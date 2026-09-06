@@ -86,7 +86,15 @@ export function fitWorldTarget(
   };
 }
 
-/** Ported from the prototype's `hitTest()` — nearest node under `(screenX, screenY)`, `null` if none is within its padded radius. */
+/**
+ * The courtesy ring outside a node's painted disc, in screen px. An element draws
+ * at 7 px world radius and can be under 4 px on screen in 3D, which is not a
+ * pressable target on its own; this is what makes it one. It is a **slack ring,
+ * not a second disc** — `hitTestWorld` ranks painted ink above it (see there).
+ */
+export const HIT_TOUCH_SLACK_PX = 5;
+
+/** Ported from the prototype's `hitTest()` — the node under `(screenX, screenY)`, `null` if none is within its padded radius. */
 export function hitTestWorld(
   world: TopologyWorld,
   camera: CameraAxes,
@@ -124,6 +132,7 @@ export function hitTestWorld(
   let bestId: string | null = null;
   let bestDistance = Infinity;
   let bestDepth = Infinity;
+  let bestOnInk = false;
   for (const node of world.nodes) {
     if (isHittable && !isHittable(node)) continue;
     const off = renderOffsetForNode ? renderOffsetForNode(node) : null;
@@ -134,16 +143,47 @@ export function hitTestWorld(
       node.x + (off?.x ?? 0),
       node.y + (off?.y ?? 0),
     );
-    const effRadius =
-      radiusForKind(node.kind, tokens) * node.magnitudeScale * (radiusScaleForNode ? radiusScaleForNode(node) : 1) * camera.scale.value + 5;
+    // The disc the draw actually paints (`topology-frame-draw.ts`'s `screenRadius`)
+    // and, around it, the courtesy ring that makes a 7 px element pressable.
+    const drawnRadius =
+      radiusForKind(node.kind, tokens) * node.magnitudeScale * (radiusScaleForNode ? radiusScaleForNode(node) : 1) * camera.scale.value;
+    const effRadius = drawnRadius + HIT_TOUCH_SLACK_PX;
     const distance = Math.hypot(screenX - screen.x, screenY - screen.y);
     // Compare positively — a NaN coordinate (mocked or unprojected) cannot pass `<=`.
     if (!(distance <= effRadius)) continue;
+    // Is the cursor on this node's **painted** disc, or only inside its slack ring?
+    const onInk = distance <= drawnRadius;
     const depth = depthForNode ? depthForNode(node) : 0;
-    if (depth < bestDepth - 1e-6 || (Math.abs(depth - bestDepth) <= 1e-6 && distance < bestDistance)) {
+    /*
+     * Rank: ink first, then depth, then distance.
+     *
+     * ## Why ink outranks depth (measured 2026-09-06)
+     *
+     * The slack ring is a courtesy for small targets; it is not an occluder. It
+     * used to compete on equal terms with the painted disc, and because depth was
+     * decided before distance, a near domain (drawn r≈10 px, hit r≈15) swallowed
+     * the **centres** of the far elements drawn beside it: on the sample vault,
+     * pointing at each drawn centre in turn, 4 of 125 nodes in Cone at 1512×982
+     * and 12 of 125 at 834×1112 handed back a different node — dead centre on a
+     * dot you can see, with the answer coming from a shape 15 px away. Two of
+     * them then resolved to a relation, because the edge candidate list uses the
+     * same body radius to decide "node beats line".
+     *
+     * With ink first, whatever the frame painted under the cursor wins, and the
+     * slack ring only decides among points that are on no node's ink at all.
+     * Depth still orders the overlaps that are real (both discs cover the point:
+     * the nearer, brighter, larger one is on top and wins) and distance still
+     * breaks ties inside one depth — the 2026-08-18 rule, now scoped to the
+     * pixels it was describing.
+     */
+    const better = onInk === bestOnInk
+      ? depth < bestDepth - 1e-6 || (Math.abs(depth - bestDepth) <= 1e-6 && distance < bestDistance)
+      : onInk;
+    if (better) {
       bestId = node.id;
       bestDistance = distance;
       bestDepth = depth;
+      bestOnInk = onInk;
     }
   }
   return bestId;

@@ -58,7 +58,7 @@ import {
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
 import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
-import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeUnfocusedPanBounds, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeUnfocusedPanBounds, HIT_TOUCH_SLACK_PX, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import { radiusForKind, type TopologyWorld, type WorldEdge } from "./topology-world";
 
@@ -707,7 +707,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       if (!node) return undefined;
     // 3D — the same perspective factor as the node hit disc (identical formula to the draw).
       const domeS = domeFrame?.get(id)?.s ?? 1;
-      return radiusForKind(node.kind, tokens) * node.magnitudeScale * domeS * scale + 5;
+      return radiusForKind(node.kind, tokens) * node.magnitudeScale * domeS * scale + HIT_TOUCH_SLACK_PX;
     };
     const candidates: EdgeHitCandidate[] = [];
     // 3D offsets — the same formula as the draw
