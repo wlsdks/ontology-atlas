@@ -76,7 +76,7 @@ const require_ = createRequire(import.meta.url);
 const MCP_METADATA = readMcpPackageMetadata();
 const MCP_TOOL_COUNT = MCP_METADATA.toolCount ?? 'current';
 const MCP_TOOL_SPLIT = MCP_METADATA.splitText ?? 'read/write';
-const INIT_ALLOWED_FLAGS = ['--help', '--quick-start', '--locale'];
+const INIT_ALLOWED_FLAGS = ['--help', '--quick-start', '--locale', '--documents'];
 const TOP_LEVEL_COMMAND_VALUES = ['--help', '-h', 'help', '--version', '-v', ...CLI_COMMANDS];
 
 
@@ -93,8 +93,9 @@ ${COLORS.dim}(The rows below shorten that to \`ontology-atlas <command>\`. There
 ${COLORS.dim} the macOS app carries the MCP server in its own bundle instead.)${COLORS.reset}
 
 ${COLORS.bold}Usage:${COLORS.reset}
-  ontology-atlas init [folder]                Scaffold a new ontology vault (default: ./vault)
+  ontology-atlas init [folder]                Scaffold a new ontology vault (default: ./atlas)
        --quick-start                          ${COLORS.dim}Slice 0 one-liner: + bootstrap + absorb suggestion + compact next steps${COLORS.reset}
+       --documents                            ${COLORS.dim}a folder of documents, not a codebase: sources/ and wiki/ only, no map scaffolding${COLORS.reset}
   ontology-atlas install-shim                 Put ${COLORS.bold}atlas${COLORS.reset} on your PATH so it works from anywhere
        --dir path --force --uninstall --json  ${COLORS.dim}default ~/.local/bin · overwrite · remove · machine output${COLORS.reset}
   ontology-atlas list [vault]                 List ontology nodes in a vault
@@ -268,12 +269,19 @@ function parseInitArgs(args) {
   }
   const positional = [];
   let quickStart = false;
+  // A folder of documents, not a codebase: `sources/` and `wiki/` only, no node folders,
+  // no project file, no agent files. The wiki stands on its own until a map is wanted.
+  let documents = false;
   // Starter body language. The file set and frontmatter are identical; only the prose differs.
   let locale = 'en';
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     if (arg === '--quick-start') {
       quickStart = true;
+      continue;
+    }
+    if (arg === '--documents') {
+      documents = true;
       continue;
     }
     // Both value forms, like every other command. Supporting only `=` made the
@@ -298,7 +306,8 @@ function parseInitArgs(args) {
   if (positional.length > 1) {
     return { error: `too many arguments: ${positional.slice(1).join(' ')}` };
   }
-  return { target: positional[0], quickStart, locale };
+  if (documents && quickStart) return { error: '--documents and --quick-start do not combine: a documents folder has no code to bootstrap from' };
+  return { target: positional[0], quickStart, locale, documents };
 }
 
 function printInitUsage(stream = stderr) {
@@ -423,7 +432,10 @@ function realpathOrSelf(path) {
 
 async function runInit(targetArg, opts = {}) {
   const quickStart = Boolean(opts.quickStart);
-  const target = resolve(cwd(), targetArg ?? 'vault');
+  const documentsOnly = Boolean(opts.documents);
+  // `atlas/` is the folder's fixed name inside a code repository — the same name the app's
+  // permission locality reads a project root from — so the default says what the docs say.
+  const target = resolve(cwd(), targetArg ?? 'atlas');
   let serverCommand;
   try {
     serverCommand = resolveMcpServerCommand();
@@ -463,10 +475,25 @@ async function runInit(targetArg, opts = {}) {
   const skillsScope = cwdBindingScope(realpathOrSelf(cwd()), realpathOrSelf(target));
   const vaultIsRepoRoot = skillsScope.reason === 'same';
   const skillsStayInVault = vaultIsRepoRoot || skillsScope.reason === 'outside';
+  // A documents folder gets no starter skills: they teach an agent to sync code meaning
+  // into nodes, and there are no nodes here. The MCP wiring below still lands, because an
+  // agent reaching the folder is how pages get compiled.
+  const installSkills = !documentsOnly;
   const skillsRelativeRoot = join('.claude', 'skills');
+  // `--documents`: only the wiki's furniture comes from the template. The rest of the tree
+  // — node folders, `project.md`, the agent files and skills — is the map's scaffolding,
+  // and a person who opened Atlas on a folder of documents did not ask for a map. The
+  // folder reads as `sources/` and `wiki/`, which is the whole shape of a wiki on its own.
+  const wikiRoot = 'wiki';
+  const documentsSkip = (rel) => rel !== wikiRoot && !rel.startsWith(`${wikiRoot}${sep}`);
   const { created, skipped } = copyTree(templateRoot, target, {
-    skip: (rel) => !skillsStayInVault && (rel === skillsRelativeRoot || rel.startsWith(`${skillsRelativeRoot}${sep}`)),
+    skip: (rel) =>
+      (documentsOnly && documentsSkip(rel)) ||
+      (!skillsStayInVault && (rel === skillsRelativeRoot || rel.startsWith(`${skillsRelativeRoot}${sep}`))),
   });
+  if (documentsOnly) {
+    mkdirSync(join(target, 'sources'), { recursive: true });
+  }
 
   // The same three skills, put where the agent will actually look for them.
   // Existing files are preserved: a person who has already written their own
@@ -482,7 +509,7 @@ async function runInit(targetArg, opts = {}) {
   const agentsSkillsRelativeRoot = join('.agents', 'skills');
   const installedSkills = [];
   const skillsSource = join(templateRoot, skillsRelativeRoot);
-  if (existsSync(skillsSource)) {
+  if (installSkills && existsSync(skillsSource)) {
     for (const name of readdirSync(skillsSource)) installedSkills.push(name);
     // Where the agent will be started from: cwd when the vault sits inside it,
     // the vault itself when the vault is its own root or lies elsewhere.
@@ -710,6 +737,29 @@ async function runInit(targetArg, opts = {}) {
 
   if (quickStart) {
     return runQuickStart({ target, cwdVaultArg });
+  }
+
+  if (documentsOnly) {
+    stdout.write(`
+${COLORS.green}${COLORS.bold}done${COLORS.reset}: documents folder scaffolded — ${COLORS.bold}sources/${COLORS.reset} for the files, ${COLORS.bold}wiki/${COLORS.reset} for the pages.
+
+${COLORS.bold}Next steps:${COLORS.reset}
+
+  ${COLORS.dim}1.${COLORS.reset} ${COLORS.bold}Put documents in:${COLORS.reset} copy PDFs, Word files, spreadsheets or text into ${COLORS.cyan}${join(target, 'sources')}${COLORS.reset}.
+       ${COLORS.dim}Any format; the files are kept byte for byte and never edited.${COLORS.reset}
+
+  ${COLORS.dim}2.${COLORS.reset} ${COLORS.bold}Open the folder in Ontology Atlas${COLORS.reset} and use ${COLORS.bold}Library${COLORS.reset}:
+       ${COLORS.dim}Compile writes one page per document, every claim cited; Check the wiki reports${COLORS.reset}
+       ${COLORS.dim}disagreements, stale claims and missing links. Every write stops at your permission card.${COLORS.reset}
+
+  ${COLORS.dim}3.${COLORS.reset} ${COLORS.bold}From the terminal:${COLORS.reset}
+       ${COLORS.cyan}${CLI} wiki-validate ${target}${COLORS.reset}      ${COLORS.dim}# every page fits the contract?${COLORS.reset}
+       ${COLORS.cyan}${CLI} wiki-index ${target}${COLORS.reset}         ${COLORS.dim}# the index, computed from the pages${COLORS.reset}
+
+  ${COLORS.dim}A map — domains, capabilities, elements — is not part of this folder. Run ${COLORS.bold}init${COLORS.reset} without${COLORS.reset}
+  ${COLORS.dim}--documents on a code repository when you want one; the wiki stands on its own until then.${COLORS.reset}
+`);
+    return 0;
   }
 
   stdout.write(`
@@ -987,7 +1037,7 @@ async function main() {
       printInitUsage();
       return 1;
     }
-    return runInit(parsed.target, { quickStart: parsed.quickStart, locale: parsed.locale });
+    return runInit(parsed.target, { quickStart: parsed.quickStart, locale: parsed.locale, documents: parsed.documents });
   }
 
   const runner = CLI_COMMAND_RUNNERS[SUBCOMMAND];

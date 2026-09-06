@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — One vault folder with a fixed inside; `atlas/` by default in a repository, and a documents-only scaffold
+
+**Why**: the owner asked what Atlas creates in a folder and whether the shape should be fixed like `.claude/`. The answer was scattered: the CLI's default folder was `vault/` while the app's permission locality and the docs read a project root from `<repo>/atlas/`, and a person with documents and no code had to accept node folders, a project file and starter skills they did not ask for.
+**Prior**: 2026-09-05 "A vault holds three kinds of file and only one is the graph…" stands and is the inside this fixes; 2026-09-06 "…the wiki's log, and underscore files are furniture" stands.
+**Decision**: the unit is one folder, never two. Inside is fixed: `sources/` and `wiki/` always; `domains/`, `capabilities/`, `elements/` and `project.md` when there is a map; `.ontology-atlas/` for the app's records; the agent wiring beside them. In a code repository the folder is `atlas/`, and `init` now defaults to that name. `init --documents` scaffolds the documents shape — `sources/`, `wiki/` with the template, the MCP wiring, and none of the map: no node folders, no project file, no starter skills. A documents folder is a wiki on its own; the map, and the bridge to it, appear only when a `kind:` node exists.
+**Dissent**: nesting the map under `ontology/` inside the vault would read cleaner; rejected because every slug and every existing vault is `capabilities/<x>` at the root, and the gain is a tidier listing against a migration of all of them.
+**Falsifier**: a person asked to choose between two folders to start; a documents-only `init` writing a node folder; an app or doc still calling the repository's vault `vault/`.
+**Owner**: jinan
+
 ## 2026-09-06 — A name the wiki keeps mentioning becomes a node candidate, and the graph is entered only through the card
 
 **Why**: the Check-the-wiki report on two corpora ended each time with names on three or more pages and no page of their own — people, systems, contractors. In the LLM Wiki pattern those become entity pages the model writes; here a wiki page is what a document said and a node is what we mean, so an entity page would be a node nobody reviewed. The report's last list was prose a person had to retype.
