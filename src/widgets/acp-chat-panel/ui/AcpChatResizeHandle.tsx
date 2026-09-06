@@ -4,9 +4,9 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import {
-  CHAT_WIDTH_DEFAULT,
   CHAT_WIDTH_MIN,
   CHAT_WIDTH_STEP,
+  defaultChatWidth,
   maxChatWidth,
 } from '../model/panel-width';
 
@@ -120,8 +120,13 @@ export function AcpChatResizeHandle({
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onKeyDown={onKeyDown}
-  // Double-click returns to the default width — a way back for someone who lost it while dragging.
-      onDoubleClick={() => onCommit(CHAT_WIDTH_DEFAULT)}
+  /*
+        Double-click returns to the default width — a way back for someone who lost it while
+        dragging. **This screen's default**, not the constant: on a 1040px window the two are
+        different numbers, and a way back that lands somewhere the panel never opened is not
+        a way back (2026-09-06, alongside `defaultChatWidth`).
+      */
+      onDoubleClick={() => onCommit(defaultChatWidth(viewport))}
       /*
        * The grab area straddles the panel's left boundary (`-left-1` plus `w-2`).
        * All that is visible is one indigo line while focused or dragging; the rest of

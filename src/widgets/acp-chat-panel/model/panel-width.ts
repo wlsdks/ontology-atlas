@@ -36,10 +36,25 @@ export const CHAT_WIDTH_MIN = 320;
  * one row needs a 632px panel — so the footer opens in its two-row shape and says everything
  * it has to say there. The other half is that shape existing at all.
  *
- * The map keeps MAP_MIN_WIDTH at every window width through the clamp — at 1512 the ceiling
- * is 968, so this never fights it.
+ * ⚠️ This is the **ceiling** of the default, not the default itself. `defaultChatWidth()`
+ * takes the window into account; `MAP_COMFORT_WIDTH` records why.
  */
 export const CHAT_WIDTH_DEFAULT = 520;
+/**
+ * **The map width a width nobody chose has to leave** — wider than `MAP_MIN_WIDTH`.
+ *
+ * The two are different promises. `MAP_MIN_WIDTH` is the floor a **drag** may not cross: the
+ * person is holding the edge, watching the map narrow, and 480px is where we stop them. A
+ * default is nobody watching anything, so it does not get to spend that last margin.
+ *
+ * Measured 2026-09-06, and it is why this constant exists: raising the default to 520 at the
+ * app's own 1040px minimum window left the map exactly 480px, and at 480 the relation caption
+ * on the map (`cart` → `product-detail`) no longer fits and is dropped —
+ * `tests/e2e/analysis-workbench.spec.ts`, "showing a relationship reveals its hidden
+ * endpoint at 1040px", went red on a change that never touched the map. 540 keeps that
+ * caption drawing with room to spare and still leaves a 1040px window a 436px conversation.
+ */
+export const MAP_COMFORT_WIDTH = 540;
 /**
  * **The composer's own width at which its footer stops being one row.**
  *
@@ -77,6 +92,23 @@ export function maxChatWidth(viewportWidth: number): number {
 export function clampChatWidth(width: number, viewportWidth: number): number {
   if (!Number.isFinite(width)) return CHAT_WIDTH_DEFAULT;
   return Math.round(Math.min(Math.max(width, CHAT_WIDTH_MIN), maxChatWidth(viewportWidth)));
+}
+
+/**
+ * **The width to open at when nobody has chosen one**, on this screen.
+ *
+ * A stored width is an answer somebody gave, so it only meets `clampChatWidth` — the floor a
+ * drag may not cross. A default is an answer we gave on their behalf, and it is spent on a
+ * screen we have not seen, so it yields first: it takes `CHAT_WIDTH_DEFAULT` only while
+ * `MAP_COMFORT_WIDTH` is still left over for the map, and otherwise takes whatever remains.
+ *
+ * The lower bound still wins on a screen too small for either promise, for the same reason it
+ * wins in `maxChatWidth`: a slightly narrow map beats an unreadable panel.
+ */
+export function defaultChatWidth(viewportWidth: number): number {
+  if (!Number.isFinite(viewportWidth)) return CHAT_WIDTH_DEFAULT;
+  const comfortable = viewportWidth - RAIL_WIDTH - MAP_COMFORT_WIDTH;
+  return clampChatWidth(Math.min(CHAT_WIDTH_DEFAULT, comfortable), viewportWidth);
 }
 
 /**
