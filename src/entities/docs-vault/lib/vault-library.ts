@@ -1,3 +1,5 @@
+import { isWikiFurnitureSlug } from '@/shared/lib/wiki-page-schema';
+
 import type { VaultDoc, VaultSourceFile } from '../model/types';
 
 /**
@@ -94,9 +96,16 @@ function readHashMap(value: unknown): Map<string, string> {
   return out;
 }
 
-/** Wiki pages in the manifest, newest write-up first by slug order. */
+/**
+ * Wiki pages in the manifest, by slug order.
+ *
+ * The shipped `wiki/_template.md` is not a page: it is the copy-ready shape `init` writes,
+ * and listing it put "<the page name>" at the top of the Wiki list and opened it as the
+ * first page a person reads (installed app, 2026-09-06, on a folder with five real
+ * pages). The validators already skip it; the list does too, for the same reason.
+ */
 export function selectWikiPages(docs: readonly VaultDoc[]): LibraryWikiPage[] {
-  return docs.filter(isWikiPage).map((doc) => ({
+  return docs.filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug)).map((doc) => ({
     slug: doc.slug,
     title: doc.title,
     sourcePaths: readStringArray(doc.frontmatter.sources),

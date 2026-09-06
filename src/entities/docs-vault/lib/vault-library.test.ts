@@ -90,6 +90,16 @@ describe('citations are read from sources + source_hash', () => {
       ])[0],
     ).toMatchObject({ createdBy: 'agent:claude', compiledAt: '2026-09-05T10:00:00Z' });
   });
+
+  it('leaves the shipped template out of the list, as the validators leave it out of judgement', () => {
+    // Seen in the installed app on 2026-09-06: "<the page name>" at the top of five real
+    // pages, opened first in the reader. The template is the shape, not a page.
+    const pages = selectWikiPages([
+      doc('wiki/_template', { title: '<the page name>', created_by: 'agent:claude' }),
+      doc('wiki/a', { created_by: 'agent:claude' }),
+    ]);
+    expect(pages.map((page) => page.slug)).toEqual(['wiki/a']);
+  });
 });
 
 describe('a source state says whether the write-up still matches the file', () => {
