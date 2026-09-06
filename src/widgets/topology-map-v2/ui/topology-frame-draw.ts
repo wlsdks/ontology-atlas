@@ -33,6 +33,8 @@ import {
   DOME_RING_ALPHA,
   DOME_RING_WIDTH_PX,
   domeDetailFactor,
+  domeEdgeFogAlpha,
+  domeEdgeWidthFactor,
   domeFogAlpha,
   DOME_RIM_FOG_FLOOR,
   domeHaloPx,
@@ -1577,8 +1579,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         const aMin = Math.min(edgeFrameA.a, edgeFrameB.a);
         if (aMin > 0) {
           const uAvg = (edgeFrameA.u + edgeFrameB.u) / 2;
-          domeEdgeFog = 1 + (domeFogAlpha(uAvg) - 1) * aMin;
-          domeWidthScale = 1 + (domeLineWidthFactor(uAvg) - 1) * aMin;
+          // The **edge** fog carries a floor under its product with the width
+          // factor (`domeEdgeFogAlpha`); nodes and rings keep the raw ramp.
+          domeEdgeFog = 1 + (domeEdgeFogAlpha(uAvg) - 1) * aMin;
+          domeWidthScale = 1 + (domeEdgeWidthFactor(uAvg) - 1) * aMin;
           domeHaloWidthPx = domeHaloPx(uAvg) * aMin;
           domeEdgeDetail = 1 + (domeDetailFactor(uAvg) - 1) * aMin;
         }

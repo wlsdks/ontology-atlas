@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — A resting relation line in 3D gets a floor under its depth ink
+
+**Why**: The owner, looking at the installed app in Cloud on the dogfood ontology, reported that the lines are so faint the connections are all but invisible and only the selected pair reads. Measured on the sample vault at 1512×982, DPR 2, nothing selected, reading each drawn line's own pixels against the ground beside it: containment lines read a median 1.26 : 1 in Cone, 1.33 in Strata, 1.14 in Cloud, where the same measurement on the 2D map reads 5.80 : 1. Depth attenuates a line twice — fog on its alpha (1.0 → 0.09) and the width factor on its stroke (0.90 → 0.35) — and the stacked product bottoms out at 3.5% of a near line's ink. The same stacking emptied the Strata rings at 0.12.
+**Prior**: 2026-08-18 (76) — the 3D fog dispensation — still stands for nodes and rings; this narrows it for relation lines only.
+**Decision**: `DOME_EDGE_INK_FLOOR` (0.62), with `DOME_EDGE_WIDTH_FLOOR` (0.72) so the alpha need not run to 1 to reach it. A resting line's fog × width product never falls below the floor: past the crossover (u ≈ 0.17) its ink is held constant instead of continuing down, and the two factors trade against each other at that total. Measured after: containment 1.75–1.89 : 1, dependency 1.75–1.78 : 1, against a bar of 1.8 and 1.5. Nodes, plane rings, ego, hover, selected lines, the selected-state dim of non-ego lines, and the whole 2D map are untouched. Gate: `tests/e2e/map-3d-relation-ink.spec.ts`, which reads the canvas back rather than asserting a token.
+**Dissent**: The hero engine's own comment beside `domeFogAlpha` — «this contrast *is* the 3D». Holding the far-side ink constant spends part of the depth cue, and the honest cost is that beyond the crossover only the surviving width falloff, the halo, the node fog, perspective size and the draw order separate near from far.
+**Falsifier**: The owner reads the far half of Cone or Cloud as flat — near and far no longer telling themselves apart at rest.
+**Owner**: jinan
+
 ## 2026-09-06 — Strata joins Cone and Cloud as a third 3D arrangement, and the three.js probe is declined
 
 **Why**: The three.js probe of 2026-09-06 (report THREE-PROBE-2026-09-06, on the `feat/three-probe` branch) measured equal frame time at 125 and 1,000 nodes, cost 137 kB gzip, and found its only real gain in a **structure**, not a renderer: Strata read tiers "by a distance" better than the cone. A structure is renderer-independent, so the canvas-2D engine can have it for free.
