@@ -439,3 +439,66 @@ describe('온톨로지 쓰기 — 여덟 문장을 사람이 읽는 카드', () 
     expect(document.activeElement).toBe(screen.getByTestId('acp-permission-reject'));
   });
 });
+
+describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => {
+  function cardWithVerdict(verdict: { ok: boolean; problems: Array<{ code: string; message: string; line?: number }> } | null) {
+    return (
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AcpPermissionCard
+          pending={{
+            request: {
+              title: 'wiki/plan.md 쓰기',
+              toolCallId: 'tool-permission',
+              toolName: 'Write',
+              toolKind: 'edit',
+              filePath: '/vault/wiki/plan.md',
+              rawInput: {},
+              reviewKind: 'permission',
+              options: [
+                { optionId: 'reject', kind: 'reject_once', name: '거절' },
+                { optionId: 'allow', kind: 'allow_once', name: '허용' },
+              ],
+            },
+            resolve: vi.fn(),
+          }}
+          vaultPath="/vault"
+          writeVerdict={verdict}
+        />
+      </NextIntlClientProvider>
+    );
+  }
+
+  it('says nothing when there is no verdict, rather than guessing', () => {
+    render(cardWithVerdict(null));
+    expect(screen.queryByTestId('acp-permission-page-verdict')).toBeNull();
+  });
+
+  it('a fitting page gets one quiet line and both buttons stay', () => {
+    render(cardWithVerdict({ ok: true, problems: [] }));
+    const block = screen.getByTestId('acp-permission-page-verdict');
+    expect(block.getAttribute('data-ok')).toBe('true');
+    expect(block.textContent).toContain('문서 모양이 맞습니다');
+    expect(screen.getByTestId('acp-permission-allow')).toBeTruthy();
+    expect(screen.getByTestId('acp-permission-reject')).toBeTruthy();
+  });
+
+  it('a failing page lists its codes with the first message, before the person decides', () => {
+    render(
+      cardWithVerdict({
+        ok: false,
+        problems: [
+          { code: 'uncited-fact', message: '인용 없는 사실', line: 12 },
+          { code: 'citation-target-missing', message: '없는 파일' },
+        ],
+      }),
+    );
+    const block = screen.getByTestId('acp-permission-page-verdict');
+    expect(block.getAttribute('data-ok')).toBe('false');
+    expect(block.textContent).toContain('2건');
+    expect(block.textContent).toContain('uncited-fact:12');
+    expect(block.textContent).toContain('인용 없는 사실');
+    expect(block.textContent).toContain('citation-target-missing');
+    // The gate is the person: Allow is still offered.
+    expect(screen.getByTestId('acp-permission-allow')).toBeTruthy();
+  });
+});

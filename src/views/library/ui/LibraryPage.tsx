@@ -1,16 +1,23 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft } from "lucide-react";
 
 import { useLocalVault, useVaultIdentityScope } from "@/entities/vault-session";
+import { isWikiPage } from "@/entities/docs-vault";
 import type { LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import {
   addSources,
   addSourcesInBrowser,
   buildCompileBrief,
+  appendWikiLog,
+  buildLintBrief,
+  describeCompileTurn,
+  describeLintTurn,
+  judgePageWrite,
+  selectCompileTargets,
   discoverSources,
   FindDocumentsDialog,
   forgetDeclinedCandidates,
@@ -34,6 +41,8 @@ import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
 import { useToast } from "@/shared/ui";
+
+import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
 
 import { useLibraryModel } from "../lib/use-library-model";
 import { useLibraryAgent } from "../lib/use-library-agent";
@@ -110,8 +119,9 @@ export function LibraryPage() {
    * the work that builds its model. The model hashes files and reads page bodies, so it
    * is switched off, not merely hidden, until a folder is really open.
    */
+  const docs = manifest?.docs ?? EMPTY_DOCS;
   const model = useLibraryModel({
-    docs: manifest?.docs ?? EMPTY_DOCS,
+    docs,
     sources: manifest?.sources,
     sourceHandles: localVault.sourceHandles,
     fileHandles: localVault.fileHandles,
@@ -383,6 +393,7 @@ export function LibraryPage() {
       agent.start(
         buildCompileBrief({
           sources: model.sources,
+          existingPages: model.wikiPages,
           locale,
           writerId: agent.runtime ? `agent:${agent.runtime.id}` : "agent:unknown",
           vaultRoot: nativeVaultRootPath ?? "",
@@ -396,7 +407,90 @@ export function LibraryPage() {
         "error",
       );
     }
-  }, [agent, locale, model.sources, nativeVaultRootPath, t, toast]);
+  }, [agent, locale, model.sources, model.wikiPages, nativeVaultRootPath, t, toast]);
+
+  /**
+   * The verdict the permission card shows before Allow: the page as this write would leave
+   * it, judged against the wiki page contract. Edits are applied to the page text the model
+   * last read; a page it has not read yet gets no verdict rather than a guessed one.
+   */
+  const judgeWrite = useCallback(
+    (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null }) =>
+      nativeVaultRootPath
+        ? judgePageWrite({
+            request,
+            vaultRoot: nativeVaultRootPath,
+            currentText: (slug) => model.pageTexts.get(slug) ?? null,
+            knownSources: model.sources.map((row) => row.path),
+          })
+        : null,
+    [model.pageTexts, model.sources, nativeVaultRootPath],
+  );
+
+  /**
+   * `wiki/_log.md`, one line per run, written by the app from what it saw: the pages
+   * present before the turn and after it (new, revised), the sources the turn was handed,
+   * and for a check the counts the report ended with. The agent's transcript is not the
+   * source of the compile line; the folder is.
+   */
+  const latestDocsRef = useRef(docs);
+  useEffect(() => {
+    latestDocsRef.current = docs;
+  }, [docs]);
+  const handleTurnStarted = useCallback(
+    (_start: { text: string; startedAt: string }) => {
+      const kind = agent.openingRequest?.kind ?? "compile";
+      if (!handle) return null;
+      const stamp = (list: typeof docs) =>
+        new Map(
+          list
+            .filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug))
+            .map((doc) => [doc.slug, doc.mtime ?? 0] as const),
+        );
+      const before = stamp(latestDocsRef.current);
+      const sources = selectCompileTargets(model.sources).map((row) => row.path);
+      const writer = agent.runtime ? `agent:${agent.runtime.id}` : "agent:unknown";
+      return async (completion: { endedAt: string; outcome: string; events: ReadonlyArray<{ kind: string; text?: string }> }) => {
+        if (completion.outcome === "cancelled") return;
+        const after = stamp(latestDocsRef.current);
+        const lastAgentText = [...completion.events].reverse().find((event) => event.kind === "agent")?.text ?? null;
+        const summary =
+          kind === "lint"
+            ? describeLintTurn(lastAgentText)
+            : describeCompileTurn({ sources, before, after });
+        try {
+          await appendWikiLog(handle, { at: completion.endedAt, kind, summary, writer });
+        } catch {
+          // A log that cannot be written is not a reason to interrupt the person; the
+          // pages themselves are unaffected and the activity receipts still exist.
+        }
+      };
+    },
+    [agent.openingRequest?.kind, agent.runtime, handle, model.sources],
+  );
+
+  const handleLint = useCallback(() => {
+    try {
+      agent.start(
+        buildLintBrief({
+          pages: model.wikiPages,
+          findings: new Map(
+            [...model.verdicts].filter(([, verdict]) => !verdict.ok).map(([slug, verdict]) => [slug, verdict.problems]),
+          ),
+          locale,
+          vaultRoot: nativeVaultRootPath ?? "",
+        }),
+        "lint",
+      );
+    } catch (error) {
+      toast.show(
+        t("wiki.compileFailed", {
+          reason: error instanceof Error ? error.message : String(error),
+        }),
+        "error",
+      );
+    }
+  }, [agent, locale, model.verdicts, model.wikiPages, nativeVaultRootPath, t, toast]);
 
   const wikiProblems = selectedWikiDoc
     ? (model.verdicts.get(selectedWikiDoc.slug)?.problems ?? [])
@@ -507,6 +601,7 @@ export function LibraryPage() {
             onAddFiles={handleAddFiles}
             onFindDocuments={handleFindDocuments}
             onCompile={agent.route === "agent" ? handleCompile : null}
+            onLint={agent.route === "agent" ? handleLint : null}
             // Compile hands the folder to a coding agent, whose own provider traffic
             // Atlas is not in the path of and does not log. Saying so beside the button
             // rather than in a settings page is the whole point.
@@ -612,6 +707,8 @@ export function LibraryPage() {
       */}
       {agent.route === "agent" && agent.runtime && nativeVaultRootPath ? (
         <LibraryAgentDock
+          judgeWrite={judgeWrite}
+          onTurnStarted={handleTurnStarted}
           open={agent.open}
           runtime={agent.runtime}
           runtimes={agent.runtimes}

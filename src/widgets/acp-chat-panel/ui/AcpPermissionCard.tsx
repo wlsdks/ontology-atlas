@@ -49,8 +49,15 @@ export function AcpPermissionCard({
   activeItemIndex,
   onActiveItemChange,
   vaultPath,
+  writeVerdict = null,
 }: {
   pending: PendingPermission;
+  /**
+   * What the page would look like if this write were allowed, judged against the wiki page
+   * contract by the screen that owns the folder (the Library). Null when the write is not a
+   * wiki page or its text cannot be known; then nothing is drawn, rather than a guess.
+   */
+  writeVerdict?: { ok: boolean; problems: ReadonlyArray<{ code: string; message: string; line?: number }> } | null;
   /** The open vault, so the card can tell the person's own project from somewhere else entirely. */
   vaultPath?: string | null;
   /** The computed value comes along so the panel and the map read the same typed change. */
@@ -322,6 +329,45 @@ export function AcpPermissionCard({
           {request.title ?? t('unknownTarget')}
         </p>
       )}
+
+      {/*
+       * The verdict before the decision. The brief once claimed a failing page "will be
+       * rejected" and nothing rejected it; the codes showed up in the Wiki list after the
+       * page had landed. Here they show before Allow, on the same card, so the person
+       * decides with them in view. A fitting page says so in one quiet line; a failing one
+       * lists its codes, first message included, and leaves both buttons where they are —
+       * the gate is the person, not the validator.
+       */}
+      {writeVerdict ? (
+        <div
+          data-testid="acp-permission-page-verdict"
+          data-ok={writeVerdict.ok ? 'true' : 'false'}
+          className={
+            writeVerdict.ok
+              ? 'rounded-chip border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]'
+              : 'rounded-chip border border-[color:var(--color-border-strong)] px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-secondary)]'
+          }
+        >
+          {writeVerdict.ok ? (
+            t('pageFits')
+          ) : (
+            <>
+              <p className="break-keep">{t('pageFails', { count: writeVerdict.problems.length })}</p>
+              <ul className="mt-1 flex flex-col gap-0.5">
+                {writeVerdict.problems.slice(0, 4).map((problem, index) => (
+                  <li key={`${problem.code}-${problem.line ?? index}`} className="flex min-w-0 gap-2">
+                    <code className="flex-none font-mono text-[color:var(--color-text-primary)]">
+                      {problem.code}
+                      {problem.line ? `:${problem.line}` : ''}
+                    </code>
+                    {index === 0 ? <span className="min-w-0 break-keep">{problem.message}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      ) : null}
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">

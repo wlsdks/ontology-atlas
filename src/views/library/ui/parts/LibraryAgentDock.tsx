@@ -3,10 +3,14 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
+import type { PageWriteRequest, PageWriteVerdict } from "@/features/library";
 import { cn } from "@/shared/lib/cn";
 import { usePanelPresence } from "@/shared/lib/use-presence";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, Surface } from "@/shared/ui";
 import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader, useChatWidth } from "@/widgets/acp-chat-panel";
+import type { ComponentProps } from "react";
+
+type AcpChatPanelProps = ComponentProps<typeof AcpChatPanel>;
 
 /**
  * The guarded ACP conversation, docked to the Library.
@@ -27,7 +31,8 @@ import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader, useChatWidth } from "
  * that only says "something is happening" would compete with the one that says what.
  */
 export interface LibraryAgentOpeningRequest {
-  kind: "compile";
+  /** `compile` writes pages under the permission gate; `lint` reads them and reports. */
+  kind: "compile" | "lint";
   text: string;
   nonce: number;
 }
@@ -47,6 +52,8 @@ export function LibraryAgentDock({
   openingRequest,
   knownSlugs,
   onClose,
+  judgeWrite,
+  onTurnStarted,
 }: {
   open: boolean;
   runtime: LibraryAgentRuntime;
@@ -57,6 +64,10 @@ export function LibraryAgentDock({
   openingRequest: LibraryAgentOpeningRequest | null;
   knownSlugs: ReadonlySet<string>;
   onClose: () => void;
+  /** Judges a wiki page write before the permission card asks; see `judgePageWrite`. */
+  judgeWrite?: (request: PageWriteRequest) => PageWriteVerdict | null;
+  /** Sees each turn start and hands back what to do when it ends; the wiki log hangs here. */
+  onTurnStarted?: AcpChatPanelProps["onTurnStarted"];
 }) {
   const tChat = useTranslations("acpChat");
   const chatWidth = useChatWidth();
@@ -140,6 +151,8 @@ export function LibraryAgentDock({
               open && openingRequest !== null && enabledRequestNonce === openingRequest.nonce
             }
             openingRequest={openingRequest}
+            judgeWrite={judgeWrite}
+            onTurnStarted={onTurnStarted}
             knownSlugs={knownSlugs}
           />
         </Surface>

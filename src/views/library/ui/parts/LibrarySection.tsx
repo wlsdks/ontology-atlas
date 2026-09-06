@@ -3,7 +3,7 @@
 import type { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
-import { BookText, FilePlus2, FileStack, FileText, Search, Sparkles } from "lucide-react";
+import { BookText, FilePlus2, FileStack, FileText, Search, Sparkles, Stethoscope } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
@@ -59,6 +59,8 @@ export interface LibrarySectionProps {
   onFindDocuments: () => void;
   /** Starts one in-app agent turn that writes the pages. Absent when no agent can run. */
   onCompile: (() => void) | null;
+  /** Starts the report-only health check; null where no agent can run, like Compile. */
+  onLint: (() => void) | null;
   /**
    * What leaves this computer when Compile runs, stated beside the button that starts it.
    *
@@ -149,6 +151,7 @@ export function LibrarySection({
   onAddFiles,
   onFindDocuments,
   onCompile,
+  onLint,
   transferNote,
   vaultLabel,
   busy,
@@ -300,20 +303,43 @@ export function LibrarySection({
           }
           label={t("wiki.header", { count: model.wikiPages.length })}
           actions={
-            onCompile ? (
-              <Tooltip content={t("wiki.compileTooltip")}>
-                <Chip
-                  data-testid="library-compile"
-                  onClick={onCompile}
-                  disabled={busy || model.needsCompileCount === 0}
-                  tone="muted"
-                  className="flex-none hover:text-[color:var(--color-text-primary)]"
-                  aria-label={t("wiki.compileTooltip")}
-                >
-                  <Sparkles size={ICON_SIZE.sm} aria-hidden />
-                  <span className="min-w-0 truncate">{t("wiki.compile")}</span>
-                </Chip>
-              </Tooltip>
+            onCompile || onLint ? (
+              <span className="flex min-w-0 items-center gap-1">
+                {onLint ? (
+                  // The judgement half of the health check: what `wiki-validate` cannot
+                  // decide (two pages disagreeing, a claim a later page replaced). Report
+                  // only; the brief forbids writing, so it needs no page count to be
+                  // worth pressing — one page has nothing to disagree with, hence two.
+                  <Tooltip content={t("wiki.lintTooltip")}>
+                    <Chip
+                      data-testid="library-lint"
+                      onClick={onLint}
+                      disabled={busy || model.wikiPages.length < 2}
+                      tone="muted"
+                      className="flex-none hover:text-[color:var(--color-text-primary)]"
+                      aria-label={t("wiki.lintTooltip")}
+                    >
+                      <Stethoscope size={ICON_SIZE.sm} aria-hidden />
+                      <span className="min-w-0 truncate">{t("wiki.lint")}</span>
+                    </Chip>
+                  </Tooltip>
+                ) : null}
+                {onCompile ? (
+                  <Tooltip content={t("wiki.compileTooltip")}>
+                    <Chip
+                      data-testid="library-compile"
+                      onClick={onCompile}
+                      disabled={busy || model.needsCompileCount === 0}
+                      tone="muted"
+                      className="flex-none hover:text-[color:var(--color-text-primary)]"
+                      aria-label={t("wiki.compileTooltip")}
+                    >
+                      <Sparkles size={ICON_SIZE.sm} aria-hidden />
+                      <span className="min-w-0 truncate">{t("wiki.compile")}</span>
+                    </Chip>
+                  </Tooltip>
+                ) : null}
+              </span>
             ) : null
           }
         />

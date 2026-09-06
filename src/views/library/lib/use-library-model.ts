@@ -9,7 +9,7 @@ import {
   type VaultSourceFile,
 } from "@/entities/docs-vault";
 import { nativeVaultFileHashes } from "@/shared/lib/tauri-vault-fs";
-import { isWikiTemplateSlug, validateWikiPage } from "@/shared/lib/wiki-page-schema";
+import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/wiki-page-schema";
 
 /**
  * The library, measured lazily, for one open folder.
@@ -49,6 +49,12 @@ export interface LibraryUiModel extends LibraryModel {
   verdicts: Map<string, LibraryWikiVerdict>;
   /** Wiki pages that do not fit the contract, and have been measured. */
   offTemplateCount: number;
+  /**
+   * Page text by wiki slug, as last read for judging. The permission card applies an
+   * agent's edit to this to judge the page that would land; a slug absent here has not
+   * been read yet and gets no verdict rather than a guessed one.
+   */
+  pageTexts: ReadonlyMap<string, string>;
   /**
    * Measured sha256 by source path, for the rows the reader opens.
    *
@@ -109,6 +115,15 @@ export function useLibraryModel({
   const [verdicts, setVerdicts] = useState<Map<string, LibraryWikiVerdict>>(() => new Map());
   /** `slug@mtime` of every wiki page already judged. */
   const judgedStamps = useRef(new Set<string>());
+  /**
+   * Page text by `slug@mtime`, kept so the folder half can be judged on every pass.
+   * A page's own verdict is stable until its bytes change; whether somebody links to it
+   * changes when *another* page changes, so the folder is re-read from this cache each
+   * time any page moves rather than only for the pages that did.
+   */
+  const rawByStamp = useRef(new Map<string, string>());
+  /** The same texts as state, for consumers that judge an agent's edit against the page. */
+  const [pageTexts, setPageTexts] = useState<Map<string, string>>(() => new Map());
 
   const hashes = useMemo(() => {
     const out = new Map<string, string>();
@@ -173,19 +188,26 @@ export function useLibraryModel({
     const knownSources = (sources ?? []).map((source) => source.path);
     void (async () => {
       const measured = new Map<string, LibraryWikiVerdict>();
+      const folderInput: Array<{ path: string; raw: string }> = [];
+      let changed = false;
       for (const page of wikiPages) {
-        if (isWikiTemplateSlug(page.slug)) continue;
+        if (isWikiFurnitureSlug(page.slug)) continue;
         const doc = bySlug.get(page.slug);
         const stamp = `${page.slug}@${doc?.mtime ?? 0}`;
-        if (judgedStamps.current.has(stamp)) continue;
-        const handle = fileHandles.get(page.slug);
-        if (!handle) continue;
-        let raw: string;
-        try {
-          raw = await (await handle.getFile()).text();
-        } catch {
-          continue;
+        let raw = rawByStamp.current.get(stamp);
+        if (raw === undefined) {
+          const handle = fileHandles.get(page.slug);
+          if (!handle) continue;
+          try {
+            raw = await (await handle.getFile()).text();
+          } catch {
+            continue;
+          }
+          rawByStamp.current.set(stamp, raw);
+          changed = true;
         }
+        folderInput.push({ path: `${page.slug}.md`, raw });
+        if (judgedStamps.current.has(stamp)) continue;
         const { ok, problems } = validateWikiPage(raw, { knownSources });
         judgedStamps.current.add(stamp);
         measured.set(page.slug, {
@@ -196,10 +218,35 @@ export function useLibraryModel({
           problems,
         });
       }
-      if (cancelled || measured.size === 0) return;
+      if (cancelled || (!changed && measured.size === 0)) return;
+      const folderByPath = new Map(
+        validateWikiFolder(folderInput).map((entry) => [entry.path, entry.problems] as const),
+      );
+      setPageTexts(new Map(folderInput.map(({ path, raw }) => [path.replace(/\.md$/, ""), raw] as const)));
       setVerdicts((current) => {
         const next = new Map(current);
         for (const [slug, verdict] of measured) next.set(slug, verdict);
+        for (const { path } of folderInput) {
+          const slug = path.replace(/\.md$/, "");
+          const base = next.get(slug);
+          if (!base) continue;
+          // Page problems first, folder problems after: the page's own shape is what
+          // a writer fixes first, and the first code shown is the one they see.
+          const own = base.problems.filter(
+            (problem) =>
+              problem.code !== "dangling-wikilink" &&
+              problem.code !== "orphan-page" &&
+              problem.code !== "shared-source-unlinked",
+          );
+          const problems = [...own, ...(folderByPath.get(path) ?? [])];
+          next.set(slug, {
+            ok: problems.length === 0,
+            firstProblem: problems[0]?.code ?? null,
+            firstProblemMessage: problems[0]?.message ?? null,
+            problemCount: problems.length,
+            problems,
+          });
+        }
         return next;
       });
     })();
@@ -215,6 +262,6 @@ export function useLibraryModel({
     for (const [slug, verdict] of verdicts) {
       if (live.has(slug) && !verdict.ok) offTemplateCount += 1;
     }
-    return { ...model, verdicts, offTemplateCount, hashes };
-  }, [hashes, model, verdicts]);
+    return { ...model, verdicts, offTemplateCount, hashes, pageTexts };
+  }, [hashes, model, pageTexts, verdicts]);
 }

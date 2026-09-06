@@ -125,9 +125,9 @@ export function useLibraryAgent(vaultRoot: string | null) {
         ? "agent"
         : "unavailable";
 
-  const start = useCallback((text: string) => {
+  const start = useCallback((text: string, kind: LibraryAgentOpeningRequest["kind"] = "compile") => {
     setOpeningRequest((current) => ({
-      kind: "compile",
+      kind,
       text,
       nonce: (current?.nonce ?? 0) + 1,
     }));
