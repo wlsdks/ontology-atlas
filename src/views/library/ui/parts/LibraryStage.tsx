@@ -50,6 +50,15 @@ import type { LibraryLocalModel } from "../../lib/use-library-agent";
  * decided by copy length is a defect; variation here would encode which step happened to
  * be written last.
  *
+ * ## At every width, including a phone
+ *
+ * The cards are full-width rows of one grid at all sizes, so nothing about this shelf is
+ * `lg`-only. It used not to be **drawn** below `lg` — the reader box it lives in was
+ * hidden whenever nothing was chosen — which is why `LibraryPage` now stacks that box
+ * above the two lists instead of hiding it. The only width-dependent value left here is
+ * the column inset, which drops one step under `sm` so a 390px phone keeps its 24px of
+ * card padding rather than spending it on the page margin.
+ *
  * ## What Compile says when it cannot run
  *
  * The button is drawn in every state and **disabled with the reason**, which is the
@@ -288,11 +297,15 @@ export function LibraryStage({
       : new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(lastAdded));
 
   return (
-    <div
-      data-testid="library-stage"
-      className="min-h-0 flex-1 overflow-auto max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]"
-    >
-      <div className="mx-auto w-full max-w-[760px] px-6 pb-10 pt-8 md:px-10">
+    /*
+     * No bottom-tab reserve here any more (2026-09-06). Below `lg` this shelf is the
+     * **top** half of the column and the index sits under it, so the tab bar stands over
+     * the index — which pays the reserve itself. Keeping a second copy here put
+     * `--topology-mobile-bottom-tab-reserve + 12px` of dead space in the middle of a
+     * phone's column, between the last step and the Sources header.
+     */
+    <div data-testid="library-stage" className="min-h-0 flex-1 overflow-auto">
+      <div className="mx-auto w-full max-w-[760px] px-5 pb-8 pt-6 sm:px-6 md:px-10 lg:pb-10 lg:pt-8">
         {/* No eyebrow. The index column 250px to the left already carries a caps eyebrow
             and this product's name, and a second identical stack at nearly the same y read
             as two headers competing (design-lead, 2026-09-06). */}

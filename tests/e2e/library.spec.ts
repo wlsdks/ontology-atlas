@@ -117,9 +117,12 @@ const VAULT = {
  * past first — the destination has no sample state, because a library of somebody else's
  * documents is not a demo of anything.
  */
-async function openLibrary(page: import("@playwright/test").Page) {
+async function openLibrary(
+  page: import("@playwright/test").Page,
+  vault: Record<string, string> = VAULT,
+) {
   await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, VAULT);
+  await stubDirectoryPicker(page, vault);
   await page.goto("/en/library/");
   await page.waitForLoadState("networkidle");
   // The stage is drawn only after the IndexedDB handle restore has decided there is no
@@ -286,3 +289,144 @@ test.describe("the Library destination", () => {
     await expect(page.getByTestId("library-source-list")).toContainText("not compiled");
   });
 });
+
+/**
+ * **Below `lg` the guided shelf has to be on the screen too.**
+ *
+ * Until 2026-09-06 it was not. The reader pane carried `max-lg:hidden` whenever nothing
+ * was chosen — which is exactly the state the shelf exists for — so a phone, and any
+ * window narrower than 1024px, opened a folder and got two lists and no guidance. The
+ * measurement was unambiguous: `library-stage` had a zero-width, zero-height rect at both
+ * 390×844 and 768×1024 while the same folder at 1512 drew all three steps.
+ *
+ * These two cases hold the four things that fix has to keep true at once:
+ *
+ * 1. all three steps are drawn, full-width and of **one height** (the equal-height rule);
+ * 2. the shelf is **above** the lists, which is the order the work happens in;
+ * 3. the index's own nested list scrollers still own their overflow — the fix stacks two
+ *    flex children, and the failure mode is an index that grows past the column and hands
+ *    its scrolling to the page;
+ * 4. choosing a source still swaps the whole column, and the back control returns.
+ *
+ * The folder is its own fixture with **enough files to overflow both lists**, because a
+ * scroller with nothing to scroll cannot fail the third assertion.
+ */
+const NARROW_VAULT: Record<string, string> = {
+  "project.md": ["---", "kind: project", "slug: narrow-demo", "title: Narrow demo", "---", "", "# Narrow demo", ""].join("\n"),
+  ...Object.fromEntries(
+    Array.from({ length: 12 }, (_, index) => [
+      `sources/report-${String(index + 1).padStart(2, "0")}.pdf`,
+      `%PDF-1.7 report ${index + 1}\n`,
+    ]),
+  ),
+  ...Object.fromEntries(
+    Array.from({ length: 8 }, (_, index) => [
+      `wiki/note-${String(index + 1).padStart(2, "0")}.md`,
+      [
+        "---",
+        `title: Note ${index + 1}`,
+        "created_by: human",
+        "compiled_at: 2026-09-05T10:00:00Z",
+        "sources: []",
+        "source_hash: {}",
+        "status: draft",
+        `summary: Note ${index + 1}.`,
+        "---",
+        "",
+        "## Summary",
+        "",
+        `Note ${index + 1}.`,
+        "",
+        "## Facts",
+        "",
+        "## Decisions",
+        "",
+        "## Open questions",
+        "",
+        "## Not in sources",
+        "",
+      ].join("\n"),
+    ]),
+  ),
+};
+
+const NARROW_VIEWPORTS = [
+  { label: "390×844", width: 390, height: 844 },
+  { label: "768×1024", width: 768, height: 1024 },
+] as const;
+
+for (const viewport of NARROW_VIEWPORTS) {
+  test(`the shelf stands above the lists at ${viewport.label}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await openLibrary(page, NARROW_VAULT);
+
+    const stage = page.getByTestId("library-stage");
+    await expect(stage).toBeVisible();
+
+    // 1 — three steps, full width, one height.
+    const steps = ["gather", "compile", "read"] as const;
+    const boxes = [];
+    for (const step of steps) {
+      const card = page.getByTestId(`library-stage-${step}`);
+      await expect(card).toBeVisible();
+      const box = await card.boundingBox();
+      expect(box, `${step} has no box at ${viewport.label}`).not.toBeNull();
+      boxes.push(box!);
+    }
+    for (const box of boxes) {
+      // Equal height is the rule a copy-length-decided card breaks; one pixel of rounding
+      // is the tolerance, not a range.
+      expect(Math.abs(box.height - boxes[0]!.height)).toBeLessThanOrEqual(1);
+      expect(Math.abs(box.width - boxes[0]!.width)).toBeLessThanOrEqual(1);
+      // "Full-width" means the column's width, not the card's own content.
+      expect(box.width).toBeGreaterThan(viewport.width * 0.8);
+    }
+
+    // 2 — the shelf is above the lists.
+    const stageBox = (await stage.boundingBox())!;
+    const indexBox = (await page.getByTestId("library-index").boundingBox())!;
+    expect(stageBox.y).toBeLessThan(indexBox.y);
+
+    /*
+     * 3 — the index still owns its own overflow, and every row is reachable inside it.
+     *
+     * The first build of this layout kept the two lists as separate scrollers here, and
+     * measured at 390 they had 333px to share between two headers, two action rows and
+     * two footnotes: the source list was left 30px and the wiki list **zero**. So below
+     * `lg` the index is one scroller and the lists stand at their natural height — the
+     * assertion is that box scrolls, that its last row can be reached, and that the page
+     * behind it never became the scroller instead.
+     */
+    const scroller = page.getByTestId("library-index-scroll");
+    const scrolled = await scroller.evaluate((element) => {
+      const before = element.scrollTop;
+      element.scrollTop = element.scrollHeight;
+      return {
+        overflowY: getComputedStyle(element).overflowY,
+        overflows: element.scrollHeight > element.clientHeight + 1,
+        moved: element.scrollTop > before,
+      };
+    });
+    expect(scrolled.overflowY, "the index is not a scroller").toBe("auto");
+    expect(scrolled.overflows, "the index has nothing to scroll — the case is idling").toBe(true);
+    expect(scrolled.moved, "the index did not scroll").toBe(true);
+    // The last row of the last list, which is what a collapsed box hides first.
+    await expect(page.getByTestId("library-wiki-wiki/note-08")).toBeInViewport();
+    // And the page itself did not become the scroller instead.
+    const pageScrolls = await page.evaluate(
+      () => document.documentElement.scrollHeight > window.innerHeight + 1,
+    );
+    expect(pageScrolls, "the narrow column handed its overflow to the page").toBe(false);
+    await scroller.evaluate((element) => {
+      element.scrollTop = 0;
+    });
+
+    // 4 — choosing swaps the column, and the way back returns.
+    await page.getByTestId("library-source-sources/report-01.pdf").click();
+    await expect(page.getByTestId("library-source-summary")).toBeVisible();
+    await expect(page.getByTestId("library-index")).toBeHidden();
+    await page.getByTestId("library-reader-back").click();
+    await expect(stage).toBeVisible();
+    await expect(page.getByTestId("library-index")).toBeVisible();
+  });
+}

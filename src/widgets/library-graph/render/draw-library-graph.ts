@@ -261,7 +261,17 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   if (activeNode && activeCentre && frame.activeLabel) {
     ctx.font = `${LABEL_FONT_PX}px ${ink.fontFamily}`;
     ctx.textBaseline = "middle";
-    const textWidth = ctx.measureText(frame.activeLabel).width;
+    /*
+     * **The label is fitted to the canvas before it is placed** (2026-09-06). The box was
+     * only ever flipped and left-clamped, which holds while the canvas is a full-pane
+     * band; once the canvas is no wider than the picture it frames, a long name —
+     * `Checkout · Open on the map` measures 168px — is wider than the clearance on either
+     * side and ran off the right edge. Truncating keeps the whole box inside the frame,
+     * and an ellipsis says a name was shortened rather than that the file is called that.
+     */
+    const maxBoxWidth = Math.max(LABEL_PAD_X * 2, frame.width - 4);
+    const text = truncateToWidth(ctx, frame.activeLabel, maxBoxWidth - LABEL_PAD_X * 2);
+    const textWidth = ctx.measureText(text).width;
     const boxWidth = textWidth + LABEL_PAD_X * 2;
     const boxHeight = LABEL_FONT_PX + LABEL_PAD_Y * 2;
     // Flip to the other side rather than let the label leave the canvas: a name that
@@ -272,6 +282,9 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     let x = activeCentre.x + clearance;
     if (x + boxWidth > frame.width - 2) x = activeCentre.x - clearance - boxWidth;
     if (x < 2) x = 2;
+    // Both edges, not just the left one: flipping a box that is wider than the clearance
+    // allows only moves which edge it leaves through.
+    if (x + boxWidth > frame.width - 2) x = Math.max(2, frame.width - 2 - boxWidth);
     let y = activeCentre.y - boxHeight / 2;
     if (y < 2) y = 2;
     if (y + boxHeight > frame.height - 2) y = frame.height - 2 - boxHeight;
@@ -284,8 +297,37 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     roundedRect(ctx, x + 0.5, y + 0.5, boxWidth - 1, boxHeight - 1, LABEL_RADIUS);
     ctx.stroke();
     ctx.fillStyle = ink.labelInk;
-    ctx.fillText(frame.activeLabel, x + LABEL_PAD_X, y + boxHeight / 2);
+    ctx.fillText(text, x + LABEL_PAD_X, y + boxHeight / 2);
   }
 
   ctx.restore();
+}
+
+/**
+ * The longest prefix of `text` that fits `maxWidth`, with an ellipsis when anything was
+ * dropped. Binary search rather than a per-character walk: a name is measured about seven
+ * times instead of once per glyph, on the one label a frame ever draws.
+ *
+ * Returns `""` only when even the ellipsis does not fit, which is a canvas too small to
+ * carry a label at all.
+ */
+function truncateToWidth(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+): string {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  const ellipsis = "…";
+  if (ctx.measureText(ellipsis).width > maxWidth) return "";
+  let low = 0;
+  let high = text.length;
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if (ctx.measureText(`${text.slice(0, middle)}${ellipsis}`).width <= maxWidth) {
+      low = middle;
+    } else {
+      high = middle - 1;
+    }
+  }
+  return `${text.slice(0, low)}${ellipsis}`;
 }

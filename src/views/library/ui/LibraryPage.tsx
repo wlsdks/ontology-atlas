@@ -77,9 +77,16 @@ import { WikiTemplateProblems } from "./parts/WikiTemplateProblems";
  * facts the folder knows about it, because there is nothing else that could honestly be
  * drawn for a PDF.
  *
- * Below `lg` there is one column and selecting swaps it, with a way back. Two 280px-plus
- * panes do not fit a phone, and hiding the index behind a drawer would bury the two doors
+ * Below `lg` the two panes become one column — **the shelf on top, the lists under it** —
+ * and selecting swaps the column for the reader, with a way back. Two 280px-plus panes do
+ * not fit a phone, and hiding the index behind a drawer would bury the two doors
  * (`Add files`, `Find documents`) that are the reason someone opens this screen at all.
+ *
+ * ⚠️ **The narrow column used to drop the shelf entirely** (fixed 2026-09-06). The reader
+ * box was `max-lg:hidden` whenever nothing was chosen, which is exactly the state the
+ * guided shelf was written for — so a phone, and any window under 1024px, got the two
+ * lists and no guidance at all. `library-stage` measured a zero rect at 390×844 and
+ * 768×1024 on the seeded folder. It is now the top half of that column at every width.
  *
  * ## With no folder open
  *
@@ -541,27 +548,46 @@ export function LibraryPage() {
       tabIndex={-1}
       data-testid="library-page"
       data-library-state={opened ? opened.kind : "nothing-open"}
-      className="topology-ui-scale flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]"
+      className="topology-ui-scale flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)] max-lg:flex-col"
     >
       {/*
-        The index. Below `lg` it is the whole column and stands aside once something is
-        open; the reader's back control is what brings it back.
+        The index. Below `lg` it is the lower half of one column and stands aside once
+        something is open; the reader's back control is what brings it back.
       */}
       <aside
         data-testid="library-index"
         aria-label={t("title")}
         className={cn(
-          "flex w-full min-w-0 flex-none flex-col overflow-hidden bg-[color:var(--color-panel)] lg:w-[var(--docs-list-width)] lg:border-r lg:border-[color:var(--color-border-soft)]",
+          /* Below `lg` the two panes stack, and the boundary between them falls in the
+             middle of whichever step the shelf's scroller happened to cut. The panel tone
+             already changes there; the rule says so outright, so a card cut by the edge
+             of one pane does not read as a card that failed to draw. */
+          "flex w-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-panel)] max-lg:border-t max-lg:border-[color:var(--color-border-soft)] lg:w-[var(--docs-list-width)] lg:flex-none lg:border-r lg:border-[color:var(--color-border-soft)]",
           narrowShowsReader && "max-lg:hidden",
         )}
       >
         <div className="flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-3 pt-4">
           <LibraryHeader t={t} />
         </div>
-        {/* Below `lg` the bottom tab bar stands over this column, so the last row of a
-            long list would sit behind it. The reserve is the surface's own to pay
-            (`.claude/rules/design.md`), and it belongs to the box that scrolls. */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]">
+        {/*
+          Below `lg` the bottom tab bar stands over this column, so the last row of a long
+          list would sit behind it. The reserve is the surface's own to pay
+          (`.claude/rules/design.md`), and it belongs to the box that scrolls.
+
+          ⚠️ **And below `lg` that box is this one, not the two lists inside it.** Measured
+          at 390×844 the moment the shelf took the top of the column: with the index on
+          half a phone, the two sections' own chrome — two headers, two action rows, the
+          web-Compile sentence and two footnotes — came to 186 of the 333px left, so
+          `library-source-list` shrank to 30px and `library-wiki-list` to **zero**. Two
+          scrollers cannot share a box that small; one can. So here the index scrolls as a
+          whole and the lists stand at their natural height, while at `lg`, where the
+          column is the full window, the two lists keep their own scrollers exactly as
+          before.
+        */}
+        <div
+          data-testid="library-index-scroll"
+          className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)] lg:overflow-y-hidden"
+        >
           <LibrarySection
             model={model}
             selectedSlug={opened?.kind === "wiki" ? opened.slug : null}
@@ -582,14 +608,30 @@ export function LibraryPage() {
         </div>
       </aside>
 
+      {/*
+       * The reader — and, with nothing chosen, the guided shelf.
+       *
+       * ⚠️ **`max-lg:order-first` is the whole of the narrow layout** (2026-09-06). Until
+       * then this box carried `!narrowShowsReader && "max-lg:hidden"`, so below `lg` a
+       * folder with nothing chosen drew the two lists and **nothing else**: the three
+       * steps that answer "what is this screen for" existed only at `lg` and above, and a
+       * phone got the one state the shelf was written to replace. Measured at 390×844 and
+       * 768×1024 on the seeded folder: `library-stage` had a zero rect at both.
+       *
+       * So below `lg` the row becomes a column (`max-lg:flex-col` on `<main>`) and this
+       * box takes the top of it, above the lists — the order of the work, the same order
+       * the two panes read in at `lg`. Both halves keep `min-h-0` and their own scroller,
+       * so the index's nested list scrollers still own their overflow rather than handing
+       * it to a page scroll (design-responsive, 2026-09-06).
+       *
+       * Choosing something still swaps the whole column: the index hides, this box is the
+       * width of the screen, and the back control above the document is the way home.
+       */}
       <div
         ref={readerRef}
         tabIndex={-1}
         data-testid="library-reader"
-        className={cn(
-          "flex min-w-0 flex-1 flex-col overflow-hidden",
-          !narrowShowsReader && "max-lg:hidden",
-        )}
+        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-lg:order-first"
       >
         {/*
           The overview, above the one thing open. The Library's two lists say what is in

@@ -726,20 +726,36 @@ verified coding agent's name, or the local model and the host it answers on — 
 leaves the computer stated for that route), **③ Read** (wiki pages, sources covered,
 off-template pages, and a row that opens the newest page). Each step says `done`, `next`
 or `waiting` from those counts, and the three rows are one height (`auto-rows-fr`,
-measured 249px at both 1512 and 1040). Two steps can honestly be next at once, so the one
+re-measured 2026-09-06 on the seeded folder: 253px at both 1512 and 1040 in English, 233
+in Korean, and equal to each other at every width). Two steps can honestly be next at once, so the one
 indigo edge goes to the earliest of them while the badges stay true. Compile is drawn in
 every state and disabled with the exact reason rather than hidden, because a missing step
 two would leave a hole in the middle of the sequence. The shelf is a place a person
 returns to: the back control that used to appear only below `lg` now stands at every
 width, and Escape does the same thing. Selecting swaps the right pane and moves focus to
-it, and the source list shows which row that pane is showing. Below `lg` the index is
-still the whole column and the shelf is not drawn.
+it, and the source list shows which row that pane is showing.
+
+**Below `lg` the shelf stands above the lists** (2026-09-06, third pass). It used not to
+be drawn there at all: the pane holding it was hidden whenever nothing was chosen, which
+is the state it exists for, so a phone and any window under 1024px opened a folder and got
+two lists and no guidance — `library-stage` measured a zero rect at both 390×844 and
+768×1024. The row is now a column below `lg`: the shelf takes the top of it with the three
+cards full-width and still one height (390: 350×341 each; 768: 680×253 each), the two
+lists take the bottom under a hairline, and choosing a file still swaps the whole column
+with the same way back. The index changes its scroll model there rather than its content:
+two list scrollers sharing half a phone left the source list 30px and the wiki list zero,
+so below `lg` the index scrolls as one box and the lists stand at their natural height,
+while at `lg` and above the two lists keep their own scrollers. Cases: `the shelf stands
+above the lists at 390×844` and `… at 768×1024` in `tests/e2e/library.spec.ts`.
 
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
 the action: one cited source is a single **View original** button carrying the file name;
-several keep a chip list under the same words; a citation naming a file that is not in the
+several keep a list under the same words; a citation naming a file that is not in the
 folder is drawn as plain text, because a door that leads nowhere is worse than a stated
-fact. A source's pane answers the other direction with **View write-up** — every page
+fact. Both crossings are drawn as list rows at the index's own 36px step rather than as
+32px chips, because opening a document is one job and it was carrying two heights
+depending on which pane a person pressed from; the source pane's label column moved 132 →
+148px for the same reason, matching the shelf's. A source's pane answers the other direction with **View write-up** — every page
 citing it, each marked `current`, `behind`, or `not checked` from the sha256 it recorded
 — and, when no page cites it, the Compile button in that row's place. `not checked` is its
 own word because hashing is lazy: reporting an unmeasured file as `behind` made this pane
@@ -816,6 +832,20 @@ stop before the first frame, rotated so its longest direction lies along the can
 fitted at one scale for both axes so distance means the same thing in x and y. It settles
 once, over the 420ms canvas-travel duration, and then nothing moves; under
 `prefers-reduced-motion` the settled frame is drawn at once. 500 nodes lay out in 95ms.
+
+**The canvas is cut to the picture** (2026-09-06). One scale for both axes means the
+height decides how big the picture is, and the extra width was spent on nothing: measured
+on the seeded five-source, three-page folder at 1512, a 1144px canvas carried a 462px
+picture — 40.4% of its width, with a 341px gutter on each side — while its height was
+already 86.6% used. The canvas is therefore never wider than the picture plus the fit's own
+label allowance, and it stands in the reader's 760px column at the same left edge as the
+shelf's title, its caption and its legend (x=588 at 1512; the chip used to begin at 356
+while the title began at 588). Measured after: 462 of 504px, **91.7%**, with 21px gutters
+at 1512, and 335 of 377px, **88.9%**, at 1040 — in both locales. A hovered name is
+truncated to fit rather than allowed past either edge. The settle also stopped cancelling
+itself: its animation frame is held across effect runs, because the width the canvas now
+takes from the picture arrives after the first measurement and used to kill the arrival
+0.85 of the way in.
 
 **What left `/docs` on 2026-09-06**: Sources, Wiki, the three doors, and the agent dock.
 What stayed: the review queue, recently changed, the tree, and the editor.
