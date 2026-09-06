@@ -2689,6 +2689,7 @@
       "justNowLabel": "방금 전",
       "stepsAgoLabel": "{count}걸음 전",
       "rowAriaLabel": "{title}(으)로 이동",
+      "stepUnrelated": "직접 연결 없음",
       "copyLabel": "AI에게 이어서 맡기기",
       "copyAriaLabel": "걸어온 길을 복사해 AI에게 이어서 맡기기",
       "copyCopiedAriaLabel": "복사했어요. AI 채팅에 붙여넣으면 이어서 봐요",

@@ -8,9 +8,12 @@ import { copyText } from "@/shared/lib/copy-text";
 
 import {
   appendFootprintVisit,
+  buildTrailStepLinks,
   collapseFootprintTrail,
   formatFootprintTrailAgentPacket,
   type FootprintTrailEntry,
+  type TrailEdge,
+  type TrailStepCaption,
 } from "../lib/footprint-trail";
 
 type InsightNode = { id: string } & NonNullable<Parameters<typeof resolveNodeAgentTarget>[0]>;
@@ -30,6 +33,10 @@ export interface UseFootprintTrailArgs {
   insightNodes: readonly InsightNode[] | undefined;
   /** Slugs the packet flags as dusty. */
   dustySlugs: ReadonlySet<string>;
+  /** Vault edges, read for the reason each consecutive pair is connected. */
+  insightEdges: readonly TrailEdge[] | undefined;
+  /** Names a relation type in the reader's current register (`relationVocabulary`). */
+  relationLabelOf: (type: string) => string;
 }
 
 export interface UseFootprintTrailResult {
@@ -38,6 +45,11 @@ export interface UseFootprintTrailResult {
   footprintNodeLookup: ReadonlyMap<string, FootprintGraphNode>;
   /** Collapsed trail (last visit per node) for the chip and the handoff packet. */
   footprintTrailEntries: FootprintTrailEntry[];
+  /**
+   * How each entry connects to the one before it, aligned index-for-index with
+   * `footprintTrailEntries`. Index 0 is null: the oldest step has no predecessor.
+   */
+  footprintTrailStepCaptions: (TrailStepCaption | null)[];
   /** Raw visit order with deleted nodes removed, for the map's step numbers. */
   footprintVisitedIds: string[];
   footprintPacketCopied: boolean;
@@ -60,6 +72,8 @@ export function useFootprintTrail({
   graphNodes,
   insightNodes,
   dustySlugs,
+  insightEdges,
+  relationLabelOf,
 }: UseFootprintTrailArgs): UseFootprintTrailResult {
   const t = useTranslations("topology");
   const [footprintTrail, setFootprintTrail] = useState<string[]>([]);
@@ -113,6 +127,28 @@ export function useFootprintTrail({
     () => footprintTrail.filter((id) => footprintNodeLookup.has(id)),
     [footprintTrail, footprintNodeLookup],
   );
+  /**
+   * The reason each step follows the one before it. The trail used to carry names and
+   * distances only, which records *where* the reader went and drops *why they could go
+   * there* — and the why (`relation_notes`) is the durable thing this product keeps. Both
+   * the timeline rows and the handoff packet read this one derivation, so the screen and
+   * the agent are told the same thing.
+   */
+  // Two steps on purpose. Scanning every vault edge is the expensive half and depends
+  // only on the walk and the graph; `relationLabelOf` comes from `useTranslations` and is
+  // a fresh closure on every render, so naming is kept in its own memo. Fused, one render
+  // of the page would re-scan the whole edge list.
+  const footprintTrailStepLinks = useMemo(
+    () => buildTrailStepLinks(footprintTrailEntries.map((entry) => entry.id), insightEdges ?? []),
+    [footprintTrailEntries, insightEdges],
+  );
+  const footprintTrailStepCaptions = useMemo<(TrailStepCaption | null)[]>(
+    () =>
+      footprintTrailStepLinks.map((link) =>
+        link ? { relationLabel: relationLabelOf(link.type), reason: link.reason } : null,
+      ),
+    [footprintTrailStepLinks, relationLabelOf],
+  );
   const [footprintPacketCopied, setFootprintPacketCopied] = useState(false);
   const copyFootprintPacket = useCallback(async () => {
     if (footprintTrailEntries.length === 0) return;
@@ -125,14 +161,16 @@ export function useFootprintTrail({
           reviewHint: t("footprint.packetReviewHint"),
           pathHint: t("footprint.packetPathHint"),
           dustyHint: t("footprint.packetDustyHint", { count: dustySlugs.size }),
+          unrelated: t("footprint.stepUnrelated"),
         },
         [...dustySlugs],
+        footprintTrailStepCaptions,
       ),
     );
     if (!ok) return;
     setFootprintPacketCopied(true);
     window.setTimeout(() => setFootprintPacketCopied(false), 1600);
-  }, [footprintTrailEntries, dustySlugs, t]);
+  }, [footprintTrailEntries, footprintTrailStepCaptions, dustySlugs, t]);
   // Footprint lens — a transient state **equivalent to** the popover being open: no
   // new mode, toggle, or URL state. While it is open the map folds away relation
   // reading (the ego highlight edges) and yields to trail reading — only visited
@@ -158,6 +196,7 @@ export function useFootprintTrail({
     lastVisitedNodeRef,
     footprintNodeLookup,
     footprintTrailEntries,
+    footprintTrailStepCaptions,
     footprintVisitedIds,
     footprintPacketCopied,
     copyFootprintPacket,
