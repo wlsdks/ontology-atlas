@@ -11,7 +11,7 @@ import {
   TopologyV2KindGlyph,
   controlClass,
 } from "@/shared/ui";
-import type { FootprintTrailEntry } from "../lib/footprint-trail";
+import type { FootprintTrailEntry, TrailStepCaption } from "../lib/footprint-trail";
 
 export interface TopologyTrailChipLabels {
   /** Popover heading — "the trail you walked". */
@@ -26,6 +26,8 @@ export interface TopologyTrailChipLabels {
   stepsAgoLabel: (count: number) => string;
   /** Row click aria prefix — "go to {title}". */
   rowAriaLabel: (title: string) => string;
+  /** Step caption when this node shares no edge with the step before it. */
+  stepUnrelatedLabel: string;
   /** "hand this over to the AI". */
   copyLabel: string;
   copyAriaLabel: string;
@@ -87,6 +89,12 @@ export interface TopologyTrailChipProps {
    * ago, so it lands on the first screen without scrolling.
    */
   entries: readonly FootprintTrailEntry[];
+  /**
+   * How each entry connects to the entry **before** it, aligned index-for-index with
+   * `entries` (index 0 is null — the oldest step has no predecessor). `null` at any other
+   * index means the two nodes share no edge, which the row states rather than hides.
+   */
+  stepCaptions: readonly (TrailStepCaption | null)[];
   /** Currently focused node id — drawn as the indigo dot on the timeline. */
   currentId: string | null;
   labels: TopologyTrailChipLabels;
@@ -157,6 +165,7 @@ export interface TopologyTrailChipProps {
 export function TopologyTrailChip({
   label,
   entries,
+  stepCaptions,
   currentId,
   labels,
   onFocusEntry,
@@ -183,7 +192,13 @@ export function TopologyTrailChip({
   // Only the render is reversed — the model (`appendFootprintVisit`) and the
   // handoff packet stay oldest → newest (the packet is replayed by a machine,
   // where chronological order is the correct one).
-  const recentFirstEntries = useMemo(() => [...entries].reverse(), [entries]);
+  const recentFirstEntries = useMemo(
+    () =>
+      entries
+        .map((entry, i) => ({ entry, caption: stepCaptions[i] ?? null, oldest: i === 0 }))
+        .reverse(),
+    [entries, stepCaptions],
+  );
 
   const close = useCallback((returnFocus: boolean) => {
     setOpen(false);
@@ -478,7 +493,7 @@ export function TopologyTrailChip({
               → bottom = oldest). i is therefore "how many steps back from the latest
               visit", so the caption costs one index. */}
           <ol className="flex max-h-[280px] flex-col overflow-y-auto px-3 py-2.5">
-            {recentFirstEntries.map((entry, i) => {
+            {recentFirstEntries.map(({ entry, caption, oldest }, i) => {
               const isCurrent = entry.id === currentId;
               // The top row alone gets "you are here" (when something is focused) or
               // "just now" (when nothing is selected — e.g. after an empty-canvas
@@ -498,7 +513,11 @@ export function TopologyTrailChip({
                   onMouseLeave={() => onHoverEntry?.(null)}
                   onFocus={() => onHoverEntry?.(entry.id)}
                   onBlur={() => onHoverEntry?.(null)}
-                  className="flex items-stretch gap-2"
+                  /* Two lines, one fixed height for every row (28px title + 14px
+                     caption): a row whose height depends on whether a reason exists
+                     turns the list into a ragged column and makes the rows with a
+                     caption look like a different kind of thing. */
+                  className="flex h-[42px] shrink-0 items-stretch gap-2"
                 >
                   {/* Left rail — the dot plus the connecting segments above and below
                       (half only on the first and last row). */}
@@ -521,31 +540,71 @@ export function TopologyTrailChip({
                       className={`w-px flex-1 ${i === recentFirstEntries.length - 1 ? "bg-transparent" : "bg-[color:var(--color-divider)]"}`}
                     />
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onFocusEntry(entry.id);
-                      close(false);
-                    }}
-                    aria-label={labels.rowAriaLabel(entry.title)}
-                    aria-current={isCurrent ? "true" : undefined}
-                    data-testid="topology-trail-row"
-                    className={controlClass({ shape: "row", size: "sm", tone: "secondary", className: "min-w-0 flex-1 truncate hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]" })}
-                  >
-                    {entry.title}
-                  </button>
-                  {/* The relative-step caption sits **outside** the button so the row's
-                      aria-label does not swallow it and screen readers still get the
-                      distance. Only the current row is indigo (the attention winner). */}
-                  <span
-                    data-testid="topology-trail-step-label"
-                    className={`shrink-0 self-center font-mono text-caption tabular-nums ${
-                      i === 0 && isCurrent
-                        ? "text-[color:var(--color-indigo-accent)]"
-                        : "text-[color:var(--color-text-quaternary)]"
-                    }`}
-                  >
-                    {stepLabel}
+                  <span className="flex min-w-0 flex-1 flex-col justify-center">
+                    {/* Title and distance share one line so the caption below explains
+                        both. Measured with the distance self-centred on the two-line row,
+                        it hung 13px under its own title and read as belonging to neither
+                        line. */}
+                    <span className="flex min-w-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onFocusEntry(entry.id);
+                        close(false);
+                      }}
+                      aria-label={labels.rowAriaLabel(entry.title)}
+                      aria-current={isCurrent ? "true" : undefined}
+                      data-testid="topology-trail-row"
+                      className={controlClass({ shape: "row", size: "sm", tone: "secondary", className: "min-w-0 flex-1 truncate hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]" })}
+                    >
+                      {entry.title}
+                    </button>
+                    {/* The relative-step caption sits **outside** the button so the row's
+                        aria-label does not swallow it and screen readers still get the
+                        distance. Only the current row is indigo (the attention winner). */}
+                    <span
+                      data-testid="topology-trail-step-label"
+                      className={`shrink-0 font-mono text-caption tabular-nums ${
+                        i === 0 && isCurrent
+                          ? "text-[color:var(--color-indigo-accent)]"
+                          : "text-[color:var(--color-text-quaternary)]"
+                      }`}
+                    >
+                      {stepLabel}
+                    </span>
+                    </span>
+                    {/* **How this step follows the one before it** — the relation word
+                        plus the reason recorded on that edge (`relation_notes`). A trail
+                        of names alone says where the reader went and drops why they could
+                        go there, and the why is the durable thing this vault keeps. It
+                        sits **outside** the button so the row's aria-label stays the
+                        destination, and it stays at the bottom of the ramp: the row is
+                        still a door, not a paragraph. The oldest row keeps the empty slot
+                        so every row is the same height. */}
+                    {(() => {
+                      const text = oldest
+                        ? ""
+                        : caption
+                          ? caption.reason
+                            ? `${caption.relationLabel} · ${caption.reason}`
+                            : caption.relationLabel
+                          : labels.stepUnrelatedLabel;
+                      return (
+                        <span
+                          data-testid="topology-trail-step-link"
+                          // A recorded reason is a whole sentence and this popover is 248px
+                          // wide, so the line truncates. The native tooltip is the cheapest
+                          // honest way to keep the rest reachable without a second surface.
+                          title={text || undefined}
+                          // The empty slot must still occupy its line box. Measured without
+                          // it, the oldest row's title sat 7px lower than the rows above,
+                          // because a zero-height caption let the column re-centre itself.
+                          className="min-h-[var(--leading-caption)] truncate px-2 text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+                        >
+                          {text}
+                        </span>
+                      );
+                    })()}
                   </span>
                 </li>
               );

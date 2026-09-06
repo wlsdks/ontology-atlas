@@ -55,6 +55,74 @@ export function collapseFootprintTrail(trail: readonly string[]): string[] {
   return out;
 }
 
+/** The fields of a graph edge this module reads. Structural, so the lib stays dependency-free. */
+export interface TrailEdge {
+  from: string;
+  to: string;
+  type: string;
+  /** `relation_notes` — the recorded reason the two are connected. */
+  label?: string;
+}
+
+/**
+ * How one step connects to the step before it, or `null` when the two nodes are not
+ * directly related (the trail is a walk, not a path: two consecutive visits need not
+ * share an edge).
+ */
+export interface TrailStepLink {
+  /** The relation type as recorded on the edge; the caller names it for a human. */
+  type: string;
+  /** The recorded reason, trimmed; `null` when the edge carries no `relation_notes`. */
+  reason: string | null;
+}
+
+/** Unordered pair key — the walk may cross an edge in either direction. */
+function pairKey(a: string, b: string): string {
+  return a < b ? `${a}\u0000${b}` : `${b}\u0000${a}`;
+}
+
+/**
+ * Per-step connections along the walked trail: entry `i` describes how `trail[i]`
+ * connects to `trail[i - 1]`. Index 0 is always `null` — the oldest step has no
+ * predecessor, which is a different fact from "not related" and the caller renders it
+ * as nothing rather than as a caption.
+ *
+ * **Why this exists.** The trail listed names and distances only, so it recorded *where*
+ * the reader went and lost *why they could go there* — while the reason is the durable
+ * thing Atlas keeps (`relation_notes`, the same text the map draws as the edge label).
+ * A walk read back with its reasons is an argument; without them it is a browser history.
+ *
+ * Direction is not part of the key: crossing an edge backwards is still crossing that
+ * edge. When several edges join the same pair the one **carrying a reason wins**, since a
+ * bare type is what the caption falls back to anyway.
+ */
+export function buildTrailStepLinks(
+  trail: readonly string[],
+  edges: readonly TrailEdge[],
+): (TrailStepLink | null)[] {
+  if (trail.length === 0) return [];
+  const wanted = new Set<string>();
+  for (let i = 1; i < trail.length; i += 1) wanted.add(pairKey(trail[i - 1], trail[i]));
+  const byPair = new Map<string, TrailStepLink>();
+  if (wanted.size > 0) {
+    for (const edge of edges) {
+      const key = pairKey(edge.from, edge.to);
+      if (!wanted.has(key)) continue;
+      const reason = edge.label?.trim() || null;
+      const held = byPair.get(key);
+      if (held && (held.reason !== null || reason === null)) continue;
+      byPair.set(key, { type: edge.type, reason });
+    }
+  }
+  return trail.map((id, i) => (i === 0 ? null : byPair.get(pairKey(trail[i - 1], id)) ?? null));
+}
+
+/** A step link named for a human — the relation word in the reader's register, plus the reason. */
+export interface TrailStepCaption {
+  relationLabel: string;
+  reason: string | null;
+}
+
 /** Bare concept slug from a graph node id (`project:foo` -> `foo`); unprefixed ids pass through. */
 export function graphIdToConceptSlug(nodeId: string): string {
   const idx = nodeId.indexOf(":");
@@ -96,6 +164,8 @@ export interface FootprintTrailPacketLabels {
   /** Drift handoff: one line about dusty nodes. The caller formats the count, and
    *  the whole section is omitted when there are none. */
   dustyHint?: string;
+  /** Caption for a step whose node shares no edge with the step before it. */
+  unrelated?: string;
 }
 
 /**
@@ -107,10 +177,24 @@ export function formatFootprintTrailAgentPacket(
   entries: readonly FootprintTrailEntry[],
   labels: FootprintTrailPacketLabels,
   dustySlugs: readonly string[] = [],
+  captions: readonly (TrailStepCaption | null)[] = [],
 ): string {
   const lines: string[] = [`# ${labels.title}`, labels.order];
   entries.forEach((entry, i) => {
     lines.push(`${i + 1}. ${entry.title} (${entry.kind}): ${entry.id}`);
+    /*
+     * The connection to the previous step, indented under it. Without it the agent
+     * receives the places walked but not the argument the walk made — and the reason
+     * is the one thing the vault holds that the source code cannot state. Silent when
+     * the caller passes no captions, so the packet's older shape still holds.
+     */
+    if (i === 0 || i >= captions.length) return;
+    const caption = captions[i];
+    if (caption) {
+      lines.push(`   — ${caption.reason ? `${caption.relationLabel} · ${caption.reason}` : caption.relationLabel}`);
+    } else if (labels.unrelated) {
+      lines.push(`   — ${labels.unrelated}`);
+    }
   });
   lines.push("");
   lines.push(labels.reviewHint);

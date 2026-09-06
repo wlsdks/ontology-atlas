@@ -1736,6 +1736,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           b.x,
           b.y,
           edgeAlpha * footprintPref.opacity,
+          // The same control point `tracesDraw` above received, so the prints follow the
+          // curve that is actually drawn. On the dome this is the meridian control point
+          // (`projectEdgePoints`), which is exactly why it is read from `points` rather
+          // than recomputed here.
+          control,
         );
       }
       // Always-on comets: the tail is drawn by `tracesDraw` off `edge.t`, together

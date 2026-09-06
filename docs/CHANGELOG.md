@@ -47,9 +47,9 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Agent lookups show targets and counts above the answer. MCP has its own screen with Connectors for external MCP servers, off by default. Library, a ninth screen, holds Sources and Wiki pages in one template. Insights repairs missing back-links in one sheet. Meaning can ask the agent to write the reasons connections lack.
-**Changed**: Insights opens on four measurements and lists to-dos one row per finding; the Cone view fills the canvas; the conversation opens wider, shows a turn's clock, survives a closed dock and shares one control height; Agents and MCP read in a 960 column; Korean labels lose tracking; a connection card leads with its reason.
-**Fixed**: Desktop pages keep a bottom margin; repeated lookups fold onto one row; the permission card reads plainly, one row per target; a saved analysis is announced once; the utility rail stops blinking; the reason field grows.
+**Added**: Agent lookups show targets and counts. MCP gets its own screen, with external MCP Connectors off by default. Library, a ninth screen, holds Sources and Wiki pages. Insights repairs missing back-links. Meaning can ask the agent for missing reasons. The walked trail says how each step connects to the last.
+**Changed**: Insights opens on four measurements, one to-do per row; the Cone view fills the canvas; the conversation opens wider, keeps a turn's clock and one control height, survives a closed dock; Agents and MCP read in a 960 column; Korean labels lose tracking; a connection card leads with its reason.
+**Fixed**: Desktop pages keep a bottom margin; repeated lookups fold onto one row; the permission card reads plainly, one row per target; a saved analysis announces once; the utility rail stops blinking; the reason field grows; trail footprints follow the relation's curve.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 
