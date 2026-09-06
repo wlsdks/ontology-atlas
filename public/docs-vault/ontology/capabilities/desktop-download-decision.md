@@ -8,6 +8,7 @@ domain: domains/onboarding-and-shell
 elements: [elements/download]
 path: src/views/download
 created_by: "agent:unknown"
+relation_notes: { elements/download: "Everything a visitor needs in order to choose, the per-platform installers, the published release facts, and the unsigned Windows warning placed ahead of its own button, is rendered on this one page, so the decision has no surface apart from it." }
 ---
 
 ## Definition
