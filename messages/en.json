@@ -4668,6 +4668,7 @@
     "connected": "{service} is connected.",
     "whatLabel": "What should it bring?",
     "whatNext": "A conversation opens next. It searches, shows you at most {limit} documents, and waits for you to pick; each one you pick is written under {folder} and asks your permission first. Nothing outside that folder is touched.",
-    "bringAction": "Open the conversation"
+    "bringAction": "Open the conversation",
+    "whatRuntime": "This works in a Claude conversation. Codex has not been measured for it yet, so a Codex conversation reaches this folder and nothing else."
   }
 }

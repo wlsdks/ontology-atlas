@@ -4668,6 +4668,7 @@
     "connected": "{service} 연결됨.",
     "whatLabel": "무엇을 가져올까요?",
     "whatNext": "다음에 대화가 열립니다. 검색해서 최대 {limit}개를 보여 주고, 고를 때까지 기다려요. 고른 문서는 {folder} 아래에 하나씩 적히고, 적기 전에 매번 허락을 물어봅니다. 그 폴더 밖은 건드리지 않아요.",
-    "bringAction": "대화 열기"
+    "bringAction": "대화 열기",
+    "whatRuntime": "이건 Claude 대화에서 됩니다. Codex 는 아직 이 부분을 재지 않아서, Codex 대화는 이 폴더까지만 닿아요."
   }
 }

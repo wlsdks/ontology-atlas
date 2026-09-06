@@ -365,6 +365,22 @@ export function LibraryImportDialog({
           <p className="mt-2 max-w-prose break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
             {t('whatNext', { limit: DEFAULT_IMPORT_LIMIT, folder: service.folder })}
           </p>
+          {/*
+            ⚠️ **Which conversation can actually reach it** (2026-09-07, caught while reading the
+            handshake rather than the screen). `connectorAcpServers` hands connectors only to a
+            runtime whose permission path was measured, which today is Claude alone; a Codex
+            session gets the folder's own server and nothing else. Without this line somebody on
+            Codex presses Connect, opens the conversation, and the agent has no Notion tools —
+            the silently-absent failure this whole feature is built to avoid, arrived at through
+            the friendliest door in the product. The MCP screen has said this since 2026-09-05;
+            saying it only there would mean the easy path is the one that lies.
+          */}
+          <p
+            data-testid={`${testIdPrefix}-runtime`}
+            className="mt-1 max-w-prose break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+          >
+            {t('whatRuntime')}
+          </p>
           <div className="mt-4 flex items-center justify-between gap-2">
             <Button variant="ghost" onClick={() => setStep('connect')}>
               {t('back')}

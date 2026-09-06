@@ -165,6 +165,21 @@ describe('bringing documents in from a service', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('says which conversation can reach it, so Codex does not meet a silent absence', () => {
+    /*
+     * `connectorAcpServers` hands connectors only to a runtime whose permission path was
+     * measured, which today is Claude alone. Without this line somebody on Codex presses
+     * Connect, opens the conversation, and the agent has no Notion tools — arriving at the
+     * silently-absent failure through the friendliest door in the product.
+     */
+    draw();
+    pickService('notion');
+    fireEvent.click(screen.getByTestId('library-import-connect'));
+    return waitFor(() => {
+      expect(screen.getByTestId('library-import-runtime')).toHaveTextContent('Codex');
+    });
+  });
+
   it('says where the picking happens instead of implying this screen will draw the list', () => {
     /*
      * Atlas cannot draw it: it has no way to call the service's tools or receive their result as
