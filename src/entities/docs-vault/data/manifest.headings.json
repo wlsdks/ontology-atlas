@@ -3929,6 +3929,73 @@
       "slug": "how-tasks-were-chosen"
     }
   ],
+  "benchmark/THREE-PROBE-2026-09-06": [
+    {
+      "depth": 1,
+      "text": "three.js structure probe, 2026-09-06",
+      "slug": "threejs-structure-probe-2026-09-06"
+    },
+    {
+      "depth": 2,
+      "text": "How to open it",
+      "slug": "how-to-open-it"
+    },
+    {
+      "depth": 2,
+      "text": "What was built",
+      "slug": "what-was-built"
+    },
+    {
+      "depth": 2,
+      "text": "The design pass, and why there are before/after shots",
+      "slug": "the-design-pass-and-why-there-are-beforeafter-shots"
+    },
+    {
+      "depth": 2,
+      "text": "Screenshots",
+      "slug": "screenshots"
+    },
+    {
+      "depth": 2,
+      "text": "Frame time during orbit",
+      "slug": "frame-time-during-orbit"
+    },
+    {
+      "depth": 3,
+      "text": "Sample vault (125 concepts)",
+      "slug": "sample-vault-125-concepts"
+    },
+    {
+      "depth": 3,
+      "text": "Synthetic 1,000 nodes (`?synth=1000`)",
+      "slug": "synthetic-1000-nodes-synth1000"
+    },
+    {
+      "depth": 3,
+      "text": "Where it breaks (5,000 nodes, beyond the brief)",
+      "slug": "where-it-breaks-5000-nodes-beyond-the-brief"
+    },
+    {
+      "depth": 2,
+      "text": "JS payload",
+      "slug": "js-payload"
+    },
+    {
+      "depth": 2,
+      "text": "What each structure gains and loses",
+      "slug": "what-each-structure-gains-and-loses"
+    },
+    {
+      "depth": 2,
+      "text": "Recommendation",
+      "slug": "recommendation"
+    },
+    {
+      "depth": 2,
+      "text": "Known gaps",
+      "slug": "known-gaps"
+    }
+  ],
   "BRAND": [
     {
       "depth": 1,
