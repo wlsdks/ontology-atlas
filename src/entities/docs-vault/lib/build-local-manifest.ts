@@ -242,13 +242,16 @@ async function walkInto(
         continue;
       }
       await walkInto(handle as FileSystemDirectoryHandle, relative, depth + 1, acc);
+    } else if (isVaultSourcePath(relative)) {
+      // Ordered before every other file branch on purpose, the Markdown one included.
+      // A PNG, a `.py` or a `.md` under `sources/` is a document somebody chose to keep
+      // verbatim, not an asset, not this folder's code and not a page of the vault —
+      // one folder, one meaning. Markdown is the format notes arrive in most (a Notion
+      // or Obsidian export, an import from a service), and until 2026-09-07 it was the
+      // one format the Library could not list, because this branch sat second.
+      acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'source' });
     } else if (name.endsWith('.md')) {
       acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'md' });
-    } else if (isVaultSourcePath(relative)) {
-      // Ordered before the image and code branches on purpose. A PNG or a `.py` under
-      // `sources/` is a document somebody chose to keep, not an asset and not this
-      // folder's code — one folder, one meaning.
-      acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'source' });
     } else if (IMAGE_EXT.test(name)) {
       acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'image' });
     } else if (SOURCE_EXT.test(name)) {
