@@ -95,8 +95,8 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 4905,
-      "updatedAt": "2026-09-06",
+      "wordCount": 4973,
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "ANALYSIS-RECORDS",
         "../AGENTS",
