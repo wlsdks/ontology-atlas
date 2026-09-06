@@ -2,8 +2,12 @@
 
 import type { useTranslations } from "next-intl";
 
-import type { VaultDoc } from "@/entities/docs-vault";
+import { FileText } from "lucide-react";
+
+import type { LibraryOriginalLink, VaultDoc } from "@/entities/docs-vault";
 import { Chip } from "@/shared/ui";
+import { controlClass } from "@/shared/ui/control-class";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { wikiStatusLabel, writerLabel } from "../../lib/writer-label";
 
 /**
@@ -23,22 +27,36 @@ import { wikiStatusLabel, writerLabel } from "../../lib/writer-label";
  * citation that only exists inside the body text as `[[src:…]]` is a promise a person has
  * to keep by hand. Pressing one opens that file's own pane, where its hash and its state
  * are.
+ *
+ * ## The crossing is named (owner, 2026-09-06)
+ *
+ * *"'view the original' and 'view the template-based write-up' must be separate."* They
+ * were separate — two panes that never named each other. `Built from` labelled the
+ * provenance and left the reader to guess that a chip was a door. So the control now says
+ * what pressing it does: **one cited source becomes one "View original" button carrying
+ * its name**, and several keep the chip list under the same words, because a list of four
+ * files cannot be one button without hiding three of them.
+ *
+ * A citation naming a file that is **not in this folder** is drawn as text rather than a
+ * chip. Pressing it would open a pane about nothing, and a door that leads nowhere is
+ * worse than a fact stated plainly.
  */
 export function WikiPageHeader({
   doc,
+  originals,
   onOpenSource,
   t,
 }: {
   doc: VaultDoc;
+  /** The sources this page cites, resolved against the folder by `buildLibraryPairing`. */
+  originals: readonly LibraryOriginalLink[];
   onOpenSource: (path: string) => void;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   const frontmatter = doc.frontmatter as Record<string, unknown>;
   const createdBy = typeof frontmatter.created_by === "string" ? frontmatter.created_by : null;
   const status = typeof frontmatter.status === "string" ? frontmatter.status : null;
-  const sources = Array.isArray(frontmatter.sources)
-    ? frontmatter.sources.filter((entry): entry is string => typeof entry === "string")
-    : [];
+  const only = originals.length === 1 ? originals[0] : null;
 
   return (
     <header
@@ -54,22 +72,59 @@ export function WikiPageHeader({
         {t("wiki.writtenBy", { author: writerLabel(createdBy, t) })}
         {wikiStatusLabel(status, t) ? ` · ${wikiStatusLabel(status, t)}` : ""}
       </p>
-      {sources.length > 0 ? (
+      {only ? (
+        <div className="mt-3">
+          {only.state === null ? (
+            <p
+              data-testid="library-wiki-original-missing"
+              className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all] [overflow-wrap:anywhere]"
+            >
+              {t("wiki.originalMissing", { name: only.name })}
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onOpenSource(only.path)}
+              data-testid={`library-wiki-source-${only.path}`}
+              className={controlClass({
+                shape: "chip",
+                tone: "muted",
+                className: "max-w-full gap-1.5",
+              })}
+            >
+              <FileText size={ICON_SIZE.sm} aria-hidden />
+              <span className="min-w-0 truncate">
+                {t("wiki.viewOriginalOne", { name: only.name })}
+              </span>
+            </button>
+          )}
+        </div>
+      ) : originals.length > 0 ? (
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-            {t("wiki.builtFrom")}
+            {t("wiki.viewOriginal")}
           </span>
-          {sources.map((path) => (
-            <Chip
-              key={path}
-              tone="muted"
-              data-testid={`library-wiki-source-${path}`}
-              onClick={() => onOpenSource(path)}
-              className="max-w-full hover:text-[color:var(--color-text-primary)]"
-            >
-              <span className="min-w-0 truncate">{path.replace(/^sources\//, "")}</span>
-            </Chip>
-          ))}
+          {originals.map((original) =>
+            original.state === null ? (
+              <span
+                key={original.path}
+                data-testid={`library-wiki-source-missing-${original.path}`}
+                className="max-w-full truncate text-caption text-[color:var(--color-text-quaternary)] line-through"
+              >
+                {original.name}
+              </span>
+            ) : (
+              <Chip
+                key={original.path}
+                tone="muted"
+                data-testid={`library-wiki-source-${original.path}`}
+                onClick={() => onOpenSource(original.path)}
+                className="max-w-full hover:text-[color:var(--color-text-primary)]"
+              >
+                <span className="min-w-0 truncate">{original.name}</span>
+              </Chip>
+            ),
+          )}
         </div>
       ) : null}
     </header>

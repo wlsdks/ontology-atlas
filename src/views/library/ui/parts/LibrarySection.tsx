@@ -53,6 +53,16 @@ export interface LibrarySectionProps {
   onSelect: (slug: string) => void;
   /** Opens a raw source: the browser hands the file over, the app reveals it in Finder. */
   onOpenSource: (row: LibrarySourceRow) => void;
+  /**
+   * The source the reader is showing, if any.
+   *
+   * Measured 2026-09-06 (design-interaction): a selected source row was byte-identical to
+   * a resting one — same ink, no fill, no `aria-current` — while the reader beside it was
+   * showing that very file. The wiki list had carried the state since it shipped; only
+   * this list had a selection nobody could see, which is what makes "View write-up" and
+   * "View original" hard to follow: they change the pane and leave the index unmoved.
+   */
+  selectedSourcePath: string | null;
   /** The one-click "add files" door. */
   onAddFiles: () => void;
   /** Proposes candidates from the open folder and any bound project root. */
@@ -146,6 +156,7 @@ export function LibrarySection({
   selectedSlug,
   onSelect,
   onOpenSource,
+  selectedSourcePath,
   onAddFiles,
   onFindDocuments,
   onCompile,
@@ -220,9 +231,13 @@ export function LibrarySection({
               aria-label={t("sources.listAria")}
               className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2"
             >
-              {model.sources.map((row) => (
+              {model.sources.map((row) => {
+                const active = row.path === selectedSourcePath;
+                return (
                 <li key={row.path}>
                   <RowButton
+                    active={active}
+                    aria-current={active ? "true" : undefined}
                     data-testid={`library-source-${row.path}`}
                     onClick={() => onOpenSource(row)}
                     // The full name first: a 280px column truncates, and the row's own
@@ -250,7 +265,8 @@ export function LibrarySection({
                     </StateBadge>
                   </RowButton>
                 </li>
-              ))}
+                );
+              })}
             </ul>
             {model.needsCompileCount > 0 ? (
               <p

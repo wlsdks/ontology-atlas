@@ -4363,7 +4363,6 @@
     "lede": "형식을 가리지 않고 모아 둔 문서와, 그 문서를 읽고 쓴 위키 문서가 여기 있습니다. 원문은 온 그대로 남고, 위키 문서의 문장은 저마다 원문을 인용합니다.",
     "emptyTitle": "아직 모아 둔 것이 없습니다",
     "emptyBody": "이미 갖고 있는 문서를 넣으세요. 기획서, 발표 자료, 표, 내려받아 둔 페이지 무엇이든 됩니다. sources/ 로 그대로 복사할 뿐, 부르기 전에는 열지 않습니다.",
-    "readerEmpty": "왼쪽에서 원문이나 위키 문서를 고르면 여기서 읽습니다.",
     "sources": {
       "header": "원문 · {count}",
       "listAria": "이 폴더의 원문 파일",
@@ -4421,7 +4420,6 @@
       "offTemplateTitle": "이 문서는 위키 서식에 맞지 않습니다",
       "offTemplateBody": "그래도 문서이고 그대로 고칠 수 있습니다. 아래를 고치면 다른 문서와 같은 방식으로 읽힙니다. `ontology-atlas wiki-validate` 와 `validate_wiki` 도구가 같은 코드를 알려 줍니다.",
       "writtenBy": "쓴이 {author}",
-      "builtFrom": "바탕이 된 원문",
       "writer": {
         "human": "사람",
         "agent": "{name}(AI)",
@@ -4430,7 +4428,10 @@
       "status": {
         "draft": "초안",
         "reviewed": "검토됨"
-      }
+      },
+      "viewOriginal": "원본 보기",
+      "viewOriginalOne": "원본 보기: {name}",
+      "originalMissing": "{name} 을(를) 인용하지만 이 폴더에는 없습니다."
     },
     "graph": {
       "title": "그래프",
@@ -4473,19 +4474,69 @@
       "state": "상태",
       "hash": "sha256",
       "hashUnmeasured": "재지 않았습니다. 아직 이 파일을 해시와 함께 인용한 문서가 없습니다",
-      "citedBy": "인용한 문서",
       "citedByNobody": "아직 없습니다",
       "neverOpened": "Atlas 는 이 파일을 연 적이 없습니다. 아래는 모두 폴더 목록에서 읽었거나, 어떤 문서가 해시를 적어 두어 그것만 재어 본 값입니다.",
       "reveal": "Finder 에서 보기",
-      "download": "사본 열기"
+      "download": "사본 열기",
+      "viewWriteUp": "정리본 보기",
+      "writeUp": {
+        "current": "지금 내용",
+        "behind": "뒤처짐",
+        "unchecked": "확인 전"
+      }
     },
-    "readerSourceHint": "원문은 온 그대로 두므로 여기서 그려 낼 것이 없습니다. 폴더가 이미 아는 사실만 적습니다.",
-    "readerNoWikiTitle": "아직 정리한 문서가 없습니다",
-    "readerNoWikiBody": "원문 {count}개가 기다리고 있습니다. 「정리 시작」은 그 원문을 읽고 문서를 한 편씩 초안으로 쓰는 에이전트 턴을 한 번 띄웁니다. 쓰기는 저장 전에 모두 허락 카드에서 멈춥니다.",
     "kindsAria": "이 폴더가 두는 것",
     "kindSourcesTitle": "원문",
     "kindSourcesBody": "온 그대로의 파일입니다. 형식을 가리지 않고, 한 바이트도 고치지 않고, 열어 보지도 않습니다.",
     "kindWikiTitle": "위키",
-    "kindWikiBody": "원문 하나에 문서 한 편, 같은 서식으로. 문장마다 바탕이 된 파일을 인용합니다."
+    "kindWikiBody": "원문 하나에 문서 한 편, 같은 서식으로. 문장마다 바탕이 된 파일을 인용합니다.",
+    "stage": {
+      "title": "모으고, 정리하고, 읽습니다",
+      "lede": "일이 일어나는 순서대로 세 단계입니다. 아래 숫자는 모두 이 폴더의 파일을 세어 나온 값이라, Finder 에서 그대로 확인할 수 있습니다.",
+      "state": {
+        "done": "끝남",
+        "next": "다음",
+        "waiting": "차례 전"
+      },
+      "none": "없음",
+      "formatEntry": "{format} {count}",
+      "gather": {
+        "title": "모으기",
+        "body": "이 프로젝트가 이미 갖고 있는 문서를 형식을 가리지 않고 넣습니다. sources/ 로 그대로 복사할 뿐, 부르기 전에는 열지 않습니다.",
+        "sourcesLabel": "원문",
+        "formatsLabel": "형식",
+        "lastLabel": "마지막으로 넣은 날",
+        "candidatesLabel": "제안받은 후보",
+        "candidatesUnknown": "아직 찾아본 적 없음"
+      },
+      "compile": {
+        "title": "정리",
+        "body": "에이전트 턴 한 번이 원문을 읽고 파일마다 위키 문서를 씁니다. 서식은 wiki/_template.md 그대로이고, 쓰기는 모두 허락 카드에서 멈춥니다.",
+        "waitingLabel": "기다리는 파일",
+        "staleLabel": "원문이 달라진 문서",
+        "brainLabel": "쓰는 쪽"
+      },
+      "read": {
+        "title": "읽기",
+        "body": "위키 문서는 kind: 가 없는 마크다운이라 온톨로지에는 그려지지 않습니다. 문장마다 나온 파일을 인용하고, 문서에서 그 파일을 바로 엽니다.",
+        "pagesLabel": "위키 문서",
+        "coveredLabel": "정리된 원문",
+        "coveredValue": "{total}개 중 {compiled}개",
+        "offTemplateLabel": "서식 밖",
+        "startWith": "{title} 부터 읽기",
+        "nothingYet": "아직 위키 문서가 없습니다. 정리를 시작하면 첫 문서가 만들어집니다."
+      },
+      "brainAgent": "{name}",
+      "brainLocal": "{model} · {host}",
+      "brainNone": "아직 아무것도 연결하지 않음",
+      "transferLocal": "이 컴퓨터 밖으로 나가지 않습니다. 요청은 같은 기계의 {host} 로 가고, {file} 에 한 건씩 남습니다.",
+      "blockedWeb": "정리하려면 이 컴퓨터에서 도는 코딩 에이전트가 필요하고, 그건 앱만 띄울 수 있습니다.",
+      "blockedChecking": "이 컴퓨터에서 쓸 수 있는 코딩 에이전트를 아직 찾는 중입니다.",
+      "blockedLocal": "{model} 은(는) 답하지만 정리는 하지 못합니다. Atlas 가 로컬 모델에 주는 것은 온톨로지 읽기와 개념 변경 허락 카드 하나이고, 정리에는 PDF 를 직접 열어 문서를 쓰는 쪽이 필요합니다. 지금 정리하려면 코딩 에이전트를 준비하세요.",
+      "blockedNoAgent": "확인된 코딩 에이전트가 이 컴퓨터에 없고, 저장해 둔 로컬 모델 주소도 없습니다. 로컬 주소는 설정의 AI 연결에 넣습니다.",
+      "blockedNoSources": "아직 정리할 것이 없습니다. 문서는 1번에서 들어옵니다.",
+      "blockedNothingWaiting": "모든 원문이 지금 내용과 맞는 정리본을 갖고 있습니다.",
+      "transferLocalRemote": "이 실행기에 저장된 주소는 {host} 이고 이 컴퓨터가 아니라서, 요청에 실린 내용은 밖으로 나갑니다. {file} 에 한 건씩 남습니다."
+    }
   }
 }

@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The Library is a guided shelf with paired original and write-up, and a local model is a named brain
+
+**Why**: the owner opened the day-old destination and said "entering the Library I don't know what to do", then named what it is for: gather every format, write it into our template, keep original and write-up separate, and let a security-minded person run a local LLM. With nothing selected the pane said "Nothing gathered yet" or opened the first wiki page unasked; `Built from` was provenance and `Cited by` slugs nobody could press.
+**Prior**: second pass on 2026-09-06 "The library becomes a place…", overturning its "nothing selected opens the first wiki page"; 2026-09-05 "A vault holds three kinds of file…" stands.
+**Decision**: nothing selected draws three equal-height steps with the folder's counts — Gather, Compile (waiting, behind their source, which brain runs, what leaves this computer), Read — each done/next/waiting, Compile drawn in every state and disabled with the exact reason. A page carries `View original`, a source `View write-up` marking each page current, behind, or not checked; both from `buildLibraryPairing`. `useLibraryAgent` gains a `local` route naming the connect-by-address model and host, claiming locality only for a loopback one. Ollama and llama.cpp server are MIT, vLLM Apache-2.0, LM Studio proprietary with only its HTTP endpoint used; Atlas ships no vendor code.
+**Dissent**: a `local` route that cannot compile is a label, not a capability, and should be hidden; rejected because someone who configured a runner must be told why it is unused. Step two names the price: the local runner has ontology-only tools that cannot open a source or write a page.
+**Falsifier**: three cold walkers who still cannot name a next press retire the shelf for one sentence; a page marked current that does not describe the bytes retires the pairing to a list; a local tool catalogue that reads a source and writes a page under one consent card reopens local Compile.
+**Owner**: jinan
+
 ## 2026-09-06 — The Library gets its own small graph, separate from the map
 
 **Why**: the owner asked for one inside this tab, "separate from (map, architecture)", drawn as small circles like a force graph. The Library says what is in the folder one row at a time, and nothing on the screen says which page came from which file; the map cannot say it either, because a raw source has no `kind:` and never becomes a node.

@@ -43,9 +43,9 @@ const VAULT_WIKI_DIR = 'wiki';
  *   transient state, never a resting one; showing "compiled" during it would be a claim
  *   nothing has verified.
  */
-export type SourceCompileState = 'not-compiled' | 'compiled' | 'stale' | 'checking';
+type SourceCompileState = 'not-compiled' | 'compiled' | 'stale' | 'checking';
 
-export interface WikiCitation {
+interface WikiCitation {
   /** Slug of the wiki page, as `VaultDoc.slug` spells it (`wiki/quarter-plan`). */
   wikiSlug: string;
   /** Vault-relative path of the cited source (`sources/quarter-plan.pdf`). */
@@ -66,7 +66,7 @@ export interface LibraryWikiPage {
 }
 
 /** Whether a doc is a wiki page: under `wiki/` **and** carrying no `kind:`. */
-export function isWikiPage(doc: VaultDoc): boolean {
+function isWikiPage(doc: VaultDoc): boolean {
   if (!doc.slug.startsWith(`${VAULT_WIKI_DIR}/`)) return false;
   const kind = doc.frontmatter.kind;
   // A file under `wiki/` that grew a `kind:` is an ontology node someone filed in the
@@ -112,7 +112,7 @@ export function selectWikiPages(docs: readonly VaultDoc[]): LibraryWikiPage[] {
 }
 
 /** Every citation any wiki page makes, grouped by the source path it names. */
-export function collectWikiCitations(
+function collectWikiCitations(
   docs: readonly VaultDoc[],
 ): Map<string, WikiCitation[]> {
   const out = new Map<string, WikiCitation[]>();
@@ -146,7 +146,7 @@ export function collectWikiCitations(
  * current, and marking it stale would send a person to re-compile a file that is already
  * covered.
  */
-export function deriveSourceState(
+function deriveSourceState(
   citations: readonly WikiCitation[] | undefined,
   actualHash: string | undefined,
 ): SourceCompileState {
@@ -180,6 +180,8 @@ export interface LibraryModel {
   staleCount: number;
   /** Paths worth hashing: cited, hash recorded, not yet measured. */
   pathsNeedingHash: string[];
+  /** Both crossings between a source and the pages written from it. */
+  pairing: LibraryPairing;
 }
 
 /**
@@ -221,6 +223,7 @@ export function buildLibraryModel({
     // nothing measured yet. The caller drops a path from its cache when the file's mtime
     // changes, which puts the row back into `checking` and back into this list.
     pathsNeedingHash: rows.filter((row) => row.state === 'checking').map((row) => row.path),
+    pairing: buildLibraryPairing({ docs, sources, hashes }),
   };
 }
 
@@ -236,4 +239,179 @@ export function formatSourceBytes(bytes: number): string {
     unit += 1;
   }
   return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────────
+ * Pairing: the original and the write-up, from one side to the other.
+ *
+ * The owner's instruction on 2026-09-06: *"'view the original' and 'view the
+ * template-based write-up' must be separate."* Separate is what the two panes already
+ * are — a wiki page renders as Markdown, a source states the six facts a file Atlas
+ * never opened can honestly carry. What was missing is the **crossing**: standing on
+ * one, there was no named way to the other.
+ *
+ * Both directions come from the same two frontmatter fields the state machine above
+ * already reads, so nothing new is stored and nothing new can drift. `sources:` gives
+ * page → file; inverting it gives file → page; `source_hash` decides whether that
+ * crossing lands on a write-up that still describes the bytes.
+ * ──────────────────────────────────────────────────────────────────────────────── */
+
+/** One source a wiki page cites, resolved against the files really in this folder. */
+export interface LibraryOriginalLink {
+  /** Vault-relative path exactly as the page cites it. */
+  path: string;
+  /** File name, or the whole path when the citation has no `/`. */
+  name: string;
+  /**
+   * The cited file's state, or `null` when **no such file is in this folder**.
+   *
+   * A citation naming a file nobody can open is not the same fact as a citation
+   * naming a stale one, and a chip that behaved identically for both would send a
+   * person looking for a document that is not there.
+   */
+  state: SourceCompileState | null;
+}
+
+/**
+ * How a write-up stands to the bytes it was written from.
+ *
+ * - `current` — the page recorded a hash for this source and it matches the measured one.
+ * - `behind` — the hashes disagree, or the page recorded none. A reader can act on
+ *   neither, and the cure is the same.
+ * - `unchecked` — the page recorded a hash and **nothing has measured the file yet**.
+ *
+ * `unchecked` exists because collapsing it into `behind` was a measured lie (PO steward,
+ * 2026-09-06): the source row's own state says `checking` in exactly that window, so one
+ * pane stated two things about one file. It is transient on the app path and permanent
+ * whenever hashing cannot happen at all — a browser without `crypto.subtle`, or a source
+ * the session holds no handle for — so it is a resting state, not a flicker.
+ */
+type WriteUpFreshness = 'current' | 'behind' | 'unchecked';
+
+/** One wiki page citing a source, and how it stands to the bytes on disk. */
+export interface LibraryWriteUpLink {
+  slug: string;
+  title: string;
+  freshness: WriteUpFreshness;
+}
+
+interface LibraryPairing {
+  /** Wiki slug → the sources that page cites. Empty array for a page citing none. */
+  originalsByWiki: Map<string, LibraryOriginalLink[]>;
+  /** Source path → the wiki pages citing it, in slug order. */
+  writeUpsBySource: Map<string, LibraryWriteUpLink[]>;
+}
+
+/**
+ * Both directions of the pairing, from the manifest plus whatever hashes are measured.
+ *
+ * `hashes` is the same lazily filled map the state machine reads: a source nobody has
+ * written up is never hashed, so a page citing it is reported `current: false` — which
+ * is exactly right, because an unproven claim is not a proven one.
+ */
+function buildLibraryPairing({
+  docs,
+  sources,
+  hashes,
+}: {
+  docs: readonly VaultDoc[];
+  sources: readonly VaultSourceFile[] | undefined;
+  hashes: ReadonlyMap<string, string>;
+}): LibraryPairing {
+  const present = new Map((sources ?? []).map((source) => [source.path, source] as const));
+  const citations = collectWikiCitations(docs);
+  const titles = new Map<string, string>();
+  const originalsByWiki = new Map<string, LibraryOriginalLink[]>();
+
+  for (const doc of docs) {
+    if (!isWikiPage(doc)) continue;
+    titles.set(doc.slug, doc.title);
+    originalsByWiki.set(
+      doc.slug,
+      readStringArray(doc.frontmatter.sources).map((path) => ({
+        path,
+        name: path.split('/').pop() || path,
+        state: present.has(path)
+          ? deriveSourceState(citations.get(path), hashes.get(path))
+          : null,
+      })),
+    );
+  }
+
+  const writeUpsBySource = new Map<string, LibraryWriteUpLink[]>();
+  for (const [path, cited] of citations) {
+    const actual = hashes.get(path)?.toLowerCase();
+    const bySlug = new Map<string, LibraryWriteUpLink>();
+    for (const citation of cited) {
+      bySlug.set(citation.wikiSlug, {
+        slug: citation.wikiSlug,
+        title: titles.get(citation.wikiSlug) ?? citation.wikiSlug,
+        freshness:
+          citation.sourceHash === null
+            ? 'behind'
+            : actual === undefined
+              ? 'unchecked'
+              : citation.sourceHash === actual
+                ? 'current'
+                : 'behind',
+      });
+    }
+    writeUpsBySource.set(
+      path,
+      [...bySlug.values()].sort((a, b) => a.slug.localeCompare(b.slug)),
+    );
+  }
+
+  return { originalsByWiki, writeUpsBySource };
+}
+
+/**
+ * Which wiki page to open first, for the shelf's “start with” row.
+ *
+ * `compiled_at` before a slug tiebreak: the freshest write-up is the one whose facts a
+ * person has the best chance of still being able to check, and a folder whose pages
+ * were all written by hand (no `compiled_at` anywhere) still gets a stable answer
+ * rather than none.
+ */
+export function newestWikiPage(
+  pages: readonly LibraryWikiPage[],
+): LibraryWikiPage | null {
+  let best: LibraryWikiPage | null = null;
+  for (const page of pages) {
+    if (best === null) {
+      best = page;
+      continue;
+    }
+    const left = page.compiledAt ?? '';
+    const right = best.compiledAt ?? '';
+    if (left > right || (left === right && page.slug.localeCompare(best.slug) < 0)) best = page;
+  }
+  return best;
+}
+
+/**
+ * The formats present, most files first — the shelf's honest answer to “what did I
+ * bring in”. A file with no extension is counted under `''` and the screen names it,
+ * because dropping it would make the total disagree with the source count above it.
+ */
+export function countSourceFormats(
+  sources: readonly VaultSourceFile[],
+): Array<{ format: string; count: number }> {
+  const totals = new Map<string, number>();
+  for (const source of sources) {
+    const key = source.format.toLowerCase();
+    totals.set(key, (totals.get(key) ?? 0) + 1);
+  }
+  return [...totals.entries()]
+    .map(([format, count]) => ({ format, count }))
+    .sort((a, b) => (b.count - a.count) || a.format.localeCompare(b.format));
+}
+
+/** The newest `mtime` among the sources, or null when there are none. */
+export function lastSourceAddedAt(sources: readonly VaultSourceFile[]): number | null {
+  let newest: number | null = null;
+  for (const source of sources) {
+    if (newest === null || source.mtime > newest) newest = source.mtime;
+  }
+  return newest;
 }
