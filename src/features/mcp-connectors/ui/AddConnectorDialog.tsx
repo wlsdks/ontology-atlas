@@ -87,10 +87,10 @@ type ProblemKey = `problem.${ConnectorProblem}`;
 type SourceKey = `source.${ReturnType<typeof shortSourceKey>}`;
 
 /** What to tell somebody when the folder saved nothing. */
-export type AddFailureReason = 'noFolder' | 'malformed' | 'writeFailed' | 'secret';
+type AddFailureReason = 'noFolder' | 'malformed' | 'writeFailed' | 'secret';
 type AddFailureKey = `addFailReason.${AddFailureReason}`;
 
-export function addFailureReason(result: ConnectorWriteResult | null): AddFailureReason | null {
+function addFailureReason(result: ConnectorWriteResult | null): AddFailureReason | null {
   if (result === null) return 'noFolder';
   switch (result.status) {
     case 'saved':
@@ -116,7 +116,7 @@ export function newConnectorId(): string {
 }
 
 /** One variable being drafted in the by-hand form: a name, a value, and where the value goes. */
-export interface DraftVariable {
+interface DraftVariable {
   name: string;
   value: string;
   /** The person's choice. A credential-shaped name starts checked and cannot be unchecked. */
@@ -135,7 +135,7 @@ export interface CustomPrefill {
   provenance?: { title: string; detail: string; docsUrl?: string };
 }
 
-export function prefillFromCatalogue(
+function prefillFromCatalogue(
   entry: CatalogueEntry,
   variant: CatalogueVariant,
   runtimes: readonly ResolvedRuntime[] | null,
@@ -789,7 +789,7 @@ function CatalogueTab({
  *    checked and locked, because `serializeConnectorState` refuses to write a literal for one and
  *    a box whose contents are thrown away is worse than no box.
  */
-export function CustomConnectorForm({
+function CustomConnectorForm({
   prefill,
   runtimes,
   canStoreSecrets,

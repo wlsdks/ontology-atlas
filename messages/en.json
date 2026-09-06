@@ -4380,7 +4380,7 @@
     "variantAsksOauth": "Nothing to enter. Your coding agent opens the sign-in window and holds what comes back; Atlas never sees it, and removing this row later does not revoke it.",
     "variantAsksToken": "Asks you for one value: {keys}. It goes into this machine’s keychain, never into the folder’s file.",
     "variantAsksNothing": "Nothing to enter.",
-    "customFromCatalogue": "Filled in from the list for {title}, captured {date}. Check the line below before you add it — that is what will run.",
+    "customFromCatalogue": "Filled in from the list for {title}, captured {date}. Check the line below before you add it: that is what will run.",
     "fieldRuntime": "What starts it",
     "runtimeOther": "Something else",
     "variablesNone": "None. Add one if this server needs a token or a setting.",
@@ -4390,11 +4390,11 @@
     "variableAdd": "Add a variable",
     "variableRemove": "Remove {name}",
     "emptyTitle": "Nothing here reaches anything yet",
-    "emptyBody": "A connector lets the agent you talk to in Atlas also reach a service you already use — your Notion pages, your Jira issues, your repositories. Add one and it stays off until you turn it on.",
+    "emptyBody": "A connector lets the agent you talk to in Atlas also reach a service you already use: your Notion pages, your Jira issues, your repositories. Add one and it stays off until you turn it on.",
     "linkDroppedValues": "That link carried values for {keys}. They were dropped: a link never sets a token. Type it below instead.",
     "linkRefused": "That link was refused ({reason}). Nothing was added.",
     "catalogueSummary": {
-      "notion": "Read and write the pages and databases in your Notion workspace.",
+      "notion": "Read and write the pages and databases in your Notion account.",
       "atlassian": "Read and write Jira issues and Confluence pages in your Atlassian site.",
       "github": "Read and write issues, pull requests, code and wikis on GitHub."
     }
@@ -4633,7 +4633,7 @@
     "service": {
       "notion": {
         "title": "Notion",
-        "body": "Pages and databases from your Notion workspace.",
+        "body": "Pages and databases from your Notion account.",
         "example": "the API design pages"
       },
       "confluence": {
@@ -4643,8 +4643,8 @@
       },
       "jira": {
         "title": "Jira",
-        "body": "Issues and their descriptions from a Jira project.",
-        "example": "open issues in the platform project"
+        "body": "Issues and their descriptions from Jira.",
+        "example": "open issues on the platform board"
       },
       "github": {
         "title": "GitHub",
@@ -4653,7 +4653,7 @@
       },
       "other": {
         "title": "Another service",
-        "body": "Set one up by hand on the MCP screen.",
+        "body": "Set one up by hand on the MCP screen, where the connection details live.",
         "example": ""
       }
     },

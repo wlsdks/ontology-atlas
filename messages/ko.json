@@ -4380,7 +4380,7 @@
     "variantAsksOauth": "적을 게 없어요. 로그인 창은 대화 중인 코딩 도구가 열고, 받은 것도 그 도구가 가집니다. Atlas는 보지 않고, 나중에 이 줄을 지워도 그 권한이 취소되지는 않아요.",
     "variantAsksToken": "{keys} 하나만 물어봐요. 이 컴퓨터 키체인에 들어가고, 폴더 안 파일에는 이름만 남아요.",
     "variantAsksNothing": "적을 게 없어요.",
-    "customFromCatalogue": "{title} 항목({date} 기준)에서 채웠어요. 추가하기 전에 아래 줄을 확인하세요 — 실제로 그게 실행됩니다.",
+    "customFromCatalogue": "{title} 항목({date} 기준)에서 채웠어요. 추가하기 전에 아래 줄을 확인하세요. 실제로 그게 실행됩니다.",
     "fieldRuntime": "무엇으로 실행하나요",
     "runtimeOther": "직접 적기",
     "variablesNone": "없음. 이 서버가 토큰이나 설정을 필요로 하면 추가하세요.",
@@ -4391,10 +4391,10 @@
     "variableRemove": "{name} 제거",
     "emptyTitle": "아직 닿는 곳이 없어요",
     "emptyBody": "Atlas 안에서 대화하는 에이전트가 이미 쓰고 있는 서비스에도 닿게 해 주는 게 연결 도구예요. Notion 문서, Jira 이슈, 저장소 같은 것들이요. 추가해도 직접 켜기 전까지는 꺼진 채로 있어요.",
-    "linkDroppedValues": "그 링크가 {keys} 값을 함께 들고 왔어요. 값은 버렸습니다 — 링크로는 토큰을 넣지 않아요. 아래에 직접 입력하세요.",
+    "linkDroppedValues": "그 링크가 {keys} 값을 함께 들고 왔어요. 값은 버렸습니다. 링크로는 토큰을 넣지 않으니 아래에 직접 입력하세요.",
     "linkRefused": "그 링크는 받지 않았어요({reason}). 아무것도 추가되지 않았습니다.",
     "catalogueSummary": {
-      "notion": "Notion 워크스페이스의 페이지와 데이터베이스를 읽고 씁니다.",
+      "notion": "Notion 계정의 페이지와 데이터베이스를 읽고 씁니다.",
       "atlassian": "Atlassian 사이트의 Jira 이슈와 Confluence 페이지를 읽고 씁니다.",
       "github": "GitHub 의 이슈·풀 리퀘스트·코드·위키를 읽고 씁니다."
     }
@@ -4633,7 +4633,7 @@
     "service": {
       "notion": {
         "title": "Notion",
-        "body": "Notion 워크스페이스의 페이지와 데이터베이스.",
+        "body": "Notion 계정에 있는 페이지와 데이터베이스.",
         "example": "API 설계 문서들"
       },
       "confluence": {
@@ -4643,8 +4643,8 @@
       },
       "jira": {
         "title": "Jira",
-        "body": "Jira 프로젝트의 이슈와 설명.",
-        "example": "플랫폼 프로젝트의 열린 이슈"
+        "body": "Jira 의 이슈와 설명.",
+        "example": "플랫폼 보드의 열린 이슈"
       },
       "github": {
         "title": "GitHub",
@@ -4653,7 +4653,7 @@
       },
       "other": {
         "title": "다른 서비스",
-        "body": "MCP 화면에서 직접 설정해요.",
+        "body": "MCP(에이전트가 이 폴더를 읽고 쓰는 연결) 화면에서 직접 설정해요.",
         "example": ""
       }
     },

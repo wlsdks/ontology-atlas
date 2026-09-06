@@ -64,6 +64,9 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:desktop:check',
     'pnpm docs-vault:check',
     'pnpm test:docs-vault',
+    // The committed connector catalogue and the generator's own translation tests. Same shape as
+    // every other generate-and-diff snapshot in this lane: a hand edit cannot ship.
+    'pnpm mcp:catalogue:check',
     'pnpm gateway:specimen:check',
     'pnpm design:toc:check',
     'pnpm docs:language',

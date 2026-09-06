@@ -43,9 +43,14 @@ import {
 } from '@/shared/config/mcp-catalogue';
 import type { ConnectorRecord } from '@/shared/lib/connector-record';
 
-/** The tiles, in the order they are drawn. `other` is always last and always present. */
-export const IMPORT_SERVICE_IDS = ['notion', 'confluence', 'jira', 'github', 'other'] as const;
-export type ImportServiceId = (typeof IMPORT_SERVICE_IDS)[number];
+/**
+ * The tiles, in the order they are drawn. `other` is always last and always present.
+ *
+ * A union rather than a `const` array: the array existed only to derive this type, and an
+ * exported constant with no reader is what the dead-code ratchet is there to catch. `IMPORT_SERVICES`
+ * below is the list, and its `id` field is checked against this.
+ */
+export type ImportServiceId = 'notion' | 'confluence' | 'jira' | 'github' | 'other';
 
 export interface ImportService {
   id: ImportServiceId;

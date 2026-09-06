@@ -30,7 +30,7 @@
 import type { ConnectorRecord, ConnectorValueEntry } from '@/shared/lib/connector-record';
 
 /** Where one variant's facts came from. Drawn differently, because the authority differs. */
-export type CatalogueSource = 'registry' | 'curated';
+type CatalogueSource = 'registry' | 'curated';
 
 /** One environment variable or header the entry declares. */
 export interface CatalogueVariable {
@@ -47,7 +47,7 @@ export interface CatalogueVariable {
   issueUrl?: string;
 }
 
-export interface CatalogueRemoteVariant {
+interface CatalogueRemoteVariant {
   kind: 'remote';
   transport: 'http';
   url: string;
@@ -63,7 +63,7 @@ export interface CatalogueRemoteVariant {
   source: CatalogueSource;
 }
 
-export interface CatalogueLocalVariant {
+interface CatalogueLocalVariant {
   kind: 'local';
   transport: 'stdio';
   /** Which runtime starts it. Resolved to a full path on this machine before it is written down. */
@@ -115,7 +115,7 @@ export function variantSecrets(variant: CatalogueVariant): readonly CatalogueVar
  * for, and the package or address itself. Somebody who half-remembers "the one with
  * githubcopilot in the URL" has to find it too.
  */
-export function catalogueHaystack(entry: CatalogueEntry): string {
+function catalogueHaystack(entry: CatalogueEntry): string {
   return [
     entry.title,
     entry.name,

@@ -14,8 +14,8 @@
  *
  * ## Web degradation contract
  *
- * A browser cannot look at `/opt/homebrew/bin`. Outside Tauri `isConnectorRuntimeBridgeAvailable()`
- * is false and this returns `null` — **"not asked", never "none installed"**. The form then falls
+ * A browser cannot look at `/opt/homebrew/bin`. Outside Tauri `resolveConnectorRuntimes()`
+ * returns `null` — **"not asked", never "none installed"**. The form then falls
  * back to a typed path with the hint it always had, which still works; what is missing is the
  * convenience, not the ability (`.claude/rules/surfaces.md`).
  */
@@ -33,10 +33,6 @@ function getInvoke(): TauriInvoke | null {
 export interface ResolvedRuntime {
   name: string;
   path: string | null;
-}
-
-export function isConnectorRuntimeBridgeAvailable(): boolean {
-  return getInvoke() !== null;
 }
 
 /** `null` on any surface that cannot look — which is not the same as an empty list. */
