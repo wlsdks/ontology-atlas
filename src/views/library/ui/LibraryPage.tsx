@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ListChecks } from "lucide-react";
 
 import { useLocalVault, useVaultIdentityScope } from "@/entities/vault-session";
 import type { LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
@@ -40,7 +40,9 @@ import { libraryCompileBlockedReason } from "../lib/compile-availability";
 import { useLibraryModel } from "../lib/use-library-model";
 import { useLibraryAgent } from "../lib/use-library-agent";
 import { LibrarySection } from "./parts/LibrarySection";
+import { LibraryShelfPopover } from "./parts/LibraryShelfPopover";
 import { LibraryStage } from "./parts/LibraryStage";
+import { LibraryStatusStrip } from "./parts/LibraryStatusStrip";
 import { LibraryAgentDock } from "./parts/LibraryAgentDock";
 import { SourceSummary } from "./parts/SourceSummary";
 import { WikiPageHeader } from "./parts/WikiPageHeader";
@@ -77,16 +79,26 @@ import { WikiTemplateProblems } from "./parts/WikiTemplateProblems";
  * facts the folder knows about it, because there is nothing else that could honestly be
  * drawn for a PDF.
  *
- * Below `lg` the two panes become one column — **the shelf on top, the lists under it** —
+ * **With nothing selected the pane is the graph** (2026-09-06, owner, third pass). It was
+ * a 320px graph strip with the guided shelf stacked under it, and the owner opened the
+ * installed app on a folder a local `qwen3:8b` had just compiled and read exactly that:
+ * *"shouldn't the Library tab's default be the graph on top? why is the area split above
+ * and below? the area underneath should come up as a popup."* Two surfaces were sharing
+ * one column and neither was the screen. So the picture fills the pane the way the map
+ * fills its own tab, and the shelf — a guide, which is a thing a person consults rather
+ * than reads — is a `Surface` one chip away, with its verdict left behind on the graph's
+ * header as a one-line status strip. `docs/DECISIONS.md`, 2026-09-06.
+ *
+ * Below `lg` the two panes become one column — **the graph on top, the lists under it** —
  * and selecting swaps the column for the reader, with a way back. Two 280px-plus panes do
  * not fit a phone, and hiding the index behind a drawer would bury the two doors
  * (`Add files`, `Find documents`) that are the reason someone opens this screen at all.
  *
- * ⚠️ **The narrow column used to drop the shelf entirely** (fixed 2026-09-06). The reader
- * box was `max-lg:hidden` whenever nothing was chosen, which is exactly the state the
- * guided shelf was written for — so a phone, and any window under 1024px, got the two
- * lists and no guidance at all. `library-stage` measured a zero rect at 390×844 and
- * 768×1024 on the seeded folder. It is now the top half of that column at every width.
+ * ⚠️ **The narrow column used to draw nothing at all in this state** (fixed 2026-09-06).
+ * The reader box was `max-lg:hidden` whenever nothing was chosen, which is exactly the
+ * state this pane is for — so a phone, and any window under 1024px, got the two lists and
+ * no overview and no guidance. Measured a zero rect at 390×844 and 768×1024 on the seeded
+ * folder. It is now the top half of that column at every width.
  *
  * ## With no folder open
  *
@@ -114,6 +126,7 @@ export function LibraryPage() {
     { kind: "wiki"; slug: string } | { kind: "source"; path: string } | null
   >(null);
   const [busy, setBusy] = useState(false);
+  const shelfChipRef = useRef<HTMLButtonElement | null>(null);
 
   /*
    * `.claude/rules/architecture.md`: the condition that draws a surface must also guard
@@ -468,6 +481,34 @@ export function LibraryPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [agent.open, findOpen, selected]);
 
+  /**
+   * **The shelf raises itself only over an empty folder, and never after a choice.**
+   *
+   * A guide that reappears over the picture on every visit is the defect the shelf itself
+   * replaced, one layer up: an answer to a question this person stopped asking after the
+   * first time. So the automatic open is bound to the one state where there is genuinely
+   * nothing else to look at — **no sources at all** — and a person's own press, either
+   * way, wins from then on.
+   *
+   * ⚠️ **Derived, not an effect.** `null` means nobody has chosen yet; the folder decides
+   * that case. Writing it into state from an effect would need `setState` inside one
+   * (the rule `react-hooks/set-state-in-effect` exists for the render loop this causes),
+   * and would also have to re-decide whenever the folder changed. The same shape the
+   * graph's own disclosure used before it became the pane.
+   *
+   * `useState`, not `localStorage`: this is about this sitting. A preference that outlived
+   * the session would hide the guide from somebody who never saw it.
+   */
+  const [shelfChoice, setShelfChoice] = useState<boolean | null>(null);
+  const shelfOpen = shelfChoice ?? (hasFolder && model.sources.length === 0);
+  const closeShelf = useCallback(() => setShelfChoice(false), []);
+  /**
+   * Pressing a door inside the panel is a choice to keep it: without this, `Add files`
+   * succeeding would drop `sources.length` out of zero and the panel would vanish from
+   * under the hand that just used it.
+   */
+  const keepShelf = useCallback(() => setShelfChoice(true), []);
+
   const wikiProblems = selectedWikiDoc
     ? (model.verdicts.get(selectedWikiDoc.slug)?.problems ?? [])
     : [];
@@ -548,7 +589,9 @@ export function LibraryPage() {
       tabIndex={-1}
       data-testid="library-page"
       data-library-state={opened ? opened.kind : "nothing-open"}
-      className="topology-ui-scale flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)] max-lg:flex-col"
+      /* `relative` is the shelf popup's containing block: it hangs from this row so it can
+         be taller than the pane it is drawn over (see `LibraryShelfPopover`). */
+      className="topology-ui-scale relative flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)] max-lg:flex-col"
     >
       {/*
         The index. Below `lg` it is the lower half of one column and stands aside once
@@ -634,34 +677,63 @@ export function LibraryPage() {
         className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-lg:order-first"
       >
         {/*
-          The overview, above the one thing open. The Library's two lists say what is in
-          the folder one row at a time; this says it all at once — which page came from
-          which file, and which concepts a page reaches into. It is the same two file
-          kinds, drawn instead of listed, so it belongs to this screen rather than to the
-          map, which draws neither of them (`docs/DECISIONS.md`, 2026-09-06).
+          **This pane is the picture.** The Library's two lists say what is in the folder
+          one row at a time; this says it all at once — which page came from which file,
+          and which concepts a page reaches into. It is the same two file kinds, drawn
+          instead of listed, so it belongs to this screen rather than to the map, which
+          draws neither of them (`docs/DECISIONS.md`, 2026-09-06).
+
+          ⚠️ **`hidden`, never unmounted.** Choosing a document stands the canvas aside and
+          the reader takes the pane, but the widget keeps its ForceAtlas2 pass and its
+          settled positions: unmounting would throw both away and pay up to 95ms again,
+          replaying the arrival, every time somebody looked at a page and came back.
         */}
-        <LibraryGraph
-          docs={manifest?.docs ?? EMPTY_DOCS}
-          wikiPages={model.wikiPages}
-          /* `model.sources`, never `manifest.sources`: the rows carry the state the list
-             prints, so the canvas cannot draw a confident citation beside a row that says
-             the file changed underneath it (design-infoviz, 2026-09-06). */
-          sources={model.sources}
-          selection={
-            opened === null
-              ? null
-              : opened.kind === "wiki"
-                ? { kind: "wiki", ref: opened.slug }
-                : { kind: "source", ref: opened.path }
-          }
-          onSelect={(next) =>
-            setSelected(
-              next.kind === "wiki"
-                ? { kind: "wiki", slug: next.ref }
-                : { kind: "source", path: next.ref },
-            )
-          }
-        />
+        <div className={cn("flex min-h-0 flex-1 flex-col", selected && "hidden")}>
+          <LibraryGraph
+            docs={manifest?.docs ?? EMPTY_DOCS}
+            wikiPages={model.wikiPages}
+            /* `model.sources`, never `manifest.sources`: the rows carry the state the list
+               prints, so the canvas cannot draw a confident citation beside a row that says
+               the file changed underneath it (design-infoviz, 2026-09-06). */
+            sources={model.sources}
+            selection={
+              opened === null
+                ? null
+                : opened.kind === "wiki"
+                  ? { kind: "wiki", ref: opened.slug }
+                  : { kind: "source", ref: opened.path }
+            }
+            onSelect={(next) =>
+              setSelected(
+                next.kind === "wiki"
+                  ? { kind: "wiki", slug: next.ref }
+                  : { kind: "source", path: next.ref },
+              )
+            }
+            headerEnd={
+              <>
+                <LibraryStatusStrip model={model} t={t} />
+                <button
+                  type="button"
+                  ref={shelfChipRef}
+                  onClick={() => setShelfChoice(!shelfOpen)}
+                  aria-expanded={shelfOpen}
+                  aria-haspopup="dialog"
+                  data-testid="library-shelf-open"
+                  className={controlClass({
+                    shape: "chip",
+                    tone: "muted",
+                    hoverInk: "strong",
+                    className: "flex-none gap-1.5",
+                  })}
+                >
+                  <ListChecks size={ICON_SIZE.sm} aria-hidden />
+                  {t("stage.open")}
+                </button>
+              </>
+            }
+          />
+        </div>
         {selected ? (
           /*
            * **The way back exists at every width now.** It was `lg:hidden`, because below
@@ -734,29 +806,49 @@ export function LibraryPage() {
               t={t}
             />
           </div>
-        ) : (
-          /*
-           * Nothing chosen: the three steps of the work, with the folder's own numbers in
-           * them. This replaced two sentences that between them could not tell a person
-           * what to do next — see `LibraryStage` for the owner's reading that produced it.
-           */
-          <LibraryStage
-            model={model}
-            route={agent.route}
-            agentLabel={agent.runtime?.label ?? null}
-            localModel={agent.localModel}
-            inApp={nativeVaultRootPath !== null}
-            onAddFiles={handleAddFiles}
-            onFindDocuments={handleFindDocuments}
-            onCompile={handleCompile}
-            onOpenWiki={(slug) => setSelected({ kind: "wiki", slug })}
-            lastDiscoveryCount={discovery?.candidates.length ?? null}
-            busy={busy}
-            locale={locale}
-            t={t}
-          />
-        )}
+        ) : null}
       </div>
+
+      {/*
+        The guided shelf, raised over the picture rather than sharing the pane with it.
+        It is parented **here**, on the row, and not inside the pane: below `lg` that pane
+        is half a phone and would cut the panel to 373px (measured 390×844).
+      */}
+      <LibraryShelfPopover
+        open={shelfOpen}
+        onClose={closeShelf}
+        anchorRef={shelfChipRef}
+        title={t("stage.title")}
+        closeLabel={t("stage.close")}
+      >
+        <LibraryStage
+          model={model}
+          route={agent.route}
+          agentLabel={agent.runtime?.label ?? null}
+          localModel={agent.localModel}
+          inApp={nativeVaultRootPath !== null}
+          onAddFiles={() => {
+            keepShelf();
+            handleAddFiles();
+          }}
+          onFindDocuments={() => {
+            keepShelf();
+            handleFindDocuments();
+          }}
+          onCompile={() => {
+            keepShelf();
+            handleCompile();
+          }}
+          onOpenWiki={(slug) => {
+            closeShelf();
+            setSelected({ kind: "wiki", slug });
+          }}
+          lastDiscoveryCount={discovery?.candidates.length ?? null}
+          busy={busy}
+          locale={locale}
+          t={t}
+        />
+      </LibraryShelfPopover>
 
       {/*
         The dock is a **sibling of the reader inside this row**, which is the whole of what

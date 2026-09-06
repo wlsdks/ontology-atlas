@@ -1,17 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown, ChevronRight } from "lucide-react";
 
 import type { VaultDoc } from "@/entities/docs-vault";
 import { useRouter } from "@/i18n/navigation";
-import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
-import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { cn } from "@/shared/lib/cn";
-import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 import {
   buildLibraryGraph,
@@ -81,21 +76,31 @@ export interface LibraryGraphProps {
   selection: LibraryGraphSelection | null;
   /** Selecting a page or a source is the Library's job; this hands the choice back. */
   onSelect: (selection: LibraryGraphSelection) => void;
+  /**
+   * What the screen hangs at the right of the caption row — the Library passes its status
+   * strip and the chip that opens the shelf.
+   *
+   * A slot rather than props, because both are the **view's** facts: which step is next,
+   * and where the guide lives. `src/widgets/` sits below `src/views/` in the import
+   * direction, so a widget cannot reach either; handing the rendered nodes down is the
+   * direction that is allowed and the one that keeps this canvas about the canvas.
+   */
+  headerEnd?: ReactNode;
 }
 
 /**
- * Fixed by us, not by content: 320px at desktop, 240 in the one-column layout — and
- * **bounded by the height it is spending**, because 320 was chosen by width and paid in
- * height. Measured 2026-09-06: at 1040×720, this repository's own responsive floor, the
- * open section took 423 of 720px and left the document 297 (design-responsive). `34dvh`
- * holds the section under 46% of the row at every measured height and reaches the 320
- * ceiling from about 940px of viewport.
+ * **No fixed height any more — the canvas is the pane.**
  *
- * The **width** is no longer "all of it": `w-full` is the ceiling and the real width is
- * the picture's own, capped at render time (see `canvasMaxWidth`). Height is still the
- * only value chosen here, because height is the only one a uniform fit spends in full.
+ * It used to be `h-[240px] lg:h-[min(320px,34dvh)]`: a band bounded by the height it was
+ * spending, because it sat above a reader that had to keep most of the column. The owner
+ * removed that premise on 2026-09-06 — the pane *is* this picture — so the height is the
+ * box's, exactly as the map's canvas takes its tab.
+ *
+ * The **width** is still not "all of it": `w-full` is the ceiling and the real width is
+ * the picture's own, capped at render time (see `canvasMaxWidth`), which is what keeps a
+ * uniform fit from leaving gutters wider than the marks.
  */
-const CANVAS_CLASS = "h-[240px] w-full lg:h-[min(320px,34dvh)]";
+const CANVAS_CLASS = "min-h-0 w-full flex-1";
 const FIT_PADDING = 26;
 /**
  * The narrowest the canvas is ever allowed to become.
@@ -105,90 +110,41 @@ const FIT_PADDING = 26;
  * small to carry a label, and a focus ring around a postage stamp.
  */
 const MIN_CANVAS_WIDTH = 320;
-/**
- * The person's own answer to "do I want this open", per machine.
- *
- * `local-first.md` permits browser storage for a preference; it is never a second store
- * of anything the folder knows. The map's INDEX panel already persists this way, so a
- * disclosure of the same class that forgot every time would be the inconsistency
- * (design-interaction, 2026-09-06).
- */
-const GRAPH_OPEN_KEY = "library:graph-open:v1";
 /** Touch reach around a mark, in CSS px. Half of `--touch-target-min` (44) is the floor. */
 const COARSE_HIT_REACH = 18;
-/** `lg` — the same number the canvas height and the screen's own two-pane rule use. */
-const WIDE_BREAKPOINT = 1024;
 
 function selectionNodeId(selection: LibraryGraphSelection | null): string | null {
   if (!selection) return null;
   return selection.kind === "wiki" ? `page:${selection.ref}` : `source:${selection.ref}`;
 }
 
-export function LibraryGraph({ docs, wikiPages, sources, selection, onSelect }: LibraryGraphProps) {
+export function LibraryGraph({
+  docs,
+  wikiPages,
+  sources,
+  selection,
+  onSelect,
+  headerEnd,
+}: LibraryGraphProps) {
   const t = useTranslations("library");
   const router = useRouter();
   const reducedMotion = usePrefersReducedMotion();
-  const narrow = useViewportBelow(WIDE_BREAKPOINT);
-  /*
-   * **Open by default where there is room, closed where there is not.**
-   *
-   * The owner asked for the canvas to be *in this tab*, so at desktop it is there without
-   * being asked for. Below `lg` this column only exists after a person has chosen
-   * something to read, and 240px of canvas above that document would push the title of
-   * the thing they just asked for under the fold — so the narrow default is closed
-   * (design-lead and design-interaction, 2026-09-06, whose dissent is in the ledger).
-   * Either way the person's own choice is remembered and wins.
-   */
-  const storedOpen = useLocalStorageBoolean(GRAPH_OPEN_KEY, !narrow);
-  const [chosenOpen, setChosenOpen] = useState<boolean | null>(null);
-  const open = chosenOpen ?? storedOpen;
-  /**
-   * One increment per **request** for the picture: the first time it can be drawn, and
-   * every time a person opens the section. Deliberately not a width: the settle used to
-   * restart on any resize, so dragging the window edge pinned the canvas on the seed
-   * spiral for the whole drag, and below `lg` re-revealing the reader replayed the whole
-   * arrival under a document that had cut in instantly (design-motion, 2026-09-06).
-   */
-  const [settleRequest, setSettleRequest] = useState(0);
-  /** Latched on the first open: the force pass is kept afterwards, never re-run. */
-  const [everOpened, setEverOpened] = useState(false);
-  const toggleOpen = useCallback(() => {
-    const next = !open;
-    setChosenOpen(next);
-    if (next) {
-      setEverOpened(true);
-      setSettleRequest((value) => value + 1);
-    }
-    try {
-      window.localStorage.setItem(GRAPH_OPEN_KEY, next ? "1" : "0");
-    } catch {
-      /* private mode: the choice still holds for this session */
-    }
-  }, [open]);
 
   const graph = useMemo(
     () => buildLibraryGraph({ docs, wikiPages, sources }),
     [docs, sources, wikiPages],
   );
-  /*
-   * `.claude/rules/architecture.md`: the condition that draws a surface must guard the
-   * work that builds its model. The force pass is the expensive part of this widget, so
-   * it does not run while the section is closed, and it re-runs only when the graph's
-   * own shape changes — not when a person selects or hovers something.
-   */
   /**
-   * The force pass, kept across a close and reopen.
+   * The force pass — **once per folder, and never again**.
    *
-   * `architecture.md` asks that a surface that is not drawn does not pay for its model,
-   * and this satisfies it exactly: nothing runs until the section is first opened.
-   * Re-running it on every reopen would put up to 95ms of synchronous ForceAtlas2 on the
-   * click frame, in front of a 420ms settle (design-motion, 2026-09-06). The cache is
-   * keyed by the graph's own identity, so a folder that changed gets a new layout.
+   * `.claude/rules/architecture.md` asks that a surface which is not drawn does not pay
+   * for its model. This one is now always drawn: the Library's pane **is** this canvas
+   * whenever nothing is chosen, so the up-to-95ms pass is the first frame's own cost
+   * rather than a cost paid for something hidden. It is memoised on the graph's identity,
+   * so selecting a document, hovering a dot or standing the whole widget aside while a
+   * page is open never re-runs it.
    */
-  const layout = useMemo(
-    () => (everOpened || open ? layoutLibraryGraph(graph) : null),
-    [everOpened, graph, open],
-  );
+  const layout = useMemo(() => layoutLibraryGraph(graph), [graph]);
 
   /**
    * **The picture's own aspect, which is what the canvas is then cut to.**
@@ -323,22 +279,17 @@ export function LibraryGraph({ docs, wikiPages, sources, selection, onSelect }: 
     });
     observer.observe(canvas);
     return () => observer.disconnect();
-  }, [open]);
+  }, []);
 
-  // ── One settle per request, then nothing moves. ──
-  const settledForRef = useRef<{ layout: LibraryGraphLayout | null; request: number }>({
-    layout: null,
-    request: -1,
-  });
+  // ── One settle per layout, then nothing moves. ──
+  const settledForRef = useRef<{ layout: LibraryGraphLayout | null }>({ layout: null });
   /** The animation frame in flight, owned across effect runs rather than by one of them. */
   const frameRef = useRef(0);
   useEffect(() => {
     // Width is the gate — can this be drawn yet — never the trigger.
     if (!layout || size.width === 0) return;
-    if (settledForRef.current.layout === layout && settledForRef.current.request === settleRequest) {
-      return;
-    }
-    settledForRef.current = { layout, request: settleRequest };
+    if (settledForRef.current.layout === layout) return;
+    settledForRef.current = { layout };
     if (reducedMotion) {
       progressRef.current = 1;
       drawRef.current();
@@ -378,7 +329,7 @@ export function LibraryGraph({ docs, wikiPages, sources, selection, onSelect }: 
     // `size.width` stays in the list because the first measurement arrives after mount and
     // the effect has to run again once there is a box; the ref above is what keeps that
     // second run — and every later resize — from restarting the arrival.
-  }, [layout, reducedMotion, settleRequest, size.width]);
+  }, [layout, reducedMotion, size.width]);
 
   /** The settle's only other end: the widget going away. */
   useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
@@ -478,171 +429,156 @@ export function LibraryGraph({ docs, wikiPages, sources, selection, onSelect }: 
   });
 
   return (
+    /*
+     * **The pane, not a strip on top of it** (2026-09-06, owner). This was a `flex-none`
+     * band of at most 320px above the reader, opened by a chip: *"shouldn't the Library
+     * tab's default be the graph on top? why is the area split above and below?"* The
+     * split was the defect — an overview and a guide taking turns for the same column,
+     * neither of them the screen. So the picture is what the tab shows, the way the map
+     * fills its own tab, and the guide it used to share the column with became a popup
+     * one press away. `docs/DECISIONS.md`, 2026-09-06.
+     */
     <section
       data-testid="library-graph"
-      data-open={open ? "true" : "false"}
       aria-label={t("graph.title")}
-      className="flex-none border-b border-[color:var(--color-border-soft)] py-2"
+      className="flex min-h-0 flex-1 flex-col px-5 py-2 sm:px-6 md:px-10"
     >
-      {/*
-        **The reader's own column, not the pane's full width** (2026-09-06). Everything
-        else this pane draws — the shelf, a source's facts, a wiki page's header — stands
-        in one 760px column, and this section stood outside it at `px-3`: measured at
-        1512, its chip began at x=356 while the shelf's title began at x=588, so the
-        overview and the thing it is an overview *of* had two left edges. One column, and
-        the caption row now sits on the same type ramp and the same axis as the step
-        titles below it.
-      */}
-      <div className="mx-auto w-full max-w-[760px] px-5 sm:px-6 md:px-10">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggleOpen}
-            aria-expanded={open}
-            data-testid="library-graph-toggle"
-            className={controlClass({ shape: "chip", tone: "muted", className: "gap-1.5" })}
-          >
-            {open ? (
-              <ChevronDown size={ICON_SIZE.sm} aria-hidden />
-            ) : (
-              <ChevronRight size={ICON_SIZE.sm} aria-hidden />
-            )}
-            {t("graph.title")}
-          </button>
-          {/* The counts are the caption of the picture, so they stand beside its title
-              whether it is open or closed: closed, they are the whole of what it says. */}
-          <p
-            data-testid="library-graph-counts"
-            className="min-w-0 truncate text-label leading-body text-[color:var(--color-text-tertiary)]"
-          >
-            {caption}
-          </p>
-        </div>
-
-        {open ? (
-          wikiPages.length === 0 ? (
-            <p
-              data-testid="library-graph-empty"
-              className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-            >
-              {t("graph.empty")}
-            </p>
-          ) : (
-            <>
-              <canvas
-                ref={canvasRef}
-                data-testid="library-graph-canvas"
-                /* Machine-readable state, because a canvas has no DOM to assert against and
-                   every interaction claim would otherwise be unfalsifiable
-                   (design-interaction, 2026-09-06). */
-                data-hovered-node-id={hoveredId ?? ""}
-                data-focused-node-id={focusedId ?? ""}
-                data-selected-node-id={selectedId ?? ""}
-                /* The picture's own aspect and the width it earned, for the same reason as
-                   the four above: a canvas has no DOM, so a claim about how much of it the
-                   picture fills is otherwise unfalsifiable. */
-                data-picture-aspect={pictureAspect === null ? "" : pictureAspect.toFixed(3)}
-                data-active-kind={activeNode?.kind ?? ""}
-                /*
-                 * `group`, not `application`. `TopologyMapV2` decided this for the identical
-                 * shape — a hit-tested canvas graph with arrow traversal — and named the one
-                 * condition that reopens it: a measured screen reader whose browse mode
-                 * claims the arrows first. Taking every key away pre-emptively, without that
-                 * measurement, would silently reverse a standing decision.
-                 */
-                role="group"
-                tabIndex={0}
-                aria-label={t("graph.canvasAria")}
-                aria-describedby="library-graph-hint library-graph-keys"
-                /* No border and the canvas ground **is** `--color-canvas`, the same ink this
-                   column is painted in, so the picture floats in the section instead of
-                   sitting in a mostly empty box: at 1512 the frame was the largest bounded
-                   shape on the screen while its marks used a third of it (design-lead,
-                   2026-09-06). The focus ring is the map's, verbatim — its own outline is the
-                   repository's 2px indigo floor, which `outline-none` had opted out of. */
-                className={cn(
-                  CANVAS_CLASS,
-                  "mt-2 block outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
-                )}
-                /* A measured number, not a design value: it is the picture's own width plus
-                   the fit's padding, so it belongs to the data rather than to the ramp. The
-                   box keeps the column's **left** edge rather than centring inside it, so
-                   the picture begins where its own caption and legend begin. */
-                style={canvasMaxWidth === null ? undefined : { maxWidth: `${canvasMaxWidth}px` }}
-                onPointerMove={(event) => {
-                  if (event.pointerType === "touch") return;
-                  const point = pointFromEvent(event);
-                  if (!point) return;
-                  const hit = hitTest(point);
-                  setHoveredId(hit?.id ?? null);
-                  // Nothing else on this canvas says a dot can be pressed, and no gate can
-                  // see a cursor over a painted mark (`cursor-affordance.spec.ts` measures
-                  // DOM elements only).
-                  event.currentTarget.style.cursor = hit ? "pointer" : "default";
-                }}
-                onPointerLeave={() => setHoveredId(null)}
-                onClick={(event) => {
-                  const point = pointFromEvent(event);
-                  if (!point) return;
-                  const hit = hitTest(point);
-                  if (!hit) return;
-                  /*
-                   * A coarse pointer never hovered, so the first tap would otherwise be the
-                   * commit on a 9px target — including the one commit that leaves this
-                   * screen. The first tap names the dot; the second one opens it.
-                   */
-                  if (coarsePointer() && coarseTapRef.current !== hit.id) {
-                    coarseTapRef.current = hit.id;
-                    setHoveredId(hit.id);
-                    return;
-                  }
-                  coarseTapRef.current = null;
-                  activate(hit);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-                    event.preventDefault();
-                    stepFocus(1);
-                  } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-                    event.preventDefault();
-                    stepFocus(-1);
-                  } else if (event.key === "Enter" || event.key === " ") {
-                    const target = activeNode;
-                    if (!target) return;
-                    event.preventDefault();
-                    activate(target);
-                  } else if (event.key === "Escape") {
-                    setFocusedId(null);
-                  }
-                }}
-                /* Only the keyboard's own position leaves with the keyboard. A pointer that
-                   has wandered off is cleared by `pointerleave`, not by this. */
-                onBlur={() => setFocusedId(null)}
-              />
-              {/* The legend: what the three marks mean, and the one verb. `text-label`
-                  rather than `text-caption` because 9.5px is this product's uppercase-eyebrow
-                  size and this is the sentence a newcomer has to read; `text-tertiary`
-                  because quaternary is for what may go unread (design-lead, 2026-09-06). */}
-              <p
-                id="library-graph-hint"
-                data-testid="library-graph-hint"
-                className="mt-1.5 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-              >
-                {t("graph.legend")}
-              </p>
-              {/* The keyboard path is said to the people who need it and not to the ones
-                  who do not: it is part of the canvas's description, never a rendered line
-                  telling a phone to press arrow keys. */}
-              <span id="library-graph-keys" className="sr-only">
-                {t("graph.keys")}
-              </span>
-              <span className="sr-only" aria-live="polite" aria-atomic="true">
-                {announcement}
-              </span>
-            </>
-          )
-        ) : null}
+      <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1">
+        {/* The counts are the caption of the picture, and now its only title: with the
+            canvas always drawn there is no disclosure left to name. */}
+        <p
+          data-testid="library-graph-counts"
+          className="min-w-0 truncate text-label leading-body text-[color:var(--color-text-tertiary)]"
+        >
+          {caption}
+        </p>
+        {/* Whatever the screen wants to hang on this row — the status strip and the door
+            to the shelf, both of which are the view's facts, not the canvas's. A widget
+            below `views` cannot reach them, so they arrive as a slot. */}
+        {headerEnd ? <div className="ml-auto flex items-center gap-2">{headerEnd}</div> : null}
       </div>
+
+      {graph.nodes.length === 0 ? (
+        <p
+          data-testid="library-graph-empty"
+          className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+        >
+          {t("graph.empty")}
+        </p>
+      ) : (
+        <>
+        <canvas
+          ref={canvasRef}
+          data-testid="library-graph-canvas"
+          /* Machine-readable state, because a canvas has no DOM to assert against and
+             every interaction claim would otherwise be unfalsifiable
+             (design-interaction, 2026-09-06). */
+          data-hovered-node-id={hoveredId ?? ""}
+          data-focused-node-id={focusedId ?? ""}
+          data-selected-node-id={selectedId ?? ""}
+          /* The picture's own aspect and the width it earned, for the same reason as
+             the four above: a canvas has no DOM, so a claim about how much of it the
+             picture fills is otherwise unfalsifiable. */
+          data-picture-aspect={pictureAspect === null ? "" : pictureAspect.toFixed(3)}
+          data-active-kind={activeNode?.kind ?? ""}
+          /*
+           * `group`, not `application`. `TopologyMapV2` decided this for the identical
+           * shape — a hit-tested canvas graph with arrow traversal — and named the one
+           * condition that reopens it: a measured screen reader whose browse mode
+           * claims the arrows first. Taking every key away pre-emptively, without that
+           * measurement, would silently reverse a standing decision.
+           */
+          role="group"
+          tabIndex={0}
+          aria-label={t("graph.canvasAria")}
+          aria-describedby="library-graph-hint library-graph-keys"
+          /* No border and the canvas ground **is** `--color-canvas`, the same ink this
+             column is painted in, so the picture floats in the section instead of
+             sitting in a mostly empty box: at 1512 the frame was the largest bounded
+             shape on the screen while its marks used a third of it (design-lead,
+             2026-09-06). The focus ring is the map's, verbatim — its own outline is the
+             repository's 2px indigo floor, which `outline-none` had opted out of. */
+          className={cn(
+            CANVAS_CLASS,
+            "mx-auto mt-2 block outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
+          )}
+          /* A measured number, not a design value: it is the picture's own width plus
+             the fit's padding, so it belongs to the data rather than to the ramp. The
+             box keeps the column's **left** edge rather than centring inside it, so
+             the picture begins where its own caption and legend begin. */
+          style={canvasMaxWidth === null ? undefined : { maxWidth: `${canvasMaxWidth}px` }}
+          onPointerMove={(event) => {
+            if (event.pointerType === "touch") return;
+            const point = pointFromEvent(event);
+            if (!point) return;
+            const hit = hitTest(point);
+            setHoveredId(hit?.id ?? null);
+            // Nothing else on this canvas says a dot can be pressed, and no gate can
+            // see a cursor over a painted mark (`cursor-affordance.spec.ts` measures
+            // DOM elements only).
+            event.currentTarget.style.cursor = hit ? "pointer" : "default";
+          }}
+          onPointerLeave={() => setHoveredId(null)}
+          onClick={(event) => {
+            const point = pointFromEvent(event);
+            if (!point) return;
+            const hit = hitTest(point);
+            if (!hit) return;
+            /*
+             * A coarse pointer never hovered, so the first tap would otherwise be the
+             * commit on a 9px target — including the one commit that leaves this
+             * screen. The first tap names the dot; the second one opens it.
+             */
+            if (coarsePointer() && coarseTapRef.current !== hit.id) {
+              coarseTapRef.current = hit.id;
+              setHoveredId(hit.id);
+              return;
+            }
+            coarseTapRef.current = null;
+            activate(hit);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+              event.preventDefault();
+              stepFocus(1);
+            } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+              event.preventDefault();
+              stepFocus(-1);
+            } else if (event.key === "Enter" || event.key === " ") {
+              const target = activeNode;
+              if (!target) return;
+              event.preventDefault();
+              activate(target);
+            } else if (event.key === "Escape") {
+              setFocusedId(null);
+            }
+          }}
+          /* Only the keyboard's own position leaves with the keyboard. A pointer that
+             has wandered off is cleared by `pointerleave`, not by this. */
+          onBlur={() => setFocusedId(null)}
+        />
+        {/* The legend: what the three marks mean, and the one verb. `text-label`
+            rather than `text-caption` because 9.5px is this product's uppercase-eyebrow
+            size and this is the sentence a newcomer has to read; `text-tertiary`
+            because quaternary is for what may go unread (design-lead, 2026-09-06). */}
+        <p
+          id="library-graph-hint"
+          data-testid="library-graph-hint"
+          className="mt-1.5 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+        >
+          {t("graph.legend")}
+        </p>
+        {/* The keyboard path is said to the people who need it and not to the ones
+            who do not: it is part of the canvas's description, never a rendered line
+            telling a phone to press arrow keys. */}
+        <span id="library-graph-keys" className="sr-only">
+          {t("graph.keys")}
+        </span>
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          {announcement}
+        </span>
+        </>
+      )}
     </section>
   );
 }

@@ -290,26 +290,125 @@ test.describe("the Library destination", () => {
   });
 });
 
+
 /**
- * **Below `lg` the guided shelf has to be on the screen too.**
+ * **The pane is the graph, and the guide is a popup over it.**
  *
- * Until 2026-09-06 it was not. The reader pane carried `max-lg:hidden` whenever nothing
- * was chosen — which is exactly the state the shelf exists for — so a phone, and any
- * window narrower than 1024px, opened a folder and got two lists and no guidance. The
- * measurement was unambiguous: `library-stage` had a zero-width, zero-height rect at both
- * 390×844 and 768×1024 while the same folder at 1512 drew all three steps.
+ * The owner opened the installed app on 2026-09-06 — two sources, two pages a local
+ * `qwen3:8b` had compiled — and read the screen as two half-screens: the graph as a strip
+ * on top and the three-step shelf stacked under it. *"Shouldn't the Library tab's default
+ * be the graph? Why is the area split above and below? The area underneath should come up
+ * as a popup."* (`docs/DECISIONS.md`, 2026-09-06.)
  *
- * These two cases hold the four things that fix has to keep true at once:
+ * These cases hold the four things that shape has to keep true, and every one of them was
+ * a real state of the old build rather than a hypothetical:
  *
- * 1. all three steps are drawn, full-width and of **one height** (the equal-height rule);
- * 2. the shelf is **above** the lists, which is the order the work happens in;
- * 3. the index's own nested list scrollers still own their overflow — the fix stacks two
- *    flex children, and the failure mode is an index that grows past the column and hands
- *    its scrolling to the page;
- * 4. choosing a source still swaps the whole column, and the back control returns.
+ * 1. the picture is the default and fills the pane — not a band with a shelf beneath it;
+ * 2. the shelf is one press away and comes back with its three steps intact;
+ * 3. it raises **itself** only over a folder with nothing in it, and a person's own press
+ *    settles it either way for the session — a guide that reappears every visit is the
+ *    spent answer the shelf itself was written to replace;
+ * 4. choosing a file still swaps the pane for the reader, and the way back returns the
+ *    picture rather than a blank column.
  *
- * The folder is its own fixture with **enough files to overflow both lists**, because a
- * scroller with nothing to scroll cannot fail the third assertion.
+ * The narrow bands stay in the list because the whole rule is "the same at every width":
+ * below `lg` the graph takes the top of the column, the index keeps the bottom, and the
+ * popup hangs from the row so it is not cut to half a phone.
+ */
+const NO_SOURCE_VAULT: Record<string, string> = {
+  "project.md": ["---", "kind: project", "slug: empty-demo", "title: Empty demo", "---", "", "# Empty demo", ""].join("\n"),
+};
+
+test.describe("the Library pane", () => {
+  test("opens on the graph, with the shelf behind one chip", async ({ page }) => {
+    await openLibrary(page);
+
+    // 1 — the picture, not a strip: it is drawn, and it is most of the pane's height.
+    const canvas = page.getByTestId("library-graph-canvas");
+    await expect(canvas).toBeVisible();
+    const readerBox = (await page.getByTestId("library-reader").boundingBox())!;
+    const canvasBox = (await canvas.boundingBox())!;
+    expect(canvasBox.height).toBeGreaterThan(readerBox.height * 0.6);
+
+    // The shelf's verdict stayed behind on the header when its copy left for the popup.
+    const strip = page.getByTestId("library-status-strip");
+    await expect(strip).toContainText("Gather done");
+    await expect(strip).toContainText("Compile next");
+
+    // 2 — one press away, and nothing was auto-raised over a folder that has files.
+    await expect(page.getByTestId("library-shelf-popover")).toHaveCount(0);
+    await page.getByTestId("library-shelf-open").click();
+    const shelf = page.getByTestId("library-shelf-popover");
+    await expect(shelf).toBeVisible();
+    for (const step of ["gather", "compile", "read"]) {
+      await expect(shelf.getByTestId(`library-stage-${step}`)).toBeVisible();
+    }
+    // Equal height survived the move into a 560px panel.
+    const heights = [];
+    for (const step of ["gather", "compile", "read"]) {
+      heights.push((await shelf.getByTestId(`library-stage-${step}`).boundingBox())!.height);
+    }
+    for (const height of heights) expect(Math.abs(height - heights[0]!)).toBeLessThanOrEqual(1);
+    // It is a popover, never a modal: the picture behind it stays in the accessibility
+    // tree and stays visible, which is the whole reason "1 waiting" is readable here.
+    await expect(canvas).toBeVisible();
+    expect((await shelf.boundingBox())!.width).toBeLessThanOrEqual(560);
+
+    // Escape closes it and hands focus back to the chip that opened it.
+    await page.keyboard.press("Escape");
+    await expect(shelf).toHaveCount(0);
+    await expect(page.getByTestId("library-shelf-open")).toBeFocused();
+  });
+
+  test("raises itself over a folder with no sources, and only until it is answered", async ({
+    page,
+  }) => {
+    await openLibrary(page, NO_SOURCE_VAULT);
+
+    // The one state where there is nothing else to look at.
+    const shelf = page.getByTestId("library-shelf-popover");
+    await expect(shelf).toBeVisible();
+    await expect(shelf.getByTestId("library-stage-gather")).toContainText("next");
+
+    // Closing it is an answer, and the answer holds: re-rendering the pane by opening and
+    // closing something else must not raise it again.
+    await page.getByTestId("library-shelf-close").click();
+    await expect(shelf).toHaveCount(0);
+    await page.getByTestId("library-shelf-open").click();
+    await expect(shelf).toBeVisible();
+    await page.getByTestId("library-shelf-close").click();
+    await expect(shelf).toHaveCount(0);
+  });
+
+  test("choosing a file swaps the pane for the reader, and the way back returns the graph", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+
+    await page.getByTestId("library-wiki-wiki/quarter-plan").click();
+    await expect(page.getByTestId("library-wiki-header")).toContainText("Quarter plan");
+    // The canvas stands aside rather than unmounting — it keeps its settled positions.
+    await expect(page.getByTestId("library-graph-canvas")).toBeHidden();
+
+    await page.getByTestId("library-reader-back").click();
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+    await expect(page.getByTestId("library-wiki-header")).toHaveCount(0);
+  });
+});
+
+const NARROW_VIEWPORTS = [
+  { label: "390×844", width: 390, height: 844 },
+  { label: "768×1024", width: 768, height: 1024 },
+] as const;
+
+/**
+ * The same rule below `lg`, where the column is one thing at a time.
+ *
+ * The folder here is its own fixture with **enough files to overflow both lists**, because
+ * the index's scroll model changes at this width — the two lists shared half a phone and
+ * measured 30px and **zero**, so the index scrolls as one box and the lists stand at their
+ * natural height. A scroller with nothing to scroll cannot fail that assertion.
  */
 const NARROW_VAULT: Record<string, string> = {
   "project.md": ["---", "kind: project", "slug: narrow-demo", "title: Narrow demo", "---", "", "# Narrow demo", ""].join("\n"),
@@ -350,53 +449,40 @@ const NARROW_VAULT: Record<string, string> = {
   ),
 };
 
-const NARROW_VIEWPORTS = [
-  { label: "390×844", width: 390, height: 844 },
-  { label: "768×1024", width: 768, height: 1024 },
-] as const;
-
 for (const viewport of NARROW_VIEWPORTS) {
-  test(`the shelf stands above the lists at ${viewport.label}`, async ({ page }) => {
+  test(`the graph takes the top of the column at ${viewport.label}`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await openLibrary(page, NARROW_VAULT);
 
-    const stage = page.getByTestId("library-stage");
-    await expect(stage).toBeVisible();
-
-    // 1 — three steps, full width, one height.
-    const steps = ["gather", "compile", "read"] as const;
-    const boxes = [];
-    for (const step of steps) {
-      const card = page.getByTestId(`library-stage-${step}`);
-      await expect(card).toBeVisible();
-      const box = await card.boundingBox();
-      expect(box, `${step} has no box at ${viewport.label}`).not.toBeNull();
-      boxes.push(box!);
-    }
-    for (const box of boxes) {
-      // Equal height is the rule a copy-length-decided card breaks; one pixel of rounding
-      // is the tolerance, not a range.
-      expect(Math.abs(box.height - boxes[0]!.height)).toBeLessThanOrEqual(1);
-      expect(Math.abs(box.width - boxes[0]!.width)).toBeLessThanOrEqual(1);
-      // "Full-width" means the column's width, not the card's own content.
-      expect(box.width).toBeGreaterThan(viewport.width * 0.8);
-    }
-
-    // 2 — the shelf is above the lists.
-    const stageBox = (await stage.boundingBox())!;
+    // 1 — the picture is drawn here too. It used not to be: the pane holding it was
+    // hidden whenever nothing was chosen, so a phone got two lists and nothing else.
+    const canvas = page.getByTestId("library-graph-canvas");
+    await expect(canvas).toBeVisible();
+    const canvasBox = (await canvas.boundingBox())!;
     const indexBox = (await page.getByTestId("library-index").boundingBox())!;
-    expect(stageBox.y).toBeLessThan(indexBox.y);
-
+    expect(canvasBox.y).toBeLessThan(indexBox.y);
     /*
-     * 3 — the index still owns its own overflow, and every row is reachable inside it.
-     *
-     * The first build of this layout kept the two lists as separate scrollers here, and
-     * measured at 390 they had 333px to share between two headers, two action rows and
-     * two footnotes: the source list was left 30px and the wiki list **zero**. So below
-     * `lg` the index is one scroller and the lists stand at their natural height — the
-     * assertion is that box scrolls, that its last row can be reached, and that the page
-     * behind it never became the scroller instead.
+     * Height, not width: the canvas is cut to the **picture's** width so a uniform fit
+     * leaves no gutters, and a folder of unconnected files settles into a squarer cloud
+     * than a tall column. What has to be true here is that the graph really took the top
+     * of the column rather than a strip of it.
      */
+    const readerBox = (await page.getByTestId("library-reader").boundingBox())!;
+    expect(canvasBox.height).toBeGreaterThan(readerBox.height * 0.6);
+
+    // 2 — the popup hangs from the row, so it is not cut to the graph's half.
+    await page.getByTestId("library-shelf-open").click();
+    const shelf = page.getByTestId("library-shelf-popover");
+    await expect(shelf).toBeVisible();
+    const shelfBox = (await shelf.boundingBox())!;
+    expect(shelfBox.height).toBeGreaterThan(canvasBox.height);
+    for (const step of ["gather", "compile", "read"]) {
+      await expect(shelf.getByTestId(`library-stage-${step}`)).toBeVisible();
+    }
+    await page.keyboard.press("Escape");
+    await expect(shelf).toHaveCount(0);
+
+    // 3 — the index still owns its own overflow, in one scroller rather than two.
     const scroller = page.getByTestId("library-index-scroll");
     const scrolled = await scroller.evaluate((element) => {
       const before = element.scrollTop;
@@ -410,9 +496,7 @@ for (const viewport of NARROW_VIEWPORTS) {
     expect(scrolled.overflowY, "the index is not a scroller").toBe("auto");
     expect(scrolled.overflows, "the index has nothing to scroll — the case is idling").toBe(true);
     expect(scrolled.moved, "the index did not scroll").toBe(true);
-    // The last row of the last list, which is what a collapsed box hides first.
     await expect(page.getByTestId("library-wiki-wiki/note-08")).toBeInViewport();
-    // And the page itself did not become the scroller instead.
     const pageScrolls = await page.evaluate(
       () => document.documentElement.scrollHeight > window.innerHeight + 1,
     );
@@ -421,12 +505,12 @@ for (const viewport of NARROW_VIEWPORTS) {
       element.scrollTop = 0;
     });
 
-    // 4 — choosing swaps the column, and the way back returns.
+    // 4 — choosing swaps the whole column, and the way back returns the picture.
     await page.getByTestId("library-source-sources/report-01.pdf").click();
     await expect(page.getByTestId("library-source-summary")).toBeVisible();
     await expect(page.getByTestId("library-index")).toBeHidden();
     await page.getByTestId("library-reader-back").click();
-    await expect(stage).toBeVisible();
+    await expect(canvas).toBeVisible();
     await expect(page.getByTestId("library-index")).toBeVisible();
   });
 }

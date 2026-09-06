@@ -4538,7 +4538,12 @@
       "blockedNoAgent": "확인된 코딩 에이전트가 이 컴퓨터에 없고, 저장해 둔 로컬 모델 주소도 없습니다. 로컬 주소는 설정의 AI 연결에 넣습니다.",
       "blockedNoSources": "아직 정리할 것이 없습니다. 문서는 1번에서 들어옵니다.",
       "blockedNothingWaiting": "모든 원문이 지금 내용과 맞는 정리본을 갖고 있습니다.",
-      "transferLocalRemote": "이 실행기에 저장된 주소는 {host} 이고 이 컴퓨터가 아니라서, 요청에 실린 내용은 밖으로 나갑니다. {file} 에 한 건씩 남습니다."
+      "transferLocalRemote": "이 실행기에 저장된 주소는 {host} 이고 이 컴퓨터가 아니라서, 요청에 실린 내용은 밖으로 나갑니다. {file} 에 한 건씩 남습니다.",
+      "open": "다음 할 일",
+      "close": "닫기",
+      "status": "{step} {state}",
+      "statusWaiting": "{count}개 기다림",
+      "statusOffTemplate": "서식 벗어남 {count}개"
     }
   }
 }

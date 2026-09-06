@@ -15,6 +15,7 @@ import {
   libraryCompileBlockedReason,
   type CompileAvailability,
 } from "../../lib/compile-availability";
+import { libraryStepStates, type LibraryStepState } from "../../lib/stage-steps";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 import type { LibraryLocalModel } from "../../lib/use-library-agent";
 
@@ -89,14 +90,12 @@ export interface LibraryStageProps {
   t: ReturnType<typeof useTranslations<"library">>;
 }
 
-type StepState = "done" | "next" | "waiting";
-
 /**
  * The step's own word for where it stands. `done` and `next` are the two that matter;
  * `waiting` is for a step whose turn has not come, and it is deliberately neutral —
  * painting an untouched step as a problem makes a new folder look broken.
  */
-function StepBadge({ state, t }: { state: StepState; t: LibraryStageProps["t"] }) {
+function StepBadge({ state, t }: { state: LibraryStepState; t: LibraryStageProps["t"] }) {
   return (
     <span
       data-testid={`library-stage-state-${state}`}
@@ -132,7 +131,7 @@ function Step({
   index: number;
   title: string;
   body: string;
-  state: StepState;
+  state: LibraryStepState;
   /**
    * Whether this is the **first** step that is next.
    *
@@ -255,29 +254,13 @@ export function LibraryStage({
     t,
   );
 
-  const gatherState: StepState = sourceCount > 0 ? "done" : "next";
-  const compileState: StepState =
-    model.needsCompileCount === 0 && model.wikiPages.length > 0
-      ? "done"
-      : sourceCount > 0
-        ? "next"
-        : "waiting";
   /*
-   * `next` was unreachable here until 2026-09-06: both branches returned `waiting`, so a
-   * folder whose pages were all written still showed the last step as one whose turn had
-   * not come. Reading is done only when every source is covered; with pages on the shelf
-   * and sources still waiting, reading is exactly what to do next.
+   * The three states come from `libraryStepStates`, which the graph's header strip reads
+   * too. They used to be derived here; two copies of the same arithmetic in one viewport
+   * is the drift this repository's one-fact-one-place rule exists to stop.
    */
-  const readState: StepState =
-    model.wikiPages.length === 0
-      ? "waiting"
-      : model.needsCompileCount === 0
-        ? "done"
-        : "next";
-
-  /** The earliest step that is next, or none when every step is done or waiting. */
-  const stepStates: StepState[] = [gatherState, compileState, readState];
-  const leadIndex = stepStates.indexOf("next");
+  const { gather: gatherState, compile: compileState, read: readState, leadIndex } =
+    libraryStepStates(model);
 
   const formatSummary =
     formats.length === 0
@@ -298,27 +281,23 @@ export function LibraryStage({
 
   return (
     /*
-     * No bottom-tab reserve here any more (2026-09-06). Below `lg` this shelf is the
-     * **top** half of the column and the index sits under it, so the tab bar stands over
-     * the index — which pays the reserve itself. Keeping a second copy here put
-     * `--topology-mobile-bottom-tab-reserve + 12px` of dead space in the middle of a
-     * phone's column, between the last step and the Sources header.
+     * **No box of its own any more** (2026-09-06). This used to be the pane: a scroller
+     * with a page column, a title and a bottom-tab reserve. It is now the body of a
+     * popover, which owns all three — the panel scrolls, its header carries the title,
+     * and it keeps itself clear of the tab bar. A second scroller inside a scrolling panel
+     * is the nested-overflow defect this screen already paid for once, in the index.
      */
-    <div data-testid="library-stage" className="min-h-0 flex-1 overflow-auto">
-      <div className="mx-auto w-full max-w-[760px] px-5 pb-8 pt-6 sm:px-6 md:px-10 lg:pb-10 lg:pt-8">
-        {/* No eyebrow. The index column 250px to the left already carries a caps eyebrow
-            and this product's name, and a second identical stack at nearly the same y read
-            as two headers competing (design-lead, 2026-09-06). */}
-        <h2 className="text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
-          {t("stage.title")}
-        </h2>
-        <p className="mt-1.5 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+    <div data-testid="library-stage" className="w-full px-4 pb-4 pt-3">
+      <div className="w-full">
+        {/* No title and no eyebrow: the panel's own header states both, and the same words
+            twice, 40px apart, is the header competition this screen keeps finding. */}
+        <p className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
           {t("stage.lede")}
         </p>
 
         {/* Three rows of one height. See the header: the height is the container's, not
             the copy's. */}
-        <div className="mt-5 grid auto-rows-fr gap-3">
+        <div className="mt-4 grid auto-rows-fr gap-3">
           <Step
             index={1}
             testId="library-stage-gather"

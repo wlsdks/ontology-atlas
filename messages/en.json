@@ -4538,7 +4538,12 @@
       "blockedNoAgent": "No verified coding agent is set up on this computer, and no local model address is saved. Settings, then AI connection, is where the local address goes.",
       "blockedNoSources": "Nothing to compile yet. Step one is where documents come in.",
       "blockedNothingWaiting": "Every source already has a write-up that matches its bytes.",
-      "transferLocalRemote": "The address saved for this runner is {host}, which is not this computer, so the sources named in the brief leave it. {file} records every request."
+      "transferLocalRemote": "The address saved for this runner is {host}, which is not this computer, so the sources named in the brief leave it. {file} records every request.",
+      "open": "What to do next",
+      "close": "Close",
+      "status": "{step} {state}",
+      "statusWaiting": "{count, plural, one {# waiting} other {# waiting}}",
+      "statusOffTemplate": "{count, plural, one {# off-template} other {# off-template}}"
     }
   }
 }

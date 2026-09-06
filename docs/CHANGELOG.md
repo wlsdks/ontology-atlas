@@ -47,9 +47,11 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Lookups show targets and counts. MCP gets a screen, external Connectors off by default. Library, a ninth screen, guides three steps at any width, graphing sources with write-ups. Insights repairs back-links. Meaning asks for missing reasons. The trail says how steps connect. Strata, a third 3D view, labels kind planes.
-**Changed**: Cone and the Library graph fill the canvas; Insights opens on four measurements, a to-do a row; the conversation widens, keeps a clock and one control height, survives a closed dock; Agents and MCP read in a column; a connection card leads with its reason; toasts sit under the toolbar.
-**Fixed**: Desktop pages keep a foot margin; repeat lookups fold to one row; the permission card reads plainly; a saved analysis announces once; the rail stops blinking; the reason field grows; footprints follow a relation's curve; a narrow dock names tool and mode.
+**Added**: Lookups show targets and counts. MCP gets a screen, external Connectors off by default. Library, a ninth screen, graphs sources with write-ups; three steps a press away. Insights repairs back-links. Meaning asks for missing reasons. The trail says how steps connect. Strata, a third 3D view, labels kind planes.
+
+**Changed**: The Library and Cone fill their canvas, its guide now a popup; Insights opens on four measurements, a to-do a row; the conversation widens, keeps a clock and one height, outlives a closed dock; Agents and MCP read in a column; a connection card leads with its reason; toasts sit under the toolbar.
+
+**Fixed**: Desktop pages keep a foot margin; repeat lookups fold to a row; the permission card reads plainly; a saved analysis announces once; the rail stops blinking; the reason field grows; footprints follow a relation curve; a narrow dock names tool and mode.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 
