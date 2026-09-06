@@ -115,24 +115,51 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     render(<AcpRuntimeSettings />);
 
     await waitFor(() => expect(screen.getByTestId('app-settings-runtime-claude-acp')).toBeInTheDocument());
-    // What is collapsed is not on screen yet — 38 rows are not poured out as one block.
+    // What is behind the door is not on screen yet — 38 rows are not poured out as one block.
     expect(screen.queryByTestId('app-settings-runtime-cursor')).toBeNull();
+    /*
+     * ⚠️ **A door, not a fold** (owner, 2026-09-07). The chip used to carry `aria-expanded`
+     * because the rest of the list unfolded underneath it; it now opens a dialog with a search,
+     * so it announces `aria-haspopup="dialog"` instead. Announcing "expanded/collapsed" for a
+     * control that opens a modal tells assistive tech the wrong thing about where focus is
+     * about to go.
+     */
     expect(screen.getByTestId('app-settings-runtimes-others-toggle')).toHaveAttribute(
-      'aria-expanded',
-      'false',
+      'aria-haspopup',
+      'dialog',
     );
+    expect(screen.queryByTestId('app-settings-runtimes-others-dialog')).toBeNull();
   });
 
-  it('접힌 묶음을 펼치면 나머지가 전부 나온다 — 목록에서 빼지 않는다', async () => {
+  it('나머지는 창을 열면 전부 나오고, 검색으로 좁힐 수 있다 — 목록에서 빼지 않는다', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
       makeRuntime({ id: 'cursor', state: 'cli-missing' }),
+      makeRuntime({ id: 'gemini', state: 'cli-missing' }),
     ]);
     render(<AcpRuntimeSettings />);
     await waitFor(() => expect(screen.getByTestId('app-settings-runtimes-others-toggle')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTestId('app-settings-runtimes-others-toggle'));
+    expect(screen.getByTestId('app-settings-runtimes-others-dialog')).toBeInTheDocument();
     expect(screen.getByTestId('app-settings-runtime-cursor')).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-runtime-gemini')).toBeInTheDocument();
+
+    /*
+     * The search is the reason this is a dialog rather than a fold: finding one tool among 36 by
+     * reading all 36 is not finding it. It reads the label and the description together, because
+     * somebody looking for "the Google one" does not remember `gemini`.
+     */
+    fireEvent.change(screen.getByTestId('app-settings-runtimes-others-search'), {
+      target: { value: 'curs' },
+    });
+    expect(screen.getByTestId('app-settings-runtime-cursor')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-settings-runtime-gemini')).toBeNull();
+
+    fireEvent.change(screen.getByTestId('app-settings-runtimes-others-search'), {
+      target: { value: 'nothing-matches-this' },
+    });
+    expect(screen.getByTestId('app-settings-runtimes-others-empty')).toBeInTheDocument();
   });
 });
 

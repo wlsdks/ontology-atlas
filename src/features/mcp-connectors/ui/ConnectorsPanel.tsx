@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { Info, MoreHorizontal, Plus } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { MoreHorizontal, Plus } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
@@ -16,8 +17,6 @@ import {
   ServiceMark,
   resolveServiceMark,
 } from '@/shared/ui';
-import { badgeClass } from '@/shared/ui/badge-class';
-import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { Input } from '@/shared/ui/input';
 import { PAGE_COLUMN_FORM } from '@/shared/ui/page-frame';
 import { controlClass } from '@/shared/ui/control-class';
@@ -27,16 +26,11 @@ import {
   looksLikeSecretKey,
   type ConnectorProblem,
   type ConnectorRecord,
-  type ConnectorTransport,
   type ConnectorValueEntry,
 } from '@/shared/lib/connector-record';
-import {
-  CONNECTORS_RELATIVE_PATH,
-  type ConnectorWriteResult,
-} from '@/shared/lib/connector-store';
+import { CONNECTORS_RELATIVE_PATH } from '@/shared/lib/connector-store';
 import {
   discoverMcpConnectors,
-  isAttachableTransport,
   isConnectorDiscoveryAvailable,
   type DiscoveredConnector,
 } from '@/shared/lib/tauri-connectors';
@@ -49,6 +43,18 @@ import {
   subscribeConnectorSecretChange,
 } from '@/shared/lib/tauri-connector-secrets';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+
+import {
+  parseMcpInstallLink,
+  type McpInstallLinkProblem,
+} from '@/shared/lib/mcp-install-link';
+
+import {
+  AddConnectorDialog,
+  newConnectorId,
+  prefillFromRecord,
+  type CustomPrefill,
+} from './AddConnectorDialog';
 
 import type { VaultConnectorsState } from '../model/use-vault-connectors';
 
@@ -80,24 +86,6 @@ import type { VaultConnectorsState } from '../model/use-vault-connectors';
  * find what is already registered, or put a token in an OS keychain. Those two are stated where
  * they are missing rather than hidden — and the list is still usable without them.
  */
-
-const EMPTY_STDIO: ConnectorRecord = {
-  id: '',
-  name: '',
-  transport: 'stdio',
-  command: '',
-  args: [],
-  env: [],
-  headers: [],
-  enabled: false,
-};
-
-/** A short, stable id. `crypto.randomUUID` exists in every surface this ships to. */
-function newConnectorId(): string {
-  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-    ? crypto.randomUUID()
-    : `c${Date.now().toString(36)}`;
-}
 
 /**
  * Forget the tokens a connector's variables pointed at.
@@ -138,6 +126,11 @@ export function connectorDestination(connector: ConnectorRecord): string {
     return (connector.url ?? '').trim();
   }
 }
+
+/** What an arriving install link did, when it is worth telling somebody about. */
+type InstallLinkNotice =
+  | { kind: 'dropped'; keys: string[] }
+  | { kind: 'refused'; problem: McpInstallLinkProblem };
 
 export function ConnectorsPanel({
   handle,
@@ -254,11 +247,84 @@ export function ConnectorsPanel({
    */
   /** No folder is open, so there is no file to write into — not "an empty list". */
   const noFolder = store.status === 'unavailable';
+  /**
+   * **Nothing attached, and the folder has actually said so.**
+   *
+   * `loading` is not emptiness (design council, 2026-09-05): painting the empty state before the
+   * first read tells somebody with five connectors that they have none. So the empty card waits
+   * for a real answer, and `AttachedList` keeps its own "reading this folder" line for the window
+   * in between.
+   */
+  const isEmpty = store.status !== 'loading' && !noFolder && store.connectors.length === 0;
+  /*
+   * ── An install link, read from the address rather than from `window` ──────────────────────
+   *
+   * `?install=<base64 json>` on this destination is the shape Cursor and VS Code already publish
+   * as an "Add to …" button, and `parseMcpInstallLink` is deliberately strict about it: an
+   * unknown field refuses the whole payload and no value survives, because a confirmation that
+   * showed less than the truth is the exact CVE this surface has to avoid
+   * (`src/shared/lib/mcp-install-link.ts`).
+   *
+   * **The link opens the dialog and stops.** Nothing is written, the switch stays off, and the
+   * last thing on screen before the press is the command or the address, written out. The custom
+   * `ontology-atlas://` scheme is not registered with macOS in this change — that needs a Tauri
+   * plugin dependency — so today the only caller is a URL somebody pasted, which is the safest
+   * possible first caller for a parser like this one.
+   *
+   * ⚠️ **`useSearchParams`, not `window.location`.** Reading the address in an effect would set
+   * state a frame after the dialog had already painted closed, and this component renders on the
+   * server during the static export where `window` does not exist at all. The hook is
+   * locale-independent and SSR-safe, which is why `.claude/rules/architecture.md` keeps it from
+   * `next/navigation` while everything else navigates through `@/i18n/navigation`.
+   */
+  const searchParams = useSearchParams() as ReturnType<typeof useSearchParams> | null;
+  // `useSearchParams` is typed non-null but returns null outside a router — a component test
+  // rendering this panel on its own is the ordinary case, not a defect, and a panel that throws
+  // there would be a panel nobody can test in isolation.
+  const installParam = searchParams?.get('install') ?? null;
+  const arrival = useMemo(() => {
+    if (!installParam) return null;
+    return parseMcpInstallLink(`?config=${encodeURIComponent(installParam)}`, {
+      id: 'draft',
+      secretRef: connectorSecretRef,
+    });
+  }, [installParam]);
+  const incoming = useMemo(
+    () => (arrival?.ok && arrival.draft ? prefillFromRecord(arrival.draft) : null),
+    [arrival],
+  );
+  const linkNotice: InstallLinkNotice | null = !arrival
+    ? null
+    : !arrival.ok
+      ? { kind: 'refused', problem: arrival.problem ?? 'config-unreadable' }
+      : arrival.droppedValues.length > 0
+        ? { kind: 'dropped', keys: arrival.droppedValues }
+        : null;
   const [removedTick, setRemovedTick] = useState(0);
   useEffect(() => {
     if (removedTick === 0) return;
     addOpenRef.current?.focus();
-  }, [removedTick]);
+    /*
+     * ⚠️ **`connectors.length` is in the list on purpose** (2026-09-07). Removal is asynchronous:
+     * the tick is bumped when the confirmation closes, but the row leaves only when the folder
+     * has written. So the first pass focuses the small chip in the header — and then the last
+     * row goes, the panel swaps to the empty card, that chip unmounts, and focus falls back to
+     * the body. Re-running when the list actually changes puts it on the card's own door, which
+     * is the only control left on screen.
+     */
+  }, [removedTick, store.connectors.length]);
+
+  /*
+   * **A link opens the dialog once.** The comparison is against what was seen last render rather
+   * than an effect, so the dialog is already open on the frame the address is first read; and it
+   * is a comparison rather than a plain `Boolean(incoming)`, because somebody who closes the
+   * dialog must be able to leave it closed while the query is still in the address bar.
+   */
+  const [seenArrival, setSeenArrival] = useState<CustomPrefill | null>(null);
+  if (incoming && incoming !== seenArrival) {
+    setSeenArrival(incoming);
+    setAddOpen(true);
+  }
 
   return (
     <section
@@ -292,7 +358,7 @@ export function ConnectorsPanel({
         discarded one. A person could not tell the two apart. The Share tab already answers this
         state by asking for the folder; this is the same answer on the same screen.
       */}
-      {noFolder ? null : (
+      {noFolder || isEmpty ? null : (
         <div className="flex flex-wrap items-start justify-end gap-x-4 gap-y-2">
           <Chip
             ref={addOpenRef}
@@ -322,37 +388,11 @@ export function ConnectorsPanel({
         </div>
       ) : (
         <>
-      {/*
-        ── The standing warning, cut to two sentences (design council, 2026-09-05) ──────────────
-        Measured before the cut: this preamble was **296px, 35% of the 390 first screen**, standing
-        between the tab and the first row, and 83px over two rows in the installed app. A warning
-        nobody reaches the list past is not read more carefully; it is read less.
-
-        What survives is the pair a person cannot act safely without: **where the traffic goes and
-        who is not recording it**, and **what a token can do**. "Every connector starts off" left
-        with the intro paragraph — the rows say Off themselves, in the place the switch is. The
-        Claude-only sentence moved to the two places where a runtime is actually being chosen: the
-        connector's own dialog and the add dialog.
-      */}
-      <div
-        data-testid={`${testIdPrefix}-transfer`}
-        /*
-         * A left rule rather than a filled box: measured, the boxed form was 59px at 1440 against
-         * the 40px the seat set, and 16px of that was vertical padding buying nothing but weight.
-         * The rule is the quiet-aside grammar this panel already used, and it carries the same two
-         * sentences in 33px.
-         */
-        className="mt-2 break-keep border-l border-[color:var(--color-border-strong)] pl-2.5 text-label leading-label text-[color:var(--color-text-secondary)]"
-      >
-        <p>{t('transfer')}</p>
-        <p className="mt-1">{t('authority')}</p>
-      </div>
-
       {store.status === 'malformed' ? (
         <p
           role="status"
           data-testid={`${testIdPrefix}-malformed`}
-          className="mt-3 break-keep text-label leading-prose text-[color:var(--color-status-warning)]"
+          className="break-keep text-label leading-prose text-[color:var(--color-status-warning)]"
         >
           {t('malformed', { path: CONNECTORS_RELATIVE_PATH })}
         </p>
@@ -371,12 +411,74 @@ export function ConnectorsPanel({
         </p>
       ) : null}
 
+      {isEmpty ? (
+        /*
+         * ── The empty state, cut to a sentence, a line and a door (owner, 2026-09-07) ─────────
+         *
+         * What stood here was a warning about traffic and tokens, a second warning about what a
+         * token can do, a "still reading this computer" line, and then, in the quietest ink on
+         * the card, "Nothing attached yet" — four claims about a list that did not exist, above
+         * the one control that could make it exist, which sat off to the right in a chip.
+         *
+         * A person with no connectors cannot use any of that. **What is true before the first
+         * connector is one thing: nothing here reaches anything yet.** The transfer sentence is
+         * about traffic that is not happening. It is not deleted — the same disclosure stands
+         * under the list the moment there is a list, and the add dialog repeats it where a
+         * runtime is actually being chosen — but a warning read before there is anything to warn
+         * about is a warning read less carefully, which is the measurement the 2026-09-05 council
+         * already made about this exact block.
+         *
+         * One quiet line survives, because it is the one fact that changes what a person does
+         * next rather than how they feel: whatever you attach here talks to that service itself,
+         * and Atlas's transfer log does not cover it.
+         */
+        <div data-testid={`${testIdPrefix}-empty`}>
+          <p className="break-keep text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+            {t('emptyTitle')}
+          </p>
+          <p className="mt-1 max-w-prose break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+            {t('emptyBody')}
+          </p>
+          <Chip
+            ref={addOpenRef}
+            size="lg"
+            tone="accentOnTint"
+            data-testid={`${testIdPrefix}-add-open`}
+            className="mt-3 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus size={ICON_SIZE.sm} aria-hidden />
+            {t('addOpen')}
+          </Chip>
+          <p
+            data-testid={`${testIdPrefix}-transfer`}
+            className="mt-4 max-w-prose break-keep border-l border-[color:var(--color-border-strong)] pl-2.5 text-label leading-prose text-[color:var(--color-text-quaternary)]"
+          >
+            {t('transfer')}
+          </p>
+        </div>
+      ) : null}
+
       {/*
         **While this computer is being read, say so.** Discovery answers after the list does, and
         an empty "Found on this computer" is a different claim from "still looking" (design
-        council, 2026-09-05).
+        council, 2026-09-05). It belongs beside the list, not above an empty state that is not
+        waiting on it.
       */}
-      {canDiscover && discovered === null ? (
+      {linkNotice ? (
+        <p
+          role="status"
+          data-testid={`${testIdPrefix}-link-notice`}
+          data-link-notice={linkNotice.kind}
+          className="mt-3 break-keep text-label leading-prose text-[color:var(--color-status-warning)]"
+        >
+          {linkNotice.kind === 'dropped'
+            ? t('linkDroppedValues', { keys: linkNotice.keys.join(', ') })
+            : t('linkRefused', { reason: linkNotice.problem })}
+        </p>
+      ) : null}
+
+      {canDiscover && discovered === null && !isEmpty ? (
         <p
           role="status"
           data-testid={`${testIdPrefix}-scanning`}
@@ -395,6 +497,34 @@ export function ConnectorsPanel({
         onOpenDetail={setDetailId}
         testIdPrefix={testIdPrefix}
       />
+
+      {/*
+        **The standing disclosure, once, under the rows it is about.** Three facts a person cannot
+        act safely without: where the traffic goes and who is not recording it, what a token can
+        do, and which sessions carry any of this at all. It stands **below** the list because the
+        2026-09-05 measurement of the same block above the list was 296px — 35% of the first
+        screen — of warning between the tab and the first row; the same words after the rows cost
+        the same pixels and stop being a toll gate.
+      */}
+      {isEmpty ? null : (
+        <div
+          data-testid={`${testIdPrefix}-transfer`}
+          className="mt-4 max-w-prose break-keep border-l border-[color:var(--color-border-strong)] pl-2.5 text-label leading-prose text-[color:var(--color-text-quaternary)]"
+        >
+          <p>{t('transfer')}</p>
+          <p className="mt-1">{t('authority')}</p>
+          <p className="mt-1">
+            {t('runtimeNarrowing')}{' '}
+            <Link
+              href={DESTINATION_HREF.agents}
+              data-testid={`${testIdPrefix}-runtime-agents`}
+              className={controlClass({ shape: 'link', tone: 'accent', className: 'text-label' })}
+            >
+              {t('runtimeAgentsLink')}
+            </Link>
+          </p>
+        </div>
+      )}
 
       {/*
         **Everything that is not an attached row is behind a blocking dialog** (2026-09-05). The
@@ -420,6 +550,7 @@ export function ConnectorsPanel({
          */
         onAddDiscovered={(server) => addDiscovered(server)}
         onAddCustom={(draft) => store.upsert(draft)}
+        incoming={incoming}
         testIdPrefix={testIdPrefix}
       />
 
@@ -535,16 +666,13 @@ function AttachedList({
       </p>
     );
   }
-  if (connectors.length === 0) {
-    return (
-      <p
-        data-testid={`${testIdPrefix}-empty`}
-        className="mt-3 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
-      >
-        {t('none')}
-      </p>
-    );
-  }
+  /*
+   * Emptiness is the panel's, not this list's (2026-09-07). It used to end here in the quietest
+   * ink on the card — "Nothing attached yet" — under two warnings about traffic that was not
+   * happening. The panel now draws a card that says what a connector is and offers the one door,
+   * so a second sentence here would be the same claim twice.
+   */
+  if (connectors.length === 0) return null;
   const enabled = connectors.filter((connector) => connector.enabled).length;
   return (
     <>
@@ -870,343 +998,6 @@ function RemoveConfirmDialog({
   );
 }
 
-/**
- * **One discovered row per thing that actually runs.**
- *
- * The same server is normally registered in several places at once - anyone who set up two coding
- * tools has byte-identical entries in `~/.claude.json` and `~/.codex/config.toml` - and the
- * previous list drew one row per file. That is the same command offered two or three times, and
- * choosing between identical rows teaches a person nothing.
- *
- * **What makes two entries the same thing** is the transport plus the command and its arguments,
- * or the URL. Not the name: somebody who wrote `notion` in one file and `notion-mcp` in another
- * still registered one server, and the name is the part they were free to invent. The first
- * spelling seen wins the row, and every file it appeared in becomes a chip.
- */
-export interface DiscoveredGroup {
-  key: string;
-  server: DiscoveredConnector;
-  /** Every source id the identical entry appeared in, in the order discovery reported them. */
-  sources: string[];
-}
-
-export function groupDiscovered(servers: readonly DiscoveredConnector[]): DiscoveredGroup[] {
-  const groups = new Map<string, DiscoveredGroup>();
-  for (const server of servers) {
-    const runs =
-      server.transport === 'http'
-        ? (server.url ?? '').trim()
-        : [server.command ?? '', ...server.args].join(' ').trim();
-    const key = `${server.transport} ${runs}`;
-    const existing = groups.get(key);
-    if (!existing) {
-      groups.set(key, { key, server, sources: [server.source] });
-      continue;
-    }
-    if (!existing.sources.includes(server.source)) existing.sources.push(server.source);
-  }
-  return [...groups.values()];
-}
-
-/**
- * A source id, reduced to the one word a person recognises. `claude-user` and `claude-project` are
- * the same tool asked twice, so both read "claude"; naming the file instead would put
- * `~/.claude.json` on a chip, which says where the entry lives rather than which tool put it
- * there.
- */
-export function shortSourceKey(
-  source: string,
-): 'claude' | 'codex' | 'cursor' | 'folder' | 'other' {
-  if (source.startsWith('claude')) return 'claude';
-  if (source.startsWith('codex')) return 'codex';
-  if (source.startsWith('cursor')) return 'cursor';
-  if (source.startsWith('vault')) return 'folder';
-  return 'other';
-}
-
-type SourceKey = `source.${ReturnType<typeof shortSourceKey>}`;
-
-/**
- * What to tell somebody when the folder saved nothing.
- *
- * The store already answers this — `null` means there was no store to ask (no folder), and every
- * refusal carries its own status. Nothing was reading either, which is how a discarded write came
- * to look identical to a successful one.
- */
-type AddFailureReason = 'noFolder' | 'malformed' | 'writeFailed' | 'secret';
-type AddFailureKey = `addFailReason.${AddFailureReason}`;
-
-function addFailureReason(result: ConnectorWriteResult | null): AddFailureReason | null {
-  if (result === null) return 'noFolder';
-  switch (result.status) {
-    case 'saved':
-      return null;
-    case 'blocked_unavailable':
-      return 'noFolder';
-    case 'blocked_malformed':
-      return 'malformed';
-    case 'blocked_secret':
-      return 'secret';
-    default:
-      return 'writeFailed';
-  }
-}
-
-/**
- * **Adding a connector, as one errand.** Search, then what this machine already registers, then a
- * form for what it does not.
- *
- * The order is not decorative. Almost everyone attaching a connector has already typed its command
- * once, into the tool they use every day, so offering that list first makes the common case one
- * press; the by-hand form is what remains for a server nothing on this computer has heard of yet.
- */
-function AddConnectorDialog({
-  open,
-  onClose,
-  discovered,
-  canDiscover,
-  canStoreSecrets,
-  attachedNames,
-  onAddDiscovered,
-  onAddCustom,
-  testIdPrefix,
-}: {
-  open: boolean;
-  onClose: () => void;
-  /** `null` until discovery answers, and on any surface that cannot ask at all. */
-  discovered: DiscoveredConnector[] | null;
-  canDiscover: boolean;
-  canStoreSecrets: boolean;
-  attachedNames: Set<string>;
-  /** Resolves with what the folder actually did — `null` when there was no folder to ask. */
-  onAddDiscovered: (server: DiscoveredConnector) => Promise<ConnectorWriteResult | null>;
-  onAddCustom: (connector: ConnectorRecord) => Promise<ConnectorWriteResult | null>;
-  testIdPrefix: string;
-}) {
-  const t = useTranslations('connectors');
-  const [query, setQuery] = useState('');
-  /**
-   * Why the last attempt saved nothing, or `null` when nothing has failed.
-   *
-   * ⚠️ **The alert is what closing used to hide.** A write that never happened and a write that
-   * succeeded both ended with the dialog gone and "Nothing attached yet" underneath, so the person
-   * had no way to tell them apart. `ConnectorWriteResult` already distinguishes them; this reads it
-   * and stays put when the answer is not `saved`.
-   */
-  const [failure, setFailure] = useState<AddFailureReason | null>(null);
-
-  /** Run one write, keep the dialog open with a reason unless the folder actually saved. */
-  const attempt = async (write: () => Promise<ConnectorWriteResult | null>) => {
-    const result = await write();
-    const reason = addFailureReason(result);
-    if (reason === null) {
-      setFailure(null);
-      onClose();
-      return;
-    }
-    setFailure(reason);
-  };
-
-  const groups = useMemo(
-    () => groupDiscovered((discovered ?? []).filter((server) => !attachedNames.has(server.name))),
-    [attachedNames, discovered],
-  );
-  /*
-   * The search reads the **name and the command or address together**, because those are the two
-   * things a person remembers about a server they registered months ago, and either one alone
-   * leaves half of them unfindable.
-   */
-  const needle = query.trim().toLowerCase();
-  const matches = needle
-    ? groups.filter((group) =>
-        `${group.server.name} ${
-          group.server.url ?? [group.server.command, ...group.server.args].join(' ')
-        }`
-          .toLowerCase()
-          .includes(needle),
-      )
-    : groups;
-
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      size="md"
-      labelledBy={`${testIdPrefix}-add-title`}
-      testId={`${testIdPrefix}-add-dialog`}
-      className="max-h-[min(80vh,var(--dialog-max-h))] overflow-y-auto"
-    >
-      <h2
-        id={`${testIdPrefix}-add-title`}
-        className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
-      >
-        {t('addTitle')}
-      </h2>
-      {/*
-        The Claude-only sentence, second of the two places it now lives. Attaching is the other
-        moment a runtime matters: somebody who works in Codex should learn that here rather than
-        after a session comes back with the folder's server and nothing else.
-      */}
-      <p
-        data-testid={`${testIdPrefix}-add-runtime`}
-        className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
-      >
-        {t('runtimeNarrowing')}
-      </p>
-
-      {canDiscover ? (
-        <>
-          <Input
-            label={t('searchLabel')}
-            size="md"
-            type="search"
-            autoComplete="off"
-            spellCheck={false}
-            value={query}
-            placeholder={t('searchPlaceholder')}
-            data-testid={`${testIdPrefix}-search`}
-            onChange={(event) => setQuery(event.target.value)}
-            className="mt-3 w-full"
-          />
-          <p className="mt-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-            {t('foundTitle')}
-          </p>
-          {discovered === null ? null : matches.length === 0 ? (
-            <p
-              data-testid={`${testIdPrefix}-found-empty`}
-              className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
-            >
-              {needle ? t('foundNoneForSearch', { query: query.trim() }) : t('foundNone')}
-            </p>
-          ) : (
-            <ul data-testid={`${testIdPrefix}-found`} className="mt-2 flex flex-col gap-2">
-              {matches.map((group) => {
-                const server = group.server;
-                const usable = isAttachableTransport(server.transport);
-                const runs = server.url ?? [server.command, ...server.args].join(' ');
-                return (
-                  <li
-                    key={group.key}
-                    data-testid={`${testIdPrefix}-found-item`}
-                    data-connector-transport={server.transport}
-                    data-connector-sources={group.sources.join(' ')}
-                    className="flex items-start gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2"
-                  >
-                    <ServiceMark
-                      mark={resolveServiceMark(server.name, runs)}
-                      className="mt-0.5 text-[color:var(--color-text-tertiary)]"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-                        {server.name}
-                      </p>
-                      <code className="mt-0.5 block break-all font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">
-                        {runs}
-                      </code>
-                      <div className="mt-1 flex flex-wrap items-center gap-1">
-                        <span className="text-label leading-label text-[color:var(--color-text-quaternary)]">
-                          {t('sourceLabel')}
-                        </span>
-                        {[...new Set(group.sources.map(shortSourceKey))].map((key) => (
-                          <span
-                            key={key}
-                            data-testid={`${testIdPrefix}-found-source`}
-                            className={badgeClass({
-                              shape: 'micro',
-                              className:
-                                'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)]',
-                            })}
-                          >
-                            {t(`source.${key}` as SourceKey)}
-                          </span>
-                        ))}
-                      </div>
-                      {!usable ? (
-                        <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-status-warning)]">
-                          {t('foundUnsupported', { transport: server.transport })}
-                        </p>
-                      ) : null}
-                    </div>
-                    {usable ? (
-                      <Chip
-                        data-testid={`${testIdPrefix}-found-add`}
-                        onClick={() => void attempt(() => onAddDiscovered(server))}
-                      >
-                        {t('add')}
-                      </Chip>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </>
-      ) : (
-        /*
-         * Why it is missing and what still works - the degradation contract, not "coming soon". It
-         * stands **inside this dialog** because finding is what happens here; the list on the
-         * screen behind is fully usable, and putting this card out there would read as a verdict
-         * on the whole panel rather than on one step of one errand.
-         */
-        <div
-          role="status"
-          data-testid="connectors-discovery-unavailable"
-          className="mt-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2.5"
-        >
-          <div className="flex items-start gap-2">
-            <Info
-              size={ICON_SIZE.md}
-              aria-hidden
-              className="mt-0.5 shrink-0 text-[color:var(--color-text-quaternary)]"
-            />
-            <div className="min-w-0">
-              <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                {t('webTitle')}
-              </p>
-              <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
-                {t('webBody')}
-              </p>
-              <Link
-                href="/download/"
-                data-testid="connectors-web-get-app"
-                className={controlClass({
-                  shape: 'link',
-                  tone: 'accent',
-                  className: 'mt-2 text-label font-[var(--font-weight-signature)]',
-                })}
-              >
-                {t('webGetApp')}
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <CustomConnectorForm
-        onAdd={(connector) => void attempt(() => onAddCustom(connector))}
-        canStoreSecrets={canStoreSecrets}
-        testIdPrefix={testIdPrefix}
-      />
-
-      {failure ? (
-        <p
-          role="alert"
-          data-testid={`${testIdPrefix}-add-failed`}
-          className="mt-3 break-keep text-label leading-prose text-[color:var(--color-status-danger)]"
-        >
-          {t('addFailed', { reason: t(`addFailReason.${failure}` as AddFailureKey) })}
-        </p>
-      ) : null}
-
-      <div className="mt-4 flex justify-end">
-        <Button variant="ghost" onClick={onClose}>
-          {t('close')}
-        </Button>
-      </div>
-    </Dialog>
-  );
-}
-
 type ProblemKey = `problem.${ConnectorProblem}`;
 
 /**
@@ -1447,201 +1238,5 @@ function VariableFields({
         }),
       )}
     </div>
-  );
-}
-
-/** Adding one by hand — the path for a server that is not registered anywhere yet. */
-function CustomConnectorForm({
-  onAdd,
-  canStoreSecrets,
-  testIdPrefix,
-}: {
-  onAdd: (connector: ConnectorRecord) => void;
-  canStoreSecrets: boolean;
-  testIdPrefix: string;
-}) {
-  const t = useTranslations('connectors');
-  const [transport, setTransport] = useState<ConnectorTransport>('stdio');
-  const [name, setName] = useState('');
-  const [command, setCommand] = useState('');
-  const [args, setArgs] = useState('');
-  const [url, setUrl] = useState('');
-  const [keys, setKeys] = useState('');
-
-  const draft = useMemo<ConnectorRecord>(() => {
-    const id = 'draft';
-    const names = keys
-      .split(/[\s,]+/)
-      .map((key) => key.trim())
-      .filter(Boolean);
-    const entries: ConnectorValueEntry[] = names.map((key) =>
-      looksLikeSecretKey(key) ? { name: key, secretRef: connectorSecretRef(id, key) } : { name: key },
-    );
-    return {
-      ...EMPTY_STDIO,
-      id,
-      name: name.trim(),
-      transport,
-      ...(transport === 'stdio'
-        ? { command: command.trim(), args: args.split(/\s+/).filter(Boolean) }
-        : { url: url.trim() }),
-      env: transport === 'stdio' ? entries : [],
-      headers: transport === 'http' ? entries : [],
-    };
-  }, [args, command, keys, name, transport, url]);
-
-  const problems = connectorProblems(draft);
-
-  return (
-    <div className="mt-4 border-t border-[color:var(--color-divider)] pt-3">
-      <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-        {t('customTitle')}
-      </p>
-      <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
-        {t('customBody')}
-      </p>
-      {/*
-        **A program or an address is one exclusive choice, so it is a segmented control**
-        (2026-09-05). It used to be two chips wearing `aria-pressed`, which announces two
-        independent toggles that happen never to be pressed together - `design-build`'s table sends
-        two to four exclusive short values here, and `useRovingRadioGroup` inside it is what makes
-        the arrow keys behave like the one choice this is.
-      */}
-      <SegmentedControl
-        ariaLabel={t('transportLabel')}
-        value={transport}
-        onChange={setTransport}
-        testId={`${testIdPrefix}-custom-transport`}
-        className="mt-2"
-        options={[
-          {
-            value: 'stdio' as ConnectorTransport,
-            label: t('transport.stdio'),
-            testId: `${testIdPrefix}-custom-transport-stdio`,
-          },
-          {
-            value: 'http' as ConnectorTransport,
-            label: t('transport.http'),
-            testId: `${testIdPrefix}-custom-transport-http`,
-          },
-        ]}
-      />
-      <div className="mt-2 flex flex-col gap-2">
-        <Field
-          id={`${testIdPrefix}-custom-name`}
-          label={t('fieldName')}
-          value={name}
-          onChange={setName}
-          placeholder="notion"
-        />
-        {transport === 'stdio' ? (
-          <>
-            <Field
-              id={`${testIdPrefix}-custom-command`}
-              label={t('fieldCommand')}
-              hint={t('fieldCommandHint')}
-              value={command}
-              onChange={setCommand}
-              placeholder="/opt/homebrew/bin/npx"
-            />
-            <Field
-              id={`${testIdPrefix}-custom-args`}
-              label={t('fieldArgs')}
-              value={args}
-              onChange={setArgs}
-              placeholder="-y @notionhq/notion-mcp-server"
-            />
-          </>
-        ) : (
-          <Field
-            id={`${testIdPrefix}-custom-url`}
-            label={t('fieldUrl')}
-            value={url}
-            onChange={setUrl}
-            placeholder="https://mcp.example.com/mcp"
-          />
-        )}
-        <Field
-          id={`${testIdPrefix}-custom-keys`}
-          label={transport === 'stdio' ? t('fieldEnvKeys') : t('fieldHeaderKeys')}
-          hint={canStoreSecrets ? t('fieldKeysHint') : t('fieldKeysHintWeb')}
-          value={keys}
-          onChange={setKeys}
-          placeholder="NOTION_TOKEN"
-        />
-      </div>
-      {name.trim() && problems.length > 0 ? (
-        <p
-          role="status"
-          data-testid={`${testIdPrefix}-custom-problem`}
-          className="mt-2 break-keep text-label leading-prose text-[color:var(--color-status-warning)]"
-        >
-          {problems.map((problem) => t(`problem.${problem}` as ProblemKey)).join(' ')}
-        </p>
-      ) : null}
-      <Chip
-        data-testid={`${testIdPrefix}-custom-add`}
-        disabled={problems.length > 0}
-        className="mt-2"
-        onClick={() => {
-          const id = newConnectorId();
-          const rekey = (entries: ConnectorValueEntry[]) =>
-            entries.map((entry) =>
-              entry.secretRef ? { ...entry, secretRef: connectorSecretRef(id, entry.name) } : entry,
-            );
-          onAdd({
-            ...draft,
-            id,
-            env: rekey(draft.env),
-            headers: rekey(draft.headers),
-          });
-          setName('');
-          setCommand('');
-          setArgs('');
-          setUrl('');
-          setKeys('');
-        }}
-      >
-        {t('customAdd')}
-      </Chip>
-    </div>
-  );
-}
-
-/**
- * One field of the by-hand form. `Input` owns the accessible name and the hint wiring, so a
- * nameless field here does not compile — which is exactly the guarantee this form needs, since
- * every one of its values is a path or a variable name somebody has to read back.
- */
-function Field({
-  id,
-  label,
-  hint,
-  value,
-  placeholder,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-  value: string;
-  placeholder: string;
-  onChange: (next: string) => void;
-}) {
-  return (
-    <Input
-      id={id}
-      label={label}
-      hint={hint}
-      size="md"
-      type="text"
-      spellCheck={false}
-      autoComplete="off"
-      value={value}
-      placeholder={placeholder}
-      data-testid={id}
-      onChange={(event) => onChange(event.target.value)}
-      className="w-full"
-    />
   );
 }

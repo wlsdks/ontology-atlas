@@ -188,6 +188,20 @@ const RULES = [
     ],
   },
   {
+    /*
+     * The catalogue is committed data with a `--check` mode, exactly like the ACP registry beside
+     * it: a hand edit to the generated file, or a curation change that was never regenerated, is
+     * invisible in review and shows up as a row pointing at a package that does not exist. The
+     * check regenerates and diffs, and runs the generator's own tests in the same breath.
+     */
+    command: 'pnpm mcp:catalogue:check',
+    reason: 'the committed MCP connector catalogue or its generator changed',
+    matches: [
+      /^scripts\/build-mcp-catalogue\.(?:mjs|test\.mjs)$/,
+      /^src\/shared\/config\/mcp-catalogue(?:\.generated)?\.ts$/,
+    ],
+  },
+  {
     command: 'pnpm acp:registry:check',
     reason: 'ACP launch identity, isolation boundary, or release wiring changed',
     matches: [

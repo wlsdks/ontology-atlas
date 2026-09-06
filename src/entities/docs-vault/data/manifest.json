@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-09-06",
+  "generatedAt": "2026-09-07",
   "docs": [
     {
       "slug": "AGENT-DESIGN-METHOD",
@@ -479,6 +479,18 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/MCP-ONE-CLICK-2026-09-07",
+      "path": "docs/benchmark/MCP-ONE-CLICK-2026-09-07.md",
+      "title": "How other open-source clients make an MCP server one press — 2026-09-07",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Written to answer two owner questions on 2026-09-07: \"one-click MCP connection is how everyone does it now — npx installs, or a token from the provider? Find out how the others do it (open source).\" and \"how do I connect Notion, Atlassian, GitHub? Claude Code and Codex do it fast — is that because they are partners?\" E",
+      "wordCount": 2630,
+      "updatedAt": "2026-09-07",
+      "linksOut": []
+    },
+    {
       "slug": "benchmark/README",
       "path": "docs/benchmark/README.md",
       "title": "Benchmark — does the ontology actually help AI agents?",
@@ -810,8 +822,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29915,
-      "updatedAt": "2026-09-06",
+      "wordCount": 29912,
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -846,8 +858,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 107780,
-      "updatedAt": "2026-09-06",
+      "wordCount": 108129,
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "slug"
       ]
@@ -952,8 +964,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 32905,
-      "updatedAt": "2026-09-06",
+      "wordCount": 33376,
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "ANALYSIS-RECORDS",
         "slug",
@@ -6534,6 +6546,13 @@
             "type": "doc",
             "slug": "benchmark/FINDINGS-2026-09-06-wiki-probe",
             "title": "Findings 2026-09-06 · the sealed five-question wiki probe"
+          },
+          {
+            "name": "MCP-ONE-CLICK-2026-09-07",
+            "path": "benchmark/MCP-ONE-CLICK-2026-09-07",
+            "type": "doc",
+            "slug": "benchmark/MCP-ONE-CLICK-2026-09-07",
+            "title": "How other open-source clients make an MCP server one press — 2026-09-07"
           },
           {
             "name": "README",

@@ -1,7 +1,7 @@
 'use client';
 
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
-import { ChevronDown, MessageSquare, RefreshCw } from 'lucide-react';
+import { MessageSquare, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -11,7 +11,8 @@ import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip } from '@/shared/ui';
+import { Chip, Dialog } from '@/shared/ui';
+import { Input } from '@/shared/ui/input';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
 import { isGuardedRuntime } from '@/features/acp-session';
@@ -122,6 +123,8 @@ export function AcpRuntimeSettings({
    * short list there is nothing to bury.
    */
   const [othersOpen, setOthersOpen] = useState(false);
+  /** What the person is typing in the other-tools dialog. Reset every time it opens. */
+  const [othersQuery, setOthersQuery] = useState('');
 
   /**
    * Re-scan from the button — it is a response to a press, so it shows "searching".
@@ -329,56 +332,178 @@ export function AcpRuntimeSettings({
           </SettingsGroup>
 
           {others.length > 0 ? (
+            /*
+             * ── The rest, behind a dialog rather than a fold (owner, 2026-09-07) ──────────────
+             *
+             * *"Not like this — like MCP: a window opens and you scroll through it and pick the
+             * one you want to set up. With a search."* The disclosure was the wrong container for
+             * 36 rows. Expanded, it pushed a list nobody could scan onto the page a person had
+             * come to for the three tools they can actually use; collapsed, the only way to find
+             * one tool among 36 was to open it and read them all. There is no search inside a
+             * fold, and there is nowhere to put one.
+             *
+             * `Dialog` is what this repository already uses for an errand with a beginning and an
+             * end — scrim, focus trap, Escape, focus returned to the control that opened it — and
+             * it is the same primitive the connector dialog uses one destination away, which is
+             * the point: setting up a coding tool and attaching an MCP server should not feel
+             * like two different products.
+             *
+             * ⚠️ **With nothing confirmed, the door is the emphasis.** A person with zero tools
+             * has one line above this and nothing to do with it; the installation instructions
+             * live in these rows, so the chip carries the indigo rather than making somebody find
+             * a quiet control to reach the only answer on the screen (walkthrough, 2026-08-20 —
+             * the same reasoning that used to auto-expand the fold).
+             */
             <div className="grid min-w-0 gap-1.5">
               <Chip
                 size="lg"
-                tone="secondary"
+                tone={ready.length === 0 ? 'accentOnTint' : 'secondary'}
                 data-testid="app-settings-runtimes-others-toggle"
-                aria-expanded={othersOpen || ready.length === 0}
-                onClick={() => setOthersOpen((open) => !open)}
-                className={DETAIL_TOGGLE_CHIP}
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setOthersQuery('');
+                  setOthersOpen(true);
+                }}
+                className={
+                  ready.length === 0
+                    ? `${DETAIL_TOGGLE_CHIP} border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]`
+                    : DETAIL_TOGGLE_CHIP
+                }
               >
-                <ChevronDown
-                  size={ICON_SIZE.md}
-                  aria-hidden
-                  className={
-                    othersOpen || ready.length === 0
-                      ? 'rotate-180 transition-transform'
-                      : 'transition-transform'
-                  }
-                />
+                <Search size={ICON_SIZE.md} aria-hidden />
                 {ready.length === 0
                   ? t('othersHeadingEmpty', { count: others.length })
                   : t('othersHeading', { count: others.length })}
               </Chip>
-              {othersOpen || ready.length === 0 ? (
-                <>
-                  {/* What 「Cannot Verify」 means is explained only while those rows are visible — someone who has not expanded has nothing to explain. */}
-                  {others.some((r) => r.state === 'cli-unknown') ? (
-                    <p
-                      data-testid="app-settings-runtimes-unknown-note"
-                      className="break-keep px-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
-                    >
-                      {t('unknownExplainer')}
-                    </p>
-                  ) : null}
-                  <SettingsGroup>
-                    {others.map((runtime) => (
-                      <RuntimeRow
-                        key={runtime.id}
-                        runtime={runtime}
-                        onOpenChat={onOpenChat}
-                        onRuntimesChanged={() => void refresh()}
-                      />
-                    ))}
-                  </SettingsGroup>
-                </>
-              ) : null}
+              <OtherRuntimesDialog
+                open={othersOpen}
+                onClose={() => setOthersOpen(false)}
+                runtimes={others}
+                query={othersQuery}
+                onQueryChange={setOthersQuery}
+                onOpenChat={onOpenChat}
+                onRuntimesChanged={() => void refresh()}
+              />
             </div>
           ) : null}
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * **Every other coding tool, in one scrolling window with a search.**
+ *
+ * The list is 38 rows and only two or three of them are usable on any given machine, so this
+ * holds the other 36. What a person does here is find one by name and read what it needs — which
+ * is a search and a list, and neither fits in the fold this replaced.
+ *
+ * ## What a row says, and what it does not
+ *
+ * The same `RuntimeRow` the ready group uses, unchanged. That is deliberate: a row that looked
+ * different in here would be a second answer to "what state is this tool in", and the states are
+ * the same states. The action on an unusable row is a link to that tool's own instructions and
+ * nothing more — Atlas does not run an install script it cannot show as a diff
+ * (`.claude/rules/forbidden.md`, and the reasoning written out in `RuntimeRow` below).
+ *
+ * ## Search reads the name and the description together
+ *
+ * Somebody looking for "the Google one" does not remember `gemini`, and somebody looking for
+ * `amp` does not remember Sourcegraph. Either alone leaves half of them unfindable, which is the
+ * same reasoning the connector dialog's search records.
+ */
+function OtherRuntimesDialog({
+  open,
+  onClose,
+  runtimes,
+  query,
+  onQueryChange,
+  onOpenChat,
+  onRuntimesChanged,
+}: {
+  open: boolean;
+  onClose: () => void;
+  runtimes: AcpRuntimeStatus[];
+  query: string;
+  onQueryChange: (next: string) => void;
+  onOpenChat: (runtimeId: string) => void;
+  onRuntimesChanged: () => void;
+}) {
+  const t = useTranslations('nav.settingsMenu.runtimes');
+  const needle = query.trim().toLowerCase();
+  const matches = needle
+    ? runtimes.filter((runtime) =>
+        `${runtime.label} ${runtime.description} ${runtime.id}`.toLowerCase().includes(needle),
+      )
+    : runtimes;
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      size="md"
+      labelledBy="app-settings-runtimes-others-title"
+      testId="app-settings-runtimes-others-dialog"
+      className="max-h-[min(80vh,var(--dialog-max-h))] overflow-y-auto"
+    >
+      <h2
+        id="app-settings-runtimes-others-title"
+        className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+      >
+        {t('othersDialogTitle', { count: runtimes.length })}
+      </h2>
+      {/*
+        What "could not check" means, stated once at the top rather than on every row. Nineteen
+        copies of one sentence is the defect this screen already went through and recorded; the
+        explanation goes before the list so somebody reading in order meets it first.
+      */}
+      {runtimes.some((runtime) => runtime.state === 'cli-unknown') ? (
+        <p
+          data-testid="app-settings-runtimes-unknown-note"
+          className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+        >
+          {t('unknownExplainer')}
+        </p>
+      ) : null}
+      <Input
+        label={t('othersSearchLabel')}
+        size="md"
+        type="search"
+        autoComplete="off"
+        spellCheck={false}
+        value={query}
+        placeholder={t('othersSearchPlaceholder')}
+        data-testid="app-settings-runtimes-others-search"
+        onChange={(event) => onQueryChange(event.target.value)}
+        className="mt-3 w-full"
+      />
+      {matches.length === 0 ? (
+        <p
+          data-testid="app-settings-runtimes-others-empty"
+          className="mt-3 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+        >
+          {t('othersNoneForSearch', { query: query.trim() })}
+        </p>
+      ) : (
+        <div className="mt-3" data-testid="app-settings-runtimes-others-list">
+          <SettingsGroup>
+            {matches.map((runtime) => (
+              <RuntimeRow
+                key={runtime.id}
+                runtime={runtime}
+                onOpenChat={onOpenChat}
+                onRuntimesChanged={onRuntimesChanged}
+              />
+            ))}
+          </SettingsGroup>
+        </div>
+      )}
+      <div className="mt-4 flex justify-end">
+        <Chip size="lg" tone="secondary" onClick={onClose} className={DETAIL_TOGGLE_CHIP}>
+          {t('othersClose')}
+        </Chip>
+      </div>
+    </Dialog>
   );
 }
 

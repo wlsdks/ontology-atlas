@@ -59,6 +59,8 @@
     "notice:check": "node scripts/build-notice.mjs --check",
     "mcp:build-binary": "node scripts/build-mcp-binary.mjs",
     "acp:registry": "node scripts/build-acp-registry.mjs",
+    "mcp:catalogue": "node scripts/build-mcp-catalogue.mjs",
+    "mcp:catalogue:check": "node scripts/build-mcp-catalogue.mjs --check && node --test scripts/build-mcp-catalogue.test.mjs",
     "acp:registry:check": "node scripts/build-acp-registry.mjs --check",
     "mcp:verify-binary": "node scripts/verify-mcp-binary.mjs",
     "desktop:build:app": "node scripts/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app",

@@ -1283,6 +1283,8 @@ When the screen first opens, only read-only tools are called (`git_status` / `gi
 
 **What left on 2026-09-05**: the folder's own MCP connection and the connectors moved to `/mcp`. This screen keeps the runner list, the connection checks, the app-only install and repair, and opening a conversation.
 
+**What changed on 2026-09-07**: only the tools Atlas confirmed on this machine are listed inline. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product. Nothing left the list; a fold of 36 rows had nowhere to put a search.
+
 ### `/mcp` — MCP (new 2026-09-05)
 
 **One sentence on what this screen does**: everything MCP — the folder's own server
@@ -1339,9 +1341,46 @@ vault server.
 - **Name collisions are called out first.** Codex silently drops an ACP-supplied server
   whose name a config layer already holds.
 
+**Three ways in, under one search (2026-09-07).** The add dialog has tabs: *Found here*
+(this machine's own config files), *Catalogue*, and *By hand*. One search box above the
+strip filters all three, because somebody typing "notion" does not yet know which of them
+will answer.
+
+- **The catalogue is a committed file**, `src/shared/config/mcp-catalogue.generated.ts`,
+  written by `pnpm mcp:catalogue` from the official MCP Registry (whose metadata is
+  CC0-1.0) plus vendor pages a person read on a stated date. **Nothing is fetched while
+  the app runs** — the same rule `scripts/build-acp-registry.mjs` already follows. It
+  carries no download count, no ranking and no "recommended", and the screen states its
+  size, its capture date, that Atlas has audited none of it, and that *By hand* reaches
+  everything it does not list.
+- **Two shapes, kept apart, because they ask different things.** A **hosted address**
+  (Notion `https://mcp.notion.com/mcp`, Atlassian `https://mcp.atlassian.com/v2/mcp`,
+  GitHub `https://api.githubcopilot.com/mcp/`) asks for nothing: the **coding agent**
+  opens the sign-in window and holds what comes back. Atlas performs no OAuth, stores no
+  token for it, and removing the row does not revoke it — all three of which the row
+  says. A **local program** asks for exactly one credential, with a link to the page that
+  issues it.
+- **The program is chosen, not typed.** `resolve_connector_runtimes` resolves a fixed
+  allow-list — `npx`, `node`, `uvx`, `python3`, `docker` — to absolute paths on this
+  machine and shows them. It opens no file, lists no directory and executes nothing. This
+  replaces a field that asked a person to type a full path, which existed because the
+  agent's child inherits no `PATH`.
+- **A variable is a name and a value on one row.** Marked secret, the value goes to the
+  keychain and the folder's file gets the name; a credential-shaped name cannot be
+  unmarked.
+- **Where a row came from is recorded.** `origin` holds `catalogue:<id>@<capture date>`,
+  so the folder can say which entry and which capture produced it.
+- **An install link only pre-fills.** `ontology-atlas://mcp/install?name=&config=<base64>`
+  (also reachable as `?install=` on `/mcp`) opens the dialog filled in and waits for the
+  press. An unknown field refuses the whole payload, no value survives, and every
+  argument is rendered verbatim — the lesson of CVE-2025-54133, recorded with its sources
+  in `docs/benchmark/MCP-ONE-CLICK-2026-09-07.md`. Registering the URL scheme with macOS
+  is a named follow-up; it needs a Tauri plugin dependency this change did not add.
+
 **On the web**: adding, editing and removing connectors work (the list is in the folder,
-which a browser holds). Finding what is already registered and keeping a token are
-app-only, and the panel says so with somewhere to go.
+which a browser holds), and the catalogue and the by-hand form work unchanged. Finding
+what is already registered, resolving a runtime path, and keeping a token are app-only,
+and the panel says so with somewhere to go.
 
 ## 3. MCP server (current runtime inventory)
 

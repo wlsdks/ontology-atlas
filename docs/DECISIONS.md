@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-07 — Attaching an MCP server is a catalogue pick; a deep link only pre-fills
+
+**Why**: the owner read the add dialog in the installed app — *"split what was found and what is being connected into tabs… I don't know what I'm supposed to do here. Everyone does one-click MCP now"* — and asked how Notion, Atlassian and GitHub connect, and whether Claude Code is fast because it is a partner. The form asked an absolute path and variable **names**, values entered elsewhere. Nobody knows where their own `npx` is, and nothing there held the word Notion.
+**Prior**: upholds the two 2026-09-05 connector records; extends `surfaces.md`'s config-read exception with a read-only path resolver that opens no file and runs nothing.
+**Decision**: three tabs under one search — Found here, Catalogue, By hand. The catalogue is a committed generated file built by a person from the MCP Registry (CC0-1.0) plus vendor pages read on a stated date; never fetched at runtime, no count or rank, and the screen says it is short, dated and unaudited. The two shapes stay apart: a hosted address asks nothing and ends in the **coding agent's** browser consent — Atlas does no OAuth and holds no token, so removing the row revokes nothing — while a local program asks one credential with a link to where it is issued. Picking one fills the by-hand form, which offers this machine's resolved runtimes and takes a variable as name → value, the value going to the keychain. An install link only pre-fills: an unknown field refuses it, no value crosses, nothing turns on.
+**Dissent**: po-evidence would ship the local half alone — nobody measured whether `claude-agent-acp` signs in for a session-supplied http server, so a hosted row may attach and 401, worse than the form because Atlas offered it. po-steward: a curated list is endorsement, and refusing a refresh guarantees staleness.
+**Falsifier**: a hosted row that attaches and 401s with no sign-in retires hosted rows to "copy this into your own tool"; an entry with no public source; an attach with no press.
+**Owner**: jinan
+
 ## 2026-09-06 — The Library pane is the graph; the shelf is a popup
 
 **Why**: the owner opened the installed app on a folder a local `qwen3:8b` had compiled and read it as two half-screens: *"shouldn't the Library tab's default be the graph? why is the area split above and below? the area underneath should be a popup."* Measured at 1512×982: a 320px band took 41% of the pane, its picture filled 40.4% of that width, and the shelf under it needed 850px of a 579px box. Below `lg` the shelf was not drawn at all — a zero rect at 390 and 768.
