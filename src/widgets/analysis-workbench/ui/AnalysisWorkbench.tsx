@@ -8,14 +8,33 @@ import remarkGfm from 'remark-gfm';
 import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compareAnalysisBasis, latestFindingReview, readAnalysisHistory, serializeAnalysisRecord, verifyAnalysisEvidence, type AnalysisCompatibility, type AnalysisFinding, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
 import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
-import { Button, Checkbox, Chip, Disclosure, IconButton, Select, TabBar, Textarea, useToast } from '@/shared/ui';
+import { Checkbox, Chip, Disclosure, IconButton, Select, TabBar, Textarea, useToast } from '@/shared/ui';
 import { RotateCcw, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
-/** Hairline between groups: the separation the tabs lacked (owner, 2026-09-06). */
+/**
+ * Hairline between groups (owner, 2026-09-06) — **now only where a label does not already
+ * separate the group.** A rule above a group that announces itself in words is a second
+ * separator doing the first one's job; the history view carried four of them around three
+ * labelled sections, which is what the panel read as when the owner called it odd.
+ */
 const DIVIDED = 'border-t border-[color:var(--color-divider)] pt-4';
-/** The small section label the Library and the workbench share: mono caps, quaternary ink. */
-const EYEBROW = 'font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]';
+/**
+ * The section label.
+ *
+ * ⚠️ **It was mono uppercase with caps tracking, and Korean has no case** (owner,
+ * 2026-09-06: the workbench eyebrow *"spaces the syllables apart and reads broken"*).
+ * `:lang(ko)` already zeroes the caps steps (`docs/DESIGN-SYSTEM.md`, "Caps tracking is a
+ * Latin device"), so the letter-spacing was gone — but the **mono metrics were not**, and a
+ * fixed-advance face pushes Hangul blocks apart on its own. `uppercase` was a no-op on
+ * Hangul from the start, so what remained of the eyebrow specification was only its
+ * destructive half.
+ *
+ * Sans at the caption step, emphasis weight, tertiary ink: the label separates by weight and
+ * ink rather than by a typeface the body text never uses. Tertiary rather than quaternary
+ * because this line names the group a person is about to read.
+ */
+const SECTION_LABEL = 'text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]';
 
 type Tab = 'meaning' | 'history' | 'conversation';
 const EMPTY_RECORDS: AnalysisRecord[] = [];
@@ -267,9 +286,19 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
     */}
     {tab === 'meaning' ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
       <div className="flex flex-col gap-2">
+        {/*
+          ⚠️ **One row, one step, one corner** (measured 2026-09-06 at a 460px panel). Analyze was
+          a `Button` — `rounded-panel` (12px) and `text-body-lg` (14px) — standing beside a chip at
+          `rounded-chip` (6px) and `text-label` (11px). Same 32px height, two corners and two type
+          steps, which is what read as "a large pill beside a smaller chip of a different shape".
+
+          The primary is now the same chip box wearing the value layer's filled-indigo tone, so
+          what separates it from the action next to it is the fill alone — the one thing that is
+          supposed to say "this is the primary".
+        */}
         {onRequest ? <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" onClick={() => request(false)}>{t('analyze')}</Button>
-          {relationNoteGaps > 0 && context.mode === 'meaning' ? <Chip data-testid="workbench-fill-notes" onClick={requestNotes}>{t('fillNotes', { count: relationNoteGaps })}</Chip> : null}
+          <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('analyze')}</Chip>
+          {relationNoteGaps > 0 && context.mode === 'meaning' ? <Chip size="lg" data-testid="workbench-fill-notes" onClick={requestNotes}>{t('fillNotes', { count: relationNoteGaps })}</Chip> : null}
         </div> : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
         <p className="text-caption text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p>
       </div>
@@ -278,10 +307,23 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
     {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1" aria-busy={busy || readPending}>
       {/* One control row: which version, reread, ask again. The two chips that led the tab
           looked like every other chip below them; the version picker is the row's subject. */}
+      {/*
+        ⚠️ **Three controls, three heights, and a label that could not fit** (measured 2026-09-06
+        at a 460px panel): the picker stood at 40px, reread at 28px and re-analyze at 32px, and the
+        picker's own value — the word for "latest", a full date and time down to the second, and an
+        eight-character id — measured 41 characters and ran out of its 274px trigger, ending in an
+        ellipsis. A picker whose current value is cut off cannot say which version is on screen,
+        which is the one thing it exists to say.
+
+        All three now stand at 32px, and the trigger keeps only what identifies the version to a
+        person: latest, then the date and time at `dateStyle: 'short'`. The eight-character id is
+        machine identity — it moves into the option's description line, in front of the request it
+        answered, where the list has room to print it whole.
+      */}
       <div className="flex flex-wrap items-center gap-2">
-        {runs.length ? <Select ariaLabel={t('version')} value={selected?.id ?? ''} onChange={setSelectedId} className="min-w-0 flex-1 basis-48" options={runs.map((run, index) => ({ value: run.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(run.createdAt).toLocaleString(locale)} · ${run.id.slice(0, 8)}`, description: run.request.text.slice(0, 100) }))} /> : null}
-        {context.handle ? <IconButton label={t('refresh')} onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden /></IconButton> : null}
-        {onRequest ? <Button size="sm" onClick={() => request(false)}>{t('reanalyze')}</Button> : null}
+        {runs.length ? <Select size="md" ariaLabel={t('version')} value={selected?.id ?? ''} onChange={setSelectedId} className="min-w-0 flex-1 basis-48" options={runs.map((run, index) => ({ value: run.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(run.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}`, description: `${run.id.slice(0, 8)} · ${run.request.text.slice(0, 80)}` }))} /> : null}
+        {context.handle ? <IconButton size="lg" label={t('refresh')} onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden /></IconButton> : null}
+        {onRequest ? <Chip size="lg" tone="onAccent" onClick={() => request(false)}>{t('reanalyze')}</Chip> : null}
       </div>
       {!context.handle ? <p>{t('openFolder')}</p> : null}
       {context.handle && readPending ? <p role="status">{t('loadingHistory')}</p> : null}
@@ -289,7 +331,7 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
       {selected ? <>
         {selected === runs[0] && earlierQuestions.length ? <Disclosure summary={t('earlierQuestions', { count: earlierQuestions.length })}>
           <p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('earlierQuestionsNote')}</p>
-          <div className="mt-2 flex flex-col items-start gap-2">{earlierQuestions.map(({ run, finding }) => <Chip key={`${run.id}:${finding.id}`} onClick={() => setSelectedId(run.id)}>{finding.title} · {run.id.slice(0, 8)}</Chip>)}</div>
+          <div className="mt-2 flex flex-col items-start gap-2">{earlierQuestions.map(({ run, finding }) => <Chip key={`${run.id}:${finding.id}`} size="lg" onClick={() => setSelectedId(run.id)}>{finding.title} · {run.id.slice(0, 8)}</Chip>)}</div>
         </Disclosure> : null}
         {/*
           The scope is the heading (the picker already says the date and id); the outcome, the
@@ -302,38 +344,38 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
           <p className="text-caption text-[color:var(--color-text-secondary)]">{t(`outcome.${selected.origin.outcome}`)} · {t(`basis.${compatibility?.status ?? 'checking'}`)} · {t(selected.qualification.status === 'grounded' ? 'grounded' : 'unverified')}</p>
           <p className="text-caption text-[color:var(--color-text-secondary)]">{t('readCoverage', { count: selected.evidence.length })}</p>
         </div>
-        <section className={cn('space-y-3', DIVIDED)}>
+        <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <p className={EYEBROW}>{t('findingsEyebrow', { count: selected.findings.length })}</p>
+            <p className={SECTION_LABEL}>{t('findingsEyebrow', { count: selected.findings.length })}</p>
             {onFindingsChange && selected.findings.length ? <Checkbox label={t('showIssues')} checked={showIssues && overlayReady} onChange={(event) => setShowIssues(event.target.checked)} disabled={!overlayReady} /> : null}
           </div>
           {onFindingsChange && selected.findings.length ? <p className="text-caption text-[color:var(--color-text-secondary)]">{overlayReady ? t('issueLegend') : t('overlayUnavailable')}</p> : null}
         {selected.findings.length === 0 ? <p>{t('noFindings')}</p> : selected.findings.map((finding) => {
           const latestReview = latestFindingReview(reviews, selected.id, finding.id);
           return <article key={finding.id} className="space-y-3 rounded-card border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
-            <h4 className="text-body-lg font-[var(--font-weight-strong)]">? {finding.title}</h4><p className="whitespace-pre-wrap">{finding.detail}</p>
+            <h4 className="text-body font-[var(--font-weight-strong)]">? {finding.title}</h4><p className="whitespace-pre-wrap">{finding.detail}</p>
             {latestReview ? <p className="text-caption">{t(`review.${latestReview.disposition}`)} · {latestReview.rationale}</p> : null}
-            <div className="flex flex-wrap gap-2">{onFinding ? <Chip onClick={() => {
+            <div className="flex flex-wrap gap-2">{onFinding ? <Chip size="lg" onClick={() => {
               if (!onFinding(finding, selected)) { setNotice(null); setError(t('targetUnavailable')); }
               else { setError(null); setNotice(t(window.matchMedia('(min-width: 1024px)').matches ? 'targetSelected' : 'targetSelectedSheet')); }
-            }}>{t('showOnMap')}</Chip> : null}{writable ? <Chip onClick={() => { setReviewing(finding.id); setReviewText(''); }}>{t('reviewAction')}</Chip> : null}</div>
-            {finding.evidenceSlugs.map((slug) => <Disclosure key={slug} summary={<span className="break-all">{t('evidence')} · {slug}</span>}><div className="mt-2 space-y-2">{onEvidence ? <Chip onClick={() => onEvidence(slug)}>{t('openCurrent')}</Chip> : null}<pre className="atlas-scroll-quiet whitespace-pre-wrap break-words text-caption">{selected.evidence.find((item) => item.slug === slug)?.body ?? t('evidenceMissing')}</pre></div></Disclosure>)}
-            {reviewing === finding.id ? <div className="space-y-2"><Textarea label={t('reviewReason')} value={reviewText} onChange={(event) => setReviewText(event.target.value)} rows={3} /><div className="flex flex-wrap gap-2"><Chip disabled={!reviewText.trim() || busy} onClick={() => void review(finding.id, 'retain')}>{t('retain')}</Chip><Chip disabled={!reviewText.trim() || busy} onClick={() => void review(finding.id, 'dismiss')}>{t('dismiss')}</Chip></div><p className="text-caption text-[color:var(--color-text-secondary)]">{t('reviewBoundary')}</p></div> : null}
+            }}>{t('showOnMap')}</Chip> : null}{writable ? <Chip size="lg" onClick={() => { setReviewing(finding.id); setReviewText(''); }}>{t('reviewAction')}</Chip> : null}</div>
+            {finding.evidenceSlugs.map((slug) => <Disclosure key={slug} summary={<span className="break-all">{t('evidence')} · {slug}</span>}><div className="mt-2 space-y-2">{onEvidence ? <Chip size="lg" onClick={() => onEvidence(slug)}>{t('openCurrent')}</Chip> : null}<pre className="atlas-scroll-quiet whitespace-pre-wrap break-words text-caption">{selected.evidence.find((item) => item.slug === slug)?.body ?? t('evidenceMissing')}</pre></div></Disclosure>)}
+            {reviewing === finding.id ? <div className="space-y-2"><Textarea label={t('reviewReason')} value={reviewText} onChange={(event) => setReviewText(event.target.value)} rows={3} /><div className="flex flex-wrap gap-2"><Chip size="lg" disabled={!reviewText.trim() || busy} onClick={() => void review(finding.id, 'retain')}>{t('retain')}</Chip><Chip size="lg" disabled={!reviewText.trim() || busy} onClick={() => void review(finding.id, 'dismiss')}>{t('dismiss')}</Chip></div><p className="text-caption text-[color:var(--color-text-secondary)]">{t('reviewBoundary')}</p></div> : null}
           </article>;
         })}
         </section>
         {selected.observations.map((observation, index) => <ArchitectureObservation key={`${observation.toolCallId}:${index}`} result={observation.result} />)}
-        <section className={cn('space-y-3', DIVIDED)}>
-          <p className={EYEBROW}>{t('answer')}</p>
+        <section className="space-y-3">
+          <p className={SECTION_LABEL}>{t('answer')}</p>
           <div className="space-y-3 break-words text-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ alt }) => <span>{alt}</span> }}>{selected.answer}</ReactMarkdown></div>
         </section>
         <div className={cn('space-y-2', DIVIDED)}>
   {selected.profileSnapshot ? <Disclosure summary={t('profileSnapshot')}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{selected.profileSnapshot.markdown}</pre></Disclosure> : null}
   <Disclosure summary={t('basisDetails')}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{JSON.stringify({ request: selected.request, origin: selected.origin, basis: selected.basis, sourceAccess: selected.sourceAccess, qualification: selected.qualification, current: compatibility }, null, 2)}</pre></Disclosure>
         </div>
-        <div className="flex flex-wrap gap-2">{onRequest ? <Chip onClick={() => request(true)}>{t('followUp')}</Chip> : null}<Chip onClick={() => exportMarkdown(serializeAnalysisRecord(selected), selected.id)}>{t('export')}</Chip></div>
+        <div className="flex flex-wrap gap-2">{onRequest ? <Chip size="lg" onClick={() => request(true)}>{t('followUp')}</Chip> : null}<Chip size="lg" onClick={() => exportMarkdown(serializeAnalysisRecord(selected), selected.id)}>{t('export')}</Chip></div>
       </> : null}
-      {loaded?.handle === context.handle && loaded?.cursor ? <Chip onClick={() => void refresh(loaded.cursor)}>{t('loadOlder')}</Chip> : null}
+      {loaded?.handle === context.handle && loaded?.cursor ? <Chip size="lg" onClick={() => void refresh(loaded.cursor)}>{t('loadOlder')}</Chip> : null}
       {loaded?.handle === context.handle && loaded?.problems.length ? <Disclosure summary={t('recordProblems', { count: loaded.problems.length })}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{loaded.problems.join('\n')}</pre></Disclosure> : null}
       <p className="mt-auto pt-2 text-caption text-[color:var(--color-text-quaternary)]">{t('diagnosticOnly')}</p>
     </div> : null}
@@ -350,7 +392,7 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
       <span className="min-w-0 break-keep">{t(`save.${saved.status}`)}</span>
       {saved.status === 'error' ? <>
         <span className="min-w-0 break-keep">{saved.error}</span>
-        {saved.record ? <>{writable && !saved.record.qualification.reasons.includes('turn_origin_mismatch') ? <Chip onClick={() => { if (context.handle && saved.record) void appendAnalysisRecord(context.handle, saved.record, context.writable).then(() => setSaveState?.({ ...saved, status: 'saved', error: null })).catch((failure: Error) => setError(failure.message)); }}>{t('retrySave')}</Chip> : null}<Chip onClick={() => exportMarkdown(serializeAnalysisRecord(saved.record!), saved.record!.id)}>{t('export')}</Chip></> : saved.rawAnswer ? <Chip onClick={() => exportMarkdown(saved.rawAnswer!, saved.id)}>{t('export')}</Chip> : null}
+        {saved.record ? <>{writable && !saved.record.qualification.reasons.includes('turn_origin_mismatch') ? <Chip size="lg" onClick={() => { if (context.handle && saved.record) void appendAnalysisRecord(context.handle, saved.record, context.writable).then(() => setSaveState?.({ ...saved, status: 'saved', error: null })).catch((failure: Error) => setError(failure.message)); }}>{t('retrySave')}</Chip> : null}<Chip size="lg" onClick={() => exportMarkdown(serializeAnalysisRecord(saved.record!), saved.record!.id)}>{t('export')}</Chip></> : saved.rawAnswer ? <Chip size="lg" onClick={() => exportMarkdown(saved.rawAnswer!, saved.id)}>{t('export')}</Chip> : null}
       </> : null}
     </div> : null}
   </section>;

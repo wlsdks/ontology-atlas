@@ -4,8 +4,14 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { Checkbox, Chip, Disclosure } from '@/shared/ui';
 
-/** The small section label the Library and the workbench share: mono caps, quaternary ink. */
-const EYEBROW = 'font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]';
+/**
+ * The section label — **sans, not mono caps** (owner, 2026-09-06). The reasoning, and the
+ * measurement behind it, is in `AnalysisWorkbench.tsx` beside the same constant: `uppercase` does
+ * nothing to Hangul, `:lang(ko)` already zeroes the caps tracking, and what was left of the
+ * eyebrow was a fixed-advance face pushing syllable blocks apart. Kept identical to the
+ * workbench's so the two halves of one panel do not label their groups two different ways.
+ */
+const SECTION_LABEL = 'text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]';
 
 /** Explanatory UI for the normative kinds and relation directions in the Atlas specification. */
 export function MeaningContext({ node, relations, onSelectRelation, onEvidence, showLabels, onShowLabelsChange }: {
@@ -30,30 +36,43 @@ export function MeaningContext({ node, relations, onSelectRelation, onEvidence, 
    * display switch on its own line; the glossary folded under one question at the end.
    */
   const divided = 'border-t border-[color:var(--color-divider)] pt-4';
+  /*
+   * ⚠️ **A rule needs something above it to divide** (measured 2026-09-06, 460px panel). With
+   * nothing picked this tab was one sentence, a rule, a switch and a fold, a rule, and another
+   * fold — three hairlines around two lines of content, and the first thing the eye met after the
+   * instruction was a horizontal line rather than the switch it was drawing.
+   *
+   * The map-display switch and the two folds are one trailing group — what the map shows and what
+   * the words mean — so they take one rule between them, and they take it only when something
+   * stands above them to be divided from.
+   */
+  const trailing = node || relations.length ? divided : '';
   return <div className="flex flex-col gap-4">
     {node ? <section className="space-y-2">
-      <p className={EYEBROW}>{kindsLabel(selectedKind)}</p>
+      <p className={SECTION_LABEL}>{kindsLabel(selectedKind)}</p>
       <h3 className="text-body-lg font-[var(--font-weight-strong)]">{node.title}</h3>
       <p className="text-caption text-[color:var(--color-text-secondary)]">{glossary(`criteria.${selectedKind}`)}</p>
       <p className="whitespace-pre-wrap">{node.summary?.trim() || t('definitionMissing')}</p>
-      <Chip onClick={() => onEvidence(node.id)}>{t('openDefinition')}</Chip>
+      <Chip size="lg" onClick={() => onEvidence(node.id)}>{t('openDefinition')}</Chip>
     </section> : <p>{t('selectNode')}</p>}
-    {node || relations.length ? <section className={cn('space-y-3', divided)}>
-      <p className={EYEBROW}>{t('relationsEyebrow')}</p>
+    {node || relations.length ? <section className={cn('space-y-3', node && divided)}>
+      <p className={SECTION_LABEL}>{t('relationsEyebrow')}</p>
       {relations.length ? relations.map((relation) => <article key={relation.id} className="space-y-2 rounded-card border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
         <p className="font-[var(--font-weight-strong)]">{relation.sentence}</p>
         <p className="text-caption text-[color:var(--color-text-secondary)]">{relation.typeLabel}</p>
         <p>{relation.why || t('rationaleMissing')}</p>
-        <div className="flex flex-wrap gap-2"><Chip onClick={() => onSelectRelation(relation.id)}>{t('showConnection')}</Chip>{relation.declaredBy ? <Chip onClick={() => onEvidence(relation.declaredBy!)}>{t('declaringDocument')}</Chip> : null}</div>
+        <div className="flex flex-wrap gap-2"><Chip size="lg" onClick={() => onSelectRelation(relation.id)}>{t('showConnection')}</Chip>{relation.declaredBy ? <Chip size="lg" onClick={() => onEvidence(relation.declaredBy!)}>{t('declaringDocument')}</Chip> : null}</div>
       </article>) : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('relationGuide')}</p>}
     </section> : null}
-    {onShowLabelsChange ? <div className={cn('space-y-2', divided)}>
-      <Checkbox label={t('showRelationMeaning')} checked={showLabels === true} onChange={(event) => onShowLabelsChange(event.target.checked)} />
-      <Disclosure summary={t('captionHelp')}><p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('captionGuide')}</p></Disclosure>
-    </div> : null}
-    <Disclosure className={divided} summary={t('kindCriteria')}>
-      <p className="mt-3 text-caption text-[color:var(--color-text-secondary)]">{glossary('ontologyDefinition')}</p>
-      <dl className="mt-3 space-y-3">{kinds.map((kind) => <div key={kind}><dt className="font-[var(--font-weight-strong)]">{kindsLabel(kind)}</dt><dd className="mt-1 text-caption text-[color:var(--color-text-secondary)]">{glossary(`criteria.${kind}`)}</dd></div>)}</dl>
-    </Disclosure>
+    <div className={cn('space-y-3', trailing)}>
+      {onShowLabelsChange ? <>
+        <Checkbox label={t('showRelationMeaning')} checked={showLabels === true} onChange={(event) => onShowLabelsChange(event.target.checked)} />
+        <Disclosure summary={t('captionHelp')}><p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('captionGuide')}</p></Disclosure>
+      </> : null}
+      <Disclosure summary={t('kindCriteria')}>
+        <p className="mt-3 text-caption text-[color:var(--color-text-secondary)]">{glossary('ontologyDefinition')}</p>
+        <dl className="mt-3 space-y-3">{kinds.map((kind) => <div key={kind}><dt className="font-[var(--font-weight-strong)]">{kindsLabel(kind)}</dt><dd className="mt-1 text-caption text-[color:var(--color-text-secondary)]">{glossary(`criteria.${kind}`)}</dd></div>)}</dl>
+      </Disclosure>
+    </div>
   </div>;
 }
