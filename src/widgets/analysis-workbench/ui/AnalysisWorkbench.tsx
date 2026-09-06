@@ -9,8 +9,13 @@ import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compar
 import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
 import { Button, Checkbox, Chip, Disclosure, IconButton, Select, TabBar, Textarea } from '@/shared/ui';
-import { X } from 'lucide-react';
+import { RotateCcw, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+
+/** Hairline between groups: the separation the tabs lacked (owner, 2026-09-06). */
+const DIVIDED = 'border-t border-[color:var(--color-divider)] pt-4';
+/** The small section label the Library and the workbench share: mono caps, quaternary ink. */
+const EYEBROW = 'font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]';
 
 type Tab = 'meaning' | 'history' | 'conversation';
 const EMPTY_RECORDS: AnalysisRecord[] = [];
@@ -222,31 +227,52 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
     </header>
     {error ? <p role="alert" className="text-caption text-[color:var(--color-danger-text)]">{error}</p> : null}
     {notice ? <p role="status" className="text-caption text-[color:var(--color-text-secondary)]">{notice}</p> : null}
-    {tab === 'meaning' ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
-      {facts ?? <p>{context.mode === 'architecture' ? t('architectureCriteria') : glossary('ontologyDefinition')}</p>}
-      <p className="text-caption text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p>
-      {onRequest ? <Button size="sm" onClick={() => request(false)}>{t('analyze')}</Button> : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
+    {/*
+      **Action first, reference last** (owner, 2026-09-06: "messy" / "nothing is set apart"). The
+      view opened on the glossary and put the one thing a person can do here — ask the agent —
+      under a wall of same-grey prose. The ask now leads with its one-line caveat; what is picked
+      on the map follows; groups are set apart by a hairline, not by more sentences.
+    */}
+    {tab === 'meaning' ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
+      <div className="flex flex-col gap-2">
+        {onRequest ? <Button size="sm" className="self-start" onClick={() => request(false)}>{t('analyze')}</Button> : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
+        <p className="text-caption text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p>
+      </div>
+      <div className={DIVIDED}>{facts ?? <p>{context.mode === 'architecture' ? t('architectureCriteria') : glossary('ontologyDefinition')}</p>}</div>
     </div> : null}
-    {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" className="atlas-scroll-quiet min-h-0 flex-1 space-y-4 overflow-y-auto pr-1" aria-busy={busy || readPending}>
-      <div className="flex flex-wrap gap-2">{context.handle ? <Chip onClick={() => void refresh()}>{t('refresh')}</Chip> : null}{onRequest ? <Chip onClick={() => request(false)}>{t('reanalyze')}</Chip> : null}</div>
+    {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1" aria-busy={busy || readPending}>
+      {/* One control row: which version, reread, ask again. The two chips that led the tab
+          looked like every other chip below them; the version picker is the row's subject. */}
+      <div className="flex flex-wrap items-center gap-2">
+        {runs.length ? <Select ariaLabel={t('version')} value={selected?.id ?? ''} onChange={setSelectedId} className="min-w-0 flex-1 basis-48" options={runs.map((run, index) => ({ value: run.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(run.createdAt).toLocaleString(locale)} · ${run.id.slice(0, 8)}`, description: run.request.text.slice(0, 100) }))} /> : null}
+        {context.handle ? <IconButton label={t('refresh')} onClick={() => void refresh()}><RotateCcw size={ICON_SIZE.sm} aria-hidden /></IconButton> : null}
+        {onRequest ? <Button size="sm" onClick={() => request(false)}>{t('reanalyze')}</Button> : null}
+      </div>
       {!context.handle ? <p>{t('openFolder')}</p> : null}
       {context.handle && readPending ? <p role="status">{t('loadingHistory')}</p> : null}
-      {runs.length ? <Select ariaLabel={t('version')} value={selected?.id ?? ''} onChange={setSelectedId} options={runs.map((run, index) => ({ value: run.id, label: `${index === 0 ? `${t('latest')} · ` : ''}${new Date(run.createdAt).toLocaleString(locale)} · ${run.id.slice(0, 8)}`, description: run.request.text.slice(0, 100) }))} /> : context.handle && loaded?.handle === context.handle && !readPending && !error ? <p>{t('empty')}</p> : null}
+      {!runs.length && context.handle && loaded?.handle === context.handle && !readPending && !error ? <p>{t('empty')}</p> : null}
       {selected ? <>
         {selected === runs[0] && earlierQuestions.length ? <Disclosure summary={t('earlierQuestions', { count: earlierQuestions.length })}>
           <p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('earlierQuestionsNote')}</p>
           <div className="mt-2 flex flex-col items-start gap-2">{earlierQuestions.map(({ run, finding }) => <Chip key={`${run.id}:${finding.id}`} onClick={() => setSelectedId(run.id)}>{finding.title} · {run.id.slice(0, 8)}</Chip>)}</div>
         </Disclosure> : null}
         {/*
-          ⚠️ **The version label was printed twice, character for character** (2026-09-06). The
-          picker above already carries `<date> · <id8>` as the selected option's own text, and
-          this heading restated the same 39 characters one line below it. What the block actually
-          needed a heading for is **what was analysed**, which was sitting under it as a caption —
-          so the scope becomes the heading and the duplicate goes. The h3 also has to exist: the
-          findings below are h4, and dropping it would skip a level under the panel's h2.
+          The scope is the heading (the picker already says the date and id); the outcome, the
+          basis and the evidence count are one caption line under it, not three sentences of
+          equal weight. The "AI findings are questions" caveat moved to the foot of the tab,
+          once, because it applies to everything above it and not to the version in particular.
         */}
-        <div className="space-y-2"><h3 className="break-words text-body-lg font-[var(--font-weight-strong)]">{selected.scope.targetSlugs.join(', ') || t('wholeProject')}</h3><p>{t(`outcome.${selected.origin.outcome}`)} · {t(`basis.${compatibility?.status ?? 'checking'}`)} · {t(selected.qualification.status === 'grounded' ? 'grounded' : 'unverified')}</p><p className="text-caption text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p><p className="text-caption text-[color:var(--color-text-secondary)]">{t('readCoverage', { count: selected.evidence.length })}</p></div>
-        {onFindingsChange ? <><Checkbox label={t('showIssues')} checked={showIssues && overlayReady} onChange={(event) => setShowIssues(event.target.checked)} disabled={!overlayReady} /><p className="text-caption text-[color:var(--color-text-secondary)]">{overlayReady ? t('issueLegend') : t('overlayUnavailable')}</p></> : null}
+        <div className={cn('space-y-1', DIVIDED)}>
+          <h3 className="break-words text-body-lg font-[var(--font-weight-strong)]">{selected.scope.targetSlugs.join(', ') || t('wholeProject')}</h3>
+          <p className="text-caption text-[color:var(--color-text-secondary)]">{t(`outcome.${selected.origin.outcome}`)} · {t(`basis.${compatibility?.status ?? 'checking'}`)} · {t(selected.qualification.status === 'grounded' ? 'grounded' : 'unverified')}</p>
+          <p className="text-caption text-[color:var(--color-text-secondary)]">{t('readCoverage', { count: selected.evidence.length })}</p>
+        </div>
+        <section className={cn('space-y-3', DIVIDED)}>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <p className={EYEBROW}>{t('findingsEyebrow', { count: selected.findings.length })}</p>
+            {onFindingsChange && selected.findings.length ? <Checkbox label={t('showIssues')} checked={showIssues && overlayReady} onChange={(event) => setShowIssues(event.target.checked)} disabled={!overlayReady} /> : null}
+          </div>
+          {onFindingsChange && selected.findings.length ? <p className="text-caption text-[color:var(--color-text-secondary)]">{overlayReady ? t('issueLegend') : t('overlayUnavailable')}</p> : null}
         {selected.findings.length === 0 ? <p>{t('noFindings')}</p> : selected.findings.map((finding) => {
           const latestReview = latestFindingReview(reviews, selected.id, finding.id);
           return <article key={finding.id} className="space-y-3 rounded-card border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
@@ -260,14 +286,21 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
             {reviewing === finding.id ? <div className="space-y-2"><Textarea label={t('reviewReason')} value={reviewText} onChange={(event) => setReviewText(event.target.value)} rows={3} /><div className="flex flex-wrap gap-2"><Chip disabled={!reviewText.trim() || busy} onClick={() => void review(finding.id, 'retain')}>{t('retain')}</Chip><Chip disabled={!reviewText.trim() || busy} onClick={() => void review(finding.id, 'dismiss')}>{t('dismiss')}</Chip></div><p className="text-caption text-[color:var(--color-text-secondary)]">{t('reviewBoundary')}</p></div> : null}
           </article>;
         })}
+        </section>
         {selected.observations.map((observation, index) => <ArchitectureObservation key={`${observation.toolCallId}:${index}`} result={observation.result} />)}
-        <Disclosure open summary={t('answer')}><div className="mt-3 space-y-3 break-words text-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ alt }) => <span>{alt}</span> }}>{selected.answer}</ReactMarkdown></div></Disclosure>
-        {selected.profileSnapshot ? <Disclosure summary={t('profileSnapshot')}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{selected.profileSnapshot.markdown}</pre></Disclosure> : null}
-        <Disclosure summary={t('basisDetails')}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{JSON.stringify({ request: selected.request, origin: selected.origin, basis: selected.basis, sourceAccess: selected.sourceAccess, qualification: selected.qualification, current: compatibility }, null, 2)}</pre></Disclosure>
+        <section className={cn('space-y-3', DIVIDED)}>
+          <p className={EYEBROW}>{t('answer')}</p>
+          <div className="space-y-3 break-words text-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ alt }) => <span>{alt}</span> }}>{selected.answer}</ReactMarkdown></div>
+        </section>
+        <div className={cn('space-y-2', DIVIDED)}>
+  {selected.profileSnapshot ? <Disclosure summary={t('profileSnapshot')}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{selected.profileSnapshot.markdown}</pre></Disclosure> : null}
+  <Disclosure summary={t('basisDetails')}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{JSON.stringify({ request: selected.request, origin: selected.origin, basis: selected.basis, sourceAccess: selected.sourceAccess, qualification: selected.qualification, current: compatibility }, null, 2)}</pre></Disclosure>
+        </div>
         <div className="flex flex-wrap gap-2">{onRequest ? <Chip onClick={() => request(true)}>{t('followUp')}</Chip> : null}<Chip onClick={() => exportMarkdown(serializeAnalysisRecord(selected), selected.id)}>{t('export')}</Chip></div>
       </> : null}
       {loaded?.handle === context.handle && loaded?.cursor ? <Chip onClick={() => void refresh(loaded.cursor)}>{t('loadOlder')}</Chip> : null}
       {loaded?.handle === context.handle && loaded?.problems.length ? <Disclosure summary={t('recordProblems', { count: loaded.problems.length })}><pre className="mt-2 whitespace-pre-wrap break-words text-caption">{loaded.problems.join('\n')}</pre></Disclosure> : null}
+      <p className="mt-auto pt-2 text-caption text-[color:var(--color-text-quaternary)]">{t('diagnosticOnly')}</p>
     </div> : null}
     {conversation ? <div role="tabpanel" id="workbench-tabpanel-conversation" aria-labelledby="workbench-tab-conversation" className={cn('min-h-0 flex-1 flex-col', tab === 'conversation' ? 'flex' : 'hidden')} inert={tab !== 'conversation'}>{conversation}</div> : null}
     {/*

@@ -1,7 +1,11 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { cn } from '@/shared/lib/cn';
 import { Checkbox, Chip, Disclosure } from '@/shared/ui';
+
+/** The small section label the Library and the workbench share: mono caps, quaternary ink. */
+const EYEBROW = 'font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]';
 
 /** Explanatory UI for the normative kinds and relation directions in the Atlas specification. */
 export function MeaningContext({ node, relations, onSelectRelation, onEvidence, showLabels, onShowLabelsChange }: {
@@ -17,24 +21,39 @@ export function MeaningContext({ node, relations, onSelectRelation, onEvidence, 
   const kindsLabel = useTranslations('kinds');
   const kinds = ['project', 'domain', 'capability', 'element', 'document'];
   const selectedKind = node && [...kinds, 'vault-readme'].includes(node.kind) ? node.kind : 'unknown';
-  return <div className="space-y-4">
-    {!node && !relations.length ? <p>{glossary('ontologyDefinition')}</p> : null}
+  /*
+   * **The tab answers "what did I pick" first** (owner, 2026-09-06: "messy"). With nothing
+   * picked it used to open on the ontology glossary, the five kind definitions, a checkbox with
+   * its help text, a relations heading with its guide, and only then the sentence that mattered
+   * — pick something on the map. Every block wore the same grey, so a person read a wall to
+   * find the one instruction. Now: the picked thing or the instruction to pick one; the map
+   * display switch on its own line; the glossary folded under one question at the end.
+   */
+  const divided = 'border-t border-[color:var(--color-divider)] pt-4';
+  return <div className="flex flex-col gap-4">
     {node ? <section className="space-y-2">
+      <p className={EYEBROW}>{kindsLabel(selectedKind)}</p>
       <h3 className="text-body-lg font-[var(--font-weight-strong)]">{node.title}</h3>
-      <p className="text-caption text-[color:var(--color-text-secondary)]">{kindsLabel(selectedKind)}</p>
-      <p>{glossary(`criteria.${selectedKind}`)}</p>
-      <p className="whitespace-pre-wrap text-[color:var(--color-text-secondary)]">{node.summary?.trim() || t('definitionMissing')}</p>
+      <p className="text-caption text-[color:var(--color-text-secondary)]">{glossary(`criteria.${selectedKind}`)}</p>
+      <p className="whitespace-pre-wrap">{node.summary?.trim() || t('definitionMissing')}</p>
       <Chip onClick={() => onEvidence(node.id)}>{t('openDefinition')}</Chip>
-    </section> : <Disclosure summary={t('kindCriteria')}><dl className="mt-3 space-y-3">{kinds.map((kind) => <div key={kind}><dt className="font-[var(--font-weight-strong)]">{kindsLabel(kind)}</dt><dd className="mt-1 text-[color:var(--color-text-secondary)]">{glossary(`criteria.${kind}`)}</dd></div>)}</dl></Disclosure>}
-    {onShowLabelsChange ? <div className="space-y-2"><Checkbox label={t('showRelationMeaning')} checked={showLabels === true} onChange={(event) => onShowLabelsChange(event.target.checked)} />{node ? <Disclosure summary={t('captionHelp')}><p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('captionGuide')}</p></Disclosure> : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('captionGuide')}</p>}</div> : null}
-    <section className="space-y-3"><h3 className="text-body-lg font-[var(--font-weight-strong)]">{t('relations')}</h3>
-      <p className="text-caption text-[color:var(--color-text-secondary)]">{t('relationGuide')}</p>
+    </section> : <p>{t('selectNode')}</p>}
+    {node || relations.length ? <section className={cn('space-y-3', divided)}>
+      <p className={EYEBROW}>{t('relationsEyebrow')}</p>
       {relations.length ? relations.map((relation) => <article key={relation.id} className="space-y-2 rounded-card border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
         <p className="font-[var(--font-weight-strong)]">{relation.sentence}</p>
         <p className="text-caption text-[color:var(--color-text-secondary)]">{relation.typeLabel}</p>
         <p>{relation.why || t('rationaleMissing')}</p>
         <div className="flex flex-wrap gap-2"><Chip onClick={() => onSelectRelation(relation.id)}>{t('showConnection')}</Chip>{relation.declaredBy ? <Chip onClick={() => onEvidence(relation.declaredBy!)}>{t('declaringDocument')}</Chip> : null}</div>
-      </article>) : <p>{t('selectNode')}</p>}
-    </section>
+      </article>) : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('relationGuide')}</p>}
+    </section> : null}
+    {onShowLabelsChange ? <div className={cn('space-y-2', divided)}>
+      <Checkbox label={t('showRelationMeaning')} checked={showLabels === true} onChange={(event) => onShowLabelsChange(event.target.checked)} />
+      <Disclosure summary={t('captionHelp')}><p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('captionGuide')}</p></Disclosure>
+    </div> : null}
+    <Disclosure className={divided} summary={t('kindCriteria')}>
+      <p className="mt-3 text-caption text-[color:var(--color-text-secondary)]">{glossary('ontologyDefinition')}</p>
+      <dl className="mt-3 space-y-3">{kinds.map((kind) => <div key={kind}><dt className="font-[var(--font-weight-strong)]">{kindsLabel(kind)}</dt><dd className="mt-1 text-caption text-[color:var(--color-text-secondary)]">{glossary(`criteria.${kind}`)}</dd></div>)}</dl>
+    </Disclosure>
   </div>;
 }
