@@ -4198,7 +4198,9 @@
     "earlierQuestionsNote": "불러온 기록에서 기각되지 않은 질문입니다. 나중 분석이 비어 있거나 취소되어도 해결된 것으로 보지 않습니다.",
     "targetUnavailable": "현재 지도에서 이 대상을 찾지 못했습니다. 기록 당시 근거를 확인하거나 다시 분석하세요.",
     "findingsEyebrow": "{count, plural, =0 {검토할 질문} other {검토할 질문 #개}}",
-    "relationsEyebrow": "연결"
+    "relationsEyebrow": "연결",
+    "fillNotes": "빠진 연결 이유 {count}개 채우기",
+    "relationNotesPrompt": "이 범위에서 이유가 비어 있는 연결마다, 그 연결이 성립하는 까닭을 한 문장으로 `relation_notes`에 적어 주세요. Atlas 도구만 씁니다. 연결마다 두 문서를 get_concepts(body: \"full\")로 읽고, 대상을 나열한 쪽(출발 문서)에 patch_concept(expected_mtime 포함, 다른 키는 그대로)로 제안합니다. 볼트가 쓰는 언어로 적고, 'A가 B를 포함한다'처럼 연결을 되풀이하는 문장은 이유가 아닙니다. 문서에 까닭이 없으면 적지 말고 미해결 질문으로 남기세요. 이번 턴에는 최대 {limit}개까지, 끝에 몇 개가 남았는지 말해 주세요."
   },
   "mcp": {
     "title": "MCP",

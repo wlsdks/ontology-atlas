@@ -4303,6 +4303,18 @@ function HomePageImpl() {
       return { id: edge.id, sentence: t(`edgeSentence.${key}`, edgeSentenceValues(key, from?.display ?? from?.title ?? edge.from, to?.display ?? to?.title ?? edge.to)), typeLabel: relationVocabulary(edge.type, relationRegister), why: edge.label?.trim() || null, declaredBy: edge.evidenceIds[0] ?? null };
     });
   }, [ontologyInsight, meaningWorkbenchOpen, acpDockFrameOpen, selectedOntologyNode, selectedEdge, t, relationVocabulary, relationRegister]);
+  /*
+   * Edges in the workbench's scope with no `relation_notes`: the count the Meaning view offers
+   * to have written. Scope follows the selection the way `meaningRelations` does — one edge,
+   * one node's edges, or the whole graph.
+   */
+  const relationNoteGaps = useMemo(() => {
+    if (!ontologyInsight || (!meaningWorkbenchOpen && !acpDockFrameOpen)) return 0;
+    const focus = selectedOntologyNode?.id;
+    return ontologyInsight.edges.filter((edge) => selectedEdge
+      ? edge.from === selectedEdge.sourceId && edge.to === selectedEdge.targetId && edge.type === selectedEdge.relationType
+      : focus ? edge.from === focus || edge.to === focus : true).filter((edge) => !edge.label?.trim()).length;
+  }, [ontologyInsight, meaningWorkbenchOpen, acpDockFrameOpen, selectedOntologyNode, selectedEdge]);
   const mapRelationCaptions = useMemo(() => (meaningWorkbenchOpen || acpDockFrameOpen) && showRelationMeaning ? new Map((ontologyInsight?.edges ?? []).map((edge) => [edge.id, relationVocabulary(edge.type, relationRegister)])) : null, [meaningWorkbenchOpen, acpDockFrameOpen, showRelationMeaning, ontologyInsight, relationVocabulary, relationRegister]);
   const mapReviewQuestionIds = useMemo(() => new Set(analysisFindings.flatMap((finding) => finding.targetSlugs.map((slug) => chatNodeIndex.get(slug)).filter((id): id is string => !!id))), [analysisFindings, chatNodeIndex]);
   const openAnalysisEvidence = useCallback((slug: string) => {
@@ -6618,6 +6630,7 @@ function HomePageImpl() {
             open={acpDockFrameOpen || meaningWorkbenchOpen}
             requestNonce={agentOpeningRequest?.nonce}
             sectionRequest={workbenchSectionRequest}
+            relationNoteGaps={relationNoteGaps}
             onSectionChange={handleWorkbenchSectionChange}
             initialTab={meaningWorkbenchOpen ? 'meaning' : 'conversation'}
             onClose={() => { setMeaningWorkbenchOpen(false); closeVaultAgent(); }}

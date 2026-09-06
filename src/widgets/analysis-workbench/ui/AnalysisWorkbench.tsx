@@ -21,7 +21,7 @@ type Tab = 'meaning' | 'history' | 'conversation';
 const EMPTY_RECORDS: AnalysisRecord[] = [];
 
 /** One context slot beside the canvas. Hiding conversation never unmounts its ACP session. */
-export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, sectionRequest, onSectionChange, initialTab = 'meaning', facts, conversation, onRequest, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
+export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, sectionRequest, onSectionChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
   context: AnalysisCaptureContext;
   contextLabel: string;
   open: boolean;
@@ -33,6 +33,12 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
   conversation?: ReactNode;
   capture?: { state: AnalysisSaveState | null; setState: (state: AnalysisSaveState) => void };
   onRequest?: (text: string, parentRunId: string | null) => void;
+  /**
+   * Relations in scope whose `relation_notes` sentence is empty. Above zero, the Meaning view
+   * offers to have the agent write them: one sentence per edge, on the source document, under
+   * the permission gate. Zero hides the offer rather than showing a dead control.
+   */
+  relationNoteGaps?: number;
   onClose: () => void;
   returnFocusSelector?: string;
   onEvidence?: (slug: string) => void;
@@ -170,6 +176,17 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
     return () => onFindingsChange?.([]);
   }, [onFindingsChange, open, overlayReady, records, selected, showIssues]);
 
+  /*
+   * The map's hover card read the same templated sentence on every containment edge because
+   * 87% of the dogfood graph's edges carried no `relation_notes` (2026-09-06, 211 of 242).
+   * This turn asks the agent to write the missing reasons, bounded, through patch_concept —
+   * every write still stops at a permission card. It carries no findings instruction: the
+   * result is frontmatter, not an analysis record.
+   */
+  function requestNotes() {
+    onRequest?.(`${t('relationNotesPrompt', { limit: 12 })}\nScope: ${JSON.stringify(context.scope)}.`, null);
+    setTab('conversation');
+  }
   function request(followUp: boolean) {
     const parent = followUp ? selected : null;
     const instruction = context.mode === 'architecture' ? t('architecturePrompt') : t('meaningPrompt');
@@ -235,7 +252,10 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
     */}
     {tab === 'meaning' ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
       <div className="flex flex-col gap-2">
-        {onRequest ? <Button size="sm" className="self-start" onClick={() => request(false)}>{t('analyze')}</Button> : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
+        {onRequest ? <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" onClick={() => request(false)}>{t('analyze')}</Button>
+          {relationNoteGaps > 0 && context.mode === 'meaning' ? <Chip data-testid="workbench-fill-notes" onClick={requestNotes}>{t('fillNotes', { count: relationNoteGaps })}</Chip> : null}
+        </div> : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
         <p className="text-caption text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p>
       </div>
       <div className={DIVIDED}>{facts ?? <p>{context.mode === 'architecture' ? t('architectureCriteria') : glossary('ontologyDefinition')}</p>}</div>
