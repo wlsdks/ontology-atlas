@@ -62,6 +62,9 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-grid-minor": "#0e0e13",
   "--topology-v2-grid-major": "#121218",
   "--topology-v2-dome-ring": "#43434f",
+  // Not a `--topology-v2-*` name: the raised plane ring borrows the application's
+  // own tertiary text step rather than adding a colour for one hover state.
+  "--color-text-tertiary": "#8a8f98",
   "--topology-v2-vignette-base-alpha": "0.32",
   "--topology-v2-vignette-far-alpha": "0.18",
 

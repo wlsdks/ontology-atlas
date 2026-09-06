@@ -20,6 +20,15 @@ export type {
 } from './model/first-words';
 export { buildSystemPrompt } from './model/system-prompt';
 export { AGENT_TOOLS } from './model/tool-catalog';
+/*
+ * The Compile catalogue's public surface is deliberately small. The tools, the executor,
+ * the proposal builder and the adapter are the feature's own internals — the screen needs
+ * the hook, the rows it draws, and the two questions it asks about a folder's formats.
+ */
+export { selectLocalCompileTargets, useLocalCompile } from './model/use-local-compile';
+export type { LocalCompileSession } from './model/use-local-compile';
+export type { CompileCardRow } from './model/compile-consent-card';
+export { PARSER_SOURCE_FORMATS } from './model/source-text';
 export { createToolExecutor } from './model/tool-executor';
 export type { VaultReadDoc, VaultReadPort } from './model/vault-read-port';
 export { resolveProviderAdapter } from './model/providers';

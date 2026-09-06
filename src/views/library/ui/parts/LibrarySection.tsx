@@ -70,6 +70,12 @@ export interface LibrarySectionProps {
   /** Starts one in-app agent turn that writes the pages. Absent when no agent can run. */
   onCompile: (() => void) | null;
   /**
+   * The brain picker, when this computer offers two and Compile can therefore be pointed
+   * at either. Null draws nothing: with one brain there is no choice to make, and the
+   * shelf's own line already names it.
+   */
+  brainControl?: React.ReactNode;
+  /**
    * What leaves this computer when Compile runs, stated beside the button that starts it.
    *
    * The coding agent talks to its own provider; Atlas is not in the path and its transfer
@@ -160,6 +166,7 @@ export function LibrarySection({
   onAddFiles,
   onFindDocuments,
   onCompile,
+  brainControl,
   transferNote,
   vaultLabel,
   busy,
@@ -341,6 +348,12 @@ export function LibrarySection({
             ) : null
           }
         />
+
+        {brainControl ? (
+          <div className="flex-none px-3 pb-2" data-testid="library-brain-control">
+            {brainControl}
+          </div>
+        ) : null}
 
         {/*
           **Compile is app-only, so the web says so instead of describing it.** The empty

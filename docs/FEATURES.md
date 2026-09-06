@@ -345,8 +345,14 @@ had become false).
   different questions with it: Cone makes a parent the apex of its own cone, so a
   subtree is a bump you can point at and rotate to the front; **Strata** (2026-09-06)
   lays the four kinds out as stacked planes — project on top, then domain,
-  capability, element — each drawn as one hairline ellipse named at its rim, so
-  "which level is this on" is a glance rather than an inference. On a Strata plane
+  capability, element — each drawn as one hairline ellipse, so
+  "which level is this on" is a glance rather than an inference. The four names
+  sit on a **legend rail** at the canvas's right edge (2026-09-06), below the
+  utility tiles: one row per plane, each row aligned to that plane's projected
+  height and re-aligned as you orbit or morph, and hovering a row raises its
+  plane's ring. They used to hang on the rims themselves, which at 1040x720 put
+  them on the graph; the rim names remain only as the fallback on a canvas too
+  short for the rail, and the two are never both on. On a Strata plane
   a node keeps its parent's bearing, which makes every containment drop short,
   near-vertical and unable to cross a sibling's; a node whose parent is not in the
   map falls to the outer rim of its own plane, where "nothing above holds this"
@@ -358,6 +364,19 @@ had become false).
   same-tier. Geometry: `buildStrataTargets` and `layoutConeTree` in
   `src/widgets/topology-map-v2/model/dome-view.ts`; gates:
   `tests/e2e/map-3d-strata-drawing.spec.ts` and `map-3d-cone-drawing.spec.ts`.
+- **A click lands on the concept you are pointing at, in every 3D arrangement**
+  (2026-09-06) — the pointer answers with whatever the frame painted under the
+  cursor, and the small pressable ring around a dot no longer competes with a
+  painted disc. Before, a near, larger concept could answer for a smaller one
+  drawn beside it: measured on the sample vault by pointing at each drawn centre
+  in turn, 4 of 125 answered wrongly in Cone at 1512x982 and 12 of 125 at
+  834x1112. Gates: the "drawn centre" cases in both 3D drawing specs.
+- **Relations stay visible at rest in 3D** (2026-09-06) — depth still fades a
+  line towards the back, but its ink now stops at a floor instead of reaching
+  3.5% of a near line's. Measured at 1512x982 against the canvas ground:
+  containment lines went from 1.26 / 1.33 / 1.14 : 1 (Cone / Strata / Cloud) to
+  1.89 / 1.75 / 1.78 : 1, with the 2D map untouched. Gate:
+  `tests/e2e/map-3d-relation-ink.spec.ts`.
 
 #### `TopologyFitControl` (top-right, desktop-only)
 - Single **Fit Map** tile — fits the camera to the graph bounds. Desktop-only (mobile uses pinch-zoom).
@@ -823,10 +842,52 @@ Three one-click doors:
   over `https://` at another address is named as one, because `normalize_base_url` in
   `src-tauri/src/llm.rs` requires loopback for plaintext but accepts a remote TLS host.
   `.ontology-atlas/llm-audit.jsonl` records each request either way.
-  It is a **named brain, not a second Compile engine**: the local runner reaches Atlas
-  through the vault agent's tool catalogue, which reads and proposes ontology concepts
-  only — no tool opens a source and none writes a page — so Compile stays on the coding
-  agent and step two says exactly that.
+  **It compiles** (second pass, 2026-09-06). The 2026-09-06 record left this route a named
+  brain because the runner's tool catalogue read and proposed ontology concepts only, and
+  wrote its own reopening condition: *a local tool catalogue that reads a source and writes
+  a page under one consent card reopens local Compile.* That catalogue is
+  `src/features/vault-agent/model/compile-tool-catalog.ts`, and it is two tools, kept out
+  of `AGENT_TOOLS` because neither exists on the MCP server. `read_source_text` opens one
+  file this folder's own walk found under `sources/` and this bundle can decode — Markdown,
+  plain text, CSV, TSV, JSON and HTML with its tags stripped — and returns it with every
+  paragraph numbered `[p1]`, `[p2]`, capped at 8,000 characters with `truncated` stated
+  rather than hidden. A PDF, Word, PowerPoint or Excel file comes back **unread and named**:
+  reading those needs a parser Atlas does not ship, and shipping one is deferred rather
+  than guessed at. Any other path — absolute, `..`, a backslash, or simply not in this
+  folder — is refused before the disk is touched. `propose_wiki_page` takes fields, never
+  Markdown: Atlas assembles the five sections itself and mints `created_by: model:<name>`,
+  `compiled_at`, `sources:` and `source_hash:` from the bytes it actually handed over, so a
+  page cannot claim a document the model never opened. **It writes nothing.** The turn ends
+  at one card that names, per page, the path it would take, what each of its five sections
+  carries, how many citations it holds, which sources it was written from, which were read
+  only in part, and which could not be opened at all; only Allow once writes, through the
+  same `applyProposal` a concept change takes. A page that fails the contract produces no
+  proposal at all, so the card has nothing to offer and shows the exact problem codes
+  instead. Beyond the shared `validateWikiPage` rules the proposal adds two: every
+  `## Decisions` bullet cites, and **every citation anchor resolves inside the bytes read
+  this turn** — the shared validator captures an anchor and never opens a file, so
+  `#p47` in a three-paragraph document would otherwise pass and land as a citation a reader
+  cannot follow. Three pages per turn, ten rounds. The button goes live only for a loopback
+  runner, because whole documents now leave the process and "on this computer" has to be
+  true rather than named; a remote saved address and a folder whose waiting files all need
+  a parser each get their own sentence naming what is missing rather than blaming the
+  route. Measured on this machine 2026-09-06 against Ollama: `qwen3:8b` (65s) and
+  `gemma4:12b` (82s) each read both sources and proposed both pages with every bullet cited
+  and every anchor resolvable; `qwen3.6:35b-a3b` proposed pages with no citations at all,
+  which the card refused with `uncited-fact` and no write action.
+- **Which brain runs is chosen, not ranked** (owner, 2026-09-06, second pass). A verified
+  coding agent still opens formats the runner cannot, so it stays the **default** — but it
+  no longer outranks the runner, because the reason a local runner is set up at all is to
+  be pointed at a folder whose documents should not leave the machine, and a precedence
+  rule takes exactly that choice away. When this computer offers both, step two's
+  **Runs on** row and the index's wiki header each draw one select naming them as the
+  shelf already does (`Claude Agent` and `gemma4:12b on localhost:11434`); the answer is
+  stored per machine in `localStorage` beside the chat width, both surfaces read and write
+  that one value, and the sentence about what leaves this computer switches with it. With
+  one brain available nothing is drawn — a select that cannot change anything is not a
+  choice — and a stored answer naming a brain the machine no longer offers falls back to
+  the one that is there **and stops being stored**, so a preference never outlives what it
+  points at. `resolveCompileBrain` is that table, tested as one.
 
 **Graph** (2026-09-06) — **the pane itself** whenever nothing is chosen, drawing the same
 two file kinds the lists carry, plus the third thing they reach: a raw

@@ -53,6 +53,17 @@ export interface AgentLoopDeps {
   execute(call: NormalizedToolCall): Promise<ToolExecution>;
   /** The tool list carried in this turn. */
   tools: readonly AgentToolDefinition[];
+  /**
+   * The round-trip ceiling for this turn. Defaults to `AGENT_ROUND_CAP` (6), which is the
+   * number a conversational turn needs.
+   *
+   * Compile is a different shape of job and needed its own number: one read plus one
+   * proposal per file means a three-file turn cannot finish inside six rounds, and the
+   * measured result of running it anyway is the person's documents going to the model and
+   * the turn ending at the cap with no card at all (PO steward, 2026-09-06). The ceiling
+   * is still a ceiling — it is stated by the caller rather than removed.
+   */
+  roundCap?: number;
   system: string;
   model: string;
   /** Cap-reached, aborted, and error copy arrive in the screen's language — the model does not write them. */
@@ -166,6 +177,7 @@ export async function runTurn(
   let auditCount = 0;
   let vaultChars = 0;
   let status: AgentTurn['status'] = 'running';
+  const roundCap = deps.roundCap ?? AGENT_ROUND_CAP;
 
   const snapshot = (): AgentTurn => ({
     id: initial.id,
@@ -179,7 +191,7 @@ export async function runTurn(
   const emit = () => options.onProgress?.(snapshot());
   emit();
 
-  while (rounds < AGENT_ROUND_CAP) {
+  while (rounds < roundCap) {
     if (options.signal.aborted) {
       status = 'aborted';
       events.push({ kind: 'notice', code: 'aborted', text: deps.notices.aborted });
@@ -289,7 +301,7 @@ export async function runTurn(
         events.push({
           kind: 'notice',
           code: 'no-tool-call',
-          text: deps.notices.noToolCall({ round: rounds, cap: AGENT_ROUND_CAP }),
+          text: deps.notices.noToolCall({ round: rounds, cap: roundCap }),
         });
       }
       status = 'done';

@@ -57,7 +57,14 @@ export type ProposalToolName =
   | 'add_concepts'
   | 'add_relation'
   | 'add_relations'
-  | 'patch_concept';
+  | 'patch_concept'
+  /**
+   * A Compile turn's wiki page. Not an MCP tool and deliberately not in `AGENT_TOOLS` —
+   * see `compile-tool-catalog.ts` for why the Compile catalogue is separate. It rides the
+   * same `ProposalChange` so `applyProposal`'s mtime guard, its "zero files changed on any
+   * refusal" contract, and the consent card's diff are the existing ones.
+   */
+  | 'propose_wiki_page';
 
 export interface ProposalChange {
   id: string;

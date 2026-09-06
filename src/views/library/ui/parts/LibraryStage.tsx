@@ -13,11 +13,17 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import {
   libraryBrainLabel,
   libraryCompileBlockedReason,
+  libraryTransferSentence,
   type CompileAvailability,
 } from "../../lib/compile-availability";
+import type { LocalCompileSession } from "@/features/vault-agent";
+
+import type { CompileBrain } from "../../lib/compile-brain";
 import { libraryStepStates, type LibraryStepState } from "../../lib/stage-steps";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 import type { LibraryLocalModel } from "../../lib/use-library-agent";
+import { CompileBrainSelect } from "./CompileBrainSelect";
+import { LocalCompileCard } from "./LocalCompileCard";
 
 /**
  * **The guided shelf** — what the right pane says when a folder is open and nothing is
@@ -77,6 +83,25 @@ export interface LibraryStageProps {
   agentLabel: string | null;
   /** The connect-by-address runner, when one is configured on this computer. */
   localModel: LibraryLocalModel | null;
+  /**
+   * The turn that runner runs, and the card it ends at.
+   *
+   * The card is seated **inside step two** rather than in a dock. The dock is where a
+   * conversation lives; this is one job with one question at the end, and the question is
+   * about the step a person just pressed — moving it elsewhere would ask them to look for
+   * the answer to their own press.
+   */
+  localCompile: LocalCompileSession | null;
+  /**
+   * The brain that will run, and whether the person gets to change it.
+   *
+   * `choosable` is true only when this computer offers both, which is the one case where
+   * a control can change anything; with one brain the static line stays (owner,
+   * 2026-09-06 — a rank became a default, because the runner exists to be chosen).
+   */
+  brain: CompileBrain | null;
+  brainChoosable: boolean;
+  onChooseBrain: (brain: CompileBrain) => void;
   /** True in the installed app. On the web, Compile has no runtime at all. */
   inApp: boolean;
   onAddFiles: () => void;
@@ -141,8 +166,14 @@ function Step({
    * so the screen answers "which one now" with one answer.
    */
   lead: boolean;
-  /** Label/value pairs. Each number keeps its own line; none is buried in prose. */
-  facts: Array<{ key: string; label: string; value: string }>;
+  /**
+   * Label/value pairs. Each number keeps its own line; none is buried in prose.
+   *
+   * A value may be a control rather than a string — "Runs on" becomes a picker when this
+   * computer offers two brains — so the row draws whatever it is given rather than
+   * growing a second row shape beside the definition list.
+   */
+  facts: Array<{ key: string; label: string; value: React.ReactNode }>;
   children?: React.ReactNode;
   testId: string;
   t: LibraryStageProps["t"];
@@ -205,6 +236,10 @@ export function LibraryStage({
   route,
   agentLabel,
   localModel,
+  localCompile,
+  brain,
+  brainChoosable,
+  onChooseBrain,
   inApp,
   onAddFiles,
   onFindDocuments,
@@ -221,7 +256,7 @@ export function LibraryStage({
   const newest = newestWikiPage(model.wikiPages);
   const compiledCount = model.sources.filter((row) => row.state === "compiled").length;
 
-  const brain = libraryBrainLabel({ route, agentLabel, localModel }, t);
+  const brainName = libraryBrainLabel({ route, agentLabel, localModel }, t);
 
   /**
    * **What leaves the computer, said once.**
@@ -235,13 +270,7 @@ export function LibraryStage({
    * a program on this machine and every request to it leaves a line in the vault's own
    * audit file.
    */
-  const transfer =
-    route === "local" && localModel
-      ? t(localModel.onThisComputer ? "stage.transferLocal" : "stage.transferLocalRemote", {
-          host: localModel.host,
-          file: ".ontology-atlas/llm-audit.jsonl",
-        })
-      : null;
+  const transfer = libraryTransferSentence({ route, localModel }, t);
 
   const blocked = libraryCompileBlockedReason(
     {
@@ -250,6 +279,7 @@ export function LibraryStage({
       sourceCount,
       needsCompileCount: model.needsCompileCount,
       localModel,
+      sources: model.sources,
     },
     t,
   );
@@ -369,7 +399,22 @@ export function LibraryStage({
                 label: t("stage.compile.staleLabel"),
                 value: String(model.staleCount),
               },
-              { key: "brain", label: t("stage.compile.brainLabel"), value: brain },
+              {
+                key: "brain",
+                label: t("stage.compile.brainLabel"),
+                value: brainChoosable ? (
+                  <CompileBrainSelect
+                    brain={brain}
+                    agentLabel={agentLabel}
+                    localModel={localModel}
+                    onChoose={onChooseBrain}
+                    className="max-w-[280px]"
+                    t={t}
+                  />
+                ) : (
+                  brainName
+                ),
+              },
             ]}
           >
             <div className="flex flex-col gap-2">
@@ -435,6 +480,9 @@ export function LibraryStage({
                 >
                   {blocked}
                 </p>
+              ) : null}
+              {localCompile && route === "local" ? (
+                <LocalCompileCard session={localCompile} model={localModel?.model ?? ""} t={t} />
               ) : null}
               {transfer ? (
                 <p
