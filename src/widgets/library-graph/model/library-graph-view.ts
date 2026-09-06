@@ -37,8 +37,8 @@ export interface LibraryGraphView {
  * far out as anything is worth seeing, and four times it puts a page's own cluster across
  * the pane.
  */
-export const VIEW_ZOOM_OUT_RATIO = 0.5;
-export const VIEW_ZOOM_IN_RATIO = 4;
+const VIEW_ZOOM_OUT_RATIO = 0.5;
+const VIEW_ZOOM_IN_RATIO = 4;
 
 /**
  * Wheel sensitivity: `exp(-pixelDelta × this)`, about 1.32× per 120px notch.
@@ -47,7 +47,7 @@ export const VIEW_ZOOM_IN_RATIO = 4;
  * this canvas inherits the number rather than starting that search again — a person who
  * has learned the zoom on the map should not have to learn a second one here.
  */
-export const WHEEL_ZOOM_SENSITIVITY = 0.0023;
+const WHEEL_ZOOM_SENSITIVITY = 0.0023;
 
 /**
  * Wheel deltas below this are ignored, unless the event is a pinch (`ctrlKey`).

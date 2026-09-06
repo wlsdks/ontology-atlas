@@ -33,7 +33,7 @@
  * pass separated, and 0.5 cost most of the speed the tree was built for.
  */
 
-export const BARNES_HUT_THETA = 0.85;
+const BARNES_HUT_THETA = 0.85;
 
 interface QuadNode {
   /** Total charge in this cell — node count, since every node carries the same charge. */

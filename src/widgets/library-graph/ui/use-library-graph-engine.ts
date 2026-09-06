@@ -81,7 +81,7 @@ import { readLibraryGraphInk, type LibraryGraphInk } from "../render/library-gra
 const DRAG_THRESHOLD_PX = 7;
 
 /** Padding the fit reserves for the names that stand under the outermost marks. */
-export const FIT_PADDING = 34;
+const FIT_PADDING = 34;
 
 /** How fast an auto-fitting view catches up with the settling picture, per frame. */
 const AUTO_FIT_FOLLOW = 0.16;

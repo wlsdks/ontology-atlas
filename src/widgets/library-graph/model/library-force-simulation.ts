@@ -51,13 +51,13 @@ import { seedPositions, type LayoutPoint } from "./library-graph-layout";
  */
 
 /** Rest length of a citation, in world units. A page holds the file it was written from close. */
-export const CITES_REST = 52;
+const CITES_REST = 52;
 /**
  * Rest length of a mention. Longer, so a concept the page merely names sits on the
  * outside of the cluster rather than inside it — the ring of hollow marks around a
  * page's own square of sources is the shape this number exists to produce.
  */
-export const MENTIONS_REST = 96;
+const MENTIONS_REST = 96;
 
 /**
  * Many-body charge. Negative is repulsion, the sign convention `d3-force` uses.
@@ -67,7 +67,7 @@ export const MENTIONS_REST = 96;
  * the unattached sources were thrown to the edges of the canvas where the fit then shrank
  * everything else to nothing.
  */
-export const MANY_BODY_STRENGTH = -260;
+const MANY_BODY_STRENGTH = -260;
 
 /**
  * Order at which the exact O(n²) many-body pass hands over to the Barnes–Hut tree.
@@ -95,11 +95,11 @@ const GRAVITY = 0.028;
 /** Velocity retained between ticks. `d3-force`'s 0.6 friction, which is a settled default. */
 const VELOCITY_DECAY = 0.62;
 /** Alpha below which the picture is at rest and the loop may stop stepping. */
-export const ALPHA_MIN = 0.0015;
+const ALPHA_MIN = 0.0015;
 /** Per-tick approach of alpha toward its target — about 240 ticks from 1 to `ALPHA_MIN`. */
 const ALPHA_DECAY = 0.0275;
 /** Alpha a re-heat restores. Not 1: the picture is being disturbed, not rebuilt. */
-export const REHEAT_ALPHA = 0.42;
+const REHEAT_ALPHA = 0.42;
 /** Iterations of the link/collision relaxation per tick. Two is enough to hold a chain. */
 const RELAX_PASSES = 2;
 /** Extra room around a mark that no other mark may enter. */
@@ -136,7 +136,7 @@ const COLLISION_EXACT_MAX_ORDER = 150;
 export const AMBIENT_AMPLITUDE = 0.28;
 export const AMBIENT_PERIOD_MS = 7200;
 
-export interface SimulationNode {
+interface SimulationNode {
   id: string;
   kind: LibraryGraphNodeKind;
   x: number;
@@ -159,7 +159,7 @@ export interface SimulationNode {
   degree: number;
 }
 
-export interface SimulationLink {
+interface SimulationLink {
   source: number;
   target: number;
   rest: number;
@@ -190,7 +190,7 @@ export interface LibrarySimulation {
 }
 
 /** The drawn half-extent of a mark, graded by degree inside the 5–10px band. */
-export function markRadius(degree: number, maxDegree: number): number {
+function markRadius(degree: number, maxDegree: number): number {
   if (maxDegree <= 0) return 5;
   // Square-rooted, so the band reads as "more links" rather than as a bar chart: area
   // grows with degree, which is how a person judges a dot's size.
