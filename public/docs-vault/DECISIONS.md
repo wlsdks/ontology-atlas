@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The Library stays on every rail; only a wiki without a map hides the map doors
+
+**Why**: PO review of the same-day shape record found the map-side half unevidenced and creator-dependent: `cli/src/index.mjs` writes `wiki/_template.md` into every code vault while the app's map card writes none, so the two creators would have drawn different rails for "a codebase map", and every vault made before today — the dogfood `docs/ontology/` included — would have lost the Library on upgrade. The Library also holds `sources/`, which any folder may have.
+**Prior**: 2026-09-06 "A folder says what it holds; the rail reads the files, and creation asks once" is narrowed here: its wiki side stands, its map side is dropped. 2026-09-06 "A folder of pages and no nodes opens on the Library" stands; its dissent rejected a picker because the folder already answers — the one question is asked only at creation, when the folder has no files to answer with.
+**Decision**: `destinationsForVaultShape` hides Map, Architecture, Docs, Insights and Projects only for a wiki without a map; a map, an empty folder, or no folder draws all nine. The three-card creation and the add-only Settings row stay.
+**Dissent**: symmetry ("the rail draws what the folder holds") is easier to say, and the Settings row restores the Library in one click (po-leverage); rejected because an honest empty Library costs nothing and a retired door on upgrade does.
+**Falsifier**: a map-only vault whose Library shows nothing a person can act on; the CLI and the app drawing different rails from the same folder.
+**Owner**: jinan
+
 ## 2026-09-06 — A folder of pages and no nodes opens on the Library
 
 **Why**: with the vault shape fixed and a documents-only `init`, a person who opened Atlas on a folder of documents landed on the topology canvas, which had nothing to draw and said so. The two probes of the day ran on exactly such folders. The first screen was the one surface that could not help them.

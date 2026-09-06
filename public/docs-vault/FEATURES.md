@@ -1519,8 +1519,9 @@ just unmounted).
   omits its button.
 
 The rail draws only the destinations the folder earns (`destinationsForVaultShape`, 2026-09-06):
-a wiki without a map hides Map, Architecture, Docs, Insights and Projects; a map without a wiki
-hides the Library; Agents, MCP and History stay; an empty folder, or no folder, shows all nine.
+a wiki without a map hides Map, Architecture, Docs, Insights and Projects; Agents, MCP, History
+and the Library stay (the Library holds `sources/` for any folder); a map, an empty folder, or no
+folder shows all nine.
 The phone tabs and the `G` keys read the same verdict.
 
 ### `AppSettingsMenu` (app shell + contextual page headers)

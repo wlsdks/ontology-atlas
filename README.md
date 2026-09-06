@@ -676,9 +676,9 @@ code: `sources/` and `wiki/` with the template and the agent wiring, and none
 of the node starter files. In the app, **Just start** asks the same question
 once — a documents wiki, an ontology map of a codebase, or both — and writes
 the answer as files. The tabs follow the files: a wiki without a map hides the
-map, the architecture reading and the analysis and opens on the Library; a map
-without a wiki hides the Library. Add the other part later from Settings ›
-Workspace, "This folder holds".
+map, the architecture reading and the analysis and opens on the Library; the
+Library itself stays on every rail, because `sources/` lives there. Add the
+other part later from Settings › Workspace, "This folder holds".
 
 ### Three kinds of file, and only one is the graph
 
