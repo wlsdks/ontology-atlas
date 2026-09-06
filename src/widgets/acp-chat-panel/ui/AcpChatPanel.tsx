@@ -153,6 +153,25 @@ const SLASH_MENU_LIMIT = 8;
 const EMPTY_KNOWN_SLUGS: ReadonlySet<string> = new Set();
 const EMPTY_KNOWN_RELATIONS: ReadonlySet<string> = new Set();
 
+/**
+ * **The floor under a composer picker** — the width below which the trigger stops saying
+ * anything.
+ *
+ * The pickers were the only elastic slots on the composer's footer, so at the dock's own
+ * default width they absorbed every shortfall and reached their chevrons: two boxes with a
+ * caret and no word (owner, 2026-09-06, installed app, mid-turn). A control that names the
+ * current choice and then hides it is worse than one that never claimed to.
+ *
+ * 120px is the trigger's own chrome — `px-3` twice, the `gap-2`, the 16px chevron, 48px in
+ * total — plus 72px of room for the name. Measured against this screen's own labels, that
+ * carries about eight Latin or five Hangul characters before the ellipsis, so the first word
+ * survives. `SelectOption` labels are never wider than the list, which is anchored to the
+ * trigger and therefore unaffected.
+ *
+ * It is a floor, not a width: above it the slots still divide the row equally.
+ */
+const PICKER_MIN_WIDTH_CLASS = 'min-w-[104px]';
+
 interface SuggestionRowsProps {
   heading: string;
   testId: string;
@@ -865,10 +884,17 @@ export function AcpChatPanel({
          * down here from the retired header (2026-09-06). A grid could not carry that name too
          * without the grid's own column count becoming a second thing to keep in step; equal
          * flex slots give the same "the slot decides, not the content" property with one rule.
+         *
+         * `flex-wrap` returned later the same day, and it is **not** the old content-sized
+         * behaviour: the slots still share the line equally, and wrapping is only what happens
+         * once the equal shares would fall under `PICKER_MIN_WIDTH_CLASS`. That is reachable —
+         * a runtime that offers models puts three pickers here, and the panel's own minimum
+         * width is 320. Without it the third one is simply clipped away by the dock's
+         * `overflow-hidden`, which is the defect this whole row was rewritten for.
          */
         <div
           data-testid="acp-chat-choices"
-          className="flex min-w-0 flex-1 items-center gap-1.5"
+          className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5"
         >
           {choices.models.length > 0 ? (
             <Select
@@ -879,7 +905,7 @@ export function AcpChatPanel({
               onChange={(value) => void chooseModel(value)}
               options={choices.models.map((model) => ({ value: model.id, label: model.name }))}
               data-testid="acp-chat-model"
-              className="min-w-0 flex-1 basis-0"
+              className={cn(PICKER_MIN_WIDTH_CLASS, 'flex-1 basis-0')}
             />
           ) : null}
           {choices.modes.length > 0 ? (
@@ -915,7 +941,7 @@ export function AcpChatPanel({
                 };
               })}
               data-testid="acp-chat-mode"
-              className="min-w-0 flex-1 basis-0"
+              className={cn(PICKER_MIN_WIDTH_CLASS, 'flex-1 basis-0')}
             />
           ) : null}
         </div>
@@ -1532,7 +1558,12 @@ export function AcpChatPanel({
       <div
         data-testid="acp-chat-composer"
         inert={presentationVisible ? true : undefined}
-        className="relative shrink-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-a46)]"
+        /*
+          `@container/composer` — the footer below reads **this box's width, not the window's**
+          (2026-09-06). The panel is dragged, so a viewport breakpoint would answer a question
+          nobody asked: the same 1512px screen holds this composer at 320px and at 968px.
+        */
+        className="@container/composer relative shrink-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-a46)]"
       >
         {/*
           The shortcut hint appears **only while focused and empty**. In that exact
@@ -1705,12 +1736,28 @@ export function AcpChatPanel({
           tool and its pickers on the left, what the session is doing and what you can do to it on
           the right, send at the end.
 
-          The row shrinks rather than wraps. Every left-hand slot is `min-w-0`, so a long runtime
-          or mode name truncates instead of pushing send off the edge — the same share the tool
-          row already keeps.
+          ⚠️ **Below `COMPOSER_FOOTER_ONE_ROW_PX` it becomes two rows** (owner, 2026-09-06,
+          installed app at the default width, mid-turn: *"why is this broken? I can't see what is
+          selected"*). One row held two pickers, a status word, a running clock and four buttons.
+          The pickers were the only slots allowed to shrink, so they shrank to their chevrons and
+          the person could no longer read which tool and which mode they were talking to — the row
+          survived and its meaning did not.
+
+          So the row splits where it stops fitting: the pickers take a full row of their own, and
+          the status and the buttons take the row below. Above that width nothing changes.
+          The measurement is in `panel-width.ts` beside the width it is measured against.
+
+          Every left-hand slot still shrinks rather than wraps, but never below
+          `PICKER_MIN_WIDTH_CLASS`: a truncated name ("Claude…") is a fact, an empty box is not.
         */}
-        <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
-          <span className="flex min-w-0 flex-1 items-center gap-1.5">
+        <div
+          data-testid="acp-chat-footer"
+          className="mt-2 flex min-w-0 flex-col items-stretch gap-2 @min-[540px]/composer:flex-row @min-[540px]/composer:items-center @min-[540px]/composer:justify-between"
+        >
+          <span
+            data-testid="acp-chat-pickers"
+            className="flex min-w-0 flex-wrap items-center gap-1.5 @min-[540px]/composer:flex-1"
+          >
             {/*
               With two or more usable tools, **the name slot becomes the picker** — it is already
               there to show the name, so no new chrome appears. With just one there is nothing to
@@ -1724,7 +1771,7 @@ export function AcpChatPanel({
                 onChange={onRuntimeChange}
                 options={runtimes.map((r) => ({ value: r.id, label: r.label }))}
                 data-testid="acp-chat-runtime"
-                className="min-w-0 flex-1 basis-0"
+                className={cn(PICKER_MIN_WIDTH_CLASS, 'flex-1 basis-0')}
               />
             ) : (
               <span className="min-w-0 shrink truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
@@ -1744,7 +1791,10 @@ export function AcpChatPanel({
             ) : null}
             {choicesRow}
           </span>
-          <span className="flex shrink-0 items-center gap-1">
+          <span
+            data-testid="acp-chat-session-actions"
+            className="flex min-w-0 flex-wrap items-center justify-end gap-1 @min-[540px]/composer:shrink-0"
+          >
             {/*
               The status is a **sentence-weight word, not a chip**. Up in the header it was a
               bordered badge competing with the title; on this row it is one of several controls,
@@ -1754,7 +1804,12 @@ export function AcpChatPanel({
             <span
               data-acp-status-badge={displayStatus}
               aria-live="polite"
-              className="flex shrink-0 items-center gap-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
+              /*
+                On the two-row footer this word and its clock are the row's left half, so the
+                free space goes into this margin and the buttons stay at the right edge. On one
+                row the group is already content-sized and the margin has nothing to absorb.
+              */
+              className="mr-auto flex shrink-0 items-center gap-1 text-label leading-label text-[color:var(--color-text-quaternary)] @min-[540px]/composer:mr-0"
             >
               {displayStatus === 'starting' ? (
                 <LoaderCircle

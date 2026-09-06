@@ -47,6 +47,20 @@ describe('대화 패널 폭 — 사용자가 끌되 지도는 지킨다', () => 
   it('정수로 떨어진다 — 반 픽셀 폭은 글자를 뭉갠다', () => {
     expect(clampChatWidth(420.4, 1512)).toBe(420);
   });
+
+  /**
+   * The width nobody chose still has to be a width somebody would pick. At 460 the composer
+   * inside it was 368px, which the two pickers divided into about 181px each; 520 makes it
+   * 428px and about 211px each, so the tool and the mode read whole in the footer's two-row
+   * shape. It stays far below the 968 ceiling a 1512 screen allows, so the map keeps its share.
+   */
+  it('the default width opens the dock in its whole shape, not its folded one', () => {
+    expect(CHAT_WIDTH_DEFAULT).toBe(520);
+    expect(CHAT_WIDTH_DEFAULT).toBeGreaterThan(CHAT_WIDTH_MIN);
+    expect(CHAT_WIDTH_DEFAULT).toBeLessThanOrEqual(maxChatWidth(1512));
+    // The default must survive the clamp unchanged — a default the clamp rewrites is not one.
+    expect(clampChatWidth(CHAT_WIDTH_DEFAULT, 1512)).toBe(CHAT_WIDTH_DEFAULT);
+  });
 });
 
 describe('대화 패널 폭 — 저장', () => {
