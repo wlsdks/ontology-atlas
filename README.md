@@ -670,6 +670,7 @@ enforces: `wiki/_template.md`, written into every new vault by `init`.
 
 ```bash
 node $ATLAS wiki-validate .   # 0 = every page fits · 1 = at least one does not
+node $ATLAS wiki-index .      # the index, computed from the pages; --write leaves wiki/_index.md
 ```
 
 The full contract is `docs/ONTOLOGY-ATLAS-SPEC.md` §11.

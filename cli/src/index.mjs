@@ -105,6 +105,8 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --list-codes                           ${COLORS.dim}the issue codes available to --fail-on${COLORS.reset}
   ontology-atlas wiki-validate [vault]       Wiki pages against the page contract (spec §11); exit 1 when one does not fit
        --json                                 ${COLORS.dim}per page: problem codes and their lines${COLORS.reset}
+  ontology-atlas wiki-index [vault]          The wiki's index, computed from the pages: title, summary, sources, links, problems
+       --json --write                         ${COLORS.dim}as data · also leave wiki/_index.md (generated, never edited)${COLORS.reset}
   ontology-atlas mcp-verify [vault]           MCP boot + tools + health + graph-query smoke
        --timeout-ms N                         ${COLORS.dim}large / slow vault server wait override${COLORS.reset}
   ontology-atlas agent-setup [vault]          Check/repair Claude Code, Cursor, and Codex configs
