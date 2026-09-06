@@ -47,8 +47,8 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Agent lookups show targets and counts above the answer. MCP has its own screen: the folder's connection plus Connectors that attach external MCP servers to the in-app chat, off by default, token in the keychain. Library, a ninth screen, holds Sources (any format, kept as they arrived, marked not compiled, stale or compiled) and Wiki pages in one template. Insights repairs missing back-links in one sheet.
-**Changed**: Insights opens on four measurements and lists to-dos one row per finding; the Cone view fills the canvas; the conversation opens 40px wider under one header band, scrolls without a bar, and its Meaning and Findings views lead with the action; Agents and MCP read in a 960 column; Korean labels lose tracking.
+**Added**: Agent lookups show targets and counts above the answer. MCP has its own screen: the folder's connection plus Connectors for external MCP servers, off by default, token in the keychain. Library, a ninth screen, holds Sources (any format, as they arrived) and Wiki pages in one template. Insights repairs missing back-links in one sheet. Meaning can ask the agent to write the reasons connections still lack.
+**Changed**: Insights opens on four measurements and lists to-dos one row per finding; the Cone view fills the canvas; the conversation opens 40px wider under one header band and its views lead with the action; Agents and MCP read in a 960 column; Korean labels lose tracking; a connection card leads with its recorded reason.
 **Fixed**: Pages keep a bottom margin on desktop; repeated lookups fold onto one row; the permission card keeps its buttons on screen.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
