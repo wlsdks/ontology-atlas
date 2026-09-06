@@ -54,6 +54,24 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-07 — Strata's tier legend takes the right edge only where the fit was not going to use it
+
+**Why**: the rail buys its names a clear column by making the fit reserve 56 px at the canvas's right edge. At 1512x982 that costs nothing: the fit is height-bound, 236 px of width unused. At 1040x720 width binds, and the column is 6% of a 976 px canvas: the outline fell from 607x567 (73.4% of the free canvas) to 565x529 (63.6%), overlapping pairs 2 to 5, two element pairs on one plane touching. The rail also clamps two of its four rows to its band there, so the reservation was not buying the alignment it exists for.
+**Prior**: overturns the unconditional reservation in 2026-09-06 "Strata's tier names move from the plane rims to a rail"; the rail, its alignment, the hover raise, the rim-name fallback and "never both" stand.
+**Decision**: `tierLegendPlacement(freeWidth, freeHeight)` answers `rail` only when `freeWidth - 56 >= freeHeight * 1.08`, the measured silhouette aspect, on the fit's own box. The fit reserves the column exactly when that says `rail`, so reservation and legend cannot disagree. Everywhere else the names become four 16 px rows stacked in the bottom-right corner the rims curve away from, on the tiles' column, offset measured off the readout. Same words, order, hover. After: 1040x720 back to 73.4% fill, 0 same-tier touching pairs, 0 rect intersections with tiles, readout, discs or names; 1512x982 unchanged at 66.3%. Gate: `tests/e2e/map-3d-strata-drawing.spec.ts`, which pins each size's placement.
+**Dissent**: the corner stack gives up saying which ring a name belongs to by alignment, on the size where the graph is hardest to read. Kept: at 1040 the rail already clamped half its rows, and the hover raise answers on demand. Second: an aspect constant is a measurement a differently shaped vault can invalidate.
+**Falsifier**: a vault whose Strata silhouette is far from square, so a canvas the predicate calls `rail` still loses width; or a walker at 1040 who cannot say which plane a corner row names after hovering it.
+**Owner**: jinan
+
+## 2026-09-07 — A resting 3D relation line is never thinner than one device pixel
+
+**Why**: the ink floor was measured at device pixel ratio 2 and its gate said so: "the same frame that measures 1.89 : 1 here measures 1.23 : 1 at DPR 1, before and after the floor alike". Width is a CSS quantity, so on an ordinary monitor a 0.32 px stroke covers a third of a device pixel, its alpha spreads over the two rows it straddles, and the peak contrast a reader follows a line by collapses. At 1512x982, contains / depends median at ratio 1: Cone 1.29 / 1.26, Strata 1.25 / 1.19, Cloud 1.27 / 1.25 — the distance that floor bought, given back.
+**Prior**: extends 2026-09-06 "relation ink", which stands; this closes the DPR 1 caveat that record and its gate both named.
+**Decision**: `DOME_EDGE_DEVICE_WIDTH_FLOOR` = 1.0 device px, converted to CSS px by the ratio the canvas rasterises at, on the base width of resting 3D lines only: before the taper, so direction still reads from width, and cross-faded on the assembly ramp so the morph cannot step it. After, contains / depends median: ratio 2, Cone 2.44 / 1.96, Strata 2.26 / 1.87, Cloud 2.51 / 2.08; ratio 1, Cone 2.72 / 2.33, Strata 2.33 / 1.57, Cloud 2.52 / 2.05. The bar, 1.8 containment and 1.5 dependency at rest, is cleared at both ratios everywhere. Ranks hold: ratio 2, 6.08 selected > 4.33 ego > 2.41 rest > 1.16 dim; ratio 1, 3.66 > 3.05 > 2.08 > 1.11. The 2D canvas is byte identical. Gate: `tests/e2e/map-3d-relation-ink.spec.ts`, at both ratios.
+**Dissent**: the floor binds at ratio 2 too, where 1 device px is 0.5 CSS px against strokes of 0.32, so the approved picture is inkier: Cone containment 1.89 to 2.44. Kept as the same defect a step smaller, and because holding ratio 2 exactly would give ratio 1 only what ratio 2 had, a bar containment merely landed on. Second: below the floor the per-level ladder ties.
+**Falsifier**: an owner or walkthrough reading the 3D lines as too heavy at ratio 2, or a ratio 3 screen where the floor stops binding and resting lines return to invisible.
+**Owner**: jinan
+
 ## 2026-09-06 — The Library stays on every rail; only a wiki without a map hides the map doors
 
 **Why**: PO review of the same-day shape record found the map-side half unevidenced and creator-dependent: `cli/src/index.mjs` writes `wiki/_template.md` into every code vault while the app's map card writes none, so the two creators would have drawn different rails for "a codebase map", and every vault made before today — the dogfood `docs/ontology/` included — would have lost the Library on upgrade. The Library also holds `sources/`, which any folder may have.

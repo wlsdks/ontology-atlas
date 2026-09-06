@@ -801,7 +801,7 @@
       "headings": [],
       "excerpt": "A trial, not a feature. The owner asked two questions on 2026-09-06: try three.js on the map's 3D view and compare it with what ships, and look for a 3D structure better suited to an ontology than the cone. This file is the answer; nothing here is on by default and no decision record was written, because the decision i",
       "wordCount": 2171,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -827,7 +827,7 @@
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
       "wordCount": 29915,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -862,7 +862,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 109911,
+      "wordCount": 110630,
       "updatedAt": "2026-09-07",
       "linksOut": [
         "wiki/…",
@@ -970,7 +970,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 33683,
+      "wordCount": 33817,
       "updatedAt": "2026-09-07",
       "linksOut": [
         "ANALYSIS-RECORDS",
@@ -2330,7 +2330,7 @@
       "headings": [],
       "excerpt": "Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user. README.md: \"Your agent reads and maintains it",
       "wordCount": 259,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -2560,7 +2560,7 @@
       "headings": [],
       "excerpt": "The first five-minute path from shared link → installed app → connection (download decision, initial run tour, locale, automatic updates) and the always-available navigation shell surrounding it. README.md: \"One download installs both surfaces. The macOS app carries a compiled MCP server inside its own bundle.\" AGENTS.",
       "wordCount": 105,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -2614,7 +2614,7 @@
       "headings": [],
       "excerpt": "A management area within a single vault that lists, views, edits, and shares multiple project nodes. AGENTS.md: Project overview (project→domain→capability→element reading spine, multi-project containment) src/features/project-edit, project-quick-edit, project-share (implementation evidence) Inclusions: Project detail/",
       "wordCount": 79,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {

@@ -535,6 +535,57 @@ export function domeEdgeFogAlpha(u: number): number {
   return Math.min(1, Math.max(domeFogAlpha(u), DOME_EDGE_INK_FLOOR / domeEdgeWidthFactor(u)));
 }
 
+/**
+ * **The floor under a resting relation line's stroke width, in _device_ pixels.**
+ *
+ * `DOME_EDGE_INK_FLOOR` holds the product `alpha × width factor`, and that product
+ * is only what reaches the eye while the stroke is at least one device pixel wide.
+ * Below that the rasteriser cannot give any pixel the line's full alpha: it spreads
+ * the same total ink across the two pixel rows the sub-pixel stroke straddles, so
+ * the **peak** contrast — what a reader follows a line by, and what the browser gate
+ * samples — falls even though the ink budget is intact.
+ *
+ * Line width is a CSS quantity, so the same frame that draws a 0.5 px stroke covers
+ * one device pixel at DPR 2 and half of one at DPR 1. Measured on the sample vault,
+ * nothing selected or hovered, at 1512×982 (2026-09-06), the identical frames read:
+ *
+ * | at rest, contains / depends median | DPR 2 | DPR 1 before |
+ * |---|---|---|
+ * | Cone | 1.89 / 1.75 : 1 | 1.29 / 1.26 : 1 |
+ * | Strata | 1.72 / 1.55 : 1 | 1.25 / 1.19 : 1 |
+ * | Cloud | 1.83 / 1.78 : 1 | 1.27 / 1.25 : 1 |
+ *
+ * That is the whole distance the ink floor bought, given back on every non-Retina
+ * screen. The answer is to stop the resting stroke from going sub-pixel **on the
+ * device**: the caller converts this to CSS px with the ratio it is actually
+ * rasterising at (`domeEdgeMinWidthPx`), so nothing changes where the stroke was
+ * already a pixel wide and the correction is exactly as large as the ratio makes it.
+ *
+ * 1.0 device px was measured and rejected: a stroke of exactly one device pixel
+ * still straddles two rows wherever its centre is not on a half-pixel, so the peak
+ * only reached 1.45 : 1. 1.4 device px is what puts a full-alpha row inside the
+ * stroke at any sub-pixel offset, and it measured 1.72–1.90 : 1 at DPR 1 — the DPR 2
+ * numbers, which is the point.
+ *
+ * What still carries depth at DPR 1: the width factor above the floor, the alpha,
+ * the halo, node fog, perspective size and draw order. Nothing here touches the 2D
+ * map, nodes, plane rings, or the interaction-exempt lines, and at DPR 2 the floor
+ * lands under the width every resting line already had.
+ * Browser gate: `tests/e2e/map-3d-relation-ink.spec.ts`.
+ */
+export const DOME_EDGE_DEVICE_WIDTH_FLOOR = 1.0;
+
+/**
+ * `DOME_EDGE_DEVICE_WIDTH_FLOOR` expressed in the CSS pixels `lineWidth` takes,
+ * for the ratio the canvas is currently rasterising at. A missing or nonsense
+ * ratio falls back to 1, which is the conservative side: it asks for the widest
+ * floor rather than silently for none.
+ */
+export function domeEdgeMinWidthPx(devicePixelRatio: number): number {
+  const dpr = Number.isFinite(devicePixelRatio) && devicePixelRatio > 0 ? devicePixelRatio : 1;
+  return DOME_EDGE_DEVICE_WIDTH_FLOOR / dpr;
+}
+
 
 /*
  * ── Far-side detail ramp — folds the back hemisphere's secondary strokes away
