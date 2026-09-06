@@ -6271,6 +6271,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-06 — The Library gets its own small graph, separate from the map",
+      "slug": "2026-09-06-the-library-gets-its-own-small-graph-separate-from-the-map"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-06 — A containment pair carries its reason once, on the parent document",
       "slug": "2026-09-06-a-containment-pair-carries-its-reason-once-on-the-parent-document"
     },

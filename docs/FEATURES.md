@@ -733,6 +733,27 @@ Three one-click doors:
   The dock opens on this screen: Compile is a job, not a place, and the job runs beside
   the shelf it is compiling.
 
+**Graph** (2026-09-06) — one canvas above the reader, opened and closed by a chip, that
+draws the same two file kinds the lists carry, plus the third thing they reach: a raw
+source is a square, a wiki page a filled circle, and an ontology concept a page names with
+`[[slug]]` is a ring. A solid line is a citation from the page's `sources:` frontmatter; a
+dashed line is a mention from its body. A link that resolves to nothing is not drawn, and a
+source nobody has written up simply has no line, which is the same fact the `not compiled`
+word carries in the list. The caption counts what is on the canvas: sources, pages,
+concepts, links. Pointing at a dot names it; clicking a page or a source selects it here, in
+the index and in the reader at once, while clicking a concept opens it on the map, because a
+concept is not a file in this folder. Selection is the only place indigo appears: the node,
+its ring, and the edges that touch it.
+
+It is **not the map, and separate on purpose** (`docs/DECISIONS.md`, 2026-09-06). The map
+draws the ontology, whose nodes all carry `kind:`; neither a PDF nor a wiki page ever
+becomes one. This picture answers the other question, what was read to write that down.
+Layout is ForceAtlas2 (Graphology, already installed for the map's force pass) run to a
+stop before the first frame, rotated so its longest direction lies along the canvas, then
+fitted at one scale for both axes so distance means the same thing in x and y. It settles
+once, over the 420ms canvas-travel duration, and then nothing moves; under
+`prefers-reduced-motion` the settled frame is drawn at once. 500 nodes lay out in 95ms.
+
 **What left `/docs` on 2026-09-06**: Sources, Wiki, the three doors, and the agent dock.
 What stayed: the review queue, recently changed, the tree, and the editor.
 
