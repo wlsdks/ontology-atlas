@@ -308,6 +308,8 @@ export function MeaningEditorPanel({
                 label={t('why')}
                 className="w-full"
                 rows={3}
+                autoGrow
+                maxRows={8}
                 value={why}
                 onChange={(event) => setWhy(event.target.value)}
                 hint={t(whyRequired ? 'whyRequiredHint' : 'whyHint')}
