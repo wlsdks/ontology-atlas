@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { serializeAnalysisRecord } from '@/entities/analysis-record';
 import { analysisGraphDigest, analysisGraphFromInsight, architectureResultRows, buildAnalysisRun, fullBodyResultRows, type AnalysisCaptureContext } from './analysis-capture';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
@@ -56,6 +57,19 @@ describe('analysis evidence capture', () => {
     expect(result.evidence[0].slug).toBe(profileSlug);
     expect(result.qualification.reasons).toContain('finding-1:target_not_in_graph');
     expect(ctx.graph.nodes).toHaveLength(1);
+  });
+  it('bounds a long or blank tool title so a write turn still saves its record', async () => {
+    const longTitle = `Update the reason on ${'capabilities/refund '.repeat(20)}`;
+    const events: AcpEvent[] = [
+      read(),
+      { kind: 'tool', id: 'write-1', title: longTitle, toolKind: 'edit', status: 'completed' },
+      { kind: 'tool', id: 'write-2', title: '   ', toolKind: 'edit', status: '' },
+    ];
+    const result = await build(completion(events));
+    expect(result.toolReads.map((item) => item.name.length <= 200 && item.name.trim().length > 0)).toEqual([true, true, true]);
+    expect(result.toolReads[2]).toEqual({ id: 'write-2', name: 'unknown', status: 'unknown' });
+    expect(result.sourceAccess).toBe('unproven');
+    expect(() => serializeAnalysisRecord(result)).not.toThrow();
   });
   it('does not promote input-only, failed, truncated or error-envelope reads', async () => {
     for (const event of [read(undefined, 'failed'), read({ ...row, bodyInfo: { ...row.bodyInfo, truncated: true } }), read({ isError: true, result: row }), { ...read(), rawOutput: undefined }]) {
