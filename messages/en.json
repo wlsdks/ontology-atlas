@@ -1048,11 +1048,13 @@
       "view3dChoice": {
         "flat": "Flat",
         "ownership": "Cone",
+        "strata": "Strata",
         "coupling": "Cloud"
       },
       "view3dChoiceHint": {
         "flat": "the ordinary 2D map",
         "ownership": "stacked in tiers, the way things are contained",
+        "strata": "the same containment, read level by level",
         "coupling": "clustered by what relates to what"
       },
       "view3dLabel": "3D",

@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — Strata joins Cone and Cloud as a third 3D arrangement, and the three.js probe is declined
+
+**Why**: The three.js probe of 2026-09-06 (report THREE-PROBE-2026-09-06, on the `feat/three-probe` branch) measured equal frame time at 125 and 1,000 nodes, cost 137 kB gzip, and found its only real gain in a **structure**, not a renderer: Strata read tiers "by a distance" better than the cone. A structure is renderer-independent, so the canvas-2D engine can have it for free.
+**Prior**: 2026-09-02 (the cone tree) and 2026-08-18 (76)/(84) stand; Strata is added beside the cone, not instead of it.
+**Decision**: `buildStrataTargets` puts the four kinds on stacked planes, each a hairline ellipse named at its rim; a node keeps its parent's sector, so containment drops are short and cannot cross. Adopted, not invented: radial layered drawing (Bachmaier 2007) over Sugiyama barycenter crossing reduction with a circular key, dot's best-of-sweeps guard, sector-per-subtree from radial Reingold-Tilford, and the Helix Cone Tree's two radii per plane. Rejected: free layer permutation, edge bundling, hyperbolic focus+context, and three.js itself. Every source, paper and shipped library alike: `docs/benchmark/STRATA-2026-09-06.md`. Measured at 1512 on the sample vault: 0 overlapping node pairs against the cone's 4, 2,606 drawn crossings against 3,015, and crossings between two containment drops 585 to 521 once the sweeps run.
+**Dissent**: A fourth picker row is a fourth thing to explain, and Cone already answers containment; Strata's total crossings are no better than id order (2,561 vs 2,606) and only its containment fan improves.
+**Falsifier**: A walkthrough where a person cannot say which arrangement answers their question, or a vault of 300+ nodes whose element plane crowds worse than the cone's nested bases, reopens whether three arrangements are one too many.
+**Owner**: jinan
+
 ## 2026-09-06 — The Library is a guided shelf with paired original and write-up, and a local model is a named brain
 
 **Why**: the owner opened the day-old destination and said "entering the Library I don't know what to do", then named what it is for: gather every format, write it into our template, keep original and write-up separate, and let a security-minded person run a local LLM. With nothing selected the pane said "Nothing gathered yet" or opened the first wiki page unasked; `Built from` was provenance and `Cited by` slugs nobody could press.

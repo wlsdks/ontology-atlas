@@ -8,6 +8,7 @@ import { useTopologyLoop } from "./use-topology-loop";
 import type { TierRevealConfig } from "../model/tier-visibility";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import type { ClusterBarLabels } from "../render/cluster-chips";
+import type { DomeViewKind } from "../model/dome-view";
 import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
 import { controlClass } from '@/shared/ui/control-class';
@@ -245,6 +246,8 @@ export interface TopologyMapV2Props {
    * catches a broken wiring.
    */
   clusterBarLabels?: ClusterBarLabels | null;
+  /** Translated kind names, written at the rim of each Strata plane ring. */
+  domeTierLabels?: Readonly<Partial<Record<DomeViewKind, string>>> | null;
   /**
    * H3 P2 — the canvas accessibility label (i18n, injected by HomePage). A canvas
    * is painted pixels and reads to a screen reader as an empty graphic, so
@@ -399,7 +402,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, domeTierLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -543,6 +546,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       realmEnterButtonRef,
       realmCaption,
       clusterBarLabels,
+      domeTierLabels,
       visitedTrail,
       trailLensActiveRef,
       trailHoverNodeIdRef,

@@ -3783,6 +3783,28 @@
       "slug": "a-note-on-ties"
     }
   ],
+  "benchmark/STRATA-2026-09-06": [
+    {
+      "depth": 1,
+      "text": "Strata — the techniques it is built from, and the ones it refused",
+      "slug": "strata-the-techniques-it-is-built-from-and-the-ones-it-refused"
+    },
+    {
+      "depth": 2,
+      "text": "What the classic literature decided for us",
+      "slug": "what-the-classic-literature-decided-for-us"
+    },
+    {
+      "depth": 2,
+      "text": "What people are actually shipping and writing, 2025–2026",
+      "slug": "what-people-are-actually-shipping-and-writing-20252026"
+    },
+    {
+      "depth": 2,
+      "text": "What was deliberately not adopted",
+      "slug": "what-was-deliberately-not-adopted"
+    }
+  ],
   "benchmark/tasks": [
     {
       "depth": 1,
@@ -6268,6 +6290,11 @@
       "depth": 2,
       "text": "Record format",
       "slug": "record-format"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-06 — Strata joins Cone and Cloud as a third 3D arrangement, and the three.js probe is declined",
+      "slug": "2026-09-06-strata-joins-cone-and-cloud-as-a-third-3d-arrangement-and-the-threejs-probe-is-declined"
     },
     {
       "depth": 2,

@@ -339,6 +339,25 @@ had become false).
   bootstrap from found docs, create a node, open Topology INDEX, open Workshop,
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
+- **Three 3D arrangements, chosen in one picker** — the `3D` chip in the top tool
+  lane opens a four-row list: **Flat** (the ordinary 2D map, default), **Cone**,
+  **Strata**, and **Cloud**. Cone and Strata both draw containment and answer
+  different questions with it: Cone makes a parent the apex of its own cone, so a
+  subtree is a bump you can point at and rotate to the front; **Strata** (2026-09-06)
+  lays the four kinds out as stacked planes — project on top, then domain,
+  capability, element — each drawn as one hairline ellipse named at its rim, so
+  "which level is this on" is a glance rather than an inference. On a Strata plane
+  a node keeps its parent's bearing, which makes every containment drop short,
+  near-vertical and unable to cross a sibling's; a node whose parent is not in the
+  map falls to the outer rim of its own plane, where "nothing above holds this"
+  is a position rather than a missing line. Cloud drops containment altogether and
+  lets relations decide all three coordinates. Switching between any two runs the
+  same continuous morph — nodes travel, they do not cut — and the choice is
+  remembered. Measured on the sample vault (2026-09-06): Strata leaves 2
+  overlapping node pairs at 1512x982 against the Cone's 4, and none of them are
+  same-tier. Geometry: `buildStrataTargets` and `layoutConeTree` in
+  `src/widgets/topology-map-v2/model/dome-view.ts`; gates:
+  `tests/e2e/map-3d-strata-drawing.spec.ts` and `map-3d-cone-drawing.spec.ts`.
 
 #### `TopologyFitControl` (top-right, desktop-only)
 - Single **Fit Map** tile — fits the camera to the graph bounds. Desktop-only (mobile uses pinch-zoom).

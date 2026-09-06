@@ -84,6 +84,7 @@ import {
 import {
   beginDomeModelBuild,
   beginDomeMorph,
+  domeRingAlphaFor,
   clampDomePitch,
   DOME_BUILD_SLICE_MS,
   createDomeRuntime,
@@ -111,6 +112,7 @@ import {
   settleDomeRuntimeOffscreen,
   updateDomeFrame,
   type DomeModel,
+  type DomeViewKind,
   type DomeModelBuild,
   type DomeRuntime,
 } from "../model/dome-view";
@@ -389,6 +391,8 @@ export interface UseTopologyLoopArgs {
    * builds user-facing strings — same path `realmCaption` already uses.
    */
   clusterBarLabels?: ClusterBarLabels | null;
+  /** Translated kind names, written at the rim of each Strata plane ring. */
+  domeTierLabels?: Readonly<Partial<Record<DomeViewKind, string>>> | null;
   /**
    * Trail brushing — a **ref** holding the node id of the popover row under
    * hover/focus. While the lens is on, the map borrows its own hover channel
@@ -484,11 +488,12 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, domeTierLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const getRealmCaption = useEffectEvent(() => realmCaption);
   const annotationRef = useRef({ captions: args.relationCaptions, questions: args.reviewQuestionIds });
   const getClusterBarLabels = useEffectEvent(() => clusterBarLabels);
+  const getDomeTierLabels = useEffectEvent(() => domeTierLabels);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -5030,6 +5035,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         depthDotPatterns: canvasBackgroundRef.current === "depth" ? depthDotPatternsRef.current : undefined,
         expand: expandPrefRef.current,
         clusterBarLabels: getClusterBarLabels(),
+        domeRingAlpha: domeRingAlphaFor(mapArrangementRef.current),
+        domeTierLabels: getDomeTierLabels(),
       });
       // Record which lens state this frame drew; the idle gate compares
       // against it next frame to decide whether the lens changed.
