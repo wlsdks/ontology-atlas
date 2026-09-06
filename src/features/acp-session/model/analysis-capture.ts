@@ -212,6 +212,17 @@ function findingGroundingProblems(finding: AnalysisFinding, run: AnalysisRun, co
   return reasons;
 }
 
+/**
+ * A tool read keeps the tool's name, but an ACP tool event outside the Atlas server carries
+ * whatever title the agent gave it, which can run past the record's 200-character bound or
+ * be blank. The record validator rejects both, and one such event used to fail the whole
+ * save ("tool name must be a non-empty bounded string"), so the audit row is bounded here.
+ */
+function bounded(value: string | undefined, max: number): string {
+  const trimmed = (value ?? '').trim();
+  return trimmed ? trimmed.slice(0, max) : 'unknown';
+}
+
 export async function buildAnalysisRun(
   completion: AcpTurnCompletion,
   context: AnalysisCaptureContext,
@@ -230,7 +241,7 @@ export async function buildAnalysisRun(
     if (event.kind !== 'tool') continue;
     if (['ToolSearch', 'tool_search'].includes(event.title)) continue;
     const call = parseAtlasToolCall(event.title, event.rawInput);
-    toolReads.push({ id: event.id, name: (call?.name ?? event.title) || 'unknown', status: event.status || 'unknown' });
+    toolReads.push({ id: bounded(event.id, 200), name: bounded(call?.name ?? event.title, 200), status: bounded(event.status, 100) });
     if (!call || !READ_TOOLS.has(call.name)) sourceAccess = 'unproven';
     if (call?.name === 'inspect_architecture') {
       const measurements = event.status === 'completed' ? architectureResultRows(event.rawOutput) : [];
