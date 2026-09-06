@@ -296,10 +296,68 @@ export function drawFootprintSteps(
   ctx.restore();
 }
 
+/** One print's position on an edge. */
+export interface EdgeFootprintPlacement {
+  x: number;
+  y: number;
+  angle: number;
+  mirror: boolean;
+  fade: number;
+}
+
+/**
+ * A control point this far off the chord (px) or less draws as a straight line, so the
+ * chord maths — exact, and the only shape the settings preview ever has — still runs.
+ */
+const FOOTPRINT_STRAIGHT_BOW_PX = 0.01;
+/**
+ * Arc-length table resolution. The map's bows are mild (control offset well under the
+ * chord length), where 24 chords hold the length to far below one pixel; the table exists
+ * so the two end pads stay **real distance** from the nodes instead of a slice of `t`,
+ * which on a curve is not the same thing.
+ */
+const FOOTPRINT_CURVE_SAMPLES = 24;
+
+/** Point and tangent angle on the quadratic Bézier the trace renderer draws. */
+function quadAt(
+  ax: number, ay: number, bx: number, by: number, cx: number, cy: number, t: number,
+): { x: number; y: number; angle: number } {
+  const u = 1 - t;
+  const dx = 2 * (u * (cx - ax) + t * (bx - cx));
+  const dy = 2 * (u * (cy - ay) + t * (by - cy));
+  return {
+    x: u * u * ax + 2 * u * t * cx + t * t * bx,
+    y: u * u * ay + 2 * u * t * cy + t * t * by,
+    // A cusp (both derivatives zero) has no tangent; the chord is the honest fallback.
+    angle: dx === 0 && dy === 0 ? Math.atan2(by - ay, bx - ax) : Math.atan2(dy, dx),
+  };
+}
+
+/** Curve parameter at arc length `s`, read off the cumulative table by linear inverse. */
+function tAtLength(table: readonly number[], s: number): number {
+  const last = table.length - 1;
+  for (let i = 1; i <= last; i += 1) {
+    if (s > table[i]) continue;
+    const span = table[i] - table[i - 1];
+    const within = span <= 0 ? 0 : (s - table[i - 1]) / span;
+    return (i - 1 + within) / last;
+  }
+  return 1;
+}
+
 /**
  * Positions and angles of the prints left along one relation line. Kept pure and apart
  * from rendering: "does it clear the line" and "does it touch the node" are properties
  * of **coordinates**, not of the picture, so they can be locked down without a canvas.
+ *
+ * **The line is a curve, so the prints are too** (owner, 2026-09-06: *"Optimise where the
+ * footprints sit — have them computed to sit smoothly beside the line; right now they even
+ * overlap it"*). Placing them along the straight chord between the endpoints put the middle
+ * prints on the **inside of the bow**, where the drawn curve runs — the same overlap the
+ * offset was there to prevent, only produced by the wrong baseline rather than the wrong
+ * distance. `control` is the quadratic Bézier control point the trace renderer received for
+ * this same edge; omitting it keeps the chord behaviour (the settings preview draws a
+ * straight line and has no curve to follow).
  */
 export function edgeFootprintPlacements(
   ax: number,
@@ -308,18 +366,13 @@ export function edgeFootprintPlacements(
   by: number,
   pref: FootprintPreference,
   scale = 1,
-): { x: number; y: number; angle: number; mirror: boolean; fade: number }[] {
+  control?: { x: number; y: number } | null,
+): EdgeFootprintPlacement[] {
   const size = pref.size * scale;
   const gap = pref.gap * scale;
   const count = FOOTPRINT_EDGE_COUNT[pref.edgeDensity];
-  const angle = Math.atan2(by - ay, bx - ax);
-  const nx = Math.cos(angle + Math.PI / 2);
-  const ny = Math.sin(angle + Math.PI / 2);
-  const len = Math.hypot(bx - ax, by - ay);
   // Leave both ends empty — a print touching a node is misread as node decoration.
   const pad = size * 1.6;
-  const usable = len - pad * 2;
-  if (usable <= 0) return [];
 
   /**
    * For a print to actually clear the line the offset must be **the gap plus the print's
@@ -333,19 +386,82 @@ export function edgeFootprintPlacements(
   const glyphHalfWidth = size * FOOTPRINT_EDGE_SCALE * 0.26 + pref.strokeWidth / 2;
   const offset = gap + glyphHalfWidth;
 
-  const out: { x: number; y: number; angle: number; mirror: boolean; fade: number }[] = [];
+  const cx = control?.x ?? (ax + bx) / 2;
+  const cy = control?.y ?? (ay + by) / 2;
+  const chordX = bx - ax;
+  const chordY = by - ay;
+  const len = Math.hypot(chordX, chordY);
+  // How far the control point stands off the chord — the bow. Zero means the Bézier
+  // collapses onto the chord and the exact straight maths below is the same picture.
+  const bow = len === 0 ? 0 : Math.abs((cx - ax) * chordY - (cy - ay) * chordX) / len;
+
+  const out: EdgeFootprintPlacement[] = [];
+  // Leading prints are darker — direction ("which end did I come from"), not recency.
+  const fadeOf = (i: number) => 0.5 + 0.5 * (1 - i / Math.max(1, count - 1));
+
+  if (bow < FOOTPRINT_STRAIGHT_BOW_PX) {
+    const angle = Math.atan2(chordY, chordX);
+    const nx = Math.cos(angle + Math.PI / 2);
+    const ny = Math.sin(angle + Math.PI / 2);
+    const usable = len - pad * 2;
+    if (usable <= 0) return [];
+    for (let i = 0; i < count; i += 1) {
+      const t = (pad + (usable * (i + 0.5)) / count) / len;
+      const alt = i % 2 === 0 ? 1 : -1;
+      // "right": a single row on one side. "both": alternating either side of the line.
+      const d = pref.placement === "both" ? alt * offset : offset;
+      out.push({
+        x: ax + chordX * t + nx * d,
+        y: ay + chordY * t + ny * d,
+        angle: angle + Math.PI / 2,
+        mirror: alt < 0,
+        fade: fadeOf(i),
+      });
+    }
+    return out;
+  }
+
+  const table: number[] = [0];
+  let prevX = ax;
+  let prevY = ay;
+  for (let i = 1; i <= FOOTPRINT_CURVE_SAMPLES; i += 1) {
+    const p = quadAt(ax, ay, bx, by, cx, cy, i / FOOTPRINT_CURVE_SAMPLES);
+    table.push(table[i - 1] + Math.hypot(p.x - prevX, p.y - prevY));
+    prevX = p.x;
+    prevY = p.y;
+  }
+  const total = table[FOOTPRINT_CURVE_SAMPLES];
+  const usable = total - pad * 2;
+  if (usable <= 0) return [];
+
+  /**
+   * Which side a single row stands on: **towards the control point**, the outer, convex
+   * side of the bend. The pocket between the chord and the curve is the inside of the
+   * bend, and it is already spoken for — the relation caption is anchored at the curve's
+   * own midpoint, and containment bundles bow the same way. One sign for the whole edge,
+   * taken at the midpoint, so the row cannot swap sides halfway along.
+   */
+  const mid = quadAt(ax, ay, bx, by, cx, cy, 0.5);
+  const midNx = Math.cos(mid.angle + Math.PI / 2);
+  const midNy = Math.sin(mid.angle + Math.PI / 2);
+  const side =
+    midNx * (cx - (ax + bx) / 2) + midNy * (cy - (ay + by) / 2) >= 0 ? 1 : -1;
+
   for (let i = 0; i < count; i += 1) {
-    const t = (pad + (usable * (i + 0.5)) / count) / len;
+    const t = tAtLength(table, pad + (usable * (i + 0.5)) / count);
+    const p = quadAt(ax, ay, bx, by, cx, cy, t);
+    // The normal is the **local** one, so the row hugs the bend instead of shearing away
+    // from it the way a single chord normal did.
+    const nx = Math.cos(p.angle + Math.PI / 2);
+    const ny = Math.sin(p.angle + Math.PI / 2);
     const alt = i % 2 === 0 ? 1 : -1;
-    // "right": a single row on one side. "both": alternating either side of the line.
-    const d = pref.placement === "both" ? alt * offset : offset;
+    const d = pref.placement === "both" ? alt * offset : side * offset;
     out.push({
-      x: ax + (bx - ax) * t + nx * d,
-      y: ay + (by - ay) * t + ny * d,
-      angle: angle + Math.PI / 2,
+      x: p.x + nx * d,
+      y: p.y + ny * d,
+      angle: p.angle + Math.PI / 2,
       mirror: alt < 0,
-      // Leading prints are darker — direction ("which end did I come from"), not recency.
-      fade: 0.5 + 0.5 * (1 - i / Math.max(1, count - 1)),
+      fade: fadeOf(i),
     });
   }
   return out;
@@ -359,10 +475,11 @@ export function drawEdgeFootprints(
   bx: number,
   by: number,
   alpha: number,
+  control?: { x: number; y: number } | null,
 ): void {
   const { ctx, pref } = paint;
   const k = paint.scale ?? 1;
-  for (const spot of edgeFootprintPlacements(ax, ay, bx, by, pref, k)) {
+  for (const spot of edgeFootprintPlacements(ax, ay, bx, by, pref, k, control)) {
     withFootprintInk(paint, alpha * spot.fade, () => {
       ctx.translate(spot.x, spot.y);
       ctx.rotate(spot.angle);
