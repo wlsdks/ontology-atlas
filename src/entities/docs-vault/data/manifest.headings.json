@@ -6293,6 +6293,16 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-07 — Strata's tier legend takes the right edge only where the fit was not going to use it",
+      "slug": "2026-09-07-stratas-tier-legend-takes-the-right-edge-only-where-the-fit-was-not-going-to-use-it"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-07 — A resting 3D relation line is never thinner than one device pixel",
+      "slug": "2026-09-07-a-resting-3d-relation-line-is-never-thinner-than-one-device-pixel"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-06 — The Library pane is the graph; the shelf is a popup",
       "slug": "2026-09-06-the-library-pane-is-the-graph-the-shelf-is-a-popup"
     },

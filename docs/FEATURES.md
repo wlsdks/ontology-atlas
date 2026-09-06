@@ -352,7 +352,12 @@ had become false).
   height and re-aligned as you orbit or morph, and hovering a row raises its
   plane's ring. They used to hang on the rims themselves, which at 1040x720 put
   them on the graph; the rim names remain only as the fallback on a canvas too
-  short for the rail, and the two are never both on. On a Strata plane
+  short for the rail, and the two are never both on. Where the rail's column would
+  be width the graph wanted, the four names become a **compact stack in the
+  bottom-right corner** instead (2026-09-07), keeping the same words and the same
+  hover: at 1040x720 that took the graph back from 63.6% of the free canvas to
+  73.4% and from two touching same-tier pairs to none, while 1512x982 keeps the
+  aligned rail and its 66.3% unchanged. On a Strata plane
   a node keeps its parent's bearing, which makes every containment drop short,
   near-vertical and unable to cross a sibling's; a node whose parent is not in the
   map falls to the outer rim of its own plane, where "nothing above holds this"
@@ -371,12 +376,16 @@ had become false).
   drawn beside it: measured on the sample vault by pointing at each drawn centre
   in turn, 4 of 125 answered wrongly in Cone at 1512x982 and 12 of 125 at
   834x1112. Gates: the "drawn centre" cases in both 3D drawing specs.
-- **Relations stay visible at rest in 3D** (2026-09-06) — depth still fades a
-  line towards the back, but its ink now stops at a floor instead of reaching
-  3.5% of a near line's. Measured at 1512x982 against the canvas ground:
-  containment lines went from 1.26 / 1.33 / 1.14 : 1 (Cone / Strata / Cloud) to
-  1.89 / 1.75 / 1.78 : 1, with the 2D map untouched. Gate:
-  `tests/e2e/map-3d-relation-ink.spec.ts`.
+- **Relations stay visible at rest in 3D, on any screen** (2026-09-06, extended
+  2026-09-07) — depth still fades a line towards the back, but its ink now stops
+  at a floor instead of reaching 3.5% of a near line's, and the stroke itself
+  never falls below one device pixel, which is what made the same frames read
+  half as strongly on a screen that is not Retina. Measured at 1512x982 against
+  the canvas ground, containment lines (Cone / Strata / Cloud): at device pixel
+  ratio 2, 1.26 / 1.33 / 1.14 : 1 before the floor and 2.44 / 2.26 / 2.51 : 1
+  now; at ratio 1, 1.29 / 1.25 / 1.27 : 1 before and 2.72 / 2.33 / 2.52 : 1 now.
+  The 2D map is untouched at either ratio. Gate:
+  `tests/e2e/map-3d-relation-ink.spec.ts`, which reads the canvas back at both.
 
 #### `TopologyFitControl` (top-right, desktop-only)
 - Single **Fit Map** tile — fits the camera to the graph bounds. Desktop-only (mobile uses pinch-zoom).

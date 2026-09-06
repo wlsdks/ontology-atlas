@@ -131,6 +131,11 @@ import {
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
 import { createGrowthReplay, GROWTH_REPLAY_CANCEL_GRACE_MS, stepGrowthReplay, type GrowthReplay } from "../model/growth-replay";
 import {
+  TIER_LEGEND_RAIL_COLUMN_PX,
+  tierLegendPlacement,
+  type TierLegendPlacement,
+} from "../model/tier-legend-rows";
+import {
   collectCanvasObstacles,
   computeFreeArea,
   measureCanvasInsets,
@@ -300,6 +305,14 @@ export interface UseTopologyLoopArgs {
    * `null` whenever the arrangement is not Strata or its rings are not up yet.
    */
   onDomeTierAnchorsChange?: (anchors: readonly { kind: DomeViewKind; y: number }[] | null) => void;
+  /**
+   * Where Strata's tier names may sit — `rail` while the fit has width to spare
+   * at the canvas's right edge, `corner` when taking that column would shrink the
+   * graph (`model/tier-legend-rows.ts#tierLegendPlacement`). Fired on change
+   * only. The fit and the legend read the same predicate, so the column is
+   * reserved exactly when the rail is the thing being drawn.
+   */
+  onTierLegendPlacementChange?: (placement: TierLegendPlacement) => void;
 
   /**
    * The semantic-zoom altitude tier changed (spine → circuit → element). Fires
@@ -493,11 +506,17 @@ const EMPTY_DOME_CHIPS: readonly ClusterChip[] = [];
  * **Why not the whole column.** The reservation is width the graph does not get,
  * and at 1040×720 it comes out of a 976 px canvas. At 88 px the fit crowded two
  * more element pairs onto one plane than the gate allows; at 56 px no node lands
- * under a legend row and the crowding cost is two touching pairs, which is the
- * trade `tests/e2e/map-3d-strata-drawing.spec.ts` records. At 1512 the fit is
- * bound by height and the reservation costs nothing at all.
+ * under a legend row.
+ *
+ * **And why it is now conditional** (2026-09-07). 56 px was still 6% of that
+ * canvas, and width is what binds the fit there: the reservation took the fill
+ * from 72.5% to 63.6% and made two element pairs touch. At 1512 it costs nothing,
+ * because the fit is height-bound and 236 px of width go unused. So the column is
+ * reserved only where `tierLegendPlacement` says the rail may have it, and the
+ * legend draws a compact corner stack everywhere else — same names, same hover,
+ * no width taken from the graph.
  */
-const TIER_LEGEND_RESERVE_PX = 56;
+const TIER_LEGEND_RESERVE_PX = TIER_LEGEND_RAIL_COLUMN_PX;
 
 /** Top tier first — the order the legend rail lists its rows in. */
 const DOME_LEGEND_KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
@@ -515,7 +534,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, domeTierLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange, onTierLegendPlacementChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, domeTierLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const getRealmCaption = useEffectEvent(() => realmCaption);
   const annotationRef = useRef({ captions: args.relationCaptions, questions: args.reviewQuestionIds });
@@ -1150,6 +1169,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const domeTierRaisedKindRef = useRef<DomeViewKind | null>(null);
   /** The last anchor set handed out — the change filter's memory, never read by the draw. */
   const domeTierAnchorsSentRef = useRef<{ kind: DomeViewKind; y: number }[] | null>(null);
+  const onTierLegendPlacementChangeRef = useRef<typeof onTierLegendPlacementChange>(onTierLegendPlacementChange);
+  /**
+   * The placement last published, so the legend re-renders on a change and not on
+   * a frame. `null` = nothing published yet.
+   */
+  const tierLegendPlacementSentRef = useRef<TierLegendPlacement | null>(null);
+  /**
+   * The panel obstruction the last fit measured, reused by the per-frame
+   * placement check so it does not read the DOM on every frame. `null` until the
+   * first fit, when the token insets stand in.
+   */
+  const domeFitInsetsRef = useRef<{ left: number; right: number } | null>(null);
   /** The last count reported, so the callback fires on change rather than every frame. */
   const drawnNodeCountRef = useRef(-1);
   const lastZoomTierRef = useRef<ZoomTier | null>(null);
@@ -1236,15 +1267,31 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
       /*
-       * Strata keeps its legend rail's names clear of the graph. The rail sits at
-       * the canvas's right edge (`TopologyV2TierLegend`) and it is **not** a side
-       * panel — it covers under half the canvas height, so `measureCanvasInsets`
-       * correctly declines to treat it as one, and the fit would otherwise run the
-       * graph out to the canvas edge. It did: three nodes landed under the rows at
-       * 1040×720, measured 2026-09-06, which is the same "a name on the data"
-       * defect the rail exists to end.
+       * Strata keeps its legend rail's names clear of the graph — **while the rail
+       * is what is drawn**. The rail sits at the canvas's right edge
+       * (`TopologyV2TierLegend`) and it is **not** a side panel: it covers under
+       * half the canvas height, so `measureCanvasInsets` correctly declines to
+       * treat it as one, and without the reservation the fit runs the graph out to
+       * the canvas edge. It did: three nodes landed under the rows at 1040×720,
+       * measured 2026-09-06, which is the same "a name on the data" defect the
+       * rail exists to end.
+       *
+       * But at that size the reservation is 6% of the canvas and width is what
+       * binds the fit, so the graph paid for it (2026-09-07: fill 72.5% → 63.6%,
+       * two element pairs touching). `tierLegendPlacement` decides from the fit's
+       * own free box which of the two is true here, and the legend reads the same
+       * predicate — so the column is reserved exactly when a rail is drawn in it,
+       * and at 1040 nothing is reserved and the legend goes to the corner.
        */
-      const legendRight = model.arrangement === "strata" ? TIER_LEGEND_RESERVE_PX : 0;
+      domeFitInsetsRef.current = { left, right };
+      const legendRight =
+        model.arrangement === "strata" &&
+        tierLegendPlacement(
+          width - left - right,
+          height - tokens.domeFitInsetTop - tokens.domeFitInsetBottom,
+        ) === "rail"
+          ? TIER_LEGEND_RESERVE_PX
+          : 0;
       return computeDomeFitCameraTarget(
         bounds,
         width,
@@ -1281,7 +1328,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onZoomTierChangeRef.current = onZoomTierChange;
     onDrawnCountChangeRef.current = onDrawnCountChange;
     onDomeTierAnchorsChangeRef.current = onDomeTierAnchorsChange;
-  }, [onZoomTierChange, onDrawnCountChange, onDomeTierAnchorsChange]);
+    onTierLegendPlacementChangeRef.current = onTierLegendPlacementChange;
+  }, [onZoomTierChange, onDrawnCountChange, onDomeTierAnchorsChange, onTierLegendPlacementChange]);
 
   useEffect(() => {
     onEnterRealmRef.current = onEnterRealm;
@@ -4993,6 +5041,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         now,
         viewportWidth: width,
         viewportHeight: height,
+        // The ratio this frame is really rasterising at — the adaptive one while a
+        // drag has lowered it, not `window.devicePixelRatio`. Only the 3D resting
+        // line's width floor reads it.
+        devicePixelRatio: dpr,
         gridPattern: gridPatternRef.current,
         dustPoints: dustPointsRef.current,
         tokens,
@@ -5159,6 +5211,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         if (moved) {
           domeTierAnchorsSentRef.current = anchors;
           onDomeTierAnchorsChangeRef.current?.(anchors);
+        }
+        /*
+         * …and where those names may sit. The same predicate the fit consumes, so
+         * the reserved column and the drawn rail can never disagree. The panel
+         * obstruction comes from the last fit's measurement rather than from a
+         * per-frame DOM read; before the first fit the token insets stand in, and
+         * both answers agree at the two review sizes.
+         */
+        const fitInsets = domeFitInsetsRef.current;
+        const placement = tierLegendPlacement(
+          width - (fitInsets?.left ?? tokens.safeInsetLeft) - (fitInsets?.right ?? tokens.safeInsetRight),
+          height - tokens.domeFitInsetTop - tokens.domeFitInsetBottom,
+        );
+        if (tierLegendPlacementSentRef.current !== placement) {
+          tierLegendPlacementSentRef.current = placement;
+          onTierLegendPlacementChangeRef.current?.(placement);
         }
       }
 

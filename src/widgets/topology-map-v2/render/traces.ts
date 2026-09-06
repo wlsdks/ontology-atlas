@@ -149,6 +149,26 @@ export interface TraceDrawState {
   /** 3D view — line-width multiplier (depth falloff). Defaults to 1, i.e. 2D. */
   widthScale?: number;
   /**
+   * 3D view — **the smallest stroke this line may be drawn at, in CSS px**, after
+   * the depth multiplier. The caller derives it from the ratio the canvas is
+   * rasterising at (`model/dome-view.ts#domeEdgeMinWidthPx`), so what is really
+   * held is a width in *device* pixels: below one device pixel the rasteriser
+   * spreads the stroke's alpha over the two pixel rows it straddles and the peak
+   * contrast collapses, which is how the depth-ink floor's whole gain disappeared
+   * at DPR 1 while measuring intact at DPR 2.
+   *
+   * It floors the **base** width, before the directional taper and after the
+   * per-level factor, so source→target still reads from width and the near lines,
+   * already above it, are untouched. Far lines that were below it tie at the
+   * floor — the cartographic hairline minimum, and the reason depth keeps being
+   * carried by alpha, halo, node fog, size and draw order rather than by a stroke
+   * too thin to raster.
+   *
+   * Omitted/0 means 2D or an interaction-exempt line: no floor, byte-identical
+   * output.
+   */
+  minWidthPx?: number;
+  /**
    * 3D view — **depth halo**. Just before the ink, the same curve is stroked
    * once in the canvas background colour slightly wider, cutting that much out
    * of whatever was already drawn behind it. Rationale, values, and why this is
@@ -351,6 +371,10 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   // 3D view — hairline falloff by depth. The caller (`topology-frame-draw.ts`)
   // computes it from the dome falloff × depth; 2D passes 1.
   width *= state.widthScale ?? 1;
+  // …then the device-pixel floor under a resting 3D line (`minWidthPx`). Applied
+  // to the base width only, so the taper below still modulates around it.
+  const minWidthPx = state.minWidthPx ?? 0;
+  if (minWidthPx > width) width = minWidthPx;
 
   /*
    * Depth halo — goes down **before** the ink. This one stroke is what creates
