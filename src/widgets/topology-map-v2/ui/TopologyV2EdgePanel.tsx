@@ -117,17 +117,23 @@ export function TopologyV2EdgePanel({
         </IconButton>
       </div>
 
-      {/* The sentence is the protagonist — meaning in plain language. */}
+      {/* The recorded reason is the protagonist when there is one; the templated sentence is
+          the same for every edge of its type, so it drops to a caption above it. Without a
+          note the sentence stands alone, as before (2026-09-06). */}
       <p
         data-testid="topology-v2-edge-sentence"
-        className="text-body-lg font-[var(--font-weight-signature)] leading-body-lg text-[color:var(--topology-v2-panel-text-primary)]"
+        className={
+          why
+            ? "text-caption leading-body text-[color:var(--topology-v2-panel-text-secondary)]"
+            : "text-body-lg font-[var(--font-weight-signature)] leading-body-lg text-[color:var(--topology-v2-panel-text-primary)]"
+        }
       >
         {sentence}
       </p>
       {why ? (
         <p
           data-testid="topology-v2-edge-why"
-          className="text-body leading-body text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="text-body-lg font-[var(--font-weight-signature)] leading-body-lg text-[color:var(--topology-v2-panel-text-primary)]"
         >
           {why}
         </p>

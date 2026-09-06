@@ -51,12 +51,29 @@ export function TopologyV2EdgeHoverCard({ sentence, typeLabel, why, clickHint, x
       <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--topology-v2-panel-text-tertiary)]">
         {typeLabel}
       </p>
-      <p className="text-body font-[var(--font-weight-signature)] leading-label text-[color:var(--topology-v2-panel-text-primary)]">
-        {sentence}
-      </p>
+      {/*
+        **The recorded reason leads when there is one** (owner, 2026-09-06: every hover on a
+        containment edge read the same templated sentence). The template — "A holds B" — is
+        true of every edge of its type, so it carries no information a person did not already
+        have from the line; the `relation_notes` sentence is the one thing that differs edge
+        by edge. With a note, the note is the protagonist and the template drops to a caption;
+        without one, the template stands as before.
+      */}
       {why ? (
-        <p className="truncate text-label leading-label text-[color:var(--topology-v2-panel-text-secondary)]">{why}</p>
-      ) : null}
+        <>
+          <p className="text-label leading-label text-[color:var(--topology-v2-panel-text-secondary)]">{sentence}</p>
+          <p
+            data-testid="topology-v2-edge-hover-why"
+            className="line-clamp-3 text-body font-[var(--font-weight-signature)] leading-label text-[color:var(--topology-v2-panel-text-primary)]"
+          >
+            {why}
+          </p>
+        </>
+      ) : (
+        <p className="text-body font-[var(--font-weight-signature)] leading-label text-[color:var(--topology-v2-panel-text-primary)]">
+          {sentence}
+        </p>
+      )}
       <p className="text-label text-[color:var(--topology-v2-panel-text-quaternary)]">{clickHint}</p>
     </div>
   );

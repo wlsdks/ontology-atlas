@@ -33,6 +33,22 @@ beforeEach(async () => {
 
 function wrapper(children: React.ReactNode) { return <NextIntlClientProvider locale="en" messages={messages}>{children}</NextIntlClientProvider>; }
 describe('analysis context workbench', () => {
+  it('offers to write the missing connection reasons only when there are some, and sends a bounded write request', () => {
+    const onRequest = vi.fn();
+    const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, onRequest };
+    const view = render(wrapper(<AnalysisWorkbench {...props} relationNoteGaps={0} />));
+    expect(screen.queryByTestId('workbench-fill-notes')).not.toBeInTheDocument();
+    view.rerender(wrapper(<AnalysisWorkbench {...props} relationNoteGaps={7} />));
+    const fill = screen.getByTestId('workbench-fill-notes');
+    expect(fill).toHaveTextContent('7');
+    fireEvent.click(fill);
+    expect(onRequest).toHaveBeenCalledTimes(1);
+    const [text, parent] = onRequest.mock.calls[0];
+    expect(text).toContain('relation_notes');
+    expect(text).toContain('patch_concept');
+    expect(text).toContain('Scope:');
+    expect(parent).toBeNull();
+  });
   it('distinguishes a pending read from an empty archive and preserves history during refresh', async () => {
     let finish!: (page: object) => void;
     archive.read.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
