@@ -47,7 +47,7 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: an MCP screen, external Connectors default off. Library opens on a live graph of sources and write-ups you can drag and zoom, guides three steps in a popup, compiles on a local model behind a card. Insights repairs back-links. Meaning asks for reasons; trails say how steps connect. Strata, a third 3D view: labelled planes.
+**Added**: an MCP screen, external Connectors default off. Library opens on a live graph of sources and write-ups a hand can pull apart, one stage on an empty folder, a compact stepper, one index column, a local model compiling behind a card. Insights repairs back-links. Meaning asks for reasons; trails say how steps connect. Strata: labelled planes.
 
 **Changed**: Insights opens on four measures; Cone fills the canvas; Strata's plane names follow their planes or a corner, lit on hover; chat widens, keeps a clock, one height, closed dock; Agents and MCP read one column; connection cards lead with a reason; toasts sit under the toolbar.
 

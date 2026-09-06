@@ -416,11 +416,9 @@ export function countSourceFormats(
     .sort((a, b) => (b.count - a.count) || a.format.localeCompare(b.format));
 }
 
-/** The newest `mtime` among the sources, or null when there are none. */
-export function lastSourceAddedAt(sources: readonly VaultSourceFile[]): number | null {
-  let newest: number | null = null;
-  for (const source of sources) {
-    if (newest === null || source.mtime > newest) newest = source.mtime;
-  }
-  return newest;
-}
+/*
+ * `lastSourceAddedAt` lived here until 2026-09-06. It had one consumer, the Library
+ * shelf's four-row "Last added" table, and that table went when the guide became a
+ * three-row stepper whose rows carry one caption each. A derivation with no surface is a
+ * fact nobody can check, so it left with its reader rather than waiting for one.
+ */

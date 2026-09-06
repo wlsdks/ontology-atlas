@@ -41,7 +41,6 @@ export {
   countSourceFormats,
   formatSourceBytes,
   isWikiPage,
-  lastSourceAddedAt,
   newestWikiPage,
 } from './lib/vault-library';
 export type {

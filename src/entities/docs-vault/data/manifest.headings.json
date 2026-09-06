@@ -6447,6 +6447,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-06 — An empty Library folder is an empty state; guidance is a compact stepper; the index is one column",
+      "slug": "2026-09-06-an-empty-library-folder-is-an-empty-state-guidance-is-a-compact-stepper-the-index-is-one-column"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-06 — The Library pane is the graph; the shelf is a popup",
       "slug": "2026-09-06-the-library-pane-is-the-graph-the-shelf-is-a-popup"
     },

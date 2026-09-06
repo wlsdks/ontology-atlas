@@ -44,8 +44,12 @@ function Harness({ onPropose, candidates = CANDIDATES }: { onPropose: ((c: LintN
       onLint={() => {}}
       candidates={candidates}
       onPropose={onPropose}
-      transferNote={null}
-      vaultLabel="launch"
+      /*
+       * `transferNote` became `compileNote` and the drop hint left this column for the
+       * empty-folder stage (2026-09-07 merge). The case is unchanged; it points at the
+       * prop that carries the same fact.
+       */
+      compileNote={null}
       busy={false}
       t={t}
     />

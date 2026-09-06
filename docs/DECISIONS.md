@@ -135,6 +135,15 @@ record stays in Git history before commit `e4fb49a89`.
 **Falsifier**: a one-at-a-time rerun where a first page carries a superseded figure with no flag; a page that drops a fact to make room; `orphan-page` on a page something links to; a linked wiki whose reader loses a question the unlinked one answered.
 **Owner**: jinan
 
+## 2026-09-06 — An empty Library folder is an empty state; guidance is a compact stepper; the index is one column
+
+**Why**: the owner opened the installed app on a folder with no sources and read it as broken: *"the sizes inside the right panel are no good … and it overlaps this text."* Measured at 1512×982: the guide was 560px of a 1168px pane, its lower half over the canvas's own "Nothing to draw yet…" line; six surfaces stated the same emptiness; step one held ~130px of dead space bought by `auto-rows-fr`; each card carried a paragraph, a four-row table, buttons and a footnote. He then read the index on seven sources and seven pages: *"I don't like this left panel split into a top and a bottom."* Two list scrollers, the longer cut mid-row, the transfer sentence under the cut.
+**Prior**: refines 2026-09-06 "The Library pane is the graph; the shelf is a popup", which stands — the canvas is the pane, the guide stays `transientSurface("anchored")`. Overturns its ≤560px, its `auto-rows-fr` equality, its self-raising over an empty folder, and its three-state header strip.
+**Decision**: no sources **and** no pages draws one centred `PAGE_COLUMN_STAGE` — eyebrow, one title, one sentence, two doors, one drop-folder line — and no index, canvas, strip or popup; hairlines 63 → 12. With content the guide is 360px, rows equal by anatomy not stretch (110/158/110, core within 2px), one caption each, no tables, the transfer sentence under Compile; placed from the chip's measured rect it clears the caption and legend at five widths in both locales by `elementsFromPoint`; hairlines 48 → 33. The header keeps one verdict or none. The index is one scroller with sticky heads and no `lg` split, `compiled` is a quiet check not a green chip, the column keeps 280px; hairlines 38 → 9.
+**Dissent**: design-lead: hiding the canvas on an empty folder hides the picture that teaches what the folder becomes. design-interaction: one caption per step drops counts people checked in Finder.
+**Falsifier**: somebody who opens an empty folder and cannot find where documents go.
+**Owner**: jinan
+
 ## 2026-09-06 — The Library pane is the graph; the shelf is a popup
 
 **Why**: the owner opened the installed app on a folder a local `qwen3:8b` had compiled and read it as two half-screens: *"shouldn't the Library tab's default be the graph? why is the area split above and below? the area underneath should be a popup."* Measured at 1512×982: a 320px band took 41% of the pane, its picture filled 40.4% of that width, and the shelf under it needed 850px of a 579px box. Below `lg` the shelf was not drawn at all — a zero rect at 390 and 768.

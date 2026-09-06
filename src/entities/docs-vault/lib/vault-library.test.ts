@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   buildLibraryModel,
   countSourceFormats,
-  lastSourceAddedAt,
   newestWikiPage,
   selectWikiPages,
 } from './vault-library';
@@ -215,11 +214,6 @@ describe('what the shelf counts', () => {
       { format: 'pdf', count: 2 },
       { format: 'xlsx', count: 1 },
     ]);
-  });
-
-  it('names the newest arrival, and nothing when nothing arrived', () => {
-    expect(lastSourceAddedAt(SOURCES)).toBe(1_757_100_000_000);
-    expect(lastSourceAddedAt([])).toBeNull();
   });
 
   it('keeps the counts of the two unfinished states apart', () => {

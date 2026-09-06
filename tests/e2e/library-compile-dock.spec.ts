@@ -231,6 +231,23 @@ test.describe("Compile opens the agent dock", () => {
     await expect(page.getByTestId("library-shelf-popover")).toBeVisible();
     await expect(page.getByTestId("library-stage-transfer")).toContainText("llm-audit.jsonl");
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);
+
+    /*
+     * ⚠️ **And it is under the press, not merely in the same panel.** The guide became a
+     * 360px stepper on 2026-09-06 and the three cards became three rows; a disclosure that
+     * slid above the button, or into another row, would still satisfy the assertions above
+     * while telling a person what leaves their computer *after* they have read past the
+     * control that sends it. `.claude/rules/local-first.md` asks for the placement, so the
+     * placement is what is measured.
+     */
+    const compileRow = page.getByTestId("library-stage-compile");
+    await expect(compileRow.getByTestId("library-stage-transfer")).toBeVisible();
+    const button = (await page.getByTestId("library-stage-compile-button").boundingBox())!;
+    const sentence = (await page.getByTestId("library-stage-transfer").boundingBox())!;
+    expect(sentence.y, "the transfer sentence sits above the Compile button").toBeGreaterThan(
+      button.y,
+    );
+    expect(sentence.y - (button.y + button.height)).toBeLessThan(120);
   });
 
   test("the disclosure follows the reader: the index takes it over once the shelf is gone", async ({
@@ -242,12 +259,37 @@ test.describe("Compile opens the agent dock", () => {
      * Both are pinned here, because between them they are every moment step two is not on
      * screen — and losing the sentence in either is the regression this exists for: the
      * person is one press away from Compile in the index column the whole time.
+     *
+     * ⚠️ **The rule the owner's 2026-09-06 reading pinned**: the disclosure lives where
+     * Compile can be pressed, and the index still has a Compile chip, so the index's copy
+     * is the caption **directly under that chip** — not, as it shipped, a line at the very
+     * bottom of the column under a list that was still going. It is one slot: the reason
+     * Compile cannot run, or what leaves the computer when it does.
      */
     await page.getByTestId("library-shelf-open").click();
     await expect(page.getByTestId("library-stage-transfer")).toBeVisible();
     await page.getByTestId("library-shelf-close").click();
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
     await expect(page.getByTestId("library-transfer")).toContainText("llm-audit.jsonl");
+
+    /*
+     * Under the chip that starts it — never the column's last line, which is where it
+     * shipped: on the owner's folder it sat below a list that was still going, three
+     * hundred pixels from the button it describes.
+     */
+    const chip = (await page.getByTestId("library-compile").boundingBox())!;
+    const note = (await page.getByTestId("library-transfer").boundingBox())!;
+    expect(note.y).toBeGreaterThan(chip.y);
+    expect(note.y - (chip.y + chip.height)).toBeLessThan(24);
+    /*
+     * And it is a child of the Wiki section, ahead of the list — a rect comparison alone
+     * would pass for a sentence that had slid to the foot of the column again, because the
+     * numbers there are only tens of pixels apart on a short folder.
+     */
+    await expect(page.getByTestId("library-wiki").getByTestId("library-transfer")).toBeVisible();
+    await expect(page.getByTestId("library-sources").getByTestId("library-transfer")).toHaveCount(
+      0,
+    );
 
     await page.getByTestId("library-source-sources/architecture.docx").click();
     await expect(page.getByTestId("library-stage")).toHaveCount(0);
