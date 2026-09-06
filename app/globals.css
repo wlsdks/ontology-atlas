@@ -1892,6 +1892,15 @@
    * growth does not. That is the equivalent this file asks for — remove the
    * moving axis, keep the information — so no carve-out is added.
    */
+  /*
+   * **The rail lingers on the way out** (owner, 2026-09-06: "it blinks as the mouse moves
+   * down"). The four tiles are one `.chrome-rail` group, but the group is `display:
+   * contents`, so the 8px gaps between tiles belong to nobody: a pointer travelling down
+   * the rail left the group between every pair of tiles and the labels collapsed and
+   * re-grew four times. Collapse now waits one `--motion-base` before it starts, long
+   * enough to cross a gap; reveal still starts at once. No new duration: the delay reuses
+   * the same token the growth already takes.
+   */
   .chrome-tile-label {
     display: inline-block;
     overflow: hidden;
@@ -1900,9 +1909,9 @@
     opacity: 0;
     white-space: nowrap;
     transition:
-      max-width var(--motion-base) var(--motion-ease),
-      margin-inline-start var(--motion-base) var(--motion-ease),
-      opacity var(--motion-fast) var(--motion-ease);
+      max-width var(--motion-base) var(--motion-ease) var(--motion-base),
+      margin-inline-start var(--motion-base) var(--motion-ease) var(--motion-base),
+      opacity var(--motion-fast) var(--motion-ease) var(--motion-base);
   }
 
   .chrome-rail:hover .chrome-tile-label,
@@ -1910,6 +1919,7 @@
     max-width: var(--chrome-tile-label-max);
     margin-inline-start: var(--chrome-tile-label-gap);
     opacity: 1;
+    transition-delay: 0ms;
   }
 
   /* W6 LNB agent heartbeat dot — mount feels like "state awakens." Appears by fading in via opacity 0→1 + scale 0.4→1 from center origin instead of sliding (prevents sudden pop). Reuses only chrome motion family tokens
@@ -4625,9 +4635,13 @@ html[data-gateway-stage] {
  * beats specificity: written inside `@layer base` this rule would be built, shipped,
  * and silently overridden. Rationale for the value: `--chrome-tile-expanded-min`.
  */
+.chrome-tile-labelled {
+  transition-delay: var(--motion-base);
+}
 .chrome-rail:hover .chrome-tile-labelled,
 .chrome-rail:focus-within .chrome-tile-labelled {
   min-width: var(--chrome-tile-expanded-min);
+  transition-delay: 0ms;
 }
 
 @media (pointer: coarse) {
