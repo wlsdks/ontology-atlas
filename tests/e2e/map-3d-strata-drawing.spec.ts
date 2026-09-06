@@ -58,8 +58,8 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * Ledger: `docs/DECISIONS.md`, 2026-09-06.
  */
 const SCREENS = [
-  { width: 1512, height: 982, fillFloor: 0.58, overlapMax: 3, sameTierMax: 1 },
-  { width: 1040, height: 720, fillFloor: 0.6, overlapMax: 5, sameTierMax: 2 },
+  { width: 1512, height: 982, fillFloor: 0.58, overlapMax: 3, sameTierMax: 1, stolenMax: 1 },
+  { width: 1040, height: 720, fillFloor: 0.6, overlapMax: 5, sameTierMax: 2, stolenMax: 1 },
 ] as const;
 
 async function openStrata(page: Page, width: number, height: number) {
@@ -246,20 +246,24 @@ for (const screen of SCREENS) {
 }
 
 /**
- * **Clicking a node's drawn centre selects that node** (2026-09-06).
+ * **Pointing at a node's drawn centre answers with that node** (2026-09-06).
  *
- * `__atlasMap.nodes()` reports where the frame drew each disc, and that is the
- * coordinate every other instrument in this suite trusts. If the pointer's answer
- * differs from it, every number here is measuring one picture while the person is
- * clicking another. It did differ: the 5 px courtesy ring around each disc used to
+ * `__atlasMap.nodes()` reports where the frame drew each disc, and every other
+ * number in this file trusts that coordinate. When the pointer disagrees with it,
+ * the suite is measuring one picture while the person is clicking another. It did
+ * disagree: the 5 px courtesy ring that makes a 3.5 px element pressable used to
  * compete with the painted disc on equal terms, and because depth was decided
- * before distance, a near domain answered for the far elements drawn beside it.
- * Sweeping every visible node's own centre before the fix: 124 of 125 answered
- * here at 1512×982 and 123 of 125 at 1040×720; after, 125 of 125 at both.
+ * before distance, a near domain answered for the far elements drawn beside it,
+ * 15 px away, with none of its ink under the cursor.
  *
- * Five is what this case checks, at the centre and two pixels either side of it,
- * because two pixels is inside the smallest disc the arrangement draws and a
- * person aiming at a dot lands within it.
+ * The sweep is the whole vault rather than a sample, because the victims are the
+ * small discs and a handful picked by size never included one: with the rule
+ * reverted, five spine nodes still answered correctly and an earlier version of
+ * this case stayed green (gate probe, 2026-09-06). What is asserted is the rule
+ * itself. A node may lose its own centre to a node **drawn over it** — that is
+ * depth, and the halo and the draw order exist to show it — and to nothing else.
+ * Measured before the fix, sweeping all 125: 124 of 125 answered here at
+ * 1512×982 and 123 of 125 at 1040×720, the rest to a disc that covered nothing.
  */
 async function settleCamera(page: Page) {
   let previous: string | null = null;
@@ -274,6 +278,14 @@ async function settleCamera(page: Page) {
 }
 
 type DrawnNode = { id: string; label: string; x: number; y: number; radius: number; hidden: boolean };
+
+async function drawnNodes(page: Page): Promise<DrawnNode[]> {
+  return page.evaluate(() =>
+    (window as unknown as { __atlasMap: { nodes: () => DrawnNode[] } }).__atlasMap
+      .nodes()
+      .filter((n) => !n.hidden),
+  );
+}
 
 /** A canvas point with no drawn disc within 40 px — clicking it clears the focus. */
 async function emptyPoint(page: Page): Promise<{ x: number; y: number }> {
@@ -295,16 +307,8 @@ async function emptyPoint(page: Page): Promise<{ x: number; y: number }> {
   });
 }
 
-async function drawnNodes(page: Page): Promise<DrawnNode[]> {
-  return page.evaluate(() =>
-    (window as unknown as { __atlasMap: { nodes: () => DrawnNode[] } }).__atlasMap
-      .nodes()
-      .filter((n) => !n.hidden),
-  );
-}
-
 for (const screen of SCREENS) {
-  test(`Strata ${screen.width}x${screen.height} — a click on a node's drawn centre selects that node`, async ({
+  test(`Strata ${screen.width}x${screen.height} — a node's drawn centre answers with that node`, async ({
     page,
   }) => {
     test.setTimeout(180_000);
@@ -314,40 +318,66 @@ for (const screen of SCREENS) {
       return { x: box.x, y: box.y };
     });
 
-    // Five of the largest discs, kept apart so one click's reframe cannot make the
-    // next one ambiguous.
-    const chosen: DrawnNode[] = [];
-    for (const node of (await drawnNodes(page)).sort((a, b) => b.radius - a.radius)) {
-      if (chosen.every((c) => Math.hypot(c.x - node.x, c.y - node.y) > 120)) chosen.push(node);
-      if (chosen.length === 5) break;
+    // ① The sweep. Nothing is focused, so the pointer's answer is the hit test's
+    // and the camera never moves under it.
+    const nodes = await drawnNodes(page);
+    expect(nodes.length, "the sample vault did not load").toBeGreaterThan(100);
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    let answered = 0;
+    const stolen: string[] = [];
+    for (const node of nodes) {
+      await page.mouse.move(canvas.x + node.x, canvas.y + node.y);
+      const got = await page.evaluate(
+        () => (window as unknown as { __atlasMap: { hover: () => string | null } }).__atlasMap.hover(),
+      );
+      if (got === node.id) {
+        answered += 1;
+        continue;
+      }
+      if (got === null) continue; // not hittable this frame — a different rule's business
+      const winner = byId.get(got);
+      // Losing your own centre to a disc drawn over it is depth, not a defect.
+      const covers = winner !== undefined && Math.hypot(winner.x - node.x, winner.y - node.y) <= winner.radius;
+      if (!covers) stolen.push(`${node.id} (r ${node.radius.toFixed(1)}) answered ${got}`);
     }
-    expect(chosen.length, "not enough separated discs to test with").toBe(5);
+    /*
+     * **Ratcheted at one, not pinned at zero, and the one is a different defect.**
+     * A node can be drawn and still be absent from the hit test: `isNodeHittable`
+     * reads the alpha the frame painted, and depth fog can take a far element
+     * under that threshold while it is still a visible dot. When that happens the
+     * node is not competing at all, and whichever disc reaches it through the
+     * slack ring answers. Measured here both before and after the ink rule
+     * changed: the same single node at 1512×982
+     * (`element:stock-snapshot` losing to `domain:loyalty`, which paints nothing
+     * at that point), which is why it cannot be this rule's doing. Fixing that one
+     * is a question about the fog's hittability threshold, not about ranking.
+     * Planting the old rule back returns 3 at 1040×720 (gate probe, 2026-09-06),
+     * so this still fails on the defect it was written for.
+     */
+    expect(
+      stolen.length,
+      `a disc that paints nothing at that point took the answer: ${stolen.slice(0, 6).join(", ")}`,
+    ).toBeLessThanOrEqual(screen.stolenMax);
+    expect(answered / nodes.length, "too few discs answered at all — the instrument is idling").toBeGreaterThan(0.9);
 
+    // ② …and the click path agrees with the pointer, on five of them, with the
+    // panel naming the concept. Two pixels off centre where the disc allows it.
     const wanted = [0, 2, -2, 0, 2];
+    const chosen = nodes.filter((n) => n.radius > 3).slice(0, 5);
+    expect(chosen.length).toBe(5);
     for (let i = 0; i < chosen.length; i += 1) {
-      /*
-       * Back to the overview between clicks. Not tidiness: with a node focused
-       * the tier reveal and the ego dim decide what is hittable at all, so a
-       * click that misses then tells you about the focus state rather than about
-       * whether the drawn centre answers — which is the only question here.
-       */
+      // Back to the overview between clicks: with a node focused the ego dim and
+      // the tier reveal decide what is hittable, and a miss would then be telling
+      // us about the focus state rather than about the drawn centre.
       if (i > 0) {
         const spare = await emptyPoint(page);
         await page.mouse.click(canvas.x + spare.x, canvas.y + spare.y);
         await page.waitForTimeout(400);
       }
-      // The camera reframes on selection, so the coordinate is re-read from the
-      // frame that is on screen now rather than from the one five clicks ago.
       await settleCamera(page);
       const drawn = await drawnNodes(page);
       const node = drawn.find((n) => n.id === chosen[i].id);
       expect(node, `${chosen[i].id} left the frame`).toBeTruthy();
-      /*
-       * Two pixels off centre, unless two pixels leaves this disc or lands on a
-       * disc drawn in front of it — then the centre. That is not the gate going
-       * soft: a point on another node's ink belongs to that node, which is the
-       * whole rule this case exists to prove.
-       */
       const clear = (dx: number) =>
         Math.abs(dx) <= node!.radius &&
         !drawn.some(
