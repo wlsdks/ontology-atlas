@@ -36,7 +36,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
 import { useToast } from "@/shared/ui";
 
-import { libraryCompileBlockedReason } from "../lib/compile-availability";
+import { libraryCompileBlockedReason, libraryTransferSentence } from "../lib/compile-availability";
 import { useLibraryModel } from "../lib/use-library-model";
 import { useLibraryAgent } from "../lib/use-library-agent";
 import { LibrarySection } from "./parts/LibrarySection";
@@ -607,14 +607,18 @@ export function LibraryPage() {
               ) : null
             }
             /*
-             * Compile hands the folder to a coding agent, whose own provider traffic Atlas
-             * is not in the path of and does not log. Saying so beside the button rather
-             * than in a settings page is the whole point — but only where step two is not
-             * already saying it, because the shelf owns that sentence whenever it is drawn
-             * and two copies of one disclosure teach a reader to skip it.
+             * Exactly one surface discloses what leaves this computer, and it is the one a
+             * person is looking at: step two owns the sentence while the shelf is drawn,
+             * and this column takes it over once a selection has replaced the shelf. Both
+             * ask `libraryTransferSentence`, so neither can name a different brain.
              */
             transferNote={
-              selected !== null && agent.route === "agent" ? t("wiki.transfer") : null
+              selected === null
+                ? null
+                : libraryTransferSentence(
+                    { route: agent.route, localModel: agent.localModel },
+                    t,
+                  )
             }
             vaultLabel={nativeVaultRootPath ?? handle.name}
             busy={busy}

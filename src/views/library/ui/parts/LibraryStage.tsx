@@ -13,6 +13,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import {
   libraryBrainLabel,
   libraryCompileBlockedReason,
+  libraryTransferSentence,
   type CompileAvailability,
 } from "../../lib/compile-availability";
 import type { LocalCompileSession } from "@/features/vault-agent";
@@ -262,22 +263,7 @@ export function LibraryStage({
    * a program on this machine and every request to it leaves a line in the vault's own
    * audit file.
    */
-  const transfer =
-    route === "local" && localModel
-      ? t(localModel.onThisComputer ? "stage.transferLocal" : "stage.transferLocalRemote", {
-          host: localModel.host,
-          file: ".ontology-atlas/llm-audit.jsonl",
-        })
-      : /*
-         * With a picker on the step, the sentence has to answer the control above it —
-         * choosing the coding agent and reading nothing about where the folder goes is
-         * the same gap this block was written to close, one option over. The agent's own
-         * disclosure is a different fact and says so: Atlas is not in the path of that
-         * traffic and does not log it.
-         */
-        route === "agent" && brainChoosable
-        ? t("wiki.transfer")
-        : null;
+  const transfer = libraryTransferSentence({ route, localModel }, t);
 
   const blocked = libraryCompileBlockedReason(
     {

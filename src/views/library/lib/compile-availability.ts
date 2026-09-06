@@ -86,3 +86,41 @@ export function libraryBrainLabel(
   }
   return t("stage.brainNone");
 }
+
+/**
+ * **What leaves this computer when Compile runs — one sentence, chosen once.**
+ *
+ * Two surfaces can start Compile, so two surfaces could disclose it, and this module
+ * already exists because answering one question in two places is how they come to
+ * disagree. The sentence is a different fact per brain and must never be a guess:
+ *
+ * - the connect-by-address runner is a program on this machine and every request to it
+ *   leaves a line in the folder's own audit file, and the wording says "on this computer"
+ *   only when the saved host really is (`.claude/rules/local-first.md`);
+ * - the coding agent talks straight to its own provider, which Atlas is not in the path of
+ *   and does not log — the rule that file states about provider-owned transfers.
+ *
+ * The **caller** decides which surface prints it, and exactly one does: the shelf's step
+ * two while it is drawn, the index beside its own chip when a selection has replaced the
+ * shelf. Measured 2026-09-06 in the installed app, printing it in both put the same
+ * paragraph twice in one viewport, which teaches a reader to skip it; the regression the
+ * other way is worse and shipped for one commit — with a single brain and nothing
+ * selected the disclosure appeared **nowhere**, caught by
+ * `tests/e2e/library-compile-dock.spec.ts`.
+ */
+export function libraryTransferSentence(
+  {
+    route,
+    localModel,
+  }: { route: CompileAvailability["route"]; localModel: LibraryLocalModel | null },
+  t: ReturnType<typeof useTranslations<"library">>,
+): string | null {
+  if (route === "local" && localModel) {
+    return t(localModel.onThisComputer ? "stage.transferLocal" : "stage.transferLocalRemote", {
+      host: localModel.host,
+      file: ".ontology-atlas/llm-audit.jsonl",
+    });
+  }
+  if (route === "agent") return t("wiki.transfer");
+  return null;
+}
