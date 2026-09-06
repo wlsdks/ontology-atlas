@@ -245,6 +245,14 @@ describe('권한 카드 — 내 프로젝트 안과 전혀 다른 곳을 다르�
     expect(screen.getByText(koMessages.acpChat.permission.insideProjectTitle)).toBeInTheDocument();
   });
 
+  it('a write inside the open folder itself says so — not "code in your project" (live turn, 2026-09-06)', () => {
+    render(card('edit', `${VAULT}/wiki/plan.md`, [], VAULT));
+    expect(screen.getByText(koMessages.acpChat.permission.insideFolderTitle)).toBeInTheDocument();
+    expect(screen.queryByText(koMessages.acpChat.permission.insideProjectTitle)).toBeNull();
+    // Neutral card, same as inside the project: no amber alarm for the person's own folder.
+    expect(screen.getByTestId('acp-permission-card').className).not.toContain('amber');
+  });
+
   it('정말 다른 곳은 예전 경고 그대로다 — 주의가 필요한 쪽', () => {
     render(card('read', '/Users/dana/.ssh/id_rsa', [], VAULT));
     expect(screen.getByText(koMessages.acpChat.permission.title)).toBeInTheDocument();
@@ -437,5 +445,68 @@ describe('온톨로지 쓰기 — 여덟 문장을 사람이 읽는 카드', () 
   it('여는 순간 초점은 거절 쪽이다 — 아무 키나 눌러 허용에 닿지 않는다', () => {
     render(writeCard());
     expect(document.activeElement).toBe(screen.getByTestId('acp-permission-reject'));
+  });
+});
+
+describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => {
+  function cardWithVerdict(verdict: { ok: boolean; problems: Array<{ code: string; message: string; line?: number }> } | null) {
+    return (
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AcpPermissionCard
+          pending={{
+            request: {
+              title: 'wiki/plan.md 쓰기',
+              toolCallId: 'tool-permission',
+              toolName: 'Write',
+              toolKind: 'edit',
+              filePath: '/vault/wiki/plan.md',
+              rawInput: {},
+              reviewKind: 'permission',
+              options: [
+                { optionId: 'reject', kind: 'reject_once', name: '거절' },
+                { optionId: 'allow', kind: 'allow_once', name: '허용' },
+              ],
+            },
+            resolve: vi.fn(),
+          }}
+          vaultPath="/vault"
+          writeVerdict={verdict}
+        />
+      </NextIntlClientProvider>
+    );
+  }
+
+  it('says nothing when there is no verdict, rather than guessing', () => {
+    render(cardWithVerdict(null));
+    expect(screen.queryByTestId('acp-permission-page-verdict')).toBeNull();
+  });
+
+  it('a fitting page gets one quiet line and both buttons stay', () => {
+    render(cardWithVerdict({ ok: true, problems: [] }));
+    const block = screen.getByTestId('acp-permission-page-verdict');
+    expect(block.getAttribute('data-ok')).toBe('true');
+    expect(block.textContent).toContain('문서 모양이 맞습니다');
+    expect(screen.getByTestId('acp-permission-allow')).toBeTruthy();
+    expect(screen.getByTestId('acp-permission-reject')).toBeTruthy();
+  });
+
+  it('a failing page lists its codes with the first message, before the person decides', () => {
+    render(
+      cardWithVerdict({
+        ok: false,
+        problems: [
+          { code: 'uncited-fact', message: '인용 없는 사실', line: 12 },
+          { code: 'citation-target-missing', message: '없는 파일' },
+        ],
+      }),
+    );
+    const block = screen.getByTestId('acp-permission-page-verdict');
+    expect(block.getAttribute('data-ok')).toBe('false');
+    expect(block.textContent).toContain('2건');
+    expect(block.textContent).toContain('uncited-fact:12');
+    expect(block.textContent).toContain('인용 없는 사실');
+    expect(block.textContent).toContain('citation-target-missing');
+    // The gate is the person: Allow is still offered.
+    expect(screen.getByTestId('acp-permission-allow')).toBeTruthy();
   });
 });

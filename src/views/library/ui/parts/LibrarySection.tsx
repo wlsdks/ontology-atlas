@@ -3,12 +3,14 @@
 import type { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
-import { BookText, FilePlus2, FileStack, FileText, Search, Sparkles } from "lucide-react";
+import { BookText, FilePlus2, FileStack, FileText, Search, Sparkles, Stethoscope } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
+import { isMapKind, type LintNodeCandidate } from "@/features/library";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { writerLabel } from "../../lib/writer-label";
+import { localizeWikiLogSummary } from "../../lib/wiki-log-summary";
 import { controlClass } from "@/shared/ui/control-class";
 import { Chip, RowButton, Tooltip } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -69,6 +71,14 @@ export interface LibrarySectionProps {
   onFindDocuments: () => void;
   /** Starts one in-app agent turn that writes the pages. Absent when no agent can run. */
   onCompile: (() => void) | null;
+  /** Starts the report-only health check; null where no agent can run, like Compile. */
+  onLint: (() => void) | null;
+  /** Names the last check found with no page of their own — offered as ontology node candidates. */
+  candidates: readonly LintNodeCandidate[];
+  /** Starts one agent turn that proposes the candidate through the ontology-write card; null like the others. */
+  onPropose: ((candidate: LintNodeCandidate) => void) | null;
+  /** Whether `wiki/_template.md` exists: without it the empty state says how to get one. */
+  hasWikiTemplate?: boolean;
   /**
    * The brain picker, when this computer offers two and Compile can therefore be pointed
    * at either. Null draws nothing: with one brain there is no choice to make, and the
@@ -99,6 +109,13 @@ export interface LibrarySectionProps {
  * words: an icon-only pair would have fitted, but these two are a brand-new capability
  * and a tooltip is not a label a person finds before they need it.
  */
+/** The log's ISO stamp as a person reads it; the raw stamp when it does not parse. */
+function logWhen(at: string): string {
+  const date = new Date(at);
+  if (Number.isNaN(date.getTime())) return at;
+  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
 function SectionHeader({
   icon,
   label,
@@ -166,6 +183,10 @@ export function LibrarySection({
   onAddFiles,
   onFindDocuments,
   onCompile,
+  onLint,
+  candidates,
+  onPropose,
+  hasWikiTemplate = true,
   brainControl,
   transferNote,
   vaultLabel,
@@ -331,20 +352,43 @@ export function LibrarySection({
           }
           label={t("wiki.header", { count: model.wikiPages.length })}
           actions={
-            onCompile ? (
-              <Tooltip content={t("wiki.compileTooltip")}>
-                <Chip
-                  data-testid="library-compile"
-                  onClick={onCompile}
-                  disabled={busy || model.needsCompileCount === 0}
-                  tone="muted"
-                  className="flex-none hover:text-[color:var(--color-text-primary)]"
-                  aria-label={t("wiki.compileTooltip")}
-                >
-                  <Sparkles size={ICON_SIZE.sm} aria-hidden />
-                  <span className="min-w-0 truncate">{t("wiki.compile")}</span>
-                </Chip>
-              </Tooltip>
+            onCompile || onLint ? (
+              <span className="flex min-w-0 items-center gap-1">
+                {onLint ? (
+                  // The judgement half of the health check: what `wiki-validate` cannot
+                  // decide (two pages disagreeing, a claim a later page replaced). Report
+                  // only; the brief forbids writing, so it needs no page count to be
+                  // worth pressing — one page has nothing to disagree with, hence two.
+                  <Tooltip content={t("wiki.lintTooltip")}>
+                    <Chip
+                      data-testid="library-lint"
+                      onClick={onLint}
+                      disabled={busy || model.wikiPages.length < 2}
+                      tone="muted"
+                      className="flex-none hover:text-[color:var(--color-text-primary)]"
+                      aria-label={t("wiki.lintTooltip")}
+                    >
+                      <Stethoscope size={ICON_SIZE.sm} aria-hidden />
+                      <span className="min-w-0 truncate">{t("wiki.lint")}</span>
+                    </Chip>
+                  </Tooltip>
+                ) : null}
+                {onCompile ? (
+                  <Tooltip content={t("wiki.compileTooltip")}>
+                    <Chip
+                      data-testid="library-compile"
+                      onClick={onCompile}
+                      disabled={busy || model.needsCompileCount === 0}
+                      tone="muted"
+                      className="flex-none hover:text-[color:var(--color-text-primary)]"
+                      aria-label={t("wiki.compileTooltip")}
+                    >
+                      <Sparkles size={ICON_SIZE.sm} aria-hidden />
+                      <span className="min-w-0 truncate">{t("wiki.compile")}</span>
+                    </Chip>
+                  </Tooltip>
+                ) : null}
+              </span>
             ) : null
           }
         />
@@ -380,6 +424,22 @@ export function LibrarySection({
             >
               {t("wiki.compileWebGetApp")}
             </Link>
+          </p>
+        ) : null}
+        {model.log.lastCompile || model.log.lastLint ? (
+          // What happened last, from `wiki/_log.md` — the app's own record. One caption,
+          // two facts at most: the last Compile and the last Check, each with its time.
+          <p
+            data-testid="library-wiki-log"
+            className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all] [overflow-wrap:anywhere]"
+          >
+            {model.log.lastCompile
+              ? t("wiki.logCompile", { when: logWhen(model.log.lastCompile.at), summary: localizeWikiLogSummary(model.log.lastCompile.summary, t) })
+              : null}
+            {model.log.lastCompile && model.log.lastLint ? " · " : null}
+            {model.log.lastLint
+              ? t("wiki.logLint", { when: logWhen(model.log.lastLint.at), summary: localizeWikiLogSummary(model.log.lastLint.summary, t) })
+              : null}
           </p>
         ) : null}
         {hasWiki ? (
@@ -445,9 +505,58 @@ export function LibrarySection({
             data-testid="library-wiki-empty"
             className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
           >
-            {t("wiki.empty")}
+            {hasWikiTemplate ? t("wiki.empty") : t("wiki.emptyNoTemplate")}
           </p>
         )}
+        {candidates.length > 0 ? (
+          // The wiki's candidates for the graph: a name the check found on three or more
+          // pages with no page of its own. Not a page to write — a node to propose, and
+          // the proposal goes through the same card every ontology write does.
+          <section
+            data-testid="library-candidates"
+            aria-label={t("wiki.candidatesHeader", { count: candidates.length })}
+            className="flex-none px-2 pb-1"
+          >
+            <p className="px-1 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+              {t("wiki.candidatesHeader", { count: candidates.length })}
+            </p>
+            <ul className="flex flex-col gap-0.5">
+              {candidates.map((candidate) => (
+                <li
+                  key={`${candidate.name}\u0000${candidate.pages.join(",")}`}
+                  data-testid="library-candidate"
+                  className="flex min-w-0 flex-col gap-0.5 rounded-chip px-1 py-1"
+                >
+                  {/* The name is the whole point of the row; at the rail's 280px it was
+                      "Timber…" beside its own meta (installed app, 2026-09-06). It takes the
+                      full line and may wrap; the meta and the chip share the line below. */}
+                  <span className="text-label text-[color:var(--color-text-primary)] [word-break:keep-all]" title={candidate.why || undefined}>
+                    {candidate.name}
+                  </span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate text-caption text-[color:var(--color-text-quaternary)]">
+                      {t(`wiki.candidateKind.${candidate.kind}`)} · {t("wiki.candidatePages", { count: candidate.pages.length })}
+                    </span>
+                    {onPropose && isMapKind(candidate.kind) ? (
+                      <Tooltip content={t("wiki.proposeTooltip")}>
+                        <Chip
+                          data-testid="library-candidate-propose"
+                          onClick={() => onPropose(candidate)}
+                          disabled={busy}
+                          tone="muted"
+                          className="flex-none hover:text-[color:var(--color-text-primary)]"
+                          aria-label={`${t("wiki.propose")}: ${candidate.name}`}
+                        >
+                          <span className="min-w-0 truncate">{t("wiki.propose")}</span>
+                        </Chip>
+                      </Tooltip>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         {transferNote ? (
           <p
             data-testid="library-transfer"

@@ -35,22 +35,20 @@ import { parseFrontmatter } from './parser.mjs';
 
 /** Vault folder holding wiki pages. */
 export const WIKI_DIR = 'wiki';
-/**
- * The copy-ready page `init` leaves in a new vault, at `wiki/_template.md`.
- *
- * It is skipped by every validator and by the Wiki list, and the leading underscore is
- * the whole rule: the file's own citations point at `sources/<file>`, which is a
- * placeholder rather than a document, so judging it would report a problem on the one
- * file that is supposed to *be* the answer. A person renaming it to a real page name
- * loses the underscore and the page starts being judged, which is the moment it should.
- */
-const WIKI_TEMPLATE_FILENAME = '_template.md';
 
-/** Whether a vault-relative slug names the shipped template rather than a real page. */
-export function isWikiTemplateSlug(slug) {
+/**
+ * Whether a vault-relative slug names the wiki's own furniture rather than a page.
+ *
+ * One rule: a file under `wiki/` whose name starts with `_` is not a page. `_template.md`
+ * is the shape `init` writes; `_log.md` is the append-only record the app keeps of what
+ * happened to the wiki. Neither is judged, listed, compiled, or linked, and a person who
+ * renames one loses the underscore and the file starts being a page, which is the moment
+ * it should.
+ */
+export function isWikiFurnitureSlug(slug) {
   if (typeof slug !== 'string') return false;
   const name = slug.slice(slug.lastIndexOf('/') + 1);
-  return name === WIKI_TEMPLATE_FILENAME || name === WIKI_TEMPLATE_FILENAME.replace(/\.md$/, '');
+  return name.startsWith('_');
 }
 /** Vault folder holding the raw sources a page cites. */
 const WIKI_SOURCES_DIR = 'sources';
@@ -252,7 +250,15 @@ function sectionBullets(body, offset, sections, title) {
     const line = lines[index];
     if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
     if (inFence) continue;
-    if (/^\s*[-*]\s+\S/.test(line)) out.push({ text: line, line: offset + index + 1 });
+    if (/^\s*[-*]\s+\S/.test(line)) {
+      out.push({ text: line, line: offset + index + 1 });
+    } else if (out.length > 0 && /^\s+\S/.test(line)) {
+      // A wrapped bullet: Markdown continues a list item on the indented lines that
+      // follow it, and a writer who wraps at 80 columns puts the citation on the last of
+      // them. Judging only the first line reported every wrapped fact as uncited
+      // (accumulation probe, 2026-09-06: seven false `uncited-fact` on one page).
+      out[out.length - 1].text += `\n${line}`;
+    }
   }
   return out;
 }
@@ -406,4 +412,169 @@ export function validateWikiPage(raw, options = {}) {
   }
 
   return { ok: problems.length === 0, problems };
+}
+
+/**
+ * The folder-level half of the contract — what no single page can know about itself.
+ *
+ * `validateWikiPage` judges one page against its own frontmatter and body. Three things
+ * are only visible with every page on the table, and the accumulation probe
+ * (`docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md`) found all three at
+ * zero in every condition: no page linked another, so every page was an orphan, and
+ * pages that cited the same document never mentioned each other. A wiki whose pages
+ * never point at each other is a folder of write-ups, not a graph a person can walk.
+ *
+ * Deterministic on purpose. Whether two pages *disagree* is a judgement and belongs to
+ * a Lint pass an agent runs and a person reads; whether a link resolves, whether a page
+ * has any inbound link, and whether two pages share a source without linking are facts
+ * of the folder, and a fact of the folder is reported by a script, not a model.
+ *
+ * Codes:
+ *
+ *   - `dangling-wikilink`      a `[[wiki/…]]` link whose target is not in the folder
+ *   - `orphan-page`            no other page links to this one (two or more pages only)
+ *   - `shared-source-unlinked` another page was written from a source this page lists
+ *                              (or the reverse), and neither links the other
+ */
+
+/** `[[target]]`, `[[target|text]]`, `[[target#anchor]]` — a citation (`src:`) is not a link. */
+function wikiPageLinkRegex() {
+  return /\[\[([^\]|#]+?)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g;
+}
+
+/** A link target as the folder names a page: `wiki/<slug>` without `.md`. */
+function normalizeWikiLinkTarget(target) {
+  let slug = String(target ?? '').trim().replace(/\.md$/, '');
+  if (!slug || slug.startsWith('src:')) return null;
+  if (!slug.includes('/')) slug = `${WIKI_DIR}/${slug}`;
+  return slug;
+}
+
+/** Every page link in `body`, with the line it sits on, fenced code skipped. */
+function extractWikiPageLinks(body, offset) {
+  const out = [];
+  const lines = String(body ?? '').split('\n');
+  let inFence = false;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const regex = wikiPageLinkRegex();
+    let match;
+    while ((match = regex.exec(line)) !== null) {
+      const target = normalizeWikiLinkTarget(match[1]);
+      if (target) out.push({ target, line: offset + index + 1 });
+    }
+  }
+  return out;
+}
+
+function readDeclaredSources(frontmatter) {
+  if (Array.isArray(frontmatter.sources)) {
+    return frontmatter.sources.filter((value) => typeof value === 'string').map((value) => value.trim());
+  }
+  if (typeof frontmatter.sources === 'string' && frontmatter.sources.trim()) return [frontmatter.sources.trim()];
+  return [];
+}
+
+/**
+ * Judge the folder.
+ *
+ * @param {Array<{ path: string, raw: string }>} pages every wiki page in the folder, the
+ *   template excluded, `path` vault-relative (`wiki/<slug>.md`)
+ * @returns {Array<{ path: string, problems: Array<{ code: string, message: string, line?: number }> }>}
+ *   one entry per input page, in input order, `problems` possibly empty
+ */
+export function validateWikiFolder(pages) {
+  const entries = (pages ?? []).map((page) => {
+    const path = String(page.path ?? '');
+    const slug = path.replace(/\.md$/, '');
+    const text = String(page.raw ?? '');
+    const { frontmatter, body } = parseFrontmatter(text);
+    const frontmatterLines = text.startsWith('---')
+      ? text.slice(0, text.length - body.length).split('\n').length - 1
+      : 0;
+    return {
+      path,
+      slug,
+      links: extractWikiPageLinks(body, frontmatterLines),
+      sources: new Set(readDeclaredSources(frontmatter)),
+      primary: readDeclaredSources(frontmatter)[0] ?? null,
+      problems: [],
+    };
+  });
+  const bySlug = new Map(entries.map((entry) => [entry.slug, entry]));
+  const inbound = new Map(entries.map((entry) => [entry.slug, new Set()]));
+
+  for (const entry of entries) {
+    const seen = new Set();
+    for (const link of entry.links) {
+      if (link.target === entry.slug) continue;
+      const target = bySlug.get(link.target);
+      if (target) {
+        inbound.get(target.slug).add(entry.slug);
+        continue;
+      }
+      if (seen.has(link.target)) continue;
+      seen.add(link.target);
+      entry.problems.push(
+        problem(
+          'dangling-wikilink',
+          `\`[[${link.target}]]\` names a page that is not in this folder. Link only to a page that exists, or write the page.`,
+          link.line,
+        ),
+      );
+    }
+  }
+
+  if (entries.length >= 2) {
+    for (const entry of entries) {
+      if (inbound.get(entry.slug).size > 0) continue;
+      entry.problems.push(
+        problem(
+          'orphan-page',
+          'No other page links here. A page nobody points at is reached only by its file name; link it from the page that talks about its topic.',
+        ),
+      );
+    }
+  }
+
+  for (let a = 0; a < entries.length; a += 1) {
+    for (let b = a + 1; b < entries.length; b += 1) {
+      const first = entries[a];
+      const second = entries[b];
+      // Only a page's primary source counts — the first it lists, the document it was
+      // written from. A source a page merely cites for a disagreement fans out across
+      // every page that carries the dispute, and asking each such pair to link (probe F,
+      // 2026-09-06: six findings on seven pages) reports the wiring the disagreement
+      // rule itself created. "Two write-ups of one document" means two pages that were
+      // each compiled from it.
+      const shared = [...first.sources].filter(
+        (source) =>
+          second.sources.has(source) && (first.primary === source || second.primary === source),
+      );
+      if (shared.length === 0) continue;
+      const linked =
+        inbound.get(first.slug).has(second.slug) || inbound.get(second.slug).has(first.slug);
+      if (linked) continue;
+      const sourceList = shared.map((source) => `\`${source}\``).join(', ');
+      first.problems.push(
+        problem(
+          'shared-source-unlinked',
+          `\`${second.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
+        ),
+      );
+      second.problems.push(
+        problem(
+          'shared-source-unlinked',
+          `\`${first.path}\` also lists ${sourceList} and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them.`,
+        ),
+      );
+    }
+  }
+
+  return entries.map((entry) => ({ path: entry.path, problems: entry.problems }));
 }

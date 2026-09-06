@@ -3,13 +3,16 @@
 import { Link, usePathname } from '@/i18n/navigation';
 import { useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
-import { BarChart3, Blocks, BookOpen, Download, FolderKanban, Map as MapIcon } from 'lucide-react';
+import { BarChart3, Blocks, BookOpen, Download, FolderKanban, Library, Map as MapIcon } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
+import { describeVaultShape } from '@/shared/lib/vault-shape';
 import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/nav-destination';
 import {
   DESTINATION_HREF,
   MOBILE_DESTINATION_IDS,
+  WIKI_ONLY_MOBILE_DESTINATION_IDS,
+  destinationsForVaultShape,
   type MobileDestinationId,
 } from '@/shared/config/destinations';
 import { shouldHideBottomTabBar } from '../lib/is-tab-active';
@@ -50,6 +53,13 @@ const TABS: ReadonlyArray<TabItem> = [
     } satisfies Record<MobileDestinationId, typeof MapIcon>)[id],
   })),
 ];
+/** A wiki without a map: the Library is the one tab worth the slot (`destinationsForVaultShape`). */
+const WIKI_ONLY_TABS: ReadonlyArray<TabItem> = WIKI_ONLY_MOBILE_DESTINATION_IDS.map((id) => ({
+  id,
+  href: DESTINATION_HREF[id],
+  labelKey: id,
+  icon: Library,
+}));
 
 export function BottomTabBar() {
   const pathname = usePathname() ?? '/';
@@ -87,6 +97,9 @@ export function BottomTabBar() {
   }
 
   const activeId = resolveActiveNavDestination(pathname);
+  const visible = destinationsForVaultShape(vault.manifest ? describeVaultShape(vault.manifest.docs) : null);
+  const mapTabs = TABS.filter((tab) => visible.has(tab.id));
+  const tabs = mapTabs.length > 0 ? mapTabs : WIKI_ONLY_TABS;
 
 
   return (
@@ -99,7 +112,7 @@ export function BottomTabBar() {
       aria-label={t('primaryAriaLabel')}
       className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-[color:var(--topology-bottom-tab-border)] bg-[color:var(--topology-bottom-tab-surface)] pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-elevation-dock-bottom)] lg:hidden"
     >
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const Icon = tab.icon;
         const active = activeId === tab.id;
         return (

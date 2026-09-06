@@ -78,6 +78,12 @@ export interface AppNavRailProps {
    */
   agentsNoticeCount?: number;
   /** Whether the connection sheet is currently open — the truth source for the tile's `aria-expanded` (global launcher `wantOpen`). */
+  /**
+   * The destinations this folder earns (`destinationsForVaultShape`); `null` draws all.
+   * A wiki without a map does not get the map, the architecture reading, Docs, Insights
+   * or Projects as empty doors; a map without a wiki does not get the Library.
+   */
+  visibleDestinations?: ReadonlySet<AppNavRailItemId> | null;
   className?: string;
 }
 
@@ -142,6 +148,7 @@ export function AppNavRail({
   contextHrefs,
   gitDirtyCount = 0,
   agentsNoticeCount = 0,
+  visibleDestinations = null,
   className,
 }: AppNavRailProps) {
   const t = useTranslations("navRail");
@@ -231,7 +238,7 @@ export function AppNavRail({
   // navigation and the shortcut sheet must read the same table, so it moved outside
   // this component (with two copies the routes diverge). Labels and icons belong to
   // the screen and stay here.
-  const destinations: RailDestination[] = [
+  const allDestinations: RailDestination[] = [
     { id: "map", href: DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
     { id: "architecture", href: DESTINATION_HREF.architecture, label: t("architecture"), Icon: Blocks },
     { id: "docs", href: contextHrefs?.docs ?? DESTINATION_HREF.docs, label: t("docs"), Icon: BookOpen },
@@ -286,6 +293,9 @@ export function AppNavRail({
     // primary destination, current-route marker, and uncommitted-change badge.
     { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
   ];
+  const destinations = allDestinations.filter(
+    (destination) => !visibleDestinations || visibleDestinations.has(destination.id),
+  );
 
   return (
     <aside

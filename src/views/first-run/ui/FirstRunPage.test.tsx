@@ -127,6 +127,7 @@ describe('FirstRunPage', () => {
     render(<FirstRunPage />);
 
     fireEvent.click(screen.getByTestId('first-run-create'));
+    fireEvent.click(screen.getByTestId('first-run-shape-both'));
 
     await waitFor(() => {
       expect(mocks.vault.scaffoldOntology).toHaveBeenCalledTimes(1);
@@ -141,6 +142,7 @@ describe('FirstRunPage', () => {
     render(<FirstRunPage />);
 
     fireEvent.click(screen.getByTestId('first-run-create'));
+    fireEvent.click(screen.getByTestId('first-run-shape-both'));
 
     await waitFor(() => {
       expect(mocks.vault.open).toHaveBeenCalledTimes(1);
@@ -155,6 +157,7 @@ describe('FirstRunPage', () => {
     render(<FirstRunPage />);
 
     fireEvent.click(screen.getByTestId('first-run-create'));
+    fireEvent.click(screen.getByTestId('first-run-shape-both'));
 
     await waitFor(() => {
       expect(mocks.vault.open).toHaveBeenCalledTimes(1);
@@ -179,10 +182,13 @@ describe('FirstRunPage', () => {
 
     expect(screen.getByTestId('first-run-just-start')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('first-run-just-start'));
+    fireEvent.click(screen.getByTestId('first-run-shape-wiki'));
 
     await waitFor(() => {
       expect(mocks.vault.scaffoldOntology).toHaveBeenCalledTimes(1);
     });
+    // The door asks what the folder will hold; the answer rides into the scaffold.
+    expect(mocks.vault.scaffoldOntology).toHaveBeenCalledWith('ko', { map: false, wiki: true });
     expect(tauriFsMocks.ensureTauriChildDirectory).toHaveBeenCalledWith(
       '/Users/me/Documents/Ontology Atlas',
       'my-ontology',
@@ -208,6 +214,7 @@ describe('FirstRunPage', () => {
     render(<FirstRunPage />);
 
     fireEvent.click(screen.getByTestId('first-run-just-start'));
+    fireEvent.click(screen.getByTestId('first-run-shape-wiki'));
 
     await waitFor(() => {
       expect(tauriFsMocks.ensureTauriChildDirectory).toHaveBeenCalledWith(

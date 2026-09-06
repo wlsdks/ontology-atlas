@@ -61,7 +61,9 @@ describe('스타터 볼트 언어 — 생성 경로 전부가 화면 언어를 �
       const source = stripComments(readFileSync(file, 'utf8'));
       for (const match of source.matchAll(SCAFFOLD_CALL)) {
         const rel = path.relative(process.cwd(), file);
-        const arg = match[1].trim();
+        // The locale is the first argument; a second one (the vault shape, 2026-09-06) is
+        // not a locale and is not judged here.
+        const arg = (match[1].split(',')[0] ?? '').trim();
         callSites.push(`${rel}: ${match[0]}`);
         if (!LOCALE_IDENTIFIER.test(arg)) {
           violations.push(`${rel}: ${match[0]}`);

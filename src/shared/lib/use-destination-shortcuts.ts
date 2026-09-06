@@ -125,6 +125,8 @@ export interface DestinationShortcutOptions {
    * the same prescription as any other dead end.
    */
   onBlockedByOverlay?: (() => void) | null;
+  /** The destinations the rail draws; a key for a hidden one does nothing. */
+  visible?: ReadonlySet<DestinationId> | null;
 }
 
 export function useDestinationShortcuts({
@@ -132,6 +134,7 @@ export function useDestinationShortcuts({
   disabled = false,
   hrefOverrides,
   onBlockedByOverlay = null,
+  visible = null,
 }: DestinationShortcutOptions) {
   /**
    * When the leader was pressed; `null` means it was not.
@@ -174,6 +177,8 @@ export function useDestinationShortcuts({
         const id = destinationForEvent(event);
         leaderAt.current = null;
         if (!id) return;
+        // A hidden destination has no tile, so its key is not a door either.
+        if (visible && !visible.has(id)) return;
         event.preventDefault();
         /*
          * With a blocking surface up, **say so instead of navigating** (rule 3
@@ -204,5 +209,5 @@ export function useDestinationShortcuts({
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [disabled]);
+  }, [disabled, visible]);
 }

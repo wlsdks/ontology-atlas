@@ -39,11 +39,11 @@ describe('권한 요청의 위치 — 내 프로젝트 안인가, 전혀 다른 
    * it answered `elsewhere` — the folder named as outside itself.
    */
   it('연 폴더 안은 프로젝트가 위에 없어도 「안」이다', () => {
-    expect(permissionLocality(VAULT, `${VAULT}/domains/order.md`)).toBe('inside-project');
+    expect(permissionLocality(VAULT, `${VAULT}/domains/order.md`)).toBe('inside-folder');
     expect(permissionLocality('/Users/dana/notes', '/Users/dana/notes/order.md')).toBe(
-      'inside-project',
+      'inside-folder',
     );
-    expect(permissionLocality('/Users/dana/notes/', '/Users/dana/notes')).toBe('inside-project');
+    expect(permissionLocality('/Users/dana/notes/', '/Users/dana/notes')).toBe('inside-folder');
   });
 
   it('폴더 이름이 접두사로 겹치는 이웃은 여전히 밖이다', () => {
