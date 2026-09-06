@@ -400,6 +400,13 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
       await page.getByRole("tab", { name: /연결 도구/ }).click();
       await page.getByTestId("connectors-panel").waitFor({ timeout: 15_000 });
       await page.getByTestId("connectors-add-open").click();
+      /*
+       * ⚠️ **One press further again since 2026-09-07.** The dialog gained three tabs, and it
+       * opens on whichever one can still answer somebody — which on the web is the catalogue,
+       * because "Found here" can only say why it is empty. The card lives on that tab and still
+       * carries a reason and a place to go, which is the claim; where it sits is not.
+       */
+      await page.locator("#connectors-add-tab-found").click();
     },
     needsVault: true,
     card: "connectors-discovery-unavailable",

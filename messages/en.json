@@ -4392,7 +4392,12 @@
     "emptyTitle": "Nothing here reaches anything yet",
     "emptyBody": "A connector lets the agent you talk to in Atlas also reach a service you already use — your Notion pages, your Jira issues, your repositories. Add one and it stays off until you turn it on.",
     "linkDroppedValues": "That link carried values for {keys}. They were dropped: a link never sets a token. Type it below instead.",
-    "linkRefused": "That link was refused ({reason}). Nothing was added."
+    "linkRefused": "That link was refused ({reason}). Nothing was added.",
+    "catalogueSummary": {
+      "notion": "Read and write the pages and databases in your Notion workspace.",
+      "atlassian": "Read and write Jira issues and Confluence pages in your Atlassian site.",
+      "github": "Read and write issues, pull requests, code and wikis on GitHub."
+    }
   },
   "library": {
     "title": "Library",
@@ -4437,7 +4442,9 @@
       "revealFailed": "Could not show it in Finder: {reason}",
       "openFailed": "Could not open that file.",
       "needsCompileSplit": "{notCompiled, plural, one {# not written up yet} other {# not written up yet}} · {stale, plural, one {# page behind its source} other {# pages behind their sources}}",
-      "staleOnly": "{count, plural, one {# page is behind its source} other {# pages are behind their sources}}"
+      "staleOnly": "{count, plural, one {# page is behind its source} other {# pages are behind their sources}}",
+      "import": "Bring from a service",
+      "importTooltip": "Bring documents in from Notion, Confluence, Jira or GitHub"
     },
     "wiki": {
       "header": "Wiki · {count}",
@@ -4616,5 +4623,51 @@
       "noSnapshot": "No save point is taken here; the change is in your folder and in Git.",
       "nothing": "It finished without proposing a page."
     }
+  },
+  "libraryImport": {
+    "title": "Bring documents from a service",
+    "pickBody": "Pick where your documents already live. Atlas connects it once, then your coding agent fetches them and writes each one into this folder as an ordinary Markdown file you can read and edit.",
+    "close": "Close",
+    "back": "Back",
+    "stepOf": "Step {step} of {total}",
+    "service": {
+      "notion": {
+        "title": "Notion",
+        "body": "Pages and databases from your Notion workspace.",
+        "example": "the API design pages"
+      },
+      "confluence": {
+        "title": "Confluence",
+        "body": "Pages from a Confluence space.",
+        "example": "everything in the Handbook space"
+      },
+      "jira": {
+        "title": "Jira",
+        "body": "Issues and their descriptions from a Jira project.",
+        "example": "open issues in the platform project"
+      },
+      "github": {
+        "title": "GitHub",
+        "body": "Issues, pull requests and wiki pages from a repository.",
+        "example": "the design discussions in this repo"
+      },
+      "other": {
+        "title": "Another service",
+        "body": "Set one up by hand on the MCP screen.",
+        "example": ""
+      }
+    },
+    "connectBrowser": "Connect {service}. A sign-in window opens; press Allow there, and choose what {service} may share.",
+    "connectBrowserWho": "Your coding agent opens that window and keeps what comes back. Atlas never sees it, and removing this connection later does not take the access away.",
+    "connectToken": "Connect {service}. Paste the value it issues you, once.",
+    "connectTokenWho": "The value goes into this computer’s keychain and never into a file in your folder. Your coding agent, not Atlas, uses it to reach the service.",
+    "connectAction": "Connect",
+    "connectFailed": "Nothing was saved. Open a folder first, and check that this folder’s connector file can be read.",
+    "tokenLabel": "Value",
+    "tokenWhere": "Where to get this",
+    "connected": "{service} is connected.",
+    "whatLabel": "What should it bring?",
+    "whatNext": "A conversation opens next. It searches, shows you at most {limit} documents, and waits for you to pick; each one you pick is written under {folder} and asks your permission first. Nothing outside that folder is touched.",
+    "bringAction": "Open the conversation"
   }
 }

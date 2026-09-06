@@ -36,7 +36,14 @@ import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader, useChatWidth } from "
  * would be two headings in eight pixels of each other.
  */
 export interface LibraryAgentOpeningRequest {
-  kind: "compile";
+  /**
+   * Which errand opened this turn. `compile` writes write-ups from what is already in the folder;
+   * `import` fetches documents from a service the person connected and writes them under
+   * `sources/`. The dock is the same either way — the brief differs, and the permission card is
+   * the same card — but the attribute has to say which, or a capture of an import turn reads as
+   * a compile that behaved strangely.
+   */
+  kind: "compile" | "import";
   text: string;
   nonce: number;
 }

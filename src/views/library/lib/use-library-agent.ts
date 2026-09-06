@@ -297,18 +297,24 @@ export function useLibraryAgent(
   });
 
   const start = useCallback(
-    (text: string) => {
+    (text: string, kind: "compile" | "import" = "compile") => {
       /*
        * One press, two engines. A verified coding agent still outranks the runner — it
        * opens formats Atlas cannot — so the dock keeps the press whenever one is ready,
        * and the local turn takes it only when that is what the shelf named.
        */
-      if (route === "local") {
+      /*
+       * ⚠️ **An import never takes the local route.** `useLocalCompile` runs a two-tool catalogue
+       * that reads files already under `sources/` and proposes a write-up; it cannot reach a
+       * service. Sending an import brief there would hand a runner a task it has no tool for and
+       * produce nothing, so the coding agent takes it or the door is not offered at all.
+       */
+      if (route === "local" && kind === "compile") {
         void localCompile.run(text);
         return;
       }
       setOpeningRequest((current) => ({
-        kind: "compile",
+        kind,
         text,
         nonce: (current?.nonce ?? 0) + 1,
       }));

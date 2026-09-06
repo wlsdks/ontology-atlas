@@ -265,7 +265,13 @@ export function AddConnectorDialog({
       setFailure(null);
     }
   }
-  const [seenIncoming, setSeenIncoming] = useState(incoming ?? null);
+  /*
+   * ⚠️ **Seeded `null`, not with what arrived** (caught in the rendered run, 2026-09-07). Seeding
+   * with `incoming` made the first render already equal to it, so the comparison never fired and
+   * a link opened the dialog on the tab it would have opened on anyway — filled form, wrong tab,
+   * and nothing saying why. `null` means the first arrival is always a change.
+   */
+  const [seenIncoming, setSeenIncoming] = useState<CustomPrefill | null>(null);
   if (open && incoming && incoming !== seenIncoming) {
     setSeenIncoming(incoming);
     setPrefill(incoming);
@@ -647,15 +653,36 @@ function CatalogueTab({
             >
               <div className="flex items-start gap-3">
                 <ServiceMark
-                  mark={resolveServiceMark(entry.name, entry.docsUrl)}
+                  /*
+                   * ⚠️ **Not the docs URL** (caught in the rendered capture, 2026-09-07). Every
+                   * vendor's instructions live on github.com, so matching against `docsUrl` put
+                   * GitHub's mark on the Atlassian row — someone else's brand on a row that is
+                   * not theirs, which is worse than the generic plug. The command or address is
+                   * the part that cannot lie about which service is on the other end, the same
+                   * reasoning the attached list already records.
+                   */
+                  mark={resolveServiceMark(entry.name, entry.variants.map((variant) => variantRuns(variant)).join(' '))}
                   className="mt-0.5 text-[color:var(--color-text-tertiary)]"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                     {entry.title}
                   </p>
+                  {/*
+                    ⚠️ **The one line is localized; the facts are not.** `summary` in the
+                    generated file is what a person read on the vendor's English page, and it
+                    stayed English on the Korean screen (caught in the rendered capture,
+                    2026-09-07) — a Korean reader met a Korean dialog with English sentences
+                    inside it. The catalogue keeps its English as the record of what was read,
+                    and `messages/<locale>.json` carries the sentence, falling back to the file
+                    for an entry nobody has translated yet. That is the same split the vault
+                    already uses: `title` is the canonical name, `display_<locale>` is the shown
+                    one.
+                  */}
                   <p className="mt-0.5 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
-                    {entry.summary}
+                    {t.has(`catalogueSummary.${entry.id}` as 'catalogueSummary.notion')
+                      ? t(`catalogueSummary.${entry.id}` as 'catalogueSummary.notion')
+                      : entry.summary}
                   </p>
                 </div>
               </div>
@@ -899,9 +926,19 @@ export function CustomConnectorForm({
         {transport === 'stdio' ? (
           <>
             <div data-testid={`${testIdPrefix}-custom-runtime`}>
-              <p className="text-label leading-label text-[color:var(--color-text-secondary)]">
-                {t('fieldRuntime')}
-              </p>
+              {/*
+                ⚠️ **The group label exists only when there is a group** (rendered capture,
+                2026-09-07). With no runtimes resolved — every browser, and any machine where
+                none of the five is installed — this collapsed to "What starts it" sitting
+                directly on top of the field's own "Command", two labels for one box. `Input`
+                already owns the accessible name; a heading above it is for the choice, and with
+                nothing to choose there is nothing to head.
+              */}
+              {installed.length > 0 ? (
+                <p className="text-label leading-label text-[color:var(--color-text-secondary)]">
+                  {t('fieldRuntime')}
+                </p>
+              ) : null}
               {installed.length > 0 ? (
                 <>
                   <div className="mt-1 flex flex-wrap gap-2">

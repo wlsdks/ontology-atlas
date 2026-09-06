@@ -3,7 +3,7 @@
 import type { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
-import { BookText, FilePlus2, FileStack, FileText, Search, Sparkles } from "lucide-react";
+import { BookText, CloudDownload, FilePlus2, FileStack, FileText, Search, Sparkles } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
@@ -67,6 +67,15 @@ export interface LibrarySectionProps {
   onAddFiles: () => void;
   /** Proposes candidates from the open folder and any bound project root. */
   onFindDocuments: () => void;
+  /**
+   * The third door: **documents that are not on this computer yet.**
+   *
+   * Owner, 2026-09-07: *"connecting a service is mostly for the Library anyway — people want the
+   * things they already wrote somewhere else."* Add files and Find documents both assume the
+   * document is already on disk, and for a person whose notes live in Notion neither one is a
+   * door at all. It sits third because it is the one that reaches outside.
+   */
+  onImportFromService: () => void;
   /** Starts one in-app agent turn that writes the pages. Absent when no agent can run. */
   onCompile: (() => void) | null;
   /**
@@ -165,6 +174,7 @@ export function LibrarySection({
   selectedSourcePath,
   onAddFiles,
   onFindDocuments,
+  onImportFromService,
   onCompile,
   brainControl,
   transferNote,
@@ -233,6 +243,19 @@ export function LibrarySection({
                 >
                   <Search size={ICON_SIZE.sm} aria-hidden />
                   <span className="min-w-0 truncate">{t("sources.find")}</span>
+                </Chip>
+              </Tooltip>
+              <Tooltip content={t("sources.importTooltip")}>
+                <Chip
+                  data-testid="library-import-open"
+                  onClick={onImportFromService}
+                  disabled={busy}
+                  tone="muted"
+                  className="flex-none hover:text-[color:var(--color-text-primary)]"
+                  aria-label={t("sources.importTooltip")}
+                >
+                  <CloudDownload size={ICON_SIZE.sm} aria-hidden />
+                  <span className="min-w-0 truncate">{t("sources.import")}</span>
                 </Chip>
               </Tooltip>
             </>

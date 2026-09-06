@@ -10589,6 +10589,11 @@
     },
     {
       "depth": 3,
+      "text": "MCP connector catalogue snapshot",
+      "slug": "mcp-connector-catalogue-snapshot"
+    },
+    {
+      "depth": 3,
       "text": "Release tag version alignment",
       "slug": "release-tag-version-alignment"
     },

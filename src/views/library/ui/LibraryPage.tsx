@@ -6,7 +6,10 @@ import { ArrowLeft, ListChecks } from "lucide-react";
 
 import { useLocalVault, useVaultIdentityScope } from "@/entities/vault-session";
 import type { LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
+import { useRouter } from "@/i18n/navigation";
+import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { OpenVaultCta } from "@/features/docs-vault-local";
+import { useVaultConnectors } from "@/features/mcp-connectors";
 import {
   addSources,
   addSourcesInBrowser,
@@ -29,6 +32,7 @@ import {
 } from "@/widgets/doc-reading-pane";
 import { DocsVaultViewer } from "@/widgets/docs-vault";
 import { LibraryGraph } from "@/widgets/library-graph";
+import { LibraryImportDialog } from "@/widgets/library-import";
 import { cn } from "@/shared/lib/cn";
 import { getTauriVaultRootPath, revealTauriVaultFile } from "@/shared/lib/tauri-vault-fs";
 import { controlClass } from "@/shared/ui/control-class";
@@ -409,6 +413,24 @@ export function LibraryPage() {
     () => new Set((manifest?.docs ?? []).map((doc) => doc.slug)),
     [manifest],
   );
+
+  /*
+   * ── The third door: documents that are not on this computer yet ────────────────────────────
+   *
+   * Owner, 2026-09-07: *"connecting a service is mostly for the Library anyway — people want the
+   * things they already wrote somewhere else."* Add files and Find documents both assume the
+   * document is already on disk; for somebody whose notes live in Notion, neither is a door.
+   *
+   * The whole flow lives in `@/widgets/library-import` and never says MCP, stdio or environment
+   * variable. What it needs from this view is the two things only this view has: the folder's
+   * connector list to write the descriptor into, and the agent turn that does the fetching. The
+   * technical dialog on `/mcp` is unchanged and is the last tile, for a service the list does not
+   * know.
+   */
+  const connectors = useVaultConnectors(handle);
+  const importRouter = useRouter();
+  const [importOpen, setImportOpen] = useState(false);
+  const openImport = useCallback(() => setImportOpen(true), []);
   const handleCompile = useCallback(() => {
     /*
      * **A press that does nothing must never be silent** (installed app, 2026-09-05).
@@ -659,6 +681,7 @@ export function LibraryPage() {
             onOpenSource={(row) => setSelected({ kind: "source", path: row.path })}
             onAddFiles={handleAddFiles}
             onFindDocuments={handleFindDocuments}
+            onImportFromService={openImport}
             onCompile={agent.route === "agent" || agent.route === "local" ? handleCompile : null}
             /*
              * The same picker as step two, reading and writing the same stored answer, so
@@ -928,6 +951,25 @@ export function LibraryPage() {
           onClose={() => agent.setOpen(false)}
         />
       ) : null}
+
+      {/*
+        The service door. Blocking, because it ends in a connection being written into the
+        folder and a conversation opening — an errand with a beginning and an end, which is what
+        `Dialog` is for. It closes before it hands the brief over, so the dock is never behind a
+        scrim (`.claude/rules/design.md` forbids two blocking surfaces at once).
+      */}
+      <LibraryImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onAttach={(connector) => connectors.upsert(connector)}
+        onBrief={(brief) => agent.start(brief, "import")}
+        /*
+         * A service this list does not know goes to the technical dialog, which lives on `/mcp`
+         * and is unchanged. `?tab=connectors` opens it on the half that adds one, so nobody
+         * arrives on the share tab wondering where the connectors went.
+         */
+        onOpenAdvanced={() => importRouter.push(`${DESTINATION_HREF.mcp}?tab=connectors`)}
+      />
 
       {/* Discovery proposes; this dialog is where a person approves. Blocking, because it
           is asking to take copies of their files. */}
