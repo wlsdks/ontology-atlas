@@ -268,6 +268,7 @@ export function AcpChatPanel({
   openingRequest,
   requestScopeKey,
   onOpeningRequestSent,
+  judgeWrite,
   suggestions = [],
   onSuggestionAction,
   knownSlugs,
@@ -323,6 +324,18 @@ export function AcpChatPanel({
   openingRequest?: { text: string; nonce: number; scopeKey?: string } | null;
   requestScopeKey?: string;
   onOpeningRequestSent?: (nonce: number) => void;
+  /**
+   * Judges a file write before the person decides, from the screen that knows the folder's
+   * contract (the Library judges wiki pages). Null for a request it has no opinion on.
+   */
+  judgeWrite?: (request: {
+    filePath: string | null;
+    rawInput: Record<string, unknown>;
+    toolKind: string | null;
+  }) => {
+    ok: boolean;
+    problems: ReadonlyArray<{ code: string; message: string; line?: number }>;
+  } | null;
   /**
    * The answer to 「What should I ask?」 (what should I ask) — drawn from **this folder's
    * current state** (`useChatSuggestions`). It appears in the empty conversation and,
@@ -1528,6 +1541,7 @@ export function AcpChatPanel({
           <AcpPermissionCard
             vaultPath={vaultRoot}
             pending={pendingHeld}
+            writeVerdict={judgeWrite ? judgeWrite(pendingHeld.request) : null}
             changeSet={pendingHeldChangeSet}
             activeItemIndex={
               (pendingHeld.request.toolCallId ?? pendingHeld.request.toolName) === previewRequestKey

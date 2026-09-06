@@ -16,7 +16,14 @@ import { projectRootForVault } from './vault-mcp-server';
  * The fix is not to suppress the card — every access still stops for an answer. It is to say which
  * of the two situations this is, so the person spends their attention on the one that deserves it.
  */
-export type PermissionLocality = 'inside-project' | 'elsewhere';
+/**
+ * `inside-folder`: the path is in the folder the person opened Atlas on — a page, a node,
+ * a source. `inside-project`: outside that folder but inside the project above it — the
+ * code the map was built from. `elsewhere`: anything else, and anything unresolvable.
+ * The first two share the neutral card; only the words differ, because "look at code in
+ * your project" over a wiki page write (live turn, 2026-09-06) named the wrong situation.
+ */
+export type PermissionLocality = 'inside-folder' | 'inside-project' | 'elsewhere';
 
 /** Boundary-aware containment: `/p/my-product-archive` is not inside `/p/my-product`, and equality counts. */
 function within(root: string, target: string): boolean {
@@ -47,7 +54,7 @@ export function permissionLocality(
    * person had opened Atlas on with 「it wants to touch something outside this folder」, naming
    * the folder as outside itself. Whatever else is true, a path inside the open folder is inside it.
    */
-  if (within(vaultPath, target)) return 'inside-project';
+  if (within(vaultPath, target)) return 'inside-folder';
   const projectRoot = projectRootForVault(vaultPath);
   // No project above this vault — beyond the folder itself, the old reading is the only true one.
   return projectRoot && within(projectRoot, target) ? 'inside-project' : 'elsewhere';

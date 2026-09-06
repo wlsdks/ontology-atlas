@@ -18,7 +18,7 @@ import { join, relative } from 'node:path';
 import { COLORS } from '../lib/colors.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { walkMd } from '../lib/walk-vault.mjs';
-import { WIKI_DIR, isWikiTemplateSlug, validateWikiPage } from '../lib/wiki-schema.mjs';
+import { WIKI_DIR, isWikiFurnitureSlug, validateWikiPage, validateWikiFolder } from '../lib/wiki-schema.mjs';
 import {
   formatUnknownFlagError,
   parseVaultFlag,
@@ -88,7 +88,7 @@ export async function runWikiValidate(args) {
       const rel = relative(vaultRoot, file);
       // The shipped template is skipped: its citations name `sources/<file>`, a
       // placeholder, so judging it would report a problem on the file that is the answer.
-      if (isWikiTemplateSlug(rel)) return false;
+      if (isWikiFurnitureSlug(rel)) return false;
       return rel.startsWith(`${WIKI_DIR}/`);
     });
     knownSources = listSources(vaultRoot);
@@ -121,7 +121,23 @@ export async function runWikiValidate(args) {
       continue;
     }
     const { ok, problems } = validateWikiPage(raw, { knownSources });
-    pages.push({ page, ok, problems });
+    pages.push({ page, ok, problems, raw });
+  }
+
+  // The folder half: links that resolve, pages somebody links to, pages sharing a
+  // source that know about each other. Only readable pages take part, and each
+  // page's folder problems land on that page so a person reads one list.
+  const folder = validateWikiFolder(
+    pages.filter((entry) => typeof entry.raw === 'string').map((entry) => ({ path: entry.page, raw: entry.raw })),
+  );
+  const folderByPage = new Map(folder.map((entry) => [entry.path, entry.problems]));
+  for (const entry of pages) {
+    const extra = folderByPage.get(entry.page) ?? [];
+    if (extra.length > 0) {
+      entry.problems.push(...extra);
+      entry.ok = false;
+    }
+    delete entry.raw;
   }
 
   const failing = pages.filter((entry) => !entry.ok);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
@@ -16,6 +16,8 @@ import {
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode, useLocalVault } from "@/entities/vault-session";
+import { describeVaultShape } from "@/shared/lib/vault-shape";
+import { destinationsForVaultShape } from "@/shared/config/destinations";
 import {
   DestinationGuide,
   GuideReplayProvider,
@@ -340,6 +342,11 @@ function AppNavRailSlot() {
   // and a page overrides only when it needs a special slot.
   // The badge count reads the same session changeset as the Git workbench. If the
   // two diverged, the rail could claim changes while the destination showed none.
+  /* The rail and the keys read the same verdict: what this folder's files say it holds. */
+  const visibleDestinations = useMemo(
+    () => destinationsForVaultShape(vault.manifest ? describeVaultShape(vault.manifest.docs) : null),
+    [vault.manifest],
+  );
   const { changeset: gitChangeset } = useAtlasGitContext();
   const gitDirtyCount = gitChangeset.touchedNodeIds.size;
 
@@ -377,6 +384,7 @@ function AppNavRailSlot() {
     },
     disabled: gateway,
     hrefOverrides: contextHrefs?.docs ? { docs: contextHrefs.docs } : undefined,
+    visible: visibleDestinations,
   });
 
   // Git was promoted to a destination on 2026-07-25 and this utility tile was absorbed.
@@ -392,6 +400,7 @@ function AppNavRailSlot() {
       contextHrefs={contextHrefs}
       gitDirtyCount={gitDirtyCount}
       agentsNoticeCount={installNotice.count}
+      visibleDestinations={visibleDestinations}
     />
   );
 }

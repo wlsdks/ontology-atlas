@@ -101,6 +101,8 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 34 | 2026-09-06 | The library becomes a place, the rail cap moves to nine, and the tile's padding pays for it | one-way | review | orient | surface-inventory | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | scope | 2 | 0 | verification-strengthened | po-evidence+po-leverage |
 | 35 | 2026-09-06 | The insights board leads with measurement, and the to-do list is one row per finding | one-way | review | judge | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=affected | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
 | 36 | 2026-09-06 | Compile runs on a local model: a source-reading tool, a page-proposing tool, and one consent card | one-way | review | handoff | public-contract | truth=affected;transfer=affected;agent-write=affected;human-correction=unchanged | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
+| 37 | 2026-09-06 | The Compile brief tells a writer to revise the page that already covers a source's topic and to record a disagreement on both pages | two-way | solo | correct | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
+| 38 | 2026-09-06 | A folder says what it holds: creation asks wiki / ontology map / both once, and the rail, phone tabs and keys read the files | one-way | review | orient | surface-inventory | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | scope | 2 | 0 | narrowed | po-evidence+po-leverage |
 
 ## Outcome updates
 
@@ -155,3 +157,5 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 34 | 2026-09-06 | pass | yes | no | pending |
 | 35 | 2026-09-06 | pass | yes | no | pending |
 | 36 | 2026-09-06 | pass | yes | no | pending |
+| 37 | 2026-09-06 | pass | yes | no | held |
+| 38 | 2026-09-06 | pass | pending | no | pending |

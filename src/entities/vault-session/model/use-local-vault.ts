@@ -1,6 +1,8 @@
 'use client';
 
 import { type AgentClientId, filesForClient } from '../lib/agent-clients';
+import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
+import type { VaultShape } from '@/shared/lib/vault-shape';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity-log';
 import {
@@ -1620,7 +1622,14 @@ export function useLocalVaultInternal() {
    * any new call site, so the same drift cannot reopen. An unknown locale is downgraded to EN
    * by `starterFilesForLocale`.
    */
-  const scaffoldOntology = useCallback(async (starterLocale: string) => {
+  /**
+   * Write the starter for the parts a person chose (`VaultShape`): the map's starter
+   * nodes and skills, the wiki's template, or both. Every folder of the fixed shape is
+   * created either way — `domains/`, `capabilities/`, `elements/`, `sources/`, `wiki/` —
+   * so the folder a teammate pulls always has the same tree, and "start the map" or
+   * "start a wiki" later only adds the files that make that part real.
+   */
+  const scaffoldOntology = useCallback(async (starterLocale: string, shape: VaultShape = { map: true, wiki: true }) => {
     if (!state.handle) {
       throw new Error('Vault is not open');
     }
@@ -1631,7 +1640,7 @@ export function useLocalVaultInternal() {
     // settings panel said "5 documents" — two screens giving different numbers for one vault.
     let markdownCreated = 0;
     let skipped = 0;
-    for (const { relPath, content } of materializeStarterFiles(starterLocale)) {
+    for (const { relPath, content } of shape.map ? materializeStarterFiles(starterLocale) : []) {
       // The slug is the path with the `.md` extension removed, per createDoc / saveDoc rules.
       const slug = relPath.replace(/\.md$/, '');
       if (state.fileHandles.has(slug)) {
@@ -1672,7 +1681,14 @@ export function useLocalVaultInternal() {
        * and where to stop*. The vault is the agent's working folder, so they appear directly in
        * its `/` listing — evidence: the `VAULT_SKILL_NAMES` comment in `ontology-starter.ts`.
        */
-      ...vaultSkillFilesForLocale(starterLocale),
+      ...(shape.map ? vaultSkillFilesForLocale(starterLocale) : []),
+      /*
+       * The wiki's furniture. The vault shape is one folder with `sources/` and `wiki/`
+       * always (ledger, 2026-09-06), and the CLI's `init` writes the page template into
+       * every new vault; a folder the app started used to lack it, so the two doors left
+       * two shapes. The template is the same string the validator enforces.
+       */
+      ...(shape.wiki ? [{ relPath: 'wiki/_template.md', content: WIKI_PAGE_TEMPLATE }] : []),
     ]) {
       try {
         const resolved = await getParentAndName(guide.relPath.replace(/\.md$/, ''), true);
@@ -1693,6 +1709,19 @@ export function useLocalVaultInternal() {
       } catch {
         skipped += 1;
       }
+    }
+    // `sources/` from the first minute, in both shapes, so the folder says where files go.
+    for (const folder of ['domains', 'capabilities', 'elements', 'sources', 'wiki']) {
+      try {
+        await state.handle?.getDirectoryHandle(folder, { create: true });
+      } catch {
+        // A folder that cannot be made is reported by the first file written into it.
+      }
+    }
+    try {
+      await state.handle?.getDirectoryHandle('sources', { create: true });
+    } catch {
+      // A folder that refuses a directory still has its pages; the Library creates it on Add files.
     }
 
     // Ready-to-use agent configs for "open the vault folder itself" flows.

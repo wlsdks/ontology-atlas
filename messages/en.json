@@ -479,7 +479,16 @@
     "errorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick another one.",
     "errorPermission": "Atlas cannot read this folder. Pick it again to grant access.",
     "errorPermissionDenied": "macOS is protecting the folder “{folder}”. Allow Ontology Atlas in System Settings under Privacy & Security, then Files and Folders, and open it again.",
-    "errorPermissionDeniedThisFolder": "this one"
+    "errorPermissionDeniedThisFolder": "this one",
+    "shapeEyebrow": "What will this folder hold?",
+    "shapeTitle": "Pick what to start with. The folder gets the same tree either way, and you can add the other part later from Settings.",
+    "shapeWikiTitle": "A documents wiki",
+    "shapeWikiBody": "Your files go in sources/, and an agent writes one wiki page per document. No map, no code needed.",
+    "shapeMapTitle": "An ontology map of a codebase",
+    "shapeMapBody": "Starter nodes and agent skills for describing what the code builds and why. No wiki.",
+    "shapeBothTitle": "Both",
+    "shapeBothBody": "The map and the wiki side by side, with the wiki able to propose nodes to the map.",
+    "shapeBack": "Back"
   },
   "firstRunStarter": {
     "brand": "Ontology Atlas",
@@ -3174,7 +3183,14 @@
       "localScopeLoopback": "Sends: your question + the folder excerpts you picked → {host}. It never leaves this computer, and the log records {host} as the destination: that record is the proof.",
       "localScopeRemote": "Sends: your question + the folder excerpts you picked → {host}. That address is off this computer, so the log records {host} as the destination.",
       "webDegradedLocalBody": "Connecting by address to a runner on this computer (Ollama, LM Studio) does not work in the browser either, and changing a setting on the runner does not help: the web build deliberately ships no path for sending text to a model at all. In the desktop app you only type the runner’s address, no key is needed, and the log records this computer as the destination."
-    }
+    },
+    "workspaceShapeLabel": "This folder holds",
+    "workspaceShapeMap": "Ontology map",
+    "workspaceShapeWiki": "Wiki",
+    "workspaceShapeCaption": "Read from the files, not a setting. Adding a part writes its starter files; the tabs follow.",
+    "workspaceShapeStartMap": "Start the map",
+    "workspaceShapeStartWiki": "Start a wiki",
+    "workspaceShapeStarted": "Added to this folder."
   },
   "copyProjectLink": {
     "toastSuccess": "Link copied",
@@ -3882,6 +3898,10 @@
       "allowAlwaysUnknown": "Allow for the rest of this chat",
       "scopeHint": "Covers: {names}",
       "scopeUnknownHint": "This tool did not say what the grant covers. Allowing once is the safer choice.",
+      "pageFits": "The page keeps its shape: every fact cited, the five sections in order.",
+      "pageFails": "{count, plural, one {# problem} other {# problems}} with this page's shape. Allow saves it as is; the Wiki list will show them.",
+      "insideFolderTitle": "It wants to change a file in this folder",
+      "insideFolderBody": "The path is below. Nothing happens until you allow it.",
       "insideProjectTitle": "It wants to look at code in your project",
       "insideProjectBody": "That is outside the map folder but inside the project you picked. Nothing happens until you allow it."
     },
@@ -4409,6 +4429,22 @@
       "listAria": "Wiki pages in this folder",
       "compile": "Compile",
       "compileTooltip": "Start one agent turn that reads the sources and writes wiki pages. Every write waits for you.",
+      "lint": "Check the wiki",
+      "lintTooltip": "Start one agent turn that reads the wiki pages and reports disagreements, superseded claims, missing links, and names without a page. It writes nothing.",
+      "candidatesHeader": "Names without a page · {count}",
+      "candidateKind": {
+        "domain": "domain",
+        "capability": "capability",
+        "element": "element",
+        "person": "person · stays in the wiki",
+        "organisation": "organisation · stays in the wiki",
+        "other": "not a map concept"
+      },
+      "candidatePages": "{count, plural, one {on # page} other {on # pages}}",
+      "propose": "Propose as node",
+      "proposeTooltip": "Start one agent turn that reads these pages and proposes one ontology node. The write stops at your permission card.",
+      "logCompile": "Last compile {when}: {summary}",
+      "logLint": "Last check {when}: {summary}",
       "empty": "No wiki pages yet. A page is Markdown with no kind:, in the shape wiki/_template.md holds.",
       "unknownAuthor": "unknown",
       "offTemplate": "off-template",
@@ -4435,7 +4471,18 @@
       "viewOriginalOne": "View original: {name}",
       "originalMissing": "Cites {name}, which is not in this folder.",
       "compileCreateFile": "Create {path}",
-      "compileModifyFile": "Replace {path}"
+      "compileModifyFile": "Replace {path}",
+      "logCount": {
+        "disagreement": "disagreement {count}",
+        "superseded": "superseded {count}",
+        "missingLink": "missing link {count}",
+        "nameWithoutPage": "names without a page {count}"
+      },
+      "logNoCounts": "ran, counts not stated",
+      "logNew": "new",
+      "logRevised": "revised",
+      "logNothingNew": "nothing new",
+      "emptyNoTemplate": "No wiki pages yet, and no template in this folder. Start a wiki from Settings › Workspace: it writes wiki/_template.md, the shape every page follows."
     },
     "graph": {
       "title": "Graph",

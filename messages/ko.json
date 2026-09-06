@@ -479,7 +479,16 @@
     "errorPathMissing": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 다른 폴더를 골라 주세요.",
     "errorPermission": "이 폴더를 읽을 권한이 없어요. 폴더를 다시 골라 권한을 주세요.",
     "errorPermissionDenied": "macOS가 「{folder}」 폴더를 보호하고 있어요. 시스템 설정 → 개인정보 보호 및 보안 → 파일 및 폴더에서 Ontology Atlas에 접근을 허용한 뒤 다시 열어 주세요.",
-    "errorPermissionDeniedThisFolder": "이"
+    "errorPermissionDeniedThisFolder": "이",
+    "shapeEyebrow": "이 폴더에 무엇을 담을까요?",
+    "shapeTitle": "무엇부터 시작할지 고르세요. 폴더 구조는 어느 쪽이든 같고, 나머지는 나중에 설정에서 추가할 수 있어요.",
+    "shapeWikiTitle": "문서 위키",
+    "shapeWikiBody": "sources/에 문서를 넣으면 에이전트가 문서마다 위키 페이지를 씁니다. 지도도 코드도 필요 없어요.",
+    "shapeMapTitle": "코드베이스 기반 온톨로지 지도",
+    "shapeMapBody": "코드가 무엇을 만들고 왜 그런지 적어 두는 시작 노드와 에이전트 스킬. 위키는 없어요.",
+    "shapeBothTitle": "둘 다",
+    "shapeBothBody": "지도와 위키를 나란히. 위키가 지도에 노드를 제안할 수 있어요.",
+    "shapeBack": "뒤로"
   },
   "firstRunStarter": {
     "brand": "Ontology Atlas",
@@ -3174,7 +3183,14 @@
       "localScopeLoopback": "전송: 당신이 쓴 질문 + 폴더에서 고른 노드 발췌 → {host}. 이 컴퓨터 밖으로 나가지 않고, 기록에도 목적지가 {host} 로 남아요. 그게 나가지 않았다는 증거예요.",
       "localScopeRemote": "전송: 당신이 쓴 질문 + 폴더에서 고른 노드 발췌 → {host}. 이 주소는 이 컴퓨터 밖이라 기록에 {host} 가 목적지로 남아요.",
       "webDegradedLocalBody": "이 컴퓨터에서 도는 러너(Ollama · LM Studio 등)에 주소로 붙는 것도 브라우저에서는 안 돼요. 러너 쪽 설정을 바꿔도 마찬가지예요. 웹 화면에는 모델로 글을 보내는 길 자체를 두지 않기로 했거든요. 데스크톱 앱에서는 러너 주소만 적으면 되고 키는 필요 없어요. 보낸 기록에도 목적지가 이 컴퓨터로 남아요."
-    }
+    },
+    "workspaceShapeLabel": "이 폴더에 있는 것",
+    "workspaceShapeMap": "온톨로지 지도",
+    "workspaceShapeWiki": "위키",
+    "workspaceShapeCaption": "설정이 아니라 파일에서 읽습니다. 추가하면 시작 파일을 쓰고, 탭이 따라옵니다.",
+    "workspaceShapeStartMap": "지도 시작",
+    "workspaceShapeStartWiki": "위키 시작",
+    "workspaceShapeStarted": "이 폴더에 추가했어요."
   },
   "copyProjectLink": {
     "toastSuccess": "링크가 복사됐습니다",
@@ -3882,6 +3898,10 @@
       "allowAlwaysUnknown": "이번 대화 내내 허용",
       "scopeHint": "허용 범위: {names}",
       "scopeUnknownHint": "이 도구가 허용 범위를 알려 주지 않았어요. 한 번만 허용하는 쪽이 안전해요.",
+      "pageFits": "문서 모양이 맞습니다. 사실마다 인용이 있고 다섯 절이 순서대로입니다.",
+      "pageFails": "문서 모양에 어긋나는 문제 {count}건. 허용하면 이대로 저장되고 위키 목록에 표시됩니다.",
+      "insideFolderTitle": "이 폴더의 파일을 바꾸려고 해요",
+      "insideFolderBody": "경로는 아래에 있어요. 허락하기 전에는 아무 일도 일어나지 않아요.",
       "insideProjectTitle": "내 프로젝트 안의 코드를 보려고 해요",
       "insideProjectBody": "지도 폴더 밖이지만, 고른 프로젝트 안입니다. 허락하기 전에는 아무 일도 일어나지 않아요."
     },
@@ -4409,6 +4429,22 @@
       "listAria": "이 폴더의 위키 문서",
       "compile": "정리 시작",
       "compileTooltip": "원문을 읽고 위키 문서를 쓰는 에이전트 턴을 한 번 시작합니다. 쓰기는 모두 사람의 허락을 기다립니다.",
+      "lint": "위키 점검",
+      "lintTooltip": "위키 문서를 읽고 어긋남·대체된 주장·빠진 연결·문서 없는 이름을 보고하는 에이전트 턴을 한 번 시작합니다. 아무것도 쓰지 않습니다.",
+      "candidatesHeader": "문서 없는 이름 · {count}",
+      "candidateKind": {
+        "domain": "도메인",
+        "capability": "역량",
+        "element": "요소",
+        "person": "사람 · 위키에 남음",
+        "organisation": "조직 · 위키에 남음",
+        "other": "지도 개념 아님"
+      },
+      "candidatePages": "문서 {count}곳",
+      "propose": "노드로 제안",
+      "proposeTooltip": "이 문서들을 읽고 온톨로지 노드 하나를 제안하는 에이전트 턴을 한 번 시작합니다. 쓰기는 허락 카드에서 멈춥니다.",
+      "logCompile": "마지막 정리 {when}: {summary}",
+      "logLint": "마지막 점검 {when}: {summary}",
       "empty": "아직 위키 문서가 없습니다. 위키 문서는 kind: 가 없는 마크다운이고, 서식은 wiki/_template.md 에 있습니다.",
       "unknownAuthor": "미상",
       "offTemplate": "서식 밖",
@@ -4435,7 +4471,18 @@
       "viewOriginalOne": "원본 보기: {name}",
       "originalMissing": "{name} 을(를) 인용하지만 이 폴더에는 없습니다.",
       "compileCreateFile": "{path} 만들기",
-      "compileModifyFile": "{path} 바꾸기"
+      "compileModifyFile": "{path} 바꾸기",
+      "logCount": {
+        "disagreement": "어긋남 {count}",
+        "superseded": "대체된 주장 {count}",
+        "missingLink": "빠진 연결 {count}",
+        "nameWithoutPage": "문서 없는 이름 {count}"
+      },
+      "logNoCounts": "실행됨 · 개수 없음",
+      "logNew": "새로 씀",
+      "logRevised": "고침",
+      "logNothingNew": "새 내용 없음",
+      "emptyNoTemplate": "아직 위키 문서가 없고 서식도 없습니다. 설정 › 작업 공간에서 위키를 시작하면 wiki/_template.md 가 생기고, 문서는 그 서식을 따릅니다."
     },
     "graph": {
       "title": "그래프",

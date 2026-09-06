@@ -116,6 +116,30 @@ export const WIKI_PAGE_CASES = [
     expectedCodes: ['uncited-fact'],
   },
   {
+    name: 'a wrapped fact carries its citation on the continuation line, which is still the same bullet',
+    input: page(
+      FRONTMATTER,
+      BODY.replace(
+        '- Three deliverables are named. [[src:sources/plan.pdf#p2]]',
+        '- Three deliverables are named, in a bullet long enough that the writer wrapped\n  it and put the citation on the second line. [[src:sources/plan.pdf#p2]]',
+      ),
+    ),
+    expectedOk: true,
+    expectedCodes: [],
+  },
+  {
+    name: 'a wrapped fact with no citation on any of its lines is still uncited',
+    input: page(
+      FRONTMATTER,
+      BODY.replace(
+        '- Three deliverables are named. [[src:sources/plan.pdf#p2]]',
+        '- Three deliverables are named, in a bullet long enough that the writer wrapped\n  it and never cited it.',
+      ),
+    ),
+    expectedOk: false,
+    expectedCodes: ['uncited-fact'],
+  },
+  {
     name: 'an uncited bullet outside Facts is fine — Open questions are not claims',
     input: page(FRONTMATTER, BODY),
     expectedOk: true,
@@ -245,4 +269,90 @@ export const WIKI_PAGE_KNOWN_SOURCES = [
   'sources/orders.csv',
   'sources/spec.docx',
   'sources/log.txt',
+];
+
+/**
+ * Folder-level cases for `validateWikiFolder`: each is a whole folder, the expected codes
+ * are listed per page path. Both implementations must return exactly these.
+ */
+function folderPage(name, links = [], sources = ['sources/plan.pdf']) {
+  const fm = [
+    '---',
+    `title: ${name}`,
+    'created_by: agent:claude',
+    'compiled_at: 2026-09-06T10:00:00Z',
+    'sources:',
+    ...sources.map((source) => `  - ${source}`),
+    'source_hash:',
+    ...sources.map((source) => `  ${source}: 3b1f0a00000000000000000000000000000000000000000000000000000000ab`),
+    'status: draft',
+    `summary: About ${name}.`,
+    '---',
+  ].join('\n');
+  const body = [
+    '## Summary',
+    '',
+    `${name}. ${links.map((link) => `See [[${link}]].`).join(' ')}`,
+    '',
+    '## Facts',
+    '',
+    `- A fact. [[src:${sources[0]}#p2]]`,
+    '',
+    '## Decisions',
+    '',
+    '## Open questions',
+    '',
+    '## Not in sources',
+  ].join('\n');
+  return { path: `wiki/${name}.md`, raw: `${fm}\n\n${body}\n` };
+}
+
+export const WIKI_FOLDER_CASES = [
+  {
+    name: 'one page alone is not an orphan — there is nobody to link it',
+    pages: [folderPage('alone')],
+    expected: { 'wiki/alone.md': [] },
+  },
+  {
+    name: 'two pages that link each other are clean',
+    pages: [folderPage('a', ['wiki/b']), folderPage('b', ['wiki/a'], ['sources/other.csv'])],
+    expected: { 'wiki/a.md': [], 'wiki/b.md': [] },
+  },
+  {
+    name: 'a page nobody links is an orphan',
+    pages: [folderPage('a', ['wiki/b']), folderPage('b', [], ['sources/other.csv'])],
+    expected: { 'wiki/a.md': ['orphan-page'], 'wiki/b.md': [] },
+  },
+  {
+    name: 'a link to a page that is not there dangles',
+    pages: [folderPage('a', ['wiki/missing']), folderPage('b', ['wiki/a'], ['sources/other.csv'])],
+    expected: { 'wiki/a.md': ['dangling-wikilink'], 'wiki/b.md': ['orphan-page'] },
+  },
+  {
+    name: 'a source a page merely cites does not fan out: only a primary source shared without a link is reported',
+    pages: [
+      folderPage('a', ['wiki/d'], ['sources/a.pdf', 'sources/minutes.txt']),
+      folderPage('b', ['wiki/d'], ['sources/b.pdf', 'sources/minutes.txt']),
+      folderPage('c', ['wiki/d'], ['sources/minutes.txt']),
+      folderPage('d', ['wiki/a', 'wiki/b', 'wiki/c'], ['sources/d.pdf']),
+    ],
+    // a and b both cite minutes.txt only for a note and are silent about each other: fine.
+    // c was written from minutes.txt; a and b cite it and do not link c: reported on both sides.
+    expected: {
+      'wiki/a.md': ['shared-source-unlinked'],
+      'wiki/b.md': ['shared-source-unlinked'],
+      'wiki/c.md': ['shared-source-unlinked', 'shared-source-unlinked'],
+      'wiki/d.md': [],
+    },
+  },
+  {
+    name: 'two pages sharing a source without linking are told about each other, on both',
+    pages: [folderPage('a', ['wiki/c']), folderPage('b', ['wiki/c']), folderPage('c', ['wiki/a', 'wiki/b'], ['sources/other.csv'])],
+    expected: { 'wiki/a.md': ['shared-source-unlinked'], 'wiki/b.md': ['shared-source-unlinked'], 'wiki/c.md': [] },
+  },
+  {
+    name: 'a bare [[slug]] resolves inside wiki/, and a citation is never a link',
+    pages: [folderPage('a', ['b']), folderPage('b', ['a'], ['sources/other.csv'])],
+    expected: { 'wiki/a.md': [], 'wiki/b.md': [] },
+  },
 ];
