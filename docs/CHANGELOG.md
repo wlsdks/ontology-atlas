@@ -47,11 +47,11 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Lookups show targets; an MCP screen, external Connectors default off. Library opens on a graph of sources and write-ups, guides three steps in a popup, compiles on a local model behind a card. Insights repairs back-links. Meaning asks for reasons; trails say how steps connect. Strata, a third 3D view: labelled planes.
+**Added**: an MCP screen, external Connectors default off. Library opens on a live graph of sources and write-ups you can drag and zoom, guides three steps in a popup, compiles on a local model behind a card. Insights repairs back-links. Meaning asks for reasons; trails say how steps connect. Strata, a third 3D view: labelled planes.
 
 **Changed**: Insights opens on four measures; Cone fills the canvas; Strata's plane names follow their planes or a corner, lit on hover; chat widens, keeps a clock, one height, closed dock; Agents and MCP read one column; connection cards lead with a reason; toasts sit under the toolbar.
 
-**Fixed**: 3D relations stay visible at rest on any screen; a concept's centre is clickable; repeat lookups fold to a row; permission cards read plainly; saved analyses announce once; rails stop blinking; reason fields grow; footprints follow curves; docks name tool and mode.
+**Fixed**: 3D relations stay visible at rest on any screen; a concept's centre is clickable; repeat lookups fold to a row; permission cards read plainly; rails stop blinking; reason fields grow; footprints follow curves; docks name tool and mode.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 

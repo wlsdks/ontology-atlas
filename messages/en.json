@@ -4489,7 +4489,7 @@
       "counts": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {concepts, plural, one {# concept} other {# concepts}} · {cites} cites · {mentions} mentions",
       "empty": "Nothing to draw yet. Once Compile writes a page, this shows which source it was written from and which concepts it names.",
       "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
-      "legend": "A filled circle is a page, a square is a source, a ring is a concept on the map. A thicker line is a citation, a dashed one a mention. Point at a dot for its name, and click to open it.",
+      "legend": "A filled circle is a page, a square is a source, a ring is a concept on the map. A thicker line is a citation, a dashed one a mention. Drag a dot to pull it out of the tangle, scroll to zoom, drag the background to move, and click to open.",
       "keys": "Arrow keys move between dots, Enter opens the one you are on, Escape leaves it.",
       "announce": "{kind} {name}, {position} of {total}. Enter {action}.",
       "kind": {
@@ -4499,7 +4499,8 @@
       },
       "actionSelect": "opens it here",
       "actionMap": "opens it on the map",
-      "openOnMap": "open on the map"
+      "openOnMap": "open on the map",
+      "fit": "Fit the whole picture"
     },
     "find": {
       "title": "Documents in the folders you granted",

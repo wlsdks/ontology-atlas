@@ -795,6 +795,47 @@ below `lg` the index scrolls as one box and the lists stand at their natural hei
 at `lg` and above the two lists keep their own scrollers. Cases: `the Library pane` and
 `the graph takes the top of the column at …` in `tests/e2e/library.spec.ts`.
 
+**The graph is a live force simulation** (2026-09-07). The owner opened the installed
+app on the real folder — 7 sources, 6 pages, every page citing 4–7 of them — and read the
+picture as a static hairball: near-identical thin grey straight lines from nearly every
+page to nearly every source, two mark sizes, and nothing that answered a hand. The
+one-shot ForceAtlas2 pass that drew it is gone. `library-force-simulation.ts` steps a
+velocity-Verlet model on `requestAnimationFrame`: springs whose rest length is the
+relation (a citation 52 world units, a mention 96, so concepts ring the outside of a page's
+own sources), many-body repulsion, collision so no mark sits on another, and an
+**aspect-aware gravity** — the one non-standard force here, weaker along the canvas's long
+axis, which *grows* the cloud into the box instead of fitting it into a corner of one.
+Measured at 1512 on that folder shape: the picture fills **93.9% of the canvas width and
+90.5% of its height**, against 33.5% before, and the width cap that used to cut the box
+down to the picture is gone with it. Above 720 nodes the many-body force switches to a
+hand-written Barnes–Hut quadtree — the crossover is measured, not assumed (1.97 ms exact
+against 1.73 ms approximated at 800; one whole tick is 0.10 / 0.40 / 1.73 ms at 100 / 300 /
+800 nodes). Nothing new is installed: Graphology is no longer imported by this widget at
+all.
+
+**Four gestures, and a picture that never freezes.** Dragging a mark pins it under the
+pointer while the springs pull its neighbours after it, and releasing hands it a capped
+flick — on a folder where six pages cite the same seven sources no layout can separate
+anything, so *pulling one dot out of the tangle* is the reading operation. The wheel zooms
+about the pointer between half and four times the fit; dragging empty canvas pans;
+double-click and a `ChromeTile` in the canvas's corner fit the whole picture; a coarse
+pointer gets one-finger drag and pinch. Which gesture a press *is* is decided once, at
+pointerdown, past a 7px threshold. Hovering holds the mark, its neighbours and their edges
+at full ink and dims everything else to 35% over `--motion-fast`. Marks are graded 5–10px
+by degree, edges are quadratic bows deeper the longer they run, every mark clears a 1px
+halo of the canvas ground, and every standing name is stroked in that ground before it is
+filled, so a grey label crossed by a grey line is still readable. Once the picture is at
+rest it keeps a deliberately tiny **ambient drift** — 0.28px per axis, 0.4px radial, 7.2s
+period, applied in *screen* pixels so a zoom cannot multiply it, and repainted one frame in
+four. It is an owner directive against the motion charter's own preference and
+`docs/DECISIONS.md` (2026-09-07) records that with its dissent. Under
+`prefers-reduced-motion` there is no settle and no drift: the simulation is run to rest
+synchronously and drawn once, and `tests/e2e/library-graph-alive.spec.ts` proves the canvas
+is byte-identical frame to frame. Recorded on a real display (15 s, 30 fps): the arrival
+decays monotonically over 2.1 s with no stall, the hover dim measures cv 0.12 across its
+ramp, the drag tracks the hand with no stall, and at rest the frame-to-frame change sits at
+the recording's own noise floor.
+
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
 the action: one cited source is a single **View original** button carrying the file name;
 several keep a list under the same words; a citation naming a file that is not in the
