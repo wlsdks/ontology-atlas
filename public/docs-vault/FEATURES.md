@@ -819,6 +819,8 @@ Empty state (0 nodes): link to `/docs` (open vault).
 
 ### `/topology?workbench=edit` — contextual meaning editor and change review
 
+- 2026-09-06: the reason field (`Why this relation exists`) grows with its text from three rows to eight, then scrolls inside itself (`Textarea autoGrow`/`maxRows`); the map's utility rail (fit, tour, shortcuts, replay) waits one `--motion-base` before collapsing its labels, so a pointer crossing the 8px gaps between tiles no longer sees them blink.
+
 - A selected node keeps its map context while its compact inspector swaps, at the
   same anchor, into `MeaningEditorPanel`. There is no second right dock and no
   separate review route.

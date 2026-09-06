@@ -2,10 +2,13 @@
 
 import {
   forwardRef,
-  useId,
   type InputHTMLAttributes,
   type ReactNode,
   type TextareaHTMLAttributes,
+  useCallback,
+  useId,
+  useLayoutEffect,
+  useRef,
 } from "react";
 
 import { cn } from "@/shared/lib/cn";
@@ -136,17 +139,51 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 
 export type TextareaProps = FieldCommonProps &
   FieldNameProps &
-  Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "className" | "aria-label">;
+  Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "className" | "aria-label"> & {
+    /**
+     * Grow with the text (owner, 2026-09-06: the relation reason field was three lines
+     * for a sentence that ran to five). `rows` stays the floor; `maxRows` is the ceiling,
+     * after which the field scrolls inside itself. Height is set from `scrollHeight` on
+     * every value change, so a paste and a deletion both land on the right size.
+     */
+    autoGrow?: boolean;
+    maxRows?: number;
+  };
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { label, labelledBy, size, frame, hint, error, className, id: idProp, ...rest },
+  { label, labelledBy, size, frame, hint, error, className, id: idProp, autoGrow = false, maxRows, ...rest },
   ref,
 ) {
   const { id, hintId, errorId, describedBy } = useFieldWiring(idProp, hint, error);
+  const innerRef = useRef<HTMLTextAreaElement | null>(null);
+  const setRefs = useCallback(
+    (node: HTMLTextAreaElement | null) => {
+      innerRef.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref) ref.current = node;
+    },
+    [ref],
+  );
+  const value = rest.value;
+  useLayoutEffect(() => {
+    if (!autoGrow) return;
+    const el = innerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const style = getComputedStyle(el);
+    const line = parseFloat(style.lineHeight) || 20;
+    const chrome =
+      parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) +
+      parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+    const ceiling = maxRows ? maxRows * line + (Number.isFinite(chrome) ? chrome : 0) : Number.POSITIVE_INFINITY;
+    const next = Math.min(el.scrollHeight, ceiling);
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > ceiling ? "auto" : "hidden";
+  }, [autoGrow, maxRows, value]);
   return (
     <FieldShell {...{ id, label, labelledBy, className, hint, hintId, error, errorId }}>
       <textarea
-        ref={ref}
+        ref={setRefs}
         id={id}
         aria-labelledby={labelledBy}
         aria-invalid={error != null ? true : undefined}
