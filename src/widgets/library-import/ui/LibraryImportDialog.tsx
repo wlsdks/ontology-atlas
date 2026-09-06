@@ -191,7 +191,14 @@ export function LibraryImportDialog({
              * whose heights differ only because their copy lengths do, and these sentences differ
              * by a line.
              */
-            className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
+            /*
+             * `auto-rows-fr` measured, 2026-09-07: without it the last tile stood alone on its
+             * row at 83px against the 65px of the four above it, because its sentence wraps to a
+             * second line. `.claude/rules/forbidden.md` only forbids unequal heights *within* a
+             * row, so this passed the letter of the rule and still looked like a mistake. One
+             * track height for every tile costs nothing and removes the question.
+             */
+            className="mt-3 grid auto-rows-fr grid-cols-1 gap-2 sm:grid-cols-2"
           >
             {IMPORT_SERVICES.map((candidate) => (
               <li key={candidate.id} className="min-w-0">
