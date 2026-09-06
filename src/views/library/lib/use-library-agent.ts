@@ -10,6 +10,7 @@ import {
   vaultSelfReadSlot,
 } from "@/features/acp-session";
 import { useVaultConnectors } from "@/features/mcp-connectors";
+import { useLocalCompile } from "@/features/vault-agent";
 import { useAgentServer, useLocalVault } from "@/entities/vault-session";
 import {
   hostOfBaseUrl,
@@ -19,6 +20,8 @@ import {
 } from "@/shared/lib/local-endpoint";
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from "@/shared/lib/tauri-acp";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
+
+import type { LibrarySourceRow } from "@/entities/docs-vault";
 
 import type { LibraryAgentOpeningRequest, LibraryAgentRuntime } from "../ui/parts/LibraryAgentDock";
 
@@ -45,15 +48,21 @@ import type { LibraryAgentOpeningRequest, LibraryAgentRuntime } from "../ui/part
  * before the request leaves. So `route` gains `local`, and the shelf can name which brain
  * would answer instead of saying only that none can.
  *
- * ⚠️ **`local` is a named brain, not a second Compile engine today.** Compile's brief
- * tells the writer to open a PDF, a spreadsheet and a Word file with its own tools and to
- * write `wiki/<topic>.md`; the local runner reaches Atlas through the vault agent's tool
- * catalogue, which reads and proposes **ontology concepts only** — it has no tool that
- * opens a source and none that writes a page, and its one consent card carries concept
- * changes. Wiring Compile to it would either hand a model a filename and print whatever
- * it invented, or write a file outside the boundary a person approves. Both are refused.
- * `localModel` therefore feeds the label and the transfer sentence, and Compile keeps
- * saying exactly which brain it needs. See `docs/DECISIONS.md`, 2026-09-06.
+ * ## `local` compiles (2026-09-06, second pass)
+ *
+ * The record above ended with its own reopening condition — *"a local tool catalogue that
+ * reads a source and writes a page under one consent card reopens local Compile"* — and
+ * that catalogue now exists: `read_source_text` opens a file this folder holds and this
+ * bundle can decode, `propose_wiki_page` assembles a page and writes nothing, and one card
+ * carries the page path, its sections, its citation count and both source lists before
+ * anything lands. `useLocalCompile` runs that turn; `route` still decides only *who*
+ * answers.
+ *
+ * Two boundaries stayed narrow, and both are visible on the shelf rather than assumed:
+ * the live button needs a **loopback** runner, because after this pass whole documents
+ * leave the process and "on this computer" has to be true rather than named; and a source
+ * whose format needs a parser Atlas does not ship is not a target, so step two can reach
+ * done instead of offering a turn it cannot finish.
  */
 
 const subscribeDesktopRuntime = () => () => undefined;
@@ -109,7 +118,15 @@ function selectLibraryAgentRuntimes(
     .map(({ id, label }) => ({ id, label }));
 }
 
-export function useLibraryAgent(vaultRoot: string | null) {
+export function useLibraryAgent(
+  vaultRoot: string | null,
+  sources: readonly LibrarySourceRow[] = [],
+  compileLabels: {
+    createFile: (path: string) => string;
+    modifyFile: (path: string) => string;
+    bridgeMissing: string;
+  } = DEFAULT_COMPILE_LABELS,
+) {
   const localVault = useLocalVault();
   const agentServer = useAgentServer();
   const bridgeAvailable = useSyncExternalStore(
@@ -129,15 +146,28 @@ export function useLibraryAgent(vaultRoot: string | null) {
    * until they reload.
    */
   const [localModel, setLocalModel] = useState<LibraryLocalModel | null>(null);
+  /*
+   * The address itself, kept beside the label. `readLocalEndpoint()` reads storage and
+   * returns a fresh object every call, so reading it during render would hand the compile
+   * hook a new identity on every frame; holding it in the same state the change event
+   * already refreshes keeps one value per saved setting.
+   */
+  const [localEndpoint, setLocalEndpoint] = useState<{ baseUrl: string; model: string } | null>(null);
   useEffect(() => {
     const read = () => {
       const settings = readLocalEndpoint();
       if (!isLlmChatBridgeAvailable() || !isLocalEndpointReady(settings)) {
         setLocalModel(null);
+        setLocalEndpoint(null);
         return;
       }
       const host = hostOfBaseUrl(settings.baseUrl);
       setLocalModel({ model: settings.model, host, onThisComputer: isLoopbackHost(host) });
+      setLocalEndpoint((current) =>
+        current && current.baseUrl === settings.baseUrl && current.model === settings.model
+          ? current
+          : { baseUrl: settings.baseUrl, model: settings.model },
+      );
     };
     read();
     return subscribeLocalEndpointChange(read);
@@ -219,18 +249,44 @@ export function useLibraryAgent(vaultRoot: string | null) {
               ? "local"
               : "unavailable";
 
-  const start = useCallback((text: string) => {
-    setOpeningRequest((current) => ({
-      kind: "compile",
-      text,
-      nonce: (current?.nonce ?? 0) + 1,
-    }));
-    setOpen(true);
-  }, []);
+  /**
+   * The turn a connect-by-address runner actually runs. It is built in every route so the
+   * hook's shape does not change under the caller, but `run` is reached only from `start`
+   * on the `local` route — the work it costs (hashing, reading) happens on demand inside
+   * the turn, never on render.
+   */
+  const localCompile = useLocalCompile({
+    vaultRoot,
+    endpoint: localEndpoint,
+    sources,
+    labels: compileLabels,
+  });
+
+  const start = useCallback(
+    (text: string) => {
+      /*
+       * One press, two engines. A verified coding agent still outranks the runner — it
+       * opens formats Atlas cannot — so the dock keeps the press whenever one is ready,
+       * and the local turn takes it only when that is what the shelf named.
+       */
+      if (route === "local") {
+        void localCompile.run(text);
+        return;
+      }
+      setOpeningRequest((current) => ({
+        kind: "compile",
+        text,
+        nonce: (current?.nonce ?? 0) + 1,
+      }));
+      setOpen(true);
+    },
+    [localCompile, route],
+  );
 
   return {
     route,
     localModel,
+    localCompile,
     runtime,
     runtimes,
     runtimeId,
@@ -242,3 +298,13 @@ export function useLibraryAgent(vaultRoot: string | null) {
     start,
   };
 }
+
+/**
+ * Fallbacks for a caller that has no translator to hand — a test, or a surface that never
+ * reaches the card. The screen passes its own; these are never what a person reads.
+ */
+const DEFAULT_COMPILE_LABELS = {
+  createFile: (path: string) => `create ${path}`,
+  modifyFile: (path: string) => `edit ${path}`,
+  bridgeMissing: "This can only run in the installed app.",
+};

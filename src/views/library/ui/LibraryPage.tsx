@@ -374,7 +374,16 @@ export function LibraryPage() {
   );
 
   // ── Compile: one in-app agent turn, docked to this screen. ───────────────────────
-  const agent = useLibraryAgent(nativeVaultRootPath);
+  /*
+   * The rows go in because the local route needs to know **which** files it can open, not
+   * only how many are waiting: a PDF is waiting forever on a runner with no PDF reader,
+   * and a step that keeps offering it never rests (`docs/DECISIONS.md`, 2026-09-06).
+   */
+  const agent = useLibraryAgent(nativeVaultRootPath, model.sources, {
+    createFile: (path: string) => t("wiki.compileCreateFile", { path }),
+    modifyFile: (path: string) => t("wiki.compileModifyFile", { path }),
+    bridgeMissing: t("stage.blockedWeb"),
+  });
   const knownSlugs = useMemo(
     () => new Set((manifest?.docs ?? []).map((doc) => doc.slug)),
     [manifest],
@@ -391,7 +400,16 @@ export function LibraryPage() {
         buildCompileBrief({
           sources: model.sources,
           locale,
-          writerId: agent.runtime ? `agent:${agent.runtime.id}` : "agent:unknown",
+          /*
+           * Whoever will actually write it. On the local route Atlas mints `created_by`
+           * itself from the runner's model name, so this is the brief's own statement of
+           * the same fact rather than a second source for it.
+           */
+          writerId: agent.runtime
+            ? `agent:${agent.runtime.id}`
+            : agent.localModel
+              ? `model:${agent.localModel.model}`
+              : "agent:unknown",
           vaultRoot: nativeVaultRootPath ?? "",
         }),
       );
@@ -416,6 +434,7 @@ export function LibraryPage() {
       sourceCount: model.sources.length,
       needsCompileCount: model.needsCompileCount,
       localModel: agent.localModel,
+      sources: model.sources,
     },
     t,
   );
@@ -570,10 +589,13 @@ export function LibraryPage() {
             onOpenSource={(row) => setSelected({ kind: "source", path: row.path })}
             onAddFiles={handleAddFiles}
             onFindDocuments={handleFindDocuments}
-            onCompile={agent.route === "agent" ? handleCompile : null}
+            onCompile={agent.route === "agent" || agent.route === "local" ? handleCompile : null}
             // Compile hands the folder to a coding agent, whose own provider traffic
             // Atlas is not in the path of and does not log. Saying so beside the button
             // rather than in a settings page is the whole point.
+            /* The runner's own transfer sentence lives on step two, which states the host
+               and whether it is this computer; repeating a second, different disclosure
+               beside a source is how two surfaces come to disagree. */
             transferNote={agent.route === "agent" ? t("wiki.transfer") : null}
             vaultLabel={nativeVaultRootPath ?? handle.name}
             busy={busy}
@@ -703,6 +725,7 @@ export function LibraryPage() {
             route={agent.route}
             agentLabel={agent.runtime?.label ?? null}
             localModel={agent.localModel}
+            localCompile={agent.localCompile}
             inApp={nativeVaultRootPath !== null}
             onAddFiles={handleAddFiles}
             onFindDocuments={handleFindDocuments}

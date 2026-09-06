@@ -791,10 +791,39 @@ Three one-click doors:
   over `https://` at another address is named as one, because `normalize_base_url` in
   `src-tauri/src/llm.rs` requires loopback for plaintext but accepts a remote TLS host.
   `.ontology-atlas/llm-audit.jsonl` records each request either way.
-  It is a **named brain, not a second Compile engine**: the local runner reaches Atlas
-  through the vault agent's tool catalogue, which reads and proposes ontology concepts
-  only — no tool opens a source and none writes a page — so Compile stays on the coding
-  agent and step two says exactly that.
+  **It compiles** (second pass, 2026-09-06). The 2026-09-06 record left this route a named
+  brain because the runner's tool catalogue read and proposed ontology concepts only, and
+  wrote its own reopening condition: *a local tool catalogue that reads a source and writes
+  a page under one consent card reopens local Compile.* That catalogue is
+  `src/features/vault-agent/model/compile-tool-catalog.ts`, and it is two tools, kept out
+  of `AGENT_TOOLS` because neither exists on the MCP server. `read_source_text` opens one
+  file this folder's own walk found under `sources/` and this bundle can decode — Markdown,
+  plain text, CSV, TSV, JSON and HTML with its tags stripped — and returns it with every
+  paragraph numbered `[p1]`, `[p2]`, capped at 8,000 characters with `truncated` stated
+  rather than hidden. A PDF, Word, PowerPoint or Excel file comes back **unread and named**:
+  reading those needs a parser Atlas does not ship, and shipping one is deferred rather
+  than guessed at. Any other path — absolute, `..`, a backslash, or simply not in this
+  folder — is refused before the disk is touched. `propose_wiki_page` takes fields, never
+  Markdown: Atlas assembles the five sections itself and mints `created_by: model:<name>`,
+  `compiled_at`, `sources:` and `source_hash:` from the bytes it actually handed over, so a
+  page cannot claim a document the model never opened. **It writes nothing.** The turn ends
+  at one card that names, per page, the path it would take, what each of its five sections
+  carries, how many citations it holds, which sources it was written from, which were read
+  only in part, and which could not be opened at all; only Allow once writes, through the
+  same `applyProposal` a concept change takes. A page that fails the contract produces no
+  proposal at all, so the card has nothing to offer and shows the exact problem codes
+  instead. Beyond the shared `validateWikiPage` rules the proposal adds two: every
+  `## Decisions` bullet cites, and **every citation anchor resolves inside the bytes read
+  this turn** — the shared validator captures an anchor and never opens a file, so
+  `#p47` in a three-paragraph document would otherwise pass and land as a citation a reader
+  cannot follow. Three pages per turn, ten rounds. The button goes live only for a loopback
+  runner, because whole documents now leave the process and "on this computer" has to be
+  true rather than named; a remote saved address and a folder whose waiting files all need
+  a parser each get their own sentence naming what is missing rather than blaming the
+  route. Measured on this machine 2026-09-06 against Ollama: `qwen3:8b` (65s) and
+  `gemma4:12b` (82s) each read both sources and proposed both pages with every bullet cited
+  and every anchor resolvable; `qwen3.6:35b-a3b` proposed pages with no citations at all,
+  which the card refused with `uncited-fact` and no write action.
 
 **Graph** (2026-09-06) — one canvas above the reader, opened and closed by a chip, that
 draws the same two file kinds the lists carry, plus the third thing they reach: a raw

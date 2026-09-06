@@ -47,10 +47,9 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Lookups show targets and counts. MCP gets a screen, external Connectors off by default. Library, a ninth screen, guides three steps and graphs sources with their write-ups. Insights repairs back-links. Meaning asks for missing reasons. The trail says how each step connects. Strata is a third 3D view: labelled kind planes.
-**Changed**: Insights opens on four measurements, a to-do per row; Cone fills the canvas; the conversation opens wider, keeps a clock and one control height, survives a closed dock; Agents and MCP read in one column; a connection card leads with its reason; toasts sit under the toolbar.
-**Fixed**: Desktop pages keep a foot margin; repeated lookups fold onto one row; the permission card reads plainly; a saved analysis announces once; the rail stops blinking; the reason field grows; footprints follow a relation's curve; a narrow dock names its tool and mode.
-
+**Added**: Lookups name targets and counts. MCP gets a screen, Connectors start off. Library guides three steps, graphs sources with write-ups, and compiles on a local model here: a card names each page, its citations and what it could not open, before you allow. Insights repairs back-links, Meaning asks missing reasons, the trail says how steps connect, Strata plots kind planes in 3D.
+**Changed**: Insights opens on four measurements with a to-do; Cone fills the canvas; the conversation is wider, clocked, one height, survives a closed dock; Agents and MCP read one column; a connection card leads with its reason; toasts move under the toolbar.
+**Fixed**: Pages keep a foot margin; repeat lookups fold to a row; the permission card reads plainly; a saved analysis announces once; the rail stops blinking; the reason field grows; footprints trace a relation curve; a narrow dock names its tool.
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 
 **Fixed**: The in-app Claude chat no longer offers the Auto mode that decides permissions by itself; a mode is judged by the class its adapter states, not only its name, and when the tool moves a conversation into a mode that accepts edits without asking, the screen says so and never offers that mode back.

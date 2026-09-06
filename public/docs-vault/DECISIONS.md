@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — Compile runs on a local model: a read tool, a proposal tool, one card, parsers deferred
+
+**Why**: this morning's record left `local` a named brain whose step two read "it cannot run Compile", and wrote what would reopen it. The agent's catalogue is fifteen ontology tools, none opening a file under `sources/` or writing under `wiki/`, while a runner answered on `127.0.0.1:11434` with eight models. Somebody keeping documents off other computers had a brain named and no way to use it.
+**Prior**: overturns the "named brain, not a second Compile engine" clause of 2026-09-06 "The Library is a guided shelf…" by firing its own falsifier; the rest stands.
+**Decision**: two Compile-only tools, out of `AGENT_TOOLS` so the MCP-mirror contract keeps no exception. `read_source_text` opens one file the folder's walk found under `sources/` that this bundle decodes (Markdown, text, CSV, TSV, JSON, stripped HTML), numbers its paragraphs, caps at 8,000 characters, says `truncated`; PDF, Word, PowerPoint and Excel come back named and unread, no parser added; any other path is refused untouched. `propose_wiki_page` writes nothing and takes fields, not Markdown: Atlas builds the five sections and mints `created_by`, `compiled_at`, `sources:` and whole-file `source_hash:` from the bytes it read. One card gives each page's path, sections, citations and which sources were read, part-read and unopened; only Allow once writes. Every Decisions bullet cites, every anchor resolves in what was read. Three pages, ten rounds, loopback only.
+**Dissent**: po-evidence would have probed first, since nothing measured whether a local model can cite. It ran: qwen3:8b and gemma4:12b cited every bullet with resolvable anchors; qwen3.6:35b-a3b cited nothing, which the card refuses. po-steward's four narrowings were taken; one objection stands: a part-read source still counts `compiled` because the whole-file hash matches.
+**Falsifier**: a locally compiled page that loses a sealed question its raw folder answers, or a reader who follows a citation and finds nothing there.
+**Owner**: jinan
+
 ## 2026-09-06 — Strata joins Cone and Cloud as a third 3D arrangement, and the three.js probe is declined
 
 **Why**: The three.js probe of 2026-09-06 (report THREE-PROBE-2026-09-06, on the `feat/three-probe` branch) measured equal frame time at 125 and 1,000 nodes, cost 137 kB gzip, and found its only real gain in a **structure**, not a renderer: Strata read tiers "by a distance" better than the cone. A structure is renderer-independent, so the canvas-2D engine can have it for free.

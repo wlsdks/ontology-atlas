@@ -4433,7 +4433,9 @@
       },
       "viewOriginal": "View original",
       "viewOriginalOne": "View original: {name}",
-      "originalMissing": "Cites {name}, which is not in this folder."
+      "originalMissing": "Cites {name}, which is not in this folder.",
+      "compileCreateFile": "Create {path}",
+      "compileModifyFile": "Replace {path}"
     },
     "graph": {
       "title": "Graph",
@@ -4531,14 +4533,48 @@
       "brainAgent": "{name}",
       "brainLocal": "{model} on {host}",
       "brainNone": "Nothing set up yet",
-      "transferLocal": "Nothing leaves this computer: the request goes to {host} on this machine, and {file} records every one.",
+      "transferLocal": "Nothing leaves this computer: the contents of the files it reads go to {host} on this machine, and {file} records every request.",
       "blockedWeb": "Compile needs a coding agent running on this computer, and only the app can start one.",
       "blockedChecking": "Still looking for a coding agent on this computer.",
-      "blockedLocal": "{model} answers, but it cannot run Compile. Atlas gives a local model ontology reading and one approval card for concept changes; Compile needs something that opens a PDF itself and writes a page. Set up a coding agent to compile today.",
+      "blockedLocalRemote": "The runner saved for this folder is {host}, which is not this computer. Compile sends the contents of your documents, so it runs only on a runner on this machine. Change the address in Settings, then AI connection.",
+      "blockedLocalFormats": "{model} reads Markdown, plain text, CSV, JSON and HTML. Everything still waiting here is {formats}, which needs a coding agent that brings its own reader.",
       "blockedNoAgent": "No verified coding agent is set up on this computer, and no local model address is saved. Settings, then AI connection, is where the local address goes.",
       "blockedNoSources": "Nothing to compile yet. Step one is where documents come in.",
       "blockedNothingWaiting": "Every source already has a write-up that matches its bytes.",
-      "transferLocalRemote": "The address saved for this runner is {host}, which is not this computer, so the sources named in the brief leave it. {file} records every request."
+      "transferLocalRemote": "The runner saved here is {host}, which is not this computer, so Compile does not run: it would send the contents of your documents there. {file} records every request Atlas does make."
+    },
+    "localCompile": {
+      "title": "Ready to write",
+      "running": "Reading the files and writing the pages. Nothing is saved yet.",
+      "runningWith": "{model} is reading {count, plural, one {# file} other {# files}}.",
+      "stop": "Stop",
+      "sectionsLabel": "Sections",
+      "sectionEntry": "{name} {count}",
+      "citationsLabel": "Citations",
+      "readLabel": "Written from",
+      "truncatedLabel": "Read in part",
+      "unreadableLabel": "Could not read",
+      "unreadableEntry": "{path}: {reason}",
+      "reason": {
+        "needs-a-parser": "this format needs a reader Atlas does not ship",
+        "unknown-format": "Atlas does not read this format as text",
+        "not-in-this-folder": "not in this folder",
+        "path-refused": "not a path under sources/",
+        "unreadable": "the file could not be opened",
+        "hash-unavailable": "this computer could not measure its sha256"
+      },
+      "replaces": "Replaces the page already there",
+      "refusedTitle": "Not written: this page does not fit the template",
+      "refusedLede": "Nothing is offered for this one. Compile again, or write the page yourself.",
+      "allow": "Allow once",
+      "allowCount": "Allow once ({count})",
+      "deny": "Don’t",
+      "dismiss": "Close",
+      "applying": "Writing…",
+      "written": "Written: {paths}",
+      "failed": "Nothing was written. {reason}",
+      "noSnapshot": "No save point is taken here; the change is in your folder and in Git.",
+      "nothing": "It finished without proposing a page."
     }
   }
 }

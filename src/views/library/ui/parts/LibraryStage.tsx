@@ -15,8 +15,11 @@ import {
   libraryCompileBlockedReason,
   type CompileAvailability,
 } from "../../lib/compile-availability";
+import type { LocalCompileSession } from "@/features/vault-agent";
+
 import type { LibraryUiModel } from "../../lib/use-library-model";
 import type { LibraryLocalModel } from "../../lib/use-library-agent";
+import { LocalCompileCard } from "./LocalCompileCard";
 
 /**
  * **The guided shelf** — what the right pane says when a folder is open and nothing is
@@ -67,6 +70,15 @@ export interface LibraryStageProps {
   agentLabel: string | null;
   /** The connect-by-address runner, when one is configured on this computer. */
   localModel: LibraryLocalModel | null;
+  /**
+   * The turn that runner runs, and the card it ends at.
+   *
+   * The card is seated **inside step two** rather than in a dock. The dock is where a
+   * conversation lives; this is one job with one question at the end, and the question is
+   * about the step a person just pressed — moving it elsewhere would ask them to look for
+   * the answer to their own press.
+   */
+  localCompile: LocalCompileSession | null;
   /** True in the installed app. On the web, Compile has no runtime at all. */
   inApp: boolean;
   onAddFiles: () => void;
@@ -197,6 +209,7 @@ export function LibraryStage({
   route,
   agentLabel,
   localModel,
+  localCompile,
   inApp,
   onAddFiles,
   onFindDocuments,
@@ -242,6 +255,7 @@ export function LibraryStage({
       sourceCount,
       needsCompileCount: model.needsCompileCount,
       localModel,
+      sources: model.sources,
     },
     t,
   );
@@ -443,6 +457,9 @@ export function LibraryStage({
                 >
                   {blocked}
                 </p>
+              ) : null}
+              {localCompile && route === "local" ? (
+                <LocalCompileCard session={localCompile} model={localModel?.model ?? ""} t={t} />
               ) : null}
               {transfer ? (
                 <p

@@ -4433,7 +4433,9 @@
       },
       "viewOriginal": "원본 보기",
       "viewOriginalOne": "원본 보기: {name}",
-      "originalMissing": "{name} 을(를) 인용하지만 이 폴더에는 없습니다."
+      "originalMissing": "{name} 을(를) 인용하지만 이 폴더에는 없습니다.",
+      "compileCreateFile": "{path} 만들기",
+      "compileModifyFile": "{path} 바꾸기"
     },
     "graph": {
       "title": "그래프",
@@ -4531,14 +4533,48 @@
       "brainAgent": "{name}",
       "brainLocal": "{model} · {host}",
       "brainNone": "아직 아무것도 연결하지 않음",
-      "transferLocal": "이 컴퓨터 밖으로 나가지 않습니다. 요청은 같은 기계의 {host} 로 가고, {file} 에 한 건씩 남습니다.",
+      "transferLocal": "이 컴퓨터 밖으로 나가는 건 없어요. 읽은 파일의 내용은 이 컴퓨터의 {host} 로 가고, {file} 이 모든 요청을 기록해요.",
       "blockedWeb": "정리하려면 이 컴퓨터에서 도는 코딩 에이전트가 필요하고, 그건 앱만 띄울 수 있습니다.",
       "blockedChecking": "이 컴퓨터에서 쓸 수 있는 코딩 에이전트를 아직 찾는 중입니다.",
-      "blockedLocal": "{model} 은(는) 답하지만 정리는 하지 못합니다. Atlas 가 로컬 모델에 주는 것은 온톨로지 읽기와 개념 변경 허락 카드 하나이고, 정리에는 PDF 를 직접 열어 문서를 쓰는 쪽이 필요합니다. 지금 정리하려면 코딩 에이전트를 준비하세요.",
+      "blockedLocalRemote": "이 폴더에 저장된 러너는 {host} 라서 이 컴퓨터가 아니에요. 컴파일은 문서 내용을 보내기 때문에 이 컴퓨터에 있는 러너에서만 돌아가요. 설정 → AI 연결에서 주소를 바꿔 주세요.",
+      "blockedLocalFormats": "{model} 은 Markdown, 일반 텍스트, CSV, JSON, HTML 을 읽어요. 지금 남아 있는 파일은 {formats} 라서, 자기 리더를 가진 코딩 에이전트가 필요해요.",
       "blockedNoAgent": "확인된 코딩 에이전트가 이 컴퓨터에 없고, 저장해 둔 로컬 모델 주소도 없습니다. 로컬 주소는 설정의 AI 연결에 넣습니다.",
       "blockedNoSources": "아직 정리할 것이 없습니다. 문서는 1번에서 들어옵니다.",
       "blockedNothingWaiting": "모든 원문이 지금 내용과 맞는 정리본을 갖고 있습니다.",
-      "transferLocalRemote": "이 실행기에 저장된 주소는 {host} 이고 이 컴퓨터가 아니라서, 요청에 실린 내용은 밖으로 나갑니다. {file} 에 한 건씩 남습니다."
+      "transferLocalRemote": "여기 저장된 러너는 {host} 라서 이 컴퓨터가 아니고, 그래서 컴파일은 돌지 않아요. 돌면 문서 내용이 그리로 가니까요. Atlas 가 실제로 보내는 요청은 {file} 에 남아요."
+    },
+    "localCompile": {
+      "title": "쓸 준비가 됐어요",
+      "running": "파일을 읽고 문서를 쓰는 중이에요. 아직 저장된 건 없어요.",
+      "runningWith": "{model} 이 파일 {count}개를 읽는 중이에요.",
+      "stop": "중지",
+      "sectionsLabel": "절",
+      "sectionEntry": "{name} {count}",
+      "citationsLabel": "출처 표기",
+      "readLabel": "읽은 원문",
+      "truncatedLabel": "일부만 읽음",
+      "unreadableLabel": "읽지 못함",
+      "unreadableEntry": "{path} · {reason}",
+      "reason": {
+        "needs-a-parser": "Atlas 가 갖고 있지 않은 리더가 필요한 형식이에요",
+        "unknown-format": "Atlas 가 텍스트로 읽지 못하는 형식이에요",
+        "not-in-this-folder": "이 폴더에 없어요",
+        "path-refused": "sources/ 아래 경로가 아니에요",
+        "unreadable": "파일을 열지 못했어요",
+        "hash-unavailable": "이 컴퓨터가 sha256 을 재지 못했어요"
+      },
+      "replaces": "이미 있는 문서를 대체해요",
+      "refusedTitle": "쓰지 않음: 템플릿에 맞지 않아요",
+      "refusedLede": "이 문서는 아무것도 제안하지 않아요. 다시 컴파일하거나 직접 쓰면 돼요.",
+      "allow": "한 번 허용",
+      "allowCount": "한 번 허용 ({count})",
+      "deny": "안 할래요",
+      "dismiss": "닫기",
+      "applying": "쓰는 중…",
+      "written": "썼어요: {paths}",
+      "failed": "아무것도 쓰지 않았어요. {reason}",
+      "noSnapshot": "여기서는 저장 지점을 만들지 않아요. 변경은 폴더와 Git 에 그대로 남아요.",
+      "nothing": "문서를 제안하지 않고 끝났어요."
     }
   }
 }
