@@ -4343,7 +4343,9 @@
       "failed": "{count, plural, one {# could not be copied} other {# could not be copied}}",
       "failedReason": "Could not add: {reason}",
       "revealFailed": "Could not show it in Finder: {reason}",
-      "openFailed": "Could not open that file."
+      "openFailed": "Could not open that file.",
+      "needsCompileSplit": "{notCompiled, plural, one {# not written up yet} other {# not written up yet}} · {stale, plural, one {# page behind its source} other {# pages behind their sources}}",
+      "staleOnly": "{count, plural, one {# page is behind its source} other {# pages are behind their sources}}"
     },
     "wiki": {
       "header": "Wiki · {count}",
@@ -4363,7 +4365,16 @@
       "offTemplateTitle": "This page does not fit the wiki template",
       "offTemplateBody": "It is still a document and still yours to edit. Fixing these lines makes it readable the same way every other page is; `ontology-atlas wiki-validate` and the `validate_wiki` tool report the same codes.",
       "writtenBy": "Written by {author}",
-      "builtFrom": "Built from"
+      "builtFrom": "Built from",
+      "writer": {
+        "human": "a person",
+        "agent": "{name} (AI)",
+        "model": "{name} (model)"
+      },
+      "status": {
+        "draft": "draft",
+        "reviewed": "reviewed"
+      }
     },
     "find": {
       "title": "Documents in the folders you granted",

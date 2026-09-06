@@ -172,8 +172,12 @@ test.describe("the Library destination", () => {
     const budgetRow = page.getByTestId("library-source-sources/budget.xlsx");
     await expect(budgetRow).toContainText("not compiled");
 
-    // The honest count, in the section rather than in a tooltip.
-    await expect(page.getByTestId("library-needs-compile")).toContainText("2");
+    // The honest count, in the section rather than in a tooltip — and the two states apart:
+    // one source nobody wrote up, one whose page has fallen behind its bytes. "2 not written
+    // up" was the sentence this line used to accept, and it was false for the stale one.
+    const footer = page.getByTestId("library-needs-compile");
+    await expect(footer).toContainText("1 not written up yet");
+    await expect(footer).toContainText("1 page behind its source");
   });
 
   test("lists wiki pages and names the first problem of one that is off-template", async ({

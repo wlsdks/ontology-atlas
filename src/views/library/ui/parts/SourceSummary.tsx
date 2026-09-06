@@ -59,7 +59,8 @@ export function SourceSummary({
       // Never a guess. An unmeasured hash says so rather than showing an empty cell that
       // reads as "no hash", which is a different and untrue fact.
       value: hash ?? t("source.hashUnmeasured"),
-      mono: true,
+      // A hash is an identifier and sits in mono; the sentence that stands in for one is prose.
+      mono: hash !== null,
     },
     {
       key: "citedBy",
