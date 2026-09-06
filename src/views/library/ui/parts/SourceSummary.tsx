@@ -9,6 +9,7 @@ import {
   type LibraryWriteUpLink,
 } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
+import { RowButton } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
@@ -117,7 +118,12 @@ export function SourceSummary({
       <dl className="mt-5 flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] pt-4">
         {facts.map((fact) => (
           <div key={fact.key} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-            <dt className="w-[132px] flex-none font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+            {/* The **same label column as the shelf's steps** (2026-09-06): both are
+                label/value pairs in this one pane, and they measured 132 here against 148
+                there — two rhythms a person reads one after the other by pressing a row.
+                One number, and it is the wider one, which is the one that fits
+                `Behind its source` in both locales. */}
+            <dt className="w-full flex-none font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)] sm:w-[148px]">
               {fact.label}
             </dt>
             <dd
@@ -155,11 +161,18 @@ export function SourceSummary({
           {t("source.viewWriteUp")}
         </p>
         {writeUps.length > 0 ? (
-          <ul className="mt-2 flex flex-col gap-1.5">
+          /*
+           * **A list of documents, drawn the way this screen draws lists of documents**
+           * (2026-09-06). These were 32px chips while the index's own rows — the same
+           * gesture, opening the same page — were 36px `row` controls, so pressing one
+           * moved a person between two heights for one job. `shape: "row"` is the
+           * repository's name for "a whole list row that is pressable", and taking it
+           * brings the leading glyph, the left alignment and the 36px step with it.
+           */
+          <ul className="mt-2 flex flex-col gap-0.5">
             {writeUps.map((page) => (
               <li key={page.slug}>
-                <button
-                  type="button"
+                <RowButton
                   onClick={() => onOpenWiki(page.slug)}
                   data-testid={`library-source-writeup-${page.slug}`}
                   /*
@@ -171,14 +184,11 @@ export function SourceSummary({
                    * rather than becoming information only the index has.
                    */
                   title={page.slug}
-                  className={controlClass({
-                    shape: "chip",
-                    tone: "muted",
-                    className: "max-w-full gap-1.5",
-                  })}
+                  tone="muted"
+                  className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                 >
-                  <BookText size={ICON_SIZE.sm} aria-hidden />
-                  <span className="min-w-0 truncate">{page.title}</span>
+                  <BookText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
+                  <span className="min-w-0 flex-1 truncate">{page.title}</span>
                   {/*
                    * Whether the page still describes *these* bytes is the fact that
                    * decides whether following it is worth the reader's time — and
@@ -200,7 +210,7 @@ export function SourceSummary({
                   >
                     {t(`source.writeUp.${page.freshness}`)}
                   </span>
-                </button>
+                </RowButton>
               </li>
             ))}
           </ul>

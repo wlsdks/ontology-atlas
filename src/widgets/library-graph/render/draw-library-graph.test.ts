@@ -127,6 +127,9 @@ function frame(overrides: Partial<Parameters<typeof drawLibraryGraph>[1]> = {}) 
     hoveredId: null,
     focusedId: null,
     activeLabel: null,
+    // The default frame is the hover policy, so every case written before standing names
+    // existed still measures what it was written to measure.
+    standingLabels: false,
     ...overrides,
   } satisfies Parameters<typeof drawLibraryGraph>[1];
 }

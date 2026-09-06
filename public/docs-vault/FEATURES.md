@@ -731,34 +731,66 @@ author and status, and a chip per source it was built from; a source opens as th
 facts the folder holds about a file Atlas has never opened (path, format, size, state and
 sha256 or "not measured") plus one door that reveals it in Finder or hands over the bytes.
 With no folder open the whole screen is one centred stage naming the two kinds of file and
-offering the picker. Below `lg` there is one column and selecting swaps it, with a way
-back.
+offering the picker. **With a folder open and nothing selected the right pane is the
+graph**, at the pane's own height. Below `lg` there is one column — the graph on top, the
+two lists under it — and selecting swaps it, with a way back.
 
-**With nothing selected, the guided shelf** (2026-09-06, second pass). The owner opened
-the new destination and said they did not know what to do on it; the pane at that moment
-was either "Nothing gathered yet" or the first wiki page, opened on the reader's behalf.
-It is now three steps in the order the work happens, each stating the folder's own counts
-and carrying its own door: **① Gather** (sources, formats present, last added, and how
+**The guided shelf, one press from the graph's header** (2026-09-06, third pass). The
+owner opened the new destination and said they did not know what to do on it; the pane at
+that moment was either "Nothing gathered yet" or the first wiki page, opened on the
+reader's behalf. The answer was three steps in the order the work happens — and later the
+same day, reading the installed app on a folder a local `qwen3:8b` had compiled, the owner
+read the result as two half-screens and moved the shelf off the pane: *"shouldn't the
+Library tab's default be the graph? why is the area split above and below? the area
+underneath should be a popup."* So the steps live in a popover opened by **What to do
+next** in the graph's header, and what stays permanently on screen is their verdict, as
+one `text-label` strip beside the counts: `Gather done · Compile next · Read next · 5
+waiting · 2 off-template`. Both read `libraryStepStates`, so the strip and the panel
+cannot disagree. The panel is `transientSurface("anchored")` and not a modal — no scrim,
+no trap, the picture stays visible behind it, because "5 waiting" is a claim about dots a
+person should be able to look at while reading it. It is at most 560px, hangs from the row
+rather than the pane (parented in the pane it measured 373px tall at 390×844), scrolls
+inside, and closes on Escape or an outside press with focus returned to its chip. It
+raises itself **only** over a folder with no sources at all, and a person's own press —
+either way — settles it for the rest of the session.
+
+Each step states the folder's own counts and carries its own door: **① Gather** (sources, formats present, last added, and how
 many candidates the last Find documents run proposed, with both doors), **② Compile**
 (sources waiting, how many are behind their source, and **which brain would run** — the
 verified coding agent's name, or the local model and the host it answers on — with what
 leaves the computer stated for that route), **③ Read** (wiki pages, sources covered,
 off-template pages, and a row that opens the newest page). Each step says `done`, `next`
 or `waiting` from those counts, and the three rows are one height (`auto-rows-fr`,
-measured 249px at both 1512 and 1040). Two steps can honestly be next at once, so the one
+measured 2026-09-06 inside the 560px panel: 233px each in English, 213 in Korean, equal at
+every width). Two steps can honestly be next at once, so the one
 indigo edge goes to the earliest of them while the badges stay true. Compile is drawn in
 every state and disabled with the exact reason rather than hidden, because a missing step
-two would leave a hole in the middle of the sequence. The shelf is a place a person
-returns to: the back control that used to appear only below `lg` now stands at every
-width, and Escape does the same thing. Selecting swaps the right pane and moves focus to
-it, and the source list shows which row that pane is showing. Below `lg` the index is
-still the whole column and the shelf is not drawn.
+two would leave a hole in the middle of the sequence. Selecting swaps the right pane and
+moves focus to it, and the source list shows which row that pane is showing; the back
+control that used to appear only below `lg` now stands at every width, and Escape does the
+same thing.
+
+**Below `lg` the whole pane reaches a phone** (2026-09-06, third pass). None of it used to
+be drawn there: the pane was hidden whenever nothing was chosen, which is the state it
+exists for, so a phone and any window under 1024px opened a folder and got two lists, no
+overview and no guidance — a measured zero rect at both 390×844 and 768×1024. The row is
+now a column below `lg`: the graph takes the top of it (390: 350×296 of canvas; 768:
+648×406), the two lists take the bottom under a hairline, the popup still hangs from the
+row so it keeps the column's whole height, and choosing a file swaps the whole column with
+the same way back. The index changes its scroll model there rather than its content: two
+list scrollers sharing half a phone left the source list 30px and the wiki list zero, so
+below `lg` the index scrolls as one box and the lists stand at their natural height, while
+at `lg` and above the two lists keep their own scrollers. Cases: `the Library pane` and
+`the graph takes the top of the column at …` in `tests/e2e/library.spec.ts`.
 
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
 the action: one cited source is a single **View original** button carrying the file name;
-several keep a chip list under the same words; a citation naming a file that is not in the
+several keep a list under the same words; a citation naming a file that is not in the
 folder is drawn as plain text, because a door that leads nowhere is worse than a stated
-fact. A source's pane answers the other direction with **View write-up** — every page
+fact. Both crossings are drawn as list rows at the index's own 36px step rather than as
+32px chips, because opening a document is one job and it was carrying two heights
+depending on which pane a person pressed from; the source pane's label column moved 132 →
+148px for the same reason, matching the shelf's. A source's pane answers the other direction with **View write-up** — every page
 citing it, each marked `current`, `behind`, or `not checked` from the sha256 it recorded
 — and, when no page cites it, the Compile button in that row's place. `not checked` is its
 own word because hashing is lazy: reporting an unmeasured file as `behind` made this pane
@@ -857,14 +889,22 @@ Three one-click doors:
   the one that is there **and stops being stored**, so a preference never outlives what it
   points at. `resolveCompileBrain` is that table, tested as one.
 
-**Graph** (2026-09-06) — one canvas above the reader, opened and closed by a chip, that
-draws the same two file kinds the lists carry, plus the third thing they reach: a raw
+**Graph** (2026-09-06) — **the pane itself** whenever nothing is chosen, drawing the same
+two file kinds the lists carry, plus the third thing they reach: a raw
 source is a square, a wiki page a filled circle, and an ontology concept a page names with
 `[[slug]]` is a ring. A solid line is a citation from the page's `sources:` frontmatter; a
 dashed line is a mention from its body. A link that resolves to nothing is not drawn, and a
 source nobody has written up simply has no line, which is the same fact the `not compiled`
 word carries in the list. The caption counts what is on the canvas: sources, pages,
-concepts, links. Pointing at a dot names it; clicking a page or a source selects it here, in
+concepts, links; beside it stand the status strip and the door to the shelf. A citation is
+drawn 1.5px against a mention's 1px, so the two relations read apart without the legend.
+**Up to 60 nodes every mark carries its own name** — the page's title, the file's name, the
+concept's title — standing under it in `text-label`, secondary ink for a page and
+quaternary for the two things it stands on; a screen-space pass claims the marks first and
+then each name in turn, sliding one back inside the frame rather than dropping it at the
+edge and hiding only a genuine collision, so no two names ever cross. Above 60 the picture
+is an overview and a name is something you ask a dot for: hover keeps its box. Pointing at
+a dot names it either way; clicking a page or a source selects it here, in
 the index and in the reader at once, while clicking a concept opens it on the map, because a
 concept is not a file in this folder. Selection is the only place indigo appears: the node,
 its ring, and the edges that touch it.
@@ -877,6 +917,23 @@ stop before the first frame, rotated so its longest direction lies along the can
 fitted at one scale for both axes so distance means the same thing in x and y. It settles
 once, over the 420ms canvas-travel duration, and then nothing moves; under
 `prefers-reduced-motion` the settled frame is drawn at once. 500 nodes lay out in 95ms.
+
+**The canvas is the pane, and is cut to the picture** (2026-09-06). It used to be a band
+of at most 320px or `34dvh` above the reader, and one scale for both axes meant the height
+decided how big the picture was: measured on the seeded five-source, three-page folder at
+1512, a 1144px canvas carried a 462px picture — 40.4% of its width, with a 341px gutter
+each side — while its height was already 86.6% used. Both premises went. The canvas takes
+the pane's height, and it is never wider than the picture plus the fit's own label
+allowance, so a cloud squarer than a tall pane leaves its slack split evenly rather than
+gathered on one side. Measured after, both locales: **1046×623 of a 1088×900 canvas at
+1512 — 96.1% of its width, against 40.4% — and 93.2% at 1040, 93.5% at 768, 88.0% at 390**,
+with 21px gutters at every band. The picture itself is 2.26× wider than it was, and its marks are one step larger with it
+(a page's circle r5 → 6, a concept's ring r4 → 6, a source's square 7.2 → 10px), because
+marks sized for a 320px strip read across that field as specks. A hovered
+name is truncated to fit rather than allowed past either edge. The settle also stopped
+cancelling itself: its animation frame is held across effect runs, because the width the
+canvas takes from the picture arrives after the first measurement and used to kill the
+arrival 0.85 of the way in.
 
 **What left `/docs` on 2026-09-06**: Sources, Wiki, the three doors, and the agent dock.
 What stayed: the review queue, recently changed, the tree, and the editor.

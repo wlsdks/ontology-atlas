@@ -186,9 +186,17 @@ export function LibrarySection({
 
   return (
     <>
+      {/*
+        `max-lg:flex-none` and the `max-lg:overflow-visible` on the list below are one
+        decision: below `lg` the index is half a column and scrolls as a whole, so a
+        section that shrank would be competing with its sibling for a box neither can fit
+        in — measured at 390, that competition left this list 30px and the Wiki list zero.
+        At `lg` both sections still share the column and both lists still own their own
+        overflow.
+      */}
       <section
         data-testid="library-sources"
-        className="flex min-h-0 flex-col border-b border-[color:var(--color-overlay-2)] pb-1"
+        className="flex min-h-0 flex-col border-b border-[color:var(--color-overlay-2)] pb-1 max-lg:flex-none"
       >
         <SectionHeader
           icon={
@@ -236,7 +244,7 @@ export function LibrarySection({
             <ul
               data-testid="library-source-list"
               aria-label={t("sources.listAria")}
-              className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2"
+              className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2 max-lg:overflow-visible"
             >
               {model.sources.map((row) => {
                 const active = row.path === selectedSourcePath;
@@ -311,7 +319,7 @@ export function LibrarySection({
 
       <section
         data-testid="library-wiki"
-        className="flex min-h-0 flex-col pb-1"
+        className="flex min-h-0 flex-col pb-1 max-lg:flex-none"
       >
         <SectionHeader
           icon={
@@ -378,7 +386,7 @@ export function LibrarySection({
           <ul
             data-testid="library-wiki-list"
             aria-label={t("wiki.listAria")}
-            className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2"
+            className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2 max-lg:overflow-visible"
           >
             {model.wikiPages.map((page) => {
               const active = page.slug === selectedSlug;

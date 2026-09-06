@@ -798,7 +798,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29909,
+      "wordCount": 29915,
       "updatedAt": "2026-09-06",
       "linksOut": []
     },
@@ -834,7 +834,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 107423,
+      "wordCount": 107780,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "slug"
@@ -940,7 +940,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 32036,
+      "wordCount": 32905,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "ANALYSIS-RECORDS",

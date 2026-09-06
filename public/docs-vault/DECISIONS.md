@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The Library pane is the graph; the shelf is a popup
+
+**Why**: the owner opened the installed app on a folder a local `qwen3:8b` had compiled and read it as two half-screens: *"shouldn't the Library tab's default be the graph? why is the area split above and below? the area underneath should be a popup."* Measured at 1512×982: a 320px band took 41% of the pane, its picture filled 40.4% of that width, and the shelf under it needed 850px of a 579px box. Below `lg` the shelf was not drawn at all — a zero rect at 390 and 768.
+**Prior**: overturns in part 2026-09-06 "The Library gets its own small graph": the chip disclosure, its preference, the `34dvh` ceiling and the narrow default go; what the marks **mean** stands. Overturns in part 2026-09-06 "The Library is a guided shelf…": the steps keep their words and counts, and stop being the pane.
+**Decision**: with nothing selected the pane **is** the canvas at the pane's height, as the map fills its tab; its header carries the counts caption and one `text-label` strip — *Gather done · Compile next · 5 waiting* — from `libraryStepStates`, which the shelf's badges read. The shelf becomes `transientSurface("anchored")`: ≤560px, hung from the row so a phone cannot cut it, scrolling inside, Escape and outside press close, focus returns. It raises itself only over a folder with **no sources**, and a press settles it for the session. The canvas is never wider than the picture plus the fit's label allowance: after, **96.1%** of its width at 1512 against 40.4%, and 93.2 / 93.5 / 88.0 at 1040, 768, 390.
+**Dissent**: design-lead: a guide behind a chip is one nobody opens twice, and the strip is a summary of a summary. design-interaction: a popover that raises itself is a modal in softer clothes, and "no sources" hides it from someone holding uncompiled PDFs.
+**Falsifier**: three cold walkers who cannot name a next press from the header and never press the chip; a band filling under 60% of its canvas width; a person who reopened the shelf in one sitting.
+**Owner**: jinan
+
 ## 2026-09-06 — Which brain Compile runs on is a default the person can change, not a rank
 
 **Why**: the same day's local-Compile record made a verified coding agent outrank the connect-by-address runner whenever both were installed. On the owner's machine both are, and the reason the runner is there is to be chosen deliberately for a folder whose documents should not leave it. A precedence rule takes that choice away silently: the sensitive folder goes to the coding agent's provider and nothing on screen says a choice existed.

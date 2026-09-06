@@ -4442,7 +4442,7 @@
       "counts": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {concepts, plural, one {# concept} other {# concepts}} · {cites} cites · {mentions} mentions",
       "empty": "Nothing to draw yet. Once Compile writes a page, this shows which source it was written from and which concepts it names.",
       "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
-      "legend": "A filled circle is a page, a square is a source, a ring is a concept on the map. Point at a dot for its name; click it to open.",
+      "legend": "A filled circle is a page, a square is a source, a ring is a concept on the map. A thicker line is a citation, a dashed one a mention. Point at a dot for its name, and click to open it.",
       "keys": "Arrow keys move between dots, Enter opens the one you are on, Escape leaves it.",
       "announce": "{kind} {name}, {position} of {total}. Enter {action}.",
       "kind": {
@@ -4541,7 +4541,12 @@
       "blockedNoAgent": "No verified coding agent is set up on this computer, and no local model address is saved. Settings, then AI connection, is where the local address goes.",
       "blockedNoSources": "Nothing to compile yet. Step one is where documents come in.",
       "blockedNothingWaiting": "Every source already has a write-up that matches its bytes.",
-      "transferLocalRemote": "The runner saved here is {host}, which is not this computer, so Compile does not run: it would send the contents of your documents there. {file} records every request Atlas does make."
+      "transferLocalRemote": "The runner saved here is {host}, which is not this computer, so Compile does not run: it would send the contents of your documents there. {file} records every request Atlas does make.",
+      "open": "What to do next",
+      "close": "Close",
+      "status": "{step} {state}",
+      "statusWaiting": "{count, plural, one {# waiting} other {# waiting}}",
+      "statusOffTemplate": "{count, plural, one {# off-template} other {# off-template}}"
     },
     "localCompile": {
       "title": "Ready to write",
