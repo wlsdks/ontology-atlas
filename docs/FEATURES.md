@@ -706,17 +706,24 @@ verified coding agent's name, or the local model and the host it answers on — 
 leaves the computer stated for that route), **③ Read** (wiki pages, sources covered,
 off-template pages, and a row that opens the newest page). Each step says `done`, `next`
 or `waiting` from those counts, and the three rows are one height (`auto-rows-fr`,
-measured 249px at both 1512 and 1040). Compile is drawn in every state and disabled with
-the exact reason rather than hidden, because a missing step two would leave a hole in the
-middle of the sequence.
+measured 249px at both 1512 and 1040). Two steps can honestly be next at once, so the one
+indigo edge goes to the earliest of them while the badges stay true. Compile is drawn in
+every state and disabled with the exact reason rather than hidden, because a missing step
+two would leave a hole in the middle of the sequence. The shelf is a place a person
+returns to: the back control that used to appear only below `lg` now stands at every
+width, and Escape does the same thing. Selecting swaps the right pane and moves focus to
+it, and the source list shows which row that pane is showing. Below `lg` the index is
+still the whole column and the shelf is not drawn.
 
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
 the action: one cited source is a single **View original** button carrying the file name;
 several keep a chip list under the same words; a citation naming a file that is not in the
 folder is drawn as plain text, because a door that leads nowhere is worse than a stated
 fact. A source's pane answers the other direction with **View write-up** — every page
-citing it, each marked `current` or `behind` from the sha256 it recorded — and, when no
-page cites it, the Compile button in that row's place. Both directions are derived in
+citing it, each marked `current`, `behind`, or `not checked` from the sha256 it recorded
+— and, when no page cites it, the Compile button in that row's place. `not checked` is its
+own word because hashing is lazy: reporting an unmeasured file as `behind` made this pane
+contradict its own state row, which reads `checking` in exactly that window. Both directions are derived in
 `buildLibraryPairing` (`src/entities/docs-vault/lib/vault-library.ts`) from the same
 `sources:` and `source_hash:` frontmatter the state machine already reads, so no second
 store can drift from it.
@@ -759,8 +766,11 @@ Three one-click doors:
   is compiling.
 - **The local-model route** — when Settings → AI connection holds a verified
   connect-by-address runner (any OpenAI-compatible `/v1` server: Ollama, LM Studio,
-  llama.cpp, vLLM), the shelf names that model and its host as the brain and states that
-  nothing leaves this computer, `.ontology-atlas/llm-audit.jsonl` recording each request.
+  llama.cpp, vLLM), the shelf names that model and its host as the brain. It says nothing
+  leaves this computer only when the saved host really is this computer; a runner reached
+  over `https://` at another address is named as one, because `normalize_base_url` in
+  `src-tauri/src/llm.rs` requires loopback for plaintext but accepts a remote TLS host.
+  `.ontology-atlas/llm-audit.jsonl` records each request either way.
   It is a **named brain, not a second Compile engine**: the local runner reaches Atlas
   through the vault agent's tool catalogue, which reads and proposes ontology concepts
   only — no tool opens a source and none writes a page — so Compile stays on the coding

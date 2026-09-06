@@ -272,16 +272,27 @@ export interface LibraryOriginalLink {
   state: SourceCompileState | null;
 }
 
-/** One wiki page citing a source, and whether it still describes the bytes on disk. */
+/**
+ * How a write-up stands to the bytes it was written from.
+ *
+ * - `current` — the page recorded a hash for this source and it matches the measured one.
+ * - `behind` — the hashes disagree, or the page recorded none. A reader can act on
+ *   neither, and the cure is the same.
+ * - `unchecked` — the page recorded a hash and **nothing has measured the file yet**.
+ *
+ * `unchecked` exists because collapsing it into `behind` was a measured lie (PO steward,
+ * 2026-09-06): the source row's own state says `checking` in exactly that window, so one
+ * pane stated two things about one file. It is transient on the app path and permanent
+ * whenever hashing cannot happen at all — a browser without `crypto.subtle`, or a source
+ * the session holds no handle for — so it is a resting state, not a flicker.
+ */
+type WriteUpFreshness = 'current' | 'behind' | 'unchecked';
+
+/** One wiki page citing a source, and how it stands to the bytes on disk. */
 export interface LibraryWriteUpLink {
   slug: string;
   title: string;
-  /**
-   * True when this page recorded a hash for this source **and** it matches the
-   * measured one. False covers both "the hashes disagree" and "no hash recorded",
-   * because a reader can act on neither.
-   */
-  current: boolean;
+  freshness: WriteUpFreshness;
 }
 
 interface LibraryPairing {
@@ -335,7 +346,14 @@ function buildLibraryPairing({
       bySlug.set(citation.wikiSlug, {
         slug: citation.wikiSlug,
         title: titles.get(citation.wikiSlug) ?? citation.wikiSlug,
-        current: citation.sourceHash !== null && citation.sourceHash === actual,
+        freshness:
+          citation.sourceHash === null
+            ? 'behind'
+            : actual === undefined
+              ? 'unchecked'
+              : citation.sourceHash === actual
+                ? 'current'
+                : 'behind',
       });
     }
     writeUpsBySource.set(

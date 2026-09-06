@@ -132,24 +132,42 @@ describe('a source points forward at the pages written from it', () => {
 
   it('lists every citing page and says which of them still matches the bytes', () => {
     expect(pairing.writeUpsBySource.get('sources/plan.pdf')).toEqual([
-      { slug: 'wiki/older-take', title: 'Older take', current: false },
-      { slug: 'wiki/quarter-plan', title: 'Quarter plan', current: true },
+      { slug: 'wiki/older-take', title: 'Older take', freshness: 'behind' },
+      { slug: 'wiki/quarter-plan', title: 'Quarter plan', freshness: 'current' },
     ]);
   });
 
   it('matches a recorded hash case-insensitively, because YAML is hand-edited', () => {
     const [, current] = pairing.writeUpsBySource.get('sources/plan.pdf') as [
       unknown,
-      { current: boolean },
+      { freshness: string },
     ];
-    expect(current.current).toBe(true);
+    expect(current.freshness).toBe('current');
   });
 
-  it('calls an unmeasured source’s page not-current rather than guessing', () => {
+  /**
+   * The defect this pins (PO steward, 2026-09-06): an unmeasured file was reported
+   * `behind`, while the same pane's own state row said `checking`. Two claims about one
+   * file, and only one of them true.
+   */
+  it('separates “nothing measured this yet” from “the page is behind”', () => {
     const unmeasured = buildLibraryPairing({ docs: DOCS, sources: SOURCES, hashes: new Map() });
-    expect(
-      unmeasured.writeUpsBySource.get('sources/plan.pdf')?.every((link) => !link.current),
-    ).toBe(true);
+    expect(unmeasured.writeUpsBySource.get('sources/plan.pdf')).toEqual([
+      // Cited with a hash, nothing measured: unchecked, not behind.
+      { slug: 'wiki/older-take', title: 'Older take', freshness: 'unchecked' },
+      { slug: 'wiki/quarter-plan', title: 'Quarter plan', freshness: 'unchecked' },
+    ]);
+  });
+
+  it('still calls a page that recorded no hash at all behind, measured or not', () => {
+    const noHash = buildLibraryPairing({
+      docs: [wiki('wiki/loose', { sources: ['sources/plan.pdf'] }, 'Loose')],
+      sources: SOURCES,
+      hashes: new Map(),
+    });
+    expect(noHash.writeUpsBySource.get('sources/plan.pdf')).toEqual([
+      { slug: 'wiki/loose', title: 'Loose', freshness: 'behind' },
+    ]);
   });
 
   it('leaves a source nobody cites out of the map, which is what “none” means', () => {

@@ -114,6 +114,7 @@ function Step({
   title,
   body,
   state,
+  lead,
   facts,
   children,
   testId,
@@ -123,6 +124,15 @@ function Step({
   title: string;
   body: string;
   state: StepState;
+  /**
+   * Whether this is the **first** step that is next.
+   *
+   * Two steps can honestly be next at once — a folder with pages already written and
+   * sources still waiting can be compiled or read — but two indigo edges is no emphasis
+   * at all. The state stays true on every badge; the edge goes to the earliest of them,
+   * so the screen answers "which one now" with one answer.
+   */
+  lead: boolean;
   /** Label/value pairs. Each number keeps its own line; none is buried in prose. */
   facts: Array<{ key: string; label: string; value: string }>;
   children?: React.ReactNode;
@@ -133,7 +143,20 @@ function Step({
     <section
       data-testid={testId}
       data-step-state={state}
-      className="flex flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+      className={cn(
+        "flex flex-col rounded-panel border bg-[color:var(--color-panel)] p-[var(--card-pad)]",
+        /*
+         * **The step that is next owns the edge, not just a 9.5px chip.** Measured by
+         * design-lead on 2026-09-06: two emerald `done` badges outweighed one indigo
+         * `next` badge, all three cards carried the same border, and the eye read a
+         * catalogue of three equal boxes with nothing leading. Equal height is a rule
+         * (`.claude/rules/design.md`), so the emphasis cannot be size; it is the one
+         * indigo edge, and it moves with the folder rather than being pinned to a step.
+         */
+        lead
+          ? "border-[color:var(--color-indigo-line-a35)]"
+          : "border-[color:var(--color-border-soft)]",
+      )}
     >
       <div className="flex items-center gap-2">
         <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
@@ -150,7 +173,10 @@ function Step({
       <dl className="mt-3 flex flex-col gap-1 border-t border-[color:var(--color-border-soft)] pt-2.5">
         {facts.map((fact) => (
           <div key={fact.key} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-            <dt className="w-[148px] flex-none font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+            {/* One column of labels from `sm` up, where 148px leaves slack in both
+                locales (measured: 120px longest English, ~100px Korean). Narrower than
+                that the label takes its own line rather than squeezing the number. */}
+            <dt className="w-full flex-none font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)] sm:w-[148px]">
               {fact.label}
             </dt>
             <dd className="min-w-0 flex-1 text-label tabular-nums text-[color:var(--color-text-secondary)]">
@@ -203,7 +229,7 @@ export function LibraryStage({
    */
   const transfer =
     route === "local" && localModel
-      ? t("stage.transferLocal", {
+      ? t(localModel.onThisComputer ? "stage.transferLocal" : "stage.transferLocalRemote", {
           host: localModel.host,
           file: ".ontology-atlas/llm-audit.jsonl",
         })
@@ -227,8 +253,22 @@ export function LibraryStage({
       : sourceCount > 0
         ? "next"
         : "waiting";
+  /*
+   * `next` was unreachable here until 2026-09-06: both branches returned `waiting`, so a
+   * folder whose pages were all written still showed the last step as one whose turn had
+   * not come. Reading is done only when every source is covered; with pages on the shelf
+   * and sources still waiting, reading is exactly what to do next.
+   */
   const readState: StepState =
-    model.wikiPages.length > 0 ? "done" : sourceCount > 0 ? "waiting" : "waiting";
+    model.wikiPages.length === 0
+      ? "waiting"
+      : model.needsCompileCount === 0
+        ? "done"
+        : "next";
+
+  /** The earliest step that is next, or none when every step is done or waiting. */
+  const stepStates: StepState[] = [gatherState, compileState, readState];
+  const leadIndex = stepStates.indexOf("next");
 
   const formatSummary =
     formats.length === 0
@@ -253,10 +293,10 @@ export function LibraryStage({
       className="min-h-0 flex-1 overflow-auto max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]"
     >
       <div className="mx-auto w-full max-w-[760px] px-6 pb-10 pt-8 md:px-10">
-        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
-          {t("stage.eyebrow")}
-        </p>
-        <h2 className="mt-1 text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
+        {/* No eyebrow. The index column 250px to the left already carries a caps eyebrow
+            and this product's name, and a second identical stack at nearly the same y read
+            as two headers competing (design-lead, 2026-09-06). */}
+        <h2 className="text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
           {t("stage.title")}
         </h2>
         <p className="mt-1.5 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
@@ -269,6 +309,7 @@ export function LibraryStage({
           <Step
             index={1}
             testId="library-stage-gather"
+            lead={leadIndex === 0}
             title={t("stage.gather.title")}
             body={t("stage.gather.body")}
             state={gatherState}
@@ -320,6 +361,7 @@ export function LibraryStage({
           <Step
             index={2}
             testId="library-stage-compile"
+            lead={leadIndex === 1}
             title={t("stage.compile.title")}
             body={t("stage.compile.body")}
             state={compileState}
@@ -346,6 +388,14 @@ export function LibraryStage({
                   disabled={busy || blocked !== null}
                   data-testid="library-stage-compile-button"
                   /*
+                   * Tied to its reason, not merely next to it. A `disabled` button is out
+                   * of the tab order, so the sentence beneath it is reachable only by
+                   * reading on; the description makes the pair one fact for anything that
+                   * exposes it (design-interaction, 2026-09-06). The visual disabled state
+                   * stays the system's — `CONTROL_DISABLED_CLASS` keys off `:disabled`.
+                   */
+                  aria-describedby={blocked ? "library-stage-compile-blocked" : undefined}
+                  /*
                    * **The indigo is on the badge, not on this button.** Which step is
                    * next changes with the folder, so the emphasis belongs to the thing
                    * that says so; a permanently indigo Compile would claim to be the
@@ -365,13 +415,20 @@ export function LibraryStage({
                   {t("wiki.compile")}
                 </button>
                 {!inApp ? (
+                  /*
+                   * A **chip**, not a link. `shape: "link"` is excluded from the coarse
+                   * 44px floor because it ends a sentence, and the index's own copy of
+                   * this destination does exactly that. Here it stands alone in an
+                   * action row beside a button, where the exclusion would leave a ~25px
+                   * target on a coarse 1024px tablet (design-responsive, 2026-09-06).
+                   */
                   <Link
                     href="/download"
                     data-testid="library-stage-get-app"
                     className={controlClass({
-                      shape: "link",
+                      shape: "chip",
+                      tone: "muted",
                       hoverInk: "strong",
-                      className: "rounded-chip px-1.5 py-0.5",
                     })}
                   >
                     {t("wiki.compileWebGetApp")}
@@ -380,6 +437,7 @@ export function LibraryStage({
               </div>
               {blocked ? (
                 <p
+                  id="library-stage-compile-blocked"
                   data-testid="library-stage-compile-blocked"
                   className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
                 >
@@ -400,6 +458,7 @@ export function LibraryStage({
           <Step
             index={3}
             testId="library-stage-read"
+            lead={leadIndex === 2}
             title={t("stage.read.title")}
             body={t("stage.read.body")}
             state={readState}

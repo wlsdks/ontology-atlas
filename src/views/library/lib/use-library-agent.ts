@@ -67,6 +67,35 @@ export interface LibraryLocalModel {
   model: string;
   /** `localhost:11434` — the host and port, which is the whole of where it goes. */
   host: string;
+  /**
+   * Whether that host really is this machine.
+   *
+   * **The screen may not assume it.** `isLocalEndpointReady` asks only for a non-empty
+   * address and a chosen model, and Rust's own guard (`src-tauri/src/llm.rs`,
+   * `normalize_base_url`) refuses a plaintext non-loopback host but accepts an `https://`
+   * one — so a saved `https://gpu.example.com/v1` is a valid connect-by-address runner
+   * that is not on this computer. Printing "nothing leaves this computer" for it would be
+   * the one sentence `.claude/rules/local-first.md` exists to keep true (PO evidence and
+   * PO steward, 2026-09-06), so the sentence is chosen from this flag rather than from
+   * the fact that the path is called local.
+   */
+  onThisComputer: boolean;
+}
+
+/** `localhost`, `127.0.0.1`, `[::1]` — the same host test `is_loopback_authority` makes. */
+function isLoopbackHost(host: string): boolean {
+  const bare = host.startsWith('[')
+    ? (host.slice(1).split(']')[0] ?? '')
+    : (host.split(':')[0] ?? '');
+  const lowered = bare.toLowerCase();
+  if (lowered === 'localhost' || lowered === '::1' || lowered === '0:0:0:0:0:0:0:1') return true;
+  // IPv4 loopback is the whole 127.0.0.0/8 block, which is what `is_loopback` accepts.
+  const octets = lowered.split('.');
+  return (
+    octets.length === 4 &&
+    octets[0] === '127' &&
+    octets.every((part) => part !== '' && /^\d{1,3}$/.test(part) && Number(part) <= 255)
+  );
 }
 
 function selectLibraryAgentRuntimes(
@@ -103,11 +132,12 @@ export function useLibraryAgent(vaultRoot: string | null) {
   useEffect(() => {
     const read = () => {
       const settings = readLocalEndpoint();
-      setLocalModel(
-        isLlmChatBridgeAvailable() && isLocalEndpointReady(settings)
-          ? { model: settings.model, host: hostOfBaseUrl(settings.baseUrl) }
-          : null,
-      );
+      if (!isLlmChatBridgeAvailable() || !isLocalEndpointReady(settings)) {
+        setLocalModel(null);
+        return;
+      }
+      const host = hostOfBaseUrl(settings.baseUrl);
+      setLocalModel({ model: settings.model, host, onThisComputer: isLoopbackHost(host) });
     };
     read();
     return subscribeLocalEndpointChange(read);

@@ -4461,8 +4461,11 @@
       "reveal": "Finder 에서 보기",
       "download": "사본 열기",
       "viewWriteUp": "정리본 보기",
-      "writeUpCurrent": "지금 내용",
-      "writeUpBehind": "뒤처짐"
+      "writeUp": {
+        "current": "지금 내용",
+        "behind": "뒤처짐",
+        "unchecked": "확인 전"
+      }
     },
     "kindsAria": "이 폴더가 두는 것",
     "kindSourcesTitle": "원문",
@@ -4470,7 +4473,6 @@
     "kindWikiTitle": "위키",
     "kindWikiBody": "원문 하나에 문서 한 편, 같은 서식으로. 문장마다 바탕이 된 파일을 인용합니다.",
     "stage": {
-      "eyebrow": "여기서 하는 일",
       "title": "모으고, 정리하고, 읽습니다",
       "lede": "일이 일어나는 순서대로 세 단계입니다. 아래 숫자는 모두 이 폴더의 파일을 세어 나온 값이라, Finder 에서 그대로 확인할 수 있습니다.",
       "state": {
@@ -4515,7 +4517,8 @@
       "blockedLocal": "{model} 은(는) 답하지만 정리는 하지 못합니다. Atlas 가 로컬 모델에 주는 것은 온톨로지 읽기와 개념 변경 허락 카드 하나이고, 정리에는 PDF 를 직접 열어 문서를 쓰는 쪽이 필요합니다. 지금 정리하려면 코딩 에이전트를 준비하세요.",
       "blockedNoAgent": "확인된 코딩 에이전트가 이 컴퓨터에 없고, 저장해 둔 로컬 모델 주소도 없습니다. 로컬 주소는 설정의 AI 연결에 넣습니다.",
       "blockedNoSources": "아직 정리할 것이 없습니다. 문서는 1번에서 들어옵니다.",
-      "blockedNothingWaiting": "모든 원문이 지금 내용과 맞는 정리본을 갖고 있습니다."
+      "blockedNothingWaiting": "모든 원문이 지금 내용과 맞는 정리본을 갖고 있습니다.",
+      "transferLocalRemote": "이 실행기에 저장된 주소는 {host} 이고 이 컴퓨터가 아니라서, 요청에 실린 내용은 밖으로 나갑니다. {file} 에 한 건씩 남습니다."
     }
   }
 }

@@ -170,17 +170,26 @@ export function SourceSummary({
                 >
                   <BookText size={ICON_SIZE.sm} aria-hidden />
                   <span className="min-w-0 truncate">{page.title}</span>
-                  {/* Whether the page still describes *these* bytes is the fact that
-                      decides whether following it is worth the reader's time. */}
+                  {/*
+                   * Whether the page still describes *these* bytes is the fact that
+                   * decides whether following it is worth the reader's time — and
+                   * "nothing has measured this file yet" is a third answer, not a
+                   * quieter version of "behind". Printing it as behind made this pane
+                   * disagree with its own STATE row, which reads `checking` in exactly
+                   * that window (PO steward, 2026-09-06).
+                   */}
                   <span
                     className={cn(
                       "flex-none",
-                      page.current
-                        ? "text-[color:var(--color-success-text-a90)]"
-                        : "text-[color:var(--color-amber-source-a90)]",
+                      page.freshness === "current" &&
+                        "text-[color:var(--color-success-text-a90)]",
+                      page.freshness === "behind" &&
+                        "text-[color:var(--color-amber-source-a90)]",
+                      page.freshness === "unchecked" &&
+                        "text-[color:var(--color-text-quaternary)]",
                     )}
                   >
-                    {page.current ? t("source.writeUpCurrent") : t("source.writeUpBehind")}
+                    {t(`source.writeUp.${page.freshness}`)}
                   </span>
                 </button>
               </li>

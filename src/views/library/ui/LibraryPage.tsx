@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft } from "lucide-react";
 
@@ -419,6 +419,47 @@ export function LibraryPage() {
     t,
   );
 
+  /**
+   * **Where the keyboard lands after the pane swaps.**
+   *
+   * Pressing "Start with …", a source chip, or "View write-up" replaces the whole right
+   * pane, and the control that was pressed leaves the document with it — measured
+   * 2026-09-06, `document.activeElement` fell back to `<body>`, so the next Tab landed in
+   * the middle of whatever had arrived. Moving focus to the pane itself keeps the reading
+   * order honest: the next Tab is the first control of the thing the person just chose.
+   *
+   * It deliberately does nothing on the first render. Focusing a region because a page
+   * loaded is not the same event as focusing it because somebody pressed something.
+   */
+  const readerRef = useRef<HTMLDivElement | null>(null);
+  const lastFocusedSelection = useRef<typeof selected | undefined>(undefined);
+  useEffect(() => {
+    if (lastFocusedSelection.current === undefined) {
+      lastFocusedSelection.current = selected;
+      return;
+    }
+    if (lastFocusedSelection.current === selected) return;
+    lastFocusedSelection.current = selected;
+    readerRef.current?.focus({ preventScroll: true });
+  }, [selected]);
+
+  /**
+   * Escape returns to the shelf, the same as the back control.
+   *
+   * Guarded on the two surfaces that own the key first: the discovery dialog traps it, and
+   * the agent dock's own conversation uses it. Answering Escape from underneath either
+   * would close two things with one press.
+   */
+  useEffect(() => {
+    if (selected === null || findOpen || agent.open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      setSelected(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [agent.open, findOpen, selected]);
+
   const wikiProblems = selectedWikiDoc
     ? (model.verdicts.get(selectedWikiDoc.slug)?.problems ?? [])
     : [];
@@ -523,6 +564,7 @@ export function LibraryPage() {
           <LibrarySection
             model={model}
             selectedSlug={opened?.kind === "wiki" ? opened.slug : null}
+            selectedSourcePath={opened?.kind === "source" ? opened.path : null}
             onSelect={(slug) => setSelected({ kind: "wiki", slug })}
             onOpenSource={(row) => setSelected({ kind: "source", path: row.path })}
             onAddFiles={handleAddFiles}
@@ -540,6 +582,8 @@ export function LibraryPage() {
       </aside>
 
       <div
+        ref={readerRef}
+        tabIndex={-1}
         data-testid="library-reader"
         className={cn(
           "flex min-w-0 flex-1 flex-col overflow-hidden",
@@ -547,7 +591,19 @@ export function LibraryPage() {
         )}
       >
         {selected ? (
-          <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3 py-2 lg:hidden">
+          /*
+           * **The way back exists at every width now.** It was `lg:hidden`, because below
+           * `lg` selecting swaps the whole column and the person visibly needs a door
+           * home, while at `lg` and above the index never left. That reasoning stopped
+           * being true on 2026-09-06: with nothing selected the right pane is the guided
+           * shelf, so it became a place a person can reach only once per session —
+           * measured by design-interaction, the only ways back were a reload and the
+           * browser's own Back, which leaves the Library and drops the open folder.
+           *
+           * `ArrowLeft` stays: it carries direction, which the label-decoration rule
+           * allows and a trailing chevron would not.
+           */
+          <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3 py-2">
             <button
               type="button"
               onClick={() => setSelected(null)}
