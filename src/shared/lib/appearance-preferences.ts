@@ -328,13 +328,27 @@ export function useView3d(): boolean {
  *   in `src/widgets/topology-map-v2/model/dome-view.ts`; decision 84 records the
  *   rejected tier-constrained hybrid.
  *
+ * - `strata` (2026-09-06) — *who contains what, read by level.* The same
+ *   containment fact as `ownership`, drawn as four stacked labelled planes
+ *   instead of nested cones, so "which level is this on" is a glance rather than
+ *   an inference. It is the one structure the three.js probe of that day found
+ *   clearly better than the cone at tier legibility, and porting it needed no
+ *   renderer: `buildStrataTargets` in
+ *   `src/widgets/topology-map-v2/model/dome-view.ts` is pure geometry.
+ *
+ * **Why `strata` breaks the "key is the question" habit.** `ownership` and
+ * `coupling` are named for what they ask because they ask different things.
+ * Strata asks the same question as `ownership` and answers it with a different
+ * shape, so a question-shaped key would collide. The shape's name is the honest
+ * key.
+ *
  * **Why this shares one picker with Flat.** Splitting 3D on/off from its
  * arrangement makes the current view depend on two controls. The toolbar's one
- * three-row picker states the whole view choice without duplicating it in settings.
+ * four-row picker states the whole view choice without duplicating it in settings.
  */
-export type MapArrangement = "ownership" | "coupling";
+export type MapArrangement = "ownership" | "coupling" | "strata";
 
-const MAP_ARRANGEMENTS: readonly MapArrangement[] = ["ownership", "coupling"];
+const MAP_ARRANGEMENTS: readonly MapArrangement[] = ["ownership", "coupling", "strata"];
 
 export const DEFAULT_MAP_ARRANGEMENT: MapArrangement = "ownership";
 

@@ -4112,6 +4112,21 @@ function HomePageImpl() {
     [t],
   );
   /*
+   * The tier names the 3D Strata arrangement writes at each plane's rim. They are
+   * the canonical kind names (`kinds.*`), not a second vocabulary invented for the
+   * map — the plane a node sits on *is* its kind, so naming it anything else would
+   * be two words for one thing.
+   */
+  const domeTierLabels = useMemo(
+    () => ({
+      project: tKinds("project"),
+      domain: tKinds("domain"),
+      capability: tKinds("capability"),
+      element: tKinds("element"),
+    }),
+    [tKinds],
+  );
+  /*
    * The bottom-right readout's own numbers (`FirstRunReadout`). `drawnConceptCount`
    * is reported by the map for the frame it just painted, and the total comes from
    * the same `ontologyInsight` as `indexDomainCount`, so the two cannot drift. The
@@ -5650,6 +5665,7 @@ function HomePageImpl() {
                       realmEnterTooltip={t('realm.enterTooltip')}
                       realmCaption={realmCaption}
                       clusterBarLabels={clusterBarLabels}
+                      domeTierLabels={domeTierLabels}
                       canvasLabel={t('canvas.ariaLabel')}
                       visitedTrail={footprintVisitedIds}
                       trailLensActiveRef={footprintLensActiveRef}

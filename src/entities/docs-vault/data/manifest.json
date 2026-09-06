@@ -751,6 +751,18 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/STRATA-2026-09-06",
+      "path": "docs/benchmark/STRATA-2026-09-06.md",
+      "title": "Strata — the techniques it is built from, and the ones it refused",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "The 2026-09-06 decision record (docs/DECISIONS.md) names these in one line each; it has 2,000 bytes and no room for the reasons. This page carries them. It is a sources page, not a plan: the geometry lives in buildStrataTargets (src/widgets/topology-map-v2/model/dome-view.ts) and the numbers live in tests/e2e/map-3d-st",
+      "wordCount": 1123,
+      "updatedAt": "2026-09-06",
+      "linksOut": []
+    },
+    {
       "slug": "benchmark/tasks",
       "path": "docs/benchmark/tasks.md",
       "title": "Benchmark tasks",
@@ -822,7 +834,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 105512,
+      "wordCount": 105799,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "slug"
@@ -928,7 +940,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 30963,
+      "wordCount": 31194,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "ANALYSIS-RECORDS",
@@ -6494,6 +6506,13 @@
             "type": "doc",
             "slug": "benchmark/rubric",
             "title": "Rubric — how to score each run"
+          },
+          {
+            "name": "STRATA-2026-09-06",
+            "path": "benchmark/STRATA-2026-09-06",
+            "type": "doc",
+            "slug": "benchmark/STRATA-2026-09-06",
+            "title": "Strata — the techniques it is built from, and the ones it refused"
           },
           {
             "name": "tasks",

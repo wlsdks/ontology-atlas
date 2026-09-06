@@ -1048,11 +1048,13 @@
       "view3dChoice": {
         "flat": "평면",
         "ownership": "원뿔",
+        "strata": "층",
         "coupling": "구름"
       },
       "view3dChoiceHint": {
         "flat": "보통의 2D 지도",
         "ownership": "담긴 구조대로 원뿔이 층층이 매달린 모양",
+        "strata": "같은 담김 구조를 층으로 나눠 읽는 모양",
         "coupling": "관계가 가까운 것끼리 모인 모양"
       },
       "view3dLabel": "3D",

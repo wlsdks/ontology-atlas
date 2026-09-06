@@ -604,6 +604,13 @@ interface DomeCircle {
   cz: number;
   y: number;
   r: number;
+  /**
+   * Whether this circle carries the tier's **name** at its rim. Strata's four
+   * plane rings do; the cone's per-parent bases do not, because there are dozens
+   * of them and they mark ownership rather than a level. See
+   * `buildStrataTargets`.
+   */
+  named?: boolean;
 }
 
 export interface DomeModel {
@@ -824,6 +831,486 @@ function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, 
   }
   return { coords, circles };
 }
+
+/**
+ * **Strata — the containment tiers as four stacked planes (2026-09-06).**
+ *
+ * Where the cone answers *what owns this* by making a subtree a bump you can
+ * point at, Strata answers *what level is this on* by making the level a place.
+ * Its four planes sit at the same `DOME_PLANE` heights the cone uses, so the two
+ * arrangements are read at one vertical scale and the morph between them moves
+ * nodes sideways rather than up and down.
+ *
+ * It came from the three.js structure probe of 2026-09-06
+ * (`docs/benchmark/THREE-PROBE-2026-09-06.md`), which compared four structures in
+ * a WebGL twin and found this one best at tier legibility "by a distance" while
+ * the renderer itself bought nothing: equal frame time at 125 and at 1,000 nodes,
+ * +137 kB gzip. The structure was the find, and a structure is renderer-independent,
+ * so it is ported here as pure geometry with no new dependency.
+ *
+ * Two rules, and everything else follows from them:
+ *
+ * 1. **Height is the tier, and nothing else.** A node's y is `DOME_PLANE[kind].y`,
+ *    full stop — no nesting, no per-parent base. Four hairline plane rings, each
+ *    named once at its rim, turn "which level am I looking at" into a glance.
+ * 2. **A node keeps its parent's bearing.** Children divide their parent's angular
+ *    sector in proportion to subtree size and sit at their own sector's midpoint.
+ *    A single child inherits the whole sector, so its drop is exactly vertical.
+ *
+ * Rule 2 is what makes this a **layered radial DAG** rather than four rings of
+ * unrelated dots, and it buys the non-crossing property outright: every node's
+ * bearing lies inside its parent's sector, sibling sectors are disjoint, so two
+ * containment drops descending from different parents live in disjoint angular
+ * wedges and cannot cross. That is a proof, not a measurement, and
+ * `dome-view.test.ts` asserts it on the shape rather than on a screenshot.
+ *
+ * Two further passes finish the picture, and both are named techniques rather
+ * than inventions — see their own doc-blocks for what was measured:
+ * `STRATA_BARYCENTER_SWEEPS` orders siblings *within* their sector by the
+ * circular barycenter of their relations (the Sugiyama crossing-reduction phase,
+ * radially adapted after Bachmaier, IEEE TVCG 13(3), 2007), and `applyLanes`
+ * alternates two radii along each plane so neighbours from different parents
+ * cannot fuse.
+ *
+ * What it trades away is compactness. A plane fills its whole disc instead of
+ * clustering under its parent, so the silhouette is wider than the cone's and a
+ * dependency line between two distant domains runs long and shallow. That is the
+ * honest cost of putting the level first, and it is why Strata joins the cone
+ * rather than replacing it.
+ */
+
+/**
+ * Radius a **placed** node takes on its plane, as a fraction of that plane's
+ * radius. The remaining fifth of the disc is the rim, and the rim is where an
+ * unparented node lands (below), so "nothing above this holds it" is a position
+ * a reader can see instead of a line they have to notice is missing.
+ */
+const STRATA_PLACED_FILL = 0.82;
+
+/**
+ * The project plane's ring radius (dome units).
+ *
+ * `DOME_PLANE.project.r` is 0 because the cone's top is an apex — a point needs no
+ * radius. Strata draws and names a ring on every plane, so the top plane needs a
+ * rim of its own. 34 clears the project disc (`DOME_NODE_R.project` 10.5) by more
+ * than two of its own radii, which is enough for the ring to read as a disc the
+ * project sits in the middle of rather than as a collar around it.
+ */
+const STRATA_PROJECT_RING_R = 34;
+
+/**
+ * How many crossing-reduction sweeps to run. Sugiyama's own prescription is
+ * "sweep until convergence or a cutoff", and this is the cutoff — the loop also
+ * stops the first sweep that changes no order.
+ *
+ * **A cutoff and not a target, because more sweeps are not monotonically
+ * better.** The barycenter heuristic oscillates; that is why `dot` keeps the best
+ * ordering it has seen rather than the last one (Gansner, Koutsofios, North & Vo,
+ * "A Technique for Drawing Directed Graphs", 1993), and so does the loop below.
+ * Measured before the best-of guard existed, on the sample vault at 1512 (drawn
+ * crossing pairs among 258 relations, 2026-09-06): id order 2,520 · 4 sweeps
+ * 2,415 · **16 sweeps 2,600** — sixteen sweeps were worse than none.
+ *
+ * **What the sweep is worth here, stated honestly.** With the two-lane pass in
+ * place, the same vault draws 2,561 crossing pairs with the sweeps off and 2,606
+ * with them on — total crossings move within noise. What clearly moves is the
+ * arrangement's own subject: crossings **between two containment drops** fall
+ * from 585 to 521, 10.9%. The key pulls a node toward the things it relates to,
+ * which lines the containment fan up and lengthens some dependency arcs, and the
+ * containment fan is what Strata exists to make readable. The scorer also reads
+ * straight chords seen from above while the screen draws bowed curves in
+ * perspective, so its optimum and the screen's are near each other rather than
+ * the same point.
+ */
+const STRATA_BARYCENTER_SWEEPS = 6;
+
+/**
+ * Above this many relations the sweeps stop being scored and simply run.
+ *
+ * Scoring a candidate order means counting crossings, which is quadratic in the
+ * relation count. At the vault sizes a person actually opens — 258 relations in
+ * the sample, 181 in this repository's own — that is 33k segment tests per
+ * candidate and costs under a millisecond in the one model build. At 2,000
+ * relations it would be 2M per candidate inside a build that must not hitch, and
+ * the ordering is worth less there anyway because the picture is dense. Past the
+ * budget the loop takes the sweeps on faith, which is the ordinary barycenter
+ * behaviour and still better than id order.
+ */
+const STRATA_SCORED_EDGE_BUDGET = 800;
+
+/**
+ * Crossing pairs among the **containment and dependency chords, seen from
+ * directly above** — the plane the sibling ordering actually decides.
+ *
+ * Chords rather than the bowed curves the screen draws, and top-down rather than
+ * the current camera: both of those are presentation, and a placement that
+ * scored itself against one camera pose would be optimising for an angle the
+ * reader is free to leave. Two relations meeting at a shared node meet there by
+ * construction and are not counted.
+ */
+function strataCrossings(
+  coords: ReadonlyMap<string, DomeCoord>,
+  edges: readonly { sourceId: string; targetId: string }[],
+): number {
+  const segs: { ax: number; az: number; bx: number; bz: number; a: string; b: string }[] = [];
+  for (const e of edges) {
+    const a = coords.get(e.sourceId);
+    const b = coords.get(e.targetId);
+    if (!a || !b) continue;
+    segs.push({ ax: a.px, az: a.pz, bx: b.px, bz: b.pz, a: e.sourceId, b: e.targetId });
+  }
+  const side = (px: number, pz: number, qx: number, qz: number, rx: number, rz: number) =>
+    Math.sign((qx - px) * (rz - pz) - (qz - pz) * (rx - px));
+  let count = 0;
+  for (let i = 0; i < segs.length; i += 1) {
+    for (let j = i + 1; j < segs.length; j += 1) {
+      const s = segs[i];
+      const t = segs[j];
+      if (s.a === t.a || s.a === t.b || s.b === t.a || s.b === t.b) continue;
+      const d1 = side(s.ax, s.az, s.bx, s.bz, t.ax, t.az);
+      const d2 = side(s.ax, s.az, s.bx, s.bz, t.bx, t.bz);
+      const d3 = side(t.ax, t.az, t.bx, t.bz, s.ax, s.az);
+      const d4 = side(t.ax, t.az, t.bx, t.bz, s.bx, s.bz);
+      if (d1 !== d2 && d3 !== d4) count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * Place `nodes` on four stacked planes. Pure, deterministic (siblings sorted by
+ * id before any reordering, no randomness, no clock) and independent of the 2D
+ * layout, exactly like `layoutConeTree` — the same vault always draws the same
+ * picture, which is what the fixed-scale contract and the frame-time comparison
+ * both rely on.
+ *
+ * `edges` are the relations. They do not move a node between planes or out of its
+ * parent's sector; they only decide the **order of siblings inside that sector**
+ * (`STRATA_BARYCENTER_SWEEPS`).
+ */
+export function buildStrataTargets(
+  nodes: readonly DomeInputNode[],
+  edges: readonly { sourceId: string; targetId: string }[] = [],
+): {
+  coords: Map<string, DomeCoord>;
+  circles: DomeCircle[];
+} {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const coords = new Map<string, DomeCoord>();
+  const byIdAsc = (a: DomeInputNode, b: DomeInputNode) => (a.id < b.id ? -1 : 1);
+
+  const kids = new Map<string, DomeInputNode[]>();
+  for (const n of nodes) {
+    if (n.parentId === null || !byId.has(n.parentId) || n.parentId === n.id) continue;
+    const list = kids.get(n.parentId);
+    if (list) list.push(n);
+    else kids.set(n.parentId, [n]);
+  }
+  for (const list of kids.values()) list.sort(byIdAsc);
+
+  /** Subtree size including the node itself — the angular weight it claims. Cycles are cut at the first repeat. */
+  const weightMemo = new Map<string, number>();
+  const weightOf = (id: string, trail: Set<string>): number => {
+    const memo = weightMemo.get(id);
+    if (memo !== undefined) return memo;
+    if (trail.has(id)) return 1;
+    trail.add(id);
+    let w = 1;
+    for (const k of kids.get(id) ?? []) w += weightOf(k.id, trail);
+    trail.delete(id);
+    weightMemo.set(id, w);
+    return w;
+  };
+
+  const projects = nodes.filter((n) => n.kind === "project").sort(byIdAsc);
+  /** Sibling order per parent — id order to begin with, then reordered by the sweeps below. */
+  const orderOf = new Map<string, DomeInputNode[]>();
+  for (const [parentId, list] of kids) orderOf.set(parentId, [...list]);
+  const bearingOf = new Map<string, number>();
+
+  /**
+   * Seat one node at the middle of `[from, to)` and deal that sector out to its
+   * children. `index`/`siblings` only choose between the two staggered radii —
+   * **the bearing never leaves the sector**, because leaving it is what would let
+   * a drop cross a neighbour's.
+   */
+  /** Each node's own sector and slot, so one subtree can be re-dealt without redoing the walk. */
+  const sectorOf = new Map<string, readonly [number, number, number, number]>();
+  const place = (node: DomeInputNode, from: number, to: number, index: number, siblings: number): void => {
+    sectorOf.set(node.id, [from, to, index, siblings]);
+    const mid = (from + to) / 2;
+    const planeR = node.kind === "project" ? STRATA_PROJECT_RING_R : DOME_PLANE[node.kind].r;
+    // A lone project is the axis the whole structure stands on; two or more share
+    // the top plane's ring like any other tier.
+    const onAxis = node.kind === "project" && projects.length <= 1;
+    const r = onAxis ? 0 : planeR * STRATA_PLACED_FILL;
+    bearingOf.set(node.id, mid);
+    coords.set(node.id, { px: Math.cos(mid) * r, py: DOME_PLANE[node.kind].y, pz: Math.sin(mid) * r });
+
+    const children = orderOf.get(node.id) ?? [];
+    if (children.length === 0) return;
+    let total = 0;
+    for (const c of children) total += weightOf(c.id, new Set());
+    let cursor = from;
+    children.forEach((child, i) => {
+      const share = ((weightOf(child.id, new Set()) || 1) / (total || 1)) * (to - from);
+      place(child, cursor, cursor + share, i, children.length);
+      cursor += share;
+    });
+  };
+
+  /*
+   * **Two lanes per plane.** Bearing is decided by the sector; radius is still
+   * free, and a plane that puts every node on one circle fuses whichever two
+   * happen to land side by side — which the crossing sweep makes *more* likely,
+   * because it deliberately pulls related nodes together. Measured at 1040 on the
+   * sample vault (2026-09-06): three same-tier overlapping pairs on one circle,
+   * zero once the plane alternates two.
+   *
+   * The device is the cone's own stagger (`CONE_STAGGER_IN`/`OUT`), moved from
+   * "one crowded parent's base" to "the whole plane", because on a plane the two
+   * neighbours that touch usually belong to different parents and a per-parent
+   * rule never sees them. It is the same answer the Helix Cone Tree gave the
+   * original cone — stretch the ring the children sit on so discs and labels stop
+   * occluding each other — in the one dimension a stratum has left.
+   *
+   * **Radius only.** Bearing is untouched, so the sector containment and the
+   * non-crossing property proved in this function's header survive it unchanged.
+   * It runs inside `layout`, so the crossing score below reads the geometry that
+   * is actually drawn rather than the pre-lane one.
+   */
+  const applyLanes = (): void => {
+    for (const kind of STRATA_PLANE_ORDER) {
+      if (kind === "project") continue;
+      const lane = [...coords.entries()]
+        .filter(([id]) => byId.get(id)?.kind === kind)
+        .map(([id, c]) => ({ id, c, bearing: Math.atan2(c.pz, c.px) }))
+        .sort((a, b) => (a.bearing !== b.bearing ? a.bearing - b.bearing : a.id < b.id ? -1 : 1));
+      if (lane.length <= CONE_STAGGER_FROM) continue;
+      lane.forEach((entry, i) => {
+        const r = DOME_PLANE[kind].r * STRATA_PLACED_FILL * (i % 2 ? CONE_STAGGER_OUT : CONE_STAGGER_IN);
+        entry.c.px = Math.cos(entry.bearing) * r;
+        entry.c.pz = Math.sin(entry.bearing) * r;
+      });
+    }
+  };
+
+  const layout = (): void => {
+    coords.clear();
+    bearingOf.clear();
+    sectorOf.clear();
+    // The walk starts at the projects, each taking a share of the full turn. −π/2
+    // starts the first sector at the top of the disc, the same zero the cone uses.
+    let projectTotal = 0;
+    for (const p of projects) projectTotal += weightOf(p.id, new Set());
+    let cursor = -Math.PI / 2;
+    projects.forEach((p, i) => {
+      const share = ((weightOf(p.id, new Set()) || 1) / (projectTotal || 1)) * TAU;
+      place(p, cursor, cursor + share, i, projects.length);
+      cursor += share;
+    });
+    applyLanes();
+  };
+  layout();
+
+  /*
+   * ── Crossing reduction: the barycenter heuristic, constrained to the sector ──
+   *
+   * Sector inheritance already guarantees that no two **containment** drops cross
+   * (`buildStrataTargets`'s header). It says nothing about the dependency arcs,
+   * and those are most of the ink: 258 of the sample vault's relations against 124
+   * containment edges. Ordering siblings by id leaves that count to chance.
+   *
+   * So the layer order is decided the way layered drawing has decided it since
+   * Sugiyama, Tagawa and Toda (1981): put each vertex at the **barycenter of its
+   * neighbours' positions in the adjacent layer**, re-sort the layer by that key,
+   * and sweep until the order stops changing. One-sided crossing minimisation is
+   * NP-hard, which is why this is a heuristic and not a solve.
+   *
+   * Two adaptations, both taken from Bachmaier's radial adaptation of the
+   * framework (IEEE TVCG 13(3), 2007), because our layers are circles and not
+   * lines:
+   *
+   * - **The key is a circular mean**, not an arithmetic one. Averaging angles
+   *   directly puts a node whose neighbours sit at 10° and 350° at 180°, the exact
+   *   opposite of where it belongs. Summing unit vectors and taking `atan2` gives
+   *   the answer a circle has.
+   * - **The order is read as a cut of the circle**: a child's key is compared as
+   *   its nearest-equivalent offset from the parent's own bearing, which turns the
+   *   sector into a line the sort can work on.
+   *
+   * The third thing is ours, and it is the constraint the arrangement exists for:
+   * **a node may only be permuted among its own siblings.** A free layer
+   * permutation would find fewer crossings and would break the reading "this
+   * capability sits under that domain", which is the fact the picture is for. That
+   * is the same trade a constrained Sugiyama makes for grouped or clustered
+   * layers, and it is why the crossing count below improves rather than minimises.
+   *
+   * Containment edges are excluded from the key: they are already encoded by the
+   * sector, so counting them again would only pull every child toward its parent
+   * and undo the spread.
+   */
+  const neighbours = new Map<string, string[]>();
+  for (const edge of edges) {
+    const a = byId.get(edge.sourceId);
+    const b = byId.get(edge.targetId);
+    if (!a || !b || a === b) continue;
+    if (a.parentId === b.id || b.parentId === a.id) continue;
+    (neighbours.get(a.id) ?? neighbours.set(a.id, []).get(a.id)!).push(b.id);
+    (neighbours.get(b.id) ?? neighbours.set(b.id, []).get(b.id)!).push(a.id);
+  }
+  if (neighbours.size > 0) {
+    /** Nearest equivalent angle of `angle` measured from `origin`, in (−π, π]. */
+    const offsetFrom = (angle: number, origin: number): number => {
+      let d = angle - origin;
+      while (d > Math.PI) d -= TAU;
+      while (d <= -Math.PI) d += TAU;
+      return d;
+    };
+    const scored = edges.length <= STRATA_SCORED_EDGE_BUDGET;
+    let bestOrder = scored ? new Map([...orderOf].map(([k, v]) => [k, [...v]])) : null;
+    let bestCount = scored ? strataCrossings(coords, edges) : 0;
+    /*
+     * Parents are visited in a fixed id order and **each subtree is re-dealt the
+     * moment its order changes**, so the next parent sees where the previous one
+     * actually put its children (Gauss-Seidel rather than Jacobi).
+     *
+     * This is not a refinement, it is the difference between working and not. A
+     * relation between two capabilities is an edge *inside* a layer, which the
+     * textbook framework never has — it splits every long edge over dummy
+     * vertices so each one spans adjacent layers. Update both ends of a same-layer
+     * edge from the same stale positions and they swap past each other in the same
+     * step: measured on the two-domain fixture in `dome-view.test.ts`, both sides
+     * reversed simultaneously and the single crossing survived untouched.
+     */
+    const parentIds = [...orderOf.keys()].sort();
+    for (let sweep = 0; sweep < STRATA_BARYCENTER_SWEEPS; sweep += 1) {
+      let changed = false;
+      for (const parentId of parentIds) {
+        const children = orderOf.get(parentId) ?? [];
+        if (children.length < 2) continue;
+        const parentBearing = bearingOf.get(parentId) ?? 0;
+        const keyed = children.map((child, index) => {
+          let sx = 0;
+          let sz = 0;
+          let seen = 0;
+          for (const other of neighbours.get(child.id) ?? []) {
+            const a = bearingOf.get(other);
+            if (a === undefined) continue;
+            sx += Math.cos(a);
+            sz += Math.sin(a);
+            seen += 1;
+          }
+          // No relation of its own, or neighbours that cancel out exactly: keep
+          // where it is, so an unrelated node never shuffles for nothing.
+          const key =
+            seen === 0 || Math.hypot(sx, sz) < 1e-9
+              ? offsetFrom(bearingOf.get(child.id) ?? parentBearing, parentBearing)
+              : offsetFrom(Math.atan2(sz, sx), parentBearing);
+          return { child, key, index };
+        });
+        keyed.sort((a, b) =>
+          a.key !== b.key ? a.key - b.key : a.child.id < b.child.id ? -1 : a.child.id > b.child.id ? 1 : 0,
+        );
+        let moved = false;
+        for (let i = 0; i < keyed.length; i += 1) {
+          if (keyed[i].index !== i) {
+            moved = true;
+            break;
+          }
+        }
+        if (!moved) continue;
+        changed = true;
+        orderOf.set(
+          parentId,
+          keyed.map((k) => k.child),
+        );
+        const sector = sectorOf.get(parentId);
+        const parent = byId.get(parentId);
+        if (sector && parent) place(parent, sector[0], sector[1], sector[2], sector[3]);
+      }
+      if (!changed) break;
+      // The Gauss-Seidel re-deals above wrote base radii; put the lanes back so
+      // the score reads the drawn geometry.
+      applyLanes();
+      if (!scored) continue;
+      const count = strataCrossings(coords, edges);
+      if (count < bestCount) {
+        bestCount = count;
+        bestOrder = new Map([...orderOf].map(([k, v]) => [k, [...v]]));
+      }
+    }
+    // Keep the best ordering seen, not the last one — the oscillation guard.
+    if (bestOrder !== null) {
+      for (const [k, v] of bestOrder) orderOf.set(k, v);
+      layout();
+    }
+  }
+
+  /*
+   * **The rim.** Anything the walk never reached — no parent, a parent filtered out
+   * of this world, a parent inside a containment cycle — sits on the outer edge of
+   * its own plane at a deterministic hash bearing. It is still on the right level,
+   * which is the fact this arrangement carries, and being outside the placed
+   * annulus says the second fact: the tier above does not hold it.
+   */
+  for (const n of nodes) {
+    if (coords.has(n.id)) continue;
+    const a = domeHash01(n.id) * TAU;
+    const rimR = n.kind === "project" ? STRATA_PROJECT_RING_R : DOME_PLANE[n.kind].r;
+    coords.set(n.id, { px: Math.cos(a) * rimR, py: DOME_PLANE[n.kind].y, pz: Math.sin(a) * rimR });
+  }
+
+  /*
+   * One ring per plane that actually has something on it. Drawing an empty plane
+   * would assert a level this vault does not have, which is the same lie the cloud
+   * would tell if it drew rings.
+   */
+  const circles: DomeCircle[] = [];
+  for (const kind of STRATA_PLANE_ORDER) {
+    if (!nodes.some((n) => n.kind === kind)) continue;
+    const r = kind === "project" ? STRATA_PROJECT_RING_R : DOME_PLANE[kind].r;
+    circles.push({ kind, cx: 0, cz: 0, y: DOME_PLANE[kind].y, r, named: true });
+  }
+  return { coords, circles };
+}
+
+/** Plane order, top to bottom — the containment spine of `docs/ONTOLOGY-ATLAS-SPEC.md` §2. */
+const STRATA_PLANE_ORDER: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
+
+/**
+ * Base opacity of a **Strata plane ring**, replacing `DOME_RING_ALPHA` for that
+ * arrangement.
+ *
+ * **Why it is higher than the cone's 0.34, and why the probe's 0.12 was wrong
+ * here.** The three.js probe drew its boundaries at ≤ 0.12 and that is the right
+ * *idea* — a boundary is a line you see through — but 0.12 is an opacity against
+ * that renderer's own bright line colour. This engine multiplies the base by the
+ * depth fog **and** by the depth line-width falloff before it reaches a pixel, and
+ * its ring ink (`--topology-v2-dome-ring`, #43434f) is already nearly the canvas
+ * ground. Measured at 1512 on the sample vault (2026-09-06), on the near arc of
+ * the element plane:
+ *
+ * | base | brightest pixel on the arc | against the ground beside it |
+ * |---|---|---|
+ * | 0.12 | indistinguishable from the ground | — |
+ * | 0.28 | still indistinguishable | — |
+ * | 0.55 | 29 / 255 | **1.21 : 1** |
+ * | 1.0 | 67 / 255 | 1.9 : 1 — the ellipses start reading as the subject |
+ *
+ * So 0.55 is the value at which a plane ring is a hairline you can see and not a
+ * shape you look at. The cone's 0.34 is not a ceiling this has to respect: a cone
+ * base is a small circle close to the camera, where fog barely touches it, while a
+ * plane ring spends most of its circumference at depth. The number that matters is
+ * the one on screen, and on screen this one is dimmer than the cone's bases are.
+ */
+export const DOME_STRATA_RING_ALPHA = 0.55;
+
+/** Base ring opacity for an arrangement — the cone's bases, or Strata's fainter planes. */
+export function domeRingAlphaFor(arrangement: DomeArrangement): number {
+  return arrangement === "strata" ? DOME_STRATA_RING_ALPHA : DOME_RING_ALPHA;
+}
+
 /**
  * **The arrangement axis — 「Ownership」 (ownership) and 「Coupling」 (coupling).**
  *
@@ -834,7 +1321,15 @@ function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, 
  * because it merely twisted the Dome. The detailed physical and determinism
  * contract follows below.
  */
-export type DomeArrangement = "ownership" | "coupling";
+/**
+ * `strata` joins them on 2026-09-06. It is **not** a third question: it answers the
+ * same containment question `ownership` does, and draws it as stacked labelled
+ * planes rather than as nested cones. That is why its key is the shape's name
+ * rather than a question — see `buildStrataTargets` for what it buys and what it
+ * costs, and `docs/DECISIONS.md` for why the three.js probe it came from was
+ * declined while its structure was kept.
+ */
+export type DomeArrangement = "ownership" | "coupling" | "strata";
 
 /**
  * **The coupling cloud's physical character.**
@@ -1250,14 +1745,21 @@ export function beginDomeModelBuild(
   // starter nodes).
   const unit = Math.max(radius, 220) / DOME_FIT_RADIUS;
 
-  const { coords, circles } = layoutConeTree(nodes);
+  const arrangement = options?.arrangement ?? "ownership";
+  /*
+   * Strata is its own placement (`buildStrataTargets`); the cone tree is the seed
+   * for both the cone itself and the coupling cloud's warm start.
+   */
+  const { coords, circles } =
+    arrangement === "strata"
+      ? buildStrataTargets(nodes, options?.edges ?? [])
+      : layoutConeTree(nodes);
 
   /*
    * "Coupling" (coupling) arrangement — relaxes from a **warm start** at the angles the
    * ownership arrangement produced. Not starting from arbitrary angles is what buys
    * determinism and spatial memory (`DomeArrangement` doc-block).
    */
-  const arrangement = options?.arrangement ?? "ownership";
   const model: DomeModel = {
     centerX: cx,
     centerY: cy,
@@ -1265,7 +1767,7 @@ export function beginDomeModelBuild(
     coords,
     arrangement,
     // The cloud has no cone bases — drawing them would assert a coordinate system
-    // relations did not produce.
+    // relations did not produce. Strata's circles are its four labelled planes.
     circles: arrangement === "coupling" ? [] : circles,
   };
   if (arrangement === "coupling" && options?.edges && options.edges.length > 0) {
@@ -1375,9 +1877,25 @@ export function domeEdgeControl(
   // A coupling cloud has no shell — with no skin to bow over, lines go straight
   // (the caller takes null and falls back to the 2D control point).
   if (model.arrangement === "coupling") return null;
-  if (kind === "contains") return null;
   const a = model.coords.get(sourceId);
   const b = model.coords.get(targetId);
+  if (kind === "contains") {
+    /*
+     * **Strata's containment drop is drawn straight, on purpose.**
+     *
+     * On the cone a containment edge is the cone's own edge and taking the 2D
+     * control point (`null`) is right, because that control already runs along the
+     * ownership spine. In Strata the drop is a near-vertical line between two
+     * planes, and the 2D control bows it sideways: a vertical line with a bulge in
+     * it reads as a mistake in the drawing rather than as a relation, and it is
+     * the one edge in this arrangement whose whole job is to say "this sits under
+     * that". So the control point becomes **the chord's own midpoint in dome
+     * space**, which a quadratic Bézier passes through exactly — a straight
+     * segment between the two nodes, at any pose.
+     */
+    if (model.arrangement !== "strata" || !a || !b) return null;
+    return { px: (a.px + b.px) / 2, py: (a.py + b.py) / 2, pz: (a.pz + b.pz) / 2 };
+  }
   if (!a || !b) return null;
   const mx = (a.px + b.px) / 2;
   const my = (a.py + b.py) / 2;
@@ -1869,12 +2387,13 @@ export function updateDomeFrame(
     const [cyK, syK] = trig[kind];
     let ring = runtime.rings[ringCount];
     if (!ring) {
-      ring = { kind, a: 0, points: [] };
+      ring = { kind, a: 0, points: [], label: null };
       runtime.rings[ringCount] = ring;
     }
     ring.kind = kind;
     ring.a = ramp[kind] * alpha;
     const samples = domeRingSampleCount(circle.r);
+    let rightmost = -1;
     for (let k = 0; k < samples; k++) {
       const theta = (k / samples) * TAU;
       ringCoord.px = circle.cx + Math.cos(theta) * circle.r;
@@ -1889,8 +2408,10 @@ export function updateDomeFrame(
       } else {
         ring.points[k] = { wx: p.wx, wy: p.wy, u: p.z };
       }
+      if (rightmost < 0 || p.wx > ring.points[rightmost].wx) rightmost = k;
     }
     ring.points.length = samples;
+    ring.label = circle.named === true && rightmost >= 0 ? ring.points[rightmost] : null;
     ringCount++;
   };
   for (const circle of model.circles) sampleCircle(circle, morphing ? morphE : 1);
@@ -2230,6 +2751,14 @@ interface DomeRing {
   /** Assembly ramp 0..1 — rings rise and fall with their tier across the 2D↔3D transition. */
   a: number;
   points: DomeRingSample[];
+  /**
+   * Where this ring's **tier name** hangs, or null when the ring carries none
+   * (every cone base). It is the ring's screen-rightmost sample, which is a stable
+   * point under rotation — the right extreme of an ellipse stays the right extreme
+   * — and the side of the canvas the index panel never covers, so the name sits in
+   * clear space beside the plane rather than on top of it.
+   */
+  label: DomeRingSample | null;
 }
 
 /**
