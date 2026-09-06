@@ -30,6 +30,7 @@ import {
   summarizeAddSources,
   withoutImportedNames,
   type DiscoveryOutcome,
+  dropCandidatesWithNodes,
 } from "@/features/library";
 import {
   DocReadingPane,
@@ -444,6 +445,8 @@ export function LibraryPage() {
    * offer, and the offer is remade each time the wiki is checked.
    */
   const [candidates, setCandidates] = useState<LintNodeCandidate[]>([]);
+  /* A candidate the card already turned into a node leaves the list; the report cannot know. */
+  const openCandidates = useMemo(() => dropCandidatesWithNodes(candidates, docs), [candidates, docs]);
   const latestDocsRef = useRef(docs);
   useEffect(() => {
     latestDocsRef.current = docs;
@@ -643,7 +646,7 @@ export function LibraryPage() {
             onFindDocuments={handleFindDocuments}
             onCompile={agent.route === "agent" ? handleCompile : null}
             onLint={agent.route === "agent" ? handleLint : null}
-            candidates={candidates}
+            candidates={openCandidates}
             onPropose={agent.route === "agent" && hasOntology ? handlePropose : null}
             // Compile hands the folder to a coding agent, whose own provider traffic
             // Atlas is not in the path of and does not log. Saying so beside the button

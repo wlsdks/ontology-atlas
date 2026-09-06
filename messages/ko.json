@@ -479,7 +479,16 @@
     "errorPathMissing": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 다른 폴더를 골라 주세요.",
     "errorPermission": "이 폴더를 읽을 권한이 없어요. 폴더를 다시 골라 권한을 주세요.",
     "errorPermissionDenied": "macOS가 「{folder}」 폴더를 보호하고 있어요. 시스템 설정 → 개인정보 보호 및 보안 → 파일 및 폴더에서 Ontology Atlas에 접근을 허용한 뒤 다시 열어 주세요.",
-    "errorPermissionDeniedThisFolder": "이"
+    "errorPermissionDeniedThisFolder": "이",
+    "shapeEyebrow": "이 폴더에 무엇을 담을까요?",
+    "shapeTitle": "무엇부터 시작할지 고르세요. 폴더 구조는 어느 쪽이든 같고, 나머지는 나중에 설정에서 추가할 수 있어요.",
+    "shapeWikiTitle": "문서 위키",
+    "shapeWikiBody": "sources/에 문서를 넣으면 에이전트가 문서마다 위키 페이지를 씁니다. 지도도 코드도 필요 없어요.",
+    "shapeMapTitle": "코드베이스 기반 온톨로지 지도",
+    "shapeMapBody": "코드가 무엇을 만들고 왜 그런지 적어 두는 시작 노드와 에이전트 스킬. 위키는 없어요.",
+    "shapeBothTitle": "둘 다",
+    "shapeBothBody": "지도와 위키를 나란히. 위키가 지도에 노드를 제안할 수 있어요.",
+    "shapeBack": "뒤로"
   },
   "firstRunStarter": {
     "brand": "Ontology Atlas",
@@ -3172,7 +3181,14 @@
       "localScopeLoopback": "전송: 당신이 쓴 질문 + 폴더에서 고른 노드 발췌 → {host}. 이 컴퓨터 밖으로 나가지 않고, 기록에도 목적지가 {host} 로 남아요. 그게 나가지 않았다는 증거예요.",
       "localScopeRemote": "전송: 당신이 쓴 질문 + 폴더에서 고른 노드 발췌 → {host}. 이 주소는 이 컴퓨터 밖이라 기록에 {host} 가 목적지로 남아요.",
       "webDegradedLocalBody": "이 컴퓨터에서 도는 러너(Ollama · LM Studio 등)에 주소로 붙는 것도 브라우저에서는 안 돼요. 러너 쪽 설정을 바꿔도 마찬가지예요. 웹 화면에는 모델로 글을 보내는 길 자체를 두지 않기로 했거든요. 데스크톱 앱에서는 러너 주소만 적으면 되고 키는 필요 없어요. 보낸 기록에도 목적지가 이 컴퓨터로 남아요."
-    }
+    },
+    "workspaceShapeLabel": "이 폴더에 있는 것",
+    "workspaceShapeMap": "온톨로지 지도",
+    "workspaceShapeWiki": "위키",
+    "workspaceShapeCaption": "설정이 아니라 파일에서 읽습니다. 추가하면 시작 파일을 쓰고, 탭이 따라옵니다.",
+    "workspaceShapeStartMap": "지도 시작",
+    "workspaceShapeStartWiki": "위키 시작",
+    "workspaceShapeStarted": "이 폴더에 추가했어요."
   },
   "copyProjectLink": {
     "toastSuccess": "링크가 복사됐습니다",

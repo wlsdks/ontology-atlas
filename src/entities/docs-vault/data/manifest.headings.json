@@ -8970,6 +8970,11 @@
       "depth": 2,
       "text": "2026-09-05 — Meaning review keeps diagnostic analyses with their evidence and history",
       "slug": "2026-09-05-meaning-review-keeps-diagnostic-analyses-with-their-evidence-and-history"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-06 — A folder says what it holds; the rail reads the files, and creation asks once",
+      "slug": "2026-09-06-a-folder-says-what-it-holds-the-rail-reads-the-files-and-creation-asks-once"
     }
   ],
   "DEMO-SCENARIO": [
@@ -11199,6 +11204,11 @@
       "depth": 4,
       "text": "GitHub row + release-gate note + footer",
       "slug": "github-row-release-gate-note-footer"
+    },
+    {
+      "depth": 3,
+      "text": "First run — what the folder holds (2026-09-06)",
+      "slug": "first-run-what-the-folder-holds-2026-09-06"
     },
     {
       "depth": 3,

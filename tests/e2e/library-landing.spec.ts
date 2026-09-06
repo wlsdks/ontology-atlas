@@ -167,6 +167,13 @@ test.describe("A folder of pages and no nodes opens on the Library", () => {
     await expect(page.getByTestId("library-wiki")).toBeVisible({ timeout: 30_000 });
     await expect(page).toHaveURL(/\/en\/library\/?/);
     await expect(page.getByTestId("library-wiki")).toContainText("Wiki · 1");
+    // The rail reads the same files: a wiki without a map has no map doors, and keeps the
+    // wiki, the agent, MCP and history.
+    await expect(page.getByTestId("app-nav-rail-item-library")).toBeVisible();
+    await expect(page.getByTestId("app-nav-rail-item-agents")).toBeVisible();
+    await expect(page.getByTestId("app-nav-rail-item-map")).toHaveCount(0);
+    await expect(page.getByTestId("app-nav-rail-item-architecture")).toHaveCount(0);
+    await expect(page.getByTestId("app-nav-rail-item-insights")).toHaveCount(0);
     await expect(page.getByTestId("library-wiki")).not.toContainText("<the page name>");
   });
 });

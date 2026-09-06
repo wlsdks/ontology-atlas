@@ -56,8 +56,7 @@ import {
 } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
-import { isWikiPage } from "@/entities/docs-vault";
-import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
+import { describeVaultShape } from "@/shared/lib/vault-shape";
 import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` avoids colliding with the global DOM `History`
 // constructor (same aliasing as `AtlasGitPanel`).
@@ -766,12 +765,10 @@ function HomePageImpl() {
     if (vault.status !== "loaded" || !vault.manifest) return;
     if (landedManifestRef.current === vault.manifest) return;
     landedManifestRef.current = vault.manifest;
-    const docs = vault.manifest.docs ?? [];
-    const nodeCount = docs.filter(
-      (doc) => typeof doc.frontmatter?.kind === "string" && doc.frontmatter.kind.trim() !== "" && doc.frontmatter.kind !== "vault-readme",
-    ).length;
-    const wikiPageCount = docs.filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug)).length;
-    if (nodeCount === 0 && wikiPageCount > 0) router.replace(DESTINATION_HREF.library);
+    // A wiki without a map opens on the Library: the template alone says a person chose
+    // the wiki, so the empty map is not their first screen.
+    const shape = describeVaultShape(vault.manifest.docs ?? []);
+    if (!shape.map && shape.wiki) router.replace(DESTINATION_HREF.library);
   }, [router, vault.manifest, vault.status]);
   const tAgent = useTranslations("vaultAgentPanel");
   // With no bridge (the web build) neither the button nor the panel is drawn —

@@ -673,8 +673,12 @@ atlas/
 
 `init --documents` is the same folder for people who have documents and no
 code: `sources/` and `wiki/` with the template and the agent wiring, and none
-of the node folders. The map can be added later; a vault that holds wiki pages
-and no node opens on the Library instead of the map.
+of the node starter files. In the app, **Just start** asks the same question
+once — a documents wiki, an ontology map of a codebase, or both — and writes
+the answer as files. The tabs follow the files: a wiki without a map hides the
+map, the architecture reading and the analysis and opens on the Library; a map
+without a wiki hides the Library. Add the other part later from Settings ›
+Workspace, "This folder holds".
 
 ### Three kinds of file, and only one is the graph
 

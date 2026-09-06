@@ -11,7 +11,7 @@ export {
   rememberDeclinedCandidates,
 } from "./lib/declined-candidates";
 export { buildCompileBrief, selectCompileTargets } from "./lib/compile-brief";
-export { buildLintBrief, isMapKind, parseLintCandidates } from "./lib/lint-brief";
+export { buildLintBrief, isMapKind, parseLintCandidates, dropCandidatesWithNodes } from "./lib/lint-brief";
 export type { LintNodeCandidate } from "./lib/lint-brief";
 export { buildProposeNodeBrief } from "./lib/propose-node-brief";
 export { judgePageWrite } from "./lib/judge-page-write";

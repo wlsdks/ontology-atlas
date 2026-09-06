@@ -1065,6 +1065,16 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 
 ---
 
+### First run — what the folder holds (2026-09-06)
+
+"Just start" and "Create" open one question before writing anything: a documents wiki, an
+ontology map of a codebase, or both. The answer is written as files — the wiki's
+`wiki/_template.md`, the map's starter nodes and skills — and every folder of the fixed
+`atlas/` tree is made either way. Nothing is stored as a preference: `describeVaultShape`
+reads the folder, so a teammate who pulls it sees the same thing. A wiki without a map lands
+on `/library`. Settings › Workspace carries an add-only row, "This folder holds", whose one
+chip writes the missing part's starter files; the tabs follow the files.
+
 ### `/git` — Record (primary desktop destination; redesigned 2026-07-27)
 
 Architecture was added without replacing this destination. Git keeps its primary
@@ -1507,6 +1517,11 @@ just unmounted).
   (`src/shared/lib/nav-destination.ts`) — `BottomTabBar` uses the same semantic
   resolver, so a route has one destination even when mobile intentionally
   omits its button.
+
+The rail draws only the destinations the folder earns (`destinationsForVaultShape`, 2026-09-06):
+a wiki without a map hides Map, Architecture, Docs, Insights and Projects; a map without a wiki
+hides the Library; Agents, MCP and History stay; an empty folder, or no folder, shows all nine.
+The phone tabs and the `G` keys read the same verdict.
 
 ### `AppSettingsMenu` (app shell + contextual page headers)
 - The old 5-tab settings modal is now one compact settings sheet

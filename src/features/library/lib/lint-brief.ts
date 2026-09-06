@@ -197,3 +197,24 @@ export function parseLintCandidates(text: string | null | undefined): LintNodeCa
   }
   return [];
 }
+
+/**
+ * Drop the candidates that already became nodes.
+ *
+ * The list is the Check-the-wiki report's, and it does not know what happened after: on
+ * the installed app (2026-09-06) "Timber sash frames" stayed listed with its "Propose as
+ * node" chip after the card had written `elements/timber-sash-frames`. A node whose
+ * title is the candidate's name, outside `wiki/`, retires the row.
+ */
+export function dropCandidatesWithNodes(
+  candidates: ReadonlyArray<LintNodeCandidate>,
+  docs: ReadonlyArray<{ slug: string; frontmatter: Record<string, unknown> }>,
+): LintNodeCandidate[] {
+  const titles = new Set(
+    docs
+      .filter((doc) => !doc.slug.startsWith("wiki/") && typeof doc.frontmatter.kind === "string")
+      .map((doc) => String(doc.frontmatter.title ?? "").trim().toLowerCase())
+      .filter((title) => title !== ""),
+  );
+  return candidates.filter((candidate) => !titles.has(candidate.name.trim().toLowerCase()));
+}

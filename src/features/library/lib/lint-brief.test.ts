@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildLintBrief, isMapKind, parseLintCandidates } from "./lint-brief";
+import { buildLintBrief, dropCandidatesWithNodes, isMapKind, parseLintCandidates } from "./lint-brief";
 
 const PAGES = [
   { slug: "wiki/plan", title: "Plan", sourcePaths: ["sources/plan.pdf"], createdBy: "agent:claude", compiledAt: null },
@@ -94,5 +94,19 @@ describe("only what the code builds may become a node", () => {
   it("admits domain, capability and element and refuses person, organisation and other", () => {
     expect(["domain", "capability", "element"].every((k) => isMapKind(k as never))).toBe(true);
     expect(["person", "organisation", "other"].some((k) => isMapKind(k as never))).toBe(false);
+  });
+});
+
+describe("dropCandidatesWithNodes", () => {
+  it("retires a candidate once a node outside wiki/ carries its name", () => {
+    const candidates = [
+      { name: "Timber sash frames", kind: "element" as const, pages: ["wiki/a"], why: "" },
+      { name: "Platform lift", kind: "element" as const, pages: ["wiki/a"], why: "" },
+    ];
+    const docs = [
+      { slug: "elements/timber-sash-frames", frontmatter: { kind: "element", title: "timber sash frames" } },
+      { slug: "wiki/platform-lift", frontmatter: { title: "Platform lift" } },
+    ];
+    expect(dropCandidatesWithNodes(candidates, docs).map((c) => c.name)).toEqual(["Platform lift"]);
   });
 });
