@@ -56,7 +56,7 @@ const LIBRARY_GRAPH_ITERATIONS = 120;
  * a layout at all. A folder that large is an overview of an overview, and a person
  * looking at it is reading shape, not positions.
  */
-function iterationsFor(order: number): number {
+export function iterationsFor(order: number): number {
   if (order <= 600) return LIBRARY_GRAPH_ITERATIONS;
   return Math.max(40, Math.round((LIBRARY_GRAPH_ITERATIONS * 600) / order));
 }
