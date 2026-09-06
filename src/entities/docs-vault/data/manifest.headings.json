@@ -6484,6 +6484,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-07 — Markdown under sources/ is a raw source, not a shadow page",
+      "slug": "2026-09-07-markdown-under-sources-is-a-raw-source-not-a-shadow-page"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-07 — Attaching an MCP server is a catalogue pick; a deep link only pre-fills",
       "slug": "2026-09-07-attaching-an-mcp-server-is-a-catalogue-pick-a-deep-link-only-pre-fills"
     },
