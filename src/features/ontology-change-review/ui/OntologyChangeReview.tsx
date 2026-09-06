@@ -9,20 +9,19 @@ import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { RowButton } from '@/shared/ui';
+import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
+
+import { fieldNameKey, sentenceMapChange, stringList } from '../lib/change-summary';
 
 function formatValue(value: unknown): string {
   if (value === null) return 'null';
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  // A map of sentences (relation_notes) reads as one line per target, not as a JSON
-  // string a person has to parse at a permission card (owner, 2026-09-06).
-  if (typeof value === 'object' && !Array.isArray(value)) {
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length > 0 && entries.every(([, v]) => typeof v === 'string')) {
-      return entries.map(([k, v]) => `${k}\n${String(v)}`).join('\n\n');
-    }
-  }
+  // A list of slugs is a list, and it reads as one per line. `["a","b"]` is the request's
+  // serialization, not the change (owner, 2026-09-06: the card read as a debugger's dump).
+  const list = stringList(value);
+  if (list) return list.join('\n');
   try {
     return JSON.stringify(value);
   } catch {
@@ -47,18 +46,35 @@ function isLongValue(text: string): boolean {
   return text.length > LONG_VALUE_CHARS || text.split('\n').length > LONG_VALUE_LINES;
 }
 
-function FieldValue({ id, text }: { id: string; text: string }) {
+/**
+ * A block of the change's own text, folded when it is long enough to push the two answers out of
+ * reach. Shared by a field value and by one sentence of a sentence map, so a long reason folds the
+ * same way a long body does rather than growing the card until the buttons leave the frame.
+ */
+function FoldedText({ id, text, tone }: { id: string; text: string; tone: 'value' | 'sentence' }) {
   const t = useTranslations('ontologyChangeReview');
   const [open, setOpen] = useState(false);
   const long = isLongValue(text);
   return (
-    <dd
-      data-testid="ontology-change-review-field-value"
-      data-long={long ? 'true' : undefined}
-      data-folded={long ? String(!open) : undefined}
-      className="min-w-0 break-words text-[color:var(--color-text-primary)]"
-    >
-      <span id={id} className={cn('block whitespace-pre-line break-words', long && !open && 'line-clamp-6')}>
+    <>
+      <span
+        id={id}
+        /*
+          The fold marker sits on the text itself rather than on the row around it: one row can now
+          carry a previous value and a new one, and a sentence map carries one of these per target,
+          so 「is this folded?」 is a fact about a block of text and not about the field.
+        */
+        data-testid="ontology-change-review-text"
+        data-long={long ? 'true' : undefined}
+        data-folded={long ? String(!open) : undefined}
+        className={cn(
+          'block whitespace-pre-line break-words',
+          tone === 'sentence'
+            ? 'text-body leading-prose text-[color:var(--color-text-primary)]'
+            : 'text-[color:var(--color-text-primary)]',
+          long && !open && 'line-clamp-6',
+        )}
+      >
         {text}
       </span>
       {long ? (
@@ -80,14 +96,95 @@ function FieldValue({ id, text }: { id: string; text: string }) {
           {t(open ? 'showLess' : 'showMore')}
         </button>
       ) : null}
-    </dd>
+    </>
   );
 }
 
-function ChangeDetails({ item }: { item: OntologyChangeItem }) {
+/**
+ * The name of a frontmatter key, in this product's words, with the key itself kept beneath it.
+ *
+ * ⚠️ Both halves are load-bearing. The plain word is what makes the row answerable — 「connection
+ * reasons」 says what is being written where `relation_notes` only says which key holds it. The raw key stays
+ * because it is what will literally appear in the Markdown, and because a person who opens the file
+ * afterwards must find the same word there. A key this product cannot name in plain words shows
+ * only its raw spelling; a friendly name invented for an unknown key is the one thing this card
+ * must never do.
+ */
+function FieldName({ fieldKey, testId }: { fieldKey: string; testId: string }) {
+  const t = useTranslations('ontologyChangeReview');
+  const nameKey = fieldNameKey(fieldKey);
+  return (
+    <dt
+      data-testid={testId}
+      data-field-key={fieldKey}
+      className="break-words text-[color:var(--color-text-quaternary)]"
+    >
+      {nameKey ? (
+        <>
+          <span className="block text-[color:var(--color-text-tertiary)]">{t(nameKey)}</span>
+          <span className="block break-words font-mono text-caption leading-caption">{fieldKey}</span>
+        </>
+      ) : (
+        <span className="block break-words font-mono">{fieldKey}</span>
+      )}
+    </dt>
+  );
+}
+
+/**
+ * One target and the sentence that will be written about it.
+ *
+ * `relation_notes` arrives as a map — eight reasons for eight targets — and it used to be printed
+ * as one JSON string, then as one text block of alternating lines. Neither is a row a person reads.
+ * One row per target, the target quiet and the sentence at reading size, is the only shape in which
+ * 「is this right?」 can be answered per line.
+ */
+function SentenceRow({
+  id,
+  entry,
+}: {
+  id: string;
+  entry: { target: string; text: string; before?: string };
+}) {
+  const t = useTranslations('ontologyChangeReview');
+  return (
+    <li
+      data-testid="ontology-change-review-entry-row"
+      className="grid gap-0.5 border-t border-[color:var(--color-divider)] pt-2 first:border-t-0 first:pt-0"
+    >
+      <p className="break-words font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+        {entry.target}
+      </p>
+      {entry.before === undefined ? null : (
+        <p className="break-words text-label leading-label text-[color:var(--color-text-quaternary)]">
+          <span className="mr-1.5 text-caption">{t('beforeLabel')}</span>
+          {entry.before}
+        </p>
+      )}
+      <div className="min-w-0">
+        <FoldedText id={id} text={entry.text} tone="sentence" />
+      </div>
+    </li>
+  );
+}
+
+function ChangeDetails({
+  item,
+  operation,
+}: {
+  item: OntologyChangeItem;
+  operation: OntologyChangeSet['operation'];
+}) {
   const t = useTranslations('ontologyChangeReview');
   const visibleFields = item.fields.slice(0, 8);
   const hiddenCount = Math.max(0, item.fields.length - visibleFields.length);
+  /*
+   * ⚠️ **Never draw a before-value the request did not carry.** `OntologyChangeField.before` is
+   * populated only by an editor that already holds the document on disk; an ACP request carries the
+   * requested after-values and nothing else. So the card states which of the two situations it is
+   * in rather than letting a person read a bare value as 「this replaces nothing」.
+   */
+  const carriesBefore = item.fields.some((field) => field.before !== undefined);
 
   return (
     <>
@@ -131,33 +228,89 @@ function ChangeDetails({ item }: { item: OntologyChangeItem }) {
       ) : null}
 
       {visibleFields.length > 0 ? (
-        <dl className="grid gap-1.5 text-label">
-          {visibleFields.map((field) => (
-            /* In the 352px relation panel, 6rem keeps the current long keys readable;
-               minmax(0,1fr) plus break-words still lets unbroken paths wrap when needed. */
-            <div
-              key={field.key}
-              data-testid="ontology-change-review-field-row"
-              className="grid grid-cols-[6rem_minmax(0,1fr)] gap-2"
-            >
-              <dt
-                data-testid="ontology-change-review-field-key"
-                className="break-words font-mono text-[color:var(--color-text-quaternary)]"
+        <dl className="grid gap-2 text-label">
+          {visibleFields.map((field) => {
+            const sentences = sentenceMapChange(field.after, field.before);
+            if (sentences) {
+              /*
+                A sentence map takes the full width instead of the 6rem key track: its values are
+                sentences, and 96px of label beside them would leave about 240px of the 352px panel
+                for prose that is the whole point of the row.
+              */
+              return (
+                <div key={field.key} data-testid="ontology-change-review-entry-group" className="grid gap-1.5">
+                  <FieldName fieldKey={field.key} testId="ontology-change-review-entry-key" />
+                  <dd className="min-w-0">
+                    <ul className="grid gap-2">
+                      {sentences.map((entry) => (
+                        <SentenceRow
+                          key={entry.target}
+                          id={`ontology-change-review-sentence-${item.key}-${field.key}-${entry.target}`}
+                          entry={entry}
+                        />
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+              );
+            }
+            const afterText = formatValue(field.after);
+            return (
+              /* In the 352px relation panel, 6rem keeps the current long keys readable;
+                 minmax(0,1fr) plus break-words still lets unbroken paths wrap when needed. */
+              <div
+                key={field.key}
+                data-testid="ontology-change-review-field-row"
+                className="grid grid-cols-[6rem_minmax(0,1fr)] gap-2"
               >
-                {field.key}
-              </dt>
-              <FieldValue
-                id={`ontology-change-review-value-${item.key}-${field.key}`}
-                text={formatValue(field.after)}
-              />
-            </div>
-          ))}
+                <FieldName fieldKey={field.key} testId="ontology-change-review-field-key" />
+                <dd
+                  data-testid="ontology-change-review-field-value"
+                  data-has-before={field.before === undefined ? undefined : 'true'}
+                  className="min-w-0 break-words text-[color:var(--color-text-primary)]"
+                >
+                  {field.before === undefined ? null : (
+                    /*
+                      Before and after are stacked and labelled rather than joined by an arrow.
+                      A body, an element list and a reason are all multi-line values here, and
+                      `old → new` on one line is legible only while both sides are short — one
+                      shape that holds for every value beats two that depend on its length.
+                    */
+                    <>
+                      <span className="mb-1 block whitespace-pre-line break-words text-[color:var(--color-text-quaternary)]">
+                        <span className="mr-1.5 text-caption">{t('beforeLabel')}</span>
+                        {formatValue(field.before)}
+                      </span>
+                      <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">
+                        {t('afterLabel')}
+                      </span>
+                    </>
+                  )}
+                  <FoldedText
+                    id={`ontology-change-review-value-${item.key}-${field.key}`}
+                    text={afterText}
+                    tone="value"
+                  />
+                </dd>
+              </div>
+            );
+          })}
           {hiddenCount > 0 ? (
             <div className="text-caption text-[color:var(--color-text-quaternary)]">
               {t('moreFields', { count: hiddenCount })}
             </div>
           ) : null}
         </dl>
+      ) : null}
+
+      {visibleFields.length > 0 && !carriesBefore ? (
+        <p
+          data-testid="ontology-change-review-value-note"
+          data-note={operation === 'create' ? 'new' : 'after-only'}
+          className="break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+        >
+          {t(operation === 'create' ? 'allValuesNew' : 'afterValuesOnly')}
+        </p>
       ) : null}
     </>
   );
@@ -167,11 +320,13 @@ function ChangeItemRow({
   item,
   index,
   active,
+  operation,
   onSelect,
 }: {
   item: OntologyChangeItem;
   index: number;
   active: boolean;
+  operation: OntologyChangeSet['operation'];
   onSelect: () => void;
 }) {
   const t = useTranslations('ontologyChangeReview');
@@ -226,7 +381,7 @@ function ChangeItemRow({
             */
             className="ai-row-disclosure-body grid gap-2 pb-2.5 pl-7 pr-1 pt-1.5"
           >
-            <ChangeDetails item={item} />
+            <ChangeDetails item={item} operation={operation} />
           </div>
         ) : null}
       </div>
@@ -267,10 +422,32 @@ export function OntologyChangeReview({
       data-active-item={activeIndex}
       className="grid gap-2"
     >
-      <div className="flex min-w-0 items-baseline justify-between gap-2">
-        <p className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-          {t(`operation.${changeSet.operation}`)}
-        </p>
+      {/*
+        ⚠️ **The address line, not a second title.** The card's own headline now says the change in
+        plain words, so repeating 「Update concept」 at the same weight underneath would be the
+        duplicate line this card has been criticised for twice. What is left here is what the
+        sentence above cannot carry: the exact document the bytes land in — a file header, the way a
+        pull request names the file before showing the hunk — with the operation demoted to a chip
+        beside it.
+      */}
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span
+            data-testid="ontology-change-review-operation"
+            className={badgeClass({
+              shape: 'micro',
+              className:
+                'border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)]',
+            })}
+          >
+            {t(`operation.${changeSet.operation}`)}
+          </span>
+          {!batch && activeItem?.target ? (
+            <p className="min-w-0 break-words font-mono text-label text-[color:var(--color-text-secondary)]">
+              {activeItem.target}
+            </p>
+          ) : null}
+        </div>
         {batch ? (
           <span className="shrink-0 text-caption text-[color:var(--color-text-quaternary)]">
             {t('itemCount', { count: changeSet.itemCount })}
@@ -293,6 +470,7 @@ export function OntologyChangeReview({
                 item={item}
                 index={index}
                 active={index === activeIndex}
+                operation={changeSet.operation}
                 onSelect={() => choose(index)}
               />
             ))}
@@ -306,12 +484,7 @@ export function OntologyChangeReview({
               'border-t border-[color:var(--color-divider)] pt-2',
           )}
         >
-          {activeItem.target ? (
-            <p className="break-words font-mono text-label text-[color:var(--color-text-secondary)]">
-              {activeItem.target}
-            </p>
-          ) : null}
-          <ChangeDetails item={activeItem} />
+          <ChangeDetails item={activeItem} operation={changeSet.operation} />
         </div>
       ) : null}
     </div>
