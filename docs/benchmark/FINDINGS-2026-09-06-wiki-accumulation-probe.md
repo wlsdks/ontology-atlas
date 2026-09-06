@@ -204,3 +204,64 @@ per source, linked both ways, never merged. `shared-source-unlinked` fired six t
 F1 because every page that carried the disagreement listed the minutes as a source; it
 now fires only when the shared source is a page's primary (first-listed) source, which
 is what "two write-ups of one document" meant.
+
+## Fifth pass, same evening: a second corpus, and the order of arrival
+
+Two probes tested whether the rules generalise beyond the documents they were tuned on.
+
+**Probe G, an unseen corpus.** Seven new documents about a library reading-room
+renovation (charter, survey, quotes, council minutes, risk register, change request,
+a volunteer email), four planted disagreements (reopening date, seating, budget, the
+platform lift), ten sealed questions including three about provenance and one about
+which document is stale on the most points. Same brief, chronological order.
+
+| | Wiki G |
+|---|---|
+| Correct, 10 sealed questions | 10 / 10 |
+| First page carries the current value or a flag | 4 / 4 |
+| Older figure kept beside the newer | 3 / 3 |
+| Pages · links · longest page | 7 · 48 · 134 lines |
+| `wiki-validate`, page and folder codes | 0 |
+| Lint brief | 0 planted disagreements left to report; 1 finer disagreement, 3 superseded, 1 missing link, 4 names without a page |
+
+**Probe H, corpus 1 in reverse order.** The same seven documents, latest first, so the
+plan that three later documents replaced arrived last. The reader still answered
+11.5 of 12, but the plan page carried neither the moved date nor the cut budget — only
+"much of this plan was later revised" and a link. Two of four first pages were false.
+The writer had treated an old document arriving late as context already settled
+elsewhere, and rule h, written for "a new source disagrees with a claim already on a
+page", did not say what to do when the new source is the older one. It now does: the
+page written from an older document names the figure that replaced its own, with its
+citation, whichever arrived first. Probe H2 reran the same order with that sentence.
+
+| | Wiki H (rule h as shipped) | Wiki H2 (rule h order-independent) | Wiki H3 (rule h as a per-figure checklist) |
+|---|---|---|---|
+| Correct, 12 sealed questions | 11.5 / 12 | 12 / 12 | 11.5 / 12 |
+| First page carries the current value or a flag | 2 / 4 | 3 / 4 | 4 / 4 |
+| Pages · links | 7 · 52 | 7 · 33 | 7 · 52 |
+| `wiki-validate` failing pages | 1 (2 `citation-target-missing`) | 0 | 1 (1 `citation-target-missing`) |
+
+H2 recovered the moved date and the new owner on the plan page and left the budget:
+the writer confirmed the plan's 180,000 against the memo's figure and never looked for
+the minutes' 150,000. The sentence asked for a judgement and got one. Rule h now asks
+for a checklist instead — for every date, owner, amount, count and setting on the new
+page, find the same item on the existing pages and record any value that differs — and
+probe H3 reran the order a third time with that wording.
+
+With the checklist, the plan page arriving last carried the moved date, the new owner
+and the cut budget beside its own figures, and the architecture page carried the
+runbook's two overrides: 4 of 4. The cost of the order is real — the last run of H3
+rewired six pages and took eleven minutes — and the residual `citation-target-missing`
+on one page is the writer forgetting a `sources:` line, which the permission card now
+shows before Allow.
+
+What the evening settles and leaves:
+
+- The rules generalise to a corpus they were not tuned on (G: 10 of 10, 4 of 4, clean).
+- Order of arrival is a real adversary. It took two rewordings of one rule to make the
+  page written from the oldest document carry what replaced it; the wording that worked
+  is a checklist over figures, not a sentence about judgement.
+- A page written from the earliest document accrues a note from every later one (the
+  charter reached 134 lines, the plan 129). That is the price of "what one document
+  said" staying on its own page; whether a reader wants those notes folded or listed is
+  the next probe, with a person reading rather than a model.

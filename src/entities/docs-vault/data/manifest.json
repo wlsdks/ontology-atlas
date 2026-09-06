@@ -474,7 +474,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Question: the LLM Wiki pattern (Karpathy, 2026-04-04) claims its value is accumulation: each new source revises existing pages and flags what it contradicts. The Library's Compile brief embeds the page template and six rules but never names existing pages. Does a wiki built one source at a time, the way the Library run",
-      "wordCount": 2349,
+      "wordCount": 3055,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "wiki/<slug>",
@@ -501,7 +501,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · graph tooling · a macOS local workbench all ",
-      "wordCount": 3240,
+      "wordCount": 3275,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-25",
@@ -4521,7 +4521,7 @@
       },
       {
         "fromSlug": "benchmark/README",
-        "context": "55-line page and 11), proves the permission card's verdict on a live turn, and adds the app-written `wiki/_log.md`. | | **[`FINDINGS-2026-08-31.md`]** | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | [`FINDINGS-2",
+        "context": "he same documents in reverse order, where first pages fell to 2/4 until rule h became a per-figure checklist (4/4). | | **[`FINDINGS-2026-08-31.md`]** | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | [`FINDINGS-2",
         "linkText": "`FINDINGS-2026-08-31.md`"
       }
     ],

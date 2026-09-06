@@ -115,6 +115,8 @@ describe("the nine rules are all present, in both locales", () => {
         // h — a disagreement lives on both pages with both citations
         "on every page that carries either claim",
         "On both pages, every source the page now cites is listed in its `sources:`",
+        "whichever document arrived first",
+        "for every date, owner, amount, count and setting on the new page",
         "Never silently replace the older figure",
         // i — pages link the pages they talk about, only to targets that exist
         "[[wiki/<slug>]]",
@@ -138,6 +140,8 @@ describe("the nine rules are all present, in both locales", () => {
         "문서를 만들지 말고 답에서 그렇다고 말해",
         "두 출처를 모두 인용해서",
         "옛 문서는 새 원문을 올려",
+        "어느 문서가 먼저 들어왔든 같아",
+        "날짜·담당자·금액·개수·설정 하나하나마다",
         "옛 수치를 말없이 바꿔치기하지 마",
         "[[wiki/<슬러그>]]",
         "없는 문서를 지어내지 마",

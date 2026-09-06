@@ -2724,6 +2724,11 @@
       "depth": 2,
       "text": "Fourth pass, same day: the gate, the log, and one page per source",
       "slug": "fourth-pass-same-day-the-gate-the-log-and-one-page-per-source"
+    },
+    {
+      "depth": 2,
+      "text": "Fifth pass, same evening: a second corpus, and the order of arrival",
+      "slug": "fifth-pass-same-evening-a-second-corpus-and-the-order-of-arrival"
     }
   ],
   "benchmark/FINDINGS-2026-09-06-wiki-probe": [
