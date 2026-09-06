@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import type { LibrarySourceRow } from "@/entities/docs-vault";
+
 import { libraryBrainLabel, libraryCompileBlockedReason } from "./compile-availability";
 import type { LibraryLocalModel } from "./use-library-agent";
 
@@ -25,12 +27,25 @@ const LOCAL: LibraryLocalModel = {
   onThisComputer: true,
 };
 
+function source(path: string, format: string): LibrarySourceRow {
+  return {
+    path,
+    name: path.slice(path.lastIndexOf("/") + 1),
+    format,
+    bytes: 1024,
+    mtime: 1,
+    state: "not-compiled",
+    citedBy: [],
+  };
+}
+
 const READY = {
   route: "agent",
   inApp: true,
   sourceCount: 3,
   needsCompileCount: 2,
   localModel: null,
+  sources: [source("sources/plan.md", "md"), source("sources/retro.txt", "txt")],
 } as const;
 
 describe("why Compile cannot run — one answer, in the order a person can act", () => {
@@ -50,10 +65,50 @@ describe("why Compile cannot run — one answer, in the order a person can act",
     );
   });
 
-  it("names the local model's own limit rather than reporting no writer at all", () => {
+  it("lets a loopback runner compile the formats it can read", () => {
+    // The 2026-09-06 record's own falsifier: a local catalogue that reads a source and
+    // writes a page under one consent card reopens local Compile. It exists, so this
+    // route stops being a reason.
     expect(
       libraryCompileBlockedReason({ ...READY, route: "local", localModel: LOCAL }, t),
-    ).toBe("stage.blockedLocal");
+    ).toBeNull();
+  });
+
+  it("refuses a runner that is not on this computer, naming the host", () => {
+    // Compile sends the contents of the documents, not only their names.
+    expect(
+      libraryCompileBlockedReason(
+        {
+          ...READY,
+          route: "local",
+          localModel: { model: "llama3.1:8b", host: "gpu.example.com", onThisComputer: false },
+        },
+        t,
+      ),
+    ).toBe("stage.blockedLocalRemote");
+  });
+
+  it("names the formats rather than the route when everything waiting needs a parser", () => {
+    expect(
+      libraryCompileBlockedReason(
+        {
+          ...READY,
+          route: "local",
+          localModel: LOCAL,
+          sources: [source("sources/finance.pdf", "pdf"), source("sources/deck.pptx", "pptx")],
+        },
+        t,
+      ),
+    ).toBe("stage.blockedLocalFormats");
+  });
+
+  it("still distinguishes a finished folder on the local route", () => {
+    expect(
+      libraryCompileBlockedReason(
+        { ...READY, route: "local", localModel: LOCAL, needsCompileCount: 0 },
+        t,
+      ),
+    ).toBe("stage.blockedNothingWaiting");
   });
 
   it("says no writer is set up when neither route resolved", () => {
