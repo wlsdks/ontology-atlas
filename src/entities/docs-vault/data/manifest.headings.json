@@ -6313,6 +6313,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-06 — A folder of pages and no nodes opens on the Library",
+      "slug": "2026-09-06-a-folder-of-pages-and-no-nodes-opens-on-the-library"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-06 — One vault folder with a fixed inside; `atlas/` by default in a repository, and a documents-only scaffold",
       "slug": "2026-09-06-one-vault-folder-with-a-fixed-inside-atlas-by-default-in-a-repository-and-a-documents-only-scaffold"
     },

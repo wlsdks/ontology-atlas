@@ -56,6 +56,8 @@ import {
 } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
+import { isWikiPage } from "@/entities/docs-vault";
+import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
 import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` avoids colliding with the global DOM `History`
 // constructor (same aliasing as `AtlasGitPanel`).
@@ -749,6 +751,28 @@ function HomePageImpl() {
     [selectedSlug, renderProjects],
   );
   const vault = useLocalVault();
+  /**
+   * **A folder of pages and no nodes is a wiki on its own, and it opens on the Library.**
+   *
+   * The vault shape is one folder (ledger, 2026-09-06): `sources/` and `wiki/` always,
+   * the map's folders when there is a map. A person who opened Atlas on documents used
+   * to land here, on an empty canvas that had nothing to draw and said so. Read from the
+   * manifest, not from the drawn graph — the graph is derived later and is empty for a
+   * moment on every open — and done once per manifest, so a person who then walks back
+   * to the map on purpose is not sent away again.
+   */
+  const landedManifestRef = useRef<object | null>(null);
+  useEffect(() => {
+    if (vault.status !== "loaded" || !vault.manifest) return;
+    if (landedManifestRef.current === vault.manifest) return;
+    landedManifestRef.current = vault.manifest;
+    const docs = vault.manifest.docs ?? [];
+    const nodeCount = docs.filter(
+      (doc) => typeof doc.frontmatter?.kind === "string" && doc.frontmatter.kind.trim() !== "" && doc.frontmatter.kind !== "vault-readme",
+    ).length;
+    const wikiPageCount = docs.filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug)).length;
+    if (nodeCount === 0 && wikiPageCount > 0) router.replace(DESTINATION_HREF.library);
+  }, [router, vault.manifest, vault.status]);
   const tAgent = useTranslations("vaultAgentPanel");
   // With no bridge (the web build) neither the button nor the panel is drawn —
   // painting a door that will not open is the opposite of honest degradation.

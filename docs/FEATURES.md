@@ -694,7 +694,10 @@ facts the folder holds about a file Atlas has never opened (path, format, size, 
 sha256 or "not measured", and the pages citing it) plus one door that reveals it in Finder
 or hands over the bytes. With nothing selected the reader opens the first wiki page. With
 no folder open the whole screen is one centred stage naming the two kinds of file and
-offering the picker. Below `lg` there is one column and selecting swaps it, with a way
+offering the picker. A folder that holds wiki pages and no `kind:` node opens here rather
+than on the map: it is a wiki on its own, and an empty canvas had nothing to say to the
+person who chose it (ledger, 2026-09-06). A folder with even one node still opens on the
+map. Below `lg` there is one column and selecting swaps it, with a way
 back.
 
 - **Sources** — every non-`.md` file under `sources/**`, listed by name, format, size and

@@ -838,7 +838,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 106107,
+      "wordCount": 106389,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "wiki/…",
@@ -946,7 +946,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 30057,
+      "wordCount": 30108,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "ANALYSIS-RECORDS",

@@ -1,6 +1,7 @@
 'use client';
 
 import { type AgentClientId, filesForClient } from '../lib/agent-clients';
+import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity-log';
 import {
@@ -1673,6 +1674,13 @@ export function useLocalVaultInternal() {
        * its `/` listing — evidence: the `VAULT_SKILL_NAMES` comment in `ontology-starter.ts`.
        */
       ...vaultSkillFilesForLocale(starterLocale),
+      /*
+       * The wiki's furniture. The vault shape is one folder with `sources/` and `wiki/`
+       * always (ledger, 2026-09-06), and the CLI's `init` writes the page template into
+       * every new vault; a folder the app started used to lack it, so the two doors left
+       * two shapes. The template is the same string the validator enforces.
+       */
+      { relPath: 'wiki/_template.md', content: WIKI_PAGE_TEMPLATE },
     ]) {
       try {
         const resolved = await getParentAndName(guide.relPath.replace(/\.md$/, ''), true);
@@ -1693,6 +1701,12 @@ export function useLocalVaultInternal() {
       } catch {
         skipped += 1;
       }
+    }
+    // `sources/` from the first minute, in both shapes, so the folder says where files go.
+    try {
+      await state.handle?.getDirectoryHandle('sources', { create: true });
+    } catch {
+      // A folder that refuses a directory still has its pages; the Library creates it on Add files.
     }
 
     // Ready-to-use agent configs for "open the vault folder itself" flows.

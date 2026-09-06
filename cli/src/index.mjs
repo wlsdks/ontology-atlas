@@ -491,9 +491,10 @@ async function runInit(targetArg, opts = {}) {
       (documentsOnly && documentsSkip(rel)) ||
       (!skillsStayInVault && (rel === skillsRelativeRoot || rel.startsWith(`${skillsRelativeRoot}${sep}`))),
   });
-  if (documentsOnly) {
-    mkdirSync(join(target, 'sources'), { recursive: true });
-  }
+  // `sources/` is part of the shape in both modes: raw documents land there whether the
+  // folder is a wiki on its own or the map's vault, and a folder that shows it from the
+  // first minute tells the person where files go without a sentence.
+  mkdirSync(join(target, 'sources'), { recursive: true });
 
   // The same three skills, put where the agent will actually look for them.
   // Existing files are preserved: a person who has already written their own
