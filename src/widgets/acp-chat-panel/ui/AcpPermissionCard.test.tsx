@@ -335,3 +335,107 @@ describe('권한 카드 — 세 버튼이 각자의 답을 돌려준다', () => 
     expect(resolve).toHaveBeenCalledWith('reject');
   });
 });
+
+/**
+ * ⚠️ **The card has to be answerable in three seconds** (owner, installed app at 1512×982,
+ * 2026-09-06: *"can this design be improved? look at references… something is lacking"*).
+ *
+ * The measured screen: one fixed title — 「Review the proposed change」 — a fixed body sentence, an
+ * operation heading, and then the request itself: the slug in mono, the frontmatter key in mono,
+ * the argument beside it. Every line true, none of them the answer to *what will change, in which
+ * file*. `relation_notes` was one JSON string until that morning and one text block after it; both
+ * shapes ask a person to parse a value at a checkpoint that has the agent stopped.
+ *
+ * This is the case the redesign was built against — eight reasons written into one document — and
+ * it is checked here rather than only in the app because this card renders **only** under an ACP
+ * runtime, so it has no route to screenshot. The three claims are the three the owner has to be
+ * able to trust: the title says the change, the eight sentences are eight rows, and the two answers
+ * are outside the scroller no matter how long the change is.
+ */
+describe('온톨로지 쓰기 — 여덟 문장을 사람이 읽는 카드', () => {
+  const TARGETS = [
+    'domains/graph-modeling',
+    'domains/agent-collaboration',
+    'capabilities/contextual-editing',
+    'capabilities/mcp-server',
+    'capabilities/topology-map',
+    'elements/acp-permission-card',
+    'elements/ontology-change-review',
+    'elements/vault-session',
+  ];
+  const NOTES = Object.fromEntries(
+    TARGETS.map((target, index) => [target, `${target} 와 이어지는 이유 ${index + 1}.`]),
+  );
+
+  function writeCard() {
+    return (
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AcpPermissionCard
+          pending={{
+            request: {
+              title: 'mcp__atlas-vault__patch_concept',
+              toolCallId: 'tool-patch',
+              toolName: 'mcp__atlas-vault__patch_concept',
+              toolKind: 'other',
+              filePath: null,
+              reviewKind: 'ontology-write',
+              rawInput: {
+                slug: 'projects/ontology-atlas',
+                frontmatter: { relation_notes: NOTES },
+              },
+              options: [
+                { optionId: 'reject', kind: 'reject_once', name: '거절' },
+                { optionId: 'allow', kind: 'allow_once', name: '허용' },
+              ],
+            },
+            resolve: vi.fn(),
+          }}
+        />
+      </NextIntlClientProvider>
+    );
+  }
+
+  it('제목이 어느 문서에 무엇을 몇 개 적는지 그 말로 말한다', () => {
+    render(writeCard());
+    expect(
+      document.getElementById('acp-permission-title')?.textContent,
+      '제목이 모든 요청에 똑같이 참이면 아무것도 답해 주지 않는다',
+    ).toBe('ontology-atlas 문서에 연결 이유 8개를 적습니다');
+  });
+
+  it('문장 여덟 개는 줄 여덟 개로 읽힌다 — JSON 을 읽으라고 하지 않는다', () => {
+    render(writeCard());
+    const rows = screen.getAllByTestId('ontology-change-review-entry-row');
+    expect(rows).toHaveLength(8);
+    expect(rows[0]).toHaveTextContent('domains/graph-modeling');
+    expect(rows[7]).toHaveTextContent('elements/vault-session 와 이어지는 이유 8.');
+
+    const text = screen.getByTestId('acp-permission-card').textContent ?? '';
+    expect(text, '괄호와 따옴표를 사람이 풀어 읽게 하면 결정이 아니라 해독이 된다').not.toContain('{"');
+    // The document the bytes land in stays on screen exactly as it will be addressed.
+    expect(screen.getByText('projects/ontology-atlas')).toBeInTheDocument();
+  });
+
+  it('변경이 길어도 답할 두 버튼은 스크롤 바깥에 남는다', () => {
+    render(writeCard());
+    const card = screen.getByTestId('acp-permission-card');
+    const scroller = screen.getByTestId('acp-permission-body-scroll');
+    const reject = screen.getByTestId('acp-permission-reject');
+    const allow = screen.getByTestId('acp-permission-allow');
+
+    expect(scroller.className).toContain('overflow-y-auto');
+    expect(scroller.contains(screen.getAllByTestId('ontology-change-review-entry-row')[0])).toBe(true);
+    expect(scroller.contains(reject), '답이 스크롤 안에 있으면 긴 변경은 벽이 된다').toBe(false);
+    expect(scroller.contains(allow)).toBe(false);
+    expect(card.contains(reject)).toBe(true);
+    expect(card.contains(allow)).toBe(true);
+    expect(card.className).toContain('max-h-full');
+    // The wider grant never appears beside a semantic write.
+    expect(screen.queryByTestId('acp-permission-allow-always')).toBeNull();
+  });
+
+  it('여는 순간 초점은 거절 쪽이다 — 아무 키나 눌러 허용에 닿지 않는다', () => {
+    render(writeCard());
+    expect(document.activeElement).toBe(screen.getByTestId('acp-permission-reject'));
+  });
+});
