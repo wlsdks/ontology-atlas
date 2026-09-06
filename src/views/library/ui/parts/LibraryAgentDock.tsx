@@ -40,8 +40,14 @@ type AcpChatPanelProps = ComponentProps<typeof AcpChatPanel>;
  * would be two headings in eight pixels of each other.
  */
 export interface LibraryAgentOpeningRequest {
-  /** `compile` writes pages under the permission gate; `lint` reads them and reports; `propose` writes one node through the ontology-write card. */
-  kind: "compile" | "lint" | "propose";
+  /**
+   * `compile` writes pages under the permission gate; `lint` reads them and reports; `propose`
+   * writes one node through the ontology-write card; `import` fetches documents from a service
+   * the person connected and writes them under `sources/`. The dock is the same either way, but
+   * the attribute has to say which, or a capture of an import turn reads as a compile that
+   * behaved strangely.
+   */
+  kind: "compile" | "lint" | "propose" | "import";
   text: string;
   nonce: number;
 }

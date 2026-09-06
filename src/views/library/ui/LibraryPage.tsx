@@ -8,7 +8,11 @@ import { useLocalVault, useVaultIdentityScope } from "@/entities/vault-session";
 import { isWikiPage } from "@/entities/docs-vault";
 import type { LintNodeCandidate } from "@/features/library";
 import type { LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
+import { useRouter } from "@/i18n/navigation";
+import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { OpenVaultCta } from "@/features/docs-vault-local";
+import { useVaultConnectors } from "@/features/mcp-connectors";
+import { isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import {
   addSources,
   addSourcesInBrowser,
@@ -40,6 +44,7 @@ import {
 } from "@/widgets/doc-reading-pane";
 import { DocsVaultViewer } from "@/widgets/docs-vault";
 import { LibraryGraph } from "@/widgets/library-graph";
+import { LibraryImportDialog } from "@/widgets/library-import";
 import { cn } from "@/shared/lib/cn";
 import { getTauriVaultRootPath, revealTauriVaultFile } from "@/shared/lib/tauri-vault-fs";
 import { controlClass } from "@/shared/ui/control-class";
@@ -433,6 +438,24 @@ export function LibraryPage() {
     () => new Set((manifest?.docs ?? []).map((doc) => doc.slug)),
     [manifest],
   );
+
+  /*
+   * ── The third door: documents that are not on this computer yet ────────────────────────────
+   *
+   * Owner, 2026-09-07: *"connecting a service is mostly for the Library anyway — people want the
+   * things they already wrote somewhere else."* Add files and Find documents both assume the
+   * document is already on disk; for somebody whose notes live in Notion, neither is a door.
+   *
+   * The whole flow lives in `@/widgets/library-import` and never says MCP, stdio or environment
+   * variable. What it needs from this view is the two things only this view has: the folder's
+   * connector list to write the descriptor into, and the agent turn that does the fetching. The
+   * technical dialog on `/mcp` is unchanged and is the last tile, for a service the list does not
+   * know.
+   */
+  const connectors = useVaultConnectors(handle);
+  const importRouter = useRouter();
+  const [importOpen, setImportOpen] = useState(false);
+  const openImport = useCallback(() => setImportOpen(true), []);
   const handleCompile = useCallback(() => {
     /*
      * **A press that does nothing must never be silent** (installed app, 2026-09-05).
@@ -524,7 +547,12 @@ export function LibraryPage() {
         const after = stamp(latestDocsRef.current);
         const lastAgentText = [...completion.events].reverse().find((event) => event.kind === "agent")?.text ?? null;
         if (kind === "lint") setCandidates(parseLintCandidates(lastAgentText));
-        if (kind === "propose") return;
+        /*
+         * The wiki log records what happened to the wiki. A proposal writes one ontology node
+         * and an import writes documents under `sources/`; neither touches a page, so neither
+         * is an entry, or the log would claim a compile that never ran.
+         */
+        if (kind === "propose" || kind === "import") return;
         const summary =
           kind === "lint"
             ? describeLintTurn(lastAgentText)
@@ -790,6 +818,47 @@ export function LibraryPage() {
    * ⚠️ It is not "no sources". A folder with hand-written pages and no sources still has
    * a picture to draw and an index worth reading, so it keeps the workbench.
    */
+  /*
+   * The service door, shared by the empty stage and the workbench: the folder that has
+   * nothing in it yet is exactly where a person whose notes live elsewhere arrives.
+   */
+  const importDialog = (
+    <>
+    {/*
+      The service door. Blocking, because it ends in a connection being written into the
+      folder and a conversation opening — an errand with a beginning and an end, which is what
+      `Dialog` is for. It closes before it hands the brief over, so the dock is never behind a
+      scrim (`.claude/rules/design.md` forbids two blocking surfaces at once).
+    */}
+    <LibraryImportDialog
+      open={importOpen}
+      onClose={() => setImportOpen(false)}
+      onAttach={(connector) => connectors.upsert(connector)}
+      onBrief={(brief) => agent.start(brief, "import")}
+      /*
+       * ⚠️ **Whether the last press can do anything** (cold walkthrough, 2026-09-07). Only the
+       * coding-agent route can fetch from a service: `useLocalCompile` reads files already
+       * under `sources/` and has no tool that reaches outward, and a browser has no agent at
+       * all. Without this the dialog closed on a press that started nothing, which reads as a
+       * broken product rather than a surface that cannot do it.
+       */
+      canRunAgent={agent.route === "agent"}
+      /*
+       * Two different absences: a browser cannot start any program, while the installed app can
+       * and has simply verified no coding tool yet. The remedies differ too — one is the app,
+       * the other is the runtimes screen — so the card is told which it is meeting.
+       */
+      agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
+      /*
+       * A service this list does not know goes to the technical dialog, which lives on `/mcp`
+       * and is unchanged. `?tab=connectors` opens it on the half that adds one, so nobody
+       * arrives on the share tab wondering where the connectors went.
+       */
+      onOpenAdvanced={() => importRouter.push(`${DESTINATION_HREF.mcp}?tab=connectors`)}
+    />
+    </>
+  );
+
   if (libraryIsEmpty) {
     return (
       <main
@@ -804,8 +873,10 @@ export function LibraryPage() {
           busy={busy}
           onAddFiles={handleAddFiles}
           onFindDocuments={handleFindDocuments}
+          onImportFromService={openImport}
           t={t}
         />
+        {importDialog}
         {/* The same dialog the workbench uses: discovery proposes, a person approves. */}
         <FindDocumentsDialog
           open={findOpen}
@@ -887,6 +958,7 @@ export function LibraryPage() {
             onOpenSource={(row) => choose({ kind: "source", path: row.path })}
             onAddFiles={handleAddFiles}
             onFindDocuments={handleFindDocuments}
+            onImportFromService={openImport}
             onCompile={agent.route === "agent" || agent.route === "local" ? handleCompile : null}
             onLint={agent.route === "agent" ? handleLint : null}
             candidates={openCandidates}
@@ -1182,6 +1254,8 @@ export function LibraryPage() {
           onClose={() => agent.setOpen(false)}
         />
       ) : null}
+
+      {importDialog}
 
       {/* Discovery proposes; this dialog is where a person approves. Blocking, because it
           is asking to take copies of their files. */}

@@ -47,11 +47,11 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: an MCP screen, external Connectors default off. Library opens on a live graph of sources and write-ups a hand can pull apart, one stage on an empty folder, a compact stepper, one index column, a local model compiling behind a card. Insights repairs back-links. Meaning asks for reasons; trails say how steps connect. Strata: labelled planes.
+**Added**: an MCP screen; Connectors off by default, Notion, Atlassian and GitHub filling the form. Library opens on a live graph a hand can pull apart, one stage on an empty folder, a compact stepper, one index column, a door for notes kept elsewhere, a local model behind a card. Insights repairs back-links. Meaning asks for reasons; trails say how steps connect. Strata: named planes.
 
-**Changed**: Insights opens on four measures; Cone fills the canvas; Strata's plane names follow their planes or a corner, lit on hover; chat widens, keeps a clock, one height, closed dock; Agents and MCP read one column; connection cards lead with a reason; toasts sit under the toolbar.
+**Changed**: connectors add in three tabs under one search; Agents lists what it confirmed, the rest in a search window. Insights opens on four measures; Cone fills the canvas; chat widens, keeps a clock; Agents and MCP read one column; connection cards lead with a reason; toasts sit under the toolbar.
 
-**Fixed**: 3D relations stay visible at rest on any screen; a concept's centre is clickable; repeat lookups fold to a row; permission cards read plainly; rails stop blinking; reason fields grow; footprints follow curves; docks name tool and mode.
+**Fixed**: 3D relations stay visible; a concept's centre is clickable; repeat lookups fold; permission cards read plainly; rails stop blinking; footprints follow curves; docks name tool and mode.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 

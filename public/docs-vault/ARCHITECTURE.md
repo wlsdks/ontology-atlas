@@ -423,10 +423,17 @@ until a local manifest exists.
                            whole screen works on the web, because MCP attaches to the folder
                            rather than to an Atlas screen; discovery of already-registered
                            servers and keychain storage are the app-only halves and each says
-                           so where it is missing
+                           so where it is missing. ?install=<base64 server config> (2026-09-07)
+                           opens the add dialog pre-filled from an "Add to Ontology Atlas"
+                           link in the Cursor/VS Code shape, and never attaches on its own:
+                           an unknown field refuses the payload, no value crosses, every
+                           argument renders verbatim, and the switch stays off. The
+                           ontology-atlas:// URL scheme it is shaped for is NOT registered
+                           with macOS yet; that needs a Tauri deep-link plugin
 /library                   the project documents gathered into this folder and the wiki
                            pages written from them. Two panes: Sources and Wiki on the
-                           left with the three doors (Add files, Find documents, Compile),
+                           left with the doors (Add files, Find documents, Bring from a
+                           service, Compile),
                            and on the right either the selected wiki page in the shared
                            reading pane or, for a source, what the folder knows about a
                            file Atlas has never opened. Split out of /docs 2026-09-06:

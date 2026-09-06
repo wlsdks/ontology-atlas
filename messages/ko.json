@@ -241,7 +241,12 @@
         "loginHint": "이 도구에 로그인이 안 돼 있어요. 터미널에서 한 번 실행해 로그인하면 여기에 나타나요.",
         "loginUnknownHint": "이 도구에 로그인돼 있는지 물었지만 답을 받지 못했어요. 도구는 그대로 있어서 대화는 열립니다. 열다가 거절당하면 터미널에서 한 번 로그인하세요.",
         "diskNote": "대화를 시작하면 Atlas 가 그 도구용 설정 폴더를 앱 안에 따로 만들어요. 당신이 그 도구에 해 둔 설정은 건드리지 않아요. 이미 해 둔 로그인은 복사하지 않고 링크만 걸어서, 다시 로그인하지 않아도 되게 해요. 원본은 그대로 한 곳에 있어요.",
-        "webMcpLink": "MCP 열기"
+        "webMcpLink": "MCP 열기",
+        "othersDialogTitle": "나머지 코딩 도구 {count}개",
+        "othersSearchLabel": "검색",
+        "othersSearchPlaceholder": "이름, 또는 어떤 도구인지",
+        "othersNoneForSearch": "“{query}”와 맞는 도구가 없어요.",
+        "othersClose": "닫기"
       },
       "appUpdate": {
         "intro": "이 앱의 새 판이 나오면 우하단에 알려 드려요. 지금 바로 확인할 수도 있어요.",
@@ -4377,6 +4382,41 @@
       "url-not-http": "주소는 http:// 또는 https:// 로 시작해야 합니다.",
       "secret-literal": "토큰이 그대로 적혀 있습니다. 먼저 키체인으로 옮기십시오.",
       "value-missing": "키체인에서 가져오기로 한 변수인데 그 뒤에 아직 아무것도 없습니다."
+    },
+    "addTablistAriaLabel": "연결 도구를 추가하는 방법",
+    "tabFound": "이 컴퓨터에서 찾은 것",
+    "tabFoundCountTitle": "이 컴퓨터에 이미 등록된 MCP 서버",
+    "tabCatalogue": "카탈로그",
+    "tabCatalogueCountTitle": "이 빌드에 담겨 있는 서비스 수",
+    "tabCustom": "직접 적기",
+    "catalogueProvenance": "{date}에 담은 {count}개짜리 짧은 목록이고, 이 빌드에 그대로 들어 있어요. Atlas가 검증한 목록은 아니고, 앱이 켜져 있는 동안 어디에서도 받아 오지 않아요. 여기 없는 건 「직접 적기」로 넣으면 돼요.",
+    "catalogueNoneForSearch": "목록에는 “{query}”와 맞는 게 없어요. 「직접 적기」로는 넣을 수 있어요.",
+    "catalogueChoose": "연결 설정",
+    "catalogueDocs": "{title} 공식 안내",
+    "sourceRegistry": "공식 레지스트리",
+    "sourceCurated": "{date} 확인",
+    "variantRemote": "주소로 연결 {label}",
+    "variantLocal": "이 컴퓨터에서 실행, {runtime}(으)로 시작",
+    "variantAsksOauth": "적을 게 없어요. 로그인 창은 대화 중인 코딩 도구가 열고, 받은 것도 그 도구가 가집니다. Atlas는 보지 않고, 나중에 이 줄을 지워도 그 권한이 취소되지는 않아요.",
+    "variantAsksToken": "{keys} 하나만 물어봐요. 이 컴퓨터 키체인에 들어가고, 폴더 안 파일에는 이름만 남아요.",
+    "variantAsksNothing": "적을 게 없어요.",
+    "customFromCatalogue": "{title} 항목({date} 기준)에서 채웠어요. 추가하기 전에 아래 줄을 확인하세요. 실제로 그게 실행됩니다.",
+    "fieldRuntime": "무엇으로 실행하나요",
+    "runtimeOther": "직접 적기",
+    "variablesNone": "없음. 이 서버가 토큰이나 설정을 필요로 하면 추가하세요.",
+    "variableName": "이름",
+    "variableValue": "값",
+    "variableSecret": "이 값을 이 컴퓨터 키체인에 보관",
+    "variableAdd": "항목 추가",
+    "variableRemove": "{name} 제거",
+    "emptyTitle": "아직 닿는 곳이 없어요",
+    "emptyBody": "Atlas 안에서 대화하는 에이전트가 이미 쓰고 있는 서비스에도 닿게 해 주는 게 연결 도구예요. Notion 문서, Jira 이슈, 저장소 같은 것들이요. 추가해도 직접 켜기 전까지는 꺼진 채로 있어요.",
+    "linkDroppedValues": "그 링크가 {keys} 값을 함께 들고 왔어요. 값은 버렸습니다. 링크로는 토큰을 넣지 않으니 아래에 직접 입력하세요.",
+    "linkRefused": "그 링크는 받지 않았어요({reason}). 아무것도 추가되지 않았습니다.",
+    "catalogueSummary": {
+      "notion": "Notion 계정의 페이지와 데이터베이스를 읽고 씁니다.",
+      "atlassian": "Atlassian 사이트의 Jira 이슈와 Confluence 페이지를 읽고 씁니다.",
+      "github": "GitHub 의 이슈·풀 리퀘스트·코드·위키를 읽고 씁니다."
     }
   },
   "library": {
@@ -4422,7 +4462,9 @@
       "revealFailed": "Finder 에서 보여 주지 못했습니다: {reason}",
       "openFailed": "그 파일을 열지 못했습니다.",
       "needsCompileSplit": "{notCompiled}개는 아직 정리되지 않았고, {stale}개는 원문이 달라졌습니다",
-      "staleOnly": "{count}개는 원문이 달라져 문서가 뒤처졌습니다"
+      "staleOnly": "{count}개는 원문이 달라져 문서가 뒤처졌습니다",
+      "import": "외부에서 가져오기",
+      "importTooltip": "Notion·Confluence·Jira·GitHub 에서 문서를 가져와요"
     },
     "wiki": {
       "header": "위키 · {count}",
@@ -4622,5 +4664,58 @@
       "noSnapshot": "여기서는 저장 지점을 만들지 않아요. 변경은 폴더와 Git 에 그대로 남아요.",
       "nothing": "문서를 제안하지 않고 끝났어요."
     }
+  },
+  "libraryImport": {
+    "title": "외부에서 문서 가져오기",
+    "pickBody": "문서가 이미 있는 곳을 고르세요. Atlas가 한 번 연결하면, 대화 중인 코딩 도구가 문서를 받아서 이 폴더에 읽고 고칠 수 있는 마크다운 파일로 하나씩 적어 둡니다.",
+    "close": "닫기",
+    "back": "뒤로",
+    "stepOf": "{total}단계 중 {step}단계",
+    "service": {
+      "notion": {
+        "title": "Notion",
+        "body": "Notion 계정에 있는 페이지와 데이터베이스.",
+        "example": "API 설계 문서들"
+      },
+      "confluence": {
+        "title": "Confluence",
+        "body": "Confluence 스페이스의 페이지.",
+        "example": "핸드북 스페이스 전체"
+      },
+      "jira": {
+        "title": "Jira",
+        "body": "Jira 의 이슈와 설명.",
+        "example": "플랫폼 보드의 열린 이슈"
+      },
+      "github": {
+        "title": "GitHub",
+        "body": "저장소의 이슈·풀 리퀘스트·위키 문서.",
+        "example": "이 저장소의 설계 논의"
+      },
+      "other": {
+        "title": "다른 서비스",
+        "body": "MCP(에이전트가 이 폴더를 읽고 쓰는 연결) 화면에서 직접 설정해요.",
+        "example": ""
+      }
+    },
+    "connectBrowser": "{service}에 연결합니다. 로그인 창이 열리면 허용을 누르고, {service}가 무엇을 공유할지 고르세요.",
+    "connectBrowserWho": "그 창은 대화 중인 코딩 도구가 열고, 받은 것도 그 도구가 가집니다. Atlas는 보지 않고, 나중에 이 연결을 지워도 권한이 취소되지는 않아요.",
+    "connectToken": "{service}에 연결합니다. 발급받은 값을 한 번만 붙여 넣으세요.",
+    "connectTokenWho": "값은 이 컴퓨터 키체인에 들어가고 폴더 안 파일에는 적히지 않아요. 그 값으로 서비스에 닿는 건 Atlas가 아니라 코딩 도구입니다.",
+    "connectAction": "연결하기",
+    "connectFailed": "아무것도 저장되지 않았어요. 폴더를 먼저 열고, 이 폴더의 연결 파일을 읽을 수 있는지 확인하세요.",
+    "tokenLabel": "값",
+    "tokenWhere": "어디서 받나요",
+    "connected": "{service} 연결됨.",
+    "whatLabel": "무엇을 가져올까요?",
+    "whatNext": "다음에 대화가 열립니다. 검색해서 최대 {limit}개를 보여 주고, 고를 때까지 기다려요. 고른 문서는 {folder} 아래에 하나씩 적히고, 적기 전에 매번 허락을 물어봅니다. 그 폴더 밖은 건드리지 않아요.",
+    "bringAction": "가져오기 시작",
+    "whatRuntime": "이건 Claude 대화에서 됩니다. Codex 는 아직 이 부분을 재지 않아서, Codex 대화는 이 폴더까지만 닿아요.",
+    "revokeWhere": "{service} 에서 되돌리는 곳",
+    "noAgentTitle": "가져오는 일은 이 앱이 띄울 수 있는 코딩 도구가 합니다",
+    "noAgentGetApp": "앱 받기",
+    "noAgentBodyWeb": "브라우저는 그 도구를 띄우지 못해요. 연결은 저장되었고 켜져 있으니, 이 폴더를 가리키는 코딩 도구라면 이미 쓸 수 있습니다. 문서를 받아서 여기에 적어 주는 것까지 하려면 앱에서 이 화면으로 다시 오세요.",
+    "noAgentBodyRuntime": "이 컴퓨터에는 아직 준비된 도구가 없어요. 연결은 저장되었고 켜져 있으니, 이 폴더를 가리키는 코딩 도구라면 이미 쓸 수 있습니다. 하나 설정하고 여기로 돌아와서 마저 하세요.",
+    "noAgentSeeRuntimes": "코딩 도구 보기"
   }
 }

@@ -3539,6 +3539,7 @@ pub fn run() {
             agent_setup::mcp_bundled_server,
             agent_setup::verify_mcp_server,
             connectors::discover_mcp_connectors,
+            connectors::resolve_connector_runtimes,
             connector_secrets::connector_secret_set,
             connector_secrets::connector_secret_status,
             connector_secrets::connector_secret_delete,

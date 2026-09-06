@@ -51,6 +51,7 @@ action or renders an honest degradation card stating why and where it works.
 | ACP runtime | `src/shared/lib/tauri-acp.ts`, `src-tauri/src/acp.rs` | cannot spawn a process; degradation card. A user may still attach an externally launched agent to the folder |
 | Connector discovery | `src/shared/lib/tauri-connectors.ts`, `src-tauri/src/connectors.rs` | cannot read `~/.claude.json` or `~/.codex/config.toml`; degradation card. Adding a connector by hand still works, and the list lives in the vault folder |
 | Connector secrets | `src/shared/lib/tauri-connector-secrets.ts`, `src-tauri/src/connector_secrets.rs` | no keychain in a browser; degradation card. The reference is resolved into the outgoing ACP line in Rust, so the WebView never holds a token |
+| Connector runtimes | `src/shared/lib/tauri-connector-runtimes.ts`, `resolve_connector_runtimes` in `src-tauri/src/connectors.rs` | cannot look at `/opt/homebrew/bin`; the by-hand form falls back to the typed absolute path it always had, with its hint. **Not a degradation card** — the ability is unchanged, only the convenience is missing, and a card would claim the browser cannot attach a program when it can |
 | Folder watch | `start_vault_watch` in `src-tauri/src/lib.rs`, `TauriVaultWatchBridge.tsx` | periodic reread: 1,500 ms after a burst, 5,000 ms while idle; delayed, not unavailable |
 | Library sources | `src/shared/lib/tauri-vault-fs.ts`, `src-tauri/src/library.rs` | different means, same ability: `showOpenFilePicker` picks and the vault handle writes, `crypto.subtle` hashes. Not a degradation — the app path exists because `read_vault_binary_file` would move a whole document across IPC to produce 64 characters |
 | Discovery outside the folder | `discover_source_candidates` in `src-tauri/src/library.rs` | the open folder is walked either way; a **bound project root** is an absolute path a browser does not have. Degradation card `find-documents-web-limit` states the narrower claim and links to `/download/` |
@@ -81,6 +82,15 @@ The exception is exactly this, and nothing wider:
 Those files hold API tokens in plain text, which is why the boundary is drawn at
 key names and pinned by a test rather than by care. A fifth file, or a value,
 needs a new decision record — not an edit here.
+
+`resolve_connector_runtimes` (2026-09-07) sits beside that exception without
+widening it. It answers a **fixed five-name allow-list** — `npx`, `node`, `uvx`,
+`python3`, `docker` — with an absolute path or nothing, reusing `acp.rs`'s own
+search order. It opens no file, enumerates no directory, takes no name from the
+caller, and **executes nothing**: running `npx --version` to prettify a row would
+be Atlas starting somebody else's program on its own initiative, which is a
+different act from a person pressing a button. `discovery_never_writes_anything`
+and `the_runtime_allow_list_is_fixed_and_small` in that module pin both halves.
 
 A connector's own token never joins them. It lives in the OS keychain
 (`src-tauri/src/connector_secrets.rs`) and becomes a value inside Rust one line

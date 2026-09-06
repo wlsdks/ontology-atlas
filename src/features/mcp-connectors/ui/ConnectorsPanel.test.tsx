@@ -55,13 +55,8 @@ vi.mock('@/shared/lib/tauri-connector-secrets', async () => {
   };
 });
 
-import {
-  ConnectorsPanel,
-  connectorDestination,
-  groupDiscovered,
-  shortSourceKey,
-  whatRuns,
-} from './ConnectorsPanel';
+import { ConnectorsPanel, connectorDestination, whatRuns } from './ConnectorsPanel';
+import { groupDiscovered, shortSourceKey } from './discovered-groups';
 import { useVaultConnectors } from '../model/use-vault-connectors';
 
 /**
@@ -108,6 +103,24 @@ function confirmRemove() {
 
 function openAdd() {
   fireEvent.click(screen.getByTestId('connectors-add-open'));
+}
+
+/**
+ * The by-hand form is behind the third tab now (2026-09-07). The dialog opens on whichever tab
+ * can answer a person without typing — what this computer already registers, or the catalogue on
+ * a surface that cannot scan — so a test about the form has to say so out loud rather than
+ * assuming the form is the dialog.
+ */
+function openAddTab(key: 'found' | 'catalogue' | 'custom') {
+  // `TabBar` gives each tab an `id` from its prefix rather than a test id — that id is what
+  // `aria-controls` has to resolve against, so it is the stable handle here too.
+  const tab = document.getElementById(`connectors-add-tab-${key}`);
+  if (!tab) throw new Error(`no add tab: ${key}`);
+  fireEvent.click(tab);
+}
+
+function openCustomTab() {
+  openAddTab('custom');
 }
 
 /** A folder handle backed by a map, enough for the store to read and write. */
@@ -208,15 +221,22 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
      * is where the traffic goes and what a token can do; which sessions carry connectors is a fact
      * about a runtime, and it now stands where a runtime is being chosen.
      */
+    /*
+     * ⚠️ **Three sentences, and they stand under the rows** (2026-09-07). The block used to sit
+     * between the tab and the first row carrying two; the third — which sessions carry
+     * connectors at all — used to live only inside a connector's own dialog, where somebody
+     * deciding whether to attach anything never met it. Moving the block below the list costs
+     * the same pixels and stops being a toll gate, which is what the 296px measurement was
+     * really about.
+     */
     expect(screen.getByTestId('connectors-transfer')).toHaveTextContent('전송 기록에도 남지 않습니다');
-    expect(screen.getByTestId('connectors-transfer').querySelectorAll('p')).toHaveLength(2);
-    expect(screen.queryByTestId('connectors-runtime')).toBeNull();
-    openDetail();
-    expect(await screen.findByTestId('connectors-runtime')).toBeInTheDocument();
+    expect(screen.getByTestId('connectors-transfer').querySelectorAll('p')).toHaveLength(3);
     expect(screen.getByTestId('connectors-runtime-agents')).toHaveAttribute(
       'href',
       expect.stringContaining('/agents'),
     );
+    openDetail();
+    expect(await screen.findByTestId('connectors-runtime')).toBeInTheDocument();
     // The switch is off before anybody touches it.
     expect(screen.getByTestId('connectors-item')).toHaveAttribute(
       'data-connector-enabled',
@@ -553,6 +573,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-malformed')).toBeInTheDocument());
     openAdd();
+    openCustomTab();
     fireEvent.change(screen.getByTestId('connectors-custom-name'), { target: { value: 'github' } });
     fireEvent.change(screen.getByTestId('connectors-custom-command'), {
       target: { value: '/usr/local/bin/github-mcp' },
@@ -579,6 +600,13 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
      * place to go, beside a list that still works.
      */
     openAdd();
+    /*
+     * ⚠️ **The dialog does not open on this tab any more** (2026-09-07). With no way to scan,
+     * "Found here" can only ever say why it is empty, so the dialog opens on the catalogue —
+     * the tab that can still answer somebody on the web. The card is still one press away and
+     * still says a reason and a place to go, which is the claim being pinned.
+     */
+    openAddTab('found');
     await waitFor(() =>
       expect(screen.getByTestId('connectors-discovery-unavailable')).toBeInTheDocument(),
     );
@@ -601,13 +629,21 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
     openAdd();
+    openCustomTab();
     fireEvent.change(screen.getByTestId('connectors-custom-name'), {
       target: { value: 'github' },
     });
     fireEvent.change(screen.getByTestId('connectors-custom-command'), {
       target: { value: '/usr/local/bin/github-mcp' },
     });
-    fireEvent.change(screen.getByTestId('connectors-custom-keys'), {
+    /*
+     * ⚠️ **A variable is a name and a value on one row now** (owner, 2026-09-07). The old field
+     * took a comma-separated list of *names* and the values were entered somewhere else
+     * afterwards, so the form could not finish the job it started. A credential-shaped name
+     * still cannot carry a literal into the folder's file — that is what `secretRef` below is.
+     */
+    fireEvent.click(screen.getByTestId('connectors-custom-variable-add'));
+    fireEvent.change(screen.getByTestId('connectors-custom-variable-name'), {
       target: { value: 'GITHUB_TOKEN' },
     });
     fireEvent.click(screen.getByTestId('connectors-custom-add'));

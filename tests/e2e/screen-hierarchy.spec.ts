@@ -49,7 +49,7 @@ import { AUDITED_ROUTES } from "./audited-routes";
  * | `/ko/` | 34px | 0 | 1 (`gateway-hero-cta`) | ② renamed 2026-08-19 |
  * | `/ko/topology/` | **none** (h1 = `sr-only` 1×1) | — | 1 (`first-run-starter-open`) | ① exception |
  * | `/ko/docs/` | **none** (h1 = `sr-only` 1×1) | — | 0 | ① exception |
- * | `/ko/ontology/insights/` | 23px | 0 | 0 | |
+ * | `/ko/ontology/insights/` | 23px | 3 (`insights-bignum` ×2, `insights-verdict-word`) | 0 | ① figures |
  * | `/ko/projects/` | 23px | 0 | 0 | the 10 capacity bars are data-marks (h≤8) |
  * | `/ko/project/storefront/` | 23px | 0 | 0 | two h1s (23·16) — an a11y matter |
  * | `/ko/project/storefront/edit/` | 30px | 0 | 1 (`project-save-top`) | fixed from 2 on 2026-08-08 |
@@ -379,6 +379,27 @@ const TITLE_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
 const TITLE_EXEMPT_ROUTES = new Set(TITLE_EXEMPT.map((e) => e.route));
 
 /**
+ * **Figures that outrank the title on purpose — one route, named elements, measured.**
+ *
+ * Narrower than `TITLE_EXEMPT`: the rule still runs on the route and still demands a
+ * painted h1, and only the listed elements may sit at or above it. Everything else
+ * on the screen is measured as usual. The `titleGuard` below proves the figures are
+ * still there and still larger, so a redesign that shrinks them turns this red first
+ * and sends a person back to this list.
+ */
+const TITLE_FIGURES: ReadonlyArray<{ route: string; testids: readonly string[]; why: string }> = [
+  {
+    route: "/ko/ontology/insights/",
+    testids: ["insights-bignum", "insights-verdict-word"],
+    why:
+      "2026-09-05 (#1455) 「분석 화면은 측정치로 시작한다」 — 인구조사 숫자(40px, 서명 숫자)와 판정 낱말(23px)이 " +
+      "이 화면의 주목 승자다. h1 「분석」(23px)은 목적지 이름이고, 숫자가 그 위에 서는 것이 결정이다. " +
+      "아래 「숫자가 제목보다 크게 서 있다」가 그 숫자가 사라지거나 줄면 빨갛게 만든다",
+  },
+];
+const TITLE_FIGURE_IDS = new Map(TITLE_FIGURES.map((f) => [f.route, new Set(f.testids)]));
+
+/**
  * **Exceptions to ② — same discipline.**
  */
 const ACCENT_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
@@ -425,7 +446,9 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
       ).toBeGreaterThan(0);
       routesWithTitle += 1;
 
+      const figures = TITLE_FIGURE_IDS.get(route);
       for (const o of m.offenders) {
+        if (figures && o.testid && figures.has(o.testid)) continue;
         violations.push(`${route} → "${o.text}" ${o.px}px ≥ 제목 ${m.titlePx}px (${o.testid ?? "-"})`);
       }
     }
@@ -493,6 +516,26 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
         `${route}: 그려진 제목이 생겼다 — TITLE_EXEMPT 에서 이 줄을 지우고 규칙을 켜라`,
       ).toBe(0);
       expect(m.titlePx, `${route}: 기준이 생겼다 — 예외가 낡았다`).toBe(0);
+    }
+  });
+
+  /**
+   * The figure exception pays the same way: the numerals must still be painted,
+   * still be the listed elements, and still stand above the title. If the census
+   * strip is redesigned below 23px the row in `TITLE_FIGURES` is dead weight and
+   * this turns red first.
+   */
+  test("예외가 낡지 않았다 — 분석의 숫자가 제목보다 크게 서 있다", async ({ page }) => {
+    for (const figure of TITLE_FIGURES) {
+      const m = await measureRoute(page, figure.route);
+      expect(m.titlePx, `${figure.route}: 그려진 h1 이 없다 — 숫자 예외는 제목이 있어야 성립한다`).toBeGreaterThan(0);
+      const seen = new Set(m.offenders.map((o) => o.testid));
+      for (const id of figure.testids) {
+        expect(
+          seen.has(id),
+          `${figure.route}: ${id} 가 제목보다 크지 않다 — TITLE_FIGURES 에서 이 줄을 지우고 규칙을 켜라`,
+        ).toBe(true);
+      }
     }
   });
 

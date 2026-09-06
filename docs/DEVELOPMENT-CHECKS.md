@@ -482,6 +482,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: none.
 **Fix**: For an ordinary registry move, run `pnpm acp:registry` and read the diff. For a compatibility-pin failure, first rerun the installed permission matrix named by the diagnostic; update the reviewed upstream identity only after that evidence. Only measured runtimes are marked `verified`.
 
+### MCP connector catalogue snapshot
+
+**Run**: `pnpm mcp:catalogue:check`
+**Proves**: The committed `src/shared/config/mcp-catalogue.generated.ts` is what the generator produces, so a hand edit or an unregenerated curation change cannot ship; and the generator's translation from `server.json` still holds. The app never fetches this list at runtime.
+**Escalate**: none.
+**Fix**: Run `pnpm mcp:catalogue` and read the diff; it reaches the official registry, and `--offline` regenerates curated rows alone. A new service is a dated `CURATION` entry, never a hand edit to the generated file.
+
 ### Release tag version alignment
 
 **Run**: `pnpm desktop:release-tag`

@@ -541,6 +541,77 @@ pub fn discover_mcp_connectors(vault_path: Option<String>) -> Result<ConnectorDi
     Ok(discover_with(home.as_deref(), vault.as_deref(), &fs))
 }
 
+/// The runtimes a connector can be started by, and where each one is on this machine.
+///
+/// ## Why this is here rather than in a form field
+///
+/// The by-hand form used to ask a person to type an **absolute path** to a program, because a
+/// connector the agent spawns inherits a sanitized environment with no `PATH`
+/// (`SHARED_RUNTIME_ENV` in `acp.rs`), so a bare `npx` resolves to nothing and the session comes
+/// up with the connector's tools silently absent. That is the worst failure this feature has:
+/// it looks exactly like success. The form's own hint said so, and the owner's reply on
+/// 2026-09-07 was that they still did not know what to write.
+///
+/// Nobody knows where their `npx` is. The app already does — `acp.rs` reconstructs the search
+/// path for exactly this reason, walking the inherited `PATH` first and then the well-known
+/// version-manager locations a GUI process never inherits. This hands that same answer to the
+/// form, so the path is chosen from a list instead of typed.
+///
+/// ## The boundary, deliberately narrow
+///
+/// A **fixed five-name allow-list**, resolved to a path. It enumerates no directory, returns no
+/// listing of what a person has installed, reads no file's contents, and — the line that matters
+/// most — **executes nothing**. Running `npx --version` to prettify a row would be Atlas starting
+/// somebody else's program on its own initiative, which is a different act from the person
+/// pressing a button (PO steward, 2026-09-07). Absence is reported as absence; a guessed path
+/// would defer the failure to the moment somebody asks a question.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedRuntime {
+    /// The name as the catalogue and the form spell it: `npx`, `node`, `uvx`, `python3`, `docker`.
+    pub name: String,
+    /// The absolute path on this machine, or `None` when it is not installed.
+    pub path: Option<String>,
+}
+
+/// The names this command will answer for. Adding a sixth is a deliberate edit, not a parameter —
+/// taking the name from the caller would turn a fixed allow-list into "resolve anything for me",
+/// which is a different capability with a different review.
+pub(crate) const CONNECTOR_RUNTIMES: &[&str] = &["npx", "node", "uvx", "python3", "docker"];
+
+/// Resolve the allow-listed runtimes. **Reads only, executes nothing.**
+#[tauri::command]
+pub fn resolve_connector_runtimes() -> Result<Vec<ResolvedRuntime>, String> {
+    let home = std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" })
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from);
+    let (is_executable, list_dir, read_text, login_ok) = crate::acp::real_probe();
+    let probe = crate::acp::FsProbe {
+        is_executable: &is_executable,
+        list_dir: &list_dir,
+        read_text: &read_text,
+        login_ok: &login_ok,
+    };
+    // No managed directories here on purpose. Those hold what Atlas installed for the person's
+    // *agent*; a connector runtime is the person's own, and offering an app-managed copy would
+    // write a path into their folder's file that only this app knows how to reach.
+    let dirs = crate::acp::candidate_bin_dirs(
+        home.as_deref(),
+        std::env::var_os("PATH").as_deref(),
+        &probe,
+        None,
+        None,
+    );
+    Ok(CONNECTOR_RUNTIMES
+        .iter()
+        .map(|name| ResolvedRuntime {
+            name: (*name).to_string(),
+            path: crate::acp::resolve_command(name, &dirs, &probe)
+                .map(|path| path.to_string_lossy().into_owned()),
+        })
+        .collect())
+}
+
 fn home_dir() -> Option<PathBuf> {
     std::env::var_os("HOME")
         .filter(|home| !home.is_empty())
@@ -808,6 +879,28 @@ url = "https://example.test/mcp"
                 "discovery must not write: found {writer}"
             );
         }
+        // `resolve_connector_runtimes` lives in this module and must stay read-only in the second
+        // sense too: it says where a program is, it never starts one.
+        for runner in ["Command::new", "process::Command", "spawn("] {
+            assert!(
+                !body.contains(runner),
+                "discovery must not execute anything: found {runner}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_runtime_allow_list_is_fixed_and_small() {
+        // The caller cannot ask for an arbitrary name. If this list ever takes a parameter the
+        // capability has changed from "where is npx" to "resolve anything", which is a different
+        // review (PO steward, 2026-09-07).
+        assert_eq!(CONNECTOR_RUNTIMES, &["npx", "node", "uvx", "python3", "docker"]);
+        let source = include_str!("connectors.rs");
+        let body = source.split("#[cfg(test)]").next().unwrap();
+        assert!(
+            body.contains("pub fn resolve_connector_runtimes() -> Result<Vec<ResolvedRuntime>, String>"),
+            "resolve_connector_runtimes must take no caller-supplied name"
+        );
     }
 
     #[test]

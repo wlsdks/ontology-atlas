@@ -1,7 +1,7 @@
 "use client";
 
 import type { useTranslations } from "next-intl";
-import { FilePlus2, Search } from "lucide-react";
+import { CloudDownload, FilePlus2, Search } from "lucide-react";
 
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -33,8 +33,11 @@ import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
  *
  * ## Anatomy
  *
- * Eyebrow, **one** title, one sentence, the two doors, and one quiet line naming the
- * folder the drop goes into. There is no second heading: a tie between an `h1` and an
+ * Eyebrow, **one** title, one sentence, the three doors, and one quiet line naming the
+ * folder the drop goes into. The doors sit in the order of how far away the document is:
+ * on this disk, in a folder the app was granted, and somewhere else entirely. The third
+ * one exists because a person whose notes live in Notion has nothing to drop and nothing
+ * to find (owner, 2026-09-07: *"connecting a service is mostly for the Library anyway"*). There is no second heading: a tie between an `h1` and an
  * `h2` reads as two titles, and the destination's own name is on the rail.
  */
 export function LibraryStartStage({
@@ -42,6 +45,7 @@ export function LibraryStartStage({
   busy,
   onAddFiles,
   onFindDocuments,
+  onImportFromService,
   t,
 }: {
   /** The folder's absolute path in the app, its handle name on the web. */
@@ -49,6 +53,8 @@ export function LibraryStartStage({
   busy: boolean;
   onAddFiles: () => void;
   onFindDocuments: () => void;
+  /** Opens the service picker: documents that are not on this computer yet. */
+  onImportFromService: () => void;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   return (
@@ -124,6 +130,24 @@ export function LibraryStartStage({
         >
           <Search size={ICON_SIZE.sm} aria-hidden />
           {t("sources.find")}
+        </button>
+        <button
+          type="button"
+          onClick={onImportFromService}
+          disabled={busy}
+          data-testid="library-start-import"
+          title={t("sources.importTooltip")}
+          className={controlClass({
+            shape: "chip",
+            size: "lg",
+            tone: "muted",
+            hoverInk: "strong",
+            hoverBorder: "strong",
+            className: "gap-1.5",
+          })}
+        >
+          <CloudDownload size={ICON_SIZE.sm} aria-hidden />
+          {t("sources.import")}
         </button>
       </div>
       {/* The folder is the interface, and this is the moment to say so. The label is an

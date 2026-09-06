@@ -34,6 +34,8 @@
     "src/construction-rules.mjs",
     "src/absorb.mjs",
     "src/activity-log.mjs",
+    "src/analysis-record.mts",
+    "src/analysis-records.mjs",
     "src/vault-sidecar.mjs",
     "src/analyze.mjs",
     "src/analyze/constants.mjs",

@@ -241,7 +241,12 @@
         "loginHint": "You are not signed in to this tool. Run it once in a terminal to sign in and it will appear here.",
         "loginUnknownHint": "Atlas asked this tool whether you are signed in and got no answer back. The tool is still here, so a chat opens; if it turns you away, sign in once in a terminal.",
         "diskNote": "Starting a chat gives Atlas its own settings folder for that tool inside the app, so your own settings for it are left alone. The login you already did is linked, not copied, so you do not have to sign in again. The original stays in one place.",
-        "webMcpLink": "Open MCP"
+        "webMcpLink": "Open MCP",
+        "othersDialogTitle": "The other {count} coding tools",
+        "othersSearchLabel": "Search",
+        "othersSearchPlaceholder": "A name, or what it is",
+        "othersNoneForSearch": "None of them matches “{query}”.",
+        "othersClose": "Close"
       },
       "appUpdate": {
         "intro": "When a new build of this app ships, we tell you in the bottom-right corner. You can also check right now.",
@@ -4377,6 +4382,41 @@
       "url-not-http": "The address has to start with http:// or https://.",
       "secret-literal": "A token is written in plain text; move it into the keychain first.",
       "value-missing": "A variable is set to come from the keychain and there is nothing behind it yet."
+    },
+    "addTablistAriaLabel": "Ways to add a connector",
+    "tabFound": "Found here",
+    "tabFoundCountTitle": "MCP servers already registered on this computer",
+    "tabCatalogue": "Catalogue",
+    "tabCatalogueCountTitle": "Services in the list that ships with this build",
+    "tabCustom": "By hand",
+    "catalogueProvenance": "A short list of {count} services, captured {date} and shipped with this build. Atlas has not audited any of them, and nothing is fetched while the app runs. Anything missing goes in by hand.",
+    "catalogueNoneForSearch": "Nothing in the list matches “{query}”. By hand still reaches it.",
+    "catalogueChoose": "Set up",
+    "catalogueDocs": "{title}’s own instructions",
+    "sourceRegistry": "official registry",
+    "sourceCurated": "read {date}",
+    "variantRemote": "A hosted address {label}",
+    "variantLocal": "Runs here, started by {runtime}",
+    "variantAsksOauth": "Nothing to enter. Your coding agent opens the sign-in window and holds what comes back; Atlas never sees it, and removing this row later does not revoke it.",
+    "variantAsksToken": "Asks you for one value: {keys}. It goes into this machine’s keychain, never into the folder’s file.",
+    "variantAsksNothing": "Nothing to enter.",
+    "customFromCatalogue": "Filled in from the list for {title}, captured {date}. Check the line below before you add it: that is what will run.",
+    "fieldRuntime": "What starts it",
+    "runtimeOther": "Something else",
+    "variablesNone": "None. Add one if this server needs a token or a setting.",
+    "variableName": "Name",
+    "variableValue": "Value",
+    "variableSecret": "Keep this value in this machine’s keychain",
+    "variableAdd": "Add a variable",
+    "variableRemove": "Remove {name}",
+    "emptyTitle": "Nothing here reaches anything yet",
+    "emptyBody": "A connector lets the agent you talk to in Atlas also reach a service you already use: your Notion pages, your Jira issues, your repositories. Add one and it stays off until you turn it on.",
+    "linkDroppedValues": "That link carried values for {keys}. They were dropped: a link never sets a token. Type it below instead.",
+    "linkRefused": "That link was refused ({reason}). Nothing was added.",
+    "catalogueSummary": {
+      "notion": "Read and write the pages and databases in your Notion account.",
+      "atlassian": "Read and write Jira issues and Confluence pages in your Atlassian site.",
+      "github": "Read and write issues, pull requests, code and wikis on GitHub."
     }
   },
   "library": {
@@ -4422,7 +4462,9 @@
       "revealFailed": "Could not show it in Finder: {reason}",
       "openFailed": "Could not open that file.",
       "needsCompileSplit": "{notCompiled, plural, one {# not written up yet} other {# not written up yet}} · {stale, plural, one {# page behind its source} other {# pages behind their sources}}",
-      "staleOnly": "{count, plural, one {# page is behind its source} other {# pages are behind their sources}}"
+      "staleOnly": "{count, plural, one {# page is behind its source} other {# pages are behind their sources}}",
+      "import": "Bring from a service",
+      "importTooltip": "Bring documents in from Notion, Confluence, Jira or GitHub"
     },
     "wiki": {
       "header": "Wiki · {count}",
@@ -4622,5 +4664,58 @@
       "noSnapshot": "No save point is taken here; the change is in your folder and in Git.",
       "nothing": "It finished without proposing a page."
     }
+  },
+  "libraryImport": {
+    "title": "Bring documents from a service",
+    "pickBody": "Pick where your documents already live. Atlas connects it once, then your coding agent fetches them and writes each one into this folder as an ordinary Markdown file you can read and edit.",
+    "close": "Close",
+    "back": "Back",
+    "stepOf": "Step {step} of {total}",
+    "service": {
+      "notion": {
+        "title": "Notion",
+        "body": "Pages and databases from your Notion account.",
+        "example": "the API design pages"
+      },
+      "confluence": {
+        "title": "Confluence",
+        "body": "Pages from a Confluence space.",
+        "example": "everything in the Handbook space"
+      },
+      "jira": {
+        "title": "Jira",
+        "body": "Issues and their descriptions from Jira.",
+        "example": "open issues on the platform board"
+      },
+      "github": {
+        "title": "GitHub",
+        "body": "Issues, pull requests and wiki pages from a repository.",
+        "example": "the design discussions in this repo"
+      },
+      "other": {
+        "title": "Another service",
+        "body": "Set one up by hand on the MCP screen, where the connection details live.",
+        "example": ""
+      }
+    },
+    "connectBrowser": "Connect {service}. A sign-in window opens; press Allow there, and choose what {service} may share.",
+    "connectBrowserWho": "Your coding agent opens that window and keeps what comes back. Atlas never sees it, and removing this connection later does not take the access away.",
+    "connectToken": "Connect {service}. Paste the value it issues you, once.",
+    "connectTokenWho": "The value goes into this computer’s keychain and never into a file in your folder. Your coding agent, not Atlas, uses it to reach the service.",
+    "connectAction": "Connect",
+    "connectFailed": "Nothing was saved. Open a folder first, and check that this folder’s connector file can be read.",
+    "tokenLabel": "Value",
+    "tokenWhere": "Where to get this",
+    "connected": "{service} is connected.",
+    "whatLabel": "What should it bring?",
+    "whatNext": "A conversation opens next. It searches, shows you at most {limit} documents, and waits for you to pick; each one you pick is written under {folder} and asks your permission first. Nothing outside that folder is touched.",
+    "bringAction": "Start bringing them in",
+    "whatRuntime": "This works in a Claude conversation. Codex has not been measured for it yet, so a Codex conversation reaches this folder and nothing else.",
+    "revokeWhere": "Where to take it back in {service}",
+    "noAgentTitle": "The fetching needs a coding tool this app can start",
+    "noAgentGetApp": "Get the app",
+    "noAgentBodyWeb": "A browser cannot start one. The connection is saved and switched on, so any coding tool you point at this folder can already use it; come back to this screen in the app to have the documents fetched and written here for you.",
+    "noAgentBodyRuntime": "None is ready on this computer yet. The connection is saved and switched on, so any coding tool you point at this folder can already use it; set one up and come back to finish here.",
+    "noAgentSeeRuntimes": "See your coding tools"
   }
 }

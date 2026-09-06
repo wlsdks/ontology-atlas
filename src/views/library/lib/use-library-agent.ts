@@ -302,7 +302,8 @@ export function useLibraryAgent(
        * One press, two engines. A verified coding agent still outranks the runner — it
        * opens formats Atlas cannot — so the dock keeps the press whenever one is ready,
        * and the local turn takes it only when that is what the shelf named. The runner
-       * compiles only; a check or a proposal is a coding agent's turn.
+       * compiles only; a check, a proposal or an import is a coding agent's turn: the local
+       * two-tool catalogue reads files already under `sources/` and cannot reach a service.
        */
       if (route === "local" && kind === "compile") {
         void localCompile.run(text);

@@ -70,8 +70,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Atlas keeps each in-app ACP analysis as a separate Markdown file under .ontology-atlas/analyses/ in the folder captured when the request starts. Map, Analysis, and Architecture use the same format. An analysis can be reopened after a session closes, exported, inspected through MCP or CLI, or used as the parent of anoth",
-      "wordCount": 1288,
-      "updatedAt": "2026-09-05",
+      "wordCount": 1294,
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "ONTOLOGY-ATLAS-SPEC"
       ]
@@ -95,7 +95,7 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 4905,
+      "wordCount": 4973,
       "updatedAt": "2026-09-07",
       "linksOut": [
         "ANALYSIS-RECORDS",
@@ -494,6 +494,18 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/MCP-ONE-CLICK-2026-09-07",
+      "path": "docs/benchmark/MCP-ONE-CLICK-2026-09-07.md",
+      "title": "How other open-source clients make an MCP server one press — 2026-09-07",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Written to answer two owner questions on 2026-09-07: \"one-click MCP connection is how everyone does it now — npx installs, or a token from the provider? Find out how the others do it (open source).\" and \"how do I connect Notion, Atlassian, GitHub? Claude Code and Codex do it fast — is that because they are partners?\" E",
+      "wordCount": 2630,
+      "updatedAt": "2026-09-07",
+      "linksOut": []
+    },
+    {
       "slug": "benchmark/README",
       "path": "docs/benchmark/README.md",
       "title": "Benchmark — does the ontology actually help AI agents?",
@@ -862,7 +874,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 111317,
+      "wordCount": 111666,
       "updatedAt": "2026-09-07",
       "linksOut": [
         "wiki/…",
@@ -958,8 +970,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Which command to run first for an area of this repository, what a pass proves, and when to escalate. The reasons a gate exists live in docs/DECISIONS.md and in the gate's own header, not here. Start every change with the planner, and let it run what it recommends: It reads the Git diff (tracked and untracked), prints t",
-      "wordCount": 6052,
-      "updatedAt": "2026-09-05",
+      "wordCount": 6133,
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -970,7 +982,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 35032,
+      "wordCount": 35807,
       "updatedAt": "2026-09-07",
       "linksOut": [
         "ANALYSIS-RECORDS",
@@ -2723,13 +2735,13 @@
         "display_en": "Analysis Record Archive",
         "display_ko": "분석 기록 보관소",
         "domain": "domains/agent-integration",
-        "path": "src/entities/analysis-record/model/analysis-record.mts",
+        "path": "mcp/src/analysis-record.mts",
         "created_by": "agent:unknown"
       },
       "headings": [],
       "excerpt": "The cross-runtime diagnostic record format, bounded readers, and exclusive native persistence that preserve an ACP analysis as one immutable Markdown version. It retains the original final answer, actual full-body Atlas evidence, Architecture measurements and profile snapshots, request identity, outcome, and qualificat",
-      "wordCount": 151,
-      "updatedAt": "2026-09-05",
+      "wordCount": 158,
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -6612,6 +6624,13 @@
             "type": "doc",
             "slug": "benchmark/FINDINGS-2026-09-06-wiki-probe",
             "title": "Findings 2026-09-06 · the sealed five-question wiki probe"
+          },
+          {
+            "name": "MCP-ONE-CLICK-2026-09-07",
+            "path": "benchmark/MCP-ONE-CLICK-2026-09-07",
+            "type": "doc",
+            "slug": "benchmark/MCP-ONE-CLICK-2026-09-07",
+            "title": "How other open-source clients make an MCP server one press — 2026-09-07"
           },
           {
             "name": "README",

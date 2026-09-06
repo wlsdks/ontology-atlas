@@ -9,7 +9,7 @@ import {
   isAnalysisRecordFileName,
   parseAnalysisRecord,
   verifyAnalysisEvidence,
-} from '../../src/entities/analysis-record/model/analysis-record.mts';
+} from './analysis-record.mts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
