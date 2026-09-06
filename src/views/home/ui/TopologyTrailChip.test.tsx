@@ -5,7 +5,7 @@ import {
   type TopologyPastWalkRow,
   type TopologyTrailChipLabels,
 } from "./TopologyTrailChip";
-import type { FootprintTrailEntry } from "../lib/footprint-trail";
+import type { FootprintTrailEntry, TrailStepCaption } from "../lib/footprint-trail";
 
 const LABELS: TopologyTrailChipLabels = {
   heading: "걸어온 길",
@@ -27,6 +27,7 @@ const LABELS: TopologyTrailChipLabels = {
   pastClearAllConfirmLabel: "한 번 더 누르면 지워요",
   pastCapCaption: "최근 10개까지",
   pastEmptyBody: "아직 남은 길이 없어요. 지도를 걷고 나면 여기 모여요.",
+  stepUnrelatedLabel: "직접 연결 없음",
 };
 
 const PAST_WALKS: TopologyPastWalkRow[] = [
@@ -52,10 +53,18 @@ const ENTRIES: FootprintTrailEntry[] = [
   { id: "element:y", title: "El Y", kind: "element" },
 ];
 
+/** Aligned with ENTRIES: the oldest has no predecessor, then a reason, then a bare type. */
+const STEP_CAPTIONS: (TrailStepCaption | null)[] = [
+  null,
+  { relationLabel: "포함", reason: "Core 는 이 능력을 품는다" },
+  { relationLabel: "의존", reason: null },
+];
+
 function renderChip(overrides: Partial<React.ComponentProps<typeof TopologyTrailChip>> = {}) {
   const props = {
     label: "걸어온 길 · 3",
     entries: ENTRIES,
+    stepCaptions: STEP_CAPTIONS,
     currentId: "element:y",
     labels: LABELS,
     onFocusEntry: vi.fn(),
@@ -106,6 +115,41 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
     const steps = screen.getAllByTestId("topology-trail-step-label");
     expect(steps.map((s) => s.textContent)).toEqual(["방금 전", "1걸음 전", "2걸음 전"]);
     expect(screen.queryByTestId("topology-trail-current-dot")).toBeNull();
+  });
+
+  /**
+   * The trail listed names and distances only, which records where the reader went and
+   * loses why they could go there — while the reason (`relation_notes`) is the durable
+   * thing this vault keeps. Newest-first, so the captions come back in reverse too.
+   */
+  it("each row says how it connects to the step before it", () => {
+    renderChip();
+    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+    const links = screen.getAllByTestId("topology-trail-step-link");
+    expect(links.map((l) => l.textContent)).toEqual([
+      // El Y — a real edge with no reason recorded: the relation word alone.
+      "의존",
+      // Cap X — a real edge with a reason.
+      "포함 · Core 는 이 능력을 품는다",
+      // Core is the oldest step: no predecessor, so the slot stays empty.
+      "",
+    ]);
+  });
+
+  it("says 'not directly related' rather than hiding the gap", () => {
+    renderChip({ stepCaptions: [null, null, null] });
+    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+    const links = screen.getAllByTestId("topology-trail-step-link");
+    expect(links.map((l) => l.textContent)).toEqual(["직접 연결 없음", "직접 연결 없음", ""]);
+  });
+
+  /** Equal-height rule: a row without a caption keeps the slot, or the list goes ragged. */
+  it("keeps one row height whether or not a caption exists", () => {
+    renderChip({ stepCaptions: [null, { relationLabel: "포함", reason: "이유" }, null] });
+    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+    const rows = screen.getAllByTestId("topology-trail-step-link").map((l) => l.closest("li")!);
+    expect(new Set(rows.map((r) => r.className)).size).toBe(1);
+    expect(rows[0].className).toContain("h-[42px]");
   });
 
   it("현재 위치는 인디고 점으로 표시(kind 글리프 아님)", () => {

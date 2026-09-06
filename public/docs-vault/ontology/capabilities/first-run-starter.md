@@ -9,7 +9,7 @@ elements: [elements/first-run]
 path: src/features/first-run-starter
 created_by: "agent:unknown"
 dependencies: [capabilities/vault-sample-source]
-relation_notes: { capabilities/vault-sample-source: The starter appears only in settled static mode and teaches through the bundled sample vault; without that sample source it cannot present the pre-folder map and sample choice. }
+relation_notes: { capabilities/vault-sample-source: The starter appears only in settled static mode and teaches through the bundled sample vault; without that sample source it cannot present the pre-folder map and sample choice., elements/first-run: "This is the installed-app half of the same starter: the bundled sample is deliberately withheld there, so a real vault has to be created or opened before the workbench appears." }
 ---
 
 ## Definition
