@@ -345,8 +345,14 @@ had become false).
   different questions with it: Cone makes a parent the apex of its own cone, so a
   subtree is a bump you can point at and rotate to the front; **Strata** (2026-09-06)
   lays the four kinds out as stacked planes — project on top, then domain,
-  capability, element — each drawn as one hairline ellipse named at its rim, so
-  "which level is this on" is a glance rather than an inference. On a Strata plane
+  capability, element — each drawn as one hairline ellipse, so
+  "which level is this on" is a glance rather than an inference. The four names
+  sit on a **legend rail** at the canvas's right edge (2026-09-06), below the
+  utility tiles: one row per plane, each row aligned to that plane's projected
+  height and re-aligned as you orbit or morph, and hovering a row raises its
+  plane's ring. They used to hang on the rims themselves, which at 1040x720 put
+  them on the graph; the rim names remain only as the fallback on a canvas too
+  short for the rail, and the two are never both on. On a Strata plane
   a node keeps its parent's bearing, which makes every containment drop short,
   near-vertical and unable to cross a sibling's; a node whose parent is not in the
   map falls to the outer rim of its own plane, where "nothing above holds this"
@@ -358,6 +364,19 @@ had become false).
   same-tier. Geometry: `buildStrataTargets` and `layoutConeTree` in
   `src/widgets/topology-map-v2/model/dome-view.ts`; gates:
   `tests/e2e/map-3d-strata-drawing.spec.ts` and `map-3d-cone-drawing.spec.ts`.
+- **A click lands on the concept you are pointing at, in every 3D arrangement**
+  (2026-09-06) — the pointer answers with whatever the frame painted under the
+  cursor, and the small pressable ring around a dot no longer competes with a
+  painted disc. Before, a near, larger concept could answer for a smaller one
+  drawn beside it: measured on the sample vault by pointing at each drawn centre
+  in turn, 4 of 125 answered wrongly in Cone at 1512x982 and 12 of 125 at
+  834x1112. Gates: the "drawn centre" cases in both 3D drawing specs.
+- **Relations stay visible at rest in 3D** (2026-09-06) — depth still fades a
+  line towards the back, but its ink now stops at a floor instead of reaching
+  3.5% of a near line's. Measured at 1512x982 against the canvas ground:
+  containment lines went from 1.26 / 1.33 / 1.14 : 1 (Cone / Strata / Cloud) to
+  1.89 / 1.75 / 1.78 : 1, with the 2D map untouched. Gate:
+  `tests/e2e/map-3d-relation-ink.spec.ts`.
 
 #### `TopologyFitControl` (top-right, desktop-only)
 - Single **Fit Map** tile — fits the camera to the graph bounds. Desktop-only (mobile uses pinch-zoom).

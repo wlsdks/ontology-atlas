@@ -47,9 +47,12 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Lookups name targets and counts. MCP gets a screen, Connectors start off. Library guides three steps, graphs sources with write-ups, and compiles on a local model here: a card names each page, its citations and what it could not open, before you allow. Insights repairs back-links, Meaning asks missing reasons, the trail says how steps connect, Strata plots kind planes in 3D.
-**Changed**: Insights opens on four measurements with a to-do; Cone fills the canvas; the conversation is wider, clocked, one height, survives a closed dock; Agents and MCP read one column; a connection card leads with its reason; toasts move under the toolbar.
-**Fixed**: Pages keep a foot margin; repeat lookups fold to a row; the permission card reads plainly; a saved analysis announces once; the rail stops blinking; the reason field grows; footprints trace a relation curve; a narrow dock names its tool.
+**Added**: Lookups show targets and counts. An MCP screen, external Connectors off by default. Library guides three steps, graphs sources and write-ups, and compiles on a local model behind one card. Insights repairs back-links. Meaning asks for reasons. Trails say how steps connect. Strata, a third 3D view: labelled planes.
+
+**Changed**: Insights opens on four measurements, a to-do per row; Cone fills the canvas; Strata's plane names sit on a legend following them, lit on hover; chat widens, keeps a clock, one height, a closed dock; Agents and MCP read one column; connection cards lead with a reason; toasts sit below the toolbar.
+
+**Fixed**: 3D relations stay visible at rest; a concept's drawn centre is clickable; desktop pages keep a foot margin; repeat lookups fold to one row; permission cards read plainly; saved analyses announce once; rails stop blinking; reason fields grow; footprints follow curves; docks name tool and mode.
+
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 
 **Fixed**: The in-app Claude chat no longer offers the Auto mode that decides permissions by itself; a mode is judged by the class its adapter states, not only its name, and when the tool moves a conversation into a mode that accepts edits without asking, the screen says so and never offers that mode back.
