@@ -11,8 +11,9 @@ import { LibraryGraph } from "./LibraryGraph";
  *
  * jsdom has no canvas, and that is exactly why this file can exist: `draw()` returns
  * before it touches a 2D context because the box is never measured, so everything below
- * tests the part a person operates — the disclosure, the keyboard path, and the two
- * separate places a highlight can come from — without a rendering backend.
+ * tests the part a person operates — what is drawn without being asked for, the keyboard
+ * path, and the two separate places a highlight can come from — without a rendering
+ * backend.
  */
 
 const routerPush = vi.fn();
@@ -116,16 +117,31 @@ describe("the library graph section", () => {
     expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/topology"));
   });
 
-  it("remembers the person's own answer to whether it is open", () => {
-    renderGraph();
-    expect(screen.getByTestId("library-graph")).toHaveProperty("dataset.open", "true");
-    fireEvent.click(screen.getByTestId("library-graph-toggle"));
-    expect(screen.queryByTestId("library-graph-canvas")).toBeNull();
-    expect(window.localStorage.getItem("library:graph-open:v1")).toBe("0");
+  /*
+   * This used to assert the disclosure: a chip that opened and closed the section and
+   * remembered the answer in `localStorage`. The owner removed the premise on 2026-09-06
+   * — the pane **is** the picture — so what has to be true now is that nothing has to be
+   * pressed, and that the screen's own row still reaches the header.
+   */
+  it("draws itself with nothing pressed, and hangs the screen's own row beside the caption", () => {
+    renderGraph({ headerEnd: <span data-testid="probe-header-end">next</span> });
+    expect(screen.getByTestId("library-graph-canvas")).toBeTruthy();
+    expect(screen.queryByTestId("library-graph-toggle")).toBeNull();
+    expect(screen.getByTestId("probe-header-end")).toBeTruthy();
   });
 
-  it("draws no canvas at all before there is a page — one sentence about what will appear", () => {
-    renderGraph({ wikiPages: [] });
+  /*
+   * "Nothing to draw" is **no nodes**, not "no pages". A folder of PDFs nobody has
+   * compiled draws one square each, and those squares are the whole of what the list's
+   * `not compiled` word says, so replacing them with a sentence would hide the state on
+   * the one surface that shows every file at once.
+   */
+  it("draws the sources of a folder nobody has compiled, and a sentence only when there is nothing at all", () => {
+    renderGraph({ wikiPages: [], docs: [] });
+    expect(screen.getByTestId("library-graph-canvas")).toBeTruthy();
+    screen.getByTestId("library-graph-canvas").remove();
+
+    renderGraph({ wikiPages: [], docs: [], sources: [] });
     expect(screen.queryByTestId("library-graph-canvas")).toBeNull();
     expect(screen.getByTestId("library-graph-empty").textContent).toContain("아직 그릴 것이 없습니다");
   });
