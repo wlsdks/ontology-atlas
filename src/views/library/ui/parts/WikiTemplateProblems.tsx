@@ -41,7 +41,7 @@ export function WikiTemplateProblems({
       data-testid="library-wiki-problems"
       className="mx-auto mt-4 max-w-[760px] px-6 md:px-10"
     >
-      <div className="rounded-chip border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] px-4 py-3">
+      <div className="rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-4 py-3">
         <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t("wiki.offTemplateTitle")}
         </p>
@@ -55,7 +55,7 @@ export function WikiTemplateProblems({
               data-testid="library-wiki-problem"
               className="text-label text-[color:var(--color-text-secondary)] [word-break:keep-all]"
             >
-              <span className="font-mono text-caption text-[color:var(--color-amber-source-a90)]">
+              <span className="font-mono text-caption text-[color:var(--color-text-tertiary)]">
                 {problem.code}
                 {problem.line ? `:${problem.line}` : ""}
               </span>{" "}

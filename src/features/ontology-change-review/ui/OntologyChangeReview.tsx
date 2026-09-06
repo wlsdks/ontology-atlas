@@ -15,6 +15,14 @@ function formatValue(value: unknown): string {
   if (value === null) return 'null';
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  // A map of sentences (relation_notes) reads as one line per target, not as a JSON
+  // string a person has to parse at a permission card (owner, 2026-09-06).
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length > 0 && entries.every(([, v]) => typeof v === 'string')) {
+      return entries.map(([k, v]) => `${k}\n${String(v)}`).join('\n\n');
+    }
+  }
   try {
     return JSON.stringify(value);
   } catch {

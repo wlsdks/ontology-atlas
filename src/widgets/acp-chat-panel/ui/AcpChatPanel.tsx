@@ -41,6 +41,7 @@ import {
   snapScrollTop,
 } from '@/shared/lib/composer-growth';
 import { cn } from '@/shared/lib/cn';
+import { elapsedParts } from '@/shared/lib/elapsed';
 import { MOTION } from '@/shared/motion';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { useTypewriterReveal } from '@/shared/lib/use-typewriter-reveal';
@@ -921,6 +922,33 @@ export function AcpChatPanel({
       ) : null;
 
   const busy = status === 'thinking';
+  /*
+   * A clock beside the status word (owner, 2026-09-06). "thinking" alone cannot show that
+   * time passes; a person watching a long turn wants to know whether it is 20 seconds or
+   * 4 minutes in. The start is the moment the panel entered `thinking`; it ticks once a
+   * second and disappears with the word.
+   */
+  const [turnClock, setTurnClock] = useState<{ startedAt: number; nowMs: number } | null>(null);
+  useEffect(() => {
+    // State moves only from timers, never synchronously inside the effect: the first tick
+    // lands a frame later and the clock reads 0s, which is the truth at that moment.
+    if (!busy) {
+      const clear = window.setTimeout(() => setTurnClock(null), 0);
+      return () => window.clearTimeout(clear);
+    }
+    const startedAt = Date.now();
+    const tick = () => setTurnClock((current) => ({ startedAt: current?.startedAt ?? startedAt, nowMs: Date.now() }));
+    const first = window.setTimeout(tick, 0);
+    const timer = window.setInterval(tick, 1000);
+    return () => { window.clearTimeout(first); window.clearInterval(timer); };
+  }, [busy]);
+  const turnElapsedLabel = (() => {
+    if (!busy || !turnClock) return null;
+    const { hours, minutes, seconds } = elapsedParts(turnClock.nowMs - turnClock.startedAt);
+    if (hours > 0) return t('elapsedHours', { hours, minutes });
+    if (minutes > 0) return t('elapsedMinutes', { minutes, seconds });
+    return t('elapsedSeconds', { seconds });
+  })();
   const canType = status === 'ready' || status === 'thinking';
   /*
    * ⚠️ A turn that stopped answering looks exactly like one still working, because `prompt` is given
@@ -1737,6 +1765,7 @@ export function AcpChatPanel({
                 />
               ) : null}
               {t(`status.${displayStatus}`)}
+              {turnElapsedLabel ? <span data-testid="acp-turn-elapsed" className="tabular-nums">· {turnElapsedLabel}</span> : null}
             </span>
             <TooltipProvider delayDuration={200}>
               {/*
@@ -2461,7 +2490,7 @@ function TranscriptEntry({
     <p
       data-acp-entry="notice"
       data-notice={event.text}
-      className="break-keep rounded-chip border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a08)] px-2.5 py-1.5 text-label leading-prose text-[color:var(--color-text-secondary)]"
+      className="break-keep rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-label leading-prose text-[color:var(--color-text-secondary)]"
     >
       {event.text === 'mode-moved'
         ? t(event.serverGate ? 'notice.modeMovedServerGate' : 'notice.modeMoved', {

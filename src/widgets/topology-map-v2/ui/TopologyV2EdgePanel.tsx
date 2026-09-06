@@ -33,6 +33,8 @@ export interface TopologyV2EdgePanelProps {
   toTitle: string;
   /** P6 — one line of rationale for the relation (relation_notes). null omits it. */
   why?: string | null;
+  /** Shown under the sentence when no reason is recorded, so the absence is said, not implied. */
+  noReasonHint?: string | null;
   /** The declaring vault document — null omits the provenance row. */
   declaredBy: { slug: string; href: string } | null;
   /** The declaring document's change-time label (reusing the S-C1 ramp) — null omits it. */
@@ -65,6 +67,7 @@ export function TopologyV2EdgePanel({
   fromTitle,
   toTitle,
   why = null,
+  noReasonHint = null,
   declaredBy,
   updatedAtLabel,
   meaningEditHref,
@@ -136,6 +139,10 @@ export function TopologyV2EdgePanel({
           className="text-body-lg font-[var(--font-weight-signature)] leading-body-lg text-[color:var(--topology-v2-panel-text-primary)]"
         >
           {why}
+        </p>
+      ) : noReasonHint ? (
+        <p data-testid="topology-v2-edge-no-reason" className="text-caption leading-body text-[color:var(--topology-v2-panel-text-tertiary)]">
+          {noReasonHint}
         </p>
       ) : null}
 

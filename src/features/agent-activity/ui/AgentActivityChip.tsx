@@ -16,6 +16,7 @@ import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { agentDisplayName } from '@/shared/lib/agent-display-name';
 import type { AgentNotification, AgentNotificationKind } from '@/shared/lib/agent-notifications';
 import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
+import { elapsedParts } from '@/shared/lib/elapsed';
 import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
 import type { AgentLiveWorkInput } from '../model/agent-work-projection';
 
@@ -206,11 +207,25 @@ export function AgentActivityChip({
   const relative = (at: number) => format.relativeTime(new Date(at), feed.nowMs);
   const phase = feed.work.phase ? t(`phase.${feed.work.phase}`) : null;
   const age = feed.lastAt === null ? null : relative(feed.lastAt);
+  /*
+   * How long the agent has been at it (owner, 2026-09-06: "can it say how many minutes it
+   * has been working?"). The number comes from the turn's own start, not from the last
+   * heartbeat, so a long silent tool call still counts.
+   */
+  const elapsed = (() => {
+    const startedAt = feed.work.startedAt ?? null;
+    if (feed.work.mode !== 'live' || startedAt === null) return null;
+    const { hours, minutes, seconds } = elapsedParts(feed.nowMs - startedAt);
+    if (hours > 0) return t('elapsedHours', { hours, minutes });
+    if (minutes > 0) return t('elapsedMinutes', { minutes, seconds });
+    return t('elapsedSeconds', { seconds });
+  })();
+  const liveLabel = feed.agentName && phase ? t('liveAgent', { agent: feed.agentName, phase }) : phase ?? t('writing');
   const statusLabel =
     feed.work.mode === 'live'
-      ? feed.agentName && phase
-        ? t('liveAgent', { agent: feed.agentName, phase })
-        : phase ?? t('writing')
+      ? elapsed
+        ? `${liveLabel} · ${elapsed}`
+        : liveLabel
       : feed.work.mode === 'recent-write'
         ? feed.agentName && age
           ? t('recentWriteAgent', { agent: feed.agentName, age })
