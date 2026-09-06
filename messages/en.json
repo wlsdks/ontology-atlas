@@ -4414,6 +4414,18 @@
       "compileTooltip": "Start one agent turn that reads the sources and writes wiki pages. Every write waits for you.",
       "lint": "Check the wiki",
       "lintTooltip": "Start one agent turn that reads the wiki pages and reports disagreements, superseded claims, missing links, and names without a page. It writes nothing.",
+      "candidatesHeader": "Names without a page · {count}",
+      "candidateKind": {
+        "domain": "domain",
+        "capability": "capability",
+        "element": "element",
+        "person": "person · stays in the wiki",
+        "organisation": "organisation · stays in the wiki",
+        "other": "not a map concept"
+      },
+      "candidatePages": "{count, plural, one {on # page} other {on # pages}}",
+      "propose": "Propose as node",
+      "proposeTooltip": "Start one agent turn that reads these pages and proposes one ontology node. The write stops at your permission card.",
       "logCompile": "Last compile {when}: {summary}",
       "logLint": "Last check {when}: {summary}",
       "empty": "No wiki pages yet. A page is Markdown with no kind:, in the shape wiki/_template.md holds.",

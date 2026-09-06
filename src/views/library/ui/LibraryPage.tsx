@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { useLocalVault, useVaultIdentityScope } from "@/entities/vault-session";
 import { isWikiPage } from "@/entities/docs-vault";
+import type { LintNodeCandidate } from "@/features/library";
 import type { LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import {
@@ -14,9 +15,11 @@ import {
   buildCompileBrief,
   appendWikiLog,
   buildLintBrief,
+  buildProposeNodeBrief,
   describeCompileTurn,
   describeLintTurn,
   judgePageWrite,
+  parseLintCandidates,
   selectCompileTargets,
   discoverSources,
   FindDocumentsDialog,
@@ -433,6 +436,13 @@ export function LibraryPage() {
    * and for a check the counts the report ended with. The agent's transcript is not the
    * source of the compile line; the folder is.
    */
+  /**
+   * Names the last Check-the-wiki run found on three or more pages with no page of their
+   * own — the wiki's candidates for the graph. Read from the report's closing block when
+   * a lint turn completes; cleared by the next lint. Never persisted: a candidate is an
+   * offer, and the offer is remade each time the wiki is checked.
+   */
+  const [candidates, setCandidates] = useState<LintNodeCandidate[]>([]);
   const latestDocsRef = useRef(docs);
   useEffect(() => {
     latestDocsRef.current = docs;
@@ -454,6 +464,8 @@ export function LibraryPage() {
         if (completion.outcome === "cancelled") return;
         const after = stamp(latestDocsRef.current);
         const lastAgentText = [...completion.events].reverse().find((event) => event.kind === "agent")?.text ?? null;
+        if (kind === "lint") setCandidates(parseLintCandidates(lastAgentText));
+        if (kind === "propose") return;
         const summary =
           kind === "lint"
             ? describeLintTurn(lastAgentText)
@@ -467,6 +479,34 @@ export function LibraryPage() {
       };
     },
     [agent.openingRequest?.kind, agent.runtime, handle, model.sources],
+  );
+
+  /**
+   * The bridge shows only where there is a map to bridge to. A folder of documents with
+   * no `kind:` node anywhere is a wiki on its own — the person who opened it asked for
+   * pages, not an ontology — and offering "propose as node" there would press a concept
+   * they never chose. With even one node in the folder the offer is meaningful.
+   */
+  const hasOntology = useMemo(
+    () => docs.some((doc) => typeof doc.frontmatter.kind === "string" && doc.frontmatter.kind.trim() !== "" && !doc.slug.startsWith("wiki/")),
+    [docs],
+  );
+
+  const handlePropose = useCallback(
+    (candidate: LintNodeCandidate) => {
+      try {
+        agent.start(
+          buildProposeNodeBrief({ candidate, locale, vaultRoot: nativeVaultRootPath ?? "" }),
+          "propose",
+        );
+      } catch (error) {
+        toast.show(
+          t("wiki.compileFailed", { reason: error instanceof Error ? error.message : String(error) }),
+          "error",
+        );
+      }
+    },
+    [agent, locale, nativeVaultRootPath, t, toast],
   );
 
   const handleLint = useCallback(() => {
@@ -602,6 +642,8 @@ export function LibraryPage() {
             onFindDocuments={handleFindDocuments}
             onCompile={agent.route === "agent" ? handleCompile : null}
             onLint={agent.route === "agent" ? handleLint : null}
+            candidates={candidates}
+            onPropose={agent.route === "agent" && hasOntology ? handlePropose : null}
             // Compile hands the folder to a coding agent, whose own provider traffic
             // Atlas is not in the path of and does not log. Saying so beside the button
             // rather than in a settings page is the whole point.

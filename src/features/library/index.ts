@@ -11,7 +11,9 @@ export {
   rememberDeclinedCandidates,
 } from "./lib/declined-candidates";
 export { buildCompileBrief, selectCompileTargets } from "./lib/compile-brief";
-export { buildLintBrief } from "./lib/lint-brief";
+export { buildLintBrief, isMapKind, parseLintCandidates } from "./lib/lint-brief";
+export type { LintNodeCandidate } from "./lib/lint-brief";
+export { buildProposeNodeBrief } from "./lib/propose-node-brief";
 export { judgePageWrite } from "./lib/judge-page-write";
 export { appendWikiLog, describeCompileTurn, describeLintTurn, parseWikiLog } from "./lib/wiki-log";
 export type { WikiLogEntry } from "./lib/wiki-log";

@@ -4414,6 +4414,18 @@
       "compileTooltip": "원문을 읽고 위키 문서를 쓰는 에이전트 턴을 한 번 시작합니다. 쓰기는 모두 사람의 허락을 기다립니다.",
       "lint": "위키 점검",
       "lintTooltip": "위키 문서를 읽고 어긋남·대체된 주장·빠진 연결·문서 없는 이름을 보고하는 에이전트 턴을 한 번 시작합니다. 아무것도 쓰지 않습니다.",
+      "candidatesHeader": "문서 없는 이름 · {count}",
+      "candidateKind": {
+        "domain": "도메인",
+        "capability": "역량",
+        "element": "요소",
+        "person": "사람 · 위키에 남음",
+        "organisation": "조직 · 위키에 남음",
+        "other": "지도 개념 아님"
+      },
+      "candidatePages": "문서 {count}곳",
+      "propose": "노드로 제안",
+      "proposeTooltip": "이 문서들을 읽고 온톨로지 노드 하나를 제안하는 에이전트 턴을 한 번 시작합니다. 쓰기는 허락 카드에서 멈춥니다.",
       "logCompile": "마지막 정리 {when}: {summary}",
       "logLint": "마지막 점검 {when}: {summary}",
       "empty": "아직 위키 문서가 없습니다. 위키 문서는 kind: 가 없는 마크다운이고, 서식은 wiki/_template.md 에 있습니다.",

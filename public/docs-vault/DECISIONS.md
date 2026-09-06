@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — A name the wiki keeps mentioning becomes a node candidate, and the graph is entered only through the card
+
+**Why**: the Check-the-wiki report on two corpora ended each time with names on three or more pages and no page of their own — people, systems, contractors. In the LLM Wiki pattern those become entity pages the model writes; here a wiki page is what a document said and a node is what we mean, so an entity page would be a node nobody reviewed. The report's last list was prose a person had to retype.
+**Prior**: 2026-09-05 "A vault holds three kinds of file and only one is the graph…" stands and is the boundary this record keeps; 2026-09-06 "The permission card judges a wiki page before Allow…" stands and is the gate this reuses.
+**Decision**: the Lint brief ends with one fenced JSON block of node candidates (name, kind among domain / capability / element / person / organisation / other, pages, why); the Library parses only that block and lists the names under the Wiki. A Propose chip appears only for the three map kinds, and only in a folder that already holds a `kind:` node — a document folder without one is a wiki on its own. Pressing it starts one agent turn whose only write is `add_concept`, after reading the pages and the vault's kinds and domains, with the pages cited as `[[wiki/…]]` links in the body and the reason for kind and parent stated first. The write reaches the ontology-write card; the wiki pages are not edited and `describes:` is not set. Candidates are not persisted: the next check remakes the offer.
+**Dissent**: an app-side `add_concept` without an agent would be cheaper and deterministic; rejected because choosing kind and parent is a judgement, and the card already exists to put a judgement in front of the person.
+**Falsifier**: a node landing with a kind or parent the person did not see on the card; a candidate row surviving a check that no longer names it; a wiki page changed by a propose turn.
+**Owner**: jinan
+
 ## 2026-09-06 — The permission card judges a wiki page before Allow, the app keeps the wiki's log, and underscore files are furniture
 
 **Why**: a live Compile turn in the fresh build reached its first page write with the card saying only the path; the codes showed afterwards. The owner asked whether `index.md` and `log.md` belong here: without a commit there is no history, and with one there are diffs, not "Lint found three disagreements". The template was listed as a page and opened first.

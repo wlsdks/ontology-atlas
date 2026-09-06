@@ -753,7 +753,19 @@ Four one-click doors:
   two pages that share a topic or a source without linking, and a name on three or
   more pages with no page of its own, which the brief labels an ontology node
   candidate. It modifies nothing; enabled from two pages up, since one page has
-  nothing to disagree with. The brief carries what the script already found (the page
+  nothing to disagree with. The report ends with those names in a block a program
+  reads, and the Library lists them under the Wiki as **Names without a page**. The
+  report sorts each name: something the code builds (a domain, capability or element),
+  a person, an organisation, or other. Only the first sort gets a **Propose as node**
+  chip, and only in a folder that already holds an ontology — a folder of documents
+  with no `kind:` node is a wiki on its own, and nobody who opened it asked for a map.
+  The chip starts one agent turn that reads the pages carrying the name and the vault's
+  own kinds and domains, then calls `add_concept` once, citing those pages as
+  `[[wiki/…]]` links in the node's body. The write reaches the ontology-write card like
+  any other; nothing touches the wiki pages, and `describes:` stays the person's to add
+  after review. People and organisations stay names in the wiki, linked by the pages
+  that mention them: the map is the code's ontology, and this is the one place the
+  wiki flows into it, through the person. The brief carries what the script already found (the page
   and folder codes the Wiki list shows) and asks the agent not to repeat them, so the
   model's reading goes to judgement.
 

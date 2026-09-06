@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { BookText, FilePlus2, FileStack, FileText, Search, Sparkles, Stethoscope } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
+import { isMapKind, type LintNodeCandidate } from "@/features/library";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { writerLabel } from "../../lib/writer-label";
@@ -61,6 +62,10 @@ export interface LibrarySectionProps {
   onCompile: (() => void) | null;
   /** Starts the report-only health check; null where no agent can run, like Compile. */
   onLint: (() => void) | null;
+  /** Names the last check found with no page of their own — offered as ontology node candidates. */
+  candidates: readonly LintNodeCandidate[];
+  /** Starts one agent turn that proposes the candidate through the ontology-write card; null like the others. */
+  onPropose: ((candidate: LintNodeCandidate) => void) | null;
   /**
    * What leaves this computer when Compile runs, stated beside the button that starts it.
    *
@@ -159,6 +164,8 @@ export function LibrarySection({
   onFindDocuments,
   onCompile,
   onLint,
+  candidates,
+  onPropose,
   transferNote,
   vaultLabel,
   busy,
@@ -460,6 +467,50 @@ export function LibrarySection({
             {t("wiki.empty")}
           </p>
         )}
+        {candidates.length > 0 ? (
+          // The wiki's candidates for the graph: a name the check found on three or more
+          // pages with no page of its own. Not a page to write — a node to propose, and
+          // the proposal goes through the same card every ontology write does.
+          <section
+            data-testid="library-candidates"
+            aria-label={t("wiki.candidatesHeader", { count: candidates.length })}
+            className="flex-none px-2 pb-1"
+          >
+            <p className="px-1 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+              {t("wiki.candidatesHeader", { count: candidates.length })}
+            </p>
+            <ul className="flex flex-col gap-0.5">
+              {candidates.map((candidate) => (
+                <li
+                  key={`${candidate.name}\u0000${candidate.pages.join(",")}`}
+                  data-testid="library-candidate"
+                  className="flex min-w-0 items-center gap-2 rounded-chip px-1 py-0.5"
+                >
+                  <span className="min-w-0 flex-1 truncate text-label text-[color:var(--color-text-primary)]" title={candidate.why || undefined}>
+                    {candidate.name}
+                  </span>
+                  <span className="flex-none text-caption text-[color:var(--color-text-quaternary)]">
+                    {t(`wiki.candidateKind.${candidate.kind}`)} · {t("wiki.candidatePages", { count: candidate.pages.length })}
+                  </span>
+                  {onPropose && isMapKind(candidate.kind) ? (
+                    <Tooltip content={t("wiki.proposeTooltip")}>
+                      <Chip
+                        data-testid="library-candidate-propose"
+                        onClick={() => onPropose(candidate)}
+                        disabled={busy}
+                        tone="muted"
+                        className="flex-none hover:text-[color:var(--color-text-primary)]"
+                        aria-label={`${t("wiki.propose")}: ${candidate.name}`}
+                      >
+                        <span className="min-w-0 truncate">{t("wiki.propose")}</span>
+                      </Chip>
+                    </Tooltip>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         {transferNote ? (
           <p
             data-testid="library-transfer"

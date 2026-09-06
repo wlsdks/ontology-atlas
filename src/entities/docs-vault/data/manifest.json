@@ -838,9 +838,10 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 105464,
+      "wordCount": 105817,
       "updatedAt": "2026-09-06",
       "linksOut": [
+        "wiki/…",
         "wiki/<slug>",
         "slug"
       ]
@@ -945,12 +946,13 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 29876,
+      "wordCount": 30057,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "ANALYSIS-RECORDS",
         "slug",
         "project:slug",
+        "wiki/…",
         "oldSlug"
       ]
     },
@@ -4297,6 +4299,18 @@
         "fromSlug": "PO-PILOT",
         "context": "sures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in **[`DECISIONS.md`]**; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run `pnpm",
         "linkText": "`DECISIONS.md`"
+      }
+    ],
+    "wiki/…": [
+      {
+        "fromSlug": "DECISIONS",
+        "context": "whose only write is `add_concept`, after reading the pages and the vault's kinds and domains, with the pages cited as `**[wiki/…]**` links in the body and the reason for kind and parent stated first. The write reaches the ontology-write card; the wiki",
+        "linkText": "wiki/…"
+      },
+      {
+        "fromSlug": "FEATURES",
+        "context": "ages carrying the name and the vault's own kinds and domains, then calls `add_concept` once, citing those pages as `**[wiki/…]**` links in the node's body. The write reaches the ontology-write card like any other; nothing touches the wiki pages,",
+        "linkText": "wiki/…"
       }
     ],
     "wiki/<slug>": [

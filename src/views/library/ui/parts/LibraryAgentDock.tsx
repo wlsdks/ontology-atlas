@@ -31,8 +31,8 @@ type AcpChatPanelProps = ComponentProps<typeof AcpChatPanel>;
  * that only says "something is happening" would compete with the one that says what.
  */
 export interface LibraryAgentOpeningRequest {
-  /** `compile` writes pages under the permission gate; `lint` reads them and reports. */
-  kind: "compile" | "lint";
+  /** `compile` writes pages under the permission gate; `lint` reads them and reports; `propose` writes one node through the ontology-write card. */
+  kind: "compile" | "lint" | "propose";
   text: string;
   nonce: number;
 }

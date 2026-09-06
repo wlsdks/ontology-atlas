@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildLintBrief } from "./lint-brief";
+import { buildLintBrief, isMapKind, parseLintCandidates } from "./lint-brief";
 
 const PAGES = [
   { slug: "wiki/plan", title: "Plan", sourcePaths: ["sources/plan.pdf"], createdBy: "agent:claude", compiledAt: null },
@@ -55,5 +55,44 @@ describe("the Lint brief hands over what the script already found", () => {
   it("says nothing about the script when there is nothing to hand over", () => {
     const brief = buildLintBrief({ pages: PAGES, locale: "en", vaultRoot: VAULT_ROOT, findings: new Map() });
     expect(brief).not.toContain("Already found");
+  });
+});
+
+describe("the report's last block is what a program reads", () => {
+  it("asks for the block in both locales", () => {
+    for (const locale of ["en", "ko"]) {
+      const brief = buildLintBrief({ pages: PAGES, locale, vaultRoot: VAULT_ROOT });
+      expect(brief).toContain('"nodeCandidates"');
+      expect(brief).toContain("person|organisation|other");
+    }
+  });
+
+  it("reads candidates from the last fenced json block and normalises them", () => {
+    const text = [
+      "### 4. Concept without a page",
+      "- Teodor Vasquez — three pages",
+      "",
+      "```json",
+      '{"nodeCandidates":[{"name":" Teodor Vasquez ","kind":"person","pages":["wiki/plan.md","wiki/minutes"],"why":"named on three pages"},{"name":"Export Worker","kind":"element","pages":["wiki/arch"]},{"name":""}]}',
+      "```",
+    ].join("\n");
+    expect(parseLintCandidates(text)).toEqual([
+      { name: "Teodor Vasquez", kind: "person", pages: ["wiki/plan", "wiki/minutes"], why: "named on three pages" },
+      { name: "Export Worker", kind: "element", pages: ["wiki/arch"], why: "" },
+    ]);
+  });
+
+  it("yields nothing for prose, a malformed block, or no block — never a guess", () => {
+    expect(parseLintCandidates("Concept without a page: Teodor Vasquez")).toEqual([]);
+    expect(parseLintCandidates("```json\n{\"nodeCandidates\": [oops]}\n```")).toEqual([]);
+    expect(parseLintCandidates(null)).toEqual([]);
+    expect(parseLintCandidates("```json\n{\"nodeCandidates\":[]}\n```")).toEqual([]);
+  });
+});
+
+describe("only what the code builds may become a node", () => {
+  it("admits domain, capability and element and refuses person, organisation and other", () => {
+    expect(["domain", "capability", "element"].every((k) => isMapKind(k as never))).toBe(true);
+    expect(["person", "organisation", "other"].some((k) => isMapKind(k as never))).toBe(false);
   });
 });

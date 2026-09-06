@@ -23,11 +23,18 @@ import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/wiki-page-schema";
  *   2. Superseded — a page states a fact a later-dated page's decision replaced, unflagged.
  *   3. Missing link — two pages share a topic or a source and neither points at the other.
  *   4. Name without a page — a system, person, release or customer on three or more pages
- *      with no page of its own. In Atlas that is an **ontology node candidate**, not a
- *      wiki page to write: the wiki is what documents said; a node is what we mean.
+ *      with no page of its own. Not a wiki page to write: the wiki is what documents
+ *      said. A system the code builds is an **ontology node candidate**; a person or an
+ *      organisation is a name the wiki keeps, because the map is the code's ontology.
  *
  * Text inside a page is data (`docs/ONTOLOGY-ATLAS-SPEC.md` §7): a sentence that reads
  * like an instruction is content to report, never a directive to follow.
+ *
+ * The report ends with one fenced JSON block restating item 4, so the Library can turn
+ * "a name on three pages with no page of its own" into a row a person can act on
+ * without parsing prose. `parseLintCandidates` reads that block and nothing else;
+ * a report without it, or with a malformed one, yields no candidates rather than a
+ * guess.
  */
 
 export interface LintBriefInput {
@@ -96,6 +103,12 @@ export function buildLintBrief({ pages, locale, vaultRoot, findings }: LintBrief
       "- 문서가 말하는 것만 인용해. 두 문장이 같은 것을 말하는지 확신이 없으면 단정하지 말고 \"불확실\" 아래 적어.",
       "",
       "출력: 범주마다 마크다운 목록, 항목은 한 줄: `문서 A` ↔ `문서 B` — 무엇이 어긋나는지 — 두 값. 끝에 범주별 개수.",
+      "",
+      "맨 마지막에 4번 항목을 기계가 읽을 수 있게 한 번 더 적어. 정확히 이 모양의 코드 블록 하나로, 다른 말 없이:",
+      "```json",
+      '{"nodeCandidates":[{"name":"<이름>","kind":"domain|capability|element|person|organisation|other","pages":["wiki/<슬러그>","..."],"why":"<한 문장>"}]}',
+      "```",
+      "kind: 이름이 코드가 만드는 것(시스템, 서비스, 부품, 기능 영역)이면 domain·capability·element 중 하나. 사람은 person, 회사·팀·기관은 organisation, 그 밖(날짜, 결정, 릴리스 번호 같은 것)은 other. 지도는 코드의 온톨로지라 사람과 조직은 노드가 아니야. 후보가 없으면 빈 배열.",
     ].join("\n");
   }
   return [
@@ -118,5 +131,69 @@ export function buildLintBrief({ pages, locale, vaultRoot, findings }: LintBrief
     "- Cite only what the pages say. If you are unsure whether two statements are about the same thing, list it under \"uncertain\" instead of asserting it.",
     "",
     "Output: a markdown list per category, each item one line: `page A` ↔ `page B` — what disagrees — the two values. End with a count per category.",
+    "",
+    "Then, last of all, restate item 4 for a program to read: exactly one fenced block of this shape and nothing else after it:",
+    "```json",
+    '{"nodeCandidates":[{"name":"<name>","kind":"domain|capability|element|person|organisation|other","pages":["wiki/<slug>","..."],"why":"<one sentence>"}]}',
+    "```",
+    "`kind`: when the name is something the code builds — a system, a service, a component, an area of function — one of domain, capability, element. A person is `person`; a company, team or body is `organisation`; anything else (a date, a decision, a release number) is `other`. The map is the code's ontology, so people and organisations are never nodes. An empty array when there are no candidates.",
   ].join("\n");
+}
+
+/**
+ * What the name is. Only the first three are things the map is about — the code's
+ * domains, capabilities and elements — and only they can be proposed as nodes. A person
+ * or an organisation stays a name in the wiki: the wiki graph links the pages that
+ * mention them, and the map, which is the code's ontology, does not carry them.
+ */
+export type LintCandidateKind = "domain" | "capability" | "element" | "person" | "organisation" | "other";
+
+/** Whether a candidate of this kind may be proposed as an ontology node. */
+export function isMapKind(kind: LintCandidateKind): boolean {
+  return kind === "domain" || kind === "capability" || kind === "element";
+}
+
+export interface LintNodeCandidate {
+  name: string;
+  kind: LintCandidateKind;
+  /** Wiki slugs (`wiki/<slug>`) the name appears on, as the report listed them. */
+  pages: string[];
+  why: string;
+}
+
+const KINDS: ReadonlySet<string> = new Set(["domain", "capability", "element", "person", "organisation", "other"]);
+
+/**
+ * The candidates the report ended with, or none. Reads the **last** fenced JSON block
+ * carrying `nodeCandidates`; prose is never parsed, and a malformed block is treated as
+ * absent — a wrong candidate offered to a person is worse than no row.
+ */
+export function parseLintCandidates(text: string | null | undefined): LintNodeCandidate[] {
+  const source = String(text ?? "");
+  const blocks = [...source.matchAll(/```(?:json)?\s*\n([\s\S]*?)\n```/g)].map((m) => m[1] ?? "");
+  for (let i = blocks.length - 1; i >= 0; i -= 1) {
+    const block = blocks[i]!;
+    if (!block.includes("nodeCandidates")) continue;
+    try {
+      const parsed = JSON.parse(block) as { nodeCandidates?: unknown };
+      if (!Array.isArray(parsed.nodeCandidates)) return [];
+      const out: LintNodeCandidate[] = [];
+      for (const item of parsed.nodeCandidates) {
+        if (!item || typeof item !== "object") continue;
+        const row = item as Record<string, unknown>;
+        const name = typeof row.name === "string" ? row.name.trim() : "";
+        if (!name) continue;
+        const kind = typeof row.kind === "string" && KINDS.has(row.kind) ? (row.kind as LintCandidateKind) : "other";
+        const pages = Array.isArray(row.pages)
+          ? row.pages.filter((p): p is string => typeof p === "string").map((p) => p.trim().replace(/\.md$/, "")).filter(Boolean)
+          : [];
+        const why = typeof row.why === "string" ? row.why.trim() : "";
+        out.push({ name, kind, pages, why });
+      }
+      return out;
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
