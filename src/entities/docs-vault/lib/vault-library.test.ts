@@ -167,6 +167,7 @@ describe('the library model', () => {
       ['sources/budget.xlsx', 'not-compiled'],
     ]);
     expect(model.needsCompileCount).toBe(1);
+    expect(model.notCompiledCount + model.staleCount).toBe(model.needsCompileCount);
   });
 
   it('names the pages citing a source', () => {
@@ -178,7 +179,7 @@ describe('the library model', () => {
 
   it('holds no sources and no wiki pages for a folder that has neither', () => {
     const model = buildLibraryModel({ sources: undefined, docs: [], hashes: new Map() });
-    expect(model).toMatchObject({ sources: [], wikiPages: [], needsCompileCount: 0 });
+    expect(model).toMatchObject({ sources: [], wikiPages: [], needsCompileCount: 0, notCompiledCount: 0, staleCount: 0 });
   });
 });
 

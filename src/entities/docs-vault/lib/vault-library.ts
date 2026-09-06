@@ -173,6 +173,11 @@ export interface LibraryModel {
   wikiPages: LibraryWikiPage[];
   /** Sources whose state is `not-compiled` or `stale` — the count Compile acts on. */
   needsCompileCount: number;
+  /** Sources nobody has written up. The footer names this apart from `staleCount`: a person
+   *  reading "5 not written up" when two of them have pages is being told something false. */
+  notCompiledCount: number;
+  /** Sources whose page cites a hash the bytes no longer match. */
+  staleCount: number;
   /** Paths worth hashing: cited, hash recorded, not yet measured. */
   pathsNeedingHash: string[];
 }
@@ -210,6 +215,8 @@ export function buildLibraryModel({
     needsCompileCount: rows.filter(
       (row) => row.state === 'not-compiled' || row.state === 'stale',
     ).length,
+    notCompiledCount: rows.filter((row) => row.state === 'not-compiled').length,
+    staleCount: rows.filter((row) => row.state === 'stale').length,
     // `checking` **is** the definition of "worth hashing": cited, a hash recorded, and
     // nothing measured yet. The caller drops a path from its cache when the file's mtime
     // changes, which puts the row back into `checking` and back into this list.
