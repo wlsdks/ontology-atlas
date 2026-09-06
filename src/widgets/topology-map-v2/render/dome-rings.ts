@@ -24,6 +24,8 @@ interface DomeRingScreenSample {
 }
 
 interface DomeRingScreen {
+  /** Which tier this ring belongs to — only the legend's raise reads it. */
+  kind?: string;
   /** That tier's assembly factor 0..1, so rings rise and fade with their tier across the 2D↔3D transition. */
   a: number;
   points: readonly DomeRingScreenSample[];
@@ -50,11 +52,20 @@ export interface DomeRingsDrawState {
    * loop. Omitted, nothing flips.
    */
   labelMaxX?: number;
+  /**
+   * The tier whose ring is currently raised — the legend row under the pointer.
+   * That ring strokes in `tokens.strokeRaised` at full base alpha while every
+   * other ring is untouched, so "which plane is this" is answered by the picture
+   * rather than by the reader counting rings. Null raises nothing.
+   */
+  raisedKind?: string | null;
 }
 
 export interface DomeRingsTokens {
   /** Ring ink — the lowest ink rank, that of a coordinate system. */
   stroke: string;
+  /** The ink a raised ring takes — see `DomeRingsDrawState.raisedKind`. */
+  strokeRaised?: string;
   /** Tier-name ink. A name has to be read, so it is a step above the ring it names. */
   labelFill: string;
   /** Font string for a tier name — assembled by the caller from the label ramp. */
@@ -98,9 +109,15 @@ export function draw(ctx: CanvasRenderingContext2D, state: DomeRingsDrawState, t
   ctx.strokeStyle = tokens.stroke;
   ctx.lineCap = "butt";
   ctx.setLineDash([]);
+  const raisedKind = state.raisedKind ?? null;
+  const raisedStroke = tokens.strokeRaised ?? tokens.stroke;
 
   for (const ring of rings) {
     if (ring.a <= 0.01) continue;
+    // One ring at a time, and only while a legend row is hovered.
+    const raised = raisedKind !== null && ring.kind === raisedKind;
+    ctx.strokeStyle = raised ? raisedStroke : tokens.stroke;
+    const ringAlpha = raised ? 1 : baseAlpha;
     const points = ring.points;
     const count = points.length;
     if (count < 3) continue;
@@ -111,7 +128,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: DomeRingsDrawState, t
       // directly makes neighbouring segments claim different brightness at the
       // same point, showing a stair-step at every joint.
       const u = (from.u + to.u) / 2;
-      const alpha = baseAlpha * fog(u) * ring.a;
+      const alpha = ringAlpha * fog(u) * ring.a;
       if (alpha <= 0.004) continue;
       ctx.globalAlpha = alpha;
       ctx.lineWidth = Math.max(0.35, baseWidthPx * widthFactor(u));

@@ -451,6 +451,91 @@ export function domeLineWidthFactor(u: number): number {
   return 0.35 + 0.55 * (1 - c);
 }
 
+/**
+ * **The floor under a resting relation line's depth ink** — the product
+ * `fog alpha × line-width factor`, as a share of the 0.90 a fully lit near line
+ * draws at.
+ *
+ * ## What was wrong, in numbers
+ *
+ * Depth attenuates a line twice: fog multiplies its alpha (1.0 → 0.09,
+ * `domeFogAlpha`) and the width factor thins the stroke (0.90 → 0.35,
+ * `domeLineWidthFactor`). Each is defensible alone; stacked, the far end draws at
+ * **3.5% of the near end's ink** (0.09 × 0.35 = 0.0315). Measured on the sample
+ * vault at 1512×982, DPR 2, nothing selected or hovered, reading each drawn line's
+ * own pixels against the ground beside it (2026-09-06):
+ *
+ * | at rest | contains median | depends median | contains under 1.5 : 1 |
+ * |---|---|---|---|
+ * | 2D map | 5.80 : 1 | 3.58 : 1 | 1 of 10 |
+ * | Cone | 1.26 : 1 | 1.25 : 1 | 109 of 160 |
+ * | Strata | 1.33 : 1 | 1.14 : 1 | 58 of 95 |
+ * | Cloud | 1.14 : 1 | 1.11 : 1 | 96 of 102 |
+ *
+ * Owner report, 2026-09-06, on the installed app in Cloud: the lines are so faint
+ * that the relations are all but invisible and only the selected pair reads. The
+ * same stacking is what made the Strata plane rings disappear at 0.12
+ * (`DOME_STRATA_RING_ALPHA`), and the answer is the same shape as the one the node
+ * rim already carries (`DOME_RIM_FOG_FLOOR`).
+ *
+ * ## Why the floor is on the product
+ *
+ * The eye is handed the product, not either factor, so that is what is held. Past
+ * the crossover (u ≈ 0.17) the resting line's ink is **constant** rather than
+ * falling, which is why the alpha rises there as the width keeps falling — the two
+ * trade against each other at a fixed total. Flooring either factor alone was
+ * tried and rejected: the alpha alone cannot reach this product against a 0.35
+ * width without going to 1 (no fog at all), and the two independent floors that do
+ * stay monotone can only reach 0.45 together, which measured 1.47–1.51 : 1 and is
+ * still not a line you can follow.
+ *
+ * What still carries depth: the width factor down to `DOME_EDGE_WIDTH_FLOOR`, the
+ * halo (`domeHaloPx`), the node fog, perspective size, and the draw order. And
+ * nothing at all changes on the near side — below the crossover the raw product is
+ * already above the floor.
+ *
+ * After, at the same viewport and sample (contains / depends median): Cone
+ * 1.89 / 1.75, Strata 1.75 / 1.78, Cloud 1.78 / 1.78. The direction's bar was
+ * ≥ 1.8 : 1 for containment and ≥ 1.5 : 1 for dependency at rest; dependency
+ * clears it everywhere and containment lands on it, the two readings just under
+ * being inside the ±0.1 the sample moves by between loads (the entry pose and the
+ * device pixel ratio both wobble). Ego, hover and selected lines were already
+ * exempt from fog and are untouched, as is the dim state of non-ego lines while
+ * something is selected, and as is the whole 2D map.
+ * Browser gate: `tests/e2e/map-3d-relation-ink.spec.ts`.
+ */
+const DOME_EDGE_INK_FLOOR = 0.62;
+
+/**
+ * The floor under a resting relation line's **width factor**. Without it the far
+ * end would meet the ink floor as a 0.35-wide hairline at alpha 1 — a crisp bright
+ * thread behind a soft grey one, which reads as nearer than the line in front of
+ * it. Holding the width up keeps the alpha's share of the trade inside
+ * 1.00 → 0.72 → 0.86 instead of running to 1.
+ */
+const DOME_EDGE_WIDTH_FLOOR = 0.72;
+
+/**
+ * Line-width multiplier for a **resting relation line** — the raw attenuation,
+ * held at `DOME_EDGE_WIDTH_FLOOR`. A sub-pixel hairline loses coverage to
+ * antialiasing before it loses alpha, which is why the width is part of the ink
+ * floor rather than something beside it.
+ */
+export function domeEdgeWidthFactor(u: number): number {
+  return Math.max(domeLineWidthFactor(u), DOME_EDGE_WIDTH_FLOOR);
+}
+
+/**
+ * Fog alpha for a **resting relation line** — the raw fog, lifted only as far as
+ * the ink floor needs against this depth's floored width, and never past
+ * the near-end value of 1. Nodes, plane rings and interaction-exempt lines keep
+ * `domeFogAlpha` unchanged.
+ */
+export function domeEdgeFogAlpha(u: number): number {
+  return Math.min(1, Math.max(domeFogAlpha(u), DOME_EDGE_INK_FLOOR / domeEdgeWidthFactor(u)));
+}
+
+
 /*
  * ── Far-side detail ramp — folds the back hemisphere's secondary strokes away
  * continuously with depth ─────────────────────────────────────────────────────

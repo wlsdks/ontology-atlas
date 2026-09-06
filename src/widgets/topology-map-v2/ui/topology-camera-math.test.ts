@@ -550,3 +550,84 @@ describe("hitTestWorld — 3D 깊이 우선 (겹친 디스크는 가까운 노�
     ).toBe("far");
   });
 });
+
+describe("hitTestWorld — 그려진 잉크가 여유 링을 이긴다 (3D 원판 한가운데 클릭 회귀)", () => {
+  const camera = {
+    x: { value: 0, velocity: 0 },
+    y: { value: 0, velocity: 0 },
+    scale: { value: 1, velocity: 0 },
+  };
+  const tokens = { radiusProject: 30, radiusDomain: 17, radiusCapability: 11, radiusElement: 7 } as unknown as Parameters<typeof hitTestWorld>[4];
+  /*
+   * The measured shape of the defect (sample vault, 2026-09-06): a far element is
+   * drawn at r≈3.5 px next to a near domain drawn at r≈10 px, their centres about
+   * 15 px apart. Nothing of the domain is painted over the element, yet pointing
+   * at the element's own centre answered "domain", because the domain's 5 px
+   * courtesy ring reached that far and depth was decided before ink.
+   */
+  const nodes = [
+    { id: "element", kind: "element", x: 0, y: 0, magnitudeScale: 1 },
+    { id: "domain", kind: "domain", x: 20, y: 0, magnitudeScale: 1 },
+  ];
+  const world = {
+    nodes,
+    nodeById: new Map(nodes.map((n) => [n.id, n])),
+  } as unknown as Parameters<typeof hitTestWorld>[0];
+  const depth = (n: { id: string }) => (n.id === "element" ? 0.9 : 0.1);
+  // Both are scaled the way the dome scales them: element 7→3.5, domain 17→10.2.
+  const radiusScale = (n: { id: string }) => (n.id === "element" ? 0.5 : 0.6);
+  // Viewport 800×600 puts world (0,0) at (400,300).
+
+  it("먼 노드의 그려진 원판 한가운데는 가까운 노드의 여유 링에 빼앗기지 않는다", () => {
+    // domain: centre 20 px away, drawn radius 10.2, slack radius 15.2 — the cursor
+    // is inside its slack ring but on no domain pixel.
+    expect(
+      hitTestWorld(world, camera as never, 800, 600, tokens, 400, 300, undefined, undefined, radiusScale as never, depth as never),
+    ).toBe("element");
+  });
+
+  it("두 원판이 정말 겹치면 여전히 가까운(u 작은) 쪽이 이긴다", () => {
+    // x=409 is 9 px from the element's centre — outside its 3.5 px disc — and 11 px
+    // from the domain's, inside its 10.2 px disc. Real occlusion, near node wins.
+    expect(
+      hitTestWorld(world, camera as never, 800, 600, tokens, 409, 300, undefined, undefined, radiusScale as never, depth as never),
+    ).toBe("domain");
+  });
+
+  it("어느 잉크에도 닿지 않으면 여유 링 안에서 깊이가 결정한다 — 종전 규칙", () => {
+    // x=406 is 6 px from the element (slack only, 3.5+5=8.5) and 14 px from the
+    // domain (slack only, 10.2+5=15.2). Neither is painted here, so depth decides.
+    expect(
+      hitTestWorld(world, camera as never, 800, 600, tokens, 406, 300, undefined, undefined, radiusScale as never, depth as never),
+    ).toBe("domain");
+  });
+
+  it("히트 디스크는 계기가 보고하는 화면 좌표와 같은 투영을 쓴다 — 하나의 투영", () => {
+    /*
+     * `__atlasMap.nodes()` reports `(n.x + dome.dx − cam) × scale + viewport/2`
+     * and multiplies the radius by `dome.s`. The hit test must land on that same
+     * point from the same two inputs, or a click at a reported centre is judged
+     * against a node that is somewhere else. `dome-view.test.ts` proves the frame
+     * offset itself is `projectDomeCoord`; this proves the hit test consumes it.
+     */
+    const offset = (n: { id: string }) => (n.id === "element" ? { x: 120, y: -80 } : { x: 0, y: 0 });
+    const moved = [{ id: "element", kind: "element", x: 0, y: 0, magnitudeScale: 1 }];
+    const movedWorld = {
+      nodes: moved,
+      nodeById: new Map(moved.map((n) => [n.id, n])),
+    } as unknown as Parameters<typeof hitTestWorld>[0];
+    const reported = worldToScreen(camera as never, 800, 600, 0 + 120, 0 + -80);
+    expect(
+      hitTestWorld(movedWorld, camera as never, 800, 600, tokens, reported.x, reported.y, undefined, offset as never, radiusScale as never),
+    ).toBe("element");
+    // …and two pixels off the reported centre, the same answer. Below the drawn
+    // radius (3.5), so this is the disc itself rather than the courtesy ring.
+    expect(
+      hitTestWorld(movedWorld, camera as never, 800, 600, tokens, reported.x + 2, reported.y, undefined, offset as never, radiusScale as never),
+    ).toBe("element");
+    // The un-offset position is empty canvas — the offset is not decorative.
+    expect(
+      hitTestWorld(movedWorld, camera as never, 800, 600, tokens, 400, 300, undefined, offset as never, radiusScale as never),
+    ).toBeNull();
+  });
+});

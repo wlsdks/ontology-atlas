@@ -54,6 +54,33 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The Cone's tablet-portrait fill floor is re-measured in the browser at 0.34
+
+**Why**: `map-3d-cone-drawing.spec.ts` has never passed at 834×1112. The frame draws an outline of 486×406 px in a 510×1112 free canvas — 34.8%, identical across runs — against a 0.35 floor. Three numbers say the drawing is not what is wrong: the cone already spends 95.3% of the free width (486 of 510); its 1.197 : 1 silhouette caps the *area* it can cover in a portrait strip at 38.3% whatever the fit does, so 34.8% is 91% of the ceiling; and the missing 1.6 points are the fit's twin crediting the outline with 12 px of disc at each edge (`DOME_NODE_FIT_ALLOWANCE_PX`, sized for the project apex at r ≈ 14) where the drawing has elements at r ≈ 3.5.
+**Prior**: 2026-09-05 — the cone fit, owner direction B2 — stands. The fit is unchanged and `tests/contract/cone-fit-fill.contract.test.ts` keeps its own 0.35, because that gate is a statement about the fit rather than about the frame.
+**Decision**: Set the 834×1112 e2e fill floor to 0.34, the browser-measured value, with the ceiling arithmetic recorded beside it in the SCREENS table. The other three sizes keep 0.60.
+**Dissent**: 0.34 is a lowered bar, and a portrait tablet really does leave two thirds of its canvas empty. Someone could answer that by giving the cone a taller silhouette on portrait screens instead of accepting the area number as the wrong shape of measurement.
+**Falsifier**: A tablet-portrait review calls the cone small in that canvas rather than calling the metric wrong — which reopens the silhouette, not the floor.
+**Owner**: jinan
+
+## 2026-09-06 — Strata's tier names move to a legend rail, and the fit keeps its column clear
+
+**Why**: The four plane names hung on the rims themselves, and `render/dome-rings.ts` already recorded why: at 1040 the fit takes the widest plane's rim to the canvas edge, so there is no clear space outside the ring and the names sit on the graph — "four short words on top of the graph is the smaller cost". It is not the smaller cost once there is somewhere else to put them.
+**Prior**: 2026-09-06 (Strata) stands; this replaces the rim-name fallback it shipped with, and keeps it only for a canvas too short for the rail.
+**Decision**: A rail at the canvas's right edge, below the utility tiles: four rows at `text-label` in quaternary ink, equal 20 px heights, each row aligned to its plane's **projected** height and re-aligned every orbit and morph frame; hovering a row raises that plane's ring to the tertiary ink. Never both — the rim names return only when the rail reports it cannot place its rows. The overview fit reserves the rail's 56 px column (`TIER_LEGEND_RESERVE_PX`), because the rail covers under half the canvas height and `measureCanvasInsets` correctly refuses to treat it as a side panel; without that, three nodes were drawn under the rows at 1040×720. The inspector owns that edge while it is docked, so the rail unmounts rather than sharing it. Measured: 0 rect intersections, all four rows reachable at their centre, ink 5.34–5.37 : 1 on the canvas ground, at both 1512×982 and 1040×720.
+**Dissent**: The reservation is width the graph does not get. At 1040×720 it takes 6% of a 976 px canvas: fill 72.5% → 63.6% and two element pairs on one plane now touch where none did, so `map-3d-strata-drawing.spec.ts` moves that size to 0.60 and `sameTierMax` 2. Someone could argue the names were legible enough on the rims and the graph is the thing worth the pixels.
+**Falsifier**: A review at 1040×720 calls the graph cramped, or calls the rail's names harder to attach to their planes than the rim names were.
+**Owner**: jinan
+
+## 2026-09-06 — A resting relation line in 3D gets a floor under its depth ink
+
+**Why**: The owner, looking at the installed app in Cloud on the dogfood ontology, reported that the lines are so faint the connections are all but invisible and only the selected pair reads. Measured on the sample vault at 1512×982, DPR 2, nothing selected, reading each drawn line's own pixels against the ground beside it: containment lines read a median 1.26 : 1 in Cone, 1.33 in Strata, 1.14 in Cloud, where the same measurement on the 2D map reads 5.80 : 1. Depth attenuates a line twice — fog on its alpha (1.0 → 0.09) and the width factor on its stroke (0.90 → 0.35) — and the stacked product bottoms out at 3.5% of a near line's ink. The same stacking emptied the Strata rings at 0.12.
+**Prior**: 2026-08-18 (76) — the 3D fog dispensation — still stands for nodes and rings; this narrows it for relation lines only.
+**Decision**: `DOME_EDGE_INK_FLOOR` (0.62), with `DOME_EDGE_WIDTH_FLOOR` (0.72) so the alpha need not run to 1 to reach it. A resting line's fog × width product never falls below the floor: past the crossover (u ≈ 0.17) its ink is held constant instead of continuing down, and the two factors trade against each other at that total. Measured after: containment 1.75–1.89 : 1, dependency 1.75–1.78 : 1, against a bar of 1.8 and 1.5. Nodes, plane rings, ego, hover, selected lines, the selected-state dim of non-ego lines, and the whole 2D map are untouched. Gate: `tests/e2e/map-3d-relation-ink.spec.ts`, which reads the canvas back rather than asserting a token.
+**Dissent**: The hero engine's own comment beside `domeFogAlpha` — «this contrast *is* the 3D». Holding the far-side ink constant spends part of the depth cue, and the honest cost is that beyond the crossover only the surviving width falloff, the halo, the node fog, perspective size and the draw order separate near from far.
+**Falsifier**: The owner reads the far half of Cone or Cloud as flat — near and far no longer telling themselves apart at rest.
+**Owner**: jinan
+
 ## 2026-09-06 — Strata joins Cone and Cloud as a third 3D arrangement, and the three.js probe is declined
 
 **Why**: The three.js probe of 2026-09-06 (report THREE-PROBE-2026-09-06, on the `feat/three-probe` branch) measured equal frame time at 125 and 1,000 nodes, cost 137 kB gzip, and found its only real gain in a **structure**, not a renderer: Strata read tiers "by a distance" better than the cone. A structure is renderer-independent, so the canvas-2D engine can have it for free.
