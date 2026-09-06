@@ -96,11 +96,15 @@ export function describeLintTurn(finalText: string | null): string {
     const match = label.exec(text);
     return match ? Number(match[1]) : null;
   };
+  // The report is written in the screen's language (the brief is localized), so each
+  // count is read under its English or Korean label; the summary keeps the English keys,
+  // which the Library translates back when it draws the line (installed app, 2026-09-07:
+  // a Korean report ended with the localized count line and the log said "counts not stated").
   const counts = [
-    ["disagreement", pick(/Disagreement[^\d\n]*?(\d+)/i)],
-    ["superseded", pick(/Superseded[^\d\n]*?(\d+)/i)],
-    ["missing-link", pick(/Missing (?:cross-reference|link)[^\d\n]*?(\d+)/i)],
-    ["name-without-page", pick(/(?:Concept|Name) without a page[^\d\n]*?(\d+)/i)],
+    ["disagreement", pick(/(?:Disagreement|어긋남)[^\d\n]*?(\d+)/i)],
+    ["superseded", pick(/(?:Superseded|대체된 주장)[^\d\n]*?(\d+)/i)],
+    ["missing-link", pick(/(?:Missing (?:cross-reference|link)|빠진 연결)[^\d\n]*?(\d+)/i)],
+    ["name-without-page", pick(/(?:(?:Concept|Name) without a page|문서 없는 이름)[^\d\n]*?(\d+)/i)],
   ] as const;
   const known = counts.filter(([, n]) => n !== null);
   if (known.length === 0) return "ran; counts not stated";

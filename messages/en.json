@@ -4471,7 +4471,18 @@
       "viewOriginalOne": "View original: {name}",
       "originalMissing": "Cites {name}, which is not in this folder.",
       "compileCreateFile": "Create {path}",
-      "compileModifyFile": "Replace {path}"
+      "compileModifyFile": "Replace {path}",
+      "logCount": {
+        "disagreement": "disagreement {count}",
+        "superseded": "superseded {count}",
+        "missingLink": "missing link {count}",
+        "nameWithoutPage": "names without a page {count}"
+      },
+      "logNoCounts": "ran, counts not stated",
+      "logNew": "new",
+      "logRevised": "revised",
+      "logNothingNew": "nothing new",
+      "emptyNoTemplate": "No wiki pages yet, and no template in this folder. Start a wiki from Settings › Workspace: it writes wiki/_template.md, the shape every page follows."
     },
     "graph": {
       "title": "Graph",
