@@ -8,6 +8,7 @@ display_ko: 코드베이스 아키텍처
 capabilities: [capabilities/architecture-guided-development]
 created_by: "agent:unknown"
 elements: [elements/architecture-profile-contract, elements/architecture-workbench]
+relation_notes: { capabilities/architecture-guided-development: "Comparing reviewed architecture intent against a revision-stamped source observation, then deciding what should change and verifying it against the same contract, is what this responsibility area exists to do.", elements/architecture-profile-contract: "The parser and conformance evaluator turn a reviewed profile and observed imports into typed facts, keeping violations and unknowns apart rather than letting missing evidence read as compliance.", elements/architecture-workbench: The /architecture canvas is where a person reads each reviewed role beside what the source actually does and sees the delta between them named. }
 ---
 
 ## Definition

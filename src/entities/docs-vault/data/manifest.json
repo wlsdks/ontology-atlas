@@ -822,7 +822,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 104614,
+      "wordCount": 104847,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "slug"
@@ -2256,8 +2256,15 @@
         "relation_notes": {
           "capabilities/acp-runtime": "Agent integration owns launching the user's already-installed coding agent inside the app over ACP with an isolated config and a vault-scoped permission gate.",
           "capabilities/agent-work-visibility": "Agent integration owns the human-visible projection of current and recent AI-agent work across ACP heartbeats and vault activity logs.",
+          "capabilities/ai-analysis-review": "Agent integration owns the shared evidence and review history through which people and successor agents judge ACP analysis results.",
+          "capabilities/cli-developer-entry": "Developers and agents reach the same vault reads, writes, and connection diagnostics from a terminal when no app or MCP client is attached.",
+          "capabilities/mcp-connectors": "An external MCP server reaches the coding agent only as a descriptor handed into the ACP handshake, so the attachment rules and the runtime narrowing live with the agent surfaces.",
+          "capabilities/mcp-server": "The stdio JSON-RPC surface is how an AI coding agent reads and safely changes the same Markdown files a person reads.",
+          "capabilities/ontology-dna-presentation": "Its guided scenes are qualified from the Atlas read tools one completed coding-agent turn actually called, so it exists only where the app runs that conversation.",
+          "capabilities/vault-agent": "The connect flow and the in-app provider-neutral agent loop are how a person attaches an agent to this folder and checks the reads it cites.",
+          "elements/agents-destination": "The /agents/ screen gathers receiving, installing, attaching, repairing, and starting a conversation with a coding tool after three separate addresses held that one task.",
           "elements/installed-mcp-identity-gate": "The installed MCP identity gate is the concrete local delivery control that keeps the agent-integration domain bound to the exact app bundle and source evidence it ships.",
-          "capabilities/ai-analysis-review": "Agent integration owns the shared evidence and review history through which people and successor agents judge ACP analysis results."
+          "elements/vault-agent-panel": "The panel is where a person judges an agent's actual tool reads, audit logs, timeouts, and mandatory-read failures before trusting its answer."
         }
       },
       "headings": [],
@@ -2285,12 +2292,17 @@
         "elements": [
           "elements/architecture-profile-contract",
           "elements/architecture-workbench"
-        ]
+        ],
+        "relation_notes": {
+          "capabilities/architecture-guided-development": "Comparing reviewed architecture intent against a revision-stamped source observation, then deciding what should change and verifying it against the same contract, is what this responsibility area exists to do.",
+          "elements/architecture-profile-contract": "The parser and conformance evaluator turn a reviewed profile and observed imports into typed facts, keeping violations and unknowns apart rather than letting missing evidence read as compliance.",
+          "elements/architecture-workbench": "The /architecture canvas is where a person reads each reviewed role beside what the source actually does and sees the delta between them named."
+        }
       },
       "headings": [],
       "excerpt": "The responsibility area that declares reviewed implementation roles and dependency rules for a codebase, then compares observed source imports with that intent. It stays separate from the ontology map: architecture profiles describe how implementation is organized, while ontology nodes preserve what the product means a",
       "wordCount": 131,
-      "updatedAt": "2026-08-26",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
@@ -2357,13 +2369,26 @@
         ],
         "created_by": "human",
         "relation_notes": {
-          "capabilities/summary-freshness": "Graph modeling owns whether the compiled graph still tells the truth, so it also owns the advisory that a summary node's description has fallen behind the membership it declares."
+          "capabilities/reviewed-ontology-writing": "A typed change proposal is shown and approved before any frontmatter is written, so what the graph means stays a person's decision rather than the caller's.",
+          "capabilities/summary-freshness": "Graph modeling owns whether the compiled graph still tells the truth, so it also owns the advisory that a summary node's description has fallen behind the membership it declares.",
+          "capabilities/taxonomy": "Which kind a node is, and the category and status values it may carry, is the vocabulary the graph is authored in, and the spec rather than a folder or team name decides it.",
+          "capabilities/vault-ontology": "The five authorable kinds, the typed relation vocabulary, and the refusal to infer inverse or transitive edges are the schema this responsibility area defines.",
+          "elements/acp-ontology-write-review": "An agent's write tool stops at a typed change card while its read tools continue, so nothing edits vault Markdown before a person sees what it would change.",
+          "elements/category": "The cluster-box categories are one of the two taxonomy value sets a node carries.",
+          "elements/knowledge-graph": "The node and edge data model built from vault frontmatter is the compiled graph every other surface reads.",
+          "elements/ontology-change-review": "The pre-write card renders the exact typed change and keeps no second approval record, so confirmed frontmatter stays the only source of truth.",
+          "elements/ontology-class": "Each authorable kind needs one label and icon so the same five kinds read the same way on every surface.",
+          "elements/ontology-edit-redirect": "Old workbench addresses still carry links, and translating their parameters into the map's edit state keeps those links pointing at the surface that now does the editing.",
+          "elements/ontology-insights": "The Analysis workbench asks whether the loaded graph still holds together, covering what is missing, what connects, where the boundaries are, and what has gone stale.",
+          "elements/ontology-meaning-editor": "One relation at a time is chosen, previewed on the real map geometry, and written with an mtime guard after review, which is how a person authors meaning by hand.",
+          "elements/ontology-redirect": "The old /ontology address still receives links, and it lands them on the map with the index expanded instead of a broken query.",
+          "elements/status": "The eight seeded lifecycle statuses are the other taxonomy value set, with stable ids so records written earlier keep resolving."
         }
       },
       "headings": [],
       "excerpt": "Defines the five authorable kinds, reserved reader kind, actual storage/query/write relation vocabulary, and non-inference boundaries encoded in markdown frontmatter, compiling them into a deterministic graph for compilation and querying. It also owns whether that graph still tells the truth: alongside writing and comp",
       "wordCount": 171,
-      "updatedAt": "2026-08-25",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
@@ -2397,13 +2422,25 @@
         ],
         "created_by": "human",
         "relation_notes": {
-          "elements/native-vault-filesystem-bridge": "The native vault filesystem bridge is a direct implementation element of the local vault/data source domain."
+          "capabilities/data-source-mode": "One authoritative source has to be decided per turn so that bundled sample facts are never drawn over a mounted local folder during restore, a folder switch, or a route change.",
+          "capabilities/docs-vault-local": "Selecting, restoring, and reopening one local Markdown folder is how a person makes their own disk the live source of truth.",
+          "capabilities/project-data-source": "Project lists and bodies are read from the selected folder or the static sample, and creating or editing a project is allowed only when a local folder is mounted.",
+          "capabilities/vault-git-history": "Git is the record of what changed in the mounted folder and when, and this is where a person reads that record as concept-level changes.",
+          "capabilities/vault-sample-source": "A web visitor who has chosen no folder still needs something to read, and the bundled example is that source, offered on the web alone.",
+          "elements/atlas-git-panel": "The panel renders the vault-scoped status, snapshot summary, and expandable history entries a person reviews.",
+          "elements/docs-vault-entity": "It builds the manifest, tree, and frontmatter backlinks from the parsed Markdown, which is the data model every vault read starts from.",
+          "elements/docs-vault-view": "The /docs page is where a mounted folder's documents are actually opened and read.",
+          "elements/docs-vault-widget": "The editor, tree navigation, and backlinks panel are where a person edits a mounted folder's Markdown, with conflict detection on save.",
+          "elements/git": "The /git destination gives the vault's read-only history a first-class address for every audience.",
+          "elements/local-fs-handle": "Browser permission for a chosen directory handle is what makes a folder readable at all, and it keeps several recent folders apart.",
+          "elements/native-vault-filesystem-bridge": "The native vault filesystem bridge is a direct implementation element of the local vault/data source domain.",
+          "elements/private-vault-sidecar-boundary": "Private receipts and activity logs sit beside the Markdown under `.ontology-atlas`, and this boundary keeps those writes inside the real vault folder."
         }
       },
       "headings": [],
       "excerpt": "A local-first, backend-0 data source layer that selects markdown folders on the local disk (File System Access API), uses git as the source of truth, and provides demo sample vaults. README.md: \"A folder of Markdown files. Each file's frontmatter declares what it is... That is the whole database.\" docs/ARCHITECTURE.md:",
       "wordCount": 124,
-      "updatedAt": "2026-09-04",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
@@ -2439,12 +2476,30 @@
           "elements/public-quick-actions",
           "elements/root-entry"
         ],
-        "created_by": "human"
+        "created_by": "human",
+        "relation_notes": {
+          "capabilities/desktop-download-decision": "Comparing installers and their trust status in one place is where a visitor decides to install, and it offers the browser path when installing is blocked.",
+          "capabilities/first-run-starter": "Someone who has chosen no folder yet meets the map through a bundled sample and is told to open their own folder to light the same map with their data.",
+          "capabilities/guided-tour": "A new arrival is walked through the map and the core loop, demo clips included, before they know any of the surfaces.",
+          "capabilities/locale-switch": "The first screens have to be readable in the visitor's own language, and the locale prefix on every route keeps that choice across the shell.",
+          "elements/app-nav-rail": "The persistent desktop rail is the always-available way to reach every workbench destination, and it stays hidden until a real local vault exists.",
+          "elements/app-settings-menu": "Settings is where values are chosen, and it holds the AI connection, update checks, language, and the vault action that differs between browser and installed app.",
+          "elements/bottom-tab-bar": "Narrow screens need their own persistent navigation, and this bar resolves active state from the same registry as the desktop rail so the two cannot disagree.",
+          "elements/docs-quick-drawer": "Jumping to a vault document from anywhere belongs to the always-available shell rather than to the /docs page.",
+          "elements/download": "The /download page is what a shared link opens first, carrying the platform choices, the unsigned Windows warning, and the demo of what the product does.",
+          "elements/first-run": "After the download, the installed app offers only local create and open actions and reveals the workbench once a real vault exists.",
+          "elements/gateway-chrome": "An uninstalled web visitor needs one persistent nav and product identity across root, download, guide, and changelog, which the workbench rail deliberately does not carry.",
+          "elements/gateway-doc": "The guide and changelog give a visitor prose to read before installing, laid out for reading rather than for work.",
+          "elements/home": "The topology hub is where a person lands once a vault is loaded, and it holds the route-level selection and panel state around the map.",
+          "elements/native-tray-control": "The macOS menu-bar item reopens or quits the workbench, keeping the app reachable from outside its own window.",
+          "elements/public-quick-actions": "A visitor with no vault can still start or edit a project, and the current route travels with them as returnTo so they come back where they were.",
+          "elements/root-entry": "The root address branches on who is asking: the gateway on the web with no vault, First Run in the desktop shell, and the map once a vault is loaded."
+        }
       },
       "headings": [],
       "excerpt": "The first five-minute path from shared link → installed app → connection (download decision, initial run tour, locale, automatic updates) and the always-available navigation shell surrounding it. README.md: \"One download installs both surfaces. The macOS app carries a compiled MCP server inside its own bundle.\" AGENTS.",
       "wordCount": 105,
-      "updatedAt": "2026-08-29",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
@@ -2475,13 +2530,22 @@
         ],
         "created_by": "human",
         "relation_notes": {
-          "capabilities/construction-review": "Project portfolio owns the human review surface because construction qualification is judged in the matching project detail."
+          "capabilities/construction-review": "Project portfolio owns the human review surface because construction qualification is judged in the matching project detail.",
+          "capabilities/project-edit": "The form is where a project's main fields are validated and saved, and it seats a new or recategorized project inside its category boundary without overlap.",
+          "capabilities/project-quick-edit": "Name, description, owner, and tags can be corrected in the detail dialog without leaving for the full editor.",
+          "capabilities/project-share": "Handing a project to someone means copying a detail address that already carries the current locale and base path, with no permission, expiry, or server behind it.",
+          "capabilities/project-source-evidence": "One project node binds to one repository or folder, and the receipt compares the implementation paths its ontology declares against the source that actually exists.",
+          "elements/project": "The project data model carries the integrity checks and dependency-cycle detection that every project surface reads.",
+          "elements/project-detail": "The /project/[slug] page is where one project's description, composition, connections, and qualification envelope are read together.",
+          "elements/project-drawer": "The slide-in drawer gives one project's metadata, integrity issues, and related documents without leaving the current screen.",
+          "elements/project-editor": "The /project/new and edit pages are where project frontmatter is actually created and changed.",
+          "elements/project-selector": "The /projects page lists each project as a card with its counts and domain composition, which is how several projects in one vault get compared."
         }
       },
       "headings": [],
       "excerpt": "A management area within a single vault that lists, views, edits, and shares multiple project nodes. AGENTS.md: Project overview (project→domain→capability→element reading spine, multi-project containment) src/features/project-edit, project-quick-edit, project-share (implementation evidence) Inclusions: Project detail/",
       "wordCount": 79,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
@@ -2512,12 +2576,26 @@
           "elements/topology-index-panel",
           "elements/topology-map-v2"
         ],
-        "created_by": "human"
+        "created_by": "human",
+        "relation_notes": {
+          "capabilities/topology-browsing": "Drawing the whole vault graph on the canvas and searching it is the visual way in, with a compact popover on click and full detail only as an explicit second step.",
+          "elements/domain-capacity-bar": "The INDEX rows show a domain's capability and element composition through this bar, so a person can size a domain before opening it.",
+          "elements/full-detail-a1": "Seeing everything about one node is an explicit escalation from the compact popover, and this panel is that step.",
+          "elements/gesture-hint": "A touch visitor has no way to discover the map's gestures, so a one-time hint appears on coarse pointers and stays gone once dismissed.",
+          "elements/global-search": "Reaching a concept by name is the other way into the graph besides the canvas, and it states which scope it searched.",
+          "elements/recent-node-row": "A concept that changed recently is offered as a row that links straight to its place on the map.",
+          "elements/search-hint": "The map toolbar carries search, relayout, and expand all, and it gives those controls up by what room the panels leave rather than by screen size.",
+          "elements/search-palette": "The map's own palette finds a project or document in the loaded vault without leaving the canvas.",
+          "elements/shortcut-sheet": "Keyboard travel over the map has to be discoverable, so the sheet groups shortcuts by the screen a person is actually on.",
+          "elements/topology-controls": "The hub rail keeps the map's main projects one click away and says what to do when no vault or no matching node exists.",
+          "elements/topology-index-panel": "The INDEX tree is how a person walks domains, capabilities, and elements when reading the canvas alone is not enough.",
+          "elements/topology-map-v2": "The canvas renderer is the map itself, drawing and hit-testing from one per-frame position map in both the flat view and the opt-in 3D one."
+        }
       },
       "headings": [],
       "excerpt": "canvas-2D graph browsing surface (map, search, index panel): The product's primary entry point for visually navigating the entire vault. docs/ARCHITECTURE.md: \"the current route model converges browsing on Topology, writing on Workshop, maintenance on the six-tab Insights page: five measured questions plus Flow\" (risky",
       "wordCount": 95,
-      "updatedAt": "2026-08-31",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
