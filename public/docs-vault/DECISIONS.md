@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The Cone's tablet-portrait fill floor is re-measured in the browser at 0.34
+
+**Why**: `map-3d-cone-drawing.spec.ts` has never passed at 834×1112. The frame draws an outline of 486×406 px in a 510×1112 free canvas — 34.8%, identical across runs — against a 0.35 floor. Three numbers say the drawing is not what is wrong: the cone already spends 95.3% of the free width (486 of 510); its 1.197 : 1 silhouette caps the *area* it can cover in a portrait strip at 38.3% whatever the fit does, so 34.8% is 91% of the ceiling; and the missing 1.6 points are the fit's twin crediting the outline with 12 px of disc at each edge (`DOME_NODE_FIT_ALLOWANCE_PX`, sized for the project apex at r ≈ 14) where the drawing has elements at r ≈ 3.5.
+**Prior**: 2026-09-05 — the cone fit, owner direction B2 — stands. The fit is unchanged and `tests/contract/cone-fit-fill.contract.test.ts` keeps its own 0.35, because that gate is a statement about the fit rather than about the frame.
+**Decision**: Set the 834×1112 e2e fill floor to 0.34, the browser-measured value, with the ceiling arithmetic recorded beside it in the SCREENS table. The other three sizes keep 0.60.
+**Dissent**: 0.34 is a lowered bar, and a portrait tablet really does leave two thirds of its canvas empty. Someone could answer that by giving the cone a taller silhouette on portrait screens instead of accepting the area number as the wrong shape of measurement.
+**Falsifier**: A tablet-portrait review calls the cone small in that canvas rather than calling the metric wrong — which reopens the silhouette, not the floor.
+**Owner**: jinan
+
 ## 2026-09-06 — A resting relation line in 3D gets a floor under its depth ink
 
 **Why**: The owner, looking at the installed app in Cloud on the dogfood ontology, reported that the lines are so faint the connections are all but invisible and only the selected pair reads. Measured on the sample vault at 1512×982, DPR 2, nothing selected, reading each drawn line's own pixels against the ground beside it: containment lines read a median 1.26 : 1 in Cone, 1.33 in Strata, 1.14 in Cloud, where the same measurement on the 2D map reads 5.80 : 1. Depth attenuates a line twice — fog on its alpha (1.0 → 0.09) and the width factor on its stroke (0.90 → 0.35) — and the stacked product bottoms out at 3.5% of a near line's ink. The same stacking emptied the Strata rings at 0.12.

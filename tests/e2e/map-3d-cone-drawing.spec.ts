@@ -12,7 +12,10 @@ import { seedFirstRunSeen } from "./first-run-seed";
  *
  * | | 1920x1080 | 1440x900 | 1024x768 | 834x1112 |
  * |---|---|---|---|---|
- * | outline ÷ free canvas | 22.6% | 23.9% | 29.0% | 13.9% |
+ * | outline ÷ free canvas | 22.6% | 23.9% | 29.0% | 13.9% | *
+ * (The three landscape sizes cleared 60% after the fit was rebuilt. 834 draws
+ * **34.8%** against its own 38.3% ceiling, re-measured 2026-09-06 — the SCREENS
+ * table below carries the arithmetic and the ledger record.)
  * | overlapping node pairs | 27 | 27 | 27 | 27 |
  * | resting labels drawn | 0 | 0 | 0 | 0 |
  * | bottom readout | "1 project · 9 domains · Domains only · zoom in to reveal elements" |
@@ -45,8 +48,33 @@ const SCREENS = [
    * Measured 2026-09-05: 2 same-tier pairs and 11 pairs in all, against 27
    * same-tier pairs before. The ratchet records that rather than pretending the
    * strip is as roomy as a workbench.
+   *
+   * **The fill floor is 0.34, re-measured in the browser on 2026-09-06** (it was
+   * 0.35 and had never passed). What the frame actually draws here is an outline
+   * of **486 × 406 px in a 510 × 1112 free canvas = 34.8%**, identical on repeated
+   * runs. Three numbers say the drawing is right and the floor was not:
+   *
+   * 1. The cone already spends **95.3% of the free width** (486 of 510). "Use the
+   *    free width like Strata does" is a fix for a cone that is not doing this;
+   *    this one is.
+   * 2. Its silhouette is 1.197 : 1 wide by construction (`CONE_HEIGHT_SCALE`), so
+   *    in a portrait strip the **area** it can cover is capped at
+   *    (510 × 510/1.197) ÷ (510 × 1112) = **38.3%**, whatever the fit does. 34.8%
+   *    is 91% of that ceiling. Area fill is simply the wrong shape of measurement
+   *    for a landscape object in a tall frame, and only this one size is affected.
+   * 3. The missing 1.6 points are arithmetic, not drawing. The floor was taken
+   *    from the fit's twin (`tests/contract/cone-fit-fill.contract.test.ts`),
+   *    which computes the outline as `span × tscale + 2 × DOME_NODE_FIT_ALLOWANCE_PX`
+   *    — crediting 12 px of disc at each edge because that is the widest disc the
+   *    cone draws (the project apex, r ≈ 14). The discs that actually sit at the
+   *    horizontal extremes are elements at r ≈ 3.5. So the twin predicts 36.4% at
+   *    the real 1.222 silhouette and the browser draws 34.8%, and the number
+   *    copied into this file was the prediction.
+   *
+   * The twin keeps its own 0.35 — it is a statement about the fit, and the fit is
+   * unchanged. Ledger: `docs/DECISIONS.md`, 2026-09-06.
    */
-  { width: 834, height: 1112, fillFloor: 0.35, overlapMax: 14, sameTierMax: 3 },
+  { width: 834, height: 1112, fillFloor: 0.34, overlapMax: 14, sameTierMax: 3 },
 ] as const;
 
 async function openCone(page: Page, width: number, height: number) {
