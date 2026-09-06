@@ -1,100 +1,33 @@
 import { describe, expect, it } from "vitest";
 
-import type { LibraryGraph } from "./build-library-graph";
-import {
-  alignToLongestAxis,
-  easeMotion,
-  fitToBox,
-  interpolatePositions,
-  layoutLibraryGraph,
-  seedPositions,
-} from "./library-graph-layout";
+import { easeMotion, fitToBox, seedPositions } from "./library-graph-layout";
 
-function ring(count: number, edges: Array<[number, number]> = []): LibraryGraph {
-  return {
-    nodes: Array.from({ length: count }, (_, index) => ({
-      id: `n${index}`,
-      kind: "page" as const,
-      label: `n${index}`,
-      ref: `n${index}`,
-      href: null,
-    })),
-    edges: edges.map(([from, to]) => ({
-      id: `e${from}-${to}`,
-      source: `n${from}`,
-      target: `n${to}`,
-      relation: "cites" as const,
-      certainty: "current" as const,
-    })),
-    counts: { sources: 0, pages: count, concepts: 0, cites: edges.length, mentions: 0 },
-  };
-}
+/**
+ * What is left of the layout after the physics moved out: the seed spiral, the uniform
+ * fit, and the sampled easing curve. The cases for `layoutLibraryGraph`,
+ * `alignToLongestAxis` and `interpolatePositions` went with the functions themselves on
+ * 2026-09-07 — the live simulation answers all three, and `library-force-simulation.test.ts`
+ * is where those claims are now made.
+ */
 
-describe("the library graph's layout", () => {
-  it("gives every node a finite position", () => {
-    const layout = layoutLibraryGraph(ring(12, [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5]]));
-    expect(layout.settled.size).toBe(12);
-    for (const point of layout.settled.values()) {
+describe("the seed spiral", () => {
+  it("gives every node a finite starting point", () => {
+    const seeds = seedPositions(Array.from({ length: 12 }, (_, index) => `n${index}`));
+    expect(seeds.size).toBe(12);
+    for (const point of seeds.values()) {
       expect(Number.isFinite(point.x)).toBe(true);
       expect(Number.isFinite(point.y)).toBe(true);
     }
   });
 
-  it("draws the same picture twice — the shape of a folder has to be learnable", () => {
-    const graph = ring(20, [[0, 1], [1, 2], [3, 4], [5, 6], [6, 7], [0, 7]]);
-    expect(layoutLibraryGraph(graph).settled).toEqual(layoutLibraryGraph(graph).settled);
-  });
-
-  it("separates connected nodes instead of stacking them on one point", () => {
-    const layout = layoutLibraryGraph(ring(6, [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]]));
-    const points = [...layout.settled.values()];
-    const distances = points.flatMap((a, i) =>
-      points.slice(i + 1).map((b) => Math.hypot(a.x - b.x, a.y - b.y)),
-    );
-    expect(Math.min(...distances)).toBeGreaterThan(1);
-  });
-
-  it("handles an empty graph without inventing a node", () => {
-    const layout = layoutLibraryGraph(ring(0));
-    expect(layout.settled.size).toBe(0);
-    expect(layout.seeds.size).toBe(0);
-  });
-
   it("seeds a spiral, not a dial: no two nodes share a radius", () => {
-    const seeds = seedPositions(["a", "b", "c", "d"]);
+    const seeds = seedPositions(Array.from({ length: 24 }, (_, index) => `n${index}`));
     const radii = [...seeds.values()].map((point) => Math.hypot(point.x, point.y));
-    expect(new Set(radii.map((r) => r.toFixed(4))).size).toBe(radii.length);
-  });
-});
-
-describe("aligning the picture with the canvas's long axis", () => {
-  it("preserves every distance — it is a rotation, not a stretch", () => {
-    const points = new Map([
-      ["a", { x: 0, y: 0 }],
-      ["b", { x: 30, y: 30 }],
-      ["c", { x: -10, y: 40 }],
-    ]);
-    const rotated = alignToLongestAxis(points);
-    const distance = (map: ReadonlyMap<string, { x: number; y: number }>, from: string, to: string) =>
-      Math.hypot(map.get(from)!.x - map.get(to)!.x, map.get(from)!.y - map.get(to)!.y);
-    for (const [from, to] of [["a", "b"], ["b", "c"], ["a", "c"]] as const) {
-      expect(distance(rotated, from, to)).toBeCloseTo(distance(points, from, to), 6);
-    }
+    expect(new Set(radii.map((radius) => radius.toFixed(4))).size).toBe(radii.length);
   });
 
-  it("lays a diagonal line flat, which is what buys the width back", () => {
-    const points = new Map(
-      Array.from({ length: 6 }, (_, index) => [`n${index}`, { x: index * 10, y: index * 10 }] as const),
-    );
-    const rotated = [...alignToLongestAxis(points).values()];
-    const spanX = Math.max(...rotated.map((p) => p.x)) - Math.min(...rotated.map((p) => p.x));
-    const spanY = Math.max(...rotated.map((p) => p.y)) - Math.min(...rotated.map((p) => p.y));
-    expect(spanX).toBeGreaterThan(spanY * 100);
-  });
-
-  it("leaves a single node exactly where it is", () => {
-    const one = new Map([["only", { x: 4, y: 9 }]]);
-    expect(alignToLongestAxis(one)).toEqual(one);
+  it("seeds an empty graph without inventing a node", () => {
+    expect(seedPositions([]).size).toBe(0);
   });
 });
 
@@ -139,14 +72,7 @@ describe("fitting the layout into the canvas box", () => {
   });
 });
 
-describe("the settle", () => {
-  it("starts at the seed and ends at the settled position", () => {
-    const seeds = new Map([["a", { x: 0, y: 0 }]]);
-    const settled = new Map([["a", { x: 100, y: 50 }]]);
-    expect(interpolatePositions(seeds, settled, 0).get("a")).toEqual({ x: 0, y: 0 });
-    expect(interpolatePositions(seeds, settled, 1).get("a")).toEqual({ x: 100, y: 50 });
-  });
-
+describe("the sampled `--motion-ease` curve", () => {
   it("decelerates: more than half the distance is covered in the first half of the time", () => {
     expect(easeMotion(0.5)).toBeGreaterThan(0.5);
     expect(easeMotion(0)).toBe(0);

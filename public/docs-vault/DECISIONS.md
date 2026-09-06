@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-07 — The Library graph is a live force simulation with a bounded drift
+
+**Why**: the real folder — 7 sources, 6 pages, each citing 4–7 — drew a hairball: near-identical grey straight lines, two mark sizes, nothing responding. The owner: *"this graph does not move, it is fixed, and that is a shame"*. At 1512 the settled cloud filled 33.5% of its canvas width.
+**Prior**: overturns "one settle, then stillness" in 2026-09-06 "The Library gets its own small graph" and the width cap in 2026-09-06 "The Library pane is the graph", whose 60%-fill falsifier is now met by force, not by cutting the box. What the marks mean stands.
+**Decision**: an own velocity-Verlet simulation — springs per relation (cites 52, mentions 96), repulsion, collision, and **aspect-aware gravity**, which grows the cloud into the canvas instead of fitting it in a corner: 93.9% of the width, 90.5% of the height. It steps on rAF while alpha > 0.0015, re-heats on drag, resize or folder change, and swaps to a hand-written Barnes–Hut quadtree above 720 nodes (1.97 vs 1.73ms at 800). Drag pins a mark, its neighbours follow; the wheel zooms about the pointer; empty canvas pans; a tile fits. Marks grade 5–10px by degree, edges bow, and everything outside the pointed-at neighbourhood dims to 35% over `--motion-fast`. The **drift** is an owner directive against the charter's preference, so numbers bound it: 0.28px per axis, 0.4px radial, 7.2s, in screen pixels so no zoom multiplies it, one frame in four at rest, and absent under `prefers-reduced-motion`, which settles synchronously.
+**Dissent**: design-motion: motion that says nothing is decoration, and a canvas that never stops is what that preference exists to stop. design-lead: a picture a hand pulls out of shape has no canonical form; "the shape of my library" stops being learnable.
+**Falsifier**: a person who drags a mark and cannot say which lines followed; a folder under 60% of its canvas width; a reduced-motion canvas not byte-identical frame to frame; a tick over 16.7ms at 800 nodes.
+**Owner**: jinan
+
 ## 2026-09-06 — The Library pane is the graph; the shelf is a popup
 
 **Why**: the owner opened the installed app on a folder a local `qwen3:8b` had compiled and read it as two half-screens: *"shouldn't the Library tab's default be the graph? why is the area split above and below? the area underneath should be a popup."* Measured at 1512×982: a 320px band took 41% of the pane, its picture filled 40.4% of that width, and the shelf under it needed 850px of a 579px box. Below `lg` the shelf was not drawn at all — a zero rect at 390 and 768.

@@ -1,32 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { Maximize2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import type { VaultDoc } from "@/entities/docs-vault";
 import { useRouter } from "@/i18n/navigation";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { cn } from "@/shared/lib/cn";
+import { ChromeTile } from "@/shared/ui";
 
 import {
   buildLibraryGraph,
-  type LibraryGraph,
   type LibraryGraphNode,
   type LibraryGraphPage,
   type LibraryGraphSource,
 } from "../model/build-library-graph";
-import {
-  fitToBox,
-  interpolatePositions,
-  layoutLibraryGraph,
-  type LayoutPoint,
-  type LibraryGraphLayout,
-} from "../model/library-graph-layout";
-import { drawLibraryGraph, hitTestLibraryGraph } from "../render/draw-library-graph";
-import { readLibraryGraphInk, type LibraryGraphInk } from "../render/library-graph-ink";
+import { useLibraryGraphEngine } from "./use-library-graph-engine";
 
 /**
- * **The library's graph — one small canvas of what this folder's write-ups are made of.**
+ * **The library's graph — one live canvas of what this folder's write-ups are made of.**
  *
  * The owner asked for it on 2026-09-06, and asked for it to be *separate from the map*:
  * *"a canvas that shows all the connected data in 2D … separate from (map, architecture)!
@@ -39,25 +32,26 @@ import { readLibraryGraphInk, type LibraryGraphInk } from "../render/library-gra
  * ## Why it is a section, not a third pane
  *
  * The Library is already an index and a reader, and a person opening it came to read.
- * A picture that shows the whole folder at once is an *overview*, so it sits above the
- * reader as one disclosure the person opens and closes, rather than taking a column from
- * either. Closed, it costs one row.
+ * A picture that shows the whole folder at once is an *overview*, so the pane **is** this
+ * canvas whenever nothing is chosen, the way the map fills its own tab.
  *
- * ## Motion
+ * ## Motion — a live simulation, reversing 2026-09-06
  *
- * One settle, then stillness. The force pass runs to completion before the first frame
- * (`layoutLibraryGraph`), and the animation only carries the dots from their seed ring to
- * where they already belong — the picture arriving, not a simulation running. A live
- * simulation beside a document a person is reading is movement with nothing to say.
+ * ⚠️ This file used to say: *"One settle, then stillness … a live simulation beside a
+ * document a person is reading is movement with nothing to say."* The owner looked at the
+ * result on 2026-09-07 and rejected it — *"this graph does not move, it is fixed, and
+ * that is a shame. Improve it now — it has to be excellent, built to the highest visual
+ * standard."* The
+ * argument was wrong about this folder: with six pages citing the same seven sources, a
+ * settled layout is a hairball, and the only way to read a hairball is to **pull it
+ * apart**, which needs physics that are still running when the hand arrives.
  *
- * The clock is `--topology-motion-camera-duration` (420ms), which
- * `.claude/rules/design.md` names as the repository's canvas-travel value ("camera/drag
- * values 420/720ms are canvas-only"). ⚠️ Its **name** still says topology because the map
- * was the only canvas when it was minted; renaming it is a `design-contract` change and
- * belongs to that gate, not to this widget. Inventing a second 600ms value here would
- * have been the actual defect: an off-ramp duration that no gate can see.
- *
- * Under `prefers-reduced-motion` the settled frame is drawn once, with no interpolation.
+ * So: `library-force-simulation.ts` steps on `requestAnimationFrame` while the picture is
+ * arriving, re-heats when it is disturbed, and afterwards keeps a bounded ambient drift
+ * (0.28px per axis, 0.4px radial, 7.2s) so the canvas never reads as a frozen image. Under
+ * `prefers-reduced-motion` it settles synchronously and the drift does not exist —
+ * an endless drift is exactly the family that preference is for. `docs/DECISIONS.md`,
+ * 2026-09-07, carries the reversal, its numbers, and the dissent.
  */
 
 export interface LibraryGraphSelection {
@@ -89,27 +83,17 @@ export interface LibraryGraphProps {
 }
 
 /**
- * **No fixed height any more — the canvas is the pane.**
+ * **No fixed height, and no width cap either — the canvas is the pane.**
  *
- * It used to be `h-[240px] lg:h-[min(320px,34dvh)]`: a band bounded by the height it was
- * spending, because it sat above a reader that had to keep most of the column. The owner
- * removed that premise on 2026-09-06 — the pane *is* this picture — so the height is the
- * box's, exactly as the map's canvas takes its tab.
- *
- * The **width** is still not "all of it": `w-full` is the ceiling and the real width is
- * the picture's own, capped at render time (see `canvasMaxWidth`), which is what keeps a
- * uniform fit from leaving gutters wider than the marks.
+ * The height stopped being a band on 2026-09-06, when the owner made the picture the tab.
+ * The **width** cap went on 2026-09-07: it existed because a uniform fit of a settled
+ * ForceAtlas2 cloud into a wide box left gutters wider than the marks, so the box was cut
+ * down to the picture. The live simulation's gravity is shaped like the canvas instead, so
+ * the picture grows into the box (measured 67.8% of the width and 91.6% of the height on
+ * the owner's own folder shape, against 33.5% before) — and a canvas a person can now pan
+ * and zoom has to be the whole pane, because the frame is the workspace.
  */
 const CANVAS_CLASS = "min-h-0 w-full flex-1";
-const FIT_PADDING = 26;
-/**
- * The narrowest the canvas is ever allowed to become.
- *
- * The width cap below is derived from the picture, and a folder whose graph settles into
- * a near-circle would otherwise pull the box down to roughly its own height — a canvas too
- * small to carry a label, and a focus ring around a postage stamp.
- */
-const MIN_CANVAS_WIDTH = 320;
 /**
  * The order at which every mark stops carrying its own name and hover takes over.
  *
@@ -121,8 +105,6 @@ const MIN_CANVAS_WIDTH = 320;
  * overview and a name is something you ask a dot for.
  */
 const STANDING_LABEL_MAX_NODES = 60;
-/** Touch reach around a mark, in CSS px. Half of `--touch-target-min` (44) is the floor. */
-const COARSE_HIT_REACH = 18;
 
 function selectionNodeId(selection: LibraryGraphSelection | null): string | null {
   if (!selection) return null;
@@ -145,78 +127,10 @@ export function LibraryGraph({
     () => buildLibraryGraph({ docs, wikiPages, sources }),
     [docs, sources, wikiPages],
   );
-  /**
-   * The force pass — **once per folder, and never again**.
-   *
-   * `.claude/rules/architecture.md` asks that a surface which is not drawn does not pay
-   * for its model. This one is now always drawn: the Library's pane **is** this canvas
-   * whenever nothing is chosen, so the up-to-95ms pass is the first frame's own cost
-   * rather than a cost paid for something hidden. It is memoised on the graph's identity,
-   * so selecting a document, hovering a dot or standing the whole widget aside while a
-   * page is open never re-runs it.
-   */
-  const layout = useMemo(() => layoutLibraryGraph(graph), [graph]);
-
-  /**
-   * **The picture's own aspect, which is what the canvas is then cut to.**
-   *
-   * A uniform fit takes the smaller of the two scales, so in a box far wider than the
-   * cloud it is the **height** that decides how big the picture is and the extra width is
-   * spent on nothing. Measured on the seeded folder at 1512 before this: a 1144px canvas
-   * carrying a 462px picture — 40.4% fill, with a 341px gutter on each side — while the
-   * height was already 86.6% used. No scale can spend that width without distorting
-   * distance, which `fitToBox` exists to refuse.
-   *
-   * So the **box** moves instead: the canvas is never wider than the picture it frames
-   * plus the label allowance the fit already reserves. The picture is unchanged — a
-   * uniform fit under a capped height cannot grow — but the frame, the focus ring and the
-   * hit area stop being three times the width of what they contain, and the section lines
-   * up with the reader's own column instead of spanning the pane behind it.
-   */
-  const pictureAspect = useMemo(() => {
-    if (!layout || layout.settled.size < 2) return null;
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
-    for (const point of layout.settled.values()) {
-      minX = Math.min(minX, point.x);
-      maxX = Math.max(maxX, point.x);
-      minY = Math.min(minY, point.y);
-      maxY = Math.max(maxY, point.y);
-    }
-    const spanX = maxX - minX;
-    const spanY = maxY - minY;
-    if (!(spanX > 0) || !(spanY > 0)) return null;
-    return spanX / spanY;
-  }, [layout]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const inkRef = useRef<LibraryGraphInk | null>(null);
-  const positionsRef = useRef<Map<string, LayoutPoint>>(new Map());
-  const progressRef = useRef(1);
-  const drawRef = useRef<() => void>(() => undefined);
-
-  const [size, setSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
-
-  /**
-   * The width cap, in CSS pixels, or null while nothing has been measured.
-   *
-   * It reads the canvas's **height** and never its width, so applying it cannot feed
-   * itself: the observer fires once more with the narrower box, the height is the same
-   * number, and the cap does not move. The height comes from CSS
-   * (`h-[240px] lg:h-[min(320px,34dvh)]`), so it is independent of this value by
-   * construction rather than by luck.
-   */
-  const canvasMaxWidth =
-    pictureAspect !== null && size.height > 0
-      ? Math.max(
-          MIN_CANVAS_WIDTH,
-          Math.round((size.height - FIT_PADDING * 2) * pictureAspect + FIT_PADDING * 2),
-        )
-      : null;
 
   const selectedId = selectionNodeId(selection);
   const activeId = hoveredId ?? focusedId;
@@ -235,150 +149,6 @@ export function LibraryGraph({
       : activeNode.label
     : null;
 
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !layout || size.width === 0 || size.height === 0) return;
-    /*
-     * The ink is resolved from the canvas element itself and cached. A throw here would
-     * mean the application's own palette is missing from `app/globals.css`, in which case
-     * every other surface is already broken — so it is left to propagate rather than
-     * absorbed into a silent default that renders in no colour.
-     */
-    inkRef.current ??= readLibraryGraphInk(canvas);
-    const context = canvas.getContext("2d", { alpha: false });
-    if (!context) return;
-
-    const box = { width: size.width, height: size.height, padding: FIT_PADDING };
-    const seeds = fitToBox(layout.seeds, box);
-    const settled = fitToBox(layout.settled, box);
-    const positions = interpolatePositions(seeds, settled, progressRef.current);
-    positionsRef.current = positions;
-
-    const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
-    const deviceWidth = Math.round(size.width * dpr);
-    const deviceHeight = Math.round(size.height * dpr);
-    if (canvas.width !== deviceWidth) canvas.width = deviceWidth;
-    if (canvas.height !== deviceHeight) canvas.height = deviceHeight;
-    context.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    drawLibraryGraph(context, {
-      nodes: graph.nodes,
-      edges: graph.edges,
-      positions,
-      width: size.width,
-      height: size.height,
-      ink: inkRef.current,
-      selectedId,
-      hoveredId,
-      focusedId,
-      activeLabel,
-      standingLabels: graph.nodes.length <= STANDING_LABEL_MAX_NODES,
-    });
-  }, [activeLabel, focusedId, graph.edges, graph.nodes, hoveredId, layout, selectedId, size.height, size.width]);
-
-  // ── The canvas's own width, measured rather than guessed. ──
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver((entries) => {
-      const rect = entries[0]?.contentRect;
-      if (!rect) return;
-      setSize((current) =>
-        Math.abs(current.width - rect.width) < 0.5 && Math.abs(current.height - rect.height) < 0.5
-          ? current
-          : { width: rect.width, height: rect.height },
-      );
-    });
-    observer.observe(canvas);
-    return () => observer.disconnect();
-  }, []);
-
-  // ── One settle per layout, then nothing moves. ──
-  const settledForRef = useRef<{ layout: LibraryGraphLayout | null }>({ layout: null });
-  /** The animation frame in flight, owned across effect runs rather than by one of them. */
-  const frameRef = useRef(0);
-  useEffect(() => {
-    // Width is the gate — can this be drawn yet — never the trigger.
-    if (!layout || size.width === 0) return;
-    if (settledForRef.current.layout === layout) return;
-    settledForRef.current = { layout };
-    if (reducedMotion) {
-      progressRef.current = 1;
-      drawRef.current();
-      return;
-    }
-    const canvas = canvasRef.current;
-    const duration = canvas ? readCanvasTravelMs(canvas) : 0;
-    if (duration <= 0) {
-      progressRef.current = 1;
-      drawRef.current();
-      return;
-    }
-    /*
-     * ⚠️ **The frame lives in a ref, and this effect does not cancel it on the way out.**
-     *
-     * It used to hold the id in a local and cancel it from the cleanup, which is correct
-     * only while nothing in the dependency list can change during the 420ms the settle
-     * lasts. `size.width` can — it did the moment the canvas started taking its width from
-     * the picture (2026-09-06): the first measurement is the full column, the cap narrows
-     * the box, the observer reports the new width, this effect re-runs, its cleanup kills
-     * the animation, and the guard above returns before starting another. Measured, the
-     * picture froze at about 0.85 of the way in: a 1.72-aspect cloud drew at 0.83 and
-     * filled 231 of 462 usable pixels, which reads as a small graph rather than a stopped
-     * one. Cancelling now belongs to the two events that mean it: a **new** settle, and
-     * unmount.
-     */
-    cancelAnimationFrame(frameRef.current);
-    const started = performance.now();
-    const tick = (now: number) => {
-      const elapsed = now - started;
-      progressRef.current = Math.min(1, elapsed / duration);
-      drawRef.current();
-      if (progressRef.current < 1) frameRef.current = requestAnimationFrame(tick);
-    };
-    progressRef.current = 0;
-    frameRef.current = requestAnimationFrame(tick);
-    // `size.width` stays in the list because the first measurement arrives after mount and
-    // the effect has to run again once there is a box; the ref above is what keeps that
-    // second run — and every later resize — from restarting the arrival.
-  }, [layout, reducedMotion, size.width]);
-
-  /** The settle's only other end: the widget going away. */
-  useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
-
-  // ── Every other reason to repaint: selection, hover, keyboard focus, a resize. ──
-  useEffect(() => {
-    // The animation loop paints through this ref so it never closes over a stale frame:
-    // a hover arriving mid-settle has to change the next frame, not the frame after the
-    // settle finishes.
-    drawRef.current = draw;
-    draw();
-  }, [draw]);
-
-  const pointFromEvent = (event: { clientX: number; clientY: number }): LayoutPoint | null => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-  };
-
-  /**
-   * A finger is not a mouse pointer, and a painted dot is invisible to every touch-target
-   * gate in this repository (they measure DOM elements). `any-pointer: coarse` is the
-   * capability question — never a viewport width — and it widens the reach rather than
-   * the mark, so the picture keeps its scale (design-responsive, 2026-09-06).
-   */
-  const coarsePointer = (): boolean =>
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(any-pointer: coarse)").matches;
-  const hitTest = (point: LayoutPoint): LibraryGraphNode | null =>
-    hitTestLibraryGraph(
-      { nodes: graph.nodes, positions: positionsRef.current },
-      point,
-      coarsePointer() ? COARSE_HIT_REACH : undefined,
-    );
-
   const activate = useCallback(
     (node: LibraryGraphNode) => {
       if (node.kind === "concept") {
@@ -393,6 +163,20 @@ export function LibraryGraph({
     [onSelect, router],
   );
 
+  const standingLabels = graph.nodes.length <= STANDING_LABEL_MAX_NODES;
+  const engine = useLibraryGraphEngine({
+    graph,
+    canvasRef,
+    reducedMotion,
+    selectedId,
+    hoveredId,
+    focusedId,
+    activeLabel,
+    standingLabels,
+    onHover: setHoveredId,
+    onActivate: activate,
+  });
+
   const ordered = graph.nodes;
   const stepFocus = useCallback(
     (delta: number) => {
@@ -403,13 +187,6 @@ export function LibraryGraph({
     },
     [focusedId, ordered],
   );
-
-  /**
-   * A coarse pointer has no hover, so the first tap would otherwise **be** the commit on
-   * a 9px target — including the one commit that leaves the screen. On touch the first
-   * tap names the dot and the second one opens it (design-interaction, 2026-09-06).
-   */
-  const coarseTapRef = useRef<string | null>(null);
 
   /**
    * What a screen reader is told: the kind, the name, where in the traversal it is, and
@@ -479,6 +256,10 @@ export function LibraryGraph({
         </p>
       ) : (
         <>
+        {/* The canvas and its one control share a positioning context; the control is a
+            real button over the canvas rather than a painted mark, so it is reachable by
+            the keyboard and measurable by every touch-target gate in the repository. */}
+        <div className="relative flex min-h-0 flex-1 flex-col">
         <canvas
           ref={canvasRef}
           data-testid="library-graph-canvas"
@@ -488,13 +269,15 @@ export function LibraryGraph({
           data-hovered-node-id={hoveredId ?? ""}
           data-focused-node-id={focusedId ?? ""}
           data-selected-node-id={selectedId ?? ""}
-          /* The picture's own aspect and the width it earned, for the same reason as
-             the four above: a canvas has no DOM, so a claim about how much of it the
-             picture fills is otherwise unfalsifiable. */
-          data-picture-aspect={pictureAspect === null ? "" : pictureAspect.toFixed(3)}
+          /* The picture's own aspect, for the same reason as the three above: a canvas has
+             no DOM, so a claim about the shape of what it drew is otherwise unfalsifiable.
+             `data-view-scale` and `data-interaction` are written by the loop itself, once
+             per frame and only when they change — a gesture's identity (a grabbed node
+             versus a panned background) cannot be read from pixels at all. */
+          data-picture-aspect={engine.pictureAspect === null ? "" : engine.pictureAspect.toFixed(3)}
           /* Which naming policy is in force. Same reason as the four above: a claim about
              what a canvas draws has to be checkable from outside it. */
-          data-labels={graph.nodes.length <= STANDING_LABEL_MAX_NODES ? "standing" : "hover"}
+          data-labels={standingLabels ? "standing" : "hover"}
           data-active-kind={activeNode?.kind ?? ""}
           /*
            * `group`, not `application`. `TopologyMapV2` decided this for the identical
@@ -515,43 +298,14 @@ export function LibraryGraph({
              repository's 2px indigo floor, which `outline-none` had opted out of. */
           className={cn(
             CANVAS_CLASS,
-            "mx-auto mt-2 block outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
+            "mt-2 block cursor-grab touch-none outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
           )}
-          /* A measured number, not a design value: it is the picture's own width plus
-             the fit's padding, so it belongs to the data rather than to the ramp. The
-             box keeps the column's **left** edge rather than centring inside it, so
-             the picture begins where its own caption and legend begin. */
-          style={canvasMaxWidth === null ? undefined : { maxWidth: `${canvasMaxWidth}px` }}
-          onPointerMove={(event) => {
-            if (event.pointerType === "touch") return;
-            const point = pointFromEvent(event);
-            if (!point) return;
-            const hit = hitTest(point);
-            setHoveredId(hit?.id ?? null);
-            // Nothing else on this canvas says a dot can be pressed, and no gate can
-            // see a cursor over a painted mark (`cursor-affordance.spec.ts` measures
-            // DOM elements only).
-            event.currentTarget.style.cursor = hit ? "pointer" : "default";
-          }}
-          onPointerLeave={() => setHoveredId(null)}
-          onClick={(event) => {
-            const point = pointFromEvent(event);
-            if (!point) return;
-            const hit = hitTest(point);
-            if (!hit) return;
-            /*
-             * A coarse pointer never hovered, so the first tap would otherwise be the
-             * commit on a 9px target — including the one commit that leaves this
-             * screen. The first tap names the dot; the second one opens it.
-             */
-            if (coarsePointer() && coarseTapRef.current !== hit.id) {
-              coarseTapRef.current = hit.id;
-              setHoveredId(hit.id);
-              return;
-            }
-            coarseTapRef.current = null;
-            activate(hit);
-          }}
+          onPointerDown={engine.onPointerDown}
+          onPointerMove={engine.onPointerMove}
+          onPointerUp={engine.onPointerUp}
+          onPointerCancel={engine.onPointerCancel}
+          onPointerLeave={engine.onPointerLeave}
+          onDoubleClick={engine.onDoubleClick}
           onKeyDown={(event) => {
             if (event.key === "ArrowRight" || event.key === "ArrowDown") {
               event.preventDefault();
@@ -572,6 +326,24 @@ export function LibraryGraph({
              has wandered off is cleared by `pointerleave`, not by this. */
           onBlur={() => setFocusedId(null)}
         />
+        {/* The way back to the whole picture after a zoom or a pan. Desktop only: a
+            coarse pointer fits by pinching out, and a floating 36px tile over a
+            phone-sized canvas would cover the marks it is meant to help find. The shared
+            `ChromeTile` rather than a hand-rolled square, so it inherits the 36px chrome
+            contract and its own 44px coarse-pointer promotion; `title` is the accessible
+            name, and no `label` because that mode wants a `.chrome-rail` ancestor this
+            canvas has no reason to grow. */}
+        <div className="pointer-events-none absolute bottom-3 right-3 hidden md:block">
+          <div className="pointer-events-auto">
+            <ChromeTile
+              data-testid="library-graph-fit"
+              icon={<Maximize2 />}
+              title={t("graph.fit")}
+              onClick={engine.fitToView}
+            />
+          </div>
+        </div>
+        </div>
         {/* The legend: what the three marks mean, and the one verb. `text-label`
             rather than `text-caption` because 9.5px is this product's uppercase-eyebrow
             size and this is the sentence a newcomer has to read; `text-tertiary`
@@ -596,19 +368,4 @@ export function LibraryGraph({
       )}
     </section>
   );
-}
-
-/**
- * The settle's clock, in milliseconds, read from the canvas travel token.
- *
- * Parsed rather than transcribed: a copied `420` in this file would be a second value
- * nothing keeps in step with the CSS ramp, which is precisely how the JS motion mirror
- * drifted two steps in 2026-07-28. Zero means "no motion is possible here" — the caller
- * draws the settled frame at once, which is also the reduced-motion behaviour.
- */
-function readCanvasTravelMs(element: Element): number {
-  const raw = getComputedStyle(element).getPropertyValue("--topology-motion-camera-duration").trim();
-  if (raw.endsWith("ms")) return Number.parseFloat(raw);
-  if (raw.endsWith("s")) return Number.parseFloat(raw) * 1000;
-  return 0;
 }
