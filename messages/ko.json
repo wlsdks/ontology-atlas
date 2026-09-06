@@ -4471,7 +4471,18 @@
       "viewOriginalOne": "원본 보기: {name}",
       "originalMissing": "{name} 을(를) 인용하지만 이 폴더에는 없습니다.",
       "compileCreateFile": "{path} 만들기",
-      "compileModifyFile": "{path} 바꾸기"
+      "compileModifyFile": "{path} 바꾸기",
+      "logCount": {
+        "disagreement": "어긋남 {count}",
+        "superseded": "대체된 주장 {count}",
+        "missingLink": "빠진 연결 {count}",
+        "nameWithoutPage": "문서 없는 이름 {count}"
+      },
+      "logNoCounts": "실행됨 · 개수 없음",
+      "logNew": "새로 씀",
+      "logRevised": "고침",
+      "logNothingNew": "새 내용 없음",
+      "emptyNoTemplate": "아직 위키 문서가 없고 서식도 없습니다. 설정 › 작업 공간에서 위키를 시작하면 wiki/_template.md 가 생기고, 문서는 그 서식을 따릅니다."
     },
     "graph": {
       "title": "그래프",

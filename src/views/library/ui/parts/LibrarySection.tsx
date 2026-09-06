@@ -10,6 +10,7 @@ import { isMapKind, type LintNodeCandidate } from "@/features/library";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { writerLabel } from "../../lib/writer-label";
+import { localizeWikiLogSummary } from "../../lib/wiki-log-summary";
 import { controlClass } from "@/shared/ui/control-class";
 import { Chip, RowButton, Tooltip } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -76,6 +77,8 @@ export interface LibrarySectionProps {
   candidates: readonly LintNodeCandidate[];
   /** Starts one agent turn that proposes the candidate through the ontology-write card; null like the others. */
   onPropose: ((candidate: LintNodeCandidate) => void) | null;
+  /** Whether `wiki/_template.md` exists: without it the empty state says how to get one. */
+  hasWikiTemplate?: boolean;
   /**
    * The brain picker, when this computer offers two and Compile can therefore be pointed
    * at either. Null draws nothing: with one brain there is no choice to make, and the
@@ -183,6 +186,7 @@ export function LibrarySection({
   onLint,
   candidates,
   onPropose,
+  hasWikiTemplate = true,
   brainControl,
   transferNote,
   vaultLabel,
@@ -430,11 +434,11 @@ export function LibrarySection({
             className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all] [overflow-wrap:anywhere]"
           >
             {model.log.lastCompile
-              ? t("wiki.logCompile", { when: logWhen(model.log.lastCompile.at), summary: model.log.lastCompile.summary })
+              ? t("wiki.logCompile", { when: logWhen(model.log.lastCompile.at), summary: localizeWikiLogSummary(model.log.lastCompile.summary, t) })
               : null}
             {model.log.lastCompile && model.log.lastLint ? " · " : null}
             {model.log.lastLint
-              ? t("wiki.logLint", { when: logWhen(model.log.lastLint.at), summary: model.log.lastLint.summary })
+              ? t("wiki.logLint", { when: logWhen(model.log.lastLint.at), summary: localizeWikiLogSummary(model.log.lastLint.summary, t) })
               : null}
           </p>
         ) : null}
@@ -501,7 +505,7 @@ export function LibrarySection({
             data-testid="library-wiki-empty"
             className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
           >
-            {t("wiki.empty")}
+            {hasWikiTemplate ? t("wiki.empty") : t("wiki.emptyNoTemplate")}
           </p>
         )}
         {candidates.length > 0 ? (

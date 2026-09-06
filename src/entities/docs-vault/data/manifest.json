@@ -23,7 +23,7 @@
       "headings": [],
       "excerpt": "Current as of 2026-08-02. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
       "wordCount": 3142,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -96,7 +96,7 @@
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
       "wordCount": 4905,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "ANALYSIS-RECORDS",
         "../AGENTS",
@@ -475,7 +475,7 @@
       "headings": [],
       "excerpt": "Question: the LLM Wiki pattern (Karpathy, 2026-04-04) claims its value is accumulation: each new source revises existing pages and flags what it contradicts. The Library's Compile brief embeds the page template and six rules but never names existing pages. Does a wiki built one source at a time, the way the Library run",
       "wordCount": 3055,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "wiki/<slug>",
         "src:…"
@@ -502,7 +502,7 @@
       "headings": [],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · graph tooling · a macOS local workbench all ",
       "wordCount": 3275,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-25",
         "benchmark/tasks",
@@ -863,7 +863,7 @@
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
       "wordCount": 109911,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "wiki/…",
         "wiki/<slug>",
@@ -1256,7 +1256,7 @@
       "headings": [],
       "excerpt": "Status: RFC (Request for Comments). This is a v2.0 release candidate, not a ratified standard — see §0 RFC status and feedback for the review window and how to comment. This document promotes an already-shipped, already-enforced de-facto schema into a formal specification. v2 makes immutable node uid mandatory; this is",
       "wordCount": 7472,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "src:sources/<path>",
         "wikilink",
@@ -4081,7 +4081,7 @@
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
       "wordCount": 2682,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "DECISIONS"
       ]
