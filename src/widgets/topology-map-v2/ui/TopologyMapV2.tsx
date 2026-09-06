@@ -5,6 +5,8 @@ import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./use-topology-loop";
+import { TopologyV2TierLegend } from "./TopologyV2TierLegend";
+import type { TierLegendAnchor } from "../model/tier-legend-rows";
 import type { TierRevealConfig } from "../model/tier-visibility";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import type { ClusterBarLabels } from "../render/cluster-chips";
@@ -505,7 +507,23 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
     [],
   );
 
-  const { canvasRef, containerRef, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleContextMenu, handleKeyDown } =
+  /*
+   * ── Strata's tier-name rail ────────────────────────────────────────────────
+   *
+   * The four plane heights, as the frame last projected them, and whether the
+   * rail could place its rows in the band it has. While it can, the canvas draws
+   * no rim names (`domeTierLabels` goes in as null) — the rail and the rims are
+   * the same legend and only one of them is ever on. `TopologyV2TierLegend` owns
+   * the reasoning; this is the wiring.
+   */
+  const [tierAnchors, setTierAnchors] = useState<readonly TierLegendAnchor[] | null>(null);
+  const [tierLegendFits, setTierLegendFits] = useState(true);
+  const handleTierAnchors = useCallback((next: readonly TierLegendAnchor[] | null) => {
+    setTierAnchors(next);
+  }, []);
+  const tierLegendActive = view3d && mapArrangement === "strata" && tierAnchors !== null && domeTierLabels !== null;
+
+  const { canvasRef, containerRef, raiseDomeTier, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleContextMenu, handleKeyDown } =
     useTopologyLoop({
       nodes,
       edges,
@@ -546,7 +564,9 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       realmEnterButtonRef,
       realmCaption,
       clusterBarLabels,
-      domeTierLabels,
+      // The rim names are the fallback, not the default — see `tierLegendActive`.
+      domeTierLabels: tierLegendActive && tierLegendFits ? null : domeTierLabels,
+      onDomeTierAnchorsChange: handleTierAnchors,
       visitedTrail,
       trailLensActiveRef,
       trailHoverNodeIdRef,
@@ -711,6 +731,14 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
             </span>
           ) : null}
         </button>
+      ) : null}
+      {tierLegendActive && !detailPanelVisible ? (
+        <TopologyV2TierLegend
+          anchors={tierAnchors!}
+          labels={domeTierLabels!}
+          onRaise={raiseDomeTier}
+          onFitChange={setTierLegendFits}
+        />
       ) : null}
       {/* The guided tour's canvas node anchor (steps 2 and 4) — the same projection
           technique as the realm button (the loop refreshes the transform and

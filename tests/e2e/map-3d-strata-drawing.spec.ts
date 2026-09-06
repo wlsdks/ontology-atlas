@@ -20,6 +20,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * | | 1512x982 | 1040x720 | Cone, same sizes |
  * |---|---|---|---|
  * | outline ÷ free canvas | 65.5% | 72.5% | 73.4% / 69.2% |
+ * | …after the tier legend took its column (2026-09-06) | 66.3% | 63.6% | unchanged |
  * | overlapping node pairs | **0** | **2** | 4 / 8 |
  * | same-tier overlapping pairs | 0 | 0 | 0 / 0 |
  * | resting labels drawn | 15 | 11 | 15 / 13 |
@@ -35,10 +36,30 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * legitimate vault edit.
  */
 
-/** The two sizes the owner reviews on, with the floor and ceiling each has to hold. */
+/**
+ * The two sizes the owner reviews on, with the floor and ceiling each has to hold.
+ *
+ * **1040's numbers moved on 2026-09-06, and it is a trade rather than a
+ * regression.** Strata's four tier names moved off the plane rims — where at this
+ * very size they were drawn on top of the graph — onto a legend rail at the
+ * canvas's right edge, and the fit now keeps that rail's column clear
+ * (`TIER_LEGEND_RESERVE_PX`, 56 px). On a 976 px canvas that is 6% of the width,
+ * and width is what binds the fit here, so the outline went to **565 × 529 =
+ * 63.6%** from 72.5% and two element pairs on one plane now touch where none did.
+ * At 1512 the fit is bound by height instead and the same reservation costs
+ * nothing: **888 × 824 = 66.3%**, a touch above the 65.5% measured before.
+ *
+ * Both sides of that trade were measured rather than argued. Without the
+ * reservation the fit runs the graph out to the canvas edge and three nodes end up
+ * underneath the legend rows — a name on a disc, which is the defect the rail
+ * exists to end and which this file's own rule (3) forbids for node labels. Two
+ * touching discs of the same tier is the smaller cost, so `sameTierMax` at this
+ * size becomes 2 and the fill floor 0.60. The wide size keeps 1 and 0.58.
+ * Ledger: `docs/DECISIONS.md`, 2026-09-06.
+ */
 const SCREENS = [
   { width: 1512, height: 982, fillFloor: 0.58, overlapMax: 3, sameTierMax: 1 },
-  { width: 1040, height: 720, fillFloor: 0.63, overlapMax: 5, sameTierMax: 1 },
+  { width: 1040, height: 720, fillFloor: 0.6, overlapMax: 5, sameTierMax: 2 },
 ] as const;
 
 async function openStrata(page: Page, width: number, height: number) {
@@ -223,3 +244,227 @@ for (const screen of SCREENS) {
     ).toBe(0);
   });
 }
+
+/**
+ * **Clicking a node's drawn centre selects that node** (2026-09-06).
+ *
+ * `__atlasMap.nodes()` reports where the frame drew each disc, and that is the
+ * coordinate every other instrument in this suite trusts. If the pointer's answer
+ * differs from it, every number here is measuring one picture while the person is
+ * clicking another. It did differ: the 5 px courtesy ring around each disc used to
+ * compete with the painted disc on equal terms, and because depth was decided
+ * before distance, a near domain answered for the far elements drawn beside it.
+ * Sweeping every visible node's own centre before the fix: 124 of 125 answered
+ * here at 1512×982 and 123 of 125 at 1040×720; after, 125 of 125 at both.
+ *
+ * Five is what this case checks, at the centre and two pixels either side of it,
+ * because two pixels is inside the smallest disc the arrangement draws and a
+ * person aiming at a dot lands within it.
+ */
+async function settleCamera(page: Page) {
+  let previous: string | null = null;
+  for (let i = 0; i < 40; i += 1) {
+    const camera = await page.evaluate(() =>
+      JSON.stringify((window as unknown as { __atlasMap: { camera: () => unknown } }).__atlasMap.camera()),
+    );
+    if (camera === previous) return;
+    previous = camera;
+    await page.waitForTimeout(150);
+  }
+}
+
+type DrawnNode = { id: string; label: string; x: number; y: number; radius: number; hidden: boolean };
+
+/** A canvas point with no drawn disc within 40 px — clicking it clears the focus. */
+async function emptyPoint(page: Page): Promise<{ x: number; y: number }> {
+  return page.evaluate(() => {
+    const canvas = document.querySelector('[data-testid="topology-map-v2-canvas"]')!.getBoundingClientRect();
+    const nodes = (
+      window as unknown as {
+        __atlasMap: { nodes: () => Array<{ x: number; y: number; radius: number; hidden: boolean }> };
+      }
+    ).__atlasMap
+      .nodes()
+      .filter((n) => !n.hidden);
+    for (let y = 40; y < canvas.height - 40; y += 20) {
+      for (let x = 360; x < canvas.width - 90; x += 20) {
+        if (nodes.every((n) => Math.hypot(n.x - x, n.y - y) > n.radius + 40)) return { x, y };
+      }
+    }
+    return { x: canvas.width - 40, y: canvas.height - 40 };
+  });
+}
+
+async function drawnNodes(page: Page): Promise<DrawnNode[]> {
+  return page.evaluate(() =>
+    (window as unknown as { __atlasMap: { nodes: () => DrawnNode[] } }).__atlasMap
+      .nodes()
+      .filter((n) => !n.hidden),
+  );
+}
+
+for (const screen of SCREENS) {
+  test(`Strata ${screen.width}x${screen.height} — a click on a node's drawn centre selects that node`, async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    await openStrata(page, screen.width, screen.height);
+    const canvas = await page.evaluate(() => {
+      const box = document.querySelector('[data-testid="topology-map-v2-canvas"]')!.getBoundingClientRect();
+      return { x: box.x, y: box.y };
+    });
+
+    // Five of the largest discs, kept apart so one click's reframe cannot make the
+    // next one ambiguous.
+    const chosen: DrawnNode[] = [];
+    for (const node of (await drawnNodes(page)).sort((a, b) => b.radius - a.radius)) {
+      if (chosen.every((c) => Math.hypot(c.x - node.x, c.y - node.y) > 120)) chosen.push(node);
+      if (chosen.length === 5) break;
+    }
+    expect(chosen.length, "not enough separated discs to test with").toBe(5);
+
+    const wanted = [0, 2, -2, 0, 2];
+    for (let i = 0; i < chosen.length; i += 1) {
+      /*
+       * Back to the overview between clicks. Not tidiness: with a node focused
+       * the tier reveal and the ego dim decide what is hittable at all, so a
+       * click that misses then tells you about the focus state rather than about
+       * whether the drawn centre answers — which is the only question here.
+       */
+      if (i > 0) {
+        const spare = await emptyPoint(page);
+        await page.mouse.click(canvas.x + spare.x, canvas.y + spare.y);
+        await page.waitForTimeout(400);
+      }
+      // The camera reframes on selection, so the coordinate is re-read from the
+      // frame that is on screen now rather than from the one five clicks ago.
+      await settleCamera(page);
+      const drawn = await drawnNodes(page);
+      const node = drawn.find((n) => n.id === chosen[i].id);
+      expect(node, `${chosen[i].id} left the frame`).toBeTruthy();
+      /*
+       * Two pixels off centre, unless two pixels leaves this disc or lands on a
+       * disc drawn in front of it — then the centre. That is not the gate going
+       * soft: a point on another node's ink belongs to that node, which is the
+       * whole rule this case exists to prove.
+       */
+      const clear = (dx: number) =>
+        Math.abs(dx) <= node!.radius &&
+        !drawn.some(
+          (other) =>
+            other.id !== node!.id && Math.hypot(other.x - (node!.x + dx), other.y - node!.y) <= other.radius,
+        );
+      const offset = clear(wanted[i]) ? wanted[i] : 0;
+      await page.mouse.click(canvas.x + node!.x + offset, canvas.y + node!.y);
+      await page.waitForTimeout(500);
+      const selection = await page.evaluate(
+        () =>
+          (
+            window as unknown as { __atlasMap: { selection: () => { nodeId: string | null; edge: unknown } } }
+          ).__atlasMap.selection(),
+      );
+      expect(
+        selection.nodeId,
+        `clicking ${node!.id} at its drawn centre${offset ? ` ${offset > 0 ? "+" : ""}${offset}px` : ""} selected ${selection.nodeId ?? "nothing"}${selection.edge ? " (a relation)" : ""}`,
+      ).toBe(node!.id);
+      await expect(page.locator('[data-testid="topology-v2-detail-panel"]').first()).toContainText(node!.label);
+    }
+  });
+}
+
+/**
+ * **The tier names are on the rail, and only on the rail** (2026-09-06).
+ *
+ * They used to hang on the plane rims, and at 1040×720 that put them over the
+ * graph — the fit takes the widest plane's rim to the canvas edge, so outside the
+ * ring there is nowhere to hang a name. What replaces them has to be checked for
+ * the same failure it was built to end, plus the two neighbours it could walk
+ * into: the utility tiles above it and the selected-node inspector beside it.
+ */
+test("Strata — the tier legend names four planes without landing on anything", async ({ page }) => {
+  test.setTimeout(120_000);
+  await openStrata(page, 1040, 720);
+
+  const read = async () =>
+    page.evaluate(() => {
+      const canvas = document.querySelector('[data-testid="topology-map-v2-canvas"]')!;
+      const cb = canvas.getBoundingClientRect();
+      const local = (element: Element | null) => {
+        if (!element) return null;
+        const r = element.getBoundingClientRect();
+        return { minX: r.x - cb.x, maxX: r.right - cb.x, minY: r.y - cb.y, maxY: r.bottom - cb.y, h: r.height };
+      };
+      const rows = [...document.querySelectorAll('[data-testid^="topology-tier-legend-row-"]')].map((el) => ({
+        kind: (el as HTMLElement).dataset.tierKind ?? "",
+        text: el.textContent ?? "",
+        rect: local(el)!,
+      }));
+      const chrome = [
+        "topology-tour-button",
+        "topology-shortcuts-help-button",
+        "topology-replay-growth",
+        "topology-v2-detail-panel",
+        "first-run-readout",
+      ]
+        .map((id) => ({ id, rect: local(document.querySelector(`[data-testid="${id}"]`)) }))
+        .filter((c) => c.rect !== null);
+      const probe = (
+        window as unknown as {
+          __atlasMap: {
+            nodes: () => Array<{ x: number; y: number; radius: number; hidden: boolean }>;
+            labels: () => ReadonlyArray<{ minX: number; minY: number; maxX: number; maxY: number }>;
+          };
+        }
+      ).__atlasMap;
+      const nodes = probe.nodes().filter((n) => !n.hidden);
+      const hits: string[] = [];
+      for (const row of rows) {
+        for (const other of chrome) {
+          const r = other.rect!;
+          if (row.rect.minX < r.maxX && r.minX < row.rect.maxX && row.rect.minY < r.maxY && r.minY < row.rect.maxY)
+            hits.push(`${row.kind} on ${other.id}`);
+        }
+        for (const n of nodes) {
+          if (
+            n.x + n.radius > row.rect.minX &&
+            n.x - n.radius < row.rect.maxX &&
+            n.y + n.radius > row.rect.minY &&
+            n.y - n.radius < row.rect.maxY
+          )
+            hits.push(`${row.kind} on a node`);
+        }
+        for (const l of probe.labels()) {
+          if (l.maxX > row.rect.minX && l.minX < row.rect.maxX && l.maxY > row.rect.minY && l.minY < row.rect.maxY)
+            hits.push(`${row.kind} on a node label`);
+        }
+      }
+      return { rows, hits, selectedPanel: chrome.some((c) => c.id === "topology-v2-detail-panel") };
+    });
+
+  const before = await read();
+  expect(before.rows.map((r) => r.kind)).toEqual(["project", "domain", "capability", "element"]);
+  expect(before.rows.every((r) => r.text.trim().length > 0)).toBe(true);
+  // Equal row heights — a legend whose rows differ because their words do is the
+  // content-decided height defect wearing a legend's clothes.
+  expect(new Set(before.rows.map((r) => Math.round(r.rect.h))).size).toBe(1);
+  // Top tier highest, in order, and never two rows on the same line.
+  for (let i = 1; i < before.rows.length; i += 1) {
+    expect(before.rows[i].rect.minY).toBeGreaterThanOrEqual(before.rows[i - 1].rect.maxY - 1e-6);
+  }
+  expect(before.hits, `the legend landed on something: ${before.hits.join(", ")}`).toEqual([]);
+
+  // …and the same holds once the inspector is docked at the same edge.
+  const target = (await drawnNodes(page)).sort((a, b) => b.radius - a.radius)[0];
+  const canvasBox = await page.evaluate(() => {
+    const box = document.querySelector('[data-testid="topology-map-v2-canvas"]')!.getBoundingClientRect();
+    return { x: box.x, y: box.y };
+  });
+  await page.mouse.click(canvasBox.x + target.x, canvasBox.y + target.y);
+  await page.waitForTimeout(900);
+  const after = await read();
+  expect(after.selectedPanel, "the inspector did not open, so this proves nothing").toBe(true);
+  // The inspector owns this edge while it is docked, so the rail steps aside
+  // rather than sharing it — and the rim names do not come back in its place.
+  expect(after.rows, "the legend stayed under the inspector").toEqual([]);
+  expect(after.hits).toEqual([]);
+});

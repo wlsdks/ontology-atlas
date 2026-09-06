@@ -63,6 +63,15 @@ record stays in Git history before commit `e4fb49a89`.
 **Falsifier**: A tablet-portrait review calls the cone small in that canvas rather than calling the metric wrong — which reopens the silhouette, not the floor.
 **Owner**: jinan
 
+## 2026-09-06 — Strata's tier names move to a legend rail, and the fit keeps its column clear
+
+**Why**: The four plane names hung on the rims themselves, and `render/dome-rings.ts` already recorded why: at 1040 the fit takes the widest plane's rim to the canvas edge, so there is no clear space outside the ring and the names sit on the graph — "four short words on top of the graph is the smaller cost". It is not the smaller cost once there is somewhere else to put them.
+**Prior**: 2026-09-06 (Strata) stands; this replaces the rim-name fallback it shipped with, and keeps it only for a canvas too short for the rail.
+**Decision**: A rail at the canvas's right edge, below the utility tiles: four rows at `text-label` in quaternary ink, equal 20 px heights, each row aligned to its plane's **projected** height and re-aligned every orbit and morph frame; hovering a row raises that plane's ring to the tertiary ink. Never both — the rim names return only when the rail reports it cannot place its rows. The overview fit reserves the rail's 56 px column (`TIER_LEGEND_RESERVE_PX`), because the rail covers under half the canvas height and `measureCanvasInsets` correctly refuses to treat it as a side panel; without that, three nodes were drawn under the rows at 1040×720. The inspector owns that edge while it is docked, so the rail unmounts rather than sharing it. Measured: 0 rect intersections, all four rows reachable at their centre, ink 5.34–5.37 : 1 on the canvas ground, at both 1512×982 and 1040×720.
+**Dissent**: The reservation is width the graph does not get. At 1040×720 it takes 6% of a 976 px canvas: fill 72.5% → 63.6% and two element pairs on one plane now touch where none did, so `map-3d-strata-drawing.spec.ts` moves that size to 0.60 and `sameTierMax` 2. Someone could argue the names were legible enough on the rims and the graph is the thing worth the pixels.
+**Falsifier**: A review at 1040×720 calls the graph cramped, or calls the rail's names harder to attach to their planes than the rim names were.
+**Owner**: jinan
+
 ## 2026-09-06 — A resting relation line in 3D gets a floor under its depth ink
 
 **Why**: The owner, looking at the installed app in Cloud on the dogfood ontology, reported that the lines are so faint the connections are all but invisible and only the selected pair reads. Measured on the sample vault at 1512×982, DPR 2, nothing selected, reading each drawn line's own pixels against the ground beside it: containment lines read a median 1.26 : 1 in Cone, 1.33 in Strata, 1.14 in Cloud, where the same measurement on the 2D map reads 5.80 : 1. Depth attenuates a line twice — fog on its alpha (1.0 → 0.09) and the width factor on its stroke (0.90 → 0.35) — and the stacked product bottoms out at 3.5% of a near line's ink. The same stacking emptied the Strata rings at 0.12.

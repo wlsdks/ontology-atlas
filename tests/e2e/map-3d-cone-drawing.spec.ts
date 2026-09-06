@@ -277,3 +277,123 @@ for (const screen of SCREENS) {
     expect(cone.readoutHasZoomHint, "다 그렸는데 여전히 줌인하라고 한다").toBe(false);
   });
 }
+
+/**
+ * **Clicking a node's drawn centre selects that node** (2026-09-06).
+ *
+ * The twin of the case in `map-3d-strata-drawing.spec.ts`, and it belongs in both
+ * files because the cone crowds differently: it packs a tier under one parent
+ * rather than spreading it across a plane, so a near disc has far more chances to
+ * reach across a neighbour's centre.
+ *
+ * `__atlasMap.nodes()` reports where the frame drew each disc, and every number in
+ * this file trusts that coordinate. When the pointer's answer differs from it, the
+ * suite is measuring one picture while the person clicks another. It did differ:
+ * the 5 px courtesy ring around each disc used to compete with the painted disc on
+ * equal terms, and because depth was decided before distance, a near domain
+ * answered for the far elements drawn beside it. Sweeping every visible node's own
+ * centre before the fix: 121 of 125 answered here at 1512×982 and 113 of 125 at
+ * 834×1112; after, 124 and 119, the rest being nodes genuinely drawn underneath
+ * another one.
+ */
+async function settleConeCamera(page: Page) {
+  let previous: string | null = null;
+  for (let i = 0; i < 40; i += 1) {
+    const camera = await page.evaluate(() =>
+      JSON.stringify((window as unknown as { __atlasMap: { camera: () => unknown } }).__atlasMap.camera()),
+    );
+    if (camera === previous) return;
+    previous = camera;
+    await page.waitForTimeout(150);
+  }
+}
+
+type ConeDrawnNode = { id: string; label: string; x: number; y: number; radius: number; hidden: boolean };
+
+async function coneDrawnNodes(page: Page): Promise<ConeDrawnNode[]> {
+  return page.evaluate(() =>
+    (window as unknown as { __atlasMap: { nodes: () => ConeDrawnNode[] } }).__atlasMap
+      .nodes()
+      .filter((n) => !n.hidden),
+  );
+}
+
+/** A canvas point with no drawn disc within 40 px — clicking it clears the focus. */
+async function coneEmptyPoint(page: Page): Promise<{ x: number; y: number }> {
+  return page.evaluate(() => {
+    const canvas = document.querySelector('[data-testid="topology-map-v2-canvas"]')!.getBoundingClientRect();
+    const nodes = (
+      window as unknown as {
+        __atlasMap: { nodes: () => Array<{ x: number; y: number; radius: number; hidden: boolean }> };
+      }
+    ).__atlasMap
+      .nodes()
+      .filter((n) => !n.hidden);
+    for (let y = 40; y < canvas.height - 40; y += 20) {
+      for (let x = 360; x < canvas.width - 60; x += 20) {
+        if (nodes.every((n) => Math.hypot(n.x - x, n.y - y) > n.radius + 40)) return { x, y };
+      }
+    }
+    return { x: canvas.width - 30, y: canvas.height - 30 };
+  });
+}
+
+// The widest and the tightest of the four sizes — the two ends of the crowding.
+for (const screen of [SCREENS[0], SCREENS[3]]) {
+  test(`Cone ${screen.width}x${screen.height} — a click on a node's drawn centre selects that node`, async ({
+    page,
+  }) => {
+    test.setTimeout(180_000);
+    await openCone(page, screen.width, screen.height);
+    const canvas = await page.evaluate(() => {
+      const box = document.querySelector('[data-testid="topology-map-v2-canvas"]')!.getBoundingClientRect();
+      return { x: box.x, y: box.y };
+    });
+
+    const chosen: ConeDrawnNode[] = [];
+    for (const node of (await coneDrawnNodes(page)).sort((a, b) => b.radius - a.radius)) {
+      if (chosen.every((c) => Math.hypot(c.x - node.x, c.y - node.y) > 100)) chosen.push(node);
+      if (chosen.length === 5) break;
+    }
+    expect(chosen.length, "not enough separated discs to test with").toBe(5);
+
+    const wanted = [0, 2, -2, 0, 2];
+    for (let i = 0; i < chosen.length; i += 1) {
+      // Back to the overview between clicks: with a node focused the ego dim and
+      // the tier reveal decide what is hittable, and a miss would then be telling
+      // us about the focus state rather than about the drawn centre.
+      if (i > 0) {
+        const spare = await coneEmptyPoint(page);
+        await page.mouse.click(canvas.x + spare.x, canvas.y + spare.y);
+        await page.waitForTimeout(400);
+      }
+      await settleConeCamera(page);
+      const drawn = await coneDrawnNodes(page);
+      const node = drawn.find((n) => n.id === chosen[i].id);
+      expect(node, `${chosen[i].id} left the frame`).toBeTruthy();
+      // Two pixels off centre unless that leaves this disc or lands on one drawn
+      // in front of it — a point on another node's ink belongs to that node,
+      // which is the rule this case proves.
+      const clear = (dx: number) =>
+        Math.abs(dx) <= node!.radius &&
+        !drawn.some(
+          (other) =>
+            other.id !== node!.id && Math.hypot(other.x - (node!.x + dx), other.y - node!.y) <= other.radius,
+        );
+      const offset = clear(wanted[i]) ? wanted[i] : 0;
+      await page.mouse.click(canvas.x + node!.x + offset, canvas.y + node!.y);
+      await page.waitForTimeout(500);
+      const selection = await page.evaluate(
+        () =>
+          (
+            window as unknown as { __atlasMap: { selection: () => { nodeId: string | null; edge: unknown } } }
+          ).__atlasMap.selection(),
+      );
+      expect(
+        selection.nodeId,
+        `clicking ${node!.id} at its drawn centre${offset ? ` ${offset > 0 ? "+" : ""}${offset}px` : ""} selected ${selection.nodeId ?? "nothing"}${selection.edge ? " (a relation)" : ""}`,
+      ).toBe(node!.id);
+      await expect(page.locator('[data-testid="topology-v2-detail-panel"]').first()).toContainText(node!.label);
+    }
+  });
+}

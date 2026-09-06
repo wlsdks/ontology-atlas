@@ -184,6 +184,7 @@ const domeAncestryColorEdgesReused = new Set<string>();
 const domeAncestryUnionReused = new Set<string>();
 const domeAncestryColorUnionReused = new Set<string>();
 const domeRingScreenReused: {
+  kind: DomeViewKind;
   a: number;
   points: { x: number; y: number; u: number }[];
   label: { x: number; y: number; text: string } | null;
@@ -820,6 +821,11 @@ export interface FrameDrawParams {
    */
   domeTierLabels?: Readonly<Partial<Record<DomeViewKind, string>>> | null;
   /**
+   * The Strata tier whose plane ring is raised — the legend row under the pointer
+   * (`TopologyV2TierLegend`). Null raises nothing.
+   */
+  domeTierRaisedKind?: DomeViewKind | null;
+  /**
    * 3D — the **meridian control point** for one edge (world 2D). Why an edge must
    * bow rather than run straight: the `DOME_EDGE_BOW` doc-block in
    * `model/dome-view.ts`. Returning null leaves that edge on its 2D control point.
@@ -910,6 +916,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     domeRings = null,
     domeRingAlpha = DOME_RING_ALPHA,
     domeTierLabels = null,
+    domeTierRaisedKind = null,
     domeControlFor = null,
     trailLensRamp,
   } = params;
@@ -1497,9 +1504,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             const ring = domeRings[i];
             let out = domeRingScreenReused[i];
             if (!out) {
-              out = { a: 0, points: [], label: null };
+              out = { kind: ring.kind, a: 0, points: [], label: null };
               domeRingScreenReused[i] = out;
             }
+            out.kind = ring.kind;
             out.a = ring.a;
             const tierName = domeTierLabels?.[ring.kind];
             if (ring.label && tierName) {
@@ -1535,9 +1543,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         // The same right edge node labels are culled against, so a tier name and
         // a concept name obey one boundary.
         labelMaxX: viewportWidth - tokens.safeInsetRight,
+        raisedKind: domeTierRaisedKind,
     };
     domeRingsTokens = {
         stroke: tokens.domeRing,
+        // The hovered plane's ring only — it borrows the application's tertiary
+        // text step rather than adding a colour (`domeRingRaised`).
+        strokeRaised: tokens.domeRingRaised,
         // The dimmest node-label ink: a tier name must be read, so it stands a
         // step above the hairline it names, and it borrows an existing token
         // rather than introducing a colour for four words.
