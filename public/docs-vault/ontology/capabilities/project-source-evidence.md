@@ -9,7 +9,7 @@ domain: domains/project-portfolio
 path: src/shared/lib/project-source-receipt.ts
 created_by: "agent:codex"
 dependencies: [capabilities/vault-ontology]
-relation_notes: { capabilities/vault-ontology: "Source receipts derive project scope, capability and element path claims, and typed relations from the ontology schema; schema changes alter which witnesses and impacts the receipt can verify." }
+relation_notes: { capabilities/vault-ontology: "Source receipts derive project scope, capability and element path claims, and typed relations from the ontology schema; schema changes alter which witnesses and impacts the receipt can verify.", elements/semantic-evidence-selector: "A receipt may only call a claim supported when it rests on exact model-visible source text, and this selector is what separates current claim sections from review-only policy lines, so it decides which prose the receipt is allowed to cite." }
 elements: [elements/semantic-evidence-selector]
 ---
 

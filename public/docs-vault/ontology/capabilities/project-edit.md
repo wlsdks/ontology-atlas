@@ -8,6 +8,7 @@ domain: domains/project-portfolio
 elements: [elements/project-editor]
 path: src/features/project-edit
 created_by: "agent:unknown"
+relation_notes: { elements/project-editor: "The form's validation, serialization, and placement rules only reach a person through the /project/new and /project/[slug]/edit page, which is where create, update, duplicate, and delete are wired to that form." }
 ---
 
 ## Definition
