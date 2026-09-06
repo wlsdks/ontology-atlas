@@ -208,7 +208,8 @@ test.describe("Check the wiki opens the agent dock", () => {
     await expect(logLine).toContainText("architecture (new)");
     await expect(logLine).toContainText("superseded 1");
     await expect(page.getByTestId("library-wiki")).toContainText("Wiki · 2");
-    await expect(page.getByRole("heading", { level: 2, name: "Architecture" })).toBeVisible();
+    // With nothing selected the pane is the graph (2026-09-06, third pass), so no page
+    // heading is on screen here; the list above already proves the template is not a row.
     // Same row, Lint first: reading before writing.
     const [lintBox, compileBox] = await Promise.all([
       lint.boundingBox(),
