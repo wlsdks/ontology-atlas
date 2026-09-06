@@ -162,3 +162,25 @@ export const NAV_LEADER_WINDOW_MS = 1500;
 export const DESTINATION_BY_KEY: Record<string, DestinationId> = Object.fromEntries(
   DESTINATION_IDS.map((id) => [DESTINATION_KEY[id], id]),
 ) as Record<string, DestinationId>;
+
+/**
+ * The destinations a folder of this shape earns.
+ *
+ * Owner direction 2026-09-06: a person with documents and no code should not meet the
+ * map, the architecture reading or the ontology analysis as empty doors. The shape comes
+ * from the files (`describeVaultShape`), never a setting, so a teammate who pulls the
+ * folder sees the same rail. Agents, MCP and history stay: a wiki is compiled by an agent
+ * and read as diffs too. The Library stays as well — PO review the same day: it holds
+ * `sources/` for any folder, the CLI writes the wiki template into every code vault, and
+ * hiding it would have retired a door from every vault made before today. An empty
+ * folder, or no folder, earns everything — there is nothing to hide.
+ */
+export function destinationsForVaultShape(
+  shape: { map: boolean; wiki: boolean } | null | undefined,
+): ReadonlySet<DestinationId> {
+  if (!shape || shape.map || !shape.wiki) return new Set(DESTINATION_IDS);
+  return new Set<DestinationId>(['library', 'agents', 'mcp', 'git']);
+}
+
+/** The bottom tabs for a wiki without a map: the Library is the one place to go. */
+export const WIKI_ONLY_MOBILE_DESTINATION_IDS = ['library'] as const satisfies ReadonlyArray<DestinationId>;

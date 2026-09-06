@@ -1,3 +1,5 @@
+import { isWikiFurnitureSlug } from '@/shared/lib/wiki-page-schema';
+
 import type { VaultDoc, VaultSourceFile } from '../model/types';
 
 /**
@@ -66,7 +68,7 @@ export interface LibraryWikiPage {
 }
 
 /** Whether a doc is a wiki page: under `wiki/` **and** carrying no `kind:`. */
-function isWikiPage(doc: VaultDoc): boolean {
+export function isWikiPage(doc: VaultDoc): boolean {
   if (!doc.slug.startsWith(`${VAULT_WIKI_DIR}/`)) return false;
   const kind = doc.frontmatter.kind;
   // A file under `wiki/` that grew a `kind:` is an ontology node someone filed in the
@@ -94,9 +96,16 @@ function readHashMap(value: unknown): Map<string, string> {
   return out;
 }
 
-/** Wiki pages in the manifest, newest write-up first by slug order. */
+/**
+ * Wiki pages in the manifest, by slug order.
+ *
+ * The shipped `wiki/_template.md` is not a page: it is the copy-ready shape `init` writes,
+ * and listing it put "<the page name>" at the top of the Wiki list and opened it as the
+ * first page a person reads (installed app, 2026-09-06, on a folder with five real
+ * pages). The validators already skip it; the list does too, for the same reason.
+ */
 export function selectWikiPages(docs: readonly VaultDoc[]): LibraryWikiPage[] {
-  return docs.filter(isWikiPage).map((doc) => ({
+  return docs.filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug)).map((doc) => ({
     slug: doc.slug,
     title: doc.title,
     sourcePaths: readStringArray(doc.frontmatter.sources),
@@ -407,11 +416,9 @@ export function countSourceFormats(
     .sort((a, b) => (b.count - a.count) || a.format.localeCompare(b.format));
 }
 
-/** The newest `mtime` among the sources, or null when there are none. */
-export function lastSourceAddedAt(sources: readonly VaultSourceFile[]): number | null {
-  let newest: number | null = null;
-  for (const source of sources) {
-    if (newest === null || source.mtime > newest) newest = source.mtime;
-  }
-  return newest;
-}
+/*
+ * `lastSourceAddedAt` lived here until 2026-09-06. It had one consumer, the Library
+ * shelf's four-row "Last added" table, and that table went when the guide became a
+ * three-row stepper whose rows carry one caption each. A derivation with no surface is a
+ * fact nobody can check, so it left with its reader rather than waiting for one.
+ */

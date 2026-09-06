@@ -34,6 +34,7 @@ import {
   DOME_RING_WIDTH_PX,
   domeDetailFactor,
   domeEdgeFogAlpha,
+  domeEdgeMinWidthPx,
   domeEdgeWidthFactor,
   domeFogAlpha,
   DOME_RIM_FOG_FLOOR,
@@ -513,6 +514,13 @@ export interface FrameDrawParams {
   now: number;
   viewportWidth: number;
   viewportHeight: number;
+  /**
+   * The ratio `ctx` is transformed by, so a length in CSS px can be converted to
+   * device pixels. Only the 3D resting relation line's width floor reads it
+   * (`domeEdgeMinWidthPx`); everything else on this canvas is a CSS quantity by
+   * design. Defaults to 1 — the value a caller that never scales the context has.
+   */
+  devicePixelRatio?: number;
   gridPattern: CanvasPattern | null;
   dustPoints: readonly DustPoint[];
   tokens: TopologyV2Tokens;
@@ -855,6 +863,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     now,
     viewportWidth,
     viewportHeight,
+    devicePixelRatio: canvasDpr = 1,
     gridPattern,
     dustPoints,
     tokens,
@@ -1579,6 +1588,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // (hover, selection, ego) is exempted below and brightens back up.
       let domeEdgeFog = 1;
       let domeWidthScale = 1;
+      /**
+       * The smallest stroke a resting line here may be drawn at, in CSS px
+       * (`domeEdgeMinWidthPx`). Cross-faded on the same assembly ramp as the width
+       * factor beside it, so the 2D↔3D morph cannot step a stroke, and 0 in 2D.
+       */
+      let domeMinWidthPx = 0;
       // Halo half-width (screen px), cross-faded on the assembly ramp so no stroke
       // pops into existence during the 2D↔3D transition. Its alpha is set below,
       // once this edge's final alpha is known.
@@ -1595,6 +1610,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           // factor (`domeEdgeFogAlpha`); nodes and rings keep the raw ramp.
           domeEdgeFog = 1 + (domeEdgeFogAlpha(uAvg) - 1) * aMin;
           domeWidthScale = 1 + (domeEdgeWidthFactor(uAvg) - 1) * aMin;
+          domeMinWidthPx = domeEdgeMinWidthPx(canvasDpr) * aMin;
           domeHaloWidthPx = domeHaloPx(uAvg) * aMin;
           domeEdgeDetail = 1 + (domeDetailFactor(uAvg) - 1) * aMin;
         }
@@ -1762,6 +1778,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           reducedMotion,
           level: edge.level,
           widthScale: domeEdgeExempt ? 1 : 1 + (domeWidthScale - 1) * (1 - hoverLift),
+          // The device-pixel floor rides the same population and the same ramp as
+          // the depth width factor above it: only the lines depth is allowed to
+          // thin, and only as far as the assembly ramp has brought them into 3D,
+          // so the 2D↔3D morph cannot step a stroke.
+          minWidthPx: domeEdgeExempt ? 0 : domeMinWidthPx,
           halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
           containsCometEligible: kind === "contains" ? egoContainsComets.has(edgePairMeta(edge).key) : undefined,
           dependsCometEligible: kind === "depends" ? ambientDependsComets.has(edgePairMeta(edge).key) : undefined,

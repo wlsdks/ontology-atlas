@@ -449,3 +449,66 @@ describe("hover lift — a hovered node's lines rise toward the ego ink on the r
     expect(drawAndRead({ ...contains, egoState: "dim", hoverLift: 1 })).toEqual(dim);
   });
 });
+
+/**
+ * **The device-pixel width floor, and the promise that 2D never sees it.**
+ *
+ * `minWidthPx` is what stops a resting 3D relation line going sub-pixel on the
+ * device — below one device pixel the rasteriser spreads the stroke's alpha over
+ * two rows and the peak contrast collapses, which is how the depth-ink floor's
+ * whole gain disappeared at DPR 1 while measuring intact at DPR 2
+ * (`tests/e2e/map-3d-relation-ink.spec.ts`). The 2D map passes nothing, and this
+ * pins that "nothing" is the same drawing it always was.
+ */
+describe("draw — the resting line's device-pixel width floor", () => {
+  const TOKENS = {
+    edgeContains: "#3a3a42",
+    edgeContainsL0: "#45454e",
+    edgeContainsL2: "#333339",
+    edgeDepends: "#4c4c63",
+    edgeDim: "#1a1a1f",
+    indigo: "#5e6ad2",
+    indigoBright: "#8b97ff",
+  };
+  function widths(state: TraceDrawState): number[] {
+    const out: number[] = [];
+    const ctx = {
+      beginPath() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, fill() {}, setLineDash() {}, arc() {},
+      stroke() { out.push(Number((this as { lineWidth?: unknown }).lineWidth)); },
+      strokeStyle: "", fillStyle: "", lineWidth: 0, lineCap: "butt", lineJoin: "miter", lineDashOffset: 0,
+    } as unknown as CanvasRenderingContext2D;
+    draw(ctx, state, TOKENS);
+    return out;
+  }
+  const FAR_CONTAINS: TraceDrawState = {
+    a: { x: 0, y: 0 }, b: { x: 200, y: 0 }, control: { x: 100, y: 20 },
+    relationType: "contains", egoState: "normal", farT: 1, t: 0, level: 2, widthScale: 0.72,
+  };
+
+  it("leaves a line already wider than the floor exactly where it was", () => {
+    const near: TraceDrawState = { ...FAR_CONTAINS, farT: 0, level: 0, widthScale: 1 };
+    expect(widths({ ...near, minWidthPx: 0.5 })).toEqual(widths(near));
+  });
+
+  it("lifts a sub-pixel far line to the floor", () => {
+    const before = widths(FAR_CONTAINS)[0];
+    const after = widths({ ...FAR_CONTAINS, minWidthPx: 1 })[0];
+    expect(before).toBeLessThan(1);
+    expect(after).toBe(1);
+  });
+
+  it("floors the base width, so the directional taper still reads source→target", () => {
+    const tapered: TraceDrawState = {
+      ...FAR_CONTAINS, relationType: "depends", level: undefined, minWidthPx: 1,
+    };
+    const segments = widths(tapered);
+    expect(segments.length).toBeGreaterThan(2);
+    expect(segments[0]).toBeGreaterThan(segments[segments.length - 1]);
+  });
+
+  it("is the 2D map's no-op: omitted, 0, and never-set all draw the same widths", () => {
+    const base = widths(FAR_CONTAINS);
+    expect(widths({ ...FAR_CONTAINS, minWidthPx: 0 })).toEqual(base);
+    expect(widths({ ...FAR_CONTAINS, minWidthPx: undefined })).toEqual(base);
+  });
+});

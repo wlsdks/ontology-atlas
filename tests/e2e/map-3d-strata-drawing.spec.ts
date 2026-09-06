@@ -21,6 +21,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * |---|---|---|---|
  * | outline ÷ free canvas | 65.5% | 72.5% | 73.4% / 69.2% |
  * | …after the tier legend took its column (2026-09-06) | 66.3% | 63.6% | unchanged |
+ * | …after the column became conditional (2026-09-07) | 66.3% | **73.4%** | unchanged |
  * | overlapping node pairs | **0** | **2** | 4 / 8 |
  * | same-tier overlapping pairs | 0 | 0 | 0 / 0 |
  * | resting labels drawn | 15 | 11 | 15 / 13 |
@@ -39,27 +40,29 @@ import { seedFirstRunSeen } from "./first-run-seed";
 /**
  * The two sizes the owner reviews on, with the floor and ceiling each has to hold.
  *
- * **1040's numbers moved on 2026-09-06, and it is a trade rather than a
- * regression.** Strata's four tier names moved off the plane rims — where at this
+ * **1040 paid for the legend rail on 2026-09-06, and stopped paying on
+ * 2026-09-07.** Strata's four tier names moved off the plane rims — where at this
  * very size they were drawn on top of the graph — onto a legend rail at the
- * canvas's right edge, and the fit now keeps that rail's column clear
+ * canvas's right edge, and the fit kept that rail's column clear
  * (`TIER_LEGEND_RESERVE_PX`, 56 px). On a 976 px canvas that is 6% of the width,
- * and width is what binds the fit here, so the outline went to **565 × 529 =
- * 63.6%** from 72.5% and two element pairs on one plane now touch where none did.
- * At 1512 the fit is bound by height instead and the same reservation costs
- * nothing: **888 × 824 = 66.3%**, a touch above the 65.5% measured before.
+ * and width is what binds the fit here, so the outline fell to **565 × 529 =
+ * 63.6%** from 72.5% and two element pairs on one plane began to touch where none
+ * did. At 1512 the fit is bound by height instead and the same reservation costs
+ * nothing: **888 × 824 = 66.3%**.
  *
- * Both sides of that trade were measured rather than argued. Without the
- * reservation the fit runs the graph out to the canvas edge and three nodes end up
- * underneath the legend rows — a name on a disc, which is the defect the rail
- * exists to end and which this file's own rule (3) forbids for node labels. Two
- * touching discs of the same tier is the smaller cost, so `sameTierMax` at this
- * size becomes 2 and the fill floor 0.60. The wide size keeps 1 and 0.58.
- * Ledger: `docs/DECISIONS.md`, 2026-09-06.
+ * The rail is not what was wrong; taking that column unconditionally was.
+ * `tierLegendPlacement` now decides from the fit's own free box, so the column is
+ * reserved only where it was going to go unused, and at 1040 the four names become
+ * a compact corner stack in the bottom-right corner the plane rims curve away
+ * from. Measured after: **607 × 567 = 73.4%** — above even the 72.5% of before the
+ * rail existed, because the corner stack asks for nothing — **0** same-tier
+ * touching pairs, and 2 overlapping pairs down from 5. 1512 is unchanged at 66.3%
+ * with the rail still on the edge. Ledger: `docs/DECISIONS.md`, 2026-09-06 and
+ * 2026-09-07.
  */
 const SCREENS = [
   { width: 1512, height: 982, fillFloor: 0.58, overlapMax: 3, sameTierMax: 1, stolenMax: 1 },
-  { width: 1040, height: 720, fillFloor: 0.6, overlapMax: 5, sameTierMax: 2, stolenMax: 1 },
+  { width: 1040, height: 720, fillFloor: 0.66, overlapMax: 4, sameTierMax: 1, stolenMax: 1 },
 ] as const;
 
 async function openStrata(page: Page, width: number, height: number) {
@@ -403,17 +406,29 @@ for (const screen of SCREENS) {
 }
 
 /**
- * **The tier names are on the rail, and only on the rail** (2026-09-06).
+ * **The tier names land on nothing, at either size and in either placement**
+ * (2026-09-06, extended 2026-09-07).
  *
  * They used to hang on the plane rims, and at 1040×720 that put them over the
  * graph — the fit takes the widest plane's rim to the canvas edge, so outside the
  * ring there is nowhere to hang a name. What replaces them has to be checked for
  * the same failure it was built to end, plus the two neighbours it could walk
  * into: the utility tiles above it and the selected-node inspector beside it.
+ *
+ * Since 2026-09-07 there are two placements, chosen by whether the rail's column
+ * is width the fit was going to use (`model/tier-legend-rows.ts#tierLegendPlacement`):
+ * the aligned rail at 1512×982, the compact corner stack at 1040×720, where the
+ * rail was costing the graph 6% of the canvas. Both are checked here, and which
+ * one is expected at which size is pinned — a legend that quietly reverted to the
+ * rail at 1040 would take that width back with nothing on screen to say so.
  */
-test("Strata — the tier legend names four planes without landing on anything", async ({ page }) => {
+for (const legend of [
+  { width: 1512, height: 982, placement: "rail" },
+  { width: 1040, height: 720, placement: "corner" },
+] as const) {
+test(`Strata ${legend.width}x${legend.height} — the tier legend names four planes without landing on anything`, async ({ page }) => {
   test.setTimeout(120_000);
-  await openStrata(page, 1040, 720);
+  await openStrata(page, legend.width, legend.height);
 
   const read = async () =>
     page.evaluate(() => {
@@ -468,10 +483,17 @@ test("Strata — the tier legend names four planes without landing on anything",
             hits.push(`${row.kind} on a node label`);
         }
       }
-      return { rows, hits, selectedPanel: chrome.some((c) => c.id === "topology-v2-detail-panel") };
+      const rail = document.querySelector('[data-testid="topology-tier-legend"]') as HTMLElement | null;
+      return {
+        rows,
+        hits,
+        placement: rail?.dataset.tierLegendPlacement ?? null,
+        selectedPanel: chrome.some((c) => c.id === "topology-v2-detail-panel"),
+      };
     });
 
   const before = await read();
+  expect(before.placement, "the legend chose the other placement for this size").toBe(legend.placement);
   expect(before.rows.map((r) => r.kind)).toEqual(["project", "domain", "capability", "element"]);
   expect(before.rows.every((r) => r.text.trim().length > 0)).toBe(true);
   // Equal row heights — a legend whose rows differ because their words do is the
@@ -498,3 +520,4 @@ test("Strata — the tier legend names four planes without landing on anything",
   expect(after.rows, "the legend stayed under the inspector").toEqual([]);
   expect(after.hits).toEqual([]);
 });
+}

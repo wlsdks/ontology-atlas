@@ -9,7 +9,9 @@ import {
   type VaultSourceFile,
 } from "@/entities/docs-vault";
 import { nativeVaultFileHashes } from "@/shared/lib/tauri-vault-fs";
-import { isWikiTemplateSlug, validateWikiPage } from "@/shared/lib/wiki-page-schema";
+import { parseWikiLog, type WikiLogEntry } from "@/features/library";
+import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/wiki-page-schema";
+import { mergeWikiVerdict } from "./merge-wiki-verdict";
 
 /**
  * The library, measured lazily, for one open folder.
@@ -49,6 +51,18 @@ export interface LibraryUiModel extends LibraryModel {
   verdicts: Map<string, LibraryWikiVerdict>;
   /** Wiki pages that do not fit the contract, and have been measured. */
   offTemplateCount: number;
+  /**
+   * Page text by wiki slug, as last read for judging. The permission card applies an
+   * agent's edit to this to judge the page that would land; a slug absent here has not
+   * been read yet and gets no verdict rather than a guessed one.
+   */
+  pageTexts: ReadonlyMap<string, string>;
+  /**
+   * The last Compile and the last Check-the-wiki run, read from `wiki/_log.md` — the
+   * app's own record, so the header can say what happened without asking anybody.
+   * Null when the log has no such line yet.
+   */
+  log: { lastCompile: WikiLogEntry | null; lastLint: WikiLogEntry | null };
   /**
    * Measured sha256 by source path, for the rows the reader opens.
    *
@@ -109,6 +123,17 @@ export function useLibraryModel({
   const [verdicts, setVerdicts] = useState<Map<string, LibraryWikiVerdict>>(() => new Map());
   /** `slug@mtime` of every wiki page already judged. */
   const judgedStamps = useRef(new Set<string>());
+  /**
+   * Page text by `slug@mtime`, kept so the folder half can be judged on every pass.
+   * A page's own verdict is stable until its bytes change; whether somebody links to it
+   * changes when *another* page changes, so the folder is re-read from this cache each
+   * time any page moves rather than only for the pages that did.
+   */
+  const rawByStamp = useRef(new Map<string, string>());
+  /** The same texts as state, for consumers that judge an agent's edit against the page. */
+  const [pageTexts, setPageTexts] = useState<Map<string, string>>(() => new Map());
+  const [logEntries, setLogEntries] = useState<WikiLogEntry[]>([]);
+  const logStamp = useRef<string | null>(null);
 
   const hashes = useMemo(() => {
     const out = new Map<string, string>();
@@ -163,6 +188,31 @@ export function useLibraryModel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, sourceHandles, sources, vaultRootPath, wantedKey]);
 
+  const logDoc = docs.find((doc) => doc.slug === "wiki/_log") ?? null;
+  const logMtime = logDoc?.mtime ?? null;
+  useEffect(() => {
+    if (!enabled) return;
+    const stamp = logDoc ? `wiki/_log@${logMtime ?? 0}` : null;
+    if (stamp === null || stamp === logStamp.current) return;
+    const handle = fileHandles.get("wiki/_log");
+    if (!handle) return;
+    // Claimed before the read so a re-run with the same stamp (the manifest and the
+    // handle map are rebuilt as new objects) does not start a second read; not cancelled
+    // on cleanup, because a read for this exact stamp is the one wanted and a cleanup
+    // that discarded it left the header blank (measured in the browser, 2026-09-06).
+    logStamp.current = stamp;
+    void (async () => {
+      try {
+        const text = await (await handle.getFile()).text();
+        if (logStamp.current === stamp) setLogEntries(parseWikiLog(text));
+      } catch {
+        // An unreadable log says nothing; the header simply has no line. Let a later
+        // change of the file try again.
+        if (logStamp.current === stamp) logStamp.current = null;
+      }
+    })();
+  }, [enabled, fileHandles, logDoc, logMtime]);
+
   const wikiPages = model.wikiPages;
   const wikiKey = wikiPages.map((page) => page.slug).join("\u0000");
 
@@ -173,19 +223,26 @@ export function useLibraryModel({
     const knownSources = (sources ?? []).map((source) => source.path);
     void (async () => {
       const measured = new Map<string, LibraryWikiVerdict>();
+      const folderInput: Array<{ path: string; raw: string }> = [];
+      let changed = false;
       for (const page of wikiPages) {
-        if (isWikiTemplateSlug(page.slug)) continue;
+        if (isWikiFurnitureSlug(page.slug)) continue;
         const doc = bySlug.get(page.slug);
         const stamp = `${page.slug}@${doc?.mtime ?? 0}`;
-        if (judgedStamps.current.has(stamp)) continue;
-        const handle = fileHandles.get(page.slug);
-        if (!handle) continue;
-        let raw: string;
-        try {
-          raw = await (await handle.getFile()).text();
-        } catch {
-          continue;
+        let raw = rawByStamp.current.get(stamp);
+        if (raw === undefined) {
+          const handle = fileHandles.get(page.slug);
+          if (!handle) continue;
+          try {
+            raw = await (await handle.getFile()).text();
+          } catch {
+            continue;
+          }
+          rawByStamp.current.set(stamp, raw);
+          changed = true;
         }
+        folderInput.push({ path: `${page.slug}.md`, raw });
+        if (judgedStamps.current.has(stamp)) continue;
         const { ok, problems } = validateWikiPage(raw, { knownSources });
         judgedStamps.current.add(stamp);
         measured.set(page.slug, {
@@ -196,10 +253,22 @@ export function useLibraryModel({
           problems,
         });
       }
-      if (cancelled || measured.size === 0) return;
+      if (cancelled || (!changed && measured.size === 0)) return;
+      const folderByPath = new Map(
+        validateWikiFolder(folderInput).map((entry) => [entry.path, entry.problems] as const),
+      );
+      setPageTexts(new Map(folderInput.map(({ path, raw }) => [path.replace(/\.md$/, ""), raw] as const)));
       setVerdicts((current) => {
         const next = new Map(current);
         for (const [slug, verdict] of measured) next.set(slug, verdict);
+        for (const { path } of folderInput) {
+          const slug = path.replace(/\.md$/, "");
+          const base = next.get(slug);
+          if (!base) continue;
+          // Page problems first, folder problems after: the page's own shape is what
+          // a writer fixes first, and the first code shown is the one they see.
+          next.set(slug, mergeWikiVerdict(base, folderByPath.get(path) ?? []));
+        }
         return next;
       });
     })();
@@ -215,6 +284,11 @@ export function useLibraryModel({
     for (const [slug, verdict] of verdicts) {
       if (live.has(slug) && !verdict.ok) offTemplateCount += 1;
     }
-    return { ...model, verdicts, offTemplateCount, hashes };
-  }, [hashes, model, verdicts]);
+    // A folder whose log was removed shows no line: the entries are read only while the
+    // file is there, and are ignored, not cleared, when it is not.
+    const entries = logDoc ? logEntries : [];
+    const lastCompile = [...entries].reverse().find((entry) => entry.kind === "compile") ?? null;
+    const lastLint = [...entries].reverse().find((entry) => entry.kind === "lint") ?? null;
+    return { ...model, verdicts, offTemplateCount, hashes, pageTexts, log: { lastCompile, lastLint } };
+  }, [hashes, logDoc, logEntries, model, pageTexts, verdicts]);
 }

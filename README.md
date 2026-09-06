@@ -650,6 +650,36 @@ The goal is not to index every symbol — a source artifact earns a node when it
 helps a person or an agent understand a capability, trace impact, or run the
 right proof. Curated, not exhaustive.
 
+### What Atlas makes in your folder
+
+Every vault is one folder named `atlas/`. That name is fixed so a teammate can
+say it and be understood, and so an agent's config can point at it without
+guessing. `ontology-atlas init` and the app's **Just start** create it; opening
+an existing folder recognises a vault by what is inside, never by its name.
+
+```text
+atlas/
+├── project.md              # the project node (kind: project) — present when there is a map
+├── domains/                # one .md per domain node
+├── capabilities/           # one .md per capability node, each with a code `path:`
+├── elements/               # one .md per implementation-role node
+├── sources/                # raw documents, any format, never edited by Atlas
+├── wiki/
+│   ├── _template.md        # page template; `_`-prefixed files are furniture, not pages
+│   ├── _log.md             # the app appends one line per compile or check
+│   └── <slug>.md           # one compiled page per source document, no `kind:`
+└── .ontology-atlas/        # gitignored, local only: source bindings, audit log, activity
+```
+
+`init --documents` is the same folder for people who have documents and no
+code: `sources/` and `wiki/` with the template and the agent wiring, and none
+of the node starter files. In the app, **Just start** asks the same question
+once — a documents wiki, an ontology map of a codebase, or both — and writes
+the answer as files. The tabs follow the files: a wiki without a map hides the
+map, the architecture reading and the analysis and opens on the Library; the
+Library itself stays on every rail, because `sources/` lives there. Add the
+other part later from Settings › Workspace, "This folder holds".
+
 ### Three kinds of file, and only one is the graph
 
 A folder also holds the project documents a team already has. They gather in the
@@ -670,6 +700,7 @@ enforces: `wiki/_template.md`, written into every new vault by `init`.
 
 ```bash
 node $ATLAS wiki-validate .   # 0 = every page fits · 1 = at least one does not
+node $ATLAS wiki-index .      # the index, computed from the pages; --write leaves wiki/_index.md
 ```
 
 The full contract is `docs/ONTOLOGY-ATLAS-SPEC.md` §11.

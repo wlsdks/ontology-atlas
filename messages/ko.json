@@ -484,7 +484,16 @@
     "errorPathMissing": "그 폴더를 찾지 못했어요. 옮겼거나 지워진 것 같아요. 다른 폴더를 골라 주세요.",
     "errorPermission": "이 폴더를 읽을 권한이 없어요. 폴더를 다시 골라 권한을 주세요.",
     "errorPermissionDenied": "macOS가 「{folder}」 폴더를 보호하고 있어요. 시스템 설정 → 개인정보 보호 및 보안 → 파일 및 폴더에서 Ontology Atlas에 접근을 허용한 뒤 다시 열어 주세요.",
-    "errorPermissionDeniedThisFolder": "이"
+    "errorPermissionDeniedThisFolder": "이",
+    "shapeEyebrow": "이 폴더에 무엇을 담을까요?",
+    "shapeTitle": "무엇부터 시작할지 고르세요. 폴더 구조는 어느 쪽이든 같고, 나머지는 나중에 설정에서 추가할 수 있어요.",
+    "shapeWikiTitle": "문서 위키",
+    "shapeWikiBody": "sources/에 문서를 넣으면 에이전트가 문서마다 위키 페이지를 씁니다. 지도도 코드도 필요 없어요.",
+    "shapeMapTitle": "코드베이스 기반 온톨로지 지도",
+    "shapeMapBody": "코드가 무엇을 만들고 왜 그런지 적어 두는 시작 노드와 에이전트 스킬. 위키는 없어요.",
+    "shapeBothTitle": "둘 다",
+    "shapeBothBody": "지도와 위키를 나란히. 위키가 지도에 노드를 제안할 수 있어요.",
+    "shapeBack": "뒤로"
   },
   "firstRunStarter": {
     "brand": "Ontology Atlas",
@@ -3179,7 +3188,14 @@
       "localScopeLoopback": "전송: 당신이 쓴 질문 + 폴더에서 고른 노드 발췌 → {host}. 이 컴퓨터 밖으로 나가지 않고, 기록에도 목적지가 {host} 로 남아요. 그게 나가지 않았다는 증거예요.",
       "localScopeRemote": "전송: 당신이 쓴 질문 + 폴더에서 고른 노드 발췌 → {host}. 이 주소는 이 컴퓨터 밖이라 기록에 {host} 가 목적지로 남아요.",
       "webDegradedLocalBody": "이 컴퓨터에서 도는 러너(Ollama · LM Studio 등)에 주소로 붙는 것도 브라우저에서는 안 돼요. 러너 쪽 설정을 바꿔도 마찬가지예요. 웹 화면에는 모델로 글을 보내는 길 자체를 두지 않기로 했거든요. 데스크톱 앱에서는 러너 주소만 적으면 되고 키는 필요 없어요. 보낸 기록에도 목적지가 이 컴퓨터로 남아요."
-    }
+    },
+    "workspaceShapeLabel": "이 폴더에 있는 것",
+    "workspaceShapeMap": "온톨로지 지도",
+    "workspaceShapeWiki": "위키",
+    "workspaceShapeCaption": "설정이 아니라 파일에서 읽습니다. 추가하면 시작 파일을 쓰고, 탭이 따라옵니다.",
+    "workspaceShapeStartMap": "지도 시작",
+    "workspaceShapeStartWiki": "위키 시작",
+    "workspaceShapeStarted": "이 폴더에 추가했어요."
   },
   "copyProjectLink": {
     "toastSuccess": "링크가 복사됐습니다",
@@ -3887,6 +3903,10 @@
       "allowAlwaysUnknown": "이번 대화 내내 허용",
       "scopeHint": "허용 범위: {names}",
       "scopeUnknownHint": "이 도구가 허용 범위를 알려 주지 않았어요. 한 번만 허용하는 쪽이 안전해요.",
+      "pageFits": "문서 모양이 맞습니다. 사실마다 인용이 있고 다섯 절이 순서대로입니다.",
+      "pageFails": "문서 모양에 어긋나는 문제 {count}건. 허용하면 이대로 저장되고 위키 목록에 표시됩니다.",
+      "insideFolderTitle": "이 폴더의 파일을 바꾸려고 해요",
+      "insideFolderBody": "경로는 아래에 있어요. 허락하기 전에는 아무 일도 일어나지 않아요.",
       "insideProjectTitle": "내 프로젝트 안의 코드를 보려고 해요",
       "insideProjectBody": "지도 폴더 밖이지만, 고른 프로젝트 안입니다. 허락하기 전에는 아무 일도 일어나지 않아요."
     },
@@ -4451,6 +4471,22 @@
       "listAria": "이 폴더의 위키 문서",
       "compile": "정리 시작",
       "compileTooltip": "원문을 읽고 위키 문서를 쓰는 에이전트 턴을 한 번 시작합니다. 쓰기는 모두 사람의 허락을 기다립니다.",
+      "lint": "위키 점검",
+      "lintTooltip": "위키 문서를 읽고 어긋남·대체된 주장·빠진 연결·문서 없는 이름을 보고하는 에이전트 턴을 한 번 시작합니다. 아무것도 쓰지 않습니다.",
+      "candidatesHeader": "문서 없는 이름 · {count}",
+      "candidateKind": {
+        "domain": "도메인",
+        "capability": "역량",
+        "element": "요소",
+        "person": "사람 · 위키에 남음",
+        "organisation": "조직 · 위키에 남음",
+        "other": "지도 개념 아님"
+      },
+      "candidatePages": "문서 {count}곳",
+      "propose": "노드로 제안",
+      "proposeTooltip": "이 문서들을 읽고 온톨로지 노드 하나를 제안하는 에이전트 턴을 한 번 시작합니다. 쓰기는 허락 카드에서 멈춥니다.",
+      "logCompile": "마지막 정리 {when}: {summary}",
+      "logLint": "마지막 점검 {when}: {summary}",
       "empty": "아직 위키 문서가 없습니다. 위키 문서는 kind: 가 없는 마크다운이고, 서식은 wiki/_template.md 에 있습니다.",
       "unknownAuthor": "미상",
       "offTemplate": "서식 밖",
@@ -4477,14 +4513,26 @@
       "viewOriginalOne": "원본 보기: {name}",
       "originalMissing": "{name} 을(를) 인용하지만 이 폴더에는 없습니다.",
       "compileCreateFile": "{path} 만들기",
-      "compileModifyFile": "{path} 바꾸기"
+      "compileModifyFile": "{path} 바꾸기",
+      "logCount": {
+        "disagreement": "어긋남 {count}",
+        "superseded": "대체된 주장 {count}",
+        "missingLink": "빠진 연결 {count}",
+        "nameWithoutPage": "문서 없는 이름 {count}"
+      },
+      "logNoCounts": "실행됨 · 개수 없음",
+      "logNew": "새로 씀",
+      "logRevised": "고침",
+      "logNothingNew": "새 내용 없음",
+      "emptyNoTemplate": "아직 위키 문서가 없고 서식도 없습니다. 설정 › 작업 공간에서 위키를 시작하면 wiki/_template.md 가 생기고, 문서는 그 서식을 따릅니다.",
+      "folderMark": "끊긴 링크"
     },
     "graph": {
       "title": "그래프",
       "counts": "원문 {sources}개 · 위키 문서 {pages}개 · 개념 {concepts}개 · 인용 {cites} · 언급 {mentions}",
       "empty": "아직 그릴 것이 없습니다. 「정리 시작」이 문서를 한 편 쓰고 나면, 그 문서가 어떤 원문에서 나왔고 어떤 개념을 부르는지 여기 그려집니다.",
       "canvasAria": "자료실 그래프: 원문과 위키 문서, 그리고 그 문서가 부르는 개념.",
-      "legend": "채운 원은 위키 문서, 네모는 원문, 고리는 지도 위의 개념입니다. 굵은 선은 인용, 점선은 언급입니다. 점을 가리키면 이름이 나오고, 누르면 열립니다.",
+      "legend": "채운 원은 위키 문서, 네모는 원문, 고리는 지도 위의 개념입니다. 굵은 선은 인용, 점선은 언급입니다. 점을 끌면 엉킨 선에서 떼어낼 수 있고, 스크롤로 확대하고, 빈 곳을 끌어 옮기고, 누르면 열립니다.",
       "keys": "화살표 키로 점 사이를 옮기고, Enter 로 열고, Esc 로 빠져나옵니다.",
       "announce": "{kind} {name}, {total}개 중 {position}번째. Enter 를 누르면 {action}.",
       "kind": {
@@ -4494,7 +4542,8 @@
       },
       "actionSelect": "여기서 엽니다",
       "actionMap": "지도에서 엽니다",
-      "openOnMap": "지도에서 열기"
+      "openOnMap": "지도에서 열기",
+      "fit": "전체 보기"
     },
     "find": {
       "title": "허락한 폴더 안의 문서",
@@ -4538,39 +4587,28 @@
     "kindWikiBody": "원문 하나에 문서 한 편, 같은 서식으로. 문장마다 바탕이 된 파일을 인용합니다.",
     "stage": {
       "title": "모으고, 정리하고, 읽습니다",
-      "lede": "일이 일어나는 순서대로 세 단계입니다. 아래 숫자는 모두 이 폴더의 파일을 세어 나온 값이라, Finder 에서 그대로 확인할 수 있습니다.",
       "state": {
         "done": "끝남",
         "next": "다음",
-        "waiting": "차례 전"
+        "waiting": "차례 전",
+        "checking": "확인 중"
       },
       "none": "없음",
       "formatEntry": "{format} {count}",
       "gather": {
-        "title": "모으기",
-        "body": "이 프로젝트가 이미 갖고 있는 문서를 형식을 가리지 않고 넣습니다. sources/ 로 그대로 복사할 뿐, 부르기 전에는 열지 않습니다.",
-        "sourcesLabel": "원문",
-        "formatsLabel": "형식",
-        "lastLabel": "마지막으로 넣은 날",
-        "candidatesLabel": "제안받은 후보",
-        "candidatesUnknown": "아직 찾아본 적 없음"
+        "title": "모으기"
       },
       "compile": {
         "title": "정리",
-        "body": "에이전트 턴 한 번이 원문을 읽고 파일마다 위키 문서를 씁니다. 서식은 wiki/_template.md 그대로이고, 쓰기는 모두 허락 카드에서 멈춥니다.",
-        "waitingLabel": "기다리는 파일",
-        "staleLabel": "원문이 달라진 문서",
-        "brainLabel": "쓰는 쪽"
+        "brainLabel": "쓰는 쪽",
+        "checkingLine": "원문 {count}개를 문서와 맞춰 보는 중입니다"
       },
       "read": {
         "title": "읽기",
-        "body": "위키 문서는 kind: 가 없는 마크다운이라 온톨로지에는 그려지지 않습니다. 문장마다 나온 파일을 인용하고, 문서에서 그 파일을 바로 엽니다.",
-        "pagesLabel": "위키 문서",
-        "coveredLabel": "정리된 원문",
-        "coveredValue": "{total}개 중 {compiled}개",
-        "offTemplateLabel": "서식 밖",
         "startWith": "{title} 부터 읽기",
-        "nothingYet": "아직 위키 문서가 없습니다. 정리를 시작하면 첫 문서가 만들어집니다."
+        "nothingYet": "아직 위키 문서가 없습니다. 정리를 시작하면 첫 문서가 만들어집니다.",
+        "coveredLine": "원문 {total}개 중 {compiled}개 정리됨",
+        "coveredChecking": "원문 {total}개 중 {compiled}개 정리됨 · {checking}개 확인 중"
       },
       "brainAgent": "{name}",
       "brainLocal": "{model} · {host}",
@@ -4588,7 +4626,10 @@
       "close": "닫기",
       "status": "{step} {state}",
       "statusWaiting": "{count}개 기다림",
-      "statusOffTemplate": "서식 벗어남 {count}개"
+      "statusOffTemplate": "서식 벗어남 {count}개",
+      "statusReady": "원문이 모두 정리되었습니다",
+      "statusUnlinked": "끊긴 링크 {count}개",
+      "statusChecking": "확인 중 {count}개"
     },
     "localCompile": {
       "title": "쓸 준비가 됐어요",

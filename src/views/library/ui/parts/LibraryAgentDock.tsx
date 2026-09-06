@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Library } from "lucide-react";
 
+import type { PageWriteRequest, PageWriteVerdict } from "@/features/library";
 import { cn } from "@/shared/lib/cn";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { usePanelPresence } from "@/shared/lib/use-presence";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, Surface } from "@/shared/ui";
 import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader, useChatWidth } from "@/widgets/acp-chat-panel";
+import type { ComponentProps } from "react";
+
+type AcpChatPanelProps = ComponentProps<typeof AcpChatPanel>;
 
 /**
  * The guarded ACP conversation, docked to the Library.
@@ -37,13 +41,13 @@ import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader, useChatWidth } from "
  */
 export interface LibraryAgentOpeningRequest {
   /**
-   * Which errand opened this turn. `compile` writes write-ups from what is already in the folder;
-   * `import` fetches documents from a service the person connected and writes them under
-   * `sources/`. The dock is the same either way — the brief differs, and the permission card is
-   * the same card — but the attribute has to say which, or a capture of an import turn reads as
-   * a compile that behaved strangely.
+   * `compile` writes pages under the permission gate; `lint` reads them and reports; `propose`
+   * writes one node through the ontology-write card; `import` fetches documents from a service
+   * the person connected and writes them under `sources/`. The dock is the same either way, but
+   * the attribute has to say which, or a capture of an import turn reads as a compile that
+   * behaved strangely.
    */
-  kind: "compile" | "import";
+  kind: "compile" | "lint" | "propose" | "import";
   text: string;
   nonce: number;
 }
@@ -63,6 +67,8 @@ export function LibraryAgentDock({
   openingRequest,
   knownSlugs,
   onClose,
+  judgeWrite,
+  onTurnStarted,
 }: {
   open: boolean;
   runtime: LibraryAgentRuntime;
@@ -73,12 +79,27 @@ export function LibraryAgentDock({
   openingRequest: LibraryAgentOpeningRequest | null;
   knownSlugs: ReadonlySet<string>;
   onClose: () => void;
+  /** Judges a wiki page write before the permission card asks; see `judgePageWrite`. */
+  judgeWrite?: (request: PageWriteRequest) => PageWriteVerdict | null;
+  /** Sees each turn start and hands back what to do when it ends; the wiki log hangs here. */
+  onTurnStarted?: AcpChatPanelProps["onTurnStarted"];
 }) {
   const tChat = useTranslations("acpChat");
   const tLibrary = useTranslations("library");
   const chatWidth = useChatWidth();
   const presence = usePanelPresence(open);
   const [enabledRequestNonce, setEnabledRequestNonce] = useState<number | null>(null);
+  /*
+   * Born wide: a dock mounted while already open has no width transition to wait for.
+   * Measured in the installed app on 2026-09-06 — the page remounted the dock mid-request
+   * and, at xl, the session waited on a `transitionend` that never came, so the panel sat
+   * on "Connecting" and every later chip pressed into a session that never started. Once
+   * the dock has closed, the next opening is a real transition again and owns the handoff.
+   */
+  const bornOpenRef = useRef(open);
+  useEffect(() => {
+    if (!open) bornOpenRef.current = false;
+  }, [open]);
 
   useEffect(() => {
     if (!open || !openingRequest) return;
@@ -92,7 +113,7 @@ export function LibraryAgentDock({
       typeof window === "undefined" || typeof window.matchMedia !== "function"
         ? true
         : window.matchMedia("(min-width: 1280px)").matches;
-    if (wide) return;
+    if (wide && !bornOpenRef.current) return;
     const nonce = openingRequest.nonce;
     const frame = window.requestAnimationFrame(() => setEnabledRequestNonce(nonce));
     return () => window.cancelAnimationFrame(frame);
@@ -167,6 +188,8 @@ export function LibraryAgentDock({
               open && openingRequest !== null && enabledRequestNonce === openingRequest.nonce
             }
             openingRequest={openingRequest}
+            judgeWrite={judgeWrite}
+            onTurnStarted={onTurnStarted}
             knownSlugs={knownSlugs}
           />
         </Surface>

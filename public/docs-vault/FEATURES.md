@@ -39,7 +39,7 @@ agent task`.
 | Surface | Entry | Audience |
 |---|---|---|
 | **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; primary workbench routes `/topology`, `/architecture`, `/docs`, `/library`, `/ontology/insights`, `/projects`, `/agents`, and `/mcp`; `/git` remains a contextual workbench route | daily visual ontology work — pick a local vault folder, inspect reviewed architecture, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
-| **CLI** (R12 / R14 / R15+ · 59 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / analysis / infer-imports / architecture / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, reviewed architecture conformance, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, architecture pre/post checks, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
+| **CLI** (R12 / R14 / R15+ · 60 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / analysis / infer-imports / architecture / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, reviewed architecture conformance, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, architecture pre/post checks, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | current runtime read/write inventory over JSON-RPC (`tools/list`; prove with `mcp-verify`) | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
 | **Website** | GitHub Pages static export / `/` + `/topology` + `/download` | With no active vault, `/` is the gateway; with a loaded local vault it is the topology map, as is explicit `/topology`. `/download` is the product intro + current release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
 
@@ -352,7 +352,12 @@ had become false).
   height and re-aligned as you orbit or morph, and hovering a row raises its
   plane's ring. They used to hang on the rims themselves, which at 1040x720 put
   them on the graph; the rim names remain only as the fallback on a canvas too
-  short for the rail, and the two are never both on. On a Strata plane
+  short for the rail, and the two are never both on. Where the rail's column would
+  be width the graph wanted, the four names become a **compact stack in the
+  bottom-right corner** instead (2026-09-07), keeping the same words and the same
+  hover: at 1040x720 that took the graph back from 63.6% of the free canvas to
+  73.4% and from two touching same-tier pairs to none, while 1512x982 keeps the
+  aligned rail and its 66.3% unchanged. On a Strata plane
   a node keeps its parent's bearing, which makes every containment drop short,
   near-vertical and unable to cross a sibling's; a node whose parent is not in the
   map falls to the outer rim of its own plane, where "nothing above holds this"
@@ -371,12 +376,16 @@ had become false).
   drawn beside it: measured on the sample vault by pointing at each drawn centre
   in turn, 4 of 125 answered wrongly in Cone at 1512x982 and 12 of 125 at
   834x1112. Gates: the "drawn centre" cases in both 3D drawing specs.
-- **Relations stay visible at rest in 3D** (2026-09-06) — depth still fades a
-  line towards the back, but its ink now stops at a floor instead of reaching
-  3.5% of a near line's. Measured at 1512x982 against the canvas ground:
-  containment lines went from 1.26 / 1.33 / 1.14 : 1 (Cone / Strata / Cloud) to
-  1.89 / 1.75 / 1.78 : 1, with the 2D map untouched. Gate:
-  `tests/e2e/map-3d-relation-ink.spec.ts`.
+- **Relations stay visible at rest in 3D, on any screen** (2026-09-06, extended
+  2026-09-07) — depth still fades a line towards the back, but its ink now stops
+  at a floor instead of reaching 3.5% of a near line's, and the stroke itself
+  never falls below one device pixel, which is what made the same frames read
+  half as strongly on a screen that is not Retina. Measured at 1512x982 against
+  the canvas ground, containment lines (Cone / Strata / Cloud): at device pixel
+  ratio 2, 1.26 / 1.33 / 1.14 : 1 before the floor and 2.44 / 2.26 / 2.51 : 1
+  now; at ratio 1, 1.29 / 1.25 / 1.27 : 1 before and 2.72 / 2.33 / 2.52 : 1 now.
+  The 2D map is untouched at either ratio. Gate:
+  `tests/e2e/map-3d-relation-ink.spec.ts`, which reads the canvas back at both.
 
 #### `TopologyFitControl` (top-right, desktop-only)
 - Single **Fit Map** tile — fits the camera to the graph bounds. Desktop-only (mobile uses pinch-zoom).
@@ -731,44 +740,98 @@ author and status, and a chip per source it was built from; a source opens as th
 facts the folder holds about a file Atlas has never opened (path, format, size, state and
 sha256 or "not measured") plus one door that reveals it in Finder or hands over the bytes.
 With no folder open the whole screen is one centred stage naming the two kinds of file and
-offering the picker. **With a folder open and nothing selected the right pane is the
+offering the picker, and a folder that is open but holds nothing gets the same grammar with
+the two doors instead. **With a folder open and nothing selected the right pane is the
 graph**, at the pane's own height. Below `lg` there is one column — the graph on top, the
-two lists under it — and selecting swaps it, with a way back.
+two lists under it — and selecting swaps it, with a way back. A folder that holds wiki
+pages and no `kind:` node opens here rather than on the map: it is a wiki on its own, and
+an empty canvas had nothing to say to the person who chose it (ledger, 2026-09-06). A
+folder with even one node still opens on the map.
 
-**The guided shelf, one press from the graph's header** (2026-09-06, third pass). The
-owner opened the new destination and said they did not know what to do on it; the pane at
-that moment was either "Nothing gathered yet" or the first wiki page, opened on the
-reader's behalf. The answer was three steps in the order the work happens — and later the
-same day, reading the installed app on a folder a local `qwen3:8b` had compiled, the owner
-read the result as two half-screens and moved the shelf off the pane: *"shouldn't the
-Library tab's default be the graph? why is the area split above and below? the area
-underneath should be a popup."* So the steps live in a popover opened by **What to do
-next** in the graph's header, and what stays permanently on screen is their verdict, as
-one `text-label` strip beside the counts: `Gather done · Compile next · Read next · 5
-waiting · 2 off-template`. Both read `libraryStepStates`, so the strip and the panel
-cannot disagree. The panel is `transientSurface("anchored")` and not a modal — no scrim,
-no trap, the picture stays visible behind it, because "5 waiting" is a claim about dots a
-person should be able to look at while reading it. It is at most 560px, hangs from the row
-rather than the pane (parented in the pane it measured 373px tall at 390×844), scrolls
-inside, and closes on Escape or an outside press with focus returned to its chip. It
-raises itself **only** over a folder with no sources at all, and a person's own press —
-either way — settles it for the rest of the session.
+**What to do next, one press from the graph's header** (2026-09-06, third and fourth
+pass). The owner opened the new destination and said they did not know what to do on it;
+the pane at that moment was either "Nothing gathered yet" or the first wiki page, opened
+on the reader's behalf. The answer was three steps in the order the work happens — and
+later the same day, reading the installed app, the owner moved them off the pane
+(*"shouldn't the Library tab's default be the graph? … the area underneath should be a
+popup"*) and then read the popup itself as broken: *"why does this design look like this?
+It looks broken … the sizes inside the right panel are no good … and it overlaps this
+text."*
 
-Each step states the folder's own counts and carries its own door: **① Gather** (sources, formats present, last added, and how
-many candidates the last Find documents run proposed, with both doors), **② Compile**
-(sources waiting, how many are behind their source, and **which brain would run** — the
-verified coding agent's name, or the local model and the host it answers on — with what
-leaves the computer stated for that route), **③ Read** (wiki pages, sources covered,
-off-template pages, and a row that opens the newest page). Each step says `done`, `next`
-or `waiting` from those counts, and the three rows are one height (`auto-rows-fr`,
-measured 2026-09-06 inside the 560px panel: 233px each in English, 213 in Korean, equal at
-every width). Two steps can honestly be next at once, so the one
-indigo edge goes to the earliest of them while the badges stay true. Compile is drawn in
-every state and disabled with the exact reason rather than hidden, because a missing step
-two would leave a hole in the middle of the sequence. Selecting swaps the right pane and
-moves focus to it, and the source list shows which row that pane is showing; the back
-control that used to appear only below `lg` now stands at every width, and Escape does the
-same thing.
+Measured on that frame at 1512×982, on a folder with nothing in it: the panel was 560px of
+a 1168px pane and its lower half lay across the canvas's own legend; its first card carried
+about 130px of empty space between its numbers and its buttons, bought by stretching three
+cards to one height; each card held a paragraph, a four-row label/value table, buttons and
+a footnote; and it raised itself over a folder whose header, strip, canvas sentence and
+both index lists were already saying the same emptiness.
+
+So there are now two shapes and neither is that one.
+
+**An empty folder is an empty state.** With no sources *and* no pages — exactly the
+condition that makes the canvas draw nothing — the whole screen is one centred stage in the
+repository's own empty-state grammar (`PAGE_COLUMN_STAGE`, 640px, dashed edge, first
+overlay): eyebrow, one title, one sentence, the two doors **Add files** and **Find
+documents**, and one quiet line naming the folder a drop goes into. No index, no canvas, no
+caption, no status strip, no popup. Page hairlines at 1512 fell 63 → 12.
+
+**With content, guidance is a compact stepper.** **What to do next** in the graph's header
+opens a 360px `transientSurface("anchored")` panel of three rows, each one head line
+(number, title, and the step's own word), one caption line, and one action row of reserved
+height: **① Gather** with the formats the folder holds and both doors, **② Compile** with
+what is waiting or behind, the Compile button, **Check the wiki** beside it once two pages
+exist, the brain picker when this computer offers two, and — directly under that button —
+the one sentence about what leaves this computer or the exact reason it cannot run,
+**③ Read** with how many sources are covered and a row that opens the newest page. Writing
+and reading back are one step, not two: a fourth row would make the sequence longer than
+the work. The heights match because the anatomy does rather than because a
+grid stretched them (measured 110 / 158 / 110 at every width, the middle row taller only
+when the folder gives step two something to say; the fixed core is equal within 2px). The
+panel is positioned from the chip's measured rect, published as `--library-shelf-top` and
+`--library-shelf-right`, because at 390 the header wraps and a class-pinned panel covered
+the very strip it was opened from. It stands clear of the caption and the legend at 1512,
+1280, 1040, 768 and 390 in both locales, proven with `elementsFromPoint`; below `lg` the
+legend yields to `sr-only` while it is open rather than being covered. Panel hairlines fell
+48 → 33. It never raises itself, and Escape or an outside press closes it with focus
+returned to its chip.
+
+The header keeps **one** verdict rather than three turns: *Compile next · 5 waiting · 2
+off-template*, or nothing at all when there is nothing to report. Both it and the stepper
+read `libraryStepStates`, so they cannot disagree. Two steps can honestly be next at once,
+so the one indigo edge — and the one indigo word — goes to the earliest of them while every
+other word stays true. Compile is drawn in every state and disabled with the exact reason
+rather than hidden, because a missing step two would leave a hole in the middle of the
+sequence. Selecting swaps the right pane and moves focus to it, the back control stands at
+every width, and Escape does the same thing.
+
+**The index is one column that scrolls once** (2026-09-06, fourth pass). The owner read the
+left panel as *"split into a top and a bottom … drawn oddly"*. It was: a fixed intro over
+two lists that each owned their overflow at `lg`, so on a folder of seven sources and seven
+pages the longer list was cut mid-row, the two halves slid past each other, and the
+transfer sentence was pinned under the cut at the very bottom of the column. Now the intro,
+Sources and Wiki stand at natural height inside one scroller, each section's eyebrow is
+`sticky` at the top of that scroller so the list a person is inside keeps its name, and the
+section divider is gone. Rows stay 36px with the name truncated at its end, format and size
+in mono `text-caption`. **`compiled` lost its chip**: on the owner's folder all seven rows
+wore the same green pill, which is a texture rather than a state, so success is now a quiet
+check in the row's own ink and a chip is spent only where a person can act — not compiled,
+stale, off-template. The disclosure under Compile is the index's one caption and it is
+empty while the stepper is open, so exactly one surface prints it. Column hairlines fell 38
+→ 9 and no row is cut by the column's edge at 1512, 768 or 390.
+
+The Wiki head carries what the wiki's own work needs, in this shape (merged from the LLM
+Wiki round, 2026-09-07): the count, then **Check the wiki** and **Compile** on one
+unwrapping line so reading stands to the left of writing, then the brain picker on the line
+beneath when this computer offers two. Under it, one `text-label` caption reads the app's
+own record — *Last compile …, last check …*, from `wiki/_log.md` — and beneath that the
+single compile disclosure. **The folder's findings are not a pill.** A page that misses the
+wiki template still wears the amber `off-template` pill, because the fix is in that page's
+own bytes; a folder finding — `dangling-wikilink`, `orphan-page`,
+`shared-source-unlinked` — is about where the page sits, is true of nearly every row on a
+young wiki, and shows as one quiet word on the row with the count carried once in the
+header strip. It is the same reasoning that took the green chip off every compiled source.
+**Names without a page** keeps its list and its **Propose as node** chips at the foot of
+the column, at this column's own `px-2` inset and `gap-0.5` rhythm rather than the spacing
+it arrived in.
 
 **Below `lg` the whole pane reaches a phone** (2026-09-06, third pass). None of it used to
 be drawn there: the pane was hidden whenever nothing was chosen, which is the state it
@@ -777,11 +840,52 @@ overview and no guidance — a measured zero rect at both 390×844 and 768×1024
 now a column below `lg`: the graph takes the top of it (390: 350×296 of canvas; 768:
 648×406), the two lists take the bottom under a hairline, the popup still hangs from the
 row so it keeps the column's whole height, and choosing a file swaps the whole column with
-the same way back. The index changes its scroll model there rather than its content: two
-list scrollers sharing half a phone left the source list 30px and the wiki list zero, so
-below `lg` the index scrolls as one box and the lists stand at their natural height, while
-at `lg` and above the two lists keep their own scrollers. Cases: `the Library pane` and
-`the graph takes the top of the column at …` in `tests/e2e/library.spec.ts`.
+the same way back. The index's one scroller was first forced here — two list scrollers sharing half
+a phone left the source list 30px and the wiki list zero — and on 2026-09-06 the same
+answer replaced the `lg` split, so the column behaves one way at every width. Cases: `the
+Library pane` and `the graph takes the top of the column at …` in
+`tests/e2e/library.spec.ts`.
+
+**The graph is a live force simulation** (2026-09-07). The owner opened the installed
+app on the real folder — 7 sources, 6 pages, every page citing 4–7 of them — and read the
+picture as a static hairball: near-identical thin grey straight lines from nearly every
+page to nearly every source, two mark sizes, and nothing that answered a hand. The
+one-shot ForceAtlas2 pass that drew it is gone. `library-force-simulation.ts` steps a
+velocity-Verlet model on `requestAnimationFrame`: springs whose rest length is the
+relation (a citation 52 world units, a mention 96, so concepts ring the outside of a page's
+own sources), many-body repulsion, collision so no mark sits on another, and an
+**aspect-aware gravity** — the one non-standard force here, weaker along the canvas's long
+axis, which *grows* the cloud into the box instead of fitting it into a corner of one.
+Measured at 1512 on that folder shape: the picture fills **93.9% of the canvas width and
+90.5% of its height**, against 33.5% before, and the width cap that used to cut the box
+down to the picture is gone with it. Above 720 nodes the many-body force switches to a
+hand-written Barnes–Hut quadtree — the crossover is measured, not assumed (1.97 ms exact
+against 1.73 ms approximated at 800; one whole tick is 0.10 / 0.40 / 1.73 ms at 100 / 300 /
+800 nodes). Nothing new is installed: Graphology is no longer imported by this widget at
+all.
+
+**Four gestures, and a picture that never freezes.** Dragging a mark pins it under the
+pointer while the springs pull its neighbours after it, and releasing hands it a capped
+flick — on a folder where six pages cite the same seven sources no layout can separate
+anything, so *pulling one dot out of the tangle* is the reading operation. The wheel zooms
+about the pointer between half and four times the fit; dragging empty canvas pans;
+double-click and a `ChromeTile` in the canvas's corner fit the whole picture; a coarse
+pointer gets one-finger drag and pinch. Which gesture a press *is* is decided once, at
+pointerdown, past a 7px threshold. Hovering holds the mark, its neighbours and their edges
+at full ink and dims everything else to 35% over `--motion-fast`. Marks are graded 5–10px
+by degree, edges are quadratic bows deeper the longer they run, every mark clears a 1px
+halo of the canvas ground, and every standing name is stroked in that ground before it is
+filled, so a grey label crossed by a grey line is still readable. Once the picture is at
+rest it keeps a deliberately tiny **ambient drift** — 0.28px per axis, 0.4px radial, 7.2s
+period, applied in *screen* pixels so a zoom cannot multiply it, and repainted one frame in
+four. It is an owner directive against the motion charter's own preference and
+`docs/DECISIONS.md` (2026-09-07) records that with its dissent. Under
+`prefers-reduced-motion` there is no settle and no drift: the simulation is run to rest
+synchronously and drawn once, and `tests/e2e/library-graph-alive.spec.ts` proves the canvas
+is byte-identical frame to frame. Recorded on a real display (15 s, 30 fps): the arrival
+decays monotonically over 2.1 s with no stall, the hover dim measures cv 0.12 across its
+ramp, the drag tracks the hand with no stall, and at rest the frame-to-frame change sits at
+the recording's own noise floor.
 
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
 the action: one cited source is a single **View original** button carrying the file name;
@@ -811,10 +915,21 @@ store can drift from it.
     hands over the bytes it was already granted.
 - **Wiki** — Markdown under `wiki/**` with no `kind:`. Each row shows `created_by` and,
   when the page does not fit the contract, the first problem code `wiki-validate` prints
-  (`section-order`, `uncited-fact`, …). The shape is `docs/ONTOLOGY-ATLAS-SPEC.md` §11,
+  (`section-order`, `uncited-fact`, …), the folder's own findings included
+  (`orphan-page`, `dangling-wikilink`, `shared-source-unlinked`). Only the page's own
+  problems and a broken link make a row **off-template**; an orphan or an unlinked
+  shared source is named on the row and in the Check-the-wiki brief but not counted,
+  because in a two-page wiki with no links yet every page is an orphan. The shape is
+  `docs/ONTOLOGY-ATLAS-SPEC.md` §11,
   and `wiki/_template.md` is written into every new vault by `ontology-atlas init`.
+  Files under `wiki/` that start with `_` are the wiki's furniture, never pages: the
+  template, and `wiki/_log.md`, which the app appends to after each Compile (the sources
+  handed over, the pages the folder shows new or revised) and each Check-the-wiki run
+  (the counts the report ended with). A person who does not commit their folder still
+  has the wiki's own memory; a person who does has a commit body ready. The Wiki header
+  reads it back as one caption: the last compile and the last check, each with its time.
 
-Three one-click doors, plus one that reaches outside this computer:
+Tour one-click doors: hree one-click doors, plus one that reaches outside this computer:
 
 - **Add files** — app: a native panel, and Rust copies the bytes into `<vault>/sources/`
   so the WebView never holds a document. Web: `showOpenFilePicker`, written through the
@@ -853,10 +968,38 @@ Three one-click doors, plus one that reaches outside this computer:
 - **Compile** — starts one in-app ACP turn whose brief embeds `wiki/_template.md`
   verbatim and names `wiki-validate` as the acceptance test. Enabled only while some
   source is not compiled or stale. Beside it: the coding agent's provider traffic is not
-  in `.ontology-atlas/llm-audit.jsonl`. Every write still stops at the permission card.
+  in `.ontology-atlas/llm-audit.jsonl`. Every write still stops at the permission card,
+  and for a page under `wiki/` the card shows the verdict first: the page as the write
+  would leave it (a whole file, or an edit applied to the page on disk), judged against
+  the contract, one quiet line when it fits and the codes with the first message when it
+  does not. Allow and Don't stay where they are; the gate is the person.
   The dock opens on this screen, above `AcpDockHeader` a lucide `Library` glyph and the
   destination's name: Compile is a job, not a place, and the job runs beside the shelf it
-  is compiling.
+  is compiling. The brief lists the pages that already exist and asks the
+  writer for one page per source, named after it and never folded into another (a page
+  is what one document said), to link the pages it touches both ways, to record a
+  disagreement on both pages with both citations, and to write nothing for a source
+  that adds nothing.
+- **Check the wiki** — starts one report-only ACP turn over `wiki/` for what
+  `wiki-validate` cannot decide: two pages disagreeing, a claim a later page replaced,
+  two pages that share a topic or a source without linking, and a name on three or
+  more pages with no page of its own, which the brief labels an ontology node
+  candidate. It modifies nothing; enabled from two pages up, since one page has
+  nothing to disagree with. The report ends with those names in a block a program
+  reads, and the Library lists them under the Wiki as **Names without a page**. The
+  report sorts each name: something the code builds (a domain, capability or element),
+  a person, an organisation, or other. Only the first sort gets a **Propose as node**
+  chip, and only in a folder that already holds an ontology — a folder of documents
+  with no `kind:` node is a wiki on its own, and nobody who opened it asked for a map.
+  The chip starts one agent turn that reads the pages carrying the name and the vault's
+  own kinds and domains, then calls `add_concept` once, citing those pages as
+  `[[wiki/…]]` links in the node's body. The write reaches the ontology-write card like
+  any other; nothing touches the wiki pages, and `describes:` stays the person's to add
+  after review. People and organisations stay names in the wiki, linked by the pages
+  that mention them: the map is the code's ontology, and this is the one place the
+  wiki flows into it, through the person. The brief carries what the script already found (the page
+  and folder codes the Wiki list shows) and asks the agent not to repeat them, so the
+  model's reading goes to judgement.
 - **The local-model route** — when Settings → AI connection holds a verified
   connect-by-address runner (any OpenAI-compatible `/v1` server: Ollama, LM Studio,
   llama.cpp, vLLM), the shelf names that model and its host as the brain. It says nothing
@@ -957,7 +1100,7 @@ cancelling itself: its animation frame is held across effect runs, because the w
 canvas takes from the picture arrives after the first measurement and used to kill the
 arrival 0.85 of the way in.
 
-**What left `/docs` on 2026-09-06**: Sources, Wiki, the three doors, and the agent dock.
+**What left `/docs` on 2026-09-06**: Sources, Wiki, the doors, and the agent dock.
 What stayed: the review queue, recently changed, the tree, and the editor.
 
 ### `/ontology` — retired tree/ego hub → thin redirect (B3 Hub is soon the map)
@@ -1249,6 +1392,16 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 - GitHub repo link row · the hosted-site scope note (the website never opens or edits vault folders) · footer (license / GitHub / stack)
 
 ---
+
+### First run — what the folder holds (2026-09-06)
+
+"Just start" and "Create" open one question before writing anything: a documents wiki, an
+ontology map of a codebase, or both. The answer is written as files — the wiki's
+`wiki/_template.md`, the map's starter nodes and skills — and every folder of the fixed
+`atlas/` tree is made either way. Nothing is stored as a preference: `describeVaultShape`
+reads the folder, so a teammate who pulls it sees the same thing. A wiki without a map lands
+on `/library`. Settings › Workspace carries an add-only row, "This folder holds", whose one
+chip writes the missing part's starter files; the tabs follow the files.
 
 ### `/git` — Record (primary desktop destination; redesigned 2026-07-27)
 
@@ -1731,6 +1884,12 @@ just unmounted).
   (`src/shared/lib/nav-destination.ts`) — `BottomTabBar` uses the same semantic
   resolver, so a route has one destination even when mobile intentionally
   omits its button.
+
+The rail draws only the destinations the folder earns (`destinationsForVaultShape`, 2026-09-06):
+a wiki without a map hides Map, Architecture, Docs, Insights and Projects; Agents, MCP, History
+and the Library stay (the Library holds `sources/` for any folder); a map, an empty folder, or no
+folder shows all nine.
+The phone tabs and the `G` keys read the same verdict.
 
 ### `AppSettingsMenu` (app shell + contextual page headers)
 - The old 5-tab settings modal is now one compact settings sheet

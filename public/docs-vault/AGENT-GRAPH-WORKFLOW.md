@@ -124,7 +124,7 @@ session can trust the local CLI graph path before scanning or writing.
 You can use the product without connecting Claude Code, Codex, Cursor, or any
 MCP client.
 
-The CLI currently exposes 59 commands over the same local vault, including
+The CLI currently exposes 60 commands over the same local vault, including
 graph-database-style queries:
 
 ```bash

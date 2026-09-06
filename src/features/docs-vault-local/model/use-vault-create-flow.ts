@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { VaultShape } from '@/shared/lib/vault-shape';
 import { shouldClearCreateIntent, shouldScaffoldAfterOpen } from './vault-create-flow';
 
 /**
@@ -10,7 +11,7 @@ export interface VaultCreateFlowVault {
   status: string;
   manifest: { docs: unknown[] } | null;
   open: () => Promise<void>;
-  scaffoldOntology: (starterLocale: string) => Promise<{ created: number; skipped: number }>;
+  scaffoldOntology: (starterLocale: string, shape?: VaultShape) => Promise<{ created: number; skipped: number }>;
 }
 
 /**
@@ -27,7 +28,10 @@ export function useVaultCreateFlow(vault: VaultCreateFlowVault, starterLocale: s
   const [scaffolding, setScaffolding] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const handleCreate = useCallback(async () => {
+  /** What the person said the folder will hold; `null` keeps the full starter. */
+  const [shape, setShape] = useState<VaultShape | null>(null);
+  const handleCreate = useCallback(async (chosen: VaultShape | null = null) => {
+    setShape(chosen);
     setActionError(null);
     await vault.open();
     // open() resolves after the picker + manifest build settled (or the
@@ -45,8 +49,7 @@ export function useVaultCreateFlow(vault: VaultCreateFlowVault, starterLocale: s
       if (shouldScaffoldAfterOpen({ createIntent: true, status, docCount })) {
         setCreateArmed(false);
         setScaffolding(true);
-        vault
-          .scaffoldOntology(starterLocale)
+        (shape ? vault.scaffoldOntology(starterLocale, shape) : vault.scaffoldOntology(starterLocale))
           .catch((err: unknown) => {
             // `''` (rather than null) marks "an error occurred but there is no message", so the caller
             // (FirstRunPage and the like) can fill in a locale-specific fallback. null means no error.
@@ -59,7 +62,7 @@ export function useVaultCreateFlow(vault: VaultCreateFlowVault, starterLocale: s
         setCreateArmed(false);
       }
     });
-  }, [createArmed, starterLocale, vault, vault.manifest, vault.status]);
+  }, [createArmed, shape, starterLocale, vault, vault.manifest, vault.status]);
 
   return { handleCreate, scaffolding, actionError, setActionError };
 }

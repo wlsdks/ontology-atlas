@@ -39,14 +39,14 @@ pnpm --dir mcp install
 pnpm checks:changed
 ```
 
-Re-run `pnpm --dir mcp install` after a pull that changes
-`mcp/package.json`; root installation does not update `mcp/node_modules`.
+Re-run `pnpm --dir mcp install` after a pull changes `mcp/package.json`;
+root installation does not update `mcp/node_modules`.
 Start verification with `pnpm checks:changed`; `-- --run` runs every
-recommendation and stops on the first failure. Do not hand-pick its list.
+recommendation and stops at the first failure. Do not hand-pick its list.
 
 Read versions from `package.json`. The graph renderer is the custom
 canvas-2D `topology-map-v2` engine; Graphology supplies ForceAtlas2 only.
-Do not reintroduce xyflow, Sigma, or another renderer without a decision record.
+Do not reintroduce xyflow, Sigma, or another renderer without a decision.
 State is React/URL/in-memory with IndexedDB only for the vault handle.
 
 ## Structure and routes
@@ -60,10 +60,10 @@ checkout surfaces, never npm packages. `docs/ontology/` is the dogfood vault.
 All routes are locale-prefixed; use `@/i18n/navigation` for in-app links.
 `/` is selected by caller: a web visitor without a vault sees the gateway,
 while a vault-bearing web user and the installed app see the map/first-run
-surface. The installed app must not offer its own download. `/topology` is
-the map address and supports contextual relation writing with directional
-preview and change review; ACP writes wait for `allow_once` or
-`reject_once`. `/ontology`, `/ontology/edit` and `/ontology/studio` are legacy
+surface; a wiki without nodes opens `/library`. The installed app must not
+offer its own download. `/topology` is the map address and supports contextual
+relation writing with directional preview and change review; ACP writes wait
+for `allow_once` or `reject_once`. `/ontology`, `/ontology/edit` and `/ontology/studio` are legacy
 redirects; `/ontology/insights` is live.
 
 Adding or removing a route requires an appended `docs/DECISIONS.md` record in
@@ -74,9 +74,9 @@ retired: `/login`, `/signup`, `/account`, `/reset-password`,
 
 ## Operating gates and skills
 
-The policies live in `.claude/rules/` and each skill owns its exact protocol.
-Use the matching source, never memory and never this summary — what follows is
-routing only: when to open a gate, not how it runs.
+Policies live in `.claude/rules/` and each skill owns its exact protocol. Use
+the matching source, never memory or this summary — what follows is routing
+only: when to open a gate, not how it runs.
 
 - **PO gate** — Before product, UX, graph, MCP, CLI, workflow, or macOS work,
   `/po-pass` names one lost Atlas ability and gives change/boundary facts to
@@ -148,8 +148,8 @@ blocks, not prose.
 
 ## Context, delegation, and CodeGraph
 
-Use the smallest sufficient context. Prefer a focused vault query, CodeGraph,
-or targeted read to broad dumps. Preserve unrelated dirty work and user-local
+Use the smallest sufficient context: a focused vault query, CodeGraph, or a
+targeted read over broad dumps. Preserve unrelated dirty work and user-local
 state. Do not delegate a handful of tool calls or delegate re-verification.
 When delegation is justified, the brief must state: isolated port; read-only
 files; no stash/worktree deletion/`git add -A`; scratch outside the repo;

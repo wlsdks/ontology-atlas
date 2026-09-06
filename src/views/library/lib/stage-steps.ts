@@ -14,7 +14,20 @@ import type { LibraryUiModel } from "./use-library-model";
  * surfaces render what it returns.
  */
 
-export type LibraryStepState = "done" | "next" | "waiting";
+/**
+ * `checking` is the fourth word, added 2026-09-07.
+ *
+ * Hashing is lazy: a source that has been listed but not yet measured is **neither**
+ * written up nor waiting, and `needsCompileCount` counts only the ones known to be
+ * waiting. Without this word the arithmetic read a folder mid-measurement as finished —
+ * the guide said *Compile done · every source already has a write-up that matches its
+ * bytes* while step three said *0 of 7 written up* and all seven rows said *checking*
+ * (owner, on the merged build). Three surfaces, three answers, one folder.
+ *
+ * It is deliberately not `waiting`: nothing is wrong and there is nothing to press. It is
+ * the honest "ask again in a moment" the source rows have carried since they shipped.
+ */
+export type LibraryStepState = "done" | "next" | "waiting" | "checking";
 
 export interface LibraryStepStates {
   gather: LibraryStepState;
@@ -28,19 +41,30 @@ export interface LibraryStepStates {
    * all. Every badge stays true; only the one visual lead moves.
    */
   leadIndex: number;
+  /** Sources listed but not yet measured — the count the `checking` word stands for. */
+  checkingCount: number;
 }
 
 export function libraryStepStates(
   model: Pick<LibraryUiModel, "sources" | "wikiPages" | "needsCompileCount">,
 ): LibraryStepStates {
   const sourceCount = model.sources.length;
+  /**
+   * Sources listed but not yet hashed. The rows say `checking` for exactly these, and the
+   * two steps that would otherwise claim a verdict about them say the same word.
+   */
+  const checkingCount = model.sources.filter((row) => row.state === "checking").length;
   const gather: LibraryStepState = sourceCount > 0 ? "done" : "next";
   const compile: LibraryStepState =
-    model.needsCompileCount === 0 && model.wikiPages.length > 0
-      ? "done"
-      : sourceCount > 0
-        ? "next"
-        : "waiting";
+    model.needsCompileCount > 0 && sourceCount > 0
+      ? "next"
+      : sourceCount === 0
+        ? "waiting"
+        : checkingCount > 0
+          ? "checking"
+          : model.wikiPages.length > 0
+            ? "done"
+            : "next";
   /*
    * `next` was unreachable here until 2026-09-06: both branches returned `waiting`, so a
    * folder whose pages were all written still showed the last step as one whose turn had
@@ -48,6 +72,18 @@ export function libraryStepStates(
    * and sources still waiting, reading is exactly what to do next.
    */
   const read: LibraryStepState =
-    model.wikiPages.length === 0 ? "waiting" : model.needsCompileCount === 0 ? "done" : "next";
-  return { gather, compile, read, leadIndex: [gather, compile, read].indexOf("next") };
+    model.wikiPages.length === 0
+      ? "waiting"
+      : model.needsCompileCount > 0
+        ? "next"
+        : checkingCount > 0
+          ? "checking"
+          : "done";
+  return {
+    gather,
+    compile,
+    read,
+    leadIndex: [gather, compile, read].indexOf("next"),
+    checkingCount,
+  };
 }
