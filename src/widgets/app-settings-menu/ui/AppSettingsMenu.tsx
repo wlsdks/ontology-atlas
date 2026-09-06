@@ -48,6 +48,7 @@ import { FootprintSettings } from './FootprintSettings';
 import { ExpandSettings } from './ExpandSettings';
 import { AgentActivitySettings } from './AgentActivitySettings';
 import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
+import { VaultShapeSettings } from './VaultShapeSettings';
 import { useFrameMeter, writeFrameMeter } from '@/shared/lib/appearance-preferences';
 import { BlockImportModule } from '@/features/ontology-blocks';
 import { AiConnectionPanel } from './AiConnectionPanel';
@@ -1013,6 +1014,7 @@ export function AppSettingsMenu({
                 ) : section === 'workspace' ? (
                     <>
                   <SettingsGroup>
+                <VaultShapeSettings />
                 {showVaultManagement ? (
                   <SettingsRow
                     testId="app-settings-workspace-folder"

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { useTranslations } from "next-intl";
-import { BookText, FilePlus2, Search, Sparkles } from "lucide-react";
+import { BookText, FilePlus2, Search, Sparkles, Stethoscope } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
 import { countSourceFormats, newestWikiPage } from "@/entities/docs-vault";
@@ -81,6 +81,14 @@ export interface LibraryStageProps {
   onAddFiles: () => void;
   onFindDocuments: () => void;
   onCompile: () => void;
+  /**
+   * The report-only health check (PR #1486), beside Compile in step two.
+   *
+   * Null where no verified coding agent can run it, which is the same condition the index
+   * uses — and unlike Compile it is **absent** rather than disabled there, because a step
+   * that cannot report is not a step with a reason, it is a step with no runtime.
+   */
+  onLint: (() => void) | null;
   onOpenWiki: (slug: string) => void;
   busy: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
@@ -191,6 +199,7 @@ export function LibraryStage({
   onAddFiles,
   onFindDocuments,
   onCompile,
+  onLint,
   onOpenWiki,
   busy,
   t,
@@ -233,6 +242,13 @@ export function LibraryStage({
    * Step two's line is the **index's own sentence**, not a second phrasing of it: the
    * same counts appear beside the file rows, and one word per thing is a repository rule.
    */
+  /*
+   * ⚠️ **The reason is not printed twice.** With every source written up, the caption and
+   * the blocked reason are the same sentence — `blockedNothingWaiting` — and step two
+   * showed it in both slots, 40px apart (measured on the owner's seven-page folder,
+   * 2026-09-07). The caption keeps it, because a row's caption is always drawn; the
+   * paragraph under the button appears only when it has something else to say.
+   */
   const compileCaption =
     model.needsCompileCount === 0
       ? t("stage.blockedNothingWaiting")
@@ -244,6 +260,9 @@ export function LibraryStage({
         : model.staleCount > 0
           ? t("sources.staleOnly", { count: model.staleCount })
           : t("sources.needsCompile", { count: model.notCompiledCount });
+
+  /** The reason under the button, unless the caption above it is already that sentence. */
+  const blockedBelow = blocked && blocked !== compileCaption ? blocked : null;
 
   return (
     <div data-testid="library-stage" className="w-full px-3 pb-3 pt-2">
@@ -304,7 +323,9 @@ export function LibraryStage({
                  * the tab order, so the sentence beneath it is reachable only by reading
                  * on. The visual disabled state stays the system's.
                  */
-                aria-describedby={blocked ? "library-stage-compile-blocked" : undefined}
+                /* Only when that paragraph is actually drawn; when the caption above is
+                   the reason, the row already reads it. */
+                aria-describedby={blockedBelow ? "library-stage-compile-blocked" : undefined}
                 className={controlClass({
                   shape: "chip",
                   tone: blocked === null ? "strong" : "muted",
@@ -316,6 +337,31 @@ export function LibraryStage({
                 <Sparkles size={ICON_SIZE.sm} aria-hidden />
                 {t("wiki.compile")}
               </button>
+              {/*
+                **Reading is the other half of step two** (PR #1486, merged 2026-09-07).
+                Compile writes the pages; Check the wiki reads them back and reports what a
+                script cannot decide. It stands here rather than in a step of its own
+                because it is the same job seen from the other end, and a fourth row would
+                make the sequence longer than the work. It appears only once there are two
+                pages, which is the first moment two pages can disagree.
+              */}
+              {onLint && model.wikiPages.length >= 2 ? (
+                <button
+                  type="button"
+                  onClick={onLint}
+                  disabled={busy}
+                  data-testid="library-stage-lint"
+                  className={controlClass({
+                    shape: "chip",
+                    tone: "muted",
+                    hoverInk: "strong",
+                    className: "gap-1.5",
+                  })}
+                >
+                  <Stethoscope size={ICON_SIZE.sm} aria-hidden />
+                  {t("wiki.lint")}
+                </button>
+              ) : null}
               {brainChoosable ? (
                 <CompileBrainSelect
                   brain={brain}
@@ -354,15 +400,15 @@ export function LibraryStage({
             </>
           }
           extra={
-            blocked || (localCompile && route === "local") || transfer ? (
+            blockedBelow || (localCompile && route === "local") || transfer ? (
               <div className="mt-2 flex flex-col gap-1.5">
-                {blocked ? (
+                {blockedBelow ? (
                   <p
                     id="library-stage-compile-blocked"
                     data-testid="library-stage-compile-blocked"
                     className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
                   >
-                    {blocked}
+                    {blockedBelow}
                   </p>
                 ) : null}
                 {localCompile && route === "local" ? (

@@ -3,13 +3,14 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { WIKI_PAGE_CASES, WIKI_PAGE_KNOWN_SOURCES } from '../fixtures/wiki-page-cases.mjs';
+import { WIKI_FOLDER_CASES, WIKI_PAGE_CASES, WIKI_PAGE_KNOWN_SOURCES } from '../fixtures/wiki-page-cases.mjs';
 import {
   WIKI_CITATION_PATTERN as PATTERN_TS,
   WIKI_FIELDS as FIELDS_TS,
   WIKI_PAGE_TEMPLATE as TEMPLATE_TS,
   WIKI_REQUIRED_FIELDS as REQUIRED_TS,
   WIKI_SECTION_ORDER as SECTIONS_TS,
+  validateWikiFolder as validateFolderTs,
   validateWikiPage as validateTs,
 } from '@/shared/lib/wiki-page-schema';
 import {
@@ -18,6 +19,7 @@ import {
   WIKI_PAGE_TEMPLATE as TEMPLATE_MCP,
   WIKI_REQUIRED_FIELDS as REQUIRED_MCP,
   WIKI_SECTION_ORDER as SECTIONS_MCP,
+  validateWikiFolder as validateFolderMcp,
   validateWikiPage as validateMcp,
 } from '../../mcp/src/wiki-schema.mjs';
 
@@ -166,5 +168,42 @@ describe('validation stays linear as a folder grows', () => {
     }
     const median = runs.sort((a, b) => a - b)[1]!;
     expect(median).toBeLessThan(1500);
+  });
+});
+
+/**
+ * The folder half. The accumulation probe (2026-09-06) found every page an orphan and
+ * no two pages that shared a source aware of each other, in every condition, while
+ * the page validator stayed green — so the three facts only the whole folder can tell
+ * are judged here, by both implementations, on the same cases.
+ */
+describe('the wiki folder contract — both implementations agree', () => {
+  const FOLDER_VALIDATORS = {
+    'src/shared/lib (TS)': validateFolderTs,
+    'mcp/src/wiki-schema.mjs': validateFolderMcp,
+  } as const;
+  for (const [name, validate] of Object.entries(FOLDER_VALIDATORS)) {
+    describe(name, () => {
+      for (const testCase of WIKI_FOLDER_CASES) {
+        it(testCase.name, () => {
+          const result = (validate as typeof validateFolderTs)(testCase.pages);
+          const got = Object.fromEntries(
+            result.map((entry) => [entry.path, entry.problems.map((p) => p.code).sort()]),
+          );
+          const want = Object.fromEntries(
+            Object.entries(testCase.expected).map(([path, codes]) => [path, [...codes].sort()]),
+          );
+          expect(got).toEqual(want);
+        });
+      }
+    });
+  }
+
+  it('both implementations return byte-identical verdicts on every case', () => {
+    for (const testCase of WIKI_FOLDER_CASES) {
+      expect(JSON.stringify(validateFolderMcp(testCase.pages))).toBe(
+        JSON.stringify(validateFolderTs(testCase.pages)),
+      );
+    }
   });
 });

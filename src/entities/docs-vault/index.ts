@@ -40,12 +40,14 @@ export {
   buildLibraryModel,
   countSourceFormats,
   formatSourceBytes,
+  isWikiPage,
   newestWikiPage,
 } from './lib/vault-library';
 export type {
   LibraryModel,
   LibraryOriginalLink,
   LibrarySourceRow,
+  LibraryWikiPage,
   LibraryWriteUpLink,
 } from './lib/vault-library';
 export { candidateKey, discoverCandidatesInHandle } from './lib/source-discovery';

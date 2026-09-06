@@ -39,7 +39,7 @@ agent task`.
 | Surface | Entry | Audience |
 |---|---|---|
 | **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; primary workbench routes `/topology`, `/architecture`, `/docs`, `/library`, `/ontology/insights`, `/projects`, `/agents`, and `/mcp`; `/git` remains a contextual workbench route | daily visual ontology work — pick a local vault folder, inspect reviewed architecture, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
-| **CLI** (R12 / R14 / R15+ · 59 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / analysis / infer-imports / architecture / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, reviewed architecture conformance, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, architecture pre/post checks, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
+| **CLI** (R12 / R14 / R15+ · 60 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / analysis / infer-imports / architecture / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, reviewed architecture conformance, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, architecture pre/post checks, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | current runtime read/write inventory over JSON-RPC (`tools/list`; prove with `mcp-verify`) | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
 | **Website** | GitHub Pages static export / `/` + `/topology` + `/download` | With no active vault, `/` is the gateway; with a loaded local vault it is the topology map, as is explicit `/topology`. `/download` is the product intro + current release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
 
@@ -734,7 +734,10 @@ With no folder open the whole screen is one centred stage naming the two kinds o
 offering the picker, and a folder that is open but holds nothing gets the same grammar with
 the two doors instead. **With a folder open and nothing selected the right pane is the
 graph**, at the pane's own height. Below `lg` there is one column — the graph on top, the
-two lists under it — and selecting swaps it, with a way back.
+two lists under it — and selecting swaps it, with a way back. A folder that holds wiki
+pages and no `kind:` node opens here rather than on the map: it is a wiki on its own, and
+an empty canvas had nothing to say to the person who chose it (ledger, 2026-09-06). A
+folder with even one node still opens on the map.
 
 **What to do next, one press from the graph's header** (2026-09-06, third and fourth
 pass). The owner opened the new destination and said they did not know what to do on it;
@@ -766,10 +769,12 @@ caption, no status strip, no popup. Page hairlines at 1512 fell 63 → 12.
 opens a 360px `transientSurface("anchored")` panel of three rows, each one head line
 (number, title, and the step's own word), one caption line, and one action row of reserved
 height: **① Gather** with the formats the folder holds and both doors, **② Compile** with
-what is waiting or behind, the Compile button, the brain picker when this computer offers
-two, and — directly under that button — the one sentence about what leaves this computer or
-the exact reason it cannot run, **③ Read** with how many sources are covered and a row that
-opens the newest page. The heights match because the anatomy does rather than because a
+what is waiting or behind, the Compile button, **Check the wiki** beside it once two pages
+exist, the brain picker when this computer offers two, and — directly under that button —
+the one sentence about what leaves this computer or the exact reason it cannot run,
+**③ Read** with how many sources are covered and a row that opens the newest page. Writing
+and reading back are one step, not two: a fourth row would make the sequence longer than
+the work. The heights match because the anatomy does rather than because a
 grid stretched them (measured 110 / 158 / 110 at every width, the middle row taller only
 when the folder gives step two something to say; the fixed core is equal within 2px). The
 panel is positioned from the chip's measured rect, published as `--library-shelf-top` and
@@ -803,6 +808,21 @@ check in the row's own ink and a chip is spent only where a person can act — n
 stale, off-template. The disclosure under Compile is the index's one caption and it is
 empty while the stepper is open, so exactly one surface prints it. Column hairlines fell 38
 → 9 and no row is cut by the column's edge at 1512, 768 or 390.
+
+The Wiki head carries what the wiki's own work needs, in this shape (merged from the LLM
+Wiki round, 2026-09-07): the count, then **Check the wiki** and **Compile** on one
+unwrapping line so reading stands to the left of writing, then the brain picker on the line
+beneath when this computer offers two. Under it, one `text-label` caption reads the app's
+own record — *Last compile …, last check …*, from `wiki/_log.md` — and beneath that the
+single compile disclosure. **The folder's findings are not a pill.** A page that misses the
+wiki template still wears the amber `off-template` pill, because the fix is in that page's
+own bytes; a folder finding — `dangling-wikilink`, `orphan-page`,
+`shared-source-unlinked` — is about where the page sits, is true of nearly every row on a
+young wiki, and shows as one quiet word on the row with the count carried once in the
+header strip. It is the same reasoning that took the green chip off every compiled source.
+**Names without a page** keeps its list and its **Propose as node** chips at the foot of
+the column, at this column's own `px-2` inset and `gap-0.5` rhythm rather than the spacing
+it arrived in.
 
 **Below `lg` the whole pane reaches a phone** (2026-09-06, third pass). None of it used to
 be drawn there: the pane was hidden whenever nothing was chosen, which is the state it
@@ -845,10 +865,21 @@ store can drift from it.
     hands over the bytes it was already granted.
 - **Wiki** — Markdown under `wiki/**` with no `kind:`. Each row shows `created_by` and,
   when the page does not fit the contract, the first problem code `wiki-validate` prints
-  (`section-order`, `uncited-fact`, …). The shape is `docs/ONTOLOGY-ATLAS-SPEC.md` §11,
+  (`section-order`, `uncited-fact`, …), the folder's own findings included
+  (`orphan-page`, `dangling-wikilink`, `shared-source-unlinked`). Only the page's own
+  problems and a broken link make a row **off-template**; an orphan or an unlinked
+  shared source is named on the row and in the Check-the-wiki brief but not counted,
+  because in a two-page wiki with no links yet every page is an orphan. The shape is
+  `docs/ONTOLOGY-ATLAS-SPEC.md` §11,
   and `wiki/_template.md` is written into every new vault by `ontology-atlas init`.
+  Files under `wiki/` that start with `_` are the wiki's furniture, never pages: the
+  template, and `wiki/_log.md`, which the app appends to after each Compile (the sources
+  handed over, the pages the folder shows new or revised) and each Check-the-wiki run
+  (the counts the report ended with). A person who does not commit their folder still
+  has the wiki's own memory; a person who does has a commit body ready. The Wiki header
+  reads it back as one caption: the last compile and the last check, each with its time.
 
-Three one-click doors:
+Four one-click doors:
 
 - **Add files** — app: a native panel, and Rust copies the bytes into `<vault>/sources/`
   so the WebView never holds a document. Web: `showOpenFilePicker`, written through the
@@ -865,10 +896,38 @@ Three one-click doors:
 - **Compile** — starts one in-app ACP turn whose brief embeds `wiki/_template.md`
   verbatim and names `wiki-validate` as the acceptance test. Enabled only while some
   source is not compiled or stale. Beside it: the coding agent's provider traffic is not
-  in `.ontology-atlas/llm-audit.jsonl`. Every write still stops at the permission card.
+  in `.ontology-atlas/llm-audit.jsonl`. Every write still stops at the permission card,
+  and for a page under `wiki/` the card shows the verdict first: the page as the write
+  would leave it (a whole file, or an edit applied to the page on disk), judged against
+  the contract, one quiet line when it fits and the codes with the first message when it
+  does not. Allow and Don't stay where they are; the gate is the person.
   The dock opens on this screen, above `AcpDockHeader` a lucide `Library` glyph and the
   destination's name: Compile is a job, not a place, and the job runs beside the shelf it
-  is compiling.
+  is compiling. The brief lists the pages that already exist and asks the
+  writer for one page per source, named after it and never folded into another (a page
+  is what one document said), to link the pages it touches both ways, to record a
+  disagreement on both pages with both citations, and to write nothing for a source
+  that adds nothing.
+- **Check the wiki** — starts one report-only ACP turn over `wiki/` for what
+  `wiki-validate` cannot decide: two pages disagreeing, a claim a later page replaced,
+  two pages that share a topic or a source without linking, and a name on three or
+  more pages with no page of its own, which the brief labels an ontology node
+  candidate. It modifies nothing; enabled from two pages up, since one page has
+  nothing to disagree with. The report ends with those names in a block a program
+  reads, and the Library lists them under the Wiki as **Names without a page**. The
+  report sorts each name: something the code builds (a domain, capability or element),
+  a person, an organisation, or other. Only the first sort gets a **Propose as node**
+  chip, and only in a folder that already holds an ontology — a folder of documents
+  with no `kind:` node is a wiki on its own, and nobody who opened it asked for a map.
+  The chip starts one agent turn that reads the pages carrying the name and the vault's
+  own kinds and domains, then calls `add_concept` once, citing those pages as
+  `[[wiki/…]]` links in the node's body. The write reaches the ontology-write card like
+  any other; nothing touches the wiki pages, and `describes:` stays the person's to add
+  after review. People and organisations stay names in the wiki, linked by the pages
+  that mention them: the map is the code's ontology, and this is the one place the
+  wiki flows into it, through the person. The brief carries what the script already found (the page
+  and folder codes the Wiki list shows) and asks the agent not to repeat them, so the
+  model's reading goes to judgement.
 - **The local-model route** — when Settings → AI connection holds a verified
   connect-by-address runner (any OpenAI-compatible `/v1` server: Ollama, LM Studio,
   llama.cpp, vLLM), the shelf names that model and its host as the brain. It says nothing
@@ -969,7 +1028,7 @@ cancelling itself: its animation frame is held across effect runs, because the w
 canvas takes from the picture arrives after the first measurement and used to kill the
 arrival 0.85 of the way in.
 
-**What left `/docs` on 2026-09-06**: Sources, Wiki, the three doors, and the agent dock.
+**What left `/docs` on 2026-09-06**: Sources, Wiki, the doors, and the agent dock.
 What stayed: the review queue, recently changed, the tree, and the editor.
 
 ### `/ontology` — retired tree/ego hub → thin redirect (B3 Hub is soon the map)
@@ -1261,6 +1320,16 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 - GitHub repo link row · the hosted-site scope note (the website never opens or edits vault folders) · footer (license / GitHub / stack)
 
 ---
+
+### First run — what the folder holds (2026-09-06)
+
+"Just start" and "Create" open one question before writing anything: a documents wiki, an
+ontology map of a codebase, or both. The answer is written as files — the wiki's
+`wiki/_template.md`, the map's starter nodes and skills — and every folder of the fixed
+`atlas/` tree is made either way. Nothing is stored as a preference: `describeVaultShape`
+reads the folder, so a teammate who pulls it sees the same thing. A wiki without a map lands
+on `/library`. Settings › Workspace carries an add-only row, "This folder holds", whose one
+chip writes the missing part's starter files; the tabs follow the files.
 
 ### `/git` — Record (primary desktop destination; redesigned 2026-07-27)
 
@@ -1704,6 +1773,12 @@ just unmounted).
   (`src/shared/lib/nav-destination.ts`) — `BottomTabBar` uses the same semantic
   resolver, so a route has one destination even when mobile intentionally
   omits its button.
+
+The rail draws only the destinations the folder earns (`destinationsForVaultShape`, 2026-09-06):
+a wiki without a map hides Map, Architecture, Docs, Insights and Projects; Agents, MCP, History
+and the Library stay (the Library holds `sources/` for any folder); a map, an empty folder, or no
+folder shows all nine.
+The phone tabs and the `G` keys read the same verdict.
 
 ### `AppSettingsMenu` (app shell + contextual page headers)
 - The old 5-tab settings modal is now one compact settings sheet

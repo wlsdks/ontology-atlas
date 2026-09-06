@@ -2,6 +2,7 @@
 
 import type { useTranslations } from "next-intl";
 
+import { isAdvisoryWikiCode, isWikiFolderCode } from "../../lib/merge-wiki-verdict";
 import { libraryStepStates } from "../../lib/stage-steps";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 
@@ -48,9 +49,29 @@ export function LibraryStatusStrip({
   if (model.needsCompileCount > 0) {
     parts.push(t("stage.statusWaiting", { count: model.needsCompileCount }));
   }
-  if (model.offTemplateCount > 0) {
-    parts.push(t("stage.statusOffTemplate", { count: model.offTemplateCount }));
-  }
+  /*
+   * **The header counts what the rows draw, or it is a third opinion** (2026-09-07).
+   *
+   * `offTemplateCount` counts every page whose merged verdict is not `ok`, and after PR
+   * #1486 that includes a dangling link — a folder finding the row deliberately marks with
+   * a quiet word rather than the amber pill. Measured on the owner's seven-page folder, the
+   * header said "2 off-template" over one pill and one quiet word. So both clauses are
+   * derived here the same way the row derives its two marks: a page's own shape, and a
+   * folder finding a person can act on. The advisory findings are counted by neither; they
+   * are true of a young wiki rather than of a page, and the Check-the-wiki report is where
+   * a judgement about the whole wiki belongs.
+   */
+  const verdicts = [...model.verdicts.values()];
+  const offTemplate = verdicts.filter((verdict) =>
+    verdict.problems.some((problem) => !isWikiFolderCode(problem.code)),
+  ).length;
+  const unlinked = verdicts.filter((verdict) =>
+    verdict.problems.some(
+      (problem) => isWikiFolderCode(problem.code) && !isAdvisoryWikiCode(problem.code),
+    ),
+  ).length;
+  if (offTemplate > 0) parts.push(t("stage.statusOffTemplate", { count: offTemplate }));
+  if (unlinked > 0) parts.push(t("stage.statusUnlinked", { count: unlinked }));
   if (parts.length === 0) return null;
 
   return (

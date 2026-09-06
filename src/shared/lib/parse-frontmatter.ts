@@ -558,6 +558,11 @@ export function extractOutLinksWithContext(
   const wre = /\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g;
   while ((m = wre.exec(body)) !== null) {
     const targetSpec = m[1].trim();
+    // A wiki page cites its sources as `[[src:sources/<path>#<anchor>]]`
+    // (`docs/ONTOLOGY-ATLAS-SPEC.md` §11.3). That is a citation, not a link to a
+    // document: counting it here made every compiled page carry a dangling outlink
+    // named after a PDF, and a source the graph cannot open is not a backlink target.
+    if (targetSpec.startsWith('src:')) continue;
     const [rawTargetSlug] = targetSpec.split('#');
     if (!rawTargetSlug) continue;
     const targetSlug = resolveWikilinkTargetSlug(rawTargetSlug, fromSlug);

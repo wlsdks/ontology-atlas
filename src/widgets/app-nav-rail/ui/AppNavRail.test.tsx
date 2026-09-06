@@ -89,6 +89,18 @@ describe("AppNavRail", () => {
     expect(screen.queryByTestId("app-nav-rail-agent-status")).not.toBeInTheDocument();
   });
 
+  it("draws only the destinations the folder's shape earns", () => {
+    // A wiki without a map (owner direction 2026-09-06): no empty map, reading, analysis
+    // or project doors; the wiki, the agent, MCP and history stay.
+    renderRail(<AppNavRail visibleDestinations={new Set(["library", "agents", "mcp", "git"])} />);
+    expect(screen.getByTestId("app-nav-rail-item-library")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
+    for (const hidden of ["map", "architecture", "docs", "insights", "projects"]) {
+      expect(screen.queryByTestId(`app-nav-rail-item-${hidden}`)).not.toBeInTheDocument();
+    }
+  });
+
   it("carries the destination reading-start intent across installed-app navigation", () => {
     window.sessionStorage.clear();
     renderRail();

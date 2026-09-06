@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
-import { FolderOpen, Orbit, Sparkles, Zap } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { FolderOpen, Layers, Library, Map as MapIcon, Orbit, Sparkles, Zap } from "lucide-react";
+import type { VaultShape } from "@/shared/lib/vault-shape";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
@@ -11,6 +12,7 @@ import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { useToast } from "@/shared/ui/toast";
 import { controlClass } from '@/shared/ui/control-class';
+import { Chip } from '@/shared/ui/controls';
 
 /**
  * First run of the installed app (the desktop shell) — `/` with no vault chosen.
@@ -73,6 +75,21 @@ export function FirstRunPage() {
     setActionError(null);
     await vault.open();
   }, [vault, setActionError]);
+  /*
+   * Which creation door was pressed, while the person says what the folder will hold.
+   * Owner direction 2026-09-06: the question is asked once, at creation; the answer is
+   * written as files (`scaffoldOntology`), and the rail reads those files afterwards.
+   */
+  const [choosingFor, setChoosingFor] = useState<"just-start" | "create" | null>(null);
+  const chooseShape = useCallback(
+    (shape: VaultShape) => {
+      const door = choosingFor;
+      setChoosingFor(null);
+      if (door === "just-start") void justStart(shape);
+      else if (door === "create") void handleCreate(shape);
+    },
+    [choosingFor, handleCreate, justStart],
+  );
 
   useEffect(() => {
     if (!createdPath) return;
@@ -151,11 +168,62 @@ export function FirstRunPage() {
           </div>
         </header>
 
+        {choosingFor ? (
+          <div className="grid gap-2" aria-busy={busy} data-testid="first-run-shape">
+            <div className="grid gap-1 px-1">
+              <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+                {t("shapeEyebrow")}
+              </p>
+              <p className="break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">{t("shapeTitle")}</p>
+            </div>
+            {/* One row of repeated cards keeps one height: the shortest copy does not
+                make its card shorter (Don'ts, content-decided card height). */}
+            <div className="grid auto-rows-fr gap-2">
+            {(
+              [
+                { id: "wiki", shape: { map: false, wiki: true }, Icon: Library, title: t("shapeWikiTitle"), body: t("shapeWikiBody") },
+                { id: "map", shape: { map: true, wiki: false }, Icon: MapIcon, title: t("shapeMapTitle"), body: t("shapeMapBody") },
+                { id: "both", shape: { map: true, wiki: true }, Icon: Layers, title: t("shapeBothTitle"), body: t("shapeBothBody") },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => chooseShape(option.shape)}
+                disabled={busy}
+                data-testid={`first-run-shape-${option.id}`}
+                className={`${cardBase} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`}
+              >
+                <span className={`${iconChip} text-[color:var(--color-indigo-accent)]`}>
+                  <option.Icon size={ICON_SIZE.md} aria-hidden />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                    {option.title}
+                  </span>
+                  <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
+                    {option.body}
+                  </span>
+                </span>
+              </button>
+            ))}
+            </div>
+            <Chip
+              tone="muted"
+              onClick={() => setChoosingFor(null)}
+              disabled={busy}
+              data-testid="first-run-shape-back"
+              className="justify-self-center"
+            >
+              {t("shapeBack")}
+            </Chip>
+          </div>
+        ) : (
         <div className="grid gap-2" aria-busy={busy}>
           {showJustStart ? (
             <button
               type="button"
-              onClick={() => void justStart()}
+              onClick={() => setChoosingFor("just-start")}
               disabled={busy}
               data-testid="first-run-just-start"
               className={`${cardBase} border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]`}
@@ -212,7 +280,7 @@ export function FirstRunPage() {
 
           <button
             type="button"
-            onClick={() => void handleCreate()}
+            onClick={() => setChoosingFor("create")}
             disabled={busy}
             data-testid="first-run-create"
             className={`${cardBase} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`}
@@ -231,6 +299,7 @@ export function FirstRunPage() {
           </button>
 
         </div>
+        )}
 
         {errorText ? (
           <p

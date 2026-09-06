@@ -23,7 +23,7 @@
       "headings": [],
       "excerpt": "Current as of 2026-08-02. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
       "wordCount": 3142,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -96,7 +96,7 @@
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
       "wordCount": 4905,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "ANALYSIS-RECORDS",
         "../AGENTS",
@@ -467,6 +467,21 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
+      "path": "docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md",
+      "title": "Findings 2026-09-06 · does the Library wiki accumulate, or only summarise?",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Question: the LLM Wiki pattern (Karpathy, 2026-04-04) claims its value is accumulation: each new source revises existing pages and flags what it contradicts. The Library's Compile brief embeds the page template and six rules but never names existing pages. Does a wiki built one source at a time, the way the Library run",
+      "wordCount": 3055,
+      "updatedAt": "2026-09-07",
+      "linksOut": [
+        "wiki/<slug>",
+        "src:…"
+      ]
+    },
+    {
       "slug": "benchmark/FINDINGS-2026-09-06-wiki-probe",
       "path": "docs/benchmark/FINDINGS-2026-09-06-wiki-probe.md",
       "title": "Findings 2026-09-06 · the sealed five-question wiki probe",
@@ -486,13 +501,14 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · graph tooling · a macOS local workbench all ",
-      "wordCount": 3103,
-      "updatedAt": "2026-09-06",
+      "wordCount": 3275,
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-25",
         "benchmark/tasks",
         "benchmark/rubric",
         "benchmark/FINDINGS-2026-09-06-wiki-probe",
+        "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
         "benchmark/FINDINGS-2026-08-31",
         "benchmark/FINDINGS-2026-08-31-change-flow",
         "benchmark/FINDINGS-2026-08-31-metric-split",
@@ -777,6 +793,18 @@
       ]
     },
     {
+      "slug": "benchmark/THREE-PROBE-2026-09-06",
+      "path": "docs/benchmark/THREE-PROBE-2026-09-06.md",
+      "title": "three.js structure probe, 2026-09-06",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "A trial, not a feature. The owner asked two questions on 2026-09-06: try three.js on the map's 3D view and compare it with what ships, and look for a 3D structure better suited to an ontology than the cone. This file is the answer; nothing here is on by default and no decision record was written, because the decision i",
+      "wordCount": 2171,
+      "updatedAt": "2026-09-07",
+      "linksOut": []
+    },
+    {
       "slug": "BRAND",
       "path": "docs/BRAND.md",
       "title": "Brand — Ontology Atlas",
@@ -834,9 +862,11 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 108128,
+      "wordCount": 110259,
       "updatedAt": "2026-09-07",
       "linksOut": [
+        "wiki/…",
+        "wiki/<slug>",
         "slug"
       ]
     },
@@ -940,12 +970,13 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 33334,
+      "wordCount": 34341,
       "updatedAt": "2026-09-07",
       "linksOut": [
         "ANALYSIS-RECORDS",
         "slug",
         "project:slug",
+        "wiki/…",
         "oldSlug"
       ]
     },
@@ -1224,8 +1255,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Status: RFC (Request for Comments). This is a v2.0 release candidate, not a ratified standard — see §0 RFC status and feedback for the review window and how to comment. This document promotes an already-shipped, already-enforced de-facto schema into a formal specification. v2 makes immutable node uid mandatory; this is",
-      "wordCount": 7271,
-      "updatedAt": "2026-09-06",
+      "wordCount": 7472,
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "src:sources/<path>",
         "wikilink",
@@ -1233,7 +1264,9 @@
         "src:sources/budget.xlsx",
         "src:sources/orders.csv",
         "src:sources/spec.docx",
-        "src:sources/log.txt"
+        "src:sources/log.txt",
+        "wiki/<slug>",
+        "<slug>"
       ]
     },
     {
@@ -2289,6 +2322,7 @@
           "capabilities/ontology-dna-presentation": "Its guided scenes are qualified from the Atlas read tools one completed coding-agent turn actually called, so it exists only where the app runs that conversation.",
           "capabilities/vault-agent": "The connect flow and the in-app provider-neutral agent loop are how a person attaches an agent to this folder and checks the reads it cites.",
           "elements/agents-destination": "The /agents/ screen gathers receiving, installing, attaching, repairing, and starting a conversation with a coding tool after three separate addresses held that one task.",
+          "elements/concurrent-ledger-conflict-resolver": "Several agents working the same folder in parallel worktrees prepend records to the append-only ledgers at the same moment, so the fail-closed merge that keeps both records is part of letting agents share one vault.",
           "elements/installed-mcp-identity-gate": "The installed MCP identity gate is the concrete local delivery control that keeps the agent-integration domain bound to the exact app bundle and source evidence it ships.",
           "elements/vault-agent-panel": "The panel is where a person judges an agent's actual tool reads, audit logs, timeouts, and mandatory-read failures before trusting its answer."
         }
@@ -2296,7 +2330,7 @@
       "headings": [],
       "excerpt": "Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user. README.md: \"Your agent reads and maintains it",
       "wordCount": 259,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -2504,6 +2538,7 @@
         ],
         "created_by": "human",
         "relation_notes": {
+          "capabilities/app-update": "Keeping the installed app current is the last step of the same path a person walks from the shared link, and the domain's own scope names automatic updates beside the download decision and the first run.",
           "capabilities/desktop-download-decision": "Comparing installers and their trust status in one place is where a visitor decides to install, and it offers the browser path when installing is blocked.",
           "capabilities/first-run-starter": "Someone who has chosen no folder yet meets the map through a bundled sample and is told to open their own folder to light the same map with their data.",
           "capabilities/guided-tour": "A new arrival is walked through the map and the core loop, demo clips included, before they know any of the surfaces.",
@@ -2525,7 +2560,7 @@
       "headings": [],
       "excerpt": "The first five-minute path from shared link → installed app → connection (download decision, initial run tour, locale, automatic updates) and the always-available navigation shell surrounding it. README.md: \"One download installs both surfaces. The macOS app carries a compiled MCP server inside its own bundle.\" AGENTS.",
       "wordCount": 105,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -2548,11 +2583,15 @@
           "capabilities/project-source-evidence"
         ],
         "elements": [
+          "elements/construction-qualification-evaluator",
+          "elements/meaning-proposal-evaluator",
           "elements/project",
           "elements/project-detail",
           "elements/project-drawer",
           "elements/project-editor",
-          "elements/project-selector"
+          "elements/project-selector",
+          "elements/qualification-handoff-helper",
+          "elements/semantic-evidence-selector"
         ],
         "created_by": "human",
         "relation_notes": {
@@ -2561,17 +2600,21 @@
           "capabilities/project-quick-edit": "Name, description, owner, and tags can be corrected in the detail dialog without leaving for the full editor.",
           "capabilities/project-share": "Handing a project to someone means copying a detail address that already carries the current locale and base path, with no permission, expiry, or server behind it.",
           "capabilities/project-source-evidence": "One project node binds to one repository or folder, and the receipt compares the implementation paths its ontology declares against the source that actually exists.",
+          "elements/construction-qualification-evaluator": "The qualification a project's detail page shows is decided by this policy engine, so the domain that owns that review surface owns the rule it applies.",
+          "elements/meaning-proposal-evaluator": "A proposed project, domain, capability, or relation meaning is judged here before any project surface can show it as reviewed, which is the portfolio's own gate on what enters a project.",
           "elements/project": "The project data model carries the integrity checks and dependency-cycle detection that every project surface reads.",
           "elements/project-detail": "The /project/[slug] page is where one project's description, composition, connections, and qualification envelope are read together.",
           "elements/project-drawer": "The slide-in drawer gives one project's metadata, integrity issues, and related documents without leaving the current screen.",
           "elements/project-editor": "The /project/new and edit pages are where project frontmatter is actually created and changed.",
-          "elements/project-selector": "The /projects page lists each project as a card with its counts and domain composition, which is how several projects in one vault get compared."
+          "elements/project-selector": "The /projects page lists each project as a card with its counts and domain composition, which is how several projects in one vault get compared.",
+          "elements/qualification-handoff-helper": "It packages one project's construction candidate for the acceptance the detail page later shows, so the hand-off belongs beside the surface that receives it.",
+          "elements/semantic-evidence-selector": "The evidence a qualification cites is selected here from the project's own documents, and a project claim is only as trustworthy as that selection."
         }
       },
       "headings": [],
       "excerpt": "A management area within a single vault that lists, views, edits, and shares multiple project nodes. AGENTS.md: Project overview (project→domain→capability→element reading spine, multi-project containment) src/features/project-edit, project-quick-edit, project-share (implementation evidence) Inclusions: Project detail/",
       "wordCount": 79,
-      "updatedAt": "2026-09-06",
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {
@@ -4037,8 +4080,8 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 2555,
-      "updatedAt": "2026-09-06",
+      "wordCount": 2682,
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "DECISIONS"
       ]
@@ -4292,6 +4335,35 @@
         "linkText": "`DECISIONS.md`"
       }
     ],
+    "wiki/…": [
+      {
+        "fromSlug": "DECISIONS",
+        "context": "whose only write is `add_concept`, after reading the pages and the vault's kinds and domains, with the pages cited as `**[wiki/…]**` links in the body and the reason for kind and parent stated first. The write reaches the ontology-write card; the wiki",
+        "linkText": "wiki/…"
+      },
+      {
+        "fromSlug": "FEATURES",
+        "context": "ages carrying the name and the vault's own kinds and domains, then calls `add_concept` once, citing those pages as `**[wiki/…]**` links in the node's body. The write reaches the ontology-write card like any other; nothing touches the wiki pages,",
+        "linkText": "wiki/…"
+      }
+    ],
+    "wiki/<slug>": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
+        "context": "nks, the folder half of the contract, and a Lint door Rule i joined the brief (a page links the pages it talks about, `**[wiki/<slug>]**`, only to pages in the list), the brief stopped claiming a failing page \"will be rejected\", `validateWikiFolder` joined",
+        "linkText": "wiki/<slug>"
+      },
+      {
+        "fromSlug": "DECISIONS",
+        "context": "both cited, the later document named, every cited source in `sources:`; i, a page links the pages it talks about with `**[wiki/<slug>]**`. Spec §11.4 gains three folder codes a script decides: `dangling-wikilink`, `orphan-page`, `shared-source-unlinked`. D",
+        "linkText": "wiki/<slug>"
+      },
+      {
+        "fromSlug": "ONTOLOGY-ATLAS-SPEC",
+        "context": "`wiki/` together, and `wiki-validate` and `validate_wiki` append its findings to the page they concern. A page link is `**[wiki/<slug>]**`, `[[<slug>]]`, optionally with `|text` or `#anchor`; a citation (`src:`) is never a link. | Code | Means | |---|---|",
+        "linkText": "wiki/<slug>"
+      }
+    ],
     "slug": [
       {
         "fromSlug": "DECISIONS",
@@ -4407,6 +4479,13 @@
         "linkText": "src:sources/log.txt"
       }
     ],
+    "<slug>": [
+      {
+        "fromSlug": "ONTOLOGY-ATLAS-SPEC",
+        "context": "nd `wiki-validate` and `validate_wiki` append its findings to the page they concern. A page link is `[[wiki/<slug>]]`, `**[<slug>]**`, optionally with `|text` or `#anchor`; a citation (`src:`) is never a link. | Code | Means | |---|---| | `dangling-wi",
+        "linkText": "<slug>"
+      }
+    ],
     "BACKLOG": [
       {
         "fromSlug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
@@ -4490,7 +4569,7 @@
       },
       {
         "fromSlug": "benchmark/README",
-        "context": "w folder: 5/5 both, pages in under half the time; the answer key's accent hue was wrong and the sources were right. | | **[`FINDINGS-2026-08-31.md`]** | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | [`FINDINGS-2",
+        "context": "he same documents in reverse order, where first pages fell to 2/4 until rule h became a per-figure checklist (4/4). | | **[`FINDINGS-2026-08-31.md`]** | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | [`FINDINGS-2",
         "linkText": "`FINDINGS-2026-08-31.md`"
       }
     ],
@@ -4600,6 +4679,13 @@
         "linkText": "`results/2026-08-31-gb-r3-summary.md`"
       }
     ],
+    "src:…": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
+        "context": "now skips the template, pinned by a unit case and the Lint dock e2e. The wikilink outlink extractor was also counting `**[src:…]**` citations as links to a document named after a PDF; it skips them now. What this pass does not settle: - E folded th",
+        "linkText": "src:…"
+      }
+    ],
     "benchmark/tasks": [
       {
         "fromSlug": "benchmark/README",
@@ -4612,6 +4698,13 @@
         "fromSlug": "benchmark/README",
         "context": "bric.md`](rubric.md) | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. | | **[`FINDINGS-2026-09-06-wiki-probe.md`]** | The sealed five-question probe of compiled wiki pages against the raw folder: 5/5 both, pages in under half the time;",
         "linkText": "`FINDINGS-2026-09-06-wiki-probe.md`"
+      }
+    ],
+    "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe": [
+      {
+        "fromSlug": "benchmark/README",
+        "context": "w folder: 5/5 both, pages in under half the time; the answer key's accent hue was wrong and the sources were right. | | **[`FINDINGS-2026-09-06-wiki-accumulation-probe.md`]** | Seven sealed documents compiled all at once and one at a time through the current Compile brief: every reader scores",
+        "linkText": "`FINDINGS-2026-09-06-wiki-accumulation-probe.md`"
       }
     ],
     "benchmark/FINDINGS-2026-08-31-change-flow": [
@@ -4963,11 +5056,21 @@
         "fromSlug": "ontology/capabilities/construction-review",
         "context": "frontmatter · **[elements/construction-qualification-evaluator]**",
         "linkText": "elements/construction-qualification-evaluator"
+      },
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[elements/construction-qualification-evaluator]**",
+        "linkText": "elements/construction-qualification-evaluator"
       }
     ],
     "ontology/elements/meaning-proposal-evaluator": [
       {
         "fromSlug": "ontology/capabilities/construction-review",
+        "context": "frontmatter · **[elements/meaning-proposal-evaluator]**",
+        "linkText": "elements/meaning-proposal-evaluator"
+      },
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
         "context": "frontmatter · **[elements/meaning-proposal-evaluator]**",
         "linkText": "elements/meaning-proposal-evaluator"
       }
@@ -4987,6 +5090,11 @@
     "ontology/elements/qualification-handoff-helper": [
       {
         "fromSlug": "ontology/capabilities/construction-review",
+        "context": "frontmatter · **[elements/qualification-handoff-helper]**",
+        "linkText": "elements/qualification-handoff-helper"
+      },
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
         "context": "frontmatter · **[elements/qualification-handoff-helper]**",
         "linkText": "elements/qualification-handoff-helper"
       }
@@ -5372,6 +5480,11 @@
     "ontology/elements/semantic-evidence-selector": [
       {
         "fromSlug": "ontology/capabilities/project-source-evidence",
+        "context": "frontmatter · **[elements/semantic-evidence-selector]**",
+        "linkText": "elements/semantic-evidence-selector"
+      },
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
         "context": "frontmatter · **[elements/semantic-evidence-selector]**",
         "linkText": "elements/semantic-evidence-selector"
       }
@@ -6487,6 +6600,13 @@
             "title": "Findings — can a frontmatter review mark constrain an agent? (2026-09-02)"
           },
           {
+            "name": "FINDINGS-2026-09-06-wiki-accumulation-probe",
+            "path": "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
+            "type": "doc",
+            "slug": "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
+            "title": "Findings 2026-09-06 · does the Library wiki accumulate, or only summarise?"
+          },
+          {
             "name": "FINDINGS-2026-09-06-wiki-probe",
             "path": "benchmark/FINDINGS-2026-09-06-wiki-probe",
             "type": "doc",
@@ -6520,6 +6640,13 @@
             "type": "doc",
             "slug": "benchmark/tasks",
             "title": "Benchmark tasks"
+          },
+          {
+            "name": "THREE-PROBE-2026-09-06",
+            "path": "benchmark/THREE-PROBE-2026-09-06",
+            "type": "doc",
+            "slug": "benchmark/THREE-PROBE-2026-09-06",
+            "title": "three.js structure probe, 2026-09-06"
           }
         ]
       },

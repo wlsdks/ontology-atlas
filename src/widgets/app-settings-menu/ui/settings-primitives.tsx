@@ -104,8 +104,11 @@ export const SETTINGS_SECTION_LABEL =
  * pane holds more than one group.
  */
 export function SettingsGroup({ label, children }: { label?: string; children: ReactNode }) {
+  // `min-w-0` on the section: as a grid item it would otherwise size to its widest caption —
+  // a long folder path — and the group's `overflow-hidden` then clipped every control on
+  // the right (installed app, 2026-09-06: the folder row's chips were off-screen).
   return (
-    <section aria-label={label}>
+    <section aria-label={label} className="min-w-0">
       {label ? (
         <h3 className={`px-1 ${SETTINGS_SECTION_LABEL}`}>{label}</h3>
       ) : null}
@@ -166,7 +169,7 @@ export function SettingsRow({
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-3 px-3',
+        'flex items-center justify-between gap-3 px-3 min-w-0',
         hasMarkSlot ? 'min-h-16 py-2.5' : 'min-h-12 py-2',
       )}
       data-testid={testId}
@@ -177,7 +180,7 @@ export function SettingsRow({
         {caption ? (
           <p
             className={cn(
-              'mt-0.5 break-keep text-label leading-label',
+              'mt-0.5 break-keep text-label leading-label [overflow-wrap:anywhere]',
               captionTone === 'danger'
                 ? 'text-[color:var(--color-status-danger)]'
                 : captionTone === 'warning'
