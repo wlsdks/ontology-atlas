@@ -147,7 +147,15 @@ export function LibraryShelfPopover({
           onClick={onClose}
           aria-label={closeLabel}
           data-testid="library-shelf-close"
-          className={controlClass({ shape: "icon", tone: "muted", hoverSurface: "lift" })}
+          /* `lg`, not the default `md`: the icon step is 28 at `md`, and every other icon
+             control this screen draws — the reading pane's outline and back-to-top — is
+             32. One size step per role (`.claude/rules/design.md`). */
+          className={controlClass({
+            shape: "icon",
+            size: "lg",
+            tone: "muted",
+            hoverSurface: "lift",
+          })}
         >
           <X size={ICON_SIZE.sm} aria-hidden />
         </button>
