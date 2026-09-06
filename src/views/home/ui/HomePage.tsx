@@ -2936,9 +2936,18 @@ function HomePageImpl() {
     selectedOntologyNode?.id ?? null,
   );
   const selectedNodeOwnsRightRail = selectedNodeFocusActive && !meaningWorkbenchOpen && !acpDockFrameOpen;
+  /*
+   * The connection card stands where the node inspector stands (same right inset, same
+   * top), so it owns the right rail on the same terms: the help, agent and recent tiles
+   * and the activity chip step aside while it is up. Owner's screen, 2026-09-06: with a
+   * relation card open the tiles and the "Claude Agent, last worked" chip sat under
+   * its header, half covered.
+   */
+  const selectedEdgeOwnsRightRail = edgePanelOpen && !meaningWorkbenchOpen && !acpDockFrameOpen;
+  const inspectorOwnsRightRail = selectedNodeOwnsRightRail || selectedEdgeOwnsRightRail;
   const topologyUtilityChromeState = selectedRelationActive
     ? "collapsed-active-relation"
-    : selectedNodeOwnsRightRail
+    : inspectorOwnsRightRail
       ? "selected-node-inspector"
       : selectedSlug
         ? "compact-focus"
@@ -2981,7 +2990,7 @@ function HomePageImpl() {
   const [activityInboxOpen, setActivityInboxOpen] = useState(false);
   const topologyUtilityLaneSuppressionContract = selectedRelationActive
     ? "selected-relation-inspector-owns-right-rail"
-    : selectedNodeOwnsRightRail
+    : inspectorOwnsRightRail
       ? "selected-node-inspector-owns-right-rail"
       : undefined;
 
@@ -4585,7 +4594,7 @@ function HomePageImpl() {
                       ) : undefined
                     }
                   />
-                  {selectedNodeOwnsRightRail ? null : (
+                  {inspectorOwnsRightRail ? null : (
                     <>
                     {/* Mobile-only settings escape hatch: the utility lane is
                         hidden while the expanded INDEX owns the <md surface. */}
@@ -4921,7 +4930,7 @@ function HomePageImpl() {
                         last square tile of this row. The same component owns both feeds and
                         outside click/Escape to avoid duplicating polling/read state. */}
                     <AgentActivityChip
-                      suppressed={Boolean(v2DatasheetModel)}
+                      suppressed={Boolean(v2DatasheetModel) || selectedEdgeOwnsRightRail}
                       liveWork={acpLiveWork}
                       onOpenChange={setActivityInboxOpen}
                       onOpenNode={handleSelect}
