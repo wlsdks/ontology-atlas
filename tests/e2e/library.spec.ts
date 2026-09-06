@@ -330,6 +330,13 @@ test.describe("the Library pane", () => {
     const canvasBox = (await canvas.boundingBox())!;
     expect(canvasBox.height).toBeGreaterThan(readerBox.height * 0.6);
 
+    /*
+     * Small enough to hold them, so every mark wears its name. The attribute is the
+     * canvas's own account of which policy is in force — there is no DOM to read a
+     * painted name out of, so without it the rule would be unfalsifiable.
+     */
+    await expect(canvas).toHaveAttribute("data-labels", "standing");
+
     // The shelf's verdict stayed behind on the header when its copy left for the popup.
     const strip = page.getByTestId("library-status-strip");
     await expect(strip).toContainText("Gather done");

@@ -835,7 +835,15 @@ source is a square, a wiki page a filled circle, and an ontology concept a page 
 dashed line is a mention from its body. A link that resolves to nothing is not drawn, and a
 source nobody has written up simply has no line, which is the same fact the `not compiled`
 word carries in the list. The caption counts what is on the canvas: sources, pages,
-concepts, links; beside it stand the status strip and the door to the shelf. Pointing at a dot names it; clicking a page or a source selects it here, in
+concepts, links; beside it stand the status strip and the door to the shelf. A citation is
+drawn 1.5px against a mention's 1px, so the two relations read apart without the legend.
+**Up to 60 nodes every mark carries its own name** — the page's title, the file's name, the
+concept's title — standing under it in `text-label`, secondary ink for a page and
+quaternary for the two things it stands on; a screen-space pass claims the marks first and
+then each name in turn, sliding one back inside the frame rather than dropping it at the
+edge and hiding only a genuine collision, so no two names ever cross. Above 60 the picture
+is an overview and a name is something you ask a dot for: hover keeps its box. Pointing at
+a dot names it either way; clicking a page or a source selects it here, in
 the index and in the reader at once, while clicking a concept opens it on the map, because a
 concept is not a file in this folder. Selection is the only place indigo appears: the node,
 its ring, and the edges that touch it.
@@ -858,7 +866,9 @@ the pane's height, and it is never wider than the picture plus the fit's own lab
 allowance, so a cloud squarer than a tall pane leaves its slack split evenly rather than
 gathered on one side. Measured after, both locales: **1046×623 of a 1088×900 canvas at
 1512 — 96.1% of its width, against 40.4% — and 93.2% at 1040, 93.5% at 768, 88.0% at 390**,
-with 21px gutters at every band. The picture itself is 2.26× wider than it was. A hovered
+with 21px gutters at every band. The picture itself is 2.26× wider than it was, and its marks are one step larger with it
+(a page's circle r5 → 6, a concept's ring r4 → 6, a source's square 7.2 → 10px), because
+marks sized for a 320px strip read across that field as specks. A hovered
 name is truncated to fit rather than allowed past either edge. The settle also stopped
 cancelling itself: its animation frame is held across effect runs, because the width the
 canvas takes from the picture arrives after the first measurement and used to kill the

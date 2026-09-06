@@ -110,6 +110,17 @@ const FIT_PADDING = 26;
  * small to carry a label, and a focus ring around a postage stamp.
  */
 const MIN_CANVAS_WIDTH = 320;
+/**
+ * The order at which every mark stops carrying its own name and hover takes over.
+ *
+ * **Chosen by what fits, not by taste.** A standing name is about 11px tall and up to
+ * 132px wide, and the collision pass hides whichever ones cannot stand clear — so past
+ * some order the picture is a field of hidden labels plus the few that happened to win,
+ * which reads as an arbitrary subset rather than a policy. 60 is where the seeded folders
+ * measured here stop placing most of them; above it the honest answer is that this is an
+ * overview and a name is something you ask a dot for.
+ */
+const STANDING_LABEL_MAX_NODES = 60;
 /** Touch reach around a mark, in CSS px. Half of `--touch-target-min` (44) is the floor. */
 const COARSE_HIT_REACH = 18;
 
@@ -261,6 +272,7 @@ export function LibraryGraph({
       hoveredId,
       focusedId,
       activeLabel,
+      standingLabels: graph.nodes.length <= STANDING_LABEL_MAX_NODES,
     });
   }, [activeLabel, focusedId, graph.edges, graph.nodes, hoveredId, layout, selectedId, size.height, size.width]);
 
@@ -480,6 +492,9 @@ export function LibraryGraph({
              the four above: a canvas has no DOM, so a claim about how much of it the
              picture fills is otherwise unfalsifiable. */
           data-picture-aspect={pictureAspect === null ? "" : pictureAspect.toFixed(3)}
+          /* Which naming policy is in force. Same reason as the four above: a claim about
+             what a canvas draws has to be checkable from outside it. */
+          data-labels={graph.nodes.length <= STANDING_LABEL_MAX_NODES ? "standing" : "hover"}
           data-active-kind={activeNode?.kind ?? ""}
           /*
            * `group`, not `application`. `TopologyMapV2` decided this for the identical
