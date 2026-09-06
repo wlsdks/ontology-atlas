@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import type { CameraAxes } from "../engine/camera";
 import { worldToScreen } from "../ui/topology-camera-math";
 import {
+  DOME_EDGE_DEVICE_WIDTH_FLOOR,
+  domeEdgeMinWidthPx,
   buildDomeModel,
   beginDomeModelBuild,
   clampDomePitch,
@@ -1505,5 +1507,30 @@ describe("domeEdgeFogAlpha x domeEdgeWidthFactor — 관계선의 깊이 잉크�
     expect(domeFogAlpha(1)).toBeCloseTo(0.09, 9);
     expect(domeLineWidthFactor(1)).toBeCloseTo(0.35, 9);
     expect(domeFogAlpha(0.8)).toBeLessThan(domeEdgeFogAlpha(0.8));
+  });
+});
+
+/**
+ * **The resting line's device-pixel width floor.** The ink floor above holds
+ * `alpha × width factor`, and that product only reaches the eye while the stroke
+ * covers a device pixel; below that the rasteriser spreads it over two rows and
+ * the peak collapses. So the floor is a device length, and the caller converts it
+ * with the ratio it is actually rasterising at.
+ */
+describe("domeEdgeMinWidthPx", () => {
+  it("asks for one device pixel, whatever the ratio", () => {
+    expect(domeEdgeMinWidthPx(1) * 1).toBeCloseTo(DOME_EDGE_DEVICE_WIDTH_FLOOR, 10);
+    expect(domeEdgeMinWidthPx(2) * 2).toBeCloseTo(DOME_EDGE_DEVICE_WIDTH_FLOOR, 10);
+    expect(domeEdgeMinWidthPx(3) * 3).toBeCloseTo(DOME_EDGE_DEVICE_WIDTH_FLOOR, 10);
+  });
+
+  it("asks for more CSS width the coarser the screen is", () => {
+    expect(domeEdgeMinWidthPx(1)).toBeGreaterThan(domeEdgeMinWidthPx(2));
+  });
+
+  it("falls back to ratio 1 — the widest floor — rather than to none", () => {
+    expect(domeEdgeMinWidthPx(0)).toBe(domeEdgeMinWidthPx(1));
+    expect(domeEdgeMinWidthPx(Number.NaN)).toBe(domeEdgeMinWidthPx(1));
+    expect(domeEdgeMinWidthPx(-2)).toBe(domeEdgeMinWidthPx(1));
   });
 });

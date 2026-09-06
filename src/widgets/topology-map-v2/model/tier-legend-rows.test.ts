@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { layoutTierLegendRows, type TierLegendAnchor } from "./tier-legend-rows";
+import {
+  layoutTierLegendRows,
+  STRATA_SILHOUETTE_ASPECT,
+  TIER_LEGEND_RAIL_COLUMN_PX,
+  tierLegendPlacement,
+  type TierLegendAnchor,
+} from "./tier-legend-rows";
 
 const ROW = 20;
 const ANCHORS: TierLegendAnchor[] = [
@@ -63,5 +69,34 @@ describe("layoutTierLegendRows", () => {
   it("refuses the band that cannot hold four rows — the rim names stay instead", () => {
     expect(layoutTierLegendRows(ANCHORS, 0, 4 * ROW - 1, ROW)).toBeNull();
     expect(layoutTierLegendRows([], 0, 600, ROW)).toBeNull();
+  });
+});
+
+/**
+ * **Which placement the four names get** — the predicate the fit and the legend
+ * both read, so the reserved column and the drawn legend cannot disagree.
+ */
+describe("tierLegendPlacement", () => {
+  it("keeps the rail where the fit is bound by height and the column goes unused", () => {
+    // 1512x982, index panel measured at 324: free box 1116 x 846, silhouette 1.08.
+    expect(tierLegendPlacement(1116, 846)).toBe("rail");
+  });
+
+  it("sends the names to the corner where the column would be width the graph wanted", () => {
+    // 1040x720, same panel: free box 652 x 584 — width binds, so 56 px is 56 px of graph.
+    expect(tierLegendPlacement(652, 584)).toBe("corner");
+  });
+
+  it("turns over within one column's width of the crossover", () => {
+    const height = 584;
+    const crossover = height * STRATA_SILHOUETTE_ASPECT + TIER_LEGEND_RAIL_COLUMN_PX;
+    expect(tierLegendPlacement(crossover + 1, height)).toBe("rail");
+    expect(tierLegendPlacement(crossover - 1, height)).toBe("corner");
+  });
+
+  it("answers corner for a box it cannot measure, rather than reserving on a guess", () => {
+    expect(tierLegendPlacement(0, 584)).toBe("corner");
+    expect(tierLegendPlacement(652, 0)).toBe("corner");
+    expect(tierLegendPlacement(Number.NaN, Number.NaN)).toBe("corner");
   });
 });

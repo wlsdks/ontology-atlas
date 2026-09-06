@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { layoutTierLegendRows, type TierLegendAnchor } from "../model/tier-legend-rows";
+import {
+  layoutTierLegendRows,
+  type TierLegendAnchor,
+  type TierLegendPlacement,
+} from "../model/tier-legend-rows";
 import type { DomeViewKind } from "../model/dome-view";
 
 /**
@@ -25,6 +29,19 @@ import type { DomeViewKind } from "../model/dome-view";
  * does not fit (`onFitChange(false)` — a very short canvas), so the two never
  * appear at once.
  *
+ * **Two placements, one legend** (2026-09-07). The rail costs the fit a 56 px
+ * column, and at 1040×720 — where width is what binds the fit — that column was
+ * 6% of the canvas: the graph's fill fell from 72.5% to 63.6% and two element
+ * pairs on one plane began to touch. At 1512×982 the same column costs nothing,
+ * because there the fit is bound by height and 236 px of width go unused. So the
+ * rail is drawn only where `tierLegendPlacement` says its column is free, and
+ * everywhere else the four names become a **compact corner stack**: the same
+ * words, the same hover-raises-the-ring reverse lookup, four 16 px rows in the
+ * bottom-right corner that the plane rims curve away from, above the readout and
+ * measured off it rather than guessed at. What the corner gives up is the
+ * per-plane alignment — and at 1040 the rail was already clamping two of its four
+ * rows to the top of its band, so what is given up there is two rows' worth.
+ *
  * **The inspector owns this edge when it is open.** The selected-node panel docks
  * against the same right edge, and the two answers tried before this one both
  * failed a measurement: leaving the rail where it is put two rows behind the
@@ -39,6 +56,16 @@ import type { DomeViewKind } from "../model/dome-view";
 /** One row's height, in CSS px. Every row is this tall; see the layout module. */
 const TIER_LEGEND_ROW_PX = 20;
 
+/**
+ * One corner row's height. Tighter than the rail's, because a corner stack has no
+ * plane height to answer to and four rows have to clear the readout below them —
+ * still the full `text-label` line box, so the names are no smaller to read.
+ */
+const TIER_LEGEND_CORNER_ROW_PX = 16;
+
+/** Fallback gap above the readout when it is not on screen to be measured. */
+const TIER_LEGEND_CORNER_FALLBACK_BOTTOM_PX = 52;
+
 export interface TopologyV2TierLegendProps {
   /** This frame's plane heights in canvas CSS px, top tier first. */
   anchors: readonly TierLegendAnchor[];
@@ -48,11 +75,23 @@ export interface TopologyV2TierLegendProps {
   onRaise: (kind: DomeViewKind | null) => void;
   /** Reports whether the rail could place its rows — false puts the rim names back. */
   onFitChange: (fits: boolean) => void;
+  /**
+   * `rail` or `corner`, decided by the fit's own free box
+   * (`model/tier-legend-rows.ts#tierLegendPlacement`) so the reserved column and
+   * the drawn legend cannot disagree.
+   */
+  placement: TierLegendPlacement;
 }
 
-export function TopologyV2TierLegend({ anchors, labels, onRaise, onFitChange }: TopologyV2TierLegendProps) {
+export function TopologyV2TierLegend({ anchors, labels, onRaise, onFitChange, placement }: TopologyV2TierLegendProps) {
   const railRef = useRef<HTMLDivElement | null>(null);
   const [band, setBand] = useState<{ top: number; height: number } | null>(null);
+  /**
+   * How far the corner stack sits above the container's bottom edge — measured
+   * off the readout that owns that corner, the same "read the element, do not
+   * assume the token" technique the rail's band uses. Null until measured.
+   */
+  const [cornerBottom, setCornerBottom] = useState<number | null>(null);
 
   /*
    * The band is where the rail actually is, measured rather than assumed: its top
@@ -70,6 +109,16 @@ export function TopologyV2TierLegend({ anchors, labels, onRaise, onFitChange }: 
         ? previous
         : { top, height },
     );
+    const parent = el.parentElement;
+    const readout = document.querySelector('[data-testid="first-run-readout"]');
+    if (parent && readout) {
+      const parentBox = parent.getBoundingClientRect();
+      const readoutBox = readout.getBoundingClientRect();
+      const next = Math.max(0, parentBox.bottom - readoutBox.top);
+      setCornerBottom((previous) => (previous !== null && Math.abs(previous - next) < 0.5 ? previous : next));
+    } else {
+      setCornerBottom((previous) => previous ?? TIER_LEGEND_CORNER_FALLBACK_BOTTOM_PX);
+    }
   }, []);
 
   useEffect(() => {
@@ -83,9 +132,14 @@ export function TopologyV2TierLegend({ anchors, labels, onRaise, onFitChange }: 
     return () => observer.disconnect();
   }, [measure]);
 
+  const corner = placement === "corner";
   const rows =
-    band === null ? null : layoutTierLegendRows(anchors, band.top, band.height, TIER_LEGEND_ROW_PX);
-  const fits = rows !== null;
+    corner || band === null
+      ? null
+      : layoutTierLegendRows(anchors, band.top, band.height, TIER_LEGEND_ROW_PX);
+  // The corner stack owns a corner nothing else draws in, so it always places its
+  // rows; only the rail can run out of band and hand the names back to the rims.
+  const fits = corner || rows !== null;
 
   useEffect(() => {
     onFitChange(fits);
@@ -95,11 +149,15 @@ export function TopologyV2TierLegend({ anchors, labels, onRaise, onFitChange }: 
   // (a fast pointer, or the rail unmounting under the cursor).
   useEffect(() => () => onRaise(null), [onRaise]);
 
+  const rowClassName =
+    "pointer-events-auto flex w-max items-center justify-end whitespace-nowrap text-label text-[color:var(--color-text-quaternary)] transition-colors duration-[var(--motion-fast)] hover:text-[color:var(--color-text-tertiary)]";
+
   return (
     <div
       ref={railRef}
       data-testid="topology-tier-legend"
       data-tier-legend-fits={fits ? "true" : "false"}
+      data-tier-legend-placement={placement}
       aria-hidden={!fits}
       /*
        * **A real 64 px column, not a zero-width anchor.** The camera reserves
@@ -109,40 +167,72 @@ export function TopologyV2TierLegend({ anchors, labels, onRaise, onFitChange }: 
        * ran the graph out to the canvas edge, and three nodes ended up under the
        * rows at 1040×720 — the same "a name on the data" defect the rail exists
        * to end. With a box the camera makes room, and `w-16` is the widest of the
-       * four names plus its gap.
+       * four names plus its gap. The corner stack keeps the same width and the
+       * same right inset, so the four names stay on the column the utility tiles
+       * and the readout already line up on.
        */
-      className="pointer-events-none absolute right-4 z-20 mt-3 hidden w-16 md:right-6 md:block xl:right-8"
-      style={{
-        /*
-         * Under the **last** utility tile — the fourth slot is the growth-replay
-         * one, and starting at the third put the rail's first row inside it,
-         * where the tile silently swallowed the row's hover (measured 2026-09-06
-         * at 1512×982). Composed from the tiles' own tokens, so a retuned rhythm
-         * moves the rail with it.
-         */
-        top: "calc(var(--topology-growth-replay-desktop-top) + var(--chrome-tile-size))",
-        // Clear of the bottom readout, which owns the map's bottom inset.
-        bottom: "calc(var(--topology-v2-safe-inset-bottom) * 1px)",
-      }}
+      className={
+        corner
+          ? "pointer-events-none absolute right-4 z-20 mb-3 hidden w-16 flex-col items-end md:right-6 md:flex xl:right-8"
+          : "pointer-events-none absolute right-4 z-20 mt-3 hidden w-16 md:right-6 md:block xl:right-8"
+      }
+      style={
+        corner
+          ? {
+              // Above the readout, which owns this corner — measured off it, so a
+              // retuned readout moves the stack with it.
+              bottom: cornerBottom ?? TIER_LEGEND_CORNER_FALLBACK_BOTTOM_PX,
+            }
+          : {
+              /*
+               * Under the **last** utility tile — the fourth slot is the
+               * growth-replay one, and starting at the third put the rail's first
+               * row inside it, where the tile silently swallowed the row's hover
+               * (measured 2026-09-06 at 1512×982). Composed from the tiles' own
+               * tokens, so a retuned rhythm moves the rail with it.
+               */
+              top: "calc(var(--topology-growth-replay-desktop-top) + var(--chrome-tile-size))",
+              // Clear of the bottom readout, which owns the map's bottom inset.
+              bottom: "calc(var(--topology-v2-safe-inset-bottom) * 1px)",
+            }
+      }
       onPointerLeave={() => onRaise(null)}
     >
-      {rows?.map((row) => {
-        const text = labels[row.kind as DomeViewKind];
-        if (!text) return null;
-        return (
-          <div
-            key={row.kind}
-            data-testid={`topology-tier-legend-row-${row.kind}`}
-            data-tier-kind={row.kind}
-            className="pointer-events-auto absolute right-0 flex w-max items-center justify-end whitespace-nowrap text-label text-[color:var(--color-text-quaternary)] transition-colors duration-[var(--motion-fast)] hover:text-[color:var(--color-text-tertiary)]"
-            style={{ top: row.top, height: TIER_LEGEND_ROW_PX }}
-            onPointerEnter={() => onRaise(row.kind as DomeViewKind)}
-            onPointerLeave={() => onRaise(null)}
-          >
-            {text}
-          </div>
-        );
-      })}
+      {corner
+        ? anchors.map((anchor) => {
+            const text = labels[anchor.kind as DomeViewKind];
+            if (!text) return null;
+            return (
+              <div
+                key={anchor.kind}
+                data-testid={`topology-tier-legend-row-${anchor.kind}`}
+                data-tier-kind={anchor.kind}
+                className={rowClassName}
+                style={{ height: TIER_LEGEND_CORNER_ROW_PX }}
+                onPointerEnter={() => onRaise(anchor.kind as DomeViewKind)}
+                onPointerLeave={() => onRaise(null)}
+              >
+                {text}
+              </div>
+            );
+          })
+        : rows?.map((row) => {
+            const text = labels[row.kind as DomeViewKind];
+            if (!text) return null;
+            return (
+              <div
+                key={row.kind}
+                data-testid={`topology-tier-legend-row-${row.kind}`}
+                data-tier-kind={row.kind}
+                className={`absolute right-0 ${rowClassName}`}
+                style={{ top: row.top, height: TIER_LEGEND_ROW_PX }}
+                onPointerEnter={() => onRaise(row.kind as DomeViewKind)}
+                onPointerLeave={() => onRaise(null)}
+              >
+                {text}
+              </div>
+            );
+          })}
     </div>
   );
 }
