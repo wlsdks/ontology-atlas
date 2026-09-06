@@ -310,13 +310,15 @@ lines it breaks.
 
 ### 2. Connect your agent
 
-![The current Agents screen in the installed macOS app, listing the coding tools found on this computer with their readiness, the option to show the rest, and the three-step MCP connection flow for the selected folder](docs/assets/readme/agent-connect.png)
+![The current Agents screen in the installed macOS app, listing the three coding tools found on this computer with their readiness, Open a chat with this tool and Check connection for the two that can run inside Atlas, the note on which tools can pause writes for review, and the option to show the other 36](docs/assets/readme/agent-connect.png)
 
 Two screens share the work. **Agents** finds the coding tools already installed
 on this computer, checks them, and opens a conversation beside the map. **MCP**
 holds the folder's own connection, the setup for each client, and the
 Connectors that attach external MCP servers to that conversation. Both read in
 one 960px column, so a row you read across and act on at the end stays short.
+
+![The current MCP screen in the installed macOS app, with Share this folder open: how many connection files are ready and which file comes next, one connect button each for Claude Code, Codex, Cursor and Antigravity, the note that the server runs only while a conversation needs it, and the two later steps to restart the agent and confirm the connection](docs/assets/readme/mcp-connect.png)
 
 - **Connect once, with visible scope.** The flow shows which folder and client
   config it will change. The resulting files are plain text you can inspect.
@@ -363,21 +365,22 @@ all three axes. Changing the view never changes the graph.
 
 ### 4. Plan against reviewed architecture
 
-![The current Architecture screen in the installed macOS app, showing the seven reviewed roles of this repository drawn as one exact chain from Routes down to Shared foundation, each box stating what the role is in two lines and its receipt of violations and imports, and every stroke between them stating its rule as a sentence beside the line, with the receipt strip above naming the commit that was measured](docs/assets/readme/architecture-flow.png)
+![The current Architecture screen in the installed macOS app, comparing the seven reviewed roles of this repository, numbered from Routes down to Shared foundation with what each role is in two lines, against the imports observed in code beside each one, a check in the Delta column where they agree, every stroke stating its rule as a sentence and the measured crossing with its import count, and the reviewed structure and inspection receipt named above with Re-inspect source and Roles and rules](docs/assets/readme/architecture-flow.png)
 
 <p align="center">
   <sub>This one screen reads Atlas's own repository rather than the storefront
   example, because measured import traffic needs a connected code folder. The
   drawing is derived from the reviewed profile and the counted imports; every
-  stroke states its own sentence, a declared rule as "may depend on" and a
-  measured crossing as "reaches … in N imports" once a role is chosen, and the
-  same profile always draws the same picture.</sub>
+  stroke states its own sentence, a declared rule as "may depend on" on the
+  reviewed side and a measured crossing with its import count on the observed
+  side, and the same profile always draws the same picture.</sub>
 </p>
 
-Architecture stays separate from the Ontology Map. The Living Blueprint keeps
-the same role order while you move through **Understand → Plan → Verify**. Plan
-copies an `architectureChangePlan:v1` handoff; the connected agent runs
-`inspect_architecture` before and after editing. The chain turns down the page
+Architecture stays separate from the Ontology Map. The screen sets what a person
+reviewed beside what an agent observed in the code, one role per row, with the
+difference between them in the middle; **Findings & history** keeps every
+inspection receipt. The connected agent runs `inspect_architecture` before and
+after editing. The chain turns down the page
 or runs across it depending on the width it is given, so a wide profile is never
 cut in half. In a source checkout the exact fallback is:
 
@@ -391,7 +394,7 @@ it does not infer a fashionable label from folder names.
 
 ### 5. Review a relation beside its node
 
-![The current relation review beside the map, showing the source, relation type, target, the reason typed for it, and the exact dependencies and relation_notes frontmatter that will change, above Keep editing and Confirm and write](docs/assets/readme/relation-review.png)
+![The current relation review beside the map, showing the source, relation type, target and the reason typed for it, then what the concept depends on as a Now list and an After list and the connection reason that will be written, above Keep editing and Confirm and write](docs/assets/readme/relation-review.png)
 
 Edit one relation from the selected node. Atlas shows a directional preview on
 the map, then a compact review of the source, type, target, reason, and exact
@@ -400,7 +403,7 @@ Markdown file; returning to edit or cancelling changes nothing.
 
 ### 6. Review the change, then record it
 
-![The current History screen in the installed macOS app, showing one unsaved concept change, the exact Markdown diff of the dependencies and relation_notes lines, the current branch, earlier vault commits, and the explicit save action](docs/assets/readme/history-review.png)
+![The current History screen in the installed macOS app, showing one unsaved concept change, the exact Markdown diff of the dependencies and relation_notes lines, the current branch and its remote with Fetch, Pull and Push, earlier vault commits, and the explicit save action](docs/assets/readme/history-review.png)
 
 Whatever wrote — you, the map editor, the CLI, or an agent over MCP — lands here
 first as a diff you read before it becomes history. The change above is the one
@@ -443,7 +446,7 @@ touched, and the screen says so.
 
 ### 7. Keep it healthy
 
-![The current Insights screen in the installed macOS app, with its Do next, Inventory, Connections, Boundaries, Recent changes and Flow tabs, three review priorities, an agent-readiness bar, a repair queue, and the fixes that need no code](docs/assets/readme/graph-insights.png)
+![The current Insights screen in the installed macOS app, with four measurements above the tabs (concepts by kind, relations by type, health in words, the last twelve weeks), the Do next, Not held, Inventory, Connections, Boundaries, Recent changes and Flow tabs, and eight things to fix grouped by kind with the first group open on a pair whose names overlap](docs/assets/readme/graph-insights.png)
 
 Insights opens on four measurements above the tabs: how many concepts and of
 which kinds, how many relations and of which types, the folder's health in
