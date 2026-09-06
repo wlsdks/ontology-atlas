@@ -44,6 +44,9 @@ function physicalCodeFor(key: string): string | null {
   return /^[a-z]$/i.test(key) ? `Key${key.toUpperCase()}` : null;
 }
 
+const KEYBOARD_OWNING_POPUP =
+  '[role="listbox"], [role="option"], [role="menu"], [role="menuitem"], [role="combobox"]';
+
 function comboMatches(event: KeyboardEvent, combo: Combo): boolean {
   const expectedCode = physicalCodeFor(combo.key);
   if (expectedCode && event.code === expectedCode) return true;
@@ -81,6 +84,11 @@ export function useTypingShortcuts(shortcuts: TypingShortcut[]) {
           target.tagName === "TEXTAREA" ||
           target.isContentEditable);
       if (isTyping) return;
+      // An open listbox or menu owns the keyboard too: its options are focused
+      // buttons, not inputs, so typing a concept's name into the relation editor's
+      // target picker used to fire the letter shortcuts underneath (`d` painted the
+      // documents drawer over the editor, installed app, 2026-09-06).
+      if (target?.closest?.(KEYBOARD_OWNING_POPUP)) return;
 
       for (const shortcut of shortcutsRef.current) {
         if (shortcut.disabled) continue;
