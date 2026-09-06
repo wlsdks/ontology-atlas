@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — A containment pair carries its reason once, on the parent document
+
+**Why**: the first fill-notes turn on the dogfood vault wrote twelve reasons and stopped at a question: the 93 `domain:` back-pointers on capability and element documents draw the same connection the parent's `capabilities:` and `elements:` lists already draw, so a reason written on both sides would show twice on the map and drift apart in a week.
+**Prior**: 2026-09-05 "A vault holds three kinds of file…" stands; spec §5 ("the note belongs to the edge, not the node") stands and is applied to the pair.
+**Decision**: for a containment pair the sentence lives in the parent's `relation_notes`, keyed by the child; the child's `domain:` line carries none. The fill-notes request says so, and the map reads the parent's note for both directions of the pair. `dependencies` and `relates` keep a note on the declaring document as before.
+**Dissent**: the child is where a person reads "why am I in this domain", and a reader opening the capability file finds no sentence; kept because the map and the workbench show the parent's note on that edge, and a second copy is the drift the ledger exists to prevent.
+**Falsifier**: a child document whose `domain:` disagrees with the parent's list for a week without either side noticing, or a reader of a capability file asking where the reason went.
+**Owner**: jinan
+
 ## 2026-09-06 — The design system document catches up with the same-day accent revert, and the wiki probe keeps Compile
 
 **Why**: the sealed five-question probe read "ember" out of `docs/DESIGN-SYSTEM.md`: the 2026-08-18 note that moved the accent to ember was never followed by the revert recorded the same day, so for eighteen days the document stated values `app/globals.css` did not hold.
