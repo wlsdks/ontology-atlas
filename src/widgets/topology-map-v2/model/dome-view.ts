@@ -504,7 +504,7 @@ export function domeLineWidthFactor(u: number): number {
  * something is selected, and as is the whole 2D map.
  * Browser gate: `tests/e2e/map-3d-relation-ink.spec.ts`.
  */
-export const DOME_EDGE_INK_FLOOR = 0.62;
+const DOME_EDGE_INK_FLOOR = 0.62;
 
 /**
  * The floor under a resting relation line's **width factor**. Without it the far
@@ -513,7 +513,7 @@ export const DOME_EDGE_INK_FLOOR = 0.62;
  * it. Holding the width up keeps the alpha's share of the trade inside
  * 1.00 → 0.72 → 0.86 instead of running to 1.
  */
-export const DOME_EDGE_WIDTH_FLOOR = 0.72;
+const DOME_EDGE_WIDTH_FLOOR = 0.72;
 
 /**
  * Line-width multiplier for a **resting relation line** — the raw attenuation,
@@ -527,7 +527,7 @@ export function domeEdgeWidthFactor(u: number): number {
 
 /**
  * Fog alpha for a **resting relation line** — the raw fog, lifted only as far as
- * `DOME_EDGE_INK_FLOOR` needs against this depth's floored width, and never past
+ * the ink floor needs against this depth's floored width, and never past
  * the near-end value of 1. Nodes, plane rings and interaction-exempt lines keep
  * `domeFogAlpha` unchanged.
  */
@@ -535,10 +535,6 @@ export function domeEdgeFogAlpha(u: number): number {
   return Math.min(1, Math.max(domeFogAlpha(u), DOME_EDGE_INK_FLOOR / domeEdgeWidthFactor(u)));
 }
 
-/** The resting line's depth ink at `u` — the quantity `DOME_EDGE_INK_FLOOR` floors. */
-export function domeEdgeInk(u: number): number {
-  return domeEdgeFogAlpha(u) * domeEdgeWidthFactor(u);
-}
 
 /*
  * ── Far-side detail ramp — folds the back hemisphere's secondary strokes away

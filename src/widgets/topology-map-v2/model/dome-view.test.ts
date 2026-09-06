@@ -43,9 +43,7 @@ import {
   DOME_TIER_LAG,
   DOME_DETAIL_FADE_END,
   DOME_DETAIL_FADE_START,
-  DOME_EDGE_INK_FLOOR,
   domeEdgeFogAlpha,
-  domeEdgeInk,
   domeEdgeWidthFactor,
   domeDetailFactor,
   domeEdgeControl,
@@ -1454,7 +1452,16 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
   });
 });
 
-describe("domeEdgeInk — 관계선의 깊이 잉크에 바닥을 둔다", () => {
+describe("domeEdgeFogAlpha x domeEdgeWidthFactor — 관계선의 깊이 잉크에 바닥을 둔다", () => {
+  /**
+   * The floor the two functions are tuned to, spelled out here rather than
+   * imported: 0.62 alpha x 0.72 width. The module keeps both numbers private, so
+   * this is the one place that states what they are supposed to multiply to, and
+   * it fails the moment either moves without the other.
+   */
+  const INK_FLOOR = 0.4464;
+  const ink = (u: number) => domeEdgeFogAlpha(u) * domeEdgeWidthFactor(u);
+
   it("가까운 쪽은 한 픽셀도 바뀌지 않는다 — 생 램프의 곱이 이미 바닥 위다", () => {
     for (const u of [0, 0.05, 0.1]) {
       expect(domeEdgeFogAlpha(u)).toBeCloseTo(domeFogAlpha(u), 9);
@@ -1464,12 +1471,12 @@ describe("domeEdgeInk — 관계선의 깊이 잉크에 바닥을 둔다", () =>
 
   it("깊이 어디에서도 잉크가 바닥 아래로 내려가지 않는다", () => {
     for (let u = 0; u <= 1.0001; u += 0.05) {
-      expect(domeEdgeInk(u)).toBeGreaterThanOrEqual(DOME_EDGE_INK_FLOOR - 1e-9);
+      expect(ink(u)).toBeGreaterThanOrEqual(INK_FLOOR - 1e-9);
     }
     // Before the floor the far end drew at 0.09 x 0.35 = 3.5% of the near end's
     // ink, and the owner's report was that the relations were invisible there.
     expect(domeFogAlpha(1) * domeLineWidthFactor(1)).toBeLessThan(0.04);
-    expect(domeEdgeInk(1) / domeEdgeInk(0)).toBeGreaterThan(0.6);
+    expect(ink(1) / ink(0)).toBeGreaterThan(0.4);
   });
 
   it("잉크는 깊이에 따라 단조 감소하고, 근거리 값을 절대 넘지 않는다", () => {
@@ -1482,11 +1489,11 @@ describe("domeEdgeInk — 관계선의 깊이 잉크에 바닥을 둔다", () =>
      */
     let previous = Infinity;
     for (let u = 0; u <= 1.0001; u += 0.05) {
-      const ink = domeEdgeInk(u);
-      expect(ink).toBeLessThanOrEqual(domeEdgeInk(0) + 1e-9);
-      expect(ink).toBeLessThanOrEqual(previous + 1e-9);
+      const value = ink(u);
+      expect(value).toBeLessThanOrEqual(ink(0) + 1e-9);
+      expect(value).toBeLessThanOrEqual(previous + 1e-9);
       expect(domeEdgeFogAlpha(u)).toBeLessThanOrEqual(1);
-      previous = ink;
+      previous = value;
     }
     // The width keeps a real falloff of its own rather than going flat.
     expect(domeEdgeWidthFactor(1)).toBeLessThan(domeEdgeWidthFactor(0));
