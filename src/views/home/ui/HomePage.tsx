@@ -2261,6 +2261,9 @@ function HomePageImpl() {
     () => buildNavRailContextHrefs(v2DatasheetModel?.documentHref ?? null),
     [v2DatasheetModel?.documentHref],
   );
+  /* Ambient chrome that yields to a surface a person is reading: the datasheet and either
+     right dock. Shared by the bottom-right readout so the rule has one name. */
+  const readoutStepsAside = Boolean(v2DatasheetModel) || acpDockFrameOpen || meaningWorkbenchOpen;
   useNavRailContextHrefs(navRailContextHrefs);
   // Bound to the datasheet being *shown*, not merely to its model existing, so the Esc
   // dismissal order is honoured: after the first press (popover closed, selection
@@ -5941,15 +5944,22 @@ function HomePageImpl() {
               {/* Inspection round 1 defect 2 (2026-07-23) — when the right datasheet opened, this
                   corner reading appeared fragmented behind and to the left of the panel
                   (reproduced across all 4 locales × resolutions). Since it is ambient info and unnecessary during investigation,
-                  it quietly disappears while the panel is open. */}
+                  it quietly disappears while the panel is open.
+
+                  The same rule covers the right dock (measured 2026-09-07 at 1512 with the
+                  meaning workbench open): the map keeps 1246px, the sample hint sits centred
+                  in it, and this row's zoom hint ran 22px under the hint's right edge. A
+                  person with a dock open is reviewing, not orienting, so the reading steps
+                  aside exactly as it does for the datasheet rather than the two chrome pieces
+                  sharing one baseline. */}
               <div
                 ref={readoutStackRef}
                 data-testid="topology-readout-stack"
                 className={cn(
                   "pointer-events-none absolute bottom-[var(--topology-relation-legend-bottom-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none",
-                  v2DatasheetModel ? "opacity-0" : "opacity-100",
+                  readoutStepsAside ? "opacity-0" : "opacity-100",
                 )}
-                aria-hidden={v2DatasheetModel ? true : undefined}
+                aria-hidden={readoutStepsAside ? true : undefined}
               >
                 <FirstRunReadout
                   conceptCount={drawnConceptCount}
