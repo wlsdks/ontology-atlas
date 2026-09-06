@@ -86,6 +86,23 @@ export interface LibraryGraphProps {
    * direction that is allowed and the one that keeps this canvas about the canvas.
    */
   headerEnd?: ReactNode;
+  /**
+   * **The caption yields while a surface stands over it** (2026-09-06).
+   *
+   * The legend is a line at the foot of this section, so at `lg` and above the Library's
+   * guide — 360×469, hung from the row's top right — never reaches it. Below `lg` the
+   * canvas is the top half of one column and the panel does: measured at 768×1024 and
+   * 390×844, `elementsFromPoint` found the panel over all three probe points of this
+   * sentence. Overlap is not tolerated because a surface "mostly still works"
+   * (`docs/DESIGN-SYSTEM.md`, Don'ts), and the two honest fixes are to move the surface
+   * clear or to let the quieter thing stand aside; a sentence explaining marks that are
+   * themselves behind the panel is the quieter thing.
+   *
+   * It stays in the document as `sr-only`, never unmounted: it is the canvas's
+   * `aria-describedby` target, and dropping it would take the marks' meaning away from
+   * the reader who has no picture at all.
+   */
+  captionQuiet?: boolean;
 }
 
 /**
@@ -136,6 +153,7 @@ export function LibraryGraph({
   selection,
   onSelect,
   headerEnd,
+  captionQuiet = false,
 }: LibraryGraphProps) {
   const t = useTranslations("library");
   const router = useRouter();
@@ -471,6 +489,14 @@ export function LibraryGraph({
       </div>
 
       {graph.nodes.length === 0 ? (
+        /*
+         * ⚠️ **The Library no longer reaches this branch** (2026-09-06). A folder with no
+         * sources and no pages draws no nodes, and that is exactly the state `LibraryPage`
+         * now answers with a centred empty stage instead of a workbench — the owner read
+         * the old frame, where this sentence lay under a 560px popup, as broken. The
+         * branch stays because this widget is not the Library's alone to guarantee: a
+         * canvas that renders nothing and says nothing is worse than one that says so.
+         */
         <p
           data-testid="library-graph-empty"
           className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
@@ -579,7 +605,10 @@ export function LibraryGraph({
         <p
           id="library-graph-hint"
           data-testid="library-graph-hint"
-          className="mt-1.5 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+          className={cn(
+            "mt-1.5 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]",
+            captionQuiet && "max-lg:sr-only",
+          )}
         >
           {t("graph.legend")}
         </p>

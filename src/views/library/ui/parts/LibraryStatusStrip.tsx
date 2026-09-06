@@ -6,17 +6,22 @@ import { libraryStepStates } from "../../lib/stage-steps";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 
 /**
- * **Where the folder stands, on the row the picture already has.**
+ * **One verdict, or nothing at all.**
  *
- * The three steps left the pane for a popup on 2026-09-06, and a guide behind a chip is a
- * guide nobody opens twice. What must survive that move is not the shelf's copy but its
- * **verdict**: which step is done, which one is next, and the two counts that decide it.
- * Those fit on one `text-label` line beside the caption, so the answer to "where am I"
- * stays on screen while the answer to "how do I do it" moves one press away.
+ * The strip shipped on 2026-09-06 as all three step states at once — *Gather next ·
+ * Compile waiting · Read waiting* — and the owner read that header on an empty folder as
+ * part of a screen that "looks broken". A run of turns-not-yet-come is not a status: it
+ * is three ways of saying nothing has happened, printed beside a caption that already
+ * said *0 sources · 0 pages · 0 concepts*.
  *
- * Every word here comes from `libraryStepStates`, the same function the shelf's badges
- * read, so the strip and the panel behind the chip cannot disagree — and every number is
- * one the folder can be checked against, never a summary of prose.
+ * So this says **which step is next**, and then only the counts that are true of this
+ * folder — *Compile next · 5 waiting*. When every source is written up it says so in one
+ * clause; when there is nothing to report it renders nothing and the header keeps the
+ * caption alone. A header that is sometimes quiet is what makes it worth reading when it
+ * is not.
+ *
+ * Every word comes from `libraryStepStates`, the same function the stepper's rows read,
+ * so the header and the panel behind the chip cannot disagree.
  */
 export function LibraryStatusStrip({
   model,
@@ -26,19 +31,27 @@ export function LibraryStatusStrip({
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   const states = libraryStepStates(model);
-  const parts = [
-    t("stage.status", { step: t("stage.gather.title"), state: t(`stage.state.${states.gather}`) }),
-    t("stage.status", { step: t("stage.compile.title"), state: t(`stage.state.${states.compile}`) }),
-    t("stage.status", { step: t("stage.read.title"), state: t(`stage.state.${states.read}`) }),
-  ];
-  // Only the counts that are true of this folder. A run of zeroes is not a status; it is
-  // three ways of saying "nothing is wrong", which is what the step words already said.
+  const titles = [t("stage.gather.title"), t("stage.compile.title"), t("stage.read.title")];
+  const parts: string[] = [];
+  if (states.leadIndex >= 0) {
+    parts.push(
+      t("stage.status", {
+        step: titles[states.leadIndex] as string,
+        state: t("stage.state.next"),
+      }),
+    );
+  } else if (model.wikiPages.length > 0) {
+    // No step is next and pages exist, so the sequence really is finished. Saying so is
+    // the one case where a verdict with no number is worth a line.
+    parts.push(t("stage.statusReady"));
+  }
   if (model.needsCompileCount > 0) {
     parts.push(t("stage.statusWaiting", { count: model.needsCompileCount }));
   }
   if (model.offTemplateCount > 0) {
     parts.push(t("stage.statusOffTemplate", { count: model.offTemplateCount }));
   }
+  if (parts.length === 0) return null;
 
   return (
     <p

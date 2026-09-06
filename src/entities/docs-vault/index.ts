@@ -40,7 +40,6 @@ export {
   buildLibraryModel,
   countSourceFormats,
   formatSourceBytes,
-  lastSourceAddedAt,
   newestWikiPage,
 } from './lib/vault-library';
 export type {

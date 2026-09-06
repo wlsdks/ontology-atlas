@@ -1,9 +1,10 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
-import { BookText, FilePlus2, FileStack, FileText, Search, Sparkles } from "lucide-react";
+import { BookText, Check, FilePlus2, FileStack, FileText, Search, Sparkles } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
@@ -16,35 +17,53 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 
 /**
- * The library's index: **Sources** and **Wiki**.
+ * The library's index: **Sources** and **Wiki**, in one column that scrolls once.
  *
  * A vault holds three kinds of file and only one is the graph (`docs/DECISIONS.md`,
  * 2026-09-05). Docs draws the third kind; these two sections draw the other two, in the
  * order of the work — what a person brought in, then what was made of it.
  *
- * ⚠️ **It stood inside the Docs sidebar until 2026-09-06.** The owner read that screen
- * and said it was cluttered, and the measurement agreed: five capped lists were stacked
- * in one 280px column, so Sources and Wiki each got 22dvh and the document tree — the
- * thing Docs is for — was left with what remained. Two jobs were competing for one
- * column. Here the same two sections own the column.
+ * ## Why it is one scroller (owner, 2026-09-06)
  *
- * **Sources is the only list here whose rows are not documents.** A row is a
- * file Atlas has never opened: its name, its format, its size, and one word about
- * whether anybody has written it up. That last word is the whole reason the section
- * exists — a folder of PDFs with no state is a folder of PDFs.
+ * > *"I don't like this left panel being split into a top and a bottom like this and drawn
+ * > oddly either. Improve it!"*
  *
- * | State | Means | Why it reads that way |
+ * It was two boxes that scrolled independently inside a 280px column, each with its own
+ * overflow. The consequences were all measurable on the frame the owner sent, a folder of
+ * seven sources and seven pages: whichever list was longer was **cut mid-row**, so the
+ * bottom of the column showed half a file name; the two halves moved past each other when
+ * either was scrolled, which is what makes a single column read as two panes; and the
+ * transfer sentence was pinned under the cut, at the very bottom of a list that was still
+ * going.
+ *
+ * So the column scrolls once — `LibraryPage` owns that scroller — and the two sections
+ * stand at their natural height inside it. What replaces the boxes is a **sticky section
+ * head**: the eyebrow with its count stays at the top of the scroller while its own rows
+ * pass under it, so the answer to "which list am I in" is on screen without a border
+ * dividing the column into halves.
+ *
+ * ⚠️ This also retires the `lg` / below-`lg` split. The narrow layout had already been
+ * forced onto one scroller in 2026-09-06 (two lists in half a phone measured 30px and
+ * **zero**); the same reasoning was always true of 280px, and keeping two answers meant
+ * the width decided how the screen behaved.
+ *
+ * **Sources is the only list here whose rows are not documents.** A row is a file Atlas
+ * has never opened: its name, its format, its size, and one word about whether anybody has
+ * written it up. That last word is the whole reason the section exists — a folder of PDFs
+ * with no state is a folder of PDFs.
+ *
+ * | State | Means | How it is drawn |
  * |---|---|---|
- * | not compiled | no wiki page cites it | nothing is wrong; nobody has written it up |
- * | compiled | a page cites it and its sha256 still matches | the write-up describes *this* file |
- * | stale | the hashes disagree, or a page cites it with no hash | the write-up may describe an older file |
- * | checking | cited, hash recorded, not yet measured | a claim nothing has verified is not shown as verified |
+ * | not compiled | no wiki page cites it | a quiet chip: it is work still to do |
+ * | compiled | a page cites it and its sha256 still matches | a **check**, no chip |
+ * | stale | the hashes disagree, or a page cites it with no hash | an amber chip: it needs attention |
+ * | checking | cited, hash recorded, not yet measured | a quiet word; a claim nothing has verified is not shown as verified |
  *
- * Only `stale` and `off-template` are coloured, and both use the warning tone the agent
- * files group already uses for an unresolved state. `compiled` earns the success tone
- * because it is a real completed state, and `not compiled` stays neutral: it is the
- * ordinary state of a document nobody has got to yet, and painting it as a problem would
- * make an untouched folder look broken.
+ * ⚠️ **`compiled` lost its chip on 2026-09-06** and that is the point of the table. It
+ * carried the success tone, and on the owner's folder every one of seven rows wore the
+ * same green pill — a badge that never varies is not a state, it is a texture, and it was
+ * the loudest thing in the column. A chip is now spent only where a person can act:
+ * stale, off-template, not yet written up. Success is a check in the row's own ink.
  */
 
 export interface LibrarySectionProps {
@@ -58,9 +77,7 @@ export interface LibrarySectionProps {
    *
    * Measured 2026-09-06 (design-interaction): a selected source row was byte-identical to
    * a resting one — same ink, no fill, no `aria-current` — while the reader beside it was
-   * showing that very file. The wiki list had carried the state since it shipped; only
-   * this list had a selection nobody could see, which is what makes "View write-up" and
-   * "View original" hard to follow: they change the pane and leave the index unmoved.
+   * showing that very file.
    */
   selectedSourcePath: string | null;
   /** The one-click "add files" door. */
@@ -71,53 +88,56 @@ export interface LibrarySectionProps {
   onCompile: (() => void) | null;
   /**
    * The brain picker, when this computer offers two and Compile can therefore be pointed
-   * at either. Null draws nothing: with one brain there is no choice to make, and the
-   * shelf's own line already names it.
+   * at either. Null draws nothing: with one brain there is no choice to make.
    */
-  brainControl?: React.ReactNode;
+  brainControl?: ReactNode;
   /**
-   * What leaves this computer when Compile runs, stated beside the button that starts it.
+   * **One caption under the Compile button, and only one** (2026-09-06).
    *
-   * The coding agent talks to its own provider; Atlas is not in the path and its transfer
-   * log does not record it (`.claude/rules/local-first.md`: ACP is a separate provider
-   * boundary and `llm-audit.jsonl` must not be claimed to cover it). Null when no agent
-   * can run, because there is then nothing to disclose.
+   * The column used to end with the transfer sentence, pinned under a cut-off list, three
+   * hundred pixels from the button it described. The rule that replaces it is the one
+   * `.claude/rules/local-first.md` actually asks for: the disclosure sits where Compile can
+   * be pressed. So this slot carries whichever single fact is true of pressing it here —
+   * the reason it cannot run, or what leaves this computer when it does — and it is empty
+   * while the guide is open, because step two is then the surface a person is reading and
+   * exactly one of the two may print it.
    */
-  transferNote: string | null;
-  /** How the drop hint names the folder — an absolute path in the app, the name on web. */
-  vaultLabel: string;
+  compileNote: string | null;
   busy: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }
 
 /**
- * **The eyebrow keeps its own line** (measured 2026-09-05).
+ * **The eyebrow keeps its own line, and now it stays put** (2026-09-05, 2026-09-06).
  *
  * The first build put the label and both action chips on one row. At the column's 280px
  * the two chips took the width and the eyebrow truncated to `SO…` — the section lost its
- * name to its buttons. Actions therefore sit on a second row, where both keep their
- * words: an icon-only pair would have fitted, but these two are a brand-new capability
- * and a tooltip is not a label a person finds before they need it.
+ * name to its buttons. Actions therefore sit on a second row.
+ *
+ * `sticky` is on the label row alone. It is 28px, it is the only part that answers "which
+ * list is this", and pinning the action rows as well would put a 68px lid over a 280px
+ * column. The actions scroll away under an opaque head; the head is `--color-panel`, which
+ * is the aside's own ground, so nothing shows through it.
  */
 function SectionHeader({
   icon,
   label,
   actions,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
-  actions?: React.ReactNode;
+  actions?: ReactNode;
 }) {
   return (
     <>
-      <div className="flex flex-none items-center gap-1.5 px-3 pb-1.5 pt-3">
+      <div className="sticky top-0 z-10 flex items-center gap-1.5 bg-[color:var(--color-panel)] px-3 pb-1.5 pt-3">
         {icon}
         <span className="min-w-0 flex-1 truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
           {label}
         </span>
       </div>
       {actions ? (
-        <div className="flex flex-none flex-wrap items-center gap-1 px-3 pb-2">{actions}</div>
+        <div className="flex flex-wrap items-center gap-1 px-3 pb-2">{actions}</div>
       ) : null}
     </>
   );
@@ -132,8 +152,8 @@ function StateBadge({
   children,
   testId,
 }: {
-  tone: "neutral" | "warning" | "success";
-  children: React.ReactNode;
+  tone: "neutral" | "warning";
+  children: ReactNode;
   testId?: string;
 }) {
   return (
@@ -143,17 +163,26 @@ function StateBadge({
         shape: "micro",
         className: cn(
           "flex-none border",
-          tone === "warning" &&
-            "border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]",
-          tone === "success" &&
-            "border-[color:var(--color-success-a35)] bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]",
-          tone === "neutral" &&
-            "border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]",
+          tone === "warning"
+            ? "border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]"
+            : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]",
         ),
       })}
     >
       {children}
     </span>
+  );
+}
+
+/** One line of counting under a list. `text-caption`, because it is a footnote to rows. */
+function ListNote({ testId, children }: { testId: string; children: ReactNode }) {
+  return (
+    <p
+      data-testid={testId}
+      className="px-3 pt-1 text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+    >
+      {children}
+    </p>
   );
 }
 
@@ -167,37 +196,18 @@ export function LibrarySection({
   onFindDocuments,
   onCompile,
   brainControl,
-  transferNote,
-  vaultLabel,
+  compileNote,
   busy,
   t,
 }: LibrarySectionProps) {
   const hasSources = model.sources.length > 0;
   const hasWiki = model.wikiPages.length > 0;
-  // Nothing to say and nothing to do would still be worth drawing once — this is the
-  // only place that explains where project documents go — so the section stays, and its
-  // empty state carries the two doors rather than a sentence about absence.
-  const stateTone = {
-    "not-compiled": "neutral",
-    compiled: "success",
-    stale: "warning",
-    checking: "neutral",
-  } as const;
 
   return (
     <>
-      {/*
-        `max-lg:flex-none` and the `max-lg:overflow-visible` on the list below are one
-        decision: below `lg` the index is half a column and scrolls as a whole, so a
-        section that shrank would be competing with its sibling for a box neither can fit
-        in — measured at 390, that competition left this list 30px and the Wiki list zero.
-        At `lg` both sections still share the column and both lists still own their own
-        overflow.
-      */}
-      <section
-        data-testid="library-sources"
-        className="flex min-h-0 flex-col border-b border-[color:var(--color-overlay-2)] pb-1 max-lg:flex-none"
-      >
+      {/* No `min-h-0` and no overflow: the column above owns the one scroller, and a
+          section that could shrink is a section that can cut a row in half. */}
+      <section data-testid="library-sources" className="flex flex-col pb-1">
         <SectionHeader
           icon={
             <FileStack
@@ -244,83 +254,93 @@ export function LibrarySection({
             <ul
               data-testid="library-source-list"
               aria-label={t("sources.listAria")}
-              className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2 max-lg:overflow-visible"
+              className="flex flex-col gap-0.5 px-2"
             >
               {model.sources.map((row) => {
                 const active = row.path === selectedSourcePath;
+                const stateLabel = t(`sources.state.${row.state}.label`);
                 return (
-                <li key={row.path}>
-                  <RowButton
-                    active={active}
-                    aria-current={active ? "true" : undefined}
-                    data-testid={`library-source-${row.path}`}
-                    onClick={() => onOpenSource(row)}
-                    // The full name first: a 280px column truncates, and the row's own
-                    // hover text is the only place the rest of the name exists.
-                    title={`${row.name}\n${t(`sources.state.${row.state}.hint`, {
-                      pages: row.citedBy.join(", ") || t("sources.state.nobody"),
-                    })}`}
-                    className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-                  >
-                    {/* The same leading glyph the tree, pinned and recent rows carry, so
-                        the sidebar keeps one left edge from top to bottom. */}
-                    <FileText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
-                    <span className="min-w-0 flex-1 truncate">{row.name}</span>
-                    {/* Format and size are the two facts a directory listing already
-                        holds, and the reason the row can exist without opening the file. */}
-                    <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                      {row.format ? row.format.toUpperCase() : t("sources.noFormat")} ·{" "}
-                      {formatSourceBytes(row.bytes)}
-                    </span>
-                    <StateBadge
-                      tone={stateTone[row.state]}
-                      testId={`library-source-state-${row.state}`}
+                  <li key={row.path}>
+                    <RowButton
+                      active={active}
+                      aria-current={active ? "true" : undefined}
+                      data-testid={`library-source-${row.path}`}
+                      onClick={() => onOpenSource(row)}
+                      // The full name first: a 280px column truncates, and the row's own
+                      // hover text is the only place the rest of the name exists.
+                      title={`${row.name}\n${t(`sources.state.${row.state}.hint`, {
+                        pages: row.citedBy.join(", ") || t("sources.state.nobody"),
+                      })}`}
+                      className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                     >
-                      {t(`sources.state.${row.state}.label`)}
-                    </StateBadge>
-                  </RowButton>
-                </li>
+                      {/* The same leading glyph the tree, pinned and recent rows carry, so
+                          the sidebar keeps one left edge from top to bottom. */}
+                      <FileText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
+                      <span className="min-w-0 flex-1 truncate">{row.name}</span>
+                      {/* Format and size are the two facts a directory listing already
+                          holds, and the reason the row can exist without opening the file. */}
+                      <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                        {row.format ? row.format.toUpperCase() : t("sources.noFormat")} ·{" "}
+                        {formatSourceBytes(row.bytes)}
+                      </span>
+                      {row.state === "compiled" ? (
+                        /*
+                         * A check, not a pill. The word is still announced — the glyph is
+                         * `aria-hidden` and the label rides with it in `sr-only`, so a
+                         * screen reader hears "compiled" exactly as it did before, while
+                         * the eye is left to find the rows that are **not** done.
+                         */
+                        <span
+                          data-testid="library-source-state-compiled"
+                          className="flex flex-none items-center text-[color:var(--color-text-quaternary)]"
+                        >
+                          <Check size={ICON_SIZE.sm} aria-hidden />
+                          <span className="sr-only">{stateLabel}</span>
+                        </span>
+                      ) : row.state === "checking" ? (
+                        <span
+                          data-testid="library-source-state-checking"
+                          className="flex-none text-caption text-[color:var(--color-text-quaternary)]"
+                        >
+                          {stateLabel}
+                        </span>
+                      ) : (
+                        <StateBadge
+                          tone={row.state === "stale" ? "warning" : "neutral"}
+                          testId={`library-source-state-${row.state}`}
+                        >
+                          {stateLabel}
+                        </StateBadge>
+                      )}
+                    </RowButton>
+                  </li>
                 );
               })}
             </ul>
             {model.needsCompileCount > 0 ? (
-              <p
-                data-testid="library-needs-compile"
-                className="flex-none px-3 pt-1 text-caption text-[color:var(--color-text-quaternary)]"
-              >
+              <ListNote testId="library-needs-compile">
                 {model.staleCount > 0 && model.notCompiledCount > 0
-                  ? t("sources.needsCompileSplit", { notCompiled: model.notCompiledCount, stale: model.staleCount })
+                  ? t("sources.needsCompileSplit", {
+                      notCompiled: model.notCompiledCount,
+                      stale: model.staleCount,
+                    })
                   : model.staleCount > 0
                     ? t("sources.staleOnly", { count: model.staleCount })
                     : t("sources.needsCompile", { count: model.notCompiledCount })}
-              </p>
+              </ListNote>
             ) : null}
           </>
         ) : (
-          <>
-            <p
-              data-testid="library-sources-empty"
-              className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-            >
-              {t("sources.empty")}
-            </p>
-            {/* The folder is the interface, and this is the moment to say so: somebody
-                with nothing here yet is deciding how documents get in. Once rows exist
-                they have already done it, and the sentence is spent. */}
-            {/* The folder label is an absolute path in the app: one unbroken run of
-                slashes that keep-all alone would carry past the column edge. */}
-            <p className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all] [overflow-wrap:anywhere]">
-              {t("sources.dropHint", { folder: vaultLabel })}
-            </p>
-          </>
+          <p
+            data-testid="library-sources-empty"
+            className="px-3 pb-1 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+          >
+            {t("sources.empty")}
+          </p>
         )}
-
       </section>
 
-      <section
-        data-testid="library-wiki"
-        className="flex min-h-0 flex-col pb-1 max-lg:flex-none"
-      >
+      <section data-testid="library-wiki" className="flex flex-col pb-1">
         <SectionHeader
           icon={
             <BookText
@@ -332,41 +352,43 @@ export function LibrarySection({
           label={t("wiki.header", { count: model.wikiPages.length })}
           actions={
             onCompile ? (
-              <Tooltip content={t("wiki.compileTooltip")}>
-                <Chip
-                  data-testid="library-compile"
-                  onClick={onCompile}
-                  disabled={busy || model.needsCompileCount === 0}
-                  tone="muted"
-                  className="flex-none hover:text-[color:var(--color-text-primary)]"
-                  aria-label={t("wiki.compileTooltip")}
-                >
-                  <Sparkles size={ICON_SIZE.sm} aria-hidden />
-                  <span className="min-w-0 truncate">{t("wiki.compile")}</span>
-                </Chip>
-              </Tooltip>
+              <>
+                <Tooltip content={t("wiki.compileTooltip")}>
+                  <Chip
+                    data-testid="library-compile"
+                    onClick={onCompile}
+                    disabled={busy || model.needsCompileCount === 0}
+                    tone="muted"
+                    className="flex-none hover:text-[color:var(--color-text-primary)]"
+                    aria-label={t("wiki.compileTooltip")}
+                  >
+                    <Sparkles size={ICON_SIZE.sm} aria-hidden />
+                    <span className="min-w-0 truncate">{t("wiki.compile")}</span>
+                  </Chip>
+                </Tooltip>
+                {/* The picker sits in the action row rather than on a line of its own: it
+                    is what the button beside it will run on, and a control on its own row
+                    reads as a setting rather than as part of the press. */}
+                {brainControl ? (
+                  <span data-testid="library-brain-control" className="min-w-0 flex-1">
+                    {brainControl}
+                  </span>
+                ) : null}
+              </>
             ) : null
           }
         />
 
-        {brainControl ? (
-          <div className="flex-none px-3 pb-2" data-testid="library-brain-control">
-            {brainControl}
-          </div>
-        ) : null}
-
         {/*
-          **Compile is app-only, so the web says so instead of describing it.** The empty
-          state used to open with "Compile turns the sources above into pages" on a
-          surface with no Compile button — a sentence about a door that is not there. The
-          degradation grammar in `.claude/rules/surfaces.md` replaces it: why it is
-          unavailable, where it works, and what still works here (the pages themselves
-          read and edit exactly as they do in the app).
+          **Compile is app-only, so the web says so instead of describing it.** The
+          degradation grammar in `.claude/rules/surfaces.md`: why it is unavailable, where
+          it works, and what still works here (the pages read and edit exactly as they do
+          in the app). It is the same slot as `compileNote`, and only one can be true.
         */}
         {onCompile === null ? (
           <p
             data-testid="library-compile-web-limit"
-            className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+            className="px-3 pb-1 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
           >
             {t("wiki.compileWebLimit")}{" "}
             <Link
@@ -381,89 +403,76 @@ export function LibrarySection({
               {t("wiki.compileWebGetApp")}
             </Link>
           </p>
-        ) : null}
-        {hasWiki ? (
-          <ul
-            data-testid="library-wiki-list"
-            aria-label={t("wiki.listAria")}
-            className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2 max-lg:overflow-visible"
+        ) : compileNote ? (
+          <p
+            data-testid="library-transfer"
+            className="px-3 pb-1 text-label leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all] [overflow-wrap:anywhere]"
           >
-            {model.wikiPages.map((page) => {
-              const active = page.slug === selectedSlug;
-              const verdict = model.verdicts.get(page.slug);
-              return (
-                <li key={page.slug}>
-                  <RowButton
-                    active={active}
-                    aria-current={active ? "true" : undefined}
-                    data-testid={`library-wiki-${page.slug}`}
-                    onClick={() => onSelect(page.slug)}
-                    /*
-                     * The pill says one fixed word; **which** rule the page missed is a
-                     * different fact and lives here until the page's own block carries it
-                     * on screen. `aria-description` rather than a bare title alone: a
-                     * screen reader announces it with the row, so the reason is not
-                     * reachable only by a pointer that hovers.
-                     */
-                    aria-description={
-                      verdict && !verdict.ok && verdict.firstProblem
-                        ? t("wiki.offTemplateReason", { code: verdict.firstProblem })
-                        : undefined
-                    }
-                    title={
-                      verdict && !verdict.ok && verdict.firstProblem
-                        ? t("wiki.offTemplateReason", { code: verdict.firstProblem })
-                        : undefined
-                    }
-                    className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-                  >
-                    <BookText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
-                    <span className="min-w-0 flex-1 truncate">{page.title}</span>
-                    <span className="flex-none text-caption text-[color:var(--color-text-quaternary)]">
-                      {writerLabel(page.createdBy, t)}
-                    </span>
-                    {verdict && !verdict.ok ? (
+            {compileNote}
+          </p>
+        ) : null}
+
+        {hasWiki ? (
+          <>
+            <ul
+              data-testid="library-wiki-list"
+              aria-label={t("wiki.listAria")}
+              className="flex flex-col gap-0.5 px-2"
+            >
+              {model.wikiPages.map((page) => {
+                const active = page.slug === selectedSlug;
+                const verdict = model.verdicts.get(page.slug);
+                const reason =
+                  verdict && !verdict.ok && verdict.firstProblem
+                    ? t("wiki.offTemplateReason", { code: verdict.firstProblem })
+                    : undefined;
+                return (
+                  <li key={page.slug}>
+                    <RowButton
+                      active={active}
+                      aria-current={active ? "true" : undefined}
+                      data-testid={`library-wiki-${page.slug}`}
+                      onClick={() => onSelect(page.slug)}
                       /*
-                       * **One fixed word in the pill.** It used to carry the problem code,
-                       * which made a badge that changed shape row by row and asked a
-                       * reader to learn a vocabulary to scan a list. The code and its
-                       * sentence belong where a person can act on them — the page's own
-                       * frontmatter block — so the pill says only that this page does not
-                       * fit, and the row keeps its author beside it.
+                       * The pill says one fixed word; **which** rule the page missed lives
+                       * here until the page's own block carries it on screen.
+                       * `aria-description` rather than a bare title: a screen reader
+                       * announces it with the row, so the reason is not reachable only by
+                       * a pointer that hovers.
                        */
-                      <StateBadge tone="warning" testId="library-wiki-off-template">
-                        {t("wiki.offTemplate")}
-                      </StateBadge>
-                    ) : null}
-                  </RowButton>
-                </li>
-              );
-            })}
-          </ul>
+                      aria-description={reason}
+                      title={reason}
+                      className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      <BookText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
+                      <span className="min-w-0 flex-1 truncate">{page.title}</span>
+                      <span className="flex-none text-caption text-[color:var(--color-text-quaternary)]">
+                        {writerLabel(page.createdBy, t)}
+                      </span>
+                      {verdict && !verdict.ok ? (
+                        <StateBadge tone="warning" testId="library-wiki-off-template">
+                          {t("wiki.offTemplate")}
+                        </StateBadge>
+                      ) : null}
+                    </RowButton>
+                  </li>
+                );
+              })}
+            </ul>
+            {model.offTemplateCount > 0 ? (
+              <ListNote testId="library-off-template-count">
+                {t("wiki.offTemplateCount", { count: model.offTemplateCount })}
+              </ListNote>
+            ) : null}
+          </>
         ) : (
           <p
             data-testid="library-wiki-empty"
-            className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+            className="px-3 pb-1 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
           >
             {t("wiki.empty")}
           </p>
         )}
-        {transferNote ? (
-          <p
-            data-testid="library-transfer"
-            className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
-          >
-            {transferNote}
-          </p>
-        ) : null}
-        {model.offTemplateCount > 0 ? (
-          <p
-            data-testid="library-off-template-count"
-            className="flex-none px-3 pt-1 text-caption text-[color:var(--color-text-quaternary)]"
-          >
-            {t("wiki.offTemplateCount", { count: model.offTemplateCount })}
-          </p>
-        ) : null}
       </section>
     </>
   );

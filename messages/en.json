@@ -4496,7 +4496,6 @@
     "kindWikiBody": "One page per source, in one shape, with every claim citing the file it came from.",
     "stage": {
       "title": "Gather, compile, read",
-      "lede": "Three steps in the order they happen. Every number below is counted from the files in this folder, so you can check any of them in Finder.",
       "state": {
         "done": "done",
         "next": "next",
@@ -4505,30 +4504,17 @@
       "none": "None",
       "formatEntry": "{format} {count}",
       "gather": {
-        "title": "Gather",
-        "body": "Bring in the documents this project already has, in whatever format they arrived. Atlas copies them into sources/ untouched and does not open them until you ask.",
-        "sourcesLabel": "Sources",
-        "formatsLabel": "Formats",
-        "lastLabel": "Last added",
-        "candidatesLabel": "Proposed",
-        "candidatesUnknown": "Not searched yet"
+        "title": "Gather"
       },
       "compile": {
         "title": "Compile",
-        "body": "One agent turn reads the sources and writes a wiki page for each, in the shape wiki/_template.md holds. Every write stops at your permission card before it lands.",
-        "waitingLabel": "Waiting",
-        "staleLabel": "Behind its source",
         "brainLabel": "Runs on"
       },
       "read": {
         "title": "Read",
-        "body": "A wiki page is Markdown with no kind:, so the ontology never draws it. Every claim on one cites the file it came from, and the page opens that file.",
-        "pagesLabel": "Wiki pages",
-        "coveredLabel": "Sources covered",
-        "coveredValue": "{compiled} of {total}",
-        "offTemplateLabel": "Off-template",
         "startWith": "Start with {title}",
-        "nothingYet": "No wiki page yet. Compile writes the first one."
+        "nothingYet": "No wiki page yet. Compile writes the first one.",
+        "coveredLine": "{compiled} of {total} sources written up"
       },
       "brainAgent": "{name}",
       "brainLocal": "{model} on {host}",
@@ -4546,7 +4532,8 @@
       "close": "Close",
       "status": "{step} {state}",
       "statusWaiting": "{count, plural, one {# waiting} other {# waiting}}",
-      "statusOffTemplate": "{count, plural, one {# off-template} other {# off-template}}"
+      "statusOffTemplate": "{count, plural, one {# off-template} other {# off-template}}",
+      "statusReady": "Every source is written up"
     },
     "localCompile": {
       "title": "Ready to write",
