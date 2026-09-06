@@ -40,6 +40,11 @@ describe("the lint line carries the report's counts when the report states them"
     expect(describeLintTurn(text)).toBe("disagreement 0 · superseded 1 · missing-link 2 · name-without-page 6");
   });
 
+  it("reads a Korean report's count line, as the localized brief asks for it", () => {
+    const text = "…\n**범주별 개수** — 어긋남 0, 대체된 주장 2, 빠진 연결 1, 문서 없는 이름 5.\n```json\n{}\n```";
+    expect(describeLintTurn(text)).toBe("disagreement 0 · superseded 2 · missing-link 1 · name-without-page 5");
+  });
+
   it("does not invent counts the report did not state", () => {
     expect(describeLintTurn("I read the pages and found nothing to report.")).toBe("ran; counts not stated");
     expect(describeLintTurn(null)).toBe("ran; counts not stated");

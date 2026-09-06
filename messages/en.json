@@ -4472,6 +4472,17 @@
       "originalMissing": "Cites {name}, which is not in this folder.",
       "compileCreateFile": "Create {path}",
       "compileModifyFile": "Replace {path}",
+      "logCount": {
+        "disagreement": "disagreement {count}",
+        "superseded": "superseded {count}",
+        "missingLink": "missing link {count}",
+        "nameWithoutPage": "names without a page {count}"
+      },
+      "logNoCounts": "ran, counts not stated",
+      "logNew": "new",
+      "logRevised": "revised",
+      "logNothingNew": "nothing new",
+      "emptyNoTemplate": "No wiki pages yet, and no template in this folder. Start a wiki from Settings › Workspace: it writes wiki/_template.md, the shape every page follows.",
       "folderMark": "link"
     },
     "graph": {
@@ -4536,7 +4547,8 @@
       "state": {
         "done": "done",
         "next": "next",
-        "waiting": "waiting"
+        "waiting": "waiting",
+        "checking": "checking"
       },
       "none": "None",
       "formatEntry": "{format} {count}",
@@ -4545,13 +4557,15 @@
       },
       "compile": {
         "title": "Compile",
-        "brainLabel": "Runs on"
+        "brainLabel": "Runs on",
+        "checkingLine": "{count, plural, one {# source is} other {# sources are}} still being checked against the pages"
       },
       "read": {
         "title": "Read",
         "startWith": "Start with {title}",
         "nothingYet": "No wiki page yet. Compile writes the first one.",
-        "coveredLine": "{compiled} of {total} sources written up"
+        "coveredLine": "{compiled} of {total} sources written up",
+        "coveredChecking": "{compiled} of {total} written up, {checking} still being checked"
       },
       "brainAgent": "{name}",
       "brainLocal": "{model} on {host}",
@@ -4571,7 +4585,8 @@
       "statusWaiting": "{count, plural, one {# waiting} other {# waiting}}",
       "statusOffTemplate": "{count, plural, one {# off-template} other {# off-template}}",
       "statusReady": "Every source is written up",
-      "statusUnlinked": "{count, plural, one {# dangling link} other {# dangling links}}"
+      "statusUnlinked": "{count, plural, one {# dangling link} other {# dangling links}}",
+      "statusChecking": "{count, plural, one {# being checked} other {# being checked}}"
     },
     "localCompile": {
       "title": "Ready to write",

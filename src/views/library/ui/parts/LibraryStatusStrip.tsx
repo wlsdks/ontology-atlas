@@ -41,9 +41,19 @@ export function LibraryStatusStrip({
         state: t("stage.state.next"),
       }),
     );
+  } else if (states.checkingCount > 0) {
+    /*
+     * ⚠️ **Nothing is next and nothing is finished either.** Hashing is lazy, so a folder
+     * whose sources have been listed but not measured has `needsCompileCount === 0`
+     * without anything being known to be written up. Printing "every source is written
+     * up" there was the header's half of a three-way contradiction the owner read on the
+     * merged build; the rows said `checking` and step three said 0 of 7.
+     */
+    parts.push(t("stage.statusChecking", { count: states.checkingCount }));
   } else if (model.wikiPages.length > 0) {
-    // No step is next and pages exist, so the sequence really is finished. Saying so is
-    // the one case where a verdict with no number is worth a line.
+    // No step is next, nothing is still being measured, and pages exist, so the sequence
+    // really is finished. Saying so is the one case where a verdict with no number is
+    // worth a line.
     parts.push(t("stage.statusReady"));
   }
   if (model.needsCompileCount > 0) {

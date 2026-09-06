@@ -4472,6 +4472,17 @@
       "originalMissing": "{name} 을(를) 인용하지만 이 폴더에는 없습니다.",
       "compileCreateFile": "{path} 만들기",
       "compileModifyFile": "{path} 바꾸기",
+      "logCount": {
+        "disagreement": "어긋남 {count}",
+        "superseded": "대체된 주장 {count}",
+        "missingLink": "빠진 연결 {count}",
+        "nameWithoutPage": "문서 없는 이름 {count}"
+      },
+      "logNoCounts": "실행됨 · 개수 없음",
+      "logNew": "새로 씀",
+      "logRevised": "고침",
+      "logNothingNew": "새 내용 없음",
+      "emptyNoTemplate": "아직 위키 문서가 없고 서식도 없습니다. 설정 › 작업 공간에서 위키를 시작하면 wiki/_template.md 가 생기고, 문서는 그 서식을 따릅니다.",
       "folderMark": "끊긴 링크"
     },
     "graph": {
@@ -4536,7 +4547,8 @@
       "state": {
         "done": "끝남",
         "next": "다음",
-        "waiting": "차례 전"
+        "waiting": "차례 전",
+        "checking": "확인 중"
       },
       "none": "없음",
       "formatEntry": "{format} {count}",
@@ -4545,13 +4557,15 @@
       },
       "compile": {
         "title": "정리",
-        "brainLabel": "쓰는 쪽"
+        "brainLabel": "쓰는 쪽",
+        "checkingLine": "원문 {count}개를 문서와 맞춰 보는 중입니다"
       },
       "read": {
         "title": "읽기",
         "startWith": "{title} 부터 읽기",
         "nothingYet": "아직 위키 문서가 없습니다. 정리를 시작하면 첫 문서가 만들어집니다.",
-        "coveredLine": "원문 {total}개 중 {compiled}개 정리됨"
+        "coveredLine": "원문 {total}개 중 {compiled}개 정리됨",
+        "coveredChecking": "원문 {total}개 중 {compiled}개 정리됨 · {checking}개 확인 중"
       },
       "brainAgent": "{name}",
       "brainLocal": "{model} · {host}",
@@ -4571,7 +4585,8 @@
       "statusWaiting": "{count}개 기다림",
       "statusOffTemplate": "서식 벗어남 {count}개",
       "statusReady": "원문이 모두 정리되었습니다",
-      "statusUnlinked": "끊긴 링크 {count}개"
+      "statusUnlinked": "끊긴 링크 {count}개",
+      "statusChecking": "확인 중 {count}개"
     },
     "localCompile": {
       "title": "쓸 준비가 됐어요",

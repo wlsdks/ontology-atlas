@@ -222,8 +222,13 @@ export function LibraryStage({
     t,
   );
 
-  const { gather: gatherState, compile: compileState, read: readState, leadIndex } =
-    libraryStepStates(model);
+  const {
+    gather: gatherState,
+    compile: compileState,
+    read: readState,
+    leadIndex,
+    checkingCount,
+  } = libraryStepStates(model);
 
   /** Step one's line: the formats the folder actually holds, in the index's own words. */
   const gatherCaption =
@@ -251,7 +256,11 @@ export function LibraryStage({
    */
   const compileCaption =
     model.needsCompileCount === 0
-      ? t("stage.blockedNothingWaiting")
+      ? checkingCount > 0
+        ? // Not "every source already has a write-up that matches its bytes": nothing has
+          // been measured yet, so that sentence would be a claim about files nobody read.
+          t("stage.compile.checkingLine", { count: checkingCount })
+        : t("stage.blockedNothingWaiting")
       : model.staleCount > 0 && model.notCompiledCount > 0
         ? t("sources.needsCompileSplit", {
             notCompiled: model.notCompiledCount,
@@ -261,8 +270,21 @@ export function LibraryStage({
           ? t("sources.staleOnly", { count: model.staleCount })
           : t("sources.needsCompile", { count: model.notCompiledCount });
 
-  /** The reason under the button, unless the caption above it is already that sentence. */
-  const blockedBelow = blocked && blocked !== compileCaption ? blocked : null;
+  /**
+   * The reason under the button, unless the caption above it is already that sentence.
+   *
+   * ⚠️ **While the hashes are still being taken, "everything already matches" is not a
+   * reason — it is a guess.** `libraryCompileBlockedReason` says it whenever nothing is
+   * *known* to be waiting, which is also true of a folder nobody has measured yet. The
+   * reason becomes the same checking sentence the caption carries, and the dedupe below
+   * then prints it once. The button stays disabled either way: there is still nothing this
+   * press could compile.
+   */
+  const blockedReason =
+    blocked !== null && checkingCount > 0 && blocked === t("stage.blockedNothingWaiting")
+      ? compileCaption
+      : blocked;
+  const blockedBelow = blockedReason && blockedReason !== compileCaption ? blockedReason : null;
 
   return (
     <div data-testid="library-stage" className="w-full px-3 pb-3 pt-2">
@@ -432,7 +454,21 @@ export function LibraryStage({
           testId="library-stage-read"
           lead={leadIndex === 2}
           title={t("stage.read.title")}
-          caption={t("stage.read.coveredLine", { compiled: compiledCount, total: sourceCount })}
+          /*
+             ⚠️ **A source that has not been measured is neither covered nor waiting.** The
+             plain line read "0 of 7 written up" beside a step two that said everything was
+             done, because `needsCompileCount` counts only what is *known* to be waiting.
+             The third clause is what makes the two agree.
+          */
+          caption={
+            checkingCount > 0
+              ? t("stage.read.coveredChecking", {
+                  compiled: compiledCount,
+                  total: sourceCount,
+                  checking: checkingCount,
+                })
+              : t("stage.read.coveredLine", { compiled: compiledCount, total: sourceCount })
+          }
           state={readState}
           t={t}
           action={

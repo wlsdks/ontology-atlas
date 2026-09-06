@@ -890,6 +890,7 @@ export function LibraryPage() {
             onCompile={agent.route === "agent" || agent.route === "local" ? handleCompile : null}
             onLint={agent.route === "agent" ? handleLint : null}
             candidates={openCandidates}
+            hasWikiTemplate={docs.some((doc) => doc.slug === "wiki/_template")}
             onPropose={agent.route === "agent" && hasOntology ? handlePropose : null}
             /*
              * The same picker as step two, reading and writing the same stored answer, so
