@@ -343,12 +343,17 @@ test.describe("the Library pane", () => {
     for (const step of ["gather", "compile", "read"]) {
       await expect(shelf.getByTestId(`library-stage-${step}`)).toBeVisible();
     }
-    // Equal height survived the move into a 560px panel.
+    /*
+     * Equal height survived the move into a 560px panel. The tolerance is 2px, not 0:
+     * `auto-rows-fr` distributes a fractional remainder, and the dev server and the static
+     * export round it differently (measured 1.33px apart). What this case exists to catch
+     * is a height decided by copy length, which differs by tens of pixels.
+     */
     const heights = [];
     for (const step of ["gather", "compile", "read"]) {
       heights.push((await shelf.getByTestId(`library-stage-${step}`).boundingBox())!.height);
     }
-    for (const height of heights) expect(Math.abs(height - heights[0]!)).toBeLessThanOrEqual(1);
+    for (const height of heights) expect(Math.abs(height - heights[0]!)).toBeLessThanOrEqual(2);
     // It is a popover, never a modal: the picture behind it stays in the accessibility
     // tree and stays visible, which is the whole reason "1 waiting" is readable here.
     await expect(canvas).toBeVisible();
