@@ -54,6 +54,24 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The permission card judges a wiki page before Allow, the app keeps the wiki's log, and underscore files are furniture
+
+**Why**: a live Compile turn in the fresh build reached its first page write with the card saying only the path; the codes showed afterwards. The owner asked whether `index.md` and `log.md` belong here: without a commit there is no history, and with one there are diffs, not "Lint found three disagreements". The template was listed as a page and opened first.
+**Prior**: 2026-09-06 "The wiki page contract gains a folder half…" stands and is extended; 2026-09-05 "A vault holds three kinds of file…" stands: nothing here enters the graph.
+**Decision**: the Library judges a wiki page write from the request itself (a whole file, or an edit applied to the page on disk) and the card shows the verdict above Allow and Don't; the person still decides. No `index.md`: the index is computed from frontmatter (the Library list, the brief's page list). `wiki/_log.md` is written by the app, never the agent, after each Compile and Check run: one `## [ISO] compile|lint | summary | writer` line, the compile summary read from the folder's before and after, the lint counts from the report when stated. Any `wiki/_*` file is furniture: not judged, listed, compiled, or linked. The Lint brief carries the script's findings and asks the model not to repeat them; rule g adds "a source with nothing new gets no page, say so".
+**Dissent**: a log beside `.ontology-atlas/acp-work.jsonl` is a second record of one event; kept because the receipt is machine-only and hidden, and the log is the person's and Obsidian's, in the folder, append-only, and says nothing a page says.
+**Falsifier**: a log line that disagrees with the folder it describes; a verdict shown for text other than what landed; a person hand-editing `_log.md` because the app's line was wrong; an `_`-prefixed file a person meant as a page.
+**Owner**: jinan
+
+## 2026-09-06 — The wiki page contract gains a folder half, and the Compile brief revises, flags, and links
+
+**Why**: the sealed accumulation probe (`docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md`) compiled seven documents one at a time as the Library sends them. No later run touched an earlier page, the plan page kept a date, owner and budget three later documents had replaced, no page linked another, and `wiki-validate` stayed green because it judges one page's shape and nothing about the folder.
+**Prior**: 2026-09-05 "A vault holds three kinds of file…" stands, its falsifier tested on 2026-09-06 and not fired; 2026-09-06 "…the wiki probe keeps Compile" stands and is the probe this extends to unfamiliar documents.
+**Decision**: the brief lists the pages that exist and gains three rules: g, read `wiki/` first and add a source to the page covering its topic, adding rather than merging; h, a disagreement goes under `## Open questions` on every page carrying either claim, both cited, the later document named, every cited source in `sources:`; i, a page links the pages it talks about with `[[wiki/<slug>]]`. Spec §11.4 gains three folder codes a script decides: `dangling-wikilink`, `orphan-page`, `shared-source-unlinked`. Disagreement stays a judgement, not a code. The brief stops claiming a failing page "will be rejected".
+**Dissent**: compile time rose about 2.5× (a run revising five pages: four to five minutes, 105k tokens); kept because the first-page metric moved from 0 of 4 to 4 of 4 and every older figure stayed beside the newer one.
+**Falsifier**: a one-at-a-time rerun where a first page carries a superseded figure with no flag; a page that drops a fact to make room; `orphan-page` on a page something links to; a linked wiki whose reader loses a question the unlinked one answered.
+**Owner**: jinan
+
 ## 2026-09-06 — A containment pair carries its reason once, on the parent document
 
 **Why**: the first fill-notes turn on the dogfood vault wrote twelve reasons and stopped at a question: the 93 `domain:` back-pointers on capability and element documents draw the same connection the parent's `capabilities:` and `elements:` lists already draw, so a reason written on both sides would show twice on the map and drift apart in a week.

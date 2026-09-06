@@ -709,10 +709,17 @@ back.
     hands over the bytes it was already granted.
 - **Wiki** — Markdown under `wiki/**` with no `kind:`. Each row shows `created_by` and,
   when the page does not fit the contract, the first problem code `wiki-validate` prints
-  (`section-order`, `uncited-fact`, …). The shape is `docs/ONTOLOGY-ATLAS-SPEC.md` §11,
+  (`section-order`, `uncited-fact`, …), the folder's own findings included
+  (`orphan-page`, `dangling-wikilink`, `shared-source-unlinked`). The shape is
+  `docs/ONTOLOGY-ATLAS-SPEC.md` §11,
   and `wiki/_template.md` is written into every new vault by `ontology-atlas init`.
+  Files under `wiki/` that start with `_` are the wiki's furniture, never pages: the
+  template, and `wiki/_log.md`, which the app appends to after each Compile (the sources
+  handed over, the pages the folder shows new or revised) and each Check-the-wiki run
+  (the counts the report ended with). A person who does not commit their folder still
+  has the wiki's own memory; a person who does has a commit body ready.
 
-Three one-click doors:
+Four one-click doors:
 
 - **Add files** — app: a native panel, and Rust copies the bytes into `<vault>/sources/`
   so the WebView never holds a document. Web: `showOpenFilePicker`, written through the
@@ -729,11 +736,27 @@ Three one-click doors:
 - **Compile** — starts one in-app ACP turn whose brief embeds `wiki/_template.md`
   verbatim and names `wiki-validate` as the acceptance test. Enabled only while some
   source is not compiled or stale. Beside it: the coding agent's provider traffic is not
-  in `.ontology-atlas/llm-audit.jsonl`. Every write still stops at the permission card.
+  in `.ontology-atlas/llm-audit.jsonl`. Every write still stops at the permission card,
+  and for a page under `wiki/` the card shows the verdict first: the page as the write
+  would leave it (a whole file, or an edit applied to the page on disk), judged against
+  the contract, one quiet line when it fits and the codes with the first message when it
+  does not. Allow and Don't stay where they are; the gate is the person.
   The dock opens on this screen: Compile is a job, not a place, and the job runs beside
-  the shelf it is compiling.
+  the shelf it is compiling. The brief lists the pages that already exist and asks the
+  writer for one page per source, named after it and never folded into another (a page
+  is what one document said), to link the pages it touches both ways, to record a
+  disagreement on both pages with both citations, and to write nothing for a source
+  that adds nothing.
+- **Check the wiki** — starts one report-only ACP turn over `wiki/` for what
+  `wiki-validate` cannot decide: two pages disagreeing, a claim a later page replaced,
+  two pages that share a topic or a source without linking, and a name on three or
+  more pages with no page of its own, which the brief labels an ontology node
+  candidate. It modifies nothing; enabled from two pages up, since one page has
+  nothing to disagree with. The brief carries what the script already found (the page
+  and folder codes the Wiki list shows) and asks the agent not to repeat them, so the
+  model's reading goes to judgement.
 
-**What left `/docs` on 2026-09-06**: Sources, Wiki, the three doors, and the agent dock.
+**What left `/docs` on 2026-09-06**: Sources, Wiki, the doors, and the agent dock.
 What stayed: the review queue, recently changed, the tree, and the editor.
 
 ### `/ontology` — retired tree/ego hub → thin redirect (B3 Hub is soon the map)

@@ -2689,6 +2689,43 @@
       "slug": "examined-and-found-correct"
     }
   ],
+  "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe": [
+    {
+      "depth": 1,
+      "text": "Findings 2026-09-06 · does the Library wiki accumulate, or only summarise?",
+      "slug": "findings-2026-09-06-does-the-library-wiki-accumulate-or-only-summarise"
+    },
+    {
+      "depth": 2,
+      "text": "Setup",
+      "slug": "setup"
+    },
+    {
+      "depth": 2,
+      "text": "Result",
+      "slug": "result"
+    },
+    {
+      "depth": 2,
+      "text": "What this does and does not show",
+      "slug": "what-this-does-and-does-not-show"
+    },
+    {
+      "depth": 2,
+      "text": "Second pass, same day: the brief with rules g and h",
+      "slug": "second-pass-same-day-the-brief-with-rules-g-and-h"
+    },
+    {
+      "depth": 2,
+      "text": "Third pass, same day: links, the folder half of the contract, and a Lint door",
+      "slug": "third-pass-same-day-links-the-folder-half-of-the-contract-and-a-lint-door"
+    },
+    {
+      "depth": 2,
+      "text": "Fourth pass, same day: the gate, the log, and one page per source",
+      "slug": "fourth-pass-same-day-the-gate-the-log-and-one-page-per-source"
+    }
+  ],
   "benchmark/FINDINGS-2026-09-06-wiki-probe": [
     {
       "depth": 1,
@@ -6268,6 +6305,16 @@
       "depth": 2,
       "text": "Record format",
       "slug": "record-format"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-06 — The permission card judges a wiki page before Allow, the app keeps the wiki's log, and underscore files are furniture",
+      "slug": "2026-09-06-the-permission-card-judges-a-wiki-page-before-allow-the-app-keeps-the-wikis-log-and-underscore-files-are-furniture"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-06 — The wiki page contract gains a folder half, and the Compile brief revises, flags, and links",
+      "slug": "2026-09-06-the-wiki-page-contract-gains-a-folder-half-and-the-compile-brief-revises-flags-and-links"
     },
     {
       "depth": 2,

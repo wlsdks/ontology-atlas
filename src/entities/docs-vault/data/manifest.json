@@ -467,6 +467,21 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
+      "path": "docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md",
+      "title": "Findings 2026-09-06 · does the Library wiki accumulate, or only summarise?",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Question: the LLM Wiki pattern (Karpathy, 2026-04-04) claims its value is accumulation: each new source revises existing pages and flags what it contradicts. The Library's Compile brief embeds the page template and six rules but never names existing pages. Does a wiki built one source at a time, the way the Library run",
+      "wordCount": 2349,
+      "updatedAt": "2026-09-06",
+      "linksOut": [
+        "wiki/<slug>",
+        "src:…"
+      ]
+    },
+    {
       "slug": "benchmark/FINDINGS-2026-09-06-wiki-probe",
       "path": "docs/benchmark/FINDINGS-2026-09-06-wiki-probe.md",
       "title": "Findings 2026-09-06 · the sealed five-question wiki probe",
@@ -486,13 +501,14 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · graph tooling · a macOS local workbench all ",
-      "wordCount": 3103,
+      "wordCount": 3240,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-25",
         "benchmark/tasks",
         "benchmark/rubric",
         "benchmark/FINDINGS-2026-09-06-wiki-probe",
+        "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
         "benchmark/FINDINGS-2026-08-31",
         "benchmark/FINDINGS-2026-08-31-change-flow",
         "benchmark/FINDINGS-2026-08-31-metric-split",
@@ -822,9 +838,10 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 104847,
+      "wordCount": 105464,
       "updatedAt": "2026-09-06",
       "linksOut": [
+        "wiki/<slug>",
         "slug"
       ]
     },
@@ -928,7 +945,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 29547,
+      "wordCount": 29856,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "ANALYSIS-RECORDS",
@@ -1212,7 +1229,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Status: RFC (Request for Comments). This is a v2.0 release candidate, not a ratified standard — see §0 RFC status and feedback for the review window and how to comment. This document promotes an already-shipped, already-enforced de-facto schema into a formal specification. v2 makes immutable node uid mandatory; this is",
-      "wordCount": 7271,
+      "wordCount": 7472,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "src:sources/<path>",
@@ -1221,7 +1238,9 @@
         "src:sources/budget.xlsx",
         "src:sources/orders.csv",
         "src:sources/spec.docx",
-        "src:sources/log.txt"
+        "src:sources/log.txt",
+        "wiki/<slug>",
+        "<slug>"
       ]
     },
     {
@@ -4025,7 +4044,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 2500,
+      "wordCount": 2563,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "DECISIONS"
@@ -4280,6 +4299,23 @@
         "linkText": "`DECISIONS.md`"
       }
     ],
+    "wiki/<slug>": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
+        "context": "nks, the folder half of the contract, and a Lint door Rule i joined the brief (a page links the pages it talks about, `**[wiki/<slug>]**`, only to pages in the list), the brief stopped claiming a failing page \"will be rejected\", `validateWikiFolder` joined",
+        "linkText": "wiki/<slug>"
+      },
+      {
+        "fromSlug": "DECISIONS",
+        "context": "both cited, the later document named, every cited source in `sources:`; i, a page links the pages it talks about with `**[wiki/<slug>]**`. Spec §11.4 gains three folder codes a script decides: `dangling-wikilink`, `orphan-page`, `shared-source-unlinked`. D",
+        "linkText": "wiki/<slug>"
+      },
+      {
+        "fromSlug": "ONTOLOGY-ATLAS-SPEC",
+        "context": "`wiki/` together, and `wiki-validate` and `validate_wiki` append its findings to the page they concern. A page link is `**[wiki/<slug>]**`, `[[<slug>]]`, optionally with `|text` or `#anchor`; a citation (`src:`) is never a link. | Code | Means | |---|---|",
+        "linkText": "wiki/<slug>"
+      }
+    ],
     "slug": [
       {
         "fromSlug": "DECISIONS",
@@ -4395,6 +4431,13 @@
         "linkText": "src:sources/log.txt"
       }
     ],
+    "<slug>": [
+      {
+        "fromSlug": "ONTOLOGY-ATLAS-SPEC",
+        "context": "nd `wiki-validate` and `validate_wiki` append its findings to the page they concern. A page link is `[[wiki/<slug>]]`, `**[<slug>]**`, optionally with `|text` or `#anchor`; a citation (`src:`) is never a link. | Code | Means | |---|---| | `dangling-wi",
+        "linkText": "<slug>"
+      }
+    ],
     "BACKLOG": [
       {
         "fromSlug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
@@ -4478,7 +4521,7 @@
       },
       {
         "fromSlug": "benchmark/README",
-        "context": "w folder: 5/5 both, pages in under half the time; the answer key's accent hue was wrong and the sources were right. | | **[`FINDINGS-2026-08-31.md`]** | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | [`FINDINGS-2",
+        "context": "55-line page and 11), proves the permission card's verdict on a live turn, and adds the app-written `wiki/_log.md`. | | **[`FINDINGS-2026-08-31.md`]** | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | [`FINDINGS-2",
         "linkText": "`FINDINGS-2026-08-31.md`"
       }
     ],
@@ -4588,6 +4631,13 @@
         "linkText": "`results/2026-08-31-gb-r3-summary.md`"
       }
     ],
+    "src:…": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
+        "context": "now skips the template, pinned by a unit case and the Lint dock e2e. The wikilink outlink extractor was also counting `**[src:…]**` citations as links to a document named after a PDF; it skips them now. What this pass does not settle: - E folded th",
+        "linkText": "src:…"
+      }
+    ],
     "benchmark/tasks": [
       {
         "fromSlug": "benchmark/README",
@@ -4600,6 +4650,13 @@
         "fromSlug": "benchmark/README",
         "context": "bric.md`](rubric.md) | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. | | **[`FINDINGS-2026-09-06-wiki-probe.md`]** | The sealed five-question probe of compiled wiki pages against the raw folder: 5/5 both, pages in under half the time;",
         "linkText": "`FINDINGS-2026-09-06-wiki-probe.md`"
+      }
+    ],
+    "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe": [
+      {
+        "fromSlug": "benchmark/README",
+        "context": "w folder: 5/5 both, pages in under half the time; the answer key's accent hue was wrong and the sources were right. | | **[`FINDINGS-2026-09-06-wiki-accumulation-probe.md`]** | Seven sealed documents compiled all at once and one at a time through the current Compile brief: every reader scores",
+        "linkText": "`FINDINGS-2026-09-06-wiki-accumulation-probe.md`"
       }
     ],
     "benchmark/FINDINGS-2026-08-31-change-flow": [
@@ -6473,6 +6530,13 @@
             "type": "doc",
             "slug": "benchmark/FINDINGS-2026-09-02-review-marks",
             "title": "Findings — can a frontmatter review mark constrain an agent? (2026-09-02)"
+          },
+          {
+            "name": "FINDINGS-2026-09-06-wiki-accumulation-probe",
+            "path": "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
+            "type": "doc",
+            "slug": "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe",
+            "title": "Findings 2026-09-06 · does the Library wiki accumulate, or only summarise?"
           },
           {
             "name": "FINDINGS-2026-09-06-wiki-probe",
