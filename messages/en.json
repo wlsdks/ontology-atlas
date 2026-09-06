@@ -3882,6 +3882,8 @@
       "scopeUnknownHint": "This tool did not say what the grant covers. Allowing once is the safer choice.",
       "pageFits": "The page keeps its shape: every fact cited, the five sections in order.",
       "pageFails": "{count, plural, one {# problem} other {# problems}} with this page's shape. Allow saves it as is; the Wiki list will show them.",
+      "insideFolderTitle": "It wants to change a file in this folder",
+      "insideFolderBody": "The path is below. Nothing happens until you allow it.",
       "insideProjectTitle": "It wants to look at code in your project",
       "insideProjectBody": "That is outside the map folder but inside the project you picked. Nothing happens until you allow it."
     },
@@ -4412,6 +4414,8 @@
       "compileTooltip": "Start one agent turn that reads the sources and writes wiki pages. Every write waits for you.",
       "lint": "Check the wiki",
       "lintTooltip": "Start one agent turn that reads the wiki pages and reports disagreements, superseded claims, missing links, and names without a page. It writes nothing.",
+      "logCompile": "Last compile {when}: {summary}",
+      "logLint": "Last check {when}: {summary}",
       "empty": "No wiki pages yet. A page is Markdown with no kind:, in the shape wiki/_template.md holds.",
       "unknownAuthor": "unknown",
       "offTemplate": "off-template",

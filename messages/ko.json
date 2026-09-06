@@ -3882,6 +3882,8 @@
       "scopeUnknownHint": "이 도구가 허용 범위를 알려 주지 않았어요. 한 번만 허용하는 쪽이 안전해요.",
       "pageFits": "문서 모양이 맞습니다. 사실마다 인용이 있고 다섯 절이 순서대로입니다.",
       "pageFails": "문서 모양에 어긋나는 문제 {count}건. 허용하면 이대로 저장되고 위키 목록에 표시됩니다.",
+      "insideFolderTitle": "이 폴더의 파일을 바꾸려고 해요",
+      "insideFolderBody": "경로는 아래에 있어요. 허락하기 전에는 아무 일도 일어나지 않아요.",
       "insideProjectTitle": "내 프로젝트 안의 코드를 보려고 해요",
       "insideProjectBody": "지도 폴더 밖이지만, 고른 프로젝트 안입니다. 허락하기 전에는 아무 일도 일어나지 않아요."
     },
@@ -4412,6 +4414,8 @@
       "compileTooltip": "원문을 읽고 위키 문서를 쓰는 에이전트 턴을 한 번 시작합니다. 쓰기는 모두 사람의 허락을 기다립니다.",
       "lint": "위키 점검",
       "lintTooltip": "위키 문서를 읽고 어긋남·대체된 주장·빠진 연결·문서 없는 이름을 보고하는 에이전트 턴을 한 번 시작합니다. 아무것도 쓰지 않습니다.",
+      "logCompile": "마지막 정리 {when}: {summary}",
+      "logLint": "마지막 점검 {when}: {summary}",
       "empty": "아직 위키 문서가 없습니다. 위키 문서는 kind: 가 없는 마크다운이고, 서식은 wiki/_template.md 에 있습니다.",
       "unknownAuthor": "미상",
       "offTemplate": "서식 밖",

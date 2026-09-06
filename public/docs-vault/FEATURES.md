@@ -717,7 +717,8 @@ back.
   template, and `wiki/_log.md`, which the app appends to after each Compile (the sources
   handed over, the pages the folder shows new or revised) and each Check-the-wiki run
   (the counts the report ended with). A person who does not commit their folder still
-  has the wiki's own memory; a person who does has a commit body ready.
+  has the wiki's own memory; a person who does has a commit body ready. The Wiki header
+  reads it back as one caption: the last compile and the last check, each with its time.
 
 Four one-click doors:
 

@@ -9,6 +9,7 @@ import {
   type VaultSourceFile,
 } from "@/entities/docs-vault";
 import { nativeVaultFileHashes } from "@/shared/lib/tauri-vault-fs";
+import { parseWikiLog, type WikiLogEntry } from "@/features/library";
 import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/wiki-page-schema";
 
 /**
@@ -55,6 +56,12 @@ export interface LibraryUiModel extends LibraryModel {
    * been read yet and gets no verdict rather than a guessed one.
    */
   pageTexts: ReadonlyMap<string, string>;
+  /**
+   * The last Compile and the last Check-the-wiki run, read from `wiki/_log.md` — the
+   * app's own record, so the header can say what happened without asking anybody.
+   * Null when the log has no such line yet.
+   */
+  log: { lastCompile: WikiLogEntry | null; lastLint: WikiLogEntry | null };
   /**
    * Measured sha256 by source path, for the rows the reader opens.
    *
@@ -124,6 +131,8 @@ export function useLibraryModel({
   const rawByStamp = useRef(new Map<string, string>());
   /** The same texts as state, for consumers that judge an agent's edit against the page. */
   const [pageTexts, setPageTexts] = useState<Map<string, string>>(() => new Map());
+  const [logEntries, setLogEntries] = useState<WikiLogEntry[]>([]);
+  const logStamp = useRef<string | null>(null);
 
   const hashes = useMemo(() => {
     const out = new Map<string, string>();
@@ -177,6 +186,31 @@ export function useLibraryModel({
     // `wantedKey` stands for `wanted`: a new array with the same paths is the same work.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, sourceHandles, sources, vaultRootPath, wantedKey]);
+
+  const logDoc = docs.find((doc) => doc.slug === "wiki/_log") ?? null;
+  const logMtime = logDoc?.mtime ?? null;
+  useEffect(() => {
+    if (!enabled) return;
+    const stamp = logDoc ? `wiki/_log@${logMtime ?? 0}` : null;
+    if (stamp === null || stamp === logStamp.current) return;
+    const handle = fileHandles.get("wiki/_log");
+    if (!handle) return;
+    // Claimed before the read so a re-run with the same stamp (the manifest and the
+    // handle map are rebuilt as new objects) does not start a second read; not cancelled
+    // on cleanup, because a read for this exact stamp is the one wanted and a cleanup
+    // that discarded it left the header blank (measured in the browser, 2026-09-06).
+    logStamp.current = stamp;
+    void (async () => {
+      try {
+        const text = await (await handle.getFile()).text();
+        if (logStamp.current === stamp) setLogEntries(parseWikiLog(text));
+      } catch {
+        // An unreadable log says nothing; the header simply has no line. Let a later
+        // change of the file try again.
+        if (logStamp.current === stamp) logStamp.current = null;
+      }
+    })();
+  }, [enabled, fileHandles, logDoc, logMtime]);
 
   const wikiPages = model.wikiPages;
   const wikiKey = wikiPages.map((page) => page.slug).join("\u0000");
@@ -262,6 +296,11 @@ export function useLibraryModel({
     for (const [slug, verdict] of verdicts) {
       if (live.has(slug) && !verdict.ok) offTemplateCount += 1;
     }
-    return { ...model, verdicts, offTemplateCount, hashes, pageTexts };
-  }, [hashes, model, pageTexts, verdicts]);
+    // A folder whose log was removed shows no line: the entries are read only while the
+    // file is there, and are ignored, not cleared, when it is not.
+    const entries = logDoc ? logEntries : [];
+    const lastCompile = [...entries].reverse().find((entry) => entry.kind === "compile") ?? null;
+    const lastLint = [...entries].reverse().find((entry) => entry.kind === "lint") ?? null;
+    return { ...model, verdicts, offTemplateCount, hashes, pageTexts, log: { lastCompile, lastLint } };
+  }, [hashes, logDoc, logEntries, model, pageTexts, verdicts]);
 }

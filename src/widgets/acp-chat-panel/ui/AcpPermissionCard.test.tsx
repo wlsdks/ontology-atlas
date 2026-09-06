@@ -245,6 +245,14 @@ describe('권한 카드 — 내 프로젝트 안과 전혀 다른 곳을 다르�
     expect(screen.getByText(koMessages.acpChat.permission.insideProjectTitle)).toBeInTheDocument();
   });
 
+  it('a write inside the open folder itself says so — not "code in your project" (live turn, 2026-09-06)', () => {
+    render(card('edit', `${VAULT}/wiki/plan.md`, [], VAULT));
+    expect(screen.getByText(koMessages.acpChat.permission.insideFolderTitle)).toBeInTheDocument();
+    expect(screen.queryByText(koMessages.acpChat.permission.insideProjectTitle)).toBeNull();
+    // Neutral card, same as inside the project: no amber alarm for the person's own folder.
+    expect(screen.getByTestId('acp-permission-card').className).not.toContain('amber');
+  });
+
   it('정말 다른 곳은 예전 경고 그대로다 — 주의가 필요한 쪽', () => {
     render(card('read', '/Users/dana/.ssh/id_rsa', [], VAULT));
     expect(screen.getByText(koMessages.acpChat.permission.title)).toBeInTheDocument();

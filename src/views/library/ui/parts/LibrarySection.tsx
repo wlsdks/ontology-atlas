@@ -85,6 +85,13 @@ export interface LibrarySectionProps {
  * words: an icon-only pair would have fitted, but these two are a brand-new capability
  * and a tooltip is not a label a person finds before they need it.
  */
+/** The log's ISO stamp as a person reads it; the raw stamp when it does not parse. */
+function logWhen(at: string): string {
+  const date = new Date(at);
+  if (Number.isNaN(date.getTime())) return at;
+  return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
 function SectionHeader({
   icon,
   label,
@@ -369,6 +376,22 @@ export function LibrarySection({
             >
               {t("wiki.compileWebGetApp")}
             </Link>
+          </p>
+        ) : null}
+        {model.log.lastCompile || model.log.lastLint ? (
+          // What happened last, from `wiki/_log.md` — the app's own record. One caption,
+          // two facts at most: the last Compile and the last Check, each with its time.
+          <p
+            data-testid="library-wiki-log"
+            className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all] [overflow-wrap:anywhere]"
+          >
+            {model.log.lastCompile
+              ? t("wiki.logCompile", { when: logWhen(model.log.lastCompile.at), summary: model.log.lastCompile.summary })
+              : null}
+            {model.log.lastCompile && model.log.lastLint ? " · " : null}
+            {model.log.lastLint
+              ? t("wiki.logLint", { when: logWhen(model.log.lastLint.at), summary: model.log.lastLint.summary })
+              : null}
           </p>
         ) : null}
         {hasWiki ? (

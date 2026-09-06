@@ -23,6 +23,8 @@ const VAULT: Record<string, string> = {
   "project.md": ["---", "kind: project", "slug: launch", "title: Launch", "---", "", "# Launch", ""].join("\n"),
   "sources/architecture.docx": "PK architecture\n",
   "sources/release-dates.csv": "date,name\n2026-09-05,launch\n",
+  // The app's own record of what happened; furniture like the template, read for the header line.
+  "wiki/_log.md": "# Wiki log\n\n## [2026-09-06T09:05:00Z] compile | sources/architecture.docx → architecture (new) | agent:claude\n## [2026-09-06T09:40:00Z] lint | disagreement 0 · superseded 1 | agent:claude\n",
   // The shape `init` writes. It must not count as a page or open as one.
   "wiki/_template.md": "---\ntitle: <the page name>\ncreated_by: agent:claude\ncompiled_at: 2026-01-01T00:00:00Z\nsources:\n  - sources/<file>\nsource_hash:\n  sources/<file>: <sha256>\nstatus: draft\nsummary: <one sentence>\n---\n\n## Summary\n\n<x>\n\n## Facts\n\n- <c> [[src:sources/<file>#p1]]\n\n## Decisions\n\n## Open questions\n\n## Not in sources\n",
   "wiki/architecture.md": "---\ntitle: Architecture\ncreated_by: agent:claude\ncompiled_at: 2026-09-06T10:00:00Z\nsources:\n  - sources/architecture.docx\nsource_hash:\n  sources/architecture.docx: 3b1f0a00000000000000000000000000000000000000000000000000000000ab\nstatus: draft\nsummary: Architecture.\n---\n\n## Summary\n\nArchitecture. See [[wiki/release-dates]].\n\n## Facts\n\n- A fact. [[src:sources/architecture.docx#p1]]\n\n## Decisions\n\n## Open questions\n\n## Not in sources\n",
@@ -200,6 +202,12 @@ test.describe("Check the wiki opens the agent dock", () => {
     // The shipped template is in the folder and is not a page: two rows, and the reader
     // opens a real page rather than "<the page name>" (installed app, 2026-09-06).
     await expect(page.getByTestId("library-wiki")).not.toContainText("<the page name>");
+    await expect(page.getByTestId("library-wiki")).not.toContainText("Wiki log");
+    // The header line reads the log: last compile and last check, from the app's own record.
+    const logLine = page.getByTestId("library-wiki-log");
+    await expect(logLine).toContainText("architecture (new)");
+    await expect(logLine).toContainText("superseded 1");
+    await expect(page.getByTestId("library-wiki")).toContainText("Wiki · 2");
     await expect(page.getByRole("heading", { level: 2, name: "Architecture" })).toBeVisible();
     // Same row, Lint first: reading before writing.
     const [lintBox, compileBox] = await Promise.all([

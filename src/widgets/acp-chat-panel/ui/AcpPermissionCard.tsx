@@ -187,7 +187,7 @@ export function AcpPermissionCard({
       className={
         ontologyWrite
           ? 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-[var(--card-pad)]'
-          : locality === 'inside-project'
+          : locality !== 'elsewhere'
             ? 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]'
             : 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] p-[var(--card-pad)]'
       }
@@ -203,8 +203,8 @@ export function AcpPermissionCard({
             aria-hidden
             className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]"
           />
-        ) : locality === 'inside-project' ? (
-          // Inside the person's own project the mark is a neutral eye, not an alarm shield.
+        ) : locality !== 'elsewhere' ? (
+          // Inside the person's own folder or project the mark is a neutral eye, not an alarm shield.
           <Eye
             size={ICON_SIZE.md}
             aria-hidden
@@ -245,9 +245,11 @@ export function AcpPermissionCard({
                      * intended path teaches people to click through it. Nothing is suppressed;
                      * the card still stops for an answer, it just says which situation this is.
                      */
-                    locality === 'inside-project'
-                    ? 'insideProjectTitle'
-                    : 'title',
+                    locality === 'inside-folder'
+                    ? 'insideFolderTitle'
+                    : locality === 'inside-project'
+                      ? 'insideProjectTitle'
+                      : 'title',
             )}
           </p>
           <p
@@ -259,9 +261,11 @@ export function AcpPermissionCard({
                 ? 'ontologyWriteBody'
                 : serverConsent
                   ? 'consentBody'
-                  : locality === 'inside-project'
-                    ? 'insideProjectBody'
-                    : 'body',
+                  : locality === 'inside-folder'
+                    ? 'insideFolderBody'
+                    : locality === 'inside-project'
+                      ? 'insideProjectBody'
+                      : 'body',
             )}
           </p>
         </div>
