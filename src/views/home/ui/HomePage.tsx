@@ -169,7 +169,7 @@ import { AGENT_DOCK_INSET_SURFACE_CLASS, CHROME_CHIP_COMPACT_BELOW_XL, ChromeChi
 import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { MOTION } from "@/shared/motion";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
-import { resolveToastBottomOffsetForStack, resolveToastRightOffset } from "@/shared/ui/toast-position";
+import { TOAST_TOP_OFFSET_UNDER_MAP_TOOLBAR_PX } from "@/shared/ui/toast-position";
 import {
   getProjectRuntimeDetailHref,
   type ProjectImpactMode,
@@ -2272,56 +2272,21 @@ function HomePageImpl() {
     setIndexPreference,
     setRouteState,
   ]);
-  // Entry inspection E-7 — The `auto-align` toast completely covered the bottom-right permanent readout.
-// Both are fixed to bottom-right, but the toast has a default 16px offset,
-// so the notification sat directly on top of the instrument. Reconnects the reserved contract
-// (`--app-toast-bottom-offset`) used by the builder's bottom bar to this stack — the reserved height is
-// not a constant but the measured rect of the stack (varies by locale, zoom tier, ≥1920 inset).
+  /*
+   * Toasts stand under the map's top toolbar (owner, 2026-09-06: the bottom-right
+   * corner sat behind the agent dock and outside the person's attention). The
+   * toaster is top-centred everywhere; only the map plants a larger top offset so
+   * the box clears the 36px toolbar tiles. `--app-right-dock-width`, published by the
+   * dock effect below, keeps it centred over the map area rather than the viewport.
+   */
   const readoutStackRef = useRef<HTMLDivElement | null>(null);
-  const readoutStackHidden = v2DatasheetModel !== null;
   useEffect(() => {
     const root = document.documentElement;
-    const clear = () => root.style.removeProperty("--app-toast-bottom-offset");
-    const element = readoutStackRef.current;
-    if (readoutStackHidden || !element) {
-      clear();
-      return undefined;
-    }
-    const apply = () => {
-      const rect = element.getBoundingClientRect();
-      // Below `md` the instruments are `hidden`, so height is 0 and there is nothing
-      // to reserve.
-      if (rect.height === 0) {
-        clear();
-        return;
-      }
-      root.style.setProperty(
-        "--app-toast-bottom-offset",
-        `${resolveToastBottomOffsetForStack(window.innerHeight, rect.top)}px`,
-      );
-    };
-    // The number of lines in the stack increases later — the instrument readout (`FirstRunReadout`) is attached after
-// sample mode determination finishes. If measured only once at mount, the reservation solidifies with one line
-// short, causing the toast to cover the readout (measured 54px vs needed 79px).
-//
-// The first measurement is left to the ResizeObserver's **initial delivery**
-// (boot measurement, 2026-08-19). Calling `apply()` synchronously from the commit
-// effect, as it used to, forces layout on a document whose DOM was just swapped —
-// 36–45 ms under 4× CPU throttling, the single largest item in the boot's longest
-// task. An RO callback runs, by spec, after layout and before paint, so it reads
-// the same rect for free and the variable is still set before the first paint. Only
-// environments without RO fall back to the synchronous measurement.
-    const observer =
-      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(apply);
-    if (observer === null) apply();
-    else observer.observe(element);
-    window.addEventListener("resize", apply);
+    root.style.setProperty("--app-toast-top-offset", `${TOAST_TOP_OFFSET_UNDER_MAP_TOOLBAR_PX}px`);
     return () => {
-      observer?.disconnect();
-      window.removeEventListener("resize", apply);
-      clear();
+      root.style.removeProperty("--app-toast-top-offset");
     };
-  }, [readoutStackHidden]);
+  }, []);
   // Click focus signature — aligns the growth origin (transform-origin) of the popover with the screen coordinates of the just-clicked node.
 // The panel is keyed by slug and re-mounts + triggers `.topology-chrome-in` appearance every time the node changes, so
 // using the slug as a dependency and injecting the origin converted to the positioner's local coordinate system as a CSS variable before paint (useLayoutEffect) (inheritance → internal panels read it). If no recent (<600ms) canvas pointer exists (list/keyboard selection), clears the variable to fall back to existing `center top`.
@@ -3284,57 +3249,30 @@ function HomePageImpl() {
     openVaultAgent();
   }, [analyzePrompt, openVaultAgent]);
 
-  /**
-   * **Toasts step aside for whatever stands on the right** (owner's screen,
-   * 2026-08-16).
+  /*
+   * The dock's width is published for the surfaces that must stay clear of it: the
+   * cards floating over the map (`right-dock-reserve.ts`) and the top-centred toaster,
+   * which shifts by half of it to stay centred over the map area (`app/globals.css`).
+   * A corner toast used to land on the composer (2026-08-16); the toaster moved to the
+   * top centre on 2026-09-06.
    *
-   * Toasts are pinned bottom-right, so with the chat panel standing to the right of
-   * the map that 16px margin ends up **inside the panel** — the "created" toast landed
-   * straight on the composer. The reservation contract already used at the bottom is
-   * applied on the right too.
-   *
-   * The width is **measured, not a constant**: the user drags this panel to size.
+   * The width is the same state the dock is drawn from (`chatWidth`, dragged and
+   * remembered), so no rect is measured: the previous ResizeObserver watched the node
+   * that existed when the dock opened and missed the one that replaced it, leaving the
+   * variable unset while a 460px dock stood open (measured in the export, 2026-09-06).
+   * A sheet-wide review reserves nothing, as before.
    */
   useEffect(() => {
     const root = document.documentElement;
-    const clear = () => {
-      root.style.removeProperty("--app-toast-right-offset");
+    if (!agentDockOpen || reviewUsesSheet) {
       root.style.removeProperty(RIGHT_DOCK_WIDTH_VAR);
-    };
-    if (!agentDockOpen) {
-      clear();
       return undefined;
     }
-    const apply = () => {
-      const dock = document.querySelector<HTMLElement>("[data-right-dock]");
-      const width = dock?.getBoundingClientRect().width ?? 0;
-      if (width === 0) {
-        clear();
-        return;
-      }
-      // The width itself is published, because the cards floating over the map derive
-      // their right wall from it (`right-dock-reserve.ts`). The toast offset is that
-      // plus its margin.
-      root.style.setProperty(RIGHT_DOCK_WIDTH_VAR, `${Math.round(width)}px`);
-      root.style.setProperty(
-        "--app-toast-right-offset",
-        `${resolveToastRightOffset(Math.round(width))}px`,
-      );
-    };
-    apply();
-    // The width changes on every drag and the panel attaches after opening, so a
-    // single measurement goes stale.
-    const dock = document.querySelector<HTMLElement>("[data-right-dock]");
-    const observer =
-      typeof ResizeObserver === "undefined" || !dock ? null : new ResizeObserver(apply);
-    if (dock) observer?.observe(dock);
-    window.addEventListener("resize", apply);
+    root.style.setProperty(RIGHT_DOCK_WIDTH_VAR, `${Math.round(chatWidth.width)}px`);
     return () => {
-      observer?.disconnect();
-      window.removeEventListener("resize", apply);
-      clear();
+      root.style.removeProperty(RIGHT_DOCK_WIDTH_VAR);
     };
-  }, [agentDockOpen]);
+  }, [agentDockOpen, reviewUsesSheet, chatWidth.width]);
 
   /*
    * "Open a chat with this tool" in the settings sheet's Agents section arrives here
@@ -5994,9 +5932,8 @@ function HomePageImpl() {
                     compete with horizontally (right-aligned, it grows leftwards into empty
                     map). The old measurement therefore does not refute this spot.
 
-                    Toasts read this stack's actual rect and step aside
-                    (`resolveToastBottomOffsetForStack` plus a ResizeObserver), so removing
-                    a line moves them down by exactly that much with no value to adjust. */}
+                    Toasts live at the top centre since 2026-09-06, so nothing here has to
+                    step aside for them. */}
                 <FrameMeter />
               </div>
 

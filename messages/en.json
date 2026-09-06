@@ -4432,6 +4432,23 @@
         "reviewed": "reviewed"
       }
     },
+    "graph": {
+      "title": "Graph",
+      "counts": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {concepts, plural, one {# concept} other {# concepts}} · {cites} cites · {mentions} mentions",
+      "empty": "Nothing to draw yet. Once Compile writes a page, this shows which source it was written from and which concepts it names.",
+      "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
+      "legend": "A filled circle is a page, a square is a source, a ring is a concept on the map. Point at a dot for its name; click it to open.",
+      "keys": "Arrow keys move between dots, Enter opens the one you are on, Escape leaves it.",
+      "announce": "{kind} {name}, {position} of {total}. Enter {action}.",
+      "kind": {
+        "page": "Wiki page",
+        "source": "Source",
+        "concept": "Concept"
+      },
+      "actionSelect": "opens it here",
+      "actionMap": "opens it on the map",
+      "openOnMap": "open on the map"
+    },
     "find": {
       "title": "Documents in the folders you granted",
       "preamble": "Atlas listed these by name, format and size. It has not opened any of them. Nothing is copied until you pick.",
