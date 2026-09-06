@@ -162,6 +162,15 @@ export function SourceSummary({
                   type="button"
                   onClick={() => onOpenWiki(page.slug)}
                   data-testid={`library-source-writeup-${page.slug}`}
+                  /*
+                   * **The title is what a reader sees; the slug is still the address.**
+                   * Every other surface addresses a wiki page by its title, so a row of
+                   * slugs here would be a second vocabulary for one thing. But this pane
+                   * is the one place a person copies exact vault paths — it prints the
+                   * source's own `Path` two rows up — so the page's path stays reachable
+                   * rather than becoming information only the index has.
+                   */
+                  title={page.slug}
                   className={controlClass({
                     shape: "chip",
                     tone: "muted",

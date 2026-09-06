@@ -227,9 +227,28 @@ test.describe("the Library destination", () => {
     await expect(summary).toContainText("quarter-plan.pdf");
     await expect(summary).toContainText("sources/quarter-plan.pdf");
     await expect(summary).toContainText("PDF");
-    // The page that cites it, and the one door: a browser cannot reveal in Finder, so it
-    // offers the bytes instead.
-    await expect(summary).toContainText("wiki/quarter-plan");
+    /*
+     * **Which page cites it, and whether that page still describes these bytes.**
+     *
+     * Until 2026-09-06 this pane listed the citing pages as slugs inside a `Cited by`
+     * fact row, and the assertion read `wiki/quarter-plan` out of the pane's text. The
+     * fact did not leave: it became a pressable row under `View write-up`, carrying the
+     * page's title — the name every other surface in this product uses for a page — and
+     * one word for how it stands to the file. The slug is still the row's `title`, so
+     * the address a person can copy did not go with the old spelling.
+     *
+     * This fixture's page records a 64-zero `source_hash`, which the frontmatter parser
+     * types as a number rather than a string, so no usable hash reaches the model: the
+     * source reads `stale` and its write-up reads `behind`, which are the same fact said
+     * from the two ends. Asserting both is what would catch them drifting apart.
+     */
+    const writeUp = page.getByTestId("library-source-writeup-wiki/quarter-plan");
+    await expect(writeUp).toBeVisible();
+    await expect(writeUp).toContainText("Quarter plan");
+    await expect(writeUp).toContainText("behind");
+    await expect(writeUp).toHaveAttribute("title", "wiki/quarter-plan");
+    await expect(summary).toContainText("stale");
+    // The one door: a browser cannot reveal in Finder, so it offers the bytes instead.
     await expect(page.getByTestId("library-source-open")).toBeVisible();
   });
 
