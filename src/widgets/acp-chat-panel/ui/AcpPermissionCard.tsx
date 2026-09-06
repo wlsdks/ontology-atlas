@@ -5,7 +5,11 @@ import { Eye, GitCompareArrows, ShieldAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { permissionIntent, permissionScope, permissionLocality } from '@/features/acp-session';
-import { OntologyChangeReview } from '@/features/ontology-change-review';
+import {
+  fieldNameKey,
+  ontologyChangeHeadline,
+  OntologyChangeReview,
+} from '@/features/ontology-change-review';
 import {
   buildOntologyChangeSet,
   type OntologyChangeSet,
@@ -55,6 +59,7 @@ export function AcpPermissionCard({
   onActiveItemChange?: (index: number) => void;
 }) {
   const t = useTranslations('acpChat.permission');
+  const tChange = useTranslations('ontologyChangeReview');
   const { request, resolve } = pending;
   const ontologyWrite = request.reviewKind === 'ontology-write' && Boolean(request.toolName);
   const changeSet = providedChangeSet === undefined
@@ -62,6 +67,22 @@ export function AcpPermissionCard({
       ? buildOntologyChangeSet(request.toolName!, request.rawInput)
       : null
     : providedChangeSet;
+  /**
+   * ⚠️ **The title says the change, not that a change exists** (owner, installed app at 1512×982,
+   * 2026-09-06: *"can this design be improved? … something is lacking"*).
+   *
+   * Every ontology write was headed 「Review the proposed change」 — a sentence that is equally true
+   * of all of them and therefore answers nothing. Underneath it sat the request itself: a slug in
+   * mono, a frontmatter key in mono, the argument beside it. To decide, a person had to compose the
+   * sentence themselves out of a debugger's dump.
+   *
+   * The facts for that sentence were already typed and already on screen. `ontologyChangeHeadline`
+   * composes them — operation, target, field, how many values it carries — and every branch of it
+   * has a variant for the fact the request did not carry, so a missing name produces 「it updates
+   * this document」 rather than a plausible one.
+   */
+  const headline = changeSet ? ontologyChangeHeadline(changeSet) : null;
+  const headlineFieldKey = headline?.fieldKey ? fieldNameKey(headline.fieldKey) : null;
   /* Not only where but **what** — see the comment below. */
   const intent = permissionIntent(request.toolKind);
   /**
@@ -194,7 +215,18 @@ export function AcpPermissionCard({
             id="acp-permission-title"
             className="break-keep text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
           >
-            {t(
+            {headline
+              ? tChange(`headline.${headline.key}`, {
+                  ...headline.values,
+                  ...(headline.fieldKey
+                    ? {
+                        field: headlineFieldKey
+                          ? tChange(headlineFieldKey)
+                          : headline.fieldKey,
+                      }
+                    : {}),
+                })
+              : t(
               ontologyWrite
                 ? 'ontologyWriteTitle'
                 : serverConsent
