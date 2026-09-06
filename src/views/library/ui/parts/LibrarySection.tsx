@@ -8,6 +8,7 @@ import { BookText, FilePlus2, FileStack, FileText, Search, Sparkles } from "luci
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
+import { writerLabel } from "../../lib/writer-label";
 import { controlClass } from "@/shared/ui/control-class";
 import { Chip, RowButton, Tooltip } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -256,7 +257,11 @@ export function LibrarySection({
                 data-testid="library-needs-compile"
                 className="flex-none px-3 pt-1 text-caption text-[color:var(--color-text-quaternary)]"
               >
-                {t("sources.needsCompile", { count: model.needsCompileCount })}
+                {model.staleCount > 0 && model.notCompiledCount > 0
+                  ? t("sources.needsCompileSplit", { notCompiled: model.notCompiledCount, stale: model.staleCount })
+                  : model.staleCount > 0
+                    ? t("sources.staleOnly", { count: model.staleCount })
+                    : t("sources.needsCompile", { count: model.notCompiledCount })}
               </p>
             ) : null}
           </>
@@ -377,8 +382,8 @@ export function LibrarySection({
                   >
                     <BookText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
                     <span className="min-w-0 flex-1 truncate">{page.title}</span>
-                    <span className="flex-none font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                      {page.createdBy ?? t("wiki.unknownAuthor")}
+                    <span className="flex-none text-caption text-[color:var(--color-text-quaternary)]">
+                      {writerLabel(page.createdBy, t)}
                     </span>
                     {verdict && !verdict.ok ? (
                       /*

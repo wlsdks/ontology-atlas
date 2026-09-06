@@ -4,6 +4,7 @@ import type { useTranslations } from "next-intl";
 
 import type { VaultDoc } from "@/entities/docs-vault";
 import { Chip } from "@/shared/ui";
+import { wikiStatusLabel, writerLabel } from "../../lib/writer-label";
 
 /**
  * **Which page is open, and what it was written from.**
@@ -47,9 +48,11 @@ export function WikiPageHeader({
       <h2 className="text-display font-[var(--font-weight-signature)] leading-title tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
         {doc.title}
       </h2>
-      <p className="mt-1.5 font-mono text-caption text-[color:var(--color-text-quaternary)]">
-        {t("wiki.writtenBy", { author: createdBy ?? t("wiki.unknownAuthor") })}
-        {status ? ` · ${status}` : ""}
+      {/* Words, not identifiers: `agent:claude · reviewed` is the file's vocabulary; the
+          reader gets the runtime's name and the status in their own language. */}
+      <p className="mt-1.5 text-caption text-[color:var(--color-text-tertiary)]">
+        {t("wiki.writtenBy", { author: writerLabel(createdBy, t) })}
+        {wikiStatusLabel(status, t) ? ` · ${wikiStatusLabel(status, t)}` : ""}
       </p>
       {sources.length > 0 ? (
         <div className="mt-3 flex flex-wrap items-center gap-1.5">

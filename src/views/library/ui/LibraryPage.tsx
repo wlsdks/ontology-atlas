@@ -413,7 +413,7 @@ export function LibraryPage() {
         className="flex min-h-0 flex-1 items-center justify-center overflow-auto px-5 py-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]"
       >
         <div className={PAGE_COLUMN_STAGE}>
-          <LibraryHeader t={t} />
+          <LibraryHeader t={t} inFolder={false} />
           {/* One step under the h1 (14px): the hierarchy gate reads a tie as two titles. */}
           <h2 className="mt-6 text-body font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
             {t("emptyTitle")}
@@ -640,12 +640,15 @@ export function LibraryPage() {
 }
 
 /** Eyebrow, name, one line. Not a display title: this is a workbench, not a document. */
-function LibraryHeader({ t }: { t: ReturnType<typeof useTranslations<"library">> }) {
+function LibraryHeader({ t, inFolder = true }: { t: ReturnType<typeof useTranslations<"library">>; inFolder?: boolean }) {
   return (
     <div data-testid="library-header">
-      <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
-        {t("eyebrow")}
-      </p>
+      {/* "In this folder" is only true once a folder is open; the stage before that has none. */}
+      {inFolder ? (
+        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+          {t("eyebrow")}
+        </p>
+      ) : null}
       <h1 className="mt-1 text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
         {t("title")}
       </h1>

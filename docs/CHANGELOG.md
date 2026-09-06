@@ -47,9 +47,9 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Agent lookups show targets and counts above the answer. MCP has its own screen: the folder's connection plus Connectors that attach external MCP servers to the in-app chat, off by default, token in the keychain. Library, a ninth screen, holds Sources (any format, kept as they arrived, marked not compiled, stale or compiled) and Wiki pages shaped by wiki/_template.md. Insights repairs missing back-links in one sheet naming each write.
+**Added**: Agent lookups show targets and counts above the answer. MCP has its own screen: the folder's connection plus Connectors that attach external MCP servers to the in-app chat, off by default, token in the keychain. Library, a ninth screen, holds Sources (any format, kept as they arrived) and Wiki pages in one template. Insights repairs missing back-links in one sheet.
 **Changed**: Insights opens on four measurements and lists to-dos one row per finding; the Cone view fills the canvas; the agent conversation scrolls without a bar under one header band with one close; Agents and MCP read in a 960 column; Korean labels lose tracking.
-**Fixed**: Pages keep a bottom margin on desktop; repeated lookups fold onto one row; the permission card keeps its buttons on screen; CONTENTS steps aside when a chat docks.
+**Fixed**: Pages keep a bottom margin on desktop; repeated lookups fold onto one row; the permission card keeps its buttons on screen; the Library names a page's writer in words and counts stale pages apart from unwritten ones.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 
