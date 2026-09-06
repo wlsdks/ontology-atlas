@@ -10,7 +10,7 @@ elements: [elements/analysis-record-archive, elements/analysis-review-workbench]
 path: src/widgets/analysis-workbench/ui/AnalysisWorkbench.tsx
 created_by: "agent:unknown"
 relates: [capabilities/acp-runtime]
-relation_notes: { capabilities/acp-runtime: New in-app analyses execute through the guarded ACP runtime; stored results remain readable without starting another agent. }
+relation_notes: { capabilities/acp-runtime: New in-app analyses execute through the guarded ACP runtime; stored results remain readable without starting another agent., elements/analysis-record-archive: "Returning to an original answer or continuing from a selected earlier version is only possible because this element keeps each analysis as one immutable Markdown record holding the full-body evidence, Architecture measurements, and outcome as they stood at analysis time.", elements/analysis-review-workbench: "This is the surface where a person actually reads the concept criteria and relationship rationale, follows an AI question down to its evidence, and picks an earlier version without navigation restarting the agent." }
 ---
 
 ## Definition

@@ -4338,14 +4338,17 @@ function HomePageImpl() {
   /*
    * Edges in the workbench's scope with no `relation_notes`: the count the Meaning view offers
    * to have written. Scope follows the selection the way `meaningRelations` does — one edge,
-   * one node's edges, or the whole graph.
+   * one node's edges, or the whole graph. A `belongs_to` edge is a child's `domain:` back-pointer;
+   * the reason for that pair lives on the parent's containment line (decision 2026-09-06), so the
+   * back-pointer is never a gap the agent could fill and is left out of the count (the view said
+   * "1 missing" for a domain whose every reason was written, 2026-09-06).
    */
   const relationNoteGaps = useMemo(() => {
     if (!ontologyInsight || (!meaningWorkbenchOpen && !acpDockFrameOpen)) return 0;
     const focus = selectedOntologyNode?.id;
     return ontologyInsight.edges.filter((edge) => selectedEdge
       ? edge.from === selectedEdge.sourceId && edge.to === selectedEdge.targetId && edge.type === selectedEdge.relationType
-      : focus ? edge.from === focus || edge.to === focus : true).filter((edge) => !edge.label?.trim()).length;
+      : focus ? edge.from === focus || edge.to === focus : true).filter((edge) => edge.type !== 'belongs_to' && !edge.label?.trim()).length;
   }, [ontologyInsight, meaningWorkbenchOpen, acpDockFrameOpen, selectedOntologyNode, selectedEdge]);
   const mapRelationCaptions = useMemo(() => (meaningWorkbenchOpen || acpDockFrameOpen) && showRelationMeaning ? new Map((ontologyInsight?.edges ?? []).map((edge) => [edge.id, relationVocabulary(edge.type, relationRegister)])) : null, [meaningWorkbenchOpen, acpDockFrameOpen, showRelationMeaning, ontologyInsight, relationVocabulary, relationRegister]);
   const mapReviewQuestionIds = useMemo(() => new Set(analysisFindings.flatMap((finding) => finding.targetSlugs.map((slug) => chatNodeIndex.get(slug)).filter((id): id is string => !!id))), [analysisFindings, chatNodeIndex]);

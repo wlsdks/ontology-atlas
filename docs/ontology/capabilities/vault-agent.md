@@ -8,6 +8,7 @@ domain: domains/agent-integration
 elements: [elements/agents-destination, elements/vault-agent-panel]
 path: src/features/vault-agent
 created_by: human
+relation_notes: { elements/agents-destination: "Attaching an agent to this folder is an operational task with progress, so the connect flow needs one address where a person installs a tool, runs the eight-step connection check, and repairs what it finds; that work sat in three separate places until this destination gathered it.", elements/vault-agent-panel: "The rule that an answer only counts when it cites actual vault reads is worth nothing unless a person can see those reads, so this panel is the surface where the agent's tool calls, audit logs, timeouts, and mandatory-read failures are judged before its answer is trusted." }
 ---
 
 ## Definition
