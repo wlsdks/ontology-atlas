@@ -2,11 +2,12 @@
 uid: 27e7b72d-dfec-405d-b236-3139b59cd68a
 slug: domains/design-system
 kind: domain
-title: Design System & Enforcement
+title: "Design System & Enforcement"
 display_ko: 디자인 시스템 지키기
-display_en: Design System & Enforcement
+display_en: "Design System & Enforcement"
 capabilities: [capabilities/control-primitives, capabilities/design-build-handoff, capabilities/design-gate-ratchets, capabilities/design-token-ramps]
 created_by: "agent:unknown"
+relation_notes: { capabilities/design-token-ramps: "This is the values leg of the domain's four: the fixed ladders every screen must choose from, which is what gives lint something concrete to block any other value against.", capabilities/control-primitives: "This is the components leg: it stops screen authors writing their own className, and it hands the token values themselves back to design-token-ramps, so the two sit beside each other under one owner rather than duplicating a value source.", capabilities/design-gate-ratchets: "This is the enforcement leg and the domain's stated differentiator, gates enforce the spec rather than documentation, which the 2026-08-03 census showed by driving hand-written buttons, links and forms to zero once they were switched on.", capabilities/design-build-handoff: "This is the assembly-order leg: it decides which rendered proof a UI change owes before implementation starts, while judging whether the finished design is good stays outside it." }
 ---
 
 ## Definition
