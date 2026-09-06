@@ -4,9 +4,11 @@ import {
   CHAT_WIDTH_DEFAULT,
   CHAT_WIDTH_MIN,
   CHAT_WIDTH_STORAGE_KEY,
+  MAP_COMFORT_WIDTH,
   MAP_MIN_WIDTH,
   RAIL_WIDTH,
   clampChatWidth,
+  defaultChatWidth,
   maxChatWidth,
   readStoredChatWidth,
   writeStoredChatWidth,
@@ -46,6 +48,67 @@ describe('대화 패널 폭 — 사용자가 끌되 지도는 지킨다', () => 
 
   it('정수로 떨어진다 — 반 픽셀 폭은 글자를 뭉갠다', () => {
     expect(clampChatWidth(420.4, 1512)).toBe(420);
+  });
+
+  /**
+   * The width nobody chose still has to be a width somebody would pick. At 460 the composer
+   * inside it was 368px, which the two pickers divided into about 181px each; 520 makes it
+   * 428px and about 211px each, so the tool and the mode read whole in the footer's two-row
+   * shape. It stays far below the 968 ceiling a 1512 screen allows, so the map keeps its share.
+   */
+  it('the default width opens the dock in its whole shape, not its folded one', () => {
+    expect(CHAT_WIDTH_DEFAULT).toBe(520);
+    expect(CHAT_WIDTH_DEFAULT).toBeGreaterThan(CHAT_WIDTH_MIN);
+    expect(CHAT_WIDTH_DEFAULT).toBeLessThanOrEqual(maxChatWidth(1512));
+    expect(defaultChatWidth(1512)).toBe(CHAT_WIDTH_DEFAULT);
+    // The default must survive the clamp unchanged — a default the clamp rewrites is not one.
+    expect(clampChatWidth(CHAT_WIDTH_DEFAULT, 1512)).toBe(CHAT_WIDTH_DEFAULT);
+  });
+});
+
+/**
+ * **A width somebody chose and a width we chose for them are not folded the same way.**
+ *
+ * `clampChatWidth` protects `MAP_MIN_WIDTH`, the floor a drag may not cross — the person is
+ * holding the edge and watching the map narrow. A default is nobody watching anything, so it
+ * stops earlier, at `MAP_COMFORT_WIDTH`.
+ *
+ * The regression that separated them: raising the default to 520 left the app's own 1040px
+ * minimum window a 480px map, and at 480 a relation caption on the map stopped fitting
+ * (`tests/e2e/analysis-workbench.spec.ts`, "showing a relationship reveals its hidden endpoint
+ * at 1040px"). Nothing about that change went near the map.
+ */
+describe('대화 패널 폭 — 아무도 안 고른 폭은 지도에 더 양보한다', () => {
+  it('leaves the map its comfortable share at the app\u2019s smallest window', () => {
+    // 1040 − 64 (rail) − 540 (map comfort) = 436, which is under the 520 ceiling.
+    expect(defaultChatWidth(1040)).toBe(1040 - RAIL_WIDTH - MAP_COMFORT_WIDTH);
+    expect(defaultChatWidth(1040)).toBe(436);
+    // And that is strictly kinder to the map than the drag floor would have been.
+    expect(defaultChatWidth(1040)).toBeLessThan(maxChatWidth(1040));
+    expect(1040 - RAIL_WIDTH - defaultChatWidth(1040)).toBeGreaterThanOrEqual(MAP_COMFORT_WIDTH);
+  });
+
+  it('takes the whole ceiling once the screen can pay for it', () => {
+    expect(defaultChatWidth(1512)).toBe(CHAT_WIDTH_DEFAULT);
+    expect(defaultChatWidth(1920)).toBe(CHAT_WIDTH_DEFAULT);
+    // The step where the ceiling starts to win: 520 + 64 + 540.
+    expect(defaultChatWidth(1124)).toBe(CHAT_WIDTH_DEFAULT);
+    expect(defaultChatWidth(1123)).toBe(519);
+  });
+
+  it('still refuses to make an unreadable panel, and still answers an unmeasurable screen', () => {
+    // Below both promises the lower bound wins, exactly as it does for a dragged width.
+    expect(defaultChatWidth(800)).toBe(CHAT_WIDTH_MIN);
+    expect(defaultChatWidth(Number.NaN)).toBe(CHAT_WIDTH_DEFAULT);
+  });
+
+  it('never crosses the drag floor either — the two promises point the same way', () => {
+    for (const viewport of [1040, 1280, 1366, 1512, 1920, 2560]) {
+      expect(defaultChatWidth(viewport), String(viewport)).toBeLessThanOrEqual(
+        maxChatWidth(viewport),
+      );
+    }
+    expect(MAP_COMFORT_WIDTH).toBeGreaterThan(MAP_MIN_WIDTH);
   });
 });
 

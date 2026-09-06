@@ -4,7 +4,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
 import { AcpChatResizeHandle } from './AcpChatResizeHandle';
-import { CHAT_WIDTH_DEFAULT, CHAT_WIDTH_STEP } from '../model/panel-width';
+import { CHAT_WIDTH_STEP, defaultChatWidth } from '../model/panel-width';
 
 /**
  * Dragging **could not be verified on screen.** A synthetic drag sent through the
@@ -22,7 +22,7 @@ beforeAll(() => {
   });
 });
 
-function renderHandle(width = CHAT_WIDTH_DEFAULT) {
+function renderHandle(width = defaultChatWidth(window.innerWidth)) {
   const onWidth = vi.fn();
   const onCommit = vi.fn();
   render(
@@ -94,10 +94,14 @@ describe('대화 칸 너비 — 키보드로도 된다', () => {
     expect(onCommit).not.toHaveBeenCalled();
   });
 
+  /*
+   * The way back is **this window's** default, not the constant. On a narrow window the two
+   * differ, and returning to a width the panel would never have opened at is not a return.
+   */
   it('두 번 누르면 기본 폭으로 되돌아간다 — 끌다 잃어버린 사람의 길', () => {
     const { handle, onCommit } = renderHandle(900);
     fireEvent.doubleClick(handle);
-    expect(onCommit).toHaveBeenCalledWith(CHAT_WIDTH_DEFAULT);
+    expect(onCommit).toHaveBeenCalledWith(defaultChatWidth(window.innerWidth));
   });
 });
 
