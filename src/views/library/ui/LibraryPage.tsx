@@ -547,7 +547,12 @@ export function LibraryPage() {
         const after = stamp(latestDocsRef.current);
         const lastAgentText = [...completion.events].reverse().find((event) => event.kind === "agent")?.text ?? null;
         if (kind === "lint") setCandidates(parseLintCandidates(lastAgentText));
-        if (kind === "propose") return;
+        /*
+         * The wiki log records what happened to the wiki. A proposal writes one ontology node
+         * and an import writes documents under `sources/`; neither touches a page, so neither
+         * is an entry, or the log would claim a compile that never ran.
+         */
+        if (kind === "propose" || kind === "import") return;
         const summary =
           kind === "lint"
             ? describeLintTurn(lastAgentText)

@@ -40,6 +40,7 @@ function Harness({ onPropose, candidates = CANDIDATES }: { onPropose: ((c: LintN
       onOpenSource={() => {}}
       onAddFiles={() => {}}
       onFindDocuments={() => {}}
+      onImportFromService={() => {}}
       onCompile={() => {}}
       onLint={() => {}}
       candidates={candidates}
