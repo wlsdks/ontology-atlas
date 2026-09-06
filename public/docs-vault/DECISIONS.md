@@ -61,6 +61,8 @@ record stays in Git history before commit `e4fb49a89`.
 **Decision**: nothing selected draws three equal-height steps with the folder's counts — Gather, Compile (waiting, behind their source, which brain runs, what leaves this computer), Read — each done/next/waiting, Compile drawn in every state and disabled with the exact reason. A page carries `View original`, a source `View write-up` marking each page current, behind, or not checked; both from `buildLibraryPairing`. `useLibraryAgent` gains a `local` route naming the connect-by-address model and host, claiming locality only for a loopback one. Ollama and llama.cpp server are MIT, vLLM Apache-2.0, LM Studio proprietary with only its HTTP endpoint used; Atlas ships no vendor code.
 **Dissent**: a `local` route that cannot compile is a label, not a capability, and should be hidden; rejected because someone who configured a runner must be told why it is unused. Step two names the price: the local runner has ontology-only tools that cannot open a source or write a page.
 **Falsifier**: three cold walkers who still cannot name a next press retire the shelf for one sentence; a page marked current that does not describe the bytes retires the pairing to a list; a local tool catalogue that reads a source and writes a page under one consent card reopens local Compile.
+**Owner**: jinan
+
 ## 2026-09-06 — The Library gets its own small graph, separate from the map
 
 **Why**: the owner asked for one inside this tab, "separate from (map, architecture)", drawn as small circles like a force graph. The Library says what is in the folder one row at a time, and nothing on the screen says which page came from which file; the map cannot say it either, because a raw source has no `kind:` and never becomes a node.
