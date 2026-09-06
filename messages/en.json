@@ -2638,7 +2638,8 @@
       "declaredBy": "Declared in",
       "editRelation": "Fix this relation on the map",
       "close": "Close",
-      "openDoc": "open"
+      "openDoc": "open",
+      "noReason": "No reason is recorded for this connection yet. Meaning review can have the agent write one."
     },
     "edgeSentence": {
       "contains": "{from} contains {to}.",
@@ -3723,7 +3724,10 @@
       "domainRemoved": "Domain removed",
       "bridgeInserted": "A new concept was inserted between two existing ones",
       "vaultProblem": "Folder problem"
-    }
+    },
+    "elapsedSeconds": "{seconds}s",
+    "elapsedMinutes": "{minutes}m {seconds}s",
+    "elapsedHours": "{hours}h {minutes}m"
   },
   "openVaultCta": {
     "label": "Open my folder",
@@ -4039,7 +4043,10 @@
       }
     },
     "openingScopeChanged": "This request has not been sent because its folder or analysis scope changed. Check the current context before starting another analysis.",
-    "dockTitle": "Conversation"
+    "dockTitle": "Conversation",
+    "elapsedSeconds": "{seconds}s",
+    "elapsedMinutes": "{minutes}m {seconds}s",
+    "elapsedHours": "{hours}h {minutes}m"
   },
   "agents": {
     "title": "Agents",

@@ -1086,6 +1086,8 @@ function HomePageImpl() {
   const [acpTurnActivityFrame, setAcpTurnActivityFrame] = useState<{
     activity: AcpTurnActivity;
     at: number;
+    /** When this turn began; kept across the turn's frames so the chip can count from it. */
+    startedAt: number;
   } | null>(null);
   const meaningEditorSource = useMemo(() => {
     if (!selectedOntologyNode || !nodeEditTarget) return null;
@@ -1362,7 +1364,13 @@ function HomePageImpl() {
    * error #301 (infinite re-render): `edgePanelModel` comes from a `useMemo` whose
    * identity is new every render, so identity comparison never converged.
    */
-  const edgePanelOpen = Boolean(edgePanelModel) && !selectedOntologyNode && !createNodeOpen && !meaningWorkbenchOpen && !acpDockFrameOpen;
+  /*
+   * The edge card opens beside the dock too (owner, 2026-09-06: clicking a connection's
+   * label with the workbench open showed nothing). It used to yield to the workbench,
+   * which only renamed its header; the card is what explains the connection, and its
+   * positioner already keeps it clear of the dock's width.
+   */
+  const edgePanelOpen = Boolean(edgePanelModel) && !selectedOntologyNode && !createNodeOpen;
   const edgePanelKey = selectedEdge ? `${selectedEdge.sourceId}→${selectedEdge.relationType}→${selectedEdge.targetId}` : null;
   const heldEdgePanelModel = useHeldValue(edgePanelOpen ? edgePanelModel : null, edgePanelKey);
   // Edge hover micro-card — the lightweight precursor to the click popover.
@@ -2568,6 +2576,12 @@ function HomePageImpl() {
       .then(() => refreshVault())
       .catch(() => {});
   }, [acpWorkReceiptStore, refreshVault]);
+  /*
+   * When the running turn began. Kept in a ref beside the frame: the frame changes with
+   * every tool call, the start does not, and the dock's close handler reads it without
+   * re-rendering. Null between turns.
+   */
+  const acpTurnStartedAtRef = useRef<number | null>(null);
   const acpLiveWork = useMemo<AgentLiveWorkInput | null>(() => {
     const frame = acpTurnActivityFrame;
     if (!frame) return null;
@@ -2578,13 +2592,16 @@ function HomePageImpl() {
       targetSlug: frame.activity.ontologySlug,
       lastTool: frame.activity.toolName,
       updatedAt: frame.at,
+      startedAt: frame.startedAt,
     };
   }, [acpRuntimeId, acpTurnActivityFrame]);
   const handleAcpTurnActivityChange = useCallback(
     (activity: AcpTurnActivity | null) => {
+      if (activity) acpTurnStartedAtRef.current ??= Date.now();
+      else acpTurnStartedAtRef.current = null;
       // The screen already has this event. React memory updates first; the sidecar
       // follows, for external consumers and for continuity across a restart.
-      setAcpTurnActivityFrame(activity ? { activity, at: Date.now() } : null);
+      setAcpTurnActivityFrame((previous) => activity ? { activity, at: Date.now(), startedAt: previous?.startedAt ?? Date.now() } : null);
       const store = acpHeartbeatStore;
       if (!store) return;
       const agent = acpHeartbeatAgentName(acpRuntimeId);
@@ -6370,6 +6387,7 @@ function HomePageImpl() {
                     }
                   : undefined
               }
+              noReasonHint={heldEdgePanelModel.why ? null : t("edgePanel.noReason")}
               labels={{
                 kicker: t("edgePanel.kicker"),
                 declaredByLabel: t("edgePanel.declaredBy"),
@@ -6584,7 +6602,15 @@ function HomePageImpl() {
            * Mount and open are now separate: mount on open, unmount once it has fully
            * left. That is this repo's per-surface rule that an exit is a two-frame job.
            */
-          onExited={() => setChatMounted(false)}
+          /*
+           * **Closing the dock does not stop the agent** (owner, 2026-09-06). Unmounting
+           * the panel ends its ACP session, and a person who closes the dock to look at
+           * the map while a long turn runs expects the turn to finish. While a turn is
+           * running the panel stays mounted behind the closed dock; the chip in the
+           * corner keeps saying what it is doing and for how long. An idle panel still
+           * unmounts on exit, as before.
+           */
+          onExited={() => { if (acpTurnStartedAtRef.current === null) setChatMounted(false); }}
           /*
            * ⚠️ The width used to be `var(--topology-agent-panel-width, 360px)`, and **that
            * token does not exist** — the 360px fallback was always what applied, while a

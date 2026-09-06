@@ -15,6 +15,7 @@ export interface AgentWorkProjection {
   nextStep: string | null;
   lastTool: string | null;
   updatedAt: number | null;
+  startedAt?: number | null;
 }
 
 /** The current state the in-app ACP already observed. Session memory that arrives before sidecar polling. */
@@ -25,6 +26,8 @@ export interface AgentLiveWorkInput {
   targetSlug: string | null;
   lastTool: string | null;
   updatedAt: number;
+  /** When this turn began, so the chip can say how long the agent has been at it. */
+  startedAt?: number | null;
 }
 
 const IDLE: AgentWorkProjection = {
@@ -63,6 +66,7 @@ export function deriveAgentWorkProjection(
       nextStep: null,
       lastTool: liveWork.lastTool,
       updatedAt: liveWork.updatedAt,
+      startedAt: liveWork.startedAt,
     };
   }
   const beat = status?.valid && !status.stale ? status.heartbeat : null;

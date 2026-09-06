@@ -8,7 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compareAnalysisBasis, latestFindingReview, readAnalysisHistory, serializeAnalysisRecord, verifyAnalysisEvidence, type AnalysisCompatibility, type AnalysisFinding, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
 import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
-import { Button, Checkbox, Chip, Disclosure, IconButton, Select, TabBar, Textarea } from '@/shared/ui';
+import { Button, Checkbox, Chip, Disclosure, IconButton, Select, TabBar, Textarea, useToast } from '@/shared/ui';
 import { RotateCcw, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
@@ -102,7 +102,8 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
     setSection({ nonce: requestNonce, viewNonce: sectionRequest?.nonce, tab: requestedTab });
   }
   const tab = section.tab;
-  const setTab = (next: Tab) => setSection({ nonce: requestNonce, viewNonce: sectionRequest?.nonce, tab: next });
+  const sectionRequestNonce = sectionRequest?.nonce;
+  const setTab = useCallback((next: Tab) => setSection({ nonce: requestNonce, viewNonce: sectionRequestNonce, tab: next }), [requestNonce, sectionRequestNonce]);
   useEffect(() => { onSectionChange?.(tab); }, [onSectionChange, tab]);
   const [loaded, setLoaded] = useState<{ handle: FileSystemDirectoryHandle; records: AnalysisRecord[]; cursor: string | null; problems: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -124,6 +125,20 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
     && record.scope.profileSlug === context.scope.profileSlug), [records, context.mode, context.scope.projectSlug, context.scope.profileSlug]);
   const selected = runs.find((run) => run.id === selectedId) ?? runs[0] ?? null;
   const saved = saveState?.handle === context.handle ? saveState : null;
+  /*
+   * **A saved analysis is news, not furniture** (owner, 2026-09-06). The report used to
+   * stand at the foot of the panel for as long as the record stayed selected, taking a
+   * row from the conversation on every tab. Success now arrives as a toast with the one
+   * action a person might want (open it); the foot keeps only what needs to stay —
+   * saving in progress, or an error with its retry.
+   */
+  const toast = useToast();
+  const savedToastId = useRef<string | null>(null);
+  useEffect(() => {
+    if (saved?.status !== 'saved' || savedToastId.current === saved.id) return;
+    savedToastId.current = saved.id;
+    toast.show(t('save.saved'), 'success', { label: t('viewSaved'), onClick: () => { setSelectedId(saved.id); setTab('history'); } });
+  }, [saved, t, toast, setSelectedId, setTab]);
   const sameScope = selected ? analysisScopeKey(selected.mode, selected.scope) === analysisScopeKey(context.mode, context.scope) : false;
   const compatibility = checked?.run === selected && checked.context === context ? checked.state : null;
   const overlayReady = !!selected && selected.qualification.status === 'grounded' && sameScope && compatibility?.status === 'current';
@@ -331,12 +346,12 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
       measured 0px apart. It now stands at the foot of the panel, beside the composer the turn
       was sent from, and lays out as one wrapping row.
     */}
-    {saved ? <div role="status" data-testid="analysis-workbench-save" className="flex shrink-0 flex-wrap items-center gap-2 text-caption text-[color:var(--color-text-secondary)]">
+    {saved && saved.status !== 'saved' ? <div role="status" data-testid="analysis-workbench-save" className="flex shrink-0 flex-wrap items-center gap-2 text-caption text-[color:var(--color-text-secondary)]">
       <span className="min-w-0 break-keep">{t(`save.${saved.status}`)}</span>
       {saved.status === 'error' ? <>
         <span className="min-w-0 break-keep">{saved.error}</span>
         {saved.record ? <>{writable && !saved.record.qualification.reasons.includes('turn_origin_mismatch') ? <Chip onClick={() => { if (context.handle && saved.record) void appendAnalysisRecord(context.handle, saved.record, context.writable).then(() => setSaveState?.({ ...saved, status: 'saved', error: null })).catch((failure: Error) => setError(failure.message)); }}>{t('retrySave')}</Chip> : null}<Chip onClick={() => exportMarkdown(serializeAnalysisRecord(saved.record!), saved.record!.id)}>{t('export')}</Chip></> : saved.rawAnswer ? <Chip onClick={() => exportMarkdown(saved.rawAnswer!, saved.id)}>{t('export')}</Chip> : null}
-      </> : saved.status === 'saved' ? <Chip onClick={() => { setSelectedId(saved.id); setTab('history'); }}>{t('viewSaved')}</Chip> : null}
+      </> : null}
     </div> : null}
   </section>;
 }

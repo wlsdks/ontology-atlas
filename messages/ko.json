@@ -2638,7 +2638,8 @@
       "declaredBy": "선언한 문서",
       "editRelation": "지도에서 이 관계 고치기",
       "close": "닫기",
-      "openDoc": "열기"
+      "openDoc": "열기",
+      "noReason": "이 연결의 이유는 아직 기록되지 않았어요. 의미 검토에서 에이전트에게 채우게 할 수 있어요."
     },
     "edgeSentence": {
       "contains": "{from}{fromJosa} {to}{toJosa} 담고 있어요.",
@@ -3723,7 +3724,10 @@
       "domainRemoved": "도메인 사라짐",
       "bridgeInserted": "두 개념 사이에 새 개념이 끼어듦",
       "vaultProblem": "폴더 문제"
-    }
+    },
+    "elapsedSeconds": "{seconds}초",
+    "elapsedMinutes": "{minutes}분 {seconds}초",
+    "elapsedHours": "{hours}시간 {minutes}분"
   },
   "openVaultCta": {
     "label": "내 폴더 열기",
@@ -4039,7 +4043,10 @@
       }
     },
     "openingScopeChanged": "요청을 준비한 폴더나 분석 대상이 달라져 아직 보내지 않았습니다. 현재 대상을 확인하고 다시 분석하세요.",
-    "dockTitle": "대화"
+    "dockTitle": "대화",
+    "elapsedSeconds": "{seconds}초",
+    "elapsedMinutes": "{minutes}분 {seconds}초",
+    "elapsedHours": "{hours}시간 {minutes}분"
   },
   "agents": {
     "title": "에이전트",
