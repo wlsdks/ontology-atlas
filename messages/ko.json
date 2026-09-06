@@ -4668,7 +4668,11 @@
     "connected": "{service} 연결됨.",
     "whatLabel": "무엇을 가져올까요?",
     "whatNext": "다음에 대화가 열립니다. 검색해서 최대 {limit}개를 보여 주고, 고를 때까지 기다려요. 고른 문서는 {folder} 아래에 하나씩 적히고, 적기 전에 매번 허락을 물어봅니다. 그 폴더 밖은 건드리지 않아요.",
-    "bringAction": "대화 열기",
-    "whatRuntime": "이건 Claude 대화에서 됩니다. Codex 는 아직 이 부분을 재지 않아서, Codex 대화는 이 폴더까지만 닿아요."
+    "bringAction": "가져오기 시작",
+    "whatRuntime": "이건 Claude 대화에서 됩니다. Codex 는 아직 이 부분을 재지 않아서, Codex 대화는 이 폴더까지만 닿아요.",
+    "revokeWhere": "{service} 에서 되돌리는 곳",
+    "noAgentTitle": "가져오는 일은 이 컴퓨터에서 도는 코딩 도구가 합니다",
+    "noAgentBody": "브라우저는 그 도구를 띄우지 못해요. 연결은 저장되었고 켜져 있으니, 이 폴더를 가리키는 코딩 도구라면 이미 쓸 수 있습니다. 문서를 받아서 여기에 적어 주는 것까지 하려면 앱에서 이 화면으로 다시 오세요.",
+    "noAgentGetApp": "앱 받기"
   }
 }

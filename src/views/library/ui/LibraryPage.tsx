@@ -964,6 +964,14 @@ export function LibraryPage() {
         onAttach={(connector) => connectors.upsert(connector)}
         onBrief={(brief) => agent.start(brief, "import")}
         /*
+         * ⚠️ **Whether the last press can do anything** (cold walkthrough, 2026-09-07). Only the
+         * coding-agent route can fetch from a service: `useLocalCompile` reads files already
+         * under `sources/` and has no tool that reaches outward, and a browser has no agent at
+         * all. Without this the dialog closed on a press that started nothing, which reads as a
+         * broken product rather than a surface that cannot do it.
+         */
+        canRunAgent={agent.route === "agent"}
+        /*
          * A service this list does not know goes to the technical dialog, which lives on `/mcp`
          * and is unchanged. `?tab=connectors` opens it on the half that adds one, so nobody
          * arrives on the share tab wondering where the connectors went.

@@ -418,6 +418,43 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
   },
   {
     /*
+     * **Bringing documents in from a service** (registered 2026-09-07). The connection itself is
+     * written into the folder and works on either surface — it is a line in a file a browser
+     * holds. What a browser cannot do is start the coding tool that goes and fetches the
+     * documents, so the last step of that errand offers no press here and says what did happen
+     * instead: the connection is saved and switched on, and any coding tool pointed at this
+     * folder can already use it.
+     *
+     * Registered because a cold walkthrough on 2026-09-07 pressed that button on the web and got
+     * nothing at all — no window, no message, no change behind the dialog. This row is what
+     * stops that from coming back.
+     */
+    name: "서비스에서 가져오기 — 브라우저는 문서를 받아 올 코딩 도구를 띄우지 못한다",
+    url: "/ko/topology/",
+    open: async (page) => {
+      await page.getByTestId("first-run-starter-open").click();
+      await page.getByTestId("vault-guide-pick-existing").click();
+      await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
+      await page.getByTestId("app-nav-rail").getByRole("link", { name: "자료실" }).click();
+      await page.getByTestId("library-import-open").waitFor({ timeout: 15_000 });
+      await page.getByTestId("library-import-open").click();
+      await page
+        .locator('[data-testid="library-import-service"][data-service="notion"]')
+        .click();
+      await page.getByTestId("library-import-connect").click();
+      await page
+        .getByTestId("library-import-no-agent")
+        .waitFor({ timeout: 20_000 });
+    },
+    needsVault: true,
+    card: "library-import-no-agent",
+    // The card does not name the browser: the sentence is true wherever it renders, and
+    // `surface-naming-ratchet` counts strings that do.
+    reason: /브라우저는 그 도구를 띄우지 못해요[\s\S]*연결은 저장되었고 켜져 있으니/,
+    destination: "library-import-no-agent-app",
+  },
+  {
+    /*
      * **Finding documents outside the open folder** (registered 2026-09-05). "Find
      * documents" walks the folder a person opened *and* the project roots they bound
      * themselves — and a binding is an absolute path, which a browser does not have and

@@ -44,6 +44,7 @@ function draw(overrides: Partial<Parameters<typeof LibraryImportDialog>[0]> = {}
         onAttach={onAttach}
         onBrief={onBrief}
         onOpenAdvanced={onOpenAdvanced}
+        canRunAgent
         {...overrides}
       />
     </NextIntlClientProvider>,
@@ -163,6 +164,44 @@ describe('bringing documents in from a service', () => {
     expect(brief).toMatch(/Do not write anything before I answer/);
     // The dock opens next, and a scrim over it would make the conversation unreachable.
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('offers no press it cannot honour, and says what did happen instead', async () => {
+    /*
+     * ⚠️ **Cold walkthrough, 2026-09-07.** On a surface with no agent the last press closed the
+     * dialog and produced nothing — no window, no message, no change behind it. The walker's own
+     * words: *"if I hadn't been told this was expected, I would assume the feature was broken"*.
+     * So the press is not offered at all, and what actually happened is said out loud: the
+     * connection is saved and switched on, and any coding tool pointed at this folder can use it.
+     */
+    draw({ canRunAgent: false });
+    pickService('notion');
+    fireEvent.click(screen.getByTestId('library-import-connect'));
+    await waitFor(() =>
+      expect(screen.getByTestId('library-import-step')).toHaveAttribute('data-step', 'choose'),
+    );
+    expect(screen.queryByTestId('library-import-bring')).toBeNull();
+    // And nothing left on screen still promises the conversation that cannot start.
+    expect(screen.queryByTestId('library-import-runtime')).toBeNull();
+    expect(document.body.textContent).not.toContain('대화가 열립니다');
+    const card = screen.getByTestId('library-import-no-agent');
+    expect(card).toHaveAttribute('role', 'status');
+    // A reason, what still works, and a destination that opens — the degradation contract.
+    expect(card).toHaveTextContent('연결은 저장되었고');
+    expect(screen.getByTestId('library-import-no-agent-app')).toHaveAttribute(
+      'href',
+      expect.stringContaining('/download'),
+    );
+  });
+
+  it('points at where the permission is really taken back, not only that a row does not do it', () => {
+    // "Told the door doesn't lock behind me, but not where the real lock is" — cold walkthrough.
+    draw();
+    pickService('notion');
+    expect(screen.getByTestId('library-import-revoke')).toHaveAttribute(
+      'href',
+      expect.stringContaining('notion.com'),
+    );
   });
 
   it('says which conversation can reach it, so Codex does not meet a silent absence', () => {

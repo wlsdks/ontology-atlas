@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Check, ExternalLink } from 'lucide-react';
 
 import { Button, Chip, Dialog, ServiceMark, resolveServiceMark } from '@/shared/ui';
+import { Link } from '@/i18n/navigation';
 import { Input } from '@/shared/ui/input';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -62,6 +63,17 @@ export function LibraryImportDialog({
   onBrief,
   /** Opens the technical dialog for a service this list does not know. */
   onOpenAdvanced,
+  /**
+   * Whether an in-app conversation can actually start here.
+   *
+   * ⚠️ **Measured in a cold walkthrough, 2026-09-07.** On the web there is no agent to hand the
+   * brief to, so the last press closed the dialog and produced nothing at all: no window, no
+   * message, no change on the screen behind. The walker wrote *"if I hadn't been told this was
+   * expected, I would assume the feature was broken"* — which is the dead-end CTA this
+   * repository refuses by name. A button that cannot act is worse than an absent one, because a
+   * person spends a press finding that out.
+   */
+  canRunAgent,
   testIdPrefix = 'library-import',
 }: {
   open: boolean;
@@ -69,6 +81,7 @@ export function LibraryImportDialog({
   onAttach: (connector: ConnectorRecord) => Promise<ConnectorWriteResult | null>;
   onBrief: (brief: string) => void;
   onOpenAdvanced: () => void;
+  canRunAgent: boolean;
   testIdPrefix?: string;
 }) {
   const t = useTranslations('libraryImport');
@@ -260,6 +273,32 @@ export function LibraryImportDialog({
           */}
           <p className="mt-2 max-w-prose break-keep border-l border-[color:var(--color-border-strong)] pl-2.5 text-label leading-prose text-[color:var(--color-text-quaternary)]">
             {ask.kind === 'browser' ? t('connectBrowserWho') : t('connectTokenWho')}
+            {/*
+              ⚠️ **Where the real lock is** (cold walkthrough, 2026-09-07). The sentence above
+              says removing this row revokes nothing, and the walker's reply was that they were
+              *"told the door doesn't lock behind me, but not where the real lock is"*. A
+              disclosure with no address is half a disclosure, so the service's own page follows
+              it — the same page the catalogue already records for this entry.
+            */}
+            {entry ? (
+              <>
+                {' '}
+                <a
+                  href={entry.docsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid={`${testIdPrefix}-revoke`}
+                  className={controlClass({ shape: 'link', tone: 'accent', className: 'text-label' })}
+                >
+                  <span aria-hidden data-external-link-marker>
+                    ↗
+                  </span>
+                  {t('revokeWhere', {
+                    service: t(`service.${service.id}.title` as 'service.notion.title'),
+                  })}
+                </a>
+              </>
+            ) : null}
           </p>
           {ask.kind === 'token' ? (
             <>
@@ -362,9 +401,17 @@ export function LibraryImportDialog({
             actually are — and saying that is better than a screen implying a list will appear
             here and then not producing one.
           */}
-          <p className="mt-2 max-w-prose break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
-            {t('whatNext', { limit: DEFAULT_IMPORT_LIMIT, folder: service.folder })}
-          </p>
+          {/*
+            ⚠️ **Both of these describe the conversation, so neither is drawn where there cannot
+            be one.** Left unconditional, the web read "a conversation opens next" directly above
+            a card saying a browser cannot start one — two sentences contradicting each other in
+            the same box (rendered capture, 2026-09-07).
+          */}
+          {canRunAgent ? (
+            <p className="mt-2 max-w-prose break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
+              {t('whatNext', { limit: DEFAULT_IMPORT_LIMIT, folder: service.folder })}
+            </p>
+          ) : null}
           {/*
             ⚠️ **Which conversation can actually reach it** (2026-09-07, caught while reading the
             handshake rather than the screen). `connectorAcpServers` hands connectors only to a
@@ -375,26 +422,65 @@ export function LibraryImportDialog({
             the friendliest door in the product. The MCP screen has said this since 2026-09-05;
             saying it only there would mean the easy path is the one that lies.
           */}
-          <p
-            data-testid={`${testIdPrefix}-runtime`}
-            className="mt-1 max-w-prose break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
-          >
-            {t('whatRuntime')}
-          </p>
+          {canRunAgent ? (
+            <p
+              data-testid={`${testIdPrefix}-runtime`}
+              className="mt-1 max-w-prose break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+            >
+              {t('whatRuntime')}
+            </p>
+          ) : null}
+          {canRunAgent ? null : (
+            /*
+             * Why it cannot happen here and what still worked — the degradation contract, not a
+             * dead button. What *did* happen is worth saying: the connection is written into the
+             * folder and switched on, so any coding tool pointed at this folder can use it, and
+             * the person can come back to this screen in the app and finish the errand.
+             */
+            <div
+              role="status"
+              data-testid={`${testIdPrefix}-no-agent`}
+              className="mt-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2.5"
+            >
+              <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                {t('noAgentTitle')}
+              </p>
+              <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+                {t('noAgentBody')}
+              </p>
+              <Link
+                href="/download/"
+                data-testid={`${testIdPrefix}-no-agent-app`}
+                className={controlClass({
+                  shape: 'link',
+                  tone: 'accent',
+                  className: 'mt-2 text-label font-[var(--font-weight-signature)]',
+                })}
+              >
+                {t('noAgentGetApp')}
+              </Link>
+            </div>
+          )}
           <div className="mt-4 flex items-center justify-between gap-2">
             <Button variant="ghost" onClick={() => setStep('connect')}>
               {t('back')}
             </Button>
-            <Chip
-              size="lg"
-              tone="accentOnTint"
-              data-testid={`${testIdPrefix}-bring`}
-              onClick={bring}
-              className="border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
-            >
-              <ExternalLink size={ICON_SIZE.sm} aria-hidden />
-              {t('bringAction')}
-            </Chip>
+            {canRunAgent ? (
+              <Chip
+                size="lg"
+                tone="accentOnTint"
+                data-testid={`${testIdPrefix}-bring`}
+                onClick={bring}
+                className="border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
+              >
+                <ExternalLink size={ICON_SIZE.sm} aria-hidden />
+                {t('bringAction')}
+              </Chip>
+            ) : (
+              <Button variant="ghost" data-testid={`${testIdPrefix}-done`} onClick={close}>
+                {t('close')}
+              </Button>
+            )}
           </div>
         </>
       ) : null}

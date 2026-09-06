@@ -63,5 +63,37 @@ test("자료실에 서비스에서 가져오는 문이 있고, 전문 용어를 
    */
   await expect(dialog).toContainText("코딩 도구가 열고");
   await expect(dialog).toContainText("취소되지는 않아요");
+  // Told that the row does not revoke, and told where the real lock is (cold walkthrough).
+  await expect(page.getByTestId("library-import-revoke")).toHaveAttribute("href", /notion\.com/);
   await expect(page.getByTestId("library-import-connect")).toBeVisible();
+});
+
+test("웹에서는 못 누를 버튼을 내밀지 않고, 대신 무엇이 되었는지 말한다", async ({ page }) => {
+  /*
+   * ⚠️ **A cold walkthrough pressed this button on the web and got nothing** (2026-09-07): no
+   * window, no message, no change behind the closing dialog. Only the coding-agent route can
+   * fetch from a service, and a browser has no agent, so the press is not offered here — what
+   * did happen is said instead. A button that cannot act is worse than an absent one.
+   */
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1512, height: 982 });
+  await stubDirectoryPicker(page, { ...FIXTURE_VAULT });
+  await seedFirstRunSeen(page);
+  await page.goto("/ko/topology/?guides=off");
+  await page.waitForLoadState("networkidle");
+  await page.getByTestId("first-run-starter-open").click();
+  await page.getByTestId("vault-guide-pick-existing").click();
+  await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
+  await page.goto("/ko/library/");
+  await page.waitForLoadState("networkidle");
+  await page.getByTestId("library-import-open").click();
+  await page.locator('[data-testid="library-import-service"][data-service="notion"]').click();
+  await page.getByTestId("library-import-connect").click();
+
+  await expect(page.getByTestId("library-import-step")).toHaveAttribute("data-step", "choose");
+  await expect(page.getByTestId("library-import-bring")).toHaveCount(0);
+  const card = page.getByTestId("library-import-no-agent");
+  await expect(card).toBeVisible();
+  await expect(card).toContainText("연결은 저장되었고");
+  await expect(page.getByTestId("library-import-no-agent-app")).toHaveAttribute("href", /download/);
 });
