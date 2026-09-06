@@ -23,8 +23,12 @@
 
 /** The minimum width at which one line reads. Below it, the conversation becomes vertical text. */
 export const CHAT_WIDTH_MIN = 320;
-/** The width when nobody has dragged — carries the previous default forward. */
-export const CHAT_WIDTH_DEFAULT = 420;
+/**
+ * The width when nobody has dragged. 420 carried the pre-resize default forward; the owner
+ * read it as tight for a conversation (2026-09-06, installed app at 1512), so it takes one
+ * more 40px step. The map keeps MAP_MIN_WIDTH at every window width through the clamp.
+ */
+export const CHAT_WIDTH_DEFAULT = 460;
 /** The minimum width the map must keep. This panel's upper bound derives from it. */
 export const MAP_MIN_WIDTH = 480;
 /** The left rail. Along with the map, it comes off the screen's width first. */
