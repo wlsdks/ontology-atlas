@@ -842,7 +842,7 @@ function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, 
  * nodes sideways rather than up and down.
  *
  * It came from the three.js structure probe of 2026-09-06
- * (`docs/benchmark/THREE-PROBE-2026-09-06.md`), which compared four structures in
+ * (`the three.js probe branch `feat/three-probe`, summarised in docs/benchmark/STRATA-2026-09-06.md`), which compared four structures in
  * a WebGL twin and found this one best at tier legibility "by a distance" while
  * the renderer itself bought nothing: equal frame time at 125 and at 1,000 nodes,
  * +137 kB gzip. The structure was the find, and a structure is renderer-independent,
