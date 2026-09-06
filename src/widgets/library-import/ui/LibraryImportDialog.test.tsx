@@ -45,6 +45,7 @@ function draw(overrides: Partial<Parameters<typeof LibraryImportDialog>[0]> = {}
         onBrief={onBrief}
         onOpenAdvanced={onOpenAdvanced}
         canRunAgent
+        agentGap="browser"
         {...overrides}
       />
     </NextIntlClientProvider>,
@@ -192,6 +193,27 @@ describe('bringing documents in from a service', () => {
       'href',
       expect.stringContaining('/download'),
     );
+  });
+
+  it('names the right absence: the app has a runtime gap, not a browser', () => {
+    /*
+     * ⚠️ **Two different absences** (caught by `surface-naming-ratchet`, 2026-09-07). A browser
+     * cannot start any program; the installed app can and has simply verified no coding tool
+     * yet. One sentence for both would be false in the app, and the remedies differ — the app
+     * versus the runtimes screen.
+     */
+    draw({ canRunAgent: false, agentGap: 'runtime' });
+    pickService('notion');
+    fireEvent.click(screen.getByTestId('library-import-connect'));
+    return waitFor(() => {
+      const card = screen.getByTestId('library-import-no-agent');
+      expect(card).toHaveTextContent('아직 준비된 도구가 없어요');
+      expect(card.textContent).not.toContain('브라우저');
+      expect(screen.getByTestId('library-import-no-agent-app')).toHaveAttribute(
+        'href',
+        expect.stringContaining('/agents'),
+      );
+    });
   });
 
   it('points at where the permission is really taken back, not only that a row does not do it', () => {

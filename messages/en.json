@@ -4671,8 +4671,10 @@
     "bringAction": "Start bringing them in",
     "whatRuntime": "This works in a Claude conversation. Codex has not been measured for it yet, so a Codex conversation reaches this folder and nothing else.",
     "revokeWhere": "Where to take it back in {service}",
-    "noAgentTitle": "The fetching needs a coding tool running on this computer",
-    "noAgentBody": "A browser cannot start one. The connection is saved and switched on, so any coding tool you point at this folder can already use it; come back to this screen in the app to have the documents fetched and written here for you.",
-    "noAgentGetApp": "Get the app"
+    "noAgentTitle": "The fetching needs a coding tool this app can start",
+    "noAgentGetApp": "Get the app",
+    "noAgentBodyWeb": "A browser cannot start one. The connection is saved and switched on, so any coding tool you point at this folder can already use it; come back to this screen in the app to have the documents fetched and written here for you.",
+    "noAgentBodyRuntime": "None is ready on this computer yet. The connection is saved and switched on, so any coding tool you point at this folder can already use it; set one up and come back to finish here.",
+    "noAgentSeeRuntimes": "See your coding tools"
   }
 }

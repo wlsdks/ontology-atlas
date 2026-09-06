@@ -10,6 +10,7 @@ import { useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useVaultConnectors } from "@/features/mcp-connectors";
+import { isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import {
   addSources,
   addSourcesInBrowser,
@@ -971,6 +972,12 @@ export function LibraryPage() {
          * broken product rather than a surface that cannot do it.
          */
         canRunAgent={agent.route === "agent"}
+        /*
+         * Two different absences: a browser cannot start any program, while the installed app can
+         * and has simply verified no coding tool yet. The remedies differ too — one is the app,
+         * the other is the runtimes screen — so the card is told which it is meeting.
+         */
+        agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
         /*
          * A service this list does not know goes to the technical dialog, which lives on `/mcp`
          * and is unchanged. `?tab=connectors` opens it on the half that adds one, so nobody

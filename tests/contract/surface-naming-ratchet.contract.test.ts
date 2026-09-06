@@ -25,8 +25,17 @@ import { describe, expect, it } from 'vitest';
  * makes it one somebody has to take deliberately by moving the number.
  */
 
-/** Measured 2026-08-28, after the two defects above were repaired. Lower it when you remove one. */
-const SURFACE_NAMED_CEILING = 17;
+/**
+ * Measured 2026-08-28, after the two defects above were repaired. Lower it when you remove one.
+ *
+ * **17 → 18 on 2026-09-07**, deliberately. The Library's service door cannot start a coding tool
+ * on the web, and its card says so; the sentence is drawn only when `agentGap === "browser"`,
+ * which is exactly the surface check this ratchet asks for before a number moves. The other half
+ * of that same card — the installed app with no verified runtime — states the missing tool
+ * instead of a surface and is not counted, because in the app "a browser cannot" would simply be
+ * false. Gate for both halves: `LibraryImportDialog.test.tsx`, "names the right absence".
+ */
+const SURFACE_NAMED_CEILING = 18;
 
 const NAMES_A_SURFACE = /브라우저|browser/i;
 

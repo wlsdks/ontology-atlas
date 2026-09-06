@@ -6,6 +6,7 @@ import { Check, ExternalLink } from 'lucide-react';
 
 import { Button, Chip, Dialog, ServiceMark, resolveServiceMark } from '@/shared/ui';
 import { Link } from '@/i18n/navigation';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { Input } from '@/shared/ui/input';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -74,6 +75,15 @@ export function LibraryImportDialog({
    * person spends a press finding that out.
    */
   canRunAgent,
+  /**
+   * Why it cannot, when it cannot.
+   *
+   * ⚠️ **Two different absences, and one sentence cannot carry both.** A browser has no way to
+   * start any program; the installed app can, and simply has no coding tool it has verified yet.
+   * Saying "a browser cannot start one" inside the app would be false, and the remedy differs —
+   * one is `/download/`, the other is the runtimes screen.
+   */
+  agentGap,
   testIdPrefix = 'library-import',
 }: {
   open: boolean;
@@ -82,6 +92,7 @@ export function LibraryImportDialog({
   onBrief: (brief: string) => void;
   onOpenAdvanced: () => void;
   canRunAgent: boolean;
+  agentGap: 'browser' | 'runtime';
   testIdPrefix?: string;
 }) {
   const t = useTranslations('libraryImport');
@@ -446,10 +457,10 @@ export function LibraryImportDialog({
                 {t('noAgentTitle')}
               </p>
               <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
-                {t('noAgentBody')}
+                {agentGap === 'browser' ? t('noAgentBodyWeb') : t('noAgentBodyRuntime')}
               </p>
               <Link
-                href="/download/"
+                href={agentGap === 'browser' ? '/download/' : DESTINATION_HREF.agents}
                 data-testid={`${testIdPrefix}-no-agent-app`}
                 className={controlClass({
                   shape: 'link',
@@ -457,7 +468,7 @@ export function LibraryImportDialog({
                   className: 'mt-2 text-label font-[var(--font-weight-signature)]',
                 })}
               >
-                {t('noAgentGetApp')}
+                {agentGap === 'browser' ? t('noAgentGetApp') : t('noAgentSeeRuntimes')}
               </Link>
             </div>
           )}
