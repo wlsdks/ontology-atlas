@@ -894,17 +894,20 @@ and none crosses the column's side edge at 1512, 1040, 768 or 390. **`compiled` 
 chip** on 2026-09-06: on the owner's folder all seven rows wore the same green pill, which
 is a texture rather than a state, so success is a quiet check in the row's own ink and a
 chip is spent only where a person can act. The one local-first disclosure follows the
-Compile press it describes — the connect-by-address runner's sentence, under the press, on
-whichever card is drawn. The agent route's sentence is not that: it says Atlas is **not** in
-the path, so since 2026-09-12 it is the index head's glyph panel and nothing inline.
+Compile press it describes — the connect-by-address runner's sentence, under the press, in
+the Compile popover or an open source's pane. The agent route's sentence is not that: it
+says Atlas is **not** in the path, so since 2026-09-12 it is the index head's glyph panel
+and nothing inline, in the guide's step two least of all.
 
 **A toast stands in the corner of the pane it is about** (owner, 2026-09-12: *"the toast at
 the top — its position is odd too, right?"*). This surface claims `bottom-right` where the
 rest of the app keeps the top centre, and the two walls it stops a 16px gutter short of are
 the pane's rather than the window's: the conversation's left edge from `xl` up, and the
-bottom tab bar's top below `lg`. While the graph or the answer comparison stands, both
-gutters grow to that dialog's inset plus its padding, so the box lands inside the dialog
-instead of across its edge; a dialog that asks a question clears toasts instead.
+bottom tab bar's top below `lg`. While the answer comparison stands — the one
+`size="viewport"` dialog this view has left since the graph became the home — both gutters
+grow to that dialog's inset plus its padding, so the box lands inside the dialog instead of
+across its edge; a dialog that asks a question clears toasts instead, which is what Find
+documents does.
 
 The Wiki half carries what the wiki's own work needs, in this shape (merged from the LLM
 Wiki round, 2026-09-07): the count on the switch above, then **Check the wiki** and
