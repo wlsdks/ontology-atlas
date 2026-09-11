@@ -232,7 +232,8 @@ export function SourceSummary({
     const reduced =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
-    section.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+    // Optional call: jsdom has no scroller, and a landing is not worth throwing over.
+    section.scrollIntoView?.({ behavior: reduced ? "auto" : "smooth", block: "start" });
     heading.focus({ preventScroll: true });
   }, [passageKey]);
 
