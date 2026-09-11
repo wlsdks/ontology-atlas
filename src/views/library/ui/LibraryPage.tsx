@@ -210,6 +210,9 @@ export function restoreFiledAnswer(current: RetainedLibraryAnswer | null, filed:
 export function LibraryPage() {
   const reducedMotion = usePrefersReducedMotion();
   const t = useTranslations("library");
+  /* The folded check answer is drawn inside the chat, so its two strings live in that
+     namespace rather than the Library's. */
+  const tChat = useTranslations("acpChat");
   const locale = useLocale();
   const toast = useToast();
   const localVault = useLocalVault();
@@ -281,9 +284,22 @@ export function LibraryPage() {
    * pages are being rewritten when nothing is writing them.
    */
   const [compileRunning, setCompileRunning] = useState(false);
+  /*
+   * **The check's own two states, which only the index row can carry** (owner, 2026-09-12).
+   * A check runs in the dock, so a person who started one and went back to reading a page
+   * had nothing on screen saying it was still going, or that it had finished. `lintRunning`
+   * is that turn in flight — narrower than `turnRunning`, which is also true of Fix, Ask and
+   * Propose. `reportUnseen` is a finished check this person has not opened yet; it clears on
+   * opening the report, including the automatic open below.
+   */
+  const [lintRunning, setLintRunning] = useState(false);
+  const [reportUnseen, setReportUnseen] = useState(false);
   const choose = useCallback((next: typeof selected) => {
     setSourceCitation(null);
     setSelected(next);
+    // Opening the report is what "seen" means. Every door — the index row, the automatic
+    // open after a check, a deep link — goes through here, so the mark cannot outlive a read.
+    if (next?.kind === "report") setReportUnseen(false);
     /*
      * **The switch follows what was opened.** A file can be reached from three places that
      * are not the index — the graph, the guide, and a reader's own crossings — and the
@@ -1086,6 +1102,27 @@ export function LibraryPage() {
   const [findings, setFindings] = useState<LintFinding[]>([]);
   /* A candidate the card already turned into a node leaves the list; the report cannot know. */
   const openCandidates = useMemo(() => dropCandidatesWithNodes(candidates, docs), [candidates, docs]);
+  /**
+   * The rail's headings and the index door's count, both derived from what the page
+   * actually holds — the app's computed half plus the agent's remembered one.
+   *
+   * `reportDoorCount` is `null` only when there is no wiki to report on at all. Any other
+   * state has a door: the structural half is computed from the folder, so "nobody has
+   * pressed anything yet" is no longer a reason to hide the screen (both PO seats,
+   * 2026-09-12).
+   */
+  const reportHeadings = useMemo(
+    () => reportOutline(model.structural, findings, openCandidates.length, t),
+    [findings, model.structural, openCandidates.length, t],
+  );
+  const reportDoorCount = useMemo(() => {
+    const structuralCount = model.structural.findingCount;
+    const agentCount = findings.length + openCandidates.length;
+    if (model.wikiPages.length === 0 && structuralCount + agentCount === 0 && !model.log.lastLint) {
+      return null;
+    }
+    return structuralCount + agentCount;
+  }, [findings.length, model.log.lastLint, model.structural.findingCount, model.wikiPages.length, openCandidates.length]);
   const latestDocsRef = useRef(docs);
   useEffect(() => {
     latestDocsRef.current = docs;
@@ -1119,9 +1156,11 @@ export function LibraryPage() {
       const writer = agent.runtime ? `agent:${agent.runtime.id}` : "agent:unknown";
       setTurnRunning(true);
       if (kind === "compile") setCompileRunning(true);
+      if (kind === "lint") setLintRunning(true);
       return async (completion: AcpTurnCompletion) => {
         setTurnRunning(false);
         setCompileRunning(false);
+        setLintRunning(false);
         if (kind === 'refresh') {
           setLibraryWorkActivity(clearLibraryWork);
           if (refreshTurn) receiveAnswerRefresh(refreshTurn,
@@ -1152,6 +1191,7 @@ export function LibraryPage() {
         const lastAgentText = [...completion.events].reverse().find((event) => event.kind === "agent")?.text ?? null;
         if (kind === "lint") setCandidates(parseLintCandidates(lastAgentText));
         if (kind === "lint") setFindings(parseLintFindings(lastAgentText));
+        if (kind === "lint") setReportUnseen(true);
         // A new check re-judges every page: the "fixed" marks are its to give again.
         if (kind === "lint") setFixedKeys(new Set());
         if (kind === "fix" && pendingFixRef.current) {
@@ -1948,14 +1988,26 @@ export function LibraryPage() {
             onImportFromService={openImport}
             onCompile={agent.route === "agent" || agent.route === "local" ? handleCompile : null}
             onLint={agent.route === "agent" ? handleLint : null}
+            lintBlockedReason={agentOnlyReason}
             hasWikiTemplate={docs.some((doc) => doc.slug === "wiki/_template")}
             onNewPage={handle ? handleNewPage : null}
+            /*
+             * The door is open whenever there is a wiki to report on. It used to require
+             * `findings.length + … > 0 || model.log.lastLint` — an agent having run at
+             * least once — so a person with no agent had no way to reach the one screen
+             * that could tell them which of their pages carried which structural finding,
+             * although the app had already computed every one of them (both PO seats,
+             * 2026-09-12). The count now counts what the page actually holds: the app's
+             * own findings plus the agent's.
+             */
             report={
-              findings.length + openCandidates.length > 0 || model.log.lastLint
+              reportDoorCount !== null
                 ? {
-                    count: findings.length + openCandidates.length,
+                    count: reportDoorCount,
                     open: opened?.kind === "report",
                     onOpen: () => choose({ kind: "report" }),
+                    running: lintRunning,
+                    unseen: reportUnseen && opened?.kind !== "report",
                   }
                 : null
             }
@@ -2158,9 +2210,9 @@ export function LibraryPage() {
               data-testid="library-report-pane"
               scrollRef={reportSpy.articleScrollRef}
               outline={
-                reportOutline(findings, openCandidates.length, t).length >= 2
+                reportHeadings.length >= 2
                   ? {
-                      headings: reportOutline(findings, openCandidates.length, t),
+                      headings: reportHeadings,
                       activeHeadingSlug: reportSpy.activeHeadingSlug,
                       onHeadingClick: handleReportHeadingNavigate,
                     }
@@ -2169,11 +2221,13 @@ export function LibraryPage() {
               backToTop={reportBackToTop}
             >
               <LibraryCheckReport
+                structural={model.structural}
                 findings={findings}
                 candidates={openCandidates}
                 lastLint={model.log.lastLint}
                 busy={busy || turnRunning}
                 onLint={agent.route === "agent" ? handleLint : null}
+                lintBlockedReason={agentOnlyReason}
                 onFix={agent.route === "agent" ? handleFix : null}
                 onPropose={agent.route === "agent" && hasOntology ? handlePropose : null}
                 onOpenPage={(slug) => choose({ kind: "wiki", slug })}
@@ -2391,6 +2445,22 @@ export function LibraryPage() {
           vaultRoot={nativeVaultRootPath}
           mcpServers={agent.mcpServers}
           openingRequest={agent.openingRequest}
+          /*
+           * The check's answer is the Library's own ledger, so the chat carries one line
+           * and a door instead of the whole report (owner, 2026-09-12). Matched on the
+           * request this dock actually sent, so an older check in the scrollback folds the
+           * same way it did when it arrived.
+           */
+          answerFold={
+            agent.openingRequest?.kind === "lint"
+              ? {
+                  request: agent.openingRequest.text,
+                  line: tChat("checkAnswerLine"),
+                  doorLabel: tChat("checkAnswerDoor"),
+                  onOpen: () => choose({ kind: "report" }),
+                }
+              : null
+          }
           knownSlugs={knownSlugs}
           onClose={() => agent.setOpen(false)}
         />

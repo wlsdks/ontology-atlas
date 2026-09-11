@@ -11,6 +11,7 @@ import {
 import { nativeVaultFileHashes } from "@/shared/lib/tauri-vault-fs";
 import { isRetainedAnswerPath, parseWikiLog, retainedAnswerHeads, type RetainedAnswerHead, type WikiLogEntry } from "@/features/library";
 import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/wiki-page-schema";
+import { aggregateWikiFindings, type WikiReport } from "@/shared/lib/wiki-report.mjs";
 import { mergeWikiVerdict } from "./merge-wiki-verdict";
 
 /**
@@ -66,6 +67,21 @@ export interface LibraryUiModel extends LibraryModel {
    * Null when the log has no such line yet.
    */
   log: { lastCompile: WikiLogEntry | null; lastLint: WikiLogEntry | null };
+  /**
+   * **The structural check, grouped the way a person reads it** — one entry per finding
+   * kind, the pages under it, advisory kinds last.
+   *
+   * Derived, never remembered: it is `verdicts` regrouped by
+   * `mcp/src/wiki-report.mjs`, the same module `wiki-validate` and `validate_wiki` group
+   * with, so the Check-results page and a terminal cannot enumerate one folder two ways
+   * (`docs/DECISIONS.md` 2026-09-11 makes that difference a falsifier). It is therefore
+   * true on every open, on every route, with no button and no agent.
+   *
+   * `unmeasured` is the honest half: page bytes are read lazily, so on the first frames
+   * of a folder there are pages this report has not judged. A reader is told that rather
+   * than being shown a short list as if it were complete.
+   */
+  structural: WikiReport;
   /**
    * Measured sha256 by source path, for the rows the reader opens.
    *
@@ -304,16 +320,43 @@ export function useLibraryModel({
     return { pageTexts, verdicts };
   }, [pageInputs, rawByStamp, sources]);
 
+  /*
+   * One aggregator decides both numbers. `offTemplateCount` used to be counted here from
+   * `!verdict.ok` while `wiki-validate` counted every page with any finding, so the app's
+   * footer said "2 pages do not fit the template" on the folder a terminal called
+   * `0/6 pages fit` — two correct numbers from two rules (both PO seats, 2026-09-12).
+   * `blockingPageCount` is now that one rule, and the report's head states what it counts.
+   */
+  const structural = useMemo(
+    () =>
+      aggregateWikiFindings({
+        pages: [...verdicts].map(([slug, verdict]) => ({
+          path: `${slug}.md`,
+          problems: verdict.problems,
+        })),
+        unmeasured: pageInputs
+          .filter(({ slug }) => !verdicts.has(slug))
+          .map(({ slug }) => `${slug}.md`),
+      }),
+    [pageInputs, verdicts],
+  );
+
   return useMemo(() => {
-    let offTemplateCount = 0;
-    for (const [, verdict] of verdicts) {
-      if (!verdict.ok) offTemplateCount += 1;
-    }
     // A folder whose log was removed shows no line: the entries are read only while the
     // file is there, and are ignored, not cleared, when it is not.
     const entries = logDoc ? logEntries : [];
     const lastCompile = [...entries].reverse().find((entry) => entry.kind === "compile") ?? null;
     const lastLint = [...entries].reverse().find((entry) => entry.kind === "lint") ?? null;
-    return { ...model, verdicts, offTemplateCount, hashes, pageTexts, retainedAnswers, answerVersions, log: { lastCompile, lastLint } };
-  }, [answerVersions, hashes, logDoc, logEntries, model, pageTexts, retainedAnswers, verdicts]);
+    return {
+      ...model,
+      verdicts,
+      offTemplateCount: structural.blockingPageCount,
+      structural,
+      hashes,
+      pageTexts,
+      retainedAnswers,
+      answerVersions,
+      log: { lastCompile, lastLint },
+    };
+  }, [answerVersions, hashes, logDoc, logEntries, model, pageTexts, retainedAnswers, structural, verdicts]);
 }

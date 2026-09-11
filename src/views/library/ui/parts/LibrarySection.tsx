@@ -10,6 +10,7 @@ import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault"
 import { writerLabel } from "../../lib/writer-label";
 import { controlClass } from "@/shared/ui/control-class";
 import { Chip, RowButton, Tooltip } from "@/shared/ui";
+import { BrandWaitingMark } from "@/shared/ui/brand-waiting-mark";
 import { Input } from "@/shared/ui/input";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import {
@@ -147,6 +148,15 @@ export interface LibrarySectionProps {
   onCompile: (() => void) | null;
   /** Starts the report-only health check; null where no agent can run, like Compile. */
   onLint: (() => void) | null;
+  /**
+   * Why the check cannot run here. Given, the chip is drawn **disabled beside its reason**
+   * rather than removed: a feature the product has is always on screen, and availability
+   * is a state with its reason (`docs/DECISIONS.md` 2026-09-11). Slice 1 applied that rule
+   * on the landing; this column and the report page still hid the chip entirely, so on a
+   * no-agent route two of the three places the product offers the check said nothing at
+   * all (measured 2026-09-12).
+   */
+  lintBlockedReason?: string | null;
   /** Names the last check found with no page of their own — offered as ontology node candidates. */
   /** What the last check found under its first three categories, each with a door to fix it. */
   /** Starts one agent turn that proposes the candidate through the ontology-write card; null like the others. */
@@ -158,12 +168,25 @@ export interface LibrarySectionProps {
   onNewPage?: ((title: string) => void) | null;
   /**
    * The Check results page: how many findings and names it holds, whether it is the open
-   * page, and the press that opens it. Null when the wiki was never checked — the row is
-   * the index's one line about the check, and an unchecked wiki has none (design-lead,
-   * council 2026-09-07: the report's door must survive a page being open, which the
-   * canvas header does not).
+   * page, and the press that opens it. The row is the index's one line about the check,
+   * and it must survive a page being open, which the canvas header does not (design-lead,
+   * council 2026-09-07).
+   *
+   * ⚠️ **No longer null on an unchecked wiki.** It used to be, because every row on that
+   * page came from an agent turn — so a person with no agent reached no door, and the one
+   * screen that could have shown them their folder's own structural findings was
+   * unreachable (measured 2026-09-12). Half the report is now computed from the folder, so
+   * the door is open whenever there is a wiki to report on.
    */
-  report?: { count: number; open: boolean; onOpen: () => void } | null;
+  report?: {
+    count: number;
+    open: boolean;
+    onOpen: () => void;
+    /** A check is in flight right now. The row says so live, rather than wearing a label. */
+    running?: boolean;
+    /** A check finished and this person has not opened the report since. */
+    unseen?: boolean;
+  } | null;
   /**
    * The brain picker, when this computer offers two and Compile can therefore be pointed
    * at either. Null draws nothing: with one brain there is no choice to make.
@@ -289,6 +312,7 @@ export function LibrarySection({
   onLint,
   hasWikiTemplate = true,
   onNewPage = null,
+  lintBlockedReason = null,
   report = null,
   brainControl,
   compileNote,
@@ -804,7 +828,7 @@ export function LibrarySection({
     <section data-testid="library-wiki" className="flex flex-col pb-1 pt-3">
       {searchField}
       <SectionActions>
-        {onCompile || onLint ? (
+        {onCompile || onLint || lintBlockedReason ? (
           <>
             {/*
               **The two doors share one line, reading before writing.** The span does not
@@ -814,16 +838,18 @@ export function LibrarySection({
               own; it is what the press will run on, not a third door.
             */}
             <span className="flex min-w-0 items-center gap-1">
-              {onLint ? (
+              {onLint || lintBlockedReason ? (
                 // The judgement half of the health check: what `wiki-validate` cannot
                 // decide (two pages disagreeing, a claim a later page replaced). Report
                 // only, so it needs no page count to be worth pressing — one page has
-                // nothing to disagree with, hence two.
-                <Tooltip content={t("wiki.lintTooltip")}>
+                // nothing to disagree with, hence two. Drawn disabled with its reason in
+                // the tooltip where no agent can run it, so the column names every door
+                // the product has.
+                <Tooltip content={onLint ? t("wiki.lintTooltip") : (lintBlockedReason ?? t("wiki.lintTooltip"))}>
                   <Chip
                     data-testid="library-lint"
-                    onClick={onLint}
-                    disabled={busy || model.wikiPages.length < 2}
+                    onClick={onLint ?? undefined}
+                    disabled={busy || onLint === null || model.wikiPages.length < 2}
                     tone="muted"
                     className="flex-none hover:text-[color:var(--color-text-primary)]"
                     aria-label={t("wiki.lint")}
@@ -895,13 +921,24 @@ export function LibrarySection({
       ) : null}
 
       {report ? (
-        /* The index's one line about the check: where its answer is, and how much it holds.
-           A row, not a door — pressing it opens a page, it starts nothing. */
+        /*
+         * The index's one line about the check: where its answer is, and how much it holds.
+         * A row, not a door — pressing it opens a page, it starts nothing.
+         *
+         * **Three states, because the row is the only thing on screen that can carry them**
+         * (owner, 2026-09-12). A check runs in the dock, and a person who started one and
+         * went back to reading had nothing telling them it was still going or that it had
+         * finished. So: *running* is announced live while the turn is in flight; *unseen*
+         * marks a finished check this person has not opened yet and clears when they do;
+         * and the count itself is the app's own half plus the agent's, so it moves on every
+         * open without anybody pressing anything.
+         */
         <div className="px-2 pb-1">
           <RowButton
             data-testid="library-open-report"
             active={report.open}
             aria-current={report.open ? "page" : undefined}
+            data-report-state={report.running ? "running" : report.unseen ? "unseen" : undefined}
             onClick={report.onOpen}
             className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
           >
@@ -909,6 +946,33 @@ export function LibrarySection({
             <span className="min-w-0 flex-1 truncate">
               {report.count > 0 ? t("report.open", { count: report.count }) : t("report.title")}
             </span>
+            {/*
+              `aria-live` on the running word, not on the row: a row whose label is live
+              would re-announce the count every time the folder polls. `BrandWaitingMark`
+              is the app's own running mark, so a check reads like every other wait.
+            */}
+            {report.running ? (
+              <span
+                data-testid="library-report-running"
+                className="flex flex-none items-center"
+              >
+                <BrandWaitingMark active />
+                <span aria-live="polite" className="sr-only">
+                  {t("report.running")}
+                </span>
+              </span>
+            ) : report.unseen ? (
+              /* A dot, not a word: the row already carries the count, and the one thing
+                 this mark adds is "you have not seen this yet". Indigo is the app's own
+                 attention tone, and the word behind it is what a screen reader is told. */
+              <span data-testid="library-report-unseen" className="flex flex-none items-center">
+                <span
+                  aria-hidden
+                  className="size-1.5 rounded-full bg-[color:var(--color-indigo-brand)]"
+                />
+                <span className="sr-only">{t("report.unseen")}</span>
+              </span>
+            ) : null}
           </RowButton>
         </div>
       ) : null}

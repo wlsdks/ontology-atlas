@@ -4162,7 +4162,10 @@
     "dockTitle": "대화",
     "elapsedSeconds": "{seconds}초",
     "elapsedMinutes": "{minutes}분 {seconds}초",
-    "elapsedHours": "{hours}시간 {minutes}분"
+    "elapsedHours": "{hours}시간 {minutes}분",
+    "checkAnswerLine": "점검 결과는 앱이 직접 확인한 것과 나란히 「점검 결과」 페이지에 있습니다.",
+    "checkAnswerDoor": "점검 결과 열기",
+    "checkAnswerFull": "에이전트의 보고 원문"
   },
   "agents": {
     "title": "에이전트",
@@ -4861,13 +4864,21 @@
     },
     "report": {
       "title": "점검 결과",
-      "never": "아직 점검하지 않았습니다. 위키 점검을 누르면 문서끼리 어긋나는 값, 나중 문서가 바꿔 놓은 주장, 빠진 연결, 문서 없는 이름을 여기에 모읍니다.",
-      "clean": "마지막 점검이 고칠 것을 찾지 못했습니다.",
+      "structuralTitle": "앱이 확인한 것",
+      "structuralHead": "문서 {pages}개 · 서식 벗어남 {offTemplate}개 · 항목 {findings}개",
+      "structuralClean": "모든 문서가 서식에 맞고, 모든 연결이 닿고, 한 원문을 정리한 두 문서가 서로를 모르는 곳도 없습니다.",
+      "advisoryMark": "갓 만든 위키라면 자연스러운 항목",
+      "unmeasured": "아직 읽지 않은 문서가 {count}개 있습니다. 위에 보이는 것은 지금까지 읽은 전부이고, 있는 것의 전부는 아닙니다.",
+      "semanticTitle": "에이전트가 읽은 것",
+      "never": "에이전트가 아직 이 문서들을 읽지 않았습니다. 위키 점검을 누르면 문서끼리 어긋나는 값, 나중 문서가 바꿔 놓은 주장, 문서 없는 이름을 더합니다.",
+      "clean": "에이전트가 마지막으로 읽었을 때 고칠 것을 찾지 못했습니다.",
       "fixed": "고쳤음 · 다시 점검하면 새로 판단",
-      "gone": "지난 점검이 찾은 항목은 이 앱을 다시 연 뒤에는 남아 있지 않습니다. 위키 점검을 다시 누르면 새로 보입니다.",
+      "gone": "에이전트가 읽은 내용은 이 앱을 다시 연 뒤에는 남아 있지 않습니다. 위 목록은 매번 폴더에서 새로 계산하므로 그대로 남습니다. 에이전트의 절반은 위키 점검을 다시 누르면 보입니다.",
       "emptyLede": "위키 점검은 문서를 읽고 보고만 합니다. 아무것도 쓰지 않습니다.",
       "namesTitle": "문서 없는 이름",
-      "open": "점검 결과 {count}"
+      "open": "점검 결과 {count}",
+      "running": "위키 점검 중…",
+      "unseen": "새로 나옴"
     },
     "search": {
       "placeholder": "원문·문서 검색",
