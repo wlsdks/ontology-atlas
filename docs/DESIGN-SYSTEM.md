@@ -1929,10 +1929,14 @@ Library gets a ground, and its shelf loses the coloured rail".
 
 ### The spine folds by the pane's height (2026-09-11)
 
-`--library-spine-collapse-height: 640px` is the height **of the Library's
-landing pane**, not of the window, below which the three-step spine collapses
-each finished step to its head line. `library-reader-landing` declares the size
-container (`.library-spine-scope`) and a `done` step drops the parts marked
+`--library-spine-collapse-height: 640px` is the height **of the surface the spine
+is drawn in**, not of the window, below which the three-step spine collapses
+each finished step to its head line. Until 2026-09-12 that surface was the
+Library's landing pane; since the home became the folder's graph the spine lives
+in the `How to use` popup, and `LibraryHomePopover`'s wrapper declares the size
+container (`.library-spine-scope`) — its wrapper, because `container-type: size`
+needs a box definite in both axes and the panel's own height is its content's.
+A `done` step drops the parts marked
 `.library-spine-fold-away` — its caption and its action row — while keeping the
 number, the name, the state word and its border at the 44px
 `--touch-target-min` head row. A step's `extra` block never folds: step three's

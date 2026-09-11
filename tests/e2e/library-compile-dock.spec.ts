@@ -216,11 +216,19 @@ test.describe("Compile opens the agent dock", () => {
     await openFolder(page);
     await expect(page.getByTestId("library-compile")).toBeVisible({ timeout: 25_000 });
     await expect(page.getByTestId("library-compile")).toBeEnabled();
-    // Four sources, none written up, so the chip has work to do and says so. The count is
-    // the Sources half's own line, one press away since the index became a switch.
-    await page.getByTestId("library-index-segment-sources").click();
+    /*
+     * Four sources, none written up, so the chip has work to do and says so.
+     *
+     * ⚠️ **Where that count is read moved on 2026-09-12.** It used to be a caption at the
+     * foot of the Sources list, and the owner read it there: *"this 'one source version
+     * needs review' line — written like this, who is ever going to look at it?"* The home
+     * is the folder's graph now, and the strip above it names the **file** Compile would
+     * start on; the count is under that clause's own press, which is where the person who
+     * is about to compile is looking.
+     */
+    await page.getByTestId("library-strip-compile").click();
     await expect(page.getByTestId("library-needs-compile")).toContainText("4");
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.keyboard.press("Escape");
     /*
      * And what leaves this computer is stated beside the button that starts it — on the
      * shelf, which is where Compile's own brain picker stands.
@@ -232,29 +240,43 @@ test.describe("Compile opens the agent dock", () => {
      * was drawn, so a machine with a single brain showed it **nowhere** — which is why the
      * next case pins the other half rather than trusting that this one covers both.
      *
-     * The unselected landing now draws the steps directly; selecting a page
-     * hands the disclosure to the index beside its Compile control.
+     * The home keeps it in the Compile popover, which is where the press is; selecting a
+     * page hands the disclosure to the index beside its own Compile control. Both owners
+     * are covered here and in the next case, and losing the sentence in either is the
+     * regression this exists for.
      */
-    await expect(page.getByTestId("library-stage")).toBeVisible();
-    await expect(page.getByTestId("library-stage-transfer")).toContainText("Atlas does not record that traffic");
-    await expect(page.getByTestId("library-transfer")).toHaveCount(0);
+    await expect(page.getByTestId("library-stage")).toHaveCount(0);
+    await page.getByTestId("library-strip-compile").click();
+    const popover = page.getByTestId("library-compile-popover");
+    await expect(popover).toBeVisible();
+    await expect(popover.getByTestId("library-transfer")).toContainText(
+      "Atlas does not record that traffic",
+    );
+    // Exactly one on screen: the index prints it only once a document is open.
+    await expect(page.getByTestId("library-transfer")).toHaveCount(1);
 
     /*
-     * ⚠️ **And it is under the press, not merely in the same panel.** The guide became a
-     * 360px stepper on 2026-09-06 and the three cards became three rows; a disclosure that
-     * slid above the button, or into another row, would still satisfy the assertions above
+     * ⚠️ **And it is under the press, not merely in the same panel.** A disclosure that
+     * slid above the button, or into another row, would still satisfy the assertion above
      * while telling a person what leaves their computer *after* they have read past the
      * control that sends it. `.claude/rules/local-first.md` asks for the placement, so the
      * placement is what is measured.
      */
-    const compileRow = page.getByTestId("library-stage-compile");
-    await expect(compileRow.getByTestId("library-stage-transfer")).toBeVisible();
-    const button = (await page.getByTestId("library-stage-compile-button").boundingBox())!;
-    const sentence = (await page.getByTestId("library-stage-transfer").boundingBox())!;
+    const button = (await popover.getByTestId("library-compile-popover-run").boundingBox())!;
+    const sentence = (await popover.getByTestId("library-transfer").boundingBox())!;
     expect(sentence.y, "the transfer sentence sits above the Compile button").toBeGreaterThan(
       button.y,
     );
     expect(sentence.y - (button.y + button.height)).toBeLessThan(120);
+
+    /* And the same sentence still stands in the guide, beside step two's own press. */
+    await page.keyboard.press("Escape");
+    await page.getByTestId("library-guide-open").click();
+    const guide = page.getByTestId("library-guide-popover");
+    await expect(guide.getByTestId("library-stage-compile").getByTestId("library-stage-transfer")).toContainText(
+      "Atlas does not record that traffic",
+    );
+    await page.keyboard.press("Escape");
   });
 
   test("the disclosure stays where the work is, and the index prints no second copy", async ({
@@ -272,7 +294,8 @@ test.describe("Compile opens the agent dock", () => {
      * source pane's own Compile. This test is therefore about the sentence not being lost
      * and not being doubled, which is what it was always for.
      */
-    await expect(page.getByTestId("library-stage-transfer")).toBeVisible();
+    // The home: the picture and its strip print nothing about transfers; the popup does.
+    await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);
     await page.getByTestId("library-wiki-wiki/notes").click();
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);

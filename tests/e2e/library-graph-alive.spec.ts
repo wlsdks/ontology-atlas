@@ -143,9 +143,8 @@ async function openGraph(page: Page): Promise<void> {
   // covering the canvas and intercepting every pointer event.
   await page.goto("/en/library/?guides=off&e2e=1");
   await page.getByTestId("library-open-vault").click();
-  await page.getByTestId("library-graph-open").click();
-  await expect(page.getByTestId("library-graph-dialog")).toBeVisible();
-  await expect(page.getByTestId("library-graph-dialog").getByTestId("library-graph-canvas")).toBeVisible();
+  // The picture is the home (2026-09-12): nothing is chosen, so the canvas is already up.
+  await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
   await expect
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.nodes().length ?? 0), {
       timeout: 15_000,

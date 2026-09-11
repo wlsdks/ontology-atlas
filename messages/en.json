@@ -4691,6 +4691,16 @@
         "concept": "{name}: a concept on the map. The dashed lines lead to the wiki pages it names or was drawn from. Press to open it on the map."
       }
     },
+    "home": {
+      "guide": "How to use",
+      "questions": "{count, plural, =0 {Questions} one {Questions #} other {Questions #}}",
+      "report": "Check result",
+      "more": "More",
+      "compileNext": "Compile next: {source}",
+      "staleClause": "{count, plural, one {# source changed} other {# sources changed}}",
+      "compileTitle": "Compile {source}",
+      "staleLit": "{count, plural, one {# changed original is lit} other {# changed originals are lit}}, with the {pages, plural, one {# page} other {# pages}} citing them. Escape, or a press on the picture, clears it."
+    },
     "find": {
       "title": "Documents in the folders you granted",
       "preamble": "Atlas listed these by name, format and size. It has not opened any of them. Nothing is copied until you pick.",

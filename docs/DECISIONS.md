@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — The Library's home is the folder's graph; the guide and the questions are doors
+
+**Why**: the owner, on the installed app: *"is this gather-compile-read screen just the main one? why every time..? put it behind a How-to-use button"*; of the graph, *"an ugly popup, very poor"*.
+**Prior**: restores 2026-09-06 "The Library pane is the graph; the shelf is a popup", falsifier standing — with the <=560px popup, self-raise and header strip that 2026-09-06 "An empty Library folder is an empty state" overturned; its empty-folder stage stands. Overturns the always-draws clause of 2026-09-11 "The Library keeps its spine" on its own dissent ("once answers exist the stage is noise above the list"); its "Overturns nothing" was wrong against `:587`. Narrows "Graph remains an explicit supporting view" (2026-09-11 "Library retains questions") to reading. Retires the landing's synapse field from 2026-09-09 "The Library gets a ground": it was ground for cards.
+**Decision**: with nothing chosen the pane is the folder's graph at full height; the `Graph` chip and its dialog go. One `text-label` row holds the counts and three presses: `Compile next: <source>`, the one accent ink, opens Compile; `N sources changed` lights that citation and its two ends, moving no mark; `N off-template` opens the report. Then `How to use`, the questions, `Check result`. The guide is `transientSurface("anchored")` <=560px on its door, raised once per machine (`atlas.library.guide-seen`). At one saved answer the questions door is that question: reopening stays one press.
+**Dissent**: design-lead, 2026-09-06: a guide behind a chip is one nobody opens twice. design-interaction: a self-raising popover is a modal in softer clothes; po-leverage: cut the self-raise, the half of the sentence offered as an alternative.
+**Falsifier**: cold walkers who cannot name the next press within 10s of the home; a canvas band under 60% of its width at 1512 or 1040; the guide reopened by hand in one sitting; a clause press that moves a mark; one saved answer not reopenable in one press.
+**Owner**: jinan
+
 ## 2026-09-12 — The reading column is worth more of its pane than the measure was buying
 
 **Why**: the owner read a wiki page in the app at 1512: *"isn't the empty space to the left of the text far too much? make the text run wider — stretch left and right at once."* Measured on that frame: a 500px line of 14px text in a 1168px pane, 334px of nothing on its left, because the column was the measure spent at `text-body-lg` and the outline rail took the mirror of its own lane out of the other side.
@@ -296,6 +305,7 @@ record stays in Git history before commit `e4fb49a89`.
 **Dissent**: unmount once the turn ends and rely on resume alone, sparing an idle adapter. Declined: a replay is the adapter's account of a conversation, not the conversation — a waiting permission card, a draft and the panel's notices do not come back with it.
 **Falsifier**: an adapter outliving the Library screen; a replay unlike what the person left; *New conversation* landing in the old one; a reopening that waits on `session/list`.
 **Owner**: jinan
+
 ## 2026-09-08 — Kind tone and the document column become tokens, and colour literals get a gate
 
 **Why**: the owner asked for a whole-app check with every value on a token. The sweep found no broken screen (14 routes, three widths, no console error or overflow). The inventory found the type, radius, shadow, duration and z gates closed and four holes beneath them: 41 hex outside Tailwind brackets, 41 `rgb()/rgba()` with no selector, named `ease-*` classes, and `maskImage` outside the inline-style gate. Most of the colour debt was the kind palette living as rgba literals in `tone.ts`: a sanctioned data mark no colour gate could see.

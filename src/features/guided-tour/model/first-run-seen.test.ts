@@ -24,8 +24,9 @@ describe("first-run-seen", () => {
       }
       expect(keys).toContain("guided-tour:v1");
       expect(keys).toContain("vault-open-guide:auto:v1");
-      // 5 destinations + the map + the folder sheet.
-      expect(keys.size).toBe(Object.keys(DESTINATION_TOURS).length + 2);
+      expect(keys).toContain("atlas.library.guide-seen");
+      // 5 destinations + the map + the folder sheet + the Library home's guide.
+      expect(keys.size).toBe(Object.keys(DESTINATION_TOURS).length + 3);
     });
   });
 

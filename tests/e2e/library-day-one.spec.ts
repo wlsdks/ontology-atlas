@@ -340,14 +340,20 @@ test.describe("the Library on its first day, with no agent", () => {
     await openLibrary(page);
 
     /*
-     * The landing prints exactly one availability sentence — `library-spine.spec.ts`
-     * counts that — so the door is beside whichever card owns it.
+     * ⚠️ **One availability sentence per surface, and the home is not one of them**
+     * (2026-09-12). The home is the folder's graph and makes no claim about an agent; the
+     * sentence stands under the press it stops. The nearest press on a day-one folder is
+     * Compile, which the strip's own clause opens — and `library-spine.spec.ts` counts
+     * that each surface carries exactly one.
      */
-    const reason = page.locator("[data-landing-blocked-reason]");
+    await expect(page.locator("[data-landing-blocked-reason]")).toHaveCount(0);
+    await page.getByTestId("library-strip-compile").click();
+    const popover = page.getByTestId("library-compile-popover");
+    const reason = popover.getByTestId("library-compile-popover-blocked");
     await expect(reason).toHaveCount(1);
     await expect(reason).toContainText(/No verified coding agent/);
 
-    const door = page.getByTestId(/library-(stage-compile|questions-ask)-blocked-door/);
+    const door = popover.getByTestId("library-compile-popover-blocked-door");
     await expect(door).toHaveCount(1);
     await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/3-door-beside-the-reason.png");
 

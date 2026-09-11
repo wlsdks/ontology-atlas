@@ -4691,6 +4691,16 @@
         "concept": "{name}: 지도 위의 개념. 점선은 이 개념이 이름 부르거나 근거로 삼은 위키 문서입니다. 누르면 지도에서 엽니다."
       }
     },
+    "home": {
+      "guide": "사용 방법",
+      "questions": "{count, plural, =0 {질문} other {질문 #}}",
+      "report": "점검 결과",
+      "more": "더 보기",
+      "compileNext": "정리 다음: {source}",
+      "staleClause": "원문 {count}개 달라짐",
+      "compileTitle": "{source} 정리",
+      "staleLit": "달라진 원문 {count}개와 그것을 인용한 문서 {pages}개만 밝게 남았습니다. Escape 를 누르거나 그림을 누르면 원래대로 돌아갑니다."
+    },
     "find": {
       "title": "허락한 폴더 안의 문서",
       "preamble": "이름·형식·크기만 훑었습니다. 파일을 연 적은 없습니다. 고르기 전에는 아무것도 복사하지 않습니다.",
