@@ -42,7 +42,7 @@ export const TOAST_TOP_OFFSET_UNDER_MAP_TOOLBAR_PX = 72;
  * existing. A media query is where that already lives; a resize listener recomputing the
  * same two breakpoints in JS would be a second copy of them.
  */
-export const TOAST_PANE_GUTTER_PX = 16;
+const TOAST_PANE_GUTTER_PX = 16;
 
 /**
  * The gap from the pane's right-hand wall, whichever wall that is.
