@@ -24,7 +24,8 @@ structural attention choice, not every rendered edit.
    accessibility tree and screenshot; use both 1512×900 and 390px only for a
    full-surface route.
 5. Measure the ratio between the largest type and smallest label. A screen packed
-   into 11–15px has no visible hierarchy.
+   into 11–15px has no visible hierarchy, which leaves the person nowhere to look
+   first: they read every element to find the one they came for.
 
 ## First impression
 
@@ -43,6 +44,8 @@ logo walls without users. Rejection always includes a concrete alternative.
 ```md
 ## Design Lead position
 
+**Person and moment**: <who, doing what, saw what, did what next — from the captures/walkthrough, never imagined>
+**What this costs them**: <one sentence: the second, the wrong press, the leave — or "nothing measurable">
 **Verdict**: approve / conditional / reject
 **Screen job**: one sentence
 **Attention winner**: one element · computer-use screenshot proof
