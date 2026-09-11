@@ -264,7 +264,11 @@ for (const { retained, kind, manual, name } of [
     await page.getByTestId('library-question-wiki/answers/original').click();
     expect(await page.evaluate(() => localStorage.getItem('library.wikiWriteMode'))).toBe('auto');
     if (kind === 'refresh') await page.getByTestId('answer-refresh-start').click();
-    else await page.getByRole('button', { name: 'Compile', exact: true }).click();
+    /* By testid, not by label: the door's words became plain language on 2026-09-12
+       (`Ask the agent to compile`), and this test is about the write permission, not the
+       copy. The index is the only surface drawing it here — the stage is not on an open
+       answer page. */
+    else await page.getByTestId('library-compile').click();
     await expect.poll(async () => (await harness.snapshot(page)).calls.some((call) => call.method === 'session/prompt')).toBe(true);
     await harness.read(page);
     await harness.wait(page);

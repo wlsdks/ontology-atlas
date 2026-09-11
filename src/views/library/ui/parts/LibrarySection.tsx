@@ -7,11 +7,11 @@ import { Link } from "@/i18n/navigation";
 import { BookText, Check, CloudDownload, FilePlus2, FileText, PencilLine, Search, Sparkles, Stethoscope } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
-import { cn } from "@/shared/lib/cn";
 import { writerLabel } from "../../lib/writer-label";
+import { cn } from "@/shared/lib/cn";
+import { BrandMark } from "@/shared/ui/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
 import { Chip, RowButton, Tooltip } from "@/shared/ui";
-import { BrandMark } from "@/shared/ui/brand-mark";
 import { Input } from "@/shared/ui/input";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import {
@@ -149,15 +149,6 @@ export interface LibrarySectionProps {
   onCompile: (() => void) | null;
   /** Starts the report-only health check; null where no agent can run, like Compile. */
   onLint: (() => void) | null;
-  /**
-   * Why the check cannot run here. Given, the chip is drawn **disabled beside its reason**
-   * rather than removed: a feature the product has is always on screen, and availability
-   * is a state with its reason (`docs/DECISIONS.md` 2026-09-11). Slice 1 applied that rule
-   * on the landing; this column and the report page still hid the chip entirely, so on a
-   * no-agent route two of the three places the product offers the check said nothing at
-   * all (measured 2026-09-12).
-   */
-  lintBlockedReason?: string | null;
   /** Names the last check found with no page of their own — offered as ontology node candidates. */
   /** What the last check found under its first three categories, each with a door to fix it. */
   /** Starts one agent turn that proposes the candidate through the ontology-write card; null like the others. */
@@ -169,15 +160,10 @@ export interface LibrarySectionProps {
   onNewPage?: ((title: string) => void) | null;
   /**
    * The Check results page: how many findings and names it holds, whether it is the open
-   * page, and the press that opens it. The row is the index's one line about the check,
-   * and it must survive a page being open, which the canvas header does not (design-lead,
-   * council 2026-09-07).
-   *
-   * ⚠️ **No longer null on an unchecked wiki.** It used to be, because every row on that
-   * page came from an agent turn — so a person with no agent reached no door, and the one
-   * screen that could have shown them their folder's own structural findings was
-   * unreachable (measured 2026-09-12). Half the report is now computed from the folder, so
-   * the door is open whenever there is a wiki to report on.
+   * page, and the press that opens it. Null when the wiki was never checked — the row is
+   * the index's one line about the check, and an unchecked wiki has none (design-lead,
+   * council 2026-09-07: the report's door must survive a page being open, which the
+   * canvas header does not).
    */
   report?: {
     count: number;
@@ -194,17 +180,21 @@ export interface LibrarySectionProps {
    */
   brainControl?: ReactNode;
   /**
-   * **One caption under the Compile button, and only one** (2026-09-06).
+   * **Why the agent-only doors above cannot run — one label line, or nothing** (2026-09-12).
    *
-   * The column used to end with the transfer sentence, pinned under a cut-off list, three
-   * hundred pixels from the button it described. The rule that replaces it is the one
-   * `.claude/rules/local-first.md` actually asks for: the disclosure sits where Compile can
-   * be pressed. So this slot carries whichever single fact is true of pressing it here —
-   * the reason it cannot run, or what leaves this computer when it does — and it is empty
-   * while the guide is open, because step two is then the surface a person is reading and
-   * exactly one of the two may print it.
+   * This slot carried the four-line transfer disclosure until 2026-09-12. Measured on the
+   * owner's folder at 1512 it was **four wrapped lines of 11px** standing between the
+   * button group and the list, and the owner read it as part of the group's alignment
+   * problem rather than as a disclosure. It moves to the agent moment that already prints
+   * it (the composer's own note, and step two while the stage is drawn); what stays here is
+   * the one fact a dead control owes a person — the reason, at the grade the landing gives
+   * the same sentence.
+   *
+   * `null` while the landing is drawn: the stage prints the landing's one reason and
+   * `agentReasonPrintedId` says which card, so a reason still prints exactly once per
+   * screen. `LibraryPage` owns that decision, as it owns the landing's.
    */
-  compileNote: string | null;
+  actionsNote: string | null;
   /** True in the installed app. On the web, Compile has no runtime at all. */
   inApp: boolean;
   /**
@@ -270,9 +260,73 @@ function OtherHalf({
   );
 }
 
+/**
+ * **A row's text starts on the column's one text edge; only its fill steps past it.**
+ *
+ * The index column has one text edge — the `px-3` its head, its search field, its
+ * captions and its card lists all sit on (x=76 at 1512). A list row is not a boxed
+ * control: it has no edge at rest, and what a person sees of it is its leading glyph and
+ * its name. Measured on the installed app's own pixels (baseline
+ * `.claude/shots-2026-09-12/library-inspection/01-landing-one-answer.png`): the lists sat
+ * in `px-2`, so every row box stood 4px **outside** the field above it at x=72 while its
+ * glyph stood 8px **inside** at x=84 — two wrong edges from one wrapper, and the owner
+ * read the second box as starting somewhere else than the first.
+ *
+ * So the 12px is split between the wrapper and the row instead of being paid twice: the
+ * list keeps 4 and the row keeps 8, which puts the glyph on 76 with the labels and the
+ * field's box while the hover/selected fill runs 68–339 — four pixels inside the panel's
+ * own edge, symmetric, and the same rectangle on both sides of the row. The pair is
+ * written here rather than as a negative margin because `shape: "row"` emits `w-full`,
+ * and a `-mx` on a full-width row bleeds left while staying put on the right.
+ * `docs/DESIGN-SYSTEM.md`, "One text edge per column".
+ */
+/**
+ * **A door whose label is a sentence takes the whole row.**
+ *
+ * The group is a two-column grid, which is right for the source half's three short labels
+ * (Add files / Find documents / Import from a service). The wiki half's two are the
+ * plain-language names the owner asked for on 2026-09-12 — *"I don't understand what
+ * 'check' is and what 'start compiling' is"* — and at 11px `wiki.compile` needs about 119px
+ * of a 125px cell, so half a 255px column truncated its label mid-word: a clearer name made
+ * unreadable by
+ * the box it was put in. Each therefore spans the row. Both halves still fill the column
+ * exactly, which is what the rule asks for (`docs/DESIGN-SYSTEM.md`, "Control groups fill
+ * their column").
+ */
+const AGENT_DOOR_SPAN = "col-span-2";
+
+/** The one line under the index's button group, so a dead door can point at its reason. */
+const SECTION_ACTIONS_NOTE_ID = "library-actions-blocked";
+
+const INDEX_LIST_INSET = "px-1";
+const INDEX_ROW_INSET = "px-2";
+
+/**
+ * **The column's button group fills the column** (owner, 2026-09-12: *"why is the
+ * alignment of these three buttons like this… make them fill the width, size them properly,
+ * two on top and one long one underneath"*).
+ *
+ * It was an inline wrap. Measured on the installed app at 1512 (baseline
+ * `.claude/shots-2026-09-12/library-inspection/01-landing-one-answer.png`): `sources.add`
+ * 76–157 and `sources.find` 161–242 ended at 242 of a column that runs to 331, and
+ * `sources.import` sat alone under them at 76–195 — three different widths and 89px of
+ * ragged edge in a 255px column, beside a search field and a switch that both span it
+ * exactly.
+ *
+ * So the group is a two-column grid: every control is `w-full`, a lone or odd last control
+ * spans the row, and the group's right edge is the search field's right edge at every
+ * width. `docs/DESIGN-SYSTEM.md`, "Control groups fill their column". The odd-child span is
+ * a selector rather than arithmetic in the caller because the children are written by the
+ * two segments and their number depends on the route (the brain picker joins the wiki
+ * half only when this computer offers two brains).
+ */
 function SectionActions({ children }: { children?: ReactNode }) {
   if (!children) return null;
-  return <div className="flex flex-wrap items-center gap-1 px-3 pb-2">{children}</div>;
+  return (
+    <div className="grid grid-cols-2 gap-1 px-3 pb-2 [&>*:last-child:nth-child(odd)]:col-span-2">
+      {children}
+    </div>
+  );
 }
 
 /** The log's ISO stamp as a person reads it; the raw stamp when it does not parse. */
@@ -315,10 +369,9 @@ export function LibrarySection({
   onLint,
   hasWikiTemplate = true,
   onNewPage = null,
-  lintBlockedReason = null,
   report = null,
   brainControl,
-  compileNote,
+  actionsNote,
   inApp,
   segment,
   busy,
@@ -539,7 +592,7 @@ export function LibrarySection({
               onClick={onAddFiles}
               disabled={busy}
               tone="muted"
-              className="flex-none hover:text-[color:var(--color-text-primary)]"
+              className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
               aria-label={t("sources.addTooltip")}
             >
               <FilePlus2 size={ICON_SIZE.sm} aria-hidden />
@@ -552,7 +605,7 @@ export function LibrarySection({
               onClick={onFindDocuments}
               disabled={busy}
               tone="muted"
-              className="flex-none hover:text-[color:var(--color-text-primary)]"
+              className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
               aria-label={t("sources.findTooltip")}
             >
               <Search size={ICON_SIZE.sm} aria-hidden />
@@ -565,7 +618,7 @@ export function LibrarySection({
               onClick={onImportFromService}
               disabled={busy}
               tone="muted"
-              className="flex-none hover:text-[color:var(--color-text-primary)]"
+              className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
               aria-label={t("sources.importTooltip")}
             >
               <CloudDownload size={ICON_SIZE.sm} aria-hidden />
@@ -582,7 +635,7 @@ export function LibrarySection({
                  answer and an unfinished read never share a frame. */
               data-phase={search.phase}
               aria-label={t("sources.listAria")}
-              className="flex flex-col gap-0.5 px-2"
+              className={`flex flex-col gap-0.5 ${INDEX_LIST_INSET}`}
             >
               {visibleSources.map((row) => {
                 const active = row.path === selectedSourcePath;
@@ -602,19 +655,10 @@ export function LibrarySection({
                       title={`${row.name}\n${t(`sources.state.${row.state}.hint`, {
                         pages: row.citedBy.join(", ") || t("sources.state.nobody"),
                       })}`}
-                      /* Hover through the axis, which the value layer gates on
-                         `active: false`; written as a class it outranked selection and the
-                         open row went dimmer under the pointer (see `library-open-report`). */
                       hoverSurface="lift"
                       hoverInk="strong"
-                      className={cn("group relative", active && "bg-[color:var(--color-indigo-a16)]")}
+                      className={cn("group relative", INDEX_ROW_INSET, active && "bg-[color:var(--color-indigo-a16)]")}
                     >
-                      {active ? (
-                        <span
-                          aria-hidden
-                          className="pointer-events-none absolute inset-y-1 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
-                        />
-                      ) : null}
                       {/* The same leading glyph the tree, pinned and recent rows carry, so
                           the sidebar keeps one left edge from top to bottom. */}
                       <FileText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
@@ -714,7 +758,7 @@ export function LibrarySection({
                            * the rows above it are 36 — under a finger the two are not the
                            * same target (design-responsive, council 2026-09-11).
                            */
-                          className: "atlas-touch-floor w-full pl-7 text-label",
+                          className: `atlas-touch-floor w-full ${INDEX_ROW_INSET} pl-7 text-label`,
                         })}
                       >
                         {/*
@@ -771,23 +815,6 @@ export function LibrarySection({
     );
   }
 
-  /**
-   * **Which of the three causes is stopping Check, as one sentence.**
-   *
-   * The chip's `disabled` is a union — a turn in flight, a wiki of fewer than two pages,
-   * no coding agent on this computer — and a union cannot be read. Running is not a
-   * sentence: it is the state the row below wears live, so it prints nothing here. Of the
-   * other two the agent reason comes first, because with no agent the page count cannot
-   * make the press available.
-   */
-  const checkBlockedReason = report?.running
-    ? null
-    : onLint === null
-      ? lintBlockedReason ?? null
-      : model.wikiPages.length < 2
-        ? t("wiki.lintNeedsPages")
-        : null;
-
   /*
    * A page a person writes by hand is the list's own last row, not a door beside the two
    * agent turns (council 2026-09-07): a hand action on the list, drawn in the list's
@@ -800,7 +827,7 @@ export function LibrarySection({
       <span
         id="library-new-page-row"
         data-testid="library-new-page-row"
-        className="flex min-w-0 items-center gap-1 px-1 py-1"
+        className="flex min-w-0 items-center gap-1 px-2 py-1"
         onKeyDown={(event) => {
           // The row owns Escape: pressed on the Make chip it must not reach the page
           // handler, which would close the open document instead of this row.
@@ -850,6 +877,7 @@ export function LibrarySection({
         title={t("wiki.newPageTooltip")}
         hoverSurface="lift"
         hoverInk="strong"
+        className={INDEX_ROW_INSET}
       >
         <PencilLine size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
         <span className="min-w-0 flex-1 truncate">{t("wiki.newPage")}</span>
@@ -861,106 +889,79 @@ export function LibrarySection({
     <section data-testid="library-wiki" className="flex flex-col pb-1 pt-3">
       {searchField}
       <SectionActions>
-        {onCompile || onLint || lintBlockedReason ? (
-          <>
-            {/*
-              **The two doors share one line, reading before writing.** The span does not
-              wrap, so `Check the wiki` and `Compile` stay on the same row at 280px and the
-              check is to the left — the order of the work, and the geometry
-              `library-lint-dock.spec.ts` measures. The picker below may take a line of its
-              own; it is what the press will run on, not a third door.
-            */}
-            <span className="flex min-w-0 items-center gap-1">
-              {onLint || lintBlockedReason ? (
-                // The judgement half of the health check: what `wiki-validate` cannot
-                // decide (two pages disagreeing, a claim a later page replaced). Report
-                // only, so it needs no page count to be worth pressing — one page has
-                // nothing to disagree with, hence two. Drawn disabled with its reason in
-                // the tooltip where no agent can run it, so the column names every door
-                // the product has.
-                <Tooltip content={onLint ? t("wiki.lintTooltip") : (lintBlockedReason ?? t("wiki.lintTooltip"))}>
-                  <Chip
-                    data-testid="library-lint"
-                    onClick={onLint ?? undefined}
-                    disabled={busy || onLint === null || model.wikiPages.length < 2}
-                    tone="muted"
-                    className="flex-none hover:text-[color:var(--color-text-primary)]"
-                    aria-label={t("wiki.lint")}
-                    aria-describedby={checkBlockedReason ? "library-lint-blocked" : undefined}
-                  >
-                    <Stethoscope size={ICON_SIZE.sm} aria-hidden />
-                    <span className="min-w-0 truncate">{t("wiki.lint")}</span>
-                  </Chip>
-                </Tooltip>
-              ) : null}
-              {onCompile ? (
-                <Tooltip content={t("wiki.compileTooltip")}>
-                  <Chip
-                    data-testid="library-compile"
-                    onClick={onCompile}
-                    disabled={busy || model.needsCompileCount === 0}
-                    tone="muted"
-                    className="flex-none hover:text-[color:var(--color-text-primary)]"
-                    aria-label={t("wiki.compile")}
-                  >
-                    <Sparkles size={ICON_SIZE.sm} aria-hidden />
-                    <span className="min-w-0 truncate">{t("wiki.compile")}</span>
-                  </Chip>
-                </Tooltip>
-              ) : null}
-            </span>
-            {/* The picker is what the buttons beside it will run on; a control on its own
-                row reads as a setting rather than as part of the press. */}
-            {brainControl ? (
-              <span data-testid="library-brain-control" className="min-w-[9rem] flex-auto">
-                {brainControl}
-              </span>
-            ) : null}
-          </>
+        {/*
+          **Reading before writing, and both drawn whether or not they can run.**
+          `Check page format` is the left cell and `Ask the agent to compile` the right —
+          the order of the work, and the geometry `library-lint-dock.spec.ts` measures. They
+          used to be wrapped in a span that kept them on one line and to disappear with
+          their handler; the grid keeps them on one row by construction, and a feature the
+          product has stays on screen with the reason it cannot run beneath it
+          (`docs/DECISIONS.md`, 2026-09-11, "availability is a state with its reason"). The
+          picker joins as a third cell and therefore spans the row: it is what the press
+          will run on, not a third door.
+        */}
+        <Tooltip content={t("wiki.lintTooltip")}>
+          <Chip
+            data-testid="library-lint"
+            onClick={onLint ?? undefined}
+            disabled={busy || onLint === null || model.wikiPages.length < 2}
+            aria-describedby={onLint === null && actionsNote ? SECTION_ACTIONS_NOTE_ID : undefined}
+            tone="muted"
+            className={`w-full justify-start ${AGENT_DOOR_SPAN} hover:text-[color:var(--color-text-primary)]`}
+            aria-label={t("wiki.lint")}
+          >
+            <Stethoscope size={ICON_SIZE.sm} aria-hidden />
+            <span className="min-w-0 truncate">{t("wiki.lint")}</span>
+          </Chip>
+        </Tooltip>
+        <Tooltip content={t("wiki.compileTooltip")}>
+          <Chip
+            data-testid="library-compile"
+            onClick={onCompile ?? undefined}
+            disabled={busy || onCompile === null || model.needsCompileCount === 0}
+            aria-describedby={
+              onCompile === null && actionsNote ? SECTION_ACTIONS_NOTE_ID : undefined
+            }
+            tone="muted"
+            className={`w-full justify-start ${AGENT_DOOR_SPAN} hover:text-[color:var(--color-text-primary)]`}
+            aria-label={t("wiki.compile")}
+          >
+            <Sparkles size={ICON_SIZE.sm} aria-hidden />
+            <span className="min-w-0 truncate">{t("wiki.compile")}</span>
+          </Chip>
+        </Tooltip>
+        {brainControl ? (
+          <span data-testid="library-brain-control" className="min-w-0">
+            {brainControl}
+          </span>
         ) : null}
       </SectionActions>
 
       {/*
-        **One ability, one reason, and the reason is visible.**
+        **One line under the group, and it is the reason.**
+        ① `actionsNote` — the sentence the two dead doors above owe a person, at the grade
+           the landing gives the same words. `LibraryPage` prints it here only while the
+           landing is not drawn, so a reason still appears once per screen.
+        ② The web's own degradation sentence, when there is no reason to print instead:
+           why Compile is unavailable, where it works, and what still works here
+           (`.claude/rules/surfaces.md`). Only one of the two can be the true one.
+        The four-line transfer disclosure is no longer either of them — see `actionsNote`.
 
-        Measured at 1512 (design-interaction, council 2026-09-12): the greyed-out Check
-        chip's only reason was a Tooltip — a transient surface as the sole carrier of a
-        reason is shortcut-only discovery for a finger — while the paragraph directly under
-        it was *Compile's* web limit, which reads as Check's. And the three causes the
-        `disabled` union merges were drawn as one look: a turn already running, a wiki with
-        one page, and no coding agent are different facts with different answers. Running is
-        said by the running mark on the row below, so this slot carries the other two, in
-        the order of what blocks first. The Tooltip stays as a duplicate, never as the only
-        copy.
+        ⚠️ **One slot means one sentence.** `disabled` on Check is a union — a turn in
+        flight, a wiki of fewer than two pages, no coding agent. Running is said by the
+        report row's own live mark and the agent reason arrives as `actionsNote`; the page
+        count reaches a person through the chip's tooltip rather than a second line here,
+        because this slot prints one reason or none and nothing may crowd it.
       */}
-      {checkBlockedReason ? (
+      {actionsNote ? (
         <p
-          id="library-lint-blocked"
-          data-testid="library-lint-blocked"
+          id={SECTION_ACTIONS_NOTE_ID}
+          data-testid="library-actions-blocked"
           className="px-3 pb-1 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
         >
-          {checkBlockedReason}
+          {actionsNote}
         </p>
-      ) : null}
-
-      {/*
-        **Compile is app-only, so the web says so instead of describing it.** The
-        degradation grammar in `.claude/rules/surfaces.md`: why it is unavailable, where
-        it works, and what still works here (the pages read and edit exactly as they do
-        in the app). It is the same slot as `compileNote`, and only one can be true.
-
-        ⚠️ **The condition is the surface, not the absence of a press.** It used to be
-        `onCompile === null` alone, which is also true *inside the app* whenever no runtime
-        is set up — so the installed app printed "which only the app can start… Get the app"
-        at a person already running it, and offered them its own download, which
-        `.claude/rules/surfaces.md` forbids in those words. Measured 2026-09-12 in
-        `.claude/shots-2026-09-12/library-check/1512-report-folded.png`: that paragraph stood
-        directly under Check's own true reason — two grey paragraphs, one of them false about
-        the surface it was on. In the app the true reason is the one `checkBlockedReason`
-        already prints, once, above.
-      */}
-
-      {onCompile === null && !inApp ? (
+      ) : onCompile === null && !inApp ? (
         <p
           data-testid="library-compile-web-limit"
           className="px-3 pb-1 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
@@ -978,53 +979,21 @@ export function LibrarySection({
             {t("wiki.compileWebGetApp")}
           </Link>
         </p>
-      ) : compileNote ? (
-        <p
-          data-testid="library-transfer"
-          className="px-3 pb-1 text-label leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all] [overflow-wrap:anywhere]"
-        >
-          {compileNote}
-        </p>
       ) : null}
 
       {report ? (
-        /*
-         * The index's one line about the check: where its answer is, and how much it holds.
-         * A row, not a door — pressing it opens a page, it starts nothing.
-         *
-         * **Three states, because the row is the only thing on screen that can carry them**
-         * (owner, 2026-09-12). A check runs in the dock, and a person who started one and
-         * went back to reading had nothing telling them it was still going or that it had
-         * finished. So: *running* is announced live while the turn is in flight; *unseen*
-         * marks a finished check this person has not opened yet and clears when they do;
-         * and the count itself is the app's own half plus the agent's, so it moves on every
-         * open without anybody pressing anything.
-         */
-        <div className="px-2 pb-1">
+        /* The index's one line about the check: where its answer is, and how much it holds.
+           A row, not a door — pressing it opens a page, it starts nothing. */
+        <div className={`${INDEX_LIST_INSET} pb-1`}>
           <RowButton
             data-testid="library-open-report"
             active={report.open}
             aria-current={report.open ? "page" : undefined}
             data-report-state={report.running ? "running" : report.unseen ? "unseen" : undefined}
             onClick={report.onOpen}
-            /*
-             * **Hover through the axis, so it stops undoing selection.** The `hover:bg`
-             * written here outranked the `{shape:'row', active:true}` compound, and the
-             * value layer gates every hover compound on `active:false` for exactly this
-             * reason (`control-class.ts`). Measured 2026-09-12: the row a person had just
-             * pressed fell from 1.14:1 to 1.03:1 while the pointer was still on it — the
-             * one row saying "you are here" went dimmer when touched.
-             *
-             * Selection is now drawn in the grammar this column already uses one level up
-             * (indigo tint) with the 2px inline-start edge the docs tree, the palette and
-             * the hub rail carry, so "current" survives a pointer and is legible at all.
-             */
             hoverSurface="lift"
             hoverInk="strong"
-            className={cn(
-              "relative",
-              report.open && "bg-[color:var(--color-indigo-a16)]",
-            )}
+            className={cn("relative", INDEX_ROW_INSET, report.open && "bg-[color:var(--color-indigo-a16)]")}
           >
             {report.open ? (
               <span
@@ -1038,11 +1007,10 @@ export function LibrarySection({
             </span>
             {/*
               `aria-live` on the running word, not on the row: a row whose label is live
-              would re-announce the count every time the folder polls.
-              ⚠️ **The mark must fit the row.** `BrandWaitingMark` is `size-16` — 64px in a
-              ~40px row, which pushed every page card down and snapped back (measured
-              2026-09-12). The inline form is the one `AgentClientButtons` already proves: a
-              14px slot holding the 16px micro mark, so the row's height never moves.
+              would re-announce the count every time the folder polls. The mark is the
+              inline micro form, not the 64px sprite — a full-size waiting mark in a row
+              this height displaces every card below it and snaps back (design-interaction,
+              council 2026-09-12).
             */}
             {report.running ? (
               <span
@@ -1061,8 +1029,7 @@ export function LibrarySection({
               </span>
             ) : report.unseen ? (
               /* A dot, not a word: the row already carries the count, and the one thing
-                 this mark adds is "you have not seen this yet". Indigo is the app's own
-                 attention tone, and the word behind it is what a screen reader is told. */
+                 this mark adds is "you have not seen this yet". */
               <span data-testid="library-report-unseen" className="flex flex-none items-center">
                 <span
                   aria-hidden
@@ -1086,7 +1053,7 @@ export function LibrarySection({
           <ul
             data-testid="library-wiki-list"
             aria-label={t("wiki.listAria")}
-            className="flex flex-col gap-0.5 px-2"
+            className={`flex flex-col gap-0.5 ${INDEX_LIST_INSET}`}
           >
             {visiblePages.map((page) => {
               const active = page.slug === selectedSlug;
@@ -1135,14 +1102,8 @@ export function LibrarySection({
                     title={reason}
                     hoverSurface="lift"
                     hoverInk="strong"
-                    className={cn("group relative", active && "bg-[color:var(--color-indigo-a16)]")}
+                    className={cn("group relative", INDEX_ROW_INSET, active && "bg-[color:var(--color-indigo-a16)]")}
                   >
-                    {active ? (
-                      <span
-                        aria-hidden
-                        className="pointer-events-none absolute inset-y-1 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
-                      />
-                    ) : null}
                     <BookText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
                     <span className="min-w-0 flex-1 truncate">{page.title}</span>
                     {model.answerVersions?.get(page.slug) ? <span className="flex-none text-caption text-[color:var(--color-text-secondary)]">{t(`answers.version.${model.answerVersions.get(page.slug)}`)}</span> : null}
@@ -1227,7 +1188,7 @@ export function LibrarySection({
             so the door works whether or not `wiki/_template.md` is there yet; the
             paragraph above still says which of those two is true.
           */}
-          {newPageControl ? <div className="px-2 pb-1">{newPageControl}</div> : null}
+          {newPageControl ? <div className={`${INDEX_LIST_INSET} pb-1`}>{newPageControl}</div> : null}
         </>
       )}
 

@@ -185,7 +185,7 @@ export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk,
                   badge for the three that need a person, a plain caption for the one
                   nothing has measured, and the alternatives a caption count.
                 */}
-                <div id={describedBy} className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 px-3 text-caption leading-body text-[color:var(--color-text-tertiary)]">
+                <div id={describedBy} className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption leading-body text-[color:var(--color-text-tertiary)]">
                   <span
                     data-testid="answer-observation"
                     data-state={observation.state}

@@ -3,7 +3,7 @@
  *
  * `app/globals.css` owns the measure. `--measure-prose` is the cap on a *line* and stays in
  * `ch`; `--measure-doc-column` is the *box* and is that same measure spent at
- * `--text-body-lg` plus one `--measure-doc-gutter` each side. Every rendered surface reads
+ * `--text-reading` plus one `--measure-doc-gutter` each side. Every rendered surface reads
  * those tokens and needs nothing from this file.
  *
  * Three consumers cannot read a token, and before 2026-09-11 all three carried the literal
@@ -29,7 +29,7 @@
  * Mirrors `--measure-prose-steps`. Change it there and here together; the gate catches it
  * either way round.
  */
-export const PROSE_MEASURE_STEPS = 60;
+export const PROSE_MEASURE_STEPS = 66;
 
 /**
  * Advance of the digit `0` in Pretendard Variable, in `em` — measured, not chosen
@@ -39,15 +39,21 @@ export const PROSE_MEASURE_STEPS = 60;
  */
 export const PROSE_ZERO_ADVANCE_EM = 0.5957;
 
-/** The size the document body is set in — `--text-body-lg`, the font the measure is spent in. */
-export const DOC_BODY_FONT_PX = 14;
+/**
+ * The size the document body is set in — `--text-reading`, the size the measure is spent at.
+ *
+ * 14 until 2026-09-12, when the reading bodies moved to their own 16px step
+ * (`docs/DECISIONS.md`, "The reading column is worth more of its pane than the measure was
+ * buying"). The name keeps its spelling because the gate imports it.
+ */
+export const DOC_BODY_FONT_PX = 16;
 
 /** The side inset a document column has always paired with (`px-6 md:px-10` at md and above). */
 export const DOC_COLUMN_GUTTER_PX = 40;
 
-/** The measure resolved at the body's size: 60 × 0.5957 × 14 = 500.4px. */
+/** The measure resolved at the body's size: 66 × 0.5957 × 16 = 629.1px. */
 export const PROSE_MEASURE_PX =
   PROSE_MEASURE_STEPS * PROSE_ZERO_ADVANCE_EM * DOC_BODY_FONT_PX;
 
-/** The document column box: the measure plus one gutter each side = 580.4px. */
+/** The document column box: the measure plus one gutter each side = 709.1px. */
 export const DOC_COLUMN_PX = PROSE_MEASURE_PX + 2 * DOC_COLUMN_GUTTER_PX;

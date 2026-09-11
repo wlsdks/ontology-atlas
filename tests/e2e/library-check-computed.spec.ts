@@ -149,7 +149,11 @@ test.describe("the structural check is the app's own", () => {
      */
     await expect(page.getByTestId("library-compile-web-limit")).toHaveCount(0);
     await expect(page.getByTestId("library-compile-web-get-app")).toHaveCount(0);
-    await expect(page.getByTestId("library-lint-blocked")).toHaveCount(1);
+    // And the reason is on screen exactly once. A1 (#1560) routes it by screen: while the
+    // landing is drawn the stage prints it and the index's slot stays empty, so counting
+    // the index's own paragraph here would assert this branch's older shape rather than
+    // the rule both it and A1 keep — one blocked ability, one reason, once per screen.
+    await expect(page.getByText(/No verified coding agent is set up on this computer/)).toHaveCount(1);
 
     // The door exists although no check has ever run and there is no log to remember one.
     const door = page.getByTestId("library-open-report");

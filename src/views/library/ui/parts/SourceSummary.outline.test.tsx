@@ -111,8 +111,15 @@ describe("the source pane's outline section", () => {
     const list = screen.getByTestId("library-source-outline-list");
     expect(list).toHaveTextContent("Response window");
     expect(list).toHaveTextContent("Records");
-    // Headings alone would describe a document of eight units as one of two.
-    expect(list).toHaveTextContent("6 paragraphs");
+    /*
+     * ⚠️ **The count is on the section's label, not in the list** (2026-09-12). Headings
+     * alone would describe a document of eight units as one of two, so the total is still
+     * printed — but a `text-body` primary line pushed into a list of pressable addresses
+     * looked like one more heading a reader could press and could not, which is the mixed
+     * grammar the owner read as *"very strange"*. It rides on the section label itself now.
+     */
+    expect(list).not.toHaveTextContent("6 paragraphs");
+    expect(screen.getByTestId("library-source-outline-count")).toHaveTextContent("6 paragraphs");
   });
 
   it("says it cannot read the shape instead of printing zero parts", () => {

@@ -98,7 +98,7 @@ function Harness({
       onCompile={() => {}}
       onLint={() => {}}
       segment={segment}
-      compileNote={null}
+      actionsNote={null}
       inApp={false}
       busy={false}
       t={t}

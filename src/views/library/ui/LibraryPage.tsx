@@ -120,7 +120,7 @@ import { SourceSummary } from "./parts/SourceSummary";
 import { WikiPageHeader } from "./parts/WikiPageHeader";
 import { WikiTemplateProblems } from "./parts/WikiTemplateProblems";
 import { LibraryQuestions } from './parts/LibraryQuestions';
-import { RetainedAnswerContext } from './parts/RetainedAnswerContext';
+import { RetainedAnswerContext, RetainedAnswerFooter } from './parts/RetainedAnswerContext';
 import { AnswerRevisionComparison } from './parts/AnswerRevisionComparison';
 import { LibraryConstellation } from "./parts/LibraryConstellation";
 import { LibrarySynapseField } from "./parts/LibrarySynapseField";
@@ -1996,7 +1996,6 @@ export function LibraryPage() {
             onImportFromService={openImport}
             onCompile={agent.route === "agent" || agent.route === "local" ? handleCompile : null}
             onLint={agent.route === "agent" ? handleLint : null}
-            lintBlockedReason={agentOnlyReason}
             hasWikiTemplate={docs.some((doc) => doc.slug === "wiki/_template")}
             onNewPage={handle ? handleNewPage : null}
             /*
@@ -2046,12 +2045,17 @@ export function LibraryPage() {
                 />
               ) : null
             }
-            /* Guidance owns the disclosure while it is visible; after a selection,
-               the index keeps it beside its Compile action. */
-            compileNote={
-              selected === null || compileBlocked !== null
-                ? null
-                : libraryTransferSentence({ route: agent.route, localModel: agent.localModel }, t)
+            /*
+             * **The reason, once per screen** (2026-09-12). This slot carried the
+             * four-line transfer disclosure; it now carries the one sentence the index's
+             * two agent-only doors owe a person when they cannot run, and only while the
+             * landing is not drawn — the stage prints the landing's own single reason and
+             * `agentReasonPrintedId` says which card. On the web the missing thing is the
+             * app, not an agent, so the section's own degradation sentence stays the true
+             * one there and this stays null.
+             */
+            actionsNote={
+              selected === null || nativeVaultRootPath === null ? null : agentOnlyReason
             }
             inApp={nativeVaultRootPath !== null}
             busy={busy}
@@ -2277,15 +2281,22 @@ export function LibraryPage() {
                 onOpenSource={(path) => choose({ kind: "source", path })}
                 t={t}
               />
-              <WikiTemplateProblems problems={wikiProblems} t={t} />
+              {/*
+                **On a page, the findings are why a person is here; on an answer, they are
+                not** (owner, 2026-09-12). Measured in the installed app at 1512 on the
+                saved answer: this card ran nine lines between the byline and the answer's
+                own Summary, which started at 84% of the viewport. So an answer gets one
+                summary line with its count, drawn **after** the body; a wiki page keeps the
+                open card above it, because a page that misses the template is a page whose
+                shape is the subject.
+              */}
+              {selectedAnswer ? null : <WikiTemplateProblems problems={wikiProblems} t={t} />}
               {selectedAnswer ? <RetainedAnswerContext
                 refreshButtonRef={answerRefreshButtonRef}
                 observation={answerObservation(selectedAnswer.frontmatter, knownOriginalPaths, model.hashes)}
                 phase={turnRunning ? 'running' : answerRefresh.phase}
                 historyState={answerHistory.state}
                 older={!retainedAnswers.some((answer) => answer.slug === selectedAnswer.slug)}
-                onHome={() => choose(null)}
-                onPrevious={answerHistory.previous && answerHistory.exists ? () => choose({ kind: 'wiki', slug: answerHistory.previous! }) : null}
                 onRefresh={agent.route === 'agent' && nativeVaultRootPath ? () => { void answerRefresh.begin(selectedAnswer.slug); } : null}
                 agentDoor={agentDoor}
                 error={answerRefresh.error} t={t} /> : null}
@@ -2338,6 +2349,18 @@ export function LibraryPage() {
                   />
                 ) : null}
               </div>
+              {/* After the answer, in the order a reader meets them: what the folder found
+                  about this page's connections, then the way off this page. */}
+              {selectedAnswer ? (
+                <>
+                  <WikiTemplateProblems problems={wikiProblems} collapsed t={t} />
+                  <RetainedAnswerFooter
+                    onHome={() => choose(null)}
+                    onPrevious={answerHistory.previous && answerHistory.exists ? () => choose({ kind: 'wiki', slug: answerHistory.previous! }) : null}
+                    t={t}
+                  />
+                </>
+              ) : null}
             </DocReadingPane>
           ) : selectedSource ? (
             <div className="min-h-0 flex-1 overflow-auto max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]">

@@ -26,22 +26,7 @@ const MODEL = {
   pairing: { originalsByWiki: new Map(), writeUpsBySource: new Map() },
 } as unknown as LibraryUiModel;
 
-function Harness({
-  onNewPage = null,
-  report = null,
-  onCompile = () => {},
-  onLint = () => {},
-  lintBlockedReason = null,
-  inApp = false,
-}: {
-  onNewPage?: ((title: string) => void) | null;
-  report?: { count: number; open: boolean; onOpen: () => void } | null;
-  onCompile?: (() => void) | null;
-  onLint?: (() => void) | null;
-  lintBlockedReason?: string | null;
-  /** False is the browser, the surface whose degradation copy this file asserts. */
-  inApp?: boolean;
-}) {
+function Harness({ onNewPage = null, report = null }: { onNewPage?: ((title: string) => void) | null; report?: { count: number; open: boolean; onOpen: () => void } | null }) {
   const t = useTranslations("library");
   return (
     <LibrarySection
@@ -55,15 +40,14 @@ function Harness({
       onAddFiles={() => {}}
       onFindDocuments={() => {}}
       onImportFromService={() => {}}
-      onCompile={onCompile}
-      onLint={onLint}
-      lintBlockedReason={lintBlockedReason}
+      onCompile={() => {}}
+      onLint={() => {}}
       onNewPage={onNewPage}
       report={report}
       /* The doors and the list are the wiki half of the column; the switch above it decides. */
       segment="wiki"
-      compileNote={null}
-      inApp={inApp}
+      actionsNote={null}
+      inApp={false}
       busy={false}
       t={t}
     />
@@ -87,7 +71,7 @@ function HarnessWith({ model }: { model: LibraryUiModel }) {
       onCompile={() => {}}
       onLint={() => {}}
       segment="wiki"
-      compileNote={null}
+      actionsNote={null}
       inApp={false}
       busy={false}
       t={t}
@@ -204,7 +188,7 @@ describe("a search whose matches sit on the other half of the switch", () => {
         onNewPage={null}
         report={null}
         segment="sources"
-        compileNote={null}
+        actionsNote={null}
       inApp={false}
         busy={false}
         t={t}
@@ -232,46 +216,5 @@ describe("a search whose matches sit on the other half of the switch", () => {
     expect(door).toHaveTextContent("Show 1 wiki page");
     fireEvent.click(door);
     expect(window.localStorage.getItem("atlas.library.index-segment")).toBe("wiki");
-  });
-});
-
-/**
- * **The installed app must never offer its own download** (`.claude/rules/surfaces.md`).
- *
- * ⚠️ The Compile slot's condition used to be `onCompile === null` alone, which is also true
- * *inside the app* whenever no coding agent is set up — so the app printed "Writing pages
- * needs a coding agent running on this computer, which only the app can start… Get the app"
- * at a person already running it, directly beneath Check's own true reason. Two grey
- * paragraphs, one of them false about the surface it was on (measured 2026-09-12,
- * `.claude/shots-2026-09-12/library-check/1512-report-folded.png`).
- *
- * The condition is now the surface. Both halves are asserted here, because a fix that only
- * silenced the app would be indistinguishable from deleting the web's degradation card.
- */
-describe("the Compile slot names the surface it is on", () => {
-  it("keeps the web's degradation card, with its door to the app", () => {
-    mount(<Harness onCompile={null} inApp={false} />);
-    expect(screen.getByTestId("library-compile-web-limit").textContent).toContain(
-      "only the app can start",
-    );
-    expect(screen.getByTestId("library-compile-web-get-app")).toBeInTheDocument();
-  });
-
-  it("prints no download offer inside the app, and leaves Check's one true reason standing", () => {
-    mount(
-      <Harness
-        onCompile={null}
-        onLint={null}
-        lintBlockedReason="No verified coding agent is set up on this computer."
-        inApp
-      />,
-    );
-    expect(screen.queryByTestId("library-compile-web-limit")).toBeNull();
-    expect(screen.queryByTestId("library-compile-web-get-app")).toBeNull();
-    // One paragraph, not two, and it is the one that is true of this surface.
-    expect(screen.getAllByTestId("library-lint-blocked")).toHaveLength(1);
-    expect(screen.getByTestId("library-lint-blocked").textContent).toContain(
-      "No verified coding agent",
-    );
   });
 });

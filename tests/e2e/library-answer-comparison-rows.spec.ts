@@ -167,14 +167,17 @@ async function openComparison(page: Page, locale: 'en' | 'ko', bodies: { old: st
 const MAX_COLUMN_PX = PROSE_MEASURE_PX + PROSE_MEASURE_STEPS;
 
 /**
- * The calibrated ceiling for one line, from `prose-measure-calibration.spec.ts`: the prose
- * measure is gated at 65–82 Latin characters, so a column of this product's body text may not
- * exceed the top of that band. The Korean ceiling is the ~36 syllables the token's own block
- * documents for `60ch`, plus the room a mixed line buys — spaces, digits and Latin source
- * names are all narrower than a syllable. Measured: 64 Latin, 40 Hangul.
+ * The calibrated ceiling for one line, from `prose-measure-calibration.spec.ts`: that gate's
+ * band moved from 65–82 to **80–92** Latin characters on 2026-09-12 when the measure became
+ * `66ch` spent at `--text-reading` (`docs/DECISIONS.md`, "The reading column is worth more of
+ * its pane than the measure was buying"), so a column of this product's body text may not
+ * exceed the top of the new band. The Korean ceiling follows the same step: the token's own
+ * block documents ~46 syllables at `66ch`, plus the room a mixed line buys — spaces, digits
+ * and Latin source names are all narrower than a syllable. Measured here after the move:
+ * 87 Latin, 44 Hangul.
  */
-const MAX_LATIN_CHARS_PER_LINE = 82;
-const MAX_HANGUL_PER_LINE = 44;
+const MAX_LATIN_CHARS_PER_LINE = 92;
+const MAX_HANGUL_PER_LINE = 52;
 
 /**
  * ⚠️ **Prove the font before measuring the font** (the rule
@@ -357,13 +360,16 @@ test('the answer page demotes leaving for the list below asking for a draft', as
       const node = document.querySelector(`[data-testid="${id}"]`)!;
       const style = getComputedStyle(node);
       const box = node.getBoundingClientRect();
-      return { y: Math.round(box.y), height: Math.round(box.height), background: style.backgroundColor, border: style.borderTopWidth };
+      return { x: Math.round(box.x), y: Math.round(box.y), height: Math.round(box.height), background: style.backgroundColor, border: style.borderTopWidth };
     };
     const group = document.querySelector('[role="group"][aria-label]')!;
     return {
       refresh: read('answer-refresh-start'),
       home: read('answer-back-home'),
-      lede: Math.round(document.querySelector('#answer-refresh-lede')!.getBoundingClientRect().y),
+      lede: (() => {
+        const box = document.querySelector('#answer-refresh-lede')!.getBoundingClientRect();
+        return { x: Math.round(box.x), y: Math.round(box.y) };
+      })(),
       groupLabelled: group.getAttribute('aria-label') !== '' && group.contains(document.querySelector('[data-testid="answer-refresh-start"]')),
       homeInGroup: group.contains(document.querySelector('[data-testid="answer-back-home"]')),
     };
@@ -371,7 +377,18 @@ test('the answer page demotes leaving for the list below asking for a draft', as
 
   expect(hierarchy.groupLabelled).toBe(true);
   expect(hierarchy.homeInGroup).toBe(false);
-  expect(hierarchy.lede).toBeLessThan(hierarchy.refresh.y);
+  /*
+   * ⚠️ **Read before, which is no longer the same as above** (2026-09-12). The 2026-09-11
+   * decision this asserts is that the group says what pressing it does before a person
+   * presses it, and it was written when the lede was a caption paragraph stacked over the
+   * control. The lede is now the observation sentence itself, on the control's own line and
+   * to its left, because the stack of paragraphs it belonged to was what pushed the answer's
+   * own Summary to 84% of the viewport. So the assertion is the reading order rather than one
+   * axis of it: the lede is left of the control and never below it. A single `y` comparison
+   * would now fail on vertical centring alone (11px of text inside a 32px row).
+   */
+  expect(hierarchy.lede.x).toBeLessThan(hierarchy.refresh.x);
+  expect(hierarchy.lede.y).toBeLessThanOrEqual(hierarchy.refresh.y + hierarchy.refresh.height);
   expect(hierarchy.home.y).toBeGreaterThan(hierarchy.refresh.y + hierarchy.refresh.height);
   // A link, not a third button: no plane and no outline of its own.
   expect(hierarchy.home.background).toBe('rgba(0, 0, 0, 0)');
@@ -382,5 +399,66 @@ test('the answer page demotes leaving for the list below asking for a draft', as
     mkdirSync(evidence, { recursive: true });
     writeFileSync(`${evidence}/answer-page-hierarchy.json`, JSON.stringify(hierarchy, null, 2));
     await page.screenshot({ path: `${evidence}/answer-page-1512.png`, animations: 'disabled' });
+  }
+});
+
+/**
+ * **The answer starts in the first half of the viewport.**
+ *
+ * The one number that says whether a saved answer reads as an answer. Measured in the
+ * installed app at 1512×901 before this slice: title, byline, the originals disclosure, a
+ * nine-line problem
+ * card and a four-paragraph evidence block put the answer's own `Summary` heading at
+ * **y=756, 84% down the viewport**, and at 1040×720 it was off the first screen entirely
+ * (97%). Everything above it was *about* the answer; none of it was the answer.
+ *
+ * The ceiling is **45%** — the answer's first heading has to be in the upper half of the
+ * first screen at both the widest window this product is designed for and the app's own
+ * window floor. Asserted at both, because the fold is the thing being protected and the two
+ * viewports fail differently: at 1512 the rail's lane narrows the column, at 1040 there is
+ * no rail and 181 fewer pixels of height.
+ */
+test('the answer page opens on the answer at 1512 and at the window floor', async ({ page }) => {
+  await seedFirstRunSeen(page);
+  await installLibraryWorkHarness(page, {
+    files: {
+      'project.md': '---\nuid: 00000000-0000-4000-8000-000000000001\nkind: project\ntitle: Knowledge review\nslug: knowledge-review\n---\n# Knowledge review\n',
+      [SOURCE]: ORIGINAL, [AUDIT]: AUDIT_TEXT, [ANSWER]: retainedPage(OLD_BODY),
+    },
+  });
+
+  /* The folder is opened once: the handle is restored from IndexedDB after that, so a second
+     `goto` never draws the first-run door again. The two viewports are therefore a resize of
+     one open answer, which is also what a person resizing the window does. */
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await page.goto('/en/docs/');
+  await page.getByRole('button', { name: /Open my folder/i }).click();
+  await page.getByTestId('app-nav-rail-item-library').click();
+  await page.getByTestId('library-questions').waitFor();
+  await page.getByTestId('library-question-wiki/answers/original').click();
+  await expect(page.getByTestId('retained-answer-context')).toBeVisible();
+
+  for (const viewport of [
+    { width: 1512, height: 900 },
+    { width: 1040, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.getByTestId('library-reading-pane').waitFor();
+
+    const summaryY = await page
+      .locator('[data-testid="library-reading-pane"] h2', { hasText: /^Summary$/ })
+      .first()
+      .evaluate((node) => node.getBoundingClientRect().y);
+    const share = summaryY / viewport.height;
+    expect(
+      share,
+      `the answer's Summary starts at y=${Math.round(summaryY)} of ${viewport.height} (${(share * 100).toFixed(1)}%) — the apparatus above the answer is back`,
+    ).toBeLessThan(0.45);
+
+    // And leaving for the list is after the answer, not before it.
+    const homeY = await page
+      .getByTestId('answer-back-home')
+      .evaluate((node) => node.getBoundingClientRect().y);
+    expect(homeY).toBeGreaterThan(summaryY);
   }
 });

@@ -964,7 +964,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 129138,
+      "wordCount": 129721,
       "updatedAt": "2026-09-12",
       "linksOut": [
         "src:sources/settlement-policy.md",
@@ -1032,7 +1032,7 @@
       },
       "headings": [],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): The B2+ \"Circuit × Constellation\" visual language shipped from ontology-map has become the standard for page rollout (gateway → docs/ontology hub → projects/ins",
-      "wordCount": 45532,
+      "wordCount": 46323,
       "updatedAt": "2026-09-12",
       "linksOut": [
         "design-references/DESIGN-linear",

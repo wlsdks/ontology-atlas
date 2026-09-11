@@ -60,6 +60,7 @@ function ProblemGroup({
   title,
   body,
   testId,
+  collapsed,
   t,
 }: {
   problems: ReadonlyArray<WikiTemplateProblem>;
@@ -67,19 +68,23 @@ function ProblemGroup({
   title: string;
   body: string;
   testId: string;
+  /**
+   * **Whether this card is one line a reader opens, or the open card itself.**
+   *
+   * On a wiki page the findings are the reason a person is looking at the page, so the card
+   * is open above the body. On a **saved answer** the answer is what they opened: measured
+   * in the installed app at 1512, this card ran nine lines between the byline and the
+   * answer's own Summary and pushed it to 84% of the viewport
+   * (`.claude/shots-2026-09-12/library-inspection/06-answer-page.png`). There it becomes one
+   * summary line with its count, after the content — nothing deleted, one press away.
+   */
+  collapsed?: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   if (problems.length === 0) return null;
-  return (
-    <section
-      aria-label={ariaLabel}
-      data-testid={testId}
-      className="mx-auto mt-4 max-w-[var(--measure-doc-column)] px-6 md:px-10"
-    >
-      <div className="rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-4 py-3">
-        <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-          {title}
-        </p>
+  const heading = collapsed ? `${title} · ${t("wiki.findingCount", { count: problems.length })}` : title;
+  const Body = (
+    <>
         {/* The explanation and each finding are sentences: they take `--measure-prose`, while
             the card itself keeps the document column. At `text-label` (11px) inside this card
             the uncapped line ran past 120 characters (2026-09-11 calibration —
@@ -87,22 +92,49 @@ function ProblemGroup({
             not as decoration: this line fitted in one row before, and the first narrower render
             in the installed app broke a Korean word across the wrap, leaving its final syllable
             and its particle stranded on the next line. The findings below already carried it. */}
-        <p className="mt-1 max-w-[var(--measure-prose)] text-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">{body}</p>
-        <ul className="mt-2 flex flex-col gap-1 font-sans">
-          {problems.map((problem, index) => (
-            <li
-              key={`${problem.code}-${index}`}
-              data-testid="library-wiki-problem"
-              className="max-w-[var(--measure-prose)] text-label text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+      <p className="mt-1 max-w-[var(--measure-prose)] text-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">{body}</p>
+      <ul className="mt-2 flex flex-col gap-1 font-sans">
+        {problems.map((problem, index) => (
+          <li
+            key={`${problem.code}-${index}`}
+            data-testid="library-wiki-problem"
+            className="max-w-[var(--measure-prose)] text-label text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+          >
+            <span className="font-mono text-caption text-[color:var(--color-text-tertiary)]">
+              {problem.code}
+              {problem.line ? `:${problem.line}` : ""}
+            </span>{" "}
+            {describeWikiProblem(problem, t)}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+  return (
+    <section
+      aria-label={ariaLabel}
+      data-testid={testId}
+      className="mx-auto mt-4 max-w-[var(--measure-doc-column)] px-6 md:px-10"
+    >
+      <div className="rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-4 py-3">
+        {collapsed ? (
+          <details>
+            <summary
+              data-testid={`${testId}-summary`}
+              className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] marker:text-[color:var(--color-text-quaternary)]"
             >
-              <span className="font-mono text-caption text-[color:var(--color-text-tertiary)]">
-                {problem.code}
-                {problem.line ? `:${problem.line}` : ""}
-              </span>{" "}
-              {describeWikiProblem(problem, t)}
-            </li>
-          ))}
-        </ul>
+              {heading}
+            </summary>
+            {Body}
+          </details>
+        ) : (
+          <>
+            <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              {heading}
+            </p>
+            {Body}
+          </>
+        )}
       </div>
     </section>
   );
@@ -129,9 +161,12 @@ function describeWikiProblem(
 
 export function WikiTemplateProblems({
   problems,
+  collapsed,
   t,
 }: {
   problems: ReadonlyArray<WikiTemplateProblem>;
+  /** One summary line per group instead of the open card — see `ProblemGroup`. */
+  collapsed?: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   if (problems.length === 0) return null;
@@ -145,6 +180,7 @@ export function WikiTemplateProblems({
         title={t("wiki.offTemplateTitle")}
         body={t("wiki.offTemplateBody")}
         testId="library-wiki-problems"
+        collapsed={collapsed}
         t={t}
       />
       <ProblemGroup
@@ -153,6 +189,7 @@ export function WikiTemplateProblems({
         title={t("wiki.linkFindingsTitle")}
         body={t("wiki.linkFindingsBody")}
         testId="library-wiki-link-findings"
+        collapsed={collapsed}
         t={t}
       />
     </>
