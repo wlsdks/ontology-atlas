@@ -205,6 +205,8 @@ export interface LibrarySectionProps {
    * exactly one of the two may print it.
    */
   compileNote: string | null;
+  /** True in the installed app. On the web, Compile has no runtime at all. */
+  inApp: boolean;
   /**
    * Which of the two lists this column is showing. There is no "both": the switch above
    * is exclusive, and rendering the inactive list `hidden` would leave its rows in the tab
@@ -317,6 +319,7 @@ export function LibrarySection({
   report = null,
   brainControl,
   compileNote,
+  inApp,
   segment,
   busy,
   compiling = false,
@@ -945,9 +948,19 @@ export function LibrarySection({
         degradation grammar in `.claude/rules/surfaces.md`: why it is unavailable, where
         it works, and what still works here (the pages read and edit exactly as they do
         in the app). It is the same slot as `compileNote`, and only one can be true.
+
+        ⚠️ **The condition is the surface, not the absence of a press.** It used to be
+        `onCompile === null` alone, which is also true *inside the app* whenever no runtime
+        is set up — so the installed app printed "which only the app can start… Get the app"
+        at a person already running it, and offered them its own download, which
+        `.claude/rules/surfaces.md` forbids in those words. Measured 2026-09-12 in
+        `.claude/shots-2026-09-12/library-check/1512-report-folded.png`: that paragraph stood
+        directly under Check's own true reason — two grey paragraphs, one of them false about
+        the surface it was on. In the app the true reason is the one `checkBlockedReason`
+        already prints, once, above.
       */}
 
-      {onCompile === null ? (
+      {onCompile === null && !inApp ? (
         <p
           data-testid="library-compile-web-limit"
           className="px-3 pb-1 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"

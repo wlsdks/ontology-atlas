@@ -2053,6 +2053,7 @@ export function LibraryPage() {
                 ? null
                 : libraryTransferSentence({ route: agent.route, localModel: agent.localModel }, t)
             }
+            inApp={nativeVaultRootPath !== null}
             busy={busy}
             /*
              * Both routes that can write a page: the agent turn this view starts, and the

@@ -138,6 +138,19 @@ test.describe("the structural check is the app's own", () => {
     await expect(lint).toBeVisible({ timeout: 25_000 });
     await expect(lint).toBeDisabled();
 
+    /*
+     * **This is the installed app, so it must not offer its own download**
+     * (`.claude/rules/surfaces.md`). The stub sets `isTauri`, and with no runtime
+     * `onCompile` is null — the state in which the Compile slot used to print "which only
+     * the app can start… Get the app" at a person already running the app, directly under
+     * Check's own true reason (measured 2026-09-12,
+     * `.claude/shots-2026-09-12/library-check/1512-report-folded.png`). One paragraph now,
+     * and it is the one that is true of this surface.
+     */
+    await expect(page.getByTestId("library-compile-web-limit")).toHaveCount(0);
+    await expect(page.getByTestId("library-compile-web-get-app")).toHaveCount(0);
+    await expect(page.getByTestId("library-lint-blocked")).toHaveCount(1);
+
     // The door exists although no check has ever run and there is no log to remember one.
     const door = page.getByTestId("library-open-report");
     await expect(door).toBeVisible();
