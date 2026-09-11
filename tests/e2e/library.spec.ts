@@ -1119,37 +1119,22 @@ for (const viewport of [
     expect(box.y, "the toast is below the index head").toBeGreaterThan(head.y + head.height);
 
     /*
-     * ⚠️ **A dialog that *shows* keeps the toast and takes it inside its own safe area; a
-     * dialog that *asks* clears it instead** (`useToast().dismiss`, which
-     * `handleFindDocuments` calls). Both of this view's full-surface dialogs are
-     * `size="viewport"`: `--chrome-inset` from each window edge with `p-4` inside that, so
-     * at the plain gutter the box came to rest on the dialog's own padding.
+     * ⚠️ **A dialog that *asks* clears the toast instead of standing over it.**
+     * `handleFindDocuments` calls `useToast().dismiss()` before it opens, because a toast
+     * is an aside that dismisses itself while a blocking dialog is not — left standing it
+     * floats above the scrim of the surface asking the next question, which is the
+     * floating-box soup the design charter refuses. Clearing is the caller's job.
+     *
+     * The other direction — a full-surface dialog that *shows* something keeps the toast
+     * and takes it inside its own safe area — is measured in
+     * `library-answer-refresh.spec.ts`, because the answer comparison is the one
+     * `size="viewport"` dialog this view has left since the graph became the home
+     * (`docs/DECISIONS.md`, 2026-09-12).
      */
-    await page.getByTestId("library-graph-open").click();
-    const graph = page.getByTestId("library-graph-dialog");
-    await expect(graph).toBeVisible();
-    await expect(toast).toBeVisible();
-    const safeArea = async () => {
-      const dialogBox = (await graph.boundingBox())!;
-      const inDialog = (await toast.boundingBox())!;
-      return {
-        insideLeftEdge: inDialog.x > dialogBox.x,
-        right: Math.round(dialogBox.x + dialogBox.width - (inDialog.x + inDialog.width)),
-        bottom: Math.round(dialogBox.y + dialogBox.height - (inDialog.y + inDialog.height)),
-      };
-    };
-    /*
-     * 32 from the dialog's own border box: the gutter is `--chrome-inset` (24, the dialog's
-     * distance from the window) plus its `p-4` (16) plus the same 16 the pane gets, so 56
-     * from the window edge — and the dialog's border stands at 24 of that. What is left,
-     * 32, is the dialog's padding plus one gutter, which is what "inside the safe area"
-     * means here. The dialog springs in and the box moves with the gutter, so this settles
-     * as well.
-     */
-    await expect
-      .poll(safeArea, { timeout: 10_000 })
-      .toEqual({ insideLeftEdge: true, right: 32, bottom: 32 });
+    await page.getByTestId("library-index-segment-sources").click();
+    await page.getByTestId("library-find-documents").click();
+    await expect(page.getByTestId("find-documents-list")).toBeVisible();
+    await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
     await page.keyboard.press("Escape");
-    await expect(graph).toHaveCount(0);
   });
 }

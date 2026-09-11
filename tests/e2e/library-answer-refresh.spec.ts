@@ -287,3 +287,92 @@ for (const { retained, kind, manual, name } of [
     expect((await harness.snapshot(page)).files[ANSWER]).toBe(OLD_PAGE);
   });
 }
+
+/**
+ * **A full-surface dialog takes the toast inside its own safe area** (`docs/DECISIONS.md`,
+ * 2026-09-12 — "The Library's toast stands in the corner of the pane it is about").
+ *
+ * The Library's toasts anchor to the pane's bottom-right corner, and the answer comparison
+ * is the one `size="viewport"` dialog this view has left since the graph became the home:
+ * `--chrome-inset` from each window edge with `p-4` inside that. At the plain 16px gutter a
+ * box came to rest in the corner of that padding, on the dialog's own close control — a
+ * dismissible aside laid over a surface a person is reading, which is the floating-box soup
+ * the charter refuses. A dialog that *asks* clears toasts instead, which
+ * `library.spec.ts` measures on Find documents.
+ *
+ * ⚠️ **What is measured here is the resolved gutter, not a painted box.** Every toast this
+ * view raises either closes the comparison as it fires (`onSave`) or is raised from the
+ * index behind the scrim, so there is no press that puts a live box on screen while the
+ * dialog stands — and a gate cannot wait for an agent turn to coincide with a four-second
+ * toast. The probe reads the two custom properties `ToastProvider` hands sonner, resolved
+ * by the engine against a real fixed element, which is the value a box would use.
+ */
+test('the toast gutters move inside the comparison dialog and back out again', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 900 });
+  const harness = await openLibrary(page);
+  await page.getByTestId('library-questions-open').click();
+  await harness.mutateSource(page, SOURCE, REVISED);
+  await expect(page.getByTestId('answer-evidence-state')).toHaveAttribute('data-state', 'changed');
+  await generateDraft(page, harness);
+
+  const gutters = () =>
+    page.evaluate(() => {
+      const probe = document.createElement('div');
+      probe.style.position = 'fixed';
+      probe.style.width = '1px';
+      probe.style.height = '1px';
+      probe.style.right = 'var(--app-toast-right-offset, 16px)';
+      probe.style.bottom = 'var(--app-toast-bottom-offset, 16px)';
+      document.body.appendChild(probe);
+      const box = probe.getBoundingClientRect();
+      probe.remove();
+      const dialog = document.querySelector('[data-testid="answer-comparison"]');
+      const dialogBox = dialog?.getBoundingClientRect() ?? null;
+      return {
+        right: Math.round(window.innerWidth - box.right),
+        bottom: Math.round(window.innerHeight - box.bottom),
+        insideDialog:
+          dialogBox === null
+            ? null
+            : {
+                right: Math.round(dialogBox.right - box.right),
+                bottom: Math.round(dialogBox.bottom - box.bottom),
+              },
+        // The pane's own right-hand wall, when there is a conversation standing on it.
+        shortOfDock: (() => {
+          const frame = document.querySelector('[data-testid="library-agent-dock-frame"]');
+          if (frame === null) return null;
+          const frameBox = frame.getBoundingClientRect();
+          return frameBox.width > 200 ? Math.round(frameBox.left - box.right) : null;
+        })(),
+      };
+    });
+
+  /*
+   * 24 of `--chrome-inset` plus the dialog's own 16 of `p-4` plus the pane's own 16 makes
+   * 56 from the window; the dialog's border stands at 24 of that, so what is left inside
+   * it is its padding plus one gutter.
+   */
+  // Polled: the dialog arrives on a spring, so its own rect is still moving for a beat.
+  await expect
+    .poll(gutters, { timeout: 10_000 })
+    .toEqual({
+      right: 56,
+      bottom: 56,
+      insideDialog: { right: 32, bottom: 32 },
+      // The dialog's safe area outranks the dock's edge: it is the surface being read.
+      shortOfDock: -464,
+    });
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('answer-comparison')).toHaveCount(0);
+  /*
+   * And back out to the pane's own wall — which on this journey is the conversation's left
+   * edge, because the refresh ran an agent turn and the dock is standing. 520px of dock
+   * plus the pane's 16px gutter is the 536 measured from the window, and the gap to the
+   * dock's own frame is that same gutter.
+   */
+  await expect
+    .poll(gutters, { timeout: 10_000 })
+    .toEqual({ right: 536, bottom: 16, insideDialog: null, shortOfDock: 16 });
+});
