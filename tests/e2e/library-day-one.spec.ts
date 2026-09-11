@@ -1,0 +1,293 @@
+import { expect, test, type Page } from "@playwright/test";
+
+import { seedFirstRunSeen } from "./first-run-seed";
+import { DAY_ONE_BINARY_BASE64, DAY_ONE_TEXT } from "./library-day-one-fixture";
+
+/**
+ * **The Library's first day, with no coding agent — slice U2's three proofs.**
+ *
+ * Measured on the installed app 2026-09-11, this is the folder a third-tier person
+ * (`docs/PRODUCT-DIRECTION.md` target tiers) actually has: six real documents in
+ * `sources/`, a `wiki/` holding only its template, nothing compiled, no agent. What the
+ * Library gave them was a file list with sizes, an empty wiki, a search matching **paths
+ * only**, and a sentence explaining why the next step was refused with no way to take it.
+ *
+ * Each case here is one of the three things that changed, written as the failure it
+ * prevents rather than the feature it demonstrates:
+ *
+ * 1. typing a phrase that is inside a document finds nothing (it is on line 11 of
+ *    `settlement-policy.md`, and no path contains it);
+ * 2. a spreadsheet's pane cannot say what is in the spreadsheet;
+ * 3. the blocked step's reason is a dead end.
+ *
+ * ## Why the desktop bridge is stubbed rather than the picker
+ *
+ * The same reason `library-ask.spec.ts` and `library-compile-dock.spec.ts` record: the
+ * installed app is a WKWebView running this exact static export, so stubbing the Rust
+ * side exercises the real handle, the real folder walk, the real library model and the
+ * real render. It also matters for **this** slice specifically: the app's source read is
+ * `read_vault_binary_file`, which hands the WebView a JSON array of bytes, and that is
+ * the path both the search and the outline actually take on the surface a person uses.
+ * An OPFS picker stub would prove the browser's File System Access path and say nothing
+ * about the one that costs.
+ *
+ * It is also the only way to reach proof 3 at all. The door is **deliberately absent on
+ * the web**, where the missing thing is the installed app and `/download/`'s own card is
+ * the honest destination — so a browser-only run cannot show it, by design rather than by
+ * accident.
+ *
+ * DOCX and XLSX ride in as base64 and are decoded to real bytes, because the outline's
+ * numbers come out of the workbook itself: two sheets, four rows and five rows. A stubbed
+ * string would have proved the section renders and nothing about whether it is true.
+ */
+
+const VAULT_ROOT = "/Users/probe/Ontology Atlas/day-one";
+
+/** No verified runtime, and none detectable: the state the whole slice is about. */
+const NO_RUNTIMES: never[] = [];
+
+async function installDesktopBridge(page: Page) {
+  await page.addInitScript(
+    ({ text, binary, rootPath }) => {
+      const MTIME = 1_757_000_000_000;
+      const encoder = new TextEncoder();
+
+      /** base64 → bytes, for the two zip documents. */
+      const decodeBase64 = (value: string) => {
+        const raw = atob(value);
+        const out = new Uint8Array(raw.length);
+        for (let index = 0; index < raw.length; index += 1) out[index] = raw.charCodeAt(index);
+        return out;
+      };
+
+      const bytesFor = (relative: string): Uint8Array | null => {
+        if (relative in binary) return decodeBase64(binary[relative]!);
+        if (relative in text) return encoder.encode(text[relative]!);
+        return null;
+      };
+
+      const paths = [...Object.keys(text), ...Object.keys(binary)];
+
+      const listDirectory = (relative: string) => {
+        const prefix = relative ? `${relative}/` : "";
+        const seen = new Map<string, "file" | "directory">();
+        for (const path of paths) {
+          if (!path.startsWith(prefix)) continue;
+          const rest = path.slice(prefix.length);
+          if (!rest) continue;
+          const slash = rest.indexOf("/");
+          if (slash < 0) seen.set(rest, "file");
+          else seen.set(rest.slice(0, slash), "directory");
+        }
+        return [...seen].map(([name, kind]) => ({ name, kind }));
+      };
+
+      const answer = (command: string, args: Record<string, unknown> = {}): unknown => {
+        const relative = String(args.relativePath ?? "");
+        switch (command) {
+          case "pick_vault_directory":
+            return rootPath;
+          case "list_vault_directory":
+            return listDirectory(relative);
+          case "vault_path_exists":
+            if (args.kind === "directory") {
+              return relative === "" || paths.some((path) => path.startsWith(`${relative}/`));
+            }
+            return paths.includes(relative);
+          case "read_vault_text_file": {
+            if (!(relative in text)) throw new Error(`missing ${relative}`);
+            return { text: text[relative], lastModified: MTIME };
+          }
+          case "read_vault_binary_file": {
+            const bytes = bytesFor(relative);
+            if (!bytes) throw new Error(`missing ${relative}`);
+            // The real bridge's shape: one JSON number per byte.
+            return { bytes: [...bytes], lastModified: MTIME };
+          }
+          case "write_vault_text_file":
+            text[relative] = String(args.content ?? "");
+            return null;
+          case "ensure_vault_directory":
+            return null;
+          case "vault_fingerprint":
+            return {
+              entries: paths
+                .filter((path) => path.endsWith(".md") || path.startsWith("sources/"))
+                .map((path) => ({
+                  relativePath: path,
+                  lastModified: MTIME,
+                  size: bytesFor(path)?.length ?? 0,
+                })),
+              truncated: false,
+              prunedDirs: [],
+            };
+          case "hash_vault_files":
+            return (args.relativePaths as string[]).map((relativePath) => ({
+              relativePath,
+              sha256: null,
+            }));
+          case "acp_detect_runtimes":
+            // Nothing on this computer. `route` resolves to `unavailable`.
+            return [];
+          case "mcp_bundled_server":
+            return { path: "/Applications/Ontology Atlas.app/mcp", available: true, reason: null };
+          case "discover_source_candidates":
+            return { candidates: [], truncated: false, unreadableRoots: [] };
+          case "discover_mcp_connectors":
+            return { servers: [], problems: [] };
+          case "start_vault_watch":
+            return null;
+          default:
+            return undefined;
+        }
+      };
+
+      (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {
+        transformCallback: (cb: unknown) => cb,
+        invoke: (command: string, args?: Record<string, unknown>) => {
+          try {
+            const value = answer(command, args ?? {});
+            return value === undefined
+              ? Promise.reject(new Error(`no stub for ${command}`))
+              : Promise.resolve(value);
+          } catch (error) {
+            return Promise.reject(error);
+          }
+        },
+      };
+      (window as unknown as { isTauri?: boolean }).isTauri = true;
+    },
+    { text: { ...DAY_ONE_TEXT }, binary: { ...DAY_ONE_BINARY_BASE64 }, rootPath: VAULT_ROOT, runtimes: NO_RUNTIMES },
+  );
+}
+
+/**
+ * Open the folder the way a person does, then cross the rail to the Library.
+ *
+ * ⚠️ **Where opening lands is not fixed, and asserting the map made this flake.** A
+ * folder's shape decides its rail (`destinationsForVaultShape`) and where `/` sends
+ * somebody — a wiki without a map opens the Library directly — so a first draft that
+ * waited on the map heading failed one run in three on this very fixture. What the walk
+ * actually needs is the rail, whatever it drew, and then the Library tile: that keeps the
+ * open folder in the session instead of asking the restore to find it again, which is the
+ * part a reload would skip.
+ */
+async function openLibrary(page: Page) {
+  await page.goto("/en/docs/");
+  await page.waitForLoadState("networkidle");
+  const door = page.getByRole("button", { name: /^Open my folder/ });
+  await door.first().waitFor({ timeout: 25_000 });
+  await door.first().click();
+  const rail = page.getByTestId("app-nav-rail");
+  await rail.waitFor({ timeout: 30_000 });
+  const libraryTile = rail.getByRole("link", { name: "Library" });
+  await libraryTile.waitFor({ timeout: 30_000 });
+  await libraryTile.click();
+  await page.getByTestId("library-sources").waitFor({ timeout: 30_000 });
+}
+
+/**
+ * **Capture only after the pixels have caught up with the DOM.**
+ *
+ * Measured while building these proofs: with the assertions green — `library-search`
+ * holding "T+2", the matches line reading "2 sources (4 passages)", and the list down to
+ * two rows — `page.screenshot()` wrote a frame showing the empty field and all six rows.
+ * The DOM was right and the paint was stale, so the capture disagreed with the test that
+ * had just passed. A capture that lags the assertion is worse than no capture: it is
+ * evidence *against* a change that actually works.
+ *
+ * Two frames plus a short settle is what closed it. It is not a `waitFor` on content —
+ * the content is already asserted above every call site — it is a wait on compositing.
+ */
+async function captureSettled(page: Page, path: string) {
+  await page.evaluate(
+    () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(null)))),
+  );
+  await page.waitForTimeout(700);
+  await page.screenshot({ path });
+}
+
+test.describe("the Library on its first day, with no agent", () => {
+  test.beforeEach(async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await installDesktopBridge(page);
+  });
+
+  test("finds a phrase that lives inside a document, and says where", async ({ page }) => {
+    await openLibrary(page);
+
+    const field = page.getByTestId("library-search");
+    await field.fill("T+2");
+
+    const matches = page.getByTestId("library-search-matches");
+    await expect(matches).toHaveAttribute("data-phase", "ready", { timeout: 20_000 });
+
+    /*
+     * Two files hold it and four units do. `fee-schedule.csv` says it in three records
+     * and sorts first; the brief expected only the policy, so the count is the fact here
+     * rather than the row.
+     */
+    await expect(matches).toHaveText(/2 sources \(4 passages\) · 0 pages matched/);
+
+    const hit = page.getByTestId("library-source-hit-sources/settlement-policy.md");
+    // Line 11, which is where the file really says it — the fixture's own wiki page
+    // cites `#l14`, three lines off, and this number comes from the reader instead.
+    await expect(hit).toContainText("line 11");
+    await expect(hit).toContainText("Card payments settle on T+2 business days.");
+
+
+    await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/1-search-inside-sources.png");
+
+    // Pressing the caption opens the file at that unit, not at the top of the pane.
+    await hit.click();
+    const passage = page.getByTestId("library-source-passage");
+    await expect(passage).toHaveAttribute("data-state", "resolved", { timeout: 20_000 });
+    await expect(page.getByTestId("library-source-passage-cited")).toContainText(
+      "Card payments settle on T+2 business days.",
+    );
+    await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/1b-caption-lands-on-the-unit.png");
+  });
+
+  test("says what a spreadsheet is made of, without compiling it", async ({ page }) => {
+    await openLibrary(page);
+
+    await page.getByTestId("library-source-sources/dispute-metrics.xlsx").click();
+
+    const outline = page.getByTestId("library-source-outline");
+    await expect(outline).toHaveAttribute("data-state", "ready", { timeout: 20_000 });
+    const list = page.getByTestId("library-source-outline-list");
+    // Out of the workbook's own bytes: two sheets, four rows and five.
+    await expect(list).toContainText("Sheet Quarterly · 4 rows");
+    await expect(list).toContainText("Sheet Reason codes · 5 rows");
+
+    // And the pane has stopped claiming it never opened the file it just described.
+    await expect(page.getByTestId("library-source-opened-state")).not.toContainText(
+      "has never opened this file",
+    );
+
+    await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/2-outline-every-file.png");
+  });
+
+  test("opens a door from the blocked step instead of ending in a sentence", async ({ page }) => {
+    await openLibrary(page);
+
+    /*
+     * The landing prints exactly one availability sentence — `library-spine.spec.ts`
+     * counts that — so the door is beside whichever card owns it.
+     */
+    const reason = page.locator("[data-landing-blocked-reason]");
+    await expect(reason).toHaveCount(1);
+    await expect(reason).toContainText(/No verified coding agent/);
+
+    const door = page.getByTestId(/library-(stage-compile|questions-ask)-blocked-door/);
+    await expect(door).toHaveCount(1);
+    await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/3-door-beside-the-reason.png");
+
+    await door.click();
+
+    // It lands on the destination the rail names, with the rail's own word for it.
+    await expect(page).toHaveURL(/\/en\/agents/, { timeout: 30_000 });
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Agents");
+    await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/3b-lands-on-agents.png");
+  });
+});
