@@ -446,8 +446,14 @@ test('the answer page opens on the answer at 1512 and at the window floor', asyn
   await page.goto('/en/docs/');
   await page.getByRole('button', { name: /Open my folder/i }).click();
   await page.getByTestId('app-nav-rail-item-library').click();
-  await page.getByTestId('library-questions').waitFor();
-  await page.getByTestId('library-question-wiki/answers/original').click();
+  /*
+   * The home is the folder's graph, and at exactly one saved answer the questions door
+   * **is** that question — its title is the label and its press opens the page, which is
+   * what keeps the 2026-09-11 falsifier ("one press from the home") holding after the
+   * 2026-09-12 move. `library-spine.spec.ts` owns the list's own shape at two answers.
+   */
+  await page.getByTestId('library-graph-canvas').waitFor();
+  await page.getByTestId('library-questions-open').click();
   await expect(page.getByTestId('retained-answer-context')).toBeVisible();
 
   for (const viewport of [
