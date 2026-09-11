@@ -22,7 +22,9 @@ proof.
    accessibility owner and saved screenshot path.
 2. Use roughly 1512×900 as the first viewport.
 3. Check 1920 and 2560 for unjustified looseness or empty space.
-4. Measure scroll-end clearance in pixels; class strings cannot prove computed layout.
+4. Measure scroll-end clearance in pixels; class strings cannot prove computed
+   layout. Content the person reaches only past the window's edge is content they
+   report as missing.
 5. Close and relaunch: no crash/recovery dialog, and recent-vault restoration is coherent.
 
 Do not reject with “too cramped.” Prescribe the surface to collapse or demote,
@@ -33,6 +35,8 @@ the width, and the reserve token. Use `/responsive-sweep` for actual rects.
 ```md
 ## Workbench position
 
+**Person and moment**: <who, doing what, saw what, did what next — from the captures/walkthrough, never imagined>
+**What this costs them**: <one sentence: the second, the wrong press, the leave — or "nothing measurable">
 **Verdict**: approve / conditional / reject
 **Installed-app proof**: command and evidence, or invalid verdict
 **14-inch first viewport**: job before scrolling and screenshot

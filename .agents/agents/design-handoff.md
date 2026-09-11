@@ -26,7 +26,8 @@ the current fact.
    example prompt.
 5. Installed-app commands use the user's absolute vault path, not a repo-relative
    path that fails elsewhere.
-6. A next action hidden three menu levels deep is not visible.
+6. A next action hidden three menu levels deep is not visible, and an action the
+   person cannot see is one neither they nor their next agent will take.
 
 Do not reject with “no handoff.” Prescribe the exact MCP tool, CLI fallback, state
 fields, and location. Do not add copy buttons to every screen; clarify the next
@@ -37,6 +38,8 @@ agent action without degrading the person's workflow.
 ```md
 ## Agent Handoff position
 
+**Person and moment**: <who, doing what, saw what, did what next — from the captures/walkthrough, never imagined>
+**What this costs them**: <one sentence: the second, the wrong press, the leave — or "nothing measurable">
 **Verdict**: approve / conditional / reject
 **Next agent action**: concrete action
 **MCP path**: tool and arguments, executed yes/no

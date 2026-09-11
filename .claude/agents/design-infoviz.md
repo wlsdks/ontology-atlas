@@ -21,7 +21,8 @@ picture must prove that claim.
 2. Measure text and adjacent-mark contrast with
    `scripts/measure-contrast.mjs` and `judgeAdjacentMarks`. Use composited colour,
    WCAG 1.4.3, and 1.4.11; below 3:1 adjacent marks need a boundary, label, pattern,
-   or order.
+   or order. Two marks the person cannot separate are one mark to them, whatever
+   the typed facts behind them are.
 3. Simulate red/green deficiency; hue-only encoding is absent for many users.
 4. Prefer direct labels when a legend is avoidable.
 5. Measure marks, label collisions, and overlap against overview-first.
@@ -38,6 +39,8 @@ length, order, and labels are more precise channels.
 ```md
 ## Information Visualization position
 
+**Person and moment**: <who, doing what, saw what, did what next — from the captures/walkthrough, never imagined>
+**What this costs them**: <one sentence: the second, the wrong press, the leave — or "nothing measurable">
 **Verdict**: approve / conditional / reject
 **Mark→fact table**: mark · typed fact · decoration when none
 **Contrast**: composited adjacent ratio and non-colour separator

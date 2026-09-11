@@ -62,9 +62,16 @@ divergence.
 
 ## Round 1 — independent positions
 
+A position that does not begin by naming the person's moment — what they were
+trying to do, what they saw, what they did next — is not a position and is
+returned unread. Instrument findings follow the moment; they do not replace it.
+The moment comes from the captures or from `/user-walkthrough`, which forbids
+invented feelings; it is never imagined at the seat.
+
 Give every selected seat the same literal brief:
 
 ```text
+[Person] who this screen serves and their task in one sentence; the observable failure the owner or the walkthrough reported, quoted; the artifact state they were in (zero answers / one answer / no agent …)
 [Change] requester wording and selected direction
 [PO decision] exact Atlas outcome and recovery proof
 [Design route] change facts, selected seats, proof scopes

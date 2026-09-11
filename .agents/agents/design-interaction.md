@@ -14,7 +14,8 @@ tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__chrome-devtools__naviga
 ## Required inspection
 
 1. Inventory rest, hover, focus-visible, active, selected, disabled, loading,
-   empty, and error. Two visually identical states are not distinct states.
+   empty, and error. Two visually identical states are not distinct states, and a
+   state the person cannot tell apart by eye is a state they will not find.
 2. Complete the task by keyboard only and verify visible focus throughout.
 3. Require one visible path to every ability. Drag, context menu, or shortcut-only
    discovery means the ability is absent for most people.
@@ -33,6 +34,8 @@ order are design, not follow-up work.
 ```md
 ## Interaction position
 
+**Person and moment**: <who, doing what, saw what, did what next — from the captures/walkthrough, never imagined>
+**What this costs them**: <one sentence: the second, the wrong press, the leave — or "nothing measurable">
 **Verdict**: approve / conditional / reject
 **State table**: rest / hover / focus-visible / active / selected / disabled / loading / empty / error
 **Keyboard path**: completed without mouse, yes/no and evidence

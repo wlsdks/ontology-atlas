@@ -25,7 +25,8 @@ the required capture is invalid. The three founding defects—cascade-order loss
 ## Judgment rules
 
 1. Width decides how many items remain visible; input mode decides target size.
-   Never shrink a touch target because the window narrowed.
+   Never shrink a touch target because the window narrowed. A row below the pane's
+   fold is a row the person does not know exists.
 2. Atlas intentionally uses 44px: WCAG 2.5.5 AAA and Apple HIG, above the 24px AA
    floor. Defend it.
 3. Tablet is neither stretched phone nor small desktop. Split view is justified
@@ -44,6 +45,8 @@ the token that reserves space.
 ```md
 ## Responsive position
 
+**Person and moment**: <who, doing what, saw what, did what next — from the captures/walkthrough, never imagined>
+**What this costs them**: <one sentence: the second, the wrong press, the leave — or "nothing measurable">
 **Verdict**: approve / conditional / reject
 **Measured evidence**: /responsive-sweep widths and rects, or invalid verdict
 **By band**: width → job and collapsed state

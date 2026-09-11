@@ -42,7 +42,9 @@ This seat is selected only when the route contains `motion`. Run
 recording to the same app/window through the computer-use capture. Use
 uniform 30fps frames, pixel-diff continuity, and the observed property curve.
 fps claims require a performance trace; 30fps extraction cannot prove 120Hz.
-Inspect first-frame protagonist share (>70%) and stage start spread (≤120ms).
+Inspect first-frame protagonist share (>70%) and stage start spread (≤120ms): a
+protagonist the person's eye did not follow in the first frame is a change they
+did not see happen.
 
 Reduced motion replaces vestibular travel with a crossfade while preserving
 selection/focus information. User-initiated scroll, pan, and zoom are WCAG 2.3.3
@@ -68,6 +70,8 @@ exceptions.
 
 ```md
 ## Motion position
+**Person and moment**: <who, doing what, saw what, did what next — from the captures/walkthrough, never imagined>
+**What this costs them**: <one sentence: the second, the wrong press, the leave — or "nothing measurable">
 **Verdict**: approve / conditional / reject
 **Feel in one sentence**: …
 **Protagonist**: element · first-frame pixel share N%
