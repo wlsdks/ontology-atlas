@@ -522,7 +522,9 @@
    *   1440·1680·1920 rect measurements identical (2026-08-19).
    *
    * Reading paragraphs don't grow wider: hero lead uses `max-w-[40rem]`(actual 34 chars/line),
-   * docs prose uses `--measure-prose`(70ch) as their own caps, not following column.
+   * docs prose uses `--measure-prose`(60ch — 79 characters, see that token's block) as their
+   * own cap, not following column. The docs/Library body applies it per prose element
+   * (`DocsVaultViewer`'s `p`/`ul`/`ol`/`blockquote`); headings, tables and code keep the column.
    * Full column width used by monument headline(display type · `4.8cqw` proportional) ·
    * event strip · divider · GNB — all «non-reading paragraphs» elements.
    *
@@ -633,14 +635,44 @@
   /* List slot height for one row inside repeated cards — this space is reserved even if empty.
      A spec preventing content length from determining card height (dimension regularity). */
   --card-row-h: 22px;
-  /* Prose measure — the upper limit of line length readable by eye. */
-  --measure-prose: 70ch;
+  /*
+   * Prose measure — the upper limit of line length readable by eye, in `ch`.
+   *
+   * ⚠️ **`ch` is not a character.** `1ch` is the advance of the digit `0`, and in
+   * Pretendard Variable that is **0.596em** — 9.53px at the 16px root, 8.34px at
+   * `text-body-lg` (14px). A proportional Latin average is only **0.454em**
+   * (7.27px at 16px), i.e. **0.76 of a `ch`**, so a `ch` cap always fits *more*
+   * characters than its number. Measured in the built export with the real font,
+   * identically at 14/15/16/17px because both sides scale with the font size.
+   *
+   * | measure | Latin characters per line | Hangul syllables |
+   * |---|---:|---:|
+   * | `70ch` (until 2026-09-11) | 92 | 42 |
+   * | **`60ch` (now)** | **79** | **36** |
+   * | `57ch` | 75 | 34 |
+   * | `50ch` | 65 | 30 |
+   *
+   * The stated intent of this token — `docs/DESIGN-SYSTEM.md` and
+   * `src/views/gateway-doc/ui/GatewayDocPage.tsx`, *"65–75 characters per line"* —
+   * was therefore never what it produced; 70 `ch` is 92 characters. **60ch** is the
+   * step that lands inside that intent (79) while keeping Korean above the ~35
+   * syllables a `break-keep` paragraph needs to stop breaking oddly. It is the cap
+   * on a *line*, not on a column: `--measure-doc-column` (760px) stays the box, and
+   * the prose body sits left-aligned inside it.
+   *
+   * Gate: `tests/e2e/prose-measure-calibration.spec.ts` renders `"0".repeat(100)`
+   * and a fixed English sample in the shipped font and fails outside 65–82
+   * characters per measure — so neither the token nor the font can drift this back
+   * without saying so.
+   */
+  --measure-prose: 60ch;
   /*
    * Document column — the reading column a document, wiki page or check report sits in
    * (2026-09-08). Measured before it was named: `760px` hand-written at 11 sites across the
    * Docs, Library and full-detail surfaces, always paired with the same gutter. `--measure-prose`
-   * is a line-length limit in `ch`; this is the column's box width, which the gutter and the
-   * frontmatter block also need, so the two stay separate tokens.
+   * is a line-length limit in `ch` applied to the prose elements *inside* this box; this is the
+   * column's box width, which the gutter, the headings, the tables and the frontmatter block
+   * also need, so the two stay separate tokens.
    */
   --measure-doc-column: 760px;
   /*
@@ -650,7 +682,7 @@
    * already used, and it has now gained a second consumer — a value earns a name the moment
    * something else needs it."* By today it had seven consumers and only three read the name, so
    * the number is the token and `PAGE_COLUMN_STAGE` reads it. Distinct from `--measure-prose`
-   * (a line-length cap in `ch`), `--measure-doc-column` (760, a document page) and
+   * (a line-length cap in `ch` — 60ch, 79 characters), `--measure-doc-column` (760, a document page) and
    * `--git-setup-measure` (520, one task in an empty destination).
    */
   --measure-stage-column: 640px;

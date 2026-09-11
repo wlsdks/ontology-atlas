@@ -102,8 +102,8 @@ describe('설정 시트 — 얼굴이 달라도 행의 폭은 하나다', () => 
 
   it('산문은 행보다 좁다 — 읽는 것과 조작하는 것의 측정폭은 다르다', () => {
     expect(tokenPx('--git-setup-measure')).toBeLessThan(tokenPx('--settings-content-measure'));
-    // The place where the "connect just one…" line ran 74 characters across 846px
-    // (past `--measure-prose: 70ch`). Prose blocks come back inside that cap.
+    // The place where the "connect just one…" line ran across 846px, far past the prose
+    // measure (`--measure-prose`, `60ch` since 2026-09-11). Prose blocks come back inside it.
     expect(
       (PANEL.match(/max-w-\[var\(--git-setup-measure\)\]/g) ?? []).length,
       '산문 블록(신뢰 고지 · 「무엇이 열리나」)이 산문 measure 를 안 쓴다',

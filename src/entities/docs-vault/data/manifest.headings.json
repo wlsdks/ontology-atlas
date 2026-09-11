@@ -11058,6 +11058,11 @@
     },
     {
       "depth": 3,
+      "text": "Prose measure calibration (characters per line, not `ch`)",
+      "slug": "prose-measure-calibration-characters-per-line-not-ch"
+    },
+    {
+      "depth": 3,
       "text": "Demo clip declaration vs shipped asset",
       "slug": "demo-clip-declaration-vs-shipped-asset"
     },
