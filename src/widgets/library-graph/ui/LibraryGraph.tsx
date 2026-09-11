@@ -305,15 +305,28 @@ export function LibraryGraph({
         >
           {caption}
         </p>
-        {/* Whatever the screen wants to hang on this row — the status strip and the door
-            to the shelf, both of which are the view's facts, not the canvas's. A widget
-            below `views` cannot reach them, so they arrive as a slot. */}
-        {headerEnd ? (
-          /* `min-w-0` + wrap: below ~560px the status strip takes its own line instead of
-             truncating its payload or clipping the shelf chip out of reach (design-responsive,
-             council 2026-09-07: measured at 320 and 390); at 768 and above one line as before. */
-          <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1">{headerEnd}</div>
-        ) : null}
+        {/*
+          Whatever the screen wants to hang on this row — the step-fact clauses and the
+          doors, both of which are the view's facts, not the canvas's. A widget below
+          `views` cannot reach them, so they arrive as a slot.
+
+          ⚠️ **The slot's children are this row's children, not a right-anchored box of
+          their own** (owner, 2026-09-12, against the "one text edge per column" rule slice
+          A1 installed). They used to sit in an `ml-auto … justify-end` wrapper, so when the
+          row wrapped the clause line was pulled to the **right** edge: measured at 1512 the
+          caption began at the pane's text edge, x=384, and the clause line below it at
+          **x=620** — a floating second row with no edge to read down. Flat children wrap
+          into the same flex container, so a clause line that does not fit beside the
+          caption starts exactly where the caption starts, and the doors keep their own
+          right anchor through `ml-auto` on their group (`LibraryHomeStrip`). Where
+          everything fits, that is one row: caption and clauses on the text edge, doors at
+          the right.
+
+          The 2026-09-07 finding this replaces still holds by the same mechanism — below
+          ~560px the clauses take their own line rather than truncating their payload or
+          clipping a door out of reach.
+        */}
+        {headerEnd}
       </div>
 
       {graph.nodes.length === 0 ? (
