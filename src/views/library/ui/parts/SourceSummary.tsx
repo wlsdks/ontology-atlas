@@ -16,8 +16,14 @@ import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { CitedPassageState } from "../../lib/use-cited-passage";
 
-/** The anchor of the passage section, for the effect that lands a press on it. */
-const SOURCE_PASSAGE_SECTION_ID = "library-source-passage-section";
+/**
+ * The heading that names the passage section to a screen reader, through the
+ * `aria-labelledby` on the section itself.
+ *
+ * The section's own `id` went with the landing's `getElementById` on 2026-09-11: the
+ * effect that needed it now holds the section by ref, and an id nothing resolves is a
+ * hook that lies about having a consumer.
+ */
 const SOURCE_PASSAGE_HEADING_ID = "library-source-passage-heading";
 
 /**
@@ -212,30 +218,56 @@ export function SourceSummary({
    *
    * The pane opens on a press from a wiki page or from the answer comparison, and the
    * facts table sits above the passage — so without this a person arrives looking at the
-   * sha256 row of a file they opened to read one sentence. Focus follows to the section's
-   * heading, because the citation is already a button and a keyboard press must land
-   * where a pointer press does (brief decision 5).
+   * sha256 row of a file they opened to read one sentence. Focus follows, because the
+   * citation is already a button and a keyboard press must land where a pointer press
+   * does (brief decision 5).
    *
    * It lives here rather than in the page for a measured reason: `LibraryPage` ran the
-   * same effect and found no heading, because on the render that first carries the
+   * same effect and found no target, because on the render that first carries the
    * citation the source row has not resolved yet and the section is not in the DOM
    * (measured 2026-09-11 — `focused: false` on all five presses). The component that
-   * renders the heading is the one that can be sure it exists.
+   * renders the section is the one that can be sure it exists.
+   *
+   * ⚠️ Three corrections after the council of 2026-09-11, all measured on the built
+   * export at port 3207:
+   *
+   * 1. **The landing waits for the answer.** Keyed on the citation alone it ran at
+   *    `t+28ms` while the phase was still `reading`, when the section is a one-line
+   *    placeholder and there is nothing to scroll: `scrollTop 0 max 0`, and by `t+37ms`
+   *    the passage had arrived with `max 282` and no second run. The travel measured
+   *    **0 of 26 / 79 / 362 / 490 / 589 available pixels** at five widths — a landing
+   *    that never landed (design-responsive). `landingKey` is therefore null until the
+   *    read has settled, so the effect fires once, after there is a passage to land on.
+   * 2. **The section is the target, not its 35×14px label.** Focus moved to the `<h3>`,
+   *    a caption-sized word; the section now takes `tabIndex={-1}` with
+   *    `aria-labelledby`, so what receives focus is the region that holds the address
+   *    and the text, announced by its own heading. Re-pressing a second citation into an
+   *    already-open pane fired **0** `focusin` because the same node was refocused, which
+   *    is silent for assistive tech; `key={passageKey}` makes each citation a new node,
+   *    so the change is an event (design-interaction).
+   * 3. **Programmatic travel is immediate.** `.claude/rules/design.md` already decides
+   *    this — only user-initiated scrolling keeps its time — and the smooth run was
+   *    measurably harmful: 0→102px completing at 158ms, cancellable by a Tab 90ms in,
+   *    which left the reader 163px past the promise. The `matchMedia` branch went with
+   *    it, because `auto` is already the reduced-motion answer.
+   *
+   * No ring is drawn on arrival, for the same reason `dialog.tsx` draws none: this is
+   * programmatically moved focus on a container, which the 2026-08-04 verdict judged a
+   * defect to ring. Without `focus:outline-none` a keyboard press inherited the
+   * browser's own `outline: auto 1px rgb(153,200,255)` — the OS accent colour — because
+   * the floor rule in `app/globals.css` deliberately excludes `[tabindex="-1"]`.
    */
-  const passageHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const passageSectionRef = useRef<HTMLElement | null>(null);
   const passageKey = passage ? `${passage.path}#${passage.anchor}` : null;
+  const landingKey = passage && passage.phase !== "reading" ? passageKey : null;
   useEffect(() => {
-    if (!passageKey) return;
-    const heading = passageHeadingRef.current;
-    const section = document.getElementById(SOURCE_PASSAGE_SECTION_ID);
-    if (!heading || !section) return;
-    const reduced =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+    if (!landingKey) return;
+    const section = passageSectionRef.current;
+    if (!section) return;
     // Optional call: jsdom has no scroller, and a landing is not worth throwing over.
-    section.scrollIntoView?.({ behavior: reduced ? "auto" : "smooth", block: "start" });
-    heading.focus({ preventScroll: true });
-  }, [passageKey]);
+    section.scrollIntoView?.({ behavior: "auto", block: "start" });
+    section.focus({ preventScroll: true });
+  }, [landingKey]);
 
   return (
     <div
@@ -295,16 +327,17 @@ export function SourceSummary({
        */}
       {passage ? (
         <section
-          id={SOURCE_PASSAGE_SECTION_ID}
+          key={passageKey ?? undefined}
+          ref={passageSectionRef}
           data-testid="library-source-passage"
           data-state={passage.phase === "ready" ? (passage.passage?.state ?? "failed") : passage.phase}
-          className="mt-5 border-t border-[color:var(--color-border-soft)] pt-4"
+          tabIndex={-1}
+          aria-labelledby={SOURCE_PASSAGE_HEADING_ID}
+          className="mt-5 border-t border-[color:var(--color-border-soft)] pt-4 focus:outline-none"
         >
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h3
-              ref={passageHeadingRef}
               id={SOURCE_PASSAGE_HEADING_ID}
-              tabIndex={-1}
               className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]"
             >
               {t("source.passage.title")}
@@ -335,7 +368,7 @@ export function SourceSummary({
           {passage.phase === "failed" ? (
             <p
               data-testid="library-source-passage-unreadable"
-              className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+              className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:break-word] [word-break:keep-all]"
             >
               {passage.error
                 ? t("source.passage.unreadable", { reason: passage.error })
@@ -369,14 +402,43 @@ export function SourceSummary({
               {/* No passage, and no nearest one. The paragraph beside a renamed heading
                   is not the cited paragraph, and a reader shown it would believe a page
                   that lost its address (brief decision 3). */}
-              {/* The answer to the press, at the weight the passage would have had.
-                  Measured at `text-label` it was the same step as the file's size, so the
-                  one thing a person pressed for was invisible on the pane
-                  (design-lead, 2026-09-11). No card around it: a card here would read as
-                  a quotation, and there is nothing to quote. */}
+              {/*
+                * **Atlas's own answer, in neither of the two voices that bracket it**
+                * (guardian decision, 2026-09-11 council).
+                *
+                * Two seats measured this sentence and each prescribed a step that is
+                * byte-identical to a different neighbour:
+                *
+                * - `text-label`/secondary is **11px · 16px · rgb(208,214,224)** — exactly
+                *   the facts `dd` two rows up, so the answer to the press reads as another
+                *   metadata row and the pane's moment has no winner (design-lead);
+                * - `text-body-lg`/`leading-prose`/primary is **14px · 23.8px ·
+                *   rgb(247,248,248) · 500.391px** — exactly `PassageLine cited`, the one
+                *   pair this section reserves for the file's own words, so a sentence *about*
+                *   a missing passage wears the clothes of quoted evidence
+                *   (design-interaction).
+                *
+                * The second collision is the worse defect and decides the tie: this slice's
+                * own falsifier is a reader who believes something the file does not say, and
+                * the `unresolved` state exists precisely because nothing may be quoted. An
+                * attention deficit is a weaker fault than a voice a person cannot attribute.
+                * So the value is neither seat's: **`text-body` · `leading-body` · primary**
+                * — 12.5px/20px/rgb(247,248,248). One size step and one ink step above the
+                * facts rows, and three channels below the quote: smaller (12.5 vs 14), UI
+                * leading rather than prose (20 vs 23.8), and no card. The card stays absent
+                * for the reason it always was — a card here would read as a quotation, and
+                * there is nothing to quote.
+                *
+                * `[overflow-wrap:break-word]` is the pair `PassageLine` already carries.
+                * With `keep-all` alone this sentence interpolates an address it does not
+                * control, and a 40-syllable unspaced Korean slug had **no break
+                * opportunity at all**: `scrollWidth 387 / clientWidth 342` at 390 and
+                * `387/272` at 320, turning a vertical reading pane into one that slides
+                * sideways (`scrollLeft` really reached 21 · 91) — design-responsive.
+                */}
               <p
                 data-testid="library-source-passage-missing"
-                className="max-w-[var(--measure-prose)] text-body-lg leading-prose text-[color:var(--color-text-primary)] [word-break:keep-all]"
+                className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-primary)] [overflow-wrap:break-word] [word-break:keep-all]"
               >
                 {t("source.passage.missing", { anchor: passage.anchor })}
               </p>
@@ -386,7 +448,7 @@ export function SourceSummary({
               {passage.passage.candidates.length > 0 ? (
                 <p
                   data-testid="library-source-passage-ambiguous"
-                  className="max-w-[var(--measure-prose)] text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+                  className="max-w-[var(--measure-prose)] text-caption leading-body text-[color:var(--color-text-quaternary)] [overflow-wrap:break-word] [word-break:keep-all]"
                 >
                   {t("source.passage.ambiguous", {
                     candidates: passage.passage.candidates.map((one) => `#${one}`).join(", "),
@@ -399,7 +461,7 @@ export function SourceSummary({
           {passage.phase === "ready" && passage.passage?.state === "no-text" ? (
             <p
               data-testid="library-source-passage-no-text"
-              className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+              className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:break-word] [word-break:keep-all]"
             >
               {t("source.passage.noText", {
                 label: passageLabel(passage.passage.label, passage.anchor, t),

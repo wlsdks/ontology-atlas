@@ -2169,8 +2169,8 @@ export function LibraryPage() {
                   /* The passage owns the landing, so the pane does not take focus from
                      it — `skipReaderFocusRef` is the existing seam for "this pane was
                      opened by something that knows where focus belongs". Measured
-                     2026-09-11: without it the heading was focused and the pane stole it
-                     back in the same frame. */
+                     2026-09-11: without it the passage section was focused and the pane
+                     stole it back in the same frame. */
                   onSourceNavigate={(path, anchor) => { skipReaderFocusRef.current = true; choose({ kind: 'source', path }); setSourceCitation({ path, anchor }); }}
                 />
                 {agent.route === "agent" ? (

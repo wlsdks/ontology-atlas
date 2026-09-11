@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { describe, expect, it } from "vitest";
 
@@ -146,6 +146,156 @@ describe("the passage a pressed citation shows", () => {
     expect(screen.queryByTestId("library-source-passage-context")).toBeNull();
     // The address alone; no label, because the reader never found the place to name.
     expect(screen.getByTestId("library-source-citation").textContent).toBe("#l28");
+  });
+
+  /**
+   * **Atlas's own sentence may not wear the voice of the file's words** (guardian
+   * decision, 2026-09-11 council).
+   *
+   * Measured on the built export, the unresolved sentence was byte-identical to the
+   * verbatim quote — 14px · 23.8px · rgb(247,248,248) · 500.391px — which is the pair
+   * this section reserves for text it read out of the file. The other seat's remedy,
+   * `text-label` with secondary ink, is byte-identical to the facts `dd` (11px · 16px ·
+   * rgb(208,214,224)), so it hides the answer to the press among the metadata. The
+   * decided value collides with neither, and the assertion is that relationship rather
+   * than a class string: what may never drift is that Atlas's sentence and the file's
+   * words differ in type, leading and ink at once.
+   */
+  it("keeps the unresolved sentence out of both the quote's voice and the facts' voice", () => {
+    const quote = renderPane(
+      passageState({
+        state: "resolved",
+        cited: [{ anchor: "l14", kind: "line", text: "A weekend or public holiday does not count" }],
+      }),
+    );
+    const citedClasses = new Set(screen.getByTestId("library-source-passage-cited").className.split(/\s+/));
+    quote.unmount();
+
+    renderPane(passageState({ state: "unresolved", anchor: "l28" }));
+    const missing = screen.getByTestId("library-source-passage-missing");
+    const missingClasses = new Set(missing.className.split(/\s+/));
+
+    // Not the quote's step, not the quote's leading, not a quotation's card.
+    expect(citedClasses.has("text-body-lg")).toBe(true);
+    expect(missingClasses.has("text-body-lg")).toBe(false);
+    expect(missingClasses.has("leading-prose")).toBe(false);
+    // Not the facts' step or ink either: the answer to the press is the pane's winner.
+    expect(missingClasses.has("text-label")).toBe(false);
+    expect(missingClasses.has("text-body")).toBe(true);
+    expect(missingClasses.has("leading-body")).toBe(true);
+    expect(missingClasses.has("text-[color:var(--color-text-primary)]")).toBe(true);
+    /*
+     * Ink is shared with the quote on purpose — primary is what makes this the answer to
+     * the press rather than another metadata row — so the separation is carried by the
+     * type pair and by the card the quote sits in and this sentence does not. Neither
+     * ramp step may be the quote's.
+     */
+    const rampOf = (classes: Set<string>) =>
+      [...classes].filter((one) => /^(text-(caption|label|body|body-lg|title)|leading-)/.test(one)).sort();
+    expect(rampOf(citedClasses)).toEqual(["leading-prose", "text-body-lg"]);
+    expect(rampOf(missingClasses)).toEqual(["leading-body", "text-body"]);
+    expect(rampOf(missingClasses).some((one) => citedClasses.has(one))).toBe(false);
+    // And no card: a card here would read as a quotation, and there is nothing to quote.
+    expect(missing.parentElement?.className ?? "").not.toContain("rounded-card");
+  });
+
+  /**
+   * **The address Atlas prints is not an address Atlas chose.** `keep-all` on its own
+   * left a 40-syllable unspaced Korean slug with no break opportunity: `scrollWidth 387`
+   * against `clientWidth 342` at 390 and `272` at 320, which made the reading pane
+   * scroll sideways (design-responsive, 2026-09-11). Every sentence here that
+   * interpolates a string from the file or the reader carries the same pair
+   * `PassageLine` does.
+   */
+  it("gives every interpolated address a break of last resort", () => {
+    const cases: Array<[string, CitedPassageState]> = [
+      ["library-source-passage-missing", passageState({ state: "unresolved", anchor: "l28" })],
+      [
+        "library-source-passage-ambiguous",
+        passageState({ state: "unresolved", anchor: "h:scope", candidates: ["h:scope-1", "h:scope-3"] }),
+      ],
+      [
+        "library-source-passage-no-text",
+        passageState({ state: "no-text", anchor: "p2", format: "pdf", label: { kind: "page", number: 2 } }),
+      ],
+      [
+        "library-source-passage-unreadable",
+        { path: ROW.path, anchor: "l14", phase: "failed", passage: null, error: "EPERM", hash: null },
+      ],
+    ];
+    for (const [testId, state] of cases) {
+      const view = renderPane(state);
+      const classes = screen.getByTestId(testId).className;
+      expect(classes, testId).toContain("[word-break:keep-all]");
+      expect(classes, testId).toContain("[overflow-wrap:break-word]");
+      view.unmount();
+    }
+  });
+
+  /**
+   * **The landing waits for the answer, and is an event when it arrives.**
+   *
+   * Keyed on the citation alone the effect ran while the phase was still `reading`,
+   * against a one-line placeholder with nothing to scroll: 0 of 26/79/362/490/589
+   * available pixels travelled at five widths. Focus also sat on the section's 35×14px
+   * caption heading, and a second citation into an open pane refocused the same node,
+   * which fires no `focusin` at all. So: nothing is focused while reading; the section
+   * itself receives focus once the read settles; and a different citation is a different
+   * node, which is what makes the change audible.
+   */
+  it("lands on the section only once there is a passage to land on", () => {
+    const reading: CitedPassageState = {
+      path: ROW.path,
+      anchor: "l14",
+      phase: "reading",
+      passage: null,
+      error: null,
+      hash: null,
+    };
+    const view = renderPane(reading);
+    const section = screen.getByTestId("library-source-passage");
+    expect(section.getAttribute("data-state")).toBe("reading");
+    expect(section.tabIndex).toBe(-1);
+    expect(section.getAttribute("aria-labelledby")).toBe("library-source-passage-heading");
+    // Nothing to read yet, so nothing takes focus.
+    expect(document.activeElement).not.toBe(section);
+
+    act(() => {
+      view.rerender(
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <Harness
+            passage={passageState({
+              state: "resolved",
+              cited: [{ anchor: "l14", kind: "line", text: "A weekend or public holiday does not count" }],
+            })}
+          />
+        </NextIntlClientProvider>,
+      );
+    });
+    const settled = screen.getByTestId("library-source-passage");
+    expect(settled.getAttribute("data-state")).toBe("resolved");
+    expect(document.activeElement).toBe(settled);
+    // The heading names the region rather than being the thing focused.
+    expect(document.getElementById("library-source-passage-heading")).not.toBe(document.activeElement);
+
+    // A second citation is a new node, so assistive tech gets an event rather than silence.
+    const first = settled;
+    act(() => {
+      view.rerender(
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <Harness
+            passage={passageState({
+              state: "resolved",
+              anchor: "l6",
+              cited: [{ anchor: "l6", kind: "line", text: "Settlement runs on business days." }],
+            })}
+          />
+        </NextIntlClientProvider>,
+      );
+    });
+    const second = screen.getByTestId("library-source-passage");
+    expect(second).not.toBe(first);
+    expect(document.activeElement).toBe(second);
   });
 
   it("names the extractor's own alternatives for a heading it reported twice, and still shows no text", () => {
