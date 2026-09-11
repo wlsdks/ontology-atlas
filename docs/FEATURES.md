@@ -867,14 +867,25 @@ thing while the reader shows another.
 **The description is a glyph** (owner, same reading: *"put one icon beside the title and
 show the explanation in a tooltip on hover"*). The three-line lede was 60px of a sentence
 read once and re-read on every visit after; it is now one lucide `Info` beside the `h1`,
-carrying that sentence as its accessible name and its tooltip, so a keyboard and a screen
-reader reach it as a pointer does. The tooltip opens to the `right`, into the picture,
-because `bottom` covered the switch a hand travels to next — and with
-`disableHoverableContent`, so the panel never holds the press underneath it.
+carrying that sentence as its accessible name and its panel, so a keyboard and a screen
+reader reach it as a pointer does. Since 2026-09-12 the panel carries a second paragraph on
+the agent route — what a coding agent's provider traffic is, and that Atlas is not in its
+path and does not log it — which is the one place that sentence appears; it used to print
+as a paragraph on up to three cards of one journey. The panel opens `bottom`/`start`, under
+the row it explains, and is `pointer-events-none`, so it never holds a press underneath it.
+
+**The head is one row, and it has no eyebrow** (owner, 2026-09-12: *"a label like 'in this
+folder' is not even needed"*, and of the fold glyph: *"centred the same as the text beside
+it, and bigger"*). `IN THIS FOLDER` named the scope of a column that was already showing
+it, so it is gone from the head — `LibraryStartStage` keeps it, where naming the scope is
+the card's only job. The fold moved onto the title's own line at the column's box edge (331
+at 1512), and both head glyphs take the ramp's `lg` step, whose 12.0px of ink is its closest
+value to the title's own 13.1px; the fold's glyph had been 9.0px of ink with its centre
+29.5px above the title's.
 
 **And the column folds** (*"the left panel must be closable, I may want only the graph"*).
-A `‹` on the eyebrow line folds it to the map's own 26px rail tab — vertical label, `›`,
-`--topology-index-tab-width` — at `lg` and above, remembered in
+A `‹` at the right end of the title row folds it to the map's own 26px rail tab — vertical
+label, `›`, `--topology-index-tab-width` — at `lg` and above, remembered in
 `atlas.library.index-collapsed`, with focus following the control that vanished. Below `lg`
 the index is the bottom half of one column and has nowhere to fold to.
 
@@ -883,9 +894,20 @@ and none crosses the column's side edge at 1512, 1040, 768 or 390. **`compiled` 
 chip** on 2026-09-06: on the owner's folder all seven rows wore the same green pill, which
 is a texture rather than a state, so success is a quiet check in the row's own ink and a
 chip is spent only where a person can act. The one local-first disclosure follows the
-Compile press it describes — under the chip on the Wiki half, and under `SourceSummary`'s
-own Compile while a source is open, which is where it belongs now that the column may be
-drawing Sources.
+Compile press it describes — the connect-by-address runner's sentence, under the press, in
+the Compile popover or an open source's pane. The agent route's sentence is not that: it
+says Atlas is **not** in the path, so since 2026-09-12 it is the index head's glyph panel
+and nothing inline, in the guide's step two least of all.
+
+**A toast stands in the corner of the pane it is about** (owner, 2026-09-12: *"the toast at
+the top — its position is odd too, right?"*). This surface claims `bottom-right` where the
+rest of the app keeps the top centre, and the two walls it stops a 16px gutter short of are
+the pane's rather than the window's: the conversation's left edge from `xl` up, and the
+bottom tab bar's top below `lg`. While the answer comparison stands — the one
+`size="viewport"` dialog this view has left since the graph became the home — both gutters
+grow to that dialog's inset plus its padding, so the box lands inside the dialog instead of
+across its edge; a dialog that asks a question clears toasts instead, which is what Find
+documents does.
 
 The Wiki half carries what the wiki's own work needs, in this shape (merged from the LLM
 Wiki round, 2026-09-07): the count on the switch above, then **Check the wiki** and

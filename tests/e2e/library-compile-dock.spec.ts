@@ -230,76 +230,80 @@ test.describe("Compile opens the agent dock", () => {
     await expect(page.getByTestId("library-needs-compile")).toContainText("4");
     await page.keyboard.press("Escape");
     /*
-     * And what leaves this computer is stated beside the button that starts it — on the
-     * shelf, which is where Compile's own brain picker stands.
-     *
-     * It used to be read from the index column. The sentence moved on 2026-09-06 when
-     * step two grew a brain picker and the disclosure had to answer the control above it;
-     * exactly one surface prints it, and which one depends on whether the shelf is drawn.
-     * The move shipped broken for one commit — the shelf printed it only while the picker
-     * was drawn, so a machine with a single brain showed it **nowhere** — which is why the
-     * next case pins the other half rather than trusting that this one covers both.
-     *
-     * The home keeps it in the Compile popover, which is where the press is; selecting a
-     * page hands the disclosure to the index beside its own Compile control. Both owners
-     * are covered here and in the next case, and losing the sentence in either is the
-     * regression this exists for.
+     * The home is the folder's graph, and `Compile next: <source>` on its strip opens the
+     * popover that carries the press and its brain picker. On the **agent** route what
+     * that press owes a person is the blocked reason and nothing else since 2026-09-12:
+     * the sentence about provider traffic says Atlas is not in the path at all, and the
+     * next case is where that sentence's one home is measured.
      */
     await expect(page.getByTestId("library-stage")).toHaveCount(0);
     await page.getByTestId("library-strip-compile").click();
     const popover = page.getByTestId("library-compile-popover");
     await expect(popover).toBeVisible();
-    await expect(popover.getByTestId("library-transfer")).toContainText(
-      "Atlas does not record that traffic",
-    );
-    // Exactly one on screen: the index prints it only once a document is open.
-    await expect(page.getByTestId("library-transfer")).toHaveCount(1);
-
-    /*
-     * ⚠️ **And it is under the press, not merely in the same panel.** A disclosure that
-     * slid above the button, or into another row, would still satisfy the assertion above
-     * while telling a person what leaves their computer *after* they have read past the
-     * control that sends it. `.claude/rules/local-first.md` asks for the placement, so the
-     * placement is what is measured.
-     */
-    const button = (await popover.getByTestId("library-compile-popover-run").boundingBox())!;
-    const sentence = (await popover.getByTestId("library-transfer").boundingBox())!;
-    expect(sentence.y, "the transfer sentence sits above the Compile button").toBeGreaterThan(
-      button.y,
-    );
-    expect(sentence.y - (button.y + button.height)).toBeLessThan(120);
-
-    /* And the same sentence still stands in the guide, beside step two's own press. */
-    await page.keyboard.press("Escape");
-    await page.getByTestId("library-guide-open").click();
-    const guide = page.getByTestId("library-guide-popover");
-    await expect(guide.getByTestId("library-stage-compile").getByTestId("library-stage-transfer")).toContainText(
-      "Atlas does not record that traffic",
-    );
+    await expect(popover.getByTestId("library-compile-popover-run")).toBeVisible();
     await page.keyboard.press("Escape");
   });
 
-  test("the disclosure stays where the work is, and the index prints no second copy", async ({
+  test("the provider disclosure has one home, and it is the index head's glyph", async ({
     page,
   }) => {
     await openFolder(page);
     /*
-     * ⚠️ **The index stopped being an owner of this sentence on 2026-09-12.** It used to
-     * take the disclosure over the moment a page was opened, which kept it beside a press
-     * — the rule `.claude/rules/local-first.md` asks for — but the sentence is four wrapped
-     * lines of 11px, and in a 255px column it stood between the button group and the list
-     * as part of the alignment the owner read as broken. The PM's re-scope moves it to an
-     * information affordance in a later slice; until then the index prints **no** copy, and
-     * the surfaces that still print one are step two (while the stage is drawn) and the
-     * source pane's own Compile. This test is therefore about the sentence not being lost
-     * and not being doubled, which is what it was always for.
+     * **A fact is said once per screen, and this one is said on demand** (owner,
+     * 2026-09-12: *"text like 'the coding agent sends requests directly to its provider
+     * and Atlas does not record that traffic…' — shouldn't that be handled as a
+     * tooltip?"*).
+     *
+     * The history is three moves. It began in the index column; on 2026-09-06 it followed
+     * Compile onto step two, because a disclosure has to answer the control above it; on
+     * 2026-09-07 it also followed the source pane's own Compile, because with the switch
+     * the column can be drawing Sources while a page is open. Each move was right about
+     * placement and wrong about count: measured on the owner's folder, one journey printed
+     * the same paragraph in up to three places, and four wrapped lines of 11px between a
+     * button group and a list is how a reader learns to skip a disclosure.
+     *
+     * So it left every inline slot. `.claude/rules/local-first.md` asks for one place to
+     * say what leaves this computer, at the press — and on this route nothing leaves
+     * through Atlas: the sentence exists to say exactly that, which is a standing fact
+     * about the place rather than about a press. The local runner's own sentence, which
+     * *is* a transfer Atlas performs, still sits under the button that performs it.
+     *
+     * This test therefore measures the count in both directions: zero inline, and one in
+     * the panel, reachable by keyboard.
      */
-    // The home: the picture and its strip print nothing about transfers; the popup does.
+    // The home: the picture and its strip print nothing about transfers, and neither does
+    // the popup behind either door.
+    const inlineDisclosure = page.getByText(/Atlas does not record that traffic/);
+    await expect(page.getByTestId("library-stage")).toHaveCount(0);
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);
+    await expect(inlineDisclosure).toHaveCount(0);
+
+    /*
+     * The two popups the home's strip opens (`docs/DECISIONS.md`, 2026-09-12 — "The
+     * Library's home is the folder's graph"). Each carried a copy: the Compile popover in
+     * its own slot under the press, and the guide's step two in the row that holds
+     * Compile. Both were right about placement under the earlier reading and both are
+     * empty of this sentence now.
+     */
+    await page.getByTestId("library-strip-compile").click();
+    const compilePopover = page.getByTestId("library-compile-popover");
+    await expect(compilePopover).toBeVisible();
+    await expect(compilePopover.getByTestId("library-transfer")).toHaveCount(0);
+    await expect(inlineDisclosure).toHaveCount(0);
+    await page.keyboard.press("Escape");
+
+    await page.getByTestId("library-guide-open").click();
+    const guide = page.getByTestId("library-guide-popover");
+    await expect(guide).toBeVisible();
+    await expect(guide.getByTestId("library-stage-transfer")).toHaveCount(0);
+    await expect(inlineDisclosure).toHaveCount(0);
+    await page.keyboard.press("Escape");
+
     await page.getByTestId("library-wiki-wiki/notes").click();
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);
+    await expect(inlineDisclosure).toHaveCount(0);
 
     /*
      * What the index does owe a dead door is the reason it cannot run, one line, directly
@@ -309,23 +313,40 @@ test.describe("Compile opens the agent dock", () => {
 
     await page.getByTestId("library-index-segment-sources").click();
     await expect(page.getByTestId("library-sources")).toBeVisible();
-    await expect(page.getByTestId("library-transfer")).toHaveCount(0);
-
-    /*
-     * ⚠️ **And opening a source moves it to that source's own press.** `SourceSummary`
-     * draws a Compile of its own for a file nobody has written up, and until 2026-09-07
-     * the sentence for it lived three hundred pixels away in a column that happened to be
-     * drawing the Wiki half. With the switch, that column is drawing Sources — so the
-     * disclosure follows the button, which is the placement the rule asks for. Still
-     * exactly one: the column has no Compile on this half, so it prints nothing.
-     */
     await page.getByTestId("library-source-sources/architecture.docx").click();
     await expect(page.getByTestId("library-stage")).toHaveCount(0);
-    await expect(page.getByTestId("library-transfer")).toHaveCount(1);
-    await expect(page.getByTestId("library-transfer")).toContainText("Atlas does not record that traffic");
-    await expect(
-      page.getByTestId("library-source-summary").getByTestId("library-transfer"),
-    ).toBeVisible();
+    await expect(page.getByTestId("library-transfer")).toHaveCount(0);
+    await expect(inlineDisclosure).toHaveCount(0);
+
+    /*
+     * And the one home. Focus opens it, which is what makes a keyboard equal to a
+     * pointer here; Escape closes it, which is what a transient surface owes
+     * (`docs/DECISIONS.md`, 2026-08-11).
+     */
+    const info = page.getByTestId("library-lede-info");
+    await info.focus();
+    const panel = page.getByRole("tooltip");
+    await expect(panel).toContainText("Atlas does not record that traffic");
+    await expect(panel).toContainText("kept byte for byte");
+    /*
+     * ⚠️ **And the panel cannot take the press beside it.** The fold now stands on the
+     * same row as this glyph, and the panel opens across that row's width; measured
+     * before `pointer-events-none`, `elementFromPoint` over the fold answered the panel
+     * for as long as it stood, including its exit animation.
+     */
+    const foldHit = await page.evaluate(() => {
+      const fold = document.querySelector('[data-testid="library-index-collapse"]');
+      if (fold === null) return null;
+      const box = fold.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      return hit?.closest("[data-testid]")?.getAttribute("data-testid") ?? null;
+    });
+    expect(foldHit, "the fold is what a press at the fold reaches").toBe(
+      "library-index-collapse",
+    );
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
   });
 
   test("pressing it opens a dock with a real rect, inside the row that holds the reader", async ({
@@ -382,6 +403,49 @@ test.describe("Compile opens the agent dock", () => {
     // The request reached the surface. `compile-brief.test.ts` owns what is inside it.
     await expect(dock).toHaveAttribute("data-agent-request-kind", "compile");
     await expect(dock).toContainText(RUNTIME.label);
+  });
+
+  /**
+   * **The pane's right-hand wall is the conversation's left edge, not the window's.**
+   *
+   * The toast anchors to this pane's bottom-right corner (`docs/DECISIONS.md`,
+   * 2026-09-12), and with the conversation open that corner belongs to the dock. The
+   * reserve is `--app-right-dock-width`, which this view already publishes for exactly
+   * this class of surface (`right-dock-reserve.ts`), read through a `xl`-gated variable —
+   * below `xl` the dock is a full-width overlay with no reader beside it, and a transient
+   * drawn above a dock is the judgement the map's own placement already accepted.
+   */
+  test("with the conversation open, the toast stops at the dock's edge", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 901 });
+    await openFolder(page);
+    await page.getByTestId("library-compile").click();
+    await expect(page.getByTestId("library-agent-dock")).toBeVisible({ timeout: 25_000 });
+
+    await page.getByTestId("library-new-page").click();
+    await page.getByTestId("library-new-page-title").fill("Dock wall probe");
+    await page.getByTestId("library-new-page-make").click();
+    const toast = page.locator("[data-sonner-toast]").first();
+    await expect(toast).toBeVisible({ timeout: 20_000 });
+
+    /*
+     * ⚠️ **Poll.** The dock opens on a width transition and the box rises into place, so a
+     * single read lands mid-animation — measured 26px of gap while the frame was still
+     * narrower than its resting width. What is being measured is where both come to rest.
+     */
+    const gap = async () => {
+      const box = (await toast.boundingBox())!;
+      const frame = (await page.getByTestId("library-agent-dock-frame").boundingBox())!;
+      return Math.round(frame.x - (box.x + box.width));
+    };
+    await expect
+      .poll(gap, { timeout: 10_000 })
+      .toBe(16);
+
+    const box = (await toast.boundingBox())!;
+    const frame = (await page.getByTestId("library-agent-dock-frame").boundingBox())!;
+    const reader = (await page.getByTestId("library-reader").boundingBox())!;
+    expect(frame.width, "the dock is a column of its own at this width").toBeGreaterThan(200);
+    expect(box.x, "the toast starts inside the reader pane").toBeGreaterThanOrEqual(reader.x);
   });
 
   test("the keyboard opens it too, which is how the defect was first pressed", async ({ page }) => {

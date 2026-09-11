@@ -4776,6 +4776,34 @@ body *::-webkit-scrollbar {
   transition-duration: var(--motion-fast);
 }
 
+/* ── The two walls a corner-anchored toaster stops short of ──────────────────────────
+   A toast that anchors to a pane's bottom-right corner (`useToastAnchor`, the Library
+   since 2026-09-12) has two edges that are not the window's, and both of them exist only
+   at some widths. They are reserves rather than JavaScript because the breakpoints are
+   already here: the conversation dock is a flex sibling of the reader from `xl`
+   (`LibraryAgentDock`) and below that it is a full-width overlay, and the bottom tab bar
+   is `lg:hidden`. So each reserve collapses to 0 exactly where its thing stops existing,
+   and `src/shared/ui/toast-position.ts` only has to add the gutter.
+
+   `--app-right-dock-width` is published by the view that has a dock open
+   (`right-dock-reserve.ts`); absent, the fallback is 0. */
+:root {
+  --app-toast-dock-reserve: 0px;
+  --app-toast-bottom-reserve: var(--topology-mobile-bottom-tab-reserve);
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --app-toast-bottom-reserve: 0px;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --app-toast-dock-reserve: var(--app-right-dock-width, 0px);
+  }
+}
+
 /* The toaster is top-centred on the **viewport** (owner, 2026-09-07). It used to centre
    over the map area, shifted left by half the agent dock's width, and on the Library the
    result stood over the index column, far from where the eye was. A toast is transient
