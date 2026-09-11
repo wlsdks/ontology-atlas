@@ -7,10 +7,11 @@ import { Link } from "@/i18n/navigation";
 import { BookText, Check, CloudDownload, FilePlus2, FileText, PencilLine, Search, Sparkles, Stethoscope } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
+import { cn } from "@/shared/lib/cn";
 import { writerLabel } from "../../lib/writer-label";
 import { controlClass } from "@/shared/ui/control-class";
 import { Chip, RowButton, Tooltip } from "@/shared/ui";
-import { BrandWaitingMark } from "@/shared/ui/brand-waiting-mark";
+import { BrandMark } from "@/shared/ui/brand-mark";
 import { Input } from "@/shared/ui/input";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import {
@@ -598,8 +599,19 @@ export function LibrarySection({
                       title={`${row.name}\n${t(`sources.state.${row.state}.hint`, {
                         pages: row.citedBy.join(", ") || t("sources.state.nobody"),
                       })}`}
-                      className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                      /* Hover through the axis, which the value layer gates on
+                         `active: false`; written as a class it outranked selection and the
+                         open row went dimmer under the pointer (see `library-open-report`). */
+                      hoverSurface="lift"
+                      hoverInk="strong"
+                      className={cn("group relative", active && "bg-[color:var(--color-indigo-a16)]")}
                     >
+                      {active ? (
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute inset-y-1 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
+                        />
+                      ) : null}
                       {/* The same leading glyph the tree, pinned and recent rows carry, so
                           the sidebar keeps one left edge from top to bottom. */}
                       <FileText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
@@ -756,6 +768,23 @@ export function LibrarySection({
     );
   }
 
+  /**
+   * **Which of the three causes is stopping Check, as one sentence.**
+   *
+   * The chip's `disabled` is a union — a turn in flight, a wiki of fewer than two pages,
+   * no coding agent on this computer — and a union cannot be read. Running is not a
+   * sentence: it is the state the row below wears live, so it prints nothing here. Of the
+   * other two the agent reason comes first, because with no agent the page count cannot
+   * make the press available.
+   */
+  const checkBlockedReason = report?.running
+    ? null
+    : onLint === null
+      ? lintBlockedReason ?? null
+      : model.wikiPages.length < 2
+        ? t("wiki.lintNeedsPages")
+        : null;
+
   /*
    * A page a person writes by hand is the list's own last row, not a door beside the two
    * agent turns (council 2026-09-07): a hand action on the list, drawn in the list's
@@ -816,7 +845,8 @@ export function LibrarySection({
         aria-expanded={false}
         aria-controls="library-new-page-row"
         title={t("wiki.newPageTooltip")}
-        className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+        hoverSurface="lift"
+        hoverInk="strong"
       >
         <PencilLine size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
         <span className="min-w-0 flex-1 truncate">{t("wiki.newPage")}</span>
@@ -853,6 +883,7 @@ export function LibrarySection({
                     tone="muted"
                     className="flex-none hover:text-[color:var(--color-text-primary)]"
                     aria-label={t("wiki.lint")}
+                    aria-describedby={checkBlockedReason ? "library-lint-blocked" : undefined}
                   >
                     <Stethoscope size={ICON_SIZE.sm} aria-hidden />
                     <span className="min-w-0 truncate">{t("wiki.lint")}</span>
@@ -885,6 +916,29 @@ export function LibrarySection({
           </>
         ) : null}
       </SectionActions>
+
+      {/*
+        **One ability, one reason, and the reason is visible.**
+
+        Measured at 1512 (design-interaction, council 2026-09-12): the greyed-out Check
+        chip's only reason was a Tooltip — a transient surface as the sole carrier of a
+        reason is shortcut-only discovery for a finger — while the paragraph directly under
+        it was *Compile's* web limit, which reads as Check's. And the three causes the
+        `disabled` union merges were drawn as one look: a turn already running, a wiki with
+        one page, and no coding agent are different facts with different answers. Running is
+        said by the running mark on the row below, so this slot carries the other two, in
+        the order of what blocks first. The Tooltip stays as a duplicate, never as the only
+        copy.
+      */}
+      {checkBlockedReason ? (
+        <p
+          id="library-lint-blocked"
+          data-testid="library-lint-blocked"
+          className="px-3 pb-1 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+        >
+          {checkBlockedReason}
+        </p>
+      ) : null}
 
       {/*
         **Compile is app-only, so the web says so instead of describing it.** The
@@ -940,23 +994,54 @@ export function LibrarySection({
             aria-current={report.open ? "page" : undefined}
             data-report-state={report.running ? "running" : report.unseen ? "unseen" : undefined}
             onClick={report.onOpen}
-            className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+            /*
+             * **Hover through the axis, so it stops undoing selection.** The `hover:bg`
+             * written here outranked the `{shape:'row', active:true}` compound, and the
+             * value layer gates every hover compound on `active:false` for exactly this
+             * reason (`control-class.ts`). Measured 2026-09-12: the row a person had just
+             * pressed fell from 1.14:1 to 1.03:1 while the pointer was still on it — the
+             * one row saying "you are here" went dimmer when touched.
+             *
+             * Selection is now drawn in the grammar this column already uses one level up
+             * (indigo tint) with the 2px inline-start edge the docs tree, the palette and
+             * the hub rail carry, so "current" survives a pointer and is legible at all.
+             */
+            hoverSurface="lift"
+            hoverInk="strong"
+            className={cn(
+              "relative",
+              report.open && "bg-[color:var(--color-indigo-a16)]",
+            )}
           >
+            {report.open ? (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-1 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
+              />
+            ) : null}
             <Stethoscope size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
             <span className="min-w-0 flex-1 truncate">
               {report.count > 0 ? t("report.open", { count: report.count }) : t("report.title")}
             </span>
             {/*
               `aria-live` on the running word, not on the row: a row whose label is live
-              would re-announce the count every time the folder polls. `BrandWaitingMark`
-              is the app's own running mark, so a check reads like every other wait.
+              would re-announce the count every time the folder polls.
+              ⚠️ **The mark must fit the row.** `BrandWaitingMark` is `size-16` — 64px in a
+              ~40px row, which pushed every page card down and snapped back (measured
+              2026-09-12). The inline form is the one `AgentClientButtons` already proves: a
+              14px slot holding the 16px micro mark, so the row's height never moves.
             */}
             {report.running ? (
               <span
                 data-testid="library-report-running"
-                className="flex flex-none items-center"
+                className="relative flex size-3.5 flex-none items-center"
               >
-                <BrandWaitingMark active />
+                <BrandMark
+                  detail="micro"
+                  alt=""
+                  aria-hidden
+                  className="atlas-inline-waiting-mark absolute left-1/2 top-1/2 size-4 max-w-none -translate-x-1/2 -translate-y-1/2"
+                />
                 <span aria-live="polite" className="sr-only">
                   {t("report.running")}
                 </span>
@@ -1035,8 +1120,16 @@ export function LibrarySection({
                      */
                     aria-description={reason}
                     title={reason}
-                    className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                    hoverSurface="lift"
+                    hoverInk="strong"
+                    className={cn("group relative", active && "bg-[color:var(--color-indigo-a16)]")}
                   >
+                    {active ? (
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-y-1 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
+                      />
+                    ) : null}
                     <BookText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
                     <span className="min-w-0 flex-1 truncate">{page.title}</span>
                     {model.answerVersions?.get(page.slug) ? <span className="flex-none text-caption text-[color:var(--color-text-secondary)]">{t(`answers.version.${model.answerVersions.get(page.slug)}`)}</span> : null}

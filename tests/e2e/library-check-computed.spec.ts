@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { installLibraryCheckBridge, openLibraryCheckFolder } from "./library-check-fixture";
 
 /**
  * **The recovery proof, in the runtime: no agent, no press, and it survives a restart.**
@@ -15,7 +16,9 @@ import { seedFirstRunSeen } from "./first-run-seed";
  *
  * So this spec plants the folder from
  * `/Users/jinan/scratch/atlas-library-fixture-20260911/vault` — the four codes it fires —
- * and holds the whole product to the proof the PO pass wrote before implementation:
+ * and holds the whole product to the proof the PO pass wrote before implementation.
+ * `library-check-fixture.ts` owns those bytes and the bridge that serves them, because the
+ * touch-target contract now measures the same page and a spec may not import a spec:
  *
  *   Given this folder opened with **no coding agent connected and no button pressed**, a
  *   person reaching the Library landing can open one report that lists every structural
@@ -45,241 +48,88 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * identical is the whole claim.
  */
 
-const VAULT_ROOT = "/Users/probe/Ontology Atlas/payments";
-
-const PAGE = (
-  title: string,
-  sources: readonly string[],
-  facts: string,
-  links = "",
-) =>
-  [
-    "---",
-    `title: ${title}`,
-    "created_by: agent:claude",
-    "compiled_at: 2026-09-11T04:00:00Z",
-    "sources:",
-    ...sources.map((path) => `  - ${path}`),
-    "source_hash:",
-    ...sources.map((path) => `  ${path}: ${"a".repeat(64)}`),
-    "status: draft",
-    `summary: One sentence about ${title}.`,
-    "---",
-    "",
-    "## Summary",
-    "",
-    `What a reader needs before the facts.${links}`,
-    "",
-    "## Facts",
-    "",
-    facts,
-    "",
-    "## Decisions",
-    "",
-    `- A decision the source records. [[src:${sources[0]}#p4]]`,
-    "",
-    "## Open questions",
-    "",
-    "- Something the source raises but does not settle.",
-    "",
-    "## Not in sources",
-    "",
-    "- Nothing.",
-    "",
-  ].join("\n");
-
-/**
- * The planted folder. **No `wiki/_log.md`** — see the header. The link topology is
- * deliberate: merchant ← refund, refund ← merchant and settlement, settlement ← refund,
- * and settlement-ko ← nobody, so exactly one page is an orphan rather than all four.
- */
-const VAULT: Record<string, string> = {
-  "project.md": ["---", "kind: project", "slug: payments", "title: Payments", "---", "", "# Payments", ""].join("\n"),
-  "sources/merchant-onboarding.html": "<p>onboarding</p>\n",
-  "sources/settlement-policy.md": "# Settlement policy\n\nT+2.\n",
-  "wiki/_template.md":
-    "---\ntitle: <the page name>\ncreated_by: agent:claude\ncompiled_at: 2026-01-01T00:00:00Z\nsources:\n  - sources/<file>\nsource_hash:\n  sources/<file>: <sha256>\nstatus: draft\nsummary: <one sentence>\n---\n\n## Summary\n\n<x>\n\n## Facts\n\n- <c> [[src:sources/<file>#p1]]\n\n## Decisions\n\n## Open questions\n\n## Not in sources\n",
-  // Two bullets under `## Facts` with no citation: this page's own bytes are wrong.
-  "wiki/merchant-onboarding.md": PAGE(
-    "Merchant Onboarding",
-    ["sources/merchant-onboarding.html"],
-    "- Onboarding closes in three days.\n- Two reviewers sign off.",
-    " See [[wiki/refund-timing]].",
-  ),
-  // A citation naming a file that is not in the folder.
-  "wiki/refund-timing.md": PAGE(
-    "Refund Timing",
-    ["sources/refund-policy-2025.md"],
-    "- Refunds settle in five days. [[src:sources/refund-policy-2025.md#p2]]",
-    " See [[wiki/merchant-onboarding]] and [[wiki/settlement]].",
-  ),
-  // Two write-ups of one document that do not link each other, disagreeing about T+2/T+3.
-  "wiki/settlement.md": PAGE(
-    "Settlement",
-    ["sources/settlement-policy.md"],
-    "- Settlement runs on T+2. [[src:sources/settlement-policy.md#p3]]",
-    " See [[wiki/refund-timing]].",
-  ),
-  "wiki/settlement-ko.md": PAGE(
-    "Settlement schedule and fees",
-    ["sources/settlement-policy.md"],
-    "- Settlement runs on T+3. [[src:sources/settlement-policy.md#p3]]",
-  ),
-};
-
 /**
  * Every `(code, page)` pair the folder must produce — the same set
  * `tests/fixtures/wiki-report-folder.mjs` hands the contract test, so the screen and the
  * three code paths are held to one list.
  */
-const EXPECTED: ReadonlyArray<{ code: string; page: string; advisory: boolean }> = [
-  { code: "citation-target-missing", page: "refund-timing", advisory: false },
-  // Two uncited bullets, two rows: a person fixes bullets, not pages, so a kind that fires
-  // twice on one page draws twice — each with its own line number.
-  { code: "uncited-fact", page: "merchant-onboarding", advisory: false },
-  { code: "uncited-fact", page: "merchant-onboarding", advisory: false },
-  { code: "orphan-page", page: "settlement-ko", advisory: true },
-  { code: "shared-source-unlinked", page: "settlement-ko", advisory: true },
-  { code: "shared-source-unlinked", page: "settlement", advisory: true },
+const EXPECTED: ReadonlyArray<{ code: string; page: string; line: string; advisory: boolean }> = [
+  { code: "citation-target-missing", page: "refund-timing", line: "", advisory: false },
+  /*
+   * Two uncited bullets on one page, with one row of ink and **two line numbers**: since
+   * 2026-09-12 rows that share a page and an identical sentence collapse into one door
+   * reading `merchant-onboarding · :19 · :20`. A person still fixes two bullets, so the
+   * finding is identified by its line — which is why this proof reads the suffix and not
+   * only the door. Counting doors here would silently assert five findings for six.
+   */
+  { code: "uncited-fact", page: "merchant-onboarding", line: ":19", advisory: false },
+  { code: "uncited-fact", page: "merchant-onboarding", line: ":20", advisory: false },
+  // Advisory kinds live behind the closed fold, so the proof presses it open (below).
+  { code: "orphan-page", page: "settlement-ko", line: "", advisory: true },
+  { code: "shared-source-unlinked", page: "settlement-ko", line: "", advisory: true },
+  { code: "shared-source-unlinked", page: "settlement", line: "", advisory: true },
 ];
 
-async function installDesktopBridge(page: Page) {
-  await page.addInitScript(
-    ({ files, rootPath }) => {
-      const MTIME = 1_757_000_000_000;
-      const encoder = new TextEncoder();
-
-      const listDirectory = (relative: string) => {
-        const prefix = relative ? `${relative}/` : "";
-        const seen = new Map<string, "file" | "directory">();
-        for (const path of Object.keys(files)) {
-          if (!path.startsWith(prefix)) continue;
-          const rest = path.slice(prefix.length);
-          if (!rest) continue;
-          const slash = rest.indexOf("/");
-          if (slash < 0) seen.set(rest, "file");
-          else seen.set(rest.slice(0, slash), "directory");
-        }
-        return [...seen].map(([name, kind]) => ({ name, kind }));
-      };
-
-      const answer = (command: string, args: Record<string, unknown> = {}): unknown => {
-        const relative = String(args.relativePath ?? "");
-        switch (command) {
-          case "pick_vault_directory":
-            return rootPath;
-          case "list_vault_directory":
-            return listDirectory(relative);
-          case "vault_path_exists":
-            if (args.kind === "directory") {
-              return relative === "" || Object.keys(files).some((path) => path.startsWith(`${relative}/`));
-            }
-            return relative in files;
-          case "read_vault_text_file":
-            if (!(relative in files)) throw new Error(`missing ${relative}`);
-            return { text: files[relative], lastModified: MTIME };
-          case "read_vault_binary_file":
-            if (!(relative in files)) throw new Error(`missing ${relative}`);
-            return { bytes: [...encoder.encode(files[relative])], lastModified: MTIME };
-          case "write_vault_text_file":
-            files[relative] = String(args.content ?? "");
-            return null;
-          case "ensure_vault_directory":
-            return null;
-          case "vault_fingerprint":
-            return {
-              entries: Object.entries(files)
-                .filter(([path]) => path.endsWith(".md") || path.startsWith("sources/"))
-                .map(([path, body]) => ({
-                  relativePath: path,
-                  lastModified: MTIME,
-                  size: encoder.encode(body).length,
-                })),
-              truncated: false,
-              prunedDirs: [],
-            };
-          case "hash_vault_files":
-            return (args.relativePaths as string[]).map((relativePath) => ({
-              relativePath,
-              sha256: null,
-            }));
-          // **The absence that makes this a proof.** No runtime is installed, so no door on
-          // this screen can start a turn and nothing here came from an agent.
-          case "acp_detect_runtimes":
-            return [];
-          case "mcp_bundled_server":
-            return { path: "/Applications/Ontology Atlas.app/mcp", available: true, reason: null };
-          case "discover_source_candidates":
-            return { candidates: [], truncated: false, unreadableRoots: [] };
-          case "discover_mcp_connectors":
-            return { servers: [], problems: [] };
-          case "start_vault_watch":
-            return null;
-          default:
-            return undefined;
-        }
-      };
-
-      (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {
-        transformCallback: (cb: unknown) => cb,
-        invoke: (command: string, args?: Record<string, unknown>) => {
-          try {
-            const value = answer(command, args ?? {});
-            return value === undefined
-              ? Promise.reject(new Error(`no stub for ${command}`))
-              : Promise.resolve(value);
-          } catch (error) {
-            return Promise.reject(error);
-          }
-        },
-      };
-      (window as unknown as { isTauri?: boolean }).isTauri = true;
-    },
-    { files: { ...VAULT }, rootPath: VAULT_ROOT },
-  );
-}
-
-async function openFolder(page: Page) {
-  await page.goto("/en/docs/");
-  await page.waitForLoadState("networkidle");
-  const door = page.getByRole("button", { name: /^Open my folder/ });
-  await door.first().waitFor({ timeout: 25_000 });
-  await door.first().click();
-  await page.getByRole("heading", { name: "Map", level: 1 }).waitFor({ timeout: 30_000 });
-  await page.getByTestId("app-nav-rail").getByRole("link", { name: "Library" }).click();
-  await page.getByTestId("library-sources").waitFor({ timeout: 30_000 });
-}
-
-/** Read the screen's own enumeration: one `(code, page)` pair per drawn row. */
+/**
+ * Read the screen's own enumeration: one `(code, page, line)` triple per **finding**, not
+ * per row. A collapsed row names one page and carries a `:line` for each finding inside
+ * it, so the line is read from the door's own paragraph — where the suffix lives — rather
+ * than from the row, whose rule sentence is prose this proof must not parse.
+ */
 async function readReport(page: Page) {
   return page.evaluate(() => {
-    const out: Array<{ code: string; page: string }> = [];
+    const out: Array<{ code: string; page: string; line: string }> = [];
     for (const group of document.querySelectorAll('[data-testid="library-structural-group"]')) {
       const code = group.getAttribute("data-code") ?? "";
       for (const row of group.querySelectorAll('[data-testid="library-structural-finding"]')) {
         for (const door of row.querySelectorAll('[data-testid="library-finding-page"]')) {
-          out.push({ code, page: (door.textContent ?? "").trim() });
+          const name = (door.textContent ?? "").trim();
+          const suffixes = [...((door.closest("p")?.textContent ?? "").matchAll(/:\d+/g))].map(
+            (match) => match[0],
+          );
+          if (suffixes.length === 0) out.push({ code, page: name, line: "" });
+          else for (const line of suffixes) out.push({ code, page: name, line });
         }
       }
     }
     // Field by field, never a concatenated key: `source-is-text.contract.test.ts` records
     // why a separator character is the wrong tool for an ordering key.
-    return out.sort((a, b) => a.code.localeCompare(b.code) || a.page.localeCompare(b.page));
+    return out.sort(
+      (a, b) => a.code.localeCompare(b.code) || a.page.localeCompare(b.page) || a.line.localeCompare(b.line),
+    );
   });
 }
 
-const expectedRows = [...EXPECTED]
-  .map(({ code, page }) => ({ code, page }))
-  .sort((a, b) => a.code.localeCompare(b.code) || a.page.localeCompare(b.page));
+const sortRows = <T extends { code: string; page: string; line: string }>(rows: readonly T[]) =>
+  [...rows]
+    .map(({ code, page, line }) => ({ code, page, line }))
+    .sort((a, b) => a.code.localeCompare(b.code) || a.page.localeCompare(b.page) || a.line.localeCompare(b.line));
+
+/** Every planted finding, advisory ones included — what the page holds with the fold open. */
+const expectedRows = sortRows(EXPECTED);
+/** What the page holds with the fold closed, which is how it opens in every state. */
+const expectedBlockingRows = sortRows(EXPECTED.filter((row) => !row.advisory));
+
+/**
+ * The advisory fold is **closed on arrival** (council 2026-09-12, unanimous), so a proof
+ * that never presses it would assert three findings for six. Pressing it is also the
+ * assertion that it is a disclosure and not a filter: nothing is removed from the page.
+ */
+async function openAdvisoryFold(page: Page) {
+  const fold = page.getByTestId("library-advisory-fold");
+  await expect(fold).toHaveAttribute("aria-expanded", "false");
+  await fold.click();
+  await expect(fold).toHaveAttribute("aria-expanded", "true");
+}
 
 test.describe("the structural check is the app's own", () => {
   test.beforeEach(async ({ page }) => {
     await seedFirstRunSeen(page);
-    await installDesktopBridge(page);
+    await installLibraryCheckBridge(page);
   });
 
   test("with no agent and no press, the landing opens a report listing every planted finding", async ({ page }) => {
-    await openFolder(page);
+    await openLibraryCheckFolder(page);
     await page.getByTestId("library-index-segment-wiki").click();
     await page.getByTestId("library-wiki").waitFor({ timeout: 30_000 });
 
@@ -294,7 +144,14 @@ test.describe("the structural check is the app's own", () => {
     await door.click();
     await expect(page.getByTestId("library-check-structural")).toBeVisible({ timeout: 25_000 });
 
+    // The blocking kinds are open and complete; the advisory ones are counted, not listed.
+    await expect
+      .poll(() => readReport(page), { timeout: 20_000 })
+      .toEqual(expectedBlockingRows);
+    await expect(page.getByTestId("library-advisory-fold")).toContainText("3");
+
     // Every planted finding, grouped by the code `wiki-validate` prints, with a page door.
+    await openAdvisoryFold(page);
     await expect
       .poll(() => readReport(page), { timeout: 20_000 })
       .toEqual(expectedRows);
@@ -322,9 +179,10 @@ test.describe("the structural check is the app's own", () => {
   });
 
   test("the same list is there after quitting and reopening the app", async ({ page }) => {
-    await openFolder(page);
+    await openLibraryCheckFolder(page);
     await page.getByTestId("library-index-segment-wiki").click();
     await page.getByTestId("library-open-report").click();
+    await openAdvisoryFold(page);
     await expect
       .poll(() => readReport(page), { timeout: 20_000 })
       .toEqual(expectedRows);
@@ -336,8 +194,90 @@ test.describe("the structural check is the app's own", () => {
     await page.waitForLoadState("networkidle");
     await page.getByTestId("library-wiki").waitFor({ timeout: 30_000 });
     await page.getByTestId("library-open-report").click();
+    /* The fold's state is not remembered, and should not be: a reopened app is a person
+       arriving, and what they arrive at is the blocking half. */
+    await openAdvisoryFold(page);
     await expect
       .poll(() => readReport(page), { timeout: 20_000 })
       .toEqual(expectedRows);
+  });
+});
+
+/**
+ * **The row that says "you are here" must not dim when a finger or a pointer is on it.**
+ *
+ * Measured at 1512 on 2026-09-12 (`design-interaction`, council): the selected report row
+ * was `--color-overlay-2` at 1.14:1 and fell to 1.03:1 while the pointer rested on it,
+ * because a `hover:bg-…` written into `className` outranked the `{shape:'row',
+ * active:true}` compound — the value layer gates every hover compound on `active: false`
+ * for exactly this reason and the class bypassed the axis. The repair routes hover through
+ * `hoverSurface`/`hoverInk` and draws selection in the grammar this column already uses:
+ * an indigo tint plus the 2px inline-start edge the docs tree, the palette and the hub rail
+ * carry, whose ink clears the 3:1 non-text floor on canvas where the tint alone does not.
+ *
+ * It lives beside the recovery proof because it needs this folder's report row and a real
+ * browser: jsdom has no computed hover. **A fresh element per condition** — a transition
+ * returns the previous value, which is where this repository measured 1,240 false
+ * positives from reusing one element.
+ */
+test.describe("the index row's own state", () => {
+  test.beforeEach(async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await installLibraryCheckBridge(page);
+  });
+
+  test("hover does not undo selection on the report row", async ({ page }) => {
+    let opened = false;
+    const read = async (condition: "current-rest" | "current-hover" | "other-hover") => {
+      /* A fresh document each time, and the folder is picked only once: after the first
+         pass the handle is restored from IndexedDB, so the first-run door is not drawn and
+         waiting for it would time out on a healthy app. */
+      if (opened) {
+        await page.goto("/en/library/?guides=off");
+        /* The switch is remembered, so wait for the switch itself: `library-sources` is
+           drawn only while that half is the chosen one. */
+        await page.getByTestId("library-index-segment-wiki").waitFor({ timeout: 30_000 });
+      } else {
+        await openLibraryCheckFolder(page);
+        opened = true;
+      }
+      await page.getByTestId("library-index-segment-wiki").click();
+      await page.getByTestId("library-wiki").waitFor({ timeout: 30_000 });
+      if (condition !== "other-hover") {
+        await page.getByTestId("library-open-report").click();
+        await expect(page.getByTestId("library-check-structural")).toBeVisible({ timeout: 25_000 });
+      }
+      await page.addStyleTag({ content: "*,*::before,*::after{transition:none !important}" });
+      const row = page.getByTestId("library-open-report");
+      const box = (await row.boundingBox())!;
+      // Away from the column entirely, never `(2,2)`: that point hovers the rail and
+      // corrupts the next resting measurement (`design-gates.md`).
+      if (condition === "current-rest") await page.mouse.move(box.x + box.width + 200, box.y + 400);
+      else await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      return row.evaluate((node) => {
+        const marker = node.querySelector("span[aria-hidden]");
+        return {
+          background: getComputedStyle(node).backgroundColor,
+          colour: getComputedStyle(node).color,
+          edge: marker ? getComputedStyle(marker).backgroundColor : null,
+          edgeWidth: marker ? getComputedStyle(marker).width : null,
+        };
+      });
+    };
+
+    const currentRest = await read("current-rest");
+    const currentHover = await read("current-hover");
+    const otherHover = await read("other-hover");
+
+    // Selected is indigo and it stays indigo under the pointer.
+    expect(currentRest.background).toBe("rgba(94, 106, 210, 0.16)");
+    expect(currentHover.background, "hover changed the current row's fill").toBe(currentRest.background);
+    expect(currentHover.colour).toBe(currentRest.colour);
+    // The durable mark is the edge, not the tint: 2px of indigo ink, 5.18:1 on canvas.
+    expect(currentRest.edgeWidth).toBe("2px");
+    expect(currentRest.edge).toBe("rgb(113, 112, 255)");
+    // An unselected row still answers the pointer — one step, from the axis.
+    expect(otherHover.background).toBe("rgba(255, 255, 255, 0.02)");
+    expect(otherHover.edge).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { installLibraryCheckBridge, openLibraryCheckReport } from "./library-check-fixture";
 
 /**
  * Touch-target contract — does `--touch-target-min` (44px) **actually reach the
@@ -217,6 +218,98 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
     }, MIN);
 
     expect(short, `44px 미만 히트 영역: ${JSON.stringify(short)}`).toEqual([]);
+  });
+
+  /**
+   * **The Library's Check-results page — the input-mode twin of the width blind spot.**
+   *
+   * Until 2026-09-12 **zero** Library controls appeared in this file, while it already ran
+   * `hasTouch` at 390 for topology, insights, first-run and `/download`. A desktop sweep of
+   * that page the same day reported its page doors at 24px and called them a defect: they
+   * carry `atlas-touch-floor`, which lands only under `(pointer: coarse)`, so the sweep had
+   * measured the fine-pointer box. The real defects were the three controls with **no**
+   * floor at all — `library-reader-back` (96×32, and the report's only exit at this width),
+   * `library-graph-open` (69×32) and `library-check-report-lint` (112×32) — beside a
+   * neighbour, `answer-review-open`, that already had one.
+   *
+   * So the scan covers both the page and the strip row above it, and it does not stop at
+   * the box: the bottom tab bar is `fixed` over this pane, and the clearance that keeps the
+   * last door reachable was never tested. `elementFromPoint` asks the rendered page who
+   * owns each door's centre, and who owns the band just inside the bar's top edge.
+   */
+  test("자료실 점검 결과의 문·탈출구가 손가락 히트 영역을 갖고 탭바에 가리지 않는다", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await seedFirstRunSeen(page);
+    await installLibraryCheckBridge(page);
+    await openLibraryCheckReport(page);
+
+    const measured = await page.evaluate((min) => {
+      // The same effective-hit rule the rest of this file uses: own rect ∪ an absolutely
+      // positioned `::after`, because growing an inline control's box moves the line.
+      const hit = (target: Element) => {
+        const rect = target.getBoundingClientRect();
+        const after = getComputedStyle(target, "::after");
+        if (after.content && after.content !== "none" && after.position === "absolute") {
+          return {
+            w: Math.max(rect.width, Number.parseFloat(after.width) || 0),
+            h: Math.max(rect.height, Number.parseFloat(after.height) || 0),
+          };
+        }
+        return { w: rect.width, h: rect.height };
+      };
+      const pane = document.querySelector('[data-testid="library-report-pane"]');
+      const strip = document.querySelector('[data-testid="library-reader-back"]')?.parentElement ?? null;
+      const roots = [pane, strip].filter((root): root is Element => root !== null);
+      const targets = roots
+        .flatMap((root) => [...root.querySelectorAll("button:not([disabled]), a[href]")])
+        .filter((target) => {
+          const rect = target.getBoundingClientRect();
+          const style = getComputedStyle(target);
+          return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden";
+        });
+      const name = (target: Element) =>
+        target.getAttribute("data-testid") || (target.textContent ?? "").trim().slice(0, 24) || target.tagName;
+
+      const bar = document.querySelector('nav[data-tabbar="primary"]');
+      const barTop = bar ? bar.getBoundingClientRect().top : null;
+      const owner = (x: number, y: number, testId: string) =>
+        document.elementFromPoint(x, y)?.closest(`[data-testid="${testId}"]`) !== null;
+
+      return {
+        roots: roots.length,
+        scanned: targets.length,
+        short: targets
+          .map((target) => ({ id: name(target), ...hit(target) }))
+          // A CSS transform can land an exact floor at 43.995 physical pixels.
+          // Height only: every control here is a labelled pill whose width is set by its
+          // words, and `atlas-touch-floor-wide` would push its neighbours for nothing.
+          .filter(({ h }) => Math.round(h) < min),
+        covered: [...(pane?.querySelectorAll('[data-testid="library-finding-page"]') ?? [])]
+          .map((door) => {
+            const rect = door.getBoundingClientRect();
+            return {
+              id: (door.textContent ?? "").trim(),
+              y: Math.round(rect.y),
+              own: owner(rect.x + rect.width / 2, rect.y + rect.height / 2, "library-finding-page"),
+            };
+          })
+          .filter((door) => !door.own),
+        barTop: barTop === null ? null : Math.round(barTop),
+        // Just inside the bar's own top edge the bar must be what answers. Anything else
+        // there is a control the bar is sitting on.
+        barOwnsItsBand:
+          barTop === null
+            ? null
+            : document.elementFromPoint(window.innerWidth / 2, barTop + 2)?.closest('nav[data-tabbar="primary"]') !== null,
+      };
+    }, MIN);
+
+    expect(measured.roots, "점검 결과 페이지와 그 위 줄을 둘 다 재지 못했다").toBe(2);
+    expect(measured.scanned, "자료실 컨트롤을 충분히 재지 못했다").toBeGreaterThan(4);
+    expect(measured.short, `44px 미만 히트 높이: ${JSON.stringify(measured.short)}`).toEqual([]);
+    expect(measured.covered, `문이 무언가에 덮였다: ${JSON.stringify(measured.covered)}`).toEqual([]);
+    expect(measured.barTop, "고정 탭바가 없다 — 이 폭의 계약이 아니다").not.toBeNull();
+    expect(measured.barOwnsItsBand, "탭바 자리를 다른 컨트롤이 차지했다").toBe(true);
   });
 
   test("공유 크롬 프리미티브가 coarse 에서 44px 로 승격된다", async ({ page }) => {

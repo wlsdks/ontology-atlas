@@ -189,10 +189,17 @@ describe("the check's answer is a page in the pane", () => {
 describe("the computed half is the app's own, and it is the half that leads", () => {
   it("lists every structural finding with no press, no agent and no remembered check", () => {
     mount(<Harness structural={STRUCTURAL} lastLint={null} onLint={null} />);
+    /*
+     * All nine planted findings are still on this page; what changed is how many rows of
+     * ink they take. The two blocking kinds are open — and `merchant-onboarding`'s two
+     * uncited bullets share a page and a sentence, so they are one row carrying `:22` and
+     * `:23`. The six advisory findings are behind the closed fold, which counts them.
+     * Nothing here came from an agent, and `lastLint` is null so nothing was remembered.
+     */
+    expect(screen.getAllByTestId("library-structural-finding")).toHaveLength(2);
+    fireEvent.click(screen.getByTestId("library-advisory-fold"));
     const rows = screen.getAllByTestId("library-structural-finding");
-    // All nine planted findings, over four kinds; nothing here came from an agent, and
-    // `lastLint` is null so nothing here was remembered either.
-    expect(rows).toHaveLength(9);
+    expect(rows).toHaveLength(8);
     const head = screen.getByTestId("library-check-structural-head").textContent ?? "";
     // Both totals, each saying what it counts: `wiki-validate` calls all six pages
     // off-template because it counts advisory findings too, and a frame that showed two
@@ -202,12 +209,40 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     expect(head).toContain("9 findings");
   });
 
-  it("puts blocking kinds before advisory ones and marks the advisory ones as such", () => {
+  it("keeps the blocking kinds open and folds the advisory ones behind their own count", () => {
     mount(<Harness structural={STRUCTURAL} />);
-    const codes = screen.getAllByTestId("library-structural-group").map((node) => node.getAttribute("data-code"));
-    expect(codes).toEqual(["citation-target-missing", "uncited-fact", "orphan-page", "shared-source-unlinked"]);
-    const advisory = screen.getAllByTestId("library-structural-group").find((node) => node.getAttribute("data-code") === "orphan-page")!;
-    expect(advisory.textContent).toContain("young wiki");
+    /*
+     * The fold is closed in every state, including this one: the app's own copy says these
+     * rows are expected of a young wiki, so they are never the page to fix first, and the
+     * 413–473px they held put the agent's half below the fold at every width (council
+     * 2026-09-12, unanimous). The blocking kinds are never collapsible.
+     */
+    expect(
+      screen.getAllByTestId("library-structural-group").map((node) => node.getAttribute("data-code")),
+    ).toEqual(["citation-target-missing", "uncited-fact"]);
+    const fold = screen.getByTestId("library-advisory-fold");
+    expect(fold.getAttribute("aria-expanded")).toBe("false");
+    // The count of what is inside, and the reason it is closed — on the control, not on a heading.
+    expect(fold.textContent).toContain("6 advisory findings");
+    expect(fold.textContent).toContain("young wiki");
+    // The rail still lists the advisory codes, so their anchor has to resolve while closed.
+    expect(document.getElementById("report-code-orphan-page")).not.toBeNull();
+    fireEvent.click(fold);
+    expect(
+      screen.getAllByTestId("library-structural-group").map((node) => node.getAttribute("data-code")),
+    ).toEqual(["citation-target-missing", "uncited-fact", "orphan-page", "shared-source-unlinked"]);
+  });
+
+  it("collapses two findings that share a page and a sentence into one row with both lines", () => {
+    mount(<Harness structural={STRUCTURAL} />);
+    const uncited = screen
+      .getAllByTestId("library-structural-group")
+      .find((node) => node.getAttribute("data-code") === "uncited-fact")!;
+    expect(uncited.querySelectorAll('[data-testid="library-structural-finding"]')).toHaveLength(1);
+    // The count on the heading still says two: one row of ink, two bullets to fix.
+    expect(uncited.textContent).toContain(":22");
+    expect(uncited.textContent).toContain(":23");
+    expect(uncited.querySelectorAll('[data-testid="library-finding-page"]')).toHaveLength(1);
   });
 
   it("names the code the terminal prints, so one folder reads one vocabulary on both screens", () => {

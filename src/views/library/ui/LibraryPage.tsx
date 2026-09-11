@@ -824,6 +824,14 @@ export function LibraryPage() {
       ref={graphTriggerRef}
       variant="outline"
       size="sm"
+      /*
+       * 69×32 on a finger until 2026-09-12 — a real defect, unlike the two controls beside
+       * it: `Button` is the one primitive that does **not** emit the floor from the value
+       * layer, which is why its neighbour `answer-review-open` carries the marker by hand.
+       * Height only; the label is wide enough that `atlas-touch-floor-wide` would add
+       * nothing but push its neighbours.
+       */
+      className="atlas-touch-floor"
       data-testid="library-graph-open"
       onClick={(event) => {
         if (graphRestoreFrameRef.current !== null) {
@@ -2108,6 +2116,15 @@ export function LibraryPage() {
                 onClick={() => localReviewVisible ? agent.localCompile.dismiss() : setSelected(null)}
                 disabled={localReviewVisible && localReviewBusy}
                 data-testid="library-reader-back"
+                /*
+                 * ⚠️ **No `atlas-touch-floor` here, and that is measured.** The council
+                 * read this exit at 96×32 and called the floor missing; re-measured under
+                 * `hasTouch` on 2026-09-12 it is 96×44, because `shape: "chip"` emits the
+                 * marker from the value layer (`control-class.ts`, `TOUCH_FLOOR`). The
+                 * seat's own correction about the 24px door — a desktop run measures the
+                 * fine-pointer box — applies to its own reading of this control. A second
+                 * copy of the class would say the floor came from this site.
+                 */
                 className={controlClass({ shape: "chip", tone: "muted" })}
               >
                 {t(localReviewVisible ? "localCompile.back" : "graph.readerClose")}
@@ -2226,8 +2243,10 @@ export function LibraryPage() {
                 candidates={openCandidates}
                 lastLint={model.log.lastLint}
                 busy={busy || turnRunning}
+                running={lintRunning}
                 onLint={agent.route === "agent" ? handleLint : null}
                 lintBlockedReason={agentOnlyReason}
+                onJumpToSection={handleReportHeadingNavigate}
                 onFix={agent.route === "agent" ? handleFix : null}
                 onPropose={agent.route === "agent" && hasOntology ? handlePropose : null}
                 onOpenPage={(slug) => choose({ kind: "wiki", slug })}

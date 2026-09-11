@@ -4557,6 +4557,7 @@
       "compileTooltip": "Read sources and update their write-ups. Retained answers are reported for separate review and refresh.",
       "lint": "Check the wiki",
       "lintTooltip": "Start one agent turn that reads the wiki pages and reports disagreements, superseded claims, missing links, and names without a page. It writes nothing.",
+      "lintNeedsPages": "The check reads from two pages up: one page has nothing to disagree with.",
       "candidateKind": {
         "domain": "domain",
         "capability": "capability",
@@ -4868,6 +4869,9 @@
       "structuralHead": "{pages, plural, one {# page} other {# pages}} · {offTemplate} off-template · {findings, plural, one {# finding} other {# findings}}",
       "structuralClean": "Every page fits the template, every link resolves, and no two write-ups of one document ignore each other.",
       "advisoryMark": "true of a young wiki",
+      "advisoryFold": "{count, plural, one {# advisory finding} other {# advisory findings}}",
+      "advisoryLess": "Hide the advisory findings",
+      "jumpAria": "Jump to a ledger on this page",
       "unmeasured": "{count, plural, one {# page has not been read yet} other {# pages have not been read yet}}. What is listed here is everything read so far, not everything there is.",
       "semanticTitle": "What the agent read",
       "never": "The agent has not read these pages yet. Check the wiki and it adds the values two pages disagree on, the claims a later page replaced, and the names without a page.",
