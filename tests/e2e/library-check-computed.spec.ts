@@ -149,17 +149,59 @@ test.describe("the structural check is the app's own", () => {
      */
     await expect(page.getByTestId("library-compile-web-limit")).toHaveCount(0);
     await expect(page.getByTestId("library-compile-web-get-app")).toHaveCount(0);
-    // And the reason is on screen exactly once. A1 (#1560) routes it by screen: while the
-    // landing is drawn the stage prints it and the index's slot stays empty, so counting
-    // the index's own paragraph here would assert this branch's older shape rather than
-    // the rule both it and A1 keep — one blocked ability, one reason, once per screen.
+    /*
+     * And the reason is on screen exactly once **per screen**, which is the rule A1 (#1560)
+     * routes and this keeps. Since 2026-09-12 the home is the folder's graph: it makes no
+     * claim about an agent at all, and each surface that holds a blocked press prints its
+     * own one reason behind its own door (`library-spine.spec.ts` counts that). So the
+     * home's own count is zero. On this folder nothing is waiting to be compiled — the
+     * bridge answers every hash with `null`, so every cited source is `checking` — so the
+     * strip carries no Compile clause at all and the blocked press is Check the wiki, whose
+     * sentence stands in the guide beside it.
+     */
+    await expect(page.getByText(/No verified coding agent is set up on this computer/)).toHaveCount(0);
+    await page.getByTestId("library-guide-open").click();
+    const guide = page.getByTestId("library-guide-popover");
+    await expect(guide.locator("[data-landing-blocked-reason]")).toHaveCount(1);
+    await expect(guide.getByText(/No verified coding agent is set up on this computer/)).toHaveCount(1);
     await expect(page.getByText(/No verified coding agent is set up on this computer/)).toHaveCount(1);
+    await page.keyboard.press("Escape");
+    await expect(guide).toHaveCount(0);
 
-    // The door exists although no check has ever run and there is no log to remember one.
+    /*
+     * **Two presses, one report, one state.** The index row is the report's only door with
+     * live state — a count, `running`, `unseen` — and the strip keeps `N off-template` as
+     * the *fact* that presses into it (po-leverage, council 2026-09-12: two doors to one
+     * report, one of them stateless, is not worth the row). Both go through `LibraryPage`'s
+     * `choose`, which is the single seam slice 3 put "seen" on, so the row must be left in
+     * the same state by either. Read here rather than asserted from the source: the row's
+     * own marks are pinned by `LibrarySection.index.test.tsx`, because no browser can reach
+     * `unseen: true` — the dock harness leaves `acp_start` unanswered on purpose, so no
+     * turn completes.
+     */
+    const rowState = () =>
+      page.getByTestId("library-open-report").evaluate((node) => ({
+        state: node.getAttribute("data-report-state"),
+        current: node.getAttribute("aria-current"),
+        running: node.querySelector('[data-testid="library-report-running"]') !== null,
+        unseen: node.querySelector('[data-testid="library-report-unseen"]') !== null,
+      }));
+
+    await page.getByTestId("library-strip-offtemplate").click();
+    await expect(page.getByTestId("library-check-structural")).toBeVisible({ timeout: 25_000 });
+    const afterClause = await rowState();
+    expect(afterClause).toEqual({ state: null, current: "page", running: false, unseen: false });
+    // And the strip never grew a second door to the same screen.
+    await expect(page.getByTestId("library-report-open")).toHaveCount(0);
+
+    // Back to the home, then in again through the row itself: the same state, both ways.
+    await page.getByTestId("library-reader-back").click();
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
     const door = page.getByTestId("library-open-report");
     await expect(door).toBeVisible();
     await door.click();
     await expect(page.getByTestId("library-check-structural")).toBeVisible({ timeout: 25_000 });
+    expect(await rowState()).toEqual(afterClause);
 
     // The blocking kinds are open and complete; the advisory ones are counted, not listed.
     await expect

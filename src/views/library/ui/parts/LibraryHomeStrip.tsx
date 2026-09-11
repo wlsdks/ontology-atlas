@@ -2,7 +2,7 @@
 
 import { type ReactNode, type RefObject } from "react";
 import type { useTranslations } from "next-intl";
-import { BookOpen, HelpCircle, MoreHorizontal, Stethoscope } from "lucide-react";
+import { BookOpen, HelpCircle, MoreHorizontal } from "lucide-react";
 
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
@@ -73,7 +73,12 @@ export interface LibraryHomeStripClause {
 }
 
 export interface LibraryHomeStripDoor {
-  id: "guide" | "questions" | "report";
+  /*
+   * Two doors. The check report's is the index's own row, which slice 3 gave the live
+   * state — count, `running`, `unseen` — that a strip chip could not carry; the strip keeps
+   * the `N off-template` clause as the fact that presses into it (2026-09-12).
+   */
+  id: "guide" | "questions";
   label: string;
   onPress: () => void;
   testId: string;
@@ -84,7 +89,6 @@ export interface LibraryHomeStripDoor {
 const DOOR_ICON: Record<LibraryHomeStripDoor["id"], typeof HelpCircle> = {
   guide: HelpCircle,
   questions: BookOpen,
-  report: Stethoscope,
 };
 
 export function LibraryHomeStrip({
@@ -186,18 +190,26 @@ export function LibraryHomeStrip({
         `lg` the whole group folds into the `…` door instead, which is the fold that works.
       */}
       {/*
-        `ml-auto` is what holds the right edge now that this component's children are the
-        header row's own children (see `LibraryGraph`'s slot comment): the doors take the
-        right end of whichever line they land on, and the clauses keep the pane's text edge.
+        ⚠️ **One right-anchored group, not a right margin on each door.**
+
+        The clauses above are the header row's own children, so they keep the pane's text
+        edge and wrap to it (see `LibraryGraph`'s slot comment). Everything that belongs at
+        the right edge is *one* item in that row instead: `ml-auto` on a single group holds
+        the edge even when the group takes a line of its own. Measured 2026-09-12 after the
+        check report's door left this strip — with `ml-auto` on the doors alone, the
+        narrower group let `trailing` wrap past it onto a third line, where nothing anchored
+        it: the row went 60px to 68 and the conversation chip's right edge measured 489
+        against a content edge of 1472. As one group: 60px and 1472/1472.
       */}
-      <span className="ml-auto flex flex-none items-center gap-1.5 max-lg:hidden">
+      <span className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-1">
+      <span className="flex flex-none items-center gap-1.5 max-lg:hidden">
         {doors.map((door) => {
           const Icon = DOOR_ICON[door.id];
           return (
             <button
               key={door.id}
               type="button"
-              ref={door.id === "guide" ? guideAnchorRef : door.id === "questions" ? questionsAnchorRef : undefined}
+              ref={door.id === "guide" ? guideAnchorRef : questionsAnchorRef}
               onClick={door.onPress}
               data-testid={door.testId}
               data-library-door={door.id}
@@ -249,16 +261,15 @@ export function LibraryHomeStrip({
           tone: "muted",
           hoverInk: "strong",
           /* Below `lg` this is the only door, so it is the one that most needs to say
-             whether the list it owns is up (design-interaction, council 2026-09-12) — and
-             it is the one that carries the row's right anchor there, because the group
-             above it is not drawn at that width. */
+             whether the list it owns is up (design-interaction, council 2026-09-12). */
           active: overflowOpen,
-          className: "ml-auto flex-none lg:hidden",
+          className: "flex-none lg:hidden",
         })}
       >
         <MoreHorizontal size={ICON_SIZE.sm} aria-hidden />
       </button>
       {trailing}
+      </span>
     </>
   );
 }

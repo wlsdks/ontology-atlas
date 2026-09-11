@@ -4697,7 +4697,6 @@
     "home": {
       "guide": "사용 방법",
       "questions": "{count, plural, =0 {질문} other {질문 #}}",
-      "report": "점검 결과",
       "more": "더 보기",
       "compileNext": "정리 다음: {source}",
       "staleClause": "원문 {count}개 달라짐",

@@ -949,7 +949,7 @@ for (const viewport of NARROW_VIEWPORTS) {
      */
     const overflow = page.getByTestId("library-home-overflow");
     await expect(overflow).toBeVisible();
-    for (const gone of ["library-guide-open", "library-questions-open", "library-report-open"]) {
+    for (const gone of ["library-guide-open", "library-questions-open"]) {
       expect(
         await page.getByTestId(gone).evaluate((el) => el.getBoundingClientRect().width),
         `${gone} still takes room on the narrow strip`,

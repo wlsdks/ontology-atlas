@@ -777,8 +777,9 @@ the two doors instead. **With a folder open and nothing selected, the right pane
 (2026-09-12, restoring 2026-09-06). Above it sits one `text-label` row — the canvas's own
 counts caption, then the step facts as pressable clauses (`Compile next: <source>` opens
 Compile and its brain picker; `N sources changed` lights that citation and its two ends
-without moving a mark; `N off-template` opens the check report) — and then four doors:
-`How to use`, the saved questions, `Check result`, and the existing `Conversation`. `How to
+without moving a mark; `N off-template` presses into the check report, whose one door with
+live state — a count, *running*, *unseen* — is the index's own row) — and then the doors
+`How to use`, the saved questions, and the existing `Conversation`. `How to
 use` holds the three source-to-wiki steps in an anchored popup and raises itself once per
 machine; at exactly one saved answer the questions door is that question, so reopening it
 is one press. Selecting a document replaces the canvas and gives it back on close. Below

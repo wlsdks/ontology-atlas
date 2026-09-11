@@ -4697,7 +4697,6 @@
     "home": {
       "guide": "How to use",
       "questions": "{count, plural, =0 {Questions} one {Questions #} other {Questions #}}",
-      "report": "Check result",
       "more": "More",
       "compileNext": "Compile next: {source}",
       "staleClause": "{count, plural, one {# source changed} other {# sources changed}}",

@@ -852,7 +852,7 @@ export function LibraryPage() {
 
   /*
    * ══════════════════════════════════════════════════════════════════════════════
-   * The home: the graph, one strip of pressable clauses, and four doors.
+   * The home: the graph, one strip of pressable clauses, and its doors.
    * ══════════════════════════════════════════════════════════════════════════════
    *
    * Owner, 2026-09-12: *"is this gather-compile-read screen just the main one? why does it
@@ -1946,7 +1946,7 @@ export function LibraryPage() {
 
   /*
    * ══════════════════════════════════════════════════════════════════════════════
-   * The home: the graph, one strip of pressable clauses, and four doors.
+   * The home: the graph, one strip of pressable clauses, and its doors.
    * ══════════════════════════════════════════════════════════════════════════════
    *
    * Owner, 2026-09-12: *"is this gather-compile-read screen just the main one? why does it
@@ -2013,6 +2013,18 @@ export function LibraryPage() {
    * opening the conversation — the `Conversation` chip two controls to the right is the
    * same press `Ask` makes. At zero answers, and at two or more, the door is the list.
    */
+  /*
+   * ⚠️ **Two doors, not three: the check report's door is the index's row** (2026-09-12,
+   * after slice 3 landed). This strip carried a `Check result` door of its own, and slice 3
+   * then gave the index row the report's live state — a count, `running` while a check is
+   * in flight, and `unseen` for a finished one nobody has opened. Both merged would put two
+   * doors to one report a column apart, and the stateless one would be lying by omission
+   * exactly while a check ran (po-leverage, council 2026-09-12). So the row is the door, and
+   * the strip keeps the clause: `N off-template` is a **fact about the folder** that happens
+   * to press into the report, and pressing it goes through `choose`, which is the one seam
+   * slice 3 put "seen" on — so the clause clears the row's `unseen` mark exactly as the
+   * row's own press does.
+   */
   const soleAnswer = retainedAnswers.length === 1 ? retainedAnswers[0] ?? null : null;
   const homeDoors: LibraryHomeStripDoor[] = [
     {
@@ -2039,12 +2051,6 @@ export function LibraryPage() {
           },
       testId: "library-questions-open",
       open: soleAnswer ? undefined : homeSurface === "questions",
-    },
-    {
-      id: "report",
-      label: t("home.report"),
-      onPress: openReport,
-      testId: "library-report-open",
     },
   ];
 
