@@ -1,6 +1,12 @@
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import {
+  DOC_BODY_FONT_PX,
+  DOC_COLUMN_GUTTER_PX,
+  PROSE_MEASURE_PX,
+  PROSE_MEASURE_STEPS,
+} from '../../src/shared/ui/reading-measure';
 import { installLibraryWorkHarness, type LibraryWorkHarness } from './library-work-harness';
 import { seedFirstRunSeen } from './first-run-seed';
 
@@ -142,6 +148,60 @@ async function openComparison(page: Page, locale: 'en' | 'ko', bodies: { old: st
 }
 
 /**
+ * ⚠️ **The column is a `ch` cap, so its pixel width belongs to the rasterizer.**
+ *
+ * `--measure-prose` is `60ch` and `1ch` is the advance of the digit `0`. macOS positions
+ * subpixel (8.340px at `text-body-lg`, so the column resolves to 500.4px); CI's Linux
+ * Chromium hints advances to whole pixels (9px, so the same column resolves to **540.0px** =
+ * 60 × 9). Both are rendering Pretendard, the CSS is identical, and no reader sees a
+ * difference — the first version of this spec asserted `<= 510` and failed on the runner at
+ * 540, which was measuring FreeType, not the design.
+ *
+ * `prose-measure-calibration.spec.ts` (#1553) settled the shape: compare the `ch`-resolved
+ * length against the **derived box** and allow one rounded pixel per `ch` step. The token
+ * stays `ch` by that slice's decision — an absolute column here would be a second source for
+ * the measure — so this spec carries the same band. `70ch`, the value that shipped until
+ * 2026-09-11, resolves to 583.8px on macOS and 630px on the runner: outside the band on both,
+ * which is what keeps this assertion a gate rather than a formality.
+ */
+const MAX_COLUMN_PX = PROSE_MEASURE_PX + PROSE_MEASURE_STEPS;
+
+/**
+ * The calibrated ceiling for one line, from `prose-measure-calibration.spec.ts`: the prose
+ * measure is gated at 65–82 Latin characters, so a column of this product's body text may not
+ * exceed the top of that band. The Korean ceiling is the ~36 syllables the token's own block
+ * documents for `60ch`, plus the room a mixed line buys — spaces, digits and Latin source
+ * names are all narrower than a syllable. Measured: 64 Latin, 40 Hangul.
+ */
+const MAX_LATIN_CHARS_PER_LINE = 82;
+const MAX_HANGUL_PER_LINE = 44;
+
+/**
+ * ⚠️ **Prove the font before measuring the font** (the rule
+ * `prose-measure-calibration.spec.ts` carries, for the same reason).
+ *
+ * Every width below is an advance in Pretendard Variable. If the face failed to load, the
+ * numbers describe whatever fallback the machine has and the failure would read as a layout
+ * defect in this dialog. `document.fonts.ready` is not enough: it resolves when loading has
+ * settled, including settling on failure, so the registered face's own status carries the
+ * verdict and `document.fonts.check` confirms the family can render.
+ */
+async function assertShippedFontIsRendering(page: Page) {
+  await page.evaluate(() => document.fonts.ready);
+  const state = await page.evaluate(() => ({
+    faces: [...document.fonts].map((face) => `${face.family}:${face.status}`),
+    checks: document.fonts.check('16px pretendard'),
+  }));
+  const detail = `registered faces = ${state.faces.join(', ') || '(none)'} · document.fonts.check('16px pretendard') = ${state.checks}`;
+  const notRendering = `the shipped font is not rendering on this runner, so the measure cannot be read here — ${detail}`;
+  expect(
+    state.faces.some((face) => face.replaceAll('"', '').toLowerCase() === 'pretendard:loaded'),
+    notRendering,
+  ).toBe(true);
+  expect(state.checks, notRendering).toBe(true);
+}
+
+/**
  * **One layout, one read.** Every rect comes out of a single `evaluate`, because two
  * round-trips are two layouts: the first Korean run reported a 1.6px offset on one row that
  * a font swap between the left and the right query had invented. `document.fonts.ready`
@@ -171,12 +231,22 @@ async function measure(page: Page, sections: readonly string[]) {
       const heading = root.querySelector(`[data-comparison-heading="${name}"]`);
       return heading ? heading.getBoundingClientRect().y : Number.NaN;
     };
+    /** The rendered `0` advance at the body size: which rasterizer produced these numbers. */
+    const zeroAdvance = (() => {
+      const probe = document.createElement('span');
+      probe.style.cssText = 'position:fixed;left:-99999px;top:0;white-space:pre;transition:none;letter-spacing:normal;font-size:14px';
+      probe.textContent = '0'.repeat(100);
+      document.body.append(probe);
+      const advance = probe.getBoundingClientRect().width / 100;
+      probe.remove();
+      return advance;
+    })();
     const leftBox = before.getBoundingClientRect(), rightBox = after.getBoundingClientRect();
     const delta = dialog.querySelector('[data-testid="answer-comparison-delta"]')!.getBoundingClientRect();
     const grid = dialog.querySelector('[data-testid="answer-comparison-scroll"]')!.getBoundingClientRect();
     return {
       rows: names.map((section) => ({ section, left: headingY(before, section), right: headingY(after, section) })),
-      columns: { left: Math.round(leftBox.width), right: Math.round(rightBox.width), gutter: Math.round(rightBox.x - (leftBox.x + leftBox.width)) },
+      columns: { left: Math.round(leftBox.width), right: Math.round(rightBox.width), gutter: Math.round(rightBox.x - (leftBox.x + leftBox.width)), zeroAdvance },
       chars: { left: charsPerLine(before), right: charsPerLine(after) },
       delta: { bottom: Math.round(delta.bottom), gridTop: Math.round(grid.y) },
       marks: {
@@ -193,6 +263,7 @@ for (const width of [1512, 1920]) {
   test(`the answer comparison puts every contract section on one row at ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await openComparison(page, 'en', { old: OLD_BODY, next: NEW_BODY });
+    await assertShippedFontIsRendering(page);
     const report = await measure(page, SECTIONS);
 
     // 1 — one row per section: both headings start on the same line.
@@ -204,10 +275,13 @@ for (const width of [1512, 1920]) {
 
     // 2 — one measure per column, equal columns, one gutter between them.
     expect(report.columns.left).toBe(report.columns.right);
-    expect(report.columns.left).toBeLessThanOrEqual(510);
-    expect(report.columns.gutter).toBe(40);
-    expect(report.chars.left).toBeLessThanOrEqual(82);
-    expect(report.chars.right).toBeLessThanOrEqual(82);
+    expect(
+      report.columns.left,
+      `a column runs ${report.columns.left}px against the ${PROSE_MEASURE_PX.toFixed(1)}px measure derived at ${DOC_BODY_FONT_PX}px — a gap of more than one rounded pixel per glyph is a wider column, not hinting (rendered "0" advance at ${DOC_BODY_FONT_PX}px: ${report.columns.zeroAdvance.toFixed(3)}px)`,
+    ).toBeLessThanOrEqual(MAX_COLUMN_PX);
+    expect(report.columns.gutter).toBe(DOC_COLUMN_GUTTER_PX);
+    expect(report.chars.left).toBeLessThanOrEqual(MAX_LATIN_CHARS_PER_LINE);
+    expect(report.chars.right).toBeLessThanOrEqual(MAX_LATIN_CHARS_PER_LINE);
 
     // 3 — the difference is above the two versions, not under one of them.
     expect(report.delta.bottom).toBeLessThanOrEqual(report.delta.gridTop);
@@ -229,13 +303,14 @@ for (const width of [1512, 1920]) {
 test('the comparison keeps its measure and its footer in Korean and at every width', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 900 });
   await openComparison(page, 'ko', { old: OLD_BODY_KO, next: NEW_BODY_KO });
+  await assertShippedFontIsRendering(page);
   const report = await measure(page, SECTIONS);
   for (const row of report.rows) {
     expect(Math.abs(row.left - row.right), `${row.section} heading y left vs right`).toBeLessThanOrEqual(1);
   }
   // Hangul at this measure: `--measure-prose` is calibrated to keep ~36 syllables per line.
-  expect(report.chars.left).toBeLessThanOrEqual(40);
-  expect(report.chars.right).toBeLessThanOrEqual(40);
+  expect(report.chars.left).toBeLessThanOrEqual(MAX_HANGUL_PER_LINE);
+  expect(report.chars.right).toBeLessThanOrEqual(MAX_HANGUL_PER_LINE);
 
   for (const width of [390, 768, 1024, 1512]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
