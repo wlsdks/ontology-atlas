@@ -15,6 +15,8 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { writeLibraryIndexSegment, type LibraryIndexSegment } from "@/shared/lib/appearance-preferences";
 
 import { isAdvisoryWikiCode, isWikiFolderCode } from "../../lib/merge-wiki-verdict";
+import { passageLabelText } from "../../lib/passage-label";
+import { useSourceSearch } from "../../lib/use-source-search";
 import { LibraryShelf } from "./LibraryShelf";
 import { StateBadge } from "./StateBadge";
 import { libraryWaitingLine } from "../../lib/stage-steps";
@@ -81,8 +83,14 @@ export interface LibrarySectionProps {
   model: LibraryUiModel;
   selectedSlug: string | null;
   onSelect: (slug: string) => void;
-  /** Opens a raw source: the browser hands the file over, the app reveals it in Finder. */
-  onOpenSource: (row: LibrarySourceRow) => void;
+  /**
+   * Opens a raw source in the reading pane.
+   *
+   * `anchor` arrives only from a search hit's caption, and means *open this file at this
+   * unit* — the same `{path, anchor}` a pressed citation sends, so one press lands on
+   * U1's passage section rather than at the top of the pane (slice U2).
+   */
+  onOpenSource: (row: LibrarySourceRow, anchor?: string) => void;
   /**
    * The source the reader is showing, if any.
    *
@@ -91,6 +99,22 @@ export interface LibrarySectionProps {
    * showing that very file.
    */
   selectedSourcePath: string | null;
+  /**
+   * The folder walk's own handles, so a search can read the words inside a source.
+   *
+   * The column asks for these rather than receiving finished results because the query
+   * lives here: the field, its state and the rows it filters are one unit, and lifting
+   * the query to `LibraryPage` to hand back matches would put the input's state a pane
+   * away from the input.
+   */
+  sourceHandles: Map<string, FileSystemFileHandle>;
+  /**
+   * The open folder's session identity, which keys the units a search keeps.
+   *
+   * Two browser folders can carry the same name, so the scope — not the path — is what
+   * stops one folder's text from answering another folder's search.
+   */
+  vaultScope: string;
   /** The one-click "add files" door. */
   onAddFiles: () => void;
   /** Proposes candidates from the open folder and any bound project root. */
@@ -230,6 +254,8 @@ export function LibrarySection({
   onSelect,
   onOpenSource,
   selectedSourcePath,
+  sourceHandles,
+  vaultScope,
   onAddFiles,
   onFindDocuments,
   onImportFromService,
@@ -252,15 +278,36 @@ export function LibrarySection({
    */
   /*
    * One search over both lists (owner direction 2026-09-07; the LLM Wiki pattern reaches
-   * for a search tool once the folder grows). A source matches on its path, a page on its
-   * title or on the text the Library already holds for the contract check, so nothing is
-   * read twice. The headers keep the folder's totals; the line under the field says what
-   * matched.
+   * for a search tool once the folder grows). The headers keep the folder's totals; the
+   * line under the field says what matched.
+   *
+   * ⚠️ **A source used to match on its path and nothing else** — the whole of slice U2's
+   * first decision. Measured 2026-09-11 on a six-file folder with no agent: "T+2" found
+   * nothing, though `sources/settlement-policy.md` says it on line 11 and
+   * `sources/fee-schedule.csv` says it in three records. The wiki half had always matched
+   * page *text*, because the Library already holds those bodies for the contract check;
+   * the sources half had no text to hold, and now reads it — on the keystroke, per file,
+   * kept for the session only. `use-source-search.ts` owns that read and every
+   * local-first clause it has to satisfy.
    */
   const [query, setQuery] = useState("");
   const needle = query.trim().toLowerCase();
   const matches = (text: string | null | undefined) => (text ?? "").toLowerCase().includes(needle);
-  const visibleSources = needle ? model.sources.filter((row) => matches(row.path)) : model.sources;
+  const search = useSourceSearch({
+    sources: model.sources,
+    sourceHandles,
+    vaultScope,
+    needle,
+    enabled: true,
+  });
+  /*
+   * Path **or** text. The path match survives because it is the one that still works
+   * while the file is being read, and because a person who types part of a filename
+   * means the filename.
+   */
+  const visibleSources = needle
+    ? model.sources.filter((row) => matches(row.path) || search.hits.has(row.path))
+    : model.sources;
   const visiblePages = needle
     ? model.wikiPages.filter((page) => matches(page.title) || matches(model.pageTexts.get(page.slug)))
     : model.wikiPages;
@@ -295,8 +342,17 @@ export function LibrarySection({
 
   /*
    * One field, both halves (2026-09-07): it filters whichever list the switch shows, on
-   * path, title and page text. It is the wiki pattern's "search at scale" in its smallest
-   * form; an index file or a search engine is what a folder of hundreds would add.
+   * path, title, page text and — since slice U2 — source text.
+   *
+   * **The count is provisional while files are still arriving, and says so.** A folder
+   * mid-read would otherwise report "0 sources matched" for files it has not opened yet,
+   * which is the difference between *not there* and *not read yet* printed as if it were
+   * the same fact. The reading line replaces the count rather than sitting beside it,
+   * because two numbers under one field is the reader counting instead of reading.
+   *
+   * **The cap is named where it binds.** 200 files / 20 MB, decided from the listing's
+   * own sizes before any byte is read; past it the line says how many were read rather
+   * than letting a silent truncation read as "everything".
    */
   const searchField =
     model.sources.length + model.wikiPages.length > 0 ? (
@@ -311,8 +367,22 @@ export function LibrarySection({
           onChange={(event) => setQuery(event.target.value)}
         />
         {needle ? (
-          <p data-testid="library-search-matches" className="text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
-            {t("search.matches", { sources: visibleSources.length, pages: visiblePages.length })}
+          <p
+            data-testid="library-search-matches"
+            data-phase={search.phase}
+            /* Polite, not assertive: the count settling as files land is progress a
+               screen reader should hear once it has, not on every published file. */
+            aria-live="polite"
+            className="text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+          >
+            {search.phase === "reading"
+              ? t("search.reading", { read: search.readCount, total: search.plannedCount })
+              : t("search.matches", {
+                  sources: visibleSources.length,
+                  passages: search.passageCount,
+                  pages: visiblePages.length,
+                })}
+            {search.capped ? ` · ${t("search.capped", { count: search.plannedCount })}` : null}
           </p>
         ) : null}
       </div>
@@ -376,6 +446,7 @@ export function LibrarySection({
               {visibleSources.map((row) => {
                 const active = row.path === selectedSourcePath;
                 const stateLabel = t(`sources.state.${row.state}.label`);
+                const hit = needle ? search.hits.get(row.path) : undefined;
                 return (
                   <li key={row.path}>
                     <RowButton
@@ -445,6 +516,45 @@ export function LibrarySection({
                         </StateBadge>
                       )}
                     </RowButton>
+                    {hit ? (
+                      /*
+                       * **The passage the search found, under the row that holds it.**
+                       *
+                       * It is a press of its own rather than part of the row above,
+                       * because the two go to different places: the row opens the file,
+                       * this opens the file *at this unit* — U1's passage section, reached
+                       * through the same `{path, anchor}` a citation press sends. Two
+                       * destinations inside one button would be one of them lost.
+                       *
+                       * `text-label`, not `text-caption` (chief's build note, and the
+                       * 2026-08-09 finding `.claude/rules/design.md` records): these are
+                       * the document's own words and a person has to read them, which
+                       * 9.5px is documented as being the wrong size for. The row's name
+                       * stays the row's winner — this is one ink step back and indented
+                       * under it.
+                       */
+                      <button
+                        type="button"
+                        data-testid={`library-source-hit-${row.path}`}
+                        onClick={() => onOpenSource(row, hit.anchor)}
+                        title={hit.text}
+                        className={controlClass({
+                          shape: "row",
+                          size: "xs",
+                          tone: "secondary",
+                          hoverInk: "strong",
+                          hoverSurface: "lift",
+                          className: "w-full pl-7 text-label",
+                        })}
+                      >
+                        <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                          {passageLabelText(hit.label, hit.anchor, t)}
+                        </span>
+                        {/* One line, clipped. The full unit is the `title` and the pane;
+                            a 280px column cannot hold a hard-wrapped line of prose. */}
+                        <span className="min-w-0 flex-1 truncate text-left">{hit.text}</span>
+                      </button>
+                    ) : null}
                   </li>
                 );
               })}

@@ -61,6 +61,8 @@ function Harness({
       selectedSourcePath={null}
       onSelect={onSelect}
       onOpenSource={() => {}}
+      sourceHandles={new Map()}
+      vaultScope="test"
       onAddFiles={() => {}}
       onFindDocuments={() => {}}
       onImportFromService={() => {}}

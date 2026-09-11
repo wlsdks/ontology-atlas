@@ -34,6 +34,8 @@ function Harness({ onNewPage = null, report = null }: { onNewPage?: ((title: str
       selectedSourcePath={null}
       onSelect={() => {}}
       onOpenSource={() => {}}
+      sourceHandles={new Map()}
+      vaultScope="test"
       onAddFiles={() => {}}
       onFindDocuments={() => {}}
       onImportFromService={() => {}}
@@ -59,6 +61,8 @@ function HarnessWith({ model }: { model: LibraryUiModel }) {
       selectedSourcePath={null}
       onSelect={() => {}}
       onOpenSource={() => {}}
+      sourceHandles={new Map()}
+      vaultScope="test"
       onAddFiles={() => {}}
       onFindDocuments={() => {}}
       onImportFromService={() => {}}
@@ -161,6 +165,8 @@ describe("a search whose matches sit on the other half of the switch", () => {
         selectedSourcePath={null}
         onSelect={() => {}}
         onOpenSource={() => {}}
+      sourceHandles={new Map()}
+      vaultScope="test"
         onAddFiles={() => {}}
         onFindDocuments={() => {}}
         onImportFromService={() => {}}
