@@ -7,8 +7,6 @@ import { Link } from "@/i18n/navigation";
 import { BookText, Check, CloudDownload, FilePlus2, FileText, PencilLine, Search, Sparkles, Stethoscope } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
-import { cn } from "@/shared/lib/cn";
-import { badgeClass } from "@/shared/ui/badge-class";
 import { writerLabel } from "../../lib/writer-label";
 import { controlClass } from "@/shared/ui/control-class";
 import { Chip, RowButton, Tooltip } from "@/shared/ui";
@@ -18,6 +16,7 @@ import { writeLibraryIndexSegment, type LibraryIndexSegment } from "@/shared/lib
 
 import { isAdvisoryWikiCode, isWikiFolderCode } from "../../lib/merge-wiki-verdict";
 import { LibraryShelf } from "./LibraryShelf";
+import { StateBadge } from "./StateBadge";
 import { libraryWaitingLine } from "../../lib/stage-steps";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 
@@ -209,37 +208,6 @@ function OtherHalf({
 function SectionActions({ children }: { children?: ReactNode }) {
   if (!children) return null;
   return <div className="flex flex-wrap items-center gap-1 px-3 pb-2">{children}</div>;
-}
-
-/**
- * One state word. Geometry comes from the badge primitive; the colour is this site's own
- * verdict, which is the split `badge-class.ts` documents in its own header.
- */
-function StateBadge({
-  tone,
-  children,
-  testId,
-}: {
-  tone: "neutral" | "warning";
-  children: ReactNode;
-  testId?: string;
-}) {
-  return (
-    <span
-      data-testid={testId}
-      className={badgeClass({
-        shape: "micro",
-        className: cn(
-          "flex-none border",
-          tone === "warning"
-            ? "border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]"
-            : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]",
-        ),
-      })}
-    >
-      {children}
-    </span>
-  );
 }
 
 /** The log's ISO stamp as a person reads it; the raw stamp when it does not parse. */
@@ -809,18 +777,29 @@ export function LibrarySection({
           ) : null}
         </>
       ) : (
-        <p
-          data-testid="library-wiki-empty"
-          className="px-3 pb-1 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-        >
-          {needle && visibleSources.length > 0 ? (
-            <OtherHalf count={visibleSources.length} segment="sources" t={t} />
-          ) : hasWikiTemplate ? (
-            t("wiki.empty")
-          ) : (
-            t("wiki.emptyNoTemplate")
-          )}
-        </p>
+        <>
+          <p
+            data-testid="library-wiki-empty"
+            className="px-3 pb-1 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+          >
+            {needle && visibleSources.length > 0 ? (
+              <OtherHalf count={visibleSources.length} segment="sources" t={t} />
+            ) : hasWikiTemplate ? (
+              t("wiki.empty")
+            ) : (
+              t("wiki.emptyNoTemplate")
+            )}
+          </p>
+          {/*
+            **A hand-written page keeps its door on an empty wiki** (`docs/DECISIONS.md`,
+            2026-09-11). The row is the list's own last row, so with no list it was drawn
+            nowhere — and an empty wiki is precisely the folder where writing the first
+            page by hand is the available move. `buildHumanPage` carries the shape itself,
+            so the door works whether or not `wiki/_template.md` is there yet; the
+            paragraph above still says which of those two is true.
+          */}
+          {newPageControl ? <div className="px-2 pb-1">{newPageControl}</div> : null}
+        </>
       )}
 
     </section>

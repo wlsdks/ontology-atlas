@@ -44,12 +44,19 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
         {older ? <p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('answers.older')}</p> : null}
         {historyState !== 'none' ? <p data-testid="answer-history-state" className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t(`answers.history.${historyState}`)}</p> : null}
         <div className="mt-3 flex flex-wrap gap-2">
-          {onRefresh ? <Button ref={refreshButtonRef} className="atlas-touch-floor max-w-full" size="sm" variant="outline" disabled={working} onClick={onRefresh} data-testid="answer-refresh-start">{t(working ? `answers.phase.${phase}` : 'answers.refresh')}</Button> : null}
+          {/*
+            **Drawn without an agent, disabled, beside its reason** (`docs/DECISIONS.md`,
+            2026-09-11, "The Library keeps its spine, and computes the structural check
+            itself"). It used to vanish, leaving `answers.refreshUnavailable` explaining
+            the absence of a control a reader had never seen — a feature the product has
+            is always on screen, and availability is a state with its reason.
+          */}
+          <Button ref={refreshButtonRef} className="atlas-touch-floor max-w-full" size="sm" variant="outline" disabled={working || onRefresh === null} aria-describedby={onRefresh ? undefined : 'answer-refresh-unavailable'} onClick={onRefresh ?? undefined} data-testid="answer-refresh-start">{t(working ? `answers.phase.${phase}` : 'answers.refresh')}</Button>
           {onPrevious ? <Button className="atlas-touch-floor max-w-full" size="sm" variant="ghost" onClick={onPrevious}>{t('answers.previous')}</Button> : null}
           <Button className="atlas-touch-floor max-w-full" size="sm" variant="ghost" onClick={onHome}>{t('answers.back')}</Button>
         </div>
         {onRefresh ? <p className="mt-2 text-caption leading-body text-[color:var(--color-text-secondary)]">{t('answers.refreshHint')}</p> : null}
-        {!onRefresh ? <p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('answers.refreshUnavailable')}</p> : null}
+        {!onRefresh ? <p id="answer-refresh-unavailable" className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('answers.refreshUnavailable')}</p> : null}
         {error ? <p role="alert" className="mt-3 text-body leading-body text-[color:var(--color-text-primary)]">{error}</p> : null}
       </div>
     </section>

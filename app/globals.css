@@ -3124,6 +3124,20 @@
        swallowed the object whole (2026-09-09, 768×1024). */
     --library-empty-max: 1120px;
     --library-empty-object-max: 440px;
+    /* **The pane height below which the Library's spine folds its finished steps.**
+       The landing stacks three step cards over the saved questions, and below `lg` the
+       reader is half of one column: measured 2026-09-11 on the seeded folder, the first
+       question row sat 272px below the fold at 390×844 (pane 361px), 270 at 1023×768 and
+       34 at 1024×640, while 1040×720 — the installed app's own minimum — cleared it by
+       22px in Korean. So the fold is a **pane** height rather than a window height, and a
+       `done` step, whose caption and action row are a record of work already finished,
+       collapses to its head line inside `@container library-landing`
+       (design-responsive C1, council 2026-09-11).
+       ⚠️ A container query condition cannot read `var()` — CSS forbids substitution in
+       `@media`/`@container` conditions — so the rule near `.library-spine-scope` carries
+       the same number as a literal and `tests/e2e/library-spine.spec.ts` reads this token
+       to prove the two still agree. */
+    --library-spine-collapse-height: 640px;
     /* One block of a vault-history column. Small enough that a hundred-node folder is a
        stack a person can take in at a glance rather than a wall, large enough that a
        single block still reads as a countable thing rather than as a rule (2026-09-09). */
@@ -4569,6 +4583,43 @@ body *::-webkit-scrollbar {
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
+  }
+}
+
+/*
+ * **The Library's spine folds its finished steps when its own pane is short.**
+ *
+ * The landing draws three step cards and the saved questions inside the third, so the
+ * one target a returning person is looking for — the row of the answer they saved — is
+ * the last thing in the stack. Measured on the branch export (design-responsive,
+ * 2026-09-11): at 390×844 that row stood 272px below the pane's fold, 270 at 1023×768,
+ * 108 at 744×1133 and 34 at 1024×640, because below `lg` the reader is the upper half of
+ * one column rather than a full-height pane.
+ *
+ * The question is therefore **how tall this pane is**, not how wide the window is, which
+ * is what makes it a container query: the same window is fine at `lg` and short below it.
+ * A `done` step's caption and action row are a record of work already finished, so they
+ * are what folds; the number, the name and the state word stay, at the 44px
+ * `--touch-target-min` head row, and the step keeps its border and its order.
+ *
+ * ⚠️ **The 640 is written twice on purpose, and a spec holds the two together.** CSS does
+ * not substitute `var()` inside an `@container` condition, so the authority stays
+ * `--library-spine-collapse-height` in the token block above and
+ * `tests/e2e/library-spine.spec.ts` reads that token to drive the fold boundary it
+ * measures — a drift between the two turns that spec red rather than shipping quietly.
+ */
+.library-spine-scope {
+  container-type: size;
+  container-name: library-landing;
+}
+
+@container library-landing (max-height: 640px) {
+  .library-spine-step[data-step-state="done"] {
+    min-height: var(--touch-target-min);
+    justify-content: center;
+  }
+  .library-spine-step[data-step-state="done"] .library-spine-fold-away {
+    display: none;
   }
 }
 

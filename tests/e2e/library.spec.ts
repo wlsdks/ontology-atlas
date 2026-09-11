@@ -559,6 +559,19 @@ test.describe("the Library pane", () => {
 
     const stageBox = (await stage.boundingBox())!;
     expect(stageBox.width).toBeLessThanOrEqual(640);
+    /*
+     * ⚠️ **The anatomy is measured in a pane tall enough to draw all of it** (guardian,
+     * council 2026-09-11). Every step still has the same shell — head line, one caption,
+     * one action row — and that is what makes the heights match. But below
+     * `--library-spine-collapse-height` of **pane** height a step that is `done` folds to
+     * its head row on purpose, so that the saved questions inside step three reach a short
+     * pane at all: measured on the branch export, the question row stood 5px past the fold
+     * at 1024×640 without the fold and 55px inside it with. That geometry is
+     * `library-spine.spec.ts`'s to pin, both folded and open; this claim is about the
+     * shell, so it is read at a height where nothing folds. A regression in the shell
+     * itself still fails here at any height.
+     */
+    await page.setViewportSize({ width: 1280, height: 900 });
     const cores: number[] = [];
     for (const step of ["gather", "compile", "read"]) {
       const row = stage.getByTestId(`library-stage-${step}`);

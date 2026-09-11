@@ -6636,6 +6636,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-11 — The Library keeps its spine, and computes the structural check itself",
+      "slug": "2026-09-11-the-library-keeps-its-spine-and-computes-the-structural-check-itself"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-11 — Atlas enters the MCP ecosystem as a release bundle; the image is prepared, not published",
       "slug": "2026-09-11-atlas-enters-the-mcp-ecosystem-as-a-release-bundle-the-image-is-prepared-not-published"
     },
@@ -10331,6 +10336,11 @@
       "depth": 2,
       "text": "The Library's ground — an object, and a field (2026-09-09)",
       "slug": "the-librarys-ground-an-object-and-a-field-2026-09-09"
+    },
+    {
+      "depth": 3,
+      "text": "The spine folds by the pane's height (2026-09-11)",
+      "slug": "the-spine-folds-by-the-panes-height-2026-09-11"
     },
     {
       "depth": 2,
