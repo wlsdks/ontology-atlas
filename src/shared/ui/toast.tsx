@@ -1,6 +1,15 @@
 'use client';
 
-import { type CSSProperties, type ReactNode } from 'react';
+import {
+  type CSSProperties,
+  type ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { CircleAlert, CircleCheck, Info, X } from 'lucide-react';
 import { toast as sonnerToast, Toaster } from 'sonner';
 
@@ -39,17 +48,49 @@ interface ToastApi {
 }
 
 /**
+ * Where a toast stands — **the surface's own answer, with one default.**
+ *
+ * `top-center` is the default and the map's answer (owner, 2026-09-06: *"the right has
+ * a panel, so nobody looks there; under the icons at the top centre is better"*, and
+ * 2026-09-07, centred on the viewport rather than on the map area). A surface whose
+ * chrome makes that the wrong corner claims a different one with `useToastAnchor`, the
+ * same way the map and the Library already plant their own offsets.
+ */
+export type ToastAnchor = 'top-center' | 'bottom-right';
+
+const ToastAnchorContext = createContext<((anchor: ToastAnchor | null) => void) | null>(null);
+
+/**
+ * **Claim a corner for as long as this surface is mounted.**
+ *
+ * `null` keeps the default. Rendered outside a `ToastProvider` — a project that took
+ * only the design system — it does nothing, which is the same promise `useToast` makes.
+ */
+export function useToastAnchor(anchor: ToastAnchor | null): void {
+  const claim = useContext(ToastAnchorContext);
+  useEffect(() => {
+    if (claim === null || anchor === null) return undefined;
+    claim(anchor);
+    return () => claim(null);
+  }, [anchor, claim]);
+}
+
+/**
  * The app's one notification popup, on sonner. No screen builds its own — they
  * all go through `useToast().show()`.
  *
- * **Top centre, not bottom right** (owner, 2026-09-06: *"the right has a panel, so
- * nobody looks there; under the icons at the top centre is better"*). The map's
- * toolbar is centred and the agent dock stands on the right, so a corner toast was
- * either under the dock or behind the person's attention. The toaster sits under
- * the top toolbar (`--app-toast-top-offset`, planted by the map; 16px elsewhere) and
- * is centred on the viewport (owner, 2026-09-07; the rule in `app/globals.css`). Below
- * 1480px of window it crosses the edge of an open 520px dock; measured 26px of painted
- * panel at 1400, none at the app's opening 1512, and accepted as a transient drawn above.
+ * **Top centre by default, and the corner is the surface's to name** (see
+ * `ToastAnchor` above). The toaster sits under the top toolbar
+ * (`--app-toast-top-offset`, planted by the map; 16px elsewhere) and is centred on the
+ * viewport (owner, 2026-09-07; the rule in `app/globals.css`). Below 1480px of window it
+ * crosses the edge of an open 520px dock; measured 26px of painted panel at 1400, none
+ * at the app's opening 1512, and accepted as a transient drawn above.
+ *
+ * **Every edge is a variable** (2026-09-12). A top-anchored toaster only ever needed the
+ * top gap; a surface that anchors to a pane's bottom-right corner needs the other two,
+ * because the wall on that side is a dock's edge or a tab bar's top rather than the
+ * window's. The defaults are sonner's own 16px, so a surface that plants nothing is
+ * unchanged.
  *
  * **Unstyled on purpose.** sonner's stock box (rounded pill, its own close chip at
  * the top-left corner, grey icon) read as a foreign widget beside our chrome. The
@@ -81,28 +122,44 @@ export function ToastProvider({
   children: ReactNode;
   notificationsLabel?: string;
 }) {
+  const [anchor, setAnchor] = useState<ToastAnchor>('top-center');
+  const claim = useCallback((next: ToastAnchor | null) => {
+    setAnchor(next ?? 'top-center');
+  }, []);
+  /*
+   * **The narrow band reads its own variables, and they are not the same numbers.**
+   * sonner stops reading `offset` at 600px of viewport and switches to `mobileOffset`; a
+   * surface that stacks chrome against one edge of its pane therefore has two clearances
+   * to state, because below that width its own rows stack differently. Left unplanted
+   * both are sonner's own 16px.
+   */
+  const offset = useMemo(
+    () => ({
+      top: 'var(--app-toast-top-offset, 16px)',
+      right: 'var(--app-toast-right-offset, 16px)',
+      bottom: 'var(--app-toast-bottom-offset, 16px)',
+      left: 16,
+    }),
+    [],
+  );
+  const mobileOffset = useMemo(
+    () => ({
+      top: 'var(--app-toast-mobile-top-offset, 16px)',
+      right: 'var(--app-toast-mobile-right-offset, 16px)',
+      bottom: 'var(--app-toast-mobile-bottom-offset, 16px)',
+      left: 16,
+    }),
+    [],
+  );
   return (
-    <>
+    <ToastAnchorContext.Provider value={claim}>
       {children}
       <Toaster
         theme="dark"
         closeButton
-        position="top-center"
-        offset={{ top: 'var(--app-toast-top-offset, 16px)', right: 16, bottom: 16, left: 16 }}
-        /*
-         * **The narrow band reads its own variable, and it is not the same number.**
-         * sonner stops reading `offset` at 600px of viewport and switches to
-         * `mobileOffset`; a surface that stacks chrome at the top of its pane therefore
-         * has two clearances to state, because below that width its own rows stack
-         * differently (the Library's work lane keeps two). Left unplanted this is
-         * sonner's own 16px default, exactly as `offset` is.
-         */
-        mobileOffset={{
-          top: 'var(--app-toast-mobile-top-offset, 16px)',
-          right: 16,
-          bottom: 16,
-          left: 16,
-        }}
+        position={anchor}
+        offset={offset}
+        mobileOffset={mobileOffset}
         gap={8}
         // The box width is ours, not sonner's 356px default: wide enough for one
         // Korean sentence plus an action without wrapping at 1512, and never wider
@@ -158,7 +215,7 @@ export function ToastProvider({
           },
         }}
       />
-    </>
+    </ToastAnchorContext.Provider>
   );
 }
 

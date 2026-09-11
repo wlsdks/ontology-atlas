@@ -54,6 +54,33 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — The Library's toast stands in the corner of the pane it is about
+
+**Why**: the owner, on the installed app's Library: *"the toast at the top — its position is odd too, right? (and of course a toast should adjust its position adaptively)"*. Measured at 1512×901: a top-centred box on this surface needed a 124px push down (173 below 601px) only to clear the pane's own chrome, and at the end of that push it still reported the **right** pane's work while resting above the **left** column's title.
+**Prior**: 2026-09-06 "toasts stand under the top toolbar" and 2026-09-07 "Toasts centre on the viewport, not on the map area" stand as the default and as the map's answer; their "on every screen" clause is overturned for one surface.
+**Decision**: the corner becomes the surface's to claim — `useToastAnchor`, default `top-center`, so nothing else moves. The Library claims `bottom-right` and publishes the two walls that are not the window's: the conversation's left edge (the dock's width, from `xl` up) and the bottom tab bar's top (below `lg`), both as width-gated reserves in `app/globals.css`. While a `size="viewport"` dialog stands, both gutters grow to its inset plus its padding, so the box lands inside the dialog rather than across its edge; a dialog that *asks* still clears toasts instead. Measured after: 16px from both pane edges at 1512×901 and 1040×720, 16px short of an open 520px dock, 32px inside the dialog's border box.
+**Dissent**: one placement app-wide is one thing for a person to learn, which is what the 2026-09-07 record chose the viewport's centre for; it loses because that record's own falsifier — "a toast read as in the wrong place on a screen with no dock" — is the observation that arrived, and a notification about a pane is easiest to trust in that pane.
+**Falsifier**: a person who misses a toast because they were not looking at the pane that raised it; or a corner-anchored box standing over the control that raised it.
+**Owner**: jinan
+
+## 2026-09-12 (2) — The provider disclosure is an on-demand fact about the place, not a paragraph at the press
+
+**Why**: the owner, on the same screen: *"text like 'the coding agent sends requests directly to its provider and Atlas does not record that traffic…' — shouldn't that be handled as a tooltip?"* Measured on the owner's folder, one journey printed that paragraph in up to three places — the shelf's step two, the index under its door group, an open source's pane beside Compile — four wrapped lines of 11px each time, which is how a reader learns to skip a disclosure.
+**Prior**: 2026-09-06 "the disclosure lives where Compile can be pressed" stands for the connect-by-address runner's sentence and is narrowed: its agent-route clause is overturned. 2026-09-07 "the Library index's description is a glyph" stands and is what this reuses.
+**Decision**: the agent-route sentence has one home — the second paragraph of the index head's existing ⓘ panel, opened by hover or focus and closed by Escape. `libraryTransferSentence` keeps the local runner's sentence under the press, because that is a transfer Atlas performs and `.claude/rules/local-first.md` asks for it there; the agent-route sentence says that Atlas is **not** in the path, which is a standing fact about the place. Measured after: zero inline prints on the agent route, one in the panel.
+**Dissent**: a disclosure a person must ask for is a disclosure most people never read, and a paragraph at the press is the only shape that cannot be missed; it loses because the rule it was serving is about an Atlas transfer, and three copies of a sentence about *no* transfer is not disclosure but noise.
+**Falsifier**: a person who believes Atlas logs their coding agent's provider traffic; or an Atlas-performed transfer reachable without a sentence at its press.
+**Owner**: jinan
+
+## 2026-09-12 (3) — The Library index's head is one row, and the fold is sized to the title
+
+**Why**: the owner, same screen: *"the fold icon's size and position — why is it like this? It should be centred the same as the text beside it, and bigger. And a label like 'in this folder' is not even needed; it is odd that it is there at all."* Measured at 1512: an `IN THIS FOLDER` eyebrow in 11px caps on its own 14px row, naming the scope of a column already showing it, with the fold on that row — 9.0px of ink whose centre stood 29.5px above the title's, and a right edge 4px past the column's box edge.
+**Prior**: 2026-09-07 "The Library index is a switch between two lists, and its description is a glyph" stands and is the frame; this removes the eyebrow that record left above the title and moves the fold off it.
+**Decision**: the head is one row — title, the ⓘ glyph, then the fold at the column's box edge (331 at 1512). Both glyphs take `ICON_SIZE.lg`, whose 12.0px of ink is the closest step on the ramp to the title's own 13.1px. The panel moves to `side="bottom" align="start"` and becomes `pointer-events-none`: at a head 28px from the top of the window the right side was collision-pushed to y 0 and lay across the whole row, and Radix keeps content mounted through its exit, so the panel answered a press aimed at the fold. `library.eyebrow` stays for `LibraryStartStage`, where naming the scope is the card's only job.
+**Dissent**: `ICON_SIZE.md` (14) is the ramp's documented pair for a `text-body-lg` title and matches its cap height exactly; it loses because 10.5px of ink is a 1.5px change to a glyph the owner had already read as too small.
+**Falsifier**: a person who cannot find the fold, or reads the head as two controls rather than one row; or a press at the fold that the panel takes.
+**Owner**: jinan
+
 ## 2026-09-12 — The dogfood repository outgrew the cap its own product ships
 
 **Why**: `main` is red in the `mcp` lane. `mcp/src/integration.test.mjs` connects this checkout as a source root and asserts `verified_current`; it reports `review_required` with `topGap: source_inventory_truncated`. No declared path is broken — the repository crossed its own bound, 3995 files at #1557 and 4007 at #1558, +96 over 25 commits. #1558 touched no `mcp/` path, so the lane that would have caught it was never selected on the PR that broke it.

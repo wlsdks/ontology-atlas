@@ -32,7 +32,7 @@ export { controlClass } from './control-class';
  */
 export { LiveAnnouncer } from './live-announcer';
 export { InfoHint } from './info-hint';
-export { ToastProvider, useToast } from './toast';
+export { ToastProvider, useToast, useToastAnchor, type ToastAnchor } from './toast';
 export { EmptyState } from './empty-state';
 export { HiddenCountLine } from './hidden-count-line';
 export { EvidenceOnlyBadge } from './evidence-only-badge';

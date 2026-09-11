@@ -60,6 +60,12 @@ import { AgentDoor } from "./AgentDoor";
  * reason and the local runner's card are all **inside step two**, under the Compile
  * button — the one row whose height is allowed to differ, because what it carries is a
  * state of the folder rather than a longer paragraph.
+ *
+ * ⚠️ **On the agent route that slot is now empty** (owner, 2026-09-12). The sentence about
+ * traffic Atlas is not in the path of is not a transfer of Atlas's own; it is a standing
+ * correction about the place, so it is said once in the index head's glyph and not as a
+ * paragraph on this card (`libraryProviderDisclosure`). What still lands here is the
+ * connect-by-address runner's own sentence, which describes a transfer Atlas performs.
  */
 
 export interface LibraryStageProps {
@@ -307,7 +313,8 @@ export function LibraryStage({
    * **What leaves the computer, said once**, and said where the press is.
    *
    * The index carries this sentence whenever this panel is closed (`LibraryPage`), so
-   * exactly one surface prints it and neither can name a different brain.
+   * exactly one surface prints it and neither can name a different brain. `null` on the
+   * agent route since 2026-09-12: see the block above the component.
    */
   const transfer = libraryTransferSentence({ route, localModel }, t);
 

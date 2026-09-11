@@ -790,6 +790,65 @@ test.describe("the Library pane", () => {
     await info.hover();
     const tip = page.getByRole("tooltip");
     await expect(tip).toContainText("kept byte for byte");
+
+    /*
+     * ⚠️ **The head is one row, and the fold stands on the title's own line** (owner,
+     * 2026-09-12: *"the fold icon's size and position — why is it like this? It should be
+     * centred the same as the text beside it, and bigger. And a label like 'in this
+     * folder' is not even needed"*).
+     *
+     * Measured at 1512 before the change: an `IN THIS FOLDER` eyebrow on its own 14px row,
+     * with the fold sitting on that row — 9px of ink whose centre was **29.5px above** the
+     * title's, and a right edge 4px past the column's box edge. All three are geometry, so
+     * all three are measured here rather than trusted to a class name.
+     *
+     * The ink ratio is the part that would rot quietly: `ICON_SIZE.sm` is still what most
+     * of this column's glyphs take, and a copy-paste back to it would leave every other
+     * assertion green. The bound is the title's own ink height, which is what the glyph is
+     * being sized to.
+     */
+    const headGeometry = await page.evaluate(() => {
+      const box = (el: Element | null) => {
+        if (el === null) return null;
+        const r = el.getBoundingClientRect();
+        return { y: r.y, bottom: r.bottom, right: r.right, cy: r.y + r.height / 2, h: r.height };
+      };
+      const header = document.querySelector('[data-testid="library-header"]')!;
+      const title = header.querySelector("h1")!;
+      const fold = document.querySelector('[data-testid="library-index-collapse"]')!;
+      const svg = fold.querySelector("svg")!;
+      const style = getComputedStyle(title);
+      const metrics = document
+        .createElement("canvas")
+        .getContext("2d")!;
+      metrics.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      const measured = metrics.measureText(title.textContent ?? "");
+      const viewBox = (svg.getAttribute("viewBox") ?? "0 0 24 24").split(/\s+/).map(Number);
+      const bbox = (svg as SVGGraphicsElement).getBBox();
+      return {
+        header: box(header),
+        title: box(title),
+        fold: box(fold),
+        eyebrowRows: header.querySelectorAll("p").length,
+        titleInk: measured.actualBoundingBoxAscent + measured.actualBoundingBoxDescent,
+        glyphInk: (bbox.height * svg.getBoundingClientRect().width) / (viewBox[2] || 24),
+      };
+    });
+    // Nothing above the title: the head's box starts where the title's does.
+    expect(headGeometry.eyebrowRows, "no eyebrow paragraph in the head").toBe(0);
+    expect(Math.abs(headGeometry.header!.y - headGeometry.title!.y)).toBeLessThanOrEqual(0.5);
+    expect(
+      Math.abs(headGeometry.fold!.cy - headGeometry.title!.cy),
+      "the fold is centred on the title's row",
+    ).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(headGeometry.fold!.right - headGeometry.header!.right),
+      "the fold stops at the column's box edge",
+    ).toBeLessThanOrEqual(0.5);
+    const inkRatio = headGeometry.glyphInk / headGeometry.titleInk;
+    expect(inkRatio, `glyph ink ${headGeometry.glyphInk} vs title ink ${headGeometry.titleInk}`)
+      .toBeGreaterThan(0.85);
+    expect(inkRatio).toBeLessThan(1.15);
     /*
      * ⚠️ **And it yields the moment the pointer moves, including onto the panel itself.**
      * Radix's default keeps a tooltip open while the pointer is over its content, and that
@@ -961,5 +1020,96 @@ for (const viewport of NARROW_VIEWPORTS) {
     await expect(landing).toBeVisible();
     await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
     await expect(page.getByTestId("library-index")).toBeVisible();
+  });
+}
+
+/**
+ * **A toast stands in the corner of the pane it is about** (owner, 2026-09-12: *"the
+ * toast at the top — its position is odd too, right? (and of course a toast should
+ * adjust its position adaptively)"*).
+ *
+ * The two constants this replaced were the measurement of the problem rather than a cure
+ * for it: a top-centred box on this surface had to be pushed 124px down (601px and up)
+ * and 173px down (below it) just to miss the pane's own chrome, and at the end of that
+ * push it was still a notification about the **right** pane's work resting above the
+ * **left** column's title. `docs/DECISIONS.md`, 2026-09-12.
+ *
+ * Three things are measured, at two window sizes, because each has its own way of going
+ * wrong: the corner (a plain `position` change), the pane (a box standing over the index
+ * instead of the reader), and a full-surface dialog (a dismissible aside laid across a
+ * surface a person is reading). The conversation dock's own wall is measured by
+ * `library-compile-dock.spec.ts`, which is where a dock can be opened.
+ */
+for (const viewport of [
+  { label: "1512x901", width: 1512, height: 901 },
+  { label: "1040x720", width: 1040, height: 720 },
+]) {
+  test(`a toast stands in the reader pane's own corner at ${viewport.label}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await openLibrary(page, NARROW_VAULT);
+
+    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-new-page").click();
+    await page.getByTestId("library-new-page-title").fill("Toast corner probe");
+    await page.getByTestId("library-new-page-make").click();
+
+    const toast = page.locator("[data-sonner-toast]").first();
+    await expect(toast).toBeVisible({ timeout: 20_000 });
+    /*
+     * ⚠️ **Poll, do not read once.** The box rises into place (`app-toast`, the repository's
+     * own ramp over sonner's 400ms `ease`), so the first `boundingBox()` after it becomes
+     * visible is a frame of that entrance: measured 41px below the window's floor at 1512
+     * and 44 at 1040. What this test is about is where the box comes to **rest**.
+     */
+    const corner = async () => {
+      const box = (await toast.boundingBox())!;
+      return {
+        right: Math.round(viewport.width - (box.x + box.width)),
+        bottom: Math.round(viewport.height - (box.y + box.height)),
+      };
+    };
+    await expect.poll(corner, { timeout: 10_000 }).toEqual({ right: 16, bottom: 16 });
+
+    const box = (await toast.boundingBox())!;
+    const reader = (await page.getByTestId("library-reader").boundingBox())!;
+    const head = (await page.getByTestId("library-header").boundingBox())!;
+    // The pane it is about, not the column beside it.
+    expect(box.x, "the toast starts inside the reader pane").toBeGreaterThanOrEqual(reader.x);
+    // And never over the page title, which is the whole of what the owner was reading.
+    expect(box.y, "the toast is below the index head").toBeGreaterThan(head.y + head.height);
+
+    /*
+     * ⚠️ **A dialog that *shows* keeps the toast and takes it inside its own safe area; a
+     * dialog that *asks* clears it instead** (`useToast().dismiss`, which
+     * `handleFindDocuments` calls). Both of this view's full-surface dialogs are
+     * `size="viewport"`: `--chrome-inset` from each window edge with `p-4` inside that, so
+     * at the plain gutter the box came to rest on the dialog's own padding.
+     */
+    await page.getByTestId("library-graph-open").click();
+    const graph = page.getByTestId("library-graph-dialog");
+    await expect(graph).toBeVisible();
+    await expect(toast).toBeVisible();
+    const safeArea = async () => {
+      const dialogBox = (await graph.boundingBox())!;
+      const inDialog = (await toast.boundingBox())!;
+      return {
+        insideLeftEdge: inDialog.x > dialogBox.x,
+        right: Math.round(dialogBox.x + dialogBox.width - (inDialog.x + inDialog.width)),
+        bottom: Math.round(dialogBox.y + dialogBox.height - (inDialog.y + inDialog.height)),
+      };
+    };
+    /*
+     * 32 from the dialog's own border box: the gutter is `--chrome-inset` (24, the dialog's
+     * distance from the window) plus its `p-4` (16) plus the same 16 the pane gets, so 56
+     * from the window edge — and the dialog's border stands at 24 of that. What is left,
+     * 32, is the dialog's padding plus one gutter, which is what "inside the safe area"
+     * means here. The dialog springs in and the box moves with the gutter, so this settles
+     * as well.
+     */
+    await expect
+      .poll(safeArea, { timeout: 10_000 })
+      .toEqual({ insideLeftEdge: true, right: 32, bottom: 32 });
+    await page.keyboard.press("Escape");
+    await expect(graph).toHaveCount(0);
   });
 }

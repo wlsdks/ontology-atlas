@@ -89,14 +89,19 @@ import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
 import {
-  TOAST_TOP_OFFSET_UNDER_LIBRARY_PANE_CHROME_NARROW_PX,
-  TOAST_TOP_OFFSET_UNDER_LIBRARY_PANE_CHROME_PX,
+  LIBRARY_TOAST_BOTTOM_OFFSET,
+  LIBRARY_TOAST_DIALOG_OFFSET,
+  LIBRARY_TOAST_RIGHT_OFFSET,
 } from "@/shared/ui/toast-position";
 import { SegmentedControl } from "@/shared/ui/segmented-control";
-import { Button, Dialog, Tooltip, TooltipProvider, useToast } from "@/shared/ui";
+import { Button, Dialog, Tooltip, TooltipProvider, useToast, useToastAnchor } from "@/shared/ui";
 
 import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
-import { libraryCompileBlockedReason, libraryTransferSentence } from "../lib/compile-availability";
+import {
+  libraryCompileBlockedReason,
+  libraryProviderDisclosure,
+  libraryTransferSentence,
+} from "../lib/compile-availability";
 import { useCitedPassage } from "../lib/use-cited-passage";
 import { useSourceOutline } from "../lib/use-source-outline";
 import { useLibraryModel } from "../lib/use-library-model";
@@ -236,37 +241,50 @@ export function LibraryPage() {
   useEffect(() => {
     latestSelectedRef.current = selected;
   }, [selected]);
-  /*
-   * Stand the toaster over the canvas, the way the map already stands its own. The
-   * toaster is top-centred on the viewport and this pane stacks 160px of chrome there —
-   * the reserved work lane, then the graph's header row — so at the default 16px the
-   * box came to rest two pixels into the receipt row, and clearing only the lane simply
-   * moved it onto the header row instead. The constant carries both measurements.
-   */
-  useEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty(
-      "--app-toast-top-offset",
-      `${TOAST_TOP_OFFSET_UNDER_LIBRARY_PANE_CHROME_PX}px`,
-    );
-    /*
-     * And the narrow band's own clearance. sonner stops reading the value above at 600px
-     * of viewport, where this pane's work lane keeps both of its rows — so the stack to
-     * clear there is a different measurement, not the same number applied twice
-     * (design-responsive C2, council 2026-09-11).
-     */
-    root.style.setProperty(
-      "--app-toast-mobile-top-offset",
-      `${TOAST_TOP_OFFSET_UNDER_LIBRARY_PANE_CHROME_NARROW_PX}px`,
-    );
-    return () => {
-      root.style.removeProperty("--app-toast-top-offset");
-      root.style.removeProperty("--app-toast-mobile-top-offset");
-    };
-  }, []);
   const [graphOpen, setGraphOpen] = useState(false);
   const [sourceCitation, setSourceCitation] = useState<{ path: string; anchor?: string } | null>(null);
   const [answerComparisonOpen, setAnswerComparisonOpen] = useState(false);
+  /*
+   * **The toast stands in the corner of the pane it is about** (owner, 2026-09-12: *"the
+   * toast at the top — its position is odd too, right? (and of course a toast should
+   * adjust its position adaptively)"*).
+   *
+   * A notification on this screen is always about the right pane's work — a page made, an
+   * answer filed, a source added — and top-centred it had to be pushed 124px down just to
+   * clear the left column's own chrome, and still came to rest above that column's title.
+   * Anchored bottom-right it sits in the pane that raised it, and the two walls it stops
+   * short of are the pane's, not the window's: the conversation's left edge, and the
+   * bottom tab bar's top where that bar is drawn. `toast-position.ts` carries both
+   * expressions and the reserves that switch them on width.
+   *
+   * The two `mobile` twins are the same values: sonner stops reading `offset` at 600px of
+   * viewport and switches props, so the value has to be planted twice. Unlike the top
+   * offsets these replace, it really is the same measurement in both bands — the width
+   * work happens inside the reserves, in `app/globals.css`, where the breakpoints already
+   * live.
+   */
+  useToastAnchor("bottom-right");
+  /**
+   * Whether a dialog is standing across that corner. Both of this view's full-surface
+   * dialogs are `size="viewport"`, so while either is open the corner belongs to the
+   * dialog and the gutters grow to its own safe area.
+   */
+  const viewportDialogOpen = graphOpen || answerComparisonOpen;
+  useEffect(() => {
+    const root = document.documentElement;
+    const right = viewportDialogOpen ? LIBRARY_TOAST_DIALOG_OFFSET : LIBRARY_TOAST_RIGHT_OFFSET;
+    const bottom = viewportDialogOpen ? LIBRARY_TOAST_DIALOG_OFFSET : LIBRARY_TOAST_BOTTOM_OFFSET;
+    root.style.setProperty("--app-toast-right-offset", right);
+    root.style.setProperty("--app-toast-bottom-offset", bottom);
+    root.style.setProperty("--app-toast-mobile-right-offset", right);
+    root.style.setProperty("--app-toast-mobile-bottom-offset", bottom);
+    return () => {
+      root.style.removeProperty("--app-toast-right-offset");
+      root.style.removeProperty("--app-toast-bottom-offset");
+      root.style.removeProperty("--app-toast-mobile-right-offset");
+      root.style.removeProperty("--app-toast-mobile-bottom-offset");
+    };
+  }, [viewportDialogOpen]);
   const graphTriggerRef = useRef<HTMLButtonElement | null>(null);
   const graphRestoreFrameRef = useRef<number | null>(null);
   /** Set when a page opened on its own (a check ending), so the focus stays where the person had it. */
@@ -1856,9 +1874,9 @@ export function LibraryPage() {
         controls beside the reader's back chip and asked what the arrow was for
         (2026-09-07, evening). The map's tab floats over a canvas as a drawer handle; here
         it sat in a row of chrome and read as noise. Now the fold and the unfold are the
-        same control in the same place — `PanelLeftClose` on the column's eyebrow line,
-        `PanelLeftOpen` at the pane's top-left once the column is gone — so the person
-        learns one glyph and one spot.
+        same control in the same place — `PanelLeftClose` at the right end of the column's
+        title row, `PanelLeftOpen` at the pane's top-left once the column is gone — so the
+        person learns one glyph and one spot, at one size (2026-09-12).
 
         `lg` and above only. Below it the index is the bottom half of one column with the
         graph above it — there is no second pane for the width to go to.
@@ -1880,7 +1898,8 @@ export function LibraryPage() {
             data-testid="library-index-tab"
             className={controlClass({ shape: "icon", size: "sm", tone: "muted", hoverInk: "strong" })}
           >
-            <PanelLeftOpen size={ICON_SIZE.sm} aria-hidden />
+            {/* The same step as its twin in the head: one glyph, one spot, one size. */}
+            <PanelLeftOpen size={ICON_SIZE.lg} aria-hidden />
           </button>
         </div>
       ) : null}
@@ -1918,6 +1937,12 @@ export function LibraryPage() {
         <div className="flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4">
           <LibraryHeader
             t={t}
+            /*
+             * The provider disclosure's one home. It is a fact about this place rather
+             * than about a press, so it rides with the place's description instead of
+             * standing as a paragraph on whichever card happens to be drawn.
+             */
+            disclosure={libraryProviderDisclosure({ route: agent.route }, t)}
             onCollapse={() => setIndexCollapsed(true)}
             collapseRef={indexCollapseRef}
           />
@@ -2389,6 +2414,10 @@ export function LibraryPage() {
                  * Compile is refused, or what leaves this computer when it runs. This press
                  * is the one a person is looking at while a source is open, so this is where
                  * the disclosure belongs (`.claude/rules/local-first.md`).
+                 *
+                 * ⚠️ On the **agent** route this is now the reason or nothing: what Atlas
+                 * does not log is not a transfer of its own, and it is said once in the
+                 * index head's glyph (`libraryProviderDisclosure`, 2026-09-12).
                  */
                 compileNote={
                   compileBlocked ??
@@ -2527,113 +2556,150 @@ export function LibraryPage() {
 }
 
 /**
- * Eyebrow, name, and the two controls that belong to the column itself. Not a display
- * title: this is a workbench, not a document.
+ * The name of the place and the two controls that belong to the column itself. Not a
+ * display title: this is a workbench, not a document.
  *
- * ⚠️ **The lede is a glyph now** (owner, 2026-09-07: *"put one icon beside the title and
+ * ⚠️ **The lede is a glyph** (owner, 2026-09-07: *"put one icon beside the title and
  * show the explanation in a tooltip on hover"*). It was three lines of `text-label` in a
  * 280px column — a sentence read once on the first visit and then re-read on every visit
  * after it, holding the ~60px the switch under it now stands in. It is not deleted: the
  * `Info` glyph is a real focusable control with the sentence as its accessible name, so a
  * keyboard and a screen reader reach it the same way a pointer does, which a paragraph
  * that had been cut would not have offered either.
+ *
+ * ⚠️ **One row, and the eyebrow is gone** (owner, 2026-09-12: *"a label like 'in this
+ * folder' is not even needed, and it is odd that it is there at all"*, and of the fold
+ * glyph: *"centred the same as the text beside it, and it should be bigger"*). Measured
+ * at 1512 before this change: the eyebrow was `IN THIS FOLDER` in 11px caps on its own
+ * 14px row, naming the scope of a column that was already showing it, and the fold sat on
+ * that row — 9px of ink whose centre was **29.5px above** the title's, and whose right
+ * edge crossed the column's box edge by 4px (`-mr-1`). Both are answered by one move: the
+ * row goes and the fold joins the title's own row, so the head is title · glyph · fold on
+ * one line and the column's box edge (331 at 1512) is where the fold stops.
+ *
+ * `library.eyebrow` stays in the catalogue: `LibraryStartStage` prints it above *nothing
+ * here yet*, where naming the scope is the only thing on the card that does, and where it
+ * is not standing over a list of the folder's own files.
  */
 function LibraryHeader({
   t,
-  inFolder = true,
+  disclosure = null,
   onCollapse,
   collapseRef,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
-  inFolder?: boolean;
+  /**
+   * **The one sentence about provider-owned traffic, when it is true** — the second
+   * paragraph of the glyph's own panel, and the only place this screen prints it
+   * (owner, 2026-09-12: *"text like that should be handled as a tooltip, shouldn't
+   * it?"*). `null` on every other route, where what leaves this computer is an Atlas
+   * transfer and therefore belongs at the press (`.claude/rules/local-first.md`).
+   */
+  disclosure?: string | null;
   /** Folds the column to its edge tab. Absent where there is no column to fold. */
   onCollapse?: () => void;
   collapseRef?: RefObject<HTMLButtonElement | null>;
 }) {
   return (
-    <div data-testid="library-header">
-      {/* "In this folder" is only true once a folder is open; the stage before that has none. */}
-      <div className="flex min-h-4 items-center gap-2">
-        {inFolder ? (
-          <p className="min-w-0 flex-1 truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
-            {t("eyebrow")}
-          </p>
-        ) : null}
-        {/*
-          ⚠️ **The fold rides on the eyebrow line, not beside the title** — and that is a
-          placement the tooltip decided. The description opens to the `right` of the `Info`
-          glyph, and Radix tooltip content takes pointer events, so with the fold on the
-          same row the panel lay directly on the control a hand travels to next: measured,
-          the press was intercepted for as long as the tooltip stood. One row up, the
-          tooltip opens over the picture, where nothing is being aimed at.
-        */}
-        {onCollapse ? (
+    <div data-testid="library-header" className="flex min-w-0 items-center gap-1.5">
+      <h1 className="min-w-0 truncate text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
+        {t("title")}
+      </h1>
+      {/*
+        Three corrections, each from a measurement (2026-09-07).
+
+        **A width.** The sentence is 150 characters and a tooltip has no width of its
+        own, so on the default `top` side it drew as one line the width of the window,
+        clipped at the left edge and lying across the graph's header (1040×760).
+
+        **`disableHoverableContent`.** Radix keeps a tooltip open while the pointer is
+        over the panel *and* the panel takes pointer events, so a control underneath it
+        could not be pressed for as long as it stood — measured as a click intercepted
+        indefinitely. This is a sentence, not a surface with anything to reach in it, so
+        the grace area is worth nothing and costs the press.
+
+        Two more, both measured on 2026-09-12 after the eyebrow row was removed.
+
+        **`side="bottom" align="start"`, no longer `right`.** `right` centres the panel on
+        this 24px glyph, and the glyph's centre is now 28px from the top of the window:
+        measured, the panel was pushed by collision detection to **y 0** and lay across
+        the whole head, title and fold included, and it only gets taller now that it holds
+        two paragraphs. `bottom` hangs it under the row it explains, and `start` puts its
+        left edge on this glyph instead of straddling it. `bottom` was rejected in
+        September for landing on the switch below; what made that a defect was the panel
+        taking the press, which the next paragraph removes.
+
+        **`pointer-events-none`.** `disableHoverableContent` closes the panel only *after*
+        the pointer has left this glyph, and Radix keeps the content mounted through the
+        exit animation — measured, `elementFromPoint` over the fold returned the panel for
+        that whole window. A panel that cannot be pointed at cannot intercept anything,
+        and it loses nothing: there is no control inside it.
+      */}
+      <TooltipProvider disableHoverableContent>
+        <Tooltip
+          withProvider={false}
+          side="bottom"
+          align="start"
+          panelClassName="pointer-events-none"
+          content={
+            <span className="block max-w-64 [word-break:keep-all]">
+              <span className="block">{t("lede")}</span>
+              {disclosure ? <span className="mt-1.5 block text-[color:var(--color-text-tertiary)]">{disclosure}</span> : null}
+            </span>
+          }
+        >
           <button
             type="button"
-            ref={collapseRef}
-            onClick={onCollapse}
-            aria-label={t("index.collapse")}
-            aria-expanded
-            data-testid="library-index-collapse"
-            /* `lg` and up: below it the column is the bottom half of one column and has
-               nowhere to fold to. The glyph is the panel itself closing; its pair opens
-               it from the same spot once the column is gone. */
+            data-testid="library-lede-info"
+            aria-label={t("lede")}
             className={controlClass({
               shape: "icon",
               size: "sm",
               tone: "muted",
               hoverInk: "strong",
-              className: "-mr-1 ml-auto hidden flex-none lg:inline-flex",
+              className: "flex-none",
             })}
           >
-            <PanelLeftClose size={ICON_SIZE.sm} aria-hidden />
+            {/*
+              The same step as the fold beside it: one glyph grade on this row, and this
+              one now carries a panel of two paragraphs rather than a single aside.
+            */}
+            <Info size={ICON_SIZE.lg} aria-hidden />
           </button>
-        ) : null}
-      </div>
-      <div className="mt-1 flex min-w-0 items-center gap-1.5">
-        <h1 className="min-w-0 truncate text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
-          {t("title")}
-        </h1>
-        {/*
-          Three corrections, each from a measurement (2026-09-07).
-
-          **A width.** The sentence is 150 characters and a tooltip has no width of its
-          own, so on the default `top` side it drew as one line the width of the window,
-          clipped at the left edge and lying across the graph's header (1040×760).
-
-          **`side="right"`.** `bottom` put the panel on the switch the hand travels to
-          next; `right` opens into the picture, where nothing is being aimed at, and the
-          fold moved up to the eyebrow line to leave that side clear.
-
-          **`disableHoverableContent`.** Radix keeps a tooltip open while the pointer is
-          over the panel *and* the panel takes pointer events, so a control underneath it
-          could not be pressed for as long as it stood — measured as a click intercepted
-          indefinitely. This is a sentence, not a surface with anything to reach in it, so
-          the grace area is worth nothing and costs the press.
-        */}
-        <TooltipProvider disableHoverableContent>
-          <Tooltip
-            withProvider={false}
-            side="right"
-            content={<span className="block max-w-64 [word-break:keep-all]">{t("lede")}</span>}
-          >
-            <button
-              type="button"
-              data-testid="library-lede-info"
-              aria-label={t("lede")}
-              className={controlClass({
-                shape: "icon",
-                size: "sm",
-                tone: "muted",
-                hoverInk: "strong",
-                className: "flex-none",
-              })}
-            >
-              <Info size={ICON_SIZE.sm} aria-hidden />
-            </button>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+        </Tooltip>
+      </TooltipProvider>
+      {onCollapse ? (
+        <button
+          type="button"
+          ref={collapseRef}
+          onClick={onCollapse}
+          aria-label={t("index.collapse")}
+          aria-expanded
+          data-testid="library-index-collapse"
+          /* `lg` and up: below it the column is the bottom half of one column and has
+             nowhere to fold to. The glyph is the panel itself closing; its pair opens
+             it from the same spot once the column is gone. */
+          className={controlClass({
+            shape: "icon",
+            size: "sm",
+            tone: "muted",
+            hoverInk: "strong",
+            className: "ml-auto hidden flex-none lg:inline-flex",
+          })}
+        >
+          {/*
+            **Sized to the title's ink, not to the ramp's default pairing.** Measured at
+            1512: the title is `text-body-lg` (14px) and its glyphs stand 13.1px tall
+            (ascent 10.3 + descent 2.8); at `ICON_SIZE.sm` the glyph's ink was 9.0px, the
+            smallest mark on a row whose text it is supposed to sit level with. `lg` (16)
+            draws 12.0px of ink — the largest step the ramp has, and the closest one to
+            the title's own 13.1. `md` (14) was the other candidate and was rejected by
+            the same measurement: 10.5px of ink is the title's cap height and a 1.5px
+            change from a glyph the owner had already read as too small.
+          */}
+          <PanelLeftClose size={ICON_SIZE.lg} aria-hidden />
+        </button>
+      ) : null}
     </div>
   );
 }

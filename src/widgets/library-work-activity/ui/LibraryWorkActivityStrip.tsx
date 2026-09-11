@@ -64,9 +64,12 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
      * rows while the toaster had already gone back to reading `--app-toast-top-offset`
      * (124, a measurement of the one-row lane), so the box landed 37px inside the
      * receipts at 620×900. Height and row direction now switch together on the same
-     * width sonner switches its offset on, and `src/shared/ui/toast-position.ts` carries
-     * the clearance for each side of it. The horizontal insets keep their own `sm`/`md`
-     * steps: an inset is not part of that agreement.
+     * width sonner switches its offset on. ⚠️ The toast half of that agreement lapsed on
+     * 2026-09-12: this surface's toasts anchor to the pane's bottom-right corner and no
+     * longer pass over this lane at any width (`src/shared/ui/toast-position.ts`). The
+     * 601px fold stands on its first measurement — the receipt chip past the right edge
+     * at 390. The horizontal insets keep their own `sm`/`md` steps: an inset is not part
+     * of that agreement.
      */
     <div className="h-28 flex-none min-[601px]:h-16" data-testid="library-work-lane">
     <Surface open={headline !== null} motion="overlay" as="section"
