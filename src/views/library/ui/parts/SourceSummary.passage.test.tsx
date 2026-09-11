@@ -179,8 +179,11 @@ describe("the passage a pressed citation shows", () => {
     const missing = screen.getByTestId("library-source-passage-missing");
     const missingClasses = new Set(missing.className.split(/\s+/));
 
-    // Not the quote's step, not the quote's leading, not a quotation's card.
-    expect(citedClasses.has("text-body-lg")).toBe(true);
+    /* Not the quote's step, not the quote's leading, not a quotation's card. The quote's
+       step became `text-reading` (16px) on 2026-09-12, when the reading bodies left
+       `text-body-lg` — which widens the separation this asserts from 1.5px to 3.5px. */
+    expect(citedClasses.has("text-reading")).toBe(true);
+    expect(missingClasses.has("text-reading")).toBe(false);
     expect(missingClasses.has("text-body-lg")).toBe(false);
     expect(missingClasses.has("leading-prose")).toBe(false);
     // Not the facts' step or ink either: the answer to the press is the pane's winner.
@@ -195,8 +198,10 @@ describe("the passage a pressed citation shows", () => {
      * ramp step may be the quote's.
      */
     const rampOf = (classes: Set<string>) =>
-      [...classes].filter((one) => /^(text-(caption|label|body|body-lg|title)|leading-)/.test(one)).sort();
-    expect(rampOf(citedClasses)).toEqual(["leading-prose", "text-body-lg"]);
+      [...classes]
+        .filter((one) => /^(text-(caption|label|body|body-lg|title|reading)|leading-)/.test(one))
+        .sort();
+    expect(rampOf(citedClasses)).toEqual(["leading-prose", "text-reading"]);
     expect(rampOf(missingClasses)).toEqual(["leading-body", "text-body"]);
     expect(rampOf(missingClasses).some((one) => citedClasses.has(one))).toBe(false);
     // And no card: a card here would read as a quotation, and there is nothing to quote.

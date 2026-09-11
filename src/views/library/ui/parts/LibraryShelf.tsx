@@ -112,7 +112,7 @@ export function LibraryShelf({
         data-testid="library-wiki-shelf"
         aria-label={t("shelf.listAria")}
         aria-busy={compiling || undefined}
-      className="flex flex-col gap-1 px-2 pb-1 pt-2"
+      className="flex flex-col gap-1 px-3 pb-1 pt-2"
       >
         {spines.map(({ page, freshness, ownProblem }) => {
           const active = page.slug === selectedSlug;
@@ -289,7 +289,7 @@ export function LibraryShelf({
           {t("shelf.compiling")}
         </p>
       ) : null}
-      {trailing ? <div className="px-2 pt-1.5">{trailing}</div> : null}
+      {trailing ? <div className="px-1 pt-1.5">{trailing}</div> : null}
     </div>
   );
 }
