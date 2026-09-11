@@ -1113,7 +1113,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // Link (the raw form hard-navigated to the locale-less root, which dropped ?p=).
 // 2026-09-02: Architecture's empty-profile action became a real in-tab button instead of a
 // button-styled Link to Map. The destination count and the verified registration both fall by one.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 18, a: 8 };
+// 2026-09-11 (slice U2): the Library's blocked steps gained a door to `/agents` —
+// `AgentDoor` is one `<Link>` through `buttonVariants`, so `Link` 18→19.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 19, a: 8 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1187,6 +1189,19 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     claim: 'standard-button',
     proof: 'buttonVariants',
     why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
+  },
+  {
+    file: 'src/views/library/ui/parts/AgentDoor.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      'The door out of a blocked Library step (slice U2, 2026-09-11). It is a `<Link>` ' +
+      'because it navigates to `/agents`, and `cn(buttonVariants({ variant: "outline", ' +
+      'size: "sm" }), …)` because it stands beside the Ask button that is already ' +
+      '`<Button variant="outline" size="sm">` — the two must be one control at two ' +
+      'tags. `control-class.ts` declares it "does not replace standard buttons", so ' +
+      'moving this to `controlClass` would break that rule rather than honour it.',
   },
   {
     file: 'app/[locale]/not-found.tsx',
@@ -1298,9 +1313,12 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // its own line it is an ordinary control, `shape: 'link'` fits, `touch-hit-expand` supplies the
 // 44px finger target, and this ledger did not have to grow. **Check whether the position is wrong
 // before registering a shape the value layer cannot make.**
-const BASELINE_ANCHOR_REGISTERED = 26;
+// 26 → 27 (2026-09-11, slice U2): `AgentDoor`, the one control that follows each of the
+// Library's agent-availability sentences. Registered rather than moved, for the reason its
+// row states — it is the standard-button shape the value layer itself yields.
+const BASELINE_ANCHOR_REGISTERED = 27;
 
-/** **Only this number may fall.** The current anchor total (27) minus registered (27). */
+/** **Only this number may fall.** The current anchor total (28) minus registered (28). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

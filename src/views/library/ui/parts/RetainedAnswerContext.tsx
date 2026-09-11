@@ -4,8 +4,9 @@ import type { useTranslations } from 'next-intl';
 import type { RefObject } from 'react';
 import type { AnswerObservation } from '@/features/library';
 import { Button, controlClass } from '@/shared/ui';
+import { AgentDoor } from './AgentDoor';
 
-export function RetainedAnswerContext({ observation, phase, historyState, older, onHome, onPrevious, onRefresh, refreshButtonRef, error, t }: {
+export function RetainedAnswerContext({ observation, phase, historyState, older, onHome, onPrevious, onRefresh, refreshButtonRef, agentDoor = false, error, t }: {
   observation: AnswerObservation;
   phase: string;
   historyState: string;
@@ -14,6 +15,14 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
   onPrevious: (() => void) | null;
   onRefresh: (() => void) | null;
   refreshButtonRef?: RefObject<HTMLButtonElement | null>;
+  /**
+   * Whether `answers.refreshUnavailable` earns a door to `/agents` (slice U2).
+   *
+   * That sentence names only a connected coding agent, so unlike `stage.blockedNoAgent`
+   * it has no second clause the door leaves unanswered. False on the web, where the
+   * missing thing is the installed app.
+   */
+  agentDoor?: boolean;
   error: string | null;
   t: ReturnType<typeof useTranslations<'library'>>;
 }) {
@@ -62,6 +71,14 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
         <div role="group" aria-label={t('answers.refresh')} className="mt-3">
           <p id="answer-refresh-lede" className="text-caption leading-body text-[color:var(--color-text-secondary)]">{t(onRefresh ? 'answers.refreshHint' : 'answers.refreshUnavailable')}</p>
           <div className="mt-2 flex flex-wrap gap-2">
+            {/*
+             * **The door, inside the group whose lede is the reason** (slice U2). The
+             * sentence above says a refresh needs a connected coding agent, and until
+             * 2026-09-11 that was the end of it — a reason with no way to act on it. It
+             * stands first in the row because it is the only live control here: the
+             * refresh beside it is disabled, which is the state the lede explains.
+             */}
+            {agentDoor && onRefresh === null ? <AgentDoor testId="answer-refresh-blocked-door" /> : null}
             <Button ref={refreshButtonRef} className="atlas-touch-floor max-w-full" size="sm" variant="outline" disabled={working || onRefresh === null} aria-describedby="answer-refresh-lede" onClick={onRefresh ?? undefined} data-testid="answer-refresh-start">{t(working ? `answers.phase.${phase}` : 'answers.refresh')}</Button>
             {onPrevious ? <Button className="atlas-touch-floor max-w-full" size="sm" variant="ghost" onClick={onPrevious}>{t('answers.previous')}</Button> : null}
           </div>

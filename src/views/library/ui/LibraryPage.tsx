@@ -98,6 +98,7 @@ import { Button, Dialog, Tooltip, TooltipProvider, useToast } from "@/shared/ui"
 import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
 import { libraryCompileBlockedReason, libraryTransferSentence } from "../lib/compile-availability";
 import { useCitedPassage } from "../lib/use-cited-passage";
+import { useSourceOutline } from "../lib/use-source-outline";
 import { useLibraryModel } from "../lib/use-library-model";
 import { useObservedWikiWork } from "../lib/use-observed-wiki-work";
 import { useLibraryAgent } from "../lib/use-library-agent";
@@ -361,6 +362,16 @@ export function LibraryPage() {
     citation: sourceCitation?.path === selectedSource?.path ? sourceCitation : null,
     handle: sourceCitation ? localVault.sourceHandles.get(sourceCitation.path) : undefined,
     enabled: hasFolder && selectedSource !== null,
+  });
+  /*
+   * **The open source's own shape, for the outline section.** Choosing the row is the person naming
+   * this file, which is the clause `use-source-outline.ts` documents; the read is one
+   * file, through the handle the walk granted, and nothing is kept.
+   */
+  const sourceOutlineState = useSourceOutline({
+    path: selectedSource?.path ?? null,
+    handle: selectedSource ? localVault.sourceHandles.get(selectedSource.path) : undefined,
+    enabled: hasFolder,
   });
   const selectedAnswer = selectedWikiDoc && isRetainedAnswerPath(selectedWikiDoc.slug) ? selectedWikiDoc : null;
   const answerHistory = useAnswerHistory(selectedAnswer, docs, model.pageTexts);
@@ -1303,6 +1314,35 @@ export function LibraryPage() {
         : "library-questions-ask-blocked";
 
   /**
+   * **Whether an availability sentence on this screen earns a door — decided once.**
+   *
+   * Slice U2's third decision: a reason a person cannot act on teaches them to stop
+   * reading reasons. Measured 2026-09-11, `stage.blockedNoAgent` printed under a dead
+   * Compile and named a destination with no way to reach it, while `/agents` sat in the
+   * rail 26px away.
+   *
+   * It is deliberately **not** a string test. The three sentences that earn the door —
+   * `stage.blockedNoAgent`, `stage.blockedLocalOnly` and `answers.refreshUnavailable` —
+   * are exactly the states where the missing thing is a verified coding agent on this
+   * computer, so the condition is the route, and a later copy edit cannot silently move
+   * a door.
+   *
+   * Two states deliberately earn nothing. **The web** (`nativeVaultRootPath === null`):
+   * the missing thing there is the app itself, and the existing degradation card to
+   * `/download/` is the honest door — a second door to `/agents` would send someone to
+   * install a coding agent for a screen that still could not run one. **`checking`**: an
+   * agent is still being looked for, and a door out of a state that may resolve itself in
+   * a moment is an answer to a question nobody has been given yet.
+   *
+   * The door follows the printed sentence, so it appears at most twice on the product at
+   * once — once on the landing, whose single reason `agentReasonPrintedId` places, and
+   * once in the answer reader, which is a different screen. The source pane's own
+   * `compileNote` is the third site.
+   */
+  const agentDoor =
+    nativeVaultRootPath !== null && (agent.route === "unavailable" || agent.route === "local");
+
+  /**
    * **Where the keyboard lands after the pane swaps.**
    *
    * Pressing "Start with …", a source chip, or "View write-up" replaces the whole right
@@ -1878,8 +1918,18 @@ export function LibraryPage() {
             segment={indexSegment}
             selectedSlug={opened?.kind === "wiki" ? opened.slug : null}
             selectedSourcePath={opened?.kind === "source" ? opened.path : null}
+            sourceHandles={localVault.sourceHandles}
+            vaultScope={workVaultScope}
             onSelect={(slug) => choose({ kind: "wiki", slug })}
-            onOpenSource={(row) => choose({ kind: "source", path: row.path })}
+            /*
+             * A search hit's caption carries an anchor, and it goes where a pressed
+             * citation goes: `choose` clears `sourceCitation`, so the anchor is set after
+             * it, exactly as the answer reader's own source link does below (slice U2).
+             */
+            onOpenSource={(row, anchor) => {
+              choose({ kind: "source", path: row.path });
+              if (anchor) setSourceCitation({ path: row.path, anchor });
+            }}
             onAddFiles={handleAddFiles}
             onFindDocuments={handleFindDocuments}
             onImportFromService={openImport}
@@ -2059,6 +2109,7 @@ export function LibraryPage() {
                     onLint={agent.route === "agent" ? handleLint : null}
                     lintBlockedReason={agentOnlyReason}
                     lintBlockedReasonId={agentReasonPrintedId}
+                    agentDoor={agentDoor}
                     onOpenWiki={(slug) => choose({ kind: "wiki", slug })}
                     answerSlugs={retainedAnswerSlugs}
                     busy={busy}
@@ -2075,6 +2126,7 @@ export function LibraryPage() {
                             ? null
                             : agentReasonPrintedId
                         }
+                        agentDoor={agentDoor}
                         t={t}
                       />
                     }
@@ -2148,6 +2200,7 @@ export function LibraryPage() {
                 onHome={() => choose(null)}
                 onPrevious={answerHistory.previous && answerHistory.exists ? () => choose({ kind: 'wiki', slug: answerHistory.previous! }) : null}
                 onRefresh={agent.route === 'agent' && nativeVaultRootPath ? () => { void answerRefresh.begin(selectedAnswer.slug); } : null}
+                agentDoor={agentDoor}
                 error={answerRefresh.error} t={t} /> : null}
               {/* The passage a person selects here can be asked about at once; the chip and
                   its list hang from the selection inside this positioned box. */}
@@ -2211,6 +2264,8 @@ export function LibraryPage() {
                  * and now lands on the text it names.
                  */
                 passage={citedPassage}
+                /* The outline, above the passage: the coarse answer before the exact one. */
+                outline={sourceOutlineState}
                 canReveal={nativeVaultRootPath !== null}
                 writeUps={model.pairing.writeUpsBySource.get(selectedSource.path) ?? EMPTY_WRITE_UPS}
                 onOpen={() => handleOpenSource(selectedSource)}
@@ -2227,6 +2282,7 @@ export function LibraryPage() {
                   libraryTransferSentence({ route: agent.route, localModel: agent.localModel }, t)
                 }
                 compileBlocked={compileBlocked !== null}
+                agentDoor={agentDoor}
                 busy={busy}
                 t={t}
               />

@@ -9,6 +9,7 @@ import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { StateBadge } from './StateBadge';
+import { AgentDoor } from './AgentDoor';
 
 /**
  * **The saved questions, drawn inside step three of the spine.**
@@ -59,7 +60,7 @@ import { StateBadge } from './StateBadge';
  * combination. Three states, three channels. No transform, so there is nothing for
  * reduced motion to replace
  */
-export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk, askBlockedReason, askBlockedReasonId, t }: {
+export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk, askBlockedReason, askBlockedReasonId, agentDoor = false, t }: {
   answers: readonly RetainedAnswerHead[];
   knownSources: ReadonlySet<string>;
   hashes: ReadonlyMap<string, string>;
@@ -84,6 +85,13 @@ export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk,
    * described by that paragraph instead of drawing a second copy.
    */
   askBlockedReasonId?: string | null;
+  /**
+   * Whether the reason **this** block prints earns a door to `/agents` (slice U2).
+   *
+   * Only meaningful when this card is the one printing the sentence; when another card
+   * owns it, that card carries the door and this one carries neither. False on the web.
+   */
+  agentDoor?: boolean;
   t: ReturnType<typeof useTranslations<'library'>>;
 }) {
   const observationId = useId();
@@ -127,6 +135,13 @@ export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk,
           className="mt-2 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
         >
           {askBlockedBelow}
+        </p>
+      ) : null}
+      {/* The way to the destination that sentence just named — the rail's own word, so
+          the door and the tile are visibly one place (slice U2). */}
+      {askBlockedBelow && agentDoor ? (
+        <p className="mt-2">
+          <AgentDoor testId="library-questions-ask-blocked-door" />
         </p>
       ) : null}
       {answers.length ? (
