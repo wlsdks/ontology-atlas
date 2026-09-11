@@ -18,8 +18,12 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  *    pixels**, because that is the only place the dim exists;
  * 3. the wheel changes the scale rather than scrolling the page;
  * 4. the fit control brings the whole picture back;
- * 5. under `prefers-reduced-motion` the canvas is **identical** frame to frame — no
- *    settle, no drift;
+ * 5. under `prefers-reduced-motion` the canvas is **identical** frame to frame **at rest**
+ *    — no settle, no drift. At rest is the whole of the claim since 2026-09-12: the dim
+ *    ramp keeps its `--motion-fast` at both settings, because it moves no mark and a hand's
+ *    own move keeps its time (`docs/DECISIONS.md`, "The Library canvas's ink ramp keeps its
+ *    120ms under reduced motion"). This case measures three hashes with no pointer on the
+ *    canvas and no clause held, which is exactly the narrowed claim;
  * 6. once it has settled the canvas is still and the loop stops asking for frames, hover
  *    included — the 2026-09-08 reversal of the ambient drift, which was a *display* offset
  *    the loop applied after the view transform, so nothing a settled simulation could say

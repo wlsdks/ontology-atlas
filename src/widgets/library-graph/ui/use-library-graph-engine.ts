@@ -420,13 +420,32 @@ export function useLibraryGraphEngine({
       const screen = new Map<string, LayoutPoint>();
       for (const [id, point] of world) screen.set(id, worldToScreen(point, view, box));
 
-      // ── The dim ramp, one `--motion-fast` from end to end. ──
+      /*
+       * ── The dim ramp, one `--motion-fast` from end to end, reduced motion included. ──
+       *
+       * ⚠️ **This ramp has no axis to remove, so there is nothing here for the preference
+       * to switch off.** It only changes how much ink a mark is painted with; measured
+       * 2026-09-12, the painted bounding box and the lit-pixel count are identical before
+       * the press and after Escape at both settings — 9108 at ordinary motion, 8959 under
+       * `reduce`, whose synchronous settle lands its own layout — so no mark moves at
+       * either setting.
+       * What a `reducedMotion` snap did instead was land the whole picture in **one frame,
+       * a single 0.3995 step** — the same hard cut this widget just repaired on the
+       * ordinary path, and it takes *what changed* away from the person who asked for less
+       * motion while the panel beside this canvas keeps its 180ms crossfade (`app/globals.css`
+       * swaps `.topology-chrome-in` to `panelCrossfadeIn`: drop the shaking axis, keep the
+       * timing). It is also the D7 case of 2026-07-28, which holds for this canvas too:
+       * WCAG 2.2 §2.3.3 exempts movement a person's own hand starts, and every dim here is
+       * started by their pointer, their press or their Escape.
+       *
+       * Stillness at rest is unaffected and is still the rule: `settling` below already
+       * watches this value, so the ramp keeps the loop awake for exactly its own window and
+       * the frame after it is byte-identical to the last, at both settings.
+       */
       const elapsed = lastPaintRef.current === 0 ? 0 : now - lastPaintRef.current;
       lastPaintRef.current = now;
       const dimState = dimRef.current;
-      if (stateRef.current.reducedMotion) {
-        dimState.value = dimState.target;
-      } else if (dimState.value !== dimState.target) {
+      if (dimState.value !== dimState.target) {
         const step = elapsed / Math.max(1, motionRef.current.fast);
         dimState.value =
           dimState.target > dimState.value
