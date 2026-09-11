@@ -1,3 +1,5 @@
+import { DOC_COLUMN_PX } from "@/shared/ui/reading-measure";
+
 import { escapeHtml } from "./persistence";
 
 /**
@@ -11,6 +13,11 @@ import { escapeHtml } from "./persistence";
  * are not defined. Colours are therefore pinned as the design tokens' *literal values*, defined in
  * `POPOUT_TOKENS` alone to prevent drift. Keep the values equal to the tokens in
  * `docs/DESIGN-SYSTEM.md` and `app/globals.css`.
+ *
+ * The reading column is the one measurement here that is **not** pinned by hand: it reads
+ * `DOC_COLUMN_PX` from `src/shared/ui/reading-measure.ts`, which carries the same derivation as
+ * `--measure-doc-column`. It was a hand-written `760px` until 2026-09-11, which is how the popout
+ * kept a column the app itself had stopped using.
  */
 const POPOUT_TOKENS = {
   canvas: "#08090a",
@@ -45,7 +52,7 @@ body {
   padding: 40px 24px;
   line-height: 1.65;
 }
-[data-docs-viewer] { max-width: 760px; margin: 0 auto; }
+[data-docs-viewer] { max-width: ${Math.round(DOC_COLUMN_PX)}px; margin: 0 auto; }
 [data-docs-viewer] h1 { font-size: 26px; font-weight: 600; color: ${t.textPrimary}; margin-top: 0; margin-bottom: 24px; }
 [data-docs-viewer] h2 { font-size: 18px; font-weight: 600; color: ${t.textPrimary}; margin: 32px 0 12px; }
 [data-docs-viewer] h3 { font-size: 15px; font-weight: 600; color: ${t.textPrimary}; margin: 20px 0 8px; }

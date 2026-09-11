@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
 import { ExternalLink, Hash } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { PROSE_MEASURE_PX } from '@/shared/ui/reading-measure';
 import {
   buildDocsVaultHref,
   type VaultDoc,
@@ -647,7 +648,7 @@ export function DocsVaultViewer({
               alt={alt ?? ''}
               width={1200}
               height={800}
-              sizes="(max-width: 768px) 100vw, 760px"
+              sizes={IMAGE_SIZES}
               unoptimized
               className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
               style={{ height: 'auto' }}
@@ -663,7 +664,7 @@ export function DocsVaultViewer({
               alt={alt ?? ''}
               width={1200}
               height={800}
-              sizes="(max-width: 768px) 100vw, 760px"
+              sizes={IMAGE_SIZES}
               unoptimized
               className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
               style={{ height: 'auto' }}
@@ -720,6 +721,14 @@ export function DocsVaultViewer({
     </article>
   );
 }
+
+/**
+ * Next's `sizes` hint for a body image, which is parsed at build time and so cannot read a CSS
+ * variable. An image is `max-w-full` inside the column's **content** box, which is the prose
+ * measure — not the column, and not the `760px` this said until 2026-09-11, when the content box
+ * was 680px wide and the hint over-fetched every image by 12%.
+ */
+const IMAGE_SIZES = `(max-width: 768px) 100vw, ${Math.round(PROSE_MEASURE_PX)}px`;
 
 /**
  * **The line-length cap, applied to the prose and not to the column** (2026-09-11).
@@ -947,7 +956,7 @@ function VaultImage({
       alt={alt}
       width={1200}
       height={800}
-      sizes="(max-width: 768px) 100vw, 760px"
+      sizes={IMAGE_SIZES}
       unoptimized
       className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
       style={{ height: 'auto' }}

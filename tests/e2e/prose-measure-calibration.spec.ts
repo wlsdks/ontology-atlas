@@ -1,5 +1,14 @@
 import { expect, test } from '@playwright/test';
 
+import {
+  DOC_BODY_FONT_PX,
+  DOC_COLUMN_GUTTER_PX,
+  DOC_COLUMN_PX,
+  PROSE_MEASURE_PX,
+  PROSE_MEASURE_STEPS,
+  PROSE_ZERO_ADVANCE_EM,
+} from '../../src/shared/ui/reading-measure';
+
 import { seedFirstRunSeen } from './first-run-seed';
 
 /**
@@ -233,11 +242,90 @@ test('the docs and Library body applies the measure inside its column', async ({
     contentPx,
     `a docs body paragraph runs ${contentPx.toFixed(1)}px, past the ${measurePx.toFixed(1)}px prose measure — the column is capping the line instead of the measure`,
   ).toBeLessThanOrEqual(measurePx + 1);
-  // And the two really are different widths here, so the assertion above is not vacuous.
+  /*
+   * The column is now the measure plus one gutter each side, so the paragraph fills the column's
+   * content box exactly — `toBeLessThan` would be the wrong shape here. What must hold is that
+   * the box and the line agree: the two-widths-in-one-column defect this replaced showed as a
+   * 680px content box around a 497px line.
+   */
   expect(
-    measurePx,
-    'the prose measure is not narrower than the document column at this size, so the cap above proves nothing',
-  ).toBeLessThan(columnPx);
+    columnPx - 2 * DOC_COLUMN_GUTTER_PX,
+    `the document column's content box (${(columnPx - 2 * DOC_COLUMN_GUTTER_PX).toFixed(1)}px) is not the prose measure (${measurePx.toFixed(1)}px) — the box and the line inside it have drifted apart`,
+  ).toBeCloseTo(measurePx, 0);
+});
+
+/**
+ * ⚠️ **The one hand-written font metric, gated.**
+ *
+ * `--measure-prose` is `ch` and therefore font-relative; `--measure-doc-column` is a box and
+ * therefore cannot be, so the column is derived by converting the measure once at
+ * `--text-body-lg` using `--measure-zero-advance` — the advance of the digit `0`, measured
+ * rather than chosen. That constant is the only place the shipped font's metrics are written
+ * down instead of asked for, and `src/shared/ui/reading-measure.ts` mirrors the whole
+ * derivation for the three consumers that cannot read a CSS variable.
+ *
+ * This test asks the browser for all of it: that the ratio still describes the font, that the
+ * rendered token matches the mirror, and that the derived column really is the measure plus two
+ * gutters. Any one of the four numbers drifting fails here.
+ */
+test('the derived column, the measured advance and the JS mirror all still agree', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1512, height: 949 });
+  await page.goto('/en/docs/?guides=off');
+  await expect(page.locator('body')).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+
+  const read = await page.evaluate((bodyFontPx) => {
+    const lengthOf = (value: string, fontSize: number) => {
+      const probe = document.createElement('div');
+      probe.style.cssText = `position:fixed;left:-99999px;top:0;width:${value};transition:none;font-size:${fontSize}px`;
+      document.body.append(probe);
+      const width = probe.getBoundingClientRect().width;
+      probe.remove();
+      return width;
+    };
+    const advanceOf = (fontSize: number) => {
+      const probe = document.createElement('span');
+      probe.style.cssText = `position:fixed;left:-99999px;top:0;white-space:pre;transition:none;letter-spacing:normal;font-size:${fontSize}px`;
+      probe.textContent = '0'.repeat(100);
+      document.body.append(probe);
+      const width = probe.getBoundingClientRect().width / 100;
+      probe.remove();
+      return width;
+    };
+    const root = getComputedStyle(document.documentElement);
+    return {
+      steps: Number(root.getPropertyValue('--measure-prose-steps').trim()),
+      zeroAdvance: Number(root.getPropertyValue('--measure-zero-advance').trim()),
+      gutterPx: lengthOf('var(--measure-doc-gutter)', 16),
+      columnPx: lengthOf('var(--measure-doc-column)', 16),
+      measureAtBodyPx: lengthOf('var(--measure-prose)', bodyFontPx as number),
+      renderedZeroAdvanceEm: advanceOf(16) / 16,
+    };
+  }, DOC_BODY_FONT_PX);
+
+  // ① The declared advance still describes the shipped font.
+  expect(
+    read.renderedZeroAdvanceEm,
+    `--measure-zero-advance is ${read.zeroAdvance} but the shipped font's "0" measures ${read.renderedZeroAdvanceEm.toFixed(4)}em — the derived column is now a different width from the measure it claims to be`,
+  ).toBeCloseTo(PROSE_ZERO_ADVANCE_EM, 3);
+
+  // ② The CSS tokens and the JS mirror are one derivation.
+  expect(read.steps, 'the CSS measure and its JS mirror disagree').toBe(PROSE_MEASURE_STEPS);
+  expect(read.zeroAdvance).toBeCloseTo(PROSE_ZERO_ADVANCE_EM, 4);
+  expect(read.gutterPx).toBeCloseTo(DOC_COLUMN_GUTTER_PX, 1);
+  expect(
+    read.columnPx,
+    `the rendered --measure-doc-column is ${read.columnPx.toFixed(1)}px but reading-measure.ts says ${DOC_COLUMN_PX.toFixed(1)}px — the popout window, the image hints and the outline rail's floors are all reading the stale one`,
+  ).toBeCloseTo(DOC_COLUMN_PX, 0);
+
+  // ③ The column really is the measure plus two gutters, at the size the body is set in.
+  expect(read.measureAtBodyPx).toBeCloseTo(PROSE_MEASURE_PX, 0);
+  expect(
+    read.columnPx - 2 * read.gutterPx,
+    `the column minus its gutters (${(read.columnPx - 2 * read.gutterPx).toFixed(1)}px) is not the prose measure at ${DOC_BODY_FONT_PX}px (${read.measureAtBodyPx.toFixed(1)}px)`,
+  ).toBeCloseTo(read.measureAtBodyPx, 0);
 });
 
 /**

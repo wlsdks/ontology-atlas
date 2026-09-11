@@ -636,6 +636,36 @@
      A spec preventing content length from determining card height (dimension regularity). */
   --card-row-h: 22px;
   /*
+   * ── One number, two shapes ────────────────────────────────────────────────────
+   *
+   * `--measure-prose-steps` is the measure. Everything below is derived from it, so
+   * changing this 60 moves the line cap, the document column, the notice cards, the
+   * header, the meta bar and the outline rail together. Before 2026-09-11 the column
+   * was an independent `760px` and the cap was `70ch`; they disagreed by 180px inside
+   * one reading column, and the wider one was the box a person actually saw.
+   */
+  --measure-prose-steps: 60;
+  /*
+   * Advance of the digit `0` in Pretendard Variable, in `em`. **Measured**, not chosen:
+   * `"0".repeat(100)` in the built export divided by 100 gives 9.531px at the 16px root.
+   * It exists because `ch` is font-relative and a **box** cannot be: the eleven sites
+   * that wear `--measure-doc-column` run from `text-label` (11px) to the 16px root, so a
+   * `ch`-bearing column token resolved to three different widths on one page (measured
+   * on `/en/docs/`: 651.9px on the viewer article and the frontmatter block, 473.2px on
+   * the meta bar). Converting the measure once, at the size the body is actually set in,
+   * is what makes the column one width.
+   *
+   * Gate: `tests/e2e/prose-measure-calibration.spec.ts` renders the glyphs and fails if
+   * this ratio stops describing the shipped font, or if the derivation below stops
+   * matching the measure resolved at `--text-body-lg`.
+   */
+  --measure-zero-advance: 0.5957;
+  /* The side inset every document column has always paired with — `px-6 md:px-10`
+     at md and above. It is also the gap the outline rail stands off the column by
+     (`DocReadingOutlineRail`), so the rail is a gutter away from the text rather than
+     a pane-width residue away from it. */
+  --measure-doc-gutter: 40px;
+  /*
    * Prose measure — the upper limit of line length readable by eye, in `ch`.
    *
    * ⚠️ **`ch` is not a character.** `1ch` is the advance of the digit `0`, and in
@@ -657,24 +687,47 @@
    * was therefore never what it produced; 70 `ch` is 92 characters. **60ch** is the
    * step that lands inside that intent (79) while keeping Korean above the ~35
    * syllables a `break-keep` paragraph needs to stop breaking oddly. It is the cap
-   * on a *line*, not on a column: `--measure-doc-column` (760px) stays the box, and
-   * the prose body sits left-aligned inside it.
+   * on a *line*; `--measure-doc-column` below is that same measure plus the gutter
+   * the column has always paired with, so the box no longer disagrees with the text
+   * inside it.
    *
    * Gate: `tests/e2e/prose-measure-calibration.spec.ts` renders `"0".repeat(100)`
    * and a fixed English sample in the shipped font and fails outside 65–82
    * characters per measure — so neither the token nor the font can drift this back
    * without saying so.
    */
-  --measure-prose: 60ch;
+  --measure-prose: calc(var(--measure-prose-steps) * 1ch);
   /*
-   * Document column — the reading column a document, wiki page or check report sits in
-   * (2026-09-08). Measured before it was named: `760px` hand-written at 11 sites across the
-   * Docs, Library and full-detail surfaces, always paired with the same gutter. `--measure-prose`
-   * is a line-length limit in `ch` applied to the prose elements *inside* this box; this is the
-   * column's box width, which the gutter, the headings, the tables and the frontmatter block
-   * also need, so the two stay separate tokens.
+   * Document column — the reading column a document, wiki page or check report sits in.
+   *
+   * **= the prose measure, spent at the size the body is set in, plus one gutter each side**
+   * → 60 × 0.5957 × 14px + 2 × 40px = **580.4px**.
+   *
+   * History, because the derivation replaced a number rather than joining it: from
+   * 2026-09-08 this was an independent `760px`, named after the literal that eleven sites
+   * had hand-written, always paired with this same gutter. That box was never a reading
+   * column — measured on the installed app at 1512, it held a **668px run at 104 English
+   * characters per line**. When the line was capped at the measure on 2026-09-11 the two
+   * stopped agreeing: the notice cards, the page header, the source disclosure, the
+   * frontmatter block and the meta bar still spanned 680px of content while the prose under
+   * them ended at 497px — two widths stacked inside one reading column, which is worse than
+   * one wrong width. So the box is now the measure, and everything in the column follows it.
+   *
+   * It stays a separate **token** because it is a different **quantity**: absolute, because
+   * eleven consumers read it from `text-label` (11px) to the 16px root and a box must not
+   * change width with the type inside it. `--measure-prose` stays in `ch` because a *line*
+   * must.
+   *
+   * Two consumers cannot see a CSS variable at all — the popout window's inlined stylesheet
+   * and Next's `sizes` hints — and they read `DOC_COLUMN_PX` from
+   * `src/shared/ui/reading-measure.ts`, which carries this same derivation from the same
+   * three constants. The rendered token and that constant are gated against each other in
+   * `tests/e2e/prose-measure-calibration.spec.ts`.
    */
-  --measure-doc-column: 760px;
+  --measure-doc-column: calc(
+    var(--measure-prose-steps) * var(--measure-zero-advance) * var(--text-body-lg) +
+      2 * var(--measure-doc-gutter)
+  );
   /*
    * Stage column — the content column of a destination's stage (2026-09-08).
    *
@@ -682,7 +735,8 @@
    * already used, and it has now gained a second consumer — a value earns a name the moment
    * something else needs it."* By today it had seven consumers and only three read the name, so
    * the number is the token and `PAGE_COLUMN_STAGE` reads it. Distinct from `--measure-prose`
-   * (a line-length cap in `ch` — 60ch, 79 characters), `--measure-doc-column` (760, a document page) and
+   * (a line-length cap in `ch` — 60ch, 79 characters), `--measure-doc-column` (580.4, a
+   * document page, derived from that cap) and
    * `--git-setup-measure` (520, one task in an empty destination).
    */
   --measure-stage-column: 640px;
