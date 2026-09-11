@@ -54,6 +54,25 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — The Library canvas's ink ramp keeps its 120ms under reduced motion
+
+**Why**: under `prefers-reduced-motion: reduce` at 1512, pressing `3 sources changed` landed the dim in **one frame, a single 0.3995 step**, both directions — the hard cut the ordinary path had just been repaired of — while the panel beside the canvas kept its 180ms crossfade.
+**Prior**: narrows the byte-identical-frames falsifier of 2026-09-07 "The Library graph is a live force simulation with a bounded drift" to the canvas **at rest**: it bounded the drift clause that 2026-09-08 "The Library graph stands still" deleted, and the same record's dim ("35% over `--motion-fast`") never carried a reduced-motion carve-out. Extends D7 2026-07-28 (WCAG 2.2 2.3.3: a hand's own move keeps its time) to this canvas.
+**Decision**: the `reducedMotion` snap leaves the dim ramp in `use-library-graph-engine.ts`; the ink rides `--motion-fast` at both settings. No axis is added: the painted bounding box and the lit-pixel count are identical before the press and after Escape (9108 at ordinary motion, 8959 under `reduce`), and `settling` still drops the loop when the ramp lands, so an idle reduced-motion canvas stays byte-identical frame to frame. Measured after: 14 changing frames over 114ms, worst step 0.0599.
+**Dissent**: design-motion's own 2026-09-07 dissent read the other way — a preference asking for less motion should get less, and 120ms of ink nobody asked for is still 120ms.
+**Falsifier**: a reduced-motion reader who reports this graph as animating; any frame differing with no pointer on the canvas and no clause held.
+**Owner**: jinan
+
+## 2026-09-12 — The Library's home is the folder's graph; the guide and the questions are doors
+
+**Why**: the owner, on the installed app: *"is this gather-compile-read screen just the main one? why every time..? put it behind a How-to-use button"*; of the graph, *"an ugly popup, very poor"*.
+**Prior**: restores 2026-09-06 "The Library pane is the graph; the shelf is a popup", falsifier standing — with the <=560px popup, self-raise and header strip that 2026-09-06 "An empty Library folder is an empty state" overturned; its empty-folder stage stands. Overturns the always-draws clause of 2026-09-11 "The Library keeps its spine" on its own dissent ("once answers exist the stage is noise above the list"); its "Overturns nothing" was wrong against `:587`. Narrows "Graph remains an explicit supporting view" (2026-09-11 "Library retains questions") to reading. Retires the landing's synapse field from 2026-09-09 "The Library gets a ground": it was ground for cards.
+**Decision**: with nothing chosen the pane is the folder's graph at full height; the `Graph` chip and its dialog go. One `text-label` row holds the counts and three presses: `Compile next: <source>`, the one accent ink, opens Compile; `N sources changed` lights that citation and its two ends, moving no mark; `N off-template` opens the report. Then `How to use`, the questions, `Check result`. The guide is `transientSurface("anchored")` <=560px on its door, raised once per machine (`atlas.library.guide-seen`). At one saved answer the questions door is that question: reopening stays one press.
+**Dissent**: design-lead, 2026-09-06: a guide behind a chip is one nobody opens twice. design-interaction: a self-raising popover is a modal in softer clothes; po-leverage: cut the self-raise, the half of the sentence offered as an alternative.
+**Falsifier**: cold walkers who cannot name the next press within 10s of the home; a canvas band under 60% of its width at 1512 or 1040; the guide reopened by hand in one sitting; a clause press that moves a mark; one saved answer not reopenable in one press.
+**Owner**: jinan
+
+
 ## 2026-09-12 — The dogfood repository outgrew the cap its own product ships
 
 **Why**: `main` is red in the `mcp` lane. `mcp/src/integration.test.mjs` connects this checkout as a source root and asserts `verified_current`; it reports `review_required` with `topGap: source_inventory_truncated`. No declared path is broken — the repository crossed its own bound, 3995 files at #1557 and 4007 at #1558, +96 over 25 commits. #1558 touched no `mcp/` path, so the lane that would have caught it was never selected on the PR that broke it.

@@ -1076,3 +1076,38 @@ export function useWikiWriteMode(): WikiWriteMode {
   const getServerSnapshot = useCallback(() => DEFAULT_WIKI_WRITE_MODE, []);
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
+
+/**
+ * **Whether this machine has already been shown the Library's three-step guide.**
+ *
+ * Owner, 2026-09-12: *"is this gather-compile-read screen just the main one? why does it
+ * come up every time … isn't this a screen for the first use only and never again?"* The
+ * guide is therefore a popup behind a door, and it raises itself exactly once — the first
+ * time the Library's home is drawn on this computer — after which only the door opens it.
+ *
+ * ⚠️ **Per machine, not per folder.** The owner's sentence is "only on first use", and a
+ * person who has read the three steps has read them; scoping the flag to the vault would
+ * re-teach the same three sentences to someone opening their second folder. It shares the
+ * key prefix and the `on`/`off` shape with `atlas.library.index-collapsed` so both of the
+ * Library's remembered answers read the same way in a person's own storage.
+ */
+const LIBRARY_GUIDE_SEEN_KEY = "atlas.library.guide-seen";
+
+const DEFAULT_LIBRARY_GUIDE_SEEN = false;
+
+export function readLibraryGuideSeen(): boolean {
+  return readOnOff(LIBRARY_GUIDE_SEEN_KEY, DEFAULT_LIBRARY_GUIDE_SEEN);
+}
+
+export function writeLibraryGuideSeen(value: boolean): void {
+  writeOnOff(LIBRARY_GUIDE_SEEN_KEY, value);
+}
+
+export function useLibraryGuideSeen(): boolean {
+  const getSnapshot = useCallback(
+    () => readOnOff(LIBRARY_GUIDE_SEEN_KEY, DEFAULT_LIBRARY_GUIDE_SEEN),
+    [],
+  );
+  const getServerSnapshot = useCallback(() => DEFAULT_LIBRARY_GUIDE_SEEN, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}

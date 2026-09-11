@@ -72,7 +72,7 @@ async function openLibrary(page: Page, files = FILES, locale = 'en') {
   await page.goto(`/${locale}/docs/`);
   await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
   await page.getByTestId('app-nav-rail-item-library').click();
-  await page.getByTestId('library-questions').waitFor();
+  await page.getByTestId('library-graph-canvas').waitFor();
   await page.waitForFunction(() => !Array.from(document.querySelectorAll('body *')).some((el) => el.children.length === 0 && /Loading the map|지도를 불러/.test(el.textContent ?? '') && el.getBoundingClientRect().width > 0));
   return harness;
 }
@@ -101,7 +101,7 @@ test('a changed original becomes a compared, retained answer revision without lo
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   const harness = await openLibrary(page);
-  await page.getByTestId('library-question-wiki/answers/original').click();
+  await page.getByTestId('library-questions-open').click();
   await expect(page.getByTestId('answer-evidence-state')).toHaveAttribute('data-state', 'unchanged');
   await harness.mutateSource(page, SOURCE, REVISED);
   await expect(page.getByTestId('answer-evidence-state')).toHaveAttribute('data-state', 'changed');
@@ -163,7 +163,9 @@ test('a changed original becomes a compared, retained answer revision without lo
   await page.getByRole('button', { name: 'Read previous version', exact: true }).click();
   await expect(page.getByTestId('retained-answer-context')).toContainText('earlier retained answer');
   await page.getByRole('button', { name: 'Back to questions', exact: true }).click();
-  await expect(page.getByTestId('library-questions').getByRole('button', { name: 'What is the retention policy?' })).toHaveCount(1);
+  /* Back on the home, the questions door still names the one saved answer — the title is
+     the label at exactly one answer, which is what makes reopening it one press. */
+  await expect(page.getByTestId('library-questions-open')).toContainText('What is the retention policy?');
   expect(errors).toEqual([]);
   if (evidence) {
     writeFileSync(`${evidence}/saved-files.json`, JSON.stringify(saved.files, null, 2));
@@ -173,7 +175,7 @@ test('a changed original becomes a compared, retained answer revision without lo
 
 test('a human edit made during refresh stops stale acceptance and survives', async ({ page }) => {
   const harness = await openLibrary(page);
-  await page.getByTestId('library-question-wiki/answers/original').click();
+  await page.getByTestId('library-questions-open').click();
   await harness.mutateSource(page, SOURCE, REVISED);
   await generateDraft(page, harness);
   const corrected = `${OLD_PAGE}\nHuman correction made during the review.\n`;
@@ -188,7 +190,7 @@ test('a human edit made during refresh stops stale acceptance and survives', asy
 test('retained answer refresh and confirmation are reachable by keyboard', async ({ page }) => {
   const harness = await openLibrary(page);
   await harness.mutateSource(page, SOURCE, REVISED);
-  await tabTo(page, 'library-question-wiki/answers/original');
+  await tabTo(page, 'library-questions-open');
   await page.keyboard.press('Enter');
   await tabTo(page, 'answer-refresh-start');
   await page.keyboard.press('Enter');
@@ -206,7 +208,7 @@ test('retained answer refresh and confirmation are reachable by keyboard', async
 
 test('new and missing originals remain distinguishable without running an agent', async ({ page }) => {
   const harness = await openLibrary(page);
-  await page.getByTestId('library-question-wiki/answers/original').click();
+  await page.getByTestId('library-questions-open').click();
   await harness.mutateSource(page, 'sources/amendment.md', 'A new amendment requires review.\n');
   await expect(page.getByTestId('answer-evidence-state')).toHaveAttribute('data-state', 'new-sources');
   await page.evaluate(async (path) => {
@@ -223,9 +225,9 @@ test('a Library without code nodes opens retained questions and routes an inline
   await installLibraryWorkHarness(page, { files: documents });
   await page.goto('/en/docs/');
   await page.getByRole('button', { name: /Open my folder/i }).click();
-  await expect(page.getByTestId('library-questions')).toBeVisible();
+  await expect(page.getByTestId('library-questions-open')).toBeVisible();
   await expect(page.getByTestId('app-nav-rail-item-architecture')).toHaveCount(0);
-  await page.getByTestId('library-question-wiki/answers/original').click();
+  await page.getByTestId('library-questions-open').click();
   await page.getByTestId('library-reading-pane').locator(`[data-source-path="${SOURCE}"][data-source-anchor="l1"]`).click();
   await expect(page.getByTestId('library-source-citation')).toContainText('l1');
   await expect(page.locator('body')).toContainText(SOURCE);
@@ -233,7 +235,7 @@ test('a Library without code nodes opens retained questions and routes an inline
 
 test('a running refresh remains visibly reopenable and can be stopped after closing the conversation', async ({ page }) => {
   const harness = await openLibrary(page);
-  await page.getByTestId('library-question-wiki/answers/original').click();
+  await page.getByTestId('library-questions-open').click();
   await expect(page.getByTestId('answer-refresh-start')).toContainText('Ask agent');
   await page.getByTestId('answer-refresh-start').click();
   await expect.poll(async () => (await harness.snapshot(page)).calls.some((call) => call.method === 'session/prompt')).toBe(true);
@@ -261,7 +263,7 @@ for (const { retained, kind, manual, name } of [
     await page.goto('/en/docs/');
     await page.getByRole('button', { name: /Open my folder/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
-    await page.getByTestId('library-question-wiki/answers/original').click();
+    await page.getByTestId('library-questions-open').click();
     expect(await page.evaluate(() => localStorage.getItem('library.wikiWriteMode'))).toBe('auto');
     if (kind === 'refresh') await page.getByTestId('answer-refresh-start').click();
     /* By testid, not by label: the door's words became plain language on 2026-09-12

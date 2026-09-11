@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -26,7 +26,7 @@ const MODEL = {
   pairing: { originalsByWiki: new Map(), writeUpsBySource: new Map() },
 } as unknown as LibraryUiModel;
 
-function Harness({ onNewPage = null, report = null }: { onNewPage?: ((title: string) => void) | null; report?: { count: number; open: boolean; onOpen: () => void } | null }) {
+function Harness({ onNewPage = null, report = null }: { onNewPage?: ((title: string) => void) | null; report?: { count: number; open: boolean; onOpen: () => void; running?: boolean; unseen?: boolean } | null }) {
   const t = useTranslations("library");
   return (
     <LibrarySection
@@ -165,6 +165,49 @@ describe("the wiki half of the column is an index: search, three doors, the list
     expect(row.textContent).toContain("Check results 6");
     fireEvent.click(row);
     expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * **The row's two live states, and the one thing that clears the second** (2026-09-12).
+   *
+   * `running` and `unseen` shipped with the computed check and had no gate of any kind —
+   * no unit test, no e2e, no contract — so a row that silently stopped saying "a check is
+   * going" or "a finished check nobody has read" would have been green everywhere.
+   *
+   * They matter more since the Library's home became the folder's graph: the strip's
+   * `N off-template` clause presses into the same report, and this row is the **only**
+   * surface carrying the report's state, because a chip on the strip could not. Both
+   * presses go through `LibraryPage`'s `choose`, which is where "seen" lives — so the
+   * mark's whole contract is that it is drawn from the prop and nowhere else, and that is
+   * what this pins. No e2e can reach `unseen: true` today: the dock harness leaves
+   * `acp_start` unanswered on purpose, so no turn ever completes in a browser.
+   */
+  it("draws running, then unseen, and neither once the report has been read", () => {
+    const onOpen = vi.fn();
+    const draw = (report: { count: number; open: boolean; onOpen: () => void; running?: boolean; unseen?: boolean }) => {
+      mount(<Harness report={report} />);
+      const row = screen.getByTestId("library-open-report");
+      return {
+        state: row.getAttribute("data-report-state"),
+        running: screen.queryByTestId("library-report-running") !== null,
+        unseen: screen.queryByTestId("library-report-unseen") !== null,
+      };
+    };
+
+    expect(draw({ count: 6, open: false, onOpen })).toEqual({ state: null, running: false, unseen: false });
+    cleanup();
+    expect(draw({ count: 6, open: false, onOpen, running: true })).toEqual({ state: "running", running: true, unseen: false });
+    cleanup();
+    expect(draw({ count: 6, open: false, onOpen, unseen: true })).toEqual({ state: "unseen", running: false, unseen: true });
+    cleanup();
+    // A check in flight outranks a stale unseen mark: one row, one word.
+    expect(draw({ count: 6, open: false, onOpen, running: true, unseen: true })).toEqual({ state: "running", running: true, unseen: false });
+    cleanup();
+    /* And reading it is what clears the mark. `LibraryPage` passes `unseen` as
+       `reportUnseen && opened?.kind !== "report"`, so the open report is the state this
+       row must draw plainly — whichever door opened it, the index row or the home strip's
+       `N off-template` clause. */
+    expect(draw({ count: 6, open: true, onOpen, unseen: false })).toEqual({ state: null, running: false, unseen: false });
   });
 });
 

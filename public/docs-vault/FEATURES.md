@@ -773,11 +773,18 @@ facts the folder holds about a file Atlas has never opened (path, format, size, 
 sha256 or "not measured") plus one door that reveals it in Finder or hands over the bytes.
 With no folder open the whole screen is one centred stage naming the two kinds of file and
 offering the picker, and a folder that is open but holds nothing gets the same grammar with
-the two doors instead. **With a folder open and nothing selected, the right pane shows the existing
-source-to-wiki steps.** Graph opens on request in a large dialog, both from this
-landing and above an open page. Closing it preserves the selected document and
-reading position. Below `lg` there is one column — guidance above the index —
-and selecting opens the reader with a way back. A folder that holds wiki
+the two doors instead. **With a folder open and nothing selected, the right pane *is* the folder's graph**
+(2026-09-12, restoring 2026-09-06). Above it sits one `text-label` row — the canvas's own
+counts caption, then the step facts as pressable clauses (`Compile next: <source>` opens
+Compile and its brain picker; `N sources changed` lights that citation and its two ends
+without moving a mark; `N off-template` presses into the check report, whose one door with
+live state — a count, *running*, *unseen* — is the index's own row) — and then the doors
+`How to use`, the saved questions, and the existing `Conversation`. `How to
+use` holds the three source-to-wiki steps in an anchored popup and raises itself once per
+machine; at exactly one saved answer the questions door is that question, so reopening it
+is one press. Selecting a document replaces the canvas and gives it back on close. Below
+`lg` there is one column — the graph above the index — the strip keeps its lead clause, and
+the rest of the doors fold into one. A folder that holds wiki
 pages and no `kind:` node opens here rather than on the map: it is a wiki on its own, and
 an empty canvas had nothing to say to the person who chose it (ledger, 2026-09-06). A
 folder with even one node still opens on the map.

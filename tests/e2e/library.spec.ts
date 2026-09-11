@@ -247,9 +247,17 @@ test.describe("the Library destination", () => {
     const budgetRow = page.getByTestId("library-source-sources/budget.xlsx");
     await expect(budgetRow).toContainText("not compiled");
 
-    // The honest count, in the section rather than in a tooltip — and the two states apart:
-    // one source nobody wrote up, one whose page has fallen behind its bytes. "2 not written
-    // up" was the sentence this line used to accept, and it was false for the cited one.
+    /*
+     * The honest count, and the two states apart: one source nobody wrote up, one whose
+     * page has fallen behind its bytes. "2 not written up" was the sentence this line used
+     * to accept, and it was false for the cited one.
+     *
+     * ⚠️ **Where the line is read moved on 2026-09-12.** It was a caption at the foot of
+     * the Sources list, and the owner read it there: *"written like this, who is ever
+     * going to look at it?"* It is now under the press it is about — one press from the
+     * clause on the home that names the file Compile would start on.
+     */
+    await page.getByTestId("library-strip-compile").click();
     const footer = page.getByTestId("library-needs-compile");
     await expect(footer).toContainText("1 not written up yet");
     await expect(footer).toContainText("1 source version needs review");
@@ -270,6 +278,8 @@ test.describe("the Library destination", () => {
 
     // And the folder's own summary line counts it as work Compile can still do, in its own
     // clause — never folded into "not written up yet", which is false of a file with a page.
+    // Under the press it is about since 2026-09-12; see the case above.
+    await page.getByTestId("library-strip-compile").click();
     const footer = page.getByTestId("library-needs-compile");
     await expect(footer).toContainText("1 read only in part");
     await expect(footer).not.toContainText("not written up yet");
@@ -515,7 +525,7 @@ test.describe("the Library pane", () => {
       "library-graph-empty",
       "library-status-strip",
       "library-reader-landing",
-      "library-graph-open",
+      "library-home-strip",
     ]) {
       await expect(page.getByTestId(gone), `${gone} still draws over an empty folder`).toHaveCount(
         0,
@@ -543,35 +553,71 @@ test.describe("the Library pane", () => {
     expect(await stage.locator("h1, h2, h3").count()).toBe(1);
   });
 
-  test("opens on readable guidance and shows a full graph only when requested", async ({ page }) => {
+  /**
+   * **The home is the folder's graph, and the guide is behind a door** (owner,
+   * 2026-09-12; `docs/DECISIONS.md` 2026-09-06 `:587`, restored).
+   *
+   * This case used to read the opposite way round — three guide cards drawn on every
+   * visit, the canvas absent until a `Graph` chip opened a viewport dialog. The owner read
+   * that: *"is this gather-compile-read screen just the main one? why does it come up
+   * every time…?"*, and of the dialog *"pressing a button gets an ugly popup, which is
+   * very poor."* So the claims invert: the canvas is present and fills the pane, the three
+   * steps are one press away, and the strip's clauses are the only place the step facts
+   * are stated.
+   */
+  test("opens on the folder's graph with the guide one press away", async ({ page }) => {
     await openLibrary(page);
     const canvas = page.getByTestId("library-graph-canvas");
-    await expect(canvas).toHaveCount(0);
-    const stage = page.getByTestId("library-stage");
-    await expect(stage).toBeVisible();
-    await expect(page.getByTestId("library-graph-open")).toHaveCount(1);
+    await expect(canvas).toBeVisible();
+    await expect(canvas).toHaveAttribute("data-labels", "standing");
+    // Not raised over the picture: the guide's self-raise is once per machine and seeded.
+    await expect(page.getByTestId("library-guide-popover")).toHaveCount(0);
+    await expect(page.getByTestId("library-stage")).toHaveCount(0);
 
-    const strip = page.getByTestId("library-status-strip");
-    await expect(strip).toContainText("Compile next");
-    await expect(strip).toContainText("2 waiting");
-    await expect(strip).not.toContainText("Gather");
-    await expect(strip).not.toContainText("Read");
-
-    const stageBox = (await stage.boundingBox())!;
-    expect(stageBox.width).toBeLessThanOrEqual(640);
     /*
-     * ⚠️ **The anatomy is measured in a pane tall enough to draw all of it** (guardian,
-     * council 2026-09-11). Every step still has the same shell — head line, one caption,
-     * one action row — and that is what makes the heights match. But below
-     * `--library-spine-collapse-height` of **pane** height a step that is `done` folds to
-     * its head row on purpose, so that the saved questions inside step three reach a short
-     * pane at all: measured on the branch export, the question row stood 5px past the fold
-     * at 1024×640 without the fold and 55px inside it with. That geometry is
-     * `library-spine.spec.ts`'s to pin, both folded and open; this claim is about the
-     * shell, so it is read at a height where nothing folds. A regression in the shell
-     * itself still fails here at any height.
+     * The picture is the pane. `> 0.6` of the reader's height is the same floor the old
+     * dialog was held to, read against the box the canvas now lives in.
+     */
+    const reader = (await page.getByTestId("library-reader").boundingBox())!;
+    expect((await canvas.boundingBox())!.height).toBeGreaterThan(reader.height * 0.6);
+    const reachable = await canvas.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return document.elementFromPoint(rect.left + 20, rect.top + rect.height / 2) === element;
+    });
+    expect(reachable, "the home's graph is covered by another surface").toBe(true);
+    for (const id of ["library-graph-counts", "library-graph-hint"]) {
+      const label = page.getByTestId(id);
+      await expect(label).toBeVisible();
+      const hit = await label.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return element.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2));
+      });
+      expect(hit, `${id} is occluded`).toBe(true);
+    }
+
+    // One strip, and the step facts are on it — not in a second header row.
+    const strip = page.getByTestId("library-home-strip");
+    await expect(strip).toContainText("Compile next");
+    await expect(page.getByTestId("library-status-strip")).toHaveCount(0);
+    await expect(page.getByTestId("library-needs-compile")).toHaveCount(0);
+
+    /*
+     * The three steps, still with one shell each, now inside the popup. The heights are
+     * read at a pane tall enough to draw all of it, for the reason the fold gives
+     * (`library-spine.spec.ts` owns the folded geometry).
      */
     await page.setViewportSize({ width: 1280, height: 900 });
+    await page.getByTestId("library-guide-open").click();
+    const guide = page.getByTestId("library-guide-popover");
+    await expect(guide).toBeVisible();
+    await expect(guide).toHaveAttribute("data-transient-surface", "anchored");
+    // Anchored, not centred: it hangs under the door that opened it.
+    const door = (await page.getByTestId("library-guide-open").boundingBox())!;
+    const panel = (await guide.boundingBox())!;
+    expect(panel.y).toBeGreaterThanOrEqual(door.y + door.height);
+    expect(panel.width).toBeLessThanOrEqual(560);
+    const stage = guide.getByTestId("library-stage");
+    await expect(stage).toBeVisible();
     const cores: number[] = [];
     for (const step of ["gather", "compile", "read"]) {
       const row = stage.getByTestId(`library-stage-${step}`);
@@ -581,46 +627,30 @@ test.describe("the Library pane", () => {
     for (const height of cores) expect(Math.abs(height - cores[0]!)).toBeLessThanOrEqual(2);
     expect(await stage.locator("dl").count()).toBe(0);
 
-    await page.getByTestId("library-graph-open").click();
-    const graph = page.getByTestId("library-graph-dialog");
-    await expect(graph).toBeVisible();
-    await expect(graph).toHaveAttribute("aria-modal", "true");
-    await expect(canvas).toHaveAttribute("data-labels", "standing");
-    expect((await canvas.boundingBox())!.height).toBeGreaterThan((await graph.boundingBox())!.height * 0.6);
-    const reachable = await canvas.evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      return document.elementFromPoint(rect.left + 20, rect.top + rect.height / 2) === element;
-    });
-    expect(reachable, "the requested graph is covered by another surface").toBe(true);
-    for (const id of ["library-graph-counts", "library-graph-hint"]) {
-      const label = graph.getByTestId(id);
-      await expect(label).toBeVisible();
-      const hit = await label.evaluate((element) => {
-        const rect = element.getBoundingClientRect();
-        return element.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2));
-      });
-      expect(hit, `${id} is occluded`).toBe(true);
-    }
+    // Escape closes it and the door takes focus back — the anchored contract.
     await page.keyboard.press("Escape");
-    await expect(graph).toHaveCount(0);
-    await expect(page.getByTestId("library-graph-open")).toBeFocused();
-    await expect(stage).toBeVisible();
+    await expect(guide).toHaveCount(0);
+    await expect(page.getByTestId("library-guide-open")).toBeFocused();
+    await expect(canvas).toBeVisible();
+    // And the machine remembers, so it never raises itself again.
+    expect(
+      await page.evaluate(() => window.localStorage.getItem("atlas.library.guide-seen")),
+    ).toBe("on");
   });
 
-  test("closing a page returns to guidance without reopening the graph", async ({ page }) => {
+  test("a page replaces the canvas, and closing it brings the canvas back", async ({ page }) => {
     await openLibrary(page);
-    await page.getByTestId("library-graph-open").click();
-    const graph = page.getByTestId("library-graph-dialog");
-    await expect(graph).toBeVisible();
-    await graph.getByRole("button", { name: "Close", exact: true }).click();
-    await expect(graph).toHaveCount(0);
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
     await page.getByTestId("library-index-segment-wiki").click();
     await page.getByTestId("library-wiki-wiki/quarter-plan").click();
     await expect(page.getByTestId("library-wiki-header")).toBeVisible();
     await expect(page.getByTestId("library-reader-landing")).toHaveCount(0);
+    // The reading state keeps its own header row: a way back and the status strip.
+    await expect(page.getByTestId("library-status-strip")).toBeVisible();
+    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
     await page.getByTestId("library-reader-back").click();
     await expect(page.getByTestId("library-reader-landing")).toBeVisible();
-    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
   });
 
   /**
@@ -858,20 +888,20 @@ test.describe("the Library pane", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await expect.poll(() => dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
-    await expect(page.getByTestId("library-graph-open")).not.toBeFocused();
+    await expect(page.getByTestId("library-guide-open")).not.toBeFocused();
   });
 
-  test("choosing a file opens the reader and closing returns guidance", async ({ page }) => {
+  test("choosing a file opens the reader and closing returns the canvas home", async ({ page }) => {
     await openLibrary(page);
     await expect(page.getByTestId("library-reader-landing")).toBeVisible();
-    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
     await page.getByTestId("library-index-segment-wiki").click();
     await page.getByTestId("library-wiki-wiki/quarter-plan").click();
     await expect(page.getByTestId("library-wiki-header")).toContainText("Quarter plan");
     await expect(page.getByTestId("library-reader-landing")).toHaveCount(0);
     await page.getByTestId("library-reader-back").click();
     await expect(page.getByTestId("library-reader-landing")).toBeVisible();
-    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
     await expect(page.getByTestId("library-wiki-header")).toHaveCount(0);
   });
 });
@@ -891,42 +921,51 @@ const NARROW_VIEWPORTS = [
  */
 
 for (const viewport of NARROW_VIEWPORTS) {
-  test(`guidance and the requested graph remain reachable at ${viewport.label}`, async ({ page }) => {
+  test(`the canvas home and its doors remain reachable at ${viewport.label}`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await openLibrary(page, NARROW_VAULT);
     const landing = page.getByTestId("library-reader-landing");
     await expect(landing).toBeVisible();
     const indexBox = (await page.getByTestId("library-index").boundingBox())!;
     expect((await landing.boundingBox())!.y).toBeLessThan(indexBox.y);
-    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
-    // Guidance owns a scroller; every step can be reached without scrolling the page.
-    for (const step of ["gather", "compile", "read"]) {
-      const row = page.getByTestId(`library-stage-${step}`);
-      await row.scrollIntoViewIfNeeded();
-      await expect(row).toBeInViewport();
-      const visible = await row.evaluate((element) => {
-        const rect = element.getBoundingClientRect();
-        const owner = element.closest('[data-testid="library-reader-landing"]')!.getBoundingClientRect();
-        const y = Math.max(rect.top, owner.top) + 4;
-        return element.contains(document.elementFromPoint(rect.left + rect.width / 2, y));
-      });
-      expect(visible, `${step} is clipped by the index`).toBe(true);
-    }
-    await page.getByTestId("library-graph-open").click();
-    const graph = page.getByTestId("library-graph-dialog");
-    const canvas = graph.getByTestId("library-graph-canvas");
+
+    /*
+     * The picture is the pane here too, in the top half of the one column. Its own box,
+     * not the viewport's: below `lg` the index takes the rest of the screen.
+     */
+    const canvas = page.getByTestId("library-graph-canvas");
     await expect(canvas).toBeVisible();
-    const graphBox = (await graph.boundingBox())!;
-    expect(graphBox.x).toBeGreaterThanOrEqual(0);
-    expect(graphBox.y).toBeGreaterThanOrEqual(0);
-    expect(graphBox.x + graphBox.width).toBeLessThanOrEqual(viewport.width);
-    expect(graphBox.y + graphBox.height).toBeLessThanOrEqual(viewport.height);
-    expect((await canvas.boundingBox())!.height).toBeGreaterThan(graphBox.height * 0.6);
-    await expect(graph.getByTestId("library-graph-hint")).toBeVisible();
+    const canvasBox = (await canvas.boundingBox())!;
+    expect(canvasBox.x).toBeGreaterThanOrEqual(0);
+    expect(canvasBox.y).toBeGreaterThanOrEqual(0);
+    expect(canvasBox.x + canvasBox.width).toBeLessThanOrEqual(viewport.width);
+    expect((await page.getByTestId("library-graph-hint")).isVisible()).toBeTruthy();
     await expect(canvas).toHaveAttribute("aria-describedby", /library-graph-hint/);
+
+    /*
+     * Below `lg` the strip keeps its lead clause and the doors fold into one `…`, because
+     * four chips plus three clauses on a phone is the header row this screen replaced.
+     * Every destination is still reachable, one press deeper.
+     */
+    const overflow = page.getByTestId("library-home-overflow");
+    await expect(overflow).toBeVisible();
+    for (const gone of ["library-guide-open", "library-questions-open"]) {
+      expect(
+        await page.getByTestId(gone).evaluate((el) => el.getBoundingClientRect().width),
+        `${gone} still takes room on the narrow strip`,
+      ).toBe(0);
+    }
+    await overflow.click();
+    const list = page.getByTestId("library-home-overflow-popover");
+    await expect(list).toBeVisible();
+    await expect(list).toHaveAttribute("data-transient-surface", "anchored");
+    const listBox = (await list.boundingBox())!;
+    expect(listBox.x).toBeGreaterThanOrEqual(0);
+    expect(listBox.x + listBox.width).toBeLessThanOrEqual(viewport.width);
+    await expect(list.getByTestId("library-guide-open-overflow")).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(graph).toHaveCount(0);
-    await expect(page.getByTestId("library-graph-open")).toBeFocused();
+    await expect(list).toHaveCount(0);
+    await expect(overflow).toBeFocused();
 
     // 3 — the index still owns its own overflow, in one scroller rather than two.
     const scroller = page.getByTestId("library-index-scroll");
@@ -953,13 +992,14 @@ for (const viewport of NARROW_VIEWPORTS) {
       element.scrollTop = 0;
     });
 
-    // Choosing swaps the column; closing returns guidance and the same index.
+    // Choosing swaps the column; closing brings the picture and the same index back.
     await page.getByTestId("library-source-sources/report-01.pdf").click();
     await expect(page.getByTestId("library-source-summary")).toBeVisible();
     await expect(page.getByTestId("library-index")).toBeHidden();
+    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
     await page.getByTestId("library-reader-back").click();
     await expect(landing).toBeVisible();
-    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
     await expect(page.getByTestId("library-index")).toBeVisible();
   });
 }
