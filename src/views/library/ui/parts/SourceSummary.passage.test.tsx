@@ -58,6 +58,9 @@ function Harness({ passage }: { passage: CitedPassageState | null }) {
       row={ROW}
       hash={null}
       passage={passage}
+      /* U1's cases pin the passage section; the outline is slice U2's and is off here,
+         so `source.neverOpened` stays the sentence these seven cases were written for. */
+      outline={null}
       canReveal={false}
       writeUps={[]}
       onOpen={() => {}}
@@ -65,6 +68,7 @@ function Harness({ passage }: { passage: CitedPassageState | null }) {
       onCompile={() => {}}
       compileNote={null}
       compileBlocked={false}
+      agentDoor={false}
       busy={false}
       t={t}
     />

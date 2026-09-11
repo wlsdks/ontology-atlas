@@ -10,11 +10,14 @@ import {
   type LibraryWriteUpLink,
 } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
-import type { PassageLabel, SourceUnit } from "@/shared/lib/source-passage";
+import type { SourceOutline, SourceUnit } from "@/shared/lib/source-passage";
 import { RowButton } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { CitedPassageState } from "../../lib/use-cited-passage";
+import type { SourceOutlineState } from "../../lib/use-source-outline";
+import { passageLabelText } from "../../lib/passage-label";
+import { AgentDoor } from "./AgentDoor";
 
 /**
  * The heading that names the passage section to a screen reader, through the
@@ -26,33 +29,56 @@ import type { CitedPassageState } from "../../lib/use-cited-passage";
  */
 const SOURCE_PASSAGE_HEADING_ID = "library-source-passage-heading";
 
-/**
- * The place the anchor names, in the extractor's own precision and no finer.
- *
- * A DOCX heading anchor is a heading, not a line: the extractor never counted lines in
- * that file, so "line 4" would send a person looking for something it does not know.
- * The same rule is why a workbook row says which sheet — `s1r3` is row 3 of sheet 1, and
- * a person reading "row 3" in a two-sheet workbook has a 50% chance of the wrong one.
+/*
+ * `passageLabel` moved to `../../lib/passage-label.ts` in slice U2: the index column's
+ * search caption names the same place this section does, and one fact in two voices is
+ * how one locale's "line 11" and another's would end up side by side on one screen.
  */
-function passageLabel(
-  label: PassageLabel,
-  anchor: string,
+
+/** Names the outline section (`source.outline.title`) to a screen reader, through its own `aria-labelledby`. */
+const SOURCE_OUTLINE_HEADING_ID = "library-source-outline-heading";
+
+/**
+ * **The file's shape as lines a person reads — only what the reader can actually back.**
+ *
+ * The per-format table is not a style choice; it is the list of things U1's reader really
+ * returns, and the gap between that and what slice U2's brief asked for is reported
+ * rather than papered over:
+ *
+ * | format | what this prints | why |
+ * |---|---|---|
+ * | DOCX | every heading, by name | the extractor mints `h:<slug>` anchors for them, so these are real addresses |
+ * | XLSX | each sheet with its row count | `s<i>r<n>` carries the sheet, and "row 3" in a two-sheet workbook is ambiguous |
+ * | CSV / TSV | the record count | records are the unit, and `r<n>` is their address |
+ * | Markdown, text | the line count | ⚠️ **not its headings.** A `##` line is a `line` unit to this reader, not a heading; the selected direction excludes deriving them, so the count is what is true today and the derivation is its own decision |
+ * | HTML | the line count | its tags are stripped before units exist, so a heading is indistinguishable from a paragraph — there is no structure here to list |
+ * | PDF, anything else | nothing; the section says it cannot read the shape | zero units and no page count. A page count needs a PDF parser, which this slice excludes by name |
+ *
+ * A `paragraph` count rides along for DOCX because the headings alone would describe a
+ * document of eight units as a document of four.
+ */
+function outlineRows(
+  outline: SourceOutline,
   t: ReturnType<typeof useTranslations<"library">>,
-): string {
-  switch (label.kind) {
-    case "line":
-      return t("source.passage.label.line", { number: label.number });
-    case "record":
-      return t("source.passage.label.record", { number: label.number });
-    case "heading":
-      return t("source.passage.label.heading", { title: label.title });
-    case "sheet-row":
-      return t("source.passage.label.sheetRow", { sheet: label.sheet, row: label.row });
-    case "page":
-      return t("source.passage.label.page", { number: label.number });
-    default:
-      return t("source.passage.label.anchor", { anchor });
+): string[] {
+  const rows: string[] = [];
+  for (const sheet of outline.sheets) {
+    rows.push(t("source.outline.sheet", { sheet: sheet.sheet, rows: sheet.rows }));
   }
+  for (const heading of outline.headings) {
+    rows.push(heading.title);
+  }
+  const paragraphs = outline.unitCount - outline.headings.length;
+  if (outline.format === "docx" && paragraphs > 0) {
+    rows.push(t("source.outline.paragraphs", { count: paragraphs }));
+  }
+  if (outline.format === "csv") {
+    rows.push(t("source.outline.records", { count: outline.unitCount }));
+  }
+  if (outline.format === "text" || outline.format === "html") {
+    rows.push(t("source.outline.lines", { count: outline.unitCount }));
+  }
+  return rows;
 }
 
 /**
@@ -131,6 +157,7 @@ export function SourceSummary({
   row,
   hash,
   passage,
+  outline,
   canReveal,
   writeUps,
   onOpen,
@@ -138,6 +165,7 @@ export function SourceSummary({
   onCompile,
   compileNote,
   compileBlocked,
+  agentDoor,
   busy,
   t,
 }: {
@@ -154,6 +182,15 @@ export function SourceSummary({
    * po-steward both, 2026-09-11).
    */
   passage: CitedPassageState | null;
+  /**
+   * The file's own shape, read once when this pane opened.
+   *
+   * `null` while the folder is not open or the read is not wanted; the section is then
+   * absent rather than empty. `use-source-outline.ts` owns the read and the reason it is
+   * inside the "nothing is read that a person did not name" clause — choosing this row
+   * *is* naming this file.
+   */
+  outline: SourceOutlineState | null;
   /** True in the installed app, where the door reveals rather than downloads. */
   canReveal: boolean;
   /** Pages citing this file, and whether each still matches its bytes. */
@@ -175,6 +212,13 @@ export function SourceSummary({
   compileNote: string | null;
   /** Whether the press is refused; the note above says why. */
   compileBlocked: boolean;
+  /**
+   * Whether that refusal earns a door to `/agents` (slice U2).
+   *
+   * `LibraryPage` decides on the route, not on the sentence, and it is false on the web
+   * and while an agent is still being looked for.
+   */
+  agentDoor: boolean;
   busy: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
@@ -212,7 +256,25 @@ export function SourceSummary({
       mono: hash !== null,
     },
   ];
-  const opened = passage !== null;
+  /*
+   * **Which sentence about reading is true of this pane right now.**
+   *
+   * U1 had two states: a citation was pressed, or Atlas had never opened the file. Slice
+   * U2 adds a third read — the outline section's — and it fires on *every* source pane,
+   * so leaving the sentence as it was would have made the pane claim the file was never
+   * opened directly above a list of its own headings. That is the reassurance-that-stopped-
+   * being-true failure po-evidence and po-steward both named in U1, and the fix is the
+   * same one: the sentence follows the read.
+   *
+   * The citation wording wins when both happened, because it is the more specific reason
+   * and the one the person acted on; the outline read is the ambient one.
+   */
+  const openedSentence =
+    passage !== null
+      ? "source.openedForCitation"
+      : outline && outline.phase !== "reading"
+        ? "source.openedForOutline"
+        : "source.neverOpened";
   /*
    * **A citation lands on the passage, not at the top of the card.**
    *
@@ -291,7 +353,7 @@ export function SourceSummary({
         data-testid="library-source-opened-state"
         className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
       >
-        {opened ? t("source.openedForCitation") : t("source.neverOpened")}
+        {t(openedSentence)}
       </p>
 
       <dl className="mt-5 flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] pt-4">
@@ -315,6 +377,76 @@ export function SourceSummary({
           </div>
         ))}
       </dl>
+
+      {/*
+       * **What the document is made of — the half of it a person could never see.**
+       *
+       * Above this line is everything Atlas knows *about* the file. This is the file's
+       * own shape, and it is the whole of slice U2's second decision: until 2026-09-11 a
+       * person with no agent could learn a document's size and its sha256 from this pane
+       * and nothing at all about whether it held three headings or three hundred rows.
+       * Reading the structure is the one thing they could do for themselves, and it is
+       * the thing the pane withheld.
+       *
+       * It is **counts and names, never bodies** (`docs/DECISIONS.md` 2026-09-07: Atlas
+       * keeps no converted copy, and a pane that rendered whole documents would be that
+       * copy in all but name). The one place text appears is the passage section below, which a
+       * person asked for by pressing an address.
+       *
+       * It sits above that section because it is the coarser answer: what is in here,
+       * then the one passage somebody named.
+       */}
+      {outline ? (
+        <section
+          data-testid="library-source-outline"
+          data-state={outline.phase === "ready" ? (outline.outline?.unreadable ? "unreadable" : "ready") : outline.phase}
+          aria-labelledby={SOURCE_OUTLINE_HEADING_ID}
+          className="mt-5 border-t border-[color:var(--color-border-soft)] pt-4"
+        >
+          <h3
+            id={SOURCE_OUTLINE_HEADING_ID}
+            className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]"
+          >
+            {t("source.outline.title")}
+          </h3>
+          {outline.phase === "reading" ? (
+            <p className="mt-2 text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]">
+              {t("source.outline.reading")}
+            </p>
+          ) : outline.phase === "failed" || !outline.outline ? (
+            <p
+              data-testid="library-source-outline-failed"
+              className="mt-2 text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]"
+            >
+              {t("source.outline.failed")}
+            </p>
+          ) : outline.outline.unreadable ? (
+            /*
+             * **A format whose shape this reader does not know says so, and prints no
+             * number.** A PDF yields no units at all; "0 parts" would be a different and
+             * untrue fact, and the kind of number a person would believe. The Finder door
+             * below is the honest answer here, which is why it stays.
+             */
+            <p
+              data-testid="library-source-outline-unreadable"
+              className="mt-2 text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]"
+            >
+              {t("source.outline.unreadable")}
+            </p>
+          ) : (
+            <ul data-testid="library-source-outline-list" className="mt-2 flex flex-col gap-1">
+              {outlineRows(outline.outline, t).map((line) => (
+                <li
+                  key={line}
+                  className="text-body leading-body text-[color:var(--color-text-secondary)] [overflow-wrap:break-word] [word-break:keep-all]"
+                >
+                  {line}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
 
       {/*
        * **The passage the citation named, under the facts it was filed with.**
@@ -354,7 +486,7 @@ export function SourceSummary({
             >
               #{passage.anchor}
               {passage.phase === "ready" && passage.passage?.state === "resolved"
-                ? ` · ${passageLabel(passage.passage.label, passage.anchor, t)}`
+                ? ` · ${passageLabelText(passage.passage.label, passage.anchor, t)}`
                 : null}
             </p>
           </div>
@@ -464,7 +596,7 @@ export function SourceSummary({
               className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:break-word] [word-break:keep-all]"
             >
               {t("source.passage.noText", {
-                label: passageLabel(passage.passage.label, passage.anchor, t),
+                label: passageLabelText(passage.passage.label, passage.anchor, t),
               })}
             </p>
           ) : null}
@@ -578,6 +710,16 @@ export function SourceSummary({
               >
                 {compileNote}
               </p>
+            ) : null}
+            {/*
+             * The door, when that note is the reason a coding agent is missing rather
+             * than a disclosure about what leaves this computer (slice U2). `compileNote`
+             * carries whichever of the two is true, so the caller says which.
+             */}
+            {compileNote && compileBlocked && agentDoor ? (
+              <div className="flex">
+                <AgentDoor testId="library-source-compile-blocked-door" />
+              </div>
             ) : null}
           </div>
         )}
