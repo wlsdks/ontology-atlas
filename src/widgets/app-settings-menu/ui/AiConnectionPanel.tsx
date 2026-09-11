@@ -232,9 +232,10 @@ export function AiConnectionPanel({
           read**, not the ramp's "micro label, legend, timestamp" (9.5px). Leading
           comes with the step's own pair (16px).
           The width stays inside the prose measure — the dock's prose column was
-          846px, which at 9.5px fitted **74 characters per line** (over
-          `--measure-prose: 70ch`). Control rows use 820px, so this cap applies to
-          **prose only**. */}
+          846px, which at 9.5px fitted **74 characters per line**, over the prose
+          measure (`--measure-prose`; it read `70ch` when that was measured and reads
+          `60ch` since the 2026-09-11 calibration). Control rows use 820px, so this
+          cap applies to **prose only**. */}
       <p
         data-testid="ai-what-it-unlocks"
         className="max-w-[var(--git-setup-measure)] break-keep px-1 text-label text-[color:var(--color-text-secondary)]"

@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 import { controlClass } from '@/shared/ui/control-class';
-import type { OutlineRailFit } from "../lib/outline-rail";
+import { OUTLINE_RAIL_WIDTH_CLASS, type OutlineRailFit } from "../lib/outline-rail";
 /**
  * One entry in a document outline.
  *
@@ -41,7 +41,22 @@ export interface DocReadingOutlineRailProps {
  * This is a pure reading aid — no pin, edit, or share; a click only jumps the scroll. It is
  * absolutely positioned inside the `position:relative` wrapper outside the article scroll
  * container, so it keeps the same on-screen position while scrolling and never intrudes on the
- * body's max-w-760 (it consumes only the empty band — `.claude/rules/design.md`).
+ * reading column (it consumes only the empty band — `.claude/rules/design.md`).
+ *
+ * ## It is anchored to the column, not to the pane (2026-09-11)
+ *
+ * It used to be `right-6`: pinned to the pane's right edge, with whatever a centred column left
+ * behind as the distance to the text. That distance was therefore a residue of the pane's width
+ * rather than a decision — measured in the installed app at 1512, the rail's glyphs sat at
+ * x=1322 both before and after the reading line was capped at the prose measure, while the
+ * text's right edge moved from 1257 to 1083. The rail had not moved; the 239px hole was the
+ * column shrinking away from something that was never following it.
+ *
+ * Now `left` is the column's right edge plus one `--measure-doc-gutter`, so the gap is the same
+ * gutter the column already pairs with at every pane width, and `mx-auto` on the column keeps
+ * the composition `[margin][column][gutter][rail][margin]`. `lib/outline-rail.ts` carries the
+ * matching fit arithmetic — with clearance now constructed, its floors only ask whether the rail
+ * fits beside the column.
  *
  * Visibility is decided by the caller: `shouldShowOutlineRail` on the heading count and
  * `resolveOutlineRailFit` on the reading pane's measured width. This component is a pure display
@@ -50,8 +65,9 @@ export interface DocReadingOutlineRailProps {
  * ⚠️ **The width gate left CSS on 2026-09-06.** It used to be `min-[1440px]` / `min-[1536px]`,
  * which is the viewport minus a constant 344px of chrome — true until a right-hand dock opened and
  * took 420px out of the same row without changing the viewport by a pixel. The rail was then drawn
- * across the body text. `lib/outline-rail.ts` carries the arithmetic and the measurement; the two
- * pane floors it names (1096 and 1192) are the same widths those media queries encoded.
+ * across the body text. `lib/outline-rail.ts` carries the arithmetic and the measurement; its two
+ * pane floors are now derived from the reading measure (1045 and 1109) rather than from the
+ * 1096/1192 those media queries encoded.
  */
 export function DocReadingOutlineRail({
   headings,
@@ -65,8 +81,11 @@ export function DocReadingOutlineRail({
       aria-label={t("railAria")}
       data-testid="doc-reading-outline-rail"
       data-outline-fit={fit}
-      className={`absolute bottom-6 right-6 top-6 flex flex-col overflow-y-auto ${
-        fit === "wide" ? "w-[200px]" : "w-[168px]"
+      /* `left` is the column's right edge plus one gutter: the column is centred, so its right
+         edge is `50% + column/2`. No `right` anchor — the rail follows the text rather than the
+         pane, and `outline-rail.ts` guarantees it fits before the caller draws it. */
+      className={`absolute bottom-6 top-6 left-[calc(50%_+_var(--measure-doc-column)_/_2_+_var(--measure-doc-gutter))] flex flex-col overflow-y-auto ${
+        fit === "wide" ? OUTLINE_RAIL_WIDTH_CLASS.wide : OUTLINE_RAIL_WIDTH_CLASS.narrow
       }`}
     >
       <span className="mb-2 flex-none font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">

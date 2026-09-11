@@ -19,7 +19,19 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
 }) {
   const working = phase === 'preparing' || phase === 'running' || phase === 'saving';
   return (
-    <section data-testid="retained-answer-context" className="mx-auto mt-4 w-full max-w-[var(--measure-doc-column)] px-6 md:px-10" aria-label={t('answers.evidence')}>
+    /*
+     * `[&_p]:max-w-[var(--measure-prose)]` rather than a cap on the section: the rules above
+     * and below this block are drawn by the inner `border-y`, and narrowing that would turn a
+     * column-wide divider into a short dash. The cap belongs on the lines a person reads
+     * (2026-09-11 prose-measure calibration — `app/globals.css`, `--measure-prose`).
+     *
+     * `[&_p]:[word-break:keep-all]` travels with it. A narrower line is a line that wraps, and
+     * `word-break: normal` breaks Hangul between any two syllables — the same defect
+     * `korean-word-break.spec.ts` was written for. The paths paragraph keeps `break-words`
+     * beside it: that is `overflow-wrap`, a different property, so a long unspaced source path
+     * can still break out of its box while a Korean sentence cannot break inside a word.
+     */
+    <section data-testid="retained-answer-context" className="mx-auto mt-4 w-full max-w-[var(--measure-doc-column)] px-6 [&_p]:max-w-[var(--measure-prose)] [&_p]:[word-break:keep-all] md:px-10" aria-label={t('answers.evidence')}>
       <div className="border-y border-[color:var(--color-divider)] py-4">
         <p role="status" aria-live="polite" className="sr-only">{working ? t(`answers.phase.${phase}`) : ''}</p>
         <p data-testid="answer-evidence-state" data-state={observation.state} className="text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t(`answers.state.${observation.state}`)}</p>

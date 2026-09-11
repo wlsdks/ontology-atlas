@@ -373,6 +373,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: The mascot's fixed palette stays out of CSS/data/status/control colour, its animation frames stay continuous, and it stays clear of the map's functional lane.
 **Escalate**: `pnpm exec playwright test tests/e2e/agent-mascot-presence.spec.ts`.
 
+### Prose measure calibration (characters per line, not `ch`)
+
+**Run**: `pnpm exec playwright test tests/e2e/prose-measure-calibration.spec.ts`
+**Proves**: the shipped font is rendering here (a load failure fails as itself, never as calibration drift), `--measure-prose` buys 65–82 characters per line, the body applies it, and `--measure-doc-column` is still that measure plus two gutters and still matches its `DOC_COLUMN_PX` mirror.
+**Escalate**: `pnpm exec playwright test` for the full suite when the body font or a reading column changed.
+**Fix**: change the `ch` number in `app/globals.css` until the measured character count is back in band; do not widen the band.
+
 ### Demo clip declaration vs shipped asset
 
 **Run**: `pnpm exec vitest run tests/contract/demo-clip-assets.contract.test.ts`

@@ -176,13 +176,19 @@ export const PAGE_COLUMN_FORM = "mx-auto w-full max-w-[960px]" as const;
  *
  * An audit measured the docs surface (`/docs`) at a 760px column with 247px of
  * top padding, unlike the destinations. The decision is **change nothing**;
- * the reason is recorded here so the next audit does not relitigate it:
+ * the reason is recorded here so the next audit does not relitigate it.
+ *
+ * ⚠️ The width in the table below is history. The reading column is owned by
+ * `--measure-doc-column` in `app/globals.css`, and since 2026-09-11 it is derived from
+ * `--measure-prose` (580.4px = the measure at `--text-body-lg` plus a gutter each side)
+ * rather than being the 760 this audit measured. What has not changed is the verdict —
+ * the third column is not this file's, and it does not wear the page frame:
  *
  * | column                  | width                 | owned by          |
  * |-------------------------|-----------------------|-------------------|
  * | list destinations       | `--page-max` (1600)   | `PAGE_FRAME`      |
  * | form / edit             | 960                   | `PAGE_FRAME_FORM` |
- * | **reading (docs body)** | **`max-w-3xl` (768)** | **docs itself**   |
+ * | **reading (docs body)** | **`--measure-doc-column`** | **docs itself**   |
  *
  * Docs is a three-pane workbench (tree · body · panel), and its body is not a
  * page but a reading measure inside a scroll pane. The top of this file already
@@ -190,8 +196,8 @@ export const PAGE_COLUMN_FORM = "mx-auto w-full max-w-[960px]" as const;
  * editor: applying the page frame would insert 48px exactly where the tree and
  * the body have to start at the same height.
  *
- * And 768 is not eyeballed — it is a reading measure (Tailwind `3xl`), not a
- * hand-written px, so it is not drift either. Gate:
+ * And that column is not eyeballed — it is a reading measure derived from the prose
+ * measure, not a hand-written px, so it is not drift either. Gate:
  * `page-frame.contract.test.ts`.
  */
 

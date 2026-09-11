@@ -35,7 +35,12 @@ import { controlClass } from '@/shared/ui/control-class';
  * change:
  *
  * 1. **65–75 characters per line** (`--measure-prose`). The workbench's full-width column makes the
- *    eye lose the first character of the next line in prose.
+ *    eye lose the first character of the next line in prose. ⚠️ That sentence was aspiration
+ *    rather than measurement until 2026-09-11: the token read `70ch`, and `ch` is the advance of
+ *    the digit `0` (0.5957em in Pretendard Variable) while a proportional Latin average is only
+ *    0.4588em, so `70ch` drew **91** characters per line here, not 65–75. The token is now `60ch`
+ *    = 78 characters, and `tests/e2e/prose-measure-calibration.spec.ts` keeps the number and the
+ *    sentence together. Full derivation: `app/globals.css`, the `--measure-prose` block.
  * 2. **`leading-prose` for the body** — the pair for text a person wrote (`.claude/rules/design.md`
     ["line height is the pair of size"], line height is the pair of size). UI text's tight leading is
  *    suffocating in a paragraph.
