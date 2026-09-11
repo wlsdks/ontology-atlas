@@ -1933,9 +1933,13 @@ struct SourceInventory {
     truncated: bool,
 }
 
+// Keep these values byte-for-byte aligned with mcp/src/project-source-inspection.mjs.
+// The app mints the receipt; a fresh MCP process must reproduce the same bounded probe
+// before it can call that receipt current.
+// tests/contract/source-inventory-bound.contract.test.ts fails when the two drift.
 const SOURCE_INVENTORY_VERSION: &str = "inventory-v2";
 const SOURCE_INVENTORY_MAX_DEPTH: usize = 20;
-const SOURCE_INVENTORY_MAX_FILES: usize = 4000;
+const SOURCE_INVENTORY_MAX_FILES: usize = 8000;
 const SOURCE_INVENTORY_MAX_HASH_BYTES: u64 = 32 * 1024 * 1024;
 const SOURCE_PRUNE_DIR_NAMES: &[&str] = &[
     ".git",
@@ -4595,7 +4599,7 @@ mod tests {
         );
         assert_eq!(
             inspection.files.last().map(String::as_str),
-            Some("3999.txt")
+            Some(format!("{:04}.txt", SOURCE_INVENTORY_MAX_FILES - 1).as_str())
         );
 
         fs::remove_dir_all(root).ok();

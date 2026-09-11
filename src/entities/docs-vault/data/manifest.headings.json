@@ -6636,6 +6636,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-12 — The dogfood repository outgrew the cap its own product ships",
+      "slug": "2026-09-12-the-dogfood-repository-outgrew-the-cap-its-own-product-ships"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-11 — The Library reads a source only when a person names it, and is useful before an agent exists",
       "slug": "2026-09-11-the-library-reads-a-source-only-when-a-person-names-it-and-is-useful-before-an-agent-exists"
     },

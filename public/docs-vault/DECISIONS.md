@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — The dogfood repository outgrew the cap its own product ships
+
+**Why**: `main` is red in the `mcp` lane. `mcp/src/integration.test.mjs` connects this checkout as a source root and asserts `verified_current`; it reports `review_required` with `topGap: source_inventory_truncated`. No declared path is broken — the repository crossed its own bound, 3995 files at #1557 and 4007 at #1558, +96 over 25 commits. #1558 touched no `mcp/` path, so the lane that would have caught it was never selected on the PR that broke it.
+**Prior**: 2026-08-03 "The new MCP handoff re-verifies the person's source connection on its own" stands unchanged; this raises one of its bounds and nothing else.
+**Decision**: `SOURCE_INVENTORY_MAX_FILES` becomes 8000 in both probes, `mcp/src/project-source-inspection.mjs` and `src-tauri/src/lib.rs`, held equal by `tests/contract/source-inventory-bound.contract.test.ts` — which also turns red when this repository's own visible-file count passes the cap, in the unit lane every PR selects. `inventory-v2` is unchanged: the version is hashed, and under the old cap the fingerprint is byte-identical.
+**Dissent**: a bounded probe that truncates and says so is the product working; 8000 moves the moment of truncation, not its shape, and a repository that outgrows 8000 meets the same wall with less warning.
+**Falsifier**: a normal repository under 8000 files whose handoff probe takes noticeably longer, or app and MCP fingerprints diverging on the same root. Measured here: 4008 visible files, 138 ms before and after; a synthetic 8000-file repository, 119 ms — cost tracks hashed bytes, already bounded at 32 MiB, not the file count.
+**Owner**: jinan
+
 ## 2026-09-11 — The Library reads a source only when a person names it, and is useful before an agent exists
 
 **Why**: a first-day person with six files and no coding agent typed "T+2" and found nothing: sources matched by path only, although `settlement-policy.md` says it on line 11; the only forward door started a multi-hundred-MB agent download; the blocked reason opened no door while the rail already carries Agents. The third target tier leaves here.
