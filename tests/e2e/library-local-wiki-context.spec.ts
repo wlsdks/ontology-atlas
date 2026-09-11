@@ -103,14 +103,33 @@ async function openLocalCompile(page: Page, selectPage = false, options: Paramet
   await expect(page.getByTestId("library-sources")).toBeVisible({ timeout: 30_000 });
   await page.getByTestId("library-index-segment-wiki").click();
   await expect(page.getByTestId("library-wiki")).toBeVisible({ timeout: 30_000 });
-  // A retained question hides first-run guidance. Compile must still expose its review.
-  await expect(page.getByRole('region', { name: 'Questions you return to' })).toBeVisible();
+  /*
+   * A retained question hides first-run guidance. Compile must still expose its review.
+   *
+   * ⚠️ **Read on the strip's door since 2026-09-12**: the home is the folder's graph and
+   * the saved questions are a door on the row above it — at exactly one saved answer that
+   * door *is* the question, which is what keeps reopening it one press. The region itself
+   * lives inside the anchored surface behind it.
+   */
+  await expect(page.getByTestId('library-questions-open')).toBeVisible();
   if (selectPage) {
     await page.getByTestId('library-wiki').getByRole('button', { name: /^Records bulletin/ }).click();
     await expect(page.getByTestId('library-page')).toHaveAttribute('data-library-state', 'wiki');
   }
   await expect(page.getByTestId("library-compile")).toBeEnabled({ timeout: 30_000 });
-  if (options?.detectedRuntime) await expect(page.getByTestId('library-compile-brain')).toContainText('probe-model');
+  /*
+   * ⚠️ **The brain picker moved with the press it belongs to** (2026-09-12). It used to
+   * stand in step two of the always-drawn stage; the home is the picture now, so it is in
+   * the Compile popover the strip's `Compile next: <file>` clause opens — one control per
+   * setting per screen, beside the button that spends it. Escape leaves the walk on the
+   * home, where it was.
+   */
+  if (options?.detectedRuntime) {
+    await page.getByTestId('library-strip-compile').click();
+    await expect(page.getByTestId('library-compile-brain')).toContainText('probe-model');
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('library-compile-popover')).toHaveCount(0);
+  }
   // This is the installed-shell local route; the web degradation copy must not be present.
   await expect(page.getByTestId("library-compile-web-limit")).toHaveCount(0);
   const endpoint = await page.evaluate(() => {

@@ -389,6 +389,24 @@ test.describe("the library graph responds", () => {
           return (hash >>> 0).toString(16);
         });
 
+      /*
+       * ⚠️ **The pointer leaves the canvas first, and that is the whole of "at rest."**
+       *
+       * `openGraph` ends on a click, which parks the mouse wherever that control was — and
+       * on CI's viewport that landed **over the picture**, so the first hash was taken with
+       * a mark hovered and the dim ramp running. Measured 2026-09-11 on GitHub's runner:
+       * frame 1 `71219841`, frame 2 `fa10ee96`, green on every local run. Since 2026-09-12
+       * the ramp keeps its `--motion-fast` at both settings (`docs/DECISIONS.md`, "The
+       * Library canvas's ink ramp keeps its 120ms under reduced motion"), so a held hover
+       * is a moving picture by decision, and this case is about the state with **no pointer
+       * on the canvas and no clause held** — which is what that record's falsifier names.
+       * Moving to the origin and letting one ramp's worth of time pass is what makes the
+       * instrument measure the claim instead of the mouse's last resting place.
+       */
+      await page.mouse.move(0, 0);
+      await expect(page.getByTestId("library-graph-canvas")).toHaveAttribute("data-hovered-node-id", "");
+      await page.waitForTimeout(300);
+
       const first = await frameHash();
       // Longer than one ambient period would have moved a mark by its full amplitude.
       await page.waitForTimeout(2_000);
