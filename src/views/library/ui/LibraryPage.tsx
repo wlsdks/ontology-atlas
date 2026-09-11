@@ -97,6 +97,7 @@ import { Button, Dialog, Tooltip, TooltipProvider, useToast } from "@/shared/ui"
 
 import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
 import { libraryCompileBlockedReason, libraryTransferSentence } from "../lib/compile-availability";
+import { useCitedPassage } from "../lib/use-cited-passage";
 import { useLibraryModel } from "../lib/use-library-model";
 import { useObservedWikiWork } from "../lib/use-observed-wiki-work";
 import { useLibraryAgent } from "../lib/use-library-agent";
@@ -349,6 +350,18 @@ export function LibraryPage() {
     if (opened?.kind !== "source") return null;
     return model.sources.find((row) => row.path === opened.path) ?? null;
   }, [model.sources, opened]);
+  /*
+   * **Pressing a citation reads that one file.** The handle is the one the folder walk
+   * already granted — `read_vault_binary_file` in the app, the File System Access handle
+   * in a browser — so this is one ability on both surfaces rather than a bridge. The
+   * text is never stored and is dropped when the pane closes; `use-cited-passage.ts`
+   * owns the local-first reasoning.
+   */
+  const citedPassage = useCitedPassage({
+    citation: sourceCitation?.path === selectedSource?.path ? sourceCitation : null,
+    handle: sourceCitation ? localVault.sourceHandles.get(sourceCitation.path) : undefined,
+    enabled: hasFolder && selectedSource !== null,
+  });
   const selectedAnswer = selectedWikiDoc && isRetainedAnswerPath(selectedWikiDoc.slug) ? selectedWikiDoc : null;
   const answerHistory = useAnswerHistory(selectedAnswer, docs, model.pageTexts);
   const answerRefreshButtonRef = useRef<HTMLButtonElement>(null);
@@ -2153,7 +2166,12 @@ export function LibraryPage() {
                   getDocContent={getDocContent}
                   resolveImage={resolveImage}
                   knownOriginalPaths={knownOriginalPaths}
-                  onSourceNavigate={(path, anchor) => { choose({ kind: 'source', path }); setSourceCitation({ path, anchor }); }}
+                  /* The passage owns the landing, so the pane does not take focus from
+                     it — `skipReaderFocusRef` is the existing seam for "this pane was
+                     opened by something that knows where focus belongs". Measured
+                     2026-09-11: without it the passage section was focused and the pane
+                     stole it back in the same frame. */
+                  onSourceNavigate={(path, anchor) => { skipReaderFocusRef.current = true; choose({ kind: 'source', path }); setSourceCitation({ path, anchor }); }}
                 />
                 {agent.route === "agent" ? (
                   <SelectionAsk
@@ -2183,10 +2201,16 @@ export function LibraryPage() {
             </DocReadingPane>
           ) : selectedSource ? (
             <div className="min-h-0 flex-1 overflow-auto max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]">
-              {sourceCitation?.path === selectedSource.path && sourceCitation.anchor ? <p data-testid="library-source-citation" className="px-6 pt-4 text-body text-[color:var(--color-text-secondary)]">{t('answers.citedLocation', { anchor: sourceCitation.anchor })}</p> : null}
               <SourceSummary
                 row={selectedSource}
                 hash={model.hashes.get(selectedSource.path) ?? null}
+                /*
+                 * The passage lives inside the pane now, beneath the facts, instead of a
+                 * line above the card that printed the anchor and nothing else. Pressing
+                 * a citation still opens this pane — today's behaviour, brief decision 5 —
+                 * and now lands on the text it names.
+                 */
+                passage={citedPassage}
                 canReveal={nativeVaultRootPath !== null}
                 writeUps={model.pairing.writeUpsBySource.get(selectedSource.path) ?? EMPTY_WRITE_UPS}
                 onOpen={() => handleOpenSource(selectedSource)}
@@ -2219,7 +2243,7 @@ export function LibraryPage() {
         knownOriginalPaths={knownOriginalPaths}
         problems={answerRefresh.proposal.problems} error={answerRefresh.error}
         saving={answerRefresh.phase === 'saving'} onClose={() => setAnswerComparisonOpen(false)}
-        onOpenSource={(path, anchor) => { setAnswerComparisonOpen(false); choose({ kind: 'source', path }); setSourceCitation({ path, anchor }); }}
+        onOpenSource={(path, anchor) => { setAnswerComparisonOpen(false); skipReaderFocusRef.current = true; choose({ kind: 'source', path }); setSourceCitation({ path, anchor }); }}
         onSave={() => { void answerRefresh.save().then((result) => {
           if (!result) return;
           pendingAnswerFocus.current = result.slug;

@@ -4724,7 +4724,26 @@
         "partial": "앞부분만",
         "behind": "뒤처짐",
         "unchecked": "확인 전"
-      }
+      },
+      "passage": {
+        "title": "인용한 곳",
+        "reading": "이 파일을 지금 읽고 있습니다",
+        "missing": "인용한 {anchor} 주소가 지금 이 파일에 없습니다 · 파일이 바뀌었을 수 있습니다",
+        "ambiguous": "같은 제목이 이 파일에 여러 번 나옵니다. 지금 이 파일에서 그 제목들의 주소는 {candidates} 입니다. 어느 쪽을 인용한 것인지는 Atlas가 알 수 없어 글을 보여 주지 않습니다.",
+        "noText": "PDF는 Atlas가 글로 바꾸지 않습니다. 인용한 {label} 위치는 파일에서 직접 보세요.",
+        "unreadable": "이 파일을 읽지 못했습니다 · {reason}",
+        "unreadableUnknown": "이 파일을 읽지 못했습니다. 폴더에서 사라졌을 수 있습니다.",
+        "label": {
+          "line": "{number}행",
+          "record": "레코드 {number}",
+          "heading": "제목: {title}",
+          "sheetRow": "시트 {sheet} · {row}행",
+          "page": "{number}쪽",
+          "anchor": "주소 {anchor}"
+        }
+      },
+      "hashJustRead": "{hash} · 지금 읽은 값",
+      "openedForCitation": "인용한 곳을 보여 주려고 Atlas가 이 파일을 방금 한 번 읽었습니다. 읽은 글은 어디에도 저장하지 않고 이 화면을 닫으면 사라집니다. 나머지 값은 폴더 목록에서 읽었거나 그 한 번 읽은 바이트에서 잰 값입니다."
     },
     "kindsAria": "이 폴더가 두는 것",
     "kindSourcesTitle": "원문",
@@ -4912,8 +4931,7 @@
         "older": "이전 버전",
         "alternative": "갱신 대안",
         "unresolved": "이력 확인 필요"
-      },
-      "citedLocation": "원문에서 인용한 위치: {anchor}"
+      }
     }
   },
   "libraryImport": {

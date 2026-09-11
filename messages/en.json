@@ -4724,7 +4724,26 @@
         "partial": "part of the file",
         "behind": "behind",
         "unchecked": "not checked"
-      }
+      },
+      "passage": {
+        "title": "Cited passage",
+        "reading": "Reading this file now",
+        "missing": "The cited {anchor} is not in the file now · the file may have changed",
+        "ambiguous": "The same heading appears more than once in this file. Its occurrences are addressed as {candidates} today. Atlas cannot tell which one was cited, so it shows no passage.",
+        "noText": "Atlas does not turn a PDF into text. Read the cited {label} in the file itself.",
+        "unreadable": "This file could not be read · {reason}",
+        "unreadableUnknown": "This file could not be read. It may have left the folder.",
+        "label": {
+          "line": "line {number}",
+          "record": "record {number}",
+          "heading": "heading: {title}",
+          "sheetRow": "sheet {sheet} · row {row}",
+          "page": "page {number}",
+          "anchor": "address {anchor}"
+        }
+      },
+      "hashJustRead": "{hash} · measured just now",
+      "openedForCitation": "Atlas read this file once, just now, to show the passage the citation names. The text is stored nowhere and is gone when this pane closes; everything else came from the folder listing, or was measured from those same bytes."
     },
     "kindsAria": "What this folder keeps",
     "kindSourcesTitle": "Sources",
@@ -4912,8 +4931,7 @@
         "older": "Earlier version",
         "alternative": "Alternative draft",
         "unresolved": "History incomplete"
-      },
-      "citedLocation": "Cited location in the original: {anchor}"
+      }
     }
   },
   "libraryImport": {

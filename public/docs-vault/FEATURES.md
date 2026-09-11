@@ -1006,9 +1006,36 @@ contradict its own state row, which reads `checking` in exactly that window. Bot
 `sources:` and `source_hash:` frontmatter the state machine already reads, so no second
 store can drift from it.
 
+**A citation shows the passage it names** (2026-09-11). Pressing
+`[[src:sources/settlement-policy.md#l14]]` opens the source's pane as before, and the pane
+now reads that one file and renders the unit the anchor names under a **Cited passage**
+section (`library.source.passage.*`) — verbatim, at `text-body-lg` on a soft card, with up
+to two units either side at `text-caption`, because a hard-wrapped line ends mid-sentence.
+The label is the extractor's own precision and no finer: `line 14` for a line, `record 3`
+for a CSV record, `heading: Records` for a Word heading, `sheet Quarterly · row 3` for a
+workbook row. A heading address names the heading **and** the paragraphs beneath it, so a
+DOCX section arrives whole. An address the file no longer holds says exactly that and
+shows **no** text — the paragraph beside a renamed heading is not the cited one — and
+names alternatives only where the extractor itself reported that heading occurring twice.
+A PDF keeps its page number and the Finder door. The bytes come from the handle the folder
+walk already granted (`read_vault_binary_file` in the app, the File System Access handle in
+a browser, one ability on both surfaces), the text is stored nowhere and dropped when the
+pane closes, and nothing leaves the computer; the pane therefore stops saying Atlas has
+never opened the file, and its sha256 row says it was measured on this read. The splitter
+is `src/shared/lib/source-passage.ts`, the MCP `read_source` reader's twin, pinned unit for
+unit by `tests/contract/source-passage-parity.contract.test.ts`; it carries its own
+raw-DEFLATE decoder (a Word or Excel file is a zip, and the app's macOS floor does not
+guarantee `DecompressionStream`) and verifies each zip entry's CRC-32, because what it
+renders is offered as the document's own words. Measured on a six-source folder: 70 units
+across Markdown, CSV, HTML, DOCX and XLSX, byte-identical between the two readers, and 26
+of 31 citations resolving — the other five are two pointing at a file the folder does not
+hold and three addresses their files no longer have, all of which a reader could only
+discover before by opening the documents themselves.
+
 - **Sources** — every non-`.md` file under `sources/**`, listed by name, format, size and
-  one state. Atlas never opens them; the walk records what a directory listing already
-  holds, which is why a folder of PDFs adds nothing to the map.
+  one state. Listing one opens nothing; the walk records what a directory listing already
+  holds, which is why a folder of PDFs adds nothing to the map. The one read is a
+  **citation's press** (below), and it is that file only.
   - `not compiled` — no wiki page cites it.
   - `compiled` — a page cites it and the sha256 it recorded still matches the file.
   - `read in part` (2026-09-07) — the hash still matches and every page citing it says,
