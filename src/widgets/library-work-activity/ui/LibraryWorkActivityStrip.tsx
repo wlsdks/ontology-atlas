@@ -54,15 +54,24 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
      * ⚠️ **The single line does not survive a phone, and two measurements say so.** At
      * 390px the first receipt chip came to rest at x 216..411 — past the right edge, so
      * reaching it needed a sideways scroll — and its row moved up to y 10..54, under the
-     * toast, which sonner places at 16px on a small viewport whatever
-     * `--app-toast-top-offset` says. Both are the width's fault, not the lane's, so below
-     * `sm` the two facts stack the way they always did and the reader there is
+     * toast, which sonner places at its own `mobileOffset` on a small viewport whatever
+     * `--app-toast-top-offset` says. Both are the width's fault, not the lane's, so in
+     * that band the two facts stack the way they always did and the reader there is
      * full-width anyway (`max-lg:order-first`).
+     *
+     * ⚠️ **The fold is 601px, not `sm` (640), and the boundary is sonner's** (design-
+     * responsive C2, council 2026-09-11). Between 601 and 639 the lane still stacked two
+     * rows while the toaster had already gone back to reading `--app-toast-top-offset`
+     * (124, a measurement of the one-row lane), so the box landed 37px inside the
+     * receipts at 620×900. Height and row direction now switch together on the same
+     * width sonner switches its offset on, and `src/shared/ui/toast-position.ts` carries
+     * the clearance for each side of it. The horizontal insets keep their own `sm`/`md`
+     * steps: an inset is not part of that agreement.
      */
-    <div className="h-28 flex-none sm:h-16" data-testid="library-work-lane">
+    <div className="h-28 flex-none min-[601px]:h-16" data-testid="library-work-lane">
     <Surface open={headline !== null} motion="overlay" as="section"
       aria-label={t("title")} data-testid="library-work-activity"
-      className="mx-5 flex h-full min-w-0 flex-col justify-center gap-2 overflow-x-auto border-b border-[color:var(--color-border-soft)] sm:mx-6 sm:flex-row sm:items-center sm:gap-3 md:mx-10">
+      className="mx-5 flex h-full min-w-0 flex-col justify-center gap-2 overflow-x-auto border-b border-[color:var(--color-border-soft)] sm:mx-6 md:mx-10 min-[601px]:flex-row min-[601px]:items-center min-[601px]:gap-3">
       {headline ? <>
         <div className="flex min-w-0 items-center gap-2" data-testid="library-work-current" data-work-kind={headline.kind} data-work-phase={headline.phase}>
           <span className={`flex-none ${INK[headline.kind]}`}><Icon size={20} aria-hidden="true" /></span>

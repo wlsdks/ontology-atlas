@@ -4768,6 +4768,7 @@
       "blockedLocalRemote": "이 폴더에 저장된 러너는 {host} 라서 이 컴퓨터가 아니에요. 컴파일은 문서 내용을 보내기 때문에 이 컴퓨터에 있는 러너에서만 돌아가요. 설정 → AI 연결에서 주소를 바꿔 주세요.",
       "blockedLocalFormats": "{model}은 Markdown, 일반 텍스트, CSV, JSON, HTML을 읽어요. 지금 남아 있는 파일은 {formats} 라서, 자기 리더를 가진 코딩 에이전트가 필요해요.",
       "blockedNoAgent": "확인된 코딩 에이전트가 이 컴퓨터에 없고, 저장해 둔 로컬 모델 주소도 없습니다. 로컬 주소는 설정의 AI 연결에 넣습니다.",
+      "blockedLocalOnly": "로컬 모델은 정리만 할 수 있습니다. 질문과 점검에는 연결된 코딩 에이전트가 필요합니다.",
       "blockedNoSources": "아직 정리할 것이 없습니다. 문서는 1번에서 들어옵니다.",
       "blockedNothingWaiting": "모든 원문이 지금 내용과 맞는 정리본을 갖고 있습니다.",
       "transferLocalRemote": "여기 저장된 러너는 {host} 라서 이 컴퓨터가 아니고, 그래서 컴파일은 돌지 않아요. 돌면 문서 내용이 그리로 가니까요. Atlas가 실제로 보내는 요청은 {file}에 남아요.",

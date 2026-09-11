@@ -88,7 +88,10 @@ import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
-import { TOAST_TOP_OFFSET_UNDER_LIBRARY_PANE_CHROME_PX } from "@/shared/ui/toast-position";
+import {
+  TOAST_TOP_OFFSET_UNDER_LIBRARY_PANE_CHROME_NARROW_PX,
+  TOAST_TOP_OFFSET_UNDER_LIBRARY_PANE_CHROME_PX,
+} from "@/shared/ui/toast-position";
 import { SegmentedControl } from "@/shared/ui/segmented-control";
 import { Button, Dialog, Tooltip, TooltipProvider, useToast } from "@/shared/ui";
 
@@ -241,8 +244,19 @@ export function LibraryPage() {
       "--app-toast-top-offset",
       `${TOAST_TOP_OFFSET_UNDER_LIBRARY_PANE_CHROME_PX}px`,
     );
+    /*
+     * And the narrow band's own clearance. sonner stops reading the value above at 600px
+     * of viewport, where this pane's work lane keeps both of its rows — so the stack to
+     * clear there is a different measurement, not the same number applied twice
+     * (design-responsive C2, council 2026-09-11).
+     */
+    root.style.setProperty(
+      "--app-toast-mobile-top-offset",
+      `${TOAST_TOP_OFFSET_UNDER_LIBRARY_PANE_CHROME_NARROW_PX}px`,
+    );
     return () => {
       root.style.removeProperty("--app-toast-top-offset");
+      root.style.removeProperty("--app-toast-mobile-top-offset");
     };
   }, []);
   const [graphOpen, setGraphOpen] = useState(false);
@@ -1232,12 +1246,14 @@ export function LibraryPage() {
    * product has is always on screen, and availability is a state with its reason. So the
    * control is drawn, disabled, beside the reason.
    *
-   * ⚠️ **`null` means "no true sentence exists yet", not "available".** On the `local`
-   * route a runner *is* saved, so `stage.blockedNoAgent` — which says no agent and no
-   * saved address — would be false, and no other key in `messages/*.json` says why a
-   * coding-agent turn still cannot run there. Those controls therefore stay absent on
-   * that one route rather than shipping a sentence that is not true; completing the rule
-   * there needs one new string and the decision that licenses it.
+   * ⚠️ **`null` means "no true sentence exists yet", not "available".** Every route now
+   * has one. The `local` route was the last hole: a runner *is* saved there, so
+   * `stage.blockedNoAgent` — which says no agent and no saved address — would be false,
+   * and Ask and Check stayed absent rather than shipping a sentence that is not true.
+   * `stage.blockedLocalOnly` is that route's own fact (design-lead F5 with
+   * design-interaction C3, council 2026-09-11): the runner compiles, and the two turns
+   * that read and judge need a coding agent. With it the presence rule — a feature the
+   * product has is on screen, disabled, beside its reason — holds on every route.
    */
   const agentOnlyReason =
     agent.route === "agent"
@@ -1248,7 +1264,30 @@ export function LibraryPage() {
           ? t("stage.blockedChecking")
           : agent.route === "unavailable"
             ? t("stage.blockedNoAgent")
-            : null;
+            : t("stage.blockedLocalOnly");
+
+  /**
+   * **Which card on the landing prints that sentence — one paragraph, whatever the route.**
+   *
+   * Measured at 1512 on the no-agent folder (design-interaction C2, council 2026-09-11):
+   * `stage.blockedNoAgent` stood at y≈410 under step two's Compile and again at y≈633
+   * under Ask. Both were true and both were the same words, which is how a screen teaches
+   * a reader to skip its reasons.
+   *
+   * The rule is that the sentence belongs to the card whose **own press** it stops. On
+   * the web, while an agent is still being looked for, and with none set up, Compile is
+   * blocked by exactly this sentence — `libraryCompileBlockedReason` returns the same
+   * string — so step two prints it and Ask points at that paragraph. On the `local` route
+   * Compile can run and only the agent-only turns cannot, so step three prints it beside
+   * Ask and step two's Check the wiki points down at it. Either way the landing carries
+   * one `data-landing-blocked-reason`, which is what `library-spine.spec.ts` counts.
+   */
+  const agentReasonPrintedId =
+    agentOnlyReason === null
+      ? null
+      : agentOnlyReason === compileBlocked
+        ? "library-stage-compile-blocked"
+        : "library-questions-ask-blocked";
 
   /**
    * **Where the keyboard lands after the pane swaps.**
@@ -1848,8 +1887,20 @@ export function LibraryPage() {
              * The same picker as step two, reading and writing the same stored answer, so
              * the sidebar and the shelf can never name different brains.
              */
+            /*
+             * ⚠️ **One control per setting per screen** (guardian, council 2026-09-11).
+             * Step two of the spine carries this same picker, and before the spine was
+             * unconditional the two never coexisted — the stage vanished at one saved
+             * answer. Now the landing is always drawn, so with a folder open in the wiki
+             * segment both pickers stood on screen at once, naming the same brain twice
+             * and turning `library-compile-brain` into two elements (CI, chromium 2/3 of
+             * `library-local-wiki-context.spec.ts`). The step-two card owns the setting
+             * while the landing is visible; the index takes it back the moment a
+             * document, a source, the report or the local review replaces that pane —
+             * which is the same condition its transfer sentence already switches on.
+             */
             brainControl={
-              agent.brainChoosable ? (
+              agent.brainChoosable && narrowShowsReader ? (
                 <CompileBrainSelect
                   brain={agent.brain}
                   agentLabel={agent.runtime?.label ?? null}
@@ -1950,7 +2001,15 @@ export function LibraryPage() {
           {!selected && !localReviewVisible ? (
             <div
               data-testid="library-reader-landing"
-              className="relative min-h-0 flex-1 overflow-y-auto px-3 py-6"
+              /*
+               * `library-spine-scope` makes this pane a size container, so the stage can
+               * fold its finished steps when **this box** is short rather than when the
+               * window is (`app/globals.css`, `--library-spine-collapse-height`).
+               * Measured below `lg`, where the reader is the upper half of one column:
+               * the first saved-question row stood 272px below the fold at 390×844 and
+               * 34 at 1024×640 (design-responsive C1, council 2026-09-11).
+               */
+              className="library-spine-scope relative min-h-0 flex-1 overflow-y-auto px-3 py-6"
             >
               <LibrarySynapseField paused={graphOpen} />
               <div
@@ -1986,6 +2045,7 @@ export function LibraryPage() {
                     onCompile={handleCompile}
                     onLint={agent.route === "agent" ? handleLint : null}
                     lintBlockedReason={agentOnlyReason}
+                    lintBlockedReasonId={agentReasonPrintedId}
                     onOpenWiki={(slug) => choose({ kind: "wiki", slug })}
                     answerSlugs={retainedAnswerSlugs}
                     busy={busy}
@@ -1997,6 +2057,11 @@ export function LibraryPage() {
                         onOpen={(slug) => choose({ kind: "wiki", slug })}
                         onAsk={agent.route === "agent" ? () => agent.setOpen(true) : null}
                         askBlockedReason={agentOnlyReason}
+                        askBlockedReasonId={
+                          agentReasonPrintedId === "library-questions-ask-blocked"
+                            ? null
+                            : agentReasonPrintedId
+                        }
                         t={t}
                       />
                     }

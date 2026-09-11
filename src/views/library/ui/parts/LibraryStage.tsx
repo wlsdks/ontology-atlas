@@ -102,6 +102,17 @@ export interface LibraryStageProps {
    * control absent, because no sentence in `messages/*.json` is true of that state yet.
    */
   lintBlockedReason: string | null;
+  /**
+   * **Where that sentence is printed — because the landing prints it once.**
+   *
+   * Measured at 1512 on the no-agent folder (design-interaction C2, council 2026-09-11):
+   * `stage.blockedNoAgent` stood at y≈410 under step two's Compile and again at y≈633
+   * under Ask, the same sentence twice in one viewport, ~200px apart. `LibraryPage` now
+   * decides which card prints it and passes that element's id here, so Check the wiki
+   * points at the surviving paragraph whether it is step two's own or step three's.
+   * `null` means no sentence exists (a verified agent can run everything).
+   */
+  lintBlockedReasonId: string | null;
   onOpenWiki: (slug: string) => void;
   /**
    * The slugs step three lists as saved questions, so it does not advertise one twice.
@@ -155,14 +166,39 @@ function Step({
   testId: string;
   t: LibraryStageProps["t"];
 }) {
+  /**
+   * **Only the lead step says the `next` word** (design-lead F3, council 2026-09-11).
+   *
+   * Two steps can honestly be next at once — pages written and sources still waiting can
+   * be compiled or read — and both rows printed *next* at the same label grade, so at
+   * 1512 the word appeared on two cards 96px apart and neither was the lead. There are
+   * only three state words and no "readable but not the lead" one; adding a fourth is
+   * copy this slice may not write. So a later step that is not done prints `waiting`,
+   * which is true of it: its turn has not come. `data-step-state` keeps the derived
+   * state, so the arithmetic seam (`libraryStepStates`, read by the header strip too) is
+   * untouched and only the printed word moves.
+   */
+  const word: LibraryStepState = !lead && state === "next" ? "waiting" : state;
   return (
     <li
       data-testid={testId}
       data-step-state={state}
       className={cn(
-        "flex flex-col rounded-panel border bg-[color:var(--color-panel)] px-3 py-2.5",
+        /* `library-spine-step` is the fold's handle: inside a short
+           `@container library-landing` a `done` step keeps this head line and drops the
+           parts marked `library-spine-fold-away` (`app/globals.css`). */
+        "library-spine-step flex flex-col rounded-panel border bg-[color:var(--color-panel)] px-3 py-2.5",
         lead
-          ? "border-[color:var(--color-indigo-line-a35)]"
+          ? /*
+             * **The lead edge is the solid accent, not an alpha step** (design-infoviz,
+             * council 2026-09-11). `--color-indigo-line-a35` measured 1.88:1 against this
+             * card and 1.65:1 against the sibling step's own border, so the one mark that
+             * says *this is the step to press* was under the 3:1 WCAG 1.4.11 asks of a
+             * non-text mark identifying a state. `--color-indigo-accent` measures 4.96:1
+             * on panel — the identical swap `LibraryShelf.tsx` records for the identical
+             * defect on the open page's spine, at zero layout cost.
+             */
+            "border-[color:var(--color-indigo-accent)]"
           : "border-[color:var(--color-border-soft)]",
       )}
     >
@@ -182,7 +218,7 @@ function Step({
             carries, so the emphasis is said once in two places rather than twice.
           */}
           <span
-            data-testid={`library-stage-state-${state}`}
+            data-testid={`library-stage-state-${word}`}
             /*
              * **The word stays true; only the emphasis is singular.** Two steps can
              * honestly be next at once — a folder with pages written and sources still
@@ -197,10 +233,10 @@ function Step({
                 : "text-[color:var(--color-text-quaternary)]",
             )}
           >
-            {t(`stage.state.${state}`)}
+            {t(`stage.state.${word}`)}
           </span>
         </div>
-        <p className="truncate text-label leading-body text-[color:var(--color-text-tertiary)]">
+        <p className="library-spine-fold-away truncate text-label leading-body text-[color:var(--color-text-tertiary)]">
           {caption}
         </p>
       </div>
@@ -210,7 +246,16 @@ function Step({
         disappears moves everything under it (`.claude/rules/design.md`, dimensional
         regularity).
       */}
-      <div className="mt-2 flex min-h-8 flex-wrap items-center gap-2">{action}</div>
+      <div className="library-spine-fold-away mt-2 flex min-h-8 flex-wrap items-center gap-2">
+        {action}
+      </div>
+      {/*
+        ⚠️ **`extra` is never folded away.** The fold exists so that step three's saved
+        questions reach a short pane at all, and step three is `done` on exactly the
+        folder that has them — a rule that hid a done step's whole body would delete the
+        target it was written to reveal. What folds is the record of finished work: the
+        caption and the action row above.
+      */}
       {extra}
     </li>
   );
@@ -230,6 +275,7 @@ export function LibraryStage({
   onCompile,
   onLint,
   lintBlockedReason,
+  lintBlockedReasonId,
   onOpenWiki,
   answerSlugs,
   questions,
@@ -328,16 +374,18 @@ export function LibraryStage({
   const partialNote = model.partialCount > 0 ? t("stage.compile.partialLine") : null;
 
   /**
-   * Check the wiki's own reason, and whether this row has to print it.
+   * Check the wiki's own reason — the sentence itself, never a second printing of it.
    *
-   * ⚠️ **A reason is not printed twice.** Without an agent the two controls in this row
-   * are blocked by the same fact, and `libraryCompileBlockedReason` already returns that
-   * sentence — so when Compile's caption or paragraph is carrying it, the lint paragraph
-   * is not drawn at all and the button points at Compile's copy of it instead.
+   * ⚠️ **A reason is not printed twice, and this row no longer prints one of its own.**
+   * Without an agent both controls in this row are blocked by the same fact that blocks
+   * Ask, and until 2026-09-11 each card drew its own paragraph: measured at 1512,
+   * `stage.blockedNoAgent` appeared under Compile and again under Ask, ~200px apart. The
+   * landing now prints it exactly once and `lintBlockedReasonId` says where, so this
+   * button describes itself by pointing at that paragraph — step two's own when Compile
+   * is blocked by the same sentence, step three's beside Ask when Compile can run and
+   * only the agent-only controls cannot (the `local` route).
    */
   const lintBlocked = onLint === null ? lintBlockedReason : null;
-  const lintBlockedBelow =
-    lintBlocked && lintBlocked !== blockedBelow && lintBlocked !== compileCaption ? lintBlocked : null;
 
   return (
     <div data-testid="library-stage" className="w-full px-3 pb-3 pt-2">
@@ -426,9 +474,10 @@ export function LibraryStage({
                   onClick={onLint ?? undefined}
                   disabled={busy || onLint === null}
                   data-testid="library-stage-lint"
-                  /* Same binding Compile uses: the sentence below is what a disabled
-                     control has instead of a press, so it is announced with it. */
-                  aria-describedby={lintBlockedBelow ? "library-stage-lint-blocked" : undefined}
+                  /* Same binding Compile uses: the landing's one availability sentence is
+                     what a disabled control has instead of a press, so it is announced
+                     with it — wherever on this landing that paragraph stands. */
+                  aria-describedby={lintBlocked ? (lintBlockedReasonId ?? undefined) : undefined}
                   className={controlClass({
                     shape: "chip",
                     tone: "muted",
@@ -478,24 +527,21 @@ export function LibraryStage({
             </>
           }
           extra={
-            blockedBelow || lintBlockedBelow || partialNote || transfer ? (
+            blockedBelow || partialNote || transfer ? (
               <div className="mt-2 flex flex-col gap-1.5">
                 {blockedBelow ? (
                   <p
                     id="library-stage-compile-blocked"
                     data-testid="library-stage-compile-blocked"
+                    /* The count marker for "the landing's availability sentence", set
+                       only when this paragraph is the one carrying it — `LibraryPage`
+                       decides, and the spec counts this attribute exactly once. */
+                    data-landing-blocked-reason={
+                      lintBlockedReasonId === "library-stage-compile-blocked" ? "true" : undefined
+                    }
                     className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
                   >
                     {blockedBelow}
-                  </p>
-                ) : null}
-                {lintBlockedBelow ? (
-                  <p
-                    id="library-stage-lint-blocked"
-                    data-testid="library-stage-lint-blocked"
-                    className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-                  >
-                    {lintBlockedBelow}
                   </p>
                 ) : null}
                 {/* After the reason, never before it: why the button is dead is what a
