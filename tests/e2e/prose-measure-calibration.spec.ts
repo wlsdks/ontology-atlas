@@ -149,6 +149,112 @@ async function calibrate(
   );
 }
 
+/**
+ * The family name `next/font/local` emits for the shipped face. It is the source file's
+ * basename lowercased — not a hash — so it can be named here and checked against the
+ * `--font-pretendard` token the product actually sets.
+ */
+const SHIPPED_FONT_FAMILY = 'pretendard';
+
+/**
+ * ⚠️ **Prove the font before measuring the font.**
+ *
+ * Every number below is an advance width in Pretendard Variable. If the face has not loaded,
+ * the measurements are of a fallback on whatever machine is running, and every assertion becomes
+ * a lie about the product — reported as calibration drift, which is the one reading that must
+ * never happen. `document.fonts.ready` is not enough: it resolves when loading has *settled*,
+ * including settling on failure.
+ *
+ * ## What each signal is actually worth (measured 2026-09-11, this export)
+ *
+ * The woff2 request was blocked two ways — aborted, and answered `200 text/plain` — and the
+ * three candidate signals were read in each case:
+ *
+ * | signal | font loaded | font failed | worth |
+ * |---|---|---|---|
+ * | `FontFace.status` for the family | `loaded` | **`error`** | the real signal |
+ * | `document.fonts.check('16px pretendard')` | `true` | **`false`** | good, but see below |
+ * | computed `font-family` of a probe | `pretendard, …` | `pretendard, …` | **none** |
+ *
+ * The computed family names the *declared* stack whether or not anything loaded, so it proves
+ * only that the product still sets this family — worth asserting, worthless as proof of
+ * rendering. And `check()` answers "can this be rendered without loading anything new", so it
+ * returns **`true` for a family that was never declared at all** (measured: `check('16px
+ * pretendard-not-shipped')` = true, because the fallback can render it). It is therefore only
+ * meaningful for a family the stylesheet does declare, which is why the face-status assertion
+ * comes first and carries the verdict.
+ */
+async function assertShippedFontIsRendering(page: import('@playwright/test').Page) {
+  await page.evaluate(() => document.fonts.ready);
+  const state = await page.evaluate((family) => {
+    const probe = document.createElement('span');
+    probe.style.cssText = 'position:fixed;left:-99999px;top:0;white-space:pre;font-size:16px';
+    probe.textContent = '0'.repeat(100);
+    document.body.append(probe);
+    const appliedFamily = getComputedStyle(probe).fontFamily;
+    probe.remove();
+    return {
+      appliedFamily,
+      tokenFamily: getComputedStyle(document.documentElement)
+        .getPropertyValue('--font-pretendard')
+        .trim(),
+      checks: document.fonts.check(`16px ${family as string}`),
+      faces: [...document.fonts].map((face) => `${face.family}:${face.status}`),
+    };
+  }, SHIPPED_FONT_FAMILY);
+
+  const normalise = (value: string) => value.replaceAll('"', '').replaceAll("'", '').toLowerCase();
+  const detail = [
+    `document.fonts.check('16px ${SHIPPED_FONT_FAMILY}') = ${state.checks}`,
+    `--font-pretendard = ${state.tokenFamily || '(empty)'}`,
+    `computed font-family on a body probe = ${state.appliedFamily}`,
+    `registered faces = ${state.faces.join(', ') || '(none)'}`,
+  ].join(' · ');
+  const notRendering = `the shipped font is not rendering on this runner; calibration cannot be measured here — ${detail}`;
+
+  // The verdict: a registered face for this family finished loading. `error` here is the shape
+  // a 404, a wrong MIME type or a rejected format takes.
+  expect(
+    state.faces.some((face) => normalise(face) === `${SHIPPED_FONT_FAMILY}:loaded`),
+    notRendering,
+  ).toBe(true);
+  expect(state.checks, notRendering).toBe(true);
+  // Not proof of rendering (see the table above) — proof the product still asks for this face.
+  expect(normalise(state.tokenFamily), notRendering).toContain(SHIPPED_FONT_FAMILY);
+  expect(normalise(state.appliedFamily).split(',')[0].trim(), notRendering).toBe(
+    SHIPPED_FONT_FAMILY,
+  );
+}
+
+/**
+ * ⚠️ **A rasterizer may quantise advances to whole pixels; the product's numbers may not.**
+ *
+ * Measured 2026-09-11, the same build on two runners:
+ *
+ * | | `0` advance @16px | `0` advance @14px | `60ch` @14px |
+ * |---|---|---|---|
+ * | macOS (CoreText, subpixel) | 9.531px | 8.340px | 500.4px |
+ * | CI Linux Chromium (FreeType, hinted) | 10px | 9px | **540.0px** |
+ *
+ * Both runners were rendering **Pretendard** — `ceil(14 × 0.5957) = 9` and
+ * `ceil(16 × 0.5957) = 10`, and the only advance ratios satisfying both are `(0.5714, 0.625]`,
+ * which excludes every plausible Linux fallback (Liberation/Arimo 0.5562, Noto Sans 0.5615,
+ * Roboto 0.5679, DejaVu Sans 0.6362). It also excludes this export's **own** declared fallback:
+ * blocking the woff2 was measured at **9.032px** at 16px (`local(Arial)` × the 101.55%
+ * size-adjust), i.e. 0.5645em — so a load failure and a hinted success are not confusable, and
+ * `0.6250` is the second, not the first.
+ *
+ * The consequence for this gate: an assertion comparing a **`ch`-resolved length** against the
+ * **derived px constant** is asserting the rasterizer's rounding, not the design. It is asserted
+ * against the derivation instead, and the font metric is checked at 100px where one pixel of
+ * hinting is 1% rather than 12%.
+ *
+ * The product is unaffected either way: the column is absolute, so a hinted runner simply has
+ * the column rather than the `ch` cap bind the line — at the same width.
+ */
+const FONT_METRIC_PROBE_PX = 100;
+const FONT_METRIC_TOLERANCE_EM = 0.01;
+
 test.beforeEach(async ({ page }) => {
   await seedFirstRunSeen(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -158,8 +264,7 @@ test('the prose measure buys 65-82 characters per line in the shipped font', asy
   await page.setViewportSize({ width: 1512, height: 949 });
   await page.goto('/en/docs/?guides=off');
   await expect(page.locator('body')).toBeVisible();
-  // Pretendard arrives as a web font; measuring before it lands measures the fallback.
-  await page.evaluate(() => document.fonts.ready);
+  await assertShippedFontIsRendering(page);
 
   const readings = await calibrate(page, SAMPLE, PROBE_FONT_SIZES);
   expect(readings.length).toBe(PROBE_FONT_SIZES.length);
@@ -181,26 +286,20 @@ test('the prose measure buys 65-82 characters per line in the shipped font', asy
   }
 
   /*
-   * Font-size invariance. Both sides of the ratio are lengths in the same font, so the
-   * character count must not depend on the size the cap is read at — one token has to mean
-   * one line length across `text-body` (12.5px), `text-body-lg` (14px) and the 16px root.
-   * A font whose digits stop being proportional to its letters would break this silently.
+   * ⚠️ A cross-size *invariance* assertion used to live here — the measure had to buy the same
+   * character count at 14/15/16/17px, which it does wherever advances are subpixel. It was
+   * removed on 2026-09-11: on CI's Linux Chromium the same build measured 78.5 / 74.3 / 80.6 /
+   * 75.7, a spread produced entirely by whole-pixel advance hinting. Every one of those four is
+   * inside the band above, which is the claim that matters; the spread was measuring the
+   * rasterizer. The band is asserted per size, so a real drift at any one size still fails.
    */
-  const counts = readings.map((reading) => reading.latinChars);
-  const spread = Math.max(...counts) - Math.min(...counts);
-  expect(
-    spread,
-    `the measure buys a different number of characters per font size: ${readings
-      .map((reading) => `${reading.fontSize}px=${reading.latinChars.toFixed(1)}`)
-      .join(', ')}`,
-  ).toBeLessThan(1);
 });
 
 test('the docs and Library body applies the measure inside its column', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 949 });
   await page.goto('/en/docs/?guides=off');
   await expect(page.locator('[data-docs-viewer]').first()).toBeVisible();
-  await page.evaluate(() => document.fonts.ready);
+  await assertShippedFontIsRendering(page);
 
   const applied = await page.evaluate(() => {
     const article = document.querySelector('[data-docs-viewer]');
@@ -237,21 +336,29 @@ test('the docs and Library body applies the measure inside its column', async ({
 
   expect(applied, 'no docs body paragraph was rendered to measure').not.toBeNull();
   const { contentPx, measurePx, columnPx } = applied!;
-  // The cap binds: the paragraph is held at the measure, not at the column box around it.
+
+  /*
+   * The line a person reads is the column's content box. Since the column *is* the measure plus
+   * one gutter each side, that box is the measure spent at `text-body-lg` — and this holds
+   * whichever of the two caps binds, which is what makes it portable across rasterizers (see the
+   * quantisation note above: on a hinted runner the `ch` cap resolves wider and the column binds
+   * instead, at the same width). The defect it replaced showed as a 680px content box holding a
+   * 497px line.
+   */
+  const contentBox = columnPx - 2 * DOC_COLUMN_GUTTER_PX;
+  expect(
+    contentBox,
+    `the document column's content box is ${contentBox.toFixed(1)}px but the measure spent at ${DOC_BODY_FONT_PX}px is ${PROSE_MEASURE_PX.toFixed(1)}px — the box is no longer the measure`,
+  ).toBeCloseTo(PROSE_MEASURE_PX, 0);
   expect(
     contentPx,
-    `a docs body paragraph runs ${contentPx.toFixed(1)}px, past the ${measurePx.toFixed(1)}px prose measure — the column is capping the line instead of the measure`,
-  ).toBeLessThanOrEqual(measurePx + 1);
-  /*
-   * The column is now the measure plus one gutter each side, so the paragraph fills the column's
-   * content box exactly — `toBeLessThan` would be the wrong shape here. What must hold is that
-   * the box and the line agree: the two-widths-in-one-column defect this replaced showed as a
-   * 680px content box around a 497px line.
-   */
+    `a docs body paragraph runs ${contentPx.toFixed(1)}px inside a ${contentBox.toFixed(1)}px content box — the line and the box it sits in have drifted apart`,
+  ).toBeCloseTo(contentBox, 0);
+  // Neither cap may be *wider* than the box, or the line would be held by something else again.
   expect(
-    columnPx - 2 * DOC_COLUMN_GUTTER_PX,
-    `the document column's content box (${(columnPx - 2 * DOC_COLUMN_GUTTER_PX).toFixed(1)}px) is not the prose measure (${measurePx.toFixed(1)}px) — the box and the line inside it have drifted apart`,
-  ).toBeCloseTo(measurePx, 0);
+    contentPx,
+    `a docs body paragraph runs ${contentPx.toFixed(1)}px, past the ${measurePx.toFixed(1)}px prose measure`,
+  ).toBeLessThanOrEqual(measurePx + 1);
 });
 
 /**
@@ -274,9 +381,9 @@ test('the derived column, the measured advance and the JS mirror all still agree
   await page.setViewportSize({ width: 1512, height: 949 });
   await page.goto('/en/docs/?guides=off');
   await expect(page.locator('body')).toBeVisible();
-  await page.evaluate(() => document.fonts.ready);
+  await assertShippedFontIsRendering(page);
 
-  const read = await page.evaluate((bodyFontPx) => {
+  const read = await page.evaluate(([bodyFontPx, metricPx]) => {
     const lengthOf = (value: string, fontSize: number) => {
       const probe = document.createElement('div');
       probe.style.cssText = `position:fixed;left:-99999px;top:0;width:${value};transition:none;font-size:${fontSize}px`;
@@ -300,16 +407,22 @@ test('the derived column, the measured advance and the JS mirror all still agree
       zeroAdvance: Number(root.getPropertyValue('--measure-zero-advance').trim()),
       gutterPx: lengthOf('var(--measure-doc-gutter)', 16),
       columnPx: lengthOf('var(--measure-doc-column)', 16),
-      measureAtBodyPx: lengthOf('var(--measure-prose)', bodyFontPx as number),
-      renderedZeroAdvanceEm: advanceOf(16) / 16,
+      measureAtBodyPx: lengthOf('var(--measure-prose)', bodyFontPx),
+      /*
+       * The font metric is read at 100px, where a rasterizer that quantises advances to whole
+       * pixels is off by at most 1% — at 16px the same rounding is 5%, which is wider than the
+       * gap between Pretendard and every face that could stand in for it.
+       */
+      renderedZeroAdvanceEm: advanceOf(metricPx) / metricPx,
+      renderedZeroAdvanceAtBodyPx: advanceOf(bodyFontPx),
     };
-  }, DOC_BODY_FONT_PX);
+  }, [DOC_BODY_FONT_PX, FONT_METRIC_PROBE_PX] as const);
 
   // ① The declared advance still describes the shipped font.
   expect(
-    read.renderedZeroAdvanceEm,
-    `--measure-zero-advance is ${read.zeroAdvance} but the shipped font's "0" measures ${read.renderedZeroAdvanceEm.toFixed(4)}em — the derived column is now a different width from the measure it claims to be`,
-  ).toBeCloseTo(PROSE_ZERO_ADVANCE_EM, 3);
+    Math.abs(read.renderedZeroAdvanceEm - PROSE_ZERO_ADVANCE_EM),
+    `--measure-zero-advance is ${read.zeroAdvance} but the shipped font's "0" measures ${read.renderedZeroAdvanceEm.toFixed(4)}em at ${FONT_METRIC_PROBE_PX}px — the derived column is a different width from the measure it claims to be`,
+  ).toBeLessThanOrEqual(FONT_METRIC_TOLERANCE_EM);
 
   // ② The CSS tokens and the JS mirror are one derivation.
   expect(read.steps, 'the CSS measure and its JS mirror disagree').toBe(PROSE_MEASURE_STEPS);
@@ -321,11 +434,21 @@ test('the derived column, the measured advance and the JS mirror all still agree
   ).toBeCloseTo(DOC_COLUMN_PX, 0);
 
   // ③ The column really is the measure plus two gutters, at the size the body is set in.
-  expect(read.measureAtBodyPx).toBeCloseTo(PROSE_MEASURE_PX, 0);
   expect(
     read.columnPx - 2 * read.gutterPx,
-    `the column minus its gutters (${(read.columnPx - 2 * read.gutterPx).toFixed(1)}px) is not the prose measure at ${DOC_BODY_FONT_PX}px (${read.measureAtBodyPx.toFixed(1)}px)`,
-  ).toBeCloseTo(read.measureAtBodyPx, 0);
+    `the column minus its gutters (${(read.columnPx - 2 * read.gutterPx).toFixed(1)}px) is not the measure spent at ${DOC_BODY_FONT_PX}px (${PROSE_MEASURE_PX.toFixed(1)}px)`,
+  ).toBeCloseTo(PROSE_MEASURE_PX, 0);
+  /*
+   * ④ And the `ch` cap the prose actually wears agrees with that box to within the rasterizer's
+   * rounding — one pixel per glyph, which is the most a hinted advance can differ by. A wider
+   * margin here would admit a real calibration change; a tighter one asserts subpixel
+   * positioning, which the CI runner does not have (see the quantisation note above: it measured
+   * 540.0px where macOS measures 500.4px, both rendering Pretendard).
+   */
+  expect(
+    Math.abs(read.measureAtBodyPx - PROSE_MEASURE_PX),
+    `the prose measure resolves to ${read.measureAtBodyPx.toFixed(1)}px at ${DOC_BODY_FONT_PX}px but the box derived from it is ${PROSE_MEASURE_PX.toFixed(1)}px — a gap of more than one rounded pixel per glyph is calibration drift, not hinting (rendered "0" advance at ${DOC_BODY_FONT_PX}px: ${read.renderedZeroAdvanceAtBodyPx.toFixed(3)}px, declared: ${(PROSE_ZERO_ADVANCE_EM * DOC_BODY_FONT_PX).toFixed(3)}px)`,
+  ).toBeLessThanOrEqual(PROSE_MEASURE_STEPS);
 });
 
 /**

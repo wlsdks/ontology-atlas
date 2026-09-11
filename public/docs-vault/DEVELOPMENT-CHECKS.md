@@ -376,7 +376,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Prose measure calibration (characters per line, not `ch`)
 
 **Run**: `pnpm exec playwright test tests/e2e/prose-measure-calibration.spec.ts`
-**Proves**: `--measure-prose` buys 65–82 rendered characters per line in the shipped font, the docs/Library body applies it, and `--measure-doc-column` is still that measure plus two gutters and still agrees with the `DOC_COLUMN_PX` mirror the popout window and the outline rail read.
+**Proves**: the shipped font is rendering here (a load failure fails as itself, never as calibration drift), `--measure-prose` buys 65–82 characters per line, the body applies it, and `--measure-doc-column` is still that measure plus two gutters and still matches its `DOC_COLUMN_PX` mirror.
 **Escalate**: `pnpm exec playwright test` for the full suite when the body font or a reading column changed.
 **Fix**: change the `ch` number in `app/globals.css` until the measured character count is back in band; do not widen the band.
 
