@@ -26,9 +26,21 @@ type Translator = ReturnType<typeof useTranslations<"library">>;
  * | pages that miss the wiki's shape | `2 off-template` | the check report |
  *
  * The counts (`6 sources · 4 pages · 6 cites`) are **not** here: they are the canvas's own
- * caption, at the left of this same row, and this component is what `LibraryGraph`'s
- * `headerEnd` slot hangs at the right of it. One row, one voice — the landing used to
- * carry three header rows saying overlapping halves of this.
+ * caption, and this component is what `LibraryGraph`'s `headerEnd` slot puts **beside** it
+ * on that one row. One row, one voice — the landing used to carry three header rows saying
+ * overlapping halves of this.
+ *
+ * ## One text edge per column
+ *
+ * The pieces below are the header row's own children, not a right-anchored box inside it,
+ * and that is the whole of how the edge holds (owner, 2026-09-12, against the rule slice A1
+ * installed). Measured before: at 1512 the caption began at the pane's text edge, x=384,
+ * and the wrapped clause line at **x=620**, because an `ml-auto … justify-end` wrapper
+ * pulled it right. Now the clauses flow after the caption where they fit — 1512: caption
+ * 384, clauses 664, one line — and wrap to **exactly** the caption's edge where they do not
+ * — 1040 and 390: 384/384 and 20/20. The doors keep the right edge through `ml-auto` on
+ * their own group, which is exact at every width (1512: tail right 1472 against a content
+ * right of 1472).
  *
  * ## Why the clauses are `shape: "link"` and the doors are chips
  *
@@ -42,10 +54,11 @@ type Translator = ReturnType<typeof useTranslations<"library">>;
  *
  * ## Responsive
  *
- * At `lg`..`xl` the clauses truncate from the right and the doors keep their words; below
- * `xl` the doors fall to their icons with a `title`; below `lg` — where the index has
- * folded and the pane is the whole row — only the lead clause stays and the rest fold
- * into one `…` door, because a row that wraps to three lines is a header again.
+ * The doors keep their words wherever they are drawn (see the note on the group below).
+ * Below `lg` — where the index has folded and the pane is the whole row — only the lead
+ * clause stays and the rest fold into one `…` door, because a row that wraps to three
+ * lines is a header again. The clause line takes the caption's edge at every width it
+ * wraps to.
  */
 export interface LibraryHomeStripClause {
   /** `compile` is the lead; the other two are plain. */
@@ -172,7 +185,12 @@ export function LibraryHomeStrip({
         `Conversation`'s — so the words were costing a line rather than buying one. Below
         `lg` the whole group folds into the `…` door instead, which is the fold that works.
       */}
-      <span className="flex flex-none items-center gap-1.5 max-lg:hidden">
+      {/*
+        `ml-auto` is what holds the right edge now that this component's children are the
+        header row's own children (see `LibraryGraph`'s slot comment): the doors take the
+        right end of whichever line they land on, and the clauses keep the pane's text edge.
+      */}
+      <span className="ml-auto flex flex-none items-center gap-1.5 max-lg:hidden">
         {doors.map((door) => {
           const Icon = DOOR_ICON[door.id];
           return (
@@ -231,9 +249,11 @@ export function LibraryHomeStrip({
           tone: "muted",
           hoverInk: "strong",
           /* Below `lg` this is the only door, so it is the one that most needs to say
-             whether the list it owns is up (design-interaction, council 2026-09-12). */
+             whether the list it owns is up (design-interaction, council 2026-09-12) — and
+             it is the one that carries the row's right anchor there, because the group
+             above it is not drawn at that width. */
           active: overflowOpen,
-          className: "flex-none lg:hidden",
+          className: "ml-auto flex-none lg:hidden",
         })}
       >
         <MoreHorizontal size={ICON_SIZE.sm} aria-hidden />
