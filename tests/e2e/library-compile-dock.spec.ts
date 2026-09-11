@@ -257,47 +257,33 @@ test.describe("Compile opens the agent dock", () => {
     expect(sentence.y - (button.y + button.height)).toBeLessThan(120);
   });
 
-  test("the disclosure follows the reader: the index takes it over once the shelf is gone", async ({
+  test("the disclosure stays where the work is, and the index prints no second copy", async ({
     page,
   }) => {
     await openFolder(page);
     /*
-     * Opening a document hands the sentence to the column. The landing and
-     * selected-page states cover both owners of the disclosure — and losing the sentence in either is the regression this exists for: the
-     * person is one press away from Compile in the index column the whole time.
-     *
-     * ⚠️ **The rule the owner's 2026-09-06 reading pinned**: the disclosure lives where
-     * Compile can be pressed, and the index still has a Compile chip, so the index's copy
-     * is the caption **directly under that chip** — not, as it shipped, a line at the very
-     * bottom of the column under a list that was still going. It is one slot: the reason
-     * Compile cannot run, or what leaves the computer when it does.
+     * ⚠️ **The index stopped being an owner of this sentence on 2026-09-12.** It used to
+     * take the disclosure over the moment a page was opened, which kept it beside a press
+     * — the rule `.claude/rules/local-first.md` asks for — but the sentence is four wrapped
+     * lines of 11px, and in a 255px column it stood between the button group and the list
+     * as part of the alignment the owner read as broken. The PM's re-scope moves it to an
+     * information affordance in a later slice; until then the index prints **no** copy, and
+     * the surfaces that still print one are step two (while the stage is drawn) and the
+     * source pane's own Compile. This test is therefore about the sentence not being lost
+     * and not being doubled, which is what it was always for.
      */
     await expect(page.getByTestId("library-stage-transfer")).toBeVisible();
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);
     await page.getByTestId("library-wiki-wiki/notes").click();
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
-    await expect(page.getByTestId("library-transfer")).toContainText("Atlas does not record that traffic");
+    await expect(page.getByTestId("library-transfer")).toHaveCount(0);
 
     /*
-     * Under the chip that starts it — never the column's last line, which is where it
-     * shipped: on the owner's folder it sat below a list that was still going, three
-     * hundred pixels from the button it describes.
+     * What the index does owe a dead door is the reason it cannot run, one line, directly
+     * under the group — and with a verified agent there is no reason, so there is no line.
      */
-    const chip = (await page.getByTestId("library-compile").boundingBox())!;
-    const note = (await page.getByTestId("library-transfer").boundingBox())!;
-    expect(note.y).toBeGreaterThan(chip.y);
-    expect(note.y - (chip.y + chip.height)).toBeLessThan(24);
-    /*
-     * And it is a child of the Wiki section, ahead of the list — a rect comparison alone
-     * would pass for a sentence that had slid to the foot of the column again, because the
-     * numbers there are only tens of pixels apart on a short folder.
-     */
-    await expect(page.getByTestId("library-wiki").getByTestId("library-transfer")).toBeVisible();
-    /*
-     * And it is not on the other half. The switch is what makes that checkable now: the
-     * Sources list has no Compile on it, so it has nothing to disclose — which is the rule
-     * `.claude/rules/local-first.md` asks for, the disclosure beside the press.
-     */
+    await expect(page.getByTestId("library-actions-blocked")).toHaveCount(0);
+
     await page.getByTestId("library-index-segment-sources").click();
     await expect(page.getByTestId("library-sources")).toBeVisible();
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);
