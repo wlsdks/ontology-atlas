@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-11 — Pressing a citation reads that one file and shows the passage it names
+
+**Why**: measured on the installed app: a fact ending in `[[src:sources/settlement-policy.md#l14]]` opened the file's card — size, sha256, the Finder door, "Atlas has never opened this file" — and one line naming the anchor. No source text renders there, so checking the claim meant leaving the app to count to line 14, or opening Word for `#h:records`. That is 2026-09-06's own falsifier, "a reader who follows a citation and finds nothing there".
+**Prior**: extends 2026-09-07 "The MCP server reads a source's text on request", keeps the unit rules of 2026-09-11 "Source citations retain record boundaries", and narrows "parsers deferred" in 2026-09-06 "Compile runs on a local model" to that route, which still refuses DOCX and XLSX by name.
+**Decision**: the press reads that one file through the handle the folder walk already granted and renders the anchored unit under the pane's facts, with two units of context either side. A `h:<slug>` address names the heading **and** its paragraphs, so the section is the passage. An address the file no longer holds says so and shows no text; an alternative appears only where the extractor reported that heading twice. A PDF keeps its page and its door. Nothing is stored or sent; the pane stops saying the file was never opened, and its sha256 says it was measured on this read. `source-passage.ts` is the MCP splitter's twin, pinned unit for unit by its parity contract, with its own raw-DEFLATE decoder and a CRC-32 check.
+**Dissent**: po-steward — a decoder Atlas wrote itself is a new class of wrong text with no agent between it and the reader; the checksum refuses rather than quotes. po-evidence — a passage proves rendering, not judgement: a reader who sees `#l14` contradict its fact has nowhere to record that verdict.
+**Falsifier**: the two readers return different text for one file; a passage appears for an address the reader calls unresolved; or the pane claims the file was never opened while showing its text.
+**Owner**: jinan
+
 ## 2026-09-11 — The Library keeps its spine, and computes the structural check itself
 
 **Why**: measured on every Library screen: the three-step stage is drawn only while `retainedAnswers.length === 0`, so the first saved answer removes the only screen naming the next step, and Ask drops from `outline` to `ghost`; at zero answers the invitation carries `text-display` and the work `text-title`. The owner could not find the saved-question path. Thirteen features are absent, not unavailable, without an agent; the folder check is asked of the agent and forgotten on restart although the per-page verdict is local.
