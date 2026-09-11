@@ -970,6 +970,43 @@ export function useLibraryIndexSegment(): LibraryIndexSegment {
 }
 
 /**
+ * **What the person had typed in the index's field, so a door can give it back.**
+ *
+ * Measured 2026-09-11 on the day-one folder (design-interaction, council): typing `T+2`,
+ * pressing the caption, then pressing the Agents door and coming back through the rail
+ * left the field empty — the door U2 exists to give somebody costs them the retype, and on
+ * a capped folder a second read of every file as well. A door that makes a person redo
+ * their own work is a door they stop pressing.
+ *
+ * ⚠️ **It is memory for this tab, not a stored preference, and that is a boundary rather
+ * than a shortcut.** The scope this column is handed is `useVaultSessionIdentityScope` — a
+ * per-session token that `use-vault-identity-scope.ts` says in as many words must never
+ * become a persisted storage key. A `sessionStorage` slot keyed by it would be refused on
+ * the next page load anyway, because the token is minted fresh per load, so the storage
+ * bought nothing and `tests/contract/scope-registry.contract.test.ts` would have had to
+ * certify a per-vault *persisted* key whose protection is a scope check inside the value.
+ * A route round trip does not need persistence: this module outlives the unmounted column
+ * and dies with the tab, which is the exact lifetime of the trip the door asks for.
+ *
+ * Two properties follow from the shape, and both are what the council asked for:
+ *
+ * - **Keyed by the folder.** Another folder never opens holding this folder's question;
+ *   a scope that does not match reads back as nothing.
+ * - **Cleared when the folder closes**, which is the same statement — the scope changes —
+ *   and cleared when the person empties the field, which is them saying so.
+ */
+let libraryIndexQuery: { scope: string; query: string } | null = null;
+
+export function readLibraryIndexQuery(vaultScope: string): string {
+  if (!vaultScope || libraryIndexQuery?.scope !== vaultScope) return "";
+  return libraryIndexQuery.query;
+}
+
+export function writeLibraryIndexQuery(vaultScope: string, query: string): void {
+  libraryIndexQuery = vaultScope && query ? { scope: vaultScope, query } : null;
+}
+
+/**
  * **Whether the Library's index column is folded to its edge tab**, per machine.
  *
  * Same verdict, same day: *"the left panel must be closable, I may want only the graph."*

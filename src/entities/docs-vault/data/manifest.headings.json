@@ -6636,6 +6636,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-11 — The Library reads a source only when a person names it, and is useful before an agent exists",
+      "slug": "2026-09-11-the-library-reads-a-source-only-when-a-person-names-it-and-is-useful-before-an-agent-exists"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-11 — Pressing a citation reads that one file and shows the passage it names",
       "slug": "2026-09-11-pressing-a-citation-reads-that-one-file-and-shows-the-passage-it-names"
     },
@@ -10346,6 +10351,11 @@
       "depth": 3,
       "text": "The spine folds by the pane's height (2026-09-11)",
       "slug": "the-spine-folds-by-the-panes-height-2026-09-11"
+    },
+    {
+      "depth": 3,
+      "text": "The index column keeps a floor below `lg` (2026-09-11)",
+      "slug": "the-index-column-keeps-a-floor-below-lg-2026-09-11"
     },
     {
       "depth": 2,

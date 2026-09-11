@@ -4743,7 +4743,17 @@
         }
       },
       "hashJustRead": "{hash} · measured just now",
-      "openedForCitation": "Atlas read this file once, just now, to show the passage the citation names. The text is stored nowhere and is gone when this pane closes; everything else came from the folder listing, or was measured from those same bytes."
+      "openedForCitation": "Atlas read this file once, just now, to show the passage the citation names. The text is stored nowhere and is gone when this pane closes; everything else came from the folder listing, or was measured from those same bytes.",
+      "openedForOutline": "Atlas read this file once, just now, to show the structure below. The text it read is stored nowhere and is gone when this pane closes. Every other value was read from the folder listing or measured from that one read.",
+      "outline": {
+        "title": "Structure",
+        "reading": "Reading this file's structure",
+        "unreadable": "Atlas does not read the structure of this format. Open the file to see it.",
+        "failed": "This file could not be read, so its structure is unknown.",
+        "sheet": "Sheet {sheet} · {rows} rows",
+        "records": "{count} records",
+        "paragraphs": "{count} paragraphs"
+      }
     },
     "kindsAria": "What this folder keeps",
     "kindSourcesTitle": "Sources",
@@ -4861,10 +4871,12 @@
     },
     "search": {
       "placeholder": "Search sources and pages",
-      "matches": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} match",
+      "matches": "{sources} sources ({passages} passages) · {pages} pages matched",
       "noneHere": "None in this list.",
       "showPages": "Show {count, plural, one {# wiki page} other {# wiki pages}}",
-      "showSources": "Show {count, plural, one {# source} other {# sources}}"
+      "showSources": "Show {count, plural, one {# source} other {# sources}}",
+      "reading": "Reading the sources<count> · {read}/{total}</count>",
+      "capped": "read the first {count} only"
     },
     "conversation": {
       "open": "Conversation",

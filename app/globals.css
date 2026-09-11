@@ -3138,6 +3138,19 @@
        the same number as a literal and `tests/e2e/library-spine.spec.ts` reads this token
        to prove the two still agree. */
     --library-spine-collapse-height: 640px;
+    /* **The least height the Library's index column keeps below `lg`.**
+       Below that breakpoint the index is the bottom half of one column and shares the
+       height with the stage above it, so on a short pane it is squeezed until a search
+       that answered has nowhere to show the answer. Measured 2026-09-11 at 756×450 — the
+       200% zoom band — with the same build either side of this token: without a floor the
+       column stood at 226px and **none** of the two matching rows was on screen; with it,
+       296px and the first row is. It is a floor, not a fit: at 390×844 the pane already
+       gives the column 423px and both rows are visible at a fine pointer, while a coarse
+       pointer's 44px rows still leave the second under the fold — that one stays in
+       carry-forward rather than being bought with a bigger number here. `lg` and above the
+       column has the window's height and the floor never binds (measured 0px at 1024 and
+       1040). */
+    --library-index-min: 296px;
     /* One block of a vault-history column. Small enough that a hundred-node folder is a
        stack a person can take in at a glance rather than a wall, large enough that a
        single block still reads as a countable thing rather than as a rule (2026-09-09). */

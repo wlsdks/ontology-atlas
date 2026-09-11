@@ -10,11 +10,14 @@ import {
   type LibraryWriteUpLink,
 } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
-import type { PassageLabel, SourceUnit } from "@/shared/lib/source-passage";
+import type { SourceOutline, SourceUnit } from "@/shared/lib/source-passage";
 import { RowButton } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { CitedPassageState } from "../../lib/use-cited-passage";
+import type { SourceOutlineState } from "../../lib/use-source-outline";
+import { passageLabelText } from "../../lib/passage-label";
+import { AgentDoor } from "./AgentDoor";
 
 /**
  * The heading that names the passage section to a screen reader, through the
@@ -26,33 +29,59 @@ import type { CitedPassageState } from "../../lib/use-cited-passage";
  */
 const SOURCE_PASSAGE_HEADING_ID = "library-source-passage-heading";
 
-/**
- * The place the anchor names, in the extractor's own precision and no finer.
- *
- * A DOCX heading anchor is a heading, not a line: the extractor never counted lines in
- * that file, so "line 4" would send a person looking for something it does not know.
- * The same rule is why a workbook row says which sheet — `s1r3` is row 3 of sheet 1, and
- * a person reading "row 3" in a two-sheet workbook has a 50% chance of the wrong one.
+/*
+ * `passageLabel` moved to `../../lib/passage-label.ts` in slice U2: the index column's
+ * search caption names the same place this section does, and one fact in two voices is
+ * how one locale's "line 11" and another's would end up side by side on one screen.
  */
-function passageLabel(
-  label: PassageLabel,
-  anchor: string,
+
+/** Names the outline section (`source.outline.title`) to a screen reader, through its own `aria-labelledby`. */
+const SOURCE_OUTLINE_HEADING_ID = "library-source-outline-heading";
+
+/**
+ * **The file's shape as lines a person reads — only what the reader can actually back.**
+ *
+ * The per-format table is not a style choice; it is the list of things U1's reader really
+ * returns, and the gap between that and what slice U2's brief asked for is reported
+ * rather than papered over:
+ *
+ * | format | what this prints | why |
+ * |---|---|---|
+ * | DOCX | every heading, by name, pressable | the extractor mints `h:<slug>` anchors for them, so these are real addresses and the press opens the passage |
+ * | XLSX | each sheet with its row count | `s<i>r<n>` carries the sheet, and "row 3" in a two-sheet workbook is ambiguous |
+ * | CSV / TSV | the record count | records are the unit, and `r<n>` is their address |
+ * | Markdown, text, HTML | nothing; the section says it cannot outline the shape | ⚠️ see below |
+ * | PDF, anything else | nothing; the same sentence | zero units and no page count. A page count needs a PDF parser, which this slice excludes by name |
+ *
+ * A `paragraph` count rides along for DOCX because the headings alone would describe a
+ * document of eight units as a document of four.
+ *
+ * ⚠️ **Markdown, text and HTML print no count at all** (design-lead, council 2026-09-11).
+ * They used to print "18 lines", and a line count is not a structure: nobody can act on
+ * it, it is not what this section promised, and it contradicted the neighbouring sentence
+ * that says these formats *cannot* be outlined — a `##` line is a `line` unit to this
+ * reader and its tags are stripped before units exist. So they take the same honest
+ * sentence a PDF takes, and deriving Markdown headings stays its own decision.
+ */
+function outlineRows(
+  outline: SourceOutline,
   t: ReturnType<typeof useTranslations<"library">>,
-): string {
-  switch (label.kind) {
-    case "line":
-      return t("source.passage.label.line", { number: label.number });
-    case "record":
-      return t("source.passage.label.record", { number: label.number });
-    case "heading":
-      return t("source.passage.label.heading", { title: label.title });
-    case "sheet-row":
-      return t("source.passage.label.sheetRow", { sheet: label.sheet, row: label.row });
-    case "page":
-      return t("source.passage.label.page", { number: label.number });
-    default:
-      return t("source.passage.label.anchor", { anchor });
+): Array<{ text: string; anchor?: string }> {
+  const rows: Array<{ text: string; anchor?: string }> = [];
+  for (const sheet of outline.sheets) {
+    rows.push({ text: t("source.outline.sheet", { sheet: sheet.sheet, rows: sheet.rows }) });
   }
+  for (const heading of outline.headings) {
+    rows.push({ text: heading.title, anchor: heading.anchor });
+  }
+  const paragraphs = outline.unitCount - outline.headings.length;
+  if (outline.format === "docx" && paragraphs > 0) {
+    rows.push({ text: t("source.outline.paragraphs", { count: paragraphs }) });
+  }
+  if (outline.format === "csv") {
+    rows.push({ text: t("source.outline.records", { count: outline.unitCount }) });
+  }
+  return rows;
 }
 
 /**
@@ -131,13 +160,16 @@ export function SourceSummary({
   row,
   hash,
   passage,
+  outline,
   canReveal,
   writeUps,
   onOpen,
+  onOpenPassage,
   onOpenWiki,
   onCompile,
   compileNote,
   compileBlocked,
+  agentDoor,
   busy,
   t,
 }: {
@@ -154,11 +186,31 @@ export function SourceSummary({
    * po-steward both, 2026-09-11).
    */
   passage: CitedPassageState | null;
+  /**
+   * The file's own shape, read once when this pane opened.
+   *
+   * `null` while the folder is not open or the read is not wanted; the section is then
+   * absent rather than empty. `use-source-outline.ts` owns the read and the reason it is
+   * inside the "nothing is read that a person did not name" clause — choosing this row
+   * *is* naming this file.
+   */
+  outline: SourceOutlineState | null;
   /** True in the installed app, where the door reveals rather than downloads. */
   canReveal: boolean;
   /** Pages citing this file, and whether each still matches its bytes. */
   writeUps: readonly LibraryWriteUpLink[];
   onOpen: () => void;
+  /**
+   * Opens this same pane **at one address inside this file** — what a heading row in the
+   * outline presses.
+   *
+   * The rows already carried `{anchor, title}` and were the only addresses on the screen a
+   * person could not press, while the index column's caption beside them did exactly this
+   * (design-interaction hold-or-record, resolved to *do it*, council 2026-09-11). It is the
+   * citation path, not a second one: the caller sets the same `{path, anchor}` a pressed
+   * citation sets, so the passage section below lands and focuses as it always has.
+   */
+  onOpenPassage?: (anchor: string) => void;
   onOpenWiki: (slug: string) => void;
   onCompile: () => void;
   /**
@@ -175,6 +227,13 @@ export function SourceSummary({
   compileNote: string | null;
   /** Whether the press is refused; the note above says why. */
   compileBlocked: boolean;
+  /**
+   * Whether that refusal earns a door to `/agents` (slice U2).
+   *
+   * `LibraryPage` decides on the route, not on the sentence, and it is false on the web
+   * and while an agent is still being looked for.
+   */
+  agentDoor: boolean;
   busy: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
@@ -212,7 +271,34 @@ export function SourceSummary({
       mono: hash !== null,
     },
   ];
-  const opened = passage !== null;
+  /*
+   * **Which sentence about reading is true of this pane right now.**
+   *
+   * U1 had two states: a citation was pressed, or Atlas had never opened the file. Slice
+   * U2 adds a third read — the outline section's — and it fires on *every* source pane,
+   * so leaving the sentence as it was would have made the pane claim the file was never
+   * opened directly above a list of its own headings. That is the reassurance-that-stopped-
+   * being-true failure po-evidence and po-steward both named in U1, and the fix is the
+   * same one: the sentence follows the read.
+   *
+   * The citation wording wins when both happened, because it is the more specific reason
+   * and the one the person acted on; the outline read is the ambient one.
+   */
+  /*
+   * The rows once, so the section's marker, its sentence and its list cannot disagree:
+   * a format whose shape this reader cannot describe prints the sentence and no list,
+   * whether that is because it yielded no units at all (PDF) or because its units carry
+   * no structure worth listing (Markdown, text, HTML).
+   */
+  const outlineReady = outline && outline.phase === "ready" ? outline.outline : null;
+  const outlineList = outlineReady ? outlineRows(outlineReady, t) : [];
+  const outlineUnreadable = outlineReady !== null && outlineList.length === 0;
+  const openedSentence =
+    passage !== null
+      ? "source.openedForCitation"
+      : outline && outline.phase !== "reading"
+        ? "source.openedForOutline"
+        : "source.neverOpened";
   /*
    * **A citation lands on the passage, not at the top of the card.**
    *
@@ -291,7 +377,7 @@ export function SourceSummary({
         data-testid="library-source-opened-state"
         className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
       >
-        {opened ? t("source.openedForCitation") : t("source.neverOpened")}
+        {t(openedSentence)}
       </p>
 
       <dl className="mt-5 flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] pt-4">
@@ -315,6 +401,242 @@ export function SourceSummary({
           </div>
         ))}
       </dl>
+
+      <div
+        data-testid="library-source-writeups"
+        className="mt-5 border-t border-[color:var(--color-border-soft)] pt-4"
+      >
+        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+          {t("source.viewWriteUp")}
+        </p>
+        {writeUps.length > 0 ? (
+          /*
+           * **A list of documents, drawn the way this screen draws lists of documents**
+           * (2026-09-06). These were 32px chips while the index's own rows — the same
+           * gesture, opening the same page — were 36px `row` controls, so pressing one
+           * moved a person between two heights for one job. `shape: "row"` is the
+           * repository's name for "a whole list row that is pressable", and taking it
+           * brings the leading glyph, the left alignment and the 36px step with it.
+           */
+          <ul className="mt-2 flex flex-col gap-0.5">
+            {writeUps.map((page) => (
+              <li key={page.slug}>
+                <RowButton
+                  onClick={() => onOpenWiki(page.slug)}
+                  data-testid={`library-source-writeup-${page.slug}`}
+                  /*
+                   * **The title is what a reader sees; the slug is still the address.**
+                   * Every other surface addresses a wiki page by its title, so a row of
+                   * slugs here would be a second vocabulary for one thing. But this pane
+                   * is the one place a person copies exact vault paths — it prints the
+                   * source's own `Path` two rows up — so the page's path stays reachable
+                   * rather than becoming information only the index has.
+                   */
+                  title={page.slug}
+                  tone="muted"
+                  className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  <BookText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
+                  <span className="min-w-0 flex-1 truncate">{page.title}</span>
+                  {/*
+                   * Whether the page still describes *these* bytes is the fact that
+                   * decides whether following it is worth the reader's time — and
+                   * "nothing has measured this file yet" is a third answer, not a
+                   * quieter version of "behind". Printing it as behind made this pane
+                   * disagree with its own STATE row, which reads `checking` in exactly
+                   * that window (PO steward, 2026-09-06).
+                   */}
+                  <span
+                    className={cn(
+                      "flex-none",
+                      page.freshness === "current" &&
+                        "text-[color:var(--color-success-text-a90)]",
+                      /* The same amber the row's chip carries (owner, 2026-09-07). This
+                         pane and the index must not disagree about whether a part-read
+                         write-up is something to act on; the word, not the colour, is what
+                         separates it from `behind`. */
+                      page.freshness === "partial" &&
+                        "text-[color:var(--color-amber-source-a90)]",
+                      page.freshness === "behind" &&
+                        "text-[color:var(--color-amber-source-a90)]",
+                      page.freshness === "unchecked" &&
+                        "text-[color:var(--color-text-quaternary)]",
+                    )}
+                  >
+                    {t(`source.writeUp.${page.freshness}`)}
+                  </span>
+                </RowButton>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="mt-2 flex flex-col gap-2">
+            <p className="max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+              {t("source.citedByNobody")}
+            </p>
+            <div>
+              <button
+                type="button"
+                onClick={onCompile}
+                disabled={busy || compileBlocked}
+                data-testid="library-source-compile"
+                className={controlClass({ shape: "chip", tone: "muted", className: "gap-1.5" })}
+              >
+                <Sparkles size={ICON_SIZE.sm} aria-hidden />
+                {t("wiki.compile")}
+              </button>
+            </div>
+            {compileNote ? (
+              /*
+               * ⚠️ **Not 9.5px under a 14px button** (design-lead, council 2026-09-11).
+               * This is the sentence that says why the press beside it is refused and
+               * where to go instead, and it was set two steps below the control it
+               * explains — the same defect `.claude/rules/design.md` records from the
+               * 2026-08-09 inventory. It takes the grade `library-source-opened-state`
+               * already uses one block up, so the pane has one voice for *what is true of
+               * this file*.
+               */
+              <p
+                data-testid="library-transfer"
+                className="max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+              >
+                {compileNote}
+              </p>
+            ) : null}
+            {/*
+             * The door, when that note is the reason a coding agent is missing rather
+             * than a disclosure about what leaves this computer (slice U2). `compileNote`
+             * carries whichever of the two is true, so the caller says which.
+             */}
+            {compileNote && compileBlocked && agentDoor ? (
+              <div className="flex">
+                <AgentDoor testId="library-source-compile-blocked-door" />
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+      {/*
+       * ⚠️ **The availability block stands above 「Structure」 and the passage, not under
+       * them** (design-responsive, council 2026-09-11).
+       *
+       * It is the pane's only forward press — the write-ups to read, or Compile with the
+       * one reason it cannot run and the door that reason names — and it used to sit last,
+       * after two blocks whose height is decided by the document. Measured at the app's
+       * own minimum window, 1040×720, on `dispute-handling-standard.docx`: the five-row
+       * outline pushed the 「Agents」 door to y=724 with its bottom at 756 against a 720
+       * viewport — `doorInViewport: false`. The one press slice U2 exists to give somebody
+       * was missing on the file that needed it most, at the size the app ships as its
+       * floor.
+       *
+       * So the order is: the fixed fact list, then the action, then the two variable-length
+       * blocks. It is the same rule the comparison dialog's footer follows, and it holds
+       * for any outline length rather than for the lengths measured so far.
+       */}
+      {/*
+       * **What the document is made of — the half of it a person could never see.**
+       *
+       * Above this line is everything Atlas knows *about* the file. This is the file's
+       * own shape, and it is the whole of slice U2's second decision: until 2026-09-11 a
+       * person with no agent could learn a document's size and its sha256 from this pane
+       * and nothing at all about whether it held three headings or three hundred rows.
+       * Reading the structure is the one thing they could do for themselves, and it is
+       * the thing the pane withheld.
+       *
+       * It is **counts and names, never bodies** (`docs/DECISIONS.md` 2026-09-07: Atlas
+       * keeps no converted copy, and a pane that rendered whole documents would be that
+       * copy in all but name). The one place text appears is the passage section below, which a
+       * person asked for by pressing an address.
+       *
+       * It sits above that section because it is the coarser answer: what is in here,
+       * then the one passage somebody named.
+       */}
+      {outline ? (
+        <section
+          data-testid="library-source-outline"
+          data-state={outline.phase === "ready" ? (outlineUnreadable ? "unreadable" : "ready") : outline.phase}
+          aria-labelledby={SOURCE_OUTLINE_HEADING_ID}
+          className="mt-5 border-t border-[color:var(--color-border-soft)] pt-4"
+        >
+          <h3
+            id={SOURCE_OUTLINE_HEADING_ID}
+            className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]"
+          >
+            {t("source.outline.title")}
+          </h3>
+          {outline.phase === "reading" ? (
+            <p className="mt-2 text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]">
+              {t("source.outline.reading")}
+            </p>
+          ) : outline.phase === "failed" || !outline.outline ? (
+            <p
+              data-testid="library-source-outline-failed"
+              className="mt-2 text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]"
+            >
+              {t("source.outline.failed")}
+            </p>
+          ) : outlineUnreadable ? (
+            /*
+             * **A format whose shape this reader does not know says so, and prints no
+             * number.** A PDF yields no units at all; "0 parts" would be a different and
+             * untrue fact, and the kind of number a person would believe. A Markdown or
+             * HTML file reaches the same sentence by the other road — it has units, and
+             * none of them is structure. The Finder door is the honest answer in both
+             * cases, which is why it stays.
+             */
+            <p
+              data-testid="library-source-outline-unreadable"
+              className="mt-2 text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]"
+            >
+              {t("source.outline.unreadable")}
+            </p>
+          ) : (
+            <ul data-testid="library-source-outline-list" className="mt-2 flex flex-col gap-1">
+              {outlineList.map((line, index) => (
+                <li key={`${index}-${line.anchor ?? line.text}`}>
+                  {line.anchor && onOpenPassage ? (
+                    /*
+                     * **A heading is an address, so it is a press.** The extractor minted
+                     * `h:<slug>` for this row and the pane can already show what it names;
+                     * leaving it as text made the outline the one list on this screen whose
+                     * addresses a person could read and not follow.
+                     *
+                     * Accent ink, like the index caption's address and unlike the counted
+                     * rows beside it: at rest that is what separates *a place you can go*
+                     * from *a number about this file*, and a row whose rest state equals
+                     * its neighbours' is the false negative this repository has already
+                     * ruled on twice.
+                     */
+                    <button
+                      type="button"
+                      data-testid={`library-source-outline-row-${line.anchor}`}
+                      data-anchor={line.anchor}
+                      onClick={() => onOpenPassage(line.anchor!)}
+                      className={controlClass({
+                        shape: "row",
+                        size: "xs",
+                        tone: "accent",
+                        hoverInk: "strong",
+                        hoverSurface: "lift",
+                        className: "atlas-touch-floor w-full text-body",
+                      })}
+                    >
+                      <span className="min-w-0 flex-1 truncate text-left">{line.text}</span>
+                    </button>
+                  ) : (
+                    /* `px-2` is the row control's own horizontal padding: measured at
+                       1440, the pressable rows' text started at x=650 and this one at 642,
+                       so one list had two left edges (guardian, 2026-09-11). */
+                    <span className="block px-2 text-body leading-body text-[color:var(--color-text-secondary)] [overflow-wrap:break-word] [word-break:keep-all]">
+                      {line.text}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
 
       {/*
        * **The passage the citation named, under the facts it was filed with.**
@@ -354,7 +676,7 @@ export function SourceSummary({
             >
               #{passage.anchor}
               {passage.phase === "ready" && passage.passage?.state === "resolved"
-                ? ` · ${passageLabel(passage.passage.label, passage.anchor, t)}`
+                ? ` · ${passageLabelText(passage.passage.label, passage.anchor, t)}`
                 : null}
             </p>
           </div>
@@ -464,7 +786,7 @@ export function SourceSummary({
               className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:break-word] [word-break:keep-all]"
             >
               {t("source.passage.noText", {
-                label: passageLabel(passage.passage.label, passage.anchor, t),
+                label: passageLabelText(passage.passage.label, passage.anchor, t),
               })}
             </p>
           ) : null}
@@ -485,102 +807,6 @@ export function SourceSummary({
           )}
           {canReveal ? t("source.reveal") : t("source.download")}
         </button>
-      </div>
-
-      <div
-        data-testid="library-source-writeups"
-        className="mt-5 border-t border-[color:var(--color-border-soft)] pt-4"
-      >
-        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-          {t("source.viewWriteUp")}
-        </p>
-        {writeUps.length > 0 ? (
-          /*
-           * **A list of documents, drawn the way this screen draws lists of documents**
-           * (2026-09-06). These were 32px chips while the index's own rows — the same
-           * gesture, opening the same page — were 36px `row` controls, so pressing one
-           * moved a person between two heights for one job. `shape: "row"` is the
-           * repository's name for "a whole list row that is pressable", and taking it
-           * brings the leading glyph, the left alignment and the 36px step with it.
-           */
-          <ul className="mt-2 flex flex-col gap-0.5">
-            {writeUps.map((page) => (
-              <li key={page.slug}>
-                <RowButton
-                  onClick={() => onOpenWiki(page.slug)}
-                  data-testid={`library-source-writeup-${page.slug}`}
-                  /*
-                   * **The title is what a reader sees; the slug is still the address.**
-                   * Every other surface addresses a wiki page by its title, so a row of
-                   * slugs here would be a second vocabulary for one thing. But this pane
-                   * is the one place a person copies exact vault paths — it prints the
-                   * source's own `Path` two rows up — so the page's path stays reachable
-                   * rather than becoming information only the index has.
-                   */
-                  title={page.slug}
-                  tone="muted"
-                  className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-                >
-                  <BookText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
-                  <span className="min-w-0 flex-1 truncate">{page.title}</span>
-                  {/*
-                   * Whether the page still describes *these* bytes is the fact that
-                   * decides whether following it is worth the reader's time — and
-                   * "nothing has measured this file yet" is a third answer, not a
-                   * quieter version of "behind". Printing it as behind made this pane
-                   * disagree with its own STATE row, which reads `checking` in exactly
-                   * that window (PO steward, 2026-09-06).
-                   */}
-                  <span
-                    className={cn(
-                      "flex-none",
-                      page.freshness === "current" &&
-                        "text-[color:var(--color-success-text-a90)]",
-                      /* The same amber the row's chip carries (owner, 2026-09-07). This
-                         pane and the index must not disagree about whether a part-read
-                         write-up is something to act on; the word, not the colour, is what
-                         separates it from `behind`. */
-                      page.freshness === "partial" &&
-                        "text-[color:var(--color-amber-source-a90)]",
-                      page.freshness === "behind" &&
-                        "text-[color:var(--color-amber-source-a90)]",
-                      page.freshness === "unchecked" &&
-                        "text-[color:var(--color-text-quaternary)]",
-                    )}
-                  >
-                    {t(`source.writeUp.${page.freshness}`)}
-                  </span>
-                </RowButton>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="mt-2 flex flex-col gap-2">
-            <p className="max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-              {t("source.citedByNobody")}
-            </p>
-            <div>
-              <button
-                type="button"
-                onClick={onCompile}
-                disabled={busy || compileBlocked}
-                data-testid="library-source-compile"
-                className={controlClass({ shape: "chip", tone: "muted", className: "gap-1.5" })}
-              >
-                <Sparkles size={ICON_SIZE.sm} aria-hidden />
-                {t("wiki.compile")}
-              </button>
-            </div>
-            {compileNote ? (
-              <p
-                data-testid="library-transfer"
-                className="max-w-[var(--measure-prose)] text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
-              >
-                {compileNote}
-              </p>
-            ) : null}
-          </div>
-        )}
       </div>
     </div>
   );

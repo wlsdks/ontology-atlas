@@ -1908,6 +1908,26 @@ inside an `@container` condition, so the rule in `app/globals.css` repeats the
 literal. `tests/e2e/library-spine.spec.ts` reads the token and drives the fold
 boundary from it, so a drift between the two turns that spec red.
 
+### The index column keeps a floor below `lg` (2026-09-11)
+
+`--library-index-min: 296px` is the least height the Library's **index column**
+(`library-index`) keeps below `lg`, where it is the lower half of one column and
+the stage above it takes the rest. Without a floor a short pane squeezes the
+column until a search that has already found its answer has nowhere to draw it:
+measured on the branch export either side of the token alone, at 756×450 — the
+200% text-zoom band — the column stood at 226px with **none** of the two
+matching rows on screen, and at 296px the first row is.
+
+It is a floor, not a fit. At 390×844 the pane already gives the column 423px and
+both matching rows are visible at a fine pointer; a coarse pointer's 44px rows
+still leave the second row under the fold, and that stays in carry-forward
+rather than being bought with a larger number here. At `lg` and above the column
+has the window's height and the floor never binds (measured `0px` at 1024 and
+1040). Consumer: the `max-lg:min-h-[var(--library-index-min)]` branch on the
+index aside in `LibraryPage.tsx`; the rendered numbers are
+`tests/e2e/library-day-one.spec.ts`'s door-in-viewport cases and the sweep
+recorded in `docs/DECISIONS.md`, 2026-09-11.
+
 ## Contextual ontology writing; Studio surface retired 2026-08-21
 
 `/topology` is the vault's visual read/write workbench. A selected node's

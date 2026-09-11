@@ -26,6 +26,7 @@ import {
 import type { LibraryUiModel } from "../../lib/use-library-model";
 import type { LibraryLocalModel } from "../../lib/use-library-agent";
 import { CompileBrainSelect } from "./CompileBrainSelect";
+import { AgentDoor } from "./AgentDoor";
 
 /**
  * **What to do next — three rows, not three essays.**
@@ -113,6 +114,17 @@ export interface LibraryStageProps {
    * `null` means no sentence exists (a verified agent can run everything).
    */
   lintBlockedReasonId: string | null;
+  /**
+   * Whether the printed reason earns a door to `/agents` (slice U2).
+   *
+   * True exactly when the sentence is one of the agent-availability ones —
+   * `stage.blockedNoAgent` or `stage.blockedLocalOnly`. It is **false on the web**, where
+   * the missing thing is the app and the existing `/download/` card is the honest door,
+   * and false while an agent is still being looked for, because "checking" is not a
+   * blockage a person can act on. `LibraryPage` decides, for the same reason it decides
+   * which card prints the sentence.
+   */
+  agentDoor: boolean;
   onOpenWiki: (slug: string) => void;
   /**
    * The slugs step three lists as saved questions, so it does not advertise one twice.
@@ -276,6 +288,7 @@ export function LibraryStage({
   onLint,
   lintBlockedReason,
   lintBlockedReasonId,
+  agentDoor,
   onOpenWiki,
   answerSlugs,
   questions,
@@ -539,10 +552,29 @@ export function LibraryStage({
                     data-landing-blocked-reason={
                       lintBlockedReasonId === "library-stage-compile-blocked" ? "true" : undefined
                     }
-                    className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+                    /*
+                     * ⚠️ **The reason is one step under the button, not two**
+                     * (design-lead, council 2026-09-11). Measured on the day-one landing:
+                     * a 9.5px sentence under a 14px control was the smallest text on the
+                     * card while being the only thing that explains why the card is dead —
+                     * the 2026-08-09 finding `.claude/rules/design.md` records. Same
+                     * grade as the pane's own reason, so the two sites read as one voice.
+                     */
+                    className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
                   >
                     {blockedBelow}
                   </p>
+                ) : null}
+                {/*
+                 * **The door the sentence above named.** Measured 2026-09-11: this
+                 * paragraph explained where to go and gave no way to go there, while the
+                 * rail's own agents tile sat 26px away. `AgentDoor` carries that
+                 * same word, so the two are visibly one destination (slice U2).
+                 */}
+                {blockedBelow && agentDoor ? (
+                  <div className="flex">
+                    <AgentDoor testId="library-stage-compile-blocked-door" />
+                  </div>
                 ) : null}
                 {/* After the reason, never before it: why the button is dead is what a
                     person reads first, and this is what the press would be worth. */}
