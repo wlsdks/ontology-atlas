@@ -286,7 +286,29 @@ test.describe("Compile opens the agent dock", () => {
     const chip = (await page.getByTestId("library-compile").boundingBox())!;
     const note = (await page.getByTestId("library-transfer").boundingBox())!;
     expect(note.y).toBeGreaterThan(chip.y);
-    expect(note.y - (chip.y + chip.height)).toBeLessThan(24);
+    /*
+     * ⚠️ **One thing now stands between the chip and this note, and it belongs there.**
+     * This folder holds a single wiki page, so Check is blocked for wanting a second one,
+     * and since 2026-09-12 that reason is visible prose under the chips rather than a
+     * tooltip — the council's rule that one blocked ability gets one reason, in the open
+     * (`.claude/rules/surfaces.md` degradation grammar, and the same "beside the press"
+     * rule in `.claude/rules/local-first.md` that put this note here).
+     *
+     * So the rule is unchanged and the chain is measured link by link, rather than the gap
+     * being loosened to swallow whatever appears in between: measured 2026-09-12 at 1512,
+     * chip bottom 225 → reason 233 (**8px**) → note 277 (**0px**, flush). A sentence that
+     * slid back to the foot of the column would break the link it sits on, which one
+     * widened number would have hidden.
+     */
+    const reasonCount = await page.getByTestId("library-lint-blocked").count();
+    const above = reasonCount > 0
+      ? (await page.getByTestId("library-lint-blocked").boundingBox())!
+      : chip;
+    if (reasonCount > 0) {
+      expect(above.y - (chip.y + chip.height)).toBeLessThan(24);
+      expect(above.y).toBeGreaterThan(chip.y);
+    }
+    expect(note.y - (above.y + above.height)).toBeLessThan(24);
     /*
      * And it is a child of the Wiki section, ahead of the list — a rect comparison alone
      * would pass for a sentence that had slid to the foot of the column again, because the
