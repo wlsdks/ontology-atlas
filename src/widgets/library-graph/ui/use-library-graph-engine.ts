@@ -225,6 +225,7 @@ export function useLibraryGraphEngine({
   selectedId,
   hoveredId,
   focusedId,
+  highlight = null,
   activeLabel,
   standingLabels,
   activity,
@@ -238,6 +239,16 @@ export function useLibraryGraphEngine({
   selectedId: string | null;
   hoveredId: string | null;
   focusedId: string | null;
+  /**
+   * A set of node ids a **sentence elsewhere on the screen** is about, or null.
+   *
+   * The home strip's `1 source changed` clause names marks rather than moving them
+   * (`docs/DECISIONS.md`, 2026-09-08 "The Library graph stands still"), so it arrives here
+   * as the same neighbourhood a pointer would hold: these keep their ink and the rest of
+   * the folder ramps down to quaternary. A pointer or the keyboard still wins over it —
+   * pointing somewhere else answers "and what about that one" without losing the clause.
+   */
+  highlight?: ReadonlySet<string> | null;
   activeLabel: string | null;
   standingLabels: boolean;
   activity?: LibraryWorkActivity;
@@ -266,6 +277,8 @@ export function useLibraryGraphEngine({
   /** Nodes whose files are gone, still fading out from where they were. */
   const ghostsRef = useRef<Map<string, { node: LibraryGraphNode; x: number; y: number; since: number }>>(new Map());
   const dimRef = useRef({ value: 0, target: 0 });
+  /** The neighbourhood the dim was last about, kept alive while the ramp eases back out. */
+  const lastFocusRef = useRef<ReadonlySet<string> | null>(null);
   const pointerRef = useRef<PointerState>({
     phase: "idle",
     pointerId: null,
@@ -290,11 +303,11 @@ export function useLibraryGraphEngine({
    * actually happened, and still before the next paint.
    */
   const graphRef = useRef(graph);
-  const stateRef = useRef({ selectedId, hoveredId, focusedId, activeLabel, standingLabels, reducedMotion, activity, visible });
+  const stateRef = useRef({ selectedId, hoveredId, focusedId, highlight, activeLabel, standingLabels, reducedMotion, activity, visible });
   const onHoverRef = useRef(onHover);
   useEffect(() => {
     graphRef.current = graph;
-    stateRef.current = { selectedId, hoveredId, focusedId, activeLabel, standingLabels, reducedMotion, activity, visible };
+    stateRef.current = { selectedId, hoveredId, focusedId, highlight, activeLabel, standingLabels, reducedMotion, activity, visible };
     onHoverRef.current = onHover;
   });
 
@@ -451,7 +464,35 @@ export function useLibraryGraphEngine({
        */
       const active =
         stateRef.current.hoveredId ?? stateRef.current.focusedId ?? stateRef.current.selectedId;
-      const focus = active ? neighboursRef.current.get(active) ?? new Set([active]) : null;
+      /*
+       * **A clause on the strip holds the same slot a pointer does** (slice L0,
+       * 2026-09-12). `highlight` is a whole set rather than one node, because the fact it
+       * carries is an *edge* — a citation the folder can no longer vouch for — and an edge
+       * has two ends. A pointer or the keyboard still takes precedence, so the set is the
+       * resting emphasis and not a lock.
+       */
+      const attention = active
+        ? neighboursRef.current.get(active) ?? new Set([active])
+        : stateRef.current.highlight && stateRef.current.highlight.size > 0
+          ? stateRef.current.highlight
+          : null;
+      /*
+       * ⚠️ **The set outlives the attention, so the dim can ramp back out.**
+       *
+       * `inkOf` returns full ink whenever `focus` is null, whatever `dim` says — so
+       * dropping the set the instant a pointer leaves or a clause is lifted made the
+       * un-dim a **hard cut**, while the dim going in rode the ramp. Measured 2026-09-12
+       * on the stale clause: 15 of 146 frames changed going in (max step 0.036), and
+       * **1 of 143** coming out, a single 0.41 jump. The eased value was running the whole
+       * time; nothing was reading it.
+       *
+       * So the last set is kept while `dim` is still above zero, which is exactly the
+       * window the ease occupies. At zero `inkOf` returns 1 for everything anyway, so the
+       * held set stops mattering the frame the ramp finishes. This is the canvas's own
+       * pointer-out too, not only the clause's lift.
+       */
+      if (attention) lastFocusRef.current = attention;
+      const focus = attention ?? (dimState.value > 0 ? lastFocusRef.current : null);
       const activity = libraryGraphActivityMarks(
         stateRef.current.activity,
         graphRef.current,
@@ -783,9 +824,10 @@ export function useLibraryGraphEngine({
   // Selection, hover, focus and the label are read from a ref by the loop, but a change to
   // any of them has to reach the screen even when nothing else is moving.
   useEffect(() => {
-    dimRef.current.target = (hoveredId ?? focusedId ?? selectedId) ? 1 : 0;
+    dimRef.current.target =
+      (hoveredId ?? focusedId ?? selectedId) || (highlight !== null && highlight.size > 0) ? 1 : 0;
     wake();
-  }, [activeLabel, focusedId, hoveredId, selectedId, standingLabels, wake]);
+  }, [activeLabel, focusedId, highlight, hoveredId, selectedId, standingLabels, wake]);
 
   // ── Pointer geometry. ──
   const pointOf = (event: { clientX: number; clientY: number }): LayoutPoint => ({

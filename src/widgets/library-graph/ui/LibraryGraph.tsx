@@ -74,6 +74,33 @@ export interface LibraryGraphProps {
   /** Keep the settled graph mounted behind a reader without scheduling hidden frames. */
   visible?: boolean;
   /**
+   * The marks a sentence **outside this canvas** is currently about.
+   *
+   * The Library's home strip has one clause per unfinished fact, and pressing the stale
+   * one has to show *which* citation it means. The picture answers that the way a hover
+   * already does — these node ids keep their ink and the rest of the folder ramps down to
+   * quaternary — and, per 2026-09-08 "The Library graph stands still", **no mark moves**.
+   * A pointer or the keyboard still wins over it. Null is the resting state.
+   */
+  highlight?: ReadonlySet<string> | null;
+  /**
+   * What the {@link highlight} is, in one sentence, for the legend's own slot.
+   *
+   * ⚠️ **Because a picture that dims is otherwise a state with no words.** Three cold
+   * walkers pressed the home strip's stale clause and all three recorded the same two
+   * failures (2026-09-12): *"no list appeared… the words looked exactly as they did
+   * before the press, so I couldn't tell the filter was on"*, and *"there is no visible
+   * way to return the dimmed half to normal."* Two of them also counted the lit marks
+   * against the clause's number and got six against three — correctly, because a citation
+   * has two ends, and nothing said so.
+   *
+   * The legend's slot is the answer rather than a new box: it is already the line that
+   * says what the marks mean and already swaps for a description of the pointed-at mark,
+   * and both sentences share one grid cell so the row's height never moves. A hover still
+   * wins over it — pointing at a dot is a more specific question than the clause.
+   */
+  highlightNote?: string | null;
+  /**
    * What the screen hangs at the right of the caption row — the Library passes its status
    * strip and the chip that opens the shelf.
    *
@@ -147,6 +174,8 @@ export function LibraryGraph({
   onSelect,
   activity = EMPTY_LIBRARY_WORK_ACTIVITY,
   visible = true,
+  highlight = null,
+  highlightNote = null,
   headerEnd,
   captionQuiet = false,
   compact = false,
@@ -203,6 +232,7 @@ export function LibraryGraph({
     selectedId,
     hoveredId,
     focusedId,
+    highlight,
     activeLabel,
     standingLabels,
     activity,
@@ -316,6 +346,9 @@ export function LibraryGraph({
           data-hovered-node-id={hoveredId ?? ""}
           data-focused-node-id={focusedId ?? ""}
           data-selected-node-id={selectedId ?? ""}
+          /* Which marks a sentence off-canvas is holding, so a spec can assert the ramp
+             without reading pixels — the same reason the three ids above are written. */
+          data-highlight={highlight === null ? "" : [...highlight].join(" ")}
           /* The picture's own aspect, for the same reason as the three above: a canvas has
              no DOM, so a claim about the shape of what it drew is otherwise unfalsifiable.
              `data-view-scale` and `data-interaction` are written by the loop itself, once
@@ -436,7 +469,11 @@ export function LibraryGraph({
                 Owner direction 2026-09-07: the bridge to the map has to read at a glance. */}
             {activeNode
               ? t(`graph.describe.${activeNode.kind}`, { name: activeNode.label })
-              : compact
+              : highlightNote
+                ? /* The emphasis a sentence off-canvas is holding, said in words: what is
+                     lit, and the two ways back. See `highlightNote`. */
+                  highlightNote
+                : compact
                 ? /* **Never empty.** This paragraph is the canvas's `aria-describedby`
                      target, and the canvas has no DOM of its own: blanking it in the
                      column took the mark vocabulary away from a first-time reader and
