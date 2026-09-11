@@ -12,7 +12,7 @@ function Fixture({ onOpen, hashes }: { onOpen: (slug: string) => void; hashes: M
     { slug: 'wiki/answers/base', title: 'Which policy?', frontmatter: {} },
     ...['one', 'two'].map((name) => ({ slug: `wiki/answers/${name}`, title: `Which policy? (${name})`, frontmatter: { answer_thread: 'wiki/answers/base', answer_previous: 'wiki/answers/base', sources: ['sources/policy.md'], answer_source_observations: { 'sources/policy.md': 'a'.repeat(64) } } })),
   ]);
-  return <LibraryQuestions answers={answers} knownSources={new Set(['sources/policy.md'])} hashes={hashes} onOpen={onOpen} onAsk={null} t={t} />;
+  return <LibraryQuestions answers={answers} knownSources={new Set(['sources/policy.md'])} hashes={hashes} onOpen={onOpen} onAsk={null} askBlockedReason={null} t={t} />;
 }
 
 describe('the retained question entrance', () => {

@@ -4768,6 +4768,7 @@
       "blockedLocalRemote": "The runner saved for this folder is {host}, which is not this computer. Compile sends the contents of your documents, so it runs only on a runner on this machine. Change the address in Settings, then AI connection.",
       "blockedLocalFormats": "{model} reads Markdown, plain text, CSV, JSON and HTML. Everything still waiting here is {formats}, which needs a coding agent that brings its own reader.",
       "blockedNoAgent": "No verified coding agent is set up on this computer, and no local model address is saved. Settings, then AI connection, is where the local address goes.",
+      "blockedLocalOnly": "A local model can only compile. Asking and checking need a connected coding agent.",
       "blockedNoSources": "Nothing to compile yet. Step one is where documents come in.",
       "blockedNothingWaiting": "Every source already has a write-up that matches its bytes.",
       "transferLocalRemote": "The runner saved here is {host}, which is not this computer, so Compile does not run: it would send the contents of your documents there. {file} records every request Atlas does make.",

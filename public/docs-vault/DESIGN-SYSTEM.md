@@ -1886,6 +1886,28 @@ per frame for a field point. Both are `aria-hidden` and `pointer-events-none`.
 Rationale and the arguments that lost: `docs/DECISIONS.md`, 2026-09-09 "The
 Library gets a ground, and its shelf loses the coloured rail".
 
+### The spine folds by the pane's height (2026-09-11)
+
+`--library-spine-collapse-height: 640px` is the height **of the Library's
+landing pane**, not of the window, below which the three-step spine collapses
+each finished step to its head line. `library-reader-landing` declares the size
+container (`.library-spine-scope`) and a `done` step drops the parts marked
+`.library-spine-fold-away` — its caption and its action row — while keeping the
+number, the name, the state word and its border at the 44px
+`--touch-target-min` head row. A step's `extra` block never folds: step three's
+saved questions are the target the fold exists to reveal.
+
+Why a pane height rather than a breakpoint: below `lg` the reader is the upper
+half of one column, so the same window is comfortable at `lg` and short under
+it. Measured on the branch export (design-responsive, council 2026-09-11) the
+first saved-question row stood 272px below the pane's fold at 390×844, 270 at
+1023×768, 108 at 744×1133 and 34 at 1024×640, while 1512×901 was clear.
+
+⚠️ The number is written twice on purpose: CSS does not substitute `var()`
+inside an `@container` condition, so the rule in `app/globals.css` repeats the
+literal. `tests/e2e/library-spine.spec.ts` reads the token and drives the fold
+boundary from it, so a drift between the two turns that spec red.
+
 ## Contextual ontology writing; Studio surface retired 2026-08-21
 
 `/topology` is the vault's visual read/write workbench. A selected node's

@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-11 — The Library keeps its spine, and computes the structural check itself
+
+**Why**: measured on every Library screen: the three-step stage is drawn only while `retainedAnswers.length === 0`, so the first saved answer removes the only screen naming the next step, and Ask drops from `outline` to `ghost`; at zero answers the invitation carries `text-display` and the work `text-title`. The owner could not find the saved-question path. Thirteen features are absent, not unavailable, without an agent; the folder check is asked of the agent and forgotten on restart although the per-page verdict is local.
+**Prior**: cites 2026-09-11 "Library retains questions through explicit answer revisions", which fixes that the landing lists retained questions and leaves size and order open; this record stays inside it. Cites 2026-09-07 "The Library index is a switch between two lists" and 2026-08-24 app-authored turns (the check brief folds by marker). Overturns nothing.
+**Decision**: the landing always draws the three-step stage; retained questions and Ask (`outline`, never `ghost`) live inside step three, with a one-line invitation at zero answers. A feature the product has is always on screen; availability is a state with its reason, not absence. The structural check is aggregated from the local per-page verdict, always available and persistent; the agent adds only semantic findings. A hand-written page keeps its door when the wiki is empty.
+**Dissent**: once answers exist the stage is noise above the list; agent-only controls shown without an agent invite presses that cannot complete. Conceded as the price of a stable shape; if the first proves out, finished steps fold to one line.
+**Falsifier**: at zero answers a person names the empty section as the first action; at one answer a person cannot reopen it from the landing; a folded step hides a blocked compile; a structural finding differs between the app's report and `wiki-validate`.
+**Owner**: jinan
+
 ## 2026-09-11 — Atlas enters the MCP ecosystem as a release bundle; the image is prepared, not published
 
 **Why**: the owner asked whether Atlas can be discoverable in the MCP ecosystem. 2026-07-27's Dissent 2, "MCP registries assume npm distribution", lost on a premise that a registry needs a package. Its validators say otherwise: `mcpb` is a release asset the registry fetches itself, verified by URL and SHA-256, and `oci` an image verified by its config label. `awesome-mcp-servers` (94,762 stars) needs no Glama registration, and Glama builds a server from its Dockerfile.

@@ -89,6 +89,20 @@ export function ToastProvider({
         closeButton
         position="top-center"
         offset={{ top: 'var(--app-toast-top-offset, 16px)', right: 16, bottom: 16, left: 16 }}
+        /*
+         * **The narrow band reads its own variable, and it is not the same number.**
+         * sonner stops reading `offset` at 600px of viewport and switches to
+         * `mobileOffset`; a surface that stacks chrome at the top of its pane therefore
+         * has two clearances to state, because below that width its own rows stack
+         * differently (the Library's work lane keeps two). Left unplanted this is
+         * sonner's own 16px default, exactly as `offset` is.
+         */
+        mobileOffset={{
+          top: 'var(--app-toast-mobile-top-offset, 16px)',
+          right: 16,
+          bottom: 16,
+          left: 16,
+        }}
         gap={8}
         // The box width is ours, not sonner's 356px default: wide enough for one
         // Korean sentence plus an action without wrapping at 1512, and never wider
