@@ -256,13 +256,15 @@ test.describe("Check the wiki opens the agent dock", () => {
     expect(overflow).toBeLessThanOrEqual(0);
     const box = (await report.boundingBox())!;
     expect(box.x + box.width).toBeLessThanOrEqual(390);
-    // At 320 (1280 at 400% zoom) the report and the Graph action are still hit-testable: an
-    // `overflow-hidden` ancestor clips instead of scrolling, so `scrollWidth` alone stays
-    // green over lost content (design-responsive, council 2026-09-07).
+    // At 320 (1280 at 400% zoom) the report and the way back out of it are still
+    // hit-testable: an `overflow-hidden` ancestor clips instead of scrolling, so
+    // `scrollWidth` alone stays green over lost content (design-responsive, council
+    // 2026-09-07). The `Graph` chip this used to read is gone — the picture is the home
+    // (2026-09-12) — and the report is open here, so the control that owns the next press
+    // is the reader's own way back, which is the one this width must not clip.
     await page.setViewportSize({ width: 320, height: 844 });
-    for (const id of ["library-check-report", "library-graph-open"]) {
+    for (const id of ["library-check-report", "library-reader-back"]) {
       const target = page.getByTestId(id);
-      // The Graph action stays in the reader header at every width.
       await expect(target).toBeVisible();
       const rect = (await target.boundingBox())!;
       const hit = await page.evaluate(

@@ -72,8 +72,11 @@ import { LibraryGraph } from "@/widgets/library-graph";
 import { LibraryWorkActivityStrip } from "@/widgets/library-work-activity";
 import { LibraryImportDialog } from "@/widgets/library-import";
 import {
+  readLibraryGuideSeen,
+  useLibraryGuideSeen,
   useLibraryIndexCollapsed,
   useLibraryIndexSegment,
+  writeLibraryGuideSeen,
   writeLibraryIndexCollapsed,
   useWikiWriteMode,
   writeLibraryIndexSegment,
@@ -93,10 +96,12 @@ import {
   TOAST_TOP_OFFSET_UNDER_LIBRARY_PANE_CHROME_PX,
 } from "@/shared/ui/toast-position";
 import { SegmentedControl } from "@/shared/ui/segmented-control";
-import { Button, Dialog, Tooltip, TooltipProvider, useToast } from "@/shared/ui";
+import { Button, Tooltip, TooltipProvider, useToast } from "@/shared/ui";
 
 import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
 import { libraryCompileBlockedReason, libraryTransferSentence } from "../lib/compile-availability";
+import { libraryWaitingLine } from "../lib/stage-steps";
+import { libraryOffTemplateCount } from "../lib/merge-wiki-verdict";
 import { useCitedPassage } from "../lib/use-cited-passage";
 import { useSourceOutline } from "../lib/use-source-outline";
 import { useLibraryModel } from "../lib/use-library-model";
@@ -104,6 +109,7 @@ import { useObservedWikiWork } from "../lib/use-observed-wiki-work";
 import { useLibraryAgent } from "../lib/use-library-agent";
 import { useAnswerRefresh } from '../lib/use-answer-refresh';
 import { useAnswerHistory } from '../lib/use-answer-history';
+import { AgentDoor } from "./parts/AgentDoor";
 import { LibraryCheckReport, findingKey, reportOutline } from "./parts/LibraryCheckReport";
 import { LibrarySection } from "./parts/LibrarySection";
 import { CompileBrainSelect } from "./parts/CompileBrainSelect";
@@ -123,6 +129,8 @@ import { LibraryQuestions } from './parts/LibraryQuestions';
 import { RetainedAnswerContext, RetainedAnswerFooter } from './parts/RetainedAnswerContext';
 import { AnswerRevisionComparison } from './parts/AnswerRevisionComparison';
 import { LibraryConstellation } from "./parts/LibraryConstellation";
+import { LibraryHomePopover } from "./parts/LibraryHomePopover";
+import { LibraryHomeStrip, type LibraryHomeStripClause, type LibraryHomeStripDoor } from "./parts/LibraryHomeStrip";
 import { LibrarySynapseField } from "./parts/LibrarySynapseField";
 
 /**
@@ -264,11 +272,32 @@ export function LibraryPage() {
       root.style.removeProperty("--app-toast-mobile-top-offset");
     };
   }, []);
-  const [graphOpen, setGraphOpen] = useState(false);
+  /**
+   * **The home's one open surface, or none.**
+   *
+   * The Library's home is the folder's graph, and the four things that used to be cards or
+   * a viewport dialog are now doors on the strip above it (`docs/DECISIONS.md`,
+   * 2026-09-12). One state rather than four booleans, because two of these popups beside
+   * each other would be the "colliding popovers" `docs/DESIGN-SYSTEM.md` forbids — and
+   * because the guide and the Compile popover each carry the brain picker, which must be
+   * one control per setting per screen (guardian, council 2026-09-11).
+   */
+  const [homeSurface, setHomeSurface] = useState<"guide" | "questions" | "compile" | "overflow" | null>(null);
+  /**
+   * The marks the stale clause is about, while it is pressed. Null is the resting state.
+   *
+   * It is a *set of ids*, not a selection: pressing the clause must not open anything and
+   * must not move a mark (2026-09-08, "The Library graph stands still"). The canvas ramps
+   * everything outside the set down to quaternary and back.
+   */
+  const [staleLit, setStaleLit] = useState(false);
   const [sourceCitation, setSourceCitation] = useState<{ path: string; anchor?: string } | null>(null);
   const [answerComparisonOpen, setAnswerComparisonOpen] = useState(false);
-  const graphTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const graphRestoreFrameRef = useRef<number | null>(null);
+  const guideDoorRef = useRef<HTMLButtonElement | null>(null);
+  const questionsDoorRef = useRef<HTMLButtonElement | null>(null);
+  const compileClauseRef = useRef<HTMLButtonElement | null>(null);
+  const overflowDoorRef = useRef<HTMLButtonElement | null>(null);
+
   /** Set when a page opened on its own (a check ending), so the focus stays where the person had it. */
   const skipReaderFocusRef = useRef(false);
   /*
@@ -819,46 +848,137 @@ export function LibraryPage() {
         onOpen={() => agent.setOpen(true)}
       />
     ) : null;
-  const graphAction = (
-    <Button
-      ref={graphTriggerRef}
-      variant="outline"
-      size="sm"
-      /*
-       * 69×32 on a finger until 2026-09-12 — a real defect, unlike the two controls beside
-       * it: `Button` is the one primitive that does **not** emit the floor from the value
-       * layer, which is why its neighbour `answer-review-open` carries the marker by hand.
-       * Height only; the label is wide enough that `atlas-touch-floor-wide` would add
-       * nothing but push its neighbours.
-       */
-      className="atlas-touch-floor"
-      data-testid="library-graph-open"
-      onClick={(event) => {
-        if (graphRestoreFrameRef.current !== null) {
-          window.cancelAnimationFrame(graphRestoreFrameRef.current);
-          graphRestoreFrameRef.current = null;
-        }
-        event.currentTarget.focus({ preventScroll: true });
-        setGraphOpen(true);
-      }}
-    >
-      {t("graph.title")}
-    </Button>
-  );
-  const closeGraph = useCallback(() => {
-    setGraphOpen(false);
-    if (graphRestoreFrameRef.current !== null) window.cancelAnimationFrame(graphRestoreFrameRef.current);
-    graphRestoreFrameRef.current = window.requestAnimationFrame(() => {
-      graphRestoreFrameRef.current = null;
-      graphTriggerRef.current?.focus({ preventScroll: true });
-    });
+  const closeHomeSurface = useCallback(() => setHomeSurface(null), []);
+
+  /*
+   * ══════════════════════════════════════════════════════════════════════════════
+   * The home: the graph, one strip of pressable clauses, and four doors.
+   * ══════════════════════════════════════════════════════════════════════════════
+   *
+   * Owner, 2026-09-12: *"is this gather-compile-read screen just the main one? why does it
+   * come up every time…? it is confusing — isn't it a screen for the first use only and
+   * never again? … put it behind a How-to-use button as a popup instead. And the graph is
+   * very important by default, yet right now pressing a button gets an ugly popup, which
+   * is very poor."* This restores `docs/DECISIONS.md`, 2026-09-06, "The Library pane is
+   * the graph; the shelf is a popup", and overturns the always-draws clause of 2026-09-11
+   * on that record's own dissent.
+   *
+   * ⚠️ Every hook this home needs lives **here**, above the two early returns for a folder
+   * with nothing in it. The first draft put them beside the JSX that reads them, which is
+   * where they read best and is also a hook order that changes with the folder's contents
+   * (`react-hooks/rules-of-hooks`, caught by lint before any measurement).
+   */
+
+  /** With nothing chosen the pane is the folder's graph; a document replaces it. */
+  const homeVisible = selected === null && !localReviewVisible;
+  /**
+   * The marks the stale clause names: every source whose page cites a hash its bytes no
+   * longer match, plus the pages citing it. A citation has two ends, so the emphasis is a
+   * set — and it is an **ink** change only (2026-09-08, "The Library graph stands still").
+   */
+  const staleHighlight = useMemo(() => {
+    const ids = new Set<string>();
+    const pages = new Set<string>();
+    for (const row of model.sources) {
+      if (row.state !== "stale") continue;
+      ids.add(`source:${row.path}`);
+      for (const slug of row.citedBy) {
+        ids.add(`page:${slug}`);
+        pages.add(slug);
+      }
+    }
+    /*
+     * ⚠️ **The clause's number and the lit marks are not the same number, so both are
+     * said** (three cold walkers, 2026-09-12). Two of them counted the lit set against
+     * `3 sources changed` and got six — correctly: a citation has two ends, and the pages
+     * are the other end. The note the legend prints carries both counts, which is what
+     * makes the clause checkable against the picture.
+     */
+    return { ids, pages: pages.size };
+  }, [model.sources]);
+  /*
+   * The check report's own door. It opens what the index's report control opens; slice 3
+   * gives that report its computed state, and this door is the home's way in.
+   */
+  const openReport = useCallback(() => {
+    setHomeSurface(null);
+    setStaleLit(false);
+    choose({ kind: "report" });
+  }, [choose]);
+  /**
+   * **The guide raises itself once per machine, and never again by itself.**
+   *
+   * The owner's sentence is "only when you first use it", so the flag is per machine and
+   * not per folder: a person who has read the three steps has read them, and re-teaching
+   * them on a second folder is the screen they asked to stop seeing. A press or Escape
+   * settles it — `LibraryHomePopover`'s close path runs `onClose`, which is where the flag
+   * is written, so the popup cannot be dismissed without the machine remembering.
+   *
+   * ⚠️ Dissent on the record (design-lead): *"a guide behind a chip is one nobody opens
+   * twice."* The single self-raise is the answer to it, and the falsifier is measurable —
+   * `atlas.library.guide-seen` showing the guide reopened by hand in one sitting.
+   */
+  /*
+   * ⚠️ **Read at the moment of raising, never from the render's snapshot.**
+   *
+   * `useLibraryGuideSeen()` is a `useSyncExternalStore`, and on a static export its first
+   * client render answers with `getServerSnapshot` — `false` — because a prerendered page
+   * cannot know what is in this machine's storage. An effect keyed on that value therefore
+   * fires once with "never seen" even on a machine that has, which raises the guide over
+   * the canvas and lets it swallow the first gesture. `readLibraryGuideSeen()` is the
+   * direct read, and this is the one place that needs it: the decision is made once, in an
+   * effect, and never rendered.
+   */
+  const guideSeen = useLibraryGuideSeen();
+  const guideRaisedRef = useRef(false);
+  useEffect(() => {
+    /*
+     * ⚠️ **`readLibraryGuideSeen()` is here as well as `guideSeen`, and it is the one that
+     * matters.** `useLibraryGuideSeen` is a `useSyncExternalStore`, so on a static export
+     * the first client render answers with `getServerSnapshot` — `false`, because a
+     * prerendered page cannot know this machine's storage. Keyed on that alone the effect
+     * fires once with "never seen" on a machine that has, and the guide raises itself over
+     * the canvas and swallows the first gesture: measured 2026-09-12, six
+     * `library-graph-alive` cases went red because no pointer ever reached the picture.
+     * The direct read closes that window; `guideSeen` stays in the dependencies so a
+     * change made in another tab still settles this one.
+     */
+    if (!homeVisible || guideSeen || guideRaisedRef.current || readLibraryGuideSeen()) return;
+    guideRaisedRef.current = true;
+    setHomeSurface("guide");
+  }, [guideSeen, homeVisible]);
+  const closeGuide = useCallback(() => {
+    writeLibraryGuideSeen(true);
+    setHomeSurface(null);
   }, []);
-  useEffect(
-    () => () => {
-      if (graphRestoreFrameRef.current !== null) window.cancelAnimationFrame(graphRestoreFrameRef.current);
-    },
-    [],
-  );
+
+  /**
+   * **The stale clause's emphasis is lifted by Escape or by a press on the picture.**
+   *
+   * It is the one home control that changes the canvas rather than opening a surface, so
+   * it needs its own way back — and the way back has to be the two a person already
+   * expects from an emphasis. A press on a *mark* lifts it through `onSelect` (that press
+   * opens a document); this covers the empty canvas and the key.
+   */
+  useEffect(() => {
+    if (!staleLit) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setStaleLit(false);
+    };
+    const onDown = (event: MouseEvent) => {
+      if (!(event.target instanceof Element)) return;
+      if (event.target.closest('[data-testid="library-graph-canvas"]')) setStaleLit(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("mousedown", onDown);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("mousedown", onDown);
+    };
+  }, [staleLit]);
   useEffect(() => {
     const root = document.documentElement;
     if (!dockOpen) {
@@ -1338,28 +1458,20 @@ export function LibraryPage() {
             ? t("stage.blockedNoAgent")
             : t("stage.blockedLocalOnly");
 
-  /**
-   * **Which card on the landing prints that sentence — one paragraph, whatever the route.**
+  /*
+   * **Where that sentence is printed — one paragraph per surface** (2026-09-11, rewritten
+   * 2026-09-12).
    *
-   * Measured at 1512 on the no-agent folder (design-interaction C2, council 2026-09-11):
-   * `stage.blockedNoAgent` stood at y≈410 under step two's Compile and again at y≈633
-   * under Ask. Both were true and both were the same words, which is how a screen teaches
-   * a reader to skip its reasons.
-   *
-   * The rule is that the sentence belongs to the card whose **own press** it stops. On
-   * the web, while an agent is still being looked for, and with none set up, Compile is
-   * blocked by exactly this sentence — `libraryCompileBlockedReason` returns the same
-   * string — so step two prints it and Ask points at that paragraph. On the `local` route
-   * Compile can run and only the agent-only turns cannot, so step three prints it beside
-   * Ask and step two's Check the wiki points down at it. Either way the landing carries
-   * one `data-landing-blocked-reason`, which is what `library-spine.spec.ts` counts.
+   * The rule the record set is that the sentence belongs to the card whose **own press**
+   * it stops, and that one viewport carries one copy of it. It used to need a chooser
+   * here, because the stepper and the saved questions shared the landing's column and
+   * either could be the printer. They do not share a column any more: the home is the
+   * folder's graph, and each of them is a popup behind its own door, so they can never be
+   * on screen together. The choice therefore disappears rather than moving — each surface
+   * prints its own single reason and ties its dead controls to it (`LibraryStage` owns
+   * which of its paragraphs carries `data-landing-blocked-reason`; `LibraryQuestions`
+   * prints Ask's). A chooser here would now resolve to an id in a closed popup.
    */
-  const agentReasonPrintedId =
-    agentOnlyReason === null
-      ? null
-      : agentOnlyReason === compileBlocked
-        ? "library-stage-compile-blocked"
-        : "library-questions-ask-blocked";
 
   /**
    * **Whether an availability sentence on this screen earns a door — decided once.**
@@ -1383,7 +1495,7 @@ export function LibraryPage() {
    * a moment is an answer to a question nobody has been given yet.
    *
    * The door follows the printed sentence, so it appears at most twice on the product at
-   * once — once on the landing, whose single reason `agentReasonPrintedId` places, and
+   * once — once on the surface printing the landing's single reason, and
    * once in the answer reader, which is a different screen. The source pane's own
    * `compileNote` is the third site.
    */
@@ -1429,14 +1541,25 @@ export function LibraryPage() {
    * would close two things with one press.
    */
   useEffect(() => {
-    if (localReviewVisible || selected === null || findOpen || graphOpen) return;
+    /*
+     * ⚠️ **`answerComparisonOpen` joined this guard on 2026-09-12**, and it should have
+     * been here since the comparison shipped: that `Dialog` owns Escape and returns focus
+     * to the control that opened it, and this handler was closing the document in the same
+     * press. Invisible until the home became the graph — the review button used to stand
+     * in a header row drawn in every state, so the node focus returned to never moved.
+     * Now closing the document unmounts that row and draws the button on the strip
+     * instead, and the restore landed on a detached node (measured:
+     * `library-answer-refresh.spec.ts` "a changed original becomes a compared, retained
+     * answer revision", one Escape, focus on `body`).
+     */
+    if (localReviewVisible || selected === null || findOpen || answerComparisonOpen || homeSurface !== null) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
       setSelected(null);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [agent.open, findOpen, graphOpen, localReviewVisible, selected]);
+  }, [agent.open, answerComparisonOpen, findOpen, homeSurface, localReviewVisible, selected]);
 
   /** Which list the index draws, and whether the column is folded — both per machine. */
   const indexSegment = useLibraryIndexSegment();
@@ -1820,6 +1943,112 @@ export function LibraryPage() {
   }
 
   const narrowShowsReader = selected !== null || localReviewVisible;
+
+  /*
+   * ══════════════════════════════════════════════════════════════════════════════
+   * The home: the graph, one strip of pressable clauses, and four doors.
+   * ══════════════════════════════════════════════════════════════════════════════
+   *
+   * Owner, 2026-09-12: *"is this gather-compile-read screen just the main one? why does it
+   * come up every time…? it is confusing — isn't it a screen for the first use only and
+   * never again? … put it behind a How-to-use button as a popup instead. And the graph is
+   * very important by default, yet right now pressing a button gets an ugly popup, which
+   * is very poor."* This restores `docs/DECISIONS.md`, 2026-09-06, "The Library pane is
+   * the graph; the shelf is a popup", and overturns the always-draws clause of 2026-09-11
+   * on that record's own dissent.
+   */
+
+  /** The file Compile would start on — `selectCompileTargets` is what the press itself runs. */
+  const compileTarget = selectCompileTargets(model.sources)[0] ?? null;
+  const offTemplateCount = libraryOffTemplateCount(model.verdicts);
+  const homeClauses: LibraryHomeStripClause[] = [];
+  if (compileTarget) {
+    homeClauses.push({
+      kind: "compile",
+      text: t("home.compileNext", { source: compileTarget.path.replace(/^sources\//, "") }),
+      onPress: () => {
+        setStaleLit(false);
+        setHomeSurface((current) => (current === "compile" ? null : "compile"));
+      },
+      testId: "library-strip-compile",
+      open: homeSurface === "compile",
+    });
+  }
+  if (model.staleCount > 0) {
+    homeClauses.push({
+      kind: "stale",
+      text: t("home.staleClause", { count: model.staleCount }),
+      /*
+       * A toggle, not a door: it changes what the picture emphasises and opens nothing, so
+       * the same press lifts it. Escape and a press on the canvas lift it too (below).
+       */
+      onPress: () => {
+        setHomeSurface(null);
+        setStaleLit((lit) => !lit);
+      },
+      pressed: staleLit,
+      testId: "library-strip-stale",
+    });
+  }
+  if (offTemplateCount > 0) {
+    homeClauses.push({
+      kind: "offTemplate",
+      text: t("stage.statusOffTemplate", { count: offTemplateCount }),
+      onPress: openReport,
+      testId: "library-strip-offtemplate",
+    });
+  }
+
+  /**
+   * **The questions door, at the one count its falsifier is about.**
+   *
+   * 2026-09-11 `:75` left a falsifier that must keep holding: *a person with one saved
+   * answer reopens it from the home in one press.* A door that opens a list of one row is
+   * two presses, so at exactly one saved answer the door **is** that question — its title
+   * is the label and the press opens the page. Measured against the alternative the
+   * directions offered (a `Questions 1` door whose surface opens with the first row
+   * focused): 1 press against 2, which is why this is the one built.
+   *
+   * Nothing is lost by it. `Ask` lives inside the surface, and asking a question is
+   * opening the conversation — the `Conversation` chip two controls to the right is the
+   * same press `Ask` makes. At zero answers, and at two or more, the door is the list.
+   */
+  const soleAnswer = retainedAnswers.length === 1 ? retainedAnswers[0] ?? null : null;
+  const homeDoors: LibraryHomeStripDoor[] = [
+    {
+      id: "guide",
+      label: t("home.guide"),
+      onPress: () => {
+        setStaleLit(false);
+        setHomeSurface((current) => (current === "guide" ? null : "guide"));
+      },
+      testId: "library-guide-open",
+      open: homeSurface === "guide",
+    },
+    {
+      id: "questions",
+      label: soleAnswer ? soleAnswer.title : t("home.questions", { count: retainedAnswers.length }),
+      onPress: soleAnswer
+        ? () => {
+            setStaleLit(false);
+            choose({ kind: "wiki", slug: soleAnswer.slug });
+          }
+        : () => {
+            setStaleLit(false);
+            setHomeSurface((current) => (current === "questions" ? null : "questions"));
+          },
+      testId: "library-questions-open",
+      open: soleAnswer ? undefined : homeSurface === "questions",
+    },
+    {
+      id: "report",
+      label: t("home.report"),
+      onPress: openReport,
+      testId: "library-report-open",
+    },
+  ];
+
+
   // Four states — both edges, either, neither — the way `AcpChatPanel` writes its own.
   const indexFade = "var(--tabbar-edge-fade)";
   const indexMask =
@@ -2114,8 +2343,17 @@ export function LibraryPage() {
           }
         />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3 py-2">
-            {selected || localReviewVisible ? (
+          {/*
+           * ⚠️ **One row above the pane, not two** (owner, 2026-09-12; `docs/DECISIONS.md`
+           * 2026-09-06 `:587`). This header used to be drawn in every state, so the home
+           * carried it *plus* the three guide cards *plus* the work lane — three rows
+           * saying overlapping halves of one thing. With nothing chosen the canvas's own
+           * caption row **is** this row: the counts on the left and `LibraryHomeStrip` in
+           * its `headerEnd` slot on the right. So this row is the reading state's, where
+           * there is a document to go back from and no strip to carry the clauses.
+           */}
+          {narrowShowsReader ? (
+            <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3 py-2">
               <button
                 type="button"
                 onClick={() => localReviewVisible ? agent.localCompile.dismiss() : setSelected(null)}
@@ -2134,13 +2372,13 @@ export function LibraryPage() {
               >
                 {t(localReviewVisible ? "localCompile.back" : "graph.readerClose")}
               </button>
-            ) : null}
-            <div className="min-w-0 flex-1"><LibraryStatusStrip model={model} t={t} /></div>
-            <span className="flex shrink-0 items-center gap-2">
-              {answerRefresh.proposal ? <Button className="atlas-touch-floor" size="sm" variant="outline" data-testid="answer-review-open" onClick={() => setAnswerComparisonOpen(true)}>{t('answers.reviewDraft')}</Button> : null}
-              {graphAction}{conversationDoor}
-            </span>
-          </div>
+              <div className="min-w-0 flex-1"><LibraryStatusStrip model={model} t={t} /></div>
+              <span className="flex shrink-0 items-center gap-2">
+                {answerRefresh.proposal ? <Button className="atlas-touch-floor" size="sm" variant="outline" data-testid="answer-review-open" onClick={() => setAnswerComparisonOpen(true)}>{t('answers.reviewDraft')}</Button> : null}
+                {conversationDoor}
+              </span>
+            </div>
+          ) : null}
           {localReviewVisible ? (
             <div data-testid="library-local-review" className="min-h-0 flex-1 overflow-y-auto px-3 py-6">
               <div className={`${PAGE_COLUMN_STAGE} mx-auto`}>
@@ -2148,79 +2386,75 @@ export function LibraryPage() {
               </div>
             </div>
           ) : null}
-          {!selected && !localReviewVisible ? (
+          {homeVisible ? (
             <div
               data-testid="library-reader-landing"
               /*
-               * `library-spine-scope` makes this pane a size container, so the stage can
-               * fold its finished steps when **this box** is short rather than when the
-               * window is (`app/globals.css`, `--library-spine-collapse-height`).
-               * Measured below `lg`, where the reader is the upper half of one column:
-               * the first saved-question row stood 272px below the fold at 390×844 and
-               * 34 at 1024×640 (design-responsive C1, council 2026-09-11).
+               * ⚠️ **The pane is the picture, at the pane's height** (`docs/DECISIONS.md`,
+               * 2026-09-06 "The Library pane is the graph; the shelf is a popup";
+               * restored 2026-09-12 on the owner's reading of the always-drawn stage).
+               *
+               * Three things left this box with the cards. The `library-spine-scope` size
+               * container had one consumer — the stepper's fold — and the stepper is now
+               * inside a 560px popup that scrolls. The `overflow-y-auto` scroller went
+               * with it: a canvas that fits its own box has nothing to scroll, and a
+               * scroller around `flex-1` would have let the picture size itself. And
+               * `LibrarySynapseField` went with it too — it is texture drawn as *ground
+               * for cards* (2026-09-09), and a real graph is not something texture grounds.
+               * What is left is a column with no padding of its own, because the canvas
+               * section carries its own gutters.
                */
-              className="library-spine-scope relative min-h-0 flex-1 overflow-y-auto px-3 py-6"
+              className="flex min-h-0 min-w-0 flex-1 flex-col"
             >
-              <LibrarySynapseField paused={graphOpen} />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--color-canvas)_0%,var(--color-canvas-a70)_30%,transparent_56%,var(--color-canvas-a70)_88%,var(--color-canvas)_100%)]"
-              />
-              <div className="relative z-10 flex min-h-full items-center justify-center">
-                <div className={PAGE_COLUMN_STAGE + " mx-auto"}>
-                  {/*
-                    **The spine is drawn at every count** (`docs/DECISIONS.md`, 2026-09-11,
-                    "The Library keeps its spine, and computes the structural check
-                    itself"). It used to be `retainedAnswers.length === 0 ? <stage> :
-                    null`, so the first saved answer removed the only screen naming the
-                    next step and left a list with no order around it. The stage is now
-                    this landing's one headline — `text-display`, the page grade the
-                    questions heading used to hold — and the questions are a section
-                    inside step three.
-                  */}
-                  <h2 data-testid="library-stage-title" className="mb-3 px-3 text-display font-[var(--font-weight-signature)] leading-display text-[color:var(--color-text-primary)]">
-                    {t("stage.title")}
-                  </h2>
-                  <LibraryStage
-                    model={model}
-                    route={agent.route}
-                    agentLabel={agent.runtime?.label ?? null}
-                    localModel={agent.localModel}
-                    brain={agent.brain}
-                    brainChoosable={agent.brainChoosable}
-                    onChooseBrain={agent.chooseBrain}
-                    inApp={nativeVaultRootPath !== null}
-                    onAddFiles={handleAddFiles}
-                    onFindDocuments={handleFindDocuments}
-                    onCompile={handleCompile}
-                    onLint={agent.route === "agent" ? handleLint : null}
-                    lintBlockedReason={agentOnlyReason}
-                    lintBlockedReasonId={agentReasonPrintedId}
-                    agentDoor={agentDoor}
-                    onOpenWiki={(slug) => choose({ kind: "wiki", slug })}
-                    answerSlugs={retainedAnswerSlugs}
-                    busy={busy}
-                    questions={
-                      <LibraryQuestions
-                        answers={retainedAnswers}
-                        knownSources={knownOriginalPaths}
-                        hashes={model.hashes}
-                        onOpen={(slug) => choose({ kind: "wiki", slug })}
-                        onAsk={agent.route === "agent" ? () => agent.setOpen(true) : null}
-                        askBlockedReason={agentOnlyReason}
-                        askBlockedReasonId={
-                          agentReasonPrintedId === "library-questions-ask-blocked"
-                            ? null
-                            : agentReasonPrintedId
-                        }
-                        agentDoor={agentDoor}
-                        t={t}
-                      />
+              <LibraryGraph
+                docs={manifest?.docs ?? EMPTY_DOCS}
+                wikiPages={model.wikiPages}
+                sources={model.sources}
+                activity={libraryWorkActivity}
+                /* Nothing is chosen — that is the condition this box is drawn under. */
+                selection={null}
+                /*
+                 * The stale clause's emphasis. A set of ids rather than a selection: it
+                 * changes ink only, and pressing the canvas or Escape lifts it.
+                 */
+                highlight={staleLit ? staleHighlight.ids : null}
+                /*
+                 * The words for the emphasis. A picture that dims with nothing written is
+                 * a state a person cannot name or leave; the legend's own slot says what
+                 * is lit and the two ways back (see `LibraryGraph.highlightNote`).
+                 */
+                highlightNote={
+                  staleLit
+                    ? t("home.staleLit", { count: model.staleCount, pages: staleHighlight.pages })
+                    : null
+                }
+                onSelect={(next) => {
+                  setStaleLit(false);
+                  setHomeSurface(null);
+                  choose(next.kind === "wiki" ? { kind: "wiki", slug: next.ref } : { kind: "source", path: next.ref });
+                }}
+                headerEnd={
+                  <LibraryHomeStrip
+                    clauses={homeClauses}
+                    doors={homeDoors}
+                    overflowOpen={homeSurface === "overflow"}
+                    onToggleOverflow={() =>
+                      setHomeSurface((current) => (current === "overflow" ? null : "overflow"))
+                    }
+                    compileAnchorRef={compileClauseRef}
+                    guideAnchorRef={guideDoorRef}
+                    questionsAnchorRef={questionsDoorRef}
+                    overflowAnchorRef={overflowDoorRef}
+                    trailing={
+                      <>
+                        {answerRefresh.proposal ? <Button className="atlas-touch-floor flex-none" size="sm" variant="outline" data-testid="answer-review-open" onClick={() => setAnswerComparisonOpen(true)}>{t('answers.reviewDraft')}</Button> : null}
+                        {conversationDoor}
+                      </>
                     }
                     t={t}
                   />
-                </div>
-              </div>
+                }
+              />
             </div>
           ) : null}
           {!localReviewVisible ? <div
@@ -2355,7 +2589,22 @@ export function LibraryPage() {
                 <>
                   <WikiTemplateProblems problems={wikiProblems} collapsed t={t} />
                   <RetainedAnswerFooter
-                    onHome={() => choose(null)}
+                    /*
+                     * ⚠️ **"Back to questions" goes to the questions** (walker 3,
+                     * 2026-09-12: *"the answer page offers 'Back to questions'. I arrived
+                     * from the diagram, and no screen I saw was a list of questions."*).
+                     * It used to return to the landing, which drew the list; the home is
+                     * the folder's graph now, so the label named a screen that no longer
+                     * existed.
+                     *
+                     * It is also what keeps the list reachable at **one** saved answer,
+                     * where the questions door is that question and opens the page rather
+                     * than the surface: Ask, the state badge and the observation line are
+                     * one press from the page a person is already on, which is the
+                     * presence 2026-09-11 ("Ask, `outline`, never `ghost`") asks for at
+                     * every count.
+                     */
+                    onHome={() => { choose(null); setHomeSurface("questions"); }}
                     onPrevious={answerHistory.previous && answerHistory.exists ? () => choose({ kind: 'wiki', slug: answerHistory.previous! }) : null}
                     t={t}
                   />
@@ -2419,41 +2668,228 @@ export function LibraryPage() {
           markSelfWrite(result.slug); setAnswerComparisonOpen(false); agent.setOpen(false); choose({ kind: 'wiki', slug: result.slug });
           toast.show(t(result.state === 'saved' ? 'answers.saved' : 'answers.savedNeedsReview'), result.state === 'saved' ? 'success' : 'error');
         }); }} t={t} /> : null}
-      <Dialog
-        open={graphOpen}
-        onClose={closeGraph}
-        size="viewport"
-        labelledBy="library-graph-dialog-title"
-        testId="library-graph-dialog"
-        className="flex min-h-0 flex-col p-0"
+      {/*
+        ══════════════════════════════════════════════════════════════════════════════
+        The home's popups. Each hangs from the control that opened it.
+        ══════════════════════════════════════════════════════════════════════════════
+
+        ⚠️ **The viewport `Dialog` that used to hold the graph is gone** (owner,
+        2026-09-12: *"the graph is very important by default, yet right now pressing a
+        button gets an ugly popup, which is very poor"*). The picture is the pane, so
+        there is nothing left for a dialog to disclose; what is behind a press now is the
+        guide and the saved questions, which are things to read beside the picture rather
+        than errands that block it. Hence `transientSurface("anchored")` on `Surface` and
+        not `Dialog`: no scrim, no focus trap, Escape and an outside press close, focus
+        returns to the door (`LibraryHomePopover`).
+      */}
+      <LibraryHomePopover
+        open={homeSurface === "guide"}
+        onClose={closeGuide}
+        anchorRef={guideDoorRef}
+        /* Below `lg` these doors are not drawn; the `…` door is what opened this. */
+        fallbackAnchorRef={overflowDoorRef}
+        title={t("stage.title")}
+        testId="library-guide-popover"
+        t={t}
       >
-        <div className="flex flex-none items-center gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
-          <h2 id="library-graph-dialog-title" className="min-w-0 flex-1 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
-            {t("graph.title")}
-          </h2>
-          <Button variant="ghost" size="sm" onClick={closeGraph}>
-            {t("stage.close")}
-          </Button>
-        </div>
-        <LibraryGraph
-          docs={manifest?.docs ?? EMPTY_DOCS}
-          wikiPages={model.wikiPages}
-          sources={model.sources}
-          activity={libraryWorkActivity}
-          visible={graphOpen}
-          selection={
-            opened === null || opened.kind === "report"
-              ? null
-              : opened.kind === "wiki"
-                ? { kind: "wiki", ref: opened.slug }
-                : { kind: "source", ref: opened.path }
-          }
-          onSelect={(next) => {
-            choose(next.kind === "wiki" ? { kind: "wiki", slug: next.ref } : { kind: "source", path: next.ref });
-            setGraphOpen(false);
-          }}
+        {/*
+          The three steps, in the words they already say — this is the same component the
+          landing drew, moved rather than rewritten, so the guide and the strip cannot
+          disagree about which step is next (`stage-steps.ts` is the one arithmetic).
+        */}
+        <LibraryStage
+          model={model}
+          route={agent.route}
+          agentLabel={agent.runtime?.label ?? null}
+          localModel={agent.localModel}
+          brain={agent.brain}
+          brainChoosable={agent.brainChoosable}
+          onChooseBrain={agent.chooseBrain}
+          inApp={nativeVaultRootPath !== null}
+          onAddFiles={handleAddFiles}
+          onFindDocuments={handleFindDocuments}
+          onCompile={handleCompile}
+          onLint={agent.route === "agent" ? handleLint : null}
+          lintBlockedReason={agentOnlyReason}
+          /*
+           * ⚠️ **Null on purpose.** This popup and the questions popup are two surfaces
+           * that can never be open at once, so "the other card prints the sentence" would
+           * be a pointer at an id outside the document. Each surface prints its own one
+           * reason; `LibraryStage` owns which of its paragraphs carries the marker.
+           */
+          lintBlockedReasonId={null}
+          agentDoor={agentDoor}
+          onOpenWiki={(slug) => { closeGuide(); choose({ kind: "wiki", slug }); }}
+          answerSlugs={retainedAnswerSlugs}
+          busy={busy}
+          /* The saved questions have their own door on the strip; step three inside the
+             guide says what reading is, and does not carry the list a second time. */
+          questions={null}
+          t={t}
         />
-      </Dialog>
+      </LibraryHomePopover>
+      <LibraryHomePopover
+        open={homeSurface === "questions"}
+        onClose={closeHomeSurface}
+        anchorRef={questionsDoorRef}
+        /* Below `lg` these doors are not drawn; the `…` door is what opened this. */
+        fallbackAnchorRef={overflowDoorRef}
+        title={t("answers.title")}
+        testId="library-questions-popover"
+        t={t}
+      >
+        <div className="px-4 py-3">
+          <LibraryQuestions
+            answers={retainedAnswers}
+            knownSources={knownOriginalPaths}
+            hashes={model.hashes}
+            onOpen={(slug) => { setHomeSurface(null); choose({ kind: "wiki", slug }); }}
+            onAsk={agent.route === "agent" ? () => { setHomeSurface(null); agent.setOpen(true); } : null}
+            askBlockedReason={agentOnlyReason}
+            askBlockedReasonId={null}
+            agentDoor={agentDoor}
+            t={t}
+          />
+        </div>
+      </LibraryHomePopover>
+      {/*
+        The Compile popover — the one control step two's card carried, hung from the clause
+        that names the file it would run on. The brain picker comes with it, because
+        choosing which brain writes the page is part of starting the run and this is now
+        the only place on the home that press exists (one control per setting per screen,
+        guardian 2026-09-11).
+      */}
+      <LibraryHomePopover
+        open={homeSurface === "compile"}
+        onClose={closeHomeSurface}
+        anchorRef={compileClauseRef}
+        /* Below `lg` these doors are not drawn; the `…` door is what opened this. */
+        fallbackAnchorRef={overflowDoorRef}
+        /*
+         * ⚠️ **Titled with the file the clause named** (three cold walkers, 2026-09-12).
+         * All three pressed `Compile next: dispute-handling-standard.docx` and all three
+         * recorded the same failure: *"the panel that opened never mentions that file and
+         * talks about three files instead"* — a press whose identity breaks between the
+         * label and the surface. The waiting line below still counts the whole run,
+         * because that is what the button does; the title is what the press promised.
+         */
+        title={
+          compileTarget
+            ? t("home.compileTitle", { source: compileTarget.path.replace(/^sources\//, "") })
+            : t("stage.compile.title")
+        }
+        testId="library-compile-popover"
+        align="start"
+        t={t}
+      >
+        <div className="flex flex-col gap-2 px-4 py-3">
+          {/*
+            **What is still waiting, in the clauses a person acts on** — the line the index's
+            own tail used to carry under the sources list. The owner read it there
+            (2026-09-12): *"written like this, who is ever going to look at it?"* It is the
+            same sentence from the same function; what changed is that it is now under the
+            press it is about, one press from the clause that names the next file.
+          */}
+          <p
+            data-testid="library-needs-compile"
+            className="text-label leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+          >
+            {libraryWaitingLine(model, t) ?? t("stage.blockedNothingWaiting")}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => { setHomeSurface(null); handleCompile(); }}
+              disabled={busy || compileBlocked !== null}
+              data-testid="library-compile-popover-run"
+              aria-describedby={compileBlocked ? "library-compile-popover-blocked" : undefined}
+              className={controlClass({
+                shape: "chip",
+                tone: compileBlocked === null ? "strong" : "muted",
+                hoverSurface: compileBlocked === null ? "lift" : "none",
+                hoverBorder: compileBlocked === null ? "strong" : "none",
+                className: "gap-1.5",
+              })}
+            >
+              {t("wiki.compile")}
+            </button>
+            {agent.brainChoosable ? (
+              <CompileBrainSelect
+                brain={agent.brain}
+                agentLabel={agent.runtime?.label ?? null}
+                localModel={agent.localModel}
+                onChoose={agent.chooseBrain}
+                className="min-w-0 max-w-full flex-1"
+                t={t}
+              />
+            ) : null}
+          </div>
+          {/* Availability is a state with its reason, and the reason is one step under the
+              press rather than two grades below it (design-lead, council 2026-09-11). */}
+          {compileBlocked ? (
+            <p
+              id="library-compile-popover-blocked"
+              data-testid="library-compile-popover-blocked"
+              className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+            >
+              {compileBlocked}
+            </p>
+          ) : (
+            /*
+              The one slot, and the same id the index's copy carries: what leaves this
+              computer when this press runs. The two can never be on screen together — the
+              index prints it only once a document is open, and this popup only exists with
+              nothing chosen — so "exactly one disclosure" stays countable
+              (`.claude/rules/local-first.md`).
+            */
+            <p
+              data-testid="library-transfer"
+              className="text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all] [overflow-wrap:anywhere]"
+            >
+              {libraryTransferSentence({ route: agent.route, localModel: agent.localModel }, t)}
+            </p>
+          )}
+          {compileBlocked && agentDoor ? (
+            <div className="flex">
+              <AgentDoor testId="library-compile-popover-blocked-door" />
+            </div>
+          ) : null}
+        </div>
+      </LibraryHomePopover>
+      {/*
+        Below `lg` the strip keeps only its lead clause, so the doors and the remaining
+        clauses live in this one list. Same anchored surface, same contract — a narrow
+        screen gets the same four destinations, one press deeper.
+      */}
+      <LibraryHomePopover
+        open={homeSurface === "overflow"}
+        onClose={closeHomeSurface}
+        anchorRef={overflowDoorRef}
+        title={t("home.more")}
+        testId="library-home-overflow-popover"
+        t={t}
+      >
+        <ul className="flex flex-col p-1">
+          {[...homeClauses.filter((clause) => clause.kind !== "compile"), ...homeDoors].map((entry) => (
+            <li key={"kind" in entry ? entry.kind : entry.id}>
+              <button
+                type="button"
+                data-testid={`${entry.testId}-overflow`}
+                onClick={() => { setHomeSurface(null); entry.onPress(); }}
+                className={controlClass({
+                  shape: "row",
+                  tone: "secondary",
+                  hoverInk: "strong",
+                  hoverSurface: "lift",
+                  className: "w-full",
+                })}
+              >
+                <span className="min-w-0 truncate">{"text" in entry ? entry.text : entry.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </LibraryHomePopover>
 
       {/*
         The dock is a **sibling of the reader inside this row**, which is the whole of what

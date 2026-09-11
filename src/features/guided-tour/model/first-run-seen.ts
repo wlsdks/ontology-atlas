@@ -31,6 +31,14 @@ export const FIRST_RUN_SEEN_ENTRIES: readonly (readonly [string, string])[] = [
   ["vault-open-guide:auto:v1", "1"],
   // The map's multi-step journey.
   ["guided-tour:v1", "done"],
+  /*
+   * The Library home's three-step guide, which raises itself once per machine (2026-09-12).
+   * It belongs on this list for the reason the list exists: it is an automatic first-visit
+   * surface, and a gate measuring a returning person's home would otherwise measure a
+   * 560px popup hung over the folder's graph. Its own behaviour is pinned by
+   * `library-home.spec.ts`, which seeds nothing.
+   */
+  ["atlas.library.guide-seen", "on"],
   ...Object.keys(DESTINATION_TOURS).map(
     (id) => [destinationTourStatusKey(id), "done"] as const,
   ),

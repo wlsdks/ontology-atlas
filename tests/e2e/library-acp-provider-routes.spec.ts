@@ -106,7 +106,7 @@ async function openLibrary(page: Page, runtimeId: LibraryWorkRuntimeId): Promise
   await page.getByRole('button', { name: /Open my folder/i }).click();
   await page.getByRole('heading', { name: 'Map' }).waitFor();
   await page.getByTestId('app-nav-rail-item-library').click();
-  await page.getByTestId('library-questions').waitFor();
+  await page.getByTestId('library-graph-canvas').waitFor();
   return harness;
 }
 
@@ -138,7 +138,7 @@ async function expectProviderSession(page: Page, harness: LibraryWorkHarness, ru
 }
 
 async function startRefresh(page: Page, harness: LibraryWorkHarness) {
-  await page.getByTestId('library-question-wiki/answers/retention').click();
+  await page.getByTestId('library-questions-open').click();
   await expect(page.getByTestId('answer-evidence-state')).toHaveAttribute('data-state', 'unchanged');
   await harness.mutateSource(page, SOURCE, REVISED);
   await expect(page.getByTestId('answer-evidence-state')).toHaveAttribute('data-state', 'changed');
