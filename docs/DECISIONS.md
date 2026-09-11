@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-11 — The Library reads a source only when a person names it, and is useful before an agent exists
+
+**Why**: a first-day person with six files and no coding agent typed "T+2" and found nothing: sources matched by path only, although `settlement-policy.md` says it on line 11; the only forward door started a multi-hundred-MB agent download; the blocked reason opened no door while the rail already carries Agents. The third target tier leaves here.
+**Prior**: extends 2026-09-11 "Pressing a citation reads that one file and shows the passage it names" from one file on a press to N files on a keystroke, and 2026-09-11 "The Library keeps its spine". Cites 2026-09-07 "The MCP server reads a source's text on request". Overturns nothing.
+**Decision**: the Library reads a source's text only when a person types a search or presses a citation; opening the folder reads nothing beyond the listing. The first keystroke shows a reading state while per-file reads land; units stay in memory for the session, are discarded when the folder closes; nothing is written. The read stops at 200 files or 20 MB and the matches line says so. Every source pane gets Structure for what the shared reader can read (DOCX headings, XLSX sheets/rows, CSV records) and says it cannot outline the rest. Every printed blocked reason gains one Agents door to `/agents`; the local-address clause stays a sentence.
+**Dissent**: read every source at folder open (806 ms at 200 files is past an interaction budget). Not adopted: at first-day size the two are 34 ms apart, and eager reading makes the source card's "never opened" sentence false for every readable file. Reopen if a measured folder shows people waiting on the reading state.
+**Falsifier**: a source file read with no keystroke or press; the "never opened" sentence shown for a file the search already read; a search that misses a line the reader returns; a door that lands anywhere but Agents.
+**Owner**: jinan
+
 ## 2026-09-11 — Pressing a citation reads that one file and shows the passage it names
 
 **Why**: measured on the installed app: a fact ending in `[[src:sources/settlement-policy.md#l14]]` opened the file's card — size, sha256, the Finder door, "Atlas has never opened this file" — and one line naming the anchor. No source text renders there, so checking the claim meant leaving the app to count to line 14, or opening Word for `#h:records`. That is 2026-09-06's own falsifier, "a reader who follows a citation and finds nothing there".

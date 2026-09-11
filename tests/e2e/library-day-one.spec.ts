@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
-import { DAY_ONE_BINARY_BASE64, DAY_ONE_TEXT } from "./library-day-one-fixture";
+import { DAY_ONE_BINARY_BASE64, DAY_ONE_TEXT, dayOneRuntimes } from "./library-day-one-fixture";
 
 /**
  * **The Library's first day, with no coding agent — slice U2's three proofs.**
@@ -43,12 +43,21 @@ import { DAY_ONE_BINARY_BASE64, DAY_ONE_TEXT } from "./library-day-one-fixture";
 
 const VAULT_ROOT = "/Users/probe/Ontology Atlas/day-one";
 
-/** No verified runtime, and none detectable: the state the whole slice is about. */
-const NO_RUNTIMES: never[] = [];
+/**
+ * **No verified runtime, and the registry saying so for every agent it knows.**
+ *
+ * ⚠️ This was `[]`, which is a different machine from the one the slice is about: the real
+ * `detect_runtimes` reports a state per registry agent, so "nothing installed" arrives as
+ * forty rows of `cli-missing`. With the empty array the door landed on a page reading
+ * "Nothing found yet — the install guides are in the list below" **with nothing below**,
+ * and a capture of that is a capture of a screen the app never shows (design-lead, council
+ * 2026-09-11).
+ */
+const NO_RUNTIMES = dayOneRuntimes();
 
 async function installDesktopBridge(page: Page) {
   await page.addInitScript(
-    ({ text, binary, rootPath }) => {
+    ({ text, binary, rootPath, runtimes }) => {
       const MTIME = 1_757_000_000_000;
       const encoder = new TextEncoder();
 
@@ -127,8 +136,9 @@ async function installDesktopBridge(page: Page) {
               sha256: null,
             }));
           case "acp_detect_runtimes":
-            // Nothing on this computer. `route` resolves to `unavailable`.
-            return [];
+            // Nothing **installed** on this computer, said one registry row at a time.
+            // `route` still resolves to `unavailable`: no row is `ready`.
+            return runtimes;
           case "mcp_bundled_server":
             return { path: "/Applications/Ontology Atlas.app/mcp", available: true, reason: null };
           case "discover_source_candidates":
@@ -178,9 +188,16 @@ async function openLibrary(page: Page) {
   const door = page.getByRole("button", { name: /^Open my folder/ });
   await door.first().waitFor({ timeout: 25_000 });
   await door.first().click();
-  const rail = page.getByTestId("app-nav-rail");
-  await rail.waitFor({ timeout: 30_000 });
-  const libraryTile = rail.getByRole("link", { name: "Library" });
+  /*
+   * ⚠️ **Below `lg` there is no rail.** The destinations live in the bottom tab bar
+   * (`[data-tabbar="primary"]`, `lg:hidden`), and waiting on the rail at 390 waits on a
+   * hidden element forever — measured while building the narrow half of this proof. So the
+   * walk asks for whichever navigation this width actually draws.
+   */
+  const wide = (page.viewportSize()?.width ?? 0) >= 1024;
+  const navigation = wide ? page.getByTestId("app-nav-rail") : page.locator('[data-tabbar="primary"]');
+  await navigation.waitFor({ timeout: 30_000 });
+  const libraryTile = navigation.getByRole("link", { name: "Library" });
   await libraryTile.waitFor({ timeout: 30_000 });
   await libraryTile.click();
   await page.getByTestId("library-sources").waitFor({ timeout: 30_000 });
@@ -217,6 +234,40 @@ test.describe("the Library on its first day, with no agent", () => {
     await openLibrary(page);
 
     const field = page.getByTestId("library-search");
+
+    /*
+     * ⚠️ **The list must not move under the pointer on the first keystroke.** The matches
+     * line used to appear with the first character, and appearing is a layout event: the
+     * index dropped 18–19px, so the row somebody was reaching for moved as they typed
+     * (design-interaction, council 2026-09-11). The line's height is reserved at rest.
+     */
+    const list = page.getByTestId("library-source-list");
+    const before = await list.boundingBox();
+
+    /*
+     * ⚠️ **A finished answer and an unfinished read may not share a frame.** Two halves of
+     * one defect: the column emptied while reading (`0 rows` at `1/6`), and the "they are
+     * all on the other list" note printed its count while that count was still provisional.
+     * 34 ms is far too fast to sample by polling, so every mutation is inspected instead.
+     */
+    await page.evaluate(() => {
+      const seen = { emptyWhileReading: 0, noteWhileReading: 0 };
+      (window as unknown as { __u2?: typeof seen }).__u2 = seen;
+      const check = () => {
+        const rows = document.querySelector('[data-testid="library-source-list"]');
+        if (rows?.getAttribute("data-phase") !== "reading") return;
+        if (rows.querySelectorAll("li").length === 0) seen.emptyWhileReading += 1;
+        if (document.querySelector('[data-testid="library-search-other-half-note"]')) {
+          seen.noteWhileReading += 1;
+        }
+      };
+      new MutationObserver(check).observe(document.body, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+      });
+    });
+
     await field.fill("T+2");
 
     const matches = page.getByTestId("library-search-matches");
@@ -234,17 +285,34 @@ test.describe("the Library on its first day, with no agent", () => {
     // cites `#l14`, three lines off, and this number comes from the reader instead.
     await expect(hit).toContainText("line 11");
     await expect(hit).toContainText("Card payments settle on T+2 business days.");
+    // The address it opens is on the control itself, not only in its handler.
+    await expect(hit).toHaveAttribute("data-anchor", "l11");
 
+    const after = await list.boundingBox();
+    expect(after?.y).toBe(before?.y);
+
+    const seen = await page.evaluate(
+      () => (window as unknown as { __u2: { emptyWhileReading: number; noteWhileReading: number } }).__u2,
+    );
+    expect(seen).toEqual({ emptyWhileReading: 0, noteWhileReading: 0 });
 
     await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/1-search-inside-sources.png");
 
-    // Pressing the caption opens the file at that unit, not at the top of the pane.
-    await hit.click();
+    /*
+     * **Enter, not only a click.** The caption is a button and a keyboard press has to
+     * land where a pointer press lands — the passage section, which takes focus on
+     * arrival. Untested until the council read it (design-interaction, 2026-09-11).
+     */
+    await hit.press("Enter");
     const passage = page.getByTestId("library-source-passage");
     await expect(passage).toHaveAttribute("data-state", "resolved", { timeout: 20_000 });
     await expect(page.getByTestId("library-source-passage-cited")).toContainText(
       "Card payments settle on T+2 business days.",
     );
+    await expect(passage).toBeFocused();
+
+    // And the caption that opened it says so, so a returning reader knows which one it was.
+    await expect(hit).toHaveAttribute("aria-current", "location");
     await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/1b-caption-lands-on-the-unit.png");
   });
 
@@ -288,6 +356,62 @@ test.describe("the Library on its first day, with no agent", () => {
     // It lands on the destination the rail names, with the rail's own word for it.
     await expect(page).toHaveURL(/\/en\/agents/, { timeout: 30_000 });
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Agents");
+    /*
+     * ⚠️ **And the landing has the answer on it.** With the old `[]` stub the page said
+     * "the install guides are in the list below" with nothing below — a screen the app
+     * never shows, because the real detection reports every registry agent as
+     * `cli-missing`. The chip that opens those guides is what makes the door's destination
+     * worth arriving at (design-lead, council 2026-09-11).
+     */
+    await expect(page.getByTestId("app-settings-runtimes-others-toggle")).toBeVisible({
+      timeout: 30_000,
+    });
     await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/3b-lands-on-agents.png");
   });
+
+  /**
+   * **The one press this slice exists to give somebody, at the window the app ships as its
+   * minimum.**
+   *
+   * Measured 2026-09-11 at 1040×720 on `dispute-handling-standard.docx` (design-responsive,
+   * council): the five-row 「Structure」 list pushed the availability sentence to the pane's
+   * last line and the 「Agents」 door to y=724, bottom 756 against a 720 viewport —
+   * `doorInViewport: false`. The XLSX pane, two rows shorter, kept its door at 684. The
+   * door's place may not depend on how long the open document happens to be, so the
+   * availability block now stands above the two blocks the document's length decides.
+   */
+  for (const viewport of [
+    { width: 1040, height: 720, name: "app-minimum" },
+    { width: 390, height: 844, name: "phone" },
+  ]) {
+    test(`keeps the door on screen at ${viewport.width}×${viewport.height}`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await openLibrary(page);
+
+      const narrow = viewport.width < 1024;
+      for (const file of ["sources/dispute-handling-standard.docx", "sources/dispute-metrics.xlsx"]) {
+        /* Below `lg` the reader takes the column the index was in, so the walk goes back
+           the way a person does — through the reader's own back control. */
+        if (narrow && (await page.getByTestId("library-reader-back").isVisible())) {
+          await page.getByTestId("library-reader-back").click();
+        }
+        await page.getByTestId(`library-source-${file}`).click();
+        const outline = page.getByTestId("library-source-outline");
+        await expect(outline).toHaveAttribute("data-state", "ready", { timeout: 20_000 });
+
+        const door = page.getByTestId("library-source-compile-blocked-door");
+        await expect(door).toBeVisible();
+        const box = await door.boundingBox();
+        expect(box).not.toBeNull();
+        // In the viewport, not merely in the document: a door below the fold is no door.
+        expect(box!.y).toBeGreaterThanOrEqual(0);
+        expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height);
+      }
+
+      await captureSettled(
+        page,
+        `.claude/shots-2026-09-11/library-day-one/4-door-in-view-${viewport.name}.png`,
+      );
+    });
+  }
 });

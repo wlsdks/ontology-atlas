@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
+import { writeLibraryIndexQuery } from "@/shared/lib/appearance-preferences";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 import { LibrarySection } from "./LibrarySection";
 
@@ -79,6 +80,16 @@ function HarnessWith({ model }: { model: LibraryUiModel }) {
 function mount(node: React.ReactNode) {
   return render(<NextIntlClientProvider locale="en" messages={enMessages}>{node}</NextIntlClientProvider>);
 }
+
+/*
+ * The index's search field now remembers what was typed for as long as the tab lives, so a
+ * door to `/agents` and back does not cost a retype (slice U2). That memory is this
+ * module's, so inside one test file a case that types a query would otherwise hand it to
+ * the next case's mount. Emptying the field is what the product calls to forget it.
+ */
+beforeEach(() => {
+  writeLibraryIndexQuery("", "");
+});
 
 describe("the wiki half of the column is an index: search, three doors, the list", () => {
   it("filters the list from one field and says what matched", () => {

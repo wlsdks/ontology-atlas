@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
@@ -12,9 +12,15 @@ import { controlClass } from "@/shared/ui/control-class";
 import { Chip, RowButton, Tooltip } from "@/shared/ui";
 import { Input } from "@/shared/ui/input";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { writeLibraryIndexSegment, type LibraryIndexSegment } from "@/shared/lib/appearance-preferences";
+import {
+  readLibraryIndexQuery,
+  writeLibraryIndexQuery,
+  writeLibraryIndexSegment,
+  type LibraryIndexSegment,
+} from "@/shared/lib/appearance-preferences";
 
 import { isAdvisoryWikiCode, isWikiFolderCode } from "../../lib/merge-wiki-verdict";
+import { captionWindow } from "../../lib/caption-window";
 import { passageLabelText } from "../../lib/passage-label";
 import { useSourceSearch } from "../../lib/use-source-search";
 import { LibraryShelf } from "./LibraryShelf";
@@ -99,6 +105,15 @@ export interface LibrarySectionProps {
    * showing that very file.
    */
   selectedSourcePath: string | null;
+  /**
+   * The anchor the reader is standing on, when the pane was opened at one.
+   *
+   * The row above says *this file is open*; this says *this passage is open*, which is a
+   * different fact and the caption's own. Without it a caption would light up for a file
+   * somebody opened plainly, marking a place nobody went to (design-interaction, council
+   * 2026-09-11).
+   */
+  selectedSourceAnchor?: string | null;
   /**
    * The folder walk's own handles, so a search can read the words inside a source.
    *
@@ -236,6 +251,16 @@ function SectionActions({ children }: { children?: ReactNode }) {
 
 /** The log's ISO stamp as a person reads it; the raw stamp when it does not parse. */
 
+/**
+ * How long the search reads before the screen says it is reading.
+ *
+ * Not a motion value and not a CSS one — it is the threshold under which a state is a
+ * flicker rather than a message. 34 ms is what the day-one folder measures end to end
+ * (design-interaction, council 2026-09-11), so anything near it would flash. Pinned by
+ * `LibrarySection.search.test.tsx`.
+ */
+const READING_TEXT_DELAY_MS = 200;
+
 /** One line of counting under a list. `text-caption`, because it is a footnote to rows. */
 function ListNote({ testId, children }: { testId: string; children: ReactNode }) {
   return (
@@ -254,6 +279,7 @@ export function LibrarySection({
   onSelect,
   onOpenSource,
   selectedSourcePath,
+  selectedSourceAnchor = null,
   sourceHandles,
   vaultScope,
   onAddFiles,
@@ -290,7 +316,19 @@ export function LibrarySection({
    * kept for the session only. `use-source-search.ts` owns that read and every
    * local-first clause it has to satisfy.
    */
-  const [query, setQuery] = useState("");
+  /*
+   * **The field comes back holding what was typed** (design-interaction, council
+   * 2026-09-11). U2's whole point is the door beside a blocked step; measured on the
+   * day-one folder, taking that door and returning through the rail left this field empty,
+   * so the person paid for the trip with a retype — and on a capped folder with a second
+   * read of every file. `appearance-preferences.ts` owns the slot and the reasons it is
+   * scoped to the folder and lives in session storage.
+   */
+  const [query, setQuery] = useState(() => readLibraryIndexQuery(vaultScope));
+  const changeQuery = (next: string) => {
+    setQuery(next);
+    writeLibraryIndexQuery(vaultScope, next);
+  };
   const needle = query.trim().toLowerCase();
   const matches = (text: string | null | undefined) => (text ?? "").toLowerCase().includes(needle);
   const search = useSourceSearch({
@@ -301,12 +339,45 @@ export function LibrarySection({
     enabled: true,
   });
   /*
+   * **Hold the reading sentence back for `READING_TEXT_DELAY_MS`.** Measured on the
+   * day-one folder: the six files are read and split in 34 ms, which draws the state for
+   * two frames — a flicker, not an explanation. Past the delay the folder really is slow
+   * enough for the sentence to be read, which is the only case it is for. `data-phase`
+   * stays truthful from the first keystroke regardless; only the words wait.
+   */
+  const [readingHeld, setReadingHeld] = useState<string | null>(null);
+  useEffect(() => {
+    if (search.phase !== "reading") return;
+    const timer = window.setTimeout(() => setReadingHeld(needle), READING_TEXT_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [needle, search.phase]);
+  /*
+   * Derived, not reset: the state names **which query** waited long enough, so leaving the
+   * reading phase or typing another character makes this false without a second
+   * `setState` — the cascading-render shape `react-hooks/set-state-in-effect` rejects.
+   */
+  const readingShown = search.phase === "reading" && readingHeld === needle;
+  /*
    * Path **or** text. The path match survives because it is the one that still works
    * while the file is being read, and because a person who types part of a filename
    * means the filename.
    */
+  /*
+   * ⚠️ **An unread row stays until its own read says otherwise** (design-lead, council
+   * 2026-09-11). Filtering on `matches || hits` alone drops every row the search has not
+   * opened yet, so on the 200-file folder the column stood **empty for most of a second**
+   * while the line counted `1/200` — "nothing found" printed before "still reading", which
+   * is the one sentence this search exists to avoid. While the phase is `reading` a row
+   * whose file has not been read is neither a match nor a miss, so it is still shown and
+   * the list *narrows* as the reads land.
+   */
   const visibleSources = needle
-    ? model.sources.filter((row) => matches(row.path) || search.hits.has(row.path))
+    ? model.sources.filter(
+        (row) =>
+          matches(row.path) ||
+          search.hits.has(row.path) ||
+          (search.phase === "reading" && !search.read.has(row.path)),
+      )
     : model.sources;
   const visiblePages = needle
     ? model.wikiPages.filter((page) => matches(page.title) || matches(model.pageTexts.get(page.slug)))
@@ -364,25 +435,64 @@ export function LibrarySection({
           aria-label={t("search.placeholder")}
           placeholder={t("search.placeholder")}
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => changeQuery(event.target.value)}
         />
-        {needle ? (
+        {/*
+         * ⚠️ **The line is always here, even when it says nothing.** It used to appear on
+         * the first keystroke, and appearing is a layout event: measured on the day-one
+         * folder, the first character pushed the whole index list **18–19px down under the
+         * pointer** — the field's `gap-1` plus one caption line — so the row somebody was
+         * about to press moved as they typed (design-interaction, council 2026-09-11). One
+         * line is reserved at rest instead, through the same `--leading-caption` this text
+         * is set in, and the list never moves.
+         */}
+        <p
+          data-testid="library-search-matches"
+          data-phase={search.phase}
+          data-reading-shown={readingShown ? "true" : "false"}
+          /* Polite, not assertive: the count settling as files land is progress a
+             screen reader should hear once it has, not on every published file. */
+          aria-live="polite"
+          className="min-h-[var(--leading-caption)] text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+        >
+          {!needle ? null : search.phase === "reading" ? (
+            /*
+             * ⚠️ **The reading sentence waits, and its counter is not announced.**
+             *
+             * At first-day size the whole read lands in 34 ms, so printing the state
+             * immediately is a one-frame flicker of a sentence nobody can read — a screen
+             * that flashes an explanation is worse than one that says nothing for a tenth
+             * of a second. And `{read}/{total}` changes once per file: left inside a live
+             * region on a capped folder it is **200 utterances** of a number, which buries
+             * the two sentences that are worth hearing. So the counter rides in an
+             * `aria-hidden` span while the live region carries the stable sentence.
+             */
+            readingShown ? (
+              t.rich("search.reading", {
+                read: search.readCount,
+                total: search.plannedCount,
+                count: (chunks) => <span aria-hidden>{chunks}</span>,
+              })
+            ) : null
+          ) : (
+            t("search.matches", {
+              sources: visibleSources.length,
+              passages: search.passageCount,
+              pages: visiblePages.length,
+            })
+          )}
+        </p>
+        {/*
+         * The cap on its own line, and a persistent one: appended to the line above it
+         * wrapped to a second line on one folder and not on the next, which moves the list
+         * by a line for a fact that has not changed.
+         */}
+        {needle && search.capped ? (
           <p
-            data-testid="library-search-matches"
-            data-phase={search.phase}
-            /* Polite, not assertive: the count settling as files land is progress a
-               screen reader should hear once it has, not on every published file. */
-            aria-live="polite"
+            data-testid="library-search-capped"
             className="text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
           >
-            {search.phase === "reading"
-              ? t("search.reading", { read: search.readCount, total: search.plannedCount })
-              : t("search.matches", {
-                  sources: visibleSources.length,
-                  passages: search.passageCount,
-                  pages: visiblePages.length,
-                })}
-            {search.capped ? ` · ${t("search.capped", { count: search.plannedCount })}` : null}
+            {t("search.capped", { count: search.plannedCount })}
           </p>
         ) : null}
       </div>
@@ -440,6 +550,9 @@ export function LibrarySection({
           <>
             <ul
               data-testid="library-source-list"
+              /* The list says which phase drew it, so a proof can assert that a finished
+                 answer and an unfinished read never share a frame. */
+              data-phase={search.phase}
               aria-label={t("sources.listAria")}
               className="flex flex-col gap-0.5 px-2"
             >
@@ -447,6 +560,8 @@ export function LibrarySection({
                 const active = row.path === selectedSourcePath;
                 const stateLabel = t(`sources.state.${row.state}.label`);
                 const hit = needle ? search.hits.get(row.path) : undefined;
+                /* The pane is open **at this unit** — not merely on this file. */
+                const hitOpen = Boolean(hit && active && selectedSourceAnchor === hit.anchor);
                 return (
                   <li key={row.path}>
                     <RowButton
@@ -536,30 +651,63 @@ export function LibrarySection({
                       <button
                         type="button"
                         data-testid={`library-source-hit-${row.path}`}
+                        /* The address this press opens, readable without pressing it —
+                           the marker a proof asserts the landing against. */
+                        data-anchor={hit.anchor}
                         onClick={() => onOpenSource(row, hit.anchor)}
                         title={hit.text}
+                        /*
+                         * ⚠️ **`location`, not `page`.** The pane is already the page; this
+                         * says where inside it the reader is standing, which is what
+                         * `aria-current="location"` is for — and it is the one state that
+                         * tells a returning reader which of several captions they followed.
+                         */
+                        aria-current={hitOpen ? "location" : undefined}
                         className={controlClass({
                           shape: "row",
                           size: "xs",
                           tone: "secondary",
                           hoverInk: "strong",
                           hoverSurface: "lift",
-                          className: "w-full pl-7 text-label",
+                          active: hitOpen,
+                          /*
+                           * The floor, because this is a control and rests at 28px while
+                           * the rows above it are 36 — under a finger the two are not the
+                           * same target (design-responsive, council 2026-09-11).
+                           */
+                          className: "atlas-touch-floor w-full pl-7 text-label",
                         })}
                       >
-                        <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                        {/*
+                         * ⚠️ **The address is the accent link ink, the document's words are
+                         * not.** At rest this control was indistinguishable from a caption —
+                         * the same false negative this file already ruled on for the
+                         * other-half link, where a muted link read as more caption. One
+                         * element carries the affordance; tinting the quoted line as well
+                         * would dress the file's own words as a control.
+                         */}
+                        <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-indigo-accent)]">
                           {passageLabelText(hit.label, hit.anchor, t)}
                         </span>
-                        {/* One line, clipped. The full unit is the `title` and the pane;
-                            a 280px column cannot hold a hard-wrapped line of prose. */}
-                        <span className="min-w-0 flex-1 truncate text-left">{hit.text}</span>
+                        {/* One line, clipped, and windowed onto the phrase when the match
+                            sits past what one line shows (`caption-window.ts`). The full
+                            unit is the `title` and the pane. */}
+                        <span className="min-w-0 flex-1 truncate text-left">
+                          {captionWindow(hit.text, needle)}
+                        </span>
                       </button>
                     ) : null}
                   </li>
                 );
               })}
             </ul>
-            {needle && visibleSources.length === 0 && visiblePages.length > 0 ? (
+            {/*
+             * ⚠️ **Not while the reading is unfinished.** This note is a finished answer —
+             * *nothing here, they are all on the other list* — and printing it under a line
+             * that says `0/6` states a conclusion the search has not reached
+             * (design-interaction, council 2026-09-11).
+             */}
+            {needle && search.phase !== "reading" && visibleSources.length === 0 && visiblePages.length > 0 ? (
               <ListNote testId="library-search-other-half-note">
                 <OtherHalf count={visiblePages.length} segment="wiki" t={t} />
               </ListNote>
@@ -875,7 +1023,8 @@ export function LibrarySection({
             rather than the amber pill. Measured on the owner's seven-page folder: the
             foot said 2 over one pill (2026-09-07).
           */}
-          {needle && visiblePages.length === 0 && visibleSources.length > 0 ? (
+          {/* The same rule as the sources half: a count still being read is not an answer. */}
+          {needle && search.phase !== "reading" && visiblePages.length === 0 && visibleSources.length > 0 ? (
             <ListNote testId="library-search-other-half-note">
               <OtherHalf count={visibleSources.length} segment="sources" t={t} />
             </ListNote>

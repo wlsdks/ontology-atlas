@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 /**
  * The `vault-day-one` fixture, inlined: six real documents in `sources/` and a `wiki/`
  * holding only its template — a folder on its first day, with nothing compiled.
@@ -18,3 +21,53 @@ export const DAY_ONE_BINARY_BASE64: Record<string, string> = {
   "sources/dispute-handling-standard.docx": "UEsDBBQAAAAIAAltK10XmADX6wAAALIBAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QyU4DMQy98xWRr2gmAweEUKc9sByBQ/kAK/HMRM2mOC3t3+NpoQdUONpvs99itQ9e7aiwS7GHm7YDRdEk6+LYw8f6pbkHxRWjRZ8i9XAghtXyarE+ZGIl4sg9TLXmB63ZTBSQ25QpCjKkErDKWEad0WxwJH3bdXfapFgp1qbOHiBmTzTg1lf1vJf96ZJCnkE9nphzWA+Ys3cGq+B6F+2vmOY7ohXlkcOTy3wtBNCXI2bo74Qf4ZuUU5wl9Y6lvmIQmv5MxWqbzDaItP3f58KlaRicobN+dsslGWKW1oNvz0hAF88f6GPlyy9QSwMEFAAAAAgACW0rXT+t/vqvAAAALAEAAAsAAABfcmVscy8ucmVsc43POw7CMAwA0J1TRN5pWgaEUEMXhNQVlQNEiZtWNB/F4dPbk4EBKgZG/57tunnaid0x0uidgKoogaFTXo/OCLh0p/UOGCXptJy8QwEzEjSHVX3GSaY8Q8MYiGXEkYAhpbDnnNSAVlLhA7pc6X20MuUwGh6kukqDfFOWWx4/DVigrNUCYqsrYN0c8B/c9/2o8OjVzaJLP3YsOrIso8Ek4OGj5vqdLjILPJ/Dv548vABQSwMEFAAAAAgACW0rXWjxzhBJAgAArgUAABEAAAB3b3JkL2RvY3VtZW50LnhtbL1UTW/UMBC98ytGuXBZkm0PgJbuVgioygVQW37AxJ7dWJvY0YyzIf+esbPdFgkqVAkuzsfYb+a9eeOLyx9dCwdiccGvi7NyWQB5E6zzu3Xx/e7q1dsCJKK32AZP62IiKS43Ly7GlQ1m6MhHUAQvq3FdNDH2q6oS01CHUoaevMa2gTuM+sm7agxsew6GRDRB11bny+XrqkPni41C1sFO6dnn5Rvnx22cWoJxdcB2XVwTptLOimpzUZ325CUXspIejZbZMwnxgYrNRyf9EAmulUOrR+E2s2GbzseMwjPWKfNTcHeNk6MgbEHfY0OQyGiNEgY2BEoYmjACgp1zW4iMXtBEFTmdURn2ZEv4HPVoFMA6HCgjfWiQd1Sj2cPN4OsQ9gsYG2casCSGXU3HjJF6eaevinZqxK9bQt26HaaUUv6Z61Mqn/+9yjckvSZSBOdtGJ+n7aeDs2o+gm6QCEyotBMTTzEpptjK18MbMNhSagBYnATCFnyIbutMZlvCe+iciMo+F5MURw84xKBGdAbaIOlPbh+TUU/qXsyb1LOcUbAFYg68SNg5COahNwnh34v6dfQ6mI3rn2tVVZJYy1ZvyND3gSNEwg7C6GeP8LFtJVw5j0n6U0goxpayr1yn0LGEL6QNIIYOJzAqASVRUGbnhhxqVKkkmBD5/+G61Dx5rtuIp7n+Pek0zSzY7Vxq/mNHLXKI7t2pQHvcUTKFDHXnok74IvvpkVlf6lyScZINeawTkAkaam2+IrZOZ34i5N86qbq/DauHm3bzE1BLAQIUAxQAAAAIAAltK10XmADX6wAAALIBAAATAAAAAAAAAAAAAACAAQAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQDFAAAAAgACW0rXT+t/vqvAAAALAEAAAsAAAAAAAAAAAAAAIABHAEAAF9yZWxzLy5yZWxzUEsBAhQDFAAAAAgACW0rXWjxzhBJAgAArgUAABEAAAAAAAAAAAAAAIAB9AEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAGwEAAAAAA==",
   "sources/dispute-metrics.xlsx": "UEsDBBQAAAAIAAltK10gOnD8BAEAALUCAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbLWSzU7DMBCEX8XytYqd9oAQStIDP0fgUB5gcTaJFf/J65b07XHSigMqICQ4reyZ2W9kudpO1rADRtLe1XwtSs7QKd9q19f8ZfdQXHNGCVwLxjus+RGJb5tqdwxILGcd1XxIKdxISWpACyR8QJeVzkcLKR9jLwOoEXqUm7K8ksq7hC4Vad7Bm+oOO9ibxO6nfH3qEdEQZ7cn48yqOYRgtIKUdXlw7SdKcSaInFw8NOhAq2zg8iJhVr4GnHNP+WGibpE9Q0yPYLNLTka++Ti+ej+K75dcaOm7TitsvdrbHBEUIkJLA2KyRixTWNBu9TN/MZNcxvqPi3zs/2WPzX/3kMu3a94BUEsDBBQAAAAIAAltK12Y2uuLrgAAACcBAAALAAAAX3JlbHMvLnJlbHONz8EOgjAMBuBXWXqXgQdjDIOLMeFq8AHmVgYB1mWbCm/vjmI8eGz69/vTsl7miT3Rh4GsgCLLgaFVpAdrBNzay+4ILERptZzIooAVA9RVecVJxnQS+sEFlgwbBPQxuhPnQfU4y5CRQ5s2HflZxjR6w51UozTI93l+4P7TgK3JGi3AN7oA1q4O/7Gp6waFZ1KPGW38UfGVSLL0BqOAZeIv8uOdaMwSCrwq+ebB6g1QSwMEFAAAAAgACW0rXSwheGbRAAAAUgEAAA8AAAB4bC93b3JrYm9vay54bWyNkE1Ow0AMha8y8p5OmgVCUZJuEFKXVHCAIXGaUWfsyJ4WentcSgXsWPlP37Of281HTu6EopGpg/WqAoc08Bhp38Hry9PdAzgtgcaQmLCDMyps+vad5fDGfHCGk3Ywl7I03uswYw664gXJJhNLDsVK2XtdBMOoM2LJyddVde9ziARXhUb+o8HTFAd85OGYkcpVRDCFYsfrHBeFvv3aoN/RUch29PMxSEFJZ/NyaW9HswpOmmiJbMc1+L/ADoMyOfuD2f1h6l9MfWH8bZu/PaT/BFBLAwQUAAAACAAJbStdPtyXOLoAAAC1AQAAGgAAAHhsL19yZWxzL3dvcmtib29rLnhtbC5yZWxzvZDLCsJADEV/Zcjepu1CRDq6EcGt6AcM0/SBnQeT8dG/dxAUC124chWSS04OqbYPM4gbBe6dlVBkOQiy2tW9bSWcT/vFCgRHZWs1OEsSRmLYbqojDSqmFe56zyIxLEvoYvRrRNYdGcWZ82RT0rhgVExtaNErfVEtYZnnSwzfDJgyxaGWEA51AeI0evqF7Zqm17Rz+mrIxpkTeHfhwh1RTFAVWooSPiPGVymyRAWclyn/LFO+ZXDy7s0TUEsDBBQAAAAIAAltK10wP0TwRAEAAFsFAAAYAAAAeGwvd29ya3NoZWV0cy9zaGVldDEueG1snZRda8MgFIb/ShB22ZiYD0oxlnVl92PbdZHkrJElmqlttn8/W0bYQApnd3rUx9fngHz7OQ7JGaxTRjckTzOSgG5Np/SxIa8vj6s1SZyXupOD0dCQL3BkK/hs7LvrAXwSzmvXkN77aUOpa3sYpUvNBDqsvBk7Sh+m9kjdZEF210PjQFmW1XSUShPBr7W99FJwa+bEhhyh2l4G9zlJfEOUHpSGZ29DXTnBr9du3CTbEClwHdgzEPFxktaD5dQLTi/7aPvD2aE4nXLTyYM7XJ4BXYT38D/ebHQEtkfBZqUPVnr4C6LB3KKPLfoYhswyVq+e8pg+FKfMWUwZLktRxEyhGFWd1nc3NBWLpgKvKfbEHYpTrNcxTbgsZaxdexSjZml+S1O5aCrxmmJd3KE4ZVXFNOGyVFFNKEZVpSyqif76v+jyMYpvUEsDBBQAAAAIAAltK11zs1oeawEAAGEFAAAYAAAAeGwvd29ya3NoZWV0cy9zaGVldDIueG1slZRNTwMhEED/CuHu0v1o0zS726iNN/WgnpsRxi5xFzYMbe2/lzZmowk24QYDvJk3Aer119CzAzrS1jQ8z2acoZFWabNr+Nvrw82SM/JgFPTWYMNPSHzd1kfrPqlD9CycN9TwzvtxJQTJDgegzI5owsqHdQP4MHU7QaNDUJdDQy+K2WwhBtCGt/UltgEPbe3skblQR4jK8+A258w3XJteG3zxLsQ1tfUl7YpGkKGkwCV0B+RtSEDWbEP5WAvf1uK8V8gf1l0Sa0AwoQkRzn0iR2kwWwUn2nq7VSj1udd/uSJ4T/LFJF+kJMpnWRWzToI8+w4d+3CwV+yGSXCKwTuh8bE+JJHL5RXlclIuk5TLLI8pJ0Ee0ckuXHBNyIz1zKFEfUAVM04CV/kV42oyrhKNy5hxEuQpWAIxhSSdfo+bJgGr6orpfDKdJ5kW2SJmmgTZ7MdeS/DIRmclEv3zopOgRRGzFb9+MTF9j+03UEsBAhQDFAAAAAgACW0rXSA6cPwEAQAAtQIAABMAAAAAAAAAAAAAAIABAAAAAFtDb250ZW50X1R5cGVzXS54bWxQSwECFAMUAAAACAAJbStdmNrri64AAAAnAQAACwAAAAAAAAAAAAAAgAE1AQAAX3JlbHMvLnJlbHNQSwECFAMUAAAACAAJbStdLCF4ZtEAAABSAQAADwAAAAAAAAAAAAAAgAEMAgAAeGwvd29ya2Jvb2sueG1sUEsBAhQDFAAAAAgACW0rXT7clzi6AAAAtQEAABoAAAAAAAAAAAAAAIABCgMAAHhsL19yZWxzL3dvcmtib29rLnhtbC5yZWxzUEsBAhQDFAAAAAgACW0rXTA/RPBEAQAAWwUAABgAAAAAAAAAAAAAAIAB/AMAAHhsL3dvcmtzaGVldHMvc2hlZXQxLnhtbFBLAQIUAxQAAAAIAAltK11zs1oeawEAAGEFAAAYAAAAAAAAAAAAAACAAXYFAAB4bC93b3Jrc2hlZXRzL3NoZWV0Mi54bWxQSwUGAAAAAAYABgCLAQAAFwcAAAAA",
 };
+
+/**
+ * **What `acp_detect_runtimes` really answers on a computer with no coding tool.**
+ *
+ * ⚠️ The stub returned `[]` and that is not the empty state (design-lead, council
+ * 2026-09-11). The Rust side walks the **whole committed registry** and reports a state per
+ * agent, so a machine with nothing installed answers forty rows of `cli-missing`, not
+ * nothing — and the difference is the screen the door lands on: with `[]` the page says
+ * "Nothing found yet — the install guides are in the list below" **with no list below**,
+ * while the real answer draws the 「other tools」 chip that opens those guides. A capture of
+ * the first is a capture of a screen the app never shows.
+ *
+ * The rows are read from `src-tauri/src/acp-registry.json`, the same snapshot the app
+ * compiles in, so the count and the names cannot drift from the product by hand.
+ */
+export function dayOneRuntimes(): unknown[] {
+  const snapshot = JSON.parse(
+    readFileSync(path.resolve(__dirname, "../../src-tauri/src/acp-registry.json"), "utf8"),
+  ) as {
+    agents: Array<{
+      id: string;
+      name: string;
+      description: string;
+      website: string | null;
+      license: string | null;
+      verified: boolean;
+      icon: string | null;
+      brandInk: string | null;
+      cli: string | null;
+      launch: { kind: string };
+    }>;
+  };
+  return snapshot.agents.map((agent) => ({
+    id: agent.id,
+    label: agent.name,
+    description: agent.description,
+    website: agent.website,
+    license: agent.license,
+    verified: agent.verified,
+    icon: agent.icon,
+    brandInk: agent.brandInk,
+    launchKind: agent.launch.kind,
+    // Nothing installed: every row is the state a person can act on by installing it.
+    state: "cli-missing",
+    cliPath: null,
+    adapterPath: null,
+    adapterPackage: null,
+    isolated: false,
+  }));
+}

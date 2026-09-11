@@ -552,7 +552,15 @@ export function LibraryStage({
                     data-landing-blocked-reason={
                       lintBlockedReasonId === "library-stage-compile-blocked" ? "true" : undefined
                     }
-                    className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+                    /*
+                     * ⚠️ **The reason is one step under the button, not two**
+                     * (design-lead, council 2026-09-11). Measured on the day-one landing:
+                     * a 9.5px sentence under a 14px control was the smallest text on the
+                     * card while being the only thing that explains why the card is dead —
+                     * the 2026-08-09 finding `.claude/rules/design.md` records. Same
+                     * grade as the pane's own reason, so the two sites read as one voice.
+                     */
+                    className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
                   >
                     {blockedBelow}
                   </p>

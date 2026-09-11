@@ -1,8 +1,9 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
+import { writeLibraryIndexQuery } from "@/shared/lib/appearance-preferences";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 import { LibrarySection } from "./LibrarySection";
 
@@ -84,6 +85,16 @@ function mount(node: React.ReactNode) {
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+/*
+ * The index's search field now remembers what was typed for as long as the tab lives, so a
+ * door to `/agents` and back does not cost a retype (slice U2). That memory is this
+ * module's, so inside one test file a case that types a query would otherwise hand it to
+ * the next case's mount. Emptying the field is what the product calls to forget it.
+ */
+beforeEach(() => {
+  writeLibraryIndexQuery("", "");
 });
 
 describe("the wiki list at rest is a shelf, and every spine carries its freshness", () => {

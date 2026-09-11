@@ -132,7 +132,10 @@ export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk,
           id={askReasonId}
           data-testid="library-questions-ask-blocked"
           data-landing-blocked-reason="true"
-          className="mt-2 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+          /* The grade the landing and the source pane give this same sentence: it
+             explains a refused press and may not be the smallest text on the card
+             (design-lead, council 2026-09-11). */
+          className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
         >
           {askBlockedBelow}
         </p>

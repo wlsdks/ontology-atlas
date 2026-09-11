@@ -1848,7 +1848,13 @@ export function LibraryPage() {
           /* Below `lg` the two panes stack, and the rule states the boundary the panel
              tone already implies, so the top of this column does not read as the bottom
              of the canvas. */
-          "flex w-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-panel)] max-lg:border-t max-lg:border-[color:var(--color-border-soft)] lg:w-[var(--docs-list-width)] lg:flex-none lg:border-r lg:border-[color:var(--color-border-soft)]",
+          /* `--library-index-min` is the floor below `lg`, where this column shares one
+             pane with the stage and a short pane squeezed it until a search that answered
+             had nowhere to show the answer (design-responsive, council 2026-09-11;
+             measured 0 of 2 rows at 756×450 without it, 1 of 2 with it — that token's own
+             block in `app/globals.css` carries the numbers). Above `lg` the column has
+             the window's height and the floor never binds. */
+          "flex w-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-panel)] max-lg:min-h-[var(--library-index-min)] max-lg:border-t max-lg:border-[color:var(--color-border-soft)] lg:w-[var(--docs-list-width)] lg:flex-none lg:border-r lg:border-[color:var(--color-border-soft)]",
           narrowShowsReader && "max-lg:hidden",
           indexCollapsed && "lg:hidden",
         )}
@@ -1918,6 +1924,13 @@ export function LibraryPage() {
             segment={indexSegment}
             selectedSlug={opened?.kind === "wiki" ? opened.slug : null}
             selectedSourcePath={opened?.kind === "source" ? opened.path : null}
+            /* Which passage the pane is standing on, so the caption that opened it says so
+               and no other caption claims it (slice U2, council 2026-09-11). */
+            selectedSourceAnchor={
+              opened?.kind === "source" && sourceCitation?.path === opened.path
+                ? sourceCitation.anchor ?? null
+                : null
+            }
             sourceHandles={localVault.sourceHandles}
             vaultScope={workVaultScope}
             onSelect={(slug) => choose({ kind: "wiki", slug })}
@@ -2269,6 +2282,9 @@ export function LibraryPage() {
                 canReveal={nativeVaultRootPath !== null}
                 writeUps={model.pairing.writeUpsBySource.get(selectedSource.path) ?? EMPTY_WRITE_UPS}
                 onOpen={() => handleOpenSource(selectedSource)}
+                /* An outline heading is an address; pressing it is the citation press,
+                   arriving from inside the pane instead of from the index (slice U2). */
+                onOpenPassage={(anchor) => setSourceCitation({ path: selectedSource.path, anchor })}
                 onOpenWiki={(slug) => choose({ kind: "wiki", slug })}
                 onCompile={handleCompile}
                 /*

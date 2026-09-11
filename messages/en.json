@@ -4752,7 +4752,6 @@
         "failed": "This file could not be read, so its structure is unknown.",
         "sheet": "Sheet {sheet} · {rows} rows",
         "records": "{count} records",
-        "lines": "{count} lines",
         "paragraphs": "{count} paragraphs"
       }
     },
@@ -4876,7 +4875,7 @@
       "noneHere": "None in this list.",
       "showPages": "Show {count, plural, one {# wiki page} other {# wiki pages}}",
       "showSources": "Show {count, plural, one {# source} other {# sources}}",
-      "reading": "Reading the sources · {read}/{total}",
+      "reading": "Reading the sources<count> · {read}/{total}</count>",
       "capped": "read the first {count} only"
     },
     "conversation": {

@@ -103,6 +103,18 @@ export interface SourceSearchState {
   /** How many files this search is allowed to read at all. */
   plannedCount: number;
   /**
+   * **Which paths have been read**, so a caller can tell an unread row from a row that
+   * held nothing.
+   *
+   * The count below was already kept; only the set was private, and that privacy is what
+   * emptied the column. Filtering on `hits` alone removes every row whose read has not
+   * landed yet, so on the 200-file folder the list stood at **0 rows while the line said
+   * `1/200`** (design-lead, council 2026-09-11) — "nothing found" arriving before "still
+   * reading". With the set, the caller keeps an unread row and the list *narrows* as
+   * reads land, which is the truth about what the search knows.
+   */
+  read: ReadonlySet<string>;
+  /**
    * How many of those have been read so far — the numerator of the reading line.
    *
    * Distinct from `hits.size`, which counts only the files that *matched*: a folder
@@ -114,6 +126,8 @@ export interface SourceSearchState {
 
 const EMPTY_HITS: ReadonlyMap<string, SourceSearchHit> = new Map();
 
+const EMPTY_READ: ReadonlySet<string> = new Set();
+
 const IDLE: SourceSearchState = {
   phase: 'idle',
   hits: EMPTY_HITS,
@@ -121,6 +135,7 @@ const IDLE: SourceSearchState = {
   capped: false,
   plannedCount: 0,
   readCount: 0,
+  read: EMPTY_READ,
 };
 
 /** One file this search may read, and the key its units are remembered under. */
@@ -234,12 +249,12 @@ export function useSourceSearch({
   return useMemo(() => {
     if (!active) return IDLE;
     const hits = new Map<string, SourceSearchHit>();
+    const read = new Set<string>();
     let passageCount = 0;
-    let read = 0;
     for (const file of planned) {
       const units = unitsByStamp.get(file.stamp);
       if (!units) continue;
-      read += 1;
+      read.add(file.path);
       let first: SourceUnit | null = null;
       let matches = 0;
       for (const unit of units) {
@@ -258,12 +273,13 @@ export function useSourceSearch({
       });
     }
     return {
-      phase: read < planned.length ? 'reading' : 'ready',
+      phase: read.size < planned.length ? 'reading' : 'ready',
       hits,
       passageCount,
       capped,
       plannedCount: planned.length,
-      readCount: read,
+      readCount: read.size,
+      read,
     };
   }, [active, capped, needle, planned, unitsByStamp]);
 }

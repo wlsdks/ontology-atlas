@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
 import type { LibrarySourceRow } from "@/entities/docs-vault";
@@ -43,7 +43,15 @@ const outlineState = (outline: Partial<SourceOutline> | null, phase: SourceOutli
     : null,
 });
 
-function renderPane(outline: SourceOutlineState | null) {
+function renderPane(
+  outline: SourceOutlineState | null,
+  extra: {
+    onOpenPassage?: (anchor: string) => void;
+    compileNote?: string | null;
+    compileBlocked?: boolean;
+    agentDoor?: boolean;
+  } = {},
+) {
   function Harness() {
     const t = useTranslations("library");
     return (
@@ -55,11 +63,12 @@ function renderPane(outline: SourceOutlineState | null) {
         canReveal={false}
         writeUps={[]}
         onOpen={() => {}}
+        onOpenPassage={extra.onOpenPassage}
         onOpenWiki={() => {}}
         onCompile={() => {}}
-        compileNote={null}
-        compileBlocked={false}
-        agentDoor={false}
+        compileNote={extra.compileNote ?? null}
+        compileBlocked={extra.compileBlocked ?? false}
+        agentDoor={extra.agentDoor ?? false}
         busy={false}
         t={t}
       />
@@ -148,5 +157,89 @@ describe("the source pane's outline section", () => {
     expect(screen.getByTestId("library-source-outline")).toHaveTextContent(
       "Reading this file's structure",
     );
+  });
+  it("prints no line count for a format it cannot outline, and says so instead", () => {
+    /*
+     * ⚠️ Markdown and HTML used to print "18 lines" (design-lead, council 2026-09-11): a
+     * number nobody can act on, contradicting the section's own sentence that these
+     * formats cannot be outlined — a `##` line is a `line` unit to this reader and HTML's
+     * tags are stripped before units exist. They take the honest sentence a PDF takes.
+     */
+    renderPane(outlineState({ format: "text", unitCount: 18 }));
+    expect(screen.getByTestId("library-source-outline-unreadable")).toHaveTextContent(
+      "does not read the structure of this format",
+    );
+    expect(screen.queryByTestId("library-source-outline-list")).toBeNull();
+    expect(screen.getByTestId("library-source-outline")).not.toHaveTextContent("18");
+    // The marker follows the sentence, so a proof cannot read this pane as an outline.
+    expect(screen.getByTestId("library-source-outline")).toHaveAttribute("data-state", "unreadable");
+  });
+
+  it("makes a heading row open the passage it already names", () => {
+    /*
+     * The rows carried `{anchor, title}` and were the only addresses on this screen a
+     * person could read and not follow, while the index caption beside them did exactly
+     * this (design-interaction hold-or-record → do it, council 2026-09-11).
+     */
+    const onOpenPassage = vi.fn();
+    renderPane(
+      outlineState({
+        format: "docx",
+        unitCount: 8,
+        headings: [
+          { anchor: "h:response-window", title: "Response window" },
+          { anchor: "h:records", title: "Records" },
+        ],
+      }),
+      { onOpenPassage },
+    );
+
+    const row = screen.getByTestId("library-source-outline-row-h:records");
+    expect(row).toHaveAttribute("data-anchor", "h:records");
+    fireEvent.click(row);
+    expect(onOpenPassage).toHaveBeenCalledWith("h:records");
+
+    // A counted row is not an address and stays text.
+    expect(screen.queryByTestId("library-source-outline-row-6 paragraphs")).toBeNull();
+  });
+
+  it("stands the forward press above the two blocks whose height the document decides", () => {
+    /*
+     * ⚠️ Measured at the app's own minimum window, 1040×720, on a five-row outline: the
+     * 「Agents」 door sat at y=724 with its bottom at 756 against a 720 viewport —
+     * `doorInViewport: false`, on the file that needed the door most (design-responsive,
+     * council 2026-09-11). The order is the fixed facts, then the action, then the
+     * variable-length blocks, which holds for any outline length rather than for the
+     * lengths measured so far. The rendered y is `library-day-one.spec.ts`'s to prove;
+     * this pins the order it depends on.
+     */
+    renderPane(
+      outlineState({
+        format: "docx",
+        unitCount: 8,
+        headings: [{ anchor: "h:records", title: "Records" }],
+      }),
+      { compileNote: "No verified coding agent is connected.", compileBlocked: true, agentDoor: true },
+    );
+    const availability = screen.getByTestId("library-source-writeups");
+    const outline = screen.getByTestId("library-source-outline");
+    expect(availability.compareDocumentPosition(outline) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId("library-source-compile-blocked-door")).toBeTruthy();
+  });
+
+  it("does not set the reason for a refused press two grades under its button", () => {
+    /*
+     * 9.5px under a 14px control, and the only sentence explaining why the card is dead —
+     * the 2026-08-09 finding `.claude/rules/design.md` records (design-lead, council
+     * 2026-09-11). It takes the grade this pane already gives `opened-state`.
+     */
+    renderPane(outlineState({ unitCount: 0, unreadable: true }), {
+      compileNote: "No verified coding agent is connected.",
+      compileBlocked: true,
+      agentDoor: true,
+    });
+    const reason = screen.getByTestId("library-transfer");
+    expect(reason).toHaveClass("text-label");
+    expect(reason).not.toHaveClass("text-caption");
   });
 });
