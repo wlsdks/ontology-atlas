@@ -58,23 +58,49 @@ test("데이터시트 줄 호버 — 지도가 그 노드를 가리키고, 떼�
   expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe("domain:order");
 
   const hover = () => page.evaluate(() => window.__atlasMap!.hover());
-  /** Raw canvas pixels — the only evidence of what was actually drawn. */
-  const pixels = () =>
-    page.evaluate(() => {
+
+  /**
+   * **The comparison happens in the page; only the count crosses.**
+   *
+   * The evidence is still raw canvas pixels — that has not changed. What changed is
+   * where they are counted. Shipping `Array.from(getImageData(...).data)` over the
+   * CDP bridge serialises 5,164,544 array entries per capture, measured at
+   * **12.2 s each** against **3 ms** for the identical reduction run in the page.
+   * Four captures made this one spec spend ~49 s of its 120 s budget on transport,
+   * so it passed on a fast machine and timed out on a slow runner — it failed three
+   * times on `main` between 2026-09-10 and 09-11, every retry included, while the
+   * feature it guards was fine.
+   *
+   * The baseline stays in the page as a handle rather than a `window` global, so
+   * nothing is added to the page the product does not have.
+   */
+  const captureBaseline = () =>
+    page.evaluateHandle(() => {
       const canvas = document.querySelector(
         '[data-testid="ontology-map-canvas"]',
       ) as HTMLCanvasElement;
       const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
-      return Array.from(ctx.getImageData(0, 0, canvas.width, canvas.height).data);
+      return ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     });
-  const changed = (a: number[], b: number[]) => {
-    let n = 0;
-    for (let i = 0; i < a.length; i += 4) {
-      if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3])
-        n += 1;
-    }
-    return n;
-  };
+  const changedSince = (baseline: Awaited<ReturnType<typeof captureBaseline>>) =>
+    page.evaluate((base) => {
+      const canvas = document.querySelector(
+        '[data-testid="ontology-map-canvas"]',
+      ) as HTMLCanvasElement;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+      const now = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let n = 0;
+      for (let i = 0; i < base.length; i += 4) {
+        if (
+          base[i] !== now[i] ||
+          base[i + 1] !== now[i + 1] ||
+          base[i + 2] !== now[i + 2] ||
+          base[i + 3] !== now[i + 3]
+        )
+          n += 1;
+      }
+      return n;
+    }, baseline);
   /** Parks the cursor on empty space off the map — neither a canvas nor a panel hover. */
   const parkCursor = async () => {
     await page.mouse.move(20, 20);
@@ -96,15 +122,15 @@ test("데이터시트 줄 호버 — 지도가 그 노드를 가리키고, 떼�
   expect(drawnRow, "지도에 그려진 이웃이 한 줄도 없다 — 이 스펙은 아무것도 못 잰다").toBeTruthy();
 
   // Noise — the difference between two frames with nothing done. The numbers below only mean something at 0.
-  const base = await pixels();
+  const base = await captureBaseline();
   await page.waitForTimeout(700);
-  const noise = changed(base, await pixels());
+  const noise = await changedSince(base);
 
   // ① Hovering the row — the state is that node and the screen really changes.
   await page.locator(`[data-datasheet-connection="${drawnRow!.id}"]`).hover();
   await page.waitForTimeout(900);
   expect(await hover(), "지도가 그 노드를 가리키지 않는다").toBe(drawnRow!.id);
-  const hoveredPixels = changed(base, await pixels());
+  const hoveredPixels = await changedSince(base);
   expect(
     hoveredPixels,
     `호버 상태는 맞는데 화면은 그대로다 (바뀐 픽셀 ${hoveredPixels}, 소음 ${noise})`,
@@ -113,9 +139,7 @@ test("데이터시트 줄 호버 — 지도가 그 노드를 가리키고, 떼�
   // ② Leaving restores it — a highlight left on the map is a new defect.
   await parkCursor();
   expect(await hover()).toBeNull();
-  expect(changed(base, await pixels()), "커서를 뗐는데 화면이 안 돌아온다").toBeLessThanOrEqual(
-    noise,
-  );
+  expect(await changedSince(base), "커서를 뗐는데 화면이 안 돌아온다").toBeLessThanOrEqual(noise);
 
   // ③ Evidence document rows — the name arriving is a **vault slug** and must go
   //    through a table to become a map id. This is where two namespaces meet, and
