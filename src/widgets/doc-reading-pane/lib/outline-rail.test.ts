@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DOC_COLUMN_GUTTER_PX, DOC_COLUMN_PX } from "@/shared/ui/reading-measure";
+import { DOC_COLUMN_PX } from "@/shared/ui/reading-measure";
 import {
+  OUTLINE_RAIL_COLUMN_GAP,
+  OUTLINE_RAIL_LANE_CLASS,
+  OUTLINE_RAIL_LEFT_CLASS,
   OUTLINE_RAIL_MIN_HEADINGS,
   OUTLINE_RAIL_NARROW_PANE_MIN,
   OUTLINE_RAIL_NARROW_WIDTH,
@@ -45,35 +48,57 @@ describe("resolveOutlineRailFit", () => {
   });
 
   /*
-   * The floors are the derivation, not two remembered numbers: with the column centred, the
-   * room on the rail's side is `(W - column) / 2`, and the rail needs a gutter in front of it,
-   * its own width, and the trailing reserve behind it.
+   * The floors are the derivation, not two remembered numbers: the pane reserves the rail's
+   * lane on the rail's own side (one gap plus the rail), the column centres in what is left,
+   * and the leftover splits into two equal gutters.
    */
-  it("derives both floors from the reading measure and the rail's own width", () => {
+  it("derives both floors from the reading measure, the gap and the rail's own width", () => {
     expect(OUTLINE_RAIL_NARROW_PANE_MIN).toBe(outlineRailPaneFloor(OUTLINE_RAIL_NARROW_WIDTH));
     expect(OUTLINE_RAIL_WIDE_PANE_MIN).toBe(outlineRailPaneFloor(OUTLINE_RAIL_WIDE_WIDTH));
     for (const railWidth of [OUTLINE_RAIL_NARROW_WIDTH, OUTLINE_RAIL_WIDE_WIDTH]) {
       const floor = outlineRailPaneFloor(railWidth);
-      // At the floor the rail fits; one pixel under it does not.
-      expect((floor - DOC_COLUMN_PX) / 2).toBeGreaterThanOrEqual(DOC_COLUMN_GUTTER_PX + railWidth);
-      expect((floor - 1 - DOC_COLUMN_PX) / 2).toBeLessThan(
-        DOC_COLUMN_GUTTER_PX + railWidth + 24,
-      );
+      const gutter = (floor - DOC_COLUMN_PX - OUTLINE_RAIL_COLUMN_GAP - railWidth) / 2;
+      // At the floor both gutters clear the minimum; one pixel under it, they do not.
+      expect(gutter).toBeGreaterThanOrEqual(48);
+      expect(gutter - 0.5).toBeLessThan(48);
     }
   });
 
   /*
-   * ⚠️ **Recorded, not tuned.** Deriving the floors moved them down — a rail that starts one
-   * gutter past the column needs less room than one that had to clear a 680px content run
-   * centred in the pane. So the tier a given pane lands in changed, and the pane a 1512 window
-   * with no dock leaves (1168) crossed from `narrow` to `wide`: the rail there is 200px rather
-   * than 168. That is the consequence of the new arithmetic and it is pinned here so the next
-   * change to the measure cannot move it silently.
+   * ⚠️ **The lane is paid for once.** The 2026-09-11 form asked the pane to be wide enough for
+   * the rail *and* for its mirror image on the other side of a fully centred column, which is
+   * why a wider reading measure would have deleted the rail from a 1512 window with no dock
+   * (1174 / 1238 against a 1168px pane). Reserving the lane on the side the rail is actually on
+   * keeps that pane in the `wide` tier at the new measure, and the number is pinned here so the
+   * next change to the measure cannot move it silently.
    */
-  it("puts the undocked 1512 pane in the wide tier, where the old floors put it in narrow", () => {
+  it("keeps the undocked 1512 pane in the wide tier at the 2026-09-12 measure", () => {
     expect(resolveOutlineRailFit(1168)).toBe("wide");
-    // The retired floors, for the record: 1168 was narrow under 1096/1192.
-    expect(1168 >= 1096 && 1168 < 1192).toBe(true);
+    // The form this replaced, for the record: it would have hidden the rail on that pane.
+    expect(DOC_COLUMN_PX + 2 * (40 + OUTLINE_RAIL_WIDE_WIDTH + 24)).toBeGreaterThan(1168);
+  });
+
+  /*
+   * The lane class and the `left` offset are literals because Tailwind only emits a utility for
+   * a class name written out in source. They are the same arithmetic as the constants above, so
+   * they are asserted against them rather than trusted.
+   */
+  it("writes the lane and the left offset from the same gap and rail widths", () => {
+    expect(OUTLINE_RAIL_LANE_CLASS.narrow).toBe(
+      `pr-[${OUTLINE_RAIL_COLUMN_GAP + OUTLINE_RAIL_NARROW_WIDTH}px]`,
+    );
+    expect(OUTLINE_RAIL_LANE_CLASS.wide).toBe(
+      `pr-[${OUTLINE_RAIL_COLUMN_GAP + OUTLINE_RAIL_WIDE_WIDTH}px]`,
+    );
+    for (const [fit, railWidth] of [
+      ["narrow", OUTLINE_RAIL_NARROW_WIDTH],
+      ["wide", OUTLINE_RAIL_WIDE_WIDTH],
+    ] as const) {
+      const lane = OUTLINE_RAIL_COLUMN_GAP + railWidth;
+      expect(OUTLINE_RAIL_LEFT_CLASS[fit]).toBe(
+        `left-[calc(50%_+_var(--measure-doc-column)_/_2_-_${lane / 2 - OUTLINE_RAIL_COLUMN_GAP}px)]`,
+      );
+    }
   });
 
   /*

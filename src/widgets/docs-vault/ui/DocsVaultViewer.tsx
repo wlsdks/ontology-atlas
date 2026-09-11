@@ -531,7 +531,7 @@ export function DocsVaultViewer({
       p({ children, ...rest }) {
         return (
           <p
-            className={`${PROSE_MEASURE} my-3 break-keep text-body-lg leading-prose text-[color:var(--color-text-secondary)]`}
+            className={`${PROSE_MEASURE} my-3 break-keep text-reading leading-prose text-[color:var(--color-text-secondary)]`}
             {...rest}
           >
             {highlightChildren(children, 'p')}
@@ -541,7 +541,7 @@ export function DocsVaultViewer({
       ul(props) {
         return (
           <ul
-            className={`${PROSE_MEASURE} my-3 list-disc break-keep pl-6 text-body-lg leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]`}
+            className={`${PROSE_MEASURE} my-3 list-disc break-keep pl-6 text-reading leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]`}
             {...props}
           />
         );
@@ -549,7 +549,7 @@ export function DocsVaultViewer({
       ol(props) {
         return (
           <ol
-            className={`${PROSE_MEASURE} my-3 list-decimal break-keep pl-6 text-body-lg leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]`}
+            className={`${PROSE_MEASURE} my-3 list-decimal break-keep pl-6 text-reading leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]`}
             {...props}
           />
         );

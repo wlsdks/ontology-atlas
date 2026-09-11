@@ -19,6 +19,9 @@ export const TYPE_RAMP_STEPS = [
   'body',
   'body-lg',
   'title',
+  // Authored document body (2026-09-12): 16px paired with `leading-prose`, the size
+  // `--measure-doc-column` is derived at. See its block in `app/globals.css`.
+  'reading',
   'display',
   'hero',
   'hero-lg',

@@ -4,6 +4,7 @@ import type { ReactNode, RefObject } from "react";
 
 import { cn } from "@/shared/lib/cn";
 
+import { OUTLINE_RAIL_LANE_CLASS } from "../lib/outline-rail";
 import { useOutlineRailFit } from "../lib/use-outline-rail-fit";
 import { BackToTopButton } from "./BackToTopButton";
 import { DocReadingOutlineRail, type OutlineHeading } from "./DocReadingOutlineRail";
@@ -26,6 +27,17 @@ import { DocReadingOutlineRail, type OutlineHeading } from "./DocReadingOutlineR
  * the scroll container, so it holds its screen position while the body scrolls). The
  * body's own centred measure is unaffected: the rail consumes margin, never text width
  * (`.claude/rules/design.md`).
+ *
+ * ## The rail's lane is reserved, not borrowed from the centring (2026-09-12)
+ *
+ * The column used to centre in the whole pane, and the rail lived in whatever the centring
+ * left on the right. That made the pane pay for the lane twice — once where the rail is and
+ * once in its mirror image — so a wider reading measure took the rail away from a 1512 window
+ * with no dock (`lib/outline-rail.ts` carries the arithmetic). The scroller now carries
+ * `padding-right: gap + railWidth` while the rail is drawn, the column centres in what is
+ * left, and the composition is `[gutter] [column] [gap] [rail] [gutter]` with both gutters
+ * equal. Measured at 1512 (pane 1168): the left void falls from 334px to 153px and the
+ * reading line grows from 500px to 629px.
  */
 export interface DocReadingPaneProps {
   /**
@@ -115,6 +127,10 @@ export function DocReadingPane({
           backToTop
             ? "pb-[var(--doc-reading-back-to-top-clearance)]"
             : "max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]",
+          /* The rail's lane, reserved on the rail's own side so the centred column stops
+             half a lane left of the pane's centre and the rail lands one gap past it. */
+          outline && fit === "wide" ? OUTLINE_RAIL_LANE_CLASS.wide : null,
+          outline && fit === "narrow" ? OUTLINE_RAIL_LANE_CLASS.narrow : null,
           scrollClassName,
         )}
       >

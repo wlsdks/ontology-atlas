@@ -1,6 +1,10 @@
 import { useTranslations } from "next-intl";
 import { controlClass } from '@/shared/ui/control-class';
-import { OUTLINE_RAIL_WIDTH_CLASS, type OutlineRailFit } from "../lib/outline-rail";
+import {
+  OUTLINE_RAIL_LEFT_CLASS,
+  OUTLINE_RAIL_WIDTH_CLASS,
+  type OutlineRailFit,
+} from "../lib/outline-rail";
 /**
  * One entry in a document outline.
  *
@@ -52,11 +56,12 @@ export interface DocReadingOutlineRailProps {
  * text's right edge moved from 1257 to 1083. The rail had not moved; the 239px hole was the
  * column shrinking away from something that was never following it.
  *
- * Now `left` is the column's right edge plus one `--measure-doc-gutter`, so the gap is the same
- * gutter the column already pairs with at every pane width, and `mx-auto` on the column keeps
- * the composition `[margin][column][gutter][rail][margin]`. `lib/outline-rail.ts` carries the
- * matching fit arithmetic — with clearance now constructed, its floors only ask whether the rail
- * fits beside the column.
+ * Now `left` is the column's right edge plus one gap, so the distance is a decision at every
+ * pane width. Since 2026-09-12 the pane reserves the rail's lane as padding on its own side and
+ * the column centres in what is left, which makes the composition
+ * `[gutter][column][gap][rail][gutter]` with both gutters equal by construction — so this
+ * `left` is half a lane left of the pane's centre. `lib/outline-rail.ts` owns that offset
+ * (`OUTLINE_RAIL_LEFT_CLASS`) and the matching fit floors.
  *
  * Visibility is decided by the caller: `shouldShowOutlineRail` on the heading count and
  * `resolveOutlineRailFit` on the reading pane's measured width. This component is a pure display
@@ -81,14 +86,25 @@ export function DocReadingOutlineRail({
       aria-label={t("railAria")}
       data-testid="doc-reading-outline-rail"
       data-outline-fit={fit}
-      /* `left` is the column's right edge plus one gutter: the column is centred, so its right
-         edge is `50% + column/2`. No `right` anchor — the rail follows the text rather than the
-         pane, and `outline-rail.ts` guarantees it fits before the caller draws it. */
-      className={`absolute bottom-6 top-6 left-[calc(50%_+_var(--measure-doc-column)_/_2_+_var(--measure-doc-gutter))] flex flex-col overflow-y-auto ${
-        fit === "wide" ? OUTLINE_RAIL_WIDTH_CLASS.wide : OUTLINE_RAIL_WIDTH_CLASS.narrow
-      }`}
+      /* `left` is the column's right edge plus one gap. The column is centred in the pane
+         minus the rail's lane, so its centre is half a lane left of `50%` — the offset
+         `OUTLINE_RAIL_LEFT_CLASS` carries. No `right` anchor: the rail follows the text
+         rather than the pane, and `outline-rail.ts` guarantees it fits before the caller
+         draws it. */
+      className={`absolute bottom-6 top-6 flex flex-col overflow-y-auto ${
+        fit === "wide" ? OUTLINE_RAIL_LEFT_CLASS.wide : OUTLINE_RAIL_LEFT_CLASS.narrow
+      } ${fit === "wide" ? OUTLINE_RAIL_WIDTH_CLASS.wide : OUTLINE_RAIL_WIDTH_CLASS.narrow}`}
     >
-      <span className="mb-2 flex-none font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+      {/*
+        ⚠️ **`pl-3` is the items' own left inset, not spacing.** Each item below carries
+        `border-l-2` plus `pl-2.5` — 12px before its first glyph — while this label had
+        none, so the rail's own name stood 12px left of everything it names (measured in
+        the installed app at 1512: label x=1261.5, items x=1271–1272). The alternative was
+        moving the border into a negative margin, which would have pushed the active bar
+        out of the rail and towards the text it is not part of. `docs/DESIGN-SYSTEM.md`,
+        "One text edge per column".
+      */}
+      <span className="mb-2 flex-none pl-3 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
         {t("railLabel")} · {headings.length}
       </span>
       <ul className="flex flex-col gap-0.5 text-body">

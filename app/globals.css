@@ -639,12 +639,20 @@
    * ── One number, two shapes ────────────────────────────────────────────────────
    *
    * `--measure-prose-steps` is the measure. Everything below is derived from it, so
-   * changing this 60 moves the line cap, the document column, the notice cards, the
+   * changing this 66 moves the line cap, the document column, the notice cards, the
    * header, the meta bar and the outline rail together. Before 2026-09-11 the column
    * was an independent `760px` and the cap was `70ch`; they disagreed by 180px inside
    * one reading column, and the wider one was the box a person actually saw.
+   *
+   * ⚠️ **60 → 66, and the size it is spent at 14 → 16** (owner, 2026-09-12: *"isn't the
+   * empty space to the left of where the text comes out far too much? make the text
+   * itself run wider — stretch left and right at the same time so the proportion is
+   * right"*). 60 steps spent at `--text-body-lg` bought a 500px run inside a 1168px
+   * pane, leaving 334px of nothing on its left; 66 steps spent at `--text-reading` buy
+   * **629px** (86 Latin characters, 46 Hangul). Record: `docs/DECISIONS.md`, "The
+   * reading column is worth more of its pane than the measure was buying".
    */
-  --measure-prose-steps: 60;
+  --measure-prose-steps: 66;
   /*
    * Advance of the digit `0` in Pretendard Variable, in `em`. **Measured**, not chosen:
    * `"0".repeat(100)` in the built export divided by 100 gives 9.531px at the 16px root.
@@ -657,7 +665,7 @@
    *
    * Gate: `tests/e2e/prose-measure-calibration.spec.ts` renders the glyphs and fails if
    * this ratio stops describing the shipped font, or if the derivation below stops
-   * matching the measure resolved at `--text-body-lg`.
+   * matching the measure resolved at `--text-reading`.
    */
   --measure-zero-advance: 0.5957;
   /* The side inset every document column has always paired with — `px-6 md:px-10`
@@ -678,30 +686,33 @@
    * | measure | Latin characters per line | Hangul syllables |
    * |---|---:|---:|
    * | `70ch` (until 2026-09-11) | 92 | 42 |
-   * | **`60ch` (now)** | **79** | **36** |
+   * | `60ch` (until 2026-09-12) | 79 | 36 |
+   * | **`66ch` (now)** | **86** | **46** |
    * | `57ch` | 75 | 34 |
    * | `50ch` | 65 | 30 |
    *
-   * The stated intent of this token — `docs/DESIGN-SYSTEM.md` and
-   * `src/views/gateway-doc/ui/GatewayDocPage.tsx`, *"65–75 characters per line"* —
-   * was therefore never what it produced; 70 `ch` is 92 characters. **60ch** is the
-   * step that lands inside that intent (79) while keeping Korean above the ~35
-   * syllables a `break-keep` paragraph needs to stop breaking oddly. It is the cap
-   * on a *line*; `--measure-doc-column` below is that same measure plus the gutter
-   * the column has always paired with, so the box no longer disagrees with the text
-   * inside it.
+   * The stated intent of this token was once *"65–75 characters per line"*, and 60ch
+   * landed inside it at 79. **66ch is deliberately outside it**: the owner read a 500px
+   * run inside a 1168px pane and asked for the line, not the void
+   * (`docs/DECISIONS.md`, 2026-09-12). What the step buys is not only Latin length —
+   * spent at `--text-reading` (16px) rather than `text-body-lg` (14px) it also lifts
+   * Hangul from 36 syllables to **46**, which is the first step where a `break-keep`
+   * Korean paragraph stops stranding a particle on its own line. The losing guidance
+   * (45–75) and the falsifier are both written into that record. It is the cap on a
+   * *line*; `--measure-doc-column` below is that same measure plus the gutter the
+   * column has always paired with, so the box does not disagree with the text inside it.
    *
    * Gate: `tests/e2e/prose-measure-calibration.spec.ts` renders `"0".repeat(100)`
-   * and a fixed English sample in the shipped font and fails outside 65–82
+   * and a fixed English sample in the shipped font and fails outside 80–92
    * characters per measure — so neither the token nor the font can drift this back
-   * without saying so.
+   * to 60 (74–81 on the same runners) without saying so.
    */
   --measure-prose: calc(var(--measure-prose-steps) * 1ch);
   /*
    * Document column — the reading column a document, wiki page or check report sits in.
    *
    * **= the prose measure, spent at the size the body is set in, plus one gutter each side**
-   * → 60 × 0.5957 × 14px + 2 × 40px = **580.4px**.
+   * → 66 × 0.5957 × 16px + 2 × 40px = **709.1px**.
    *
    * History, because the derivation replaced a number rather than joining it: from
    * 2026-09-08 this was an independent `760px`, named after the literal that eleven sites
@@ -725,7 +736,7 @@
    * `tests/e2e/prose-measure-calibration.spec.ts`.
    */
   --measure-doc-column: calc(
-    var(--measure-prose-steps) * var(--measure-zero-advance) * var(--text-body-lg) +
+    var(--measure-prose-steps) * var(--measure-zero-advance) * var(--text-reading) +
       2 * var(--measure-doc-gutter)
   );
   /*
@@ -735,7 +746,7 @@
    * already used, and it has now gained a second consumer — a value earns a name the moment
    * something else needs it."* By today it had seven consumers and only three read the name, so
    * the number is the token and `PAGE_COLUMN_STAGE` reads it. Distinct from `--measure-prose`
-   * (a line-length cap in `ch` — 60ch, 79 characters), `--measure-doc-column` (580.4, a
+   * (a line-length cap in `ch` — 66ch, 86 characters), `--measure-doc-column` (709.1, a
    * document page, derived from that cap) and
    * `--git-setup-measure` (520, one task in an empty destination).
    */
@@ -1050,6 +1061,19 @@
   --text-body: 12.5px; /* default body/list rows (pair: tracking-body) */
   --text-body-lg: 14px; /* emphasized body/subtitles (pair: tracking-body-lg) */
   --text-title: 16px; /* panel/card titles (pair: tracking-title) */
+  /*
+   * **The size authored prose is read at** (2026-09-12) — the same 16px as `--text-title`
+   * and a different quantity, which is why it is a step and not an alias.
+   *
+   * `--text-title` is chrome: a panel or card title, paired with `--leading-title` (24px)
+   * because it is one or two lines of a label. This step is the body of a document, paired
+   * with `--leading-prose` (1.7) because it is paragraphs, and it is the size
+   * `--measure-doc-column` is derived at — so the two can never be swapped without moving
+   * the reading column. Reading bodies used `--text-body-lg` (14px) until the owner read
+   * the line against the void beside it (`docs/DECISIONS.md`, 2026-09-12); captions,
+   * labels, tables and chrome keep their own grades.
+   */
+  --text-reading: 16px; /* authored document body (pair: leading-prose) */
   --text-display: 23px; /* page headlines (pair: tracking-display) */
   --text-hero: 30px; /* hero headlines */
   /* gateway headline — one step above the top of the ramp. On surfaces where maps cover the full view, 30px competes with the background, while 34px falls within the reference hero band (2.5–3.0) at 2.72x relative to lead (12.5px).
@@ -1191,6 +1215,7 @@
   --text-body--line-height: var(--leading-body);
   --text-body-lg--line-height: var(--leading-body-lg);
   --text-title--line-height: var(--leading-title);
+  --text-reading--line-height: var(--leading-prose);
   --text-display--line-height: var(--leading-display);
   /* --leading-hero creates no 1px today — both text-hero call sites in the repo have explicit leading attached. The reason to keep it is this line:
      If hero is used without leading in the future, it receives 34px instead of inheritance 1.5 (45px).

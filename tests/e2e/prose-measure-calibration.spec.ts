@@ -45,16 +45,23 @@ import { seedFirstRunSeen } from './first-run-seed';
  * |---|---:|
  * | `50ch` | 65 |
  * | `57ch` | 75 |
- * | **`60ch` (shipped)** | **78** |
- * | `70ch` (the defect) | 91 |
+ * | `60ch` (until 2026-09-12) | 78 |
+ * | **`66ch` (shipped)** | **86** |
+ * | `70ch` (the 2026-09-11 defect) | 91 |
  *
- * The floor is **65** and the ceiling **82** — the stated intent plus the slack a font
- * revision or a hinting change may move a proportional average, and still well below the
- * 91 the old value produced. A single exact number would fail on a font update that changed
- * nothing a reader could see; a band wider than this would re-admit the defect.
+ * ⚠️ **The band moved with the measure on 2026-09-12.** The owner read a 500px line inside a
+ * 1168px pane and asked for the line rather than the void (`docs/DECISIONS.md`, "The reading
+ * column is worth more of its pane than the measure was buying"), which put the measure at
+ * `66ch` spent at `--text-reading` — **86** Latin characters and 46 Hangul syllables. The
+ * floor is **80** and the ceiling **92**: 80 is under the shipped 86 by the same slack a
+ * hinted rasterizer already spends here (the four probe sizes measured 74–81 at `60ch` on
+ * CI's Linux Chromium, so a silent return to `60ch` still fails this floor), and 92 is one
+ * step past the value, so the token cannot drift wider without saying so. What the band no
+ * longer guards is the old *45–75* guidance; that is the dissent the record keeps, and its
+ * falsifier is a reader who loses their line on the wiki page at 1512.
  */
-const MIN_CHARS_PER_MEASURE = 65;
-const MAX_CHARS_PER_MEASURE = 82;
+const MIN_CHARS_PER_MEASURE = 80;
+const MAX_CHARS_PER_MEASURE = 92;
 
 /**
  * A fixed sample, not the page's own text: the average must not move because someone edited
@@ -260,7 +267,7 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
 });
 
-test('the prose measure buys 65-82 characters per line in the shipped font', async ({ page }) => {
+test('the prose measure buys 80-92 characters per line in the shipped font', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 949 });
   await page.goto('/en/docs/?guides=off');
   await expect(page.locator('body')).toBeVisible();
@@ -453,12 +460,20 @@ test('the derived column, the measured advance and the JS mirror all still agree
 
 /**
  * ⚠️ **A gate that can only pass is not a gate.** The defect this file exists for is a
- * *wider* token, so the probe plants exactly that — `70ch`, the value that shipped until
- * 2026-09-11 — and requires the measurement to leave the band. Then it restores the real
- * value through the same channel and requires GREEN again, so a probe that had simply
- * stopped measuring would be caught too.
+ * *wider* token, so the probe plants one and requires the measurement to leave the band. Then
+ * it restores the real value through the same channel and requires GREEN again, so a probe
+ * that had simply stopped measuring would be caught too.
+ *
+ * ⚠️ **The planted value moved on 2026-09-12, and it had to.** It used to be `70ch` — the
+ * value that shipped until 2026-09-11 — which measured 88.4 characters here. When the measure
+ * moved to `66ch` (86 characters) the band's ceiling rose to 92 and the old plant landed
+ * *inside* it: the probe would have reported the instrument healthy while planting a defect
+ * the gate could no longer see. It plants `80ch` instead, one clear step past the ceiling, and
+ * the plant's own margin is asserted below so this cannot happen silently again.
  */
-test('instrument probe — the planted 70ch reads out of band and the shipped value reads in', async ({
+const PLANTED_MEASURE = '80ch';
+
+test('instrument probe — a planted wider measure reads out of band and the shipped value reads in', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1512, height: 949 });
@@ -469,14 +484,20 @@ test('instrument probe — the planted 70ch reads out of band and the shipped va
   const shipped = await calibrate(page, SAMPLE, [16]);
   expect(shipped[0].latinChars).toBeLessThanOrEqual(MAX_CHARS_PER_MEASURE);
 
-  await page.evaluate(() => {
-    document.documentElement.style.setProperty('--measure-prose', '70ch');
-  });
+  await page.evaluate((measure) => {
+    document.documentElement.style.setProperty('--measure-prose', measure);
+  }, PLANTED_MEASURE);
   const planted = await calibrate(page, SAMPLE, [16]);
   expect(
     planted[0].latinChars,
-    `the planted 70ch measured ${planted[0].latinChars.toFixed(1)} characters and stayed inside the band — this gate is permanently green`,
+    `the planted ${PLANTED_MEASURE} measured ${planted[0].latinChars.toFixed(1)} characters and stayed inside the band — this gate is permanently green`,
   ).toBeGreaterThan(MAX_CHARS_PER_MEASURE);
+  /* And it clears the ceiling by more than the rasterizer's own spread, so the next change to
+     the band cannot quietly swallow the plant the way it swallowed `70ch`. */
+  expect(
+    planted[0].latinChars - MAX_CHARS_PER_MEASURE,
+    `the plant clears the ceiling by only ${(planted[0].latinChars - MAX_CHARS_PER_MEASURE).toFixed(1)} characters — widen ${PLANTED_MEASURE} or the probe is measuring hinting`,
+  ).toBeGreaterThan(4);
 
   await page.evaluate(() => {
     document.documentElement.style.removeProperty('--measure-prose');

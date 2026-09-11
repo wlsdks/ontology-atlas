@@ -71,7 +71,7 @@ function Harness({
       onLint={() => {}}
       onNewPage={() => {}}
       segment="wiki"
-      compileNote={null}
+      actionsNote={null}
       busy={false}
       compiling={compiling}
       t={t}

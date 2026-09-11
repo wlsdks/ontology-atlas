@@ -22,14 +22,14 @@ import type { WikiTemplateProblem } from './WikiTemplateProblems';
 /**
  * **Two capped columns and one gutter, centred** — the dialog's own measure.
  *
- * `text-body-lg` travels with it because `--measure-prose` is `ch`, and `ch` is the advance
+ * `text-reading` travels with it because `--measure-prose` is `ch`, and `ch` is the advance
  * of `0` in the element's *own* font: read at the 16px root the same token resolves to 572px
  * and at `text-body-lg` to 500px. Spending it at the size the prose is actually set in is what
  * the 2026-09-11 calibration is for (`app/globals.css`, `--measure-prose`) — the header, the
  * grid and the footer then start and end on the same two edges instead of three.
  */
 const COMPARISON_SPAN =
-  'mx-auto w-full max-w-[calc(2*var(--measure-prose)+var(--measure-doc-gutter))] text-body-lg';
+  'mx-auto w-full max-w-[calc(2*var(--measure-prose)+var(--measure-doc-gutter))] text-reading';
 
 const SHA256 = /^[a-f0-9]{64}$/i;
 const EMPTY_PATHS: ReadonlySet<string> = new Set<string>();
@@ -129,9 +129,9 @@ function RevisionText({
     h1: ({ children }) => <h3 className="mb-3 mt-6 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{children}</h3>,
     h2: ({ children }) => <h3 className="mb-3 mt-6 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] first:mt-0">{children}</h3>,
     h3: ({ children }) => <h4 className="mb-2 mt-4 text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{children}</h4>,
-    p: ({ children }) => <p className="my-3 break-words text-body-lg leading-prose text-[color:var(--color-text-secondary)]">{children}</p>,
-    ul: ({ children }) => <ul className="my-3 list-disc pl-5 text-body-lg leading-prose text-[color:var(--color-text-secondary)]">{children}</ul>,
-    ol: ({ children }) => <ol className="my-3 list-decimal pl-5 text-body-lg leading-prose text-[color:var(--color-text-secondary)]">{children}</ol>,
+    p: ({ children }) => <p className="my-3 break-words text-reading leading-prose text-[color:var(--color-text-secondary)]">{children}</p>,
+    ul: ({ children }) => <ul className="my-3 list-disc pl-5 text-reading leading-prose text-[color:var(--color-text-secondary)]">{children}</ul>,
+    ol: ({ children }) => <ol className="my-3 list-decimal pl-5 text-reading leading-prose text-[color:var(--color-text-secondary)]">{children}</ol>,
     li: ({ children }) => <li className="my-2 break-words">{children}</li>,
     a: ({ href, children, ...rest }) => {
       if (!href || !href.startsWith(WIKILINK_SENTINEL)) {
@@ -369,7 +369,7 @@ export function AnswerRevisionComparison({ open, question, before, after, proble
     <Dialog open={open} onClose={saving ? () => {} : onClose} size="viewport" initialFocus="container" labelledBy="answer-comparison-title" testId="answer-comparison" className="flex flex-col gap-4">
       <header className={`${COMPARISON_SPAN} flex-none [&_p]:max-w-[var(--measure-prose)] [&_p]:[word-break:keep-all]`}>
         <h2 id="answer-comparison-title" className="text-display font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">{t('answers.compareTitle')}</h2>
-        <p className="mt-2 break-words text-body-lg text-[color:var(--color-text-secondary)]">{question}</p>
+        <p className="mt-2 break-words text-reading text-[color:var(--color-text-secondary)]">{question}</p>
         <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{t('answers.compareHint')}</p>
         {/*
           **The difference is stated before the two versions, not after them.** It used to be
