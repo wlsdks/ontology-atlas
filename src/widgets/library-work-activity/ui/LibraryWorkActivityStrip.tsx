@@ -40,25 +40,40 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
   // the lane stands for one that is already there even after the dock is closed.
   if (!reserved && headline === null) return null;
   return (
-    // Reserve the activity lane before the first event: mounting a receipt must not
-    // resize the canvas and move the very marks whose work it is explaining.
-    <div className="h-28 flex-none" data-testid="library-work-lane">
+    /*
+     * Reserve the activity lane before the first event: mounting a receipt must not
+     * resize the canvas and move the very marks whose work it is explaining.
+     *
+     * **One line from `sm` up, two below it** (`docs/DECISIONS.md`, 2026-09-11 — "The
+     * Library keeps its spine, and computes the structural check itself"). Two stacked
+     * rows plus the status strip put a **third** header band over the reader: measured at
+     * 1512, the landing and the document under it fell 112px the moment a conversation
+     * opened, and 112 → 64 gives 48 of that back. 64px is the height the coarse-pointer
+     * receipt chip needs (44px) plus its own inset.
+     *
+     * ⚠️ **The single line does not survive a phone, and two measurements say so.** At
+     * 390px the first receipt chip came to rest at x 216..411 — past the right edge, so
+     * reaching it needed a sideways scroll — and its row moved up to y 10..54, under the
+     * toast, which sonner places at 16px on a small viewport whatever
+     * `--app-toast-top-offset` says. Both are the width's fault, not the lane's, so below
+     * `sm` the two facts stack the way they always did and the reader there is
+     * full-width anyway (`max-lg:order-first`).
+     */
+    <div className="h-28 flex-none sm:h-16" data-testid="library-work-lane">
     <Surface open={headline !== null} motion="overlay" as="section"
       aria-label={t("title")} data-testid="library-work-activity"
-      className="mx-5 mt-2 flex-none border-b border-[color:var(--color-border-soft)] pb-2 sm:mx-6 md:mx-10">
+      className="mx-5 flex h-full min-w-0 flex-col justify-center gap-2 overflow-x-auto border-b border-[color:var(--color-border-soft)] sm:mx-6 sm:flex-row sm:items-center sm:gap-3 md:mx-10">
       {headline ? <>
-        <div className="flex min-w-0 items-center gap-3" data-testid="library-work-current" data-work-kind={headline.kind} data-work-phase={headline.phase}>
-          <span className={INK[headline.kind]}><Icon size={20} aria-hidden="true" /></span>
-          <div className="min-w-0 flex-1">
-            <p className="text-label text-[color:var(--color-text-tertiary)]">{current ? t("now") : t("latest")}</p>
-            <p role="status" aria-atomic="true" className="flex min-w-0 items-baseline gap-x-2 text-title text-[color:var(--color-text-primary)]">
-              <span className="flex-none font-[var(--font-weight-strong)]">{label(headline)}</span>
-              <span title={headline.target?.ref ?? t("unbound")} className="min-w-0 truncate text-label text-[color:var(--color-text-secondary)]">{headline.target?.ref ?? t("unbound")}</span>
-            </p>
-          </div>
+        <div className="flex min-w-0 items-center gap-2" data-testid="library-work-current" data-work-kind={headline.kind} data-work-phase={headline.phase}>
+          <span className={`flex-none ${INK[headline.kind]}`}><Icon size={20} aria-hidden="true" /></span>
+          <span className="flex-none text-label leading-body text-[color:var(--color-text-tertiary)]">{current ? t("now") : t("latest")}</span>
+          <p role="status" aria-atomic="true" className="flex min-w-0 items-baseline gap-x-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">
+            <span className="flex-none font-[var(--font-weight-strong)]">{label(headline)}</span>
+            <span title={headline.target?.ref ?? t("unbound")} className="min-w-0 truncate text-label text-[color:var(--color-text-secondary)]">{headline.target?.ref ?? t("unbound")}</span>
+          </p>
         </div>
-        <div className="mt-2 flex min-w-0 items-center gap-2 overflow-x-auto" data-testid="library-work-recent">
-          <span className="flex-none text-label text-[color:var(--color-text-tertiary)]">{t("recent")}</span>
+        <div className="flex min-w-0 items-center gap-2" data-testid="library-work-recent">
+          <span className="flex-none text-label leading-body text-[color:var(--color-text-tertiary)]">{t("recent")}</span>
           {activity.recent.slice(0, 3).map((event) => {
             const EventIcon = ICONS[event.kind];
             const content = <><EventIcon size={14} aria-hidden="true" /><span className="truncate">{label(event)} · {event.target?.ref ?? t("unbound")}</span></>;

@@ -304,6 +304,11 @@ export function LibraryPage() {
   });
   const retainedAnswers = model.retainedAnswers ?? EMPTY_DOCS;
   const knownOriginalPaths = useMemo(() => new Set(model.sources.map((source) => source.path)), [model.sources]);
+  /** What step three already lists, so "Start with …" names a different page than the rows. */
+  const retainedAnswerSlugs = useMemo(
+    () => new Set(retainedAnswers.map((answer) => answer.slug)),
+    [retainedAnswers],
+  );
 
   /**
    * **Nothing chosen is its own state, and it is the one this screen is for.**
@@ -1219,6 +1224,33 @@ export function LibraryPage() {
   );
 
   /**
+   * **Why a coding-agent-only Library control cannot run — the sentence already written.**
+   *
+   * Ask and Check the wiki need a verified coding agent, and until 2026-09-11 they were
+   * simply **absent** without one. `docs/DECISIONS.md`, "The Library keeps its spine, and
+   * computes the structural check itself", replaces that with a rule: a feature the
+   * product has is always on screen, and availability is a state with its reason. So the
+   * control is drawn, disabled, beside the reason.
+   *
+   * ⚠️ **`null` means "no true sentence exists yet", not "available".** On the `local`
+   * route a runner *is* saved, so `stage.blockedNoAgent` — which says no agent and no
+   * saved address — would be false, and no other key in `messages/*.json` says why a
+   * coding-agent turn still cannot run there. Those controls therefore stay absent on
+   * that one route rather than shipping a sentence that is not true; completing the rule
+   * there needs one new string and the decision that licenses it.
+   */
+  const agentOnlyReason =
+    agent.route === "agent"
+      ? null
+      : nativeVaultRootPath === null
+        ? t("stage.blockedWeb")
+        : agent.route === "checking"
+          ? t("stage.blockedChecking")
+          : agent.route === "unavailable"
+            ? t("stage.blockedNoAgent")
+            : null;
+
+  /**
    * **Where the keyboard lands after the pane swaps.**
    *
    * Pressing "Start with …", a source chip, or "View write-up" replaces the whole right
@@ -1927,38 +1959,49 @@ export function LibraryPage() {
               />
               <div className="relative z-10 flex min-h-full items-center justify-center">
                 <div className={PAGE_COLUMN_STAGE + " mx-auto"}>
-                  <LibraryQuestions
-                    answers={retainedAnswers}
-                    knownSources={knownOriginalPaths}
-                    hashes={model.hashes}
-                    onOpen={(slug) => choose({ kind: "wiki", slug })}
-                    onAsk={agent.route === "agent" ? () => agent.setOpen(true) : null}
-                    t={t}
-                  />
-                  {retainedAnswers.length === 0 ? (
-                    <>
-                      <h2 className="mb-3 mt-8 px-3 text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
-                        {t("stage.title")}
-                      </h2>
-                      <LibraryStage
-                        model={model}
-                        route={agent.route}
-                        agentLabel={agent.runtime?.label ?? null}
-                        localModel={agent.localModel}
-                        brain={agent.brain}
-                        brainChoosable={agent.brainChoosable}
-                        onChooseBrain={agent.chooseBrain}
-                        inApp={nativeVaultRootPath !== null}
-                        onAddFiles={handleAddFiles}
-                        onFindDocuments={handleFindDocuments}
-                        onCompile={handleCompile}
-                        onLint={agent.route === "agent" ? handleLint : null}
-                        onOpenWiki={(slug) => choose({ kind: "wiki", slug })}
-                        busy={busy}
+                  {/*
+                    **The spine is drawn at every count** (`docs/DECISIONS.md`, 2026-09-11,
+                    "The Library keeps its spine, and computes the structural check
+                    itself"). It used to be `retainedAnswers.length === 0 ? <stage> :
+                    null`, so the first saved answer removed the only screen naming the
+                    next step and left a list with no order around it. The stage is now
+                    this landing's one headline — `text-display`, the page grade the
+                    questions heading used to hold — and the questions are a section
+                    inside step three.
+                  */}
+                  <h2 data-testid="library-stage-title" className="mb-3 px-3 text-display font-[var(--font-weight-signature)] leading-display text-[color:var(--color-text-primary)]">
+                    {t("stage.title")}
+                  </h2>
+                  <LibraryStage
+                    model={model}
+                    route={agent.route}
+                    agentLabel={agent.runtime?.label ?? null}
+                    localModel={agent.localModel}
+                    brain={agent.brain}
+                    brainChoosable={agent.brainChoosable}
+                    onChooseBrain={agent.chooseBrain}
+                    inApp={nativeVaultRootPath !== null}
+                    onAddFiles={handleAddFiles}
+                    onFindDocuments={handleFindDocuments}
+                    onCompile={handleCompile}
+                    onLint={agent.route === "agent" ? handleLint : null}
+                    lintBlockedReason={agentOnlyReason}
+                    onOpenWiki={(slug) => choose({ kind: "wiki", slug })}
+                    answerSlugs={retainedAnswerSlugs}
+                    busy={busy}
+                    questions={
+                      <LibraryQuestions
+                        answers={retainedAnswers}
+                        knownSources={knownOriginalPaths}
+                        hashes={model.hashes}
+                        onOpen={(slug) => choose({ kind: "wiki", slug })}
+                        onAsk={agent.route === "agent" ? () => agent.setOpen(true) : null}
+                        askBlockedReason={agentOnlyReason}
                         t={t}
                       />
-                    </>
-                  ) : null}
+                    }
+                    t={t}
+                  />
                 </div>
               </div>
             </div>

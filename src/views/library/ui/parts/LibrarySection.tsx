@@ -809,18 +809,29 @@ export function LibrarySection({
           ) : null}
         </>
       ) : (
-        <p
-          data-testid="library-wiki-empty"
-          className="px-3 pb-1 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-        >
-          {needle && visibleSources.length > 0 ? (
-            <OtherHalf count={visibleSources.length} segment="sources" t={t} />
-          ) : hasWikiTemplate ? (
-            t("wiki.empty")
-          ) : (
-            t("wiki.emptyNoTemplate")
-          )}
-        </p>
+        <>
+          <p
+            data-testid="library-wiki-empty"
+            className="px-3 pb-1 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+          >
+            {needle && visibleSources.length > 0 ? (
+              <OtherHalf count={visibleSources.length} segment="sources" t={t} />
+            ) : hasWikiTemplate ? (
+              t("wiki.empty")
+            ) : (
+              t("wiki.emptyNoTemplate")
+            )}
+          </p>
+          {/*
+            **A hand-written page keeps its door on an empty wiki** (`docs/DECISIONS.md`,
+            2026-09-11). The row is the list's own last row, so with no list it was drawn
+            nowhere — and an empty wiki is precisely the folder where writing the first
+            page by hand is the available move. `buildHumanPage` carries the shape itself,
+            so the door works whether or not `wiki/_template.md` is there yet; the
+            paragraph above still says which of those two is true.
+          */}
+          {newPageControl ? <div className="px-2 pb-1">{newPageControl}</div> : null}
+        </>
       )}
 
     </section>

@@ -41,7 +41,7 @@ import { CompileBrainSelect } from "./CompileBrainSelect";
  * | Measured | Rule now |
  * |---|---|
  * | the panel was 560px of a 1168px pane and its lower half lay over the graph's own *"Nothing to draw yet…"* sentence | the surface is ~360px, it stands clear of the caption and the legend, and an empty folder never raises it at all |
- * | the Gather card carried ~130px of empty space between its numbers and its buttons | there is no stretch: every row is head, one caption line, one action row, so the heights match because the **anatomy** does, not because a grid pulled them |
+ * | the Gather card carried ~130px of empty space between its numbers and its buttons | there is no stretch: every row is head, one caption line, one action row, so the heights match because the **anatomy** does, not because a grid pulled them. Two rows carry an `extra` block below that action row and are allowed to differ — step two's own state, and, since 2026-09-11, step three's saved questions |
  * | every card held a paragraph, a four-row label/value table, buttons and a footnote | one caption line per row. The four-row tables are gone: those counts are already in the index beside the files they describe and in the header caption |
  *
  * ## Why the rows still exist at all
@@ -91,7 +91,35 @@ export interface LibraryStageProps {
    * that cannot report is not a step with a reason, it is a step with no runtime.
    */
   onLint: (() => void) | null;
+  /**
+   * Why Check the wiki cannot run, when it cannot — the sentence this screen already owns.
+   *
+   * Until 2026-09-11 this control was **absent** without a coding agent, on the reasoning
+   * that "a step that cannot report is not a step with a reason, it is a step with no
+   * runtime". The record "The Library keeps its spine, and computes the structural check
+   * itself" overturns that half: a feature the product has stays on screen, and
+   * availability is a state with its reason. `null` on both this and `onLint` keeps the
+   * control absent, because no sentence in `messages/*.json` is true of that state yet.
+   */
+  lintBlockedReason: string | null;
   onOpenWiki: (slug: string) => void;
+  /**
+   * The slugs step three lists as saved questions, so it does not advertise one twice.
+   *
+   * Measured 2026-09-11 on the seeded folder: the newest page *was* the saved answer, so
+   * "Start with <title>" and the question row beneath it were the same door, 180px apart
+   * inside one card. "Start with" names the newest **write-up**; a saved answer has its
+   * own row, and the two lists stopped overlapping once this set was subtracted.
+   */
+  answerSlugs?: ReadonlySet<string>;
+  /**
+   * The saved questions and their Ask control, seated inside step three.
+   *
+   * Reading is what step three names, and a saved answer is the most finished thing this
+   * folder holds — so the list belongs in that row rather than above the whole stepper,
+   * where it used to replace it (`docs/DECISIONS.md`, 2026-09-11).
+   */
+  questions?: ReactNode;
   busy: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }
@@ -201,13 +229,20 @@ export function LibraryStage({
   onFindDocuments,
   onCompile,
   onLint,
+  lintBlockedReason,
   onOpenWiki,
+  answerSlugs,
+  questions,
   busy,
   t,
 }: LibraryStageProps) {
   const sourceCount = model.sources.length;
   const formats = countSourceFormats(model.sources);
-  const newest = newestWikiPage(model.wikiPages);
+  const newest = newestWikiPage(
+    answerSlugs && answerSlugs.size > 0
+      ? model.wikiPages.filter((page) => !answerSlugs.has(page.slug))
+      : model.wikiPages,
+  );
 
   /**
    * **What leaves the computer, said once**, and said where the press is.
@@ -292,6 +327,18 @@ export function LibraryStage({
    */
   const partialNote = model.partialCount > 0 ? t("stage.compile.partialLine") : null;
 
+  /**
+   * Check the wiki's own reason, and whether this row has to print it.
+   *
+   * ⚠️ **A reason is not printed twice.** Without an agent the two controls in this row
+   * are blocked by the same fact, and `libraryCompileBlockedReason` already returns that
+   * sentence — so when Compile's caption or paragraph is carrying it, the lint paragraph
+   * is not drawn at all and the button points at Compile's copy of it instead.
+   */
+  const lintBlocked = onLint === null ? lintBlockedReason : null;
+  const lintBlockedBelow =
+    lintBlocked && lintBlocked !== blockedBelow && lintBlocked !== compileCaption ? lintBlocked : null;
+
   return (
     <div data-testid="library-stage" className="w-full px-3 pb-3 pt-2">
       {/* No lede and no title: the panel's own header states both, and the same words
@@ -373,12 +420,15 @@ export function LibraryStage({
                 make the sequence longer than the work. It appears only once there are two
                 pages, which is the first moment two pages can disagree.
               */}
-              {onLint && model.wikiPages.length >= 2 ? (
+              {(onLint || lintBlocked) && model.wikiPages.length >= 2 ? (
                 <button
                   type="button"
-                  onClick={onLint}
-                  disabled={busy}
+                  onClick={onLint ?? undefined}
+                  disabled={busy || onLint === null}
                   data-testid="library-stage-lint"
+                  /* Same binding Compile uses: the sentence below is what a disabled
+                     control has instead of a press, so it is announced with it. */
+                  aria-describedby={lintBlockedBelow ? "library-stage-lint-blocked" : undefined}
                   className={controlClass({
                     shape: "chip",
                     tone: "muted",
@@ -428,7 +478,7 @@ export function LibraryStage({
             </>
           }
           extra={
-            blockedBelow || partialNote || transfer ? (
+            blockedBelow || lintBlockedBelow || partialNote || transfer ? (
               <div className="mt-2 flex flex-col gap-1.5">
                 {blockedBelow ? (
                   <p
@@ -437,6 +487,15 @@ export function LibraryStage({
                     className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
                   >
                     {blockedBelow}
+                  </p>
+                ) : null}
+                {lintBlockedBelow ? (
+                  <p
+                    id="library-stage-lint-blocked"
+                    data-testid="library-stage-lint-blocked"
+                    className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+                  >
+                    {lintBlockedBelow}
                   </p>
                 ) : null}
                 {/* After the reason, never before it: why the button is dead is what a
@@ -510,6 +569,21 @@ export function LibraryStage({
                 {t("stage.read.nothingYet")}
               </p>
             )
+          }
+          /*
+            The saved questions sit under step three's own action row, divided from it,
+            because they are the row's content rather than a second control: the step says
+            what reading is, and this is what there is to read again.
+          */
+          extra={
+            questions ? (
+              <div
+                data-testid="library-stage-questions"
+                className="mt-3 border-t border-[color:var(--color-border-soft)] pt-3"
+              >
+                {questions}
+              </div>
+            ) : null
           }
         />
       </ol>
