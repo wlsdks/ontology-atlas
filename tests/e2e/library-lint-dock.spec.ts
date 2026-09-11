@@ -214,13 +214,29 @@ test.describe("Check the wiki opens the agent dock", () => {
     await expect(page.getByTestId("library-index-segment")).toContainText("Wiki 2");
     // With nothing selected the pane is the graph (2026-09-06, third pass), so no page
     // heading is on screen here; the list above already proves the template is not a row.
-    // Same row, Lint first: reading before writing.
-    const [lintBox, compileBox] = await Promise.all([
+    /*
+     * Reading before writing — but the two doors no longer share a row (2026-09-12).
+     * They wear the plain-language names the owner asked for, and at 11px
+     * `Ask the agent to compile` needs about 119px of the 125px half a 255px column
+     * leaves, so it truncated mid-word. Each takes the full row instead, and both fill
+     * the column exactly (`docs/DESIGN-SYSTEM.md`, "Control groups fill their column").
+     * The order that carried the meaning is now vertical, and the width is the assertion
+     * that the group fills its column.
+     */
+    const [lintBox, compileBox, fieldBox] = await Promise.all([
       lint.boundingBox(),
       page.getByTestId("library-compile").boundingBox(),
+      page.getByTestId("library-search").boundingBox(),
     ]);
-    expect(lintBox && compileBox && Math.abs(lintBox.y - compileBox.y) < 4, "the two doors share a row").toBe(true);
-    expect(lintBox!.x, "Lint sits to the left of Compile").toBeLessThan(compileBox!.x);
+    expect(lintBox!.y, "reading stands above writing").toBeLessThan(compileBox!.y);
+    expect(Math.abs(lintBox!.x - compileBox!.x), "the two doors share a left edge").toBeLessThan(1);
+    for (const box of [lintBox!, compileBox!]) {
+      expect(Math.abs(box.x - fieldBox!.x), "a door starts where the search field does").toBeLessThan(1);
+      expect(
+        Math.abs(box.x + box.width - (fieldBox!.x + fieldBox!.width)),
+        "a door ends where the search field does",
+      ).toBeLessThan(1);
+    }
     // The app's own record of the last check is read back on the Check results page in the
     // pane, opened from the chip beside the status strip (owner, 2026-09-07: the column is an
     // index); nothing about it stands in the column.

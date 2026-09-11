@@ -6,13 +6,56 @@ import type { AnswerObservation } from '@/features/library';
 import { Button, controlClass } from '@/shared/ui';
 import { AgentDoor } from './AgentDoor';
 
-export function RetainedAnswerContext({ observation, phase, historyState, older, onHome, onPrevious, onRefresh, refreshButtonRef, agentDoor = false, error, t }: {
+/**
+ * **The answer is what they opened, so the answer is what they read first** (owner,
+ * 2026-09-12).
+ *
+ * Measured in the installed app at 1512×901 on the seeded folder
+ * (`.claude/shots-2026-09-12/library-inspection/06-answer-page.png`): title, byline and
+ * the originals disclosure, then a nine-line problem card, then this block — a bold
+ * heading, three caption
+ * paragraphs, a button and a link — and the answer's own **Summary started at y=756 of 901,
+ * 84% down the viewport**. Every one of those lines is *about* the answer; none of them is
+ * the answer. A reader who pressed a saved question had to scroll past the whole apparatus
+ * to reach the sentence they asked for.
+ *
+ * This file is now two blocks with the body between them:
+ *
+ * | block | where | what it carries |
+ * |---|---|---|
+ * | `RetainedAnswerContext` | above the body | one line: what the observation found, and the press that acts on it. Everything else is behind a disclosure |
+ * | `RetainedAnswerFooter` | after the body | leaving — the previous version, and the way back to the list |
+ *
+ * ## Why the notice is one line and not a card
+ *
+ * What a returning reader needs before the answer is the one fact that could make it wrong:
+ * the cited originals changed, or one is missing, or nothing has moved. That is a sentence,
+ * and the control that acts on it belongs on the same line. The **paths** of the files that
+ * changed, the provenance caveat, and the paragraph explaining what a refresh sends to a
+ * provider are all true and all secondary, so they sit under a `<summary>` a person opens
+ * when the sentence has made them want them. The disclosure is the reason the sentence can
+ * stay one line without anything being deleted.
+ *
+ * ## What stays outside the disclosure, and why
+ *
+ * `older` and the history state are **exceptional**: they say a reader is not on the newest
+ * answer, or that the thread behind it is broken. A state that changes what the page *is*
+ * may not be hidden behind a press. The error is the same class. All three are conditional,
+ * so the routine screen pays nothing for them.
+ *
+ * ## The two controls are still not peers (2026-09-11 record, preserved)
+ *
+ * Asking for a draft acts on this answer; leaving for the list does not. The refresh stays
+ * an outlined control inside a `role="group"` whose lede is the observation sentence — now
+ * beside it rather than above it, which is the one assertion
+ * `library-answer-comparison-rows.spec.ts` had to move — and leaving drops out of the group
+ * to the very end of the page, below the answer it leaves.
+ */
+export function RetainedAnswerContext({ observation, phase, historyState, older, onRefresh, refreshButtonRef, agentDoor = false, error, t }: {
   observation: AnswerObservation;
   phase: string;
   historyState: string;
   older: boolean;
-  onHome: () => void;
-  onPrevious: (() => void) | null;
   onRefresh: (() => void) | null;
   refreshButtonRef?: RefObject<HTMLButtonElement | null>;
   /**
@@ -20,19 +63,20 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
    *
    * That sentence names only a connected coding agent, so unlike `stage.blockedNoAgent`
    * it has no second clause the door leaves unanswered. False on the web, where the
-   * missing thing is the installed app.
+   * missing thing is the app itself.
    */
   agentDoor?: boolean;
   error: string | null;
   t: ReturnType<typeof useTranslations<'library'>>;
 }) {
   const working = phase === 'preparing' || phase === 'running' || phase === 'saving';
+  const paths = (['changed', 'missing', 'added'] as const).filter((kind) => observation[kind].length);
   return (
     /*
-     * `[&_p]:max-w-[var(--measure-prose)]` rather than a cap on the section: the rules above
-     * and below this block are drawn by the inner `border-y`, and narrowing that would turn a
-     * column-wide divider into a short dash. The cap belongs on the lines a person reads
-     * (2026-09-11 prose-measure calibration — `app/globals.css`, `--measure-prose`).
+     * `[&_p]:max-w-[var(--measure-prose)]` rather than a cap on the section: the rule below this
+     * block is drawn by the inner `border-b`, and narrowing that would turn a column-wide
+     * divider into a short dash. The cap belongs on the lines a person reads
+     * (`app/globals.css`, `--measure-prose`).
      *
      * `[&_p]:[word-break:keep-all]` travels with it. A narrower line is a line that wraps, and
      * `word-break: normal` breaks Hangul between any two syllables — the same defect
@@ -41,59 +85,87 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
      * can still break out of its box while a Korean sentence cannot break inside a word.
      */
     <section data-testid="retained-answer-context" className="mx-auto mt-4 w-full max-w-[var(--measure-doc-column)] px-6 [&_p]:max-w-[var(--measure-prose)] [&_p]:[word-break:keep-all] md:px-10" aria-label={t('answers.evidence')}>
-      <div className="border-y border-[color:var(--color-divider)] py-4">
+      <div role="group" aria-label={t('answers.refresh')} className="border-b border-[color:var(--color-divider)] pb-4">
         <p role="status" aria-live="polite" className="sr-only">{working ? t(`answers.phase.${phase}`) : ''}</p>
-        <p data-testid="answer-evidence-state" data-state={observation.state} className="text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t(`answers.state.${observation.state}`)}</p>
-        {(['changed', 'missing', 'added'] as const).map((kind) => observation[kind].length ? (
-          <p key={kind} className="mt-1 break-words text-caption leading-body text-[color:var(--color-text-secondary)]">
-            {t(`answers.paths.${kind}`)}: {observation[kind].join(' · ')}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          {/*
+            **The group's lede and the observation are one sentence, not two.** It used to be
+            a `text-body` strong line stacked over a separate caption that explained the
+            press; the two said the same thing in two grades, and together they were the top
+            of a block that pushed the answer to 84% of the viewport. `text-label` is the
+            grade this screen already gives a sentence that explains a control
+            (`.claude/rules/design.md`, the 2026-08-09 finding), and `id` keeps it the
+            element the refresh is described by.
+          */}
+          <p
+            id="answer-refresh-lede"
+            data-testid="answer-evidence-state"
+            data-state={observation.state}
+            className="min-w-0 flex-1 text-label leading-body text-[color:var(--color-text-secondary)]"
+          >
+            {t(`answers.state.${observation.state}`)}
           </p>
-        ) : null)}
-        <p className="mt-2 text-caption leading-body text-[color:var(--color-text-secondary)]">{t('answers.provenance')}</p>
-        {older ? <p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('answers.older')}</p> : null}
-        {historyState !== 'none' ? <p data-testid="answer-history-state" className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t(`answers.history.${historyState}`)}</p> : null}
-        {/*
-          **Asking for a new draft is not "go back", so they are not peers** (the 2026-09-11
-          record's Why: a refresh button was mistaken for a read-only review action). The two
-          controls that act on *this* answer — request a draft, read the version before it —
-          stand together in a group whose lede says what pressing them does, and leaving for
-          the list drops out of the group as a plain link below it. It stays a `<button>`: it
-          performs in-app selection, not navigation to a URL.
-
-          **Drawn without an agent, disabled, beside its reason** (`docs/DECISIONS.md`,
-          2026-09-11, "The Library keeps its spine, and computes the structural check
-          itself"). It used to vanish, leaving `answers.refreshUnavailable` explaining
-          the absence of a control a reader had never seen — a feature the product has
-          is always on screen, and availability is a state with its reason. That reason is
-          now the group's lede, so the sentence a person reads before pressing and the
-          sentence explaining why they cannot occupy one place.
-        */}
-        <div role="group" aria-label={t('answers.refresh')} className="mt-3">
-          <p id="answer-refresh-lede" className="text-caption leading-body text-[color:var(--color-text-secondary)]">{t(onRefresh ? 'answers.refreshHint' : 'answers.refreshUnavailable')}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <span className="flex flex-none flex-wrap items-center gap-2">
             {/*
-             * **The door, inside the group whose lede is the reason** (slice U2). The
-             * sentence above says a refresh needs a connected coding agent, and until
-             * 2026-09-11 that was the end of it — a reason with no way to act on it. It
-             * stands first in the row because it is the only live control here: the
-             * refresh beside it is disabled, which is the state the lede explains.
+             * **The door, beside the reason the disclosure holds** (slice U2). The refresh is
+             * disabled without a connected coding agent and `answers.refreshUnavailable` says
+             * so; this is the only live control in that state, so it stands first.
              */}
             {agentDoor && onRefresh === null ? <AgentDoor testId="answer-refresh-blocked-door" /> : null}
             <Button ref={refreshButtonRef} className="atlas-touch-floor max-w-full" size="sm" variant="outline" disabled={working || onRefresh === null} aria-describedby="answer-refresh-lede" onClick={onRefresh ?? undefined} data-testid="answer-refresh-start">{t(working ? `answers.phase.${phase}` : 'answers.refresh')}</Button>
-            {onPrevious ? <Button className="atlas-touch-floor max-w-full" size="sm" variant="ghost" onClick={onPrevious}>{t('answers.previous')}</Button> : null}
-          </div>
+          </span>
         </div>
-        <p className="mt-3">
-          <button
-            type="button"
-            onClick={onHome}
-            data-testid="answer-back-home"
-            className={controlClass({ shape: 'link', tone: 'muted', hoverInk: 'strong', className: 'atlas-touch-floor text-body' })}
-          >
-            {t('answers.back')}
-          </button>
-        </p>
-        {error ? <p role="alert" className="mt-3 text-body leading-body text-[color:var(--color-text-primary)]">{error}</p> : null}
+        {/*
+          The paths, the provenance caveat and what a refresh sends — every line that is true
+          and none that a reader needs before the answer itself.
+        */}
+        <details data-testid="answer-evidence-detail" className="mt-2">
+          <summary className={controlClass({ shape: 'link', size: 'sm', tone: 'muted', hoverInk: 'strong', className: 'atlas-touch-floor text-label' })}>
+            {t('answers.evidenceMore')}
+          </summary>
+          <div className="mt-2 flex flex-col gap-1">
+            {paths.map((kind) => (
+              <p key={kind} data-testid={`answer-evidence-paths-${kind}`} className="break-words text-label leading-body text-[color:var(--color-text-tertiary)]">
+                {t(`answers.paths.${kind}`)}: {observation[kind].join(' · ')}
+              </p>
+            ))}
+            <p className="text-label leading-body text-[color:var(--color-text-tertiary)]">{t(onRefresh ? 'answers.refreshHint' : 'answers.refreshUnavailable')}</p>
+            <p data-testid="answer-provenance" className="text-label leading-body text-[color:var(--color-text-tertiary)]">{t('answers.provenance')}</p>
+          </div>
+        </details>
+        {/* Not behind a press: each of these says the page is not what a reader assumes. */}
+        {older ? <p className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)]">{t('answers.older')}</p> : null}
+        {historyState !== 'none' ? <p data-testid="answer-history-state" className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)]">{t(`answers.history.${historyState}`)}</p> : null}
+        {error ? <p role="alert" className="mt-2 text-body leading-body text-[color:var(--color-text-primary)]">{error}</p> : null}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * **Leaving, after the answer rather than before it.**
+ *
+ * The way back to the question list and the previous revision both take a reader *off* this
+ * answer, so they belong where the answer ends. They were 300px above the answer's own
+ * Summary until 2026-09-12.
+ */
+export function RetainedAnswerFooter({ onHome, onPrevious, t }: {
+  onHome: () => void;
+  onPrevious: (() => void) | null;
+  t: ReturnType<typeof useTranslations<'library'>>;
+}) {
+  return (
+    <section data-testid="retained-answer-footer" className="mx-auto mt-6 w-full max-w-[var(--measure-doc-column)] px-6 pb-8 md:px-10">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[color:var(--color-divider)] pt-4">
+        {onPrevious ? <Button className="atlas-touch-floor max-w-full" size="sm" variant="ghost" data-testid="answer-previous" onClick={onPrevious}>{t('answers.previous')}</Button> : null}
+        <button
+          type="button"
+          onClick={onHome}
+          data-testid="answer-back-home"
+          className={controlClass({ shape: 'link', tone: 'muted', hoverInk: 'strong', className: 'atlas-touch-floor text-body' })}
+        >
+          {t('answers.back')}
+        </button>
       </div>
     </section>
   );

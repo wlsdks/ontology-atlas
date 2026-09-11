@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — The reading column is worth more of its pane than the measure was buying
+
+**Why**: the owner read a wiki page in the app at 1512: *"isn't the empty space to the left of the text far too much? make the text run wider — stretch left and right at once."* Measured on that frame: a 500px line of 14px text in a 1168px pane, 334px of nothing on its left, because the column was the measure spent at `text-body-lg` and the outline rail took the mirror of its own lane out of the other side.
+**Prior**: none in this ledger. The 2026-09-11 calibration that set `--measure-prose` to `60ch` lived only in `docs/DESIGN-SYSTEM.md` and its spec; this supersedes both numbers. Cites 2026-09-08 "`--measure-doc-column: 760px` replaces the literal at eleven sites".
+**Decision**: `--measure-prose-steps` 60 → 66, spent at a new ramp step `--text-reading` (16px, paired with `leading-prose`): the column is **709.1px**, the line **629.1px** — 86 Latin characters, 46 Hangul syllables. Captions, labels and tables keep their grades. The pane stops paying for the rail twice: `DocReadingPane` reserves `gap 32 + railWidth` on the rail's own side and the column centres in what is left, so both gutters are equal by construction, which keeps the 200px rail at a 1168px pane where the old form would have deleted it. After, at 1512×901: the line runs 497.5 → 1126.5 where it ran 677.8 → 1177.8 and the left void falls 334 → 153px.
+**Dissent**: the 45–75 characters-per-line guidance, which 60 steps met at 78 and 66 breaks at 86. Not adopted: the owner judged the rendered frame, the guidance is Latin-only, and the same step lifts Hangul from 36 syllables to 46 — the first width at which a `break-keep` Korean paragraph stops stranding a particle alone.
+**Falsifier**: a walker who loses their line on the wiki page at 1512, or a Hangul page wrapping under 40 syllables — then the guidance was right and the step comes back down.
+**Owner**: jinan
+
 ## 2026-09-11 — The Library reads a source only when a person names it, and is useful before an agent exists
 
 **Why**: a first-day person with six files and no coding agent typed "T+2" and found nothing: sources matched by path only, although `settlement-policy.md` says it on line 11; the only forward door started a multi-hundred-MB agent download; the blocked reason opened no door while the rail already carries Agents. The third target tier leaves here.

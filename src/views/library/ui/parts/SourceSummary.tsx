@@ -66,7 +66,7 @@ const SOURCE_OUTLINE_HEADING_ID = "library-source-outline-heading";
 function outlineRows(
   outline: SourceOutline,
   t: ReturnType<typeof useTranslations<"library">>,
-): Array<{ text: string; anchor?: string }> {
+): { rows: Array<{ text: string; anchor?: string }>; count: string | null } {
   const rows: Array<{ text: string; anchor?: string }> = [];
   for (const sheet of outline.sheets) {
     rows.push({ text: t("source.outline.sheet", { sheet: sheet.sheet, rows: sheet.rows }) });
@@ -74,14 +74,24 @@ function outlineRows(
   for (const heading of outline.headings) {
     rows.push({ text: heading.title, anchor: heading.anchor });
   }
+  /*
+   * ⚠️ **A count is not a row** (owner, 2026-09-12: *"this got very strange, and not
+   * refined"*). The paragraph and record totals were pushed into this list beside the
+   * headings, so a DOCX outline ended in a `text-body` primary line that looked like one
+   * more heading a reader could press and could not — the list had two grammars and its
+   * last row was the wrong one. The total is a fact about the whole section, so it rides
+   * on the section's own label instead (`source.outline.title` plus the count), leaving the
+   * list to hold
+   * addresses only.
+   */
   const paragraphs = outline.unitCount - outline.headings.length;
-  if (outline.format === "docx" && paragraphs > 0) {
-    rows.push({ text: t("source.outline.paragraphs", { count: paragraphs }) });
-  }
-  if (outline.format === "csv") {
-    rows.push({ text: t("source.outline.records", { count: outline.unitCount }) });
-  }
-  return rows;
+  const count =
+    outline.format === "docx" && paragraphs > 0
+      ? t("source.outline.paragraphs", { count: paragraphs })
+      : outline.format === "csv"
+        ? t("source.outline.records", { count: outline.unitCount })
+        : null;
+  return { rows, count };
 }
 
 /**
@@ -97,6 +107,24 @@ function outlineRows(
  * (primary → tertiary) plus the leading pair (23.8 vs 20), because a 1.5px size step
  * alone would not carry one winner.
  */
+/**
+ * **A row's text starts on the reading column's one text edge; only its fill steps past it.**
+ *
+ * This pane is a document column: the file's name, the `LABEL / value` facts table, the
+ * two section labels and the passage all begin at one x (677.8 at 1512). Its pressable
+ * rows did not — measured in the installed app (baseline
+ * `.claude/shots-2026-09-12/library-inspection/07-docx-pane.png`): the write-up rows'
+ * glyphs stood at 687 and the outline rows' text at 686, eight to ten pixels inside the
+ * labels that name them, because each row was paying for its own hover fill out of the
+ * column's edge. The row gives that padding back as a negative margin, which the 40px
+ * column gutter has room for — the list carries the negative margin and the row keeps its
+ * own `px-2.5`, because `shape: "row"` emits `w-full` and a `-mx` on a full-width row
+ * bleeds left while staying put on the right. `docs/DESIGN-SYSTEM.md`, "One text edge per
+ * column".
+ */
+const PANE_LIST_BLEED = "-mx-2.5";
+const PANE_ROW_INSET = "px-2.5";
+
 function PassageLine({ unit, cited }: { unit: SourceUnit; cited: boolean }) {
   return (
     <p
@@ -104,7 +132,7 @@ function PassageLine({ unit, cited }: { unit: SourceUnit; cited: boolean }) {
       className={cn(
         "max-w-[var(--measure-prose)] whitespace-pre-wrap [overflow-wrap:break-word] [word-break:keep-all]",
         cited
-          ? "text-body-lg leading-prose text-[color:var(--color-text-primary)]"
+          ? "text-reading leading-prose text-[color:var(--color-text-primary)]"
           : "text-body leading-body text-[color:var(--color-text-tertiary)]",
       )}
     >
@@ -291,8 +319,10 @@ export function SourceSummary({
    * no structure worth listing (Markdown, text, HTML).
    */
   const outlineReady = outline && outline.phase === "ready" ? outline.outline : null;
-  const outlineList = outlineReady ? outlineRows(outlineReady, t) : [];
-  const outlineUnreadable = outlineReady !== null && outlineList.length === 0;
+  const outlineRead = outlineReady ? outlineRows(outlineReady, t) : { rows: [], count: null };
+  const outlineList = outlineRead.rows;
+  const outlineUnreadable =
+    outlineReady !== null && outlineList.length === 0 && outlineRead.count === null;
   const openedSentence =
     passage !== null
       ? "source.openedForCitation"
@@ -418,7 +448,7 @@ export function SourceSummary({
            * repository's name for "a whole list row that is pressable", and taking it
            * brings the leading glyph, the left alignment and the 36px step with it.
            */
-          <ul className="mt-2 flex flex-col gap-0.5">
+          <ul className={`mt-2 flex flex-col gap-0.5 ${PANE_LIST_BLEED}`}>
             {writeUps.map((page) => (
               <li key={page.slug}>
                 <RowButton
@@ -434,7 +464,7 @@ export function SourceSummary({
                    */
                   title={page.slug}
                   tone="muted"
-                  className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                  className={`${PANE_ROW_INSET} hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]`}
                 >
                   <BookText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
                   <span className="min-w-0 flex-1 truncate">{page.title}</span>
@@ -563,6 +593,9 @@ export function SourceSummary({
             className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]"
           >
             {t("source.outline.title")}
+            {outlineRead.count ? (
+              <span data-testid="library-source-outline-count"> · {outlineRead.count}</span>
+            ) : null}
           </h3>
           {outline.phase === "reading" ? (
             <p className="mt-2 text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]">
@@ -591,7 +624,7 @@ export function SourceSummary({
               {t("source.outline.unreadable")}
             </p>
           ) : (
-            <ul data-testid="library-source-outline-list" className="mt-2 flex flex-col gap-1">
+            <ul data-testid="library-source-outline-list" className={`mt-2 flex flex-col gap-1 ${PANE_LIST_BLEED}`}>
               {outlineList.map((line, index) => (
                 <li key={`${index}-${line.anchor ?? line.text}`}>
                   {line.anchor && onOpenPassage ? (
@@ -618,16 +651,17 @@ export function SourceSummary({
                         tone: "accent",
                         hoverInk: "strong",
                         hoverSurface: "lift",
-                        className: "atlas-touch-floor w-full text-body",
+                        className: `atlas-touch-floor w-full ${PANE_ROW_INSET} text-body`,
                       })}
                     >
                       <span className="min-w-0 flex-1 truncate text-left">{line.text}</span>
                     </button>
                   ) : (
-                    /* `px-2` is the row control's own horizontal padding: measured at
-                       1440, the pressable rows' text started at x=650 and this one at 642,
-                       so one list had two left edges (guardian, 2026-09-11). */
-                    <span className="block px-2 text-body leading-body text-[color:var(--color-text-secondary)] [overflow-wrap:break-word] [word-break:keep-all]">
+                    /* No inset: the pressable rows beside it now bleed their own padding,
+                       so every line in this list — pressable or not — starts on the
+                       column's text edge (it used to match the rows' `px-2` instead,
+                       which put the whole list 8px inside its own label). */
+                    <span className={`block ${PANE_ROW_INSET} text-body leading-body text-[color:var(--color-text-secondary)] [overflow-wrap:break-word] [word-break:keep-all]`}>
                       {line.text}
                     </span>
                   )}
@@ -734,8 +768,8 @@ export function SourceSummary({
                 * - `text-label`/secondary is **11px · 16px · rgb(208,214,224)** — exactly
                 *   the facts `dd` two rows up, so the answer to the press reads as another
                 *   metadata row and the pane's moment has no winner (design-lead);
-                * - `text-body-lg`/`leading-prose`/primary is **14px · 23.8px ·
-                *   rgb(247,248,248) · 500.391px** — exactly `PassageLine cited`, the one
+                * - `text-reading`/`leading-prose`/primary is **16px · 27.2px ·
+                *   rgb(247,248,248) · 629.06px** — exactly `PassageLine cited`, the one
                 *   pair this section reserves for the file's own words, so a sentence *about*
                 *   a missing passage wears the clothes of quoted evidence
                 *   (design-interaction).
@@ -746,8 +780,8 @@ export function SourceSummary({
                 * attention deficit is a weaker fault than a voice a person cannot attribute.
                 * So the value is neither seat's: **`text-body` · `leading-body` · primary**
                 * — 12.5px/20px/rgb(247,248,248). One size step and one ink step above the
-                * facts rows, and three channels below the quote: smaller (12.5 vs 14), UI
-                * leading rather than prose (20 vs 23.8), and no card. The card stays absent
+                * facts rows, and three channels below the quote: smaller (12.5 vs 16), UI
+                * leading rather than prose (20 vs 27.2), and no card. The card stays absent
                 * for the reason it always was — a card here would read as a quotation, and
                 * there is nothing to quote.
                 *

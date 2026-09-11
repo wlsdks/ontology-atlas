@@ -1,4 +1,4 @@
-import { DOC_COLUMN_GUTTER_PX, DOC_COLUMN_PX } from "@/shared/ui/reading-measure";
+import { DOC_COLUMN_PX } from "@/shared/ui/reading-measure";
 
 /**
  * The outline rail's two verdicts — how many headings earn it, and how wide the
@@ -40,33 +40,63 @@ export function shouldShowOutlineRail(headingCount: number): boolean {
  * holding a relationship to the column at all.
  *
  * The rail is now positioned from the column: its left edge is the column's right edge plus
- * `--measure-doc-gutter`. Clearance is therefore **constructed, not checked**, and the only
- * question left is whether the rail *fits* between the column and the pane's right edge. With
- * the column centred (`mx-auto`) the space on that side is `(W − C) / 2`, so:
+ * one gap. Clearance is therefore **constructed, not checked**, and the only question left is
+ * whether the rail *fits* beside the column.
  *
- *     (W − C) / 2  ≥  gutter + railWidth + trailing reserve
+ * ## The rail owns a lane; it no longer eats one gutter twice (2026-09-12)
+ *
+ * Until 2026-09-12 the column was centred in the **whole** pane and the rail lived in the
+ * right-hand half of what the centring left over. The pane therefore had to be wide enough
+ * for the rail *and* for a mirror of the rail on the other side:
+ *
  *     W  ≥  C + 2 × (gutter + railWidth + trailing reserve)
  *
- * | rail | floor before (clear the text) | floor now (fit beside the column) |
+ * At `C = 580.4` that was 1045 / 1109 and a 1168px pane cleared it. At `C = 709.1` — the
+ * measure the owner asked for on 2026-09-12 — the same form asks for **1174 / 1238**, so the
+ * rail would have vanished from a 1512 window with no dock. Nothing about the rail had
+ * changed; the arithmetic was paying for the lane twice.
+ *
+ * So the lane is reserved once, on the side it is actually on. `DocReadingPane` gives the
+ * scroller `padding-right: gap + railWidth`, the column centres in what is left, and the rail
+ * stands one gap past the column's right edge. The composition is
+ * `[gutter] [column] [gap] [rail] [gutter]` with the two outer gutters equal **by
+ * construction** — which is why the old trailing reserve is now a minimum *gutter* and the
+ * floor is:
+ *
+ *     W  ≥  C + gap + railWidth + 2 × minGutter
+ *
+ * | rail | floor at C=580.4 (2026-09-11) | floor now, C=709.1 |
  * |---|---|---|
- * | 168px | 1096 | **1045** |
- * | 200px | 1192 | **1109** |
+ * | 168px | 1045 | **1006** |
+ * | 200px | 1109 | **1038** |
  *
- * Both floors fall, because a rail that starts one gutter past the column needs less room
- * than one that had to clear a 680px content run centred in the pane. The consequence is
- * reported rather than tuned: a pane of 1168 (a 1512 window with no dock) was `narrow` before
- * and is `wide` now, so the rail there is 200px instead of 168.
+ * Measured consequence at 1512 with no dock (pane 1168, `wide`): the column's own text runs
+ * 497.5 → 1126.5 where it ran 677.8 → 1177.8, the left void falls from 334px to 153px, and the
+ * rail's glyphs move from 1270 to 1211. The rail keeps the 200px tier it gained in 2026-09-11.
  *
- * Every number comes from `src/shared/ui/reading-measure.ts` or from the two rail widths
- * below; none is a fresh literal.
+ * Every number comes from `src/shared/ui/reading-measure.ts`, from the gap below, or from the
+ * two rail widths; none is a fresh literal.
  */
 
 /**
- * The rail's own trailing breathing room against the pane's right edge. It was the `right-6`
- * the rail used to be anchored by; with the rail anchored to the column instead, the same 24px
- * survives as the reserve the fit arithmetic keeps free on that side.
+ * The distance between the column's right edge and the rail's left edge.
+ *
+ * It was `--measure-doc-gutter` (40) while the rail was one gutter past the column. It is its
+ * own number now because it is a different quantity: 40 is the inset *inside* the column's box,
+ * and this is the space *between* two boxes. 32 is the step the brief for this slice asked for
+ * and the one the pane composition is measured at.
  */
-const OUTLINE_RAIL_TRAILING_RESERVE = 24;
+export const OUTLINE_RAIL_COLUMN_GAP = 32;
+
+/**
+ * The smallest gutter the composition leaves outside the column and outside the rail.
+ *
+ * The two are equal by construction — reserving the lane on one side only makes the leftover
+ * split evenly — so this single floor answers both. It was a 24px *trailing* reserve while the
+ * rail hung off the pane's right edge; 48 is what the slice's composition asks for and what
+ * keeps the column clear of the pane's own edge at the floor.
+ */
+const OUTLINE_RAIL_MIN_GUTTER = 48;
 
 /** The two widths the rail wears. `DocReadingOutlineRail` reads these rather than repeating them. */
 export const OUTLINE_RAIL_NARROW_WIDTH = 168;
@@ -82,10 +112,35 @@ export const OUTLINE_RAIL_WIDTH_CLASS = {
   wide: "w-[200px]",
 } as const;
 
-/** The pane width at which a rail of `railWidth` first fits one gutter past the column. */
+/**
+ * The lane the pane reserves on the rail's side: one gap plus the rail's own width.
+ *
+ * `200 = 32 + 168` and `232 = 32 + 200`. Literals for the same reason the widths above are —
+ * Tailwind emits a utility only for a class name it can find written out — and asserted
+ * against the constants in `outline-rail.test.ts` so the pair cannot drift.
+ */
+export const OUTLINE_RAIL_LANE_CLASS = {
+  narrow: "pr-[200px]",
+  wide: "pr-[232px]",
+} as const;
+
+/**
+ * Where the rail stands, as an offset from the **pane's** centre.
+ *
+ * The rail is absolutely positioned in the pane, while the column is centred in the pane
+ * *minus the lane* — so the column's centre is half a lane left of the pane's, and the rail's
+ * left edge is `50% − lane/2 + column/2 + gap`. Folded: `50% + column/2 − (lane/2 − gap)`,
+ * i.e. −68px narrow (100 − 32) and −84px wide (116 − 32).
+ */
+export const OUTLINE_RAIL_LEFT_CLASS = {
+  narrow: "left-[calc(50%_+_var(--measure-doc-column)_/_2_-_68px)]",
+  wide: "left-[calc(50%_+_var(--measure-doc-column)_/_2_-_84px)]",
+} as const;
+
+/** The pane width at which a rail of `railWidth` first fits one gap past the column. */
 export function outlineRailPaneFloor(railWidth: number): number {
   return Math.ceil(
-    DOC_COLUMN_PX + 2 * (DOC_COLUMN_GUTTER_PX + railWidth + OUTLINE_RAIL_TRAILING_RESERVE),
+    DOC_COLUMN_PX + OUTLINE_RAIL_COLUMN_GAP + railWidth + 2 * OUTLINE_RAIL_MIN_GUTTER,
   );
 }
 

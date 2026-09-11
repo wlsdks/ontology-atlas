@@ -4550,9 +4550,9 @@
     "wiki": {
       "header": "Wiki · {count}",
       "listAria": "Wiki pages in this folder",
-      "compile": "Compile",
+      "compile": "Ask the agent to compile",
       "compileTooltip": "Read sources and update their write-ups. Retained answers are reported for separate review and refresh.",
-      "lint": "Check the wiki",
+      "lint": "Check page format",
       "lintTooltip": "Start one agent turn that reads the wiki pages and reports disagreements, superseded claims, missing links, and names without a page. It writes nothing.",
       "candidateKind": {
         "domain": "domain",
@@ -4649,7 +4649,8 @@
         "dangling-wikilink": "`[[{target}]]` names a page that is not in this folder. Link to a page that exists, or write the page.",
         "orphan-page": "No other page links here. A page nobody points at is reached only by its file name; link it from the page that talks about its topic.",
         "shared-source-unlinked": "`{other}` also lists {sources}, and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them."
-      }
+      },
+      "findingCount": "{count} findings"
     },
     "shelf": {
       "listAria": "Wiki pages and their source versions",
@@ -4943,7 +4944,8 @@
         "older": "Earlier version",
         "alternative": "Alternative draft",
         "unresolved": "History incomplete"
-      }
+      },
+      "evidenceMore": "Show what was observed"
     }
   },
   "libraryImport": {
