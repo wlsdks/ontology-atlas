@@ -18,8 +18,12 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  *    pixels**, because that is the only place the dim exists;
  * 3. the wheel changes the scale rather than scrolling the page;
  * 4. the fit control brings the whole picture back;
- * 5. under `prefers-reduced-motion` the canvas is **identical** frame to frame — no
- *    settle, no drift;
+ * 5. under `prefers-reduced-motion` the canvas is **identical** frame to frame **at rest**
+ *    — no settle, no drift. At rest is the whole of the claim since 2026-09-12: the dim
+ *    ramp keeps its `--motion-fast` at both settings, because it moves no mark and a hand's
+ *    own move keeps its time (`docs/DECISIONS.md`, "The Library canvas's ink ramp keeps its
+ *    120ms under reduced motion"). This case measures three hashes with no pointer on the
+ *    canvas and no clause held, which is exactly the narrowed claim;
  * 6. once it has settled the canvas is still and the loop stops asking for frames, hover
  *    included — the 2026-09-08 reversal of the ambient drift, which was a *display* offset
  *    the loop applied after the view transform, so nothing a settled simulation could say
@@ -143,9 +147,8 @@ async function openGraph(page: Page): Promise<void> {
   // covering the canvas and intercepting every pointer event.
   await page.goto("/en/library/?guides=off&e2e=1");
   await page.getByTestId("library-open-vault").click();
-  await page.getByTestId("library-graph-open").click();
-  await expect(page.getByTestId("library-graph-dialog")).toBeVisible();
-  await expect(page.getByTestId("library-graph-dialog").getByTestId("library-graph-canvas")).toBeVisible();
+  // The picture is the home (2026-09-12): nothing is chosen, so the canvas is already up.
+  await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
   await expect
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.nodes().length ?? 0), {
       timeout: 15_000,
@@ -385,6 +388,24 @@ test.describe("the library graph responds", () => {
           }
           return (hash >>> 0).toString(16);
         });
+
+      /*
+       * ⚠️ **The pointer leaves the canvas first, and that is the whole of "at rest."**
+       *
+       * `openGraph` ends on a click, which parks the mouse wherever that control was — and
+       * on CI's viewport that landed **over the picture**, so the first hash was taken with
+       * a mark hovered and the dim ramp running. Measured 2026-09-11 on GitHub's runner:
+       * frame 1 `71219841`, frame 2 `fa10ee96`, green on every local run. Since 2026-09-12
+       * the ramp keeps its `--motion-fast` at both settings (`docs/DECISIONS.md`, "The
+       * Library canvas's ink ramp keeps its 120ms under reduced motion"), so a held hover
+       * is a moving picture by decision, and this case is about the state with **no pointer
+       * on the canvas and no clause held** — which is what that record's falsifier names.
+       * Moving to the origin and letting one ramp's worth of time pass is what makes the
+       * instrument measure the claim instead of the mouse's last resting place.
+       */
+      await page.mouse.move(0, 0);
+      await expect(page.getByTestId("library-graph-canvas")).toHaveAttribute("data-hovered-node-id", "");
+      await page.waitForTimeout(300);
 
       const first = await frameHash();
       // Longer than one ambient period would have moved a mark by its full amplitude.

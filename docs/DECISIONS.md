@@ -63,7 +63,7 @@ record stays in Git history before commit `e4fb49a89`.
 **Falsifier**: a person who misses a toast because they were not looking at the pane that raised it; or a corner-anchored box standing over the control that raised it.
 **Owner**: jinan
 
-## 2026-09-12 (2) — The provider disclosure is an on-demand fact about the place, not a paragraph at the press
+## 2026-09-12 — The provider disclosure is an on-demand fact about the place, not a paragraph at the press
 
 **Why**: the owner, on the same screen: *"text like 'the coding agent sends requests directly to its provider and Atlas does not record that traffic…' — shouldn't that be handled as a tooltip?"* Measured on the owner's folder, one journey printed that paragraph in up to three places — the shelf's step two, the index under its door group, an open source's pane beside Compile — four wrapped lines of 11px each time, which is how a reader learns to skip a disclosure.
 **Prior**: 2026-09-06 "the disclosure lives where Compile can be pressed" stands for the connect-by-address runner's sentence and is narrowed: its agent-route clause is overturned. 2026-09-07 "the Library index's description is a glyph" stands and is what this reuses.
@@ -72,7 +72,7 @@ record stays in Git history before commit `e4fb49a89`.
 **Falsifier**: a person who believes Atlas logs their coding agent's provider traffic; or an Atlas-performed transfer reachable without a sentence at its press.
 **Owner**: jinan
 
-## 2026-09-12 (3) — The Library index's head is one row, and the fold is sized to the title
+## 2026-09-12 — The Library index's head is one row, and the fold is sized to the title
 
 **Why**: the owner, same screen: *"the fold icon's size and position — why is it like this? It should be centred the same as the text beside it, and bigger. And a label like 'in this folder' is not even needed; it is odd that it is there at all."* Measured at 1512: an `IN THIS FOLDER` eyebrow in 11px caps on its own 14px row, naming the scope of a column already showing it, with the fold on that row — 9.0px of ink whose centre stood 29.5px above the title's, and a right edge 4px past the column's box edge.
 **Prior**: 2026-09-07 "The Library index is a switch between two lists, and its description is a glyph" stands and is the frame; this removes the eyebrow that record left above the title and moves the fold off it.
@@ -80,6 +80,25 @@ record stays in Git history before commit `e4fb49a89`.
 **Dissent**: `ICON_SIZE.md` (14) is the ramp's documented pair for a `text-body-lg` title and matches its cap height exactly; it loses because 10.5px of ink is a 1.5px change to a glyph the owner had already read as too small.
 **Falsifier**: a person who cannot find the fold, or reads the head as two controls rather than one row; or a press at the fold that the panel takes.
 **Owner**: jinan
+
+## 2026-09-12 — The Library canvas's ink ramp keeps its 120ms under reduced motion
+
+**Why**: under `prefers-reduced-motion: reduce` at 1512, pressing `3 sources changed` landed the dim in **one frame, a single 0.3995 step**, both directions — the hard cut the ordinary path had just been repaired of — while the panel beside the canvas kept its 180ms crossfade.
+**Prior**: narrows the byte-identical-frames falsifier of 2026-09-07 "The Library graph is a live force simulation with a bounded drift" to the canvas **at rest**: it bounded the drift clause that 2026-09-08 "The Library graph stands still" deleted, and the same record's dim ("35% over `--motion-fast`") never carried a reduced-motion carve-out. Extends D7 2026-07-28 (WCAG 2.2 2.3.3: a hand's own move keeps its time) to this canvas.
+**Decision**: the `reducedMotion` snap leaves the dim ramp in `use-library-graph-engine.ts`; the ink rides `--motion-fast` at both settings. No axis is added: the painted bounding box and the lit-pixel count are identical before the press and after Escape (9108 at ordinary motion, 8959 under `reduce`), and `settling` still drops the loop when the ramp lands, so an idle reduced-motion canvas stays byte-identical frame to frame. Measured after: 14 changing frames over 114ms, worst step 0.0599.
+**Dissent**: design-motion's own 2026-09-07 dissent read the other way — a preference asking for less motion should get less, and 120ms of ink nobody asked for is still 120ms.
+**Falsifier**: a reduced-motion reader who reports this graph as animating; any frame differing with no pointer on the canvas and no clause held.
+**Owner**: jinan
+
+## 2026-09-12 — The Library's home is the folder's graph; the guide and the questions are doors
+
+**Why**: the owner, on the installed app: *"is this gather-compile-read screen just the main one? why every time..? put it behind a How-to-use button"*; of the graph, *"an ugly popup, very poor"*.
+**Prior**: restores 2026-09-06 "The Library pane is the graph; the shelf is a popup", falsifier standing — with the <=560px popup, self-raise and header strip that 2026-09-06 "An empty Library folder is an empty state" overturned; its empty-folder stage stands. Overturns the always-draws clause of 2026-09-11 "The Library keeps its spine" on its own dissent ("once answers exist the stage is noise above the list"); its "Overturns nothing" was wrong against `:587`. Narrows "Graph remains an explicit supporting view" (2026-09-11 "Library retains questions") to reading. Retires the landing's synapse field from 2026-09-09 "The Library gets a ground": it was ground for cards.
+**Decision**: with nothing chosen the pane is the folder's graph at full height; the `Graph` chip and its dialog go. One `text-label` row holds the counts and three presses: `Compile next: <source>`, the one accent ink, opens Compile; `N sources changed` lights that citation and its two ends, moving no mark; `N off-template` opens the report. Then `How to use`, the questions, `Check result`. The guide is `transientSurface("anchored")` <=560px on its door, raised once per machine (`atlas.library.guide-seen`). At one saved answer the questions door is that question: reopening stays one press.
+**Dissent**: design-lead, 2026-09-06: a guide behind a chip is one nobody opens twice. design-interaction: a self-raising popover is a modal in softer clothes; po-leverage: cut the self-raise, the half of the sentence offered as an alternative.
+**Falsifier**: cold walkers who cannot name the next press within 10s of the home; a canvas band under 60% of its width at 1512 or 1040; the guide reopened by hand in one sitting; a clause press that moves a mark; one saved answer not reopenable in one press.
+**Owner**: jinan
+
 
 ## 2026-09-12 — The dogfood repository outgrew the cap its own product ships
 

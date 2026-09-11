@@ -21,13 +21,12 @@ import {
   type LibraryIndexSegment,
 } from "@/shared/lib/appearance-preferences";
 
-import { isAdvisoryWikiCode, isWikiFolderCode } from "../../lib/merge-wiki-verdict";
+import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount } from "../../lib/merge-wiki-verdict";
 import { captionWindow } from "../../lib/caption-window";
 import { passageLabelText } from "../../lib/passage-label";
 import { useSourceSearch } from "../../lib/use-source-search";
 import { LibraryShelf } from "./LibraryShelf";
 import { StateBadge } from "./StateBadge";
-import { libraryWaitingLine } from "../../lib/stage-steps";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 
 /**
@@ -485,12 +484,8 @@ export function LibrarySection({
   const [newPageTitle, setNewPageTitle] = useState("");
   const hasSources = model.sources.length > 0;
   const hasWiki = model.wikiPages.length > 0;
-  /** What is still waiting, in words — the same line step two's caption prints. */
-  const waitingLine = libraryWaitingLine(model, t);
   /** Pages whose **own** shape misses the template — the rows that wear the amber pill. */
-  const offTemplateRows = [...model.verdicts.values()].filter((verdict) =>
-    verdict.problems.some((problem) => !isWikiFolderCode(problem.code)),
-  ).length;
+  const offTemplateRows = libraryOffTemplateCount(model.verdicts);
 
   /*
    * One field, both halves (2026-09-07): it filters whichever list the switch shows, on
@@ -795,9 +790,23 @@ export function LibrarySection({
                 <OtherHalf count={visiblePages.length} segment="wiki" t={t} />
               </ListNote>
             ) : null}
-            {waitingLine ? (
-              <ListNote testId="library-needs-compile">{waitingLine}</ListNote>
-            ) : null}
+            {/*
+             * ⚠️ **The waiting count is not a footnote under the list any more** (owner,
+             * 2026-09-12): *"this 'one source version needs review' line — written like
+             * this, who is ever going to look at it? … a different way is needed."*
+             *
+             * It was a `text-caption` sentence at the quaternary ink, below the last row
+             * and above nothing, stating the one fact on this screen a person has to act
+             * on. The home strip above the graph now carries it as a **pressable clause**
+             * — `1 source changed` lights that citation and its two ends on the canvas —
+             * and the header strip keeps printing it while a document is open. A third
+             * copy here would be the fact said twice in one viewport, quietest where it
+             * matters most.
+             *
+             * The search status line's own `min-h` reserve (above) is untouched: it is
+             * the line that keeps this list from moving under a pointer as somebody
+             * types, and it never carried this sentence.
+             */}
           </>
         ) : (
           <p

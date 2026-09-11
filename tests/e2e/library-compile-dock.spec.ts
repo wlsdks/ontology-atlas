@@ -216,20 +216,32 @@ test.describe("Compile opens the agent dock", () => {
     await openFolder(page);
     await expect(page.getByTestId("library-compile")).toBeVisible({ timeout: 25_000 });
     await expect(page.getByTestId("library-compile")).toBeEnabled();
-    // Four sources, none written up, so the chip has work to do and says so. The count is
-    // the Sources half's own line, one press away since the index became a switch.
-    await page.getByTestId("library-index-segment-sources").click();
-    await expect(page.getByTestId("library-needs-compile")).toContainText("4");
-    await page.getByTestId("library-index-segment-wiki").click();
     /*
-     * The landing draws the steps, and step two is the row that carries the Compile press
-     * along with whatever that press owes a person. On the **agent** route that is the
-     * blocked reason and nothing else since 2026-09-12: what the sentence about provider
-     * traffic says is that Atlas is not in the path at all, and the next case is where
-     * that sentence's one home is measured.
+     * Four sources, none written up, so the chip has work to do and says so.
+     *
+     * ⚠️ **Where that count is read moved on 2026-09-12.** It used to be a caption at the
+     * foot of the Sources list, and the owner read it there: *"this 'one source version
+     * needs review' line — written like this, who is ever going to look at it?"* The home
+     * is the folder's graph now, and the strip above it names the **file** Compile would
+     * start on; the count is under that clause's own press, which is where the person who
+     * is about to compile is looking.
      */
-    await expect(page.getByTestId("library-stage")).toBeVisible();
-    await expect(page.getByTestId("library-stage-compile-button")).toBeVisible();
+    await page.getByTestId("library-strip-compile").click();
+    await expect(page.getByTestId("library-needs-compile")).toContainText("4");
+    await page.keyboard.press("Escape");
+    /*
+     * The home is the folder's graph, and `Compile next: <source>` on its strip opens the
+     * popover that carries the press and its brain picker. On the **agent** route what
+     * that press owes a person is the blocked reason and nothing else since 2026-09-12:
+     * the sentence about provider traffic says Atlas is not in the path at all, and the
+     * next case is where that sentence's one home is measured.
+     */
+    await expect(page.getByTestId("library-stage")).toHaveCount(0);
+    await page.getByTestId("library-strip-compile").click();
+    const popover = page.getByTestId("library-compile-popover");
+    await expect(popover).toBeVisible();
+    await expect(popover.getByTestId("library-compile-popover-run")).toBeVisible();
+    await page.keyboard.press("Escape");
   });
 
   test("the provider disclosure has one home, and it is the index head's glyph", async ({
@@ -259,11 +271,34 @@ test.describe("Compile opens the agent dock", () => {
      * This test therefore measures the count in both directions: zero inline, and one in
      * the panel, reachable by keyboard.
      */
+    // The home: the picture and its strip print nothing about transfers, and neither does
+    // the popup behind either door.
     const inlineDisclosure = page.getByText(/Atlas does not record that traffic/);
-    await expect(page.getByTestId("library-stage")).toBeVisible();
+    await expect(page.getByTestId("library-stage")).toHaveCount(0);
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
     await expect(page.getByTestId("library-transfer")).toHaveCount(0);
     await expect(inlineDisclosure).toHaveCount(0);
+
+    /*
+     * The two popups the home's strip opens (`docs/DECISIONS.md`, 2026-09-12 — "The
+     * Library's home is the folder's graph"). Each carried a copy: the Compile popover in
+     * its own slot under the press, and the guide's step two in the row that holds
+     * Compile. Both were right about placement under the earlier reading and both are
+     * empty of this sentence now.
+     */
+    await page.getByTestId("library-strip-compile").click();
+    const compilePopover = page.getByTestId("library-compile-popover");
+    await expect(compilePopover).toBeVisible();
+    await expect(compilePopover.getByTestId("library-transfer")).toHaveCount(0);
+    await expect(inlineDisclosure).toHaveCount(0);
+    await page.keyboard.press("Escape");
+
+    await page.getByTestId("library-guide-open").click();
+    const guide = page.getByTestId("library-guide-popover");
+    await expect(guide).toBeVisible();
+    await expect(guide.getByTestId("library-stage-transfer")).toHaveCount(0);
+    await expect(inlineDisclosure).toHaveCount(0);
+    await page.keyboard.press("Escape");
 
     await page.getByTestId("library-wiki-wiki/notes").click();
     await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);

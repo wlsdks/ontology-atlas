@@ -407,6 +407,26 @@ export function LibraryStage({
    */
   const lintBlocked = onLint === null ? lintBlockedReason : null;
 
+  /**
+   * **This card prints the agent-only reason itself when no other surface owns it**
+   * (2026-09-12).
+   *
+   * `lintBlockedReasonId` exists because the landing used to draw this stepper and the
+   * saved questions in one column, so one of the two printed the sentence and the other
+   * pointed at it. The home is the folder's graph now and those two live behind separate
+   * doors, which can never be open at once — so "the other card prints it" became a
+   * pointer at an id that is not in the document, and on the `local` route (where Compile
+   * runs and only the agent-only turns cannot) it left this button dead with no reason at
+   * all. Given no id, the card owns the sentence: one paragraph per surface, which is what
+   * the 2026-09-11 record asked for now that a surface is one screen.
+   */
+  const lintReasonBelow =
+    lintBlocked && !lintBlockedReasonId && lintBlocked !== blockedBelow ? lintBlocked : null;
+  /** Where a dead Check-the-wiki points: an owner elsewhere, this card's own, or Compile's. */
+  const lintReasonId =
+    lintBlockedReasonId ??
+    (lintReasonBelow ? "library-stage-lint-blocked" : blockedBelow ? "library-stage-compile-blocked" : null);
+
   return (
     <div data-testid="library-stage" className="w-full px-3 pb-3 pt-2">
       {/* No lede and no title: the panel's own header states both, and the same words
@@ -497,7 +517,7 @@ export function LibraryStage({
                   /* Same binding Compile uses: the landing's one availability sentence is
                      what a disabled control has instead of a press, so it is announced
                      with it — wherever on this landing that paragraph stands. */
-                  aria-describedby={lintBlocked ? (lintBlockedReasonId ?? undefined) : undefined}
+                  aria-describedby={lintBlocked ? (lintReasonId ?? undefined) : undefined}
                   className={controlClass({
                     shape: "chip",
                     tone: "muted",
@@ -547,7 +567,7 @@ export function LibraryStage({
             </>
           }
           extra={
-            blockedBelow || partialNote || transfer ? (
+            blockedBelow || lintReasonBelow || partialNote || transfer ? (
               <div className="mt-2 flex flex-col gap-1.5">
                 {blockedBelow ? (
                   <p
@@ -556,9 +576,13 @@ export function LibraryStage({
                     /* The count marker for "the landing's availability sentence", set
                        only when this paragraph is the one carrying it — `LibraryPage`
                        decides, and the spec counts this attribute exactly once. */
-                    data-landing-blocked-reason={
-                      lintBlockedReasonId === "library-stage-compile-blocked" ? "true" : undefined
-                    }
+                    /*
+                      The marker for "the one availability sentence on this surface". It
+                      used to be set only when the *other* card pointed here; with the
+                      stepper and the questions behind separate doors this card is its own
+                      surface, so Compile's reason is that surface's whenever it is drawn.
+                    */
+                    data-landing-blocked-reason="true"
                     /*
                      * ⚠️ **The reason is one step under the button, not two**
                      * (design-lead, council 2026-09-11). Measured on the day-one landing:
@@ -582,6 +606,28 @@ export function LibraryStage({
                   <div className="flex">
                     <AgentDoor testId="library-stage-compile-blocked-door" />
                   </div>
+                ) : null}
+                {/*
+                  Check the wiki's own reason, on the one route where Compile has none: a
+                  disabled control beside the sentence that disables it, at the same grade
+                  as Compile's own so the two read as one voice.
+                */}
+                {lintReasonBelow ? (
+                  <>
+                    <p
+                      id="library-stage-lint-blocked"
+                      data-testid="library-stage-lint-blocked"
+                      data-landing-blocked-reason={blockedBelow ? undefined : "true"}
+                      className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+                    >
+                      {lintReasonBelow}
+                    </p>
+                    {agentDoor ? (
+                      <div className="flex">
+                        <AgentDoor testId="library-stage-lint-blocked-door" />
+                      </div>
+                    ) : null}
+                  </>
                 ) : null}
                 {/* After the reason, never before it: why the button is dead is what a
                     person reads first, and this is what the press would be worth. */}

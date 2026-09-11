@@ -64,3 +64,45 @@ export function mergeWikiVerdict(
     problems,
   };
 }
+
+/**
+ * **Pages whose own shape misses the wiki contract**, counted once.
+ *
+ * The header strip, the index's wiki list and — since the graph became the Library's home
+ * — the home strip's `off-template` clause all print this number. It was derived three
+ * times from the same map, which is exactly the arrangement `libraryStepStates` exists to
+ * prevent: three copies of one piece of arithmetic disagree the first time any of them is
+ * edited, and they disagree in one viewport.
+ *
+ * A **folder** finding (a dangling link) is deliberately not counted here. It is not a
+ * property of the page's shape, and the row marks it with a quiet word rather than the
+ * amber pill (2026-09-07); {@link libraryDanglingLinkCount} is its own number.
+ */
+export function libraryOffTemplateCount(
+  verdicts: ReadonlyMap<string, WikiVerdictLike>,
+): number {
+  let count = 0;
+  for (const verdict of verdicts.values()) {
+    if (verdict.problems.some((problem) => !isWikiFolderCode(problem.code))) count += 1;
+  }
+  return count;
+}
+
+/**
+ * **Broken links, counted as links** — never as the pages holding them.
+ *
+ * A folder with six broken links across three pages says **6**: each finding is one line
+ * in one page's reader panel, which is the unit a person repairs (2026-09-09). Advisory
+ * findings are true of a young wiki rather than of a page and belong to the report.
+ */
+export function libraryDanglingLinkCount(
+  verdicts: ReadonlyMap<string, WikiVerdictLike>,
+): number {
+  let count = 0;
+  for (const verdict of verdicts.values()) {
+    count += verdict.problems.filter(
+      (problem) => isWikiFolderCode(problem.code) && !isAdvisoryWikiCode(problem.code),
+    ).length;
+  }
+  return count;
+}

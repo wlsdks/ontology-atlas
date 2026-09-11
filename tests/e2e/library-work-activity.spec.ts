@@ -14,15 +14,18 @@ test.describe("Library live work activity", () => {
     });
     const harness = await openLibraryWorkScenario(page);
 
-    await page.getByTestId("library-graph-open").click();
-    const graphDialog = page.getByTestId("library-graph-dialog");
-    await expect(graphDialog).toBeVisible();
+    /*
+     * The canvas is the home now (2026-09-12), so there is nothing to open: the picture is
+     * already on screen with nothing chosen, and choosing a document is what takes it away.
+     */
+    const canvas = page.getByTestId("library-graph-canvas");
+    await expect(canvas).toBeVisible();
 
     await harness.read(page);
     await expect(page.getByTestId("acp-chat-tool-target")).toContainText("sources/architecture.docx");
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "read");
 
-    // Selecting a document closes the graph; active work cannot paint its removed canvas.
+    // Selecting a document replaces the canvas; active work cannot paint a removed canvas.
     await page.evaluate(() => {
       (window as unknown as PaintWindow).__libraryPaintCount = 0;
       const fill = CanvasRenderingContext2D.prototype.fillRect;
@@ -35,13 +38,15 @@ test.describe("Library live work activity", () => {
       };
     });
     await expect.poll(() => page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0)).toBeGreaterThan(5);
-    await graphDialog.getByTestId("library-graph-canvas").press("ArrowRight");
-    await graphDialog.getByTestId("library-graph-canvas").press("Enter");
-    await expect(graphDialog).toHaveCount(0);
+    await canvas.press("ArrowRight");
+    await canvas.press("Enter");
+    await expect(canvas).toHaveCount(0);
     const hiddenPaints = await page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0);
     await page.waitForTimeout(500);
     expect(await page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0)).toBe(hiddenPaints);
-    await page.getByTestId("library-graph-open").click();
+    // The way back to the picture is the reader's own close control.
+    await page.getByTestId("library-reader-back").click();
+    await expect(canvas).toBeVisible();
     await expect.poll(() => page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0)).toBeGreaterThan(hiddenPaints);
 
     await harness.wait(page);
@@ -49,10 +54,10 @@ test.describe("Library live work activity", () => {
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "waiting");
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-phase", "active");
 
-    // Permission belongs to the conversation. Leave the graph through its actual
-    // close gesture before acting on the conversation behind the modal.
-    await page.keyboard.press("Escape");
-    await expect(graphDialog).toHaveCount(0);
+    /*
+     * Permission belongs to the conversation, and nothing blocks it any more: the picture
+     * is the pane rather than a modal over it, so the card is reachable where it stands.
+     */
     await page.getByTestId("acp-permission-allow").click();
     await harness.write(page);
     await expect.poll(async () => (await harness.snapshot(page)).writes.some((write) => write.relativePath === "wiki/architecture.md")).toBe(true);

@@ -2,7 +2,7 @@
 
 import type { useTranslations } from "next-intl";
 
-import { isAdvisoryWikiCode, isWikiFolderCode } from "../../lib/merge-wiki-verdict";
+import { libraryDanglingLinkCount, libraryOffTemplateCount } from "../../lib/merge-wiki-verdict";
 import { libraryStepStates } from "../../lib/stage-steps";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 
@@ -71,39 +71,14 @@ export function LibraryStatusStrip({
   /*
    * **The header counts what the rows draw, or it is a third opinion** (2026-09-07).
    *
-   * `offTemplateCount` counts every page whose merged verdict is not `ok`, and after PR
-   * #1486 that includes a dangling link — a folder finding the row deliberately marks with
-   * a quiet word rather than the amber pill. Measured on the owner's seven-page folder, the
-   * header said "2 off-template" over one pill and one quiet word. So both clauses are
-   * derived here the same way the row derives its two marks: a page's own shape, and a
-   * folder finding a person can act on. The advisory findings are counted by neither; they
-   * are true of a young wiki rather than of a page, and the Check-the-wiki report is where
-   * a judgement about the whole wiki belongs.
+   * Both clauses are derived the way the row derives its two marks — a page's own shape,
+   * and a folder finding a person can act on — and since the graph became the Library's
+   * home a third surface prints the same two numbers, so the arithmetic itself moved to
+   * `merge-wiki-verdict.ts`. Its own comments carry why a page is the unit for one and a
+   * link is the unit for the other; the advisory findings are counted by neither.
    */
-  const verdicts = [...model.verdicts.values()];
-  const offTemplate = verdicts.filter((verdict) =>
-    verdict.problems.some((problem) => !isWikiFolderCode(problem.code)),
-  ).length;
-  /*
-   * ⚠️ **The two clauses count different things, because they name different things**
-   * (2026-09-09).
-   *
-   * *Off-template* is a property of a page — a page either fits the shape or it does
-   * not — so it counts pages, and one page with four shape problems is one row to open.
-   *
-   * *Broken links* names links, and this used to count pages too: a folder holding six
-   * broken links across three pages said **3**. A person reading "3 broken links" goes
-   * looking for three, fixes them, and the header still says 3. Each finding below is
-   * one line in one page's reader panel, which is exactly the unit a person repairs.
-   */
-  const unlinked = verdicts.reduce(
-    (total, verdict) =>
-      total +
-      verdict.problems.filter(
-        (problem) => isWikiFolderCode(problem.code) && !isAdvisoryWikiCode(problem.code),
-      ).length,
-    0,
-  );
+  const offTemplate = libraryOffTemplateCount(model.verdicts);
+  const unlinked = libraryDanglingLinkCount(model.verdicts);
   if (offTemplate > 0) parts.push(t("stage.statusOffTemplate", { count: offTemplate }));
   if (unlinked > 0) parts.push(t("stage.statusUnlinked", { count: unlinked }));
   if (parts.length === 0) return null;

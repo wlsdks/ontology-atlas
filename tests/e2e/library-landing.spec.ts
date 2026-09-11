@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "./first-run-seed";
+import { FIRST_RUN_SEEN_ENTRIES, seedFirstRunSeen } from "./first-run-seed";
 
 /**
  * **A folder of pages and no nodes lands on the Library, not on an empty map.**
@@ -173,9 +173,15 @@ test.describe("A folder of pages and no nodes opens on the Library", () => {
     await expect(page).toHaveURL(/\/en\/library\/?/);
     await expect(segment).toContainText("Wiki 1");
     await expect(page.getByTestId("library-reader-landing")).toBeVisible();
-    await expect(page.getByTestId("library-stage")).toBeVisible();
-    await expect(page.getByTestId("library-graph-open")).toHaveCount(1);
-    await expect(page.getByTestId("library-graph-canvas")).toHaveCount(0);
+    /*
+     * The home draws the folder's picture with nothing chosen, and the three steps are
+     * behind the `How to use` door rather than on it (2026-09-12). This spec seeds the
+     * first-run keys, which includes the once-per-machine self-raise, so the guide is not
+     * up either.
+     */
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+    await expect(page.getByTestId("library-guide-open")).toHaveCount(1);
+    await expect(page.getByTestId("library-stage")).toHaveCount(0);
     await page.getByTestId("library-index-segment-wiki").click();
     await expect(page.getByTestId("library-wiki")).toBeVisible();
     // The rail reads the same files: a wiki without a map has no map doors, and keeps the
@@ -186,5 +192,77 @@ test.describe("A folder of pages and no nodes opens on the Library", () => {
     await expect(page.getByTestId("app-nav-rail-item-architecture")).toHaveCount(0);
     await expect(page.getByTestId("app-nav-rail-item-insights")).toHaveCount(0);
     await expect(page.getByTestId("library-wiki")).not.toContainText("<the page name>");
+  });
+});
+
+/**
+ * **The guide raises itself once per machine, and this case seeds nothing.**
+ *
+ * The owner's sentence was *"isn't it a screen for the first use only and never again?"*
+ * (2026-09-12), and the answer is a single self-raise stored in
+ * `atlas.library.guide-seen`. Every other Library case seeds it, because
+ * `FIRST_RUN_SEEN_ENTRIES` now carries the key — a gate measuring a returning person must
+ * not measure a raised popup. That makes the raise itself a state no other gate can see
+ * (po-leverage, council 2026-09-12: *"the behaviour the owner literally asked for is the
+ * one on this branch with no proof"*), so this one deliberately seeds **nothing** and is
+ * the only case that walks the first visit.
+ *
+ * Three facts, each of which was a real defect before it was measured:
+ *
+ * 1. it raises itself on the first open, hung from its door and not centred;
+ * 2. one press settles it — the flag is written even when the press is not `✕`;
+ * 3. the second open draws the picture with no popup over it.
+ */
+test.describe("the Library guide raises itself once per machine", () => {
+  test("the first open raises it, a press settles it, and the second open is the picture", async ({
+    page,
+  }) => {
+    /*
+     * ⚠️ **Seeded by hand, minus one key — and neither `seedFirstRunSeen` nor
+     * `?guides=off` can be used here.** Both write the whole `FIRST_RUN_SEEN_ENTRIES`
+     * list, which since 2026-09-12 includes `atlas.library.guide-seen`, so either door
+     * would seed away the state this case exists to walk. The other keys must still be
+     * seeded: the docs destination raises its own first-visit overlay, and that one covers
+     * the folder door.
+     */
+    await page.addInitScript((entries: readonly (readonly [string, string])[]) => {
+      for (const [key, value] of entries) {
+        if (key === "atlas.library.guide-seen") continue;
+        try {
+          window.localStorage.setItem(key, value);
+        } catch {
+          /* private mode */
+        }
+      }
+    }, FIRST_RUN_SEEN_ENTRIES);
+    await installDesktopBridge(page);
+    await page.goto("/en/docs/");
+    await page.waitForLoadState("networkidle");
+    const door = page.getByRole("button", { name: /^Open my folder/ });
+    await door.first().waitFor({ timeout: 25_000 });
+    await door.first().click();
+    await page.getByTestId("library-graph-canvas").waitFor({ timeout: 30_000 });
+
+    // 1 — up on its own, and hanging from the door rather than floating over the canvas.
+    const guide = page.getByTestId("library-guide-popover");
+    await expect(guide).toBeVisible();
+    const opener = (await page.getByTestId("library-guide-open").boundingBox())!;
+    const panel = (await guide.boundingBox())!;
+    expect(panel.y).toBeGreaterThanOrEqual(opener.y + opener.height);
+    expect(panel.width).toBeLessThanOrEqual(560);
+    await expect(guide.getByTestId("library-stage")).toBeVisible();
+
+    // 2 — Escape is a press, and the machine remembers it.
+    await page.keyboard.press("Escape");
+    await expect(guide).toHaveCount(0);
+    expect(
+      await page.evaluate(() => window.localStorage.getItem("atlas.library.guide-seen")),
+    ).toBe("on");
+
+    // 3 — and it never raises itself again.
+    await page.reload();
+    await page.getByTestId("library-graph-canvas").waitFor({ timeout: 30_000 });
+    await expect(page.getByTestId("library-guide-popover")).toHaveCount(0);
+    await expect(page.getByTestId("library-guide-open")).toBeVisible();
   });
 });
