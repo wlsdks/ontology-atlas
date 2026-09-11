@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — The Library canvas's ink ramp keeps its 120ms under reduced motion
+
+**Why**: under `prefers-reduced-motion: reduce` at 1512, pressing `3 sources changed` landed the dim in **one frame, a single 0.3995 step**, both directions — the hard cut the ordinary path had just been repaired of — while the panel beside the canvas kept its 180ms crossfade.
+**Prior**: narrows the byte-identical-frames falsifier of 2026-09-07 "The Library graph is a live force simulation with a bounded drift" to the canvas **at rest**: it bounded the drift clause that 2026-09-08 "The Library graph stands still" deleted, and the same record's dim ("35% over `--motion-fast`") never carried a reduced-motion carve-out. Extends D7 2026-07-28 (WCAG 2.2 2.3.3: a hand's own move keeps its time) to this canvas.
+**Decision**: the `reducedMotion` snap leaves the dim ramp in `use-library-graph-engine.ts`; the ink rides `--motion-fast` at both settings. No axis is added: the painted bounding box and the lit-pixel count are identical before the press and after Escape (9108 at ordinary motion, 8959 under `reduce`), and `settling` still drops the loop when the ramp lands, so an idle reduced-motion canvas stays byte-identical frame to frame. Measured after: 14 changing frames over 114ms, worst step 0.0599.
+**Dissent**: design-motion's own 2026-09-07 dissent read the other way — a preference asking for less motion should get less, and 120ms of ink nobody asked for is still 120ms.
+**Falsifier**: a reduced-motion reader who reports this graph as animating; any frame differing with no pointer on the canvas and no clause held.
+**Owner**: jinan
+
 ## 2026-09-12 — The Library's home is the folder's graph; the guide and the questions are doors
 
 **Why**: the owner, on the installed app: *"is this gather-compile-read screen just the main one? why every time..? put it behind a How-to-use button"*; of the graph, *"an ugly popup, very poor"*.
