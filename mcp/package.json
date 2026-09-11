@@ -31,6 +31,7 @@
     "src/schema.mjs",
     "src/validate.mjs",
     "src/wiki-schema.mjs",
+  "src/wiki-report.mjs",
     "src/vault.mjs",
     "src/construction-rules.mjs",
     "src/absorb.mjs",

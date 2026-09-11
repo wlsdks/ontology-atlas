@@ -672,10 +672,19 @@ export function validateWikiFolder(pages) {
       // 2026-09-06: six findings on seven pages) reports the wiring the disagreement
       // rule itself created. "Two write-ups of one document" means two pages that were
       // each compiled from it.
-      const shared = [...first.sources].filter(
-        (source) =>
-          second.sources.has(source) && (first.primary === source || second.primary === source),
-      );
+      // Sorted, not in frontmatter order. The sentence names these paths, and which page
+      // is `first` here follows the caller's input order — `wiki-validate` sorts its file
+      // walk, `validate_wiki` takes the vault's document order, the Library takes its own
+      // read order. Measured 2026-09-12 on the same folder: the CLI said
+      // "`dispute-handling-standard.docx`, `chargeback-runbook.md`" and `validate_wiki`
+      // said the reverse. Codes and page lists agreed, so the contract held, but a person
+      // holding the report beside a terminal read one finding worded two ways.
+      const shared = [...first.sources]
+        .filter(
+          (source) =>
+            second.sources.has(source) && (first.primary === source || second.primary === source),
+        )
+        .sort();
       if (shared.length === 0) continue;
       const linked =
         inbound.get(first.slug).has(second.slug) || inbound.get(second.slug).has(first.slug);

@@ -86,6 +86,7 @@ export function LibraryAgentDock({
   vaultRoot,
   mcpServers,
   openingRequest,
+  answerFold,
   knownSlugs,
   onClose,
   judgeWrite,
@@ -106,6 +107,12 @@ export function LibraryAgentDock({
   vaultRoot: string;
   mcpServers: unknown[];
   openingRequest: LibraryAgentOpeningRequest | null;
+  /**
+   * The one app-authored turn whose answer belongs on a page, not in this pane: the wiki
+   * check. See `AcpChatPanel`'s `answerFold` — the chat says one line and opens the
+   * Check-results page (owner, 2026-09-12).
+   */
+  answerFold?: { request: string; line: string; doorLabel: string; onOpen: () => void } | null;
   knownSlugs: ReadonlySet<string>;
   onClose: () => void;
   /** Judges a wiki page write before the permission card asks; see `judgePageWrite`. */
@@ -290,6 +297,7 @@ export function LibraryAgentDock({
              */
             resumeLatest
             openingRequest={openingRequest}
+            answerFold={answerFold ?? null}
             judgeWrite={judgeWrite}
             autoDecide={autoDecide}
             onTurnStarted={onTurnStarted}

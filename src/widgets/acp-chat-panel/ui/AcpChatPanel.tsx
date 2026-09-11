@@ -290,6 +290,7 @@ export function AcpChatPanel({
   onSuggestionAction,
   knownSlugs,
   knownRelations,
+  answerFold = null,
   presentationIntent = null,
   presentationRequest = null,
   contextLabel = null,
@@ -405,6 +406,21 @@ export function AcpChatPanel({
   noticeActions?: { openPage: (path: string) => void; askNext: () => void } | null;
   /** Current graph relation keys (`from\0type\0to`) used to reject invented presentation edges. */
   knownRelations?: ReadonlySet<string>;
+  /**
+   * **One app-authored request whose answer belongs on a page, not in the chat.**
+   *
+   * Owner, 2026-09-12: the raw check output must not be dumped into this pane as the
+   * report — the report is the Library's own ledger, and the chat says one line and opens
+   * it. So the caller names the exact request it sent; every agent message in that turn
+   * collapses to `line` plus a door, with the verbatim text one disclosure away, because
+   * the 2026-08-24 rule for app-authored turns is that nothing is dropped from the
+   * transcript.
+   *
+   * Matched on the request's exact text, the same way `presentationRequest` is: the panel
+   * renders a transcript, so it must recognise the turn from the transcript rather than
+   * be told out of band by a caller whose state has already moved on.
+   */
+  answerFold?: { request: string; line: string; doorLabel: string; onOpen: () => void } | null;
   /** Only the explicit whole-ontology Flow request can become a presentation in this slice. */
   presentationIntent?: AcpPresentationIntent | null;
   /** Exact app-authored Flow request; editing or following it up leaves presentation mode. */
@@ -1249,6 +1265,28 @@ export function AcpChatPanel({
           ? `linear-gradient(to bottom, transparent 0, black ${historyFade})`
           : undefined;
   const transcriptItems = groupEvents(withoutErrorEcho(events, error));
+  /*
+   * Agent messages inside the folded turn, by event id. Walked in transcript order: a user
+   * message opens a turn, and the fold applies until the next one. Computed from the
+   * transcript rather than from a caller's flag so that scrolling back to an older check
+   * shows the same folded line it showed when it arrived.
+   */
+  const foldedAnswerIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (!answerFold) return ids;
+    const wanted = answerFold.request.trim();
+    if (!wanted) return ids;
+    let inside = false;
+    for (const item of transcriptItems) {
+      if (item.kind !== 'event') continue;
+      if (item.event.kind === 'user') {
+        inside = item.event.text.trim() === wanted;
+        continue;
+      }
+      if (inside && item.event.kind === 'agent') ids.add(item.event.id);
+    }
+    return ids;
+  }, [answerFold, transcriptItems]);
   const lastWorkGroupId = [...transcriptItems]
     .reverse()
     .find((item) => item.kind === 'workGroup')?.id;
@@ -1461,6 +1499,7 @@ export function AcpChatPanel({
                 knownSlugs={knownSlugs}
                 onHoverSlug={onHoverSlug}
                 noticeActions={noticeActions}
+                fold={answerFold && foldedAnswerIds.has(item.event.id) ? answerFold : null}
                 /*
                  * Only the **last** bubble, and only while the turn is still running. Revealing an
                  * older answer again on every re-render would replay finished text, and revealing
@@ -2414,6 +2453,7 @@ function TranscriptEntry({
   noticeActions = null,
   streaming = false,
   repeat = 1,
+  fold = null,
 }: {
   event: AcpEvent;
   knownSlugs?: ReadonlySet<string>;
@@ -2428,6 +2468,12 @@ function TranscriptEntry({
    * lines go, the count does not.
    */
   repeat?: number;
+  /**
+   * Set on every agent message of an app-authored turn whose answer belongs on a page.
+   * The message then draws one line and a door instead of its markdown, with the verbatim
+   * text one disclosure away (owner, 2026-09-12; see `answerFold`).
+   */
+  fold?: { line: string; doorLabel: string; onOpen: () => void } | null;
 }) {
   const t = useTranslations('acpChat');
   /*
@@ -2499,6 +2545,43 @@ function TranscriptEntry({
      * `text-body-lg` with large heading margins, and in a 420px panel one paragraph
      * eats the whole screen. This is **chat density**.
      */
+    if (fold) {
+      /*
+       * ⚠️ **The check's report is not a chat message.** Drawn whole, it filled the pane
+       * with the same findings the Check-results page already holds — two copies of one
+       * ledger, and the copy in the chat is the one that scrolls away and cannot be
+       * re-counted or opened page by page. Owner, 2026-09-12: the chat shows one line and
+       * a door.
+       *
+       * Nothing is dropped. The verbatim answer stays in the transcript behind one
+       * disclosure, which is the same contract `splitAppRequest` keeps for the request
+       * half of an app-authored turn (2026-08-24).
+       */
+      return (
+        <div data-acp-entry="agent" data-acp-folded="answer" className="flex flex-col items-start gap-1.5">
+          <p className="break-keep text-body leading-body text-[color:var(--color-text-secondary)]">
+            {fold.line}
+          </p>
+          <Chip data-testid="acp-chat-answer-door" onClick={fold.onOpen} tone="secondary" hoverInk="strong">
+            {fold.doorLabel}
+          </Chip>
+          <Disclosure
+            className="mt-0.5 self-stretch"
+            summaryTestId="acp-chat-answer-full"
+            summary={t('checkAnswerFull')}
+          >
+            <div className={CHAT_MARKDOWN}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={chatMarkdownComponents(knownSlugs, onHoverSlug)}
+              >
+                {event.text}
+              </ReactMarkdown>
+            </div>
+          </Disclosure>
+        </div>
+      );
+    }
     return (
       <div data-acp-entry="agent" data-acp-streaming={streaming ? 'true' : undefined} className={CHAT_MARKDOWN}>
         <ReactMarkdown

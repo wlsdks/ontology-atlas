@@ -72,6 +72,7 @@ function Harness({
       onNewPage={() => {}}
       segment="wiki"
       actionsNote={null}
+      inApp={false}
       busy={false}
       compiling={compiling}
       t={t}

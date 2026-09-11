@@ -47,6 +47,7 @@ function Harness({ onNewPage = null, report = null }: { onNewPage?: ((title: str
       /* The doors and the list are the wiki half of the column; the switch above it decides. */
       segment="wiki"
       actionsNote={null}
+      inApp={false}
       busy={false}
       t={t}
     />
@@ -71,6 +72,7 @@ function HarnessWith({ model }: { model: LibraryUiModel }) {
       onLint={() => {}}
       segment="wiki"
       actionsNote={null}
+      inApp={false}
       busy={false}
       t={t}
     />
@@ -187,6 +189,7 @@ describe("a search whose matches sit on the other half of the switch", () => {
         report={null}
         segment="sources"
         actionsNote={null}
+      inApp={false}
         busy={false}
         t={t}
       />

@@ -4162,7 +4162,10 @@
     "dockTitle": "Conversation",
     "elapsedSeconds": "{seconds}s",
     "elapsedMinutes": "{minutes}m {seconds}s",
-    "elapsedHours": "{hours}h {minutes}m"
+    "elapsedHours": "{hours}h {minutes}m",
+    "checkAnswerLine": "The check is reported on the Check results page, beside what the app checked itself.",
+    "checkAnswerDoor": "Open check results",
+    "checkAnswerFull": "The agent's report, verbatim"
   },
   "agents": {
     "title": "Agents",
@@ -4862,13 +4865,24 @@
     },
     "report": {
       "title": "Check results",
-      "never": "Not checked yet. Check the wiki and this page gathers the values two pages disagree on, the claims a later page replaced, the missing links, and the names without a page.",
-      "clean": "The last check found nothing to fix.",
+      "structuralTitle": "What the app checked",
+      "structuralHead": "{pages, plural, one {# page} other {# pages}} · {offTemplate} off-template · {findings, plural, one {# finding} other {# findings}}",
+      "structuralClean": "Every page fits the template, every link resolves, and no two write-ups of one document ignore each other.",
+      "advisoryMark": "true of a young wiki",
+      "advisoryFold": "{count, plural, one {# advisory finding} other {# advisory findings}}",
+      "advisoryLess": "Hide the advisory findings",
+      "jumpAria": "Jump to a ledger on this page",
+      "unmeasured": "{count, plural, one {# page has not been read yet} other {# pages have not been read yet}}. What is listed here is everything read so far, not everything there is.",
+      "semanticTitle": "What the agent read",
+      "never": "The agent has not read these pages yet. Check the wiki and it adds the values two pages disagree on, the claims a later page replaced, and the names without a page.",
+      "clean": "The agent's last reading found nothing to fix.",
       "fixed": "Fixed · check again to re-judge",
-      "gone": "What the last check found does not survive reopening the app. Check the wiki again to see it.",
+      "gone": "What the agent read does not survive reopening the app; the list above is computed from the folder each time and does. Check the wiki again to see the agent's half.",
       "emptyLede": "Checking the wiki reads and reports. It writes nothing.",
       "namesTitle": "Names without a page",
-      "open": "Check results {count}"
+      "open": "Check results {count}",
+      "running": "Checking the wiki…",
+      "unseen": "new"
     },
     "search": {
       "placeholder": "Search sources and pages",

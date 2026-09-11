@@ -99,6 +99,7 @@ function Harness({
       onLint={() => {}}
       segment={segment}
       actionsNote={null}
+      inApp={false}
       busy={false}
       t={t}
     />

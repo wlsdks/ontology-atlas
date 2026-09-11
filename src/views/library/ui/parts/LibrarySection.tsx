@@ -8,6 +8,8 @@ import { BookText, Check, CloudDownload, FilePlus2, FileText, PencilLine, Search
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
 import { writerLabel } from "../../lib/writer-label";
+import { cn } from "@/shared/lib/cn";
+import { BrandMark } from "@/shared/ui/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
 import { Chip, RowButton, Tooltip } from "@/shared/ui";
 import { Input } from "@/shared/ui/input";
@@ -163,7 +165,15 @@ export interface LibrarySectionProps {
    * council 2026-09-07: the report's door must survive a page being open, which the
    * canvas header does not).
    */
-  report?: { count: number; open: boolean; onOpen: () => void } | null;
+  report?: {
+    count: number;
+    open: boolean;
+    onOpen: () => void;
+    /** A check is in flight right now. The row says so live, rather than wearing a label. */
+    running?: boolean;
+    /** A check finished and this person has not opened the report since. */
+    unseen?: boolean;
+  } | null;
   /**
    * The brain picker, when this computer offers two and Compile can therefore be pointed
    * at either. Null draws nothing: with one brain there is no choice to make.
@@ -185,6 +195,8 @@ export interface LibrarySectionProps {
    * screen. `LibraryPage` owns that decision, as it owns the landing's.
    */
   actionsNote: string | null;
+  /** True in the installed app. On the web, Compile has no runtime at all. */
+  inApp: boolean;
   /**
    * Which of the two lists this column is showing. There is no "both": the switch above
    * is exclusive, and rendering the inactive list `hidden` would leave its rows in the tab
@@ -360,6 +372,7 @@ export function LibrarySection({
   report = null,
   brainControl,
   actionsNote,
+  inApp,
   segment,
   busy,
   compiling = false,
@@ -642,7 +655,9 @@ export function LibrarySection({
                       title={`${row.name}\n${t(`sources.state.${row.state}.hint`, {
                         pages: row.citedBy.join(", ") || t("sources.state.nobody"),
                       })}`}
-                      className={`group relative ${INDEX_ROW_INSET} hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]`}
+                      hoverSurface="lift"
+                      hoverInk="strong"
+                      className={cn("group relative", INDEX_ROW_INSET, active && "bg-[color:var(--color-indigo-a16)]")}
                     >
                       {/* The same leading glyph the tree, pinned and recent rows carry, so
                           the sidebar keeps one left edge from top to bottom. */}
@@ -860,7 +875,9 @@ export function LibrarySection({
         aria-expanded={false}
         aria-controls="library-new-page-row"
         title={t("wiki.newPageTooltip")}
-        className={`${INDEX_ROW_INSET} hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]`}
+        hoverSurface="lift"
+        hoverInk="strong"
+        className={INDEX_ROW_INSET}
       >
         <PencilLine size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
         <span className="min-w-0 flex-1 truncate">{t("wiki.newPage")}</span>
@@ -929,6 +946,12 @@ export function LibrarySection({
            why Compile is unavailable, where it works, and what still works here
            (`.claude/rules/surfaces.md`). Only one of the two can be the true one.
         The four-line transfer disclosure is no longer either of them — see `actionsNote`.
+
+        ⚠️ **One slot means one sentence.** `disabled` on Check is a union — a turn in
+        flight, a wiki of fewer than two pages, no coding agent. Running is said by the
+        report row's own live mark and the agent reason arrives as `actionsNote`; the page
+        count reaches a person through the chip's tooltip rather than a second line here,
+        because this slot prints one reason or none and nothing may crowd it.
       */}
       {actionsNote ? (
         <p
@@ -938,7 +961,7 @@ export function LibrarySection({
         >
           {actionsNote}
         </p>
-      ) : onCompile === null ? (
+      ) : onCompile === null && !inApp ? (
         <p
           data-testid="library-compile-web-limit"
           className="px-3 pb-1 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
@@ -966,13 +989,55 @@ export function LibrarySection({
             data-testid="library-open-report"
             active={report.open}
             aria-current={report.open ? "page" : undefined}
+            data-report-state={report.running ? "running" : report.unseen ? "unseen" : undefined}
             onClick={report.onOpen}
-            className={`${INDEX_ROW_INSET} hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]`}
+            hoverSurface="lift"
+            hoverInk="strong"
+            className={cn("relative", INDEX_ROW_INSET, report.open && "bg-[color:var(--color-indigo-a16)]")}
           >
+            {report.open ? (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-1 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
+              />
+            ) : null}
             <Stethoscope size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
             <span className="min-w-0 flex-1 truncate">
               {report.count > 0 ? t("report.open", { count: report.count }) : t("report.title")}
             </span>
+            {/*
+              `aria-live` on the running word, not on the row: a row whose label is live
+              would re-announce the count every time the folder polls. The mark is the
+              inline micro form, not the 64px sprite — a full-size waiting mark in a row
+              this height displaces every card below it and snaps back (design-interaction,
+              council 2026-09-12).
+            */}
+            {report.running ? (
+              <span
+                data-testid="library-report-running"
+                className="relative flex size-3.5 flex-none items-center"
+              >
+                <BrandMark
+                  detail="micro"
+                  alt=""
+                  aria-hidden
+                  className="atlas-inline-waiting-mark absolute left-1/2 top-1/2 size-4 max-w-none -translate-x-1/2 -translate-y-1/2"
+                />
+                <span aria-live="polite" className="sr-only">
+                  {t("report.running")}
+                </span>
+              </span>
+            ) : report.unseen ? (
+              /* A dot, not a word: the row already carries the count, and the one thing
+                 this mark adds is "you have not seen this yet". */
+              <span data-testid="library-report-unseen" className="flex flex-none items-center">
+                <span
+                  aria-hidden
+                  className="size-1.5 rounded-full bg-[color:var(--color-indigo-brand)]"
+                />
+                <span className="sr-only">{t("report.unseen")}</span>
+              </span>
+            ) : null}
           </RowButton>
         </div>
       ) : null}
@@ -1035,7 +1100,9 @@ export function LibrarySection({
                      */
                     aria-description={reason}
                     title={reason}
-                    className={`group relative ${INDEX_ROW_INSET} hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]`}
+                    hoverSurface="lift"
+                    hoverInk="strong"
+                    className={cn("group relative", INDEX_ROW_INSET, active && "bg-[color:var(--color-indigo-a16)]")}
                   >
                     <BookText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
                     <span className="min-w-0 flex-1 truncate">{page.title}</span>
