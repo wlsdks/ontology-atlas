@@ -137,7 +137,10 @@ export function LibraryCheckReport({
 
       {empty ? (
         <div className="mt-8 flex flex-col items-start gap-3">
-          <p className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+          {/* The lede, a finding's sentence and the candidates note are read as lines, so they
+              take `--measure-prose`; the report's own column stays `--measure-doc-column`
+              (2026-09-11 calibration — `app/globals.css`, `--measure-prose`). */}
+          <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
             {lastLint ? (lastCheckFoundSomething ? t("report.gone") : t("report.clean")) : t("report.emptyLede")}
           </p>
           {onLint ? (
@@ -169,7 +172,7 @@ export function LibraryCheckReport({
                 className="flex min-w-0 items-start gap-4 py-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]">
+                  <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]">
                     {finding.summary}
                   </p>
                   <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-caption text-[color:var(--color-text-quaternary)]">
@@ -235,7 +238,7 @@ export function LibraryCheckReport({
               {candidates.length}
             </span>
           </h3>
-          <p className="mt-1 text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+          <p className="mt-1 max-w-[var(--measure-prose)] text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
             {t("wiki.candidatesTooltip")}
           </p>
           <ul className="mt-3 flex flex-col divide-y divide-[color:var(--color-divider)]">

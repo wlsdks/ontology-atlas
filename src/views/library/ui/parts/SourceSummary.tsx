@@ -124,7 +124,10 @@ export function SourceSummary({
           {row.name}
         </h2>
       </div>
-      <p className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+      {/* The line, not the column: `--measure-doc-column` is the box this pane sits in and
+          `--measure-prose` is how long a line inside it may run (2026-09-11 calibration —
+          see that token's block in `app/globals.css`). */}
+      <p className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
         {t("source.neverOpened")}
       </p>
 
@@ -235,7 +238,7 @@ export function SourceSummary({
           </ul>
         ) : (
           <div className="mt-2 flex flex-col gap-2">
-            <p className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+            <p className="max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
               {t("source.citedByNobody")}
             </p>
             <div>
@@ -253,7 +256,7 @@ export function SourceSummary({
             {compileNote ? (
               <p
                 data-testid="library-transfer"
-                className="text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+                className="max-w-[var(--measure-prose)] text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
               >
                 {compileNote}
               </p>

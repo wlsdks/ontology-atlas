@@ -530,7 +530,7 @@ export function DocsVaultViewer({
       p({ children, ...rest }) {
         return (
           <p
-            className="my-3 break-keep text-body-lg leading-prose text-[color:var(--color-text-secondary)]"
+            className={`${PROSE_MEASURE} my-3 break-keep text-body-lg leading-prose text-[color:var(--color-text-secondary)]`}
             {...rest}
           >
             {highlightChildren(children, 'p')}
@@ -540,7 +540,7 @@ export function DocsVaultViewer({
       ul(props) {
         return (
           <ul
-            className="my-3 list-disc break-keep pl-6 text-body-lg leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+            className={`${PROSE_MEASURE} my-3 list-disc break-keep pl-6 text-body-lg leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]`}
             {...props}
           />
         );
@@ -548,7 +548,7 @@ export function DocsVaultViewer({
       ol(props) {
         return (
           <ol
-            className="my-3 list-decimal break-keep pl-6 text-body-lg leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+            className={`${PROSE_MEASURE} my-3 list-decimal break-keep pl-6 text-body-lg leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]`}
             {...props}
           />
         );
@@ -601,7 +601,7 @@ export function DocsVaultViewer({
         }
         return (
           <blockquote
-            className="my-4 border-l-2 border-[color:var(--color-indigo-line-a35)] pl-4 italic text-[color:var(--color-text-tertiary)]"
+            className={`${PROSE_MEASURE} my-4 border-l-2 border-[color:var(--color-indigo-line-a35)] pl-4 italic text-[color:var(--color-text-tertiary)]`}
             {...rest}
           >
             {children}
@@ -720,6 +720,24 @@ export function DocsVaultViewer({
     </article>
   );
 }
+
+/**
+ * **The line-length cap, applied to the prose and not to the column** (2026-09-11).
+ *
+ * `--measure-doc-column` (760px) is the *box* — the gutter, the headings, the tables and
+ * the frontmatter block all need that width. Nothing was capping the *line*, so measured
+ * on the installed app at 1512 wide the body ran a **680px content box at 105.8 English
+ * characters per line**, while `app/globals.css` already claimed docs prose was held at
+ * `--measure-prose`. It was not; no element in this file referenced the token. The claim
+ * is now true, and it lands on the elements a person reads a sentence in — paragraphs,
+ * lists and quotes — leaving headings, tables, code and images on the full column so a
+ * table still gets its own `overflow-x` room.
+ *
+ * The cap is a `max-width`, so it only ever narrows: a viewport already below the measure
+ * is untouched, and the prose stays left-aligned inside the column rather than being
+ * re-centred into a second origin (`app/globals.css`, `--page-col-utility`'s retirement).
+ */
+const PROSE_MEASURE = 'max-w-[var(--measure-prose)]';
 
 type CalloutKind = 'note' | 'tip' | 'info' | 'warning' | 'danger' | 'success';
 

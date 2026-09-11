@@ -80,13 +80,20 @@ function ProblemGroup({
         <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {title}
         </p>
-        <p className="mt-1 text-label text-[color:var(--color-text-tertiary)]">{body}</p>
+        {/* The explanation and each finding are sentences: they take `--measure-prose`, while
+            the card itself keeps the document column. At `text-label` (11px) inside this card
+            the uncapped line ran past 120 characters (2026-09-11 calibration —
+            `app/globals.css`, `--measure-prose`). `[word-break:keep-all]` arrives with the cap,
+            not as decoration: this line fitted in one row before, and the first narrower render
+            in the installed app broke a Korean word across the wrap, leaving its final syllable
+            and its particle stranded on the next line. The findings below already carried it. */}
+        <p className="mt-1 max-w-[var(--measure-prose)] text-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">{body}</p>
         <ul className="mt-2 flex flex-col gap-1 font-sans">
           {problems.map((problem, index) => (
             <li
               key={`${problem.code}-${index}`}
               data-testid="library-wiki-problem"
-              className="text-label text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+              className="max-w-[var(--measure-prose)] text-label text-[color:var(--color-text-secondary)] [word-break:keep-all]"
             >
               <span className="font-mono text-caption text-[color:var(--color-text-tertiary)]">
                 {problem.code}
