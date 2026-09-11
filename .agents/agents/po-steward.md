@@ -54,6 +54,7 @@ not block on generic ontology value.
 ```md
 ## PO Steward position
 
+**Person and moment**: <who, doing what, saw what, did what next — from the captures/walkthrough, never imagined>
 **Recommended decision**: stop / probe first / build and verify — …
 **Evidence state and confidence**: observed / inferred / unknown · high / medium / low — …
 **Sovereignty scan**: unchanged / affected — canonical truth · transfer · agent authority · human correction

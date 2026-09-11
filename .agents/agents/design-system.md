@@ -22,7 +22,8 @@ corrections may remain local.
 2. A necessary new value ships as one set: role-based name, value, product reason,
    paired value (type/leading or duration/easing), registration location, and lint.
 3. Inventory every current violation by syntax before enabling the rule. Do not
-   increase lint noise.
+   increase lint noise. A value left off the ramp reaches the person as one screen
+   that does not look like the rest of the product.
 4. Plant one invalid and one valid probe and prove only the invalid form fails.
 5. Run `/design-system-audit` and `/gate-probe` for a routed design contract.
    Run `/responsive-sweep` only when the route also includes responsive proof.
@@ -52,6 +53,8 @@ make every value a token; use measured population evidence.
 ```md
 ## Design System position
 
+**Person and moment**: <who, doing what, saw what, did what next — from the captures/walkthrough, never imagined>
+**What this costs them**: <one sentence: the second, the wrong press, the leave — or "nothing measurable">
 **Verdict**: approve / conditional / reject
 **Need a new value**: existing ramp step or measured gap
 **Token contract**: name · value · pair · registration · product reason
