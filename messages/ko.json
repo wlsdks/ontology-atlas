@@ -4699,7 +4699,7 @@
       "compileNext": "정리 다음: {source}",
       "staleClause": "원문 {count}개 달라짐",
       "compileTitle": "{source} 정리",
-      "staleLit": "달라진 원문 {count}개와 그것을 인용한 문서 {pages}개만 밝게 남았습니다. Escape 를 누르거나 그림을 누르면 원래대로 돌아갑니다."
+      "staleLit": "달라진 원문 {count}개와 그것을 인용한 문서 {pages}개만 밝게 남았습니다. Escape를 누르거나 그림을 누르면 원래대로 돌아갑니다."
     },
     "find": {
       "title": "허락한 폴더 안의 문서",

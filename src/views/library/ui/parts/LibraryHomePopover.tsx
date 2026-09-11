@@ -185,16 +185,30 @@ export function LibraryHomePopover({
    * Focus moves into the panel on open. Not a trap — the canvas behind stays live — but
    * the panel is what a person just asked for, and a popup nobody's keyboard can reach is
    * an anchored surface in name only. On close the door takes it back (below).
+   *
+   * ⚠️ **The panel itself, not its first control.** The first focusable child is the
+   * header's `✕`, so focusing it charged one extra Tab to reach the content and made
+   * Enter-on-open dismiss what had just been opened (design-interaction, council
+   * 2026-09-12, recorded as a cost). The panel carries `tabIndex={-1}` for exactly this.
+   *
+   * ⚠️ **And it waits for `box`.** Until the first placement lands this component renders
+   * `null`, so a run keyed on `open` alone found `panelRef.current` empty and never tried
+   * again — measured 2026-09-12: `library-reader-graph.spec.ts` polled fifteen seconds for
+   * the panel to contain the active element and never saw it. `focusedRef` keeps it to one
+   * move per open, so a scroll or a resize re-placing the box does not steal focus back.
    */
+  const focusedRef = useRef(false);
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      focusedRef.current = false;
+      return;
+    }
+    if (focusedRef.current || box === null) return;
     const panel = panelRef.current;
     if (!panel) return;
-    const first = panel.querySelector<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    );
-    (first ?? panel).focus({ preventScroll: true });
-  }, [open]);
+    focusedRef.current = true;
+    panel.focus({ preventScroll: true });
+  }, [box, open]);
 
   /*
    * ⚠️ **Starts `true`, so a closed popover never takes focus on mount.**
@@ -212,6 +226,17 @@ export function LibraryHomePopover({
     }
     if (returned.current) return;
     returned.current = true;
+    /*
+     * ⚠️ **Only when the close left the keyboard nowhere.** Escape and the `✕` do: focus
+     * is inside the panel, which `Surface` still holds through its exit window, or already
+     * on `body`. A press *somewhere else* does not — the canvas is `tabIndex=0`, so
+     * pressing it both closes this and focuses the picture, and pulling focus back to a
+     * chip the person did not touch is the surface arguing with their own gesture. Asking
+     * the document is what distinguishes the three, without a flag each close has to
+     * remember to set.
+     */
+    const active = document.activeElement;
+    if (active && active !== document.body && !panelRef.current?.contains(active)) return;
     anchorNow()?.focus({ preventScroll: true });
   }, [anchorNow, open]);
 

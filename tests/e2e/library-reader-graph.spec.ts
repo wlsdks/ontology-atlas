@@ -60,6 +60,9 @@ test("a home popup returns its door on every close, and the canvas stands still"
     scale: await canvas.getAttribute("data-view-scale"),
     aspect: await canvas.getAttribute("data-picture-aspect"),
   });
+  // The aspect is published by the loop only once the simulation comes to rest, so the
+  // comparison starts from a settled picture rather than from one still arriving.
+  await expect.poll(() => canvas.getAttribute("data-picture-aspect")).not.toBe("");
   const before = await camera();
   const door = page.getByTestId("library-guide-open");
   const guide = page.getByTestId("library-guide-popover");
@@ -75,11 +78,26 @@ test("a home popup returns its door on every close, and the canvas stands still"
   await guide.getByTestId("library-guide-popover-close").click();
   await expect(guide).toHaveCount(0);
   await expect(door).toBeFocused();
+  // Two closes in, two doors back, and the picture has not moved for either.
+  expect(await camera()).toEqual(before);
+
   await door.click();
   await expect(guide).toBeVisible();
-  // An outside press is the third way out, and it returns the door too.
-  await canvas.click({ position: { x: 8, y: 8 } });
+  /*
+   * An outside press is the third way out. **Near the canvas's bottom edge, not its
+   * top-left**: the panel hangs from a door above the picture, so it covers the canvas's
+   * first corner — Playwright reported its header intercepting the press for fifteen
+   * seconds. Low and to the left is canvas the panel cannot reach and, on this folder,
+   * holds no mark to select.
+   */
+  const canvasBox = (await canvas.boundingBox())!;
+  await canvas.click({ position: { x: 8, y: canvasBox.height - 8 } });
   await expect(guide).toHaveCount(0);
-  await expect(door).toBeFocused();
-  expect(await camera()).toEqual(before);
+  /*
+   * And here the keyboard stays where the press put it. The canvas is `tabIndex=0`, so
+   * pressing it both closes the panel and focuses the picture; pulling focus back to a chip
+   * nobody touched would be the surface arguing with the gesture. Escape and the `✕` are
+   * the two closes that leave focus nowhere, and those are the two that hand the door back.
+   */
+  await expect(canvas).toBeFocused();
 });

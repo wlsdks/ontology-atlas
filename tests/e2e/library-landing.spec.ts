@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "./first-run-seed";
+import { FIRST_RUN_SEEN_ENTRIES, seedFirstRunSeen } from "./first-run-seed";
 
 /**
  * **A folder of pages and no nodes lands on the Library, not on an empty map.**
@@ -217,9 +217,26 @@ test.describe("the Library guide raises itself once per machine", () => {
   test("the first open raises it, a press settles it, and the second open is the picture", async ({
     page,
   }) => {
-    // No `seedFirstRunSeen`: this is what a machine that has never opened the Library has.
+    /*
+     * ⚠️ **Seeded by hand, minus one key — and neither `seedFirstRunSeen` nor
+     * `?guides=off` can be used here.** Both write the whole `FIRST_RUN_SEEN_ENTRIES`
+     * list, which since 2026-09-12 includes `atlas.library.guide-seen`, so either door
+     * would seed away the state this case exists to walk. The other keys must still be
+     * seeded: the docs destination raises its own first-visit overlay, and that one covers
+     * the folder door.
+     */
+    await page.addInitScript((entries: readonly (readonly [string, string])[]) => {
+      for (const [key, value] of entries) {
+        if (key === "atlas.library.guide-seen") continue;
+        try {
+          window.localStorage.setItem(key, value);
+        } catch {
+          /* private mode */
+        }
+      }
+    }, FIRST_RUN_SEEN_ENTRIES);
     await installDesktopBridge(page);
-    await page.goto("/en/docs/?guides=off");
+    await page.goto("/en/docs/");
     await page.waitForLoadState("networkidle");
     const door = page.getByRole("button", { name: /^Open my folder/ });
     await door.first().waitFor({ timeout: 25_000 });
