@@ -58,7 +58,7 @@ export interface SourceUnit {
   sheet?: string;
 }
 
-type SourceTextFormat = 'docx' | 'xlsx' | 'csv' | 'text' | 'html' | 'pdf' | 'binary';
+export type SourceTextFormat = 'docx' | 'xlsx' | 'csv' | 'text' | 'html' | 'pdf' | 'binary';
 
 export interface SourceTextAnswer {
   path: string;
@@ -577,6 +577,91 @@ export function readSourceUnits(
   return answer;
 }
 
+/**
+ * **Every unit in the file, unwindowed — what a search over the text needs.**
+ *
+ * `readSourceUnits` exists to match the MCP tool answer for answer, window and all, and
+ * that window is why it cannot serve a search: a phrase at unit 1,400 of a long file
+ * would be reported as *no match*, which is a false negative wearing an answer's
+ * clothes. The window is a bound on what crosses a tool's round trip; nothing crosses
+ * anything here, so there is nothing to bound.
+ *
+ * Same reasoning as `citedPassage`, which calls the same splitter for the same reason.
+ */
+export function sourceUnits(
+  bytes: Uint8Array,
+  path: string,
+): { format: SourceTextFormat; units: SourceUnit[]; note?: string } {
+  return splitSourceText(bytes, path);
+}
+
+/**
+ * What a document is made of, in the extractor's own kinds — the file's shape without
+ * its contents.
+ */
+export interface SourceOutline {
+  format: SourceTextFormat;
+  /** Every unit the reader found, so a count is never a guess at one. */
+  unitCount: number;
+  /**
+   * Headings the extractor itself named, with the anchors it minted for them.
+   *
+   * Only DOCX populates this today. A Markdown `##` line is a `line` unit to this
+   * reader, not a heading, and promoting it here would invent a structure the citation
+   * grammar cannot address — so Markdown reports its line count instead and the
+   * derivation waits for its own decision.
+   */
+  headings: Array<{ anchor: string; title: string }>;
+  /** Worksheets and how many rows each holds, in the workbook's own sheet order. */
+  sheets: Array<{ sheet: string; rows: number }>;
+  /**
+   * True when this reader cannot describe the file's shape at all — a PDF, or any
+   * format it has no text reader for. The screen says so rather than printing `0`,
+   * which is a different and untrue fact.
+   */
+  unreadable: boolean;
+  /** The extractor's own note about this file, unchanged. */
+  note?: string;
+}
+
+/**
+ * **The file's shape, read once when a person opens its pane.**
+ *
+ * This is the half of a document Atlas could always have shown and never did: the pane
+ * knew the path, the format, the size and the hash, and nothing about whether the file
+ * held three headings or three hundred rows. A person with no agent could not learn what
+ * was in their own document without leaving the app (measured 2026-09-11).
+ *
+ * It is deliberately **counts and names, never bodies**. `docs/DECISIONS.md` 2026-09-07
+ * keeps no converted copy, and a pane that rendered whole documents would be that copy
+ * in all but name. The one place text appears is the passage a citation named, which a
+ * person asked for by pressing its address.
+ */
+export function sourceOutline(bytes: Uint8Array, path: string): SourceOutline {
+  const { format, units, note } = splitSourceText(bytes, path);
+  const headings = units
+    .filter((unit) => unit.kind === 'heading')
+    .map((unit) => ({ anchor: unit.anchor, title: unit.heading ?? unit.text }));
+  /*
+   * Insertion order, which for a workbook is the sheet order `xlsxUnits` walked. A Map
+   * keyed by name also collapses the case a sheet's rows are not contiguous, which is
+   * not something this reader promises either way.
+   */
+  const rowsBySheet = new Map<string, number>();
+  for (const unit of units) {
+    if (unit.kind !== 'row' || !unit.sheet) continue;
+    rowsBySheet.set(unit.sheet, (rowsBySheet.get(unit.sheet) ?? 0) + 1);
+  }
+  return {
+    format,
+    unitCount: units.length,
+    headings,
+    sheets: [...rowsBySheet].map(([sheet, rows]) => ({ sheet, rows })),
+    unreadable: units.length === 0,
+    note,
+  };
+}
+
 // ── the passage one citation names ──────────────────────────────────────────────
 
 /**
@@ -624,8 +709,13 @@ export interface CitedPassage {
   note?: string;
 }
 
-/** `l14` → line 14, `s1r3` → sheet 1 row 3, `h:records` → the heading it names. */
-function labelFor(anchor: string, cited: readonly SourceUnit[]): PassageLabel {
+/**
+ * `l14` → line 14, `s1r3` → sheet 1 row 3, `h:records` → the heading it names.
+ *
+ * Exported because a search hit's caption names the same place as the passage section,
+ * and two functions deciding what `s1r3` is called would eventually disagree about it.
+ */
+export function passageLabelFor(anchor: string, cited: readonly SourceUnit[]): PassageLabel {
   const first = cited[0];
   if (first?.kind === 'heading' || (first && anchor.startsWith('h:'))) {
     return { kind: 'heading', title: first.heading ?? first.text };
@@ -669,7 +759,7 @@ export function citedPassage(
     cited: [],
     before: [],
     after: [],
-    label: labelFor(anchor, []),
+    label: passageLabelFor(anchor, []),
     unitCount: units.length,
     candidates: [],
     note,
@@ -708,6 +798,6 @@ export function citedPassage(
     cited,
     before: units.slice(Math.max(0, firstIndex - contextUnits), firstIndex),
     after: units.slice(lastIndex + 1, lastIndex + 1 + contextUnits),
-    label: labelFor(anchor, cited),
+    label: passageLabelFor(anchor, cited),
   };
 }
