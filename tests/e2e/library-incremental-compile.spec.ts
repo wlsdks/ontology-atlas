@@ -37,7 +37,16 @@ test("a current source write-up revises an outdated related page; approval updat
   await browser.getByRole("button", { name: /Open my folder/i }).click();
   await browser.getByTestId("app-nav-rail-item-library").click();
   await browser.getByTestId("library-index-segment-wiki").click();
+  /*
+   * ⚠️ **The waiting line left the index's foot on 2026-09-12** (owner: *"written like
+   * this, who is ever going to look at it?"*). The home is the folder's graph, and this
+   * sentence is under the press it is about — one press from the strip clause that names
+   * the file Compile would start on. Escape closes the popover so the rest of the walk
+   * begins from the home, as it did before.
+   */
+  await browser.getByTestId("library-strip-compile").click();
   await expect(browser.getByText("1 existing page needs rechecking", { exact: false }).first()).toBeVisible();
+  await browser.keyboard.press("Escape");
   await expect(browser.getByTestId("library-compile")).toBeEnabled();
   // Begin from the old related page, where the local review used to remain hidden.
   await browser.getByRole("button", { name: /Release research/ }).first().click();
@@ -56,7 +65,10 @@ test("a current source write-up revises an outdated related page; approval updat
   expect((await harness.snapshot(browser)).files[existingPath]).toBe(oldPage);
   await browser.getByTestId("library-local-compile-allow").click();
   await expect(browser.getByTestId("library-local-compile-written")).toBeVisible();
+  /* And the sentence is gone from the one surface that prints it: the local review holds
+     the pane, so the strip's clause — and with it the popover — is not drawn at all. */
   await expect(browser.getByText("1 existing page needs rechecking", { exact: false })).toHaveCount(0);
+  await expect(browser.getByTestId("library-strip-compile")).toHaveCount(0);
   const saved = await harness.snapshot(browser);
   const sourceResult = saved.calls.filter((entry) => entry.method === "llm_chat")
     .flatMap((entry) => JSON.parse(String((entry.params as { body: string }).body)).messages)
