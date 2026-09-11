@@ -253,3 +253,59 @@ test('the comparison keeps its measure and its footer in Korean and at every wid
     await page.screenshot({ path: `${evidence}/comparison-ko-1512.png`, animations: 'disabled' });
   }
 });
+
+/**
+ * **The two actions on this answer are not peers** (2026-09-11 record: a refresh button was
+ * mistaken for a read-only review action). Asking an agent for a draft is an outlined control
+ * inside a group with a lede; leaving for the list is a link below it. Proven by geometry and
+ * paint rather than by class name: the link carries no filled or outlined box, and it sits
+ * under both controls that act on the answer.
+ */
+test('the answer page demotes leaving for the list below asking for a draft', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await seedFirstRunSeen(page);
+  await installLibraryWorkHarness(page, {
+    files: {
+      'project.md': '---\nuid: 00000000-0000-4000-8000-000000000001\nkind: project\ntitle: Knowledge review\nslug: knowledge-review\n---\n# Knowledge review\n',
+      [SOURCE]: ORIGINAL, [AUDIT]: AUDIT_TEXT, [ANSWER]: retainedPage(OLD_BODY),
+    },
+  });
+  await page.goto('/en/docs/');
+  await page.getByRole('button', { name: /Open my folder/i }).click();
+  await page.getByTestId('app-nav-rail-item-library').click();
+  await page.getByTestId('library-questions').waitFor();
+  await page.getByTestId('library-question-wiki/answers/original').click();
+  await expect(page.getByTestId('retained-answer-context')).toBeVisible();
+
+  const hierarchy = await page.evaluate(() => {
+    const read = (id: string) => {
+      const node = document.querySelector(`[data-testid="${id}"]`)!;
+      const style = getComputedStyle(node);
+      const box = node.getBoundingClientRect();
+      return { y: Math.round(box.y), height: Math.round(box.height), background: style.backgroundColor, border: style.borderTopWidth };
+    };
+    const group = document.querySelector('[role="group"][aria-label]')!;
+    return {
+      refresh: read('answer-refresh-start'),
+      home: read('answer-back-home'),
+      lede: Math.round(document.querySelector('#answer-refresh-lede')!.getBoundingClientRect().y),
+      groupLabelled: group.getAttribute('aria-label') !== '' && group.contains(document.querySelector('[data-testid="answer-refresh-start"]')),
+      homeInGroup: group.contains(document.querySelector('[data-testid="answer-back-home"]')),
+    };
+  });
+
+  expect(hierarchy.groupLabelled).toBe(true);
+  expect(hierarchy.homeInGroup).toBe(false);
+  expect(hierarchy.lede).toBeLessThan(hierarchy.refresh.y);
+  expect(hierarchy.home.y).toBeGreaterThan(hierarchy.refresh.y + hierarchy.refresh.height);
+  // A link, not a third button: no plane and no outline of its own.
+  expect(hierarchy.home.background).toBe('rgba(0, 0, 0, 0)');
+  expect(hierarchy.home.border).toBe('0px');
+  expect(hierarchy.refresh.background).not.toBe('rgba(0, 0, 0, 0)');
+
+  if (evidence) {
+    mkdirSync(evidence, { recursive: true });
+    writeFileSync(`${evidence}/answer-page-hierarchy.json`, JSON.stringify(hierarchy, null, 2));
+    await page.screenshot({ path: `${evidence}/answer-page-1512.png`, animations: 'disabled' });
+  }
+});

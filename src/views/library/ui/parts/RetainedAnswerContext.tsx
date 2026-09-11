@@ -3,7 +3,7 @@
 import type { useTranslations } from 'next-intl';
 import type { RefObject } from 'react';
 import type { AnswerObservation } from '@/features/library';
-import { Button } from '@/shared/ui';
+import { Button, controlClass } from '@/shared/ui';
 
 export function RetainedAnswerContext({ observation, phase, historyState, older, onHome, onPrevious, onRefresh, refreshButtonRef, error, t }: {
   observation: AnswerObservation;
@@ -43,20 +43,39 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
         <p className="mt-2 text-caption leading-body text-[color:var(--color-text-secondary)]">{t('answers.provenance')}</p>
         {older ? <p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('answers.older')}</p> : null}
         {historyState !== 'none' ? <p data-testid="answer-history-state" className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t(`answers.history.${historyState}`)}</p> : null}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {/*
-            **Drawn without an agent, disabled, beside its reason** (`docs/DECISIONS.md`,
-            2026-09-11, "The Library keeps its spine, and computes the structural check
-            itself"). It used to vanish, leaving `answers.refreshUnavailable` explaining
-            the absence of a control a reader had never seen — a feature the product has
-            is always on screen, and availability is a state with its reason.
-          */}
-          <Button ref={refreshButtonRef} className="atlas-touch-floor max-w-full" size="sm" variant="outline" disabled={working || onRefresh === null} aria-describedby={onRefresh ? undefined : 'answer-refresh-unavailable'} onClick={onRefresh ?? undefined} data-testid="answer-refresh-start">{t(working ? `answers.phase.${phase}` : 'answers.refresh')}</Button>
-          {onPrevious ? <Button className="atlas-touch-floor max-w-full" size="sm" variant="ghost" onClick={onPrevious}>{t('answers.previous')}</Button> : null}
-          <Button className="atlas-touch-floor max-w-full" size="sm" variant="ghost" onClick={onHome}>{t('answers.back')}</Button>
+        {/*
+          **Asking for a new draft is not "go back", so they are not peers** (the 2026-09-11
+          record's Why: a refresh button was mistaken for a read-only review action). The two
+          controls that act on *this* answer — request a draft, read the version before it —
+          stand together in a group whose lede says what pressing them does, and leaving for
+          the list drops out of the group as a plain link below it. It stays a `<button>`: it
+          performs in-app selection, not navigation to a URL.
+
+          **Drawn without an agent, disabled, beside its reason** (`docs/DECISIONS.md`,
+          2026-09-11, "The Library keeps its spine, and computes the structural check
+          itself"). It used to vanish, leaving `answers.refreshUnavailable` explaining
+          the absence of a control a reader had never seen — a feature the product has
+          is always on screen, and availability is a state with its reason. That reason is
+          now the group's lede, so the sentence a person reads before pressing and the
+          sentence explaining why they cannot occupy one place.
+        */}
+        <div role="group" aria-label={t('answers.refresh')} className="mt-3">
+          <p id="answer-refresh-lede" className="text-caption leading-body text-[color:var(--color-text-secondary)]">{t(onRefresh ? 'answers.refreshHint' : 'answers.refreshUnavailable')}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button ref={refreshButtonRef} className="atlas-touch-floor max-w-full" size="sm" variant="outline" disabled={working || onRefresh === null} aria-describedby="answer-refresh-lede" onClick={onRefresh ?? undefined} data-testid="answer-refresh-start">{t(working ? `answers.phase.${phase}` : 'answers.refresh')}</Button>
+            {onPrevious ? <Button className="atlas-touch-floor max-w-full" size="sm" variant="ghost" onClick={onPrevious}>{t('answers.previous')}</Button> : null}
+          </div>
         </div>
-        {onRefresh ? <p className="mt-2 text-caption leading-body text-[color:var(--color-text-secondary)]">{t('answers.refreshHint')}</p> : null}
-        {!onRefresh ? <p id="answer-refresh-unavailable" className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('answers.refreshUnavailable')}</p> : null}
+        <p className="mt-3">
+          <button
+            type="button"
+            onClick={onHome}
+            data-testid="answer-back-home"
+            className={controlClass({ shape: 'link', tone: 'muted', hoverInk: 'strong', className: 'atlas-touch-floor text-body' })}
+          >
+            {t('answers.back')}
+          </button>
+        </p>
         {error ? <p role="alert" className="mt-3 text-body leading-body text-[color:var(--color-text-primary)]">{error}</p> : null}
       </div>
     </section>
