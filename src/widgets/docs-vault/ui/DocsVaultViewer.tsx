@@ -19,6 +19,7 @@ import { splitHighlightSegments } from '@/shared/lib/highlight-match';
 import { githubAnchorSlug } from '@/shared/lib/github-anchor-slug';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useDelayedVisible } from '@/shared/lib/use-presence';
+import { useArrivalMemory } from '@/shared/lib/route-arrival-memory';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import {
   decodeWikilinkSlug,
@@ -94,13 +95,33 @@ export function DocsVaultViewer({
 }: Props) {
   const t = useTranslations('vaultWidgets.viewer');
   const reducedMotion = usePrefersReducedMotion();
-  const [raw, setRaw] = useState<string | null>(null);
+  /*
+   * **A document already read once arrives painted** (2026-09-12).
+   *
+   * `useDelayedVisible` below already stops the skeleton flashing — but stopping the
+   * *skeleton* is not the same as having a *screen*. With `raw` starting null on every
+   * mount, what the pane showed instead was its own ground. Measured at 1512×901 on the
+   * static export with the installed app's runtime injected, arriving at Docs from the rail
+   * left this pane **blank for 65-168 ms on the second arrival exactly as on the first**,
+   * with the body's own heading appearing only at 193 ms — and the route crossfade captured
+   * the blank, so the document then cut in with no motion at all.
+   *
+   * The memory key carries `mtime` (`shared/lib/route-arrival-memory.ts`), which is what
+   * makes this safe rather than a cache needing a policy: an edited file has a different
+   * mtime, so it has a different key and is read again. A remembered body can only ever be
+   * the body of exactly the bytes it was read from. The read below still runs every time and
+   * replaces this in place.
+   */
+  const [raw, setRaw] = useArrivalMemory<string | null>(
+    `docs-vault-body:${getDocContent ? 'local' : 'bundled'}:${doc.slug}:${doc.mtime ?? 0}`,
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   /*
    * The skeleton appears **only when there is something to wait for**. This component
-   * remounts on every document change, so `raw` starts null each time, and since the
-   * body is usually already in hand, the three-bar skeleton used to flash for a single
-   * frame (measured 8.2–15.9ms · see the `SKELETON_DELAY_MS` comment).
+   * remounts on every document change, so `raw` starts null for a document never read in
+   * this session, and since the body is usually already in hand, the three-bar skeleton used
+   * to flash for a single frame (measured 8.2–15.9ms · see the `SKELETON_DELAY_MS` comment).
    */
   const showSkeleton = useDelayedVisible(raw === null && error === null);
   // A static vault's bundled bodies — they have to come from **the same vault** the
@@ -126,8 +147,9 @@ export function DocsVaultViewer({
     return () => cancelAnimationFrame(handle);
   }, [raw, highlightQuery, reducedMotion]);
 
-  // This component remounts through key={doc.slug} in the parent, so state resets to a
-  // fresh null on a slug change. No reset is needed in the effect.
+  // This component remounts through key={doc.slug} in the parent, and the memory above is
+  // keyed by slug and mtime, so the body in hand always belongs to the document on screen.
+  // No reset is needed in the effect.
   useEffect(() => {
     let cancelled = false;
     const fetcher = getDocContent
@@ -171,7 +193,7 @@ export function DocsVaultViewer({
     return () => {
       cancelled = true;
     };
-  }, [bundledContent, doc.slug, getDocContent]);
+  }, [bundledContent, doc.slug, getDocContent, setRaw]);
 
   // Wrap highlightQuery matches in a string node with <mark>. Split out as a pure
   // function so dependencies track well inside useMemo, passing the query as an

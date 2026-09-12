@@ -10,6 +10,7 @@ import { DESTINATION_HREF } from '@/shared/config/destinations';
 
 import { badgeClass } from '@/shared/ui/badge-class';
 import { cn } from '@/shared/lib/cn';
+import { useArrivalMemory } from '@/shared/lib/route-arrival-memory';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip, Dialog } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
@@ -106,7 +107,26 @@ export function AcpRuntimeSettings({
   onOpenChat?: (runtimeId: string) => void;
 } = {}) {
   const t = useTranslations('nav.settingsMenu.runtimes');
-  const [runtimes, setRuntimes] = useState<AcpRuntimeStatus[] | null>(null);
+  /*
+   * **The list this machine already has, kept across a route change** (2026-09-12).
+   *
+   * `null` means "searching", and it used to be the value on **every** arrival at the Agents
+   * destination — so the screen whose whole content is this list started as one "checking…"
+   * row each time. Measured at 1512×901 on the static export with the installed app's
+   * runtime injected, the pane's content doubled 200-262 ms after the rail click on the
+   * second arrival exactly as on the first, which is inside the route crossfade: the browser
+   * captured the searching row as the screen it was fading into and then cut to the list.
+   *
+   * Not keyed on anything: which coding tools exist is a fact about this computer, so one
+   * memory is the whole truth. Both detection passes still run on every mount (the fast
+   * disk scan and the login check behind it) and replace this in place — the row that changes
+   * from "Ready" to "Login required" is still the sign that the check finished, exactly as
+   * the note below describes. What is gone is the state before any of it is known.
+   */
+  const [runtimes, setRuntimes] = useArrivalMemory<AcpRuntimeStatus[] | null>(
+    "acp-runtimes",
+    null,
+  );
   const [checking, setChecking] = useState(false);
   /*
    * ⚠️ **Expanded from the start for someone who has nothing** (walkthrough,
@@ -137,7 +157,7 @@ export function AcpRuntimeSettings({
     } finally {
       setChecking(false);
     }
-  }, []);
+  }, [setRuntimes]);
 
   // The first pass **does not use the button path**, for two reasons:
   // ① changing state directly in an effect body costs another render
@@ -170,7 +190,7 @@ export function AcpRuntimeSettings({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setRuntimes]);
 
   // A browser cannot spawn a process — impossible in principle, so the reason and
   // the place to go are stated together (`.claude/rules/surfaces.md`).

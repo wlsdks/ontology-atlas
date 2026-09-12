@@ -1,4 +1,7 @@
 import '@testing-library/jest-dom/vitest';
+import { beforeEach } from 'vitest';
+
+import { clearArrivalMemory } from './src/shared/lib/route-arrival-memory-store';
 
 /**
  * jsdom lacks `ResizeObserver` — this is **a hole in the environment**, not a product constraint,
@@ -49,3 +52,28 @@ if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
     dispatchEvent: () => false,
   })) as unknown as typeof window.matchMedia;
 }
+
+/**
+ * **Route-arrival memory is forgotten between cases** (2026-09-12).
+ *
+ * `src/shared/lib/route-arrival-memory.ts` keeps what a pane resolved for the life of the tab,
+ * so a returning screen arrives painted instead of loading. In a test file the "tab" is the whole
+ * module, so one case's resolved value is the next case's starting value — and two
+ * `AtlasGitPanel` cases that assert the *loading* stage went red the moment the memory landed,
+ * having inherited a workspace an earlier case had read.
+ *
+ * ## Why here rather than in those two files
+ *
+ * Same reason as the stubs above: the failure lands somewhere unrelated to the change that
+ * caused it. Any component that adopts this memory later would silently leak state into its
+ * neighbours, and the next person would read the red as their own doing. React state is already
+ * torn down between cases by Testing Library; this is the one store that is not, so it is the
+ * one that needs saying once.
+ *
+ * ⚠️ Imported from the **store** file, not the hook's. Importing the hook's module put React in
+ * every test file's setup graph — 128 ms of setup per file against 101 ms, roughly +27 ms ×
+ * 1026 files on CI, which is pressure on the one resource an oversubscribed runner lacks.
+ */
+beforeEach(() => {
+  clearArrivalMemory();
+});
