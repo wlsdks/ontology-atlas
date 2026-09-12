@@ -2749,6 +2749,19 @@ All reuse existing lamps. Enforcement is not lint but the **full contract of cva
 - **Coarse pointer = 44 — two prescriptions, neighbor spacing determines which**
   (revised 2026-08-05). 44 comes only from `--touch-target-min` (single source for coarse).
 
+  ⚠️ **The question is `any-pointer: coarse`, not `pointer: coarse`** (2026-09-12).
+  `pointer` reports the **primary** device, so a touchscreen laptop or a tablet with a
+  trackpad answered *fine* and every `.atlas-touch-floor` control stayed at its mouse
+  height while the screen was what the person reached for. `any-pointer` asks whether
+  any attached device is coarse, and is strictly wider — a phone matches both — so
+  nothing that promoted before stops promoting. **No browser can be put in the hybrid
+  state**: measured in Chromium across three context shapes and four CDP emulation
+  calls, the moment touch exists both queries match and `(any-pointer: fine)` stops
+  matching, so the query is gated statically
+  (`tests/contract/touch-floor-layer.contract.test.ts`, asserting both directions
+  because the old query is a substring of the new one) and the floor's reach is gated at
+  a desktop width in `tests/e2e/touch-target-contract.spec.ts`.
+
   | Prescription | Where | Why this one |
   |---|---|---|
   | **Actual height** — `.atlas-touch-floor` (`min-height`) | Value layer `chip`, `row`, `pill` | As the control grows, it **pushes neighbors away**, preventing overlap |

@@ -16,6 +16,7 @@ import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { CitedPassageState } from "../../lib/use-cited-passage";
 import type { SourceOutlineState } from "../../lib/use-source-outline";
+import { elideHashMiddle } from "../../lib/elide-hash";
 import { passageLabelText } from "../../lib/passage-label";
 import { AgentDoor } from "./AgentDoor";
 
@@ -265,7 +266,20 @@ export function SourceSummary({
   busy: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
-  const facts: Array<{ key: string; label: string; value: string; mono?: boolean }> = [
+  /**
+   * `oneLine` marks a value whose row must never grow a second line: the fact list is the
+   * one fixed-height block in this pane, and a row that wraps when a file has been cited
+   * makes the pane's whole rhythm depend on its state. `title` is where the untruncated
+   * value stays reachable.
+   */
+  const facts: Array<{
+    key: string;
+    label: string;
+    value: string;
+    mono?: boolean;
+    oneLine?: boolean;
+    title?: string;
+  }> = [
     { key: "path", label: t("source.path"), value: row.path, mono: true },
     {
       key: "format",
@@ -290,13 +304,22 @@ export function SourceSummary({
        * it was measured, because a hash whose provenance a reader cannot tell apart from
        * the one a write-up recorded is a fact about nothing (brief decision 2).
        */
+      /*
+       * ⚠️ **The middle is elided so the row stays one line** (2026-09-12). All 64
+       * characters plus the provenance clause measured two 16px lines at 1040x720 and at
+       * 1512x901 — see `../../lib/elide-hash.ts` for the column measurement and for why
+       * the *middle* goes rather than the tail. `title` carries the whole value.
+       */
       value:
-        hash ??
-        (passage?.hash
-          ? t("source.hashJustRead", { hash: passage.hash })
-          : t("source.hashUnmeasured")),
+        hash !== null
+          ? elideHashMiddle(hash)
+          : passage?.hash
+            ? t("source.hashJustRead", { hash: elideHashMiddle(passage.hash) })
+            : t("source.hashUnmeasured"),
+      title: hash ?? passage?.hash ?? undefined,
       // A hash is an identifier and sits in mono; the sentence that stands in for one is prose.
       mono: hash !== null,
+      oneLine: hash !== null || passage?.hash !== undefined,
     },
   ];
   /*
@@ -388,7 +411,28 @@ export function SourceSummary({
   return (
     <div
       data-testid="library-source-summary"
-      className="mx-auto w-full max-w-[var(--measure-doc-column)] px-6 pt-8 md:px-10"
+      /*
+       * ⚠️ **The document ends with a gutter, not against the window** (2026-09-12).
+       *
+       * This pane is a document and sizes itself to what it holds — measured on the static
+       * export, the box is exactly as tall as its content at both 1512x901 and 1040x720
+       * (657px for the DOCX, 523 for the XLSX, 777 for the cited Markdown), with no
+       * `min-height`, no centring and no filler anywhere in its chain, and the ground
+       * below it is `--color-canvas`, the same ground the landing stands on. That half of
+       * the earlier finding was wrong: the empty space under a short source is not a
+       * second panel.
+       *
+       * What was missing is the other end. `pt-8` opened the document and nothing closed
+       * it, so at 1040x720 on a cited source — where the content is 777px against a 671px
+       * scroller — the last block ended at y=720, **flush with the bottom of the window**,
+       * 0px of clearance at the scroll end. The repository already owes that room
+       * elsewhere (`tests/e2e/scroll-end-gap.spec.ts` holds a 24px floor, and
+       * `DocReadingPane` reserves its pill's clearance); this pane had it only below `lg`,
+       * from the bottom-tab reserve on its scroller. `pb-8` is the same gutter `pt-8`
+       * opens with, so the last block sits one gutter inside the document's end at every
+       * width.
+       */
+      className="mx-auto w-full max-w-[var(--measure-doc-column)] px-6 pb-8 pt-8 md:px-10"
     >
       <div className="flex items-start gap-2">
         <FileText
@@ -422,9 +466,16 @@ export function SourceSummary({
               {fact.label}
             </dt>
             <dd
-              className={`min-w-0 flex-1 break-all text-label text-[color:var(--color-text-secondary)] ${
-                fact.mono ? "font-mono" : ""
-              }`}
+              /* `truncate` rather than a character count alone: the elision is sized for
+                 the 1040 column, and below `sm` the value cell drops under its own label
+                 and is narrower than any fixed length could allow for. One line at every
+                 width, and the whole value on the cell. */
+              title={fact.title}
+              className={cn(
+                "min-w-0 flex-1 text-label text-[color:var(--color-text-secondary)]",
+                fact.oneLine ? "truncate" : "break-all",
+                fact.mono && "font-mono",
+              )}
             >
               {fact.value}
             </dd>
