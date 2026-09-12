@@ -978,6 +978,26 @@ for (const fixture of FIXTURES) {
         picture.maxNodeDiameterPx,
         "a mark is wider than a map node, which is the balloon the ceiling exists to stop",
       ).toBeLessThanOrEqual(LIBRARY_MAX_MARK_PX + 1e-6);
+      /*
+       * ⚠️ **One folder, one mark size — at every window, and this is the bar that holds it.**
+       *
+       * A folder small enough to fit any of these canvases sits *against* the ceiling, so its
+       * widest mark is drawn at exactly `LIBRARY_MAX_MARK_PX` on all three. That is the whole
+       * of what G1 answered: the owner's complaint was "one twelve-mark folder wearing 26.1px
+       * marks at 1040 and 34.0 at 1920".
+       *
+       * It is also what bounds every future attempt to fill the canvas by making the *world*
+       * bigger. Measured on this branch, stretching the gap between unrelated groups (the one
+       * distance on this canvas that carries no claim about meaning) to 1.55× its value takes
+       * `vault` to 59.8% of the 1512 window's width — and drops the 1040 camera to 1.74, its
+       * widest mark to **31.4px** while 1512 still draws 36. This bar goes red there.
+       */
+      if (picture.nodes.length <= NAMES_ALL_FIT_MARKS) {
+        expect(
+          picture.maxNodeDiameterPx,
+          "a small folder's widest mark is not at the ceiling, so this window draws it a different size than the others do",
+        ).toBeCloseTo(LIBRARY_MAX_MARK_PX, 5);
+      }
 
       /*
        * ── The amber dot is on the canvas, at every window. ──
