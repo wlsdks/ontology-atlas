@@ -563,8 +563,10 @@ product decisions route through `pnpm po:route -- --help` from change facts
 rather than a self-declared risk.
 
 Pre-push keeps quick checks local; full contract and Knip scans belong to PR CI.
-Main CI uses the push diff, with exhaustive daily and manual runs. Exact
-test-file duplicates are collapsed within a local check run; CI always executes. Browser CI shares one build and balances whole test files by
+Main CI reuses a successful PR only for the identical Git tree with complete
+live required-check proof; unproven pushes use their diff. Daily and manual
+runs remain exhaustive. Exact test-file duplicates are collapsed within a
+local check run. Browser CI shares one build and balances whole test files by
 measured duration; `node --test scripts/run-playwright-ci.test.mjs` verifies allocation.
 MCP harness probes use `pnpm test:mcp:rpc`; full CI keeps the unique CLI boundary
 through `pnpm integration:cli:architecture`. Catalogue checks use captured inputs;

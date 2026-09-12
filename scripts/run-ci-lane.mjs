@@ -53,6 +53,7 @@ export function commandsForLane({
   if (!plan?.lanes?.[lane] && !['static', 'web', 'e2e'].includes(lane)) {
     throw new Error(`unknown CI lane: ${lane}`);
   }
+  if (plan.reusedFrom) return [];
 
   if (lane === 'gates') {
     const commands = plan.full

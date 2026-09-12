@@ -16,6 +16,8 @@ export const BROWSER_EXECUTION_SURFACE_PATTERNS = Object.freeze([
 ]);
 
 export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
+  /^scripts\/(?:lib\/)?reviewed-main-push(?:\.test)?\.mjs$/,
+  /^scripts\/fixtures\/reviewed-main-push\.json$/,
   /^scripts\/classify-change(?:\.test)?\.mjs$/,
   /^scripts\/run-ci-lane(?:\.test)?\.mjs$/,
   /^scripts\/lib\/focused-check-suggestions(?:\.test)?\.mjs$/,

@@ -1,0 +1,458 @@
+{
+  "data": {
+    "repository": {
+      "rulesets": {
+        "totalCount": 0
+      },
+      "ref": {
+        "branchProtectionRule": {
+          "requiresStatusChecks": true,
+          "requiredStatusCheckContexts": [
+            "Types \u00b7 Lint \u00b7 Docs",
+            "Unit \u00b7 Contract",
+            "MCP",
+            "Playwright (static export)",
+            "Playwright (web surface)",
+            "Playwright (chromium 1/3)",
+            "Playwright (chromium 2/3)",
+            "Playwright (chromium 3/3)"
+          ]
+        }
+      },
+      "object": {
+        "oid": "e67e4b8854a82e8ff7c741b755fe8ce420c34e47",
+        "tree": {
+          "oid": "a0850407b103667e1d29a6f54794f9c756491cf1"
+        },
+        "associatedPullRequests": {
+          "pageInfo": {
+            "hasNextPage": false
+          },
+          "nodes": [
+            {
+              "number": 1591,
+              "state": "MERGED",
+              "mergedAt": "2026-09-12T19:36:20Z",
+              "baseRefName": "main",
+              "mergeCommit": {
+                "oid": "e67e4b8854a82e8ff7c741b755fe8ce420c34e47"
+              },
+              "headRefOid": "ef9e88e8e34c5fcf53c60ec3ac5767c797933fb8",
+              "commits": {
+                "nodes": [
+                  {
+                    "commit": {
+                      "oid": "ef9e88e8e34c5fcf53c60ec3ac5767c797933fb8",
+                      "tree": {
+                        "oid": "a0850407b103667e1d29a6f54794f9c756491cf1"
+                      },
+                      "statusCheckRollup": {
+                        "contexts": {
+                          "pageInfo": {
+                            "hasNextPage": false
+                          },
+                          "nodes": [
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Check impact plan",
+                              "databaseId": 103608832996,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:31:09Z",
+                              "completedAt": "2026-09-12T19:31:09Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "E2E impact plan",
+                              "databaseId": 103608833430,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:31:09Z",
+                              "completedAt": "2026-09-12T19:31:09Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Vault freshness check",
+                              "databaseId": 103608832830,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:31:09Z",
+                              "completedAt": "2026-09-12T19:31:08Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Check impact plan",
+                              "databaseId": 103608942728,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:31:56Z",
+                              "completedAt": "2026-09-12T19:32:18Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "E2E impact plan",
+                              "databaseId": 103608942446,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:31:54Z",
+                              "completedAt": "2026-09-12T19:32:15Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Vault freshness check",
+                              "databaseId": 103608942612,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:31:55Z",
+                              "completedAt": "2026-09-12T19:32:16Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Types \u00b7 Lint \u00b7 Docs",
+                              "databaseId": 103608845741,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:31:16Z",
+                              "completedAt": "2026-09-12T19:31:09Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Build browser artifact",
+                              "databaseId": 103608845739,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:31:16Z",
+                              "completedAt": "2026-09-12T19:31:09Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Build browser artifact",
+                              "databaseId": 103608998474,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:32:15Z",
+                              "completedAt": "2026-09-12T19:32:15Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Types \u00b7 Lint \u00b7 Docs",
+                              "databaseId": 103609005429,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:32:22Z",
+                              "completedAt": "2026-09-12T19:33:05Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Unit \u00b7 Contract ${{ matrix.shard }}/3",
+                              "databaseId": 103608833394,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:31:09Z",
+                              "completedAt": "2026-09-12T19:31:09Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Playwright (static export)",
+                              "databaseId": 103608833663,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:31:09Z",
+                              "completedAt": "2026-09-12T19:31:09Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Unit \u00b7 Contract 1/3",
+                              "databaseId": 103609005473,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:32:21Z",
+                              "completedAt": "2026-09-12T19:35:03Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Playwright (static export)",
+                              "databaseId": 103608997828,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:32:18Z",
+                              "completedAt": "2026-09-12T19:32:22Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Unit \u00b7 Contract 2/3",
+                              "databaseId": 103609005448,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:32:22Z",
+                              "completedAt": "2026-09-12T19:34:48Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Unit \u00b7 Contract 3/3",
+                              "databaseId": 103609005464,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:32:22Z",
+                              "completedAt": "2026-09-12T19:35:47Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "MCP",
+                              "databaseId": 103608833357,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:31:09Z",
+                              "completedAt": "2026-09-12T19:31:09Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Playwright (web surface)",
+                              "databaseId": 103608843504,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:31:15Z",
+                              "completedAt": "2026-09-12T19:31:09Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "MCP",
+                              "databaseId": 103609005438,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:32:21Z",
+                              "completedAt": "2026-09-12T19:32:25Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Playwright (web surface)",
+                              "databaseId": 103608997794,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:32:18Z",
+                              "completedAt": "2026-09-12T19:32:22Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Unit \u00b7 Contract",
+                              "databaseId": 103608833670,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:31:09Z",
+                              "completedAt": "2026-09-12T19:31:09Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Playwright (chromium ${{ matrix.shard }}/3)",
+                              "databaseId": 103608843506,
+                              "status": "COMPLETED",
+                              "conclusion": "SKIPPED",
+                              "startedAt": "2026-09-12T19:31:15Z",
+                              "completedAt": "2026-09-12T19:31:09Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Unit \u00b7 Contract",
+                              "databaseId": 103609545113,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:35:50Z",
+                              "completedAt": "2026-09-12T19:35:53Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Playwright (chromium 1/3)",
+                              "databaseId": 103608997875,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:32:18Z",
+                              "completedAt": "2026-09-12T19:32:21Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Playwright (chromium 2/3)",
+                              "databaseId": 103608997871,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:32:53Z",
+                              "completedAt": "2026-09-12T19:32:56Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            },
+                            {
+                              "__typename": "CheckRun",
+                              "name": "Playwright (chromium 3/3)",
+                              "databaseId": 103608997795,
+                              "status": "COMPLETED",
+                              "conclusion": "SUCCESS",
+                              "startedAt": "2026-09-12T19:32:18Z",
+                              "completedAt": "2026-09-12T19:32:22Z",
+                              "checkSuite": {
+                                "app": {
+                                  "databaseId": 15368,
+                                  "slug": "github-actions"
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

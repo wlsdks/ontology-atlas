@@ -1,8 +1,22 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildImpactPlan, FULL_LANE_COMMANDS } from './classify-change.mjs';
+import { buildImpactPlan, FULL_LANE_COMMANDS, reuseReviewedMainPlan } from './classify-change.mjs';
 import { commandsForLane, MACOS_ONLY_GATE_COMMANDS, runCommands } from './run-ci-lane.mjs';
+
+test('verified main reuse emits no duplicate commands in any required lane', () => {
+  const head = 'b'.repeat(40);
+  const full = buildImpactPlan({ files: ['scripts/classify-change.mjs'] });
+  const plan = reuseReviewedMainPlan(full, {
+    skip: true, commit: head, tree: 'c'.repeat(40), reviewedHead: 'd'.repeat(40), pullRequest: 12,
+  }, { eventName: 'push', base: 'a'.repeat(40), head });
+  for (const lane of ['gates', 'unit', 'mcp', 'e2e', 'static', 'web']) {
+    for (const shard of ['1/3', '2/3', '3/3']) {
+      assert.deepEqual(commandsForLane({ lane, plan, shard, eventName: 'push' }), [], `${lane} ${shard}`);
+    }
+  }
+  assert.ok(commandsForLane({ lane: 'gates', plan: full, eventName: 'push' }).length > 0);
+});
 
 test('affected unit lane uses the module graph and keeps filesystem contracts separate', () => {
   const plan = buildImpactPlan({
