@@ -182,7 +182,15 @@ describe("모션 토큰 거울 — CSS 램프와 JS 복사본", () => {
       }
     }
     expect(offenders, `the exit curve reached an entrance:\n${offenders.join("\n")}`).toEqual([]);
-  });
+    /*
+     * ⚠️ **20 seconds, because this case runs a backtracking regex over the whole of
+     * `app/globals.css`.** It passes alone in 3.9s and timed out at vitest's 5s default
+     * inside the 264-file contract run on a laptop with four branches building (measured
+     * 6.75s, 2026-09-12) — a lane going red on machine load rather than on a defect, and
+     * CI's own `Unit · Contract` run was green on the same commit. The assertions are
+     * untouched; only the clock they get is.
+     */
+  }, 20_000);
 
   it("오버레이 스프링이 CSS 토큰의 값 복사다", () => {
     const response = Number(cssVar("--overlay-spring-response"));
