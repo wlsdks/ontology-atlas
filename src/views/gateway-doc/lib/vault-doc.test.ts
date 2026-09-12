@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { readLedgerSource } from '../../../../scripts/lib/record-ledgers.mjs';
 import {
   extractEntries,
   normalizeHeadingKey,
@@ -102,10 +101,7 @@ describe('trimToRecentSections', () => {
     expect(body.length).toBeLessThan(preview.length);
     expect(bundledOmitted).toBeGreaterThan(0);
 
-    const raw = readFileSync(
-      path.join(process.cwd(), 'docs', 'CHANGELOG.md'),
-      'utf8',
-    );
+    const raw = readLedgerSource('docs/CHANGELOG.md')!.content;
     // With limit 0 every section is folded — the cheapest way to count the total.
     const totalSections = trimToRecentSections(raw, 0).omittedSections;
     expect(bundledOmitted + omittedSections + 12).toBe(totalSections);

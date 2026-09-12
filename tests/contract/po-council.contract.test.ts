@@ -1,5 +1,6 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readPoPilotSource } from '../../scripts/lib/po-pilot-records.mjs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -412,7 +413,7 @@ describe('Atlas PO pilot can decide its sunset', () => {
     });
     // The command must report what the library reports for the same document and
     // date, whatever phase the live register is in.
-    const expected = evaluatePoPilot(parsePoPilot(read(PILOT)), '2026-09-01');
+    const expected = evaluatePoPilot(parsePoPilot(readPoPilotSource(PILOT)!.content), '2026-09-01');
     expect(JSON.parse(output)).toMatchObject({
       phase: expected.phase,
       metrics: { eligibleDecisions: expected.metrics.eligibleDecisions },
