@@ -72,9 +72,15 @@ const EXPECTED: ReadonlyArray<{ code: string; page: string; line: string; adviso
 
 /**
  * Read the screen's own enumeration: one `(code, page, line)` triple per **finding**, not
- * per row. A collapsed row names one page and carries a `:line` for each finding inside
- * it, so the line is read from the door's own paragraph — where the suffix lives — rather
+ * per row. A collapsed row names one page and carries one place for each finding inside
+ * it, so the line is read from the door's own paragraph — where the place lives — rather
  * than from the row, whose rule sentence is prose this proof must not parse.
+ *
+ * ⚠️ The place used to be printed as `:19`, the anchor `wiki-validate` writes, and this
+ * reader matched it literally. Since 2026-09-13 the door says it the way the describer says
+ * it beside the page (`line 19` on this English run), so the reader takes the number out of
+ * those words and keeps the `:19` shape `EXPECTED` is written in — the proof is about which
+ * findings the page enumerates, not about how it words a line number.
  */
 async function readReport(page: Page) {
   return page.evaluate(() => {
@@ -84,8 +90,8 @@ async function readReport(page: Page) {
       for (const row of group.querySelectorAll('[data-testid="library-structural-finding"]')) {
         for (const door of row.querySelectorAll('[data-testid="library-finding-page"]')) {
           const name = (door.textContent ?? "").trim();
-          const suffixes = [...((door.closest("p")?.textContent ?? "").matchAll(/:\d+/g))].map(
-            (match) => match[0],
+          const suffixes = [...((door.closest("p")?.textContent ?? "").matchAll(/line (\d+)/g))].map(
+            (match) => `:${match[1]}`,
           );
           if (suffixes.length === 0) out.push({ code, page: name, line: "" });
           else for (const line of suffixes) out.push({ code, page: name, line });
