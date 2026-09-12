@@ -76,10 +76,12 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
   it("성능 시험은 훅에서 뺀다 — 바쁜 기계에서 잰 비율은 뜻이 없다", () => {
     const unitLane = executable.split("\n").find((line) => /lane unit /.test(line)) ?? "";
     expect(unitLane, "unit 레인을 못 찾았다 — 이 시험이 헛돈다").not.toBe("");
-    expect(unitLane, "훅이 성능 시험까지 돌린다 — 바쁜 기계에서 흔들린다").toContain(
+    const planner = readFileSync(path.join(ROOT, 'scripts/prepush-unit-plan.mjs'), 'utf8');
+    expect(executable).toContain('node scripts/prepush-unit-plan.mjs');
+    expect(planner, "훅이 성능 시험까지 돌린다 — 바쁜 기계에서 흔들린다").toContain(
       "--exclude",
     );
-    expect(unitLane).toContain("perf.test");
+    expect(planner).toContain("perf.test");
 
     // CI must still run them; the exclusion is local-only.
     const ci = readFileSync(path.join(ROOT, ".github/workflows/checks.yml"), "utf8");
@@ -118,7 +120,10 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
     // The unit lane is selected by Vitest's module graph from the same three-dot
     // base the lane filters use. Running all 759 files to judge a leaf change is
     // what made this hook 367 s for a one-file diff.
-    expect(laneLine("unit"), "unit 레인이 아직 전체 suite 를 돈다").toContain("--changed=");
+    const planner = readFileSync(path.join(ROOT, 'scripts/prepush-unit-plan.mjs'), 'utf8');
+    expect(executable).toContain('node scripts/prepush-unit-plan.mjs');
+    expect(planner, "unit 레인이 아직 전체 suite 를 돈다").toContain("--changed=");
+    expect(planner).not.toMatch(/--maxWorkers|--testTimeout/);
     expect(executable, "unit 레인의 기준이 3점 병합 기점이 아니다").toMatch(
       /merge-base "\$BASE_REF" HEAD/,
     );

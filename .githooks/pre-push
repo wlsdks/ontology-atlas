@@ -159,7 +159,11 @@ fi
 # change cost 377.7 s; the tests that actually import the change cost a fraction of
 # that, and CI re-runs the identical `--changed` selection on the PR.
 MERGE_BASE=$(git merge-base "$BASE_REF" HEAD 2>/dev/null || echo "$BASE_REF")
-touched '^(src|app)/.*\.(ts|tsx|js|mjs|css)$' '^messages/' && lane unit "pnpm exec vitest run --changed=$MERGE_BASE --exclude '**/*.perf.test.*' --exclude 'tests/contract/**' --passWithNoTests"
+if touched '^(src|app)/.*\.(ts|tsx|js|mjs|css)$' '^messages/'; then
+  UNIT_COMMAND=$(node scripts/prepush-unit-plan.mjs "--base=$MERGE_BASE") ||
+    UNIT_COMMAND="pnpm exec vitest run --changed=$MERGE_BASE --exclude '**/*.perf.test.*' --exclude 'tests/contract/**' --passWithNoTests"
+  lane unit "$UNIT_COMMAND"
+fi
 touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
 # The lane selector covers agents:check's full subject set: `.codex/**` (the
 # hook/config mirror and the MCP-grant denominator via .codex/config.toml),
