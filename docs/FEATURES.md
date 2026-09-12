@@ -973,9 +973,9 @@ about the pointer between half and four times the fit; dragging empty canvas pan
 double-click and a `ChromeTile` in the canvas's corner fit the whole picture; a coarse
 pointer gets one-finger drag and pinch. Which gesture a press *is* is decided once, at
 pointerdown, past a 7px threshold. Hovering holds the mark, its neighbours and their edges
-at full ink and dims everything else to 35% over `--motion-fast`. Marks are graded 5–10px
-by degree, edges are quadratic bows deeper the longer they run, and every mark clears a 1px
-halo of the canvas ground. Under `prefers-reduced-motion` there is no settle: the
+at full ink and dims everything else to 35% over `--motion-fast`. Marks are graded by
+degree inside a band that follows the canvas (below), edges are quadratic bows deeper the
+longer they run, and every mark clears a halo of the canvas ground one line width wide. Under `prefers-reduced-motion` there is no settle: the
 simulation is run to rest synchronously and drawn once, and
 `tests/e2e/library-graph-alive.spec.ts` proves the canvas is byte-identical frame to frame.
 
@@ -1017,6 +1017,49 @@ from every line crossing it), it is stroked in a **2px** ground halo — wider t
 citation line that used to run through the glyphs — and it is shortened **in the middle**,
 so `volunteer-email-2026-09-02.txt` and `…-05.txt` no longer render as one identical
 `volunteer-email-2026-0…` on two different squares.
+
+**Each group of the folder gets a place, and the ink is sized to the canvas**
+(2026-09-12). The graph became the Library's home the same day, and the owner read the first
+frame of it as *"an ugly popup, very poor"*. A folder is usually not one graph — the owner's
+is four groups: two clusters, one page with its single source, and the files nobody has
+written up — and held in one field with one centre the only force with an opinion about where
+two *unconnected* groups go is mutual repulsion, whose answer is always the walls. Measured
+at 1512×901 on a 1088×819 canvas: three clusters at three walls, a **167px** horizontal band
+holding nothing, and **54%** of a fixed 6×4 grid occupied. (The 99.8% bounding-box fill
+reported at the same time is the number that cannot see it: four marks in four corners fill a
+box perfectly.)
+
+So the groups are **composed**. Each connected component is settled on its own by the same
+forces, its measured footprint is packed into a column of an arrangement shaped like the
+canvas, and its gravity is re-aimed at that place with cross-group repulsion removed;
+collision stays, so no mark ever sits on another, and every distance *inside* a group is
+still the springs', drawn at one uniform scale. Unattached files become one more group with a
+place of their own — a folder that is one connected mass keeps the ring around that mass, and
+that case measured better that way. The arrangement is searched for: every assignment of six
+groups or fewer to columns is placed, fitted to the canvas and scored on the grid it leaves
+empty, because four earlier forms of the search each optimised something other than what a
+person sees and each traded one folder's hole for another's. Measured after, on the same two
+fixtures and a sixty-mark folder at 1512×901 and 1040×720: occupancy **0.54 → 0.83**,
+**0.50 → 0.63**, **0.58 → 0.88**, **0.54 → 0.67**, and the tallest band **167 → 58px**,
+**226 → 80px**, **121 → 38px**, **139 → 58px**. Width filled on the sparsest folder went
+**0.62 → 1.00**. The sixty-mark folder is one component and is unchanged.
+
+The ink then follows the canvas rather than the 320px strip this graph was born in. The mark
+band grades from the room each mark has — the side of the square it would get if the canvas
+were split evenly between them — floored at the 10px top 2026-09-06 measured and capped at
+17px, where two marks citing one file would start to touch: twelve marks on 891,000 square
+pixels now wear **34px** where they wore 20. The two relation widths, the mark halo, the
+name's ground outline and the fit's own padding all scale with that band and never below the
+values they were measured at, so a dense folder keeps exactly the lines that shipped. A
+page's name takes the ramp step above a file's (`--text-body` against `--text-label`), read
+from CSS rather than copied, because the page is what somebody wrote and what this screen is
+for. And the canvas stands on the **map's own blueprint grid** (`--map-grid-minor` /
+`--map-grid-major`, 24px minor and 120px major in screen space, never moving), so the two
+canvases in this product share one floor. Every mark still clears the 3:1 non-text floor over
+the worst of that ground — page 12.77:1, source 5.74:1, concept and edge 4.90:1, the selected
+node 3.97:1 over a major grid line — and the grid is 1.07:1 from the canvas it rules.
+`tests/e2e/library-graph-picture.spec.ts` holds the occupancy, the band, both fills and the
+name placement at both windows on all three folders.
 
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
 the action: one cited source is a single **View original** button carrying the file name;
