@@ -389,7 +389,7 @@ export function HarnessGuidesView({
   locale: string;
 }) {
   const t = useTranslations('harness');
-  const rows = useMemo(() => buildRows(report, t('nestedLabel')), [report]);
+  const rows = useMemo(() => buildRows(report, t('nestedLabel')), [report, t]);
   const checks = report.analysis.checks;
   const declaredPairs = [checks.skillCopy, checks.agentCopy].filter(
     (check) => check.status !== 'not-applicable',
