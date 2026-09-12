@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+  branchRangePathsFromGit,
   changedPathsFromGit,
   collapsePlaywrightCommands,
   collapseCoveredContractCommands,
@@ -11,6 +12,76 @@ import {
   suggestFocusedChecksUsage,
   untrackedPathsForAdvisor,
 } from './suggest-focused-checks.mjs';
+
+/**
+ * The defect: on a **committed** branch with a clean tree, `git diff --name-only HEAD`
+ * is empty, so the advisor used to print "no changed paths" and exit 0 — at the exact
+ * moment an agent runs it to check the work it just committed. Measured 2026-09-12.
+ */
+describe('branch-range fallback', () => {
+  /** A `spawnSync` stand-in: one canned answer per git subcommand. */
+  function gitStub({ head = '', untracked = '', range = '', baseExists = true }) {
+    return (_command, args) => {
+      if (args[0] === 'rev-parse') return { status: baseExists ? 0 : 1, stdout: '' };
+      if (args[0] === 'ls-files') return { status: 0, stdout: untracked };
+      if (args[0] === 'diff' && args.includes('origin/main...HEAD')) {
+        return { status: 0, stdout: range };
+      }
+      return { status: 0, stdout: head };
+    };
+  }
+
+  it('reads the merge-base range and splits surviving paths from deleted ones', () => {
+    const result = branchRangePathsFromGit({
+      spawn: gitStub({ range: 'src/kept.ts\nsrc/gone.ts\n' }),
+      exists: (path) => !path.endsWith('gone.ts'),
+    });
+
+    assert.equal(result.base, 'origin/main...HEAD');
+    assert.deepEqual(result.paths, ['src/kept.ts']);
+    assert.deepEqual(result.deletedPaths, ['src/gone.ts']);
+  });
+
+  it('returns nothing when origin/main cannot be resolved, rather than guessing a base', () => {
+    const result = branchRangePathsFromGit({
+      spawn: gitStub({ range: 'src/kept.ts\n', baseExists: false }),
+      exists: () => true,
+    });
+
+    assert.equal(result.base, '');
+    assert.deepEqual(result.paths, []);
+  });
+
+  it('plans the branch range when the working tree is clean, and says which scope it used', () => {
+    const output = [];
+    const exitCode = runSuggestFocusedChecks({
+      argv: [],
+      stdout: { write: (text) => output.push(text) },
+      stderr: { write: () => {} },
+      spawn: gitStub({ head: '', untracked: '', range: 'src/shared/lib/cn.ts\n' }),
+    });
+
+    assert.equal(exitCode, 0);
+    const text = output.join('');
+    assert.match(text, /scope: origin\/main\.\.\.HEAD/);
+    assert.match(text, /1 changed path/);
+    assert.doesNotMatch(text, /no changed paths/);
+  });
+
+  it('keeps the working tree ahead of the branch range when both have something to say', () => {
+    const output = [];
+    runSuggestFocusedChecks({
+      argv: [],
+      stdout: { write: (text) => output.push(text) },
+      stderr: { write: () => {} },
+      spawn: gitStub({ head: 'src/shared/lib/cn.ts\n', range: 'messages/en.json\n' }),
+    });
+
+    const text = output.join('');
+    assert.match(text, /scope: the working tree/);
+    assert.doesNotMatch(text, /origin\/main\.\.\.HEAD/);
+  });
+});
 
 describe('focused check suggestion CLI', () => {
   it('normalizes the pnpm separator and prints help without git', () => {

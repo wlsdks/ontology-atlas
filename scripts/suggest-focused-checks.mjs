@@ -66,6 +66,47 @@ export function deletedPathsFromGit({
   return uniqueLines(tracked).filter((path) => !exists(resolve(cwd, path)));
 }
 
+/**
+ * The branch's own three-dot range, used when the working tree has nothing to say.
+ *
+ * ⚠️ **Measured 2026-09-12.** `git diff --name-only HEAD` describes the *working tree*.
+ * The moment the work is committed that list is empty, and the advisor printed "no
+ * changed paths against HEAD or untracked files" and **exited 0** — which is exactly
+ * when an agent runs it, having just committed, and reads the zero as "verified". The
+ * one instruction `AGENTS.md` gives about verification therefore returned nothing at the
+ * only moment it was asked.
+ *
+ * `origin/main...HEAD` is the merge-base diff the pre-push hook already scopes itself
+ * with, so merging main into the branch does not drag main's files into the plan. It is
+ * the fallback, never the default: an uncommitted edit is still the more specific answer
+ * and keeps priority.
+ */
+export function branchRangePathsFromGit({
+  cwd = process.cwd(),
+  spawn = spawnSync,
+  exists = existsSync,
+  baseRef = 'origin/main',
+} = {}) {
+  const resolved = spawn('git', ['rev-parse', '--verify', '--quiet', baseRef], {
+    cwd,
+    encoding: 'utf-8',
+  });
+  // No `origin/main` (a fresh clone with no remote, a detached checkout): nothing to
+  // compare against, and guessing another base would silently change the scope.
+  if ((resolved.status ?? 1) !== 0) return { base: '', paths: [], deletedPaths: [] };
+  const tracked = spawnGit({
+    cwd,
+    spawn,
+    args: ['diff', '--name-only', `${baseRef}...HEAD`, '--'],
+  });
+  const all = uniqueLines(tracked);
+  return {
+    base: `${baseRef}...HEAD`,
+    paths: existingPaths(all, { cwd, exists }),
+    deletedPaths: all.filter((path) => !exists(resolve(cwd, path))),
+  };
+}
+
 function spawnGit({ cwd, spawn, args }) {
   const result = spawn('git', args, {
     cwd,
@@ -253,8 +294,18 @@ export function runSuggestFocusedChecks({
   const pathArgs = args.filter((arg) => arg !== '--run');
   try {
     const explicit = pathArgs.length > 0;
-    const paths = explicit ? pathArgs : changedPathsFromGit({ cwd, spawn });
-    const deletedPaths = explicit ? [] : deletedPathsFromGit({ cwd, spawn });
+    let paths = explicit ? pathArgs : changedPathsFromGit({ cwd, spawn });
+    let deletedPaths = explicit ? [] : deletedPathsFromGit({ cwd, spawn });
+    let scope = explicit ? '' : 'the working tree';
+    if (!explicit && paths.length === 0 && deletedPaths.length === 0) {
+      const branch = branchRangePathsFromGit({ cwd, spawn });
+      if (branch.paths.length > 0 || branch.deletedPaths.length > 0) {
+        paths = branch.paths;
+        deletedPaths = branch.deletedPaths;
+        scope = branch.base;
+      }
+    }
+    if (scope) stdout.write(`[focused-checks] scope: ${scope}\n`);
     const suggestions = suggestFocusedChecks(paths, { deletedPaths });
     stdout.write(`${formatFocusedCheckSuggestions(suggestions)}\n`);
     if (!run) return 0;
@@ -281,7 +332,9 @@ Suggests the first focused checks for changed files so agents avoid full-suite
 verification by default. With no path arguments it
 uses tracked changes from git diff plus untracked files from git ls-files,
 excluding local .agents/ and .codex/ agent state except shared repo skills,
-Codex hooks, and Codex MCP config. Pass paths explicitly to inspect a planned
+Codex hooks, and Codex MCP config. When the working tree is clean it falls back
+to the branch's own range, origin/main...HEAD, so a committed branch is still
+planned rather than reported as nothing to run. Pass paths explicitly to inspect a planned
 file set before editing. Escalate to broad lint/build/test only when the
 focused checks leave a concrete uncovered risk.`;
 }
