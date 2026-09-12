@@ -54,23 +54,6 @@ import { expect, test, type Page } from "@playwright/test";
  * red from day one, and a red gate is soon switched off.
  *
  * ════════════════════════════════════════════════════════════════════
- * ## How many surfaces can be opened — the denominator
- * ════════════════════════════════════════════════════════════════════
- *
- * The exhaustive source count is **36** (`censusAppearingSurfaces`, surfaces that
- * appear conditionally). This file opens **9** of them. Most of the rest cannot be
- * opened here because they **need a vault** (document editor autocomplete, the agent
- * panel) or require canvas coordinates (map node popover, right-click menu — the
- * route through `?e2e=1`'s `window.__atlasMap` reached coordinate conversion this
- * round, but the click never landed on a node, so it was deferred).
- *
- * **Why the denominator is written into the code**: writing 9/36 lets the next person
- * ask "why are the other 27 not measured". Opening 9 and saying nothing makes that
- * question disappear. When the denominator grows, `surface-motion-ratchet`'s "openable
- * surfaces never grow" turns red first — and that is the moment to review this list
- * too.
- *
- * ════════════════════════════════════════════════════════════════════
  * ## Proof that this gate is not idling
  * ════════════════════════════════════════════════════════════════════
  *
@@ -91,112 +74,6 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 /** The same floor as `a11y-ratchet.spec.ts`. An empty document gives 2; a real screen 25–30. */
 const MIN_RULES_PASSED = 15;
-
-/**
- * The exhaustive source count from `censusAppearingSurfaces()`. See "the
- * denominator" above.
- *
- * 20 → 22 (2026-08-04): "connect my agent" became a stepped flow, adding two collapse
- * branches (the step body and the "not working?" drawer). Both need a vault to open,
- * so they are not yet among the surfaces this file opens — which is what the
- * denominator says.
- *
- * 22 → 20 (evening of 2026-08-04): those two branches moved to the list-row
- * disclosure grammar (`.ai-row-disclosure`, box always rendered with only the content
- * collapsing) and stopped being conditional *appearing surfaces*. Accessibility of the
- * collapsed content (tab order, no AT exposure) is carried by the box's `inert`, and
- * `AgentSetupStep.test.tsx` measures that contract.
- *
- * 20 → 21 (2026-08-08): the editor's `@` mention gained a **relation-picking second
- * step**. The first step (picking a concept) inherited the old wiki-link popover's
- * slot so the count was unchanged; only that second step is new. This surface appears
- * only after **a local vault + opening a document + entering edit + typing `@` +
- * picking a concept**, so it does not fit the single-click `OPENERS` grammar below —
- * which is what the denominator says. Its keyboard contract (↑↓, Enter, Esc) is
- * carried by widget-level tests rather than this file.
- *
- * 21 → 22 (2026-08-12): the evidence disclosure in project review results. The route
- * that injects local JSON and then presses the real toggle fits OPENERS below, so this
- * surface is included in the axe measurement as well as the denominator.
- *
- * 22 → 23 (2026-08-14): a specialist session-draft disclosure was added inside the
- * same review artifact. It is a local editing surface that does not modify the
- * original receipt, and the construction review e2e measures its opening and overflow
- * at 390/1023/1024/1512.
- *
- * 23 → 25 (2026-08-16): the ACP chat panel and the permission card inside it. Neither
- * **can fit the OPENERS grammar below** — without the desktop bridge
- * (`isAcpBridgeAvailable`) they do not render at all, so this browser-run sweep cannot
- * open them in principle. The permission card goes one layer deeper still: it appears
- * only when the agent tries to touch something outside the vault. The denominator says
- * so (the same class as the "@ typing" surface above). Accessibility is carried by
- * widget-level tests — `AcpChatPanel.test.tsx` measures the card's
- * `role="alertdialog"`, its name wiring, and the contract that it has no closing X.
- *
- * 25 → 26 (2026-08-16): the ACP chat's **past-conversation list** popover. This sweep
- * cannot open it for the same reason as the two above — it needs the desktop bridge,
- * and beyond that the button only exists when **this folder really has past
- * conversations** (with none, nothing is drawn). Accessibility and the folder-scope
- * contract are carried by `AcpChatPanel.test.tsx` and
- * `tests/contract/acp-session-scope.contract.test.ts`.
- *
- * 26 → 29 (2026-08-21): one in-map relation editor plus the two input→changeset swap
- * surfaces of "new concept". All three need a locally writable vault, so this static
- * browser sweep's single-click OPENERS cannot open them. The relation editor's
- * keyboard handling, review step, and pre-write pause are carried by
- * `MeaningEditorPanel.test.tsx`, the creation swap by `CreateNodeForm.test.tsx`, and
- * the installed-app verification opens the real surfaces.
- *
- * 30 → 31 (2026-08-29): the ACP chat's post-turn next-step group. It cannot fit
- * this static browser OPENERS grammar: the surface needs the desktop ACP bridge,
- * an established session, and a completed latest turn with a nonblank agent
- * answer. `AcpChatPanel.test.tsx` covers its named group, keyboard-reachable rows,
- * state suppression, and prefill-without-send contract; the installed app carries
- * the actual 1512px turn and screenshot proof.
- *
- * 31 → 33 (2026-09-02): Architecture gained a same-route ACP dock and an on-canvas
- * evidence overlay. The overlay fits the static browser opener grammar and joins
- * the list below. The dock requires a verified desktop ACP runtime, vault path,
- * and bundled MCP server, so component tests plus the installed-app walkthrough
- * carry its accessibility proof.
- */
-/*
- * 38 → 39 (2026-09-07): the Library's select-to-ask list. It appears only after a text
- * selection inside a wiki page and only where a desktop ACP runtime can answer, so it
- * cannot join this single-click OPENERS grammar. `SelectionAsk.test.tsx` covers the named
- * aside, Escape, the three questions and the typed one; the installed app carries the press.
- */
-/*
- * 33 → 34 (2026-09-04): the Flow presentation requires a Tauri vault path, an
- * eligible ACP runtime, an exact completed Flow turn, and successful source-hidden
- * qualification. It therefore cannot join this static single-click OPENERS grammar.
- * `AcpChatPanel.test.tsx` opens the offer and presentation, checks the named region,
- * progress and keyboard/focus path, and separately covers fail-closed qualification.
- */
-/*
- * 35 → 36 (2026-09-05): Docs gained a same-route ACP dock, the surface Compile opens.
- * Like the Analysis and Architecture docks it needs a verified desktop ACP runtime, an
- * absolute vault path and the bundled MCP server, so this static browser sweep cannot
- * reach it; `LibraryAgentDock` reuses `AcpChatPanel` verbatim, whose own tests carry the
- * named region, keyboard path and prefill-without-send contract, and the installed-app
- * walkthrough carries the rendered proof.
- *
- * The library's own two sections are **not** appearing surfaces — they are list sections
- * in the sidebar, always drawn once a folder is open — and its one blocking dialog is a
- * `Dialog`, which this gate counts separately.
- */
-// The Analysis dock is desktop-only; InsightsAgentDock tests and the native walkthrough cover it.
-// 39 → 40: Library work observations require tool events or a changed folder revision,
-// not a single-click opener. library-work-activity.spec.ts drives the ACP protocol,
-// permission wait, changed-file receipt and rejection; LibraryWorkActivityStrip.test.tsx
-// covers its named section and exact file controls. Native motion proof is separate.
-// 35 → 36: ACP's held-scope request status requires a runtime; AcpChatPanel tests
-// its no-send and eventual real-turn acknowledgement. Map Meaning and Architecture
-// history now open without that runtime and join the measured browser paths below.
-// 36 → 37: two branches each added one surface on the same day. The Docs dock in the
-// block above is the second, and it needs the same desktop runtime, so it stays out of
-// this sweep for the same reason.
-const APPEARING_SURFACES_IN_SOURCE = 40;
 
 interface Opener {
   readonly name: string;
@@ -407,6 +284,12 @@ test("접근성 래칫(열린 표면) — 새 룰 위반 0, 기존 개수는 늘
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 1512, height: 900 });
 
+  expect(OPENERS.length, "열 표면 목록이 비면 시험은 공집합 위에서 전부 초록이다").toBeGreaterThanOrEqual(5);
+  expect(
+    new Set(OPENERS.map((o) => o.route)).size,
+    "전부 한 라우트에서만 열면 다른 축의 표면은 여전히 아무도 안 본다",
+  ).toBeGreaterThanOrEqual(3);
+
   const counts = new Map<string, number>();
   const samples = new Map<string, string>();
   const thin: string[] = [];
@@ -454,15 +337,4 @@ test("접근성 래칫(열린 표면) — 새 룰 위반 0, 기존 개수는 늘
     slack,
     `열린 표면의 위반이 줄었다 — 이 파일의 BASELINE 도 같이 내려라.\n${slack.join("\n")}`,
   ).toEqual([]);
-});
-
-test("측정 목록이 분모를 잃지 않는다 — 9/36 라고 말할 수 있어야 한다", async () => {
-  expect(OPENERS.length, "열 표면 목록이 비면 위 시험은 공집합 위에서 전부 초록이다").toBeGreaterThanOrEqual(5);
-  expect(
-    new Set(OPENERS.map((o) => o.route)).size,
-    "전부 한 라우트에서만 열면 다른 축의 표면은 여전히 아무도 안 본다",
-  ).toBeGreaterThanOrEqual(3);
-  // The denominator must stay in the code so "why are the rest not measured" can be
-  // asked.
-  expect(APPEARING_SURFACES_IN_SOURCE).toBeGreaterThan(OPENERS.length);
 });

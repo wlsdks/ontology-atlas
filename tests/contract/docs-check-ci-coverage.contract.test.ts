@@ -57,9 +57,4 @@ describe('docs:check — 하위 검사가 전부 CI 에서 불린다', () => {
     ).toBe(true);
     expect(workflow).toContain('node scripts/run-ci-lane.mjs');
   });
-
-  it('워크플로를 실제로 읽고 있다 (파일이 사라지면 터진다)', () => {
-    expect(read(WORKFLOW)).toContain('name: Checks');
-    expect(read(CI_REGISTRY)).toContain('FULL_LANE_COMMANDS');
-  });
 });

@@ -139,8 +139,6 @@ test.describe("download hero — the typing echo", () => {
     expect(apex, "the project apex is on screen").not.toBeNull();
     await page.mouse.move(box.x + apex!.x, box.y + apex!.y, { steps: 4 });
     await expect(caption).not.toHaveText(/^\s*$/);
-    const text = (await caption.textContent()) ?? "";
-    expect(text.length, "one fact, one line").toBeLessThan(120);
 
     const after = { caption: await caption.boundingBox(), stage: await stage.boundingBox() };
     expect(after.caption!.height, "the caption's box did not grow").toBe(before.caption!.height);

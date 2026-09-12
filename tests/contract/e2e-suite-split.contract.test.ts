@@ -117,8 +117,8 @@ describe('정적 export CI만 runner의 두 CPU를 쓴다', () => {
     expect(resolvePlaywrightWorkers({ CI: 'false', PLAYWRIGHT_STATIC: '1' })).toBe(1);
   });
 
-  it('보통의 test process는 로컬·dev용 단일 worker를 유지한다', () => {
-    expect(playwrightConfig.workers).toBe(1);
+  it('the loaded config resolves workers from the actual environment', () => {
+    expect(playwrightConfig.workers).toBe(resolvePlaywrightWorkers(process.env));
   });
 });
 
@@ -137,10 +137,10 @@ describe('워크플로 분기가 살아 있다', () => {
       );
     }
     expect(runner, 'smoke project selection disappeared from the executor').toContain(
-      'playwright test --project=smoke --shard=${shard}',
+      "const project = e2e.mode === 'smoke' ? ' --project=smoke' : '';",
     );
     expect(runner, 'targeted mode no longer receives exact spec paths').toContain(
-      '${e2e.specs.join',
+      '${specs.join',
     );
     expect(planner, 'an unmapped browser path no longer fails closed to smoke').toContain(
       "unmappedPaths.length > 0 ? 'smoke'",
@@ -156,10 +156,10 @@ describe('워크플로 분기가 살아 있다', () => {
     // 30-second timeout on each run (measured on #1178's first run). Deleting either
     // of these two pieces brings that class of failure back.
     expect(runner, 'build disappeared before the browser suite').toMatch(
-      /pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test/g,
+      /prebuilt \? '' : 'pnpm build && '/g,
     );
     expect(runner, 'the full main sweep disappeared').toContain(
-      'playwright test --shard=${shard}',
+      'scripts/run-playwright-ci.mjs${project} --shard=${shard}',
     );
   });
 

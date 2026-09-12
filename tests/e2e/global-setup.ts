@@ -26,6 +26,7 @@ const WARMUP_PATHS = [
 ];
 
 export default async function globalSetup(config: FullConfig) {
+  if (process.env.PLAYWRIGHT_STATIC === '1') return;
   const baseURL = config.projects[0]?.use?.baseURL;
   if (!baseURL) return;
   for (const path of WARMUP_PATHS) {

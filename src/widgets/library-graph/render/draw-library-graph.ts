@@ -368,9 +368,9 @@ const STALE_DOT_BREATH = 1.1;
  *
  * ## Where 64 comes from
  *
- * The budget this holds is recorded in `docs/DECISIONS.md`, 2026-09-13 "The standing amber
- * is a share of the picture's ink": **the standing amber may hold no more than 4% of the
- * canvas's ink at rest**, ink being
+ * The budget this holds is recorded in
+ * `docs/records/decisions/2026-09-13-standing-amber-ink-share-e7854c6f-2475-49ae-821d-2c6dc5bcbdc6.md`:
+ * **the standing amber may hold no more than 4% of the canvas's ink at rest**, ink being
  * re-inspection 122's own statistic (a canvas pixel brighter than luma 30). Both sides of
  * 64 are measured, on `tests/e2e/library-graph-picture.spec.ts`'s own fixtures:
  *
@@ -757,8 +757,8 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
      * 5,236 pixels of strict amber against 33,416 of ink — **15.7% of the picture**, with
      * total graph ink up 48% on the installed app. The reviewer's sentence is the
      * statistic: *"the picture's dominant mark is now a warning, not a document"*, which
-     * is the "reader who calls dense amber noise" the 2026-09-13 record listed as its own
-     * falsifier.
+     * is the "reader who calls dense amber noise" the 2026-09-13 ceiling record listed as
+     * its own falsifier.
      *
      * Two other levers were arithmetic dead ends and are not taken. **Alpha** is refused by
      * the same record's own measurement: at 0.55 the dot composites to `rgb(139,105,33)`

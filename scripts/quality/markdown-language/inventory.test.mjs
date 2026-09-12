@@ -137,7 +137,6 @@ test('ratchets each migration scope in both directions', () => {
       content: '---\ndisplay_ko: 예시\n---\n# Example\n',
     },
     { path: 'cli/templates/vault-ko/README.md', content: '# 한국어 템플릿\n' },
-    { path: 'public/docs-vault/GUIDE.md', content: '# Generated\n' },
     { path: '.agents/agents/example.md', content: '# Mirror\n' },
   ]);
   const exact = Object.fromEntries(
@@ -150,6 +149,7 @@ test('ratchets each migration scope in both directions', () => {
     ]),
   );
 
+  assert.equal(audit.generatedFiles, 0);
   assert.deepEqual(evaluateMarkdownLanguageGate(audit, exact), []);
 
   const tooLow = structuredClone(exact);

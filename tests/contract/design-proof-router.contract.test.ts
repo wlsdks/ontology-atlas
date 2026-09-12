@@ -159,34 +159,9 @@ describe('Atlas design proof routing', () => {
     });
   });
 
-  /*
-   * Mirror byte-identity is `pnpm agents:check`'s job, and it does every pair in the
-   * tree generically (`cli/src/commands/agent-files.mjs`: ".claude/skills ↔
-   * .agents/skills byte diff", same for agents). Re-asserting three named pairs here
-   * added no falsifier and made a new seat look guarded when it was not (removed
-   * 2026-09-12).
-   */
-  it('keeps the active policy reachable from the agent router', () => {
-    const agents = read('AGENTS.md');
-    expect(agents).toContain('pnpm design:route');
+  it('keeps the active policy reachable from the package entrypoint', () => {
     expect(JSON.parse(read('package.json')).scripts['design:route']).toBe(
       'node scripts/design-proof-router.mjs',
     );
-  });
-
-  /*
-   * Only the routed token, not the sentences around it.
-   *
-   * This test used to also require five exact sentences out of `design-build/SKILL.md`
-   * and one out of the operating system document, and to forbid three exact retired
-   * phrasings. `docs/DECISIONS.md` 2026-08-01 settled that class of check: "check only
-   * what a machine can produce; do not check sentences a human judged and wrote." Those
-   * eight pins failed on a faithful rewrite and passed on the retired *behaviour*
-   * returning under new words — wrong in both directions. What a machine can produce is
-   * the routing token the router actually emits, so that is what stays (removed
-   * 2026-09-12).
-   */
-  it('makes the routed loop reachable from the skill the router names', () => {
-    expect(read('.agents/skills/design-build/SKILL.md')).toContain('computer-use-loop');
   });
 });

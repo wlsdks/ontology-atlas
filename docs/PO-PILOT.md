@@ -8,6 +8,8 @@ outcome: adjust
 
 # Atlas PO routing pilot
 
+> Frozen pilot baseline since 2026-09-13. Add runs, later observations and authorized policy outcomes with `pnpm po:record`; `pnpm po:pilot` and the Docs Vault compose them. See [record workflow](records/README.md). Do not edit these historical tables or frontmatter.
+
 This temporary register measures the 2026-09-01 Atlas product-decision system.
 It is not a second decision archive. Significant rationale stays in
 [`DECISIONS.md`](DECISIONS.md); this file keeps only the typed facts needed to

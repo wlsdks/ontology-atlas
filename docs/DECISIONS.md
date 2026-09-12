@@ -1,5 +1,7 @@
 # DECISIONS — the council decision ledger
 
+> Frozen history since 2026-09-13. Add new decisions under `docs/records/decisions/` with `pnpm record:new`; `pnpm decisions:find` and the Docs Vault compose all records. See [record workflow](records/README.md). Historical recording instructions below describe the former format.
+
 > This file keeps **the decisions and the arguments that lost when they were
 > made**. `docs/CHANGELOG.md` answers *what changed and when*; this file
 > answers ***why it was decided that way, and what was staked on it***.
@@ -53,15 +55,6 @@ decision is dated the same day. Dates and numbers are unchanged, so every
 citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
-
-## 2026-09-13 — The standing amber is a share of the picture's ink
-
-**Why**: re-inspection 122 R2 fired the previous record's own falsifier, *"a reader who calls dense amber noise"*: 480 standing dots measured **23,298 amber pixels against 0** and graph ink up **48%** — *"the dominant mark is now a warning, not a document"*. On the picture fixtures, **15.67% of the canvas's ink at 1040x720** against 0.79-2.18% on the folders read as legible.
-**Prior**: **narrows** the same day's "The camera's ceiling is the widest mark a folder may draw" on that falsifier; its ink, half-break bound and 3px floor stand, and only how many dots stand at once moves. 2026-09-08 "The Library graph stands still" stands: nothing moves, and a press changes ink.
-**Decision**: the standing amber holds no more than **4% of the canvas's ink at rest** (122's own luma-30 ink), held by a count of unverified **citations** and never of marks, the amber being 9-11 pixels per dot and nothing else. At or under **64** every citation keeps its dot at every window, unchanged; past it none stands and the strip's `N sources changed` clause is the number — all or nothing, never a sample. Dots stay on what a reader has in hand: the open card's, the pointed-at neighbourhood, all of them while that clause is held, riding the dim's eased value because `focus` outlives it. Nothing in `flow` is attention.
-**Dissent**: design-infoviz — past the cap no amber stands at rest, so the fact is one press away. Answered by the clause, on the screen at any size, and by the card's sentence being printed only from its own mark's citations, which a card always attends. Alpha and radius were refused on arithmetic: 0.55 composites to `rgb(139,105,33)` and fails the scan; 2.2 to the 1.5 floor is 54% of a dot, not the order 480 need.
-**Falsifier**: standing amber past 4% of a picture's ink at rest; a folder under the cap whose stale citation draws no dot at any window; a reader who cannot reach one past the cap; a sampled subset; a dot left after the clause lifts.
-**Owner**: jinan
 
 ## 2026-09-13 — The camera's ceiling is the widest mark a folder may draw, and the fit tile stops offering a press it cannot answer
 
@@ -5696,4 +5689,24 @@ record stays in Git history before commit `e4fb49a89`.
 **Decision**: Pre-push keeps quick checks. The lander defers whole unit/contract suites and Knip to required PR CI, keeping focused checks. Main uses its verified push-before ancestor; invalid history, unknown paths and planner/shared-root changes stay exhaustive. Daily/manual sweeps have separate cancellation groups. Collapse only later exact test-file commands covered by an earlier default invocation; retain flags and lifecycle hooks. Record lane/command durations. Reject persistent caching: dependency fingerprinting cost 5.5 seconds each way against 13.6 seconds for Knip. Preserve behavior tests.
 **Dissent**: Every-main sweeps catch mapper blind spots sooner. Accept detection at the daily sweep for those unknown defects; release qualification stays unchanged. Revisit cross-run caching only with sufficient measured savings and reliable input identity.
 **Falsifier**: A changed invocation is omitted, failed earlier evidence permits progress, invalid push history narrows coverage, a failing selected lane permits push, or required PR evidence disappears.
+**Owner**: jinan
+
+
+## 2026-09-13 — Browser CI shares one build and balances measured work without reducing coverage
+
+**Why**: The owner requested Playwright optimization. Three recent full runs put shard 3 at 7.9 minutes of testing, while the latest shard 1 took 4.9. Five jobs rebuilt the same export and 16 dedicated surface tests also ran inside the broad suite.
+**Prior**: Extends 2026-09-13 “Scope verification and collapse exact repeated test commands”; keeps the smoke/sweep boundary and all protected browser statuses.
+**Decision**: Build one run-local SHA-named export. Active consumers fail if it is unavailable. Discover tests live and balance whole files by advisory measured duration; new files stay included with estimated weights. Verify executed file/test counts against assignments. Remove dedicated surface duplicates only while the corresponding required job owns them. Retain two workers and serial suites; independent hover cases opt into parallel execution within their assigned file. Replace fixed route/hover waits in four layout audits with font and finite-animation completion. Preserve actual idle/physics measurement windows and all PR smoke tests.
+**Dissent**: A shared build introduces a dependency and artifact transfer; duration estimates can become stale. Accept these costs only with measured critical-path improvement. No timing estimate can remove a test or turn a failed process green.
+**Falsifier**: A discovered test disappears or runs twice across its owners; missing build/report evidence passes; a serial file splits; a planted visual defect escapes; or full CI loses its measured runtime improvement.
+**Owner**: jinan
+
+
+## 2026-09-13 — Verification owns evidence once and completes on responses
+
+**Why**: The owner requested elimination of redundant checks and meaningless tests. Full lint ran again inside a contract for 111 seconds. MCP integration spent most of 310 seconds waiting for per-call shutdown timers; 146 unchanged cases completed locally in 40.9 seconds after response-driven closure.
+**Prior**: Extends the 2026-09-13 verification-scope and browser-execution decisions; preserves the 2026-08-01 rule against authored-prose pins and all required PR contexts.
+**Decision**: Keep one full lint scan with real stdin warning/error probes. Reuse existing architecture unit/transport coverage. Scope browser execution changes to browser verification; avoid setup on empty unit shards. Validate catalogue output against independent captured inputs offline, retaining bounded live freshness on scheduled/manual CI. Close MCP test processes after every expected response, rejecting missing responses, timeouts and abnormal exits. Remove tautologies, stale hand-counted denominators and authored-prose pins; retain nonempty scans, reference integrity and real browser geometry.
+**Dissent**: Aggressive subtraction can confuse similar assertions with equivalent coverage. Keep computed browser token checks because source declarations alone do not prove the cascade, and retain the original a11y opener coverage floors when moving them into the real browser test.
+**Falsifier**: A real warning passes, a required response is missing on success, unrelated registry availability blocks ordinary CI, a live test loses its owner, or a removed assertion exposes a distinct defect not caught by retained evidence.
 **Owner**: jinan

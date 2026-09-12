@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtemp, mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { after, before, describe, it } from 'node:test';
+import { after, before, describe, it, test } from 'node:test';
 
 import {
   comparableDoc,
@@ -244,4 +244,49 @@ describe('build-docs-vault 결정성 계약', () => {
     );
     assert.equal(deterministicGeneratedAt([]), '1970-01-01');
   });
+});
+
+test('virtual ledger keeps its public slug, hides record fragments, and takes the newest input date', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'docs-vault-virtual-ledger-'));
+  const git = (args, env = {}) => execFileSync('git', args, {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, ...env },
+  });
+  try {
+    await mkdir(path.join(root, 'docs', 'records', 'decisions'), { recursive: true });
+    await writeFile(path.join(root, 'docs', 'DECISIONS.md'), '# Decisions\n\nLegacy.\n', 'utf8');
+    await writeFile(path.join(root, 'docs', 'records', 'README.md'), '# Recording guide\n', 'utf8');
+    await writeFile(path.join(root, 'docs', 'records', 'decisions', 'new.md'), 'new record\n', 'utf8');
+    git(['init', '-q', '-b', 'main']);
+    git(['config', 'user.email', 'test@example.com']);
+    git(['config', 'user.name', 'Virtual Ledger Probe']);
+    git(['config', 'commit.gpgsign', 'false']);
+    git(['add', '-A']);
+    git(['commit', '-q', '-m', 'docs: seed virtual ledger'], {
+      GIT_AUTHOR_DATE: '2026-03-04T01:02:03+09:00',
+      GIT_COMMITTER_DATE: '2026-03-04T01:02:03+09:00',
+    });
+    await writeFile(path.join(root, 'docs', 'records', 'decisions', 'new.md'), 'newer record\n', 'utf8');
+    git(['add', '-A']);
+    git(['commit', '-q', '-m', 'docs: update record'], {
+      GIT_AUTHOR_DATE: '2026-03-08T01:02:03+09:00',
+      GIT_COMMITTER_DATE: '2026-03-08T01:02:03+09:00',
+    });
+
+    const result = await scanVaultDir(path.join(root, 'docs'), {
+      rootDir: root,
+      check: true,
+      sourceReaders: [(relativePath) => relativePath === 'docs/DECISIONS.md' ? {
+        content: '# Decisions\n\nComposed.\n',
+        inputs: ['docs/DECISIONS.md', 'docs/records/decisions/new.md'],
+      } : null],
+    });
+    assert.deepEqual(Object.keys(result.content), ['DECISIONS', 'records/README']);
+    assert.equal(result.content.DECISIONS, '# Decisions\n\nComposed.\n');
+    assert.equal(result.manifest.docs[0].updatedAt, '2026-03-08');
+    assert.deepEqual(result.publicFiles.map((file) => file.relativePath), ['DECISIONS.md', 'records/README.md']);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

@@ -48,6 +48,7 @@ const OWNER_STATES = Object.freeze(['pending', 'yes', 'no']);
 const BOUNDARY_STATES = Object.freeze(['pending', 'no', 'yes']);
 const LATER_RESULTS = Object.freeze(['pending', 'held', 'reopened', 'reversed']);
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const fail = (message) => {
   throw new Error(`[po-pilot] ${message}`);
@@ -68,6 +69,12 @@ const integer = (value, label, minimum = 0) => {
     fail(`${label} must be an integer >= ${minimum}; received ${value}`);
   }
   return Number(value);
+};
+
+const runIdentifier = (value, label) => {
+  if (/^\d+$/.test(value) && Number(value) >= 1) return Number(value);
+  if (UUID_PATTERN.test(value)) return value.toLowerCase();
+  fail(`${label} must be an integer >= 1 or UUIDv4; received ${value}`);
 };
 
 const parseFrontmatter = (source) => {
@@ -188,7 +195,7 @@ const parseBoundaries = (value, label) => {
 };
 
 const parseRun = (row) => {
-  const id = integer(row['#'], 'run #', 1);
+  const id = runIdentifier(row['#'], 'run #');
   assertDate(row.Date, `run ${id} date`);
   if (!row.Decision) fail(`run ${id} decision is empty`);
   assertAllowed(row.Door, ['two-way', 'one-way'], `run ${id} door`);
@@ -266,7 +273,7 @@ const parseRun = (row) => {
 };
 
 const parseUpdate = (row, runsById) => {
-  const runId = integer(row.Run, 'update run', 1);
+  const runId = runIdentifier(row.Run, 'update run');
   const run = runsById.get(runId);
   if (!run) fail(`update references unknown run ${runId}`);
   assertDate(row.Date, `run ${runId} update date`);
@@ -289,8 +296,15 @@ export function parsePoPilot(source) {
   const metadata = parseFrontmatter(source);
   const runs = tableAfter(source, '## Structured runs', PO_PILOT_RUN_COLUMNS).map(parseRun);
 
+  const seenRunIds = new Set();
+  let expectedLegacyId = 1;
   for (let index = 0; index < runs.length; index += 1) {
-    if (runs[index].id !== index + 1) fail(`run ids must be consecutive from 1; found ${runs[index].id}`);
+    if (seenRunIds.has(runs[index].id)) fail(`duplicate run id ${runs[index].id}`);
+    seenRunIds.add(runs[index].id);
+    if (typeof runs[index].id === 'number') {
+      if (runs[index].id !== expectedLegacyId) fail(`legacy run ids must be consecutive from 1; found ${runs[index].id}`);
+      expectedLegacyId += 1;
+    }
     if (runs[index].date < metadata.started) fail(`run ${runs[index].id} predates the pilot`);
     if (index > 0 && runs[index].date < runs[index - 1].date) fail('run dates must be append-ordered');
   }

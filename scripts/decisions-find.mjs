@@ -26,6 +26,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { readLedgerSource } from './lib/record-ledgers.mjs';
 
 const HEADING = /^## (\d{4}-\d{2}-\d{2})(?: \((\d+)\))? [—–-]+ (.+)$/;
 // A field opens with a bold label (`**Decision**: …`) or, in some records, a
@@ -179,6 +180,7 @@ export function citedBy(records, target) {
 }
 
 export function findRecord(records, selector) {
+  if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(selector)) return records.find((r) => r.id === selector) ?? null;
   if (/^\d+$/.test(selector)) return records.find((r) => r.number === Number(selector)) ?? null;
   const dateAndNumber = /^(\d{4}-\d{2}-\d{2})(?: \((\d+)\))?$/.exec(selector);
   if (dateAndNumber) {
@@ -192,7 +194,7 @@ export function findRecord(records, selector) {
 
 export function formatRecord(record, records, { file = 'docs/DECISIONS.md', full = false } = {}) {
   const id = record.number === null ? record.date : `${record.date} (${record.number})`;
-  const lines = [`${file}:${record.line}  ${id}  ${record.title}`];
+  const lines = [`${record.sourceFile ?? file}:${record.sourceLine ?? record.line}  ${record.id ? `${record.id}  ` : ''}${id}  ${record.title}`];
   if (record.fields.decision) lines.push(`  decision:  ${full ? record.fields.decision : firstSentence(record.fields.decision)}`);
   if (record.fields.falsifier) lines.push(`  falsifier: ${full ? record.fields.falsifier : firstSentence(record.fields.falsifier)}`);
   if (record.fields.prior) lines.push(`  prior:     ${firstSentence(record.fields.prior, 140)}`);
@@ -228,7 +230,22 @@ export function runDecisionsFind(argv, io = console, { cwd = process.cwd() } = {
     return 2;
   }
   const file = 'docs/DECISIONS.md';
-  const records = parseLedger(readFileSync(join(cwd, file), 'utf8'));
+  let source;
+  try { source = readLedgerSource(file, { root: cwd }); }
+  catch (error) { io.error(error.message); return 2; }
+  const records = parseLedger(source.content);
+  const locations = new Map();
+  for (const input of source.inputs.filter((p) => p.startsWith('docs/records/decisions/'))) {
+    const raw = readFileSync(join(cwd, input), 'utf8');
+    const end = raw.indexOf('\n---\n', 4);
+    const id = /^id:\s*(\S+)/m.exec(raw.slice(0, end))?.[1];
+    const parsed = parseLedger(raw.slice(end + 5));
+    const sourceLine = raw.slice(0, end + 5).split('\n').length;
+    if (parsed[0]) locations.set(`${parsed[0].date}\0${parsed[0].title}\0${parsed[0].body}`, { sourceFile: input, sourceLine, id });
+  }
+  const legacy = parseLedger(readFileSync(join(cwd, file), 'utf8'));
+  for (const item of legacy) locations.set(`${item.date}\0${item.title}\0${item.body}`, { sourceFile: file, sourceLine: item.line });
+  for (const record of records) Object.assign(record, locations.get(`${record.date}\0${record.title}\0${record.body}`));
   if (args.record !== null) {
     const record = findRecord(records, args.record);
     if (!record) {
