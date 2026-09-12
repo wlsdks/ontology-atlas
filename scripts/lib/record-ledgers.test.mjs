@@ -107,6 +107,39 @@ describe('record ledgers', () => {
     writeFileSync(path.join(root, 'docs/PO-PILOT.md'), pilot.replace('legacy', 'edited').replace(/\n/g, '\r\n'));
     assert.throws(() => readFrozenDocument('docs/PO-PILOT.md', { root }), /changed after it was frozen/);
   });
+
+  /**
+   * **The second CRLF defect, and the one that actually blocked v1.2.2.** Normalizing the
+   * frozen ledgers was not enough: the record *fragments* are read by a private
+   * `parseFrontmatter` whose `raw.startsWith('---\n')` is false for `---\r\n`, so every
+   * record reported "frontmatter is required" and the docs-vault build refused to compose.
+   * Frozen documents and fragments are separate readers; this covers the fragment side.
+   */
+  it('composes CRLF record fragments, frozen ledger and release marker together', () => {
+    const root = repo();
+    const change = randomUUID();
+    const decision = randomUUID();
+    const files = {
+      [`docs/records/changes/2026-02-01-crlf-${change}.md`]:
+        `---\nid: ${change}\ndate: 2026-02-01\ncategory: Added\n---\na fact written on a Windows checkout\n`,
+      [`docs/records/decisions/2026-02-01-crlf-${decision}.md`]:
+        `---\nid: ${decision}\ndate: 2026-02-01\n---\n## 2026-02-01 — a decision on a Windows checkout\n\n**Why**: why.\n**Prior**: none.\n**Decision**: yes.\n**Dissent**: none.\n**Falsifier**: no.\n**Owner**: owner.\n`,
+      'docs/records/releases/v1.1.0.md':
+        `---\nversion: v1.1.0\ndate: 2026-02-02\ntitle: a release cut on a Windows checkout\n---\n- ${change}\n`,
+    };
+    for (const [file, text] of Object.entries(files)) {
+      writeFileSync(path.join(root, file), text.replace(/\n/g, '\r\n'));
+    }
+
+    const changelog = readLedgerSource('docs/CHANGELOG.md', { root }).content;
+    assert.match(changelog, /v1\.1\.0: a release cut on a Windows checkout/);
+    assert.match(changelog, /\*\*Added\*\*: a fact written on a Windows checkout/);
+    assert.ok(!changelog.includes('\r'), 'the composed changelog must carry one canonical line ending');
+
+    const decisions = readLedgerSource('docs/DECISIONS.md', { root }).content;
+    assert.match(decisions, /a decision on a Windows checkout/);
+    assert.ok(!decisions.includes('\r'), 'the composed decisions must carry one canonical line ending');
+  });
   it('rejects impossible calendar dates without trusting their shape', () => {
     const root = repo(); const id = randomUUID();
     writeFileSync(path.join(root, `docs/records/changes/2026-02-30-a-${id}.md`), `---\nid: ${id}\ndate: 2026-02-30\ncategory: Added\n---\nA\n`);

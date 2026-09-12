@@ -84,3 +84,14 @@ test('an additive keep policy still passes through the unsupported-keep gate', (
     assert.ok(pilotCheckFailures(result).length > 0);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+/**
+ * A CRLF checkout broke `parsePoPilot`'s duplicate-key pre-scan (`startsWith('---\n')`)
+ * and its table reader, both of which test `\n` directly even though the shared
+ * frontmatter parser normalizes for itself. Found sweeping v1.2.2's Windows failure.
+ */
+test('parses the register identically on a CRLF checkout', () => {
+  const lf = parsePoPilot(LEGACY);
+  const crlf = parsePoPilot(LEGACY.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n'));
+  assert.deepEqual(crlf, lf);
+});

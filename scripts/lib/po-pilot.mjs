@@ -292,7 +292,11 @@ const parseUpdate = (row, runsById) => {
   };
 };
 
-export function parsePoPilot(source) {
+export function parsePoPilot(input) {
+  // A Windows checkout hands this `\r\n`. The shared frontmatter parser normalizes for
+  // itself, but the duplicate-key pre-scan above and `tableAfter` below both test `\n`
+  // directly, so normalize once at the entry and let every reader below see one shape.
+  const source = input.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   const metadata = parseFrontmatter(source);
   const runs = tableAfter(source, '## Structured runs', PO_PILOT_RUN_COLUMNS).map(parseRun);
 

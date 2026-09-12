@@ -36,7 +36,14 @@ const LABEL = /^\*\*([^*]+)\*\*[:：]?\s*(.*)$/;
 
 /** Split the changelog into entries; the preamble before the first entry is dropped. */
 export function parseChangelog(text) {
-  const lines = text.split('\n');
+  /*
+   * `\r` is a line terminator in a JavaScript regex, so `.` does not match it: on a CRLF
+   * checkout `HEADING`'s `(.+)$` can never reach end-of-input and **every** heading stops
+   * matching. The gate then measured zero entries and passed, which is worse than failing.
+   * Normalize here, where every caller reads, rather than at the one call site that reads
+   * the frozen file raw.
+   */
+  const lines = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').split('\n');
   const entries = [];
   let current = null;
   for (let i = 0; i < lines.length; i += 1) {
