@@ -1,100 +1,47 @@
 import { reviewedMainPushVerdict } from './lib/reviewed-main-push.mjs';
 
-// Read the live protection rule rather than copying its required-check names.
-// Rulesets and truncated responses fall back to CI until their complete policy is supported.
-const QUERY = `query($owner:String!,$name:String!,$sha:GitObjectID!) {
-  repository(owner:$owner,name:$name) {
-    rulesets(first:1,includeParents:true) { totalCount }
-    ref(qualifiedName:"refs/heads/main") {
-      branchProtectionRule { requiresStatusChecks requiredStatusCheckContexts }
-    }
-    object(oid:$sha) { ... on Commit {
-      oid tree { oid }
-      associatedPullRequests(first:10) {
-        pageInfo { hasNextPage }
-        nodes {
-          number state mergedAt baseRefName mergeCommit { oid } headRefOid
-          commits(last:1) { nodes { commit {
-            oid tree { oid }
-            statusCheckRollup { contexts(first:100) {
-              pageInfo { hasNextPage }
-              nodes {
-                __typename
-                ... on CheckRun {
-                  name databaseId status conclusion startedAt completedAt
-                  checkSuite { app { databaseId slug } }
-                }
-                ... on StatusContext { context }
-              }
-            } }
-          } } }
-        }
-      }
-    } }
-  }
-}`;
+const API = 'https://api.github.com';
+const SHA = /^[0-9a-f]{40}$/i;
+const REPO_PART = /^[A-Za-z0-9_.-]+$/;
+class ProofReadError extends Error {}
 
-export async function verifyReviewedMainPush({
-  eventName, ref, sha, currentTreeSha,
-  repository = process.env.GITHUB_REPOSITORY,
-  token = process.env.GH_TOKEN,
-  fetchImpl = globalThis.fetch,
-  timeoutMs = 8_000,
-} = {}) {
+export async function verifyReviewedMainPush({ eventName, ref, sha, currentTreeSha, repository = process.env.GITHUB_REPOSITORY, token = process.env.GH_TOKEN, fetchImpl = globalThis.fetch, timeoutMs = 8_000 } = {}) {
   const run = (reason) => ({ skip: false, reason });
   if (eventName !== 'push' || ref !== 'refs/heads/main') return run('not a main push');
-  if (!token || !/^[\w.-]+\/[\w.-]+$/.test(repository ?? '')) return run('GitHub proof credentials or repository unavailable');
-  if (![sha, currentTreeSha].every((value) => /^[a-f0-9]{40}$/.test(value ?? ''))) return run('current Git identity unavailable');
-  const [owner, name] = repository.split('/');
+  const parts = String(repository ?? '').split('/');
+  if (!token || parts.length !== 2 || parts.some((part) => !REPO_PART.test(part) || part === '.' || part === '..')) return run('GitHub proof credentials or repository unavailable');
+  if (![sha, currentTreeSha].every((value) => SHA.test(value ?? ''))) return run('current Git identity unavailable');
+  const repoPath = `/repos/${encodeURIComponent(parts[0])}/${encodeURIComponent(parts[1])}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), Math.min(Math.max(1, timeoutMs), 8_000));
+  const get = async (path) => {
+    const response = await fetchImpl(`${API}${repoPath}${path}`, { headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }, signal: controller.signal });
+    if (!response?.ok) throw new ProofReadError(`GitHub proof HTTP ${Number.isInteger(response?.status) ? response.status : 'unknown'} at ${path}`);
+    if (typeof response.headers?.get !== 'function') throw new ProofReadError('GitHub response pagination metadata unavailable');
+    const link = response.headers.get('link') ?? '';
+    if (/\brel\s*=\s*"?next\b/.test(link)) throw new ProofReadError('GitHub response pagination incomplete');
+    return response.json();
+  };
   try {
-    const response = await fetchImpl('https://api.github.com/graphql', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: QUERY, variables: { owner, name, sha } }),
-      signal: AbortSignal.timeout(Math.min(Math.max(1, timeoutMs), 8_000)),
-    });
-    if (!response.ok) return run(`GitHub proof HTTP ${response.status}`);
-    const payload = await response.json();
-    if (payload.errors?.length) return run('GitHub proof contains GraphQL errors');
-    const repo = payload.data?.repository;
-    if (repo?.rulesets?.totalCount !== 0) return run('effective ruleset policy is not proven');
-    const rule = repo.ref?.branchProtectionRule;
-    if (!rule?.requiresStatusChecks || !Array.isArray(rule.requiredStatusCheckContexts)) return run('required-check policy unavailable');
-    const commit = repo.object;
-    if (commit?.oid !== sha || commit.tree?.oid !== currentTreeSha) return run('GitHub commit differs from the local tree');
-    const associated = commit.associatedPullRequests;
-    if (associated?.pageInfo?.hasNextPage !== false || !Array.isArray(associated.nodes)) return run('associated pull requests incomplete');
-    const candidates = associated.nodes.filter((pr) => pr?.mergeCommit?.oid === sha && pr.state === 'MERGED');
-    if (candidates.length !== 1) return run('no unique merged pull request for this commit');
+    const [branch, rules, pulls] = await Promise.all([get('/branches/main'), get('/rules/branches/main?per_page=100'), get(`/commits/${sha}/pulls?per_page=100`)]);
+    if (!Array.isArray(rules) || rules.length !== 0) return run('effective rules policy is unsupported or incomplete');
+    const protection = branch?.protection?.required_status_checks;
+    if (branch?.name !== 'main' || branch.protected !== true || branch?.protection?.enabled !== true || !protection || !['everyone', 'non_admins'].includes(protection.enforcement_level)) return run('required status-check protection is absent or disabled');
+    if (branch?.commit?.sha !== sha || branch?.commit?.commit?.tree?.sha !== currentTreeSha) return run('GitHub main commit differs from the requested local tree');
+    if (!Array.isArray(protection.contexts) || !Array.isArray(protection.checks)) return run('required status-check policy is malformed');
+    const required = new Set();
+    for (const context of protection.contexts) { if (typeof context !== 'string' || !context.trim()) return run('required status-check context is malformed'); required.add(context); }
+    for (const check of protection.checks) { if (!check || typeof check.context !== 'string' || !check.context.trim() || ![null, -1, 15368].includes(check.app_id)) return run('required status-check app binding is unsupported'); required.add(check.context); }
+    if (required.size === 0) return run('required status-check policy is empty');
+    if (!Array.isArray(pulls)) return run('associated pull request response is malformed');
+    const candidates = pulls.filter((pr) => pr?.state === 'closed' && pr?.merged_at && pr?.base?.ref === 'main' && pr?.merge_commit_sha === sha);
+    if (candidates.length !== 1 || !Number.isSafeInteger(candidates[0]?.number) || candidates[0].number <= 0 || !SHA.test(candidates[0]?.head?.sha ?? '')) return run('no unique valid merged pull request for this commit');
     const pr = candidates[0];
-    const heads = pr.commits?.nodes;
-    if (heads?.length !== 1 || heads[0]?.commit?.oid !== pr.headRefOid) return run('reviewed head commit unavailable');
-    const head = heads[0].commit;
-    const contexts = head.statusCheckRollup?.contexts;
-    if (contexts?.pageInfo?.hasNextPage !== false || !Array.isArray(contexts.nodes)) return run('check run response incomplete');
-    if (contexts.nodes.some((check) => !check || !['CheckRun', 'StatusContext'].includes(check.__typename))) return run('unknown check evidence');
-    if (contexts.nodes.some((check) => check.__typename === 'StatusContext' && rule.requiredStatusCheckContexts.includes(check.context))) return run('required legacy status attribution is not proven');
-    const verdict = reviewedMainPushVerdict({
-      eventName, ref, sha, currentTreeSha,
-      protectionComplete: true,
-      requiresStatusChecks: rule.requiresStatusChecks,
-      requiredContexts: rule.requiredStatusCheckContexts,
-      associatedPullRequestsComplete: true,
-      associatedPullRequests: [{
-        number: pr.number, state: 'closed', merged_at: pr.mergedAt,
-        base: { ref: pr.baseRefName }, merge_commit_sha: pr.mergeCommit.oid,
-        head: { sha: pr.headRefOid }, headTreeSha: head.tree?.oid,
-      }],
-      checkRunsComplete: true,
-      checkRuns: contexts.nodes.filter((check) => check.__typename === 'CheckRun').map((check) => ({
-        name: check.name, id: check.databaseId, head_sha: head.oid,
-        status: check.status?.toLowerCase(), conclusion: check.conclusion?.toLowerCase(),
-        started_at: check.startedAt, completed_at: check.completedAt,
-        app: { id: check.checkSuite?.app?.databaseId, slug: check.checkSuite?.app?.slug },
-      })),
-    });
-    return verdict.skip ? { ...verdict, commit: sha, tree: currentTreeSha, reviewedHead: head.oid } : verdict;
-  } catch {
-    return run('GitHub proof request failed, timed out or was malformed');
-  }
+    const [headCommit, checks] = await Promise.all([get(`/git/commits/${pr.head.sha}`), get(`/commits/${pr.head.sha}/check-runs?per_page=100&filter=all`)]);
+    if (headCommit?.sha !== pr.head.sha || !SHA.test(headCommit?.tree?.sha ?? '')) return run('reviewed head commit is malformed or mismatched');
+    if (!Number.isSafeInteger(checks?.total_count) || !Array.isArray(checks?.check_runs) || checks.total_count !== checks.check_runs.length) return run('check run response is partial or malformed');
+    const verdict = reviewedMainPushVerdict({ eventName, ref, sha, currentTreeSha, protectionComplete: true, requiresStatusChecks: true, requiredContexts: [...required], associatedPullRequestsComplete: true, associatedPullRequests: [{ ...pr, headTreeSha: headCommit.tree.sha }], checkRunsComplete: true, checkRuns: checks.check_runs });
+    return verdict.skip ? { ...verdict, commit: sha, tree: currentTreeSha, reviewedHead: pr.head.sha } : verdict;
+  } catch (error) { return run(error instanceof ProofReadError ? error.message : 'GitHub REST proof failed, timed out or was malformed'); }
+  finally { clearTimeout(timer); controller.abort(); }
 }
