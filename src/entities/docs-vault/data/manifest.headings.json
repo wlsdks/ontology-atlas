@@ -9763,6 +9763,11 @@
       "depth": 2,
       "text": "2026-09-11 — Related Wiki maintenance preserves explicit retained-answer revisions",
       "slug": "2026-09-11-related-wiki-maintenance-preserves-explicit-retained-answer-revisions"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-13 — Scope verification and collapse exact repeated test commands",
+      "slug": "2026-09-13-scope-verification-and-collapse-exact-repeated-test-commands"
     }
   ],
   "DEMO-SCENARIO": [
@@ -10920,6 +10925,11 @@
       "depth": 2,
       "text": "Default gate",
       "slug": "default-gate"
+    },
+    {
+      "depth": 2,
+      "text": "Local result reuse and CI ownership",
+      "slug": "local-result-reuse-and-ci-ownership"
     },
     {
       "depth": 2,

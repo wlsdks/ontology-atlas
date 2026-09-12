@@ -296,12 +296,15 @@ export const isBrowserCommand = (command) =>
  * (`scripts/lib/focused-check-suggestions.mjs`), so a landing never carries a
  * second, drifting idea of which check a path needs.
  */
+export const isCiOwnedCommand = (command) =>
+  isBrowserCommand(command) || ['pnpm knip', 'pnpm test:contracts', 'pnpm test:run'].includes(command);
+
 export function localCheckPlan(paths) {
   const suggestions = suggestFocusedChecks(paths);
   return {
     suggestions,
-    commands: suggestions.commands.filter((row) => !isBrowserCommand(row.command)),
-    deferred: suggestions.commands.filter((row) => isBrowserCommand(row.command)),
+    commands: suggestions.commands.filter((row) => !isCiOwnedCommand(row.command)),
+    deferred: suggestions.commands.filter((row) => isCiOwnedCommand(row.command)),
   };
 }
 

@@ -10,11 +10,11 @@ import {
   FULL_LANE_COMMANDS,
 } from './classify-change.mjs';
 
-test('main and missing comparisons run every exhaustive lane', () => {
+test('scheduled runs and missing comparisons run every exhaustive lane', () => {
   for (const input of [
     { base: 'same', head: 'same', files: [], eventName: 'pull_request' },
     { base: null, head: 'head', files: [], eventName: 'pull_request' },
-    { base: 'base', head: 'head', files: [], eventName: 'push' },
+    { base: 'base', head: 'head', files: [], eventName: 'schedule' },
   ]) {
     const plan = decide(input);
     assert.equal(plan.full, true);
@@ -269,4 +269,49 @@ test('a merge group builds every lane and says why', () => {
   assert.equal(plan.lanes.e2e.mode, 'full');
   assert.equal(plan.lanes.e2e.staticExport, true);
   assert.equal(plan.lanes.e2e.webSurface, true);
+});
+
+ test('push with a verified comparison uses the same scope as a PR', () => {
+  const plan = decide({base:'before', head:'after', files:['README.md'], eventName:'push'});
+  assert.equal(plan.full, false);
+  assert.equal(plan.lanes.unit.mode, 'skip');
+  assert.equal(plan.lanes.e2e.mode, 'skip');
+  assert.equal(decide({base:null, head:'after', eventName:'push'}).full, true);
+});
+
+test('push entrypoint uses the exact ancestor and fails closed for missing or unrelated history', async () => {
+  const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const cwd = mkdtempSync(join(tmpdir(), 'atlas-push-plan-'));
+  try {
+    const git = (...args) => execFileSync('git', args, { cwd, encoding:'utf8', stdio:['ignore','pipe','pipe'] }).trim();
+    git('init'); git('config','user.email','test@example.com'); git('config','user.name','Test');
+    writeFileSync(join(cwd,'README.md'),'before'); git('add','.'); git('commit','-m','base');
+    const before=git('rev-parse','HEAD');
+    writeFileSync(join(cwd,'README.md'),'after'); git('add','.'); git('commit','-m','change');
+    git('update-ref','refs/remotes/origin/main','HEAD');
+    const script = new URL('./classify-change.mjs', import.meta.url).pathname;
+    const run = (base) => execFileSync(process.execPath,[script,'--event=push'],{
+      cwd, encoding:'utf8', env:{...process.env, GITHUB_OUTPUT:'', PUSH_BEFORE:base},
+    });
+    assert.match(run(before), /unit=skip mcp=skip playwright=skip/);
+    for (const base of ['', '0'.repeat(40), 'a'.repeat(40), git('commit-tree',git('rev-parse','HEAD^{tree}'),'-m','unrelated')]) {
+      assert.match(run(base), /unit=full mcp=full playwright=full/);
+    }
+  } finally { rmSync(cwd,{recursive:true,force:true}); }
+});
+
+test('both workflows retain exhaustive triggers isolated from ordinary push cancellation', async () => {
+  const { readFileSync } = await import('node:fs');
+  for (const name of ['checks', 'e2e']) {
+    const source = readFileSync(new URL(`../.github/workflows/${name}.yml`, import.meta.url), 'utf8');
+    assert.match(source, /^  schedule:\n    - cron:/m);
+    assert.match(source, /^  workflow_dispatch:/m);
+    assert.match(source, /PUSH_BEFORE: \$\{\{ github\.event\.before \}\}/);
+    const group = source.split('\n').find((line) => line.startsWith('  group:'));
+    assert.match(group, /github\.event_name == 'schedule'/);
+    assert.match(group, /github\.event_name == 'workflow_dispatch'/);
+    assert.match(group, /'full' \|\| 'change'/);
+  }
 });
