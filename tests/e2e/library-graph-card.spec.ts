@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 import type { LibraryGraphProbeNode as ProbeNode } from "./library-graph-probe";
 import { stubDirectoryPicker } from "./vault-picker-stub";
+import { waitFrames } from "./settle";
 
 /**
  * **A press on a mark opens a card beside it — the claims only a browser can settle.**
@@ -117,9 +118,17 @@ async function openGraph(page: Page): Promise<void> {
   await expect
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.alpha() ?? 1), { timeout: 20_000 })
     .toBeLessThan(0.01);
-  // The home's single stale breath runs once the picture settles; let it finish so what
-  // moves next moved because of the press.
-  await page.waitForTimeout(2_200);
+  /*
+   * The home's single stale breath runs once the picture settles; let it finish so what
+   * moves next moved because of the press. The breath clears its own timestamp and
+   * `flow().pulsing` reports it, so this asks the canvas rather than budgeting for it.
+   */
+  await expect
+    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.flow().pulsing ?? true), {
+      timeout: 20_000,
+      message: "the arrival breath never let go",
+    })
+    .toBe(false);
 }
 
 const marks = (page: Page): Promise<ProbeNode[]> =>
@@ -357,14 +366,21 @@ test.describe("a press on a mark opens a card beside it", () => {
     const read = () =>
       page.evaluate(() => (window as unknown as { __rafCount: { frames: number } }).__rafCount.frames);
 
-    // The breath is armed the frame the picture settles and lasts two settle budgets.
+    // A **measurement window**, not a wait: the claim is that the breath asks for frames
+    // while it runs, so some of its run has to pass before the count means anything.
     const duringFrom = await read();
     await page.waitForTimeout(900);
     const during = (await read()) - duringFrom;
     expect(during, "the arrival breath asked for no frames at all").toBeGreaterThan(5);
 
-    // Then it clears its own timestamp, and the canvas stops.
-    await page.waitForTimeout(2_600);
+    // Then it clears its own timestamp, and the canvas stops. The timestamp is the
+    // condition; 2.6 s was an estimate of when it would be gone.
+    await expect
+      .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.flow().pulsing ?? true), {
+        timeout: 20_000,
+        message: "the breath never let go",
+      })
+      .toBe(false);
     const quietFrom = await read();
     await page.waitForTimeout(2_000);
     expect((await read()) - quietFrom, "the breath became a loop").toBe(0);
@@ -433,8 +449,20 @@ test.describe("with reduced motion", () => {
     const target = all.find((node) => node.kind === "page" && node.label === "Settlement")!;
     await pressMark(page, target);
     await expect(page.getByTestId("library-graph-card")).toBeVisible();
-    // Past the ink ramp, which reduced motion keeps at 120ms by decision (2026-09-12).
-    await page.waitForTimeout(260);
+    /*
+     * Past the ink ramp, which reduced motion keeps at 120 ms by decision (2026-09-12) —
+     * seen rather than budgeted for: two identical frames are the ramp having finished.
+     */
+    await expect
+      .poll(
+        async () => {
+          const sample = await hash();
+          await waitFrames(page, 2);
+          return (await hash()) === sample;
+        },
+        { timeout: 20_000, message: "the ink ramp never finished" },
+      )
+      .toBe(true);
 
     /*
      * The static equivalent is a chevron on each citation and a full amber dot in each
