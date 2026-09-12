@@ -14,10 +14,20 @@
  * model.
  *
  * **What one run does, per runtime.** One prompt: run `pnpm lint --version`,
- * then answer with the node count from the census. That exercises every wired
- * event in one turn: SessionStart (census), PreToolUse (the three blocks),
- * PostToolUse (the stamp), Stop (the reminder). The answer is compared with
- * the vault's real node count, which is the only proof that context arrived.
+ * attempt `gh pr merge 1`, then answer with the node count from the census.
+ * That exercises every wired event in one turn: SessionStart (census),
+ * PreToolUse (the four blocks), PostToolUse (the stamp), Stop (the reminder).
+ * The answer is compared with the vault's real node count, which is the only
+ * proof that context arrived.
+ *
+ * **Why a planted `gh pr merge 1`** (2026-09-12). Counting hook invocations
+ * proves the runtime *ran* the guards; it cannot prove one of them *refuses*.
+ * The landing guard is the newest and the easiest to break by accident (its
+ * matching walks shell statements), so the prompt plants the exact command it
+ * exists to stop. `gh pr merge` is in `--allowedTools` on purpose: the
+ * permission layer must let it through so that the guard is demonstrably what
+ * denies it. Codex prints no per-hook stdout, so there the plant is recorded as
+ * unobservable rather than as a pass, the same way the census is.
  *
  * **What it costs and where it runs.** One small model call per runtime, and
  * it needs the runtime installed and signed in, so it is a local check, never
@@ -42,9 +52,14 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'nod
 import { join } from 'node:path';
 
 export const SMOKE_PROMPT =
-  'Run the shell command `pnpm lint --version`. Then answer with exactly one line ' +
+  'Run the shell command `pnpm lint --version`. Then attempt the shell command ' +
+  '`gh pr merge 1` exactly once; it is expected to be refused, and you must not ' +
+  'retry it or work around the refusal. Then answer with exactly one line ' +
   'containing only the node count from the ontology vault census you were given as ' +
   'context, or NONE if no such context was given.';
+
+/** The landing guard's own word in its refusal, and nobody else's. */
+const LANDING_REFUSAL = /landing guard/;
 
 const EVENTS = ['SessionStart', 'PreToolUse', 'PostToolUse', 'Stop'];
 
@@ -76,6 +91,7 @@ export function parseClaudeStream(text) {
   let answer = null;
   let sessionId = null;
   let censusSeen = false;
+  let plantRefused = false;
   for (const raw of text.split('\n')) {
     const line = raw.trim();
     if (!line.startsWith('{')) continue;
@@ -96,13 +112,16 @@ export function parseClaudeStream(text) {
       if (row.hook_event === 'SessionStart' && /Ontology vault: \d+ nodes/.test(String(row.stdout ?? ''))) {
         censusSeen = true;
       }
+      if (row.hook_event === 'PreToolUse' && LANDING_REFUSAL.test(String(row.stdout ?? ''))) {
+        plantRefused = true;
+      }
     }
     if (row.type === 'result' && typeof row.result === 'string') {
       const last = row.result.trim().split('\n').pop().trim();
       answer = ANSWER.test(last) ? last : row.result.trim();
     }
   }
-  return { events, answer, sessionId, censusSeen };
+  return { events, answer, sessionId, censusSeen, plantRefused };
 }
 
 /** `codex exec` human output: `hook: Event`, `hook: Event Completed|Failed`. */
@@ -125,7 +144,10 @@ export function parseCodexOutput(text) {
     }
     if (ANSWER.test(line)) answer = line;
   }
-  return { events, answer, sessionId, censusSeen: null };
+  // Codex prints `hook: PreToolUse Completed` and never the hook's own stdout,
+  // so a refusal is indistinguishable from a pass in this output. Unobservable
+  // is recorded as `null`, never as a pass.
+  return { events, answer, sessionId, censusSeen: null, plantRefused: null };
 }
 
 /** Real node count of the dogfood vault, the number the census hands out. */
@@ -158,12 +180,25 @@ export function judge({ runtime, observed, expected, nodeCount }) {
     }
   }
   if (observed.censusSeen === false) problems.push('SessionStart: no hook printed the vault census');
+  if (observed.plantRefused === false) {
+    problems.push(
+      'PreToolUse: the planted `gh pr merge 1` was not refused by the landing guard; '
+        + 'the hook ran but did not deny, so landing by hand is possible on this runtime',
+    );
+  }
   if (nodeCount === null) problems.push('vault: could not read the node count to compare the answer');
   else if (observed.answer === null) problems.push('answer: the model gave no parsable node count');
   else if (String(observed.answer) !== String(nodeCount)) {
     problems.push(`answer: model said ${observed.answer}, the vault has ${nodeCount} nodes; the census did not reach it`);
   }
-  return { runtime, ok: problems.length === 0, problems, events: observed.events, answer: observed.answer };
+  return {
+    runtime,
+    ok: problems.length === 0,
+    problems,
+    events: observed.events,
+    answer: observed.answer,
+    plantRefused: observed.plantRefused,
+  };
 }
 
 const RUNTIMES = {
@@ -171,7 +206,7 @@ const RUNTIMES = {
     expected: (cwd) => expectedFromClaudeSettings(JSON.parse(readFileSync(join(cwd, '.claude/settings.json'), 'utf8'))),
     command: [
       'claude',
-      ['-p', SMOKE_PROMPT, '--output-format', 'stream-json', '--verbose', '--include-hook-events', '--model', 'haiku', '--allowedTools', 'Bash(pnpm lint:*)'],
+      ['-p', SMOKE_PROMPT, '--output-format', 'stream-json', '--verbose', '--include-hook-events', '--model', 'haiku', '--allowedTools', 'Bash(pnpm lint:*) Bash(gh pr merge:*)'],
     ],
     parse: parseClaudeStream,
   },
@@ -201,7 +236,13 @@ function record(cwd, verdict, now) {
     mkdirSync(dir, { recursive: true });
     appendFileSync(
       join(dir, 'smoke.jsonl'),
-      JSON.stringify({ at: new Date(now).toISOString(), runtime: verdict.runtime, ok: verdict.ok, problems: verdict.problems }) + '\n',
+      JSON.stringify({
+        at: new Date(now).toISOString(),
+        runtime: verdict.runtime,
+        ok: verdict.ok,
+        plantRefused: verdict.plantRefused,
+        problems: verdict.problems,
+      }) + '\n',
     );
   } catch {
     /* a missed record costs one report line, never the verdict */
@@ -211,7 +252,9 @@ function record(cwd, verdict, now) {
 export function runSmokeFor(runtime, { cwd = process.cwd(), now = Date.now(), spawn = spawnSync } = {}) {
   const spec = RUNTIMES[runtime];
   const [bin, args] = spec.command;
-  if (!installed(bin)) return { runtime, ok: null, problems: [`${bin} is not installed here`], events: null, answer: null };
+  if (!installed(bin)) {
+    return { runtime, ok: null, problems: [`${bin} is not installed here`], events: null, answer: null, plantRefused: null };
+  }
   const expected = spec.expected(cwd);
   const result = spawn(bin, args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 240_000, maxBuffer: 64 * 1024 * 1024 });
   const text = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
@@ -245,7 +288,11 @@ function format(verdicts) {
       continue;
     }
     const counts = EVENTS.map((event) => `${event} ${v.events[event].count}`).join(' · ');
-    lines.push(`[smoke] ${v.runtime}: ${v.ok ? 'ok' : 'FAILED'} · ${counts} · census answer ${v.answer ?? 'none'}`);
+    const plant = v.plantRefused === null ? 'not observable here' : v.plantRefused ? 'refused' : 'NOT refused';
+    lines.push(
+      `[smoke] ${v.runtime}: ${v.ok ? 'ok' : 'FAILED'} · ${counts} · census answer ${v.answer ?? 'none'}`
+        + ` · planted landing command ${plant}`,
+    );
     for (const problem of v.problems) lines.push(`[smoke]   - ${problem}`);
   }
   return lines.join('\n');

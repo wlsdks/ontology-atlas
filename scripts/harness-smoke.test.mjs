@@ -31,6 +31,18 @@ const CLAUDE_OK = [
   }),
   claudeRow('hook_response', { hook_name: 'PreToolUse:Bash', hook_event: 'PreToolUse', stdout: '', stderr: '', exit_code: 0, outcome: 'success' }),
   claudeRow('hook_response', { hook_name: 'PreToolUse:Bash', hook_event: 'PreToolUse', stdout: '', stderr: '', exit_code: 0, outcome: 'success' }),
+  // The planted `gh pr merge 1`: the landing guard answers on stdout, which is
+  // the only place a refusal is visible in this stream.
+  claudeRow('hook_response', {
+    hook_name: 'PreToolUse:Bash',
+    hook_event: 'PreToolUse',
+    stdout:
+      '{\n  "hookSpecificOutput": {\n    "hookEventName": "PreToolUse",\n    "permissionDecision": "deny",\n'
+      + '    "permissionDecisionReason": "landing guard: `gh pr merge` does not wait for the agent already landing."\n  }\n}\n',
+    stderr: '',
+    exit_code: 0,
+    outcome: 'success',
+  }),
   claudeRow('hook_response', { hook_name: 'PostToolUse:Bash', hook_event: 'PostToolUse', stdout: '', stderr: '', exit_code: 0, outcome: 'success' }),
   claudeRow('hook_response', { hook_name: 'Stop', hook_event: 'Stop', stdout: '', stderr: '', exit_code: 0, outcome: 'success' }),
   JSON.stringify({ type: 'result', subtype: 'success', result: '97', session_id: 'sess-claude' }),
@@ -126,10 +138,13 @@ describe('harness smoke: parsers read the shapes the runtimes emit', () => {
   it('Claude: counts hook_response rows, sees the census, and reads the answer', () => {
     const observed = parseClaudeStream(CLAUDE_OK);
     assert.equal(observed.events.SessionStart.count, 1);
-    assert.equal(observed.events.PreToolUse.count, 2);
+    // Three PreToolUse rows: the two silent guards on `pnpm lint --version`,
+    // plus the landing guard's refusal of the planted `gh pr merge 1`.
+    assert.equal(observed.events.PreToolUse.count, 3);
     assert.equal(observed.events.PostToolUse.count, 1);
     assert.equal(observed.events.Stop.count, 1);
     assert.equal(observed.censusSeen, true);
+    assert.equal(observed.plantRefused, true, 'the planted landing command must read as refused');
     assert.equal(observed.answer, '97');
     assert.equal(observed.sessionId, 'sess-claude');
   });
@@ -152,6 +167,7 @@ describe('harness smoke: parsers read the shapes the runtimes emit', () => {
     assert.equal(observed.answer, '97');
     assert.equal(observed.sessionId, '01a05f75-14cc-7742-97bc-6db95d700a57');
     assert.equal(observed.censusSeen, null, 'Codex prints no per-hook stdout; the answer is the proof');
+    assert.equal(observed.plantRefused, null, 'a refusal is not observable in Codex output, so it is never a pass');
   });
 
   it('Codex: a Failed line is a failure and not a completion', () => {
@@ -192,6 +208,24 @@ describe('harness smoke: the verdict names every way a hook can be dead', () => 
     const verdict = judge({ runtime: 'claude', observed, expected, nodeCount: 97 });
     assert.equal(verdict.ok, false);
     assert.match(verdict.problems[0], /model said NONE/);
+  });
+
+  it('fails when the planted landing command was not refused', () => {
+    // The counts can all be met by hooks that ran and decided nothing, which is
+    // exactly what a broken matcher looks like from the outside.
+    const withoutRefusal = CLAUDE_OK.split('\n')
+      .filter((line) => !line.includes('landing guard'))
+      .join('\n');
+    const observed = parseClaudeStream(withoutRefusal);
+    assert.equal(observed.plantRefused, false);
+    const verdict = judge({
+      runtime: 'claude',
+      observed,
+      expected: expectedFromClaudeSettings(CLAUDE_SETTINGS),
+      nodeCount: 97,
+    });
+    assert.equal(verdict.ok, false);
+    assert.match(verdict.problems.join('\n'), /planted `gh pr merge 1` was not refused/);
   });
 
   it('fails when the vault count itself cannot be read, instead of passing by default', () => {

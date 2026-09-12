@@ -965,7 +965,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 133574,
+      "wordCount": 133908,
       "updatedAt": "2026-09-12",
       "linksOut": [
         "src:sources/settlement-policy.md",
@@ -1062,8 +1062,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Which command to run first for an area of this repository, what a pass proves, and when to escalate. The reasons a gate exists live in docs/DECISIONS.md and in the gate's own header, not here. Start every change with the planner, and let it run what it recommends: It reads the Git diff (tracked and untracked), prints t",
-      "wordCount": 6387,
-      "updatedAt": "2026-09-11",
+      "wordCount": 6462,
+      "updatedAt": "2026-09-12",
       "linksOut": []
     },
     {
