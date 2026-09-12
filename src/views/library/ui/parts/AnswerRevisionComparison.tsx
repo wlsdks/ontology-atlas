@@ -17,8 +17,8 @@ import { WIKI_SECTION_ORDER } from '@/shared/lib/wiki-page-schema';
 import { Button, controlClass, Dialog, Disclosure } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { LG_BREAKPOINT_PX, useViewportBelow } from '@/shared/lib/use-viewport-below';
+import { describeWikiProblem, type WikiTemplateProblem } from '../../lib/describe-wiki-problem';
 import { sectionSlices } from '../../lib/section-slices';
-import type { WikiTemplateProblem } from './WikiTemplateProblems';
 
 /**
  * **Two capped columns and one gutter, centred** — the dialog's own measure.
@@ -239,18 +239,15 @@ export function AnswerRevisionComparison({ open, question, before, after, proble
   ].filter((pane) => !narrow || mobileSide === pane.id);
 
   /*
-   * The blocking sentence, in the reader's language when the validator gave one. The sibling
-   * `describeWikiProblem` in `WikiTemplateProblems.tsx` answers the same question for the
-   * page; `t.has` is the same guard, so a code the validator grows before the catalogue does
-   * still degrades to the validator's English rather than a raw message path.
+   * The blocking sentence, in the reader's language when the validator gave one.
+   *
+   * ⚠️ **A copy of `describeWikiProblem` used to live here** (carry-forward, 2026-09-11),
+   * so the reason a Save was refused and the reason printed beside the page were two
+   * sentences maintained apart. It is the shared describer now, and this is the one
+   * surface that wants the plain string rather than the pressable pieces: there is
+   * nothing to open from a footer whose whole subject is the control it is disabling.
    */
-  const describe = (problem: WikiTemplateProblem): string => {
-    const key = problem.detail?.key;
-    if (!key) return problem.message;
-    const path = `wiki.problem.${key}` as 'wiki.problem.orphan-page';
-    return t.has(path) ? t(path, problem.detail?.values ?? {}) : problem.message;
-  };
-  const blocking = problems[0];
+  const blockingWords = problems[0] ? describeWikiProblem(problems[0], t) : null;
 
   const sectionCell = (pane: (typeof panes)[number], row: (typeof rows)[number]) => {
     if (row.id === 'head') {
@@ -371,9 +368,9 @@ export function AnswerRevisionComparison({ open, question, before, after, proble
           always blocked the save; the sentence explaining it used to sit in a block above
           the footer, which at 390 is off screen while the greyed-out button is not.
         */}
-        {error || blocking ? <div role="alert" data-testid="answer-comparison-blocked" className="min-w-0 flex-1 basis-full text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all] sm:basis-0">
+        {error || blockingWords ? <div role="alert" data-testid="answer-comparison-blocked" className="min-w-0 flex-1 basis-full text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all] sm:basis-0">
           {error ? <p className="max-w-[var(--measure-prose)]">{error}</p> : null}
-          {blocking ? <p className="max-w-[var(--measure-prose)]">{describe(blocking)}</p> : null}
+          {blockingWords ? <p className="max-w-[var(--measure-prose)]">{blockingWords.sentence}{blockingWords.action ? ` ${blockingWords.action}` : ''}</p> : null}
           {problems.length > 1 ? <p className="mt-1 font-mono text-caption text-[color:var(--color-text-tertiary)]">{problems.slice(1).map((problem) => problem.code).join(' · ')}</p> : null}
         </div> : null}
         <div className="flex flex-wrap justify-end gap-2">

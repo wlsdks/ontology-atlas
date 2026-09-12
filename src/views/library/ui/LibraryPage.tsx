@@ -39,6 +39,7 @@ import {
   wikiPagePathOf,
   buildAskBrief,
   buildFixBrief,
+  buildWikiShapeFixBrief,
   parseLintFindings,
   buildAnswerPage,
   automaticWikiWriteAllowed,
@@ -112,7 +113,7 @@ import {
   libraryTransferSentence,
 } from "../lib/compile-availability";
 import { libraryWaitingLine } from "../lib/stage-steps";
-import { libraryOffTemplateCount } from "../lib/merge-wiki-verdict";
+import { isWikiFolderCode, libraryOffTemplateCount } from "../lib/merge-wiki-verdict";
 import { useCitedPassage } from "../lib/use-cited-passage";
 import { useSourceOutline } from "../lib/use-source-outline";
 import { sectionSlices } from "../lib/section-slices";
@@ -1866,9 +1867,111 @@ export function LibraryPage() {
     document.getElementById("main")?.focus({ preventScroll: true });
   }, [libraryIsEmpty]);
 
-  const wikiProblems = selectedWikiDoc
-    ? (model.verdicts.get(selectedWikiDoc.slug)?.problems ?? [])
-    : [];
+  /*
+   * Memoised because the card's action closes over it: a fresh `[]` every render would
+   * rebuild the fix callback every render, which is the only reason this is not a plain
+   * conditional.
+   */
+  const wikiProblems = useMemo(
+    () => (selectedWikiDoc ? (model.verdicts.get(selectedWikiDoc.slug)?.problems ?? []) : []),
+    [model.verdicts, selectedWikiDoc],
+  );
+  /**
+   * **A page's title, by slug** — so a finding that names another page names it the way
+   * the index and the reader's own header do. A path is an address; a title is the thing.
+   */
+  const wikiPageTitle = useCallback(
+    (slug: string) => model.wikiPages.find((page) => page.slug === slug)?.title,
+    [model.wikiPages],
+  );
+  /*
+   * What a finding's own words may open. The page and the original are doors this surface
+   * already has; the **place** is the one that needed a decision, because a rendered page
+   * has paragraphs and not lines. A finding bound to a section travels to that section's
+   * head — the same function the outline rail presses, so there is one answer to "go
+   * there" — and a finding bound only to a line stays a word, which is honest: there is
+   * no line to land on. Getting to the exact line is what the card's own action does, by
+   * putting the file in front of the person.
+   */
+  const wikiProblemDoors = useMemo(
+    () => ({
+      onOpenPage: (slug: string) => choose({ kind: "wiki", slug }),
+      onOpenSource: (path: string) => choose({ kind: "source", path }),
+      onOpenPlace: (where: { section?: string }) => {
+        const heading = outlineHeadings.find((item) => item.text === where.section);
+        if (heading) handleHeadingNavigate(heading.slug);
+      },
+    }),
+    [choose, handleHeadingNavigate, outlineHeadings],
+  );
+  /*
+   * **The card's one way out, and it is never a control that cannot act.**
+   *
+   * With a coding agent connected the agent repairs the page; with the app but no agent
+   * the person is put in front of the file, the way `wiki.newPageDone` already promises
+   * ("fix it in any editor and the list follows the file"). On the web there is neither:
+   * no local agent and no absolute path to reveal, so the card carries no action at all
+   * rather than a press that goes nowhere. Every finding still names its own place.
+   */
+  const wikiProblemFix = useMemo(() => {
+    /*
+     * Only this page's **own shape** can be repaired from this page (po-evidence,
+     * 2026-09-12). A folder finding is fixed by editing another page, which is why the
+     * folder card has no action and why the brief is built from the shape half alone —
+     * offering a turn for `orphan-page` under a brief that forbids touching any other
+     * file would be a card asking for what the brief refuses.
+     */
+    const shape = wikiProblems.filter((problem) => !isWikiFolderCode(problem.code));
+    if (!selectedWikiDoc || shape.length === 0 || !nativeVaultRootPath) return null;
+    if (agent.route === "agent") {
+      return {
+        mode: "agent" as const,
+        disabled: busy || turnRunning,
+        askEveryWrite: writeMode === "ask",
+        onPress: () => {
+          try {
+            /*
+             * ⚠️ **A cancelled semantic Fix must not be marked fixed by this turn**
+             * (po-steward, 2026-09-12). Both openings carry the kind `"fix"`, and
+             * `pendingFixRef` is set only by `handleFix` and cleared only by a *completed*
+             * turn — so a Fix the person cancelled leaves its finding in the ref, and this
+             * repair's completion would have written `library-finding-fixed` onto a
+             * disagreement nothing touched. That is agent-authored meaning shown as an
+             * observed fact.
+             */
+            pendingFixRef.current = null;
+            agent.start(
+              buildWikiShapeFixBrief({
+                page: selectedWikiDoc.slug,
+                findings: shape,
+                locale,
+                vaultRoot: nativeVaultRootPath,
+              }),
+              "fix",
+            );
+          } catch (error) {
+            toast.show(
+              t("wiki.compileFailed", { reason: error instanceof Error ? error.message : String(error) }),
+              "error",
+            );
+          }
+        },
+      };
+    }
+    return {
+      mode: "self" as const,
+      onPress: () => {
+        void revealTauriVaultFile(nativeVaultRootPath, `${selectedWikiDoc.slug}.md`).catch((error) => {
+          toast.show(
+            t("sources.revealFailed", {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
+            "error",
+          );
+        });
+      },
+    };
+  }, [agent, busy, locale, nativeVaultRootPath, selectedWikiDoc, t, toast, turnRunning, wikiProblems, writeMode]);
 
   // ── With no folder, one centred stage rather than two empty panes. ───────────────
   if (!hasFolder) {
@@ -2671,6 +2774,8 @@ export function LibraryPage() {
                 onFix={agent.route === "agent" ? handleFix : null}
                 onPropose={agent.route === "agent" && hasOntology ? handlePropose : null}
                 onOpenPage={(slug) => choose({ kind: "wiki", slug })}
+                onOpenSource={(path) => choose({ kind: "source", path })}
+                pageTitle={wikiPageTitle}
                 fixedKeys={fixedKeys}
                 t={t}
               />
@@ -2706,7 +2811,16 @@ export function LibraryPage() {
                 open card above it, because a page that misses the template is a page whose
                 shape is the subject.
               */}
-              {selectedAnswer ? null : <WikiTemplateProblems problems={wikiProblems} t={t} />}
+              {selectedAnswer ? null : (
+                <WikiTemplateProblems
+                  problems={wikiProblems}
+                  file={`${selectedWikiDoc.slug}.md`}
+                  doors={wikiProblemDoors}
+                  fix={wikiProblemFix}
+                  context={{ pageTitle: wikiPageTitle }}
+                  t={t}
+                />
+              )}
               {selectedAnswer ? <RetainedAnswerContext
                 refreshButtonRef={answerRefreshButtonRef}
                 observation={answerObservation(selectedAnswer.frontmatter, knownOriginalPaths, model.hashes)}
@@ -2769,7 +2883,14 @@ export function LibraryPage() {
                   about this page's connections, then the way off this page. */}
               {selectedAnswer ? (
                 <>
-                  <WikiTemplateProblems problems={wikiProblems} collapsed t={t} />
+                  <WikiTemplateProblems
+                    problems={wikiProblems}
+                    file={`${selectedWikiDoc.slug}.md`}
+                    collapsed
+                    doors={wikiProblemDoors}
+                    context={{ pageTitle: wikiPageTitle }}
+                    t={t}
+                  />
                   <RetainedAnswerFooter
                     /*
                      * ⚠️ **"Back to questions" goes to the questions** (walker 3,

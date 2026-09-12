@@ -4623,8 +4623,8 @@
       "compileWebGetApp": "Get the app",
       "offTemplateReason": "Does not fit the wiki template: {code}. Open the page to see what to change.",
       "offTemplateAriaLabel": "How this page differs from the wiki template",
-      "offTemplateTitle": "This page does not fit the wiki template",
-      "offTemplateBody": "It is still a document and still yours to edit. Fixing these lines makes it readable the same way every other page is; `ontology-atlas wiki-validate` and the `validate_wiki` tool report the same codes.",
+      "offTemplateTitle": "{count} to fix · page template",
+      "offTemplateBody": "It is still a document and still yours to edit. Fixing what follows makes it read the same way every other page does.",
       "writtenBy": "Written by {author}",
       "writer": {
         "human": "a person",
@@ -4679,25 +4679,83 @@
       "undone": "Removed {page}.",
       "undoFailed": "Could not undo: the file is already gone or the folder is not writable.",
       "linkFindingsAriaLabel": "How this page connects inside the folder",
-      "linkFindingsTitle": "Check how this page connects",
+      "linkFindingsTitle": "{count} connections to check",
       "linkFindingsBody": "The page fits the template. What follows is about the folder: things no single page can see about itself.",
+      "fixWithAgent": "Let the agent fix it",
+      "fixWithAgentTooltip": "Starts one agent turn that brings this page back to the template. A repaired page that fits the template is saved as it is; one that does not stops at the permission card.",
+      "fixWithAgentTooltipAsk": "Starts one agent turn that brings this page back to the template. Writing stops at the permission card.",
+      "fixMyself": "Fix it myself",
+      "fixMyselfTooltip": "Selects this page's file in Finder. Fix it in any editor and the list follows the file.",
+      "technical": "Technical detail · check codes and line numbers",
+      "technicalNote": "The ontology-atlas wiki-validate command and the validate_wiki tool report these same codes.",
+      "technicalFile": "File: {path}",
+      "goToPlace": "Go to {place}",
+      "openPage": "Open {name}",
+      "openSource": "Open {name}",
       "problem": {
-        "kind-present": "This page carries `kind:`. That key is what puts a document on the map, and a write-up about sources is not a reviewed concept. Remove it, or move the file out of `wiki/` if it really is a node.",
-        "missing-field": "`{field}:` is missing.",
-        "section-order-missing": "The page needs all five sections, in order. Missing: {missing}. Keep an empty section rather than dropping it: \"nothing here\" is itself something a reader learns.",
-        "section-order-sequence": "The sections are out of order. It must read: {expected}. Right now: {found}.",
-        "uncited-fact": "Every bullet under `## Facts` ends in at least one citation, like `[[src:sources/plan.pdf#p12]]`. A claim a reader cannot check against one place in one document belongs under `## Not in sources`.",
-        "bad-citation": "`{text}` is not a citation this format can resolve. The shape is `[[src:sources/PATH#ANCHOR]]`, and an anchor looks like p12, s2, s2r14, r89, l204, or h:error-handling.",
-        "bad-truncation-record-shape": "`sources_truncated:` is a list of paths. This value is not one, so it records no boundary at all.",
-        "bad-truncation-record-path": "`{path}` is under `sources_truncated:` but not under `sources:`. A path this page does not cite has no boundary a reader could place.",
-        "citation-target-missing-folder": "`{path}` is cited but is not in this folder. A citation a reader cannot open is not a citation.",
-        "citation-target-missing-sources": "`{path}` is cited but is not listed in this page's `sources:`. Add it there with its sha256, or fix the citation.",
-        "describes-needs-approval": "`describes:` says this page speaks for those concepts. That is a claim about the map and it needs a person: set `status: reviewed` after reading the page, or remove `describes:`.",
-        "dangling-wikilink": "`[[{target}]]` names a page that is not in this folder. Link to a page that exists, or write the page.",
-        "orphan-page": "No other page links here. A page nobody points at is reached only by its file name; link it from the page that talks about its topic.",
-        "shared-source-unlinked": "`{other}` also lists {sources}, and neither page links the other. Two write-ups of one document that do not know about each other cannot carry a disagreement between them."
-      },
-      "findingCount": "{count} findings"
+        "where": {
+          "sectionLine": "line {line} under {section}",
+          "section": "the {section} section",
+          "line": "line {line}",
+          "unknown": "a line nothing recorded"
+        },
+        "kind-present": {
+          "what": "This page carries the marker (kind) that puts a document on the map, and a write-up about originals does not belong on the map.",
+          "do": "Delete that line, or move the file out of the wiki folder if it really is a concept."
+        },
+        "missing-field": {
+          "what": "The info block at the top of the file has no {field} line.",
+          "do": "Add a {field} line."
+        },
+        "section-order-missing": {
+          "what": "The page needs all five sections and {missing} is not there.",
+          "do": "Add the missing section, heading alone if you like. \"Nothing here\" is itself something a reader learns."
+        },
+        "section-order-sequence": {
+          "what": "The sections are in a different order: right now it reads {found}.",
+          "do": "Put them in this order: {expected}."
+        },
+        "uncited-fact": {
+          "what": "No original backs up what is written at {where}.",
+          "do": "Point it at one place in one original, or move it into the Not in sources section at the end of the page if you cannot."
+        },
+        "bad-citation": {
+          "what": "A citation at {where} cannot be read.",
+          "do": "Make it name the original file and the place inside it. The exact shape is under the technical detail."
+        },
+        "bad-truncation-record-shape": {
+          "what": "The line that records how far an original was read (sources_truncated) is not a list of paths.",
+          "do": "Write the path of each original that was read only in part, as a list."
+        },
+        "bad-truncation-record-path": {
+          "what": "{path} is recorded as read only in part, but it is not among the originals this page uses.",
+          "do": "Add it to the list of originals, or remove that line."
+        },
+        "citation-target-missing-folder": {
+          "what": "{path} is cited but that file is not in this folder.",
+          "do": "A citation a reader cannot open is not a citation: put the file in this folder, or fix the citation."
+        },
+        "citation-target-missing-sources": {
+          "what": "{path} is cited but it is not among the originals this page uses.",
+          "do": "Add it to the list of originals, or fix the citation."
+        },
+        "describes-needs-approval": {
+          "what": "This page says it speaks for a concept (describes), and that is a claim about the map a person has to confirm.",
+          "do": "Read it and set the status to reviewed, or remove that line."
+        },
+        "dangling-wikilink": {
+          "what": "The link at {where} points at {target}, and there is no such page in this folder.",
+          "do": "Link to a page that exists, or write that page."
+        },
+        "orphan-page": {
+          "what": "No other page points at this one yet.",
+          "do": "Link it from the page that talks about its topic and it becomes easy to find."
+        },
+        "shared-source-unlinked": {
+          "what": "{other} is written from the same original ({sources}), and neither page points at the other.",
+          "do": "Link one of them to the other."
+        }
+      }
     },
     "shelf": {
       "listAria": "Wiki pages and their source versions",
