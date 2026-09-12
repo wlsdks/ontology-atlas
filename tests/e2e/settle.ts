@@ -286,3 +286,67 @@ export async function waitFrames(page: Page, count = 2): Promise<void> {
     count,
   );
 }
+
+/**
+ * Resolve once the 3D dome has finished assembling — its ramp clock is at the top.
+ *
+ * The assembly is a fixed-length ramp the loop advances by real elapsed time, so a
+ * busy machine takes more wall clock to reach the same ramp value. `ramp >= 1` is
+ * that value; four seconds was one machine's guess at it.
+ *
+ * The pose is deliberately not part of this: the dome arrives **armed to spin**
+ * (`dome-view.ts`), so "assembled" and "still" are different states and only the
+ * first one is what arriving in 3D means.
+ */
+export async function waitForDomeAssembled(page: Page, timeout = HANG_TIMEOUT_MS): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const dome = (window as unknown as { __atlasMap?: { dome?: () => { ramp: number } | null } }).__atlasMap?.dome?.();
+      return dome !== null && dome !== undefined && dome.ramp >= 1;
+    },
+    undefined,
+    { polling: "raf", timeout },
+  );
+}
+
+/**
+ * Resolve once the map is flat again: the dome's ramp has run all the way back
+ * down (or the runtime is gone), and the 2D layout underneath has stopped moving.
+ */
+export async function waitForFlatMap(page: Page, timeout = HANG_TIMEOUT_MS): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const probe = (window as unknown as { __atlasMap?: { dome?: () => { ramp: number } | null } }).__atlasMap;
+      if (!probe) return false;
+      const dome = probe.dome?.() ?? null;
+      return dome === null || dome.ramp <= 0;
+    },
+    undefined,
+    { polling: "raf", timeout },
+  );
+  await waitForMapStill(page, { timeout });
+}
+
+/**
+ * Resolve once the 3D dome has both assembled **and** finished its entry sweep.
+ *
+ * The two have separate clocks — the sweep outlives the assembly by 380 ms
+ * (`model/dome-view.ts`) — so "arrived in 3D" is both flags, and while the sweep
+ * is alive the drawn attitude keeps moving and cannot be told apart from what a
+ * drag changed.
+ *
+ * The pose is still not required to be *still*: the dome arrives armed to spin, so
+ * stillness would never come until a hand touched it.
+ */
+export async function waitForDomeEntered(page: Page, timeout = HANG_TIMEOUT_MS): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const dome = (
+        window as unknown as { __atlasMap?: { dome?: () => { ramp: number; entryArmed: boolean } | null } }
+      ).__atlasMap?.dome?.();
+      return dome !== null && dome !== undefined && dome.ramp >= 1 && !dome.entryArmed;
+    },
+    undefined,
+    { polling: "raf", timeout },
+  );
+}
