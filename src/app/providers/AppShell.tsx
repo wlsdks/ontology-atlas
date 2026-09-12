@@ -182,8 +182,18 @@ function ShellColumn({ children }: { children: ReactNode }) {
           had it been wrong the other way it would have silently measured the wrong
           element. Naming the target makes that class of failure impossible.
         */}
+        {/*
+          `data-app-shell-pane` is what the route crossfade captures (`app/globals.css`).
+          It is an attribute rather than a class because the stylesheet only names it while
+          a transition is running: off a transition this box carries no
+          `view-transition-name`, so it is not a stacking context or a containing block for
+          the fixed-position surfaces pages put inside it. The rail and everything else the
+          shell owns are deliberately **not** captured — they stay part of the live document
+          so they keep painting and keep taking presses while the pane fades.
+        */}
         <div
           data-testid="app-shell-body-slot"
+          data-app-shell-pane=""
           className="flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0"
         >
           <VaultRouteIdentityBoundary pathname={pathname}>
@@ -255,26 +265,13 @@ function VaultRouteIdentityBoundary({
     (vault.status === "opening" || vault.status === "loading") &&
     !localReady;
   const desktopWithoutVault = desktop && workbenchDestination && !vault.manifest;
-  const [releasedPathname, setReleasedPathname] = useState(pathname);
-  const routeCommitPending = localReady && releasedPathname !== pathname;
-
-  useLayoutEffect(() => {
-    if (!routeCommitPending) return;
-    let cancelled = false;
-    window.queueMicrotask(() => {
-      if (!cancelled) setReleasedPathname(pathname);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [pathname, routeCommitPending]);
 
   useEffect(() => {
     if (!desktopWithoutVault || !vault.restoreAttempted) return;
     router.replace("/");
   }, [desktopWithoutVault, router, vault.restoreAttempted]);
 
-  if (routeCommitPending || localLoadPending || desktopWithoutVault) {
+  if (localLoadPending || desktopWithoutVault) {
     return (
       <div
         data-testid="vault-route-identity-pending"
