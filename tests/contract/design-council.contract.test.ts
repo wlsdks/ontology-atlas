@@ -68,9 +68,13 @@ describe('Design Council wiring', () => {
     requireMirroredAgent('design-guardian', read);
   });
 
-  it.each(['design-council', 'design-directions'])('mirrors the %s skill byte-for-byte', (name) => {
-    expect(read(`.agents/skills/${name}/SKILL.md`)).toBe(read(`.claude/skills/${name}/SKILL.md`));
-  });
+  /*
+   * Mirror byte-identity is `pnpm agents:check`'s job, and it does every pair in the
+   * tree generically (`cli/src/commands/agent-files.mjs`: ".claude/skills ↔
+   * .agents/skills byte diff", same for agents). Re-asserting two named pairs here
+   * added no falsifier and made a new seat look guarded when it was not (removed
+   * 2026-09-12).
+   */
 
   it('rejects missing, misidentified, and divergent agent files', () => {
     const name = seats[0];

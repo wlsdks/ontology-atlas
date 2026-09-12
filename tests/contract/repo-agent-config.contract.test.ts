@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -88,9 +88,8 @@ describe('저장소가 커밋하는 연결 설정 — 누구 컴퓨터에서든 
     const vault = mcp.mcpServers['ontology-atlas']?.env?.OATLAS_VAULT ?? '';
     // Must be a relative path, and a vault must really be at that location.
     expect(vault.startsWith('.'), `볼트 경로가 상대 경로가 아니다: ${vault}`).toBe(true);
-    expect(
-      readFileSync(join(ROOT, vault, 'README.md'), 'utf8').length,
-      `${vault} 에 볼트가 없다`,
-    ).toBeGreaterThan(0);
+    // Existence, said as existence. `.length > 0` on the same file only ever fired if
+    // someone emptied it, which is not a change anyone makes (clarified 2026-09-12).
+    expect(existsSync(join(ROOT, vault, 'README.md')), `${vault} 에 볼트가 없다`).toBe(true);
   });
 });

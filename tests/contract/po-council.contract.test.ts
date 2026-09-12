@@ -477,15 +477,16 @@ describe('Atlas PO pilot can decide its sunset', () => {
 });
 
 describe('Atlas PO policy stays executable and mirrored', () => {
-  it('has a non-empty guarded inventory and matching agent/skill mirrors', () => {
+  /*
+   * Mirror byte-identity is `pnpm agents:check`'s job, and it does every pair in the
+   * tree generically (`cli/src/commands/agent-files.mjs`: ".claude/skills ↔
+   * .agents/skills byte diff", same for agents). Re-asserting three named pairs here
+   * added no falsifier and made a new seat look guarded when it was not (removed
+   * 2026-09-12).
+   */
+  it('has a non-empty guarded inventory', () => {
     expect(ACTIVE_FILES.length, 'the active PO inventory must not be empty').toBeGreaterThan(0);
     for (const path of ACTIVE_FILES) expect(existsSync(join(ROOT, path)), `${path} must exist`).toBe(true);
-
-    expect(read(PASS_MIRROR)).toBe(read(PASS_SKILL));
-    expect(read(COUNCIL_MIRROR)).toBe(read(COUNCIL_SKILL));
-    for (const name of ACTIVE_AGENTS) {
-      expect(read(`.agents/agents/${name}.md`)).toBe(read(`.claude/agents/${name}.md`));
-    }
   });
 
   it('binds both written templates to fields exported by the router policy', () => {
