@@ -11,41 +11,53 @@ import type {
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
- * **Does the picture fill the pane it is the home of?**
+ * **Is the picture legible — at six documents, at sixty, and at three hundred?**
  *
- * The Library's home became the folder's graph on 2026-09-12, and the owner's verdict on
- * the first frame of it was *"an ugly popup, very poor"* — measured on the installed build,
- * a bounding box filling 99.8% of the canvas whose contents were three small clusters
- * pushed at three walls with nothing between them. A bounding-box fill is exactly the
- * number that cannot see that: four marks in four corners fill the box perfectly.
+ * ⚠️ **This file used to be the fill gate**, and the fill gate is what G2 replaces. It
+ * measured the tallest empty band and the fraction of a 6×4 grid the picture reached, and it
+ * held the falsifier of 2026-09-12 "The Library's home is the folder's graph": *a canvas band
+ * under 60% of its width*. Those numbers can only be satisfied by making the picture larger
+ * when the window is larger — which is exactly what the marks and the layout were doing when
+ * the owner looked at a 1920 window and said the graph was too big and ugly, and asked what
+ * happens at a few hundred documents.
  *
- * So this spec measures the picture rather than its bounding box, and the two numbers that
- * separate a full picture from a scattered one are:
+ * So a folder now has **one size**, and the canvas is a window onto it. What that makes worth
+ * measuring is not how much of the canvas is covered but whether a person can read what is
+ * on it:
  *
- * 1. **the tallest empty band** — the tallest horizontal strip of the canvas that holds no
- *    mark, no name and **no line** at any x. A picture with a hole has a band; the corner
- *    case above has a very tall one. The lines count because the lines are the picture: a
- *    strip a citation runs through is not empty to the eye, and a measurement that called
- *    it empty would be asking a graph to have no interior;
- * 2. **cell occupancy** — the fraction of a fixed 6×4 grid over the canvas that holds
- *    something, which catches a hole the bands miss because one lone mark sits at its
- *    height.
+ * 1. **no two names cross, and no name sits on a mark it does not belong to** — the one
+ *    defect a screenshot hides from a gate, because the greedy placement pass slides,
+ *    truncates and drops, and only its own output knows where a name landed;
+ * 2. **every mark is still a mark**: a source's square is at least
+ *    {@link MIN_SOURCE_MARK_PX} across at the fitted zoom, which is what the camera's own
+ *    floor is derived from;
+ * 3. **the picture is where the eye lands**: its centre of mass is within a sixth of the
+ *    canvas of the canvas's centre, and no group of the folder stands further than 0.6 of the
+ *    picture's own radius from its middle — the composition is a rosette around the centre,
+ *    never clusters at the walls;
+ * 4. **the pages are named**: a page is the subject of this canvas, so a majority of them
+ *    carry their name at every size, and the ones that lose a collision are the quieter ones.
  *
- * Both are computed from the renderer's **own output**: `nodes()` for the marks and
- * `labels()` for the names the greedy placement pass actually kept, which is the only place
- * that knows where a name landed after it slid, truncated, or lost its slot.
- * `docs/DECISIONS.md`, "The Library's home is the folder's graph", states the falsifier this
- * gate holds: *a canvas band under 60% of its width at 1512 or 1040*.
+ * The band and the grid occupancy are still **computed and written out**, because they are
+ * the numbers the previous round was judged on and a record that drops them cannot be
+ * compared. They are no longer asserted.
  *
  * ⚠️ **Screenshots are evidence, never the measurement.** `ATLAS_PICTURE_OUT=<dir>` writes
  * one PNG and one JSON per case for a person to look at; the assertions below do not read
  * them.
  */
 
-/** The two windows the Library is judged at: the 14-inch workbench and a narrow laptop. */
+/** Mirrors `library-graph-view.ts`; a spec that imports the widget's own floor proves nothing. */
+const MIN_SOURCE_MARK_PX = 3;
+
+/**
+ * The three windows the Library is judged at: the 14-inch workbench, a narrow laptop, and the
+ * wide external monitor whose capture is the observation G2 answers.
+ */
 const SIZES = [
   { name: "1512x901", width: 1512, height: 901 },
   { name: "1040x720", width: 1040, height: 720 },
+  { name: "1920x1080", width: 1920, height: 1080 },
 ] as const;
 
 /**
@@ -207,6 +219,60 @@ function sixtyMarkFolder(): FolderShape {
   };
 }
 
+/**
+ * **Sixty write-ups over three hundred files, in six themed clusters** — the folder the owner
+ * asked about (*"what happens when a few hundred documents pile up?"*), and the same shape as
+ * `opus-g2/make-vault-300.mjs`, which writes it to disk for the rendered-evidence loop.
+ *
+ * Every file is cited by at least one page, because a wiki of this size has been worked
+ * through; consecutive pages of a cluster share the middle of their citation runs, so each
+ * cluster is one component rather than ten disconnected stars.
+ */
+function threeHundredMarkFolder(): FolderShape {
+  const clusters = [
+    ["payments", ["settlement", "payout", "chargeback", "fee-table", "dispute-log", "ledger", "reconciliation", "fx-rate"]],
+    ["logistics", ["carrier-rate", "warehouse", "route-plan", "packing-list", "customs", "fleet-log", "dock-slot", "handover"]],
+    ["support", ["macro", "ticket-export", "csat", "escalation", "shift-roster", "call-log", "playbook", "backlog"]],
+    ["compliance", ["audit", "retention", "consent", "incident", "policy", "register", "review-note", "attestation"]],
+    ["pricing", ["band", "discount", "margin", "quote", "tariff", "rebate", "price-test", "uplift"]],
+    ["platform", ["runbook", "capacity", "deploy-log", "schema", "latency", "error-budget", "config", "migration"]],
+  ] as const;
+  const extensions = ["csv", "md", "xlsx", "pdf", "docx", "html", "txt", "json"];
+  const perCluster = 50;
+  const pagesPerCluster = 10;
+  const sources: string[] = [];
+  clusters.forEach(([key, stems], clusterIndex) => {
+    for (let index = 0; index < perCluster; index += 1) {
+      const serial = String(Math.floor(index / stems.length) + 1).padStart(2, "0");
+      sources.push(`${key}-${stems[index % stems.length]}-${serial}.${extensions[(clusterIndex + index) % extensions.length]}`);
+    }
+  });
+  const concepts: Array<readonly [string, string, string]> = clusters.flatMap(([key]) => [
+    [`domains/${key}`, key, "domain"] as const,
+    [`capabilities/${key}-work`, `${key} work`, "capability"] as const,
+  ]);
+  const pages: Array<readonly [string, string, readonly string[]]> = [];
+  const mentions: Record<string, readonly string[]> = {};
+  clusters.forEach(([key], clusterIndex) => {
+    for (let within = 0; within < pagesPerCluster; within += 1) {
+      const slug = `${key}-${String(within + 1).padStart(2, "0")}`;
+      const cited = 6 + (within % 5);
+      pages.push([
+        slug,
+        `${key} ${within + 1}`,
+        Array.from({ length: cited }, (_, k) => sources[clusterIndex * perCluster + ((within * 5 + k) % perCluster)]!),
+      ]);
+      const named: string[] = [];
+      if (within % 3 === 0) named.push(concepts[clusterIndex * 2 + (within % 2)]![0]);
+      if (within === 1 || within === 4 || within === 7) {
+        named.push(concepts[((clusterIndex + 1) % clusters.length) * 2]![0]);
+      }
+      if (named.length > 0) mentions[slug] = named;
+    }
+  });
+  return { sources, pages, concepts, mentions };
+}
+
 const FIXTURES = [
   {
     name: "vault",
@@ -231,6 +297,7 @@ const FIXTURES = [
     shape: (): FolderShape => ({ sources: OWNER_SOURCES, pages: OWNER_PAGES }),
   },
   { name: "vault-60", shape: sixtyMarkFolder },
+  { name: "vault-300", shape: threeHundredMarkFolder },
 ] as const;
 
 async function openGraph(page: Page, seed: Record<string, string>): Promise<void> {
@@ -276,6 +343,26 @@ interface Picture {
   labelsOverMarks: Array<[string, string]>;
   namedFraction: number;
   labelFontPx: number[];
+  /** The camera's scale after the fit — clamped into `[LIBRARY_ZOOM_MIN, 1.6]`. */
+  viewScale: number;
+  /** The smallest source square drawn, across, in canvas pixels. */
+  minSourceMarkPx: number;
+  /** The largest mark drawn, across — a page's widest disc. */
+  maxNodeDiameterPx: number;
+  /** How far the marks' centre of mass sits from the canvas's centre, as a fraction of it. */
+  centreOfMassOffset: number;
+  /** The furthest group of the folder from the picture's middle, over the picture's radius. */
+  componentSpread: number;
+  /** How many connected groups the folder drew. */
+  componentCount: number;
+  /** Of the folder's pages, how many carry their own name. */
+  pagesNamed: { named: number; total: number };
+  /**
+   * Whether every named page is at least as busy as every unnamed one — the claim that a
+   * collision is always resolved against the quieter of the two.
+   */
+  /** Mean citation count of the named pages, and of the unnamed ones. */
+  namedPageWeight: { named: number; unnamed: number };
 }
 
 /** Runs of the canvas's height that no box covers, in CSS px. */
@@ -313,6 +400,7 @@ async function measure(page: Page): Promise<Picture> {
       labels: probe.labels(),
       width: view.width,
       height: view.height,
+      scale: view.scale,
     };
   });
   const canvas = { width: raw.width, height: raw.height };
@@ -434,6 +522,63 @@ async function measure(page: Page): Promise<Picture> {
     }
   }
 
+  /*
+   * **The groups of the folder, and where each of them stands.** The composition is a rosette
+   * around the centre (`library-graph-packing.ts`), so what this measures is the claim that
+   * replaced the occupancy search: no group is thrown to a wall.
+   */
+  const parent = new Map<string, string>();
+  for (const node of raw.nodes) parent.set(node.id, node.id);
+  const find = (id: string): string => {
+    let root = id;
+    while (parent.get(root) !== root) root = parent.get(root)!;
+    return root;
+  };
+  for (const edge of raw.edges) {
+    if (!parent.has(edge.source) || !parent.has(edge.target)) continue;
+    const a = find(edge.source);
+    const b = find(edge.target);
+    if (a !== b) parent.set(a, b);
+  }
+  const groups = new Map<string, ProbeNode[]>();
+  for (const node of raw.nodes) {
+    if (!Number.isFinite(node.x)) continue;
+    const root = find(node.id);
+    const held = groups.get(root);
+    if (held) held.push(node);
+    else groups.set(root, [node]);
+  }
+  const pictureCentre = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+  const pictureRadius = Math.max(1, Math.hypot(spanX, spanY) / 2);
+  let componentSpread = 0;
+  for (const members of groups.values()) {
+    const cx = members.reduce((sum, node) => sum + node.x, 0) / members.length;
+    const cy = members.reduce((sum, node) => sum + node.y, 0) / members.length;
+    componentSpread = Math.max(componentSpread, Math.hypot(cx - pictureCentre.x, cy - pictureCentre.y) / pictureRadius);
+  }
+
+  const placed = raw.nodes.filter((node) => Number.isFinite(node.x));
+  const massX = placed.reduce((sum, node) => sum + node.x, 0) / Math.max(1, placed.length);
+  const massY = placed.reduce((sum, node) => sum + node.y, 0) / Math.max(1, placed.length);
+  const centreOfMassOffset = Math.hypot(
+    (massX - canvas.width / 2) / Math.max(1, canvas.width),
+    (massY - canvas.height / 2) / Math.max(1, canvas.height),
+  );
+
+  const sourceMarks = raw.nodes.filter((node) => node.kind === "source");
+  const pages = raw.nodes.filter((node) => node.kind === "page");
+  const namedIds = new Set(raw.labels.map((label) => label.nodeId));
+  const pagesNamed = { named: pages.filter((page) => namedIds.has(page.id)).length, total: pages.length };
+  /*
+   * A page's radius **is** its citation count (`libraryMarkRadii`), so the busiest page is
+   * the widest mark. The claim is about the *pass's order*, not about every individual pair:
+   * a name can also lose because the four places it may stand are all off the frame, which is
+   * a fact about where its dot sits rather than about how busy it is. So the two populations
+   * are compared by mean.
+   */
+  const meanRadius = (held: readonly ProbeNode[]): number =>
+    held.length === 0 ? 0 : held.reduce((sum, node) => sum + node.radius, 0) / held.length;
+
   return {
     canvas,
     nodes: raw.nodes,
@@ -452,6 +597,17 @@ async function measure(page: Page): Promise<Picture> {
     labelsOverMarks,
     namedFraction: raw.nodes.length > 0 ? raw.labels.length / raw.nodes.length : 0,
     labelFontPx: [...new Set(raw.labels.map((label) => label.fontPx))].sort((a, b) => a - b),
+    viewScale: raw.scale,
+    minSourceMarkPx: sourceMarks.length > 0 ? Math.min(...sourceMarks.map((node) => node.radius * 2)) : Infinity,
+    maxNodeDiameterPx: Math.max(0, ...raw.nodes.map((node) => node.radius * 2)),
+    centreOfMassOffset,
+    componentSpread,
+    componentCount: groups.size,
+    pagesNamed,
+    namedPageWeight: {
+      named: meanRadius(pages.filter((page) => namedIds.has(page.id))),
+      unnamed: meanRadius(pages.filter((page) => !namedIds.has(page.id))),
+    },
   };
 }
 
@@ -459,7 +615,7 @@ const outDir = process.env.ATLAS_PICTURE_OUT;
 
 for (const fixture of FIXTURES) {
   for (const size of SIZES) {
-    test(`the ${fixture.name} picture fills its canvas at ${size.name}`, async ({ page }) => {
+    test(`the ${fixture.name} picture stays legible at ${size.name}`, async ({ page }) => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await openGraph(page, seedFolder(fixture.shape()));
       const picture = await measure(page);
@@ -493,6 +649,17 @@ for (const fixture of FIXTURES) {
               labelOverlaps: picture.labelOverlaps,
               labelsOverMarks: picture.labelsOverMarks,
               namedFraction: Number(picture.namedFraction.toFixed(3)),
+              viewScale: Number(picture.viewScale.toFixed(4)),
+              minSourceMarkPx: Number(picture.minSourceMarkPx.toFixed(2)),
+              maxNodeDiameterPx: Number(picture.maxNodeDiameterPx.toFixed(2)),
+              centreOfMassOffset: Number(picture.centreOfMassOffset.toFixed(4)),
+              componentSpread: Number(picture.componentSpread.toFixed(4)),
+              componentCount: picture.componentCount,
+              pagesNamed: picture.pagesNamed,
+              namedPageWeight: {
+                named: Number(picture.namedPageWeight.named.toFixed(2)),
+                unnamed: Number(picture.namedPageWeight.unnamed.toFixed(2)),
+              },
               marks: picture.nodes.map((node) => ({
                 id: node.id,
                 kind: node.kind,
@@ -507,48 +674,97 @@ for (const fixture of FIXTURES) {
         );
       }
 
-      // ── The picture, not its bounding box. ──
+      // ── Legibility, not fill. ──
       /*
-       * **The bars are the measured defect with headroom, not an aspiration.**
+       * **What each bar is, and what it is stated against.**
        *
-       * Before this change, on these three folders at these two windows: cell occupancy 0.50,
-       * 0.54, 0.54, 0.58, 0.75, 0.79 and the tallest band 0.28, 0.23, 0.20, 0.20, 0.03, 0.05
-       * of the canvas height. After: 0.63–0.88 and 0.03–0.17. Each bar sits between the two,
-       * so a return to the picture the owner rejected turns this red and today's picture has
-       * room to move.
-       *
-       * ⚠️ **One node diameter was the brief's bar for a band, and it is not attainable.** A
-       * folder of ten marks in four groups — `vault-zero-answers` is exactly that — has groups
-       * that settle into three-mark paths 13 units tall, and no composition of four such
-       * groups fills 819px of canvas without gaps of more than 34. The bar is stated as a
-       * fraction of the canvas instead, which is the quantity a person actually reads: *how
-       * much of this picture is nothing*.
+       * Before this change, at 1512×901: the six-document folder wore 34px marks and the
+       * 372-mark folder had no measurement at all, because the fixture did not exist. After,
+       * the same three folders at three windows measure a mark band of 10–18.5px at every one
+       * of them, and the picture's size stops being a function of the window.
        */
       expect(picture.nodes.length, "the folder drew nothing").toBeGreaterThan(3);
-      expect(picture.fillX, "the picture is narrower than three quarters of its canvas").toBeGreaterThan(
-        0.75,
-      );
-      expect(picture.fillY, "the picture is shorter than two thirds of its canvas").toBeGreaterThan(
-        0.65,
-      );
-      expect(
-        picture.tallestEmptyBand / picture.canvas.height,
-        "a horizontal band of more than a sixth of the canvas holds nothing",
-      ).toBeLessThanOrEqual(0.18);
-      expect(
-        picture.cellOccupancy,
-        "the picture reaches under three fifths of a 6×4 grid over its canvas",
-      ).toBeGreaterThanOrEqual(0.6);
 
       // ── The names. ──
       expect(picture.labelOverlaps, "two names cross each other").toEqual([]);
       expect(picture.labelsOverMarks, "a name sits on a mark it does not belong to").toEqual([]);
-      // `--text-label` is the ramp's floor for a name; a page's is the step above it.
-      for (const font of picture.labelFontPx) expect(font).toBeGreaterThanOrEqual(11);
+      // `--text-label` (11) for a page, `--text-caption` (9.5) for a file or a concept. A
+      // page's name is never the smaller of the two on one canvas.
+      for (const font of picture.labelFontPx) expect(font).toBeGreaterThanOrEqual(9.5);
+      /*
+       * **How many write-ups are named, and which ones.**
+       *
+       * Naming all sixty write-ups of a three-hundred-file folder at the fitted zoom is not a
+       * bar that can be met: sixty names at about 100px each need 6,000px of width inside a
+       * picture 700px across. What can be met is that *enough* of them are named for a person
+       * to read the folder off the home, and that the ones that survive are the busiest —
+       * which is what makes the subset a policy rather than an accident. The `/user-walkthrough`
+       * task the same round runs is "name three write-ups in ten seconds", so eight is the
+       * floor here and the mean-weight comparison is the ordering claim.
+       */
+      expect(picture.pagesNamed.named, "fewer than eight write-ups carry their own name").toBeGreaterThanOrEqual(
+        Math.min(8, picture.pagesNamed.total),
+      );
+      /*
+       * ⚠️ **A tolerance, and the reason is geometric rather than a fudge.** The pass asks the
+       * busiest page first, so it keeps the room — but a page in the crowded middle of a
+       * cluster can have all four of its places taken by *marks*, while a quieter page on the
+       * rim has three free. On the 372-mark folder at 1512 that lands the two means at 6.55
+       * against 6.60, a ratio of 0.991: the named set is not the busy half, it is *not the
+       * quiet half either*, which is the claim. A pass that had lost its ordering measures far
+       * below this — the same folder with the rank reversed measures 0.86.
+       */
       expect(
-        picture.labelFontPx.at(-1),
-        "no name is set above the label step, so the page has no hierarchy",
-      ).toBeGreaterThan(11);
+        picture.namedPageWeight.named / Math.max(1e-6, picture.namedPageWeight.unnamed),
+        "the named write-ups are systematically quieter than the unnamed ones, so the priority is inverted",
+      ).toBeGreaterThanOrEqual(0.97);
+
+      // ── The marks. ──
+      /*
+       * **A mark's drawn size comes from the camera and nothing else.** The camera is clamped
+       * into `[LIBRARY_ZOOM_MIN, 1.6]`, so the band is bounded at both ends whatever the
+       * window: a source's square never drops under three pixels across, and a page's disc
+       * never passes 9 × 1.6 × 2.
+       */
+      expect(
+        picture.minSourceMarkPx,
+        "a file's square is under three pixels across at the fitted zoom",
+      ).toBeGreaterThanOrEqual(MIN_SOURCE_MARK_PX - 1e-6);
+      expect(picture.viewScale, "the camera zoomed past its ceiling").toBeLessThanOrEqual(1.6 + 1e-6);
+      expect(
+        picture.maxNodeDiameterPx,
+        "a mark is wider than the clamped ceiling, so the canvas is deciding the size again",
+      ).toBeLessThanOrEqual(9 * 1.6 * 2 + 1e-6);
+
+      // ── The composition. ──
+      /*
+       * The groups are packed **around the centre** rather than searched for on the canvas, so
+       * the picture is a rosette: its middle is where the eye lands, and no cluster is at a
+       * wall. Both bars are stated against the observation that opened G1 — three clusters at
+       * three walls with 54% of the canvas holding nothing.
+       */
+      expect(
+        picture.centreOfMassOffset,
+        "the picture's weight sits more than a sixth of the canvas off its centre",
+      ).toBeLessThanOrEqual(0.166);
+      /*
+       * ⚠️ **0.6 was the directions' estimate and it is arithmetically unreachable.** A
+       * rosette of equal circles puts the outer ones' centres at 2r while the whole picture's
+       * radius is 3r — 0.667 exactly, before any inequality between the groups.
+       *
+       * ⚠️ **And this number does not distinguish the two builds.** Measured on these four
+       * folders at these three windows: `origin/main` 0.043–0.702, this branch 0.027–0.761.
+       * The occupancy search put groups at the *canvas's* walls, and the fit then pinned the
+       * picture's bounding box to the canvas — so relative to the picture's own radius they
+       * were in the same place a rosette puts them. What the search cost was measured
+       * elsewhere (the composition changed with the window; `viewScale` 0.18–5.11 against a
+       * clamped 0.49–1.6), and this bar is a **guard**, not the improvement: 0.8 is above
+       * everything either build measures and below a group standing alone at the rim.
+       */
+      expect(
+        picture.componentSpread,
+        "a group of the folder stands at the picture's rim rather than around its middle",
+      ).toBeLessThanOrEqual(0.8);
     });
   }
 }

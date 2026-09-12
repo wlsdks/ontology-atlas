@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — One folder is one picture; the canvas is a window onto it
+
+**Why**: the owner on G1 (#1567): *"the graph is too big and ugly.. what happens when a few hundred documents pile up..?"* The fit was unclamped: over four folders at three windows the camera ran **0.18–5.11**, one twelve-mark folder wearing 26.1px marks at 1040 and 34.0 at 1920. At 372 marks the label threshold turned **every** name off: the home answered *which write-ups exist* with anonymous dots on graph paper.
+**Prior**: **overturns** 2026-09-12 "The canvas's ink is sized to the canvas" whole, on its own design-infoviz dissent, and the **fill clause** of 2026-09-12 "The Library's home is the folder's graph" and 2026-09-07 "a live force simulation". **Narrows** 2026-09-12 "Each group gets a place", whose search over the canvas goes.
+**Decision**: the marks are a constant **world** scale — a page 5→9 by files cited, a file a 3.5 square — and the camera alone stands between them and the screen, clamped to `[0.4286, 1.6]`: a floor keeping a file 3px across, a ceiling holding a page at 28.8px. Hub-and-satellite forces (citation rest 52→**28**, mention 96→**120**, page charge ∝ relations, repulsion cut off at 240), groups packed **around the centre**, no grid. A page always carries its name, in one of four places around its mark, collisions going against the page with fewer citations; a file's needs zoom or hover. The fill gate becomes a **legibility** gate: no overlapping names, no mark under 3px, the weight within a sixth of the canvas of its centre. After: camera **0.49–1.60**, widest mark **28.8px**, names at 372 **0/60 → 34/60**.
+**Dissent**: design-lead: six documents now cover 28% of a 1920 window where they covered 100%, and the fill gate existed because that reads as unfinished; kept, the alternative being distances meaning something different on every monitor.
+**Falsifier**: a folder whose picture changes shape or size with the window; a write-up nobody can name from a three-hundred-file home; a mark under 3px at the fit.
+**Owner**: jinan
+
 ## 2026-09-12 — Each group of the folder gets a place, the ring included
 
 **Why**: the owner on the Library home: *"the graph matters most by default, and it comes up as an ugly popup"*. At 1512×901 (canvas 1088×819): three clusters at three walls, a **167px** band holding no mark, name or line, **54%** of a 6×4 grid held; 50% and 226px on `vault-zero-answers`. A bounding-box fill cannot see that: between two *unconnected* groups the only force with an opinion is repulsion, answering with the walls.

@@ -6636,6 +6636,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-12 — One folder is one picture; the canvas is a window onto it",
+      "slug": "2026-09-12-one-folder-is-one-picture-the-canvas-is-a-window-onto-it"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-12 — Each group of the folder gets a place, the ring included",
       "slug": "2026-09-12-each-group-of-the-folder-gets-a-place-the-ring-included"
     },
@@ -10191,6 +10196,11 @@
       "depth": 3,
       "text": "Borders",
       "slug": "borders"
+    },
+    {
+      "depth": 3,
+      "text": "Library graph ink — `--graph-page-halo` (2026-09-12)",
+      "slug": "library-graph-ink---graph-page-halo-2026-09-12"
     },
     {
       "depth": 3,
