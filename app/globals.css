@@ -1177,7 +1177,17 @@
 
      Pairing: tracking-monument(−0.018em) · leading-monument(1.08, ratio — since clamp size,
      creating px pairings would require tokens per size. Same category as display-tight). */
-  --text-monument: clamp(40px, 4.8cqw, 96px); /* Gateway monument headline (pair: tracking-monument) */
+  /*
+   * ⚠️ **The floor is the reader's, the `cqw` term is the column's, the ceiling is the
+   * layout's** (2026-09-12). `2.5rem` is the same 40px it has always been at the default
+   * root, and it is `rem` because that arm is the *guarantee* — the size below which the
+   * headline stops being a monument. Measured on `/ko/download/` at a browser text size of
+   * 200%: with a `40px` floor the `h1` rendered **40px at 768 and 44.54px at 1024 while its
+   * own `h2`s rendered 46px** — a page whose headline was smaller than its sections. The
+   * `4.8cqw` term still answers to the container, and the `96px` ceiling stays absolute
+   * because it is the layout's limit, not the reader's.
+   */
+  --text-monument: clamp(2.5rem, 4.8cqw, 96px); /* Gateway monument headline (pair: tracking-monument) */
   --tracking-monument: -0.018em;
 
   /* Type ramp letter-spacing pair — 1:1 with text-<step>. Used via tracking-<step>
@@ -2811,7 +2821,14 @@
        Same precedent as `--pad-card`/`--pad-panel`: tokens no one uses are misinformation, not specifications. */
     --topology-chrome-icon-size: 12px;
     --topology-chrome-gap: clamp(5px, 0.4vw, 6px);
-    --topology-chrome-title-size: 12px;
+    /*
+     * The same 12px at the default root, in `rem` because this is a **type size** consumed
+     * through `text-[length:var(…)]` (`TopologyReviewLink`, `TopologyChangeAnnouncement`) —
+     * a size token outside the `--text-*` prefix is still type, and the ramp's own rule
+     * applies to it or the prefix becomes the specification instead of the quantity
+     * (2026-09-12). The deliberate 13 → 12 step above is unchanged; only the unit moves.
+     */
+    --topology-chrome-title-size: 0.75rem;
     --topology-utility-lane-height: var(--topology-chrome-control-height);
     --topology-utility-lane-gap: var(--topology-chrome-gap);
     --topology-utility-lane-compact-width: var(--topology-chrome-control-height);
@@ -3028,11 +3045,28 @@
     /* #67 — Scrollable signal (scroll edge). Bottom fade indicating "more below" rather than "end here" when a list is clipped. Only one step lighter than panel color, not a decorative gradient, and does not move. */
     --topology-shortcut-sheet-scroll-fade: 28px;
     --topology-bottom-tab-min-height: 56px;
+    /*
+     * **The bar's content, not its floor** (2026-09-12).
+     *
+     * A reserve derived from a `min-height` is a reserve only while the minimum is what
+     * binds. The bar is an icon shell (`h-6` inside its row) plus a `gap-0.5` plus one
+     * `leading-caption` line, and the type ramp is now root-relative — so at a browser
+     * text size of 200% the bar measured **73.13px** while the reserve still said 56px,
+     * and three text leaves on `/ko/docs/` at 600 wide and one at 768 sat **behind** it
+     * (measured with `elementFromPoint`, so genuinely covered, not merely intersecting).
+     * At the default root the content comes to 40px and the 56px floor still wins, so
+     * `max()` renders the same pixel it always did.
+     *
+     * The label is not shrunk to fit the old floor: the label growing is the reader's
+     * instruction, and the room the page owes it is the page's side of that.
+     */
+    --topology-bottom-tab-content: calc(1.5rem + 0.125rem + var(--leading-caption));
     --topology-bottom-tab-surface: #08090a;
     /* 2026-08-06 audit: value was `rgba(255,255,255,0.09)` — the third value **sandwiched between** global `--color-divider` (0.08) and `--color-overlay-3` (0.1). The job of this line is to separate the bar from content, which is the definition of a divider, so it now references the global token. Alpha difference of 0.01 means screen appearance is effectively unchanged. */
     --topology-bottom-tab-border: var(--color-divider);
     --topology-mobile-bottom-tab-reserve: calc(
-      var(--topology-bottom-tab-min-height) + env(safe-area-inset-bottom)
+      max(var(--topology-bottom-tab-min-height), var(--topology-bottom-tab-content)) +
+        env(safe-area-inset-bottom)
     );
     --topology-shortcuts-help-phone-top: 188px;
     --topology-shortcuts-help-focus-phone-top: 208px;

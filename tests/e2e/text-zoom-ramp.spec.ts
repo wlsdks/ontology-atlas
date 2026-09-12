@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 import {
+  CUT_TEXT,
+  DEFAULT_ROOT_PX,
+  ZOOMED_ROOT_PX,
+} from "./text-zoom-probes";
+import {
   DOC_COLUMN_GUTTER_PX,
   DOC_COLUMN_PX,
   PROSE_MEASURE_PX,
@@ -24,12 +29,27 @@ import {
  * `tests/contract/type-ramp-root-relative.contract.test.ts`, reads the declarations; it cannot
  * see a screen, and this file cannot tell `px` from `rem` at the default root. Both are needed.
  *
- * ## Why the root font size is set in script and not emulated
+ * ## Two techniques, because one of them is a trap
  *
  * There is no `emulateMedia` for this: text-only zoom is a browser **setting**, not a media
- * feature, and Playwright exposes no switch for it. What the setting does is multiply the root
- * font size, so the measurement does exactly that — `documentElement.style.fontSize = '32px'`
- * is 200% of the 16px default, and every `rem` in the cascade resolves against it.
+ * feature. The obvious stand-in is `documentElement.style.fontSize = '32px'`, and for the
+ * *type* it is exact — every `rem` length in the cascade resolves against the root.
+ *
+ * ⚠️ **It is not the browser's setting.** `rem` inside a **media query** resolves against the
+ * root element's *initial* font size — the browser's own default — and an author-set
+ * `html { font-size }` cannot move it. Tailwind v4's breakpoints are `rem`
+ * (`48rem` / `64rem` / `80rem`), so a real font-size preference moves them and the script
+ * stand-in does not. Measured at a 1512 viewport: with the author-set root,
+ * `(min-width: 48rem)` is **true**; with the browser's default font size set to 32px it is
+ * **false**, while the repository's own `(min-width: 768px)` queries stay **true** in both.
+ * A real reader at 200% therefore gets a state no script stand-in produces — the below-`lg`
+ * layout in a 1512 window — and every layout claim measured the other way describes a screen
+ * that does not exist.
+ *
+ * So the file splits. The first group sets the root in script, because a claim about *type*
+ * wants the root moved and nothing else moved with it. The second group launches the browser
+ * with `defaultFontSize=32`, which is the setting, and it carries a self-probe on
+ * `(min-width: 48rem)` so it cannot quietly fall back to the stand-in and stay green.
  *
  * ## What is asserted, and what is deliberately not
  *
@@ -60,9 +80,6 @@ interface BoxRead {
   readonly width: number;
 }
 
-/** 200% of the 16px default. The one number this whole file is about. */
-const ZOOMED_ROOT_PX = 32;
-const DEFAULT_ROOT_PX = 16;
 
 /**
  * The ramp, and the pixel each step renders at the default root — the same table
@@ -101,14 +118,6 @@ const CHROME_BOXES = [
   "--touch-target-min",
 ] as const;
 
-const ROUTES = [
-  "/ko/docs/",
-  "/ko/topology/?guides=off",
-  "/ko/download/",
-  "/ko/library/?guides=off",
-] as const;
-
-const WIDTHS = [1512, 1040] as const;
 
 /**
  * ⚠️ **A fresh element per token, with transitions off.** Reusing one probe element returns the
@@ -140,57 +149,6 @@ const READ_BOXES = `(names) => names.map((name) => {
   el.remove();
   return { name, width };
 })`;
-
-/**
- * **Text that is visibly cut off and offered no way to see the rest.**
- *
- * ⚠️ The obvious measurement here is wrong, and it is wrong in the direction that passes.
- * `html` and `body` both carry `overflow-x: hidden` on every Atlas route (measured), so
- * `documentElement.scrollWidth` can never exceed `clientWidth` and an element whose rect
- * reaches past the viewport always has a clipping ancestor. A gate built on either of those
- * two facts is green before it is written — the same shape as the width-conditional gate that
- * measured a control only at the one width where it did not exist.
- *
- * So the question is asked about the **text**, not the box: is a leaf's content taller or wider
- * than the box it sits in, and does the box that clips it offer a way to the rest? An ellipsis
- * (`text-overflow`), a line clamp (`-webkit-line-clamp`) and a scroller (`auto`/`scroll`) are
- * all such offers, and all three are things an author chose for a narrow box; the type merely
- * reaches them sooner. What is left over — cut with nothing on offer — is text a reader cannot
- * get to at all, and that is the number this holds at zero.
- */
-const CUT_TEXT = `() => {
-  const out = [];
-  for (const el of document.querySelectorAll('body *')) {
-    if (el.children.length) continue;
-    const text = (el.textContent || '').trim();
-    if (!text) continue;
-    // A 1px box is the visually-hidden idiom (skip links, rail tooltips), not a cut.
-    if (el.clientWidth <= 1 || el.clientHeight <= 1) continue;
-    const cs = getComputedStyle(el);
-    if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.05) continue;
-    if (el.scrollWidth <= el.clientWidth + 1 && el.scrollHeight <= el.clientHeight + 1) continue;
-    let clipper = null;
-    for (let node = el; node && node !== document.body; node = node.parentElement) {
-      const ns = getComputedStyle(node);
-      const clips = (axis) => ['hidden', 'clip', 'auto', 'scroll'].includes(axis);
-      if (clips(ns.overflowX) || clips(ns.overflowY)) { clipper = node; break; }
-    }
-    if (!clipper) continue;
-    const ks = getComputedStyle(clipper);
-    const offersRest =
-      ks.textOverflow === 'ellipsis' ||
-      (ks.webkitLineClamp && ks.webkitLineClamp !== 'none') ||
-      ['auto', 'scroll'].includes(ks.overflowX) ||
-      ['auto', 'scroll'].includes(ks.overflowY);
-    if (offersRest) continue;
-    out.push(
-      '«' + text.slice(0, 40) + '» ' + el.scrollWidth + 'x' + el.scrollHeight
-        + ' in ' + el.clientWidth + 'x' + el.clientHeight
-        + ' · clipped by .' + String(clipper.className).slice(0, 60),
-    );
-  }
-  return out;
-}`;
 
 test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다", () => {
   test("램프의 모든 단이 기본 루트에서 지정된 픽셀로, 32px 루트에서 정확히 두 배로 렌더된다", async ({
@@ -306,38 +264,6 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     expect(after.get("--measure-doc-gutter")).toBe(DOC_COLUMN_GUTTER_PX);
   });
 
-  for (const width of WIDTHS) {
-    for (const route of ROUTES) {
-      test(`${route} · ${width}px — 200% 글자 확대에서 가로 넘침도, 갇힌 글자도 없다`, async ({
-        page,
-      }) => {
-        await page.setViewportSize({ width, height: 900 });
-        await page.goto(route, { waitUntil: "domcontentloaded" });
-        await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
-
-        for (const root of [DEFAULT_ROOT_PX, ZOOMED_ROOT_PX]) {
-          await page.evaluate((size) => {
-            document.documentElement.style.fontSize = `${size}px`;
-          }, root);
-          // Two frames for the reflow the root change causes.
-          await page.evaluate(
-            () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-          );
-
-          const cut = (await page.evaluate(eval(CUT_TEXT))) as string[];
-          expect(
-            cut,
-            `루트 ${root}px 에서 잘린 채 나머지를 볼 방법이 없는 글자가 있다.\n` +
-              `줄임표·라인 클램프·스크롤러 중 하나라도 있으면 좁은 상자의 설계된 동작이지만,\n` +
-              `셋 다 없으면 독자는 그 글자에 닿을 수 없다. html·body 가 둘 다\n` +
-              `overflow-x: hidden 이라 문서 scrollWidth 로는 이걸 절대 못 본다.\n` +
-              cut.join("\n"),
-          ).toEqual([]);
-        }
-      });
-    }
-  }
-
   test("잘린 글자 탐지기가 실제로 문다 — 심어 넣은 절단을 찾아낸다", async ({ page }) => {
     await page.setViewportSize({ width: 1040, height: 900 });
     await page.goto("/ko/docs/", { waitUntil: "domcontentloaded" });
@@ -421,3 +347,4 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     expect(after!.textWidth).toBeGreaterThan(before!.textWidth);
   });
 });
+

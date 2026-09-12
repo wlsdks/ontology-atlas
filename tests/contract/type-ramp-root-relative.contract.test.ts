@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -27,6 +27,24 @@ import { describe, expect, it } from 'vitest';
 const ROOT = process.cwd();
 const CSS = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
 
+/** Every `.ts`/`.tsx` under `src/` and `app/` — the two directories the ramp lint covers. */
+function sourceFiles(): string[] {
+  const found: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const full = path.join(dir, entry);
+      if (statSync(full).isDirectory()) {
+        if (entry === 'node_modules' || entry === 'data') continue;
+        walk(full);
+      } else if (/\.tsx?$/.test(entry)) {
+        found.push(full);
+      }
+    }
+  };
+  for (const dir of ['src', 'app']) walk(path.join(ROOT, dir));
+  return found;
+}
+
 /** Comments are blanked so a px value quoted in prose cannot read as a declaration. */
 const CODE = CSS.replace(/\/\*[\s\S]*?\*\//g, (block) => block.replace(/[^\n]/g, ' '));
 
@@ -38,7 +56,12 @@ interface Declaration {
 
 function declarations(prefix: 'text' | 'leading'): Declaration[] {
   const found: Declaration[] = [];
-  const pattern = new RegExp(`^[ \\t]*(--${prefix}-[a-z0-9-]+)\\s*:\\s*([^;{}]+);`, 'gm');
+  // ⚠️ `(?:^|[{;])` rather than `^`: a one-line scoped override — `[data-dense] { --text-body:
+  // 12px; }` — puts the declaration after a brace on the same line, and an anchor that only
+  // knows the line start walks straight past it. Nothing formats `app/globals.css` (no
+  // prettier or stylelint in `package.json`), so that spelling is a live possibility rather
+  // than a hypothetical. The fourth self-probe below plants exactly that line.
+  const pattern = new RegExp(`(?:^|[{;])[ \\t]*(--${prefix}-[a-z0-9-]+)\\s*:\\s*([^;{}]+);`, 'gm');
   for (const match of CODE.matchAll(pattern)) {
     // The `--text-<step>--line-height` companions are pointers at a `--leading-*` step, not
     // sizes of their own; the step they point at is checked on its own row.
@@ -60,9 +83,10 @@ function declarations(prefix: 'text' | 'leading'): Declaration[] {
 const NOT_ROOT_RELATIVE = new Map<string, string>([
   [
     '--text-monument',
-    'clamp(40px, 4.8cqw, 96px) — derived from its own container, not a step spent on reading; ' +
-      'its specification is that the headline stands on one line inside its measure, and text ' +
-      'zoom cannot reach a `cqw` term at all',
+    'clamp(2.5rem, 4.8cqw, 96px) — a three-armed size, so no single unit describes it. Its ' +
+      'floor IS root-relative (the reader\'s guarantee, and `2.5rem` is the same 40px it was); ' +
+      'the `4.8cqw` term answers to its own container, which text zoom cannot reach at all; ' +
+      'the `96px` ceiling is the layout\'s limit, not the reader\'s',
   ],
   ['--leading-display-tight', 'a ratio — it already follows the size it is applied to'],
   ['--leading-prose', 'a ratio — it already follows the size it is applied to'],
@@ -115,6 +139,55 @@ describe('타입 램프는 루트 글꼴 크기를 따른다', () => {
       .filter((entry) => /^[0-9.]+rem$/.test(entry.value))
       .map((entry) => `  ${entry.name}: ${entry.value}`);
     expect(stale, '예외로 등록된 단이 평범한 rem 이 됐다 — 목록에서 내린다').toEqual([]);
+  });
+
+  it('한 줄 스코프 오버라이드도 잡는다 — 중괄호 뒤의 선언은 선언이다', () => {
+    // The anchor's own probe: the same declaration, written after a brace on one line. An
+    // earlier version of this detector reported it as absent, which is the quietest way for a
+    // ramp step to come back to `px`.
+    const oneLine = '[data-dense] { --text-body: 12px; }';
+    const pattern = /(?:^|[{;])[ \t]*(--text-[a-z0-9-]+)\s*:\s*([^;{}]+);/gm;
+    const found = [...oneLine.matchAll(pattern)].map((m) => `${m[1]}: ${m[2].trim()}`);
+    expect(found).toEqual(['--text-body: 12px']);
+  });
+
+  it('접두사 밖의 타입 크기 토큰도 루트를 따른다 — 접두사가 사양이 되면 안 된다', () => {
+    // `--text-*` is a naming convention, not the quantity. A size token under any other name
+    // that a component consumes as a font size through `text-[length:var(…)]` is still type,
+    // and until 2026-09-12 `--topology-chrome-title-size: 12px` was exactly that: a 12px type
+    // step no ramp gate could see, sitting behind two consumers. The detector reads the
+    // consumers rather than guessing from names, so a new one is covered on its first day.
+    const sources = sourceFiles();
+    expect(sources.length, '스캔이 비었다 — src/app 에서 소비자를 못 찾았다').toBeGreaterThan(50);
+    const consumed = new Set<string>();
+    for (const file of sources) {
+      const body = readFileSync(file, 'utf8');
+      for (const match of body.matchAll(/text-\[length:var\((--[a-z0-9-]+)\)\]/g)) {
+        consumed.add(match[1]);
+      }
+    }
+    expect(consumed.size, '소비자 스캔이 0 이다 — 정규식이 드리프트했다').toBeGreaterThan(0);
+
+    const offenders: string[] = [];
+    for (const name of [...consumed].sort()) {
+      // A token that points at a ramp step inherits the ramp's unit by construction.
+      const declaration = CODE.match(
+        new RegExp(`(?:^|[{;])[ \\t]*${name}\\s*:\\s*([^;{}]+);`, 'm'),
+      );
+      if (!declaration) continue;
+      const value = declaration[1].trim();
+      if (/var\(--text-/.test(value)) continue;
+      if (/^[0-9.]+rem$/.test(value)) continue;
+      if (/^calc\(.*var\(--text-/.test(value)) continue;
+      offenders.push(`  ${name}: ${value}`);
+    }
+    expect(
+      offenders,
+      '`text-[length:var(…)]` 로 소비되는 크기 토큰이 루트를 따르지 않는다.\n' +
+        '접두사가 아니라 수량이 규칙을 정한다 — rem 으로 적거나 var(--text-*) 를\n' +
+        '가리킨다. 위반:\n' +
+        offenders.join('\n'),
+    ).toEqual([]);
   });
 
   it('읽는 값은 주석이 아니라 선언이다 — 산문에 적힌 px 에 속지 않는다', () => {

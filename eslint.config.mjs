@@ -626,6 +626,29 @@ export const arbitrarySizeSelectors = [
     message:
       'Geometry Codex — text-[Nrem] 하드코딩 금지 (template literal). text-* 램프로.',
   },
+  // The two spellings the four selectors above still cannot see: the explicit `length:` data
+  // type, and `em`. `em` is the worse of the two — it resolves against the *parent's* size, so
+  // it neither pins a pixel nor follows the reader's root, and it reads as if it did.
+  {
+    selector: 'Literal[value=/text-\\[length:[0-9.]+(px|rem|em)\\]/]',
+    message:
+      'Geometry Codex — text-[length:N단위] 하드코딩 금지. text-* 램프로. 램프 밖이면 eslint-disable + 사유.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/text-\\[length:[0-9.]+(px|rem|em)\\]/]',
+    message:
+      'Geometry Codex — text-[length:N단위] 하드코딩 금지 (template literal). text-* 램프로.',
+  },
+  {
+    selector: 'Literal[value=/text-\\[[0-9.]+em\\]/]',
+    message:
+      'Geometry Codex — text-[Nem] 금지. em 은 부모 크기에 상대적이라 픽셀도 루트도 따르지 않는다. text-* 램프로.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/text-\\[[0-9.]+em\\]/]',
+    message:
+      'Geometry Codex — text-[Nem] 금지 (template literal). text-* 램프로.',
+  },
   {
     selector:
       'Literal[value=/rounded-((t|b|l|r|s|e|tl|tr|bl|br|ss|se|es|ee)-)?\\[[0-9.]+px\\]/]',
