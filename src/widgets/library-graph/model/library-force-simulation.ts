@@ -321,7 +321,7 @@ const MARK_BOTTOM_RATIO = 0.55;
 const MARK_ROOM_SHARE = 0.075;
 
 /** The band this folder's marks are drawn in, on this canvas. */
-export function libraryMarkBand(
+function libraryMarkBand(
   order: number,
   box?: { width: number; height: number },
 ): { min: number; max: number } {

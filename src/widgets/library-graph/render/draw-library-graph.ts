@@ -222,7 +222,7 @@ const MENTIONS_WIDTH = 1;
  * and it never goes below 1 — a dense folder keeps exactly the lines that shipped, which is
  * also what keeps the 5.23:1 contrast measurement those widths were taken with honest.
  */
-export function libraryEdgeWidth(relation: "cites" | "mentions", maxRadius: number): number {
+function libraryEdgeWidth(relation: "cites" | "mentions", maxRadius: number): number {
   const base = relation === "mentions" ? MENTIONS_WIDTH : CITES_WIDTH;
   return base * Math.max(1, maxRadius / 10);
 }

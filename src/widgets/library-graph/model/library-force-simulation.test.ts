@@ -623,6 +623,33 @@ describe("the library graph's force simulation", () => {
     expect(still).toEqual(["source:sources/design-system.docx", "source:sources/interview-notes.txt"]);
   });
 
+  /**
+   * **A mark is small or large relative to the room around it** (2026-09-12). The 5–10px band
+   * was measured when this canvas was a 320px strip; it is the Library's whole pane now, and
+   * twelve marks on 891,000 square pixels wearing 20px of diameter is what the owner read as
+   * an ugly popup. The band follows the canvas, floored at the old top so a dense folder never
+   * gets smaller marks than the ones that shipped.
+   */
+  it("grades the band by the room each mark has, and never below the band that shipped", () => {
+    const graph = denseFolder();
+    const sparse = libraryMarkRadii(graph, { width: 1088, height: 819 });
+    const dense = libraryMarkRadii(
+      { ...graph, nodes: graph.nodes },
+      { width: 200, height: 150 },
+    );
+    const top = (radii: Map<string, number>) => Math.max(...radii.values());
+    // An 18-mark folder on the 14-inch workbench's canvas gets the band's ceiling.
+    expect(top(sparse)).toBeCloseTo(17, 5);
+    // A canvas with almost no room per mark still never goes under the 2026-09-06 top.
+    expect(top(dense)).toBeCloseTo(10, 5);
+    // And with no box at all, the band is exactly the one that shipped.
+    expect(top(libraryMarkRadii(graph))).toBeCloseTo(10, 5);
+    // Degree still grades inside whichever band it is.
+    const busiest = sparse.get("page:wiki/page-4")!;
+    const quietest = sparse.get("page:wiki/page-3")!;
+    expect(busiest).toBeGreaterThan(quietest);
+  });
+
   it("grades the mark by degree inside the 5–10px band, keeping the source a step smaller", () => {
     const graph = denseFolder();
     const radii = libraryMarkRadii(graph);
