@@ -34,8 +34,15 @@ import { describe, expect, it } from 'vitest';
  * of that same card — the installed app with no verified runtime — states the missing tool
  * instead of a surface and is not counted, because in the app "a browser cannot" would simply be
  * false. Gate for both halves: `LibraryImportDialog.test.tsx`, "names the right absence".
+ *
+ * **18 → 20 on 2026-09-13**, deliberately, for the Harness tab's 지침 view. Almost the whole agent
+ * harness lives in dot directories, and a browser's folder permission cannot see a dot entry at
+ * all — so on the web this view cannot draw a shorter list and call it the inventory. The two
+ * strings (`harness.browserOnly`, `harness.browserOnlyBody`) render only when the reading bridge is
+ * absent, which is the surface check this ratchet asks for, and in the installed app they are never
+ * reached. Gate: `HarnessPage.test.tsx`, "names what a browser cannot reach".
  */
-const SURFACE_NAMED_CEILING = 18;
+const SURFACE_NAMED_CEILING = 20;
 
 const NAMES_A_SURFACE = /브라우저|browser/i;
 

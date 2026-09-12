@@ -26,7 +26,8 @@ tags: [architecture, infra, overview]
 │ │                          less web visitor, map for   │
 │ │                          the app and vault users     │
 │ ├─ /topology               map + contextual write     │
-│ ├─ /architecture           reviewed roles + agent gate│
+│ ├─ /architecture           harness: guides · structure│
+│ │                          · sensors (?view=)          │
 │ ├─ /docs                   vault picker + editor       │
 │ ├─ /library                gathered sources + wiki     │
 │ ├─ /ontology               thin redirect → /topology   │
@@ -137,9 +138,13 @@ behaviour, while unclassified usage can never be declared away. Their
 `architectureConformance:v1` result is `conforms`, `violated`, or `unknown`;
 unsupported languages, incomplete scans, unknown usages, unmapped edges,
 unruled edges, and empty roles prevent a false green result. The
-`/architecture` Living Blueprint
+`/architecture?view=structure` Living Blueprint
 renders the declared model and copies the typed pre/post agent plan, while source
-analysis remains in MCP/CLI rather than being duplicated into Markdown.
+analysis remains in MCP/CLI rather than being duplicated into Markdown. Beside it
+`?view=guides` reads the same repository's **agent harness** — the guide files, which tool
+reads which, size against a documented cap, declared mirror-pair drift, and hook wiring — from
+files only, through the installed app's bridge (`entities/agent-files`); the browser cannot see a
+dot directory at all and says so instead of drawing a shorter list.
 
 ## Surface contract — web and app
 
@@ -483,8 +488,16 @@ until a local manifest exists.
 /topology                  map + contextual relation editor + change review. Any link labelled
                            "map" or "edit relation" points here, not at / (gate:
                            tests/contract/map-destination-route.contract.test.ts)
-/architecture              reviewed architecture profiles, stable role blueprint, and typed
-                           MCP/CLI planning + verification handoff; never an ontology map
+/architecture              the Harness destination (labelled 하네스 / "Harness" since
+                           2026-09-13; route unchanged). Three views on ?view=:
+                           guides — the agent guide files this repository carries, which
+                           tool reads each (a static table citing its source per row), size
+                           against the Codex 32 KiB merged cap, declared mirror-pair byte
+                           status with a diff door, and hook wiring; structure (the default,
+                           where every link written before the rename lands) — reviewed
+                           architecture profiles, the stable role blueprint, and the typed
+                           MCP/CLI planning + verification handoff; sensors — declared not
+                           built. Never an ontology map
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench

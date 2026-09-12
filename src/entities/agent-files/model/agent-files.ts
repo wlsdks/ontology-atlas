@@ -1,4 +1,13 @@
-import type { VaultDoc } from '@/entities/docs-vault';
+/**
+ * The two fields this module needs from a vault document, written out rather than imported from the
+ * `docs-vault` slice. Two entity slices reaching sideways for a type is an edge the architecture
+ * ratchet counts, and nothing here needs the rest of `VaultDoc`: the classifier works on paths and
+ * the UI join needs a slug.
+ */
+interface VaultDocRef {
+  path: string;
+  slug: string;
+}
 
 /**
  * Read-only "agent files" detection — web mirror of the CLI pure logic in
@@ -54,7 +63,7 @@ export const AGENT_TOOL_LABELS: Readonly<Record<AgentTool, string>> = Object.fre
   copilot: 'Copilot',
 });
 
-interface AgentFileRule {
+export interface AgentFileRule {
   readonly id: string;
   readonly kind: AgentFileKind;
   readonly tools: readonly AgentTool[];
@@ -80,7 +89,13 @@ const TOML_MCP_SECTION_RE =
 const NON_ENGLISH_SCRIPT_RE =
   /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff]/gu;
 
-const AGENT_FILE_RULES: readonly AgentFileRule[] = Object.freeze([
+/**
+ * Exported read-only so `entities/harness-inventory` can prove it carries a source document for
+ * every (rule, tool) claim this table makes. The classifier itself is unchanged: the citation lives
+ * beside the table rather than inside it, because the CLI twin's JSON output is a shipped contract
+ * and this table's shape is half of it.
+ */
+export const AGENT_FILE_RULES: readonly AgentFileRule[] = Object.freeze([
   { id: 'claude-md', kind: 'instructions', tools: ['claude-code'], pattern: /^CLAUDE\.md$/ },
   { id: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], pattern: /^AGENTS\.md$/ },
   { id: 'gemini-md', kind: 'instructions', tools: ['antigravity', 'gemini-cli'], pattern: /^GEMINI\.md$/ },
@@ -120,7 +135,7 @@ interface AgentFileRecord {
   drift: string[];
 }
 
-interface AgentDriftFinding {
+export interface AgentDriftFinding {
   check: string;
   code: string;
   path: string;
@@ -824,12 +839,12 @@ export function analyzeAgentFiles({
  * (docs/ontology …) cannot reach the repo root through FSA, so the group is
  * not rendered at all rather than shown empty or half-true.
  */
-export function manifestIncludesRepoRoot(docs: Array<Pick<VaultDoc, 'path'>>): boolean {
+export function manifestIncludesRepoRoot(docs: Array<Pick<VaultDocRef, 'path'>>): boolean {
   return docs.some((doc) => doc.path === 'CLAUDE.md' || doc.path === 'AGENTS.md');
 }
 
 /** Manifest docs that classify as agent files (visible = non-dot paths only). */
-export function selectAgentFileDocs<T extends Pick<VaultDoc, 'path' | 'slug'>>(docs: T[]): T[] {
+export function selectAgentFileDocs<T extends Pick<VaultDocRef, 'path' | 'slug'>>(docs: T[]): T[] {
   return docs.filter((doc) => classifyAgentFilePath(doc.path) !== null);
 }
 
@@ -859,7 +874,7 @@ export interface AgentFilesUiModel {
 /** Join analysis records back to manifest docs (slug needed for onSelect). */
 export function buildAgentFilesUiModel(
   analysis: AgentFilesAnalysis,
-  docs: Array<Pick<VaultDoc, 'path' | 'slug'>>,
+  docs: Array<Pick<VaultDocRef, 'path' | 'slug'>>,
 ): AgentFilesUiModel {
   const slugByPath = new Map(docs.map((doc) => [doc.path, doc.slug]));
   const records: AgentFilesUiRecord[] = [];

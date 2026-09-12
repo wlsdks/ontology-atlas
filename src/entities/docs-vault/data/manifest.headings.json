@@ -6646,6 +6646,16 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-13 — The 아키텍처 tab becomes 하네스, and says only what files can prove",
+      "slug": "2026-09-13-the-아키텍처-tab-becomes-하네스-and-says-only-what-files-can-prove"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-13 — The blueprint ladder takes the card's width so its sentences finish",
+      "slug": "2026-09-13-the-blueprint-ladder-takes-the-cards-width-so-its-sentences-finish"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-12 — A gate may check the product, never the clock",
       "slug": "2026-09-12-a-gate-may-check-the-product-never-the-clock"
     },
@@ -11795,8 +11805,8 @@
     },
     {
       "depth": 3,
-      "text": "`/architecture` — Living Blueprint for implementation boundaries",
-      "slug": "architecture-living-blueprint-for-implementation-boundaries"
+      "text": "`/architecture` — 하네스 / Harness: guides, structure, sensors",
+      "slug": "architecture-하네스-harness-guides-structure-sensors"
     },
     {
       "depth": 3,

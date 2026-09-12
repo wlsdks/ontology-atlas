@@ -103,8 +103,11 @@ export function ArchitectureWorkbench({
   agentActivity = null,
   copyFeedbackMs = COPY_FEEDBACK_MS,
   offersInstalledApp = false,
+  embedded = false,
 }: {
   profiles: ArchitectureProfile[];
+  /** The Harness shell above already states the destination's identity; drop the eyebrow and h1. */
+  embedded?: boolean;
   /** Architecture documents this surface could not read, named rather than silently dropped. */
   profileProblems?: ReadonlyArray<ArchitectureProfileProblem>;
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
@@ -466,7 +469,10 @@ export function ArchitectureWorkbench({
         {profileNotices ? <div className="w-full max-w-[var(--measure-stage-column)]">{profileNotices}</div> : null}
         <EmptyState
           title={t('noProfiles')}
-          titleAs="h1"
+          /* Embedded under the Harness shell the page headline is already spoken above, so this
+             fallback drops a rung rather than putting a second `h1` on one screen. Standing alone
+             it is the route's only headline and keeps it. */
+          titleAs={embedded ? 'h2' : 'h1'}
           description={
             agentRoute === 'clipboard'
               ? `${t('noProfilesBody')} ${t('draftNoAgentBody')}`
@@ -710,18 +716,31 @@ export function ArchitectureWorkbench({
           data-testid="architecture-flow-panel"
         >
           <header className="mb-3 shrink-0 px-1">
+            {/*
+              Embedded under the Harness shell the destination's identity is already stated above,
+              so this header keeps only what is about *this profile* — its name and what the
+              blueprint compares. Standing alone it still owns the eyebrow and the `h1`.
+            */}
             <div className="min-w-0">
-              <p className="text-caption font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-                {t('eyebrow')}
-              </p>
-              <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h1 className="text-display font-[var(--font-weight-strong)] leading-display-tight text-[color:var(--color-text-primary)]">
-                  {t('title')}
-                </h1>
-                <span className="text-body-lg text-[color:var(--color-text-tertiary)]">
+              {embedded ? (
+                <h2 className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                   {selected.title}
-                </span>
-              </div>
+                </h2>
+              ) : (
+                <>
+                  <p className="text-caption font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
+                    {t('eyebrow')}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h1 className="text-display font-[var(--font-weight-strong)] leading-display-tight text-[color:var(--color-text-primary)]">
+                      {t('title')}
+                    </h1>
+                    <span className="text-body-lg text-[color:var(--color-text-tertiary)]">
+                      {selected.title}
+                    </span>
+                  </div>
+                </>
+              )}
               <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
                 {t('description')}
               </p>

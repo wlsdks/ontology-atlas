@@ -5,7 +5,7 @@ import koMessages from "../../../../../messages/ko.json";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import type { DocsTreeGroup, DocsTreeSort } from "@/widgets/docs-vault/lib/tree-order";
 import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
-import type { AgentFilesUiModel } from "../../lib/agent-files";
+import type { AgentFilesUiModel } from "@/entities/agent-files";
 import { DOCS_HEAD_LABEL_MIN_PX, DocsSidebarBody } from "./DocsSidebarBody";
 
 function makeDoc(slug: string, title: string, updatedAt: string): VaultDoc {
