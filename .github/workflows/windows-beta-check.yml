@@ -24,8 +24,21 @@ name: Windows x64 Beta Check
 # across the last three green runs (17–20 min per job). A `main` run after each merge that
 # touches these paths saves the cache where every later PR can read it. The `paths` list is
 # duplicated on purpose: workflow triggers cannot share a YAML anchor.
+#
+# Draft and merge group (2026-09-12). A draft pull request runs nothing here either: `pnpm pr:land`
+# merges main in, runs the local lanes and marks the pull request ready, and `ready_for_review` is
+# what fires this job once, on the tree that is about to land.
+#
+# **This workflow deliberately carries no `merge_group` trigger, unlike `checks.yml` and `e2e.yml`.**
+# `merge_group` supports no `paths` filter, so the trigger would run this 17-to-20-minute Windows job
+# on every merge group whatever it contains, and neither job here produces a required status context,
+# so it would gate nothing while doing so. The pre-merge signal is the `pull_request` trigger below
+# and the post-merge signal is the `push` to `main`, both path-filtered.
+# `tests/contract/workflow-security.contract.test.ts` holds that rule: a workflow that produces a
+# required context must carry `merge_group`, and this one must not.
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - ".github/workflows/release-macos.yml"
       - ".github/workflows/windows-beta-check.yml"
@@ -81,6 +94,7 @@ jobs:
   # Linux job it finishes in under a minute, fails on its own, and reruns for cents.
   audit-js:
     name: Audit JavaScript production dependencies
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -118,6 +132,7 @@ jobs:
 
   verify-windows:
     name: Verify unsigned Windows x64 beta
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: windows-2022
     timeout-minutes: 45
     steps:

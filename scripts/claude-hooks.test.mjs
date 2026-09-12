@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
-import { constants } from 'node:fs';
+import { constants, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -25,6 +25,9 @@ const HOOK_CONFIGS = [
     settingsFile: '.claude/settings.json',
     expectedCommands: [
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-generated-edit.sh"',
+      // The landing guard: `gh pr merge`, `gh pr update-branch`, and
+      // `gh pr create` without `--draft` (2026-09-12).
+      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-manual-landing.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-npm-publish.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-unsafe-git.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/fast-sensor.sh"',
@@ -46,6 +49,12 @@ const HOOK_CONFIGS = [
     settingsFile: '.codex/hooks.json',
     expectedCommands: [
       'bash .codex/hooks/block-generated-edit.sh',
+      // The landing guard, in all three shell matcher groups. Counted, not
+      // named once: a missing group lowers the harness-smoke lower bound
+      // silently instead of failing here.
+      'bash .codex/hooks/block-manual-landing.sh',
+      'bash .codex/hooks/block-manual-landing.sh',
+      'bash .codex/hooks/block-manual-landing.sh',
       'bash .codex/hooks/block-npm-publish.sh',
       'bash .codex/hooks/block-npm-publish.sh',
       'bash .codex/hooks/block-npm-publish.sh',
@@ -137,6 +146,111 @@ describe('agent hooks', () => {
     }
   });
 
+  /**
+   * The landing guard (2026-09-12).
+   *
+   * Landing is serialized by `pnpm pr:land`, which holds a shared lock, pours
+   * main into the branch, runs the local lanes and fires the one CI run. Every
+   * command below defeats one of those steps, and each is the obvious thing to
+   * type, which is why prose was not enough.
+   */
+  const LANDING_HOOKS = [
+    { name: 'Claude Code', hook: '.claude/hooks/block-manual-landing.sh' },
+    { name: 'Codex', hook: '.codex/hooks/block-manual-landing.sh' },
+  ];
+
+  /**
+   * Every probe runs against a throwaway root.
+   *
+   * The guard appends each refusal to `<root>/.tmp/harness/refusals.jsonl`, and
+   * this suite refuses ten commands per tree. Run inside a real session, whose
+   * `CLAUDE_PROJECT_DIR` is this repository, that is twenty invented refusals
+   * in the number `pnpm harness:report` publishes. A probe left in the real
+   * directory was already counted as a session once, on 2026-09-02.
+   */
+  function runLandingHook(hookPath, payload, { root } = {}) {
+    const sandbox = root ?? mkdtempSync(join(tmpdir(), 'landing-probe-'));
+    try {
+      return spawnSync('bash', [hookPath], {
+        input: JSON.stringify(payload),
+        encoding: 'utf8',
+        env: { ...process.env, CLAUDE_PROJECT_DIR: sandbox, ATLAS_HOOK_ROOT: sandbox },
+      });
+    } finally {
+      if (!root) rmSync(sandbox, { recursive: true, force: true });
+    }
+  }
+
+  it('refuses landing a pull request by hand', () => {
+    for (const config of LANDING_HOOKS) {
+      for (const command of [
+        'gh pr merge 1',
+        'gh pr merge 1572 --squash --delete-branch',
+        'cd /repo && gh pr merge 12 --admin',
+        'echo ok\ngh pr merge 3',
+        'gh pr update-branch 1572',
+        'gh pr create --title x --body y',
+        'gh pr create --fill',
+        'pnpm pr:land 1 && gh pr merge 2',
+        { tool_name: 'functions.exec_command', tool_input: { cmd: 'gh pr merge 3' } },
+        { tool_name: 'exec_command', tool_input: { cmd: 'gh pr create --title x' } },
+      ]) {
+        const payload =
+          typeof command === 'string' ? { tool_name: 'Bash', tool_input: { command } } : command;
+        const result = runLandingHook(config.hook, payload);
+        assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
+        assert.match(result.stdout, /"permissionDecision": "deny"/, `${config.name}: ${JSON.stringify(command)}`);
+        assert.match(result.stdout, /landing guard/, `${config.name}: ${JSON.stringify(command)}`);
+        // A refusal that does not name the replacement is a wall, not a gate.
+        assert.match(result.stdout, /pnpm pr:land/, `${config.name}: ${JSON.stringify(command)}`);
+      }
+    }
+  });
+
+  it('passes the lander, a draft pull request, and every read-only gh command', () => {
+    for (const config of LANDING_HOOKS) {
+      for (const payload of [
+        { tool_name: 'Bash', tool_input: { command: 'pnpm pr:land 1572' } },
+        { tool_name: 'Bash', tool_input: { command: 'pnpm pr:land 1572 --cleanup /tmp/wt' } },
+        { tool_name: 'Bash', tool_input: { command: 'pnpm run pr:land 1572' } },
+        { tool_name: 'Bash', tool_input: { command: 'pnpm pr:queue' } },
+        { tool_name: 'Bash', tool_input: { command: 'pnpm pr:ci 1572' } },
+        { tool_name: 'Bash', tool_input: { command: 'node scripts/pr-land.mjs 1572' } },
+        { tool_name: 'Bash', tool_input: { command: 'gh pr create --draft --title x --body y' } },
+        { tool_name: 'Bash', tool_input: { command: 'gh pr create -d --fill' } },
+        { tool_name: 'Bash', tool_input: { command: 'gh pr view 1572 --json state' } },
+        { tool_name: 'Bash', tool_input: { command: 'gh pr checks 1572' } },
+        { tool_name: 'Bash', tool_input: { command: 'gh pr list --state open' } },
+        // A pull request body may quote the very commands this guard refuses.
+        { tool_name: 'Bash', tool_input: { command: 'gh pr create --draft --body "$(cat <<EOF\nnever gh pr merge by hand\nEOF\n)"' } },
+        { tool_name: 'Read', tool_input: { command: 'gh pr merge 1' } },
+      ]) {
+        const result = runLandingHook(config.hook, payload);
+        assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
+        assert.equal(result.stdout, '', `${config.name}: ${JSON.stringify(payload.tool_input)}`);
+      }
+    }
+  });
+
+  it('counts every refusal where the harness report can read it', async () => {
+    // A guard nobody counted is the dead gate this repository keeps
+    // rediscovering, so the refusal ledger is part of the guard's contract.
+    const root = await mkdtemp(join(tmpdir(), 'landing-guard-'));
+    try {
+      runLandingHook(
+        '.claude/hooks/block-manual-landing.sh',
+        { tool_name: 'Bash', tool_input: { command: 'gh pr merge 7 --squash' } },
+        { root },
+      );
+      const ledger = await readFile(join(root, '.tmp/harness/refusals.jsonl'), 'utf8');
+      const row = JSON.parse(ledger.trim().split('\n').pop());
+      assert.equal(row.guard, 'block-manual-landing');
+      assert.equal(row.rule, 'gh-pr-merge');
+      assert.match(row.at, /^\d{4}-\d{2}-\d{2}T/);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
 });
 
 // The SessionStart inject hook pushes a vault summary into the agent context.

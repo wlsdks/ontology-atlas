@@ -17,9 +17,17 @@ name: Vault freshness
 # previous comment from this bot is removed. Never fails the PR check itself;
 # this is an FYI, not a merge gate.
 
+# Draft, 2026-09-12. A draft runs nothing, like every other lane;
+# `ready_for_review` is what `pnpm pr:land` fires once per landing.
+#
+# No `merge_group` trigger: this workflow produces no required status context,
+# and its whole output is a comment on a pull request, which a merge group does
+# not have. The combination's vault is validated by the `gates` lane, which runs
+# exhaustively on a merge group. `tests/contract/workflow-security.contract.test.ts`
+# holds the rule: the trigger belongs exactly where a required context is.
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_call:
     inputs:
       vault-dir:
@@ -48,7 +56,7 @@ jobs:
     name: Vault freshness check
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: github.event.pull_request != null
+    if: ${{ github.event.pull_request != null && github.event.pull_request.draft == false }}
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6

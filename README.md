@@ -560,6 +560,16 @@ Verification starts with `pnpm checks:changed`, which picks the focused gates fo
 the files you changed; `-- --run` executes every recommendation and stops at the
 first failure, and it is the last command before a pull request.
 
+Open the pull request as a **draft** (`gh pr create --draft`), which runs no CI,
+and land it with `pnpm pr:land <number>`. That one command serializes against
+every other agent: it takes a shared lock, merges today's `main` into the
+branch, runs the local lanes on the merged source, marks the pull request ready
+(which fires the single CI run for that branch), squash merges, deletes the
+branch and releases the lock. `pnpm pr:queue` shows who holds the lock and who
+is waiting; `pnpm pr:ci <number>` buys an early CI run without landing. Never
+run `gh pr merge` or `gh pr update-branch` by hand: a guard refuses both,
+because outside the lander neither waits for the landing already in flight.
+
 | Command | What it answers |
 |---|---|
 | `pnpm checks:changed` | Which gates this change actually needs |
@@ -567,6 +577,7 @@ first failure, and it is the last command before a pull request.
 | `pnpm knip` | Dead files, exports and types across every scope |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision record to cite or overturn, and whether this change owes one |
 | `pnpm harness:report` · `pnpm harness:outcomes` | What the agent hooks caught, and whether that lane still earns its place |
+| `pnpm pr:land <n>` · `pnpm pr:queue` | Land a pull request, and who is landing right now |
 
 [Development checks](docs/DEVELOPMENT-CHECKS.md) is the full gate reference, one
 entry per area; [map testability](docs/MAP-TESTABILITY.md) owns canvas

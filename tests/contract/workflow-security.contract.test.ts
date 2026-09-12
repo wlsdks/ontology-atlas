@@ -360,3 +360,104 @@ describe("워크플로 보안 계약", () => {
     expect(writePermissionsByJob(pages)).toEqual({ deploy: ["pages", "id-token"] });
   });
 });
+
+/**
+ * The landing contract, as YAML (2026-09-12).
+ *
+ * Two settings and four workflows have to agree, and none of them can see the
+ * others. `main` requires eight status contexts; a pull request is opened as a
+ * draft and runs nothing; `pnpm pr:land` merges main in, runs the local lanes
+ * and marks it ready, and `ready_for_review` is what fires the one CI run.
+ * Remove `ready_for_review` from a trigger and a draft can never run, so every
+ * landing waits forever on contexts that will not report. Forget the draft
+ * guard on one job and that job burns a runner on every draft push. Both are
+ * one line of YAML, and neither shows up in a green pull request.
+ *
+ * `merge_group` is the same shape in reverse: it is wired for the day this
+ * repository belongs to an organization and GitHub's own merge queue becomes
+ * available (the queue is org-only, proven 2026-09-12 by a `422 Invalid rule
+ * 'merge_queue'` on a ruleset and by `requiresMergeQueue` being absent from
+ * this account's GraphQL schema). A required context that never reports on
+ * `merge_group` would make a queue that can never merge, so the workflows that
+ * produce one carry the trigger. `windows-beta-check.yml` must not: the event
+ * supports no `paths` filter, so the trigger would run a 20-minute Windows job
+ * on every merge group while gating nothing.
+ */
+describe("landing: draft, ready_for_review, and the merge group", () => {
+  const all = workflows();
+
+  /** The eight contexts `main` requires, as their job `name:` lines. */
+  const REQUIRED_CONTEXT_JOB_NAMES = [
+    "Types · Lint · Docs",
+    "Unit · Contract",
+    "MCP",
+    "Playwright (static export)",
+    "Playwright (web surface)",
+    "Playwright (chromium ${{ matrix.shard }}/3)",
+  ];
+
+  const producesRequiredContext = (source: string): boolean =>
+    REQUIRED_CONTEXT_JOB_NAMES.some((name) => source.includes(`    name: ${name}\n`));
+
+  /** Job names in a workflow, in file order. */
+  function jobNames(source: string): string[] {
+    const jobsAt = source.indexOf("\njobs:\n");
+    if (jobsAt < 0) throw new Error("workflow jobs block not found");
+    return [...source.slice(jobsAt + 1).matchAll(/^  ([A-Za-z0-9_-]+):\s*$/gm)].map((match) => match[1]);
+  }
+
+  const DRAFT_GUARD = "github.event.pull_request.draft == false";
+
+  it("finds exactly the two workflows that produce a required context", () => {
+    // Idle-scan guard: if this pair ever reads empty, every assertion below
+    // passes by measuring nothing.
+    expect(all.filter((w) => producesRequiredContext(w.source)).map((w) => w.name).sort()).toEqual([
+      "checks.yml",
+      "e2e.yml",
+    ]);
+  });
+
+  it("runs a required context on the merge group, and runs nothing else there", () => {
+    for (const workflow of all) {
+      expect(
+        hasTrigger(workflow.source, "merge_group"),
+        `${workflow.name}: a workflow that produces a required context must carry merge_group, `
+          + "and one that produces none must not (merge_group takes no paths filter)",
+      ).toBe(producesRequiredContext(workflow.source));
+    }
+  });
+
+  it("lets a draft become ready, on every pull-request workflow", () => {
+    const onPullRequest = all.filter(({ source }) => hasTrigger(source, "pull_request"));
+    expect(onPullRequest.length).toBeGreaterThan(3);
+    for (const workflow of onPullRequest) {
+      // Without this activity type a draft marked ready fires nothing, and
+      // `pnpm pr:land` waits out its whole timeout on contexts that will never
+      // report.
+      expect(workflow.source, `${workflow.name}: ready_for_review`).toMatch(
+        /pull_request:\n(?:\s+#.*\n)*\s+types: \[[^\]]*ready_for_review[^\]]*\]/,
+      );
+    }
+  });
+
+  it("skips every job on a draft, so a draft costs no runner minute", () => {
+    const onPullRequest = all.filter(({ source }) => hasTrigger(source, "pull_request"));
+    for (const workflow of onPullRequest) {
+      for (const job of jobNames(workflow.source)) {
+        const header = jobHeader(workflow.source, job);
+        expect(header, `${workflow.name}: job ${job} runs on a draft`).toContain(DRAFT_GUARD);
+      }
+    }
+  });
+
+  it("plans a merge group from the merge group's own base, never from a branch name", () => {
+    for (const workflow of all.filter((w) => producesRequiredContext(w.source))) {
+      expect(workflow.source, `${workflow.name}: merge-group base`).toContain(
+        "MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}",
+      );
+      expect(workflow.source, `${workflow.name}: merge-group base is used`).toContain(
+        '--base="${MERGE_GROUP_BASE_SHA:-origin/$BASE_REF}"',
+      );
+    }
+  });
+});
