@@ -337,9 +337,31 @@ export interface LibrarySimulation {
    * walls.
    */
   groupNodes: SimulationNode[][];
-  /** Which cell holds the unattached marks, or `null` when the folder has none. */
-  looseCell: number | null;
-  /** Radius of the ring they stand on inside it. 0 when there is only one of them. */
+  /**
+   * **Index into {@link groupNodes} of the unattached marks** — and, while {@link packed},
+   * of their cell as well, because a packed composition has one cell per group. `null` when
+   * the folder has no unattached mark.
+   *
+   * ⚠️ **It was named for a cell, and its two setters disagreed about what it addressed.**
+   * The packed branch writes `groups.length - 1`, which is both a `groupNodes` index and a
+   * `cells` index. The single-mass branch writes `1` — the loose marks are listed after the
+   * one connected mass in `groupNodes` — while `cells` holds exactly one entry, the whole
+   * field. Indexing `cells` with it was therefore out of range on every single-mass folder,
+   * and nothing crashed only because `libraryOrphanRing` tests `sim.packed` before it
+   * indexes `cells`. The other reader (`applyManyBody`) always wanted the group index, and
+   * gets it in both branches. So the field is named for what both setters actually produce,
+   * and the one cell-shaped use states its own precondition.
+   */
+  looseGroup: number | null;
+  /**
+   * Radius of the ring they stand on inside their cell. 0 when there is only one of them.
+   *
+   * ⚠️ **Read only while {@link packed}.** Unpacked — one connected mass — the ring is
+   * measured from the mass's own settled box by `libraryOrphanRing`, because there the ring
+   * goes *around* the picture rather than inside a cell of it. The single-mass branch still
+   * writes this value so that a folder which stops being packed cannot leave a stale radius
+   * behind for the next composition to read.
+   */
   looseRadius: number;
   /**
    * Whether the groups were composed at all. False for a single-group folder — where the
@@ -502,7 +524,7 @@ export function createLibrarySimulation({
     box: { width: Math.max(1, box.width), height: Math.max(1, box.height) },
     cells: [],
     groupNodes: [],
-    looseCell: null,
+    looseGroup: null,
     looseRadius: 0,
     packed: false,
     exactMaxOrder,
@@ -611,7 +633,7 @@ function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null
   if (nodes.length === 0) {
     sim.cells = [wholeField];
     sim.groupNodes = [[]];
-    sim.looseCell = null;
+    sim.looseGroup = null;
     sim.looseRadius = 0;
     sim.packed = false;
     return;
@@ -673,7 +695,9 @@ function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null
     sim.groupNodes = loose.length > 0
       ? [components[0]?.map((index) => nodes[index]!) ?? [], loose.map((index) => nodes[index]!)]
       : [components[0]?.map((index) => nodes[index]!) ?? []];
-    sim.looseCell = loose.length > 0 ? 1 : null;
+    // One cell, two groups: the mass is 0 and the loose marks are 1. This is a
+    // `groupNodes` index and `cells` has no entry for it — see the field's own note.
+    sim.looseGroup = loose.length > 0 ? 1 : null;
     sim.looseRadius = looseRadius;
     sim.packed = false;
     for (const node of nodes) node.cell = 0;
@@ -732,7 +756,8 @@ function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null
   // ── 3. The places. ──
   sim.cells = cells;
   sim.groupNodes = groups.map((members) => members.map((index) => nodes[index]!));
-  sim.looseCell = loose.length > 0 ? groups.length - 1 : null;
+  // Packed: one cell per group, so this addresses both.
+  sim.looseGroup = loose.length > 0 ? groups.length - 1 : null;
   sim.looseRadius = looseRadius;
   sim.packed = true;
   groups.forEach((members, groupIndex) => {
@@ -889,8 +914,10 @@ export function libraryOrphanRing(
    * with {@link ORPHAN_RING_GAP} of clear space around it.
    */
   if (sim.packed) {
-    if (sim.looseCell === null) return null;
-    const cell = sim.cells[sim.looseCell];
+    if (sim.looseGroup === null) return null;
+    // Packed, so the group index is a cell index too — which is the precondition this
+    // branch is inside of, and the reason the field's name no longer promises it outright.
+    const cell = sim.cells[sim.looseGroup];
     if (!cell) return null;
     return { cx: cell.cx, cy: cell.cy, rx: sim.looseRadius, ry: sim.looseRadius };
   }
@@ -1038,7 +1065,7 @@ function applyManyBody(sim: LibrarySimulation, alpha: number): void {
    * pass at 0.62ms against 0.35 (2026-09-07).
    */
   for (let group = 0; group < sim.groupNodes.length; group += 1) {
-    if (group === sim.looseCell) continue;
+    if (group === sim.looseGroup) continue;
     applyGroupManyBody(sim, sim.groupNodes[group]!, charge);
   }
 }

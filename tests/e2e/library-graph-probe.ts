@@ -35,6 +35,17 @@ export interface LibraryGraphProbeLabel {
   fontPx: number;
 }
 
+/** Where the open card stands, in the canvas's own CSS pixels, with the mark it hangs from. */
+export interface LibraryGraphProbeCard {
+  nodeId: string;
+  left: number;
+  top: number;
+  side: "right" | "left" | "below" | "above";
+  width: number;
+  maxHeight: number;
+  mark: { x: number; y: number; radius: number };
+}
+
 export interface LibraryGraphProbe {
   nodes: () => LibraryGraphProbeNode[];
   edges: () => LibraryGraphProbeEdge[];
@@ -42,6 +53,15 @@ export interface LibraryGraphProbe {
   interaction: () => { kind: "idle" | "node" | "pan"; nodeId: string | null };
   view: () => { scale: number; x: number; y: number; width: number; height: number };
   alpha: () => number;
+  card: () => LibraryGraphProbeCard | null;
+  flow: () => { edges: string[]; stale: string[]; pulsing: boolean };
+  paint: () => {
+    last: number;
+    mean: number;
+    worst: number;
+    frames: number;
+    reset: () => void;
+  };
 }
 
 declare global {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Maximize2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -17,7 +17,15 @@ import {
   type LibraryGraphPage,
   type LibraryGraphSource,
 } from "../model/build-library-graph";
-import { useLibraryGraphEngine } from "./use-library-graph-engine";
+import {
+  libraryGraphFlowEdges,
+  LIBRARY_CARD_INSET,
+  LIBRARY_CARD_MAX_WIDTH,
+  type LibraryGraphCardFacts,
+  type LibraryGraphCardSide,
+} from "../model/library-graph-card";
+import { LibraryMarkPopover } from "./LibraryMarkPopover";
+import { useLibraryGraphEngine, type LibraryGraphCardBox } from "./use-library-graph-engine";
 
 /**
  * **The library's graph — one live canvas of what this folder's write-ups are made of.**
@@ -135,6 +143,21 @@ export interface LibraryGraphProps {
    * somewhere to say what a mark is — and drops the standing sentence.
    */
   compact?: boolean;
+  /**
+   * **What the card beside a pressed mark says**, asked for one mark at a time.
+   *
+   * A press on a mark opens a card rather than leaving for the page (direction B,
+   * 2026-09-12), and what belongs in it — the Summary's opening sentence, a file's byte
+   * length and state, which pages cite it, whether a draft can be asked for — are the
+   * *folder's* facts, derived once in the Library's own model. A widget sits below `views`
+   * in the import direction and cannot reach that model, so the facts come down as this
+   * function and the wording stays here, where the rest of this canvas's words are. Same
+   * seam as {@link headerEnd}, same reason.
+   *
+   * Absent, a press still opens a card: name, kind, and the doors. The picture never
+   * depends on the screen having answered.
+   */
+  cardFacts?: (node: LibraryGraphNode) => LibraryGraphCardFacts | null;
 }
 
 /**
@@ -186,6 +209,7 @@ export function LibraryGraph({
   headerEnd,
   captionQuiet = false,
   compact = false,
+  cardFacts,
 }: LibraryGraphProps) {
   const t = useTranslations("library");
   const router = useRouter();
@@ -197,8 +221,40 @@ export function LibraryGraph({
   );
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cardRef = useRef<HTMLElement | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  /**
+   * **The mark whose card is open, and whether its list is fully shown.**
+   *
+   * One id, not a copy of the node: the folder can change under an open card — Compile
+   * writes a page, a file leaves — and a snapshot would keep answering with a mark that is
+   * no longer on the picture. Looked up every render, so a card whose mark has gone closes
+   * itself.
+   */
+  const [cardId, setCardId] = useState<string | null>(null);
+  const [cardExpanded, setCardExpanded] = useState(false);
+  /**
+   * Which side of its mark the card stands on — the only part of its placement React needs.
+   *
+   * ⚠️ **The pixels are written straight onto the element, not held as state.** The mark
+   * can still move (a drag reheats the springs, a dock narrows the box), so the card is
+   * placed every frame while that lasts, and a `useState` there would be a React render per
+   * frame on the one canvas whose whole design is that it stops asking for frames. The side
+   * changes at most once per flip, and the surface needs it for its growth origin.
+   */
+  const [cardSide, setCardSide] = useState<LibraryGraphCardSide>("right");
+  const placeCardElement = useCallback((box: LibraryGraphCardBox | null) => {
+    const element = cardRef.current;
+    if (box && element) {
+      element.style.left = `${box.left}px`;
+      element.style.top = `${box.top}px`;
+      // The room it has, not the height it wants: a card taller than its corner of the
+      // canvas scrolls inside instead of standing over the edge (`placeLibraryGraphCard`).
+      element.style.maxHeight = `${box.maxHeight}px`;
+    }
+    if (box) setCardSide((current) => (current === box.side ? current : box.side));
+  }, []);
 
   const selectedId = selectionNodeId(selection);
   const activeId = hoveredId ?? focusedId;
@@ -207,18 +263,50 @@ export function LibraryGraph({
     [activeId, graph.nodes],
   );
   /**
-   * What the label says. A concept is the one mark whose click **leaves this screen**,
-   * so its destination is part of its name rather than a surprise afterwards
-   * (design-interaction, 2026-09-06: one verb must not stand for three outcomes).
+   * What the hover label says: the mark's name, and nothing else.
+   *
+   * ⚠️ **A concept's label used to carry `· open on the map`**, because a press on it was
+   * the one press on this canvas that left the screen, and a verb standing for three
+   * outcomes is the defect design-interaction named on 2026-09-06. No press leaves the
+   * screen now — every one of them opens a card beside the mark, and the card carries
+   * `open on the map` as a door a person presses on purpose. The suffix would now be
+   * describing something the press does not do.
    */
-  const activeLabel = activeNode
-    ? activeNode.kind === "concept" && activeNode.href
-      ? `${activeNode.label} · ${t("graph.openOnMap")}`
-      : activeNode.label
-    : null;
+  const activeLabel = activeNode ? activeNode.label : null;
+
+  /**
+   * **A press: the mark answers, and stays where it is.**
+   *
+   * The same mark pressed twice closes its card — the reversal a person expects of a
+   * toggle, and the third of the anchored contract's three ways out (Escape and an outside
+   * press are the other two). Nothing here moves a mark: `docs/DECISIONS.md`, 2026-09-08,
+   * "The Library graph stands still".
+   */
+  const pressMark = useCallback((node: LibraryGraphNode) => {
+    setCardId((current) => (current === node.id ? null : node.id));
+    setCardExpanded(false);
+  }, []);
+
+  /**
+   * Closes the card and gives the canvas its keyboard back.
+   *
+   * ⚠️ **Only when the close left the keyboard inside the card or nowhere.** Pressing the
+   * *canvas* closes this and focuses the picture in the same gesture, and a press on some
+   * other control is that control's — pulling focus there would be the surface arguing with
+   * the hand (the rule `LibraryHomePopover` records for the Library's other popup).
+   */
+  const dismissCard = useCallback(() => {
+    const active = document.activeElement;
+    const inside = !active || active === document.body || cardRef.current?.contains(active);
+    setCardId(null);
+    setCardExpanded(false);
+    if (inside) canvasRef.current?.focus({ preventScroll: true });
+  }, []);
 
   const activate = useCallback(
     (node: LibraryGraphNode) => {
+      setCardId(null);
+      setCardExpanded(false);
       if (node.kind === "concept") {
         // A concept is not a file in this folder, so there is nothing here to open. It
         // belongs to the map, and the map's own deeplink is what takes a person there.
@@ -246,9 +334,35 @@ export function LibraryGraph({
     standingLabels,
     activity,
     visible,
+    cardId,
+    cardRef,
+    onCardPlaced: placeCardElement,
     onHover: setHoveredId,
+    onPressMark: pressMark,
     onActivate: activate,
+    onDismiss: dismissCard,
   });
+
+  /** The open card's mark, or null once the folder no longer holds it. */
+  const cardNode = useMemo(
+    () => (cardId === null ? null : graph.nodes.find((node) => node.id === cardId) ?? null),
+    [cardId, graph.nodes],
+  );
+  /*
+   * ⚠️ **Placed synchronously on open, then by the frame.** An effect runs after the
+   * browser has painted, so a card placed only by the next `requestAnimationFrame` was
+   * visible for one frame at the canvas's top-left corner before it reached its mark.
+   */
+  const placeCard = engine.placeCard;
+  useLayoutEffect(() => {
+    // The id is passed, not read: the engine's own state ref is filled by a passive effect
+    // that React runs after this one.
+    placeCard(cardNode?.id ?? null);
+  }, [cardExpanded, cardNode, placeCard]);
+  const cardStale = useMemo(
+    () => libraryGraphFlowEdges(graph, cardId).stale.size > 0,
+    [cardId, graph],
+  );
 
   const ordered = graph.nodes;
   const stepFocus = useCallback(
@@ -419,15 +533,47 @@ export function LibraryGraph({
               const target = activeNode;
               if (!target) return;
               event.preventDefault();
-              activate(target);
+              // The keyboard gets the same answer the pointer does: a card beside the mark,
+              // with `Open` inside it. The card takes focus, and Escape gives it back here.
+              pressMark(target);
             } else if (event.key === "Escape") {
+              // With a card open its own capture listener has already answered this press.
               setFocusedId(null);
             }
           }}
           /* Only the keyboard's own position leaves with the keyboard. A pointer that
-             has wandered off is cleared by `pointerleave`, not by this. */
-          onBlur={() => setFocusedId(null)}
+             has wandered off is cleared by `pointerleave`, not by this.
+
+             ⚠️ **An open card is not the keyboard leaving.** The card takes focus, which
+             blurs the canvas — and clearing the position there meant Escape handed the
+             keyboard back to the top of the walk instead of to the mark it had been on. */
+          onBlur={() => {
+            if (cardId === null) setFocusedId(null);
+          }}
         />
+        {cardNode ? (
+          <LibraryMarkPopover
+            node={cardNode}
+            facts={cardFacts?.(cardNode) ?? null}
+            side={cardSide}
+            /*
+             * The cap, or the canvas minus its gutters where the canvas is the narrower —
+             * resolved in CSS against the box the card is absolutely positioned in, which
+             * is the canvas itself. So a 390px phone gets a card that fits without the
+             * widget having to know the box, and `offsetWidth` is still what the placement
+             * measures.
+             */
+            width={`min(${LIBRARY_CARD_MAX_WIDTH}px, calc(100% - ${LIBRARY_CARD_INSET * 2}px))`}
+            cardRef={cardRef}
+            flowStale={cardStale}
+            expanded={cardExpanded}
+            onExpand={() => setCardExpanded(true)}
+            onOpen={() => activate(cardNode)}
+            onOpenOnMap={cardNode.href ? () => activate(cardNode) : null}
+            onClose={dismissCard}
+            t={t}
+          />
+        ) : null}
         {/* The way back to the whole picture after a zoom or a pan. Desktop only: a
             coarse pointer fits by pinching out, and a floating 36px tile over a
             phone-sized canvas would cover the marks it is meant to help find. The shared
@@ -489,6 +635,13 @@ export function LibraryGraph({
             {/* While a mark is under the pointer or the keyboard, the legend's line says what
                 that one mark is and what pressing it does — the same slot, so nothing moves.
                 Owner direction 2026-09-07: the bridge to the map has to read at a glance. */}
+            {/*
+              ⚠️ **An open card does not take this slot.** The drift's own sentence was
+              printed here first, and a walker recorded the cost: *"the legend I was relying
+              on is gone … the moment I open a card I lose the key to the picture"*
+              (2026-09-12). The card says what is moving, beside the lines; this line goes
+              on saying what the marks mean.
+            */}
             {activeNode
               ? t(`graph.describe.${activeNode.kind}`, { name: activeNode.label })
               : highlightNote

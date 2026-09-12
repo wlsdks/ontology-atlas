@@ -136,6 +136,45 @@ export interface LibraryGraphFrame {
    * mounted, so the ordinary frame allocates nothing for it.
    */
   labelReport?: LibraryGraphLabelBox[];
+  /**
+   * **Where knowledge is moving**, or null at rest.
+   *
+   * This is the one thing on the canvas that animates without a hand on it, and the
+   * reason it is allowed to is that it carries a fact no still frame can: *which
+   * direction* a citation goes. A page is written **from** its sources, so the dashes
+   * travel from each file toward the write-up — and since the line is drawn page→file,
+   * a rising phase is exactly that travel (see {@link FLOW_PERIOD}).
+   *
+   * Everything here is a set of ids plus a number, so the whole of the motion is
+   * decidable outside a browser (`library-graph-card.test.ts`, `draw-library-graph.test.ts`).
+   */
+  flow?: LibraryGraphFlow | null;
+}
+
+export interface LibraryGraphFlow {
+  /** Citation edges drifting because a card stands open on one of their ends. */
+  edges: ReadonlySet<string>;
+  /** 0 → 1 → 0, one dash period. Rising means travelling toward the page. */
+  phase: number;
+  /** Citation edges drifting **once** because their page has just been written. */
+  arrivalEdges: ReadonlySet<string>;
+  /** 0 → 1 across the whole arrival: one pass, never a loop. */
+  arrivalPhase: number;
+  /** Pages that have just landed, and how far through their arrival each one is. */
+  arrived: ReadonlyMap<string, number>;
+  /** Stale citations whose midpoint breathes, and the breath, 0 → 1 → 0. */
+  pulse: ReadonlySet<string>;
+  pulsePhase: number;
+  /**
+   * **The reduced-motion equivalent, and it is not "nothing".**
+   *
+   * Travel is what the drift says, so removing it has to leave the *direction* behind:
+   * each flowing citation keeps a static chevron pointing at its page, and a stale
+   * midpoint keeps its amber dot at full size. The map settled this for its own walked
+   * path on 2026-09-10 — *"a static chevron carries direction for a still frame and for
+   * reduced motion"* — and this is the same claim on the same kind of mark.
+   */
+  still: boolean;
 }
 
 /** One placed name, in canvas CSS pixels. `text` is what was drawn, ellipsis included. */
@@ -260,6 +299,26 @@ const LABEL_PAD_Y = 4;
 const LABEL_GAP = 6;
 /** The break an unverified citation carries at its midpoint, in CSS px. */
 const BROKEN_EDGE_GAP = 7;
+
+/**
+ * The flowing dash, in CSS px: ink, gap, and the period the phase is measured against.
+ *
+ * ⚠️ **A citation is otherwise a solid line, and turning it dashed is a change of mark.**
+ * That is why only the card's own citations flow, and only while the card is open: a
+ * dashed line already means `mentions` on this canvas, so a permanent drift would have
+ * given two relations one mark. Held to the card's neighbourhood the two never appear in
+ * the same reading — the flowing lines are the ones the card is about, at four times the
+ * mention dash's ink, and the legend's line says what is moving.
+ */
+const FLOW_DASH = 5;
+const FLOW_GAP = 4;
+const FLOW_PERIOD = FLOW_DASH + FLOW_GAP;
+/** Where a still frame's chevron sits along the curve, and how wide its arms are. */
+const FLOW_CHEVRON_T = 0.62;
+const FLOW_CHEVRON_PX = 3.5;
+/** The amber dot in a broken citation's gap: its resting radius and its breath. */
+const STALE_DOT_RADIUS = 2.2;
+const STALE_DOT_BREATH = 1.1;
 const LABEL_RADIUS = 4;
 /** Pointer slop around a mark for a mouse. A 5px square is smaller than any pointer. */
 const FINE_HIT_REACH = 4;
@@ -464,6 +523,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   // read was a third narrower than specified (design-infoviz, 2026-09-06).
   ctx.lineCap = "butt";
   const active = frame.hoveredId ?? frame.focusedId;
+  const flow = frame.flow ?? null;
   for (const edge of frame.edges) {
     const from = nodeCentre(frame, edge.source);
     const to = nodeCentre(frame, edge.target);
@@ -480,10 +540,32 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
      */
     // The selected page's own lines are part of "where I am", so they are exempt for the
     // same reason its mark is.
+    /*
+     * **Flowing, arriving, or neither.** A card's own citations carry the continuous
+     * drift; a page Compile has just written carries one pass along the same lines, which
+     * is the one ambient motion this canvas has. Both ride `lineDashOffset`, and the
+     * dashes travel **toward the page**: the path is stroked page→file, and a rising
+     * offset shifts the pattern back along the stroke, so the ink moves from the file it
+     * was read out of to the write-up it became.
+     */
+    const drifting = flow !== null && !flow.still && flow.edges.has(edge.id);
+    const arriving = flow !== null && !flow.still && flow.arrivalEdges.has(edge.id);
     ctx.globalAlpha = touchesSelection ? 1 : Math.min(alphaOf(edge.source), alphaOf(edge.target));
     ctx.beginPath();
-    ctx.setLineDash(edge.relation === "mentions" ? [2.5, 3.5] : []);
-    ctx.strokeStyle = touchesSelection ? ink.selected : touchesActive ? ink.source : ink.edge;
+    if (drifting || arriving) {
+      ctx.setLineDash([FLOW_DASH, FLOW_GAP]);
+      ctx.lineDashOffset = (drifting ? flow!.phase : flow!.arrivalPhase) * FLOW_PERIOD;
+    } else {
+      ctx.setLineDash(edge.relation === "mentions" ? [2.5, 3.5] : []);
+      ctx.lineDashOffset = 0;
+    }
+    ctx.strokeStyle = touchesSelection
+      ? ink.selected
+      : touchesActive
+        ? ink.source
+        : arriving
+          ? ink.selected
+          : ink.edge;
     /*
      * **The two relations differ in weight as well as in dash** (2026-09-06). Both were
      * 1px, so the only thing separating "this page was written from that file" from "this
@@ -525,9 +607,59 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       ctx.quadraticCurveTo(control.x, control.y, to.x, to.y);
     }
     ctx.stroke();
+
+    /*
+     * **A still frame keeps the direction.** Under reduced motion the citation is solid
+     * again, so the chevron is the whole of what says which way the knowledge went — one
+     * open arrow on the curve, pointing back along the stroke at the page.
+     */
+    if (flow !== null && flow.still && (flow.edges.has(edge.id) || flow.arrivalEdges.has(edge.id))) {
+      const at = quadraticAt(from, control, to, FLOW_CHEVRON_T);
+      const behind = quadraticAt(from, control, to, FLOW_CHEVRON_T - 0.06);
+      const dx = behind.x - at.x;
+      const dy = behind.y - at.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const ux = dx / length;
+      const uy = dy / length;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(at.x + (-ux * FLOW_CHEVRON_PX - uy * FLOW_CHEVRON_PX), at.y + (-uy * FLOW_CHEVRON_PX + ux * FLOW_CHEVRON_PX));
+      ctx.lineTo(at.x + ux * FLOW_CHEVRON_PX, at.y + uy * FLOW_CHEVRON_PX);
+      ctx.lineTo(at.x + (-ux * FLOW_CHEVRON_PX + uy * FLOW_CHEVRON_PX), at.y + (-uy * FLOW_CHEVRON_PX - ux * FLOW_CHEVRON_PX));
+      ctx.stroke();
+    }
   }
   ctx.setLineDash([]);
+  ctx.lineDashOffset = 0;
   ctx.globalAlpha = 1;
+
+  /*
+   * ── The amber dot, in the gap the broken citation already leaves. ──
+   *
+   * A stale citation is drawn as two arcs with a hole at the midpoint (see
+   * `BROKEN_EDGE_GAP`), and the hole is exactly where the fact lives: *this line may no
+   * longer describe that file*. The pulse fills it rather than adding a mark somewhere
+   * else, so the breath is read as being about the break and not about the page or the
+   * file at either end. `--color-status-warning` is the product's one warning amber; this
+   * canvas mints nothing.
+   */
+  if (flow !== null && flow.pulse.size > 0) {
+    const breath = flow.still ? 1 : flow.pulsePhase;
+    for (const edge of frame.edges) {
+      if (!flow.pulse.has(edge.id)) continue;
+      const from = nodeCentre(frame, edge.source);
+      const to = nodeCentre(frame, edge.target);
+      if (!from || !to) continue;
+      const control = edgeControlPoint(from, to);
+      const middle = quadraticAt(from, control, to, 0.5);
+      ctx.globalAlpha = 0.55 + 0.45 * breath;
+      ctx.fillStyle = ink.stale;
+      ctx.beginPath();
+      ctx.arc(middle.x, middle.y, STALE_DOT_RADIUS + STALE_DOT_BREATH * breath, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
 
   // ── Nodes. ──
   for (const node of frame.nodes) {
@@ -591,6 +723,24 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       ctx.fillStyle = mark;
       ctx.arc(centre.x, centre.y, radius, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    /*
+     * **"New knowledge just landed."** A page Compile has written or rewritten brightens
+     * into the selection's own indigo and decays back to its own ink over the arrival,
+     * while the citations it was written from carry one drift toward it. Two channels for
+     * one event, the way the map's walked star separates *walked* from *here now*
+     * (`docs/DECISIONS.md`, 2026-09-10) — and both are bounded by the receipt's trail, so
+     * nothing is still moving a second later.
+     */
+    const arrival = flow?.arrived.get(node.id);
+    if (arrival !== undefined) {
+      ctx.globalAlpha = alphaOf(node.id) * (1 - Math.min(1, Math.max(0, arrival))) * 0.65;
+      ctx.beginPath();
+      ctx.fillStyle = ink.selected;
+      ctx.arc(centre.x, centre.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = alphaOf(node.id);
     }
 
     if (isSelected) {

@@ -309,9 +309,20 @@ test.describe("the library graph responds", () => {
     await openGraph(page);
     const canvas = page.getByTestId("library-graph-canvas");
     const box = (await canvas.boundingBox())!;
-    // Everything else on the page has had its chance to animate by now, so what follows is
-    // this canvas's own loop or nothing.
-    await page.waitForTimeout(1_500);
+    /*
+     * Everything else on the page has had its chance to animate by now, so what follows is
+     * this canvas's own loop or nothing.
+     *
+     * ⚠️ **Three seconds, not one and a half, since 2026-09-12.** The home now gives every
+     * citation it cannot vouch for a **single** amber breath as the picture arrives
+     * (`docs/DECISIONS.md`, "a press opens a card beside the mark"), and this fixture has
+     * stale citations in it. That breath is two settle budgets long and then clears its own
+     * timestamp, so the promise this case guards is unchanged — *a canvas with nothing left
+     * to say stops asking for frames* — and the wait is now past the one thing that has
+     * something to say. `library-graph-card.spec.ts` owns the other half: that the breath
+     * is bounded rather than a loop.
+     */
+    await page.waitForTimeout(3_000);
 
     const readFrames = () =>
       page.evaluate(() => (window as unknown as { __rafCount: { frames: number } }).__rafCount.frames);
