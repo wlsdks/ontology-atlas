@@ -52,6 +52,12 @@ again. Full architecture verification reuses Vitest, MCP and CLI library lanes,
 with `pnpm integration:cli:architecture` retaining the unique CLI transport case.
 Focused-only Node suites remain discoverable through the actual impact plan.
 
+Vitest source/parser contracts run in the `contract-node` project without browser
+setup. The two contracts that render React components stay in `jsdom` alongside
+app/src tests. A new contract defaults to Node; add a DOM exception in
+`vitest.config.ts` only when it actually renders. `pnpm test:contracts` and exact
+file, changed-file and shard invocations keep the same test inventory.
+
 Browser timing/allocator changes promote browser evidence, not unrelated MCP,
 type or full unit suites. Focused unit work starts only the shard with commands;
 missing distribution metadata conservatively starts all shards.
