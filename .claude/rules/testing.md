@@ -106,6 +106,13 @@ Consequences that follow from the rule:
   DOM reveal from `Element.getAnimations()` — never from a token's duration
   copied into the spec. A sleep that survives there says in place why it is a
   measurement window rather than a wait.
+- **Run Playwright in the foreground, and let it own its server.** A dev server
+  started as a background command gets reaped, and the specs in flight then fail
+  against a dead server in about a second each — which reads as a flake in
+  whatever was being changed. Two "flakes" in `download-gateway-grid` were that
+  and nothing else (2026-09-13). So: no pre-started background server, a port of
+  your own via `PLAYWRIGHT_BASE_URL` so a stale server from another session
+  cannot answer instead, and batches short enough to finish in the foreground.
 
 ## TDD
 
