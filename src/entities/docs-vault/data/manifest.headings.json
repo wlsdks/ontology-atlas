@@ -6646,6 +6646,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-12 — A press on a Library mark opens a card beside it, and citations flow toward the page",
+      "slug": "2026-09-12-a-press-on-a-library-mark-opens-a-card-beside-it-and-citations-flow-toward-the-page"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-12 — One pull request is one CI run, fired by the lander that holds the lock",
       "slug": "2026-09-12-one-pull-request-is-one-ci-run-fired-by-the-lander-that-holds-the-lock"
     },

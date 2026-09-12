@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — A press on a Library mark opens a card beside it, and citations flow toward the page
+
+**Why**: the owner: *"a press should raise a popup and show me something … the flow of information should be visible"*. A press left the picture, so *what is this made of, can I believe it* cost a navigation.
+**Prior**: `forbidden.md`'s Don't — node click → full-screen detail — and the map's rule it protects: ego focus, a compact popover, detail explicit inside. 2026-09-08 "The Library graph stands still" is **narrowed**: nothing moves unasked, and each exception ends on its own.
+**Decision**: the press holds the ego ink and hangs `transientSurface("anchored")` off the mark in the Library's own popup material — no new token, ≤320px, clamped inside the canvas box, flipping rather than spilling — with its facts, its neighbours' states and two doors: `Open`, the old press named, and `Ask for a redraft` on the **existing Compile brief**. Escape, a second press, an outside press and `✕` close it and hand the keyboard back; a double press is the shortcut. Three bounded motions on tokens already read here: the card's citations drift 9px per settle budget **toward the page**, a stale midpoint breathes once per two budgets and once as the home arrives, and a page Compile just wrote brightens as its citations drift once. Reduced motion gets a chevron and a dot. Over 42 states: card over its mark 0, the strip 0, marks moved 0px, frames at rest 0.
+**Dissent**: a page is two presses away now; `Open` first and the double press mitigate it. design-interaction's harder objection, confirmed: a drifting dash is the loading idiom, and all three walkers read it so before finding a sentence. Answered by holding the drift to the card's own lines and naming it there.
+**Falsifier**: a walker who reads the drift as loading with the card's sentence in front of them; a card over its mark, the strip or the canvas edge; a mark that moves on a press; a frame over 2ms at 372 marks, or one at rest.
+**Owner**: jinan
+
 ## 2026-09-12 — One pull request is one CI run, fired by the lander that holds the lock
 
 **Why**: five pull requests cost about four CI rounds each. `main` required eight contexts with `strict = true`, so every merge turned every other pull request BEHIND and the `gh pr update-branch` that followed bought a round for a tree the next merge invalidated again. The owner: wait for the landing in flight, take the merged source, then land the next; and *"most of the code will overlap anyway, so wouldn't it be better to run CI on the branch with the merged source poured in?"*

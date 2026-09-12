@@ -6,6 +6,13 @@ import { MOTION } from "@/shared/motion";
 import type { LibraryWorkActivity, LibraryWorkEvent } from "@/features/library";
 
 import type { LibraryGraph, LibraryGraphNode } from "../model/build-library-graph";
+import {
+  libraryGraphFlowEdges,
+  libraryGraphStaleEdges,
+  placeLibraryGraphCard,
+  LIBRARY_CARD_MAX_WIDTH,
+  type LibraryGraphCardSide,
+} from "../model/library-graph-card";
 import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
 import {
   createLibrarySimulation,
@@ -41,6 +48,7 @@ import {
   drawLibraryGraph,
   hitTestLibraryGraph,
   type LibraryGraphActivityMark,
+  type LibraryGraphFlow,
   type LibraryGraphLabelBox,
 } from "../render/draw-library-graph";
 import { readLibraryGraphInk, type LibraryGraphInk } from "../render/library-graph-ink";
@@ -105,6 +113,9 @@ const RELEASE_WINDOW_MS = 80;
 
 /** Touch reach around a mark, in CSS px. Half of `--touch-target-min` (44) is the floor. */
 const COARSE_HIT_REACH = 18;
+
+/** One shared empty set, so a resting frame allocates nothing for a motion it is not making. */
+const EMPTY_EDGE_SET: ReadonlySet<string> = new Set<string>();
 
 type PointerPhase = "idle" | "pressed" | "dragging";
 
@@ -208,6 +219,19 @@ function activitySignature(activity: LibraryWorkActivity | undefined): string {
   return `${activity.isActive ? "1" : "0"}|${event(activity.current)}|${activity.recent.map(event).join(",")}`;
 }
 
+/** Where the open card stands, for the surface to read and for a gate to measure. */
+export interface LibraryGraphCardBox {
+  nodeId: string;
+  left: number;
+  top: number;
+  side: LibraryGraphCardSide;
+  width: number;
+  /** The tallest it may be here; past that it scrolls inside. */
+  maxHeight: number;
+  /** The mark the card is hung from, in canvas CSS pixels. */
+  mark: { x: number; y: number; radius: number };
+}
+
 export interface LibraryGraphEngine {
   onPointerDown: (event: ReactPointerEvent<HTMLCanvasElement>) => void;
   onPointerMove: (event: ReactPointerEvent<HTMLCanvasElement>) => void;
@@ -219,6 +243,11 @@ export interface LibraryGraphEngine {
   fitToView: () => void;
   /** The settled picture's width over its height, for `data-picture-aspect`. */
   pictureAspect: number | null;
+  /**
+   * Places the open card now, synchronously — what a layout effect calls on open, passing
+   * the card's own id because this hook's own state ref is not filled until after it.
+   */
+  placeCard: (openNow?: string | null) => void;
 }
 
 export function useLibraryGraphEngine({
@@ -233,8 +262,13 @@ export function useLibraryGraphEngine({
   standingLabels,
   activity,
   visible = true,
+  cardId = null,
+  cardRef,
+  onCardPlaced,
   onHover,
+  onPressMark,
   onActivate,
+  onDismiss,
 }: {
   graph: LibraryGraph;
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -256,8 +290,29 @@ export function useLibraryGraphEngine({
   standingLabels: boolean;
   activity?: LibraryWorkActivity;
   visible?: boolean;
+  /**
+   * The mark whose card is open, or null.
+   *
+   * It is the widget's state rather than this loop's, because the card is a DOM surface
+   * with content, a keyboard path and an Escape — but the loop is what holds the ego
+   * focus for it, what makes its citations flow, and what keeps it beside its mark as the
+   * picture or the box moves.
+   */
+  cardId?: string | null;
+  /** The open card's element. Read for its measured size, never written to — see `placeCard`. */
+  cardRef?: RefObject<HTMLElement | null>;
+  /**
+   * Where the card should stand, every time that changes — including once per frame while
+   * the picture or the box is moving. The caller writes it onto its own element.
+   */
+  onCardPlaced?: (box: LibraryGraphCardBox | null) => void;
   onHover: (id: string | null) => void;
+  /** A press, or `Enter`: the mark answers with a card beside it, and stays where it is. */
+  onPressMark: (node: LibraryGraphNode) => void;
+  /** A double press: the shortcut past the card, straight to the page or the map. */
   onActivate: (node: LibraryGraphNode) => void;
+  /** A press that landed on no mark. Whatever stands open is dismissed by it. */
+  onDismiss: () => void;
 }): LibraryGraphEngine {
   const simRef = useRef<LibrarySimulation | null>(null);
   const viewRef = useRef<LibraryGraphView>({ scale: 1, x: 0, y: 0 });
@@ -324,13 +379,47 @@ export function useLibraryGraphEngine({
    * actually happened, and still before the next paint.
    */
   const graphRef = useRef(graph);
-  const stateRef = useRef({ selectedId, hoveredId, focusedId, highlight, activeLabel, standingLabels, reducedMotion, activity, visible });
+  const stateRef = useRef({ selectedId, hoveredId, focusedId, highlight, activeLabel, standingLabels, reducedMotion, activity, visible, cardId });
   const onHoverRef = useRef(onHover);
+  const onCardPlacedRef = useRef(onCardPlaced ?? (() => undefined));
   useEffect(() => {
+    onCardPlacedRef.current = onCardPlaced ?? (() => undefined);
     graphRef.current = graph;
-    stateRef.current = { selectedId, hoveredId, focusedId, highlight, activeLabel, standingLabels, reducedMotion, activity, visible };
+    stateRef.current = { selectedId, hoveredId, focusedId, highlight, activeLabel, standingLabels, reducedMotion, activity, visible, cardId };
     onHoverRef.current = onHover;
   });
+
+  /**
+   * **The card's own state, kept out of the frame's way.**
+   *
+   * `flowRef` holds the two sets the drift is drawn from — recomputed when the card or the
+   * folder changes, never per frame — and the phase the frame advances. `arrivalRef`
+   * remembers which pages have already had their one arrival pass, so a receipt that stays
+   * in the activity window cannot re-run it. `pulseRef.homeAt` is the single breath every
+   * stale citation gets when the home settles, and `null` afterwards: one pulse, not a loop.
+   */
+  const flowRef = useRef<{ edges: Set<string>; stale: Set<string> }>({ edges: new Set(), stale: new Set() });
+  const pulseRef = useRef<{ homeAt: number | null; armed: boolean }>({ homeAt: null, armed: true });
+  const cardBoxRef = useRef<LibraryGraphCardBox | null>(null);
+  const cardSizeRef = useRef({ width: LIBRARY_CARD_MAX_WIDTH, height: 0 });
+  /** The last painted frame's cost in milliseconds, and the mean over the run. See `paint()`. */
+  const paintCostRef = useRef({ last: 0, total: 0, frames: 0, worst: 0 });
+
+  useEffect(() => {
+    flowRef.current = (() => {
+      const { flow, stale } = libraryGraphFlowEdges(graph, cardId);
+      return { edges: flow, stale };
+    })();
+  }, [cardId, graph]);
+
+  /*
+   * ⚠️ **The arrival breath is once per folder, not once per settle.** `wasSettling` rises
+   * again on a resize and on every folder sync, and keying the pulse on that alone made a
+   * window drag re-pulse a picture the person had been looking at for a minute.
+   */
+  useEffect(() => {
+    pulseRef.current = { homeAt: null, armed: true };
+  }, [graph]);
 
   const [pictureAspect, setPictureAspect] = useState<number | null>(null);
 
@@ -361,6 +450,86 @@ export function useLibraryGraphEngine({
     activityCycle: MOTION.base.duration * 1000 + MOTION.settle.duration * 1000,
   });
 
+  /**
+   * ── The card, kept beside its mark. ──
+   *
+   * The placement is pure (`placeLibraryGraphCard`) and the write is one `style.left` /
+   * `style.top`: the mark can still move under a drag or a narrowing dock, and a card that
+   * stayed where the mark had been would be a surface pointing at nothing. Two properties
+   * on one element is cheaper than a React render, and it is the same trade the loop
+   * already makes for `data-view-scale`.
+   *
+   * ⚠️ **It is called from a layout effect as well as from the frame.** Effects run after
+   * the browser has painted, so a card placed only by the next `requestAnimationFrame`
+   * showed for one frame at the canvas's top-left corner. Everything it reads is a ref the
+   * last frame already filled, so running it synchronously on open is exact rather than a
+   * guess.
+   */
+  const placeCard = useCallback((openNow?: string | null) => {
+    /*
+     * ⚠️ **The caller may name the card, and on open it must.** `stateRef` is filled by a
+     * passive effect, which React runs *after* the layout effect that calls this — so on the
+     * frame a card opens, reading the ref here answers `null`, the placement is not published,
+     * and the surface is visible for one frame with no box. Measured as a race in
+     * `library-graph-card.spec.ts`: `card()` came back null right after the card became
+     * visible, on the faster of two runs of the same spec.
+     */
+    const openCardId = openNow === undefined ? stateRef.current.cardId : openNow;
+    if (openCardId === null) {
+      if (cardBoxRef.current !== null) {
+        cardBoxRef.current = null;
+        onCardPlacedRef.current(null);
+      }
+      return;
+    }
+    const box = boxRef.current;
+    const mark = screenRef.current.get(openCardId);
+    if (!mark || box.width === 0 || box.height === 0) return;
+    const markRadius = screenRadiiRef.current.get(openCardId) ?? 0;
+    const element = cardRef?.current ?? null;
+    if (element) {
+      cardSizeRef.current = {
+        width: element.offsetWidth || cardSizeRef.current.width,
+        height: element.offsetHeight || cardSizeRef.current.height,
+      };
+    }
+    const placement = placeLibraryGraphCard({
+      mark,
+      markRadius,
+      card: cardSizeRef.current,
+      box: { width: box.width, height: box.height },
+    });
+    const next: LibraryGraphCardBox = {
+      nodeId: openCardId,
+      left: placement.left,
+      top: placement.top,
+      side: placement.side,
+      width: cardSizeRef.current.width,
+      maxHeight: placement.maxHeight,
+      mark: { x: mark.x, y: mark.y, radius: markRadius },
+    };
+    const previous = cardBoxRef.current;
+    cardBoxRef.current = next;
+    if (
+      !previous ||
+      previous.nodeId !== next.nodeId ||
+      previous.side !== next.side ||
+      Math.abs(previous.maxHeight - next.maxHeight) > 0.1 ||
+      Math.abs(previous.left - next.left) > 0.1 ||
+      Math.abs(previous.top - next.top) > 0.1
+    ) {
+      /*
+       * ⚠️ **The placement is handed back rather than written here**, and the reason is a
+       * rule rather than a preference: a hook may not mutate what its caller handed it
+       * (`react-hooks/immutability`), and `cardRef` is this hook's argument. The widget
+       * owns the element, so the widget writes the two properties — which also keeps this
+       * loop free of the DOM it does not own. It is still one write per frame and no React
+       * render, because the widget's handler only touches `style`.
+       */
+      onCardPlacedRef.current(next);
+    }
+  }, [cardRef]);
+
   // ── One paint. ──
   const paint = useCallback(
     (now: number) => {
@@ -376,6 +545,7 @@ export function useLibraryGraphEngine({
       inkRef.current ??= readLibraryGraphInk(canvas);
       const context = canvas.getContext("2d", { alpha: false });
       if (!context) return;
+      const startedAt = performance.now();
 
       /*
        * **The backing store is resized here, in the frame, never in the ResizeObserver.**
@@ -507,8 +677,18 @@ export function useLibraryGraphEngine({
        * hover still wins over it, so pointing somewhere else answers "and what about that
        * one" without losing the page underneath.
        */
+      /*
+       * **An open card holds the ego focus, the way a pointer does** (direction B,
+       * 2026-09-12). A press is a question about one mark's neighbourhood, and the card is
+       * the written half of the answer; the dim is the drawn half, and it has to survive
+       * the pointer leaving the mark to read the card. A hover still wins over it, so
+       * pointing somewhere else answers "and what about that one" without closing anything.
+       */
       const active =
-        stateRef.current.hoveredId ?? stateRef.current.focusedId ?? stateRef.current.selectedId;
+        stateRef.current.hoveredId ??
+        stateRef.current.focusedId ??
+        stateRef.current.cardId ??
+        stateRef.current.selectedId;
       /*
        * **A clause on the strip holds the same slot a pointer does** (slice L0,
        * 2026-09-12). `highlight` is a whole set rather than one node, because the fact it
@@ -547,6 +727,68 @@ export function useLibraryGraphEngine({
         stateRef.current.reducedMotion,
       );
 
+      /*
+       * ── What is moving, and why each thing is allowed to. ──
+       *
+       * Three motions, one object. The **flow** is a card's own citations drifting from
+       * each file toward the write-up: it exists only while a card is open, which is the
+       * only state a person has asked a question in. The **arrival** is one pass along the
+       * citations of a page Compile has just written, plus that page brightening — the one
+       * ambient motion on this home, bounded by the receipt's own trail. The **pulse** is
+       * the amber breath in a stale citation's gap, either while its card is open or once
+       * when the home settles.
+       *
+       * Reduced motion takes `still`: no travel, a chevron for the direction and a full
+       * amber dot for the break. Nothing here schedules a frame by itself — `settling`
+       * below decides that, and at rest with no card open every set is empty.
+       */
+      const reduced = stateRef.current.reducedMotion;
+      const period = Math.max(1, motionRef.current.activityCycle);
+      const arrived = new Map<string, number>();
+      const arrivalEdges = new Set<string>();
+      for (const mark of activity) {
+        if (mark.kind !== "write" || mark.phase !== "complete") continue;
+        if (!mark.nodeId.startsWith("page:")) continue;
+        const progress = Math.min(1, Math.max(0, mark.progress));
+        arrived.set(mark.nodeId, progress);
+        for (const edge of graphRef.current.edges) {
+          if (edge.relation !== "cites") continue;
+          if (edge.source === mark.nodeId || edge.target === mark.nodeId) arrivalEdges.add(edge.id);
+        }
+      }
+      const cardOpen = stateRef.current.cardId !== null;
+      const homePulse =
+        pulseRef.current.homeAt !== null && now - pulseRef.current.homeAt <= period * 2
+          ? (now - pulseRef.current.homeAt) / (period * 2)
+          : null;
+      if (pulseRef.current.homeAt !== null && homePulse === null) pulseRef.current.homeAt = null;
+      const pulse =
+        cardOpen && flowRef.current.stale.size > 0
+          ? flowRef.current.stale
+          : homePulse !== null
+            ? libraryGraphStaleEdges(graphRef.current)
+            : EMPTY_EDGE_SET;
+      const flow: LibraryGraphFlow | null =
+        flowRef.current.edges.size > 0 || arrivalEdges.size > 0 || pulse.size > 0
+          ? {
+              edges: cardOpen ? flowRef.current.edges : EMPTY_EDGE_SET,
+              // One dash period per canvas settle budget: 9px over 900ms, which is slower
+              // than anything a person reads as loading and fast enough to have a direction.
+              phase: ((now % period) / period),
+              arrivalEdges,
+              arrivalPhase: arrived.size > 0 ? Math.min(...arrived.values()) : 0,
+              arrived,
+              pulse,
+              // One breath over twice the settle budget — the "once per two seconds" the
+              // direction asks for, derived from a token this canvas already reads.
+              pulsePhase:
+                homePulse !== null && !cardOpen
+                  ? Math.sin(Math.PI * homePulse) ** 2
+                  : Math.sin((Math.PI * (now % (period * 2))) / (period * 2)) ** 2,
+              still: reduced,
+            }
+          : null;
+
       // The pass below appends; without this the measurement's array would be every
       // frame's names at once.
       if (labelReportRef.current) labelReportRef.current.length = 0;
@@ -569,7 +811,10 @@ export function useLibraryGraphEngine({
         dim: dimState.value,
         focus,
         activity,
+        flow,
       });
+
+      placeCard();
 
       /*
        * Machine-readable state for a surface that has no DOM. `data-view-scale` is what an
@@ -586,8 +831,21 @@ export function useLibraryGraphEngine({
             ? "pan"
             : "idle";
       if (canvas.dataset.interaction !== interaction) canvas.dataset.interaction = interaction;
+
+      /*
+       * **What one frame cost.** The card's motion is the first thing on this canvas that
+       * paints without a hand on it, so "how much of a frame does it take at three hundred
+       * marks" has to be answerable from outside — the `e2e` probe reads this, and the
+       * budget it is judged against is in `docs/DECISIONS.md`.
+       */
+      const cost = performance.now() - startedAt;
+      const record = paintCostRef.current;
+      record.last = cost;
+      record.total += cost;
+      record.frames += 1;
+      if (cost > record.worst) record.worst = cost;
     },
-    [canvasRef],
+    [canvasRef, placeCard],
   );
 
   // ── The loop. ──
@@ -673,7 +931,22 @@ export function useLibraryGraphEngine({
           motionRef.current.base + motionRef.current.settle,
           motionRef.current.activityCycle,
           reduced,
-        );
+        ) ||
+        /*
+         * ⚠️ **The three card motions are the only things on this canvas that ask for a
+         * frame with nobody's hand on it, and each one is bounded by something.**
+         *
+         * The drift runs while a card is open — a state a person entered by pressing a
+         * mark and leaves with Escape. The home's single stale breath runs for its own two
+         * settle budgets and then clears its own timestamp. Reduced motion takes none of
+         * them: `still` draws a chevron and a full dot in one frame, so nothing is left to
+         * animate and the rule of 2026-09-08 holds unchanged — once nothing is arriving,
+         * ramping, fading, resizing, held **or flowing**, the last frame is painted and the
+         * loop stops.
+         */
+        (!reduced &&
+          ((stateRef.current.cardId !== null && flowRef.current.edges.size > 0) ||
+            pulseRef.current.homeAt !== null));
 
       /*
        * ⚠️ **A picture with nowhere left to go stops the loop; it does not idle inside it.**
@@ -701,6 +974,24 @@ export function useLibraryGraphEngine({
         if (wasSettlingRef.current) {
           wasSettlingRef.current = false;
           publishAspect();
+          /*
+           * **One breath for every citation the folder cannot vouch for, as the home
+           * arrives** (direction B). It is armed here rather than on mount because before
+           * the picture settles the marks are still travelling, and a pulse nobody can
+           * locate is a flicker. `homeAt` clears itself two settle budgets later, inside
+           * the frame, so this is a single pulse and never a loop.
+           */
+          if (
+            !reduced &&
+            pulseRef.current.armed &&
+            pulseRef.current.homeAt === null &&
+            stateRef.current.cardId === null &&
+            libraryGraphStaleEdges(graphRef.current).size > 0
+          ) {
+            pulseRef.current = { homeAt: now, armed: false };
+            frameRef.current = requestAnimationFrame((next) => stepRef.current(next));
+            return;
+          }
         }
         runningRef.current = false;
         return;
@@ -878,10 +1169,19 @@ export function useLibraryGraphEngine({
   // Selection, hover, focus and the label are read from a ref by the loop, but a change to
   // any of them has to reach the screen even when nothing else is moving.
   useEffect(() => {
+    /*
+     * ⚠️ **An open card is one of the things that holds the dim.** Without it in this
+     * list the ramp eased back to zero the moment the pointer left the mark to read the
+     * card — `inkOf` returns full ink at `dim === 0` whatever the focus set says — so the
+     * ego focus a press had just established disappeared while the person was looking at
+     * the answer to it. Direction B's "ego focus … held" is this line.
+     */
     dimRef.current.target =
-      (hoveredId ?? focusedId ?? selectedId) || (highlight !== null && highlight.size > 0) ? 1 : 0;
+      (hoveredId ?? focusedId ?? cardId ?? selectedId) || (highlight !== null && highlight.size > 0)
+        ? 1
+        : 0;
     wake();
-  }, [activeLabel, focusedId, highlight, hoveredId, selectedId, standingLabels, wake]);
+  }, [activeLabel, cardId, focusedId, highlight, hoveredId, selectedId, standingLabels, wake]);
 
   // ── Pointer geometry. ──
   const pointOf = (event: { clientX: number; clientY: number }): LayoutPoint => ({
@@ -938,26 +1238,32 @@ export function useLibraryGraphEngine({
       };
       const canvas = canvasRef.current;
       if (canvas) canvas.style.cursor = "";
-      if (commit && pressed) {
-        const node = graphRef.current.nodes.find((candidate) => candidate.id === pressed);
+      if (commit) {
+        const node = pressed
+          ? graphRef.current.nodes.find((candidate) => candidate.id === pressed) ?? null
+          : null;
         if (node) {
           /*
-           * A coarse pointer never hovered, so the first tap would otherwise be the commit
-           * on a 10px target — including the one commit that leaves this screen. The first
-           * tap names the dot; the second one opens it.
+           * ⚠️ **The two-tap dance on a coarse pointer is gone, and the card is why.**
+           *
+           * It existed because the commit *left the screen*: on a 10px target the first tap
+           * had to name the dot before the second one navigated. A press now answers with a
+           * card beside the mark, which is the safe answer the first tap was standing in
+           * for — reversible, Escape away, and carrying `Open` as an explicit door. So one
+           * tap is enough at every pointer type, and a finger reaches the page in the same
+           * two presses it used to, with a sentence in between.
            */
-          if (coarsePointer() && coarseTapRef.current !== node.id) {
-            coarseTapRef.current = node.id;
-            onHoverRef.current(node.id);
-          } else {
-            coarseTapRef.current = null;
-            onActivate(node);
-          }
+          coarseTapRef.current = null;
+          if (coarsePointer()) onHoverRef.current(node.id);
+          onPressMark(node);
+        } else {
+          /* A press on the empty canvas dismisses what stands open, and pans nothing. */
+          onDismiss();
         }
       }
       wake();
     },
-    [canvasRef, onActivate, wake],
+    [canvasRef, onDismiss, onPressMark, wake],
   );
 
   const onPointerDown = useCallback(
@@ -1123,12 +1429,21 @@ export function useLibraryGraphEngine({
 
   const onDoubleClick = useCallback(
     (event: ReactPointerEvent<HTMLCanvasElement>) => {
-      // A double-click **on a mark** is two clicks on it, which the first one already
-      // answered. Only the empty canvas re-frames the picture.
-      if (hitTest(pointOf(event))) return;
+      /*
+       * **A double press is the shortcut past the card.** Since a single press opens the
+       * card rather than the page, the gesture a person already knows for "open it" has
+       * somewhere to go — and it is the mitigation on the record for the second press this
+       * direction costs (the other being `Open` as the card's first door). The empty canvas
+       * keeps its re-frame.
+       */
+      const hit = hitTest(pointOf(event));
+      if (hit) {
+        onActivate(hit);
+        return;
+      }
       fitToView();
     },
-    [fitToView, hitTest],
+    [fitToView, hitTest, onActivate],
   );
 
   // ── The wheel, on a native listener. ──
@@ -1220,6 +1535,36 @@ export function useLibraryGraphEngine({
       labels: () => labelReportRef.current ?? [],
       /** Where the simulation is: above the floor it is still arranging itself. */
       alpha: () => simRef.current?.alpha ?? 0,
+      /**
+       * The open card's placement in canvas CSS pixels, with the mark it hangs from.
+       *
+       * A card is a DOM surface, so a spec can read its own rect — but the *mark* is
+       * painted, and "the card never covers its mark" is a claim about both. Only this can
+       * hand over the pair in one frame's coordinates.
+       */
+      card: () => cardBoxRef.current,
+      /** Which lines are moving, and whether they are travelling or standing still. */
+      flow: () => ({
+        edges: [...flowRef.current.edges],
+        stale: [...flowRef.current.stale],
+        pulsing: pulseRef.current.homeAt !== null,
+      }),
+      /**
+       * What frames cost, in milliseconds: the last one, the mean, and the worst.
+       *
+       * `reset()` before a measurement, because the arrival of a three-hundred-mark folder
+       * is the most expensive frame this canvas ever paints and it is not what a card's
+       * budget is about.
+       */
+      paint: () => ({
+        last: paintCostRef.current.last,
+        mean: paintCostRef.current.frames === 0 ? 0 : paintCostRef.current.total / paintCostRef.current.frames,
+        worst: paintCostRef.current.worst,
+        frames: paintCostRef.current.frames,
+        reset: () => {
+          paintCostRef.current = { last: 0, total: 0, frames: 0, worst: 0 };
+        },
+      }),
     };
     labelReportRef.current = [];
     (window as unknown as { __atlasLibraryGraph?: typeof probe }).__atlasLibraryGraph = probe;
@@ -1238,6 +1583,7 @@ export function useLibraryGraphEngine({
     onDoubleClick,
     fitToView,
     pictureAspect,
+    placeCard,
   };
 }
 

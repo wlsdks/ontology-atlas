@@ -105,12 +105,81 @@ describe("the library graph section", () => {
     );
   });
 
-  it("moves through the dots with the arrow keys and opens the one it is on", () => {
+  /*
+   * ⚠️ **`Enter` used to be the commit** — it called `onSelect` and the Library replaced the
+   * picture with the page. Since 2026-09-12 it opens the card beside the mark instead, and
+   * `Open` inside the card is the commit. The claim this case keeps is the pair: the
+   * keyboard reaches the mark, and the mark answers **without leaving the screen**.
+   */
+  it("moves through the dots with the arrow keys and opens a card beside the one it is on", () => {
     const { onSelect } = renderGraph();
     fireEvent.keyDown(canvas(), { key: "ArrowRight" });
     expect(canvas().getAttribute("data-focused-node-id")).toBe("source:sources/plan.pdf");
     fireEvent.keyDown(canvas(), { key: "Enter" });
+    expect(onSelect).not.toHaveBeenCalled();
+    const card = screen.getByTestId("library-graph-card");
+    expect(card.getAttribute("data-card-node-id")).toBe("source:sources/plan.pdf");
+    expect(card.getAttribute("data-transient-surface")).toBe("anchored");
+    expect(screen.getByTestId("library-graph-card-title").textContent).toBe("plan.pdf");
+    // And the commit is a door inside it, named.
+    fireEvent.click(screen.getByTestId("library-graph-card-open"));
     expect(onSelect).toHaveBeenCalledWith({ kind: "source", ref: "sources/plan.pdf" });
+    expect(screen.queryByTestId("library-graph-card")).toBeNull();
+  });
+
+  it("closes the card on Escape, on its own control, and on a second Enter", () => {
+    renderGraph();
+    fireEvent.keyDown(canvas(), { key: "ArrowRight" });
+    fireEvent.keyDown(canvas(), { key: "Enter" });
+    expect(screen.getByTestId("library-graph-card")).toBeTruthy();
+    // Escape is answered by the card's own capture listener, so the keyboard's position
+    // on the canvas survives one press: one press closes one thing.
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("library-graph-card")).toBeNull();
+    expect(canvas().getAttribute("data-focused-node-id")).toBe("source:sources/plan.pdf");
+
+    fireEvent.keyDown(canvas(), { key: "Enter" });
+    fireEvent.keyDown(canvas(), { key: "Enter" });
+    expect(screen.queryByTestId("library-graph-card")).toBeNull();
+
+    fireEvent.keyDown(canvas(), { key: "Enter" });
+    fireEvent.click(screen.getByTestId("library-graph-card-close"));
+    expect(screen.queryByTestId("library-graph-card")).toBeNull();
+  });
+
+  it("says what the folder knows about the mark, and what the lines are doing", () => {
+    renderGraph({
+      cardFacts: () => ({
+        sentence: "정산은 완료된 거래를 돈으로 바꾼다.",
+        counts: { sources: 2, cites: 4, mentions: 1, stale: 1 },
+        rows: [
+          { id: "source:sources/settlement-policy.md", label: "settlement-policy.md", state: "compiled" },
+          { id: "source:sources/fee-schedule.csv", label: "fee-schedule.csv", state: "stale" },
+        ],
+        refresh: { onRequest: null, reason: "연결된 코딩 에이전트가 없습니다" },
+      }),
+    });
+    fireEvent.keyDown(canvas(), { key: "ArrowRight" });
+    fireEvent.keyDown(canvas(), { key: "ArrowRight" });
+    expect(canvas().getAttribute("data-focused-node-id")).toBe("page:wiki/plan");
+    fireEvent.keyDown(canvas(), { key: "Enter" });
+    expect(screen.getByTestId("library-graph-card-sentence").textContent).toContain("정산은 완료된");
+    // The facts line carries both the counts and the one thing the folder cannot vouch for.
+    expect(screen.getByTestId("library-graph-card-facts").textContent).toBe(
+      "원문 2 · 인용 문장 4 · 언급 1 · 원문 1개 달라짐",
+    );
+    expect(screen.getByTestId("library-graph-card-rows").textContent).toContain("fee-schedule.csv");
+    // A door that cannot open is the reason instead, never a chip that does nothing.
+    expect(screen.queryByTestId("library-graph-card-refresh")).toBeNull();
+    expect(screen.getByTestId("library-graph-card-reason").textContent).toContain("코딩 에이전트");
+    // The drift has words **in the card**, beside the lines it is about — and the legend
+    // below the canvas keeps teaching the marks while the card stands open.
+    expect(screen.getByTestId("library-graph-card-flow").textContent).toContain(
+      "인용은 원문에서 이 문서로 흐릅니다",
+    );
+    // The slot below the canvas still belongs to the picture: here the keyboard is on a
+    // mark, so it describes that mark, and with nothing pointed at it is the legend.
+    expect(screen.getByTestId("library-graph-hint").textContent).toContain("위키 문서");
   });
 
   it("wraps backwards from the start rather than stopping at nothing", () => {
@@ -138,14 +207,25 @@ describe("the library graph section", () => {
   it("says the kind, the position and what Enter will do — a bare name says none of it", () => {
     renderGraph();
     fireEvent.keyDown(canvas(), { key: "ArrowRight" });
-    expect(screen.getByText("원문 plan.pdf, 3개 중 1번째. Enter를 누르면 여기서 엽니다.")).toBeTruthy();
+    expect(screen.getByText("원문 plan.pdf, 3개 중 1번째. Enter를 누르면 무엇인지 보여 줍니다.")).toBeTruthy();
   });
 
-  it("leaves for the map only on a concept, and says so before the key is pressed", () => {
+  /*
+   * ⚠️ **The concept's label used to carry "open on the map"**, because its press was the one
+   * press on this canvas that left the screen. No press does now: the concept's card says
+   * what it is and offers the map as a door. So the destination is still named before
+   * anything leaves — one control further in, and pressed on purpose.
+   */
+  it("leaves for the map only from the concept's own door, never from the press", () => {
     const { onSelect } = renderGraph();
     fireEvent.keyDown(canvas(), { key: "ArrowLeft" });
-    expect(screen.getByText(/개념 checkout.*지도에서 엽니다\./)).toBeTruthy();
+    expect(screen.getByText(/개념 checkout.*무엇인지 보여 줍니다\./)).toBeTruthy();
     fireEvent.keyDown(canvas(), { key: "Enter" });
+    expect(routerPush).not.toHaveBeenCalled();
+    expect(screen.getByTestId("library-graph-card").getAttribute("data-card-kind")).toBe("concept");
+    expect(screen.getByTestId("library-graph-card-sentence").textContent).toBe("지도의 개념입니다.");
+    expect(screen.queryByTestId("library-graph-card-open")).toBeNull();
+    fireEvent.click(screen.getByTestId("library-graph-card-map"));
     expect(onSelect).not.toHaveBeenCalled();
     expect(routerPush).toHaveBeenCalledWith(expect.stringContaining("/topology"));
   });

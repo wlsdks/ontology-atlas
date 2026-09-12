@@ -227,7 +227,16 @@ const BASELINE_HARD_CUTS = 0;
 // LibraryWorkActivityStrip.test.tsx owns its named section and exact receipt controls;
 // library-work-activity.spec.ts opens it through the ACP bridge, including permission
 // wait, observed revision and rejection. It is not a modal and never takes focus.
-const BASELINE_APPEARING_SURFACES = 41;
+/*
+ * 41 → 42 (2026-09-12): the card a press on a Library graph mark opens
+ * (`LibraryMarkPopover`, `docs/DECISIONS.md` "a press opens a card beside the mark").
+ * `Surface` with `transientSurface("anchored")`, so hard cuts stay at zero. It needs
+ * nothing but a folder and one press, so its open path is measured directly and in the
+ * browser: `library-graph-card.spec.ts` presses a mark and asserts the card stands beside
+ * it, covers neither the mark nor the strip, flips at the edges, and closes on Escape, on a
+ * second press and on its own control with the keyboard going back to the canvas.
+ */
+const BASELINE_APPEARING_SURFACES = 42;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';
