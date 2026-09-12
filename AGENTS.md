@@ -66,9 +66,8 @@ relation writing with directional preview and change review; ACP writes wait
 for `allow_once` or `reject_once`. `/ontology`, `/ontology/edit` and `/ontology/studio` are legacy
 redirects; `/ontology/insights` is live.
 
-Adding or removing a route requires one decision fragment from `pnpm record:new`
-in the same change; `pnpm decisions:check` composes it with the frozen legacy
-ledger and enforces the result. Keep retired namespaces
+Route additions/removals require a same-change decision fragment
+(`pnpm record:new`, enforced by `pnpm decisions:check`). Keep retired namespaces
 retired: `/login`, `/signup`, `/account`, `/reset-password`,
 `/settings/*`, `/admin/*`, `/review/*`, `/diagnostics/*`,
 `/knowledge/*`, and `/skills`. See `.claude/rules/forbidden.md`.
@@ -81,9 +80,8 @@ only: when to open a gate, not how it runs.
 
 - **PO gate** — Before product, UX, graph, MCP, CLI, workflow, or macOS work,
   `/po-pass` names one lost Atlas ability and gives change/boundary facts to
-  `pnpm po:route`; it derives door and risk. Write pilot run, update, and optional
-  policy JSON through `pnpm po:record -- --type=run|update|policy --input=/tmp/file.json`;
-  `pnpm po:pilot -- --check` composes them with the frozen pilot and owns the sunset.
+  `pnpm po:route` derives door/risk. Record with `pnpm po:record`;
+  `pnpm po:pilot -- --check` owns the sunset.
 - **Product design gate** — `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`, after
   the PO pass, for UI, interaction, topology, responsive, motion, and macOS
   workbench work. Run `pnpm design:route`; it selects `/design-directions`,
@@ -101,12 +99,9 @@ only: when to open a gate, not how it runs.
   and tests recovery proof; `chief` rebuts only material conflict.
   `/design-council` runs only for routed structural commitments, with selected
   seats and `design-guardian` deciding. Cross-critique needs material conflict.
-- **Decision ledger** — `docs/DECISIONS.md` is frozen legacy input; new records
-  are immutable `docs/records/decisions/` fragments created
-  by `pnpm record:new`;
-  `pnpm decisions:find <terms>` finds the record to cite or overturn
-  explicitly, keeping the losing dissent and a falsifier. Never silently
-  re-decide.
+- **Decisions** — `pnpm decisions:find <terms>` searches history and fragments.
+  Cite or explicitly overturn prior decisions, retaining dissent and a falsifier.
+  Add with `pnpm record:new`; never edit frozen history.
 - **Gate probe** — `/gate-probe` whenever a gate changes. A permanently green
   gate is not evidence.
 - **Journey and motion** — `/user-walkthrough` names observable UX patterns,
@@ -133,20 +128,15 @@ Run `pnpm checks:changed -- --run`; complete every recommendation. Finish
 after they pass unless a new edit, failure, or named unresolved risk requires
 more. Use `.claude/rules/testing.md` for escalation; never broaden or repeat
 checks by habit.
-Generated docs-vault output is created by the repository's
-prepare/checkout/merge/build hooks through `pnpm docs-vault:build`. Never hand-edit
-or stage `src/entities/docs-vault/data/` or `public/docs-vault/`; they are ignored
-derived output and are regenerated in each checkout.
+`pnpm docs-vault:build` materializes ignored `src/entities/docs-vault/data/` and
+`public/docs-vault/` on install, checkout, merge and build. Never edit or stage them.
 
 When documentation changes, keep the owner current: public behavior in
 `README.md` and `docs/FEATURES.md`; architecture/routes in
-`docs/ARCHITECTURE.md`; MCP/CLI contracts in their own READMEs; decisions through
-`pnpm record:new -- --kind=decision --date=YYYY-MM-DD --slug=<slug> --input=/tmp/body.md`;
-change facts through the same command with `--kind=change` and `--category=Added|Changed|Fixed|Removed`;
-release groupings in `docs/records/releases/`. Current authored prose
-is English; `display_ko` frontmatter and `cli/templates/vault-ko/**` are
-localized data. Record fragments are immutable; legacy ledgers remain frozen and
-are read only through composition. Current docs links must resolve.
+`docs/ARCHITECTURE.md`; MCP/CLI contracts in their READMEs. Decision, change,
+release and pilot records follow `docs/records/README.md`: immutable fragments,
+frozen history, composed readers. Authored prose is English; `display_ko` and
+`cli/templates/vault-ko/**` are localized data. Current docs links must resolve.
 
 Land with `pnpm pr:land <number>`; open pull requests as drafts. The lander
 locks, merges `main` in, checks locally, then fires the one CI run.
