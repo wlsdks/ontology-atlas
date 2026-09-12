@@ -11,7 +11,7 @@ import type { AgentTool } from './agent-files';
  * repository itself, and this one is not. Presence, bytes, byte-drift and wiring are facts about
  * files on disk; "Codex merges nested `AGENTS.md` root-down" is a claim about somebody else's
  * product, true only until they change it. A wrong row here looks exactly like a right one, so the
- * screen prints the source beside the claim and prints 「출처 없음」 where we have none — a
+ * screen prints the source beside the claim, and says so where we have none — a
  * correction the Evidence seat required on 2026-09-13 after finding `antigravity` resolved in the
  * classifier with nothing behind it.
  *
@@ -35,7 +35,7 @@ const COPILOT_INSTRUCTIONS =
   'https://docs.github.com/en/copilot/reference/custom-instructions-support';
 const GEMINI_MD = 'https://google-gemini.github.io/gemini-cli/docs/cli/gemini-md.html';
 
-export interface GuideCitation {
+interface GuideCitation {
   /** The document the claim was read from. */
   source: string;
   /**

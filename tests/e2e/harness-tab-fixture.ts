@@ -111,7 +111,7 @@ const SOURCE_FILES: Record<string, string> = {
   "src/AGENTS.md": "# src\n\nCodex merges this one root-down. Claude Code never auto-loads it.\n",
   ".claude/rules/forbidden.md": "# Forbidden\n",
   ".claude/skills/po-pass/SKILL.md": SKILL_BODY,
-  // One byte apart from its declared twin: the drift the 「차이 보기」 door opens.
+  // One byte apart from its declared twin: the drift the difference door opens.
   ".agents/skills/po-pass/SKILL.md": `${SKILL_BODY}\nDiverged line.\n`,
   ".claude/agents/chief.md": "# chief\n",
   ".agents/agents/chief.md": "# chief\n",

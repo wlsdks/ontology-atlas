@@ -25,7 +25,7 @@ const WARNING_BADGE =
   'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]';
 
 /**
- * **지침 — the guide inventory, with the limits of each column said out loud.**
+ * **The guide inventory, with the limits of each column said out loud.**
  *
  * Every cell here is one of two kinds of fact, and the screen never lets them look alike:
  *
@@ -33,12 +33,12 @@ const WARNING_BADGE =
  *   the repository itself calls a pair differ, this script the config names exists.
  * - **Read from somebody else's documentation** — which tool reads which file. That claim carries
  *   its source URL and the date a person last opened it, and a claim with no document behind it
- *   prints 「출처 없음」 instead of rendering like the sourced rows.
+ *   says so in place of the source link, instead of rendering like the sourced rows.
  *
  * Three things this view deliberately does not do, each because a reader would take it as more
  * than it is (Evidence seat, 2026-09-13):
  *
- * 1. **No bare green.** 「어긋남 0」 would read as "everything matches"; what is true is that the
+ * 1. **No bare green.** A bare "0 drift" would read as "everything matches"; what is true is that the
  *    declared pairs match and nothing else was compared, so that is what it says.
  * 2. **No verified hooks.** A hook row says the script exists. The Codex group carries the
  *    approval gate as standing text, because that state lives in no file.
@@ -64,6 +64,10 @@ interface GuideRow {
   declaredPair: string | null;
 }
 
+/**
+ * Directory slots, labelled by the path a person would type. Only the nested-`AGENTS.md` slot needs
+ * words rather than a path, and those words live in the catalogue like every other visible string.
+ */
 const TREE_RULES: Readonly<Record<string, string>> = Object.freeze({
   'claude-rules': '.claude/rules/',
   'claude-skills': '.claude/skills/',
@@ -71,7 +75,6 @@ const TREE_RULES: Readonly<Record<string, string>> = Object.freeze({
   'agents-skills': '.agents/skills/',
   'agents-agents': '.agents/agents/',
   'cursor-rules': '.cursor/rules/',
-  'nested-agents-md': 'AGENTS.md (하위 폴더)',
 });
 
 function formatBytes(bytes: number): string {
@@ -386,7 +389,7 @@ export function HarnessGuidesView({
   locale: string;
 }) {
   const t = useTranslations('harness');
-  const rows = useMemo(() => buildRows(report, TREE_RULES['nested-agents-md']!), [report]);
+  const rows = useMemo(() => buildRows(report, t('nestedLabel')), [report]);
   const checks = report.analysis.checks;
   const declaredPairs = [checks.skillCopy, checks.agentCopy].filter(
     (check) => check.status !== 'not-applicable',
@@ -458,9 +461,9 @@ export function HarnessGuidesView({
                   {/*
                     The pair column answers one question — does this file match the twin the
                     repository itself declared it identical to — so a row with no declared twin says
-                    「해당 없음」 rather than borrowing a finding from another check. The first build
-                    printed 「어긋남 1」 beside `.codex/`, which has no pair at all (measured in the
-                    browser, 2026-09-13).
+                    "not applicable" rather than borrowing a finding from another check. The first
+                    build printed a drift count beside `.codex/`, which has no pair at all (measured
+                    in the browser, 2026-09-13).
                   */}
                   {row.declaredPair === null ? (
                     <span className="text-caption text-[color:var(--color-text-quaternary)]">
@@ -488,7 +491,7 @@ export function HarnessGuidesView({
         </table>
       </div>
 
-      {/* Never 「어긋남 0」 on its own: what is true is that the declared pairs match and nothing
+      {/* Never a bare zero: what is true is that the declared pairs match and nothing
           else was compared, and both halves of that are said together. */}
       <p className="text-caption text-[color:var(--color-text-quaternary)]">
         {t('pairMatched', { count: declaredPairs })} · {t('pairNotMeasured')} ·{' '}

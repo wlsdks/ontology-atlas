@@ -121,7 +121,7 @@ test.describe("하네스 탭", () => {
      * Inspection 122, S8. Before this slice the ladder held its 280/72/240 faces whatever the
      * card's width, so at 1512 the drawn band was 592px inside a 1448px card (41 %), sat 124px
      * left of its centre, and all seven role sentences ended in an ellipsis while 856px of the
-     * card stood empty. The owner's standing priority is 문장 완결 over box symmetry.
+     * card stood empty. The owner's standing priority is a finished sentence over box symmetry.
      */
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/");

@@ -124,7 +124,8 @@ const PAIRED_OBSERVATION_W = 240;
  * (`estimateCaptionWidth`, 8px per Korean glyph), and `captionLineRoom` spends 24 on side padding,
  * so 560 leaves 536 of room — the longest sentence plus 64px of headroom for a profile whose
  * sentences run longer. Anything past that still wraps to the roomy ladder's second line, which is
- * the behaviour that was always there. The owner's standing priority is 문장 완결 over box symmetry.
+ * the behaviour that was always there. The owner's standing priority is a finished sentence over
+ * box symmetry.
  */
 const PAIRED_CONTRACT_W_MAX = 560;
 /*

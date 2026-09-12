@@ -11,7 +11,7 @@ import { CITATIONS_REVIEWED, guideCitation, UNCITED_TOOLS } from './guide-citati
  * repository, so the screen prints the document behind each claim. That promise is only kept if
  * adding a tool to a rule also adds its source — otherwise the new row renders looking exactly like
  * the sourced ones. This test walks the classifier's own rules and requires every (rule, tool) pair
- * to be either cited or named as uncited, which is what makes 「출처 없음」 a deliberate statement
+ * to be either cited or named as uncited, which is what makes the uncited marker a statement
  * rather than an oversight.
  */
 describe('every tool×file claim is either cited or declared uncited', () => {

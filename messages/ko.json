@@ -283,6 +283,7 @@
     "guidesTitle": "지침: 에이전트에게 알려준 것",
     "guidesCaption": "에이전트가 일을 시작하기 전에 미리 읽는 문서입니다. 도구별로 읽는 파일이 다릅니다.",
     "columnFile": "파일",
+    "nestedLabel": "AGENTS.md (하위 폴더)",
     "columnTools": "읽는 도구",
     "columnSize": "크기/한도",
     "columnPair": "짝",

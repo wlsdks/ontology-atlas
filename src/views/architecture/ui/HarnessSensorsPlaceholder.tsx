@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 
 /**
- * **센서 — a view that is not built, saying so.**
+ * **The sensors view is not built, and says so.**
  *
  * The tempting alternative is to fill this with what we could compute today: a lint glob here, a
  * test path there, a count of hooks. That would produce a screen that looks like coverage, and

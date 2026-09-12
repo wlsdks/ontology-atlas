@@ -95,7 +95,7 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 5937,
+      "wordCount": 5936,
       "updatedAt": "2026-09-13",
       "linksOut": [
         "../mcp/README",
@@ -965,7 +965,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 135212,
+      "wordCount": 135220,
       "updatedAt": "2026-09-13",
       "linksOut": [
         "src:sources/settlement-policy.md",
@@ -1074,7 +1074,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 43922,
+      "wordCount": 43917,
       "updatedAt": "2026-09-13",
       "linksOut": [
         "ANALYSIS-RECORDS",

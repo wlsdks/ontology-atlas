@@ -26,7 +26,7 @@ import { HarnessGuidesView } from './HarnessGuidesView';
 import { HarnessSensorsPlaceholder } from './HarnessSensorsPlaceholder';
 
 /**
- * **하네스 — one destination, three views, and one sentence that only says what it measured.**
+ * **The Harness destination: three views, and one sentence that only says what it measured.**
  *
  * The route is still `/architecture`. Only the label and what stands beside the blueprint changed,
  * so every existing link, bookmark and `?focus=` deep link lands exactly where it always did; the
@@ -39,7 +39,7 @@ import { HarnessSensorsPlaceholder } from './HarnessSensorsPlaceholder';
  * clause of the sketched sentence, "N domains nobody guards", is **not** in the sentence. Leaving a
  * deferral inside a sentence whose other slots are numbers asserts that unguarded domains exist and
  * are merely uncounted, which no static read of a repository can claim. It sits on its own line, as
- * a question, and the 센서 view it points at says plainly that it is not built (Evidence seat,
+ * a question, and the sensors view it points at says plainly that it is not built (Evidence seat,
  * 2026-09-13).
  */
 

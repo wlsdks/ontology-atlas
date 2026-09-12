@@ -283,6 +283,7 @@
     "guidesTitle": "Guides: what the agents were told",
     "guidesCaption": "Documents an agent reads before it starts work. Each tool reads a different set.",
     "columnFile": "File",
+    "nestedLabel": "AGENTS.md (subfolders)",
     "columnTools": "Read by",
     "columnSize": "Size / cap",
     "columnPair": "Pair",

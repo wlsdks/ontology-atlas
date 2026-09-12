@@ -19,14 +19,14 @@
  */
 
 /** Where a hook command's script lives, and whether we could resolve a path at all. */
-export interface HookScriptRef {
+interface HookScriptRef {
   /** The repo-relative script path, or `null` when the command runs something we cannot resolve. */
   path: string | null;
   /** The command as written, kept so the screen can show what it actually tried. */
   command: string;
 }
 
-export interface HookFact {
+interface HookFact {
   /** Lifecycle events this script answers, joined with ` · `. The tool's own word, untranslated. */
   events: string;
   ref: HookScriptRef;

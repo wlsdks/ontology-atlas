@@ -6646,8 +6646,8 @@
     },
     {
       "depth": 2,
-      "text": "2026-09-13 — The 아키텍처 tab becomes 하네스, and says only what files can prove",
-      "slug": "2026-09-13-the-아키텍처-tab-becomes-하네스-and-says-only-what-files-can-prove"
+      "text": "2026-09-13 — The Architecture tab becomes Harness, and says only what files can prove",
+      "slug": "2026-09-13-the-architecture-tab-becomes-harness-and-says-only-what-files-can-prove"
     },
     {
       "depth": 2,
@@ -11805,8 +11805,8 @@
     },
     {
       "depth": 3,
-      "text": "`/architecture` — 하네스 / Harness: guides, structure, sensors",
-      "slug": "architecture-하네스-harness-guides-structure-sensors"
+      "text": "`/architecture` — Harness: guides, structure, sensors",
+      "slug": "architecture-harness-guides-structure-sensors"
     },
     {
       "depth": 3,

@@ -63,7 +63,7 @@ export const AGENT_TOOL_LABELS: Readonly<Record<AgentTool, string>> = Object.fre
   copilot: 'Copilot',
 });
 
-export interface AgentFileRule {
+interface AgentFileRule {
   readonly id: string;
   readonly kind: AgentFileKind;
   readonly tools: readonly AgentTool[];
@@ -280,7 +280,7 @@ interface InternalRecord extends AgentFileRecord {
   entry: AgentFileEntry;
 }
 
-export interface AnalyzeAgentFilesInput {
+interface AnalyzeAgentFilesInput {
   files: AgentFileEntry[];
   existingPaths?: string[];
   unverifiablePrefixes?: string[];

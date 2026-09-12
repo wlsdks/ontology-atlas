@@ -11,6 +11,10 @@
  * this slice gained beside it is the part that classifier never carried: the document behind each
  * "tool X reads file Y" claim, the hook wiring a config declares, and a bridge-fed scan that can
  * reach the dot directories a browser cannot see.
+ *
+ * This barrel lists only what another slice consumes. The hook parser, the rule table and the
+ * uncited-tool list are used inside this slice and by its own tests, which import them directly;
+ * re-exporting them here would be a public surface with no reader (`pnpm knip`).
  */
 export {
   analyzeAgentFiles,
@@ -18,38 +22,20 @@ export {
   manifestIncludesRepoRoot,
   selectAgentFileDocs,
   AGENT_TOOL_LABELS,
-  AGENT_FILE_RULES,
   WEB_SCAN_ANALYZE_OPTIONS,
   type AgentDriftFinding,
   type AgentFileEntry,
-  type AgentFileRule,
   type AgentFilesAnalysis,
   type AgentFilesUiModel,
   type AgentTool,
-  type AnalyzeAgentFilesInput,
 } from './model/agent-files';
 export {
   declaredPairFor,
   isGuideRecord,
   isPairDrift,
   scanHarness,
-  type HarnessCheckCensus,
-  type HarnessFileTime,
   type HarnessReport,
   type HarnessScanPort,
 } from './model/repo-scan';
-export {
-  collectHookFacts,
-  hookScriptPath,
-  parseHookConfig,
-  wiredHookCount,
-  type HookConfigFacts,
-  type HookFact,
-  type HookScriptRef,
-} from './model/hook-wiring';
-export {
-  guideCitation,
-  CITATIONS_REVIEWED,
-  UNCITED_TOOLS,
-  type GuideCitation,
-} from './model/guide-citations';
+export { type HookConfigFacts } from './model/hook-wiring';
+export { guideCitation, CITATIONS_REVIEWED } from './model/guide-citations';

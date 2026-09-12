@@ -488,7 +488,7 @@ until a local manifest exists.
 /topology                  map + contextual relation editor + change review. Any link labelled
                            "map" or "edit relation" points here, not at / (gate:
                            tests/contract/map-destination-route.contract.test.ts)
-/architecture              the Harness destination (labelled 하네스 / "Harness" since
+/architecture              the Harness destination (relabelled from Architecture since
                            2026-09-13; route unchanged). Three views on ?view=:
                            guides — the agent guide files this repository carries, which
                            tool reads each (a static table citing its source per row), size

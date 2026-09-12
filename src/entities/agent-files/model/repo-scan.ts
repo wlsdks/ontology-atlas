@@ -97,9 +97,9 @@ export function isPairDrift(code: string): boolean {
 }
 
 /**
- * **What counts as a guide**, used by both the sentence's first number and the 지침 table so the
- * two cannot disagree. A reader who sees 「문서 8개」 above a table of ten rows learns only that one
- * of the two is wrong. `config` records — `settings.json`, the hook scripts, `.codex/` — are the
+ * **What counts as a guide**, used by both the sentence's first number and the guides table so
+ * the two cannot disagree. A reader who sees "8 documents" above a table of ten rows learns only
+ * that one of the two is wrong. `config` records — `settings.json`, the hook scripts, `.codex/` — are the
  * enforcement layer and belong to the second number and the hooks section.
  */
 export function isGuideRecord(record: { kind: string }): boolean {
@@ -109,12 +109,12 @@ export function isGuideRecord(record: { kind: string }): boolean {
 /** `package.json` script names that run a linter, a type check, or a test suite. */
 const CHECK_SCRIPT_NAME = /^(lint|test|typecheck)(:|$)/;
 
-export interface HarnessFileTime {
+interface HarnessFileTime {
   path: string;
   lastModified: number | null;
 }
 
-export interface HarnessCheckCensus {
+interface HarnessCheckCensus {
   /** Hook scripts named by a config and found on disk. */
   wiredHooks: number;
   /** Files under `.githooks/` — Git-level checks the repository installs. */
@@ -128,7 +128,7 @@ export interface HarnessCheckCensus {
 export interface HarnessReport {
   analysis: AgentFilesAnalysis;
   hookGroups: readonly HookConfigFacts[];
-  /** Modification times by path, for the 「바뀜」 column. See `HarnessReport.timesAreFileMtime`. */
+  /** Modification times by path, for the change column. See `HarnessReport.timesAreFileMtime`. */
   times: readonly HarnessFileTime[];
   /**
    * Every scanned file's text, keyed by path. The drift door shows two complete files side by side,
