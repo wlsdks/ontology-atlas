@@ -11,7 +11,12 @@ import { BrandMark } from "@/shared/ui/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
+import {
+  describeWikiProblem,
+  type WikiProblemContext,
+} from "../../lib/describe-wiki-problem";
 import { localizeWikiLogSummary } from "../../lib/wiki-log-summary";
+import { WikiProblemSentence, type WikiProblemDoors } from "./WikiTemplateProblems";
 
 /**
  * **What the check found, as a page in the reading pane — two ledgers, the computed one
@@ -72,27 +77,14 @@ function logWhen(at: string): string {
   return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
-/**
- * The finding in the reader's language, or the validator's English when there is no
- * translation for that sentence yet.
- *
- * The same rule `WikiTemplateProblems` applies beside a page: `message` is written once,
- * in English, for the machines that read it — `wiki-validate`'s output, `validate_wiki`'s
- * payload, an agent's retry — and a person gets `detail`, the sentence's pieces,
- * reassembled in their own language. `t.has` rather than a table of known keys: the
- * validator owns which sentence it just found, and a key it grows before this file learns
- * about it should degrade to English rather than render a raw message path.
+/*
+ * ⚠️ **A `describeStructuralRow` used to live here, and it was the third copy.** The same
+ * function sat in `WikiTemplateProblems.tsx` and in `AnswerRevisionComparison.tsx`
+ * (carry-forward, 2026-09-11), so one folder's finding had three retellings maintained in
+ * three places. `describeWikiProblem` is now the one of them, and the reason is not
+ * tidiness: a person reads a finding on this page, presses the page's name, and must meet
+ * the *same sentence* beside the page. Two retellings are two folders.
  */
-function describeStructuralRow(
-  row: WikiReportRow,
-  t: ReturnType<typeof useTranslations<"library">>,
-): string {
-  const key = row.detail?.key;
-  if (!key) return row.message;
-  const path = `wiki.problem.${key}` as "wiki.problem.orphan-page";
-  if (!t.has(path)) return row.message;
-  return t(path, row.detail?.values ?? {});
-}
 
 /**
  * The report's sections, in reading order, as the outline rail lists them.
@@ -221,13 +213,16 @@ function PageDoors({
 function collapseStructuralRows(
   rows: readonly WikiReportRow[],
   t: ReturnType<typeof useTranslations<"library">>,
+  context: WikiProblemContext,
 ): Array<{ row: WikiReportRow; lines: number[] }> {
   const out: Array<{ row: WikiReportRow; lines: number[] }> = [];
   const at = new Map<string, number>();
   for (const row of rows) {
     // Field by field with a unit separator, the same key discipline the recovery proof
-    // records: a page path can hold any character a folder allows.
-    const key = `${row.page}\u241f${describeStructuralRow(row, t)}`;
+    // records: a page path can hold any character a folder allows. The sentence half is
+    // the describer's plain string \u2014 the one piece of its output that is a comparable
+    // value rather than something to press.
+    const key = `${row.page}\u241f${describeWikiProblem(row, t, context).sentence}`;
     const seen = at.get(key);
     if (seen === undefined) {
       at.set(key, out.length);
@@ -256,10 +251,14 @@ function collapseStructuralRows(
 function StructuralGroup({
   group,
   onOpenPage,
+  doors,
+  context,
   t,
 }: {
   group: WikiReport["groups"][number];
   onOpenPage: (slug: string) => void;
+  doors: WikiProblemDoors;
+  context: WikiProblemContext;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   return (
@@ -279,24 +278,34 @@ function StructuralGroup({
         </span>
       </h4>
       <ul className="mt-1.5 flex flex-col divide-y divide-[color:var(--color-divider)]">
-        {collapseStructuralRows(group.rows, t).map(({ row, lines }) => (
-          <li
-            key={`${row.page}-${row.code}-${lines.join(",")}`}
-            data-testid="library-structural-finding"
-            className="flex min-w-0 items-start gap-4 py-2.5"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
-                {describeStructuralRow(row, t)}
-              </p>
-              <PageDoors
-                pages={[pageSlug(row.page)]}
-                suffixes={lines.map((line) => `:${line}`)}
-                onOpenPage={onOpenPage}
-              />
-            </div>
-          </li>
-        ))}
+        {collapseStructuralRows(group.rows, t, context).map(({ row, lines }) => {
+          const words = describeWikiProblem(row, t, context);
+          return (
+            <li
+              key={`${row.page}-${row.code}-${lines.join(",")}`}
+              data-testid="library-structural-finding"
+              className="flex min-w-0 items-start gap-4 py-2.5"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+                  {/* The place is a word here and not a press: this page is not the page,
+                      so there is nothing on screen to travel to. The door below opens it. */}
+                  <WikiProblemSentence words={words} doors={doors} t={t} />
+                </p>
+                {words.action ? (
+                  <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+                    {words.action}
+                  </p>
+                ) : null}
+                <PageDoors
+                  pages={[pageSlug(row.page)]}
+                  suffixes={lines.map((line) => `:${line}`)}
+                  onOpenPage={onOpenPage}
+                />
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
@@ -314,6 +323,8 @@ export function LibraryCheckReport({
   onFix,
   onPropose,
   onOpenPage,
+  onOpenSource,
+  pageTitle,
   onJumpToSection,
   fixedKeys,
   t,
@@ -344,6 +355,13 @@ export function LibraryCheckReport({
   onPropose: ((candidate: LintNodeCandidate) => void) | null;
   onOpenPage: (slug: string) => void;
   /**
+   * Opens an original a finding names. Absent leaves that file name as plain words — the
+   * honest degradation, rather than a press that goes nowhere.
+   */
+  onOpenSource?: (path: string) => void;
+  /** A wiki page's own title, by slug, so a finding names pages the way the list does. */
+  pageTitle?: (slug: string) => string | undefined;
+  /**
    * Moves the pane to one of this page's own section heads. Given by the caller because
    * the scroll container and the reduced-motion decision belong to the reading pane, and
    * the outline rail's clicks already travel through the same function — two answers to
@@ -369,6 +387,19 @@ export function LibraryCheckReport({
    * fold, blocking groups never collapsible.
    */
   const [advisoryOpen, setAdvisoryOpen] = useState(false);
+  /*
+   * What a structural row's sentence may press, and how precisely it names a place.
+   *
+   * No `onOpenPlace`: this page is not the page a finding is about, so there is no
+   * paragraph here to travel to — the row's own door opens the page instead. And `place:
+   * "section"` keeps the line out of the sentence, where the collapsed row already
+   * carries every line on its door.
+   */
+  const structuralDoors: WikiProblemDoors = { onOpenPage, ...(onOpenSource ? { onOpenSource } : {}) };
+  const structuralContext: WikiProblemContext = {
+    place: "section",
+    ...(pageTitle ? { pageTitle } : {}),
+  };
   const orderedCandidates = [...candidates].sort(
     (a, b) => Number(isMapKind(b.kind)) - Number(isMapKind(a.kind)),
   );
@@ -485,7 +516,14 @@ export function LibraryCheckReport({
             </p>
           ) : null}
           {blockingGroups.map((group) => (
-            <StructuralGroup key={group.code} group={group} onOpenPage={onOpenPage} t={t} />
+            <StructuralGroup
+              key={group.code}
+              group={group}
+              onOpenPage={onOpenPage}
+              doors={structuralDoors}
+              context={structuralContext}
+              t={t}
+            />
           ))}
           {advisoryGroups.length > 0 ? (
             <>
@@ -528,7 +566,14 @@ export function LibraryCheckReport({
               </div>
               {advisoryOpen
                 ? advisoryGroups.map((group) => (
-                    <StructuralGroup key={group.code} group={group} onOpenPage={onOpenPage} t={t} />
+                    <StructuralGroup
+              key={group.code}
+              group={group}
+              onOpenPage={onOpenPage}
+              doors={structuralDoors}
+              context={structuralContext}
+              t={t}
+            />
                   ))
                 : null}
             </>

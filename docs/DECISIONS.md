@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — A wiki finding is one sentence, one place and one way out; the codes go behind one fold
+
+**Why**: the owner opened a page their own agent had written and met, above its Summary, `uncited-fact:31`, a citation grammar in backticks and the names of `wiki-validate` and `validate_wiki`: *"I cannot tell what this is saying from a person's side — it just looks like alien script."* They then did nothing: the card named a defect and carried no control. The finding had three maintained retellings, and the only thing to act on was the card's smallest type.
+**Prior**: 2026-09-09 "A folder finding is not an off-template verdict" stands, both cards kept. The 2026-09-12 council's "the report's group headings keep the code" stands — hence codes fold only on the page card. 2026-09-07 "A wiki page that fits its contract is written without a card" stands, and is what this card's copy must now say truthfully.
+**Decision**: one describer serves all four surfaces. A finding is one sentence in the reader's language plus one action; pages and files are named by their titles and pressable; the place is words, pressable where a section exists; identical findings fold into one row carrying every place. Codes, line anchors, the validator's English, the page's path and the CLI/tool note sit behind one closed disclosure per card. The own-shape card carries one action — an agent turn over that page's shape findings, Finder, or nothing on the web — naming the checkpoint the write mode runs; the folder card carries none.
+**Dissent**: po-evidence held the turn should force `ask` whatever the write mode: `validateWikiPage` never resolves a citation anchor, so `uncited-fact` closes on a plausible string and the page lands cardless. Overruled on the half that seat called equal — the control no longer promises a checkpoint the default removes.
+**Falsifier**: a repaired page carrying a citation whose anchor, pressed, does not state its claim; a reader who cannot name the file a finding is about without leaving the card.
+**Owner**: jinan
+
 ## 2026-09-12 — The bell separates what needs me from what was done
 
 **Why**: the owner: the panel's inside matters very much, because it may be the only place the difference can be told; tabs inside it are fine. On a folder of four turns, two decisions and one turn blocked on permission, it printed a receipt's title plus **four dot-separated state words**, then one task's start and end as **two rows saying the same thing**, and **nothing** about the blocked request. Opening the bell marked everything read: the badge went 8 → none on the first press.
