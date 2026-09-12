@@ -2,7 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 
-import { DOC_BODY_FONT_PX, docColumnPxAtRoot } from "@/shared/ui/reading-measure";
+import { docColumnPxAtRoot } from "@/shared/ui/reading-measure";
+import { rootFontPx } from "@/shared/ui/root-font-size";
 
 import { resolveOutlineRailFit, type OutlineRailFit } from "./outline-rail";
 
@@ -41,12 +42,9 @@ export function useOutlineRailFit(): {
       // The column is `rem`-derived, so a browser text-only zoom moves it while the pane
       // stands still. Both sides of the comparison are therefore read at the same moment:
       // the pane from its own rect, the column from the live root size.
-      const rootFontPx =
-        Number.parseFloat(getComputedStyle(document.documentElement).fontSize) ||
-        DOC_BODY_FONT_PX;
       const next = resolveOutlineRailFit(
         node.getBoundingClientRect().width,
-        docColumnPxAtRoot(rootFontPx),
+        docColumnPxAtRoot(rootFontPx()),
       );
       setFit((current) => (current === next ? current : next));
     };

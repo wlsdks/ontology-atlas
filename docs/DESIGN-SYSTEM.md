@@ -2244,10 +2244,22 @@ horizontal-overflow gate built on that number is green before it is written. The
 measures the **text** — is a leaf taller or wider than its box, and does the box that clips it
 offer a way to the rest.
 
+**A token's value is a length in a unit, and JavaScript that reads one must say so.** The library
+graph's canvas resolves `--text-body` and `--text-label` at runtime (`ctx.font` cannot take a
+`var()`), and it did it with `Number.parseFloat` — which on `"0.6875rem"` returns **0.6875**:
+finite, positive, past every guard the caller wrote, and off by a factor of sixteen. Nothing threw;
+the canvas drew its names at two thirds of a pixel. `src/shared/ui/root-font-size.ts` is the answer
+— `rootFontPx()` and `cssLengthToPx()`, which resolves `px` and `rem` and returns `NaN` for `em`
+rather than guessing at a parent it cannot see. Any new consumer of a size token outside the style
+engine uses it.
+
 Gates: `tests/contract/type-ramp-root-relative.contract.test.ts` (no ramp step may be reintroduced
-in `px`; the documented exceptions are a named list) and `tests/e2e/text-zoom-ramp.spec.ts` (the
-pinned pixels at 100%, exact doubling at a 32px root, the eleven chrome boxes holding still, and
-the cut-text sweep — each with its own planted defect). `eslint.config.mjs` bans `text-[Nrem]`
+in `px`; the documented exceptions are a named list; and every size token consumed through
+`text-[length:var(…)]` is scanned by its **consumers**, not by its name, so a step hiding outside
+the `--text-*` prefix is covered on its first day), `tests/e2e/text-zoom-ramp.spec.ts` (the pinned
+pixels at 100%, exact doubling at a 32px root, the eleven chrome boxes holding still, the cut-text
+sweep) and `tests/e2e/text-zoom-layout.spec.ts` (the real browser setting, with its own
+breakpoint self-probe) — each with its own planted defect. `eslint.config.mjs` bans `text-[Nrem]`
 beside `text-[Npx]`, because a selector that knows only the px spelling reopened the off-ramp hole
 the moment the ramp changed unit. Record: `docs/DECISIONS.md`, "The type ramp follows the root
 size, so a browser's text zoom reaches it".

@@ -254,8 +254,14 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     // the measure and not by a factor of two: 709.1 → 1338.1.
     expect(after.get("--measure-doc-column")).toBeCloseTo(docColumnPxAtRoot(ZOOMED_ROOT_PX), 0);
     // The line cap doubles because both sides of `ch` scale with the font size — true in any
-    // face, which is exactly why this is the ratio and not the pixel.
-    expect(after.get("--measure-prose")).toBeCloseTo((before.get("--measure-prose") ?? 0) * 2, 1);
+    // face, which is exactly why this is the ratio and not the pixel. The band is relative for
+    // the same reason: a rasterizer that rounds `ch` at one size need not round it the same way
+    // at twice that size, and 0.5% of a 1258px cap is six pixels of slack against a claim that
+    // would fail by 629 if it were wrong.
+    const measureRatio =
+      (after.get("--measure-prose") ?? 0) / (before.get("--measure-prose") ?? 1);
+    expect(measureRatio, "the line cap did not follow the root").toBeGreaterThan(1.995);
+    expect(measureRatio).toBeLessThan(2.005);
     // The column grows by the measure and not by a factor of two, because the two gutters are
     // absolute: 709.1 + 629.06 = 1338.1. `PROSE_MEASURE_PX` is font-independent here — it is
     // derived from the measured constant, not from a rendered `ch`.
