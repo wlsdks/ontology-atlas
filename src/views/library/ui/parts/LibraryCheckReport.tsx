@@ -84,9 +84,9 @@ type RulePath = "report.rule.orphan-page";
  * `orphan-page`, `shared-source-unlinked`, in monospace and untranslated, in the body and
  * again in the outline rail. Measured on the installed app 2026-09-13
  * (`inspection-122/06-strip-format-report.png`), two screens from the wiki page that
- * already said 「Facts의 22번째 줄에 근거가 없어요」 and kept its codes behind
- * 「기술 정보 · 점검 코드와 줄 번호」. One folder, two vocabularies, and the louder one was
- * the machine's.
+ * already said "no original backs up what is written at line 22 under Facts" and kept its
+ * codes behind a fold called "technical detail, check codes and line numbers"
+ * (`wiki.technical`). One folder, two vocabularies, and the louder one was the machine's.
  *
  * Nothing is taken away: the code, its line anchor and the validator's own English
  * sentence stand under the same disclosure this page's sibling uses, because a person
@@ -95,8 +95,12 @@ type RulePath = "report.rule.orphan-page";
  *
  * A kind this catalogue has not learned yet falls back to the code rather than to a raw
  * `library.report.rule.…` path — the same degradation `describeWikiProblem` keeps.
+ *
+ * Not exported: the heading and the outline rail's entry are both built here, and an
+ * exported name with no importer is the kind of misinformation the dead-code ratchet exists
+ * to refuse (the reason `WikiProblemSegment` stays internal too).
  */
-export function reportRuleTitle(
+function reportRuleTitle(
   code: string,
   t: ReturnType<typeof useTranslations<"library">>,
 ): string {
@@ -243,7 +247,7 @@ function PageDoors({
  * **One row per bullet a person fixes, not per time the validator fired.**
  *
  * Within one code group, rows that name the same page and retell the same sentence become
- * one row whose door carries every place: `merchant-onboarding · 22번째 줄 · 23번째 줄`.
+ * one row whose door carries every place: `merchant-onboarding · line 22 · line 23`.
  * Measured at 1512 (design-lead, council 2026-09-12): rows 4 and 5 were the same three-line
  * sentence twice, differing only in the line number — 32 lines of rule prose around six
  * page names.

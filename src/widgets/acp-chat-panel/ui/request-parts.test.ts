@@ -60,7 +60,7 @@ describe('splitAppRequest — the transcript opens on the readable sentence', ()
 /**
  * **The Library's briefs, measured on the installed app 2026-09-13.**
  *
- * Pressing 「서식 맞는지 확인」 opened the dock on the outgoing instruction verbatim — a JSON
+ * The Check-the-wiki press opened the dock on the outgoing instruction verbatim — a JSON
  * schema, fenced blocks, `{"counts":{"disagreement":0,…}`, `nodeCandidates` and the taxonomy
  * rules — the largest block on the screen, in front of somebody who had pressed a Korean
  * button. Every Library brief writes the same anchor line before its instructions, so one

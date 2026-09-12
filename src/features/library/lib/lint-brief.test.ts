@@ -35,7 +35,7 @@ describe("the Lint brief reports and never writes", () => {
   /**
    * ⚠️ The dock opened on the whole brief — schema, fenced blocks, taxonomy rules — for
    * somebody who had pressed a Korean button (installed app, 2026-09-13). The fold in
-   * `splitAppRequest` cuts at the `Folder:` / `폴더:` anchor, so the one line in front of it
+   * `splitAppRequest` cuts at the folder anchor line, so the one line in front of it
    * is the only line a person is handed, and it has to say what was asked and what comes
    * back. Nothing after it is removed; it is one disclosure away.
    */

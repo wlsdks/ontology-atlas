@@ -32,14 +32,15 @@ import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/wiki-page-schema";
  *
  * ## The first line is the one line a person reads
  *
- * ⚠️ Pressing 「서식 맞는지 확인」 used to open the conversation on the whole brief — the JSON
+ * ⚠️ The Check-the-wiki press used to open the conversation on the whole brief — the JSON
  * schema, the fenced blocks, `{"counts":{"disagreement":0,…}`, `nodeCandidates` and the
  * taxonomy rules — the largest block on the screen, in a dock somebody reached through a
  * Korean button (installed app, 2026-09-13, `inspection-122/54-toast-b.png`). Being able to
  * read what is sent is the point; being handed all of it first is not.
  *
  * So the brief opens on **what was asked and what will come back**, and every instruction
- * after it stands below the `폴더:` / `Folder:` line that `splitAppRequest` folds on.
+ * after it stands below the folder anchor line that `splitAppRequest` folds on (`Folder:`,
+ * and its Korean twin).
  * Nothing is removed: the 2026-08-24 decision that a caller may send on a person's behalf
  * rests on the whole text landing in the transcript as their own turn, and it still does,
  * one disclosure away and verbatim.
