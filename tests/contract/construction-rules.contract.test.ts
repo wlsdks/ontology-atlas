@@ -24,10 +24,15 @@ import { NODE_ELIGIBILITY_GATE } from "../../mcp/src/schema.mjs";
  * lives only in a comment.
  */
 
-const INDEX_SOURCE = readFileSync(
-  resolve(__dirname, "../../mcp/src/index.js"),
-  "utf-8",
-);
+/**
+ * The two files the rules have to reach: the `initialize` instructions and the
+ * tool table. They left `index.js` when the entry point became wiring only, so
+ * both are read and joined — a gate that read only one of them could go green
+ * because the text moved rather than because it arrived.
+ */
+const SERVER_SOURCE = ["server/instructions.mjs", "server/registry.mjs", "index.js"]
+  .map((file) => readFileSync(resolve(__dirname, "../../mcp/src", file), "utf-8"))
+  .join("\n");
 
 /** Phrases that occur only in the source of truth and would not be retyped by hand. */
 const RULES_FINGERPRINT = "count alone is not evidence of";
@@ -45,20 +50,20 @@ const BATCH_FINGERPRINT = "Rows whose `title` is a bare file path";
 
 describe("구축 규격 텍스트 — LLM 이 읽는 자리에 도달한다", () => {
   it("SERVER_INSTRUCTIONS 가 규격 전문을 interpolate 한다", () => {
-    expect(INDEX_SOURCE).toContain("${CONSTRUCTION_RULES_EN}");
+    expect(SERVER_SOURCE).toContain("${CONSTRUCTION_RULES_EN}");
   });
 
   it("add_concept · add_concepts description 이 명명 규칙을 붙인다", () => {
     // A tool description is the only text an LLM reads **immediately before calling**,
     // so the rule easiest to break at that moment (creating nodes from filenames) must
     // be carried here.
-    expect(INDEX_SOURCE).toContain("ELEMENT_NAMING_RULE_EN");
-    expect(INDEX_SOURCE).toContain("ELEMENT_NAMING_RULE_BATCH_EN");
+    expect(SERVER_SOURCE).toContain("ELEMENT_NAMING_RULE_EN");
+    expect(SERVER_SOURCE).toContain("ELEMENT_NAMING_RULE_BATCH_EN");
   });
 
   it("세 상수를 정말 import 한다", () => {
-    expect(INDEX_SOURCE).toMatch(
-      /import \{[\s\S]*?CONSTRUCTION_RULES_EN[\s\S]*?\} from '\.\/construction-rules\.mjs';/,
+    expect(SERVER_SOURCE).toMatch(
+      /import \{[\s\S]*?CONSTRUCTION_RULES_EN[\s\S]*?\} from '\.\.?\/construction-rules\.mjs';/,
     );
   });
 });
@@ -71,8 +76,8 @@ describe("정본 단일성 — 파생이지 사본이 아니다", () => {
     ["CONSTRUCTION_RULES_EN", RULES_FINGERPRINT],
     ["ELEMENT_NAMING_RULE_EN", NAMING_FINGERPRINT],
     ["ELEMENT_NAMING_RULE_BATCH_EN", BATCH_FINGERPRINT],
-  ])("%s 의 문장이 index.js 에 리터럴로 복제돼 있지 않다", (_name, fingerprint) => {
-    expect(INDEX_SOURCE).not.toContain(fingerprint);
+  ])("%s 의 문장이 서버 소스에 리터럴로 복제돼 있지 않다", (_name, fingerprint) => {
+    expect(SERVER_SOURCE).not.toContain(fingerprint);
   });
 
   it("지문 문장은 정본 쪽에는 실재한다 — 지문이 썩으면 위 검사가 조용히 통과한다", () => {

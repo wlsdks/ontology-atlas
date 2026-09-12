@@ -176,7 +176,12 @@ describe('vault-health contract — src lib mirrors the MCP engine health verdic
  */
 describe('vault health — 안 돌리는 검사는 이름으로 남는다', () => {
   it('브라우저가 도는 검사 + 안 돈다고 밝힌 검사 = 명령이 보고하는 검사', () => {
-    const serverSource = readFileSync(join(process.cwd(), 'mcp', 'src', 'index.js'), 'utf8');
+    // The tool layer is the `tools/` modules now, not the entry point — both
+    // files are read so this gate cannot go green on a file that no longer
+    // carries the ids.
+    const serverSource = ['maintenance.mjs', 'graph.mjs']
+      .map((file) => readFileSync(join(process.cwd(), 'mcp', 'src', 'tools', file), 'utf8'))
+      .join('\n');
     // The two the tool layer attaches on top of the engine's six.
     const attachedByToolLayer = ['vault_validation', 'meaning_assessment'].filter((id) =>
       serverSource.includes(`id: '${id}'`),
