@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import type { LibraryGraphProbeNode as ProbeNode } from "./library-graph-probe";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
@@ -118,26 +119,6 @@ function denseVault(): Record<string, string> {
     ].join("\n");
   });
   return vault;
-}
-
-interface ProbeNode {
-  id: string;
-  kind: string;
-  label: string;
-  x: number;
-  y: number;
-  radius: number;
-}
-
-declare global {
-  interface Window {
-    __atlasLibraryGraph?: {
-      nodes: () => ProbeNode[];
-      interaction: () => { kind: "idle" | "node" | "pan"; nodeId: string | null };
-      view: () => { scale: number; x: number; y: number; width: number; height: number };
-      alpha: () => number;
-    };
-  }
 }
 
 async function openGraph(page: Page): Promise<void> {

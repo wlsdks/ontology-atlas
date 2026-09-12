@@ -22,9 +22,13 @@ import {
  *
  * | Nodes | Edges | Tick | Of a 16.7 ms frame |
  * |---|---|---|---|
- * | 100 | 75 | 0.10 ms | 0.6% |
- * | 300 | 225 | 0.40 ms | 2.4% |
- * | 800 | 600 | 1.73 ms | 10% |
+ * | 100 | 99 | 0.10 ms | 1% |
+ * | 300 | 299 | 0.47 ms | 3% |
+ * | 800 | 799 | 1.93 ms | 12% |
+ *
+ * Re-measured 2026-09-12 on the same laptop, after the fixture became **one** connected
+ * folder rather than `nodeCount / 4` disconnected stars (see `folder` below). The edge
+ * counts are the ones that changed; the ticks moved by a tenth of a millisecond.
  *
  * The gate is a **ceiling**, not the measurement: a wall-clock assertion tuned to this
  * laptop either fails honest code on a loaded CI runner or is loosened until it catches
@@ -62,6 +66,27 @@ function folder(nodeCount: number): LibraryGraph {
       relation: "mentions",
       certainty: "current",
     });
+    /*
+     * ⚠️ **One folder, one graph** (2026-09-12).
+     *
+     * Without this edge the fixture was `nodeCount / 4` **disconnected stars** — each page
+     * cited two sources nobody else cited and named one concept nobody else named — and
+     * nothing above said so. It did not matter while the many-body pass ran over every
+     * mark in the field. It matters now: repulsion runs inside a group, so 2,160 marks in
+     * 540 groups is 540 four-body passes, the O(n²) the crossover below exists to measure
+     * never happens, and the comparison inverted on noise. A large folder in the product is
+     * one big component — that is what a wiki *is* — so the fixture becomes one, and the
+     * crossover is measured on the shape it is claimed for.
+     */
+    if (page > 0) {
+      edges.push({
+        id: `j${page}`,
+        source: `n${page}`,
+        target: `n${pageCount + ((page - 1) * 2) % (pageCount * 2)}`,
+        relation: "cites",
+        certainty: "current",
+      });
+    }
   }
   return {
     nodes,
