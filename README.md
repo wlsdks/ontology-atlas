@@ -556,6 +556,10 @@ repository [AGENTS.md](AGENTS.md) is canonical for people and agents alike, and
 product decisions route through `pnpm po:route -- --help` from change facts
 rather than a self-declared risk.
 
+Pre-push keeps quick checks local; full contract and Knip scans belong to PR CI.
+Main CI uses the push diff, with exhaustive daily and manual runs. Exact
+test-file duplicates are collapsed within a local check run; CI always executes. Details: [development checks](docs/DEVELOPMENT-CHECKS.md).
+
 Verification starts with `pnpm checks:changed`, which picks the focused gates for
 the files you changed; `-- --run` executes every recommendation and stops at the
 first failure, and it is the last command before a pull request.

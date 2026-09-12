@@ -2,8 +2,8 @@
 /**
  * Build one fail-closed CI impact plan from a Git diff.
  *
- * PRs pay for evidence that can see their changed paths. Pushes to main, shared
- * test configuration, and changes to this planner itself run the exhaustive
+ * PRs and verified main push ranges pay for affected evidence. Scheduled runs,
+ * shared test configuration, and changes to this planner run the exhaustive
  * lanes. The focused mapping is not duplicated here: `checks:changed` remains
  * the repository's path -> check authority and this module assigns those checks
  * to CI lanes.
@@ -44,6 +44,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:dev-checks',
     'pnpm test:checks:changed',
     'pnpm test:ci:impact',
+    'node --test scripts/prepush.test.mjs',
     'pnpm test:source:language',
     'pnpm test:docs:language',
     'pnpm test:docs:checks',
@@ -408,7 +409,7 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
     paths,
     unknownPaths,
     reason: forceFull
-      ? fullReason ?? 'no safe PR comparison or default-branch push — exhaustive lanes'
+      ? fullReason ?? 'no safe comparison or exhaustive event — all lanes'
       : plannerChanged
         ? 'CI impact authority changed — exhaustive self-verification'
         : rootAllChanged
@@ -436,7 +437,7 @@ export function decide({ base, head, files = [], deletedFiles = [], eventName = 
   // the whole, so it is exhaustive by name here rather than by accident of the
   // `eventName !== 'pull_request'` fallthrough below.
   const mergeGroup = eventName === 'merge_group';
-  const forceFull = mergeGroup || eventName !== 'pull_request' || !base || (head && base === head);
+  const forceFull = mergeGroup || !['pull_request', 'push'].includes(eventName) || !base || (head && base === head);
   const fullReason = mergeGroup
     ? 'merge group: this combination has never been built — exhaustive lanes'
     : null;
@@ -601,7 +602,19 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
     process.argv.find((arg) => arg.startsWith('--event='))?.slice('--event='.length) ||
     process.env.GITHUB_EVENT_NAME ||
     'pull_request';
-  const base = resolveBase(baseArg?.trim());
+  // A push must use its exact previous tip, never origin/main (already HEAD).
+  // Missing/deleted history fails closed; do not fall back to another range.
+  let base;
+  if (eventName === 'push') {
+    try {
+      const before = process.env.PUSH_BEFORE;
+      if (!/^[a-f0-9]{40}$/.test(before ?? '') || /^0+$/.test(before)) throw new Error('missing push base');
+      base = git(['rev-parse', '--verify', `${before}^{commit}`]);
+      git(['merge-base', '--is-ancestor', base, 'HEAD']);
+    } catch { base = null; }
+  } else {
+    base = resolveBase(baseArg?.trim());
+  }
   let head = null;
   try {
     head = git(['rev-parse', 'HEAD']);

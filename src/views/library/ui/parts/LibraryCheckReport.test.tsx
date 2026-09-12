@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../../messages/en.json";
 import type { LintFinding, LintNodeCandidate } from "@/features/library";
 import { aggregateWikiFindings } from "@/shared/lib/wiki-report.mjs";
-import { LibraryCheckReport, findingKey, reportOutline } from "./LibraryCheckReport";
+import { LibraryCheckReport, advisoryReportSlugs, findingKey, reportOutline } from "./LibraryCheckReport";
 
 /**
  * The planted fixture, finding for finding: the nine `(code, page)` pairs
@@ -90,6 +90,12 @@ function Harness(props: Props) {
 
 function mount(node: React.ReactNode) {
   return render(<NextIntlClientProvider locale="en" messages={enMessages}>{node}</NextIntlClientProvider>);
+}
+
+function group(code: string) {
+  return screen
+    .getAllByTestId("library-structural-group")
+    .find((node) => node.getAttribute("data-code") === code)!;
 }
 
 describe("the check's answer is a page in the pane", () => {
@@ -235,39 +241,90 @@ describe("the computed half is the app's own, and it is the half that leads", ()
 
   it("collapses two findings that share a page and a sentence into one row with both lines", () => {
     mount(<Harness structural={STRUCTURAL} />);
-    const uncited = screen
-      .getAllByTestId("library-structural-group")
-      .find((node) => node.getAttribute("data-code") === "uncited-fact")!;
+    const uncited = group("uncited-fact");
     expect(uncited.querySelectorAll('[data-testid="library-structural-finding"]')).toHaveLength(1);
     // The count on the heading still says two: one row of ink, two bullets to fix.
-    expect(uncited.textContent).toContain(":22");
-    expect(uncited.textContent).toContain(":23");
+    expect(uncited.querySelector("h4")!.textContent).toContain("2");
     expect(uncited.querySelectorAll('[data-testid="library-finding-page"]')).toHaveLength(1);
   });
 
-  it("names the code the terminal prints, so one folder reads one vocabulary on both screens", () => {
+  /**
+   * **A rule is a fact about the folder, and a fact is said once per screen.**
+   *
+   * Measured on the 300-source fixture (60 pages, 222 findings): every `uncited-fact` row
+   * restated one sentence and one repair, as did all 60 `orphan-page` rows — ~670 lines of
+   * prose for four rules. Sharing is measured, not assumed: `shared-source-unlinked` names
+   * a different page on every row, so there the sentence stays on the row and only the
+   * repair is hoisted.
+   */
+  it("prints a kind's sentence once per section and leaves the rows only what differs", () => {
     mount(<Harness structural={STRUCTURAL} />);
-    expect(screen.getByTestId("library-check-report").textContent).toContain("uncited-fact");
-    expect(screen.getByTestId("library-check-report").textContent).toContain("citation-target-missing");
+    fireEvent.click(screen.getByTestId("library-advisory-fold"));
+
+    const orphan = group("orphan-page");
+    expect(orphan.querySelector('[data-testid="library-structural-rule"]')!.textContent).toContain(
+      "No other page points at this one yet",
+    );
+    const orphanRows = [...orphan.querySelectorAll('[data-testid="library-structural-finding"]')];
+    expect(orphanRows).toHaveLength(2);
+    for (const row of orphanRows) {
+      expect(row.textContent).not.toContain("No other page points at this one yet");
+      expect(row.textContent).not.toContain("Link it from the page");
+    }
+
+    // The sentence names a different page on each row, so it cannot be hoisted — but the
+    // repair is one repair, and it is printed once.
+    const shared = group("shared-source-unlinked");
+    expect(shared.querySelector('[data-testid="library-structural-rule"]')).toBeNull();
+    expect(shared.querySelector('[data-testid="library-structural-rule-action"]')!.textContent).toContain(
+      "Link one of them to the other",
+    );
+    const sharedRows = [...shared.querySelectorAll('[data-testid="library-structural-finding"]')];
+    expect(sharedRows).toHaveLength(4);
+    expect(sharedRows[0]!.textContent).toContain("is written from the same original");
+    for (const row of sharedRows) {
+      expect(row.textContent).not.toContain("Link one of them to the other");
+    }
+  });
+
+  it("heads each kind with a sentence and keeps the code the terminal prints one press away", () => {
+    mount(<Harness structural={STRUCTURAL} />);
+    const uncited = group("uncited-fact");
+    // The heading a person reads is a sentence, not the validator's token.
+    expect(uncited.querySelector("h4")!.textContent).toContain("No original backs this up");
+    expect(uncited.querySelector("h4")!.textContent).not.toContain("uncited-fact");
+    // Nothing is taken away: the code, its line anchor and the English message the CLI
+    // prints are under the same disclosure the wiki page beside it uses.
+    expect(screen.getByTestId("library-structural-technical-uncited-fact")).not.toBeNull();
+    const codes = [...uncited.querySelectorAll('[data-testid="library-structural-code"]')].map(
+      (node) => node.textContent ?? "",
+    );
+    expect(codes).toHaveLength(2);
+    expect(codes[0]).toContain("wiki/merchant-onboarding.md");
+    expect(codes[0]).toContain("uncited-fact:22");
+    expect(codes[1]).toContain("uncited-fact:23");
   });
 
   it("retells each finding in the reader's language and opens the page it names", () => {
     const onOpenPage = vi.fn();
     mount(<Harness structural={STRUCTURAL} onOpenPage={onOpenPage} />);
-    const rows = screen.getAllByTestId("library-structural-finding");
-    expect(rows[0]!.textContent).toContain("is cited but that file is not in this folder");
-    // The action is its own sentence beside the finding, from the same describer.
-    expect(rows[0]!.textContent).toContain("put the file in this folder, or fix the citation");
-    expect(rows[0]!.textContent).toContain("refund-timing");
+    const citation = group("citation-target-missing");
+    expect(citation.textContent).toContain("is cited but that file is not in this folder");
+    // The action is its own sentence, from the same describer.
+    expect(citation.textContent).toContain("put the file in this folder, or fix the citation");
+    expect(screen.getAllByTestId("library-structural-finding")[0]!.textContent).toContain("refund-timing");
     fireEvent.click(screen.getAllByTestId("library-finding-page")[0]!);
     expect(onOpenPage).toHaveBeenCalledWith("wiki/refund-timing");
   });
 
-  it("carries the line number a person needs to find the bullet", () => {
+  it("says the place in the reader's words, not as the anchor the validator prints", () => {
     mount(<Harness structural={STRUCTURAL} />);
-    const uncited = screen.getAllByTestId("library-structural-group").find((node) => node.getAttribute("data-code") === "uncited-fact")!;
-    expect(uncited.textContent).toContain(":22");
-    expect(uncited.textContent).toContain(":23");
+    const uncited = group("uncited-fact");
+    const door = uncited.querySelector('[data-testid="library-structural-finding"]')!;
+    expect(door.textContent).toContain("line 22");
+    expect(door.textContent).toContain("line 23");
+    // `:22` is the machine's anchor and it belongs under the technical disclosure.
+    expect(door.textContent).not.toContain(":22");
   });
 
   it("never says 'not checked yet' above a live computed list", () => {
@@ -324,5 +381,48 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     ]);
     expect(parsed).toContainEqual([2, "report-code-uncited-fact"]);
     expect(parsed).toContainEqual([2, "report-names"]);
+  });
+
+  it("gives the rail the same sentence the heading carries, not the validator's token", () => {
+    const TestOutline = () => {
+      const t = useTranslations("library");
+      return <pre data-testid="outline">{JSON.stringify(reportOutline(STRUCTURAL, [], 0, t).map((h) => h.text))}</pre>;
+    };
+    mount(<TestOutline />);
+    const parsed = JSON.parse(screen.getByTestId("outline").textContent!) as string[];
+    expect(parsed).toContain("A cited original is not here 1");
+    expect(parsed).toContain("No other page points here 2");
+    expect(parsed.some((text) => text.startsWith("orphan-page"))).toBe(false);
+  });
+
+  /**
+   * ⚠️ Two of six rail entries were dead on the installed app (2026-09-13): the sections
+   * they name sit inside a fold that starts closed, so the press marked itself active and
+   * the page did not move. The rail lives above this component, so the fold's state has to
+   * be reachable from there.
+   */
+  it("names the advisory anchors so the rail can open the fold before it scrolls", () => {
+    expect([...advisoryReportSlugs(STRUCTURAL)].sort()).toEqual([
+      "report-code-orphan-page",
+      "report-code-shared-source-unlinked",
+    ]);
+    expect(advisoryReportSlugs(null).size).toBe(0);
+  });
+
+  it("lets the caller own the fold, and shows the advisory sections when it says open", () => {
+    const onAdvisoryOpenChange = vi.fn();
+    const { rerender } = mount(
+      <Harness structural={STRUCTURAL} advisoryOpen={false} onAdvisoryOpenChange={onAdvisoryOpenChange} />,
+    );
+    expect(screen.queryByTestId("library-structural-technical-orphan-page")).toBeNull();
+    fireEvent.click(screen.getByTestId("library-advisory-fold"));
+    // The chip reports; it does not decide. The caller does, because the rail shares it.
+    expect(onAdvisoryOpenChange).toHaveBeenCalledWith(true);
+    rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <Harness structural={STRUCTURAL} advisoryOpen onAdvisoryOpenChange={onAdvisoryOpenChange} />
+      </NextIntlClientProvider>,
+    );
+    expect(document.getElementById("report-code-orphan-page")!.tagName).toBe("H4");
   });
 });
