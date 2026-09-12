@@ -55,7 +55,8 @@ jobs:
   freshness:
     name: Vault freshness check
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # budget: 30s
+    timeout-minutes: 2
     if: ${{ github.event.pull_request != null && github.event.pull_request.draft == false }}
     steps:
       - name: Checkout

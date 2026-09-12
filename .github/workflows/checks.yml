@@ -38,7 +38,8 @@ jobs:
     name: Check impact plan
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # budget: 25s
+    timeout-minutes: 2
     outputs:
       plan: ${{ steps.impact.outputs.plan }}
       gates: ${{ steps.impact.outputs.gates }}
@@ -67,7 +68,8 @@ jobs:
     needs: plan
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # budget: 240s
+    timeout-minutes: 6
     env:
       ACTIVE: ${{ needs.plan.outputs.gates }}
       NEED_MCP: ${{ needs.plan.outputs.gates_needs_mcp }}
@@ -116,12 +118,24 @@ jobs:
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
         run: echo "No affected type, lint, or documentation gate"
 
+  # The slowest job in PR CI and the only unsharded one: 437 s average and 705 s at
+  # the tail over the last 20 runs (measured 2026-09-12), against an 8-minute budget
+  # for the whole pull request. None of that was wasted work — the impact plan
+  # already selects it — it was one runner doing all of it. Both Vitest invocations
+  # take `--shard`, and `run-ci-lane.mjs` keeps whole-graph commands (`pnpm knip`)
+  # on shard 1, where a third of the files would otherwise call two thirds of the
+  # exports unused.
   unit:
-    name: Unit · Contract
+    name: Unit · Contract ${{ matrix.shard }}/3
     needs: plan
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # budget: 180s
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     env:
       ACTIVE: ${{ needs.plan.outputs.unit != 'skip' }}
       NEED_MCP: ${{ needs.plan.outputs.unit_needs_mcp }}
@@ -160,11 +174,11 @@ jobs:
         if: env.ACTIVE == 'true' && env.NEED_MCP == 'true'
         run: pnpm --dir mcp install --frozen-lockfile
 
-      - name: Run affected unit and contract evidence
+      - name: Run affected unit and contract evidence (shard ${{ matrix.shard }}/3)
         if: env.ACTIVE == 'true'
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: node scripts/run-ci-lane.mjs --lane=unit --base="origin/$BASE_REF"
+        run: node scripts/run-ci-lane.mjs --lane=unit --base="origin/$BASE_REF" --shard=${{ matrix.shard }}/3
 
       - name: Skip unaffected unit setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
@@ -175,7 +189,8 @@ jobs:
     needs: plan
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # budget: 390s
+    timeout-minutes: 9
     env:
       ACTIVE: ${{ needs.plan.outputs.mcp != 'skip' }}
       CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}

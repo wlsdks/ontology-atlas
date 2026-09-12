@@ -28,7 +28,8 @@ jobs:
   admit-release:
     name: Admit protected release source
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # budget: 40s
+    timeout-minutes: 2
     outputs:
       release_sha: ${{ steps.admit.outputs.release_sha }}
       release_tag: ${{ steps.admit.outputs.release_tag }}
@@ -137,6 +138,7 @@ jobs:
     # The Intel runner needs 25-30 minutes for the cold release build plus
     # notarization (v1.0.5 x64: 28m50s; v1.0.6 first attempt cancelled at 30m
     # with rustc still running). The arm64 runner finishes in about 15 minutes.
+    # budget: 2200s
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -336,7 +338,8 @@ jobs:
     needs: admit-release
     environment: release-signing
     runs-on: windows-2022
-    timeout-minutes: 45
+    # budget: 1100s
+    timeout-minutes: 27
     permissions:
       contents: read
       checks: write
@@ -516,7 +519,8 @@ jobs:
     if: ${{ always() && needs.admit-release.result == 'success' && needs.build-macos.result == 'success' && needs.build-windows.result == 'success' }}
     runs-on: ubuntu-latest
     needs: [admit-release, build-macos, build-windows]
-    timeout-minutes: 10
+    # budget: 120s
+    timeout-minutes: 3
     permissions:
       contents: write
     env:
@@ -642,7 +646,8 @@ jobs:
     name: Publish Desktop Release
     runs-on: ubuntu-latest
     needs: [admit-release, stage-macos]
-    timeout-minutes: 10
+    # budget: 120s
+    timeout-minutes: 3
     environment: release
     permissions:
       # Publish the verified GitHub Release. Generated download facts leave this

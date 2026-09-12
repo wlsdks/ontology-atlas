@@ -8,16 +8,57 @@ test('affected unit lane uses the module graph and keeps filesystem contracts se
   const plan = buildImpactPlan({
     files: ['src/widgets/docs-vault/ui/DocsVaultEditor.tsx'],
   });
-  const commands = commandsForLane({ lane: 'unit', plan, base: 'abc123' });
+  const commands = commandsForLane({ lane: 'unit', plan, base: 'abc123', shard: '1/3' });
 
   assert.ok(commands.includes('pnpm knip'));
   assert.ok(
     commands.includes(
-      "pnpm exec vitest run --changed='abc123' --exclude='tests/contract/**' --passWithNoTests",
+      "pnpm exec vitest run --changed='abc123' --exclude='tests/contract/**' --passWithNoTests --shard=1/3",
     ),
   );
-  assert.ok(commands.includes('pnpm exec vitest run tests/contract'));
+  assert.ok(commands.includes('pnpm exec vitest run tests/contract --shard=1/3'));
   assert.equal(commands.filter((command) => command.includes('tests/contract')).length, 2);
+});
+
+/**
+ * The unit lane was 437 s average / 705 s at the tail and the only unsharded job in
+ * PR CI (measured 2026-09-12). Sharding it is only safe if what gets split is a file
+ * sweep: `pnpm knip` walks the whole dependency graph, and a third of the files would
+ * report two thirds of the exports as unused.
+ */
+test('sharding the unit lane splits the file sweeps and keeps whole-graph checks on shard 1', () => {
+  const plan = buildImpactPlan({ files: ['src/widgets/docs-vault/ui/DocsVaultEditor.tsx'] });
+  const of = (shard) => commandsForLane({ lane: 'unit', plan, base: 'abc123', shard });
+
+  for (const shard of ['2/3', '3/3']) {
+    const commands = of(shard);
+    assert.ok(!commands.includes('pnpm knip'), `knip must not run on shard ${shard}`);
+    assert.ok(commands.every((command) => command.includes(`--shard=${shard}`)));
+    assert.ok(commands.includes(`pnpm exec vitest run tests/contract --shard=${shard}`));
+  }
+
+  // Every Vitest file the unsharded lane would have run is covered exactly once
+  // across the three shards, and no shard is empty.
+  for (const shard of ['1/3', '2/3', '3/3']) {
+    assert.ok(of(shard).length > 0, `shard ${shard} has nothing to do`);
+  }
+
+  const full = buildImpactPlan({ files: [], forceFull: true });
+  assert.deepEqual(commandsForLane({ lane: 'unit', plan: full, shard: '2/3' }), [
+    'pnpm exec vitest run --shard=2/3',
+  ]);
+  assert.deepEqual(commandsForLane({ lane: 'unit', plan: full, shard: '1/3' }), [
+    'pnpm knip',
+    'pnpm exec vitest run --shard=1/3',
+  ]);
+});
+
+test('a focused contract list is not split three ways', () => {
+  // Three startups to run a handful of files, and two shards with nothing to do.
+  const plan = buildImpactPlan({ files: ['docs/DESIGN-SYSTEM.md'] });
+  if (plan.lanes.unit.contract !== 'focused') return;
+  const second = commandsForLane({ lane: 'unit', plan, base: 'abc123', shard: '2/3' });
+  assert.ok(second.every((command) => !command.includes('tests/contract/')));
 });
 
 test('targeted Playwright runs exact specs once without an empty shard', () => {
@@ -64,17 +105,26 @@ test('comparison refs remain one shell argument and malformed shards fail closed
     lane: 'unit',
     plan,
     base: "origin/main'; echo injected; '",
+    shard: '1/3',
   });
   assert.ok(
     commands.includes(
-      "pnpm exec vitest run --changed='origin/main'\"'\"'; echo injected; '\"'\"'' --exclude='tests/contract/**' --passWithNoTests",
+      "pnpm exec vitest run --changed='origin/main'\"'\"'; echo injected; '\"'\"'' --exclude='tests/contract/**' --passWithNoTests --shard=1/3",
     ),
   );
 
   const smoke = buildImpactPlan({ files: ['src/widgets/search-hint/ui/SearchHint.tsx'] });
+  for (const lane of ['e2e', 'unit']) {
+    assert.throws(
+      () => commandsForLane({ lane, plan: smoke, base: 'abc123', shard: '1/3; echo injected' }),
+      /invalid shard/,
+      `${lane} accepted a malformed shard`,
+    );
+  }
+  // A shard index past its total would silently run nothing.
   assert.throws(
-    () => commandsForLane({ lane: 'e2e', plan: smoke, shard: '1/3; echo injected' }),
-    /invalid Playwright shard/,
+    () => commandsForLane({ lane: 'unit', plan: smoke, base: 'abc123', shard: '4/3' }),
+    /out of range/,
   );
 });
 

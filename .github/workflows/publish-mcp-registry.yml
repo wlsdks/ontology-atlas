@@ -47,6 +47,8 @@ permissions:
 
 jobs:
   publish:
+    # budget: 60s
+    timeout-minutes: 2
     name: Publish the MCP server entry
     runs-on: ubuntu-latest
     steps:

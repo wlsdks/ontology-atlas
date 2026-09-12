@@ -1,0 +1,183 @@
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+/**
+ * **Every CI job declares what it costs, and its timeout cannot be a blank cheque.**
+ *
+ * ## Why this exists
+ *
+ * Measured 2026-09-12 over the last 20 runs. `Unit · Contract` averaged 437 s and hit
+ * 705 s, inside a `timeout-minutes: 20` — so it could have doubled again and the only
+ * signal would have been the owner's report that CI "takes far too long every single
+ * time". Three other jobs carried no `timeout-minutes` at all (`deploy-pages`'s build
+ * and deploy, and the registry publish), which means their ceiling was GitHub's
+ * six-hour default.
+ *
+ * A timeout set far above the real cost is not a safety net, it is a hiding place. So
+ * each job states its measured p95 as a `# budget: <n>s` comment beside its
+ * `timeout-minutes`, and the timeout must sit between the budget and 1.5x it. A job
+ * that grows past its budget fails on the clock **in CI, once**, and the person who
+ * made it slower is the one who has to re-measure and say so — rather than the cost
+ * arriving quietly in everyone else's afternoon.
+ *
+ * The 120-second floor is GitHub's granularity, not slack: `timeout-minutes` is whole
+ * minutes, so a 30-second job cannot express a 45-second ceiling.
+ *
+ * ## What this does not do
+ *
+ * It never compares a *run* against the budget. The budget is a declared property of
+ * the workflow file, checked by reading the file — nothing here measures a machine, so
+ * this gate cannot go red because a runner was slow (`.claude/rules/testing.md`, "The
+ * timing rule"). Only a job's own `timeout-minutes` can do that, and that is the
+ * mechanism being bounded.
+ */
+
+const WORKFLOWS = path.join(process.cwd(), ".github/workflows");
+
+/** Jobs that delegate to a reusable workflow; the callee owns the timeout. */
+const DELEGATING_JOBS = new Set(["release-macos.yml:list-mcp-registry"]);
+
+/**
+ * The one exemption from the 1.5x ceiling, and it is another contract's ceiling
+ * rather than an absence of one.
+ *
+ * A job that prepares Playwright may have to download chromium, and
+ * `ci-bounded-network.contract.test.ts` requires the job timeout to leave **half**
+ * the budget for the tests after the bounded install's worst case — 3 attempts x
+ * 180 s plus 2 x 90 s, i.e. 12 minutes. Tightening these four to 1.5x their
+ * cache-hit p95 turned that gate red, which is correct: a 3-minute ceiling on a job
+ * that may legitimately spend 12 minutes downloading a browser would fail on the
+ * cold path every time the cache key rolls.
+ *
+ * So the two gates divide the work. That one owns the ceiling of a job with a
+ * network prep envelope; this one still requires the measured budget beside it, so
+ * the steady-state cost is written down and a regression is visible in review.
+ */
+const PREPARES_PLAYWRIGHT = /\.\/\.github\/actions\/setup-playwright/;
+
+const GRANULARITY_FLOOR_SECONDS = 120;
+
+type Job = {
+  file: string;
+  key: string;
+  budget: number | null;
+  timeout: number | null;
+  delegates: boolean;
+  preparesPlaywright: boolean;
+};
+
+/**
+ * A two-space-indented key under `jobs:` starts a job; the block runs to the next one.
+ * Parsed as text on purpose — this repository has no YAML parser in its dependency
+ * tree, and adding one to read seven files would be the larger change.
+ */
+function jobs(): Job[] {
+  const found: Job[] = [];
+  for (const file of readdirSync(WORKFLOWS).filter((name) => name.endsWith(".yml"))) {
+    const lines = readFileSync(path.join(WORKFLOWS, file), "utf8").split("\n");
+    const start = lines.findIndex((line) => line === "jobs:");
+    expect(start, `${file} has no jobs: block`).toBeGreaterThan(-1);
+    let current: Job | null = null;
+    for (const line of lines.slice(start + 1)) {
+      const key = /^ {2}([A-Za-z][\w-]*):\s*$/.exec(line)?.[1];
+      if (key) {
+        current = {
+          file,
+          key,
+          budget: null,
+          timeout: null,
+          delegates: false,
+          preparesPlaywright: false,
+        };
+        found.push(current);
+        continue;
+      }
+      if (!current) continue;
+      // A trailing note after the number is allowed and often necessary (which p95, on
+      // which path). The number is what is parsed.
+      const budget = /^\s*# budget: (\d+)s\b/.exec(line)?.[1];
+      if (budget) current.budget = Number(budget);
+      const timeout = /^\s*timeout-minutes: (\d+)\s*$/.exec(line)?.[1];
+      if (timeout) current.timeout = Number(timeout);
+      if (/^\s{4}uses:\s*\.\/\.github\/workflows\//.test(line)) current.delegates = true;
+      if (PREPARES_PLAYWRIGHT.test(line)) current.preparesPlaywright = true;
+    }
+  }
+  return found;
+}
+
+describe("CI job budgets — a lane cannot grow in silence", () => {
+  const all = jobs();
+  const owned = all.filter((job) => !job.delegates && !DELEGATING_JOBS.has(`${job.file}:${job.key}`));
+
+  it("finds every workflow job — a parser that finds none would pass everything", () => {
+    expect(all.length, "no jobs parsed out of .github/workflows").toBeGreaterThan(15);
+    expect(new Set(all.map((job) => job.file)).size, "not every workflow was read").toBeGreaterThan(5);
+    expect(owned.length).toBeGreaterThan(14);
+  });
+
+  it("gives every job a timeout — GitHub's default is six hours", () => {
+    const missing = owned.filter((job) => job.timeout === null).map((job) => `${job.file}:${job.key}`);
+    expect(missing, `these jobs have no timeout-minutes:\n${missing.join("\n")}`).toEqual([]);
+  });
+
+  it("gives every job a measured budget beside that timeout", () => {
+    const missing = owned.filter((job) => job.budget === null).map((job) => `${job.file}:${job.key}`);
+    expect(
+      missing,
+      `these jobs declare no budget:\n${missing.join("\n")}\n` +
+        "Add `# budget: <measured p95 in seconds>s` above timeout-minutes. " +
+        "Measure it: gh run view <id> --json jobs.",
+    ).toEqual([]);
+  });
+
+  it("exempts exactly the jobs whose ceiling another contract owns", () => {
+    // If this set silently emptied, the exemption below would stop exempting and
+    // this file would start contradicting ci-bounded-network.contract.test.ts.
+    const exempt = owned.filter((job) => job.preparesPlaywright).map((job) => `${job.file}:${job.key}`);
+    expect(exempt.sort()).toEqual([
+      "e2e.yml:static-export",
+      "e2e.yml:suite",
+      "e2e.yml:web-smoke",
+    ]);
+  });
+
+  it("keeps every timeout between its budget and 1.5x it", () => {
+    const offenders: string[] = [];
+    for (const job of owned) {
+      if (job.budget === null || job.timeout === null) continue;
+      if (job.preparesPlaywright) continue;
+      const seconds = job.timeout * 60;
+      const ceiling = Math.max(Math.round(job.budget * 1.5), GRANULARITY_FLOOR_SECONDS);
+      if (seconds > ceiling) {
+        offenders.push(
+          `${job.file}:${job.key} — timeout ${job.timeout}m (${seconds}s) exceeds 1.5x its ${job.budget}s budget (${ceiling}s)`,
+        );
+      }
+      if (seconds < job.budget) {
+        offenders.push(
+          `${job.file}:${job.key} — timeout ${job.timeout}m (${seconds}s) is below its own ${job.budget}s budget; it would fail every run`,
+        );
+      }
+    }
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  it("cancels superseded runs per ref so a new push does not queue behind the old one", () => {
+    for (const file of readdirSync(WORKFLOWS).filter((name) => name.endsWith(".yml"))) {
+      const text = readFileSync(path.join(WORKFLOWS, file), "utf8");
+      if (!/^on:/m.test(text)) continue;
+      // A release is the exception and says so in its own file: cancelling a
+      // half-published release is worse than paying for a duplicate run.
+      if (file === "release-macos.yml") {
+        expect(text, "the release must not cancel in progress").toContain("cancel-in-progress: false");
+        continue;
+      }
+      if (!/pull_request|push:/.test(text)) continue;
+      expect(text, `${file} has no concurrency group`).toMatch(/^concurrency:/m);
+      expect(text, `${file} does not cancel a superseded run`).toContain("cancel-in-progress: true");
+    }
+  });
+});
