@@ -4,10 +4,15 @@ import path from 'path';
 
 import packageJson from './package.json' with { type: 'json' };
 
+// Only these contract files render components; source/parser guards need no DOM.
+const domContracts = [
+  'tests/contract/brand-asset-parity.contract.test.ts',
+  'tests/contract/node-kind-shape-parity.contract.test.ts',
+];
+
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: 'jsdom',
     globals: true,
     /*
      * **A hang detector, not a budget** (2026-09-12).
@@ -36,15 +41,34 @@ export default defineConfig({
      * deliberate `unknown` fallback and fail on a repair that is working correctly.
      */
     env: { NEXT_PUBLIC_RELEASE_VERSION: packageJson.version },
-    setupFiles: ['./vitest.setup.ts'],
-    include: [
-      'app/**/*.test.{ts,tsx}',
-      'app/**/*.spec.{ts,tsx}',
-      'src/**/*.test.{ts,tsx}',
-      'src/**/*.spec.{ts,tsx}',
-      'tests/contract/**/*.test.ts',
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'contract-node',
+          environment: 'node',
+          setupFiles: [],
+          include: ['tests/contract/**/*.test.ts'],
+          exclude: domContracts,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'jsdom',
+          environment: 'jsdom',
+          setupFiles: ['./vitest.setup.ts'],
+          include: [
+            'app/**/*.test.{ts,tsx}',
+            'app/**/*.spec.{ts,tsx}',
+            'src/**/*.test.{ts,tsx}',
+            'src/**/*.spec.{ts,tsx}',
+            ...domContracts,
+          ],
+          exclude: ['tests/e2e/**'],
+        },
+      },
     ],
-    exclude: ['tests/e2e/**'],
     // Externalizing next-intl to Node ESM causes the `next/navigation` subpath
     // to fail resolving relative to the pnpm virtual store realpath, breaking
     // test file loading itself (manifested as 15 files failing simultaneously during 2026-07 refactoring). Vite
