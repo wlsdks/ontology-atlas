@@ -2220,9 +2220,18 @@ visible rather than causing them, each belongs to its own view, and widening a t
 four views is how one reviewable diff becomes none. The decision record carries all eleven in its
 `Dissent`, and its `Falsifier` is one of them being pressed wrong.
 
+Two more of the same family, found while repairing the bottom tab bar's reserve and left with it:
+the docs frontmatter disclosure's box measures **178px around 375–449px of content** with
+`overflow: visible`, so its lines paint past any reserve however large — its box is shorter than
+what is inside it at both roots, and the larger type is only what carries the escape as far as the
+bar; and the reading scroller's own box ends well above the bar, so *which* box owes the bar room
+is a question about that view rather than about the token. The reserve itself is fixed and gated;
+these two are recorded, not gated, because a gate must be fixable by the thing it is about.
+
 The rule they teach, which is the part worth keeping: **a chrome box that stays absolute while its
-padding, icon and label are root-relative must declare either a clip or a collapse rule.** Two
-places already do and came through clean — the nav rail's labels wrap inside their 63px item, and
+padding, icon and label are root-relative must declare either a clip or a collapse rule** — and a
+box with `overflow: visible` that is already shorter than its own content is not reserving, it is
+escaping. Two places came through clean: the nav rail's labels wrap inside their 63px item, and
 every `truncate` / `line-clamp` box reaches its designed state sooner instead of a new one.
 
 **Where 200% truncates instead.** Measured on the four routes at every band: no text is cut off

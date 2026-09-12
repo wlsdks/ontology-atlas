@@ -10,7 +10,6 @@ import {
   DOC_COLUMN_PX,
   PROSE_MEASURE_PX,
   docColumnPxAtRoot,
-  proseMeasurePxAtRoot,
 } from "../../src/shared/ui/reading-measure";
 
 /**
@@ -228,10 +227,18 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     };
 
     const before = await readColumn();
+    // The column is derived from `--measure-zero-advance`, a measured **constant**, so it is
+    // the same number on every machine and can be pinned.
     expect(before.get("--measure-doc-column")).toBeCloseTo(DOC_COLUMN_PX, 0);
-    // `--measure-prose` is `66ch`, which is relative to the *element's* font size; the probe
-    // box inherits the body's, so this is the measure as a line actually gets it.
-    expect(before.get("--measure-prose")).toBeCloseTo(PROSE_MEASURE_PX, 0);
+    // ⚠️ `--measure-prose` is `66ch`, and `1ch` is the advance of `0` **in the font actually
+    // rendering**. Pinning it to `PROSE_MEASURE_PX` is a font assertion wearing a layout
+    // assertion's clothes: it passed locally on Pretendard and measured 660px on a CI runner
+    // whose fallback puts `0` at 10px (0.625em against Pretendard's 0.5957em). Whether the
+    // shipped face is loaded is `prose-measure-calibration.spec.ts`'s question; this file's
+    // question is whether the cap **follows the root**, which is a ratio and font-independent.
+    // The pinned value is still used, as a sanity bound two thirds wide either way.
+    expect(before.get("--measure-prose")).toBeGreaterThan(PROSE_MEASURE_PX * 0.66);
+    expect(before.get("--measure-prose")).toBeLessThan(PROSE_MEASURE_PX * 1.5);
 
     await page.evaluate((root) => {
       document.documentElement.style.fontSize = `${root}px`;
@@ -241,10 +248,15 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     // The column is the measure spent at the root plus two absolute gutters, so it grows by
     // the measure and not by a factor of two: 709.1 → 1338.1.
     expect(after.get("--measure-doc-column")).toBeCloseTo(docColumnPxAtRoot(ZOOMED_ROOT_PX), 0);
-    expect(after.get("--measure-prose")).toBeCloseTo(proseMeasurePxAtRoot(ZOOMED_ROOT_PX), 0);
+    // The line cap doubles because both sides of `ch` scale with the font size — true in any
+    // face, which is exactly why this is the ratio and not the pixel.
+    expect(after.get("--measure-prose")).toBeCloseTo((before.get("--measure-prose") ?? 0) * 2, 1);
+    // The column grows by the measure and not by a factor of two, because the two gutters are
+    // absolute: 709.1 + 629.06 = 1338.1. `PROSE_MEASURE_PX` is font-independent here — it is
+    // derived from the measured constant, not from a rendered `ch`.
     expect(
       (after.get("--measure-doc-column") ?? 0) - (before.get("--measure-doc-column") ?? 0),
-    ).toBeCloseTo(proseMeasurePxAtRoot(DEFAULT_ROOT_PX), 0);
+    ).toBeCloseTo(PROSE_MEASURE_PX, 0);
 
     const moved: string[] = [];
     for (const name of CHROME_BOXES) {
