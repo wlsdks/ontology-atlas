@@ -163,9 +163,9 @@ function ToolsCell({ row, t }: { row: GuideRow; t: TranslateFn }) {
                 target="_blank"
                 rel="noreferrer"
                 title={citation.source}
-                /* Every citation link was named 「출처」, fourteen times. The name says whose
-                   document it is and where it lives — which is also the only way to see the
-                   destination in a WKWebView, since it has no status bar. */
+                /* Every citation link carried the same one-word name, fourteen times. It now
+                   names whose document it is and where that document lives — which is also the
+                   only way to see a destination in a WKWebView, since it has no status bar. */
                 aria-label={t('toolsSourceFor', {
                   tool: AGENT_TOOL_LABELS[tool] ?? tool,
                   host: new URL(citation.source).host,

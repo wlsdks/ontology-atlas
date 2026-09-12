@@ -171,8 +171,8 @@ test.describe("하네스 탭", () => {
   test("다른 보기로 가는 길은 어떤 화면에서도 사라지지 않는다", async ({ page }) => {
     /*
      * The tab set must never be a property of the panel it switches. With no architecture profile
-     * the blueprint returns its empty state early; a tab set rendered inside it vanished, and 지침
-     * and 센서 had no path from the screen a person lands on (design-interaction, 2026-09-13).
+     * the blueprint returns its empty state early; a tab set rendered inside it vanished, and the
+     * other two views had no path from the screen a person lands on (design-interaction, 2026-09-13).
      */
     await page.setViewportSize({ width: 1512, height: 949 });
     await installProfilelessHarnessRuntime(page);

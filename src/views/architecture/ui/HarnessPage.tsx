@@ -35,8 +35,8 @@ import { HarnessSensorsPlaceholder } from './HarnessSensorsPlaceholder';
  *    defect the 2026-09-03 record and `architecture-workbench.spec.ts` exist to prevent.
  * 2. Pushing the identity *into* the workbench recovered the canvas but put the tab set inside the
  *    panel it switches: the blueprint's own `!selected` empty state returns early, so a repository
- *    with no architecture profile lost every path to 지침 and 센서, and a second `TabBar` instance
- *    meant a keyboard activation unmounted the focused tab and dropped focus to `<body>`
+ *    with no architecture profile lost every path to the other two views, and a second `TabBar`
+ *    instance meant a keyboard activation unmounted the focused tab and dropped focus to `<body>`
  *    (design-interaction, 2026-09-13).
  * 3. So the tab set is **one instance, in the shell, above every panel**, and it shares its row
  *    with the `h1` — which is what the design-lead and design-responsive seats independently
@@ -44,9 +44,9 @@ import { HarnessSensorsPlaceholder } from './HarnessSensorsPlaceholder';
  *    beside it). The row costs the canvas far less than a stacked header, and the blueprint gives
  *    back the eyebrow and description it no longer needs to repeat.
  *
- * Everything that is 지침's own data — the counted sentence and its parts — lives at the top of the
- * scrolling column, not in the fixed row: it is the view's content, and a `shrink-0` band holding
- * it is height the canvas cannot spare (design-responsive).
+ * Everything that is the guides view's own data — the counted sentence and its parts — opens that
+ * view's scrolling column rather than sitting in the fixed row: it is the view's content, and a
+ * `shrink-0` band holding it is height the canvas cannot spare (design-responsive).
  *
  * The route is still `/architecture`. Only the label and what stands beside the blueprint changed,
  * so every existing link, bookmark and `?focus=` deep link lands exactly where it always did; the
