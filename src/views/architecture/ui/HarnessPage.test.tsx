@@ -21,8 +21,24 @@ vi.mock('../model/use-harness-report', () => ({
 }));
 /* The blueprint is a whole workbench with its own bridge reads; this file is about the shell. */
 vi.mock('./ArchitecturePage', () => ({
-  ArchitecturePage: ({ embedded }: { embedded?: boolean }) => (
-    <div data-testid="architecture-page" data-embedded={String(embedded)} />
+  ArchitecturePage: ({
+    embedded,
+    harnessIdentity,
+    harnessSwitcher,
+  }: {
+    embedded?: boolean;
+    harnessIdentity?: React.ReactNode;
+    harnessSwitcher?: React.ReactNode;
+  }) => (
+    <div
+      data-testid="architecture-page"
+      data-embedded={String(embedded)}
+      data-has-identity={String(harnessIdentity != null)}
+      data-has-switcher={String(harnessSwitcher != null)}
+    >
+      {harnessIdentity}
+      {harnessSwitcher}
+    </div>
   ),
 }));
 vi.mock('next/navigation', async (importOriginal) => ({
@@ -73,12 +89,24 @@ beforeEach(() => {
 });
 
 describe('the destination identity', () => {
-  it('is named 하네스 and says in one line what it is about', () => {
+  it('is named 하네스 on every view', () => {
     mount();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('하네스');
+  });
+
+  it('says in one line what it is about, except where the line below already does', () => {
+    window.history.replaceState(null, '', '/ko/architecture/?view=guides');
+    mount();
     expect(
       screen.getByText('에이전트가 이 저장소에서 어떻게 일하도록 되어 있는지'),
     ).toBeInTheDocument();
+  });
+
+  it('drops the explainer in the blueprint, where 20px is a third of a layer row', () => {
+    mount();
+    expect(
+      screen.queryByText('에이전트가 이 저장소에서 어떻게 일하도록 되어 있는지'),
+    ).toBeNull();
   });
 
   it('opens on the blueprint, where every link written before the rename points', () => {
@@ -86,9 +114,20 @@ describe('the destination identity', () => {
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
   });
 
-  it('hands the blueprint the shell’s identity so the screen has exactly one h1', () => {
+  it('keeps one tab set above the panel, never inside it', () => {
+    /*
+     * Two measurements pinned this shape. A stacked header over the blueprint cost 168px at
+     * 1280x800 and took the canvas column from 612 to 444, below even the tight ladder's 573, so
+     * the seventh role went behind a fold. Pushing the tab set *into* the workbench recovered the
+     * canvas and then lost the tabs entirely on a repository with no architecture profile, where
+     * that view returns its empty state early. One instance, in the shell, above every panel.
+     */
     mount();
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-embedded', 'true');
+    expect(screen.getAllByRole('tablist')).toHaveLength(1);
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    // The identity is the shell's, so the blueprint is handed none of it.
+    expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-has-identity', 'false');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 });
@@ -97,13 +136,13 @@ describe('the segmented control', () => {
   it('moves between the three views and writes the view into the address', () => {
     mount();
     act(() => {
-      fireEvent.click(screen.getByTestId('harness-view-sensors'));
+      fireEvent.click(document.querySelector('#harness-tab-sensors')!);
     });
     expect(screen.getByTestId('harness-sensors-placeholder')).toBeInTheDocument();
     expect(window.location.search).toBe('?view=sensors');
 
     act(() => {
-      fireEvent.click(screen.getByTestId('harness-view-structure'));
+      fireEvent.click(document.querySelector('#harness-tab-structure')!);
     });
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
     // The default view leaves the plain address a person copies.

@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-import { HARNESS_SOURCE_ROOT, installHarnessRuntime, mountHarnessVault } from "./harness-tab-fixture";
+import {
+  HARNESS_SOURCE_ROOT,
+  installHarnessRuntime,
+  installProfilelessHarnessRuntime,
+  mountHarnessVault,
+} from "./harness-tab-fixture";
 
 /**
  * **The Harness tab, read on a repository that actually has a harness.**
@@ -20,8 +25,15 @@ test.describe("하네스 탭", () => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("하네스");
-    // Exactly one page headline: the blueprint below drops its own while embedded.
+    // Exactly one page headline: the identity travels into the blueprint's own header.
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    /*
+     * The explainer stands on the document views. In the blueprint the line directly under the
+     * title already names the profile and what the view compares, and 20px there is a third of a
+     * layer row — the difference between the ladder tightening its seven rows and hiding the
+     * seventh (measured 2026-09-13).
+     */
+    await page.locator("#harness-tab-guides").click();
     await expect(
       page.getByText("에이전트가 이 저장소에서 어떻게 일하도록 되어 있는지"),
     ).toBeVisible();
@@ -35,9 +47,9 @@ test.describe("하네스 탭", () => {
     await page.goto("/ko/architecture/");
     await expect(page.getByTestId("architecture-flow-panel")).toBeVisible();
 
-    await page.getByTestId("harness-view-guides").click();
+    await page.locator("#harness-tab-guides").click();
     await expect(page).toHaveURL(/\?view=guides$/);
-    await page.getByTestId("harness-view-sensors").click();
+    await page.locator("#harness-tab-sensors").click();
     await expect(page).toHaveURL(/\?view=sensors$/);
     await expect(page.getByTestId("harness-sensors-placeholder")).toBeVisible();
 
@@ -154,5 +166,47 @@ test.describe("하네스 탭", () => {
     expect(Math.abs(measured.offCentre), "the drawing slid off the card's centre").toBeLessThanOrEqual(8);
     // And the "not inspected yet" fact is stated once for the column, not once per role.
     await expect(page.getByTestId("architecture-observation-column-note")).toHaveCount(1);
+  });
+
+  test("다른 보기로 가는 길은 어떤 화면에서도 사라지지 않는다", async ({ page }) => {
+    /*
+     * The tab set must never be a property of the panel it switches. With no architecture profile
+     * the blueprint returns its empty state early; a tab set rendered inside it vanished, and 지침
+     * and 센서 had no path from the screen a person lands on (design-interaction, 2026-09-13).
+     */
+    await page.setViewportSize({ width: 1512, height: 949 });
+    await installProfilelessHarnessRuntime(page);
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/");
+    await expect(page.getByRole("tablist")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("tab")).toHaveCount(3);
+    // And the tab the open panel names actually exists, so `aria-labelledby` does not dangle.
+    const labelledBy = await page
+      .locator('[role="tabpanel"]')
+      .first()
+      .getAttribute("aria-labelledby");
+    await expect(page.locator(`#${labelledBy}`)).toHaveCount(1);
+
+    await page.getByRole("tab", { name: "지침" }).click();
+    await expect(page.getByTestId("harness-guides")).toBeVisible({ timeout: 30_000 });
+  });
+
+  test("키보드로 보기를 옮겨도 초점이 탭에 남는다", async ({ page }) => {
+    /*
+     * One `TabBar` instance, not one per branch: the two-instance build unmounted the focused tab
+     * on activation and the browser reset focus to `<body>`, from where no key did anything.
+     */
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=guides");
+    await page.getByRole("tab", { name: "지침" }).focus();
+    for (const key of ["ArrowRight", "ArrowRight", "Home", "End"]) {
+      await page.keyboard.press(key);
+      const state = await page.evaluate(() => ({
+        role: document.activeElement?.getAttribute("role"),
+        selected: document.activeElement?.getAttribute("aria-selected"),
+      }));
+      expect(state.role, `focus left the tab set after ${key}`).toBe("tab");
+      expect(state.selected, `focus landed on an unselected tab after ${key}`).toBe("true");
+    }
   });
 });

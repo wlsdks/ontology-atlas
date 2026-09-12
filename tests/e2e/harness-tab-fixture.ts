@@ -296,3 +296,28 @@ export async function mountHarnessVault(page: Page): Promise<void> {
   await page.getByTestId("first-run-open").click();
   await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
 }
+
+/**
+ * The same vault with **no architecture profile** — the shape that exposed the tab set being a
+ * property of the panel it switches. The blueprint's `!selected` branch returns early, so a tab set
+ * rendered inside it disappears exactly where a person most needs the other two views.
+ */
+export async function installProfilelessHarnessRuntime(page: Page): Promise<void> {
+  await installHarnessRuntime(page);
+  await page.addInitScript(() => {
+    const internals = (window as unknown as {
+      __TAURI_INTERNALS__: { invoke(command: string, args?: Record<string, unknown>): Promise<unknown> };
+    }).__TAURI_INTERNALS__;
+    const inner = internals.invoke.bind(internals);
+    internals.invoke = (command, args = {}) => {
+      const path = String((args as { relativePath?: unknown }).relativePath ?? "");
+      if (path.startsWith("architecture/")) return Promise.reject(new Error(`missing ${path}`));
+      if (command === "list_vault_directory" && path === "") {
+        return inner(command, args).then((entries) =>
+          (entries as { name: string }[]).filter((entry) => entry.name !== "architecture"),
+        );
+      }
+      return inner(command, args);
+    };
+  });
+}

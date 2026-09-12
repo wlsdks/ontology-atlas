@@ -15,7 +15,10 @@ import {
   type HarnessReport,
   type HookConfigFacts,
 } from '@/entities/agent-files';
+import { ChevronRight } from 'lucide-react';
+
 import { Chip, EmptyState, InfoHint } from '@/shared/ui';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
@@ -160,6 +163,13 @@ function ToolsCell({ row, t }: { row: GuideRow; t: TranslateFn }) {
                 target="_blank"
                 rel="noreferrer"
                 title={citation.source}
+                /* Every citation link was named 「출처」, fourteen times. The name says whose
+                   document it is and where it lives — which is also the only way to see the
+                   destination in a WKWebView, since it has no status bar. */
+                aria-label={t('toolsSourceFor', {
+                  tool: AGENT_TOOL_LABELS[tool] ?? tool,
+                  host: new URL(citation.source).host,
+                })}
                 className={controlClass({
                   shape: 'link',
                   hoverInk: 'secondary',
@@ -349,24 +359,50 @@ function DriftList({
                   {finding.path}
                 </span>
                 {left && right ? (
+                  /*
+                   * A disclosure, so it says so: `aria-expanded` and the pressed token carry the
+                   * state. The label deliberately does not flip — a control that renames itself
+                   * under the cursor while also announcing `aria-expanded` states the same thing
+                   * twice, and the two readings disagree (design-interaction, 2026-09-13).
+                   */
                   <Chip
                     data-testid={`harness-drift-open-${finding.path}`}
+                    active={isOpen}
+                    aria-expanded={isOpen}
+                    aria-controls={`harness-drift-diff-${finding.path}`}
                     onClick={() => setOpen(isOpen ? null : finding.path)}
                   >
-                    {isOpen ? t('driftClose') : t('driftOpen')}
+                    <ChevronRight
+                      size={ICON_SIZE.sm}
+                      aria-hidden
+                      className={cn('transition-transform', isOpen && 'rotate-90')}
+                    />
+                    {t('driftOpen')}
                   </Chip>
                 ) : null}
               </div>
               {isOpen && left && right ? (
                 /* The diff opens in the reading column, beneath the row it belongs to — two
                    complete texts side by side rather than a floating panel over the table. */
-                <div className="mt-3 grid gap-3 md:grid-cols-2" data-testid="harness-drift-diff">
+                <div
+                  className="mt-3 grid gap-3 md:grid-cols-2"
+                  id={`harness-drift-diff-${finding.path}`}
+                  data-testid="harness-drift-diff"
+                >
                   {[left, right].map((path) => (
                     <div key={path} className="min-w-0">
                       <p className="font-mono text-caption text-[color:var(--color-text-tertiary)]">
                         {path}
                       </p>
-                      <pre className="mt-1 max-h-64 overflow-auto rounded-chip bg-[color:var(--color-overlay-1)] p-2 font-mono text-caption text-[color:var(--color-text-secondary)]">
+                      {/* Reachable and named: a bare `<pre>` is not in the tab order in a
+                          WKWebView at all, and a byte comparison behind a horizontal scroller is
+                          not a comparison. */}
+                      <pre
+                        tabIndex={0}
+                        role="group"
+                        aria-label={path}
+                        className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] p-2 font-mono text-caption text-[color:var(--color-text-secondary)]"
+                      >
                         {contentByPath.get(path) ?? ''}
                       </pre>
                     </div>
@@ -424,6 +460,10 @@ export function HarnessGuidesView({
                 <th
                   key={key}
                   scope="col"
+                  /* `scope="col"` hands this cell's text to every cell under it as its header
+                     name, and the hint panel inside it is a 137-character paragraph. The label is
+                     the column's name; the hint stays reachable on its own button. */
+                  aria-label={t(key)}
                   className="pb-2 pr-4 text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-label)] text-[color:var(--color-text-quaternary)]"
                 >
                   <span className="inline-flex items-center gap-1">

@@ -81,6 +81,8 @@ export function useHarnessReport(
   handle: FileSystemDirectoryHandle | null,
   projectSlugs: readonly string[],
   enabled: boolean,
+  /** Bumped by the failed state's retry, so a transient bridge error is not a dead end. */
+  reloadNonce = 0,
 ): HarnessReportState {
   const [state, setState] = useState<HarnessReportState>({ status: 'unsupported' });
   const slugKey = projectSlugs.join('\0');
@@ -118,7 +120,7 @@ export function useHarnessReport(
     return () => {
       cancelled = true;
     };
-  }, [supported, handle, slugKey]);
+  }, [supported, handle, slugKey, reloadNonce]);
 
   return supported ? state : { status: 'unsupported' };
 }
