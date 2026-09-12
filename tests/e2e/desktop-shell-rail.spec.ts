@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForBoxStill } from "./settle";
 
 /**
  * **The rail follows a real vault, not merely the installed-app runtime.**
@@ -23,6 +24,20 @@ const DESKTOP_INIT = () => {
   (window as unknown as { isTauri?: boolean }).isTauri = true;
 };
 
+/**
+ * The rail is present and has stopped moving.
+ *
+ * `networkidle` says the network is quiet, not that the shell has decided whether this
+ * visitor gets a rail — the decision arrives with the vault state and then the rail
+ * animates to its width. Waiting for the box to repeat across frames reads the width the
+ * shell settled on; 1.5 s was one machine's guess at when that would be.
+ */
+async function railSettled(page: import("@playwright/test").Page) {
+  const rail = page.locator('[data-testid="app-nav-rail"]');
+  await expect(rail).toHaveCount(1, { timeout: 20_000 });
+  await waitForBoxStill(rail);
+}
+
 async function railState(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
     const rail = document.querySelector('[data-testid="app-nav-rail"]');
@@ -41,9 +56,8 @@ test.describe("데스크톱 셸의 좌측 레일", () => {
     await page.setViewportSize({ width: 1512, height: 949 });
     await seedFirstRunSeen(page);
     await page.goto("/ko/", { waitUntil: "networkidle" });
-    await page.waitForTimeout(1500);
-
     await expect(page.getByTestId("first-run-open")).toBeVisible();
+    await railSettled(page);
     await expect(page.getByText("Storefront Services")).toHaveCount(0);
     const rail = await railState(page);
     expect(rail.present, "레일이 DOM 에 없다").toBe(true);
@@ -60,7 +74,7 @@ test.describe("데스크톱 셸의 좌측 레일", () => {
     await page.setViewportSize({ width: 1512, height: 949 });
     await seedFirstRunSeen(page);
     await page.goto("/ko/", { waitUntil: "networkidle" });
-    await page.waitForTimeout(1500);
+    await railSettled(page);
 
     const rail = await railState(page);
     expect(rail.present, "레일은 DOM 에 상주해야 한다(언마운트가 아니라 숨김)").toBe(true);
@@ -74,7 +88,7 @@ test.describe("데스크톱 셸의 좌측 레일", () => {
     await page.setViewportSize({ width: 1512, height: 949 });
     await seedFirstRunSeen(page);
     await page.goto("/ko/topology/", { waitUntil: "networkidle" });
-    await page.waitForTimeout(1500);
+    await railSettled(page);
     expect((await railState(page)).width).toBeGreaterThan(0);
   });
 

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitFrames } from "./settle";
 
 /**
  * Destination shortcuts — **every destination reachable by keyboard alone.**
@@ -136,7 +137,13 @@ test.describe("목적지 이동 단축키", () => {
     const before = page.url();
     for (const retired of ["k", "s"]) {
       await go(page, retired);
-      await page.waitForTimeout(600);
+      /*
+       * An **absence**: nothing positive marks "this keystroke did nothing", so the
+       * wait can only be an opportunity for the navigation to happen. Counting it in
+       * drawn frames rather than in milliseconds makes it the browser's own unit — a
+       * loaded machine spends longer over the same thirty, where 600 ms shrank.
+       */
+      await waitFrames(page, 30);
       expect(page.url(), `은퇴한 G ${retired.toUpperCase()} 가 다른 화면으로 이동했다`).toBe(before);
     }
   });
@@ -171,7 +178,8 @@ test.describe("목적지 이동 단축키", () => {
 
     const before = page.url();
     await go(page, "p");
-    await page.waitForTimeout(600);
+    // An absence again: thirty drawn frames of opportunity, counted in frames.
+    await waitFrames(page, 30);
     expect(page.url(), "모달이 떠 있는데 뒤 화면이 바뀌었다").toBe(before);
   });
 
@@ -200,9 +208,11 @@ test.describe("목적지 이동 단축키", () => {
     await dismissBlockingSurface(page);
     const before = page.url();
     await page.keyboard.press("g");
-    await page.waitForTimeout(2_000); // Longer than NAV_LEADER_WINDOW_MS — this wait is the thing under test
+    // ⚠️ Kept in milliseconds: this wait **is** the thing under test — it has to be
+    // longer than NAV_LEADER_WINDOW_MS for the leader to have expired.
+    await page.waitForTimeout(2_000);
     await page.keyboard.press("p");
-    await page.waitForTimeout(600);
+    await waitFrames(page, 30);
     expect(page.url(), "시간 제한이 안 걸렸다").toBe(before);
   });
 

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForAnimationsDone, waitForBoxStill, waitFrames } from "./settle";
 
 /**
  * **The gateway's grid is one grid** — width is the independent variable, so
@@ -554,7 +555,8 @@ test.describe("the headline types only its own sentence (council, 2026-09-03)", 
           };
         }),
       );
-      await page.waitForTimeout(60);
+      // A sampling interval across the typing, counted in drawn frames.
+      await waitFrames(page, 4);
     }
     const typing = samples.filter((s) => s.typed > 0);
     expect(typing.length, "typing was observed").toBeGreaterThanOrEqual(6);
@@ -580,10 +582,15 @@ test.describe("the headline types only its own sentence (council, 2026-09-03)", 
           .map((a) => a.getAttribute("data-testid")),
       );
     await page.goto("/en/download/", { waitUntil: "load" });
-    await page.waitForTimeout(1500);
-    expect(await visibleChangelogLinks()).toEqual(["gateway-facts-changelog"]);
+    // The list of links **is** the condition, so it is polled rather than slept in front of.
+    await expect.poll(visibleChangelogLinks, { timeout: 20_000 }).toEqual(["gateway-facts-changelog"]);
     await page.goto("/en/guide/", { waitUntil: "load" });
-    await page.waitForTimeout(800);
+    await expect
+      .poll(visibleChangelogLinks, {
+        timeout: 20_000,
+        message: "the chrome keeps the chip off the gateway face",
+      })
+      .toContain("gateway-nav-changelog");
     const onGuide = await visibleChangelogLinks();
     expect(onGuide, "the chrome keeps the chip off the gateway face").toContain("gateway-nav-changelog");
   });
@@ -617,8 +624,21 @@ test.describe("the decision block reads over the stage at every split width", ()
         );
       }
       await page.evaluate(() => document.fonts.ready);
-      /* The echo lights the last dot with the last character (~2.5s); measure the settled stage. */
-      await page.waitForTimeout(3200);
+      /*
+       * What this case measures is **layout and ink**: the destinations' rows, the stage's
+       * width, and the share of lit canvas pixels under the type. So the condition is the
+       * first screen having laid out and the stage having stopped animating.
+       *
+       * ⚠️ **Not "the headline finished typing"**, which was tried first and is the wrong
+       * condition twice over. The un-typed glyphs already occupy their layout, so the h1's
+       * box — the thing `litShare` reads — is complete from the first frame. And on this
+       * headless browser's software WebGL the typing interval is starved badly enough that
+       * 59 characters take about 25 s (measured 2026-09-13 at 1100px with `?hero=three`:
+       * 1, 3, 6, 8, 10, 12 lit after each of the first six seconds), so the old 3,200 ms
+       * had never waited for the end of the typing either.
+       */
+      await waitForBoxStill(page.locator('[data-testid="gateway-hero"]'));
+      await waitForAnimationsDone(page.locator('[data-testid="gateway-hero-object"]'));
       const m = await page.evaluate(() => {
         const stage = document.querySelector('[data-testid="gateway-hero-object"]')!.getBoundingClientRect();
         const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="gateway-hero-object"] canvas')!;
