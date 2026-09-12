@@ -18,7 +18,7 @@ The ability for a developer and coding agent to compare human-reviewed architect
 
 ## Evidence
 - `docs/ontology/architecture/ontology-atlas-web.md`: reviewed FSD role order, scope, exclusions, lower-only dependency policy, and value-only governed usage
-- `mcp/src/architecture-profile.mjs` and `mcp/src/index.js`: `architectureBrief:v1`, usage-qualified conformance, and public `inspect_architecture`
+- `mcp/src/architecture-profile.mjs` and `mcp/src/tools/repo-analysis.mjs`: `architectureBrief:v1`, usage-qualified conformance, and public `inspect_architecture`
 - `src/views/architecture/model/architecture-agent.ts`: fail-closed admission for verified, ready, guarded ACP runtimes with a vault and bundled MCP launch
 - `src/views/architecture/ui/ArchitectureAgentDock.tsx`: same-route ACP conversation as a narrow-workbench sheet or wide side dock, with process start bound to real reflow completion
 - `src/views/architecture/ui/ArchitectureWorkbench.tsx`: contextual Draft / Change / Verify task, compact evidence rail, on-canvas provenance overlay, and browser clipboard fallback

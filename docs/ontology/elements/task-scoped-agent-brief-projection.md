@@ -16,14 +16,14 @@ Task-scoped agent brief projection is the read-side implementation that turns on
 ## Evidence
 
 - `mcp/src/agent-brief-compact.mjs`
-- `mcp/src/index.js`
+- `mcp/src/tools/graph.mjs`
 - `mcp/package.json`
 - `cli/src/commands/agent-brief.mjs`
 - `mcp/src/agent-brief-compact.test.mjs`
 - `mcp/src/integration.test.mjs`
 - `cli/src/integration.test.mjs`
 - Primary implementation: `mcp/src/agent-brief-compact.mjs#buildCompactAgentBrief`
-- Supporting implementation: `mcp/src/index.js#queryOntologyTool`
+- Supporting implementation: `mcp/src/tools/graph.mjs#queryOntologyTool`
 - Focused test: `mcp/src/task-navigation-evidence.test.mjs#resolves reviewed JavaScript functions and named tests without source snippets`
 - Focused test: `mcp/src/agent-brief-compact.test.mjs#routes by persisted responsibility and boundaries instead of noun overlap`
 

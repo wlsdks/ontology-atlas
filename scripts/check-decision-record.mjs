@@ -80,8 +80,17 @@ ${TEMPLATE.split("\n").map((line) => `[decisions]   ${line}`).join("\n")}
 /** Route files whose *existence* changes the surface inventory. */
 const ROUTE_PATTERN = /^app\/\[locale\]\/.*\/page\.tsx$/;
 
-/** Single sources of truth for the two public contracts. */
-const CONTRACT_FILES = ["cli/src/lib/cli-commands.mjs", "mcp/src/index.js"];
+/**
+ * Single sources of truth for the two public contracts. The MCP tool table moved
+ * out of `mcp/src/index.js` into `server/registry.mjs` on 2026-09-12; the entry
+ * point stays listed because it still decides the dispatch and the read-only
+ * guard, and dropping it would quietly stop watching those.
+ */
+const CONTRACT_FILES = [
+  "cli/src/lib/cli-commands.mjs",
+  "mcp/src/index.js",
+  "mcp/src/server/registry.mjs",
+];
 
 function printHelp() {
   console.log(`Usage: pnpm decisions:check [-- --base=<ref>]

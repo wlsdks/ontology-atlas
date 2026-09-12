@@ -23,6 +23,8 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+/** The table moved out of `index.js` when the entry point became wiring only. */
+const HINT_TABLE_FILE = join(HERE, 'tools', 'graph.mjs');
 
 /**
  * The modules that produce remedies.
@@ -62,9 +64,9 @@ function remedyIdsInSource() {
   return found;
 }
 
-/** The keys written in the table. Read as text rather than by running `index.js` (the server must not start). */
+/** The keys written in the table. Read as text rather than by running the module (the server must not start). */
 function hintKeys() {
-  const text = readFileSync(join(HERE, 'index.js'), 'utf8');
+  const text = readFileSync(HINT_TABLE_FILE, 'utf8');
   const start = text.indexOf('const MEANING_NEXT_ACTION_HINTS = Object.freeze({');
   assert.ok(start > 0, '표를 못 찾았다 — 이 검사는 아무것도 못 잰다');
   const end = text.indexOf('});', start);
@@ -130,7 +132,7 @@ test('표에 실재하지 않는 처방이 없다 — 죽은 칸은 안 걸리�
 });
 
 test('문장이 실제로 뭔가를 말한다 — 짧은 껍데기는 id 와 다를 바 없다', () => {
-  const text = readFileSync(join(HERE, 'index.js'), 'utf8');
+  const text = readFileSync(HINT_TABLE_FILE, 'utf8');
   const start = text.indexOf('const MEANING_NEXT_ACTION_HINTS = Object.freeze({');
   const block = text.slice(start, text.indexOf('});', start));
   // ⚠️ Do not measure only the first quoted chunk — values are joined across
