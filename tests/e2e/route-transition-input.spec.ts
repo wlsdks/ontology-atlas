@@ -340,9 +340,11 @@ test("전환이 도는 애니메이션 중 선언한 크로스페이드보다 �
     "전환 애니메이션 목록을 잡지 못했다 — ready 가 거부됐거나 브라우저에 전환이 없다",
   ).not.toBeNull();
   /*
-   * Idling guard. The four fade and blend animations on `old(root)`/`new(root)` are what the
-   * crossfade *is*, so a run that captured fewer than that captured the wrong moment and the
-   * duration rule below would pass on an empty set.
+   * Idling guard. The four fade and blend animations on the captured pane's `old`/`new` pair
+   * are what the crossfade *is*, so a run that captured fewer than that captured the wrong
+   * moment and the duration rule below would pass on an empty set. The pair was named `root`
+   * until 2026-09-13, when the capture moved off the document so the rail could stay on screen
+   * in WebKit (`rail-stays-painted.spec.ts`); the count is the same either way.
    */
   expect(seen.animations!.length, `잡은 애니메이션: ${JSON.stringify(seen.animations)}`).toBeGreaterThanOrEqual(4);
   const overrunning = seen.animations!.filter((animation) => !(animation.duration <= declared));

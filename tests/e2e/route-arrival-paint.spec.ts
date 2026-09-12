@@ -77,19 +77,18 @@ const NOT_SETTLED = [
  * **The shell's own neutral pane is measured but not gated here** — a separate subject with a
  * separate owner.
  *
- * `app/providers/AppShell.tsx` mounts an empty canvas-coloured pane on **every** route change,
- * on purpose (it keeps one vault identity on screen while the destination commits), and
- * releases it from a microtask inside the same task. Measured across 18 crossings on the
- * static export it reached **0 of ~90 sampled frames** — the release lands before paint.
- * Against the dev server the same crossings put it in **1-3 frames**, because a slower commit
- * lets the browser paint in between.
+ * `app/providers/AppShell.tsx` used to mount an empty canvas-coloured pane on **every** route
+ * change and release it from a microtask. Measured across 18 crossings on the static export it
+ * reached 0 of ~90 sampled frames; against the dev server the same crossings put it in **1-3**,
+ * and it was named here as follow-up because removing it meant changing the shell rather than
+ * what any pane remembers.
  *
- * So it is a real latent flash whose window widens with the machine, and it is **not** what
- * this file is about: it belongs to the shell, its behaviour is defended by
- * `local-vault-route-identity.spec.ts`, and removing that painted frame means changing when
- * the boundary releases rather than what any pane remembers. Gating it here would make this
- * gate red in dev for a defect this change does not claim to fix, so it is counted and logged
- * beside the numbers instead, and named as follow-up.
+ * It was removed on 2026-09-13 (inspection 122, B1): no release mechanism was early enough,
+ * because what held the pane on the glass was the *arriving* route suspending against it, and
+ * React already keeps the departing screen until the destination can render. The boundary now
+ * fires only for a folder load or a workbench destination with no vault, so this count is
+ * expected to be zero on every crossing below. It stays measured rather than asserted —
+ * `rail-stays-painted.spec.ts` is what gates it — so that a number appearing here still says so.
  */
 const SHELL_NEUTRAL_PANE = '[data-testid="vault-route-identity-pending"]';
 
