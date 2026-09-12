@@ -158,11 +158,33 @@ describe("모션 토큰 거울 — CSS 램프와 JS 복사본", () => {
    * curve, so it would hand the accelerating curve to the entrance as well.
    */
   it("CSS 에서 `var(--motion-ease-exit)` 는 나가는 규칙의 *Out 키프레임에만 붙는다", () => {
-    const rules = [...CSS.matchAll(/([^{}]*)\{([^{}]*)\}/g)]
-      .map(([, selector, body]) => ({
-        selector: selector.trim().split("\n").pop()!.trim(),
-        body,
-      }))
+    /*
+     * Split on `}` rather than matching `([^{}]*)\{([^{}]*)\}` globally.
+     *
+     * ⚠️ **Measured 2026-09-12.** The regex form took **2,388 ms** on this 339 KB
+     * stylesheet: the leading `[^{}]*` backtracks from every position in the file. It
+     * was the slowest contract test in the repository, and the reason the pre-push
+     * hook carried `--testTimeout=30000` — under eight parallel lanes it went past the
+     * ordinary 5-second ceiling and failed as a timeout, in a file whose diff could
+     * not have touched it. The stretched timeout hid a quadratic parser instead of
+     * fixing it.
+     *
+     * The split form takes **1 ms** and yields the identical 262 rules and the
+     * identical verdict; verified by comparing both readings before the change. The
+     * flat `selector { body }` shape is unchanged, which is what keeps this consistent
+     * with `exit-motion-restart.contract.test.ts`.
+     */
+    const rules = CSS.split("}")
+      .map((chunk) => {
+        const open = chunk.lastIndexOf("{");
+        return open === -1
+          ? null
+          : {
+              selector: chunk.slice(0, open).trim().split("\n").pop()!.trim(),
+              body: chunk.slice(open + 1),
+            };
+      })
+      .filter((rule): rule is { selector: string; body: string } => rule !== null)
       .filter((rule) => /var\(--motion-ease-exit\)/.test(rule.body));
     expect(rules.length, "no CSS rule consumes --motion-ease-exit — an unused token is misinformation").toBeGreaterThan(0);
 

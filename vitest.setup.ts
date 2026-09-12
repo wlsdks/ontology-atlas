@@ -1,7 +1,33 @@
+import { configure } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { beforeEach } from 'vitest';
 
 import { clearArrivalMemory } from './src/shared/lib/route-arrival-memory-store';
+
+/**
+ * One condition-wait ceiling for the whole suite, instead of a millisecond number
+ * per call site.
+ *
+ * `waitFor` and `findBy*` poll until the condition holds; the ceiling only decides
+ * how long a *failure* takes to report. Testing Library's default is 1,000 ms, so
+ * every test that legitimately needed longer had been raising it by hand — eight
+ * call sites at 1,500-2,000 ms as of 2026-09-12. Those hand-raised numbers are what
+ * starved on 2026-08-28, when eleven parallel pre-push lanes shared one machine and
+ * two ordinary React state-transition tests missed their own ceiling. The hook's
+ * answer then was to cap Vitest at two workers, which cost the unit lane 377.7 s
+ * against 124.3 s at the normal pool (measured 2026-09-12).
+ *
+ * The ceiling is generous on purpose: it is not a budget, and nothing is asserted
+ * about it. A test that needs a *product* timing budget measures it and says so,
+ * with headroom — see `.claude/rules/testing.md`, "The timing rule".
+ *
+ * It sits **below** `testTimeout` (30 s, set in `vitest.config.ts`) on purpose. When
+ * the two are equal the test dies first and what CI prints is a bare "Test timed out
+ * in 5000ms" pointing at the `it(...)` line instead of the element the wait was
+ * looking for. That is what run 34693905255 printed for the two `FirstRunStarter`
+ * modal-close cases, which cost 152 ms and 15 ms run alone.
+ */
+configure({ asyncUtilTimeout: 15_000 });
 
 /**
  * jsdom lacks `ResizeObserver` — this is **a hole in the environment**, not a product constraint,

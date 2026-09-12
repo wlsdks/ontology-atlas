@@ -63,6 +63,45 @@ Before concluding that CI is wrong or flaky, run the exact CI line above. If it
 still passes, only then look at server age (`design-gates.md`, stale
 `reuseExistingServer`). A local pass under a different run mode is not evidence.
 
+## The timing rule (2026-09-12)
+
+**No test asserts a wall-clock number it did not measure, and no test waits by
+sleeping.** A gate that can go red because the machine was busy teaches people to
+retry, and a gate people retry is not a gate.
+
+Four shapes, three of them allowed:
+
+| Shape | Allowed | Form |
+|---|---|---|
+| **Condition wait** | yes, the default | `waitFor` / `findBy*` / `expect.poll` / `page.waitForFunction`. It returns the moment the condition holds, so it costs nothing on a fast machine and still passes on a slow one |
+| **Relative in one run** | yes | measure both sides in the same process and assert the ratio. `src/views/ontology-insights/lib/duplicate-pairs.perf.test.ts` is the model: warm-up pass, best of three, a documented ratio of 3.8-4.2 against 0.88 when the fast path was broken |
+| **Product budget with headroom** | yes, with both halves | print the measured value **and** keep the bound at >= 5x it. Say the measurement and the date in the comment, so the next reader can re-derive the ratio instead of guessing whether the number still means anything |
+| **Absolute wall clock or a fixed sleep** | **no** | `expect(elapsed).toBeLessThan(n)` with no measured basis; `waitForTimeout(n)`; `await new Promise(r => setTimeout(r, n))` used as a wait |
+
+Consequences that follow from the rule:
+
+- **Two ceilings, both set once, both hang detectors.** `vitest.config.ts` sets
+  `testTimeout` (30 s) and `vitest.setup.ts` sets `asyncUtilTimeout` (15 s) below
+  it, so a wait always reports the element it was looking for instead of dying as a
+  bare test timeout. Neither is a budget, nothing is asserted about either, and a
+  call site may not narrow them: a hand-raised `{ timeout: n }` is a wall-clock
+  number in disguise. Eight of them starved on 2026-08-28, and a ninth — a 5-second
+  "product-meaningful bound" on a modal close that costs 15 ms — flaked twice more
+  in September before it was removed. A lane may not override them either; one
+  suite, one clock, whoever invokes it.
+- **Sleeping past a constant is not waiting for it.** `setTimeout(400)` to clear a
+  140 ms exit window asserts "140 < 400" about a constant the test never reads.
+  Wait for the state the screen shows instead (`data-dock-state="put-away"`).
+- **An order is not a duration.** "The answer must not be sent before the commit
+  motion starts" is proven by observing the motion and then finding no answer —
+  not by sleeping 80 ms first.
+- **A hang is Vitest's job.** `expect(elapsed).toBeLessThan(5_000)` on work
+  measured at 17.7 ms can only fire on a hang, which the test timeout already
+  reports with a better message. Delete it.
+- **Performance lanes never block.** `*.perf.test.*` runs where the number means
+  something: CI on a quiet runner, not the pre-push hook, which deliberately
+  saturates the machine.
+
 ## TDD
 
 1. Write the failing test before a behavioral feature or regression fix.

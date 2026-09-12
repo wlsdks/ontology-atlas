@@ -122,11 +122,17 @@ async function openWithSession() {
   };
 }
 
-/** Long enough for the presence exit window, which is when the panel used to be destroyed. */
+/**
+ * The exit window has closed when the frame says `put-away` — the same fact the screen
+ * shows. Sleeping 400 ms instead asserted `EXIT_WINDOW_MS` is under 400, which is a claim
+ * about a constant this file does not read and a clock it cannot control.
+ */
 async function pastTheExitWindow() {
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-  });
+  await waitFor(() =>
+    expect(
+      screen.getByTestId("library-agent-dock-frame").getAttribute("data-dock-state"),
+    ).toBe("put-away"),
+  );
 }
 
 afterEach(() => {

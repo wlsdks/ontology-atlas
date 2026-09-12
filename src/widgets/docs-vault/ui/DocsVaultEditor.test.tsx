@@ -397,7 +397,7 @@ describe('DocsVaultEditor', () => {
     );
     // Nothing is announced before the window passes — there may be nothing to wait for.
     expect(screen.queryByRole('status')).toBeNull();
-    const status = await screen.findByRole('status', {}, { timeout: 2_000 });
+    const status = await screen.findByRole('status');
     expect(status).toHaveAttribute('aria-label', '파일 불러오는 중…');
     // Cleanup: resolve to clear the dangling promise.
     resolve('done');
@@ -497,17 +497,14 @@ describe('DocsVaultEditor', () => {
       </NextIntlClientProvider>,
     );
 
-    await waitFor(
-      () => {
-        const written = window.localStorage.getItem(otherKey);
-        expect(
-          written,
-          '초안이 새 스코프 키에 안 생겼다 — vaultScope 가 의존성에서 빠져 옛 스코프로 샜다',
-        ).toBeTruthy();
-        expect(JSON.parse(written as string).content).toContain('고친 것');
-      },
-      { timeout: 2000 },
-    );
+    await waitFor(() => {
+      const written = window.localStorage.getItem(otherKey);
+      expect(
+        written,
+        '초안이 새 스코프 키에 안 생겼다 — vaultScope 가 의존성에서 빠져 옛 스코프로 샜다',
+      ).toBeTruthy();
+      expect(JSON.parse(written as string).content).toContain('고친 것');
+    });
 
     expect(
       window.localStorage.getItem(draftKey),
