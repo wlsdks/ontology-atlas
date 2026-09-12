@@ -1128,9 +1128,9 @@ held, which lights both ends and prints both counts — and it is all or nothing
 never a sample, so an undotted citation cannot be read as a fresh one. The budget is the
 canvas's own ink: the standing amber holds no more than **4%** of it at rest. Measured on the
 four picture fixtures at 1512x901, 1040x720 and 1920x1080: the three folders under the cap are
-unchanged pixel for pixel (the six-document folder keeps 97 strict-amber pixels at 1512), and
-the three-hundred-source folder with 480 unverified citations goes from 5,236 amber pixels and
-15.67% of its ink at the narrowest window to 0, with total graph ink down 9.5-22.4%.
+unchanged pixel for pixel (the six-document folder keeps its 97 strict-amber pixels at 1512),
+and the three-hundred-source folder with 480 unverified citations goes from 5,202 amber pixels
+and 15.57% of its ink at the narrowest window to 0, with total graph ink down 9.5-22.4%.
 `tests/e2e/library-graph-picture.spec.ts` holds both arms and the three routes back.
 
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names

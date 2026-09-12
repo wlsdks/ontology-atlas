@@ -360,7 +360,7 @@ const STALE_DOT_BREATH = 1.1;
  * number instead of painting it once per citation.**
  *
  * ⚠️ **This is a count of unverified citations, not of marks.** The amber ink is
- * proportional to the dots, and only to the dots: measured at **9–11 canvas pixels of
+ * proportional to the dots, and only to the dots: measured at **6–11 canvas pixels of
  * strict amber per dot** on all four picture fixtures and at all three windows, because the
  * dot is a screen-space constant and does not shrink with the camera. A folder of four
  * hundred marks with two stale citations should keep both of them, and a mark-count
@@ -376,16 +376,16 @@ const STALE_DOT_BREATH = 1.1;
  *
  * | folder | stale citations | amber / ink at 1040x720 |
  * |---|---|---|
- * | `vault-zero-answers` | 6 | 0.86% |
- * | `vault` | 10 | 0.82% |
- * | `vault-60` | 48 | **2.18%** |
- * | `vault-300` | 480 | **15.67%** |
+ * | `vault-zero-answers` | 6 | 0.67% |
+ * | `vault` | 10 | 0.56% |
+ * | `vault-60` | 48 | **2.09%** |
+ * | `vault-300` | 480 | **15.57%** |
  *
  * 48 is the densest folder the 2026-09-12 and 2026-09-13 reviews read as legible, so the
  * cap has to sit above it. Its own narrowest window draws 19,517 pixels of ink, and 4% of
- * that is 781 amber pixels, which at the worst measured 11.3 per dot is **69 dots** — so
+ * that is 781 amber pixels, which at the worst measured 10.8 per dot is **72 dots** — so
  * the cap has to sit below that or the folder it was chosen for cannot afford it. 64 is the
- * round number between the two, 1.33x the folder that must keep every dot and 0.93x what
+ * round number between the two, 1.33x the folder that must keep every dot and 0.89x what
  * that folder's own ink can pay for.
  *
  * ## What happens above it
@@ -754,7 +754,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
      *
      * Standing was the fix; standing **at every scale** was the defect. On the
      * three-hundred-source folder 480 citations are unverified, and one dot each measured
-     * 5,236 pixels of strict amber against 33,416 of ink — **15.7% of the picture**, with
+     * 5,202 pixels of strict amber against 33,416 of ink — **15.6% of the picture**, with
      * total graph ink up 48% on the installed app. The reviewer's sentence is the
      * statistic: *"the picture's dominant mark is now a warning, not a document"*, which
      * is the "reader who calls dense amber noise" the 2026-09-13 ceiling record listed as
@@ -770,7 +770,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
      *
      * Below the cap nothing changes: every unverified citation carries its dot at rest, at
      * every window, which is the bar inspection 122 raised (0 -> 97 strict amber pixels on
-     * the six-document folder at 1512). Above it the dots stay on the citations the reader
+     * the six-document folder at 1512, 59 of them outside its placed names). Above it the dots stay on the citations the reader
      * has in hand, and **all or nothing** — never a sample, so an undotted stale citation
      * can never be read as a fresh one:
      *
