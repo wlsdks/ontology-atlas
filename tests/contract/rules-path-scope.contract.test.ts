@@ -251,7 +251,19 @@ describe("`.claude/rules` path scoping contract", () => {
    * this ratchets in one direction only: a commit that saves bytes must record
    * the saving, which is what makes the saving permanent.
    */
-  const RESIDENT_CONTEXT_BYTES = 26_935;
+  const RESIDENT_CONTEXT_BYTES = 27_144;
+
+  /*
+   * Raised by 209 bytes on 2026-09-12, using the mechanism this gate's own message
+   * offers ("state in the commit why this must be resident").
+   *
+   * `.claude/rules/git.md` listed the allowed commit prefixes and nothing checked
+   * them, which is how `wip`, `wip2` and `wip3` reached a branch. Those 209 bytes say
+   * the list is now enforced by `.githooks/commit-msg`, that `design:` belongs on it,
+   * and that `wip` does not. They buy a resident rule that a hook refuses rather than
+   * a resident rule a reader may ignore — the one trade that makes a resident byte
+   * worth more than a path-loaded one. The ratchet still only falls from here.
+   */
 
   /**
    * One region of `AGENTS.md` is not ours (2026-09-11). `@vercel/detect-agent`

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Language check for `.githooks/commit-msg`. It lives in its own file so
+// Subject-shape and language checks for `.githooks/commit-msg`. They live in this
+// file so
 // `scripts/claude-hooks.test.mjs` can call the decision directly instead of
 // spawning a shell, and so the pattern sits beside its tests.
 //
@@ -22,11 +23,49 @@ const NON_ENGLISH_SCRIPT_RE =
 // exists. Blocking it would force someone to edit history they did not write.
 const GENERATED_SUBJECT = /^(Merge |Revert |squash! |fixup! |amend! )/;
 
+/**
+ * The prefix list from `.claude/rules/git.md`, section "Commit messages".
+ *
+ * ⚠️ **The reason this is enforced and not merely written down (2026-09-12).** The
+ * rule has said "allowed prefixes" since the repository started, and the language
+ * gate beside it was added on 2026-08-24 for exactly the reason that a rule nothing
+ * checks is not a rule. The shape half stayed unchecked, and `wip`, `wip2`, `wip3`
+ * reached a branch — subjects that say nothing to the reviewer, to `git log`
+ * archaeology, or to the next agent reading history for context, which is the whole
+ * audience a commit message has.
+ *
+ * An optional `(scope)` is allowed because the repository already uses it
+ * (`feat(map):`, `design(library):`). Nothing else is: an invented prefix defeats
+ * the point of having a list.
+ *
+ * `design` is on the list because a census of the last 200 subjects found it 9 times,
+ * including the commit this gate landed on. `.claude/rules/git.md` had not listed it.
+ * A gate that refuses a prefix the repository actively and deliberately writes is a
+ * gate somebody reaches past on its first day, so the rule was corrected to the
+ * practice rather than the practice to the stale rule — the design gates are a
+ * first-class workflow here and their commits say so.
+ */
+const ALLOWED_PREFIXES = [
+  'feat',
+  'fix',
+  'docs',
+  'refactor',
+  'chore',
+  'test',
+  'style',
+  'perf',
+  'design',
+];
+const SUBJECT_SHAPE = new RegExp(`^(?:${ALLOWED_PREFIXES.join('|')})(?:\\([^()\\s]+\\))?: \\S`);
+
 export function checkCommitMessage(raw) {
   const meaningful = raw.split('\n').filter((line) => !line.startsWith('#'));
   const text = meaningful.join('\n').trim();
   if (text === '') return { ok: true, reason: 'empty' };
   if (GENERATED_SUBJECT.test(text)) return { ok: true, reason: 'generated' };
+
+  const subject = text.split('\n')[0];
+  if (!SUBJECT_SHAPE.test(subject)) return { ok: false, reason: 'shape', subject };
 
   const offenders = [];
   meaningful.forEach((line, index) => {
@@ -40,6 +79,26 @@ export function checkCommitMessage(raw) {
 export function formatRejection(verdict) {
   const red = '\u001b[31m';
   const reset = '\u001b[0m';
+  if (verdict.reason === 'shape') {
+    // A blocked agent reads only this text, so it carries the whole list and one
+    // corrected example rather than a pointer to go and look the rule up.
+    return `${[
+      '',
+      `${red}commit-msg${reset}  the subject needs a conventional prefix.`,
+      '',
+      `    ${verdict.subject}`,
+      '',
+      `  Allowed: ${ALLOWED_PREFIXES.map((prefix) => `${prefix}:`).join(' · ')}`,
+      '  An optional scope goes in parentheses, and a space follows the colon:',
+      '      feat(map): let the walked constellation keep one fact per channel',
+      '',
+      '  Merge, revert, squash and fixup subjects are exempt; Git writes those.',
+      '  Basis: .claude/rules/git.md, section "Commit messages".',
+      '  "wip" is not a prefix: the subject is what the reviewer and `git log`',
+      '  archaeology get, so it has to say what changed.',
+      '',
+    ].join('\n')}\n`;
+  }
   const lines = [
     '',
     `${red}commit-msg${reset}  the commit message must be English.`,
