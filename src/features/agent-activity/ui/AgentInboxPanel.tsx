@@ -118,7 +118,7 @@ export interface ResultFactLineModel {
   agent: string | null;
   duration: string | null;
   /**
-   * When it happened. Without it `2분` was the only number on the line and read as "two
+   * When it happened. Without it `2m` was the only number on the line and read as "two
    * minutes ago" rather than "it took two minutes", and the boundary a press moves — a
    * time — was nowhere on the tab that draws unread dots.
    */
@@ -339,8 +339,10 @@ export function AgentInboxPanel({
   };
 
   return (
-    <div data-testid="agent-inbox-panel">
-      <div className="px-3 pt-1">
+    <div data-testid="agent-inbox-panel" className="flex min-h-0 flex-1 flex-col">
+      {/* `px-2` rather than `px-3`: the strip is the first thing to run out of room when a
+          browser's text is enlarged, and 8px is 8px of tab. */}
+      <div className="shrink-0 px-2 pt-1">
         <TabBar
           idPrefix={TAB_ID_PREFIX}
           ariaLabel={t('inboxTabs')}
@@ -354,12 +356,25 @@ export function AgentInboxPanel({
               count: counts.results,
               countTitle: t('tabResultsTitle'),
             },
-            {
-              key: 'history',
-              label: t('tab.history'),
-              count: counts.history,
-              countTitle: t('tabHistoryTitle'),
-            },
+            /*
+             * **History carries no digit** (design-lead's prescription, accepted 2026-09-12).
+             *
+             * The other two digits are counts of things a person can act on or take
+             * credit for: To do is how many things wait on them and is the number the
+             * bell's badge advertises, Results is how much got done. History would be the
+             * **length of a day-grouped, time-windowed log** — a different kind of
+             * quantity sitting in the same engraved slot, which is the count channel
+             * asked to carry two units at once. On the seeded folder it also reads 5
+             * while its neighbours read 1 and 4, i.e. exactly their sum, in a body that
+             * clips the fifth row at `max-h-[264px]` — a number a reader cannot verify
+             * from what is on screen. Dropping it leaves the strip readable in one pass:
+             * one waits, four are done. `counts.history` still decides which tab opens.
+             *
+             * `TabBar` documents `count` as omittable, so this is the pattern's own
+             * option, not a fork; its label span names its leading, so a digit-less tab
+             * keeps the same 28px height and underline distance as its neighbours.
+             */
+            { key: 'history', label: t('tab.history') },
           ]}
         />
       </div>
@@ -370,15 +385,18 @@ export function AgentInboxPanel({
         aria-labelledby={`${TAB_ID_PREFIX}-tab-${tab}`}
         data-testid={`agent-inbox-panel-${tab}`}
         /*
-         * One scroller for the whole body, capped at five rows of the 52px pitch.
+         * One scroller for the whole body. Two ceilings, in this order: **264px**, four
+         * whole rows of the 52px pitch plus 44 of the fifth — the partial row is the scroll
+         * affordance — and, when the window is shorter than that, whatever the flex column
+         * leaves after the header and the footer (`--map-panel-max-height` on the Surface).
          *
-         * The panel's **own** height follows the tab (measured: 188 · 344 · 364 px on the
-         * seeded folder) — a popover that always reserved the tallest tab would hang 200px
-         * of empty ground over the map on the tab that matters most. What must not move is
-         * what the pointer is on: the header and the tab strip are above the body, so they
-         * stay put while the bottom edge follows the content.
+         * The panel's **own** height follows the tab (measured 188 · 344 · 388 px on the
+         * seeded folder): a popover that always reserved the tallest tab would hang 200px of
+         * empty ground over the map on the tab that matters most. What must not move is what
+         * the pointer is on — the header and the strip are above the body, so the edge that
+         * follows the content is the bottom one.
          */
-        className="max-h-[264px] overflow-y-auto px-2 py-1.5"
+        className="min-h-0 flex-1 overflow-y-auto px-2 py-1.5 [max-height:264px]"
       >
         {tab === 'todo' ? (
           counts.todo === 0 ? (
@@ -460,7 +478,15 @@ export function AgentInboxPanel({
                       <span className={ROW_HEADLINE_CLASS}>
                         <span
                           className={cn(
-                            'shrink-0 text-label',
+                            /*
+                             * ⚠️ **Not `shrink-0`** (design-responsive, 2026-09-12). At 200%
+                             * browser text the sentence held its full width and the object it
+                             * names was erased instead — measured 0px wide with 38px clipped,
+                             * and the four rows became four copies of one sentence. Both
+                             * halves truncate now, so the row loses words rather than the
+                             * thing it is about.
+                             */
+                            'min-w-0 truncate text-label',
                             row.unread
                               ? 'text-[color:var(--color-text-primary)]'
                               : 'text-[color:var(--color-text-secondary)]',
@@ -509,6 +535,25 @@ export function AgentInboxPanel({
                         briefCounts={briefCountsFor?.(row) ?? null}
                         durationTitle={t('durationTitle')}
                       />
+                      {/*
+                        **Where the press goes is said in the one channel that has room
+                        for it.** The whole row is the button, so its accessible name was
+                        the sentence plus the facts and nothing in it said a press
+                        navigates — while History's node link has carried `openOnMap` from
+                        the start. It is appended here rather than set as `aria-label`,
+                        which would replace the row's summary with the destination, and it
+                        is omitted when neither door is wired: then the press only moves
+                        the read boundary, and naming a destination would be a claim.
+                        `sr-only` is absolutely positioned, so it adds no grid row and the
+                        52px pitch does not move.
+                      */}
+                      {row.kind === 'task' && row.node && onOpenNode ? (
+                        <span className="sr-only">
+                          {t('openOnMap', { name: row.node.name })}
+                        </span>
+                      ) : onOpenConversation ? (
+                        <span className="sr-only">{t('openInConversation')}</span>
+                      ) : null}
                     </span>
                   </RowButton>
                 </li>
@@ -610,7 +655,13 @@ function TodoRow({
               onOpenConversation();
               onClose?.();
             }}
-            className="shrink-0"
+            /*
+             * `atlas-touch-floor` because the control ramp's coarse promotion asks
+             * `pointer: coarse` while the rows ask `any-pointer: coarse`: on a mouse-primary
+             * machine with a touchscreen the rows grew to 44 and the only door out of this
+             * tab stayed 28 (design-responsive, 2026-09-12).
+             */
+            className="atlas-touch-floor shrink-0"
           >
             {t('askDoor')}
           </Chip>
@@ -672,6 +723,36 @@ function TodoRow({
  * reported in the first place. The agent moved to the second line, where it belongs beside
  * the duration and the time.
  */
+/**
+ * The timeline's object is a control, so it wears a **control's mark, not the panel's
+ * indigo** (guardian verdict, 2026-09-12).
+ *
+ * Measured on the seeded folder — an accent-ink pixel count of the same crops
+ * `pil-edges.json` reads — indigo ink in the panel **body** was To do 154 px · Results
+ * 128 px · History **823 px**. The tab where nothing is outstanding carried 6.4× the
+ * accent ink of the tab holding four unread results, because three node names were
+ * `tone: 'accent'` (13px type) while the results tab spends its indigo on four 6px
+ * unread dots. Everywhere else in this panel indigo means *this needs you*: the ask
+ * glyph, the review chip, the unread dot, the bell's own badge. A settled timeline needs
+ * nobody, so it must not hold the loudest hue in the panel.
+ *
+ * The ink therefore drops to `secondary` — the exact step the results tab already gives
+ * the same node name, so one name reads one way in both tabs — and what tells a reader
+ * that this particular *word* presses is the app's existing quiet-link underline
+ * (`--color-indigo-line-a32` at a 2px offset, the `.prose-link` values, written the way
+ * `GatewayDocPage` already writes them). That underline is the mark a Results row must
+ * **not** wear: there the whole row presses, not a word inside it. Text decoration is
+ * painted inside the line box, so the 52px row pitch does not move.
+ */
+const HISTORY_OBJECT_CLASS = controlClass({
+  shape: 'link',
+  tone: 'secondary',
+  truncate: true,
+  hoverInk: 'strong',
+  className:
+    'min-w-0 underline decoration-[color:var(--color-indigo-line-a32)] underline-offset-2 hover:decoration-[color:var(--color-indigo-accent)]',
+});
+
 const HISTORY_LABEL_KEY: Readonly<Record<BellHistoryRow['kind'], string>> = {
   'human-decision': 'decisionAllowed',
   'task-start': 'runningTask',
@@ -736,7 +817,8 @@ function HistoryRow({
         <span className={ROW_HEADLINE_CLASS}>
           <span
             className={cn(
-              'shrink-0 text-label',
+              // Shrinkable for the same reason as the result row's sentence.
+              'min-w-0 truncate text-label',
               problem
                 ? 'text-[color:var(--color-status-warning)]'
                 : 'text-[color:var(--color-text-primary)]',
@@ -754,13 +836,7 @@ function HistoryRow({
                 }}
                 title={row.node.slug}
                 aria-label={t('openOnMap', { name: row.node.name })}
-                className={controlClass({
-                  shape: 'link',
-                  tone: 'accent',
-                  truncate: true,
-                  hoverInk: 'strong',
-                  className: 'min-w-0',
-                })}
+                className={HISTORY_OBJECT_CLASS}
               >
                 {row.node.name}
               </button>
@@ -769,13 +845,7 @@ function HistoryRow({
                 href={getTopologyFocusHref(row.node.slug)}
                 title={row.node.slug}
                 aria-label={t('openOnMap', { name: row.node.name })}
-                className={controlClass({
-                  shape: 'link',
-                  tone: 'accent',
-                  truncate: true,
-                  hoverInk: 'strong',
-                  className: 'min-w-0',
-                })}
+                className={HISTORY_OBJECT_CLASS}
               >
                 {row.node.name}
               </Link>

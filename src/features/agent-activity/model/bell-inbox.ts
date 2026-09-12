@@ -96,7 +96,7 @@ export type BellResult =
  * The last one is here because the timeline was answering "what happened, when" without
  * the person's own allow and reject in it (design-lead and po-steward, 2026-09-12). A
  * rejected write produces no log line at all, so before this its only rendering anywhere
- * was the folded `결과` row.
+ * was the folded Results row.
  */
 export interface BellHistoryRow {
   id: string;
@@ -117,7 +117,8 @@ export interface BellHistoryRow {
   result: AcpWorkResult | null;
 }
 
-export interface BellHistoryGroup {
+/** A day's worth of timeline rows. Not exported: the panel reads it through `BellInbox`. */
+interface BellHistoryGroup {
   /** Stable day key (`YYYY-MM-DD` in the reader's own timezone). */
   key: string;
   /** `today` and `yesterday` are named; anything older prints its date. */
@@ -190,7 +191,7 @@ function agentFamily(raw: string | null | undefined): string | null {
  *
  * ⚠️ **Time alone is not enough** (po-evidence, 2026-09-12): two agents can work minutes
  * apart in one folder, and a decision credited to the wrong turn makes a task row say
- * 허용 1 for permission the person never gave it. When both records name an agent, they
+ * "1 allowed" for permission the person never gave it. When both records name an agent, they
  * have to be the same one; when either is silent, time decides alone rather than the row
  * being dropped.
  */
@@ -241,7 +242,7 @@ function leadingWrite(counts: AgentWriteCounts): string {
  * ⚠️ Keyed on the subject alone, the fold could invert a person's own decision
  * (po-steward, 2026-09-12): reject-then-retry-then-allow on the same request by the same
  * agent — the ordinary shape of a correction — folded into one row, the newer row won, and
- * the panel printed `허용했어요 ×2` over a rejection that had happened. Receipts never
+ * the panel printed "You allowed it ×2" over a rejection that had happened. Receipts never
  * reach the timeline, so that row is the only rendering the decision gets. Two rows fold
  * only when they would print the same sentence.
  */
@@ -423,7 +424,7 @@ export function deriveBellInbox({
   }
   /*
    * A decision that produced no write is in no log, so the timeline has to take it from the
-   * receipt directly — otherwise the only place a rejection is ever seen is a `결과` row
+   * receipt directly — otherwise the only place a rejection is ever seen is a Results row
    * that folding could have covered.
    */
   for (const receipt of orphanReceipts) {

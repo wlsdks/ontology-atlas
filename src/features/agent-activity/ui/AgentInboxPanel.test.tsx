@@ -72,7 +72,7 @@ describe('결과 줄의 두 번째 줄 — 사실 목록', () => {
   });
 });
 
-/** Each tab says what is not there in its own words, and only the 할 일 one carries a door. */
+/** Each tab says what is not there in its own words, and only the To do one carries a door. */
 describe('빈 탭', () => {
   const empty: BellInbox = { todos: [], results: [], history: [], unreadResults: 0 };
 
@@ -88,5 +88,97 @@ describe('빈 탭', () => {
     );
     fireEvent.click(screen.getByRole('tab', { name: /기록/ }));
     expect(screen.getByTestId('agent-inbox-history-empty')).toBeInTheDocument();
+  });
+});
+
+/**
+ * Guardian verdict, 2026-09-12 — **indigo marks what needs the person, and the strip
+ * counts only what can be acted on.**
+ *
+ * Measured before the correction (accent-ink pixels in the panel body of the same crops
+ * `pil-edges.json` reads): To do 154 · Results 128 · History 823. A settled timeline held
+ * 6.4× the accent ink of the tab holding four unread results, because its node names were
+ * `tone: 'accent'`. Two seats prescribed opposite ink moves; both are refused here. The
+ * timeline's object keeps its link — it is the only control in an inert row — and trades
+ * the hue for the app's quiet-link underline, while a result row, whose *whole row* is the
+ * button, gains no word-level mark and says its destination where there is room for it.
+ */
+describe('패널의 잉크와 숫자 — 주의를 끄는 것만 인디고', () => {
+  const history: BellInbox = {
+    todos: [],
+    results: [task],
+    unreadResults: 1,
+    history: [
+      {
+        key: 'today',
+        label: 'today',
+        at: NOW - 4 * MINUTE,
+        rows: [
+          {
+            id: 'task:1',
+            at: NOW - 4 * MINUTE,
+            kind: 'task-end',
+            agent: 'claude-code',
+            node: { slug: 'domains/orders', name: '주문', kind: 'domain' },
+            label: null,
+            counts: { added: 13, edited: 0, removed: 0 },
+            problems: null,
+            childCount: null,
+            durationMs: 2 * MINUTE,
+            running: false,
+            decision: null,
+            result: null,
+          },
+        ],
+      },
+    ],
+  };
+
+  function renderHistory() {
+    // The panel remembers the last tab in `localStorage`, so each case starts from the
+    // same place rather than from the previous case's press.
+    window.localStorage.clear();
+    return render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <AgentInboxPanel inbox={history} feed={feed} onOpenNode={vi.fn()} />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it('기록의 대상 이름은 인디고를 내려놓고 밑줄로 눌릴 수 있음을 말한다', () => {
+    renderHistory();
+    fireEvent.click(screen.getByRole('tab', { name: '기록' }));
+    const object = screen.getByRole('button', { name: '지도에서 주문 열기' });
+    // The hue leaves: the loudest ink in the panel no longer sits on a settled timeline.
+    expect(object.className).not.toContain('text-[color:var(--color-indigo-accent)]');
+    // It takes the step the results tab already gives the same name, so one name reads
+    // one way in both tabs.
+    expect(object.className).toContain('--color-text-secondary');
+    // What is left saying "this word presses" is the app's existing quiet-link underline,
+    // and indigo returns only under the cursor.
+    expect(object.className).toContain('decoration-[color:var(--color-indigo-line-a32)]');
+    expect(object.className).toContain('hover:decoration-[color:var(--color-indigo-accent)]');
+  });
+
+  it('결과 줄은 눌렀을 때 어디로 가는지 이름으로 말한다 — 요약을 지우지 않고', () => {
+    renderHistory();
+    fireEvent.click(screen.getByRole('tab', { name: /결과/ }));
+    const row = screen.getByTestId('agent-inbox-result-row');
+    // The whole row is the button, so the destination is appended to the summary rather
+    // than replacing it through `aria-label`.
+    const name = screen.getByRole('button', { name: /지도에서 주문 열기/ });
+    expect(name).toBe(row);
+    expect(name).toHaveAccessibleName(/개념 1개를 고쳤어요/);
+    // A word inside the row takes no underline — the row presses, not the word.
+    expect(row.querySelector('.underline')).toBeNull();
+  });
+
+  it('기록 탭은 숫자를 달지 않는다 — 셀 수 있는 것만 센다', () => {
+    renderHistory();
+    // To do and Results count things a person acts on or is credited with; the timeline's
+    // length is a windowed log, a different unit in the same engraved slot.
+    expect(screen.getByRole('tab', { name: '할 일, 0' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '결과, 1' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '기록' })).toBeInTheDocument();
   });
 });

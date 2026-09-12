@@ -95,12 +95,22 @@ export function AgentActivityChip({
    * filled indigo; otherwise the badge counts the **results** nobody has opened.
    *
    * ⚠️ Not `feed.unreadCount`, which counts raw notifications: this slice folds a task's
-   * start and its end into one row, so a bell reading 8 sat over a `결과 4` with four
+   * start and its end into one row, so a bell reading 8 sat over a Results tab reading 4 with four
    * unread dots (measured on the seeded folder, design-lead round 1). The badge, the dots
-   * and the `모두 읽음` door now read the same number.
+   * and the "Mark all read" door now read the same number.
    */
   const badgeCount = todoCount > 0 ? todoCount : inbox.unreadResults;
   const [openSurface, setOpenSurface] = useState<'status' | 'notifications' | null>(null);
+  /*
+   * **Which of the two views the box holds, kept through the exit.**
+   *
+   * `openSurface` goes null the moment the box starts closing, so a child conditioned on
+   * it unmounted in the same frame and the rounded box faded out **empty** — the content
+   * hard-cut while its own container was still animating. This is set by the press that
+   * opens a view and never cleared, so the two views are a swap (the box always holds one
+   * of them) rather than two appearances.
+   */
+  const [renderedSurface, setRenderedSurface] = useState<'status' | 'notifications'>('notifications');
   const open = openSurface !== null;
   const rootRef = useRef<HTMLDivElement | null>(null);
   const statusRef = useRef<HTMLButtonElement | null>(null);
@@ -197,6 +207,7 @@ export function AgentActivityChip({
       return;
     }
     openTriggerRef.current = trigger;
+    setRenderedSurface(surface);
     setOpenSurface(surface);
   };
 
@@ -348,26 +359,43 @@ export function AgentActivityChip({
         open={open}
         origin="top right"
         role="group"
-        aria-label={t(openSurface === 'notifications' ? 'notificationTitle' : 'inboxTitle')}
+        aria-label={t(renderedSurface === 'notifications' ? 'notificationTitle' : 'inboxTitle')}
         data-testid="agent-activity-inbox"
         data-agent-activity-panel={openSurface ?? undefined}
+        data-agent-activity-rendered={renderedSurface}
         style={{ right: 'calc(var(--chrome-tile-size) + 8px)' }}
         className={cn(
-          'absolute z-30 w-[var(--map-panel-width)] overflow-hidden whitespace-normal rounded-[var(--map-panel-radius)] border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]',
+          /*
+           * ⚠️ **The viewport is the hard ceiling; the body's own cap is the preferred one**
+           * (design-responsive, 2026-09-12). With no height token the box grew to whatever
+           * its content wanted: at 768×600 with the browser's text at 150% the closing
+           * sentence was sliced in half by the bottom tab bar, and at 200% four of the five
+           * rows plus the footer sat below the window edge with no way to scroll to them.
+           * The ceiling is the viewport **minus this box's own anchor**, because
+           * `--map-panel-max-height` alone is not it: that token is written for a surface
+           * hanging at `--topology-node-popover-top`, and this one hangs under the utility
+           * lane (`--chrome-inset` + a `--chrome-tile-size` row + the `top` offsets written
+           * on this very element, 52 + 8). Measured at 768×600 with the token alone: the box
+           * ended 28px inside the bottom tab bar because its real top was 124, not 72.
+           * `--map-panel-bottom-reserve` carries the tab bar and the safe area below `lg`,
+           * and the flex column hands the leftover to the scrolling body rather than to the
+           * header or the footer.
+           */
+          'absolute z-30 flex max-h-[calc(100dvh-var(--chrome-inset)-var(--chrome-tile-size)-60px-var(--map-panel-bottom-reserve))] w-[var(--map-panel-width)] flex-col overflow-hidden whitespace-normal rounded-[var(--map-panel-radius)] border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]',
           openSurface === 'status' || showStatus
             ? 'top-[calc(100%+52px)]'
             : 'top-[calc(100%+8px)]',
         )}
       >
-        <div className="flex items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
           <span className="min-w-0 flex-1 truncate">
-            {t(openSurface === 'notifications' ? 'notificationTitle' : 'inboxTitle')}
+            {t(renderedSurface === 'notifications' ? 'notificationTitle' : 'inboxTitle')}
           </span>
           {/*
             The one door that moves the read boundary in a single press. It appears only
             with something unread behind it — a control that can change nothing is noise.
           */}
-          {openSurface === 'notifications' && inbox.unreadResults > 0 ? (
+          {renderedSurface === 'notifications' && inbox.unreadResults > 0 ? (
             <MarkAllReadDoor
               onPress={feed.markAllRead}
               label={t('markAllReadCount', { count: inbox.unreadResults })}
@@ -375,7 +403,15 @@ export function AgentActivityChip({
           ) : null}
         </div>
 
-        {openSurface === 'status' && feed.work.mode !== 'idle' ? (
+        {renderedSurface === 'notifications' ? (
+          <AgentInboxPanel
+            inbox={inbox}
+            feed={feed}
+            onOpenNode={onOpenNode}
+            onOpenConversation={onOpenConversation}
+            onClose={() => close(true)}
+          />
+        ) : feed.work.mode !== 'idle' ? (
           <section
             data-testid="agent-activity-current-work"
             className="px-3 py-3"
@@ -451,17 +487,7 @@ export function AgentActivityChip({
           </section>
         ) : null}
 
-        {openSurface === 'notifications' ? (
-          <AgentInboxPanel
-            inbox={inbox}
-            feed={feed}
-            onOpenNode={onOpenNode}
-            onOpenConversation={onOpenConversation}
-            onClose={() => close(true)}
-          />
-        ) : null}
-
-        <p className="border-t border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-label text-[color:var(--color-text-quaternary)]">
+        <p className="shrink-0 border-t border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-label text-[color:var(--color-text-quaternary)]">
           {t('inboxFooter')}
         </p>
       </Surface>

@@ -216,7 +216,7 @@ describe('deriveBellInbox — 결과', () => {
   /*
    * ⚠️ Keyed on the subject alone the fold could invert a decision: reject, retry, allow on
    * the same request folds into one row, the newer row wins, and the panel prints
-   * 「허용했어요 ×2」 over a rejection that really happened. Receipts never reach the
+   * "You allowed it ×2" over a rejection that really happened. Receipts never reach the
    * timeline, so this row is the only rendering that decision gets.
    */
   it('반대되는 판정은 접히지 않는다 — 거절한 기록이 허용으로 덮이지 않는다', () => {
