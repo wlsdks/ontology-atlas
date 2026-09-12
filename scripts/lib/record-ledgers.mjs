@@ -6,7 +6,7 @@ const DOCUMENTS = new Set(['docs/DECISIONS.md', 'docs/CHANGELOG.md']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CHANGE_CATEGORIES = ['Added', 'Changed', 'Fixed', 'Removed'];
 
-export class RecordLedgerError extends Error {
+class RecordLedgerError extends Error {
   constructor(message) { super(`[record-ledgers] ${message}`); this.name = 'RecordLedgerError'; }
 }
 

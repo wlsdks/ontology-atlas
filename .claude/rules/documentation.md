@@ -84,7 +84,7 @@ worktrees never allocate a shared row or prepend to the same file.
 
 - Decision: `pnpm record:new -- --kind=decision --date=YYYY-MM-DD --slug=<slug> --input=/tmp/body.md`
 - Change fact: add `--kind=change --category=Added|Changed|Fixed|Removed`; files land in `docs/records/changes/`.
-- Release: add `docs/records/releases/`, whose body lists change UUIDs.
+- Release: use `pnpm record:new -- --kind=release --date=YYYY-MM-DD --version=vX.Y.Z --title=<title> --changes=<uuid,uuid>`; the marker lists the exact included change UUIDs.
 - PO pilot: `pnpm po:record -- --type=run|update|policy --input=/tmp/file.json`; run and update IDs are UUIDs, and an update references the stable run UUID.
 
 Readers and checks compose these fragments with the checksum-frozen legacy

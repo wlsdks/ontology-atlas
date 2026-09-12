@@ -33,12 +33,7 @@ describe("pre-commit 훅 배선", () => {
     expect(() => accessSync(HOOK, constants.X_OK)).not.toThrow();
   });
 
-  it("package.json 의 prepare 가 core.hooksPath 를 .githooks 로 건다", () => {
-    const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
-    expect(pkg.scripts?.prepare).toBeTypeOf("string");
-    expect(pkg.scripts.prepare).toContain("core.hooksPath");
-    expect(pkg.scripts.prepare).toContain(".githooks");
-  });
+
 
   it("훅이 staged snapshot 안에서 생성 가능성을 검증하고 stage 는 건드리지 않는다", () => {
     const source = readFileSync(HOOK, "utf-8");

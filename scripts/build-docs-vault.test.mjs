@@ -256,6 +256,7 @@ test('virtual ledger keeps its public slug, hides record fragments, and takes th
   try {
     await mkdir(path.join(root, 'docs', 'records', 'decisions'), { recursive: true });
     await writeFile(path.join(root, 'docs', 'DECISIONS.md'), '# Decisions\n\nLegacy.\n', 'utf8');
+    await writeFile(path.join(root, 'docs', 'records', 'README.md'), '# Recording guide\n', 'utf8');
     await writeFile(path.join(root, 'docs', 'records', 'decisions', 'new.md'), 'new record\n', 'utf8');
     git(['init', '-q', '-b', 'main']);
     git(['config', 'user.email', 'test@example.com']);
@@ -281,10 +282,10 @@ test('virtual ledger keeps its public slug, hides record fragments, and takes th
         inputs: ['docs/DECISIONS.md', 'docs/records/decisions/new.md'],
       } : null],
     });
-    assert.deepEqual(Object.keys(result.content), ['DECISIONS']);
+    assert.deepEqual(Object.keys(result.content), ['DECISIONS', 'records/README']);
     assert.equal(result.content.DECISIONS, '# Decisions\n\nComposed.\n');
     assert.equal(result.manifest.docs[0].updatedAt, '2026-03-08');
-    assert.deepEqual(result.publicFiles.map((file) => file.relativePath), ['DECISIONS.md']);
+    assert.deepEqual(result.publicFiles.map((file) => file.relativePath), ['DECISIONS.md', 'records/README.md']);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

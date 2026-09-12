@@ -122,7 +122,7 @@ const RULES = [
     command: 'pnpm test:docs-vault',
     reason: 'docs-vault build/check or conflict-recovery helper changed',
     matches: [
-      /^scripts\/(?:build-docs-vault|resolve-docs-vault-conflicts)\.(?:mjs|test\.mjs)$/,
+      /^scripts\/(?:build-docs-vault|resolve-docs-vault-conflicts|prepare-worktree)\.(?:mjs|test\.mjs)$/,
       /^scripts\/lib\/(?:record-ledgers|po-pilot-records)\.(?:mjs|test\.mjs)$/,
     ],
   },

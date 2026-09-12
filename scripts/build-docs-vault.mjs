@@ -265,7 +265,12 @@ async function walk(dir) {
   );
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
-    if (entry.isDirectory() && NOT_PRODUCT_DOCS.has(entry.name)) continue;
+    if (entry.isDirectory() && NOT_PRODUCT_DOCS.has(entry.name)) {
+      // The recording guide is linked by composed ledgers; fragments are consumed there.
+      const guide = path.join(dir, entry.name, 'README.md');
+      if (entry.name === 'records' && existsSync(guide)) out.push(guide);
+      continue;
+    }
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       const nested = await walk(full);

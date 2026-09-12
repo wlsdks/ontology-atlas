@@ -38,8 +38,9 @@ export function evaluateMarkdownLanguageGate(audit, baselines = MARKDOWN_LANGUAG
   if (audit.localeTemplateFiles === 0) {
     errors.push('markdown language inventory found zero files in the Korean vault template');
   }
-  if (audit.generatedFiles === 0 || audit.mirrorFiles === 0) {
-    errors.push('markdown language inventory did not observe both generated and mirrored Markdown');
+  // Reproducible public copies are ignored; the canonical source remains the subject.
+  if (audit.mirrorFiles === 0) {
+    errors.push('markdown language inventory did not observe mirrored Markdown');
   }
 
   for (const [scopeName, baseline] of Object.entries(baselines)) {

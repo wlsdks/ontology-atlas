@@ -39,13 +39,7 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
     expect(statSync(path.join(ROOT, HOOK_PATH)).mode & 0o111).toBeGreaterThan(0);
   });
 
-  it("package.json 의 prepare 가 core.hooksPath 를 .githooks 로 건다", () => {
-    const pkg = JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8")) as {
-      scripts?: Record<string, string>;
-    };
-    expect(pkg.scripts?.prepare ?? "").toContain("core.hooksPath");
-    expect(pkg.scripts?.prepare ?? "").toContain(".githooks");
-  });
+
 
   it("레인은 병렬로 돈다 — 직렬이면 이 훅은 다시 12시간이 된다", () => {
     // A lane is backgrounded and then joined; both halves have to be present.

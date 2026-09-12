@@ -6,6 +6,8 @@ import { dirname, join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 
+import { prepareWorktree } from './prepare-worktree.mjs';
+
 const SOURCE = new URL('..', import.meta.url).pathname;
 const PREPARE = JSON.parse(readFileSync(join(SOURCE, 'package.json'), 'utf8')).scripts.prepare;
 const UUID_A = '30000000-0000-4000-8000-000000000001';
@@ -22,7 +24,7 @@ const PILOT = `---\nstarted: 2026-09-01\ndecision_target: 20\ndecision_deadline:
 
 function seed(root) {
   for (const path of [
-    'scripts/build-docs-vault.mjs', 'scripts/new-record.mjs',
+    'scripts/build-docs-vault.mjs', 'scripts/new-record.mjs', 'scripts/prepare-worktree.mjs',
     'scripts/lib/parse-frontmatter.mjs', 'scripts/lib/record-ledgers.mjs',
     'scripts/lib/po-pilot-records.mjs', 'scripts/lib/po-pilot.mjs',
     'scripts/lib/po-risk-router.mjs', 'scripts/lib/decision-record-template.mjs',
@@ -50,12 +52,33 @@ function seed(root) {
   git(root, 'config', 'core.hooksPath', '.githooks');
 }
 
+test('prepare configures Git when present, propagates config failure, and builds archives without Git', () => {
+  const calls = [];
+  const spawn = (command, args) => {
+    calls.push([command, args]);
+    if (command === 'git' && args[0] === 'rev-parse') return { status: 0, stdout: '/tmp/repo\n' };
+    if (command === 'git') return { status: 9 };
+    return { status: 0 };
+  };
+  assert.equal(prepareWorktree({ root: '/tmp/repo', spawn }), 9);
+  assert.equal(calls.some(([command]) => command === process.execPath), false);
+
+  calls.length = 0;
+  const archiveSpawn = (command, args) => {
+    calls.push([command, args]);
+    return command === 'git' ? { status: 128, stderr: 'not a git repository' } : { status: 0 };
+  };
+  assert.equal(prepareWorktree({ root: '/tmp/archive', spawn: archiveSpawn }), 0);
+  assert.deepEqual(calls.at(-1), [process.execPath, ['scripts/build-docs-vault.mjs']]);
+});
+
 test('parallel worktrees merge immutable records and every checkout materializes ignored outputs', () => {
   const scratch = mkdtempSync(join(tmpdir(), 'atlas-worktree-materialization-'));
   const repo = join(scratch, 'repo');
   const left = join(scratch, 'left');
   const right = join(scratch, 'right');
   const cold = join(scratch, 'cold');
+  const archive = join(scratch, 'archive');
   mkdirSync(repo);
   try {
     seed(repo);
@@ -96,6 +119,20 @@ test('parallel worktrees merge immutable records and every checkout materializes
       assert.equal(git(cold, 'check-ignore', path).length > 0, true, `${path} is not ignored`);
     }
     assert.equal(git(cold, 'status', '--short'), '');
+
+    const tar = join(scratch, 'fixture.tar');
+    execFileSync('git', ['archive', '--format=tar', `--output=${tar}`, 'HEAD'], { cwd: repo });
+    mkdirSync(archive);
+    execFileSync('tar', ['-xf', tar, '-C', archive]);
+    assert.equal(existsSync(join(archive, '.git')), false);
+    execFileSync('npm', ['run', 'prepare', '--silent'], { cwd: archive, encoding: 'utf8' });
+    assert.equal(existsSync(join(archive, 'src/entities/docs-vault/data/manifest.json')), true);
+    writeFileSync(join(archive, 'docs/DECISIONS.md'), `${DECISIONS}\nchanged after freeze\n`);
+    assert.throws(
+      () => execFileSync('npm', ['run', 'prepare', '--silent'], { cwd: archive, encoding: 'utf8', stdio: 'pipe' }),
+      /Command failed/,
+      'prepare hid a generated-document failure outside Git',
+    );
   } finally {
     try { git(repo, 'worktree', 'remove', '--force', left); } catch {}
     try { git(repo, 'worktree', 'remove', '--force', right); } catch {}
