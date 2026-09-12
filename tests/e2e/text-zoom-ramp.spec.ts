@@ -160,7 +160,12 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     const steps = RAMP.map((entry) => entry.step);
 
     // At 100% — the byte-identity witness. Every number here is what the ramp rendered
-    // before it was written in `rem`; the unit changed and the pixel did not.
+    // before it was written in `rem`; the unit changed and the pixel did not. The root is
+    // stated rather than assumed, so a runner whose own default font size is not 16 fails
+    // here with the ramp's numbers instead of somewhere further down with none.
+    await page.evaluate((root) => {
+      document.documentElement.style.fontSize = `${root}px`;
+    }, DEFAULT_ROOT_PX);
     const atDefault = (await page.evaluate(eval(READ_RAMP), steps)) as RampRead[];
     expect(atDefault).toEqual(
       RAMP.map((entry) => ({
