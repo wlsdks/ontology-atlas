@@ -77,7 +77,7 @@
     "docs-vault:build": "node scripts/build-docs-vault.mjs",
     "docs-vault:check": "node scripts/build-docs-vault.mjs --check",
     "docs-vault:resolve-conflicts": "node scripts/resolve-docs-vault-conflicts.mjs",
-    "test:docs-vault": "node --test scripts/build-docs-vault.test.mjs scripts/resolve-docs-vault-conflicts.test.mjs",
+    "test:docs-vault": "node --test scripts/build-docs-vault.test.mjs scripts/resolve-docs-vault-conflicts.test.mjs scripts/worktree-materialization.test.mjs",
     "docs:surface:build": "node scripts/build-docs-surface.mjs",
     "docs:surface:check": "node scripts/build-docs-surface.mjs --check",
     "docs:comment-refs": "node scripts/check-comment-refs.mjs",

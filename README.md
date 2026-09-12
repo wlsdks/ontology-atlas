@@ -108,7 +108,13 @@ second direct source.
 Not a roadmap. This summarizes behavior documented in the
 [feature inventory](docs/FEATURES.md), the
 [specification](docs/ONTOLOGY-ATLAS-SPEC.md), and the
-[decision ledger](docs/DECISIONS.md).
+[decision history](docs/DECISIONS.md) and [independent record workflow](docs/records/README.md).
+
+Each worktree adds its own decision/change/pilot fragments with `pnpm record:new`
+and `pnpm po:record`. `pnpm test:records` checks composition and writer contracts.
+Docs Vault JSON and public copies are ignored build products, materialized by
+installation and checkout/merge hooks; use `pnpm docs-vault:build` after an
+installation with scripts disabled.
 
 **Working today**
 

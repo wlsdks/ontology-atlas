@@ -102,7 +102,7 @@ only: when to open a gate, not how it runs.
   `/design-council` runs only for routed structural commitments, with selected
   seats and `design-guardian` deciding. Cross-critique needs material conflict.
 - **Decision ledger** — `docs/DECISIONS.md` is frozen legacy input; new records
-  are immutable `docs/records/decisions/YYYY-MM-DD-slug-UUID.md` fragments created
+  are immutable `docs/records/decisions/` fragments created
   by `pnpm record:new`;
   `pnpm decisions:find <terms>` finds the record to cite or overturn
   explicitly, keeping the losing dissent and a falsifier. Never silently
@@ -143,7 +143,7 @@ When documentation changes, keep the owner current: public behavior in
 `docs/ARCHITECTURE.md`; MCP/CLI contracts in their own READMEs; decisions through
 `pnpm record:new -- --kind=decision --date=YYYY-MM-DD --slug=<slug> --input=/tmp/body.md`;
 change facts through the same command with `--kind=change` and `--category=Added|Changed|Fixed|Removed`;
-release groupings in `docs/records/releases/vVERSION.md`. Current authored prose
+release groupings in `docs/records/releases/`. Current authored prose
 is English; `display_ko` frontmatter and `cli/templates/vault-ko/**` are
 localized data. Record fragments are immutable; legacy ledgers remain frozen and
 are read only through composition. Current docs links must resolve.

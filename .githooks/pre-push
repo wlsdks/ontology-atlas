@@ -117,6 +117,11 @@ TS='\.tsx?$|\.mjs$|tsconfig.*\.json$|next\.config\.ts$'
 APP='^src/|^app/'
 DOCS='^docs/|^[A-Z0-9_-]+\.md$|^\.claude/|^\.agents/'
 
+# Materialize once before parallel readers; derived output is never staged.
+if touched '^docs/|^samples/storefront/|^scripts/(build-docs-vault|lib/(record-ledgers|po-pilot-records|parse-frontmatter))'; then
+  pnpm docs-vault:build || exit 1
+fi
+
 touched "$TS" "$APP" && lane typecheck 'pnpm exec tsc --noEmit'
 # ESLint is per-file, so linting the whole tree to judge one changed file costs
 # 84.9 s to learn what a few seconds can say (measured 2026-09-12). A configuration
@@ -164,7 +169,7 @@ touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:mes
 # silently and only CI's unconditional agents:check caught it (bug sweep
 # 2026-09-01 — the same half-subject-set failure noted here on 2026-08-24).
 touched '^AGENTS\.md$|^CLAUDE\.md$|^\.claude/|^\.agents/|^\.codex/|^\.mcp\.json$|(^|/)AGENTS\.md$' && lane agents 'pnpm agents:check'
-touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:language && pnpm docs:links && pnpm docs-vault:check'
+touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:language && pnpm docs:links'
 # The gateway shows one vault file verbatim; the committed copy must match the vault.
 touched '^docs/ontology/' '^scripts/generate-evidence-specimen' '^src/views/download/model/evidence-specimen' && lane specimen 'pnpm gateway:specimen:check'
 touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'

@@ -112,6 +112,25 @@ export function readPoPilotSource(relativePath, { root = process.cwd() } = {}) {
   return { content: loaded.content, inputs: loaded.inputs };
 }
 
+function preflight(type, record, root) {
+  if (!readable(join(root, 'docs/PO-PILOT.md'))) return;
+  const loaded = loadPoPilotRecords({ root });
+  let content = loaded.content;
+  if (type === 'run') {
+    content = appendRows(content, '## Structured runs', [runRow(record)]);
+    content = appendRows(content, '## Outcome updates', [updateRow({ ...record.initialUpdate, runId: record.id })]);
+  } else if (type === 'update') {
+    content = appendRows(content, '## Outcome updates', [updateRow(record)]);
+  } else {
+    content = content.replace(/^outcome: .*$/m, `outcome: ${record.outcome}`);
+  }
+  parsePoPilot(content);
+}
+
+function readable(path) {
+  try { readFileSync(path); return true; } catch (error) { if (error.code === 'ENOENT') return false; throw error; }
+}
+
 export function writePoPilotFragment(type, input, { root = process.cwd(), now = () => new Date().toISOString(), uuid = randomUUID } = {}) {
   const config = {
     run: [RUN_DIR, 'po-pilot-run/v1'],
@@ -132,6 +151,7 @@ export function writePoPilotFragment(type, input, { root = process.cwd(), now = 
   if (type === 'policy' && !['pending', 'keep', 'adjust', 'revert'].includes(input.outcome)) fail('policy outcome is invalid');
   const recordId = id(input.id ?? uuid(), 'record id');
   const record = { ...input, schema: config[1], id: recordId, recordedAt: instant(input.recordedAt ?? now(), 'recordedAt') };
+  preflight(type, record, root);
   const directory = join(root, config[0]);
   mkdirSync(directory, { recursive: true });
   const path = join(directory, `${recordId}.json`);

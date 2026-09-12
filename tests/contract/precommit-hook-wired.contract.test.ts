@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { accessSync, chmodSync, constants, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { accessSync, chmodSync, constants, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -115,6 +115,46 @@ describe("pre-commit 훅 배선", () => {
       writeFileSync(join(repo, "docs", "GUIDE.md"), "GOOD\n");
       const blocked = run();
       expect(blocked.status).toBe(1);
+      expect(blocked.stdout).toContain("staged Docs Vault sources cannot be generated");
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it("실제 생성기가 staged policy JSON 오류를 막고 unstaged 오류는 읽지 않는다", () => {
+    const repo = mkdtempSync(join(tmpdir(), "atlas-precommit-record-json-"));
+    try {
+      cpSync(join(ROOT, "docs"), join(repo, "docs"), { recursive: true });
+      cpSync(join(ROOT, "samples", "storefront"), join(repo, "samples", "storefront"), {
+        recursive: true,
+      });
+      mkdirSync(join(repo, "scripts"), { recursive: true });
+      cpSync(join(ROOT, "scripts", "build-docs-vault.mjs"), join(repo, "scripts", "build-docs-vault.mjs"));
+      cpSync(join(ROOT, "scripts", "lib"), join(repo, "scripts", "lib"), { recursive: true });
+      execFileSync("git", ["init", "-q"], { cwd: repo });
+      execFileSync("git", ["config", "user.name", "Atlas Test"], { cwd: repo });
+      execFileSync("git", ["config", "user.email", "atlas@example.invalid"], { cwd: repo });
+      execFileSync("git", ["add", "."], { cwd: repo });
+      execFileSync("git", ["commit", "-qm", "fixture"], { cwd: repo });
+      const policyPath = join(repo, "docs", "records", "legacy.json");
+      const validPolicy = readFileSync(policyPath, "utf8");
+      const run = () => spawnSync(HOOK, [], { cwd: repo, encoding: "utf8" });
+
+      // A harmless staged formatting change is valid; the broken working copy must be invisible.
+      writeFileSync(policyPath, `${validPolicy.trimEnd()}\n\n`);
+      execFileSync("git", ["add", "docs/records/legacy.json"], { cwd: repo });
+      writeFileSync(policyPath, "{ broken working-copy policy\n");
+      const stagedGood = run();
+      expect(stagedGood.status, `${stagedGood.stdout}\n${stagedGood.stderr}`).toBe(0);
+
+      // Now the malformed policy is staged and the working copy is repaired: schema parsing blocks.
+      execFileSync("git", ["add", "docs/records/legacy.json"], { cwd: repo });
+      writeFileSync(policyPath, validPolicy);
+      const blocked = run();
+      expect(blocked.status).toBe(1);
+      expect(`${blocked.stdout}\n${blocked.stderr}`).toMatch(
+        /record-ledgers.*legacy\.json|cannot read docs\/records\/legacy\.json/,
+      );
       expect(blocked.stdout).toContain("staged Docs Vault sources cannot be generated");
     } finally {
       rmSync(repo, { recursive: true, force: true });

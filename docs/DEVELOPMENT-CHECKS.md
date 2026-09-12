@@ -1108,3 +1108,11 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: Executable routing, documented seat references, agent metadata, and mirrored files agree; it does not judge human prose or rendered quality.
 **Escalate**: `pnpm agents:check` when shared skill or agent wiring changes beyond the design bench.
 **Fix**: Repair the reported route, metadata, reference, or mirror mismatch; do not pin replacement prose.
+
+
+## Independent record composition
+
+**Run**: `pnpm test:records`
+**Proves**: Independent decision, change, release and pilot fragments compose deterministically; duplicate IDs, invalid release assignments, malformed records and frozen-history edits fail before a writer creates a file.
+**Escalate**: `pnpm test:docs-vault`
+**Fix**: Correct the new fragment or its source input. Preserve frozen history and its checksum. See `docs/records/README.md` for writers and old-branch migration.

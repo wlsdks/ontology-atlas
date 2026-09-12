@@ -152,6 +152,7 @@ function resolveBase(explicit) {
 }
 
 const base = resolveBase(parseArgs(process.argv.slice(2)));
+if (process.argv.includes("--template")) { console.log(TEMPLATE); process.exit(0); }
 if (templateFailures()) process.exit(1);
 if (!base) {
   console.log("[decisions] no comparable base ref — skipping (nothing to diff against)");

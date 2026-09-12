@@ -1,5 +1,7 @@
 # DECISIONS — the council decision ledger
 
+> Frozen history since 2026-09-13. Add new decisions under `docs/records/decisions/` with `pnpm record:new`; `pnpm decisions:find` and the Docs Vault compose all records. See [record workflow](records/README.md). Historical recording instructions below describe the former format.
+
 > This file keeps **the decisions and the arguments that lost when they were
 > made**. `docs/CHANGELOG.md` answers *what changed and when*; this file
 > answers ***why it was decided that way, and what was staked on it***.

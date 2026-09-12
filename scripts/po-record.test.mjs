@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -20,5 +20,20 @@ test('refuses a run that could be created without its initial pending outcome', 
   const root = mkdtempSync(join(tmpdir(), 'atlas-po-writer-'));
   try {
     assert.throws(() => writePoPilotFragment('run', { decision: 'incomplete' }, { root }), /initialUpdate/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('preflights an update against the composed pilot before creating a file', () => {
+  const root = mkdtempSync(join(tmpdir(), 'atlas-po-writer-'));
+  try {
+    mkdirSync(join(root, 'docs'), { recursive: true });
+    writeFileSync(join(root, 'docs/PO-PILOT.md'), readFileSync(new URL('../docs/PO-PILOT.md', import.meta.url)));
+    assert.throws(() => writePoPilotFragment('update', {
+      id: '20000000-0000-4000-8000-000000000002',
+      runId: '20000000-0000-4000-8000-000000000003',
+      recordedAt: '2026-09-13T12:00:00.000Z',
+      date: '2026-09-13', proof: 'pass', ownerClear: 'yes', boundaryMiss: 'no', laterResult: 'held',
+    }, { root }), /unknown run/);
+    assert.equal(existsSync(join(root, 'docs/records/po-updates')), false);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });

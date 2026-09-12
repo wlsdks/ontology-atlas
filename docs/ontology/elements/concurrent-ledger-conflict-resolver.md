@@ -9,23 +9,24 @@ path: scripts/resolve-docs-vault-conflicts.mjs
 created_by: "agent:unknown"
 ---
 
-A fail-closed repository helper for concurrent worktrees. It semantically merges only complete dated records prepended to the append-only CHANGELOG and DECISIONS ledgers, refuses historical or unrelated conflicts, rebuilds deterministic docs-vault artifacts, and stages the verified result without continuing the Git operation.
+A fail-closed repository migration helper for concurrent worktrees. New decision, change and pilot records live in independent UUID fragments and are composed when read. This helper resolves tracked-era Docs Vault conflicts by removing derived mirrors from the index and regenerating local ignored output, without continuing the Git operation.
 
 ## Evidence
 
 - Primary implementation: `scripts/resolve-docs-vault-conflicts.mjs#resolveRepositoryConflicts`
-- Supporting implementation: `scripts/resolve-docs-vault-conflicts.mjs#mergeAppendOnlyLedger`
-- Focused test: `scripts/resolve-docs-vault-conflicts.test.mjs#keeps both concurrent records in one deterministic merge`
-- Focused test: `scripts/resolve-docs-vault-conflicts.test.mjs#resolves a real Git merge, regenerates outputs, and stages the complete result`
+- Record composition: `scripts/lib/record-ledgers.mjs#readLedgerSource`
+- Transition tests: `scripts/resolve-docs-vault-conflicts.test.mjs`
+- Independent worktree and cold-checkout proof: `scripts/worktree-materialization.test.mjs`
 
 ## Includes
 
-- Fail-closed merging of concurrent-worktree conflicts limited to complete, dated records prepended to the append-only CHANGELOG and DECISIONS ledgers.
-- Refusing historical or unrelated conflicts rather than guessing a resolution.
-- Rebuilding deterministic docs-vault artifacts and staging the verified result without continuing the git operation itself.
+- Removing conflicted reproducible Docs Vault mirrors from the index while materializing them locally from authored inputs.
+- Refusing frozen-history edits, unrelated conflicts and ambiguous authored changes.
+- Retaining legacy prepend-only record recovery only before the freeze policy exists.
+- Keeping the separate tracked census output contract when that file conflicts.
 
 ## Excludes
 
-- Committing or pushing the resolved state: the caller's git operation (merge/rebase) completes separately after this script stages the result.
-- Resolving conflicts in generated JSON under `src/entities/docs-vault/data/` or `public/docs-vault/` outside the ledger-only scope.
-- Any conflict shape other than a prepended dated ledger record; those are refused, not merged.
+- Committing, pushing, or completing the caller's merge or rebase.
+- Automatically converting historical ledger edits into new records with invented metadata.
+- Resolving concurrent edits to the same implementation or current reference document.

@@ -26,7 +26,9 @@ export function runChangelogCheck(argv, io = console, { cwd = process.cwd() } = 
   const entries = parseChangelog(hasFragments ? readFileSync(`${cwd}/${FILE}`, 'utf8') : source.content);
   const { entries: broken, shape } = checkChangelogTemplate(entries);
   if (broken.length === 0 && shape.length === 0) {
-    io.log(`[changelog] ${entries.length} entries fit the template ✓`);
+    const changeFacts = source.inputs.filter((path) => path.startsWith('docs/records/changes/')).length;
+    const releaseMarkers = source.inputs.filter((path) => path.startsWith('docs/records/releases/')).length;
+    io.log(`[changelog] ${entries.length} frozen entries + ${changeFacts} change facts + ${releaseMarkers} release markers fit their templates ✓`);
     return 0;
   }
   for (const problem of shape) io.error(`[changelog] ${problem}`);
@@ -41,7 +43,7 @@ export function runChangelogCheck(argv, io = console, { cwd = process.cwd() } = 
 [changelog] category lines in this order, ${CATEGORIES.join(', ')}, within ${LIMITS.lines} lines and ${LIMITS.bytes} bytes:
 ${TEMPLATE.split('\n').map((line) => `[changelog]   ${line}`).join('\n')}
 [changelog]
-[changelog] A pull request adds a line to the Unreleased entry; the release cut renames that entry to its tag.
+[changelog] A pull request adds one immutable change fragment; a release cut adds a marker assigning change IDs.
 [changelog] What a user cannot see belongs in the commit message, not here.`);
   return 1;
 }

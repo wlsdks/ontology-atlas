@@ -211,3 +211,37 @@ export function readLedgerSource(relativePath, { root = process.cwd() } = {}) {
   const inputs = [relativePath, ...(policy ? [policy.file] : []), ...result.fragments.map((f) => f.file)].sort();
   return { content: result.content, inputs };
 }
+
+/** Validate a prospective immutable record against all current sources without writing it. */
+export function validateNewRecord({ kind, date, id, version, changes = [], root = process.cwd() }) {
+  const document = kind === 'decision' ? 'docs/DECISIONS.md' : 'docs/CHANGELOG.md';
+  try { readFileSync(path.join(root, document), 'utf8'); }
+  catch (error) { if (error?.code === 'ENOENT') return; throw error; } // standalone writer fixture
+  readLedgerSource(document, { root }); // current state must itself be valid and frozen when fragmented
+
+  const decisionFragments = readFragments(root, 'docs/records/decisions', 'decision');
+  const changeFragments = readFragments(root, 'docs/records/changes', 'change');
+  const releaseMarkers = releases(root);
+  const allIds = new Map([...decisionFragments, ...changeFragments].map((item) => [item.meta.id, item.file]));
+  if (id && allIds.has(id)) throw new RecordLedgerError(`duplicate id ${id}: already used by ${allIds.get(id)}`);
+
+  const legacy = readFrozenDocument(document, { root });
+  const legacyDates = [...legacy.matchAll(/^## (\d{4}-\d{2}-\d{2})(?=\s)/gm)].map((match) => match[1]);
+  // Concurrent branches may finish out of date order; only frozen history is the floor.
+  const newest = legacyDates.sort().at(-1);
+  if (newest && date < newest) throw new RecordLedgerError(`new ${kind} date ${date} predates current newest record ${newest}`);
+
+  if (kind === 'release') {
+    const existingVersions = new Set([
+      ...[...legacy.matchAll(/^## \d{4}-\d{2}-\d{2} · (v\d+\.\d+\.\d+(?:-rc\.\d+)?):/gm)].map((match) => match[1]),
+      ...releaseMarkers.map((marker) => marker.meta.version),
+    ]);
+    if (existingVersions.has(version)) throw new RecordLedgerError(`release version ${version} already exists`);
+    const known = new Set(changeFragments.map((item) => item.meta.id));
+    const assigned = new Set(releaseMarkers.flatMap((marker) => marker.ids));
+    for (const changeId of changes) {
+      if (!known.has(changeId)) throw new RecordLedgerError(`release references unknown change id ${changeId}`);
+      if (assigned.has(changeId)) throw new RecordLedgerError(`change ${changeId} is already assigned to a release`);
+    }
+  }
+}
