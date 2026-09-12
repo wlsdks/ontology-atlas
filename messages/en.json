@@ -4282,7 +4282,7 @@
     "permission-denied": "This folder refused the write, so nothing changed. Allow Ontology Atlas to reach this folder in System Settings, under Privacy & Security, then try again.",
     "target-missing": "That folder or file is no longer there. It may have moved or been deleted, so open the folder again and retry.",
     "already-exists": "A file of that name is already there, so nothing was overwritten. Check the existing file or use another name, then try again.",
-    "app-required": "This action works only in the installed app. In a browser you can read, but not write.",
+    "app-required": "This action creates a file directly in the folder, so only the installed app can do it.",
     "answer-history-unreadable": "This answer's question or its link to earlier versions could not be read. Check that answer_thread in the info block at the top of the file starts with wiki/answers/, then try again.",
     "answer-path-invalid": "This answer does not live under wiki/answers/. Move the answer page into that folder, then try again.",
     "answer-sources-unmeasured": "One of the cited originals cannot be read right now, so the refresh did not start. Put the original files back, then try again.",
