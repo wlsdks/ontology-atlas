@@ -520,7 +520,7 @@ After four consecutive prescriptions for the size series (zoom removal → field
 
 | Body font | **Pretendard Variable** (self-hosted) | `--font-sans` |
 
-| Type ramp | caption 9.5 · label 11 · body 12.5 · body-lg 14 · title 16 · display 23 · hero 30 | `--text-*` |
+| Type ramp | caption 9.5 · label 11 · body 12.5 · body-lg 14 · title 16 · reading 16 · display 23 · hero 30 — **declared in `rem` against the 16px root** since 2026-09-12, so a browser's text-only zoom reaches them; the pixels are those numbers | `--text-*` |
 
 | Leading ramp | Paired 1:1 with size 14 · **16** · 20 · 22 · 24 · 28 · 34 + free 2 (1.06 · 1.7) | `--leading-*` |
 
@@ -2143,6 +2143,127 @@ braking the "codification redesign" principle. New code must pair them together 
 **Closest-convergence rule** (on substitution): Snap each literal px to the nearest step
 (±1px absorbed by ramp). Exactly between steps (e.g. 15px) goes to the upper step; off-ramp values (≥1.5px deviation) remain only via "explicit exceptions" below.
 
+#### The unit is `rem`, and that is the whole of the accessibility story (2026-09-12)
+
+The `px` column above is what the ramp **renders**. What it is **declared** in is `rem`, each
+step divided by the 16px root: `9.5px → 0.59375rem`, `11px → 0.6875rem`, `12.5px → 0.78125rem`,
+`14px → 0.875rem`, `16px → 1rem`, `23px → 1.4375rem`, `30px → 1.875rem`, `34px → 2.125rem`. Every
+numerator is a multiple of 0.5 over a denominator of 16, so each quotient terminates exactly in
+binary: at the default root the rendered pixel is the same one, with no rounding step. Measured
+before and after on a fresh-element computed-style probe across all nine steps and all eight
+`px` leading steps, on `/ko/docs/`, `/ko/library/`, `/ko/topology/` and `/ko/download/`:
+identical `font-size` and `line-height` strings, and a 0-pixel screenshot diff at 1512 and 1040.
+
+**Why it had to change.** A browser has two zooms. *Page* zoom scales the layout, so larger words
+come with a narrower window. *Text-only* zoom — Chrome's Appearance → Font size, Firefox's "Zoom
+text only", Safari's accessibility text size — multiplies the **root font size**, and it is the
+control a person uses when the window is already the size they want. A `px` ramp is immune to it:
+before this change every one of those settings, at every step up to 200%, left the type
+pixel-for-pixel identical. Carry-forward finding, U2 council, 2026-09-11.
+
+⚠️ **But "nothing else" is not true, and the untrue half is why this is worth reading twice.**
+`rem` inside a **media query** resolves against the root element's *initial* font size — the
+browser's own default — and an author-set `html { font-size }` cannot move it. Tailwind v4's
+breakpoints are `rem` (`48rem` · `64rem` · `80rem`), so a real font-size preference **does** move
+them. Measured at a 1512 viewport with Chrome's default font size at 32px: `(min-width: 48rem)` is
+**false**, `(min-width: 64rem)` and `(min-width: 80rem)` are **false**, and the repository's own
+fourteen `px` width queries in `app/globals.css` are all **true**. A reader at 200% was therefore
+already getting the below-`lg` layout inside a 1512 window — with 12.5px text in it. The type half
+is what this change fixes; **the two breakpoint populations disagreeing is untouched and needs its
+own decision**, because choosing between them moves layout at 100% for everyone.
+
+That also makes the obvious test technique a trap. `documentElement.style.fontSize = '32px'` is
+exact for the type and wrong for every layout claim, because it leaves every `rem` breakpoint at
+its 16px value. The two gates are split along that line: `tests/e2e/text-zoom-ramp.spec.ts` sets
+the root in script and measures only type, tokens and boxes;
+`tests/e2e/text-zoom-layout.spec.ts` launches the browser with `defaultFontSize=32` and measures
+layout, with a self-probe asserting `(min-width: 48rem)` is false at 1512 so it cannot fall back
+to the stand-in's state and keep reporting zero.
+
+**The `leading` ramp moved with it, or the fix is worse than the defect.** The eight px steps in
+the line-height table below are bound to the sizes above through the `--text-<step>--line-height`
+companions. Left in `px` while the sizes doubled, a 25px glyph would sit in a 20px line box and
+consecutive paragraphs would overlap; they are the same quantity as the size they pair with, so
+they follow the same root. The three ratio steps (`display-tight` 1.06, `prose` 1.7, `monument`
+1.08) already followed and are untouched.
+
+**Type follows the reader; boxes do not.** What stays in `px` is chrome geometry —
+`--chrome-tile-size` (36), `--app-nav-rail-icon-size` (20), the rail and dock widths, the hit
+floors, the dialog tiers, `--measure-doc-gutter` (40) — because the fixed-scale contract pins them
+and a hit target that moved with a font setting would be a different promise than the one every
+other gate measures. Measured at a 32px root: all eleven hold their value. `--text-monument` also
+stays, because it is derived from its own container (`clamp(40px, 4.8cqw, 96px)`) and its
+specification is that the headline stands on one line inside its measure; text zoom cannot reach a
+`cqw` term at all, so converting only the clamp arms would make it scale or not depending on which
+arm won.
+
+**What follows for free.** `--measure-doc-column` is derived from `--text-reading`, so the reading
+column grows with the words inside it: **709.1px at the 16px root, 1338.1px at a 32px one** (the
+measure doubles, the two gutters hold). `--measure-prose` is in `ch`, which is relative to the
+element's own font size, so the line cap followed the moment the size did: 629.1 → 1258.1px. The
+three JS consumers that cannot read a CSS variable each decided separately — the popout window and
+the image `sizes` hint are now written in `rem`, and the outline rail's fit verdict reads the live
+root through `docColumnPxAtRoot`, because a verdict about overlap must describe the column on
+screen. That table lives in `src/shared/ui/reading-measure.ts`.
+
+**The open cost: eleven control overlaps, all in boxes pinned while their labels grew.** Measured
+in the **real** setting (Chrome's default font size at 32px), seven widths × four routes, hit-tested
+at each control's centre with `elementFromPoint`: **0 overlaps at the default root across all 28
+states, 11 at 200%.** They are the map toolbar's search pill under the review pill and the rail's
+MCP tile under the get-app tile and two docs-sidebar collection tiles under their search and order
+toggles, all at 2560; a `doc-frontmatter` reference chip under a neighbouring chip at 600, 1024 and
+1512; and the starter card's two buttons under rail labels at 600. Every one is a box that stayed
+absolute while the label inside it followed the reader — the toolbar's two clusters are anchored to
+opposite ends of a row they do not share, the rail's items are a fixed-height stack, the sidebar's
+well is `min-w-0` against `flex-none` chips. They are **not fixed here**: the ramp made them
+visible rather than causing them, each belongs to its own view, and widening a token slice into
+four views is how one reviewable diff becomes none. The decision record carries all eleven in its
+`Dissent`, and its `Falsifier` is one of them being pressed wrong.
+
+Two more of the same family, found while repairing the bottom tab bar's reserve and left with it:
+the docs frontmatter disclosure's box measures **178px around 375–449px of content** with
+`overflow: visible`, so its lines paint past any reserve however large — its box is shorter than
+what is inside it at both roots, and the larger type is only what carries the escape as far as the
+bar; and the reading scroller's own box ends well above the bar, so *which* box owes the bar room
+is a question about that view rather than about the token. The reserve itself is fixed and gated;
+these two are recorded, not gated, because a gate must be fixable by the thing it is about.
+
+The rule they teach, which is the part worth keeping: **a chrome box that stays absolute while its
+padding, icon and label are root-relative must declare either a clip or a collapse rule** — and a
+box with `overflow: visible` that is already shorter than its own content is not reserving, it is
+escaping. Two places came through clean: the nav rail's labels wrap inside their 63px item, and
+every `truncate` / `line-clamp` box reaches its designed state sooner instead of a new one.
+
+**Where 200% truncates instead.** Measured on the four routes at every band: no text is cut off
+without an ellipsis, a line clamp or a scroller, and nothing reaches past the viewport unclipped.
+Several boxes that already truncate at a narrow window now reach that state through the type
+instead — a docs sidebar sentence, a rail label, a `line-clamp-2` caption — which is the behaviour
+their author chose for a narrow box, arrived at sooner. ⚠️ **`html` and `body` both carry
+`overflow-x: hidden`**, so `documentElement.scrollWidth` can never exceed `clientWidth`: a
+horizontal-overflow gate built on that number is green before it is written. The gate therefore
+measures the **text** — is a leaf taller or wider than its box, and does the box that clips it
+offer a way to the rest.
+
+**A token's value is a length in a unit, and JavaScript that reads one must say so.** The library
+graph's canvas resolves `--text-body` and `--text-label` at runtime (`ctx.font` cannot take a
+`var()`), and it did it with `Number.parseFloat` — which on `"0.6875rem"` returns **0.6875**:
+finite, positive, past every guard the caller wrote, and off by a factor of sixteen. Nothing threw;
+the canvas drew its names at two thirds of a pixel. `src/shared/ui/root-font-size.ts` is the answer
+— `rootFontPx()` and `cssLengthToPx()`, which resolves `px` and `rem` and returns `NaN` for `em`
+rather than guessing at a parent it cannot see. Any new consumer of a size token outside the style
+engine uses it.
+
+Gates: `tests/contract/type-ramp-root-relative.contract.test.ts` (no ramp step may be reintroduced
+in `px`; the documented exceptions are a named list; and every size token consumed through
+`text-[length:var(…)]` is scanned by its **consumers**, not by its name, so a step hiding outside
+the `--text-*` prefix is covered on its first day), `tests/e2e/text-zoom-ramp.spec.ts` (the pinned
+pixels at 100%, exact doubling at a 32px root, the eleven chrome boxes holding still, the cut-text
+sweep) and `tests/e2e/text-zoom-layout.spec.ts` (the real browser setting, with its own
+breakpoint self-probe) — each with its own planted defect. `eslint.config.mjs` bans `text-[Nrem]`
+beside `text-[Npx]`, because a selector that knows only the px spelling reopened the off-ramp hole
+the moment the ramp changed unit. Record: `docs/DECISIONS.md`, "The type ramp follows the root
+size, so a browser's text zoom reaches it".
+
 **Calling a non-existent step renders at root 16px** (recorded 2026-07-27). Since Tailwind
 creates no class for undefined steps, names not in the ramp like `text-large` are **syntactically valid but apply no size**. This is invisible to any value checker — non-existent things leave no hardcoding literals either,
 falling outside `type-ramp-coverage`'s view, and tsc/eslint do not check strings.
@@ -2166,6 +2287,11 @@ so it must be fixed in px so that the rhythm of repeated card sets does not depe
 The values are on a 2px grid, and the three pairs (label 16 · body 20 · title 24) already have
 the **same values** as the previously used
 `leading-4/5/6`. This is not a new specification but merely naming what is already the trend.
+
+The eight px rows below are **declared in `rem`** (`14px → 0.875rem` … `38px → 2.375rem`) for the
+reason written under the type ramp: they are the line box of a size that follows the root, and a
+fixed line box under a doubled glyph is overlapping paragraphs. The px column is what they render
+at the default root. The three ratio rows are unit-free and unchanged.
 
 | slot | token (util) | value | pair (font) | ratio | usage — when to choose this line-height |
 |---|---|---|---|---|---|
@@ -2358,7 +2484,7 @@ Two lessons learned:
 | Gateway gutter (origin floor) | `--gateway-gutter` | 200, unitless (the 40→64→120→200 lineage lives in the dedicated `app/globals.css` block) |
 | Gateway content-column ceiling | `--gateway-page-max` | `1920px` (2026-08-19 wide-width revision, round 2) — the single ceiling read by `PAGE_COLUMN` and the alignment origin across gateway surfaces (gateway face, documentation face, and GNB). In the owner's 2560 measurement, each side margin was 480px and 37.5% of the screen was empty canvas; among four options, the owner chose “widen only the gateway”: [320][1920][320] at 2560. **Invariant: `--gateway-page-max` ≥ `--page-max` (1600).** While this value remains at least 1600, origin and column calculations are identical to the previous formula for vw ≤ 2000, so 1440–1920 rendering does not move by one pixel. Other surfaces (document vault, projects, insights) keep `--page-max`. Reading measures do not follow the wider column: the hero lead keeps `max-w-[40rem]` (measured 34 characters per line), and document prose keeps `--measure-prose` (66ch since 2026-09-12 — 86 characters; see the prose-measure row below). Only the monumental proportional headline, instrument strip, rules, and GNB use the full column. Gates: `tests/contract/gateway-column-width.contract.test.ts` + `tests/e2e/download-gateway-grid.spec.ts` |
 | Prose measure | `--measure-prose` | `66ch` (widened 2026-09-12; `60ch` from 2026-09-11, `70ch` before that). The cap on one **line** of authored text, distinct from every column above, which are box widths. ⚠️ **`ch` is not a character**: `1ch` is the advance of the digit `0`, measured in the built export with Pretendard Variable at **0.5957em** (9.53px at the 16px root, 8.34px at `text-body-lg`), while a proportional Latin average is **0.4588em** (7.34px at 16px) — 0.77 of a `ch`. So `70ch` drew **91 English characters per line**, not the 65–75 this document and `GatewayDocPage` both claimed it did; measured `/en/project/storefront/` body 583.8px = 90.8 characters, `/en/guide/` 536px = 83.1. `60ch` landed inside that stated intent at **78** characters. **2026-09-12 leaves the intent behind deliberately**: the owner read a 500px line inside a 1168px pane — *"isn't the empty space to the left of where the text comes out far too much? make the text itself run wider"* — and `66ch` spent at `--text-reading` (16px) buys **86 Latin characters, 46 Hangul syllables, 629.1px**. The losing 45–75 guidance and the falsifier are kept in `docs/DECISIONS.md`, "The reading column is worth more of its pane than the measure was buying". Both sides of the ratio scale with the font size, so the character count is the same at 14/15/16/17px. Applied to the prose elements *inside* a column — `DocsVaultViewer`'s `p`/`ul`/`ol`/`blockquote`, the Library's lede, finding and note lines, the project body, the gateway reading column — never to the column itself, which headings, tables, code and the frontmatter block still need. Gate: `tests/e2e/prose-measure-calibration.spec.ts` (renders `"0".repeat(100)` and a fixed English sample in the shipped font and fails outside 80–92 characters, with a planted `80ch` proving it can go red — the old plant, `70ch`, measures 88.4 and is now *inside* the band, which is why the plant moved with it). |
-| Document column | `--measure-doc-column` | **`calc(--measure-prose-steps × --measure-zero-advance × --text-reading + 2 × --measure-doc-gutter)` = 709.1px** (widened 2026-09-12 by the measure and the size it is spent at; 580.4px derived 2026-09-11; an independent `760px` from 2026-09-08). The reading column a document, wiki page, source summary or check report sits in — including the editor's side-by-side preview, which read 720 until 2026-09-08 so the same document wrapped differently while being written and after being saved. **It is the prose measure spent at the size the body is set in, plus one gutter each side**, so the box and the line inside it cannot disagree. *Why it stopped being 760:* that number was named after a literal eleven sites had hand-written, and it was never a reading column — measured on the installed app at 1512 it held a 668px run at 104 English characters per line. Capping the line at the measure on 2026-09-11 left the notice cards, page header, source disclosure, frontmatter block and meta bar spanning 680px of content around a 497px line: two widths stacked in one reading column, worse than one wrong width. *Why it stays a separate token:* it is a different quantity — **absolute**, because eleven consumers read it from `text-label` (11px) to the 16px root and a box must not change width with the type inside it, while `--measure-prose` stays in `ch` because a line must. A `ch`-bearing column token was measured resolving to 651.9px on the viewer article and the frontmatter block and 473.2px on the meta bar, on one page. *The three consumers that cannot read a CSS variable* — the popout window's inlined stylesheet, Next's `sizes` image hints, and the outline rail's fit arithmetic — read `DOC_COLUMN_PX` from `src/shared/ui/reading-measure.ts`, which carries the same derivation from the same constants; all three carried a hand-written `760` until 2026-09-11. Gates: `tests/e2e/prose-measure-calibration.spec.ts` (rendered token vs the JS mirror, and column − 2 × gutter = the measure at `--text-reading`; it first proves the shipped face is loaded, because a font that failed to load measures as calibration drift, and it tolerates one rounded pixel per glyph because a hinted rasterizer quantises advances — CI Linux Chromium measured `60ch` at 14px as 540.0px where macOS measures 500.4px, both rendering Pretendard) and `src/widgets/doc-reading-pane/lib/outline-rail.test.ts` (the rail's floors are the derivation, not two remembered numbers). *The pane composition that came with the widening (2026-09-12):* `[gutter] [column] [gap 32] [rail] [gutter]`, where `DocReadingPane` reserves `gap + railWidth` as padding on the rail's own side and the column centres in what is left, so both outer gutters are equal by construction. The 2026-09-11 form made the pane pay for the rail's lane twice — once where the rail is and once in its mirror — which at 709.1px would have asked for 1174/1238 and deleted the rail from a 1512 window with no dock (pane 1168). Floors are now `column + gap + railWidth + 2 × 48` = **1006 / 1038**, and at 1512 the reading line runs 497.5 → 1126.5 where it ran 677.8 → 1177.8, with the left void falling from 334px to 153px. |
+| Document column | `--measure-doc-column` | **`calc(--measure-prose-steps × --measure-zero-advance × --text-reading + 2 × --measure-doc-gutter)` = 709.1px** (widened 2026-09-12 by the measure and the size it is spent at; 580.4px derived 2026-09-11; an independent `760px` from 2026-09-08). The reading column a document, wiki page, source summary or check report sits in — including the editor's side-by-side preview, which read 720 until 2026-09-08 so the same document wrapped differently while being written and after being saved. **It is the prose measure spent at the size the body is set in, plus one gutter each side**, so the box and the line inside it cannot disagree. *Why it stopped being 760:* that number was named after a literal eleven sites had hand-written, and it was never a reading column — measured on the installed app at 1512 it held a 668px run at 104 English characters per line. Capping the line at the measure on 2026-09-11 left the notice cards, page header, source disclosure, frontmatter block and meta bar spanning 680px of content around a 497px line: two widths stacked in one reading column, worse than one wrong width. *Why it stays a separate token:* it is a different quantity. `--measure-prose` is in `ch`, relative to *the element's own* font size, which is right for a line and impossible for a box — eleven consumers read this one from `text-label` (11px) to the 16px root, and a `ch`-bearing column resolved to three widths on one page. So the box converts the measure once, at the size the body is set in. ⚠️ **That is about the type inside the box, not about the reader's setting** (2026-09-12): `--text-reading` is `1rem`, so this column is root-relative — one width per page, because every consumer resolves the same root, and a width that grows when the reader asks for bigger words. 709.1px at the 16px root, **1338.1px at a 32px one**, both measured. `--measure-prose` stays in `ch` because a line must. A `ch`-bearing column token was measured resolving to 651.9px on the viewer article and the frontmatter block and 473.2px on the meta bar, on one page. *The three consumers that cannot read a CSS variable* — the popout window's inlined stylesheet, Next's `sizes` image hints, and the outline rail's fit arithmetic — read `src/shared/ui/reading-measure.ts`, which carries the same derivation from the same constants; all three carried a hand-written `760` until 2026-09-11. Since 2026-09-12 they no longer read the same thing, because a number transcribed at one root is the column *at 100%*: the popout window and the image `sizes` hint are written in `rem` (a document with its own root, and a CSS length list that accepts one), while the outline rail's fit verdict calls `docColumnPxAtRoot` with the live root — its *position* already followed the token, so a floor from the 100% number went on telling a 1168px pane "wide fits" for a column grown to 1338px. `DOC_COLUMN_PX` and `PROSE_MEASURE_PX` remain as the values **at the default root**, which is what the calibration gate compares the rendered token against. Gates: `tests/e2e/prose-measure-calibration.spec.ts` (rendered token vs the JS mirror, and column − 2 × gutter = the measure at `--text-reading`; it first proves the shipped face is loaded, because a font that failed to load measures as calibration drift, and it tolerates one rounded pixel per glyph because a hinted rasterizer quantises advances — CI Linux Chromium measured `60ch` at 14px as 540.0px where macOS measures 500.4px, both rendering Pretendard) and `src/widgets/doc-reading-pane/lib/outline-rail.test.ts` (the rail's floors are the derivation, not two remembered numbers). *The pane composition that came with the widening (2026-09-12):* `[gutter] [column] [gap 32] [rail] [gutter]`, where `DocReadingPane` reserves `gap + railWidth` as padding on the rail's own side and the column centres in what is left, so both outer gutters are equal by construction. The 2026-09-11 form made the pane pay for the rail's lane twice — once where the rail is and once in its mirror — which at 709.1px would have asked for 1174/1238 and deleted the rail from a 1512 window with no dock (pane 1168). Floors are now `column + gap + railWidth + 2 × 48` = **1006 / 1038**, and at 1512 the reading line runs 497.5 → 1126.5 where it ran 677.8 → 1177.8, with the left void falling from 334px to 153px. |
 | Stage column | `--measure-stage-column` | `640px` (2026-09-08). The content column of a destination's stage — assembly entry, Library start, domain coupling card, architecture workbench, project selector, the full-detail reach grid. `page-frame.ts` carried the number and its rule ("a value earns a name the moment something else needs it") from 2026-08; by 2026-09-08 seven consumers used it and four wrote it by hand, so the number moved into the token and `PAGE_COLUMN_STAGE` reads it. Zero-pixel change. |
 | Note column | `--measure-note-column` | `560px` (2026-09-08, owner: "one value per role"). A narrow block of explanatory content inside an otherwise empty destination — the Docs empty state card, its sample note, the starter CTA's note. Distinct from `--git-setup-measure` (520, one *task* column carrying a form and a command) and `--measure-stage-column` (640, a whole stage). The starter CTA's button grid keeps its own 420: a column of controls is not a block of prose. |
 | Insights row label | `--insights-row-label-w` | `136px` (2026-09-08). The leading label cell of a kind or domain row. Overview and Freshness carried 136 and Connections 104 for the identical job, so bars started at two places for a reader moving between tabs. 136 is what two of the three already used and what long Korean kind names fit in; Connections widens by 32px. |

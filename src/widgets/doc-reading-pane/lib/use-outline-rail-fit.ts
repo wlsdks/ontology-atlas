@@ -2,6 +2,9 @@
 
 import { useCallback, useRef, useState } from "react";
 
+import { docColumnPxAtRoot } from "@/shared/ui/reading-measure";
+import { rootFontPx } from "@/shared/ui/root-font-size";
+
 import { resolveOutlineRailFit, type OutlineRailFit } from "./outline-rail";
 
 /**
@@ -27,19 +30,43 @@ export function useOutlineRailFit(): {
 } {
   const [fit, setFit] = useState<OutlineRailFit>("hidden");
   const observerRef = useRef<ResizeObserver | null>(null);
+  const rootProbeRef = useRef<HTMLElement | null>(null);
 
   const paneRef = useCallback((node: HTMLElement | null) => {
     observerRef.current?.disconnect();
     observerRef.current = null;
+    rootProbeRef.current?.remove();
+    rootProbeRef.current = null;
     if (!node) return;
     const apply = () => {
-      const next = resolveOutlineRailFit(node.getBoundingClientRect().width);
+      // The column is `rem`-derived, so a browser text-only zoom moves it while the pane
+      // stands still. Both sides of the comparison are therefore read at the same moment:
+      // the pane from its own rect, the column from the live root size.
+      const next = resolveOutlineRailFit(
+        node.getBoundingClientRect().width,
+        docColumnPxAtRoot(rootFontPx()),
+      );
       setFit((current) => (current === next ? current : next));
     };
     apply();
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(apply);
     observer.observe(node);
+    // Second observed box: a `1rem` square. The pane's width does not change when a reader
+    // raises the browser's font size, but the column's does — so without this the verdict
+    // would keep describing the column as it was until something else happened to resize the
+    // pane, which is the overlap this file's arithmetic exists to prevent. It hangs off
+    // `document.body` rather than the pane so that nothing is appended inside a box React
+    // reconciles, and it is `visibility: hidden` and `aria-hidden`, so it is in no
+    // accessibility tree and paints nothing.
+    const rootProbe = document.createElement("span");
+    rootProbe.setAttribute("aria-hidden", "true");
+    rootProbe.dataset.atlasRootSizeProbe = "";
+    rootProbe.style.cssText =
+      "position:absolute;left:0;top:0;width:1rem;height:1rem;visibility:hidden;pointer-events:none";
+    document.body.appendChild(rootProbe);
+    observer.observe(rootProbe);
+    rootProbeRef.current = rootProbe;
     observerRef.current = observer;
   }, []);
 

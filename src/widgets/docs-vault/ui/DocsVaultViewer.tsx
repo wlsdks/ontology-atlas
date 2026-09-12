@@ -8,7 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
 import { ExternalLink, Hash } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { PROSE_MEASURE_PX } from '@/shared/ui/reading-measure';
+import { PROSE_MEASURE_REM } from '@/shared/ui/reading-measure';
 import {
   buildDocsVaultHref,
   type VaultDoc,
@@ -727,8 +727,16 @@ export function DocsVaultViewer({
  * variable. An image is `max-w-full` inside the column's **content** box, which is the prose
  * measure — not the column, and not the `760px` this said until 2026-09-11, when the content box
  * was 680px wide and the hint over-fetched every image by 12%.
+ *
+ * **In `rem`, not `px`** (2026-09-12). `sizes` is a list of CSS lengths and a font-relative one
+ * is resolved against the **root element's** font size, which is exactly the quantity the prose
+ * measure now follows (`app/globals.css`, "The ramp is written in `rem`"). One string therefore
+ * describes the box at every zoom level, where `629px` described it only at 100% and under-fetched
+ * by a full srcset step at 200% — the mirror image of the 12% over-fetch above. A browser that
+ * cannot parse the unit discards the source-size list and falls back to `100vw`, i.e. it
+ * over-fetches rather than rendering anything wrong.
  */
-const IMAGE_SIZES = `(max-width: 768px) 100vw, ${Math.round(PROSE_MEASURE_PX)}px`;
+const IMAGE_SIZES = `(max-width: 768px) 100vw, ${PROSE_MEASURE_REM.toFixed(4)}rem`;
 
 /**
  * **The line-length cap, applied to the prose and not to the column** (2026-09-11).

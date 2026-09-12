@@ -1,3 +1,5 @@
+import { cssLengthToPx, rootFontPx } from "@/shared/ui/root-font-size";
+
 /**
  * The canvas ink, resolved from CSS once.
  *
@@ -133,8 +135,15 @@ export function readLibraryGraphInk(element: Element): LibraryGraphInk {
   const ink = {} as Record<string, string | number>;
   for (const [key, token] of Object.entries(TOKENS)) ink[key] = read(token);
   ink.fontFamily = style.fontFamily || "system-ui, sans-serif";
+  // ⚠️ **A ramp step is a length in a unit, not a number.** Since 2026-09-12 the ramp is
+  // declared in `rem` so a browser's text-only zoom reaches it, and `--text-label` reads back
+  // as `"0.6875rem"`; `Number.parseFloat` on that returns 0.6875 — finite, positive, and off
+  // by sixteen, so the guard below passes and the canvas draws its names at two thirds of a
+  // pixel. `cssLengthToPx` resolves the unit against the root the page is rendering at, which
+  // also means these two steps now follow the reader here exactly as they do in the DOM.
+  const root = rootFontPx();
   for (const [key, token] of Object.entries(TYPE_TOKENS)) {
-    const px = Number.parseFloat(read(token));
+    const px = cssLengthToPx(read(token), root);
     if (!Number.isFinite(px) || px <= 0) {
       throw new LibraryGraphInkError(
         `library-graph: ${token} resolved to "${read(token)}" — a name cannot be set in it`,
