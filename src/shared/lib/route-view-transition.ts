@@ -11,11 +11,21 @@
  * The browser's View Transitions API does the work: `document.startViewTransition`
  * snapshots the old screen, the navigation updates the DOM, and the two are
  * crossfaded by the compositor. `app/globals.css` sets the crossfade to
- * `--motion-base` on the `--motion-ease` curve and keeps the nav rail out of the
- * crossfade (its active indicator already slides on its own transition, and a
- * rail that fades under a sliding indicator reads as two events). Reduced motion
- * keeps the crossfade: an opacity-only change is the least-shaking equivalent the
- * design system asks for, not something to switch off.
+ * `--motion-base` on the `--motion-ease` curve. Reduced motion keeps the
+ * crossfade: an opacity-only change is the least-shaking equivalent the design
+ * system asks for, not something to switch off.
+ *
+ * ⚠️ **What is captured is the pane, and only while a transition runs**
+ * (2026-09-13). The crossfade used to capture the whole document and lift the nav
+ * rail out of it under its own name. In WebKit — the installed app's engine — the
+ * root group paints over every other group, so the rail was covered by the old
+ * screen's snapshot and the window read as blank, rail included, for the length of
+ * the transition (inspection 122, B1; the measurements are in `app/globals.css`).
+ * `ROUTE_CROSSFADE_CLASS` is therefore put on the document element for exactly as
+ * long as the transition lasts: the stylesheet uses it to stop capturing the root
+ * and to name the shell's pane instead. Off a transition the document carries no
+ * `view-transition-name` at all, so nothing here changes paint or containment
+ * while the app is sitting still.
  *
  * **Why the promise resolves on the pathname, not on `router.push`.** The App
  * Router's push returns before the new tree is committed. The transition must
@@ -145,6 +155,34 @@ let pendingSettle: (() => void) | null = null;
 /** The bound armed for the transition now running, so a second click replaces it. */
 let pendingBound: (() => void) | null = null;
 
+/**
+ * The class that makes the stylesheet capture the pane instead of the document.
+ *
+ * It is added before `startViewTransition` — the browser reads the old state inside that
+ * call, so a class added afterwards would name nothing — and removed once the transition
+ * has finished, however it ended. A skipped transition settles `finished` too, so the
+ * class is never left behind; the counter below is what keeps a second navigation from
+ * having the first one's cleanup strip the name out from under it.
+ */
+/** Paired with `html.route-crossfade` in `app/globals.css`; not exported, so the name lives
+ *  in exactly two places and `pnpm knip` does not carry an unused export. */
+const ROUTE_CROSSFADE_CLASS = "route-crossfade";
+
+let crossfadeGeneration = 0;
+
+function beginCrossfadeCapture(): number {
+  if (typeof document === "undefined") return 0;
+  crossfadeGeneration += 1;
+  document.documentElement.classList.add(ROUTE_CROSSFADE_CLASS);
+  return crossfadeGeneration;
+}
+
+function endCrossfadeCapture(generation: number): void {
+  if (typeof document === "undefined") return;
+  if (generation !== crossfadeGeneration) return;
+  document.documentElement.classList.remove(ROUTE_CROSSFADE_CLASS);
+}
+
 function viewTransitionApi(): StartViewTransition | null {
   if (typeof document === "undefined") return null;
   const candidate = (document as unknown as { startViewTransition?: unknown }).startViewTransition;
@@ -180,6 +218,7 @@ export function navigateWithViewTransition(
   // not chain two held snapshots.
   pendingSettle?.();
   pendingBound = null;
+  const generation = beginCrossfadeCapture();
   const handle = start(
     () =>
       new Promise<void>((resolve) => {
@@ -205,7 +244,28 @@ export function navigateWithViewTransition(
       }),
   ) as ViewTransitionHandle;
   silenceSkippedTransition(handle);
+  releaseCaptureWhenSettled(handle, generation);
   return "transition";
+}
+
+/**
+ * Puts the document back to capturing nothing once the transition is over.
+ *
+ * `finished` settles on a skipped transition as well as a completed one, and a handle that
+ * carries neither (an older implementation, or a test's fake) is released immediately —
+ * leaving the class on would keep a `view-transition-name` on the pane for the rest of the
+ * session, which is a containing block the pane does not otherwise have.
+ */
+function releaseCaptureWhenSettled(handle: ViewTransitionHandle | null, generation: number): void {
+  const settled = handle?.finished ?? handle?.updateCallbackDone;
+  if (typeof settled?.then !== "function") {
+    endCrossfadeCapture(generation);
+    return;
+  }
+  settled.then(
+    () => endCrossfadeCapture(generation),
+    () => endCrossfadeCapture(generation),
+  );
 }
 
 /** Called by the shell once the new route has committed: releases the held snapshot. */

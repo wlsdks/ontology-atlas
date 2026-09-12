@@ -6,14 +6,17 @@ import type { useTranslations } from "next-intl";
 
 import { isMapKind, type LintFinding, type LintNodeCandidate } from "@/features/library";
 import type { WikiReport, WikiReportRow } from "@/shared/lib/wiki-report.mjs";
-import { Chip, Tooltip } from "@/shared/ui";
+import { Chip, Disclosure, Tooltip } from "@/shared/ui";
 import { BrandMark } from "@/shared/ui/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 import {
   describeWikiProblem,
+  wikiProblemMachineLine,
   type WikiProblemContext,
+  type WikiProblemWhere,
+  type WikiProblemWords,
 } from "../../lib/describe-wiki-problem";
 import { localizeWikiLogSummary } from "../../lib/wiki-log-summary";
 import { WikiProblemSentence, type WikiProblemDoors } from "./WikiTemplateProblems";
@@ -71,6 +74,47 @@ function findingKindKey(code: LintFinding["code"]): "disagreement" | "superseded
   return code === "missing-link" ? "missingLink" : code;
 }
 
+/** `t` is typed against the catalogue, and a finding kind is data the validator chooses. */
+type RulePath = "report.rule.orphan-page";
+
+/**
+ * **A finding kind, said as a sentence.**
+ *
+ * ⚠️ The heading used to *be* the code — `citation-target-missing`, `uncited-fact`,
+ * `orphan-page`, `shared-source-unlinked`, in monospace and untranslated, in the body and
+ * again in the outline rail. Measured on the installed app 2026-09-13
+ * (`inspection-122/06-strip-format-report.png`), two screens from the wiki page that
+ * already said "no original backs up what is written at line 22 under Facts" and kept its
+ * codes behind a fold called "technical detail, check codes and line numbers"
+ * (`wiki.technical`). One folder, two vocabularies, and the louder one was the machine's.
+ *
+ * Nothing is taken away: the code, its line anchor and the validator's own English
+ * sentence stand under the same disclosure this page's sibling uses, because a person
+ * holding this screen beside a terminal is comparing tokens. What changes is which of the
+ * two is the heading.
+ *
+ * A kind this catalogue has not learned yet falls back to the code rather than to a raw
+ * `library.report.rule.…` path — the same degradation `describeWikiProblem` keeps.
+ *
+ * Not exported: the heading and the outline rail's entry are both built here, and an
+ * exported name with no importer is the kind of misinformation the dead-code ratchet exists
+ * to refuse (the reason `WikiProblemSegment` stays internal too).
+ */
+function reportRuleTitle(
+  code: string,
+  t: ReturnType<typeof useTranslations<"library">>,
+): string {
+  const path = `report.rule.${code}` as RulePath;
+  return t.has(path) ? t(path) : code;
+}
+
+/** The anchors the outline rail holds for kinds that live behind the advisory fold. */
+export function advisoryReportSlugs(structural: WikiReport | null): ReadonlySet<string> {
+  return new Set(
+    (structural?.groups ?? []).filter((group) => group.advisory).map((group) => `report-code-${group.code}`),
+  );
+}
+
 function logWhen(at: string): string {
   const date = new Date(at);
   if (Number.isNaN(date.getTime())) return at;
@@ -106,7 +150,8 @@ export function reportOutline(
     for (const group of structural.groups) {
       out.push({
         slug: `report-code-${group.code}`,
-        text: `${group.code} ${group.count}`,
+        // The rail reads what the heading reads. It used to read `orphan-page 2`.
+        text: `${reportRuleTitle(group.code, t)} ${group.count}`,
         depth: 2,
         occurrence: 1,
         duplicate: false,
@@ -188,8 +233,8 @@ function PageDoors({
           </button>
         </span>
       ))}
-      {(suffixes ?? []).map((suffix) => (
-        <span key={suffix} className="inline-flex items-center gap-x-1">
+      {(suffixes ?? []).map((suffix, suffixIndex) => (
+        <span key={`${suffixIndex}-${suffix}`} className="inline-flex items-center gap-x-1">
           <span aria-hidden>·</span>
           <span>{suffix}</span>
         </span>
@@ -202,47 +247,108 @@ function PageDoors({
  * **One row per bullet a person fixes, not per time the validator fired.**
  *
  * Within one code group, rows that name the same page and retell the same sentence become
- * one row whose door carries every line: `merchant-onboarding · :19 · :20`. Measured at
- * 1512 (design-lead, council 2026-09-12): rows 4 and 5 were the same three-line sentence
- * twice, differing only in the line number — 32 lines of rule prose around six page names.
+ * one row whose door carries every place: `merchant-onboarding · line 22 · line 23`.
+ * Measured at 1512 (design-lead, council 2026-09-12): rows 4 and 5 were the same three-line
+ * sentence twice, differing only in the line number — 32 lines of rule prose around six
+ * page names.
  *
- * It is a dedup of ink and **not** a substitute for the advisory fold: on the four-page
- * fixture it closes ≈65px of ≈330, and on a larger wiki it grows with the findings while
- * the fold's cost stays constant (the concession that closed round 2).
+ * ⚠️ The door used to carry `· :22 · :23` — a colon and a number, which is the anchor
+ * `wiki-validate` prints and not a thing a person says (installed app, 2026-09-13). The
+ * place now comes from the describer, in the reader's own words, exactly as it does beside
+ * the page.
  */
+interface StructuralRow {
+  row: WikiReportRow;
+  words: WikiProblemWords;
+  /** Every place this row stands for, in the validator's order. */
+  places: WikiProblemWhere[];
+}
+
 function collapseStructuralRows(
   rows: readonly WikiReportRow[],
   t: ReturnType<typeof useTranslations<"library">>,
   context: WikiProblemContext,
-): Array<{ row: WikiReportRow; lines: number[] }> {
-  const out: Array<{ row: WikiReportRow; lines: number[] }> = [];
+): StructuralRow[] {
+  const out: StructuralRow[] = [];
   const at = new Map<string, number>();
   for (const row of rows) {
     // Field by field with a unit separator, the same key discipline the recovery proof
     // records: a page path can hold any character a folder allows. The sentence half is
     // the describer's plain string \u2014 the one piece of its output that is a comparable
     // value rather than something to press.
-    const key = `${row.page}\u241f${describeWikiProblem(row, t, context).sentence}`;
+    const words = describeWikiProblem(row, t, context);
+    const key = `${row.page}\u241f${words.sentence}`;
     const seen = at.get(key);
     if (seen === undefined) {
       at.set(key, out.length);
-      out.push({ row, lines: row.line ? [row.line] : [] });
-    } else if (row.line) {
-      out[seen]!.lines.push(row.line);
+      out.push({ row, words, places: words.where ? [words.where] : [] });
+    } else if (words.where) {
+      out[seen]!.places.push(words.where);
     }
   }
   return out;
 }
 
 /**
- * One code's findings: the code as the heading, the count, and a row per bullet.
+ * The sentence with every name and every place taken out — what makes two rows *the same
+ * finding said twice* rather than two findings.
+ */
+function sentenceShape(words: WikiProblemWords): string {
+  return words.segments
+    .map((segment) =>
+      segment.kind === "text"
+        ? `t${segment.text}`
+        : segment.kind === "where"
+          ? "w"
+          : `g${segment.target.kind}:${segment.target.id}`,
+    )
+    .join("\u241f");
+}
+
+/**
+ * **What every row in a group says identically is the rule, and a rule is said once.**
  *
- * **The heading keeps the code and gains a grade.** Both design seats agreed one
- * vocabulary with `wiki-validate` beats a translated synonym a person would have to map
- * back to their terminal — it is how they can check the licensing record's falsifier
- * themselves — so the defect was never the word but the ladder: a 9.5px tertiary heading
- * over a 12.5px primary body, a heading smaller than the text it heads (ratio 1.3,
- * inverted). It now takes the body step in secondary.
+ * ⚠️ Measured on the 300-source fixture (60 pages, 42 off-template, **222 findings**,
+ * `inspection-122/52-en-report.png`): every one of the 42 `uncited-fact` rows restated the
+ * same two sentences, as did all 60 `orphan-page` and 120 `shared-source-unlinked` rows —
+ * ~670 lines of prose to say four things. The page said a fact once per time the validator
+ * fired instead of once per screen.
+ *
+ * Sharing is **measured, never assumed**. A sentence is the group's rule only when every
+ * row's shape *and* its place read alike; where the sentence names a different page or a
+ * different line on each row, that difference is the finding and the row keeps its own
+ * sentence. The action is judged separately, because one code can carry two of them
+ * (`citation-target-missing` is a different repair inside the folder and inside the page's
+ * own source list) and a wrong repair printed once is worse than a right one printed twice.
+ */
+function sharedRule(rows: readonly StructuralRow[]): { sentence: StructuralRow | null; action: string | null } {
+  const first = rows[0];
+  if (!first) return { sentence: null, action: null };
+  const shape = sentenceShape(first.words);
+  const place = first.words.where?.label ?? null;
+  const sameSentence = rows.every(
+    (entry) => sentenceShape(entry.words) === shape && (entry.words.where?.label ?? null) === place,
+  );
+  const action = first.words.action;
+  const sameAction = action !== null && rows.every((entry) => entry.words.action === action);
+  return { sentence: sameSentence ? first : null, action: sameAction ? action : null };
+}
+
+/** The place on a door, in the reader's words — the section is already in the sentence. */
+function placeSuffix(where: WikiProblemWhere): string {
+  return where.lineLabel ?? where.label;
+}
+
+/**
+ * One code's findings: the rule as the heading, said once, and a row per bullet.
+ *
+ * **The heading is a sentence and the code is one press away.** Both design seats agreed
+ * in council 2026-09-12 that one vocabulary with `wiki-validate` beats a translated
+ * synonym — that is how a person checks the licensing record's falsifier themselves. The
+ * 2026-09-13 inspection showed what that cost when the code was the *only* thing on the
+ * heading: four monospace English tokens down a Korean page, and the same tokens in the
+ * outline rail. Both are kept, in the order a person needs them — the sentence stands, the
+ * code sits under `wiki.technical`, the disclosure the wiki page beside it already uses.
  *
  * The 1px rule above it makes the boundary between two kinds **structural rather than a
  * matter of ink**, which is what lets the rows below it step back without the group
@@ -261,6 +367,8 @@ function StructuralGroup({
   context: WikiProblemContext;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
+  const rows = collapseStructuralRows(group.rows, t, context);
+  const rule = sharedRule(rows);
   return (
     <section
       data-testid="library-structural-group"
@@ -270,43 +378,79 @@ function StructuralGroup({
     >
       <h4
         id={`report-code-${group.code}`}
-        className="scroll-mt-4 font-mono text-body leading-body text-[color:var(--color-text-secondary)]"
+        className="scroll-mt-4 max-w-[var(--measure-prose)] text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
       >
-        {group.code}
-        <span className="ml-2 font-sans text-label font-normal text-[color:var(--color-text-quaternary)]">
+        {reportRuleTitle(group.code, t)}
+        <span className="ml-2 text-label font-normal text-[color:var(--color-text-quaternary)]">
           {group.count}
         </span>
       </h4>
+      {rule.sentence ? (
+        <p
+          data-testid="library-structural-rule"
+          className="mt-1 max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+        >
+          {/* The place is a word here and not a press: this page is not the page, so there
+              is nothing on screen to travel to. Each row's own door opens it. */}
+          <WikiProblemSentence words={rule.sentence.words} doors={doors} t={t} />
+        </p>
+      ) : null}
+      {rule.action ? (
+        <p
+          data-testid="library-structural-rule-action"
+          className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+        >
+          {rule.action}
+        </p>
+      ) : null}
       <ul className="mt-1.5 flex flex-col divide-y divide-[color:var(--color-divider)]">
-        {collapseStructuralRows(group.rows, t, context).map(({ row, lines }) => {
-          const words = describeWikiProblem(row, t, context);
-          return (
-            <li
-              key={`${row.page}-${row.code}-${lines.join(",")}`}
-              data-testid="library-structural-finding"
-              className="flex min-w-0 items-start gap-4 py-2.5"
-            >
-              <div className="min-w-0 flex-1">
+        {rows.map(({ row, words, places }) => (
+          <li
+            key={`${row.page}-${row.code}-${places.map((place) => place.line ?? place.label).join(",")}`}
+            data-testid="library-structural-finding"
+            className="flex min-w-0 items-start gap-4 py-2.5"
+          >
+            <div className="min-w-0 flex-1">
+              {rule.sentence ? null : (
                 <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
-                  {/* The place is a word here and not a press: this page is not the page,
-                      so there is nothing on screen to travel to. The door below opens it. */}
                   <WikiProblemSentence words={words} doors={doors} t={t} />
                 </p>
-                {words.action ? (
-                  <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-                    {words.action}
-                  </p>
-                ) : null}
-                <PageDoors
-                  pages={[pageSlug(row.page)]}
-                  suffixes={lines.map((line) => `:${line}`)}
-                  onOpenPage={onOpenPage}
-                />
-              </div>
-            </li>
-          );
-        })}
+              )}
+              {!rule.action && words.action ? (
+                <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+                  {words.action}
+                </p>
+              ) : null}
+              <PageDoors
+                pages={[pageSlug(row.page)]}
+                suffixes={places.map(placeSuffix)}
+                onOpenPage={onOpenPage}
+              />
+            </div>
+          </li>
+        ))}
       </ul>
+      {/* The machine's own vocabulary, whole, one press away — every finding the validator
+          fired, not the rows this page collapsed them into. Deliberately not localised: a
+          person opening this is holding the screen beside a terminal or an agent
+          transcript, and a translated synonym is a word they would have to map back. */}
+      <Disclosure
+        className="mt-2.5"
+        summary={t("wiki.technical")}
+        summaryTestId={`library-structural-technical-${group.code}`}
+      >
+        <ul className="mt-1.5 flex flex-col gap-1">
+          {group.rows.map((row, index) => (
+            <li
+              key={`${row.page}-${row.code}-${row.line ?? index}`}
+              data-testid="library-structural-code"
+              className="font-mono text-label leading-label text-[color:var(--color-text-quaternary)]"
+            >
+              {`${row.page} — ${wikiProblemMachineLine(row)}`}
+            </li>
+          ))}
+        </ul>
+      </Disclosure>
     </section>
   );
 }
@@ -326,6 +470,8 @@ export function LibraryCheckReport({
   onOpenSource,
   pageTitle,
   onJumpToSection,
+  advisoryOpen: advisoryOpenProp,
+  onAdvisoryOpenChange,
   fixedKeys,
   t,
 }: {
@@ -368,6 +514,19 @@ export function LibraryCheckReport({
    * "go to that head" is how one of them drifts.
    */
   onJumpToSection?: (slug: string) => void;
+  /**
+   * **Whether the advisory kinds are open — the caller's answer when the caller has one.**
+   *
+   * ⚠️ The outline rail lists every kind the report holds, and two of its six entries went
+   * nowhere (installed app, 2026-09-13: `inspection-122/07-report-orphan-page-rail.png`).
+   * Pressing `orphan-page` or `shared-source-unlinked` marked the entry active and the page
+   * did not move, because the section they name is inside a fold this component alone could
+   * open. The rail lives in the reading pane, above this component, so the state it has to
+   * change lives with the rail's own handler; left uncontrolled, this stays the local state
+   * it always was.
+   */
+  advisoryOpen?: boolean;
+  onAdvisoryOpenChange?: (open: boolean) => void;
   /** Keys (`findingKey`) of the findings a Fix turn completed since the last check. */
   fixedKeys?: ReadonlySet<string>;
   t: ReturnType<typeof useTranslations<"library">>;
@@ -386,7 +545,12 @@ export function LibraryCheckReport({
    * (`design-responsive`, council 2026-09-12), which is what closed the vote: unanimous
    * fold, blocking groups never collapsible.
    */
-  const [advisoryOpen, setAdvisoryOpen] = useState(false);
+  const [advisoryOpenLocal, setAdvisoryOpenLocal] = useState(false);
+  const advisoryOpen = advisoryOpenProp ?? advisoryOpenLocal;
+  const setAdvisoryOpen = (next: boolean) => {
+    if (onAdvisoryOpenChange) onAdvisoryOpenChange(next);
+    else setAdvisoryOpenLocal(next);
+  };
   /*
    * What a structural row's sentence may press, and how precisely it names a place.
    *
@@ -543,7 +707,7 @@ export function LibraryCheckReport({
                   data-testid="library-advisory-fold"
                   tone="muted"
                   hoverInk="strong"
-                  onClick={() => setAdvisoryOpen((open) => !open)}
+                  onClick={() => setAdvisoryOpen(!advisoryOpen)}
                   aria-expanded={advisoryOpen}
                 >
                   {advisoryOpen ? (
