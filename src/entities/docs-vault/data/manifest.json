@@ -95,9 +95,10 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 5696,
-      "updatedAt": "2026-09-11",
+      "wordCount": 5802,
+      "updatedAt": "2026-09-12",
       "linksOut": [
+        "../mcp/README",
         "ANALYSIS-RECORDS",
         "RETAINED-ANSWERS",
         "../AGENTS",
@@ -964,7 +965,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 132645,
+      "wordCount": 132901,
       "updatedAt": "2026-09-12",
       "linksOut": [
         "src:sources/settlement-policy.md",
@@ -4411,6 +4412,18 @@
         "linkText": "`ONTOLOGY-ATLAS-SPEC.md` §2"
       }
     ],
+    "../mcp/README": [
+      {
+        "fromSlug": "ARCHITECTURE",
+        "context": "th node identity in `tools/vault-nodes.mjs` and post-write maintenance in `tools/maintenance.mjs`. The full table is in **[`mcp/README.md`]**. `scripts/check-decision-record.mjs` watches `server/registry.mjs` alongside the entry point, because that is where a",
+        "linkText": "`mcp/README.md`"
+      },
+      {
+        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": "every session — the same \"consult a reference file instead of restating it\" move, aimed at facts instead of rules. See **[`mcp/README.md`]** for the tool surface an agent uses to read and write that reference file, and [`AGENTS.md`](../../AGENTS.md#source-auth",
+        "linkText": "`mcp/README.md`"
+      }
+    ],
     "ANALYSIS-RECORDS": [
       {
         "fromSlug": "ARCHITECTURE",
@@ -4729,13 +4742,6 @@
         "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "context": "eeps this file consistent without a second edit). - Drift between the two is listed as a named forbidden pattern in **[`.claude/rules/forbidden.md`]**, under \"문서\" (documentation): *\"AGENTS.md 와 CLAUDE.md 가 비동기\"* — AGENTS.md and CLAUDE.md being out of sync is treated",
         "linkText": "`.claude/rules/forbidden.md`"
-      }
-    ],
-    "../mcp/README": [
-      {
-        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": "every session — the same \"consult a reference file instead of restating it\" move, aimed at facts instead of rules. See **[`mcp/README.md`]** for the tool surface an agent uses to read and write that reference file, and [`AGENTS.md`](../../AGENTS.md#source-auth",
-        "linkText": "`mcp/README.md`"
       }
     ],
     "benchmark/results/2026-08-31-change-r7-summary": [

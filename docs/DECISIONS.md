@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — The MCP entry point is wiring; workflows live in their own modules
+
+**Why**: `mcp/src/index.js` was 12,276 lines — 2,124 of JSON Schema, a 4,109-line `TOOLS` table, and all 38 handlers in one file. Finding what `rename_concept` does meant paging past `infer_imports`, and five contract gates plus one unit test read the file as text, so the file's size was itself part of the contract surface.
+**Prior**: cites 2026-07-29 "Audit follow-up: 4 MCP public-contract items are bug fixes, not direction decisions" as standing — the public contract is what `tools/list` and `initialize` return, and this record changes neither.
+**Decision**: the entry point keeps only the two request handlers, the name-to-module switch, and the transport (269 lines). The public surface moves whole to `server/registry.mjs` with `server/tool-schemas.mjs` and `server/instructions.mjs`; handlers move to `tools/` by workflow. `scripts/check-decision-record.mjs` now watches `server/registry.mjs` too, so the contract gate follows the contract rather than the filename. Zero behaviour change: `initialize` instructions and `tools/list` captured from the running server are byte-identical to the pre-split capture.
+**Dissent**: one file is one `rg`, and 21 files means a reader has to know which one holds `getConcept` before searching; answered by keeping shared helpers with their handlers and by the module table in `mcp/README.md`, not by a re-export barrel that would make the surface ambiguous again.
+**Falsifier**: a tool whose description or schema changes without `pnpm decisions:check` firing, or a handler that has to import from a second module to stay correct — either means the cut was drawn in the wrong place.
+**Owner**: jinan
+
 ## 2026-09-12 — One folder is one picture; the canvas is a window onto it
 
 **Why**: the owner on G1 (#1567): *"the graph is too big and ugly.. what happens when a few hundred documents pile up..?"* The fit was unclamped: over four folders at three windows the camera ran **0.18–5.11**, one twelve-mark folder wearing 26.1px marks at 1040 and 34.0 at 1920. At 372 marks the label threshold turned **every** name off: the home answered *which write-ups exist* with anonymous dots on graph paper.
