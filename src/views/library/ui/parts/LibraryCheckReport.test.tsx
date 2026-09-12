@@ -255,7 +255,9 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     const onOpenPage = vi.fn();
     mount(<Harness structural={STRUCTURAL} onOpenPage={onOpenPage} />);
     const rows = screen.getAllByTestId("library-structural-finding");
-    expect(rows[0]!.textContent).toContain("is cited but is not in this folder");
+    expect(rows[0]!.textContent).toContain("is cited but that file is not in this folder");
+    // The action is its own sentence beside the finding, from the same describer.
+    expect(rows[0]!.textContent).toContain("put the file in this folder, or fix the citation");
     expect(rows[0]!.textContent).toContain("refund-timing");
     fireEvent.click(screen.getAllByTestId("library-finding-page")[0]!);
     expect(onOpenPage).toHaveBeenCalledWith("wiki/refund-timing");

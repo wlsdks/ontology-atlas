@@ -932,6 +932,30 @@ header strip. It is the same reasoning that took the green chip off every compil
 **Names without a page** keeps its list and its **Propose as node** chips on the *Check
 results* page in the pane, five at a time with the map kinds first.
 
+**The two cards above a page speak the reader's language** (owner, 2026-09-12: the cards
+read as alien script — a finding code glued to a line number, a citation grammar in
+backticks, and the names of a CLI command and an MCP tool, above the page's own Summary).
+One `describeWikiProblem` now serves the page's cards, the *Check results* rows and the
+revision dialog, so one folder is never described two ways. A finding is one sentence plus
+one action — *"No original backs up what is written at line 19 under Facts, line 20. Point
+it at one place in one original, or move it into the Not in sources section at the end of
+the page if you cannot."* — with every page and original named by its title and pressable
+(a page nobody wrote, and a file the finding itself says is missing, are named but never
+pressable), the place pressable where the page has a section to scroll to, and two findings
+that read the same folded into one row carrying both places. The card's title counts in
+words ("2 to fix · page template", "2 connections to check"). The codes, their line
+anchors, the validator's English verbatim, the page's own `wiki/<slug>.md` path and the
+sentence that `ontology-atlas wiki-validate` and `validate_wiki` report the same codes all
+stay whole behind one closed disclosure per card, for whoever is holding a terminal. The
+own-shape card carries exactly one action, top right: with a coding agent connected it
+starts one turn scoped to that page's shape findings (`buildWikiShapeFixBrief` — restore
+the five sections, cite a real place, and **never** invent a citation: an unverifiable
+claim moves under `## Not in sources`), and without one it reveals the file in Finder. Its
+wording names the checkpoint the person's own write mode actually runs. On the web there is
+neither an absolute path nor a local agent, so there is no control rather than a dead one.
+The folder card has no action at all: its findings are repaired by editing another page,
+and that page's title inside the sentence is the press.
+
 **Below `lg` the whole pane reaches a phone** (2026-09-06, third pass). None of it used to
 be drawn there: the pane was hidden whenever nothing was chosen, which is the state it
 exists for, so a phone and any window under 1024px opened a folder and got two lists, no
