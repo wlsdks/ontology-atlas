@@ -54,6 +54,24 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — Each group of the folder gets a place, the ring included
+
+**Why**: the owner on the Library home: *"the graph matters most by default, and it comes up as an ugly popup"*. At 1512×901 (canvas 1088×819): three clusters at three walls, a **167px** band holding no mark, name or line, **54%** of a 6×4 grid held; 50% and 226px on `vault-zero-answers`. A bounding-box fill cannot see that: between two *unconnected* groups the only force with an opinion is repulsion, answering with the walls.
+**Prior**: 2026-09-07 "The Library graph is a live force simulation", 2026-09-06 "The Library gets its own small graph" and 2026-09-08 "The Library graph stands still" stand. 2026-09-07 "An unattached mark stands on a ring" is **narrowed**: the ring, its sorted-id spread and `ORPHAN_RING_GAP` stand; its centre becomes the loose group's own cell.
+**Decision**: each component is settled alone by these same forces, the footprints packed into columns of an arrangement shaped like the canvas with `ORPHAN_RING_GAP` around each, each group's gravity aimed at its own cell; cross-group repulsion goes, collision stays global, no distance inside a group changes. Unattached files are one more group, on their own ring. One connected mass keeps its field and ring: composing 60 marks and an uncited file as peers cost band 26 → 82px. The arrangement is searched over every assignment of ≤6 groups, scored on the grid it leaves empty, skipped over 240 marks. After: occupancy 0.54 → **0.83** and 0.50 → **0.63**; band 167 → **58** and 226 → **80px**.
+**Dissent**: design-infoviz: packed adjacent, the nearest mark of the next cluster can be nearer than the far side of your own — 96 against 100 units — where repulsion guaranteed the opposite, so membership rides on the lines. design-lead: a composition is a shape the folder lacks.
+**Falsifier**: a walker who reads two adjacent clusters as one, or follows a distance to the wrong group; a composition that changes between visits; a band over a sixth of the canvas on ten marks or more.
+**Owner**: jinan
+
+## 2026-09-12 — The canvas's ink is sized to the canvas, and its ground is the map's
+
+**Why**: the 5–10px mark band and the 11px name were measured in 2026-09-06, when this graph was a 320px strip above the reader. It became the Library's whole pane and the band never followed: twelve marks on 891,000 square pixels wore 20px at most, on an unruled void. The owner read that as an ugly popup in the sentence that also named the layout.
+**Prior**: 2026-09-06 "The Library gets its own small graph" set the band and the widths and stands as the **floor**: no folder gets smaller marks or thinner lines. 2026-09-08 "The expression bans are lifted" allows a ground. 2026-09-08 "The map widget is named for what it draws" stands; this consumes two `--map-*` tokens rather than minting any.
+**Decision**: the band grades from the room each mark has — the side of its own even share of the canvas — floored at a 10px top and capped at 17px, where marks citing one file begin to touch. The relation widths, the halo, the name's ground outline and the fit's padding scale with it, never below their 2026-09-06 values. A page's name takes `--text-body`; a file's and a concept's keep `--text-label`, both read from CSS. The ground is the map's blueprint grid, `--map-grid-minor` / `--map-grid-major` at 24 and 120px, static in screen space; no vignette, the map's being a gate-exempt literal. Measured: widest mark 20 → **34px**, names 11 → **12.5/11px**, 0 overlaps; over a major grid line page 12.77:1, source 5.74:1, edge 4.90:1, selected 3.97:1.
+**Dissent**: design-infoviz: a size that changes with the window makes one folder two pictures, and degree is read by comparing marks. Kept: that comparison is always inside one frame. design-system: borrowing `--map-*` is the drift the naming record exists to stop; kept because a floor is shared furniture.
+**Falsifier**: a reader who cannot tell a busy mark from a quiet one at any width; a mark or line under 3:1 on this ground; a `--map-grid-*` change the map wants and this canvas does not.
+**Owner**: jinan
+
 ## 2026-09-12 — The Library's toast stands in the corner of the pane it is about
 
 **Why**: the owner, on the installed app's Library: *"the toast at the top — its position is odd too, right? (and of course a toast should adjust its position adaptively)"*. Measured at 1512×901: a top-centred box on this surface needed a 124px push down (173 below 601px) only to clear the pane's own chrome, and at the end of that push it still reported the **right** pane's work while resting above the **left** column's title.
