@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+
+import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
+import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -151,6 +154,7 @@ export function DocsVaultEditor({
   vaultScope,
 }: Props) {
   const t = useTranslations('vaultWidgets.editor');
+  const failureSentence = useFailureSentence();
   const locale = useLocale();
   // The relation vocabulary is read from the same namespace by the map editor and the document editor.
   const tRelations = useTranslations('ontologyRelations');
@@ -159,7 +163,13 @@ export function DocsVaultEditor({
   const [content, setContent] = useState<string | null>(null);
   const [savedContent, setSavedContent] = useState<string | null>(null);
   const [loadedSlug, setLoadedSlug] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  /*
+   * ⚠️ The editor's failure carries **two halves** (v1.2.2 repair). It used to hold a plain string
+   * that was `err.message` on both the load and the save path, so a rejected write printed the
+   * vault layer's English into this pane. `sentence` is what the pane renders; `detail` is the
+   * machine half and only ever reaches `data-failure-detail`.
+   */
+  const [error, setError] = useState<FailureCopy | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
@@ -419,7 +429,7 @@ export function DocsVaultEditor({
   const doSave = useCallback(async () => {
     if (saving || content === null || !dirty) return;
     if (legacyDraftConflict) {
-      setError(t('saveConflict'));
+      setError({ sentence: t('saveConflict'), detail: null });
       return;
     }
     setSaving(true);
@@ -446,19 +456,17 @@ export function DocsVaultEditor({
       const name = err instanceof Error ? err.name : '';
       setError(
         name === 'VaultConflictError'
-          ? t('saveConflict')
+          ? { sentence: t('saveConflict'), detail: null }
           : name === 'VaultIdentityUidError'
-            ? t('saveIdentityUid')
+            ? { sentence: t('saveIdentityUid'), detail: null }
             : name === 'VaultIdentityHistoryError'
-              ? t('saveIdentityHistory')
-              : err instanceof Error
-                ? err.message
-                : t('saveFailed'),
+              ? { sentence: t('saveIdentityHistory'), detail: null }
+              : failureSentence(err, t('saveFailed')),
       );
     } finally {
       setSaving(false);
     }
-  }, [content, dirty, doc.slug, legacyDraftConflict, onSave, saving, t, vaultScope]);
+  }, [content, dirty, doc.slug, failureSentence, legacyDraftConflict, onSave, saving, t, vaultScope]);
 
   const requestClose = useCallback(() => {
     if (saving) return;
@@ -506,7 +514,7 @@ export function DocsVaultEditor({
         const cannotVerifyLegacyDraft =
           diskChangedSinceDraft && typeof draft.diskMtime !== 'number';
         setLegacyDraftConflict(cannotVerifyLegacyDraft);
-        setError(diskChangedSinceDraft ? t('saveConflict') : null);
+        setError(diskChangedSinceDraft ? { sentence: t('saveConflict'), detail: null } : null);
         setSavedFlash(false);
         setDraftSavedAt(shouldRestoreDraft ? draft.updatedAt : null);
         setAutocomplete(null);
@@ -518,12 +526,12 @@ export function DocsVaultEditor({
         setLoadedSlug(doc.slug);
         setDraftSavedAt(null);
         setLegacyDraftConflict(false);
-        setError(err instanceof Error ? err.message : String(err));
+        setError(failureSentence(err, t('loadFailed')));
       });
     return () => {
       cancelled = true;
     };
-  }, [doc.mtime, doc.slug, getDocContent, t, vaultScope]);
+  }, [doc.mtime, doc.slug, failureSentence, getDocContent, t, vaultScope]);
 
   // After a clean save, once the parent manifest refreshes with the new mtime, the
   // baseline for the next edit advances too. External mtime changes while dirty are
@@ -624,12 +632,14 @@ export function DocsVaultEditor({
 
   if (!loading && error && content === null) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
+      <div
+        className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center"
+        data-failure-detail={error.detail ?? undefined}
+      >
+        {/* The sentence is the reader's. The English cause stays on `data-failure-detail`: it used
+            to sit here in mono, which is raw `Error.message` on a Korean screen. */}
         <div className="text-body text-[color:var(--color-text-tertiary)]">
-          {t('loadFailed')}
-        </div>
-        <div className="font-mono text-label text-[color:var(--color-text-quaternary)]">
-          {error}
+          {error.sentence}
         </div>
         <Chip
           onClick={requestClose}
@@ -821,8 +831,9 @@ export function DocsVaultEditor({
         <div
           className="break-keep border-b border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-4 py-1.5 text-label leading-label text-[color:var(--color-danger-text-strong)]"
           aria-live="polite"
+          data-failure-detail={error.detail ?? undefined}
         >
-          {error}
+          {error.sentence}
         </div>
       ) : null}
       {/* Formatting toolbar */}
