@@ -673,6 +673,7 @@ function TodoRow({
  * the duration and the time.
  */
 const HISTORY_LABEL_KEY: Readonly<Record<BellHistoryRow['kind'], string>> = {
+  'human-decision': 'decisionAllowed',
   'task-start': 'runningTask',
   'task-end': 'event.taskEnd',
   'domain-added': 'event.domainAdded',
@@ -698,7 +699,11 @@ function HistoryRow({
   const problem = row.kind === 'vault-problem';
   const agent = row.agent ? (agentDisplayName(row.agent) ?? row.agent) : null;
   const sentence =
-    row.kind === 'task-end' ? writeSentence(t, row.counts) : t(HISTORY_LABEL_KEY[row.kind]);
+    row.kind === 'task-end'
+      ? writeSentence(t, row.counts)
+      : row.kind === 'human-decision'
+        ? t(row.decision === 'rejected' ? 'decisionRejected' : 'decisionAllowed')
+        : t(HISTORY_LABEL_KEY[row.kind]);
 
   const detail = (() => {
     if (row.problems) {

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -33,10 +33,13 @@ const feed = {
   markAllRead: vi.fn(),
 } as unknown as AgentActivityFeed;
 
-function renderPanel(briefCountsFor?: Parameters<typeof AgentInboxPanel>[0]['briefCountsFor']) {
+function renderPanel(
+  briefCountsFor?: Parameters<typeof AgentInboxPanel>[0]['briefCountsFor'],
+  next: BellInbox = inbox,
+) {
   return render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
-      <AgentInboxPanel inbox={inbox} feed={feed} briefCountsFor={briefCountsFor} />
+      <AgentInboxPanel inbox={next} feed={feed} briefCountsFor={briefCountsFor} />
     </NextIntlClientProvider>,
   );
 }
@@ -66,5 +69,24 @@ describe('결과 줄의 두 번째 줄 — 사실 목록', () => {
     );
     // The uncertain half carries the signal tone, not a second sentence.
     expect(row.querySelector('[class*="--color-status-warning"]')).not.toBeNull();
+  });
+});
+
+/** Each tab says what is not there in its own words, and only the 할 일 one carries a door. */
+describe('빈 탭', () => {
+  const empty: BellInbox = { todos: [], results: [], history: [], unreadResults: 0 };
+
+  it('세 탭이 서로 다른 문장을 말한다', () => {
+    renderPanel(undefined, empty);
+    expect(screen.getByTestId('agent-inbox-todo-empty')).toHaveTextContent(
+      '여기 올라온 기다리는 일은 없어요.',
+    );
+    expect(screen.getByTestId('agent-inbox-todo-empty-repair')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /결과/ }));
+    expect(screen.getByTestId('agent-inbox-results-empty')).toHaveTextContent(
+      '아직 끝난 작업이 없어요.',
+    );
+    fireEvent.click(screen.getByRole('tab', { name: /기록/ }));
+    expect(screen.getByTestId('agent-inbox-history-empty')).toBeInTheDocument();
   });
 });

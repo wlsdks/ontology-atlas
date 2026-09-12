@@ -474,6 +474,10 @@ describe('deriveBellInbox — 12건 씨앗', () => {
 
   it('기록은 작업별로 접히고 오늘과 어제로 나뉜다', () => {
     expect(inbox.history.map((group) => group.label)).toEqual(['today', 'yesterday']);
-    expect(inbox.history.flatMap((group) => group.rows)).toHaveLength(8);
+    // 4 folded tasks + a problem + a domain + a bridge + the rejection that wrote nothing.
+    expect(inbox.history.flatMap((group) => group.rows)).toHaveLength(9);
+    expect(
+      inbox.history.flatMap((group) => group.rows).filter((row) => row.kind === 'human-decision'),
+    ).toHaveLength(1);
   });
 });

@@ -500,8 +500,10 @@ describe('알림함 — 세 탭', () => {
     expect(screen.getAllByTestId('agent-inbox-history-day')).toHaveLength(1);
     expect(screen.getByTestId('agent-inbox-history-day')).toHaveTextContent('오늘');
     const rows = screen.getAllByTestId('agent-inbox-history-row');
-    // 4 tasks (start+end folded) + a problem + a domain + a bridge.
-    expect(rows).toHaveLength(7);
+    // 4 tasks (start+end folded) + a problem + a domain + a bridge + the rejection, which
+    // wrote nothing and so appears in no log.
+    expect(rows).toHaveLength(8);
+    expect(rows.some((row) => row.dataset.kind === 'human-decision')).toBe(true);
   });
 
   it('탭은 하나의 탭 스톱이고 화살표로 옮긴다 — APG 라디오 문법', () => {
@@ -541,7 +543,11 @@ describe('알림함 — 세 탭', () => {
     expect(screen.getByTestId('agent-inbox-todo-empty')).toHaveTextContent('여기 올라온 기다리는 일은 없어요.');
     expect(screen.getByTestId('agent-inbox-todo-empty-repair')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /기록/ }));
-    expect(screen.getByTestId('agent-inbox-history-empty')).toBeInTheDocument();
+    // A decision that wrote nothing is in no log, so the timeline takes it from the receipt.
+    expect(screen.getByTestId('agent-inbox-history-row')).toHaveAttribute(
+      'data-kind',
+      'human-decision',
+    );
   });
 });
 

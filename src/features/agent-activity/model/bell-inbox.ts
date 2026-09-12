@@ -89,11 +89,19 @@ export type BellResult =
       items: number;
     };
 
-/** One row of the timeline: a whole task, or a single shape/problem event. */
+/**
+ * One row of the timeline: a whole task, a shape/problem event, or **a decision the person
+ * themselves made**.
+ *
+ * The last one is here because the timeline was answering "what happened, when" without
+ * the person's own allow and reject in it (design-lead and po-steward, 2026-09-12). A
+ * rejected write produces no log line at all, so before this its only rendering anywhere
+ * was the folded `결과` row.
+ */
 export interface BellHistoryRow {
   id: string;
   at: number;
-  kind: AgentNotificationKind;
+  kind: AgentNotificationKind | 'human-decision';
   agent: string | null;
   node: VaultShapeNode | null;
   label: string | null;
@@ -104,6 +112,9 @@ export interface BellHistoryRow {
   durationMs: number | null;
   /** True when the task is still running — it has a start and no end. */
   running: boolean;
+  /** `human-decision` only: what the person answered, and what came of it. */
+  decision: AcpWorkDecision | null;
+  result: AcpWorkResult | null;
 }
 
 export interface BellHistoryGroup {
@@ -389,6 +400,8 @@ export function deriveBellInbox({
         childCount: null,
         durationMs: start && end ? Math.max(0, end.at - start.at) : null,
         running: !end,
+        decision: null,
+        result: null,
       });
       continue;
     }
@@ -404,6 +417,32 @@ export function deriveBellInbox({
       childCount: item.childCount ?? null,
       durationMs: null,
       running: false,
+      decision: null,
+      result: null,
+    });
+  }
+  /*
+   * A decision that produced no write is in no log, so the timeline has to take it from the
+   * receipt directly — otherwise the only place a rejection is ever seen is a `결과` row
+   * that folding could have covered.
+   */
+  for (const receipt of orphanReceipts) {
+    const at = Date.parse(receipt.updatedAt);
+    if (!Number.isFinite(at)) continue;
+    historyRows.push({
+      id: `decision:${receipt.id}`,
+      at,
+      kind: 'human-decision',
+      agent: receipt.agent,
+      node: null,
+      label: receipt.request,
+      counts: null,
+      problems: null,
+      childCount: null,
+      durationMs: null,
+      running: false,
+      decision: receipt.decision,
+      result: receipt.result,
     });
   }
   historyRows.sort((a, b) => b.at - a.at || a.id.localeCompare(b.id));
