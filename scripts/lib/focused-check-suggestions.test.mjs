@@ -42,7 +42,8 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks(['docs/ontology/capabilities/mcp-server.md']);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm docs-vault:check',
+      'pnpm docs-vault:build',
+      'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:mcp:docs',
@@ -59,7 +60,8 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks(['docs/FEATURES.md']);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm docs-vault:check',
+      'pnpm docs-vault:build',
+      'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
     ]);
@@ -198,7 +200,8 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks(['docs/guide/relations.md']);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm docs-vault:check',
+      'pnpm docs-vault:build',
+      'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:guide-examples',
@@ -311,6 +314,7 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks(['mcp/src/integration.test.mjs']);
 
     assert.deepEqual(domainCommands(result), [
+      'pnpm test:mcp:rpc',
       'pnpm integration:mcp',
       'pnpm vault:validate',
     ]);
@@ -743,7 +747,8 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
       'pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts',
       'pnpm exec vitest run src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx',
-      'pnpm docs-vault:check',
+      'pnpm docs-vault:build',
+      'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:desktop:check',
@@ -1151,7 +1156,8 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(domainCommands(result), [
-      'pnpm docs-vault:check',
+      'pnpm docs-vault:build',
+      'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm docs:surface:check',
@@ -1668,7 +1674,7 @@ describe('deleted paths participate in rule matching without reaching file-readi
       deletedPaths: ['docs/ontology/capabilities/gone.md'],
     });
     const commands = suggestions.commands.map((c) => c.command);
-    assert.ok(commands.includes('pnpm docs-vault:check'), commands.join('\n'));
+    assert.ok(commands.includes('pnpm docs-vault:build'), commands.join('\n'));
     assert.deepEqual(suggestions.deletedPaths, ['docs/ontology/capabilities/gone.md']);
   });
 

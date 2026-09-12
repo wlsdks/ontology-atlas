@@ -50,6 +50,7 @@ jobs:
       gates_needs_mcp: ${{ steps.impact.outputs.gates_needs_mcp }}
       unit: ${{ steps.impact.outputs.unit }}
       unit_needs_mcp: ${{ steps.impact.outputs.unit_needs_mcp }}
+      unit_sharded: ${{ steps.impact.outputs.unit_sharded }}
       mcp: ${{ steps.impact.outputs.mcp }}
     steps:
       - name: Checkout
@@ -119,6 +120,10 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: node scripts/run-ci-lane.mjs --lane=gates --base="${PUSH_BEFORE:-origin/$BASE_REF}"
 
+      - name: Check live catalogue freshness
+        if: env.ACTIVE == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        run: node scripts/build-mcp-catalogue.mjs --check-online
+
       - name: Skip unaffected gate setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
         run: echo "No affected type, lint, or documentation gate"
@@ -150,7 +155,7 @@ jobs:
       matrix:
         shard: [1, 2, 3]
     env:
-      ACTIVE: ${{ needs.plan.outputs.unit != 'skip' }}
+      ACTIVE: ${{ needs.plan.outputs.unit != 'skip' && (needs.plan.outputs.unit_sharded != 'false' || matrix.shard == 1) }}
       NEED_MCP: ${{ needs.plan.outputs.unit_needs_mcp }}
       CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}
     steps:

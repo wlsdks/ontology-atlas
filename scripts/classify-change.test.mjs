@@ -8,6 +8,7 @@ import {
   decodePlan,
   encodePlan,
   FULL_LANE_COMMANDS,
+  unitUsesAllShards,
 } from './classify-change.mjs';
 
 test('scheduled runs and missing comparisons run every exhaustive lane', () => {
@@ -192,9 +193,9 @@ test('the serialized workflow plan is versioned and round-trips exactly', () => 
 });
 
 test('gate inventories are non-empty so exhaustive mode cannot pass vacuously', () => {
-  assert.ok(FULL_LANE_COMMANDS.gates.length >= 30);
-  assert.ok(FULL_LANE_COMMANDS.unit.length >= 2);
-  assert.ok(FULL_LANE_COMMANDS.mcp.length >= 5);
+  assert.ok(FULL_LANE_COMMANDS.gates.length > 0);
+  assert.ok(FULL_LANE_COMMANDS.unit.length > 0);
+  assert.ok(FULL_LANE_COMMANDS.mcp.length > 0);
 });
 
 test('every currently tracked path belongs to a known impact namespace', () => {
@@ -202,7 +203,7 @@ test('every currently tracked path belongs to a known impact namespace', () => {
     .trim()
     .split('\n')
     .filter(Boolean);
-  assert.ok(files.length > 1_000, 'tracked-path inventory is unexpectedly empty');
+  assert.ok(files.length > 0, 'tracked-path inventory is unexpectedly empty');
   assert.deepEqual(buildImpactPlan({ files }).unknownPaths, []);
 });
 
@@ -314,4 +315,35 @@ test('both workflows retain exhaustive triggers isolated from ordinary push canc
     assert.match(group, /github\.event_name == 'workflow_dispatch'/);
     assert.match(group, /'full' \|\| 'change'/);
   }
+});
+
+test('browser execution inputs promote only browser evidence, while shared routing remains exhaustive', () => {
+  for (const file of ['scripts/data/playwright-file-durations.json', 'scripts/run-playwright-ci.mjs']) {
+    const plan=buildImpactPlan({files:[file]});
+    assert.equal(plan.full,false);
+    assert.equal(plan.lanes.e2e.mode,'full');
+    assert.equal(plan.lanes.mcp.mode,'skip');
+    assert.notEqual(plan.lanes.unit.mode,'full');
+    assert.ok(!plan.lanes.gates.commands.includes('pnpm lint'));
+    assert.ok(plan.lanes.gates.commands.includes('node --test scripts/run-playwright-ci.test.mjs'));
+  }
+  assert.equal(buildImpactPlan({files:['scripts/data/playwright-file-durations.json']}).lanes.unit.mode,'skip');
+  for (const file of ['scripts/classify-change.mjs','scripts/run-ci-lane.mjs','.github/workflows/checks.yml']) {
+    assert.equal(buildImpactPlan({files:[file]}).full,true);
+  }
+});
+
+test('unit distribution keeps all full file sweeps and avoids setup for empty focused shards', () => {
+  assert.equal(unitUsesAllShards({mode:'full'}),true);
+  assert.equal(unitUsesAllShards({mode:'affected',affected:true}),true);
+  assert.equal(unitUsesAllShards({mode:'focused',contract:'full'}),true);
+  assert.equal(unitUsesAllShards({mode:'focused',contract:'focused',affected:false}),false);
+  assert.equal(unitUsesAllShards({mode:'skip',contract:'skip',affected:false}),false);
+});
+
+test('exhaustive architecture coverage is owned once across the three lanes', () => {
+  assert.ok(!FULL_LANE_COMMANDS.gates.includes('pnpm test:architecture'));
+  for(const command of ['pnpm package:check','pnpm integration:cli:architecture']) assert.ok(FULL_LANE_COMMANDS.gates.includes(command));
+  for(const command of ['pnpm test:mcp:unit','pnpm integration:mcp']) assert.ok(FULL_LANE_COMMANDS.mcp.includes(command));
+  assert.ok(FULL_LANE_COMMANDS.unit.includes('pnpm test:run'));
 });

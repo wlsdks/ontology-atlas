@@ -70,7 +70,7 @@ describe('changelog entry template', () => {
       mkdirSync(join(dir, 'docs'));
       writeFileSync(join(dir, 'docs', 'CHANGELOG.md'), `# CHANGELOG\n\n${GOOD}`);
       assert.equal(runChangelogCheck([], io, { cwd: dir }), 0);
-      assert.match(io.logs.join('\n'), /1 entries fit the template/);
+      assert.match(io.logs.join('\n'), /1 frozen entries \+ 0 change facts \+ 0 release markers fit their templates/);
       writeFileSync(join(dir, 'docs', 'CHANGELOG.md'), `# CHANGELOG\n\n${GOOD}\n## 2026-09-04 · Unreleased: late\n\n- an old-shape bullet\n`);
       assert.equal(runChangelogCheck([], io, { cwd: dir }), 1);
       assert.match(io.errors.join('\n'), /belongs at the top/);

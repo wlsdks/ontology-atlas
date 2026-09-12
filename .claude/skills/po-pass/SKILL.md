@@ -119,10 +119,11 @@ motion, and journey measurement to their own gates.
 If the owner explicitly adds reviewers to a two-way decision, record
 `owner-review` in the pilot so the council-avoidance metric sees the cost.
 
-Routine solo work stays out of `docs/DECISIONS.md`. Every eligible
-non-mechanical decision adds one structured run and outcome row to
-`docs/PO-PILOT.md`; run `pnpm po:pilot` to see whether the gate is earning
-its cost.
+Routine solo work does not create a decision fragment. Every eligible
+non-mechanical decision creates a UUID run fragment, including its initial pending
+outcome, through `pnpm po:record -- --type=run --input=/tmp/po-run.json`. Later
+evidence uses an update fragment that references that run UUID. Run
+`pnpm po:pilot` to see whether the gate is earning its cost.
 
 A green router is not proof of a good product decision. The recovery proof and
 later observed result are.

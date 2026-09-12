@@ -1,5 +1,7 @@
 # CHANGELOG
 
+> Frozen release history since 2026-09-13. Add change facts and release markers under `docs/records/`; the Docs Vault composes the current changelog. See [record workflow](records/README.md). Historical recording instructions below describe the former format.
+
 > Major change history. Code commit messages answer *why*; this file answers
 > *when / which surface changed*, for a person who uses the product.
 >
