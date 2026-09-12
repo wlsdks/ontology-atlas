@@ -45,6 +45,14 @@
 
 ---
 
+## 2026-09-12 · v1.2.1: the Library opens on its graph, and the graph stays readable at three hundred pages
+
+**Added**: the Library computes the structural check itself and keeps it, behind a report door naming whether a check runs, what it covered and what it has not; the README points at the MCP directory listings.
+
+**Changed**: the Library's home is its graph, with the guide and its strip's clauses as doors; the graph keeps the map's scale, names every page and sets files as satellites of their hubs, so three hundred pages stay readable; one text edge per column over a 16px reading column; the index grid, header, tooltip and toast take plain labels and their places; the type ramp is in rem, so text zoom reaches it.
+
+**Fixed**: touch floors reach hybrid pointers; an arriving route takes input at once; the source pane clears its bottom and keeps sha256 on one line; the source inventory reads the 8000 entries the dogfood repository outgrew; the installed app never offers its own download.
+
 ## 2026-09-11 · v1.2.0: two npm-free channels for the MCP server, and Library answers that keep their evidence
 
 **Added**: the MCP server also ships as an `.mcpb` bundle on each release and as a container image, so it can be listed in the official MCP Registry; neither is a package registry and npm stays retired. Saved questions retain reviewed ACP answer revisions, inspectable citations and competing histories; an offline wiki evaluation reports maintenance omissions.
