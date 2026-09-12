@@ -66,8 +66,9 @@ relation writing with directional preview and change review; ACP writes wait
 for `allow_once` or `reject_once`. `/ontology`, `/ontology/edit` and `/ontology/studio` are legacy
 redirects; `/ontology/insights` is live.
 
-Adding or removing a route requires an appended `docs/DECISIONS.md` record in
-the same change; `pnpm decisions:check` enforces it. Keep retired namespaces
+Adding or removing a route requires one decision fragment from `pnpm record:new`
+in the same change; `pnpm decisions:check` composes it with the frozen legacy
+ledger and enforces the result. Keep retired namespaces
 retired: `/login`, `/signup`, `/account`, `/reset-password`,
 `/settings/*`, `/admin/*`, `/review/*`, `/diagnostics/*`,
 `/knowledge/*`, and `/skills`. See `.claude/rules/forbidden.md`.
@@ -80,8 +81,9 @@ only: when to open a gate, not how it runs.
 
 - **PO gate** — Before product, UX, graph, MCP, CLI, workflow, or macOS work,
   `/po-pass` names one lost Atlas ability and gives change/boundary facts to
-  `pnpm po:route`; it derives door and risk. Log pilot outcomes in
-  `docs/PO-PILOT.md`; `pnpm po:pilot -- --check` owns the sunset.
+  `pnpm po:route`; it derives door and risk. Write pilot run, update, and optional
+  policy JSON through `pnpm po:record -- --type=run|update|policy --input=/tmp/file.json`;
+  `pnpm po:pilot -- --check` composes them with the frozen pilot and owns the sunset.
 - **Product design gate** — `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`, after
   the PO pass, for UI, interaction, topology, responsive, motion, and macOS
   workbench work. Run `pnpm design:route`; it selects `/design-directions`,
@@ -99,7 +101,9 @@ only: when to open a gate, not how it runs.
   and tests recovery proof; `chief` rebuts only material conflict.
   `/design-council` runs only for routed structural commitments, with selected
   seats and `design-guardian` deciding. Cross-critique needs material conflict.
-- **Decision ledger** — `docs/DECISIONS.md` is append-only;
+- **Decision ledger** — `docs/DECISIONS.md` is frozen legacy input; new records
+  are immutable `docs/records/decisions/YYYY-MM-DD-slug-UUID.md` fragments created
+  by `pnpm record:new`;
   `pnpm decisions:find <terms>` finds the record to cite or overturn
   explicitly, keeping the losing dissent and a falsifier. Never silently
   re-decide.
@@ -129,16 +133,20 @@ Run `pnpm checks:changed -- --run`; complete every recommendation. Finish
 after they pass unless a new edit, failure, or named unresolved risk requires
 more. Use `.claude/rules/testing.md` for escalation; never broaden or repeat
 checks by habit.
-Generated docs-vault output is created only by
-`pnpm docs-vault:build`; never hand-edit
-`src/entities/docs-vault/data/` or `public/docs-vault/`.
+Generated docs-vault output is created by the repository's
+prepare/checkout/merge/build hooks through `pnpm docs-vault:build`. Never hand-edit
+or stage `src/entities/docs-vault/data/` or `public/docs-vault/`; they are ignored
+derived output and are regenerated in each checkout.
 
 When documentation changes, keep the owner current: public behavior in
 `README.md` and `docs/FEATURES.md`; architecture/routes in
-`docs/ARCHITECTURE.md`; MCP/CLI contracts in their own READMEs; decisions in
-`docs/DECISIONS.md`; releases in `docs/CHANGELOG.md`. Current authored prose
+`docs/ARCHITECTURE.md`; MCP/CLI contracts in their own READMEs; decisions through
+`pnpm record:new -- --kind=decision --date=YYYY-MM-DD --slug=<slug> --input=/tmp/body.md`;
+change facts through the same command with `--kind=change` and `--category=Added|Changed|Fixed|Removed`;
+release groupings in `docs/records/releases/vVERSION.md`. Current authored prose
 is English; `display_ko` frontmatter and `cli/templates/vault-ko/**` are
-localized data. Ledgers remain append-only. Current docs links must resolve.
+localized data. Record fragments are immutable; legacy ledgers remain frozen and
+are read only through composition. Current docs links must resolve.
 
 Land with `pnpm pr:land <number>`; open pull requests as drafts. The lander
 locks, merges `main` in, checks locally, then fires the one CI run.

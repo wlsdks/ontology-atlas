@@ -37,7 +37,8 @@ Its Korean *matcher data* for the user's own document lives in `mcp/src/absorb.m
 | `docs/ARCHITECTURE.md` | 2 | System structure or file ownership changes |
 | `docs/DESIGN-SYSTEM.md` | 2 | Design tokens or component rules change |
 | `docs/DEPLOYMENT.md` | 2 | Deployment changes |
-| `docs/CHANGELOG.md` | 2 | A major user-visible change lands |
+| `docs/records/changes/*.md` | 2 | A user-visible change lands |
+| `docs/records/releases/vVERSION.md` | 2 | A release groups change UUIDs |
 | `docs/ontology/*.md` | 2 | Dogfood meaning drifts from the implementation |
 | `mcp/README.md` | 2 | An MCP tool or signature changes |
 | `.claude/rules/*` | 2 | Contributor policy evolves |
@@ -75,16 +76,30 @@ Do not pin a vault-node count—documents name the command that derives it.
 Register every new docs gate in `docs/DEVELOPMENT-CHECKS.md` and mention its
 command in `README.md`.
 
+## Collision-resistant records
+
+`docs/DECISIONS.md`, `docs/CHANGELOG.md`, and `docs/PO-PILOT.md` are frozen legacy
+inputs. Do not edit them. Create one immutable file per change so parallel
+worktrees never allocate a shared row or prepend to the same file.
+
+- Decision: `pnpm record:new -- --kind=decision --date=YYYY-MM-DD --slug=<slug> --input=/tmp/body.md`
+- Change fact: add `--kind=change --category=Added|Changed|Fixed|Removed`; files land in `docs/records/changes/`.
+- Release: add `docs/records/releases/vVERSION.md`, whose body lists change UUIDs.
+- PO pilot: `pnpm po:record -- --type=run|update|policy --input=/tmp/file.json`; run and update IDs are UUIDs, and an update references the stable run UUID.
+
+Readers and checks compose these fragments with the checksum-frozen legacy
+documents. Never edit a generated composite to resolve a conflict.
+
 ## Common failures
 
-- Shipping an implementation without its changelog or current-state docs.
+- Shipping an implementation without its change fragment or current-state docs.
 - Leaving a design decision only in conversation; after a few sessions nobody
   remembers why it exists.
 - Letting dogfood capability or element slugs drift from real files.
 - Continuing to cite a deleted file. `pnpm docs:links` catches this; run it after
   regenerating or moving documentation.
-- Editing `public/docs-vault/**` directly instead of changing the authored source
-  and regenerating.
+- Editing or staging `public/docs-vault/**` or `src/entities/docs-vault/data/**`.
+  They are ignored derived output regenerated on prepare, checkout, merge, and build.
 
 ## Rule of thumb
 

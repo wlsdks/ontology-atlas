@@ -11,7 +11,7 @@
     "**/globals.css"
   ],
   "scripts": {
-    "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
+    "prepare": "(git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true) && node scripts/build-docs-vault.mjs",
     "predev": "node scripts/clean-next-dev-cache.mjs && pnpm docs-vault:build",
     "dev": "next dev",
     "dev:route-smoke": "node scripts/check-dev-locale-routes.mjs",
@@ -219,7 +219,10 @@
     "gateway:specimen:check": "node scripts/generate-evidence-specimen.mjs --check",
     "integration:cli:architecture": "node scripts/run-focused-node-test.mjs --test-name-pattern '^architecture --json' cli/src/integration.test.mjs",
     "mcp:catalogue:check-online": "node scripts/build-mcp-catalogue.mjs --check-online",
-    "test:mcp:rpc": "node --test scripts/lib/mcp-test-rpc.test.mjs"
+    "test:mcp:rpc": "node --test scripts/lib/mcp-test-rpc.test.mjs",
+    "record:new": "node scripts/new-record.mjs",
+    "po:record": "node scripts/po-record.mjs",
+    "test:records": "node --test scripts/lib/record-ledgers.test.mjs scripts/new-record.test.mjs scripts/lib/po-pilot-records.test.mjs scripts/po-record.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",

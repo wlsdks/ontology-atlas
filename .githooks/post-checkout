@@ -1,0 +1,8 @@
+#!/bin/sh
+# Refresh ignored Docs Vault assets after a branch switch or new worktree checkout.
+[ "$3" = "1" ] || exit 0
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+if ! (cd "$root" && node scripts/build-docs-vault.mjs); then
+  echo "[post-checkout] Docs Vault materialization failed; run pnpm docs-vault:build after fixing the error." >&2
+  exit 1
+fi

@@ -128,3 +128,14 @@ sweep*/
 # Agent worktree — lives inside the repository but is not part of it.
 # (2026-08-03: `git add -A` once committed this as a gitlink into main)
 .claude/worktrees/
+
+# Worktree-local materialization. prepare, checkout, merge and build create these.
+/src/entities/docs-vault/data/
+/public/docs-vault/
+# Local capture sessions, including scripts and recordings beside screenshots.
+/.claude/shots-*/
+/.scratch-po/
+# Accepted historical review evidence remains versioned.
+!docs/audits/analysis-acp-2026-09-05/*.png
+!docs/benchmark/results/2026-09-10-wiki-review-*.png
+!docs/benchmark/results/2026-09-11-library-*.png

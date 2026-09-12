@@ -16,6 +16,8 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseFrontmatter } from './lib/parse-frontmatter.mjs';
+import { readPoPilotSource } from './lib/po-pilot-records.mjs';
+import { readLedgerSource } from './lib/record-ledgers.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -248,7 +250,7 @@ export function parseArgs(argv = process.argv.slice(2)) {
 // documentation anybody installs. Bundling them would grow the shipped app on
 // every run, against a static budget already at 78% (docs/DECISIONS.md,
 // 2026-08-31).
-const NOT_PRODUCT_DOCS = new Set(['analyses']);
+const NOT_PRODUCT_DOCS = new Set(['analyses', 'records']);
 
 async function walk(dir) {
   const out = [];
@@ -544,6 +546,27 @@ export function comparableDoc(doc) {
   };
 }
 
+async function latestInputDay(inputs, rootDir, gitDays) {
+  const days = [];
+  for (const relativePath of inputs) {
+    const committedDay = gitDays.dirty.has(relativePath)
+      ? null
+      : gitDays.days.get(relativePath);
+    if (committedDay) {
+      days.push(committedDay);
+      continue;
+    }
+    try {
+      const inputStat = await stat(path.join(rootDir, relativePath));
+      const day = localDayStamp(inputStat.mtime);
+      if (day) days.push(day);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+  }
+  return days.length > 0 ? days.reduce((left, right) => left >= right ? left : right) : null;
+}
+
 // Source of the dogfood census module — deterministic, with no timestamp, so it
 // only diffs when the vault content actually changes.
 
@@ -652,7 +675,13 @@ async function assertOutputsCurrent({
  */
 export async function scanVaultDir(
   dir,
-  { rootDir = ROOT, publicOutDir = null, check = false, treeName = 'docs' } = {},
+  {
+    rootDir = ROOT,
+    publicOutDir = null,
+    check = false,
+    treeName = 'docs',
+    sourceReaders = [readLedgerSource, readPoPilotSource],
+  } = {},
 ) {
   const files = await walk(dir);
   const gitDays = gitLastCommitDays(rootDir, dir);
@@ -664,7 +693,13 @@ export async function scanVaultDir(
   const tagsMap = new Map(); // tag -> Set<slug>
 
   for (const full of files) {
-    const raw = await readFile(full, 'utf8');
+    const relPath = path.relative(rootDir, full).replace(/\\/g, '/');
+    let composed = null;
+    for (const reader of sourceReaders) {
+      composed = reader(relPath, { root: rootDir });
+      if (composed) break;
+    }
+    const raw = composed?.content ?? await readFile(full, 'utf8');
     const slug = slugFromPath(full, dir);
     const { frontmatter, body, diagnostics } = parseFrontmatter(raw);
     const headings = extractHeadings(body);
@@ -697,9 +732,8 @@ export async function scanVaultDir(
       if (!tagsMap.has(tag)) tagsMap.set(tag, new Set());
       tagsMap.get(tag).add(slug);
     }
-    const st = await stat(full);
-    const relPath = path.relative(rootDir, full).replace(/\\/g, '/');
-    const committedDay = gitDays.dirty.has(relPath) ? null : gitDays.days.get(relPath);
+    const inputPaths = composed?.inputs ?? [relPath];
+    const updatedAt = await latestInputDay(inputPaths, rootDir, gitDays);
     const nextDoc = {
       slug,
       path: relPath,
@@ -714,7 +748,7 @@ export async function scanVaultDir(
       // Commit date wins; the mtime date is used only for documents that are dirty in
       // the working tree or still untracked. Both are dates, so the value is stable as
       // long as the edit and its merge land on the same day.
-      updatedAt: committedDay ?? localDayStamp(st.mtime) ?? STABLE_GENERATED_AT_FALLBACK,
+      updatedAt: updatedAt ?? STABLE_GENERATED_AT_FALLBACK,
       linksOut,
     };
     // The stabiliser that carried values over from the previous manifest was

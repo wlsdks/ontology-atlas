@@ -210,9 +210,9 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Static dogfood manifest
 
 **Run**: `pnpm docs-vault:check`
-**Proves**: `docs-vault:build`'s committed artifacts (`manifest.json`, `content.json`, `sample-storefront.*`, `dogfood-census.generated.ts`, `public/docs-vault/**`) are still byte-identical to what the vault source generates.
+**Proves**: `docs-vault:build`'s locally materialized artifacts (`manifest.json`, `content.json`, `sample-storefront.*`, `dogfood-census.generated.ts`, `public/docs-vault/**`) are still byte-identical to what the vault source generates.
 **Escalate**: `pnpm test:docs-vault`
-**Fix**: run `pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault` to refresh and stage the generated artifacts.
+**Fix**: run `pnpm docs-vault:build` to refresh ignored artifacts in this worktree; commit their authored inputs. Installation, branch checkout and merge materialize them automatically.
 
 ### Gateway evidence specimen
 

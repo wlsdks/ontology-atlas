@@ -23,6 +23,8 @@ test('classifies current, test, and historical prototype source', () => {
   assert.equal(classifySourcePath('docs/prototypes/example.html'), 'historicalPrototype');
   assert.equal(isSupportedSourcePath('docs/GUIDE.md'), false);
   assert.equal(isSupportedSourcePath('.githooks/pre-push'), true);
+  assert.equal(isSupportedSourcePath('.githooks/post-checkout'), true);
+  assert.equal(isSupportedSourcePath('.githooks/post-merge'), true);
   assert.equal(isSupportedSourcePath('tests/fixtures/example.tsx.fixture'), true);
 });
 

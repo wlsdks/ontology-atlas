@@ -105,7 +105,8 @@ After applying, rerun only the route proofs invalidated by the guardian's change
 Do not repeat a full design audit, responsive matrix, recording, or installed-app
 run when the last-mile edit cannot affect it. A changed proof is never waived.
 
-Append a hard-to-reverse decision to `docs/DECISIONS.md` as the six-field
+Create a hard-to-reverse decision fragment with `pnpm record:new -- --kind=decision
+--date=YYYY-MM-DD --slug=<slug> --input=/tmp/decision.md` using the six-field
 record below; `pnpm decisions:check` refuses any other shape. The council
 utility block goes in the pull-request rationale, never into the ledger.
 

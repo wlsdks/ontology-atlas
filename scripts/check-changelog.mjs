@@ -9,9 +9,8 @@
  * and size, not whether the entry says anything true.
  */
 
-import { readFileSync } from 'node:fs';
-
 import { CATEGORIES, LIMITS, TEMPLATE, checkChangelogTemplate, parseChangelog } from './lib/changelog-entry-template.mjs';
+import { readLedgerSource } from './lib/record-ledgers.mjs';
 
 const FILE = 'docs/CHANGELOG.md';
 
@@ -20,7 +19,11 @@ export function runChangelogCheck(argv, io = console, { cwd = process.cwd() } = 
     io.log(TEMPLATE);
     return 0;
   }
-  const entries = parseChangelog(readFileSync(`${cwd}/${FILE}`, 'utf8'));
+  let source;
+  try { source = readLedgerSource(FILE, { root: cwd }); }
+  catch (error) { io.error(error.message); return 2; }
+  const hasFragments = source.inputs.some((path) => path.startsWith('docs/records/changes/') || path.startsWith('docs/records/releases/'));
+  const entries = parseChangelog(hasFragments ? readFileSync(`${cwd}/${FILE}`, 'utf8') : source.content);
   const { entries: broken, shape } = checkChangelogTemplate(entries);
   if (broken.length === 0 && shape.length === 0) {
     io.log(`[changelog] ${entries.length} entries fit the template ✓`);
@@ -46,3 +49,4 @@ ${TEMPLATE.split('\n').map((line) => `[changelog]   ${line}`).join('\n')}
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
   process.exitCode = runChangelogCheck(process.argv.slice(2));
 }
+import { readFileSync } from 'node:fs';
