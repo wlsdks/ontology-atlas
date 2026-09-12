@@ -48,6 +48,7 @@ export function commandsForLane({
   shard = '1/3',
   eventName = 'pull_request',
   platform = process.platform,
+  prebuilt = false,
 }) {
   if (!plan?.lanes?.[lane] && !['static', 'web', 'e2e'].includes(lane)) {
     throw new Error(`unknown CI lane: ${lane}`);
@@ -114,32 +115,29 @@ export function commandsForLane({
 
   if (lane === 'mcp') return [...plan.lanes.mcp.commands];
 
-  if (lane === 'static') return ['pnpm test:e2e:static'];
-
-  if (lane === 'web') {
-    return [
-      'pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
-    ];
-  }
-
+  const build = prebuilt ? '' : 'pnpm build && ';
+  if (lane === 'static') return [prebuilt
+    ? 'PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts'
+    : 'pnpm test:e2e:static'];
+  if (lane === 'web') return [
+    `${build}PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts`,
+  ];
   if (lane === 'e2e') {
     const e2e = plan.lanes.e2e;
+    const dedicated = [
+      ...(e2e.staticExport ? ['contextual-meaning-editor.spec.ts'] : []),
+      ...(e2e.webSurface ? ['web-surface-smoke.spec.ts'] : []),
+    ];
     if (e2e.mode === 'targeted') {
       if (e2e.specs.length === 0) throw new Error('targeted Playwright plan has no specs');
-      return [
-        `pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test ${e2e.specs.join(' ')}`,
-      ];
+      const specs = e2e.specs.filter((file) => !dedicated.includes(file.split('/').at(-1)));
+      return specs.length ? [`${build}PLAYWRIGHT_STATIC=1 pnpm exec playwright test ${specs.join(' ')}`] : [];
     }
     shardParts(shard);
-    if (e2e.mode === 'smoke') {
-      return [
-        `pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test --project=smoke --shard=${shard}`,
-      ];
-    }
-    if (e2e.mode === 'full') {
-      return [
-        `pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test --shard=${shard}`,
-      ];
+    if (e2e.mode === 'smoke' || e2e.mode === 'full') {
+      const project = e2e.mode === 'smoke' ? ' --project=smoke' : '';
+      const exclusions = dedicated.map((file) => ` --exclude=${file}`).join('');
+      return [`${build}PLAYWRIGHT_STATIC=1 node scripts/run-playwright-ci.mjs${project} --shard=${shard}${exclusions}`];
     }
     return [];
   }
@@ -197,6 +195,7 @@ export function runCiLane({ argv = process.argv.slice(2), env = process.env } = 
       base,
       shard,
       eventName: env.GITHUB_EVENT_NAME || 'pull_request',
+      prebuilt: env.PLAYWRIGHT_PREBUILT === '1',
     });
     if (lane === 'gates' && process.platform !== 'darwin') {
       const planned = commandsForLane({
@@ -205,6 +204,7 @@ export function runCiLane({ argv = process.argv.slice(2), env = process.env } = 
         base,
         shard,
         eventName: env.GITHUB_EVENT_NAME || 'pull_request',
+      prebuilt: env.PLAYWRIGHT_PREBUILT === '1',
         platform: 'darwin',
       });
       for (const command of planned.filter((entry) => !commands.includes(entry))) {

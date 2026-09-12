@@ -1,0 +1,510 @@
+{
+  "version": 1,
+  "sourceRuns": [
+    34702476591,
+    34700199157,
+    34700694565
+  ],
+  "files": {
+    "a11y-open-surfaces.spec.ts": {
+      "seconds": 39.703,
+      "tests": 2
+    },
+    "a11y-ratchet.spec.ts": {
+      "seconds": 59.0,
+      "tests": 1
+    },
+    "a11y-structure.spec.ts": {
+      "seconds": 11.0,
+      "tests": 2
+    },
+    "a11y-vault-backed.spec.ts": {
+      "seconds": 45.6,
+      "tests": 1
+    },
+    "agent-activity-chip.spec.ts": {
+      "seconds": 9.5,
+      "tests": 2
+    },
+    "agent-activity-placement.spec.ts": {
+      "seconds": 2.1,
+      "tests": 1
+    },
+    "agent-connect-panel-census.spec.ts": {
+      "seconds": 3.3,
+      "tests": 1
+    },
+    "agent-mascot-presence.spec.ts": {
+      "seconds": 16.1,
+      "tests": 4
+    },
+    "agent-writing-ring-visible.spec.ts": {
+      "seconds": 8.2,
+      "tests": 1
+    },
+    "analysis-workbench.spec.ts": {
+      "seconds": 53.62,
+      "tests": 31
+    },
+    "architecture-role-ledger.spec.ts": {
+      "seconds": 34.3,
+      "tests": 5
+    },
+    "architecture-workbench.spec.ts": {
+      "seconds": 11.516,
+      "tests": 11
+    },
+    "aria-audit.spec.ts": {
+      "seconds": 2.0,
+      "tests": 1
+    },
+    "back-navigation.spec.ts": {
+      "seconds": 2.317,
+      "tests": 3
+    },
+    "brand-waiting-native-pixels.spec.ts": {
+      "seconds": 0.899,
+      "tests": 2
+    },
+    "camera-transition.spec.ts": {
+      "seconds": 11.0,
+      "tests": 4
+    },
+    "changelog-preamble.spec.ts": {
+      "seconds": 0.49,
+      "tests": 1
+    },
+    "chrome-noise.spec.ts": {
+      "seconds": 4.5,
+      "tests": 2
+    },
+    "contextual-meaning-editor.spec.ts": {
+      "seconds": 16.5,
+      "tests": 2
+    },
+    "contrast-ratchet.spec.ts": {
+      "seconds": 52.0,
+      "tests": 1
+    },
+    "cursor-affordance.spec.ts": {
+      "seconds": 26.142,
+      "tests": 21
+    },
+    "datasheet-hover-map-brush.spec.ts": {
+      "seconds": 10.4,
+      "tests": 1
+    },
+    "demo-clip-locale.spec.ts": {
+      "seconds": 1.874,
+      "tests": 2
+    },
+    "dense-row-target-size.spec.ts": {
+      "seconds": 3.7,
+      "tests": 1
+    },
+    "desktop-shell-rail.spec.ts": {
+      "seconds": 8.566,
+      "tests": 4
+    },
+    "destination-shortcuts.spec.ts": {
+      "seconds": 9.413,
+      "tests": 6
+    },
+    "dialog-focus-ring.spec.ts": {
+      "seconds": 2.8,
+      "tests": 2
+    },
+    "dialog-responsive.spec.ts": {
+      "seconds": 2.3,
+      "tests": 1
+    },
+    "docs-deeplink.spec.ts": {
+      "seconds": 15.1,
+      "tests": 4
+    },
+    "docs-rename-address.spec.ts": {
+      "seconds": 34.9,
+      "tests": 2
+    },
+    "docs-sidebar-head.spec.ts": {
+      "seconds": 1.258,
+      "tests": 2
+    },
+    "document-scroll-lock.spec.ts": {
+      "seconds": 1.496,
+      "tests": 6
+    },
+    "download-gateway-grid.spec.ts": {
+      "seconds": 63.639,
+      "tests": 33
+    },
+    "download-hero-echo.spec.ts": {
+      "seconds": 9.728,
+      "tests": 3
+    },
+    "first-run-text-fit.spec.ts": {
+      "seconds": 3.846,
+      "tests": 4
+    },
+    "focus-ring-contrast.spec.ts": {
+      "seconds": 5.5,
+      "tests": 5
+    },
+    "gateway-idle-sleep.spec.ts": {
+      "seconds": 41.6,
+      "tests": 1
+    },
+    "gateway-reading-reach.spec.ts": {
+      "seconds": 18.6,
+      "tests": 4
+    },
+    "git-setup-preview.spec.ts": {
+      "seconds": 1.6,
+      "tests": 1
+    },
+    "guide-inbody-links.spec.ts": {
+      "seconds": 4.5,
+      "tests": 2
+    },
+    "guide-pager.spec.ts": {
+      "seconds": 1.063,
+      "tests": 2
+    },
+    "guided-tour.spec.ts": {
+      "seconds": 9.4,
+      "tests": 2
+    },
+    "hangul-tracking.spec.ts": {
+      "seconds": 18.604,
+      "tests": 20
+    },
+    "hover-contrast.spec.ts": {
+      "seconds": 138.6,
+      "tests": 21
+    },
+    "insights-badge-agreement.spec.ts": {
+      "seconds": 5.966,
+      "tests": 3
+    },
+    "insights-flow-scroll.spec.ts": {
+      "seconds": 2.705,
+      "tests": 2
+    },
+    "insights-not-held-list.spec.ts": {
+      "seconds": 4.6,
+      "tests": 1
+    },
+    "insights-write-loop.spec.ts": {
+      "seconds": 6.3,
+      "tests": 2
+    },
+    "keyboard-path.spec.ts": {
+      "seconds": 7.3,
+      "tests": 5
+    },
+    "korean-word-break.spec.ts": {
+      "seconds": 15.1,
+      "tests": 1
+    },
+    "library-acp-provider-routes.spec.ts": {
+      "seconds": 16.6,
+      "tests": 6
+    },
+    "library-answer-comparison-rows.spec.ts": {
+      "seconds": 11.3,
+      "tests": 5
+    },
+    "library-answer-provenance.spec.ts": {
+      "seconds": 3.4,
+      "tests": 1
+    },
+    "library-answer-refresh.spec.ts": {
+      "seconds": 29.0,
+      "tests": 10
+    },
+    "library-ask.spec.ts": {
+      "seconds": 5.7,
+      "tests": 2
+    },
+    "library-check-computed.spec.ts": {
+      "seconds": 9.9,
+      "tests": 3
+    },
+    "library-compile-dock.spec.ts": {
+      "seconds": 13.0,
+      "tests": 6
+    },
+    "library-conversation-answer.spec.ts": {
+      "seconds": 14.0,
+      "tests": 5
+    },
+    "library-day-one.spec.ts": {
+      "seconds": 16.4,
+      "tests": 5
+    },
+    "library-graph-alive.spec.ts": {
+      "seconds": 29.6,
+      "tests": 5
+    },
+    "library-graph-card.spec.ts": {
+      "seconds": 58.6,
+      "tests": 9
+    },
+    "library-graph-picture.spec.ts": {
+      "seconds": 57.7,
+      "tests": 12
+    },
+    "library-import-service.spec.ts": {
+      "seconds": 21.3,
+      "tests": 2
+    },
+    "library-incremental-compile.spec.ts": {
+      "seconds": 2.5,
+      "tests": 1
+    },
+    "library-landing.spec.ts": {
+      "seconds": 3.6,
+      "tests": 2
+    },
+    "library-lint-dock.spec.ts": {
+      "seconds": 5.7,
+      "tests": 3
+    },
+    "library-local-wiki-context.spec.ts": {
+      "seconds": 9.6,
+      "tests": 4
+    },
+    "library-reader-graph.spec.ts": {
+      "seconds": 7.5,
+      "tests": 1
+    },
+    "library-source-pane-end.spec.ts": {
+      "seconds": 1.939,
+      "tests": 2
+    },
+    "library-spine.spec.ts": {
+      "seconds": 14.3,
+      "tests": 7
+    },
+    "library-work-activity.spec.ts": {
+      "seconds": 8.9,
+      "tests": 3
+    },
+    "library.spec.ts": {
+      "seconds": 37.4,
+      "tests": 19
+    },
+    "local-vault-picker.spec.ts": {
+      "seconds": 2.4,
+      "tests": 2
+    },
+    "local-vault-route-identity.spec.ts": {
+      "seconds": 7.7,
+      "tests": 2
+    },
+    "locale-purity.spec.ts": {
+      "seconds": 3.3,
+      "tests": 2
+    },
+    "map-3d-cone-drawing.spec.ts": {
+      "seconds": 60.7,
+      "tests": 6
+    },
+    "map-3d-grip.spec.ts": {
+      "seconds": 11.7,
+      "tests": 2
+    },
+    "map-3d-relation-ink.spec.ts": {
+      "seconds": 37.9,
+      "tests": 6
+    },
+    "map-3d-return.spec.ts": {
+      "seconds": 41.2,
+      "tests": 3
+    },
+    "map-3d-strata-drawing.spec.ts": {
+      "seconds": 63.8,
+      "tests": 6
+    },
+    "map-expand-all.spec.ts": {
+      "seconds": 7.7,
+      "tests": 2
+    },
+    "map-focus-dangling.spec.ts": {
+      "seconds": 5.2,
+      "tests": 2
+    },
+    "map-growth-replay.spec.ts": {
+      "seconds": 13.0,
+      "tests": 2
+    },
+    "map-hover-release.spec.ts": {
+      "seconds": 8.0,
+      "tests": 1
+    },
+    "map-keyboard-walk.spec.ts": {
+      "seconds": 41.654,
+      "tests": 18
+    },
+    "map-keyboard-zoom.spec.ts": {
+      "seconds": 7.2,
+      "tests": 1
+    },
+    "map-label-collision.spec.ts": {
+      "seconds": 7.757,
+      "tests": 3
+    },
+    "map-node-sheet-contract.spec.ts": {
+      "seconds": 14.8,
+      "tests": 6
+    },
+    "map-rail-labels.spec.ts": {
+      "seconds": 7.193,
+      "tests": 5
+    },
+    "map-selection-framing.spec.ts": {
+      "seconds": 33.9,
+      "tests": 5
+    },
+    "map-smoke.spec.ts": {
+      "seconds": 10.3,
+      "tests": 5
+    },
+    "map-trail.spec.ts": {
+      "seconds": 8.6,
+      "tests": 1
+    },
+    "map-viewport-reframe.spec.ts": {
+      "seconds": 16.4,
+      "tests": 4
+    },
+    "mcp-connector-add.spec.ts": {
+      "seconds": 53.5,
+      "tests": 5
+    },
+    "mobile-settings-mode.spec.ts": {
+      "seconds": 1.8,
+      "tests": 1
+    },
+    "nav-yield-map-frames.spec.ts": {
+      "seconds": 4.9,
+      "tests": 1
+    },
+    "offscreen-node-census.spec.ts": {
+      "seconds": 9.0,
+      "tests": 1
+    },
+    "ontology-ui.spec.ts": {
+      "seconds": 9.459,
+      "tests": 8
+    },
+    "open-vault-cta.spec.ts": {
+      "seconds": 19.524,
+      "tests": 6
+    },
+    "overflow-sweep.spec.ts": {
+      "seconds": 81.128,
+      "tests": 10
+    },
+    "page-frame.spec.ts": {
+      "seconds": 2.6,
+      "tests": 1
+    },
+    "project-construction-review.spec.ts": {
+      "seconds": 6.949,
+      "tests": 9
+    },
+    "prose-measure-calibration.spec.ts": {
+      "seconds": 2.185,
+      "tests": 4
+    },
+    "public-detail-access.spec.ts": {
+      "seconds": 2.3,
+      "tests": 1
+    },
+    "public-surface-health.spec.ts": {
+      "seconds": 8.5,
+      "tests": 6
+    },
+    "rail-active-indicator.spec.ts": {
+      "seconds": 6.9,
+      "tests": 2
+    },
+    "recent-changes-needs-vault.spec.ts": {
+      "seconds": 19.5,
+      "tests": 6
+    },
+    "responsive-overflow-audit.spec.ts": {
+      "seconds": 41.3,
+      "tests": 33
+    },
+    "retired-skills-route.spec.ts": {
+      "seconds": 1.131,
+      "tests": 3
+    },
+    "route-arrival-paint.spec.ts": {
+      "seconds": 25.0,
+      "tests": 1
+    },
+    "route-transition-input.spec.ts": {
+      "seconds": 4.4,
+      "tests": 2
+    },
+    "screen-hierarchy.spec.ts": {
+      "seconds": 64.9,
+      "tests": 6
+    },
+    "scroll-end-gap.spec.ts": {
+      "seconds": 124.3,
+      "tests": 7
+    },
+    "surface-vocabulary-ratchet.spec.ts": {
+      "seconds": 10.197,
+      "tests": 2
+    },
+    "text-zoom-layout.spec.ts": {
+      "seconds": 5.35,
+      "tests": 12
+    },
+    "text-zoom-ramp.spec.ts": {
+      "seconds": 2.016,
+      "tests": 5
+    },
+    "topology-control-height-ladder.spec.ts": {
+      "seconds": 19.1,
+      "tests": 4
+    },
+    "touch-target-contract.spec.ts": {
+      "seconds": 15.583,
+      "tests": 15
+    },
+    "transient-surface-contract.spec.ts": {
+      "seconds": 36.8,
+      "tests": 3
+    },
+    "user-journey-a.spec.ts": {
+      "seconds": 2.8,
+      "tests": 1
+    },
+    "vault-live-arrival.spec.ts": {
+      "seconds": 14.4,
+      "tests": 1
+    },
+    "vault-reflect-loop.spec.ts": {
+      "seconds": 13.6,
+      "tests": 1
+    },
+    "vault-truth-telling.spec.ts": {
+      "seconds": 34.9,
+      "tests": 5
+    },
+    "web-get-app-tile.spec.ts": {
+      "seconds": 13.8,
+      "tests": 5
+    },
+    "web-surface-smoke.spec.ts": {
+      "seconds": 37.359,
+      "tests": 14
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { waitForDocumentPaint } from './visual-ready';
 import { test, expect } from "@playwright/test";
 
 import { AUDITED_ROUTES } from "./audited-routes";
@@ -160,8 +161,7 @@ async function measureRoute(
   route: string,
 ): Promise<RouteMeasurement> {
   await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(1200);
+  await waitForDocumentPaint(page);
 
   if (PROBE.some((k) => k.length > 0)) {
     await page.evaluate((kinds: string[]) => {

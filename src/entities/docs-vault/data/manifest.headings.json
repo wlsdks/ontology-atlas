@@ -9768,6 +9768,11 @@
       "depth": 2,
       "text": "2026-09-13 — Scope verification and collapse exact repeated test commands",
       "slug": "2026-09-13-scope-verification-and-collapse-exact-repeated-test-commands"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-13 — Browser CI shares one build and balances measured work without reducing coverage",
+      "slug": "2026-09-13-browser-ci-shares-one-build-and-balances-measured-work-without-reducing-coverage"
     }
   ],
   "DEMO-SCENARIO": [
@@ -10933,6 +10938,11 @@
     },
     {
       "depth": 2,
+      "text": "Browser execution",
+      "slug": "browser-execution"
+    },
+    {
+      "depth": 2,
       "text": "Lane budgets",
       "slug": "lane-budgets"
     },
@@ -10960,6 +10970,11 @@
       "depth": 3,
       "text": "Static deploy safety",
       "slug": "static-deploy-safety"
+    },
+    {
+      "depth": 3,
+      "text": "Browser allocation and coverage",
+      "slug": "browser-allocation-and-coverage"
     },
     {
       "depth": 3,

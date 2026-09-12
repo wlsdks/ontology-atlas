@@ -11,6 +11,8 @@ import { isSupportedSourcePath } from '../quality/source-language/source-paths.m
  * assumption the CI infrastructure had not changed.
  */
 export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
+  /^scripts\/run-playwright-ci(?:\.test)?\.mjs$/,
+  /^scripts\/data\/playwright-file-durations\.json$/,
   /^scripts\/classify-change(?:\.test)?\.mjs$/,
   /^scripts\/run-ci-lane(?:\.test)?\.mjs$/,
   /^scripts\/lib\/focused-check-suggestions(?:\.test)?\.mjs$/,
@@ -20,6 +22,11 @@ export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
 ]);
 
 const RULES = [
+  {
+    command: 'node --test scripts/run-playwright-ci.test.mjs',
+    reason: 'browser file allocation, coverage verification, or timing estimates changed',
+    matches: [/^scripts\/run-playwright-ci(?:\.test)?\.mjs$/, /^scripts\/data\/playwright-file-durations\.json$/, /^scripts\/run-ci-lane(?:\.test)?\.mjs$/],
+  },
   { command: 'node --test scripts/prepush.test.mjs', reason: 'pre-push scope or failure propagation changed', matches: [/^scripts\/prepush(?:\.test)?\.mjs$/, /^\.githooks\/pre-push$/, /^scripts\/suggest-focused-checks\.mjs$/] },
   {
     command: 'pnpm test:ci:impact',

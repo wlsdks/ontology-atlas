@@ -65,9 +65,40 @@ jobs:
           MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: node scripts/classify-change.mjs --event="$EVENT_NAME" --base="${MERGE_GROUP_BASE_SHA:-origin/$BASE_REF}"
 
+  build:
+    name: Build browser artifact
+    needs: changes
+    if: ${{ (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (needs.changes.outputs.playwright != 'skip' || needs.changes.outputs.static == 'true' || needs.changes.outputs.web == 'true') }}
+    runs-on: ubuntu-latest
+    # budget: 120s
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - name: Enable Corepack pnpm
+        run: corepack enable && corepack prepare pnpm@10.18.0 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build once
+        run: pnpm build
+      - name: Pack static export
+        run: tar -czf "$RUNNER_TEMP/playwright-export.tgz" out
+      - name: Upload static export
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: playwright-export-${{ github.sha }}
+          path: ${{ runner.temp }}/playwright-export.tgz
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 1
+
   static-export:
     name: Playwright (static export)
-    needs: changes
+    needs: [changes, build]
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     # budget: 150s (cache-hit p95; the cold path adds the bounded browser
@@ -76,6 +107,7 @@ jobs:
     env:
       ACTIVE: ${{ needs.changes.outputs.static }}
       CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
+      PLAYWRIGHT_PREBUILT: "1"
     steps:
       - name: Require impact plan
         if: needs.changes.result != 'success'
@@ -83,9 +115,24 @@ jobs:
           echo "::error::E2E impact planning failed; refusing to turn a missing verdict into green"
           exit 1
 
+      - name: Require browser artifact
+        if: env.ACTIVE == 'true' && needs.build.result != 'success'
+        run: exit 1
+
       - name: Checkout
         if: env.ACTIVE == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Download static export
+        if: env.ACTIVE == 'true'
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: playwright-export-${{ github.sha }}
+          path: ${{ runner.temp }}
+
+      - name: Unpack static export
+        if: env.ACTIVE == 'true'
+        run: tar -xzf "$RUNNER_TEMP/playwright-export.tgz"
 
       - name: Setup Playwright
         if: env.ACTIVE == 'true'
@@ -106,12 +153,12 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: playwright-report-static-export
-          path: output/playwright/test-results
+          path: output/playwright
           retention-days: 1
 
   web-smoke:
     name: Playwright (web surface)
-    needs: changes
+    needs: [changes, build]
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     # budget: 160s (cache-hit p95; the cold path adds the bounded browser
@@ -120,6 +167,7 @@ jobs:
     env:
       ACTIVE: ${{ needs.changes.outputs.web }}
       CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
+      PLAYWRIGHT_PREBUILT: "1"
     steps:
       - name: Require impact plan
         if: needs.changes.result != 'success'
@@ -127,9 +175,24 @@ jobs:
           echo "::error::E2E impact planning failed; refusing to turn a missing verdict into green"
           exit 1
 
+      - name: Require browser artifact
+        if: env.ACTIVE == 'true' && needs.build.result != 'success'
+        run: exit 1
+
       - name: Checkout
         if: env.ACTIVE == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Download static export
+        if: env.ACTIVE == 'true'
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: playwright-export-${{ github.sha }}
+          path: ${{ runner.temp }}
+
+      - name: Unpack static export
+        if: env.ACTIVE == 'true'
+        run: tar -xzf "$RUNNER_TEMP/playwright-export.tgz"
 
       - name: Setup Playwright
         if: env.ACTIVE == 'true'
@@ -150,12 +213,12 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: playwright-report-web-smoke
-          path: output/playwright/test-results
+          path: output/playwright
           retention-days: 1
 
   suite:
     name: Playwright (chromium ${{ matrix.shard }}/3)
-    needs: changes
+    needs: [changes, build]
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     # budget: 600s (cache-hit p95; the cold path adds the bounded browser
@@ -168,6 +231,7 @@ jobs:
     env:
       ACTIVE: ${{ needs.changes.outputs.playwright == 'full' || needs.changes.outputs.playwright == 'smoke' || (needs.changes.outputs.playwright == 'targeted' && matrix.shard == 1) }}
       CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
+      PLAYWRIGHT_PREBUILT: "1"
     steps:
       - name: Require impact plan
         if: needs.changes.result != 'success'
@@ -175,9 +239,24 @@ jobs:
           echo "::error::E2E impact planning failed; refusing to turn a missing verdict into green"
           exit 1
 
+      - name: Require browser artifact
+        if: env.ACTIVE == 'true' && needs.build.result != 'success'
+        run: exit 1
+
       - name: Checkout
         if: env.ACTIVE == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Download static export
+        if: env.ACTIVE == 'true'
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: playwright-export-${{ github.sha }}
+          path: ${{ runner.temp }}
+
+      - name: Unpack static export
+        if: env.ACTIVE == 'true'
+        run: tar -xzf "$RUNNER_TEMP/playwright-export.tgz"
 
       - name: Setup Playwright
         if: env.ACTIVE == 'true'
@@ -198,5 +277,16 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: playwright-report-shard-${{ matrix.shard }}
-          path: output/playwright/test-results
+          path: output/playwright
           retention-days: 1
+
+      - name: Upload timing evidence
+        continue-on-error: true
+        if: always() && env.ACTIVE == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: playwright-timings-${{ matrix.shard }}
+          path: |
+            output/playwright/assignment-*.json
+            output/playwright/results-*.json
+          retention-days: 7

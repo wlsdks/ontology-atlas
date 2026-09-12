@@ -13,11 +13,9 @@
  *
  * **When it runs** — three triggers, not "later":
  *
- * ① On every push to main (= right after merge) — `e2e.yml`'s suite job runs
- *    everything with no project filter on push. ② On a PR touching e2e infrastructure
- *    (`tests/e2e/**`, `playwright.config.ts`) — you see your own spec go red in your own
- *    PR (classify's `e2e` output). ③ Locally, `pnpm exec playwright test` runs every
- *    project unfiltered.
+ * ① Daily and manual full runs. ② Changes to browser infrastructure or other
+ * full-plan inputs. ③ Locally, an unfiltered Playwright invocation. Main pushes
+ * use their verified change range, so a prose-only merge does not pay for this sweep.
  *
  * **Discipline**
  *

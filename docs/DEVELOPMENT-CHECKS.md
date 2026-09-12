@@ -44,6 +44,30 @@ CI prints each command's duration and adds it to the job summary. Use those
 measurements and reproduced failure causes before deleting a contract test;
 source-reading tests are not automatically redundant.
 
+## Browser execution
+
+Browser jobs download one static export built in the same workflow run, named
+for the source SHA. An absent or failed build fails every active consumer. Local
+commands retain their build step.
+
+`scripts/run-playwright-ci.mjs` discovers the current Playwright inventory and
+assigns whole files longest-first using advisory measurements in
+`scripts/data/playwright-file-durations.json`. New files receive an estimated
+weight and remain included. File hooks and serial suites stay intact. The runner
+compares the actual report's file/test inventory with its assignment before
+accepting success. Dedicated web/static specs leave the broad shards only when
+the corresponding protected job owns them; otherwise they stay in the suite.
+
+Assignments and JSON reports are uploaded as `playwright-timings-*` artifacts on
+successful and failed runs. The timing baseline cites three successful source
+runs; stale estimates can affect balance, never test selection. Re-measure from
+first-attempt results before refreshing weights. The PR smoke inventory remains
+unchanged; this optimization does not move behavioral coverage into nightly CI.
+
+Layout audits wait for fonts and finite paint transitions instead of fixed
+route delays. Real idle/physics measurement windows remain unchanged. Browser
+infrastructure and helper changes still receive exhaustive CI verification.
+
 ## Lane budgets
 
 Every lane costs someone's afternoon, so every lane says what it costs. Measured
@@ -130,6 +154,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: the app still compiles to a static export without errors.
 **Escalate**: `pnpm exec tsc --noEmit` to isolate a type only failure
 **Fix**: fix the reported build error; keep the change compatible with static export (no server-only routes, actions, or APIs).
+
+### Browser allocation and coverage
+
+**Run**: `node --test scripts/run-playwright-ci.test.mjs`
+**Proves**: Live test files are assigned once, unknown files stay included, discovery errors and failed test processes cannot pass, and measured weights distribute work without changing coverage.
+**Escalate**: `pnpm test:ci:impact` when command ownership or workflow wiring changes
+**Fix**: repair the allocator or its report verification; timing estimates must never suppress tests.
 
 ### CI impact plan
 
