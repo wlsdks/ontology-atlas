@@ -59,7 +59,7 @@ export function AgentActivityChip({
   /**
    * Opens the conversation dock.
    *
-   * The `할 일` tab's door for a waiting request. Atlas cannot answer that request from
+   * The todo tab's door for a waiting request. Atlas cannot answer that request from
    * here: the allow/reject callback lives inside `useAcpSession`, owned by the chat panel,
    * and an ontology write is reviewed against a directional diff (`OntologyChangeReview`)
    * inside the permission card. A 352px popover is the wrong place to decide that, so the
@@ -88,13 +88,18 @@ export function AgentActivityChip({
   );
   const todoCount = inbox.todos.length;
   /*
-   * One mark, two grades (the brief asked for the `할 일` count; the code says it cannot be
-   * that alone). `할 일` is zero most of the time, so making it the only badge deletes the
+   * One mark, two grades (the plan asked for the waiting count alone; the code says it
+   * cannot be that). Nothing waits most of the time, so that alone deletes the
    * unread mark in exactly the moment this slice was written for — four finished turns
    * waiting after an hour. So: something waiting on the person wins the badge and its
-   * filled indigo; otherwise the badge keeps saying how many notifications are unread.
+   * filled indigo; otherwise the badge counts the **results** nobody has opened.
+   *
+   * ⚠️ Not `feed.unreadCount`, which counts raw notifications: this slice folds a task's
+   * start and its end into one row, so a bell reading 8 sat over a `결과 4` with four
+   * unread dots (measured on the seeded folder, design-lead round 1). The badge, the dots
+   * and the `모두 읽음` door now read the same number.
    */
-  const badgeCount = todoCount > 0 ? todoCount : feed.unreadCount;
+  const badgeCount = todoCount > 0 ? todoCount : inbox.unreadResults;
   const [openSurface, setOpenSurface] = useState<'status' | 'notifications' | null>(null);
   const open = openSurface !== null;
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -301,8 +306,8 @@ export function AgentActivityChip({
           aria-label={
             todoCount > 0
               ? t('bellTodoAria', { count: todoCount })
-              : feed.unreadCount > 0
-                ? t('bellUnreadAria', { count: feed.unreadCount })
+              : inbox.unreadResults > 0
+                ? t('bellUnreadAria', { count: inbox.unreadResults })
                 : t('bellAria')
           }
           data-testid="agent-activity-bell"
@@ -362,8 +367,11 @@ export function AgentActivityChip({
             The one door that moves the read boundary in a single press. It appears only
             with something unread behind it — a control that can change nothing is noise.
           */}
-          {openSurface === 'notifications' && feed.unreadCount > 0 ? (
-            <MarkAllReadDoor onPress={feed.markAllRead} label={t('markAllRead')} />
+          {openSurface === 'notifications' && inbox.unreadResults > 0 ? (
+            <MarkAllReadDoor
+              onPress={feed.markAllRead}
+              label={t('markAllReadCount', { count: inbox.unreadResults })}
+            />
           ) : null}
         </div>
 
@@ -449,7 +457,7 @@ export function AgentActivityChip({
             feed={feed}
             onOpenNode={onOpenNode}
             onOpenConversation={onOpenConversation}
-            onClose={() => close(false)}
+            onClose={() => close(true)}
           />
         ) : null}
 

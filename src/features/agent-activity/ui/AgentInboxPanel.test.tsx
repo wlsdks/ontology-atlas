@@ -51,7 +51,8 @@ describe('결과 줄의 두 번째 줄 — 사실 목록', () => {
     renderPanel();
     const row = screen.getByTestId('agent-inbox-result-row');
     // The gaps between facts are CSS, so the text node reads them back without spaces.
-    expect(row.textContent).toContain('Claude Code·3분·허용 2·거절 0');
+    // The row's own age sits between the duration and the decisions it explains.
+    expect(row.textContent).toContain('Claude Code·3분·3분 전·허용 2·거절 0');
   });
 
   it('브리프가 있으면 에이전트 사실 앞에 먼저 온다', () => {
@@ -61,7 +62,7 @@ describe('결과 줄의 두 번째 줄 — 사실 목록', () => {
     ]);
     const row = screen.getByTestId('agent-inbox-result-row');
     expect(row.textContent).toContain(
-      '새로 알아야 할 것 4·확실하지 않은 것 2·Claude Code·3분·허용 2·거절 0',
+      '새로 알아야 할 것 4·확실하지 않은 것 2·Claude Code·3분·3분 전·허용 2·거절 0',
     );
     // The uncertain half carries the signal tone, not a second sentence.
     expect(row.querySelector('[class*="--color-status-warning"]')).not.toBeNull();

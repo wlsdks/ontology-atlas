@@ -27,9 +27,9 @@ import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
 /**
  * The bell's inside: **three questions, not one log.**
  *
- * Owner, 2026-09-12: 「이 알림창 내부 디자인도 매우매우 중요해! 알림함으로만 구분이 가능할
- * 수도 있기 때문에 말이지? 내부에 탭을 만들어도 괜찮고 하니 잘 구성해줘」 — the panel may have
- * to carry the distinction on its own, so the distinction has to be inside it.
+ * Owner, 2026-09-12: this panel's inside matters very much, because it may be the only
+ * place the difference can be told — and tabs inside it are fine. So the distinction has
+ * to live inside the panel itself. The quote is in the PR that brought this.
  *
  * Before this the panel was an event log in two stacked sections: receipts whose
  * decision and result were four dot-separated words, then a feed that printed a task's
@@ -38,9 +38,9 @@ import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
  * on them. The three tabs answer three different questions (`model/bell-inbox.ts` owns
  * the derivation):
  *
- * - `할 일` — the only tab that can cost the person something by being missed.
- * - `결과` — one row per finished task, unread until opened.
- * - `기록` — the same tasks as a timeline under a day label.
+ * - `todo` — the only tab that can cost the person something by being missed.
+ * - `results` — one row per finished task, unread until opened.
+ * - `history` — the same tasks as a timeline under a day label.
  *
  * **Why the tab strip is `shared/ui/tab-bar`**: that file is declared the one tab-bar
  * pattern for the app (caps label, engraved count, 2px indigo underline, roving
@@ -76,8 +76,9 @@ function writeStoredTab(tab: BellTab): void {
  * What a finished write **did**, as one verb-first sentence.
  *
  * The leading kind is the largest count, ties resolved added → edited → removed. Both
- * `결과` and `기록` say this same sentence: four rows reading `Claude Code 작업 끝` is the
- * repetition the owner named, and a generic heading repeated down a list is refused by
+ * Both the results and the history tab say this same sentence: four rows reading
+ * "<agent> finished a task" is the repetition the owner named, and a generic heading
+ * repeated down a list is refused by
  * `.claude/rules/design.md` as well.
  */
 function writeSentence(
@@ -108,7 +109,7 @@ export interface BellFact {
  * The second line of a result row, as data.
  *
  * **Why a view model rather than the words inline.** A later slice supplies a per-turn
- * brief from the ontology diff (「새로 알아야 할 것 4 · 확실하지 않은 것 2」), and that has
+ * brief from the ontology diff (how much is newly known, how much is uncertain), and it has
  * to print **before** the agent's own facts without this row being rewritten. Today the
  * brief is simply absent, and with it absent the line renders exactly what it rendered
  * before this shape existed.
@@ -116,6 +117,12 @@ export interface BellFact {
 export interface ResultFactLineModel {
   agent: string | null;
   duration: string | null;
+  /**
+   * When it happened. Without it `2분` was the only number on the line and read as "two
+   * minutes ago" rather than "it took two minutes", and the boundary a press moves — a
+   * time — was nowhere on the tab that draws unread dots.
+   */
+  age: string | null;
   allowed: number | null;
   denied: number | null;
   /** Everything else this row has to say — a decision's effect, a result that is not `completed`. */
@@ -126,6 +133,7 @@ function resultFacts(
   t: (key: string, values?: Record<string, number>) => string,
   row: BellResult,
   duration: (ms: number) => string,
+  age: string,
 ): ResultFactLineModel {
   const agent = agentDisplayName(row.agent) ?? row.agent ?? t('unknownAgent');
   if (row.kind === 'task') {
@@ -133,6 +141,7 @@ function resultFacts(
     return {
       agent,
       duration: duration(row.durationMs),
+      age,
       allowed: decided ? row.allowed : null,
       denied: decided ? row.rejected : null,
       summaryFacts: [],
@@ -148,7 +157,7 @@ function resultFacts(
   if (row.decision === 'allowed' && row.result !== 'completed') {
     facts.push({ label: t(`receiptResult.${row.result}`), tone: 'warning' });
   }
-  return { agent, duration: null, allowed: null, denied: null, summaryFacts: facts };
+  return { agent, duration: null, age, allowed: null, denied: null, summaryFacts: facts };
 }
 
 function ResultFactLine({
@@ -184,6 +193,7 @@ function ResultFactLine({
       </span>,
     );
   }
+  if (facts.age) parts.push(<span key="age" className="shrink-0">{facts.age}</span>);
   if (facts.allowed !== null && facts.denied !== null) {
     parts.push(
       <span key="allowed" className="shrink-0 tabular-nums">
@@ -278,13 +288,17 @@ export function AgentInboxPanel({
    * **Which tab opens is decided once, at mount, and never taken back.**
    *
    * The remembered tab wins while it has something in it; when it is empty the first tab
-   * that does wins, and `할 일` is first in that order, so a panel does not open on an
+   * that does wins, and the todo tab is first in that order, so a panel does not open on an
    * empty tab while a request waits two tabs away. After that the person's own press is
    * final — an empty tab a person deliberately opened must show its empty sentence, and
    * content arriving later changes the **count in the label**, never the tab under the
    * reader.
    */
   const [tab, setTab] = useState<BellTab>(() => {
+    // The bell's filled badge and the tab that opens have to name the same thing: a
+    // remembered tab that is merely non-empty used to win over a waiting request, so the
+    // request sat two tabs away behind the digit that advertised it.
+    if (counts.todo > 0) return 'todo';
     const remembered = readStoredTab();
     if (remembered && counts[remembered] > 0) return remembered;
     return BELL_TABS.find((key) => counts[key] > 0) ?? remembered ?? 'todo';
@@ -305,19 +319,23 @@ export function AgentInboxPanel({
     return t('durationSeconds', { seconds });
   };
 
+  /*
+   * ⚠️ **A press must not delete the list it was invited into** (design-interaction,
+   * 2026-09-12). Pressing a result used to close the panel, and because selecting a node
+   * raises the datasheet the whole bell is suppressed with it — one press on the first of
+   * four unread rows and the other three had no door left, with focus on `<body>`. A task
+   * row now focuses the map **behind** the open panel and the row's own dot goes out in
+   * place, which is also the press feedback it had none of. Only a door that genuinely
+   * leaves (the conversation) closes the panel, and that path returns focus to the bell.
+   */
   const openRow = (row: BellResult) => {
     feed.markReadUpTo(row.at);
     if (row.kind === 'task' && row.node) {
-      if (onOpenNode) {
-        onOpenNode(row.node.slug);
-        onClose?.();
-      }
+      onOpenNode?.(row.node.slug);
       return;
     }
-    if (onOpenConversation) {
-      onOpenConversation();
-      onClose?.();
-    }
+    onOpenConversation?.();
+    if (onOpenConversation) onClose?.();
   };
 
   return (
@@ -364,7 +382,31 @@ export function AgentInboxPanel({
       >
         {tab === 'todo' ? (
           counts.todo === 0 ? (
-            <InboxEmpty testId="agent-inbox-todo-empty">{t('todoEmpty')}</InboxEmpty>
+            /*
+             * ⚠️ **This is the one empty state that could lie** (po-evidence and po-steward,
+             * 2026-09-12). Atlas never receives a permission request: the ask row stands on a
+             * heartbeat, which goes stale after five minutes, and a folder problem leaves the
+             * list after a day whether or not anybody fixed it. So the sentence says what has
+             * reached **this list** rather than what is true of the world, and the standing
+             * repair queue stays one press away — "nothing waiting" must never be read as
+             * "nothing to fix".
+             */
+            <InboxEmpty testId="agent-inbox-todo-empty">
+              {t('todoEmpty')}
+              <Link
+                href={buildOntologyInsightsReturnHref('do-next')}
+                data-testid="agent-inbox-todo-empty-repair"
+                onClick={() => onClose?.()}
+                className={controlClass({
+                  shape: 'link',
+                  tone: 'accent',
+                  hoverInk: 'strong',
+                  className: 'mt-1',
+                })}
+              >
+                {t('todoEmptyRepair')}
+              </Link>
+            </InboxEmpty>
           ) : (
             <ul className="flex flex-col">
               {inbox.todos.map((todo) => (
@@ -416,7 +458,14 @@ export function AgentInboxPanel({
                     */}
                     <span className="grid min-w-0 flex-1 gap-0.5 text-left">
                       <span className={ROW_HEADLINE_CLASS}>
-                        <span className="shrink-0 text-label text-[color:var(--color-text-primary)]">
+                        <span
+                          className={cn(
+                            'shrink-0 text-label',
+                            row.unread
+                              ? 'text-[color:var(--color-text-primary)]'
+                              : 'text-[color:var(--color-text-secondary)]',
+                          )}
+                        >
                           {row.kind === 'task'
                             ? writeSentence(t, row.counts)
                             : row.decision === 'allowed'
@@ -456,7 +505,7 @@ export function AgentInboxPanel({
                         ) : null}
                       </span>
                       <ResultFactLine
-                        facts={resultFacts(t, row, duration)}
+                        facts={resultFacts(t, row, duration, relative(row.at))}
                         briefCounts={briefCountsFor?.(row) ?? null}
                         durationTitle={t('durationTitle')}
                       />
@@ -505,14 +554,14 @@ export function AgentInboxPanel({
   );
 }
 
-function InboxEmpty({ children, testId }: { children: string; testId: string }) {
+function InboxEmpty({ children, testId }: { children: ReactNode; testId: string }) {
   return (
-    <p
+    <div
       data-testid={testId}
-      className="px-1 py-6 text-center text-caption leading-label text-[color:var(--color-text-tertiary)]"
+      className="grid justify-items-center px-1 py-6 text-center text-caption leading-label text-[color:var(--color-text-tertiary)]"
     >
       {children}
-    </p>
+    </div>
   );
 }
 
@@ -618,7 +667,7 @@ function TodoRow({
 /**
  * Kind → the sentence a timeline row says, for everything that is not a finished write.
  *
- * A finished write says what it did (`writeSentence`) rather than `<agent> 작업 끝`: the
+ * A finished write says what it did (`writeSentence`) rather than "<agent> finished a task": the
  * seeded folder drew that same line four times in a row, which is the repetition the owner
  * reported in the first place. The agent moved to the second line, where it belongs beside
  * the duration and the time.

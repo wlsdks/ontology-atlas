@@ -72,6 +72,28 @@ function renderBell(next: Partial<AgentActivityFeed> = {}) {
   });
 }
 
+/**
+ * A finished task the badge can count. The badge counts **result rows**, so a test that
+ * wants an unread badge has to give the feed a session and its end notification — a bare
+ * `unreadCount` is the raw notification total this slice stopped showing.
+ */
+function finishedTask(id: string, endAt: number, counts = { added: 1, edited: 0, removed: 0 }) {
+  return {
+    session: {
+      id,
+      startAt: endAt - 60_000,
+      endAt,
+      entryCount: 1,
+      counts,
+      lastTarget: null,
+      lastTool: 'add_concept',
+      agent: null,
+      done: true,
+    },
+    notification: { id, kind: 'task-end' as const, at: endAt, node: null, counts },
+  };
+}
+
 describe("AgentActivityChip", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -214,13 +236,12 @@ describe("AgentActivityChip", () => {
     expect(current).toHaveTextContent('validate_vault');
   });
 
-  it("안 읽은 알림 수를 벨에 단다", () => {
+  it("안 읽은 결과 수를 벨에 단다", () => {
+    const first = finishedTask("a", NOW - 1000, { added: 34, edited: 2, removed: 4 });
+    const second = finishedTask("b", NOW - 2000);
     renderBell({
-      unreadCount: 2,
-      notifications: [
-        { id: "a", kind: "task-end", at: NOW - 1000, node: null, counts: { added: 34, edited: 2, removed: 4 } },
-        { id: "b", kind: "task-start", at: NOW - 2000, node: null },
-      ],
+      sessions: [second.session, first.session],
+      notifications: [first.notification, second.notification],
     });
     expect(screen.getByTestId("agent-activity-unread")).toHaveTextContent("2");
     expect(screen.getByTestId("agent-activity-bell")).toContainElement(
@@ -231,23 +252,19 @@ describe("AgentActivityChip", () => {
   // The badge alone did not survive a glance (owner report, 2026-08-24): a bell
   // holding unread receipts and an empty bell looked identical. The glyph itself
   // has to change, so the signal is shape and weight rather than a small badge.
-  it("안 읽은 알림이 있으면 종 글리프 자체가 채워진다", () => {
-    renderBell({
-      unreadCount: 3,
-      notifications: [
-        { id: "a", kind: "task-end", at: NOW - 1000, node: null, counts: { added: 1, edited: 0, removed: 0 } },
-      ],
-    });
+  it("안 읽은 결과가 있으면 종 글리프 자체가 채워진다", () => {
+    const task = finishedTask("a", NOW - 1000);
+    renderBell({ sessions: [task.session], notifications: [task.notification] });
     const svg = screen.getByTestId("agent-activity-bell").querySelector("svg");
     expect(svg?.getAttribute("fill")).toBe("currentColor");
   });
 
-  it("안 읽은 알림이 없으면 종은 비어 있다", () => {
+  it("안 읽은 결과가 없으면 종은 비어 있다", () => {
+    const task = finishedTask("a", NOW - 1000);
     renderBell({
-      unreadCount: 0,
-      notifications: [
-        { id: "a", kind: "task-end", at: NOW - 1000, node: null, counts: { added: 1, edited: 0, removed: 0 } },
-      ],
+      readAt: NOW,
+      sessions: [task.session],
+      notifications: [task.notification],
     });
     const svg = screen.getByTestId("agent-activity-bell").querySelector("svg");
     expect(svg?.getAttribute("fill")).toBe("none");
@@ -289,7 +306,7 @@ describe("AgentActivityChip", () => {
     const row = screen.getByTestId("agent-inbox-history-row");
     expect(row).toHaveAttribute("data-kind", "task-end");
     // The row says what the work did, not that a task ended: four rows reading
-    // 「<agent> 작업 끝」 is the repetition this slice removed.
+    // Four rows reading "<agent> finished a task" is the repetition this slice removed.
     expect(row.textContent).toContain("개념 34개를 새로 적었어요");
   });
 
@@ -301,13 +318,8 @@ describe("AgentActivityChip", () => {
    */
   it("벨을 여는 것만으로는 읽음이 되지 않는다 — 「모두 읽음」이 그 문이다", () => {
     const markAllRead = vi.fn();
-    renderBell({
-      markAllRead,
-      unreadCount: 2,
-      notifications: [
-        { id: "a", kind: "task-end", at: NOW - 1000, node: null, counts: { added: 1, edited: 0, removed: 0 } },
-      ],
-    });
+    const task = finishedTask("a", NOW - 1000);
+    renderBell({ markAllRead, sessions: [task.session], notifications: [task.notification] });
     fireEvent.click(screen.getByTestId("agent-activity-bell"));
     expect(markAllRead).not.toHaveBeenCalled();
     fireEvent.click(screen.getByTestId("agent-inbox-mark-all-read"));
@@ -502,8 +514,15 @@ describe('알림함 — 세 탭', () => {
     expect(screen.getByTestId('agent-inbox-panel-results')).toBeInTheDocument();
   });
 
-  it('마지막으로 본 탭을 기억한다 — 다시 열면 그 탭이다', () => {
-    openBell();
+  /*
+   * Memory governs the quiet grade only: with something waiting, the tab that opens is the
+   * one the bell's badge is pointing at, whatever was remembered.
+   */
+  it('마지막으로 본 탭을 기억한다 — 기다리는 일이 없으면 그 탭으로 다시 열린다', () => {
+    openBell({
+      work: feed().work,
+      notifications: seeded().notifications?.filter((item) => item.kind !== 'vault-problem'),
+    });
     fireEvent.click(screen.getByRole('tab', { name: /기록/ }));
     const bell = screen.getByTestId('agent-activity-bell');
     fireEvent.click(bell);
@@ -517,7 +536,10 @@ describe('알림함 — 세 탭', () => {
       agent: 'claude-code', request: '관계를 정리해줘', tool: 'add_relations', decision: 'allowed', result: 'completed', items: [],
     }] });
     fireEvent.click(screen.getByRole('tab', { name: /할 일/ }));
-    expect(screen.getByTestId('agent-inbox-todo-empty')).toHaveTextContent('지금 기다리는 일이 없어요.');
+    // The sentence says what reached this list, not what is true of the world: Atlas never
+    // receives the ask itself, and the repair queue stays one press away.
+    expect(screen.getByTestId('agent-inbox-todo-empty')).toHaveTextContent('여기 올라온 기다리는 일은 없어요.');
+    expect(screen.getByTestId('agent-inbox-todo-empty-repair')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /기록/ }));
     expect(screen.getByTestId('agent-inbox-history-empty')).toBeInTheDocument();
   });

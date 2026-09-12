@@ -3,15 +3,15 @@
  *
  * **Why this module exists.** The panel used to be one log: work receipts stacked over
  * an event feed, every line an event. Measured on the seeded fixture, a person returning
- * after an hour read `의미 검토: 프로젝트 포트폴리오 관리 (domains/project-portfolio…) /
- * Claude Agent · 허용함 · 완료 · 변경 1건`, then the same title again, then
- * `Codex 작업 끝` and `Codex 작업 시작` for one piece of work — and nothing at all about
- * the ask the agent was blocked on. Four dot-separated state words are not a sentence,
+ * after an hour read a receipt's title, its path in parentheses, and then four
+ * dot-separated state words — agent, allowed, completed, one change — then the same title
+ * again, then "<agent> finished a task" and "<agent> started a task" for one single piece
+ * of work, and nothing at all about the request the agent was blocked on. Four dot-separated state words are not a sentence,
  * and a start plus an end are not two events to a person: they are one task.
  *
  * So the panel asks three different questions and this module answers all three from the
- * **same sources the feed already reads** (owner, 2026-09-12: 「이 알림창 내부 디자인도
- * 매우매우 중요해 … 내부에 탭을 만들어도 괜찮고」):
+ * **same sources the feed already reads** (owner, 2026-09-12: this panel's inside matters
+ * very much, and tabs inside it are fine):
  *
  * | Tab | Question | Source |
  * |---|---|---|
@@ -49,7 +49,6 @@ export type BellTodo =
       /** The person's own request for this turn, never the agent's thinking. */
       summary: string | null;
       tool: string | null;
-      node: VaultShapeNode | null;
     }
   | {
       kind: 'folder-problem';
@@ -154,6 +153,21 @@ function dayLabel(at: number, nowMs: number): BellHistoryGroup['label'] {
 }
 
 /**
+ * Whose agent it was, coarse enough to survive two names for one program.
+ *
+ * The same agent reaches the two records under two ids — a decision receipt carries the
+ * ACP runtime (`claude-acp`, `codex-acp`) while a write row carries the MCP client that
+ * wrote it (`claude-code`, `codex-mcp-client`) — so comparing the ids, or even their
+ * product names, would reject the true attribution. The leading token is what both spell
+ * the same way.
+ */
+function agentFamily(raw: string | null | undefined): string | null {
+  const trimmed = raw?.trim().toLowerCase();
+  if (!trimmed) return null;
+  return trimmed.split(/[-_ ]/)[0] || null;
+}
+
+/**
  * Which task a human decision belongs to.
  *
  * A decision is made **before** the write it permits, so a receipt's time sits just
@@ -162,14 +176,24 @@ function dayLabel(at: number, nowMs: number): BellHistoryGroup['label'] {
  * same number is used here rather than a second, invented tolerance. A receipt counts for
  * at most one task; one that matches nothing stands on its own row, which is the only way
  * a **rejected** write is ever seen (it produces no log line at all).
+ *
+ * ⚠️ **Time alone is not enough** (po-evidence, 2026-09-12): two agents can work minutes
+ * apart in one folder, and a decision credited to the wrong turn makes a task row say
+ * 허용 1 for permission the person never gave it. When both records name an agent, they
+ * have to be the same one; when either is silent, time decides alone rather than the row
+ * being dropped.
  */
 function sessionForReceipt(
+  receipt: AcpWorkReceipt,
   at: number,
   sessions: readonly AgentWorkSession[],
 ): AgentWorkSession | null {
+  const decidedBy = agentFamily(receipt.agent);
   let best: AgentWorkSession | null = null;
   let bestDistance = Number.POSITIVE_INFINITY;
   for (const session of sessions) {
+    const wroteBy = agentFamily(session.agent);
+    if (decidedBy && wroteBy && decidedBy !== wroteBy) continue;
     const distance =
       at < session.startAt
         ? session.startAt - at
@@ -189,11 +213,31 @@ function emptyCounts(): AgentWriteCounts {
   return { added: 0, edited: 0, removed: 0 };
 }
 
-/** The object a result row names, used to fold consecutive identical rows. */
+/** Which write kind leads a task row's sentence — the same rule the panel's copy uses. */
+function leadingWrite(counts: AgentWriteCounts): string {
+  const ordered = [
+    ['added', counts.added],
+    ['edited', counts.edited],
+    ['removed', counts.removed],
+  ] as const;
+  const top = [...ordered].sort((a, b) => b[1] - a[1])[0];
+  return top && top[1] > 0 ? `${top[0]}:${top[1]}` : 'none';
+}
+
+/**
+ * What a result row **says**, which is what may be folded.
+ *
+ * ⚠️ Keyed on the subject alone, the fold could invert a person's own decision
+ * (po-steward, 2026-09-12): reject-then-retry-then-allow on the same request by the same
+ * agent — the ordinary shape of a correction — folded into one row, the newer row won, and
+ * the panel printed `허용했어요 ×2` over a rejection that had happened. Receipts never
+ * reach the timeline, so that row is the only rendering the decision gets. Two rows fold
+ * only when they would print the same sentence.
+ */
 function resultSubject(row: BellResult): string {
   return row.kind === 'task'
-    ? `task|${row.node?.slug ?? ''}|${row.agent ?? ''}`
-    : `decision|${row.request}|${row.agent ?? ''}`;
+    ? `task|${leadingWrite(row.counts)}|${row.node?.slug ?? ''}|${row.agent ?? ''}`
+    : `decision|${row.decision}|${row.request}|${row.agent ?? ''}`;
 }
 
 /**
@@ -242,7 +286,6 @@ export function deriveBellInbox({
       agent: work.agentName,
       summary: work.summary,
       tool: work.lastTool,
-      node: null,
     });
   }
   for (const item of notifications) {
@@ -270,7 +313,7 @@ export function deriveBellInbox({
   for (const receipt of receipts) {
     const at = Date.parse(receipt.updatedAt);
     if (!Number.isFinite(at)) continue;
-    const session = sessionForReceipt(at, sessions);
+    const session = sessionForReceipt(receipt, at, sessions);
     if (!session) {
       orphanReceipts.push(receipt);
       continue;

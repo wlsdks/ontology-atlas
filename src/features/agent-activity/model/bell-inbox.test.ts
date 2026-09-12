@@ -213,6 +213,98 @@ describe('deriveBellInbox — 결과', () => {
     expect(decision?.id).toBe('r-far');
   });
 
+  /*
+   * ⚠️ Keyed on the subject alone the fold could invert a decision: reject, retry, allow on
+   * the same request folds into one row, the newer row wins, and the panel prints
+   * 「허용했어요 ×2」 over a rejection that really happened. Receipts never reach the
+   * timeline, so this row is the only rendering that decision gets.
+   */
+  it('반대되는 판정은 접히지 않는다 — 거절한 기록이 허용으로 덮이지 않는다', () => {
+    const inbox = deriveBellInbox({
+      sessions: [],
+      notifications: [],
+      receipts: [
+        receipt({
+          id: 'r-1',
+          decision: 'rejected',
+          result: 'not-run',
+          request: '배송 도메인을 지워줘',
+          updatedAt: new Date(NOW - 4 * MINUTE).toISOString(),
+        }),
+        receipt({
+          id: 'r-2',
+          decision: 'allowed',
+          request: '배송 도메인을 지워줘',
+          updatedAt: new Date(NOW - 2 * MINUTE).toISOString(),
+        }),
+      ],
+      work: IDLE,
+      readAt: 0,
+      nowMs: NOW,
+    });
+    expect(inbox.results).toHaveLength(2);
+    expect(inbox.results.map((row) => row.kind === 'decision' && row.decision)).toEqual([
+      'allowed',
+      'rejected',
+    ]);
+  });
+
+  it('같은 대상이라도 한 일이 다르면 접히지 않는다', () => {
+    const sessions: AgentWorkSession[] = [];
+    const notifications: AgentNotification[] = [];
+    const node = { slug: 'domains/orders', name: '주문', kind: 'domain' };
+    for (const [index, counts] of [
+      [1, { added: 12, edited: 0, removed: 0 }],
+      [2, { added: 0, edited: 0, removed: 2 }],
+    ] as const) {
+      const endAt = NOW - index * MINUTE;
+      sessions.push(session({ id: `task:${index}`, startAt: endAt - MINUTE, endAt }));
+      notifications.push({
+        id: `task:${index}:end`,
+        kind: 'task-end',
+        at: endAt,
+        node,
+        counts,
+        agent: 'claude-code',
+      });
+    }
+    const inbox = deriveBellInbox({
+      sessions,
+      notifications,
+      receipts: [],
+      work: IDLE,
+      readAt: 0,
+      nowMs: NOW,
+    });
+    expect(inbox.results).toHaveLength(2);
+    expect(inbox.results.every((row) => row.repeat === 1)).toBe(true);
+  });
+
+  it('다른 에이전트의 작업에는 내 판정을 붙이지 않는다', () => {
+    const mine = NOW - 20 * MINUTE;
+    const theirs = NOW - 18 * MINUTE;
+    const inbox = deriveBellInbox({
+      sessions: [
+        session({ id: 'task:mine', startAt: mine - MINUTE, endAt: mine, agent: 'claude-code' }),
+        session({ id: 'task:theirs', startAt: theirs, endAt: theirs, agent: 'codex-mcp-client' }),
+      ],
+      notifications: [
+        { id: 'task:mine:end', kind: 'task-end', at: mine, node: null, counts: { added: 1, edited: 0, removed: 0 }, agent: 'claude-code' },
+        { id: 'task:theirs:end', kind: 'task-end', at: theirs, node: null, counts: { added: 2, edited: 0, removed: 0 }, agent: 'codex-mcp-client' },
+      ],
+      // The decision is closer in time to the other agent's turn, and belongs to neither
+      // but the one that shares its name.
+      receipts: [receipt({ id: 'r-1', agent: 'claude-acp', updatedAt: new Date(theirs - 30_000).toISOString() })],
+      work: IDLE,
+      readAt: 0,
+      nowMs: NOW,
+    });
+    const rows = inbox.results.filter((row) => row.kind === 'task');
+    const byId = new Map(rows.map((row) => [row.id, row.kind === 'task' ? row.allowed : 0]));
+    expect(byId.get('task:mine')).toBe(1);
+    expect(byId.get('task:theirs')).toBe(0);
+  });
+
   it('읽은 시점보다 오래된 줄은 안 읽음으로 세지 않는다', () => {
     const endAt = NOW - 10 * MINUTE;
     const inbox = deriveBellInbox({
