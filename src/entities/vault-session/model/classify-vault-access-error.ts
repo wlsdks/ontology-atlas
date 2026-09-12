@@ -17,21 +17,16 @@
  * has moved it, and an ordinary project inside Documents needs no warning once consent is granted.
  * The operating system already answered the question; this reads its answer.
  */
+import { MISSING_TARGET_SIGNATURES, PERMISSION_DENIED_SIGNATURES } from '@/shared/lib/failure-code';
+
 export type VaultAccessErrorKind = 'permission-denied' | 'unknown';
 
 /**
- * Signatures of a refusal, as `std::io::Error::to_string()` renders them on macOS.
- *
- * `EPERM` (1) is what TCC returns for a protected location. `EACCES` (13) is the ordinary
- * filesystem-permission refusal, which reaches a person the same way and has the same remedy shape,
- * so it is classified together rather than left in the generic bucket.
+ * The signature tables live in `@/shared/lib/failure-code`, which is where every other catch site
+ * reads them from. Two copies of "what a refusal looks like" would drift the first time an errno
+ * was added to one of them, and the screens they feed would then disagree about the same failure.
  */
-const DENIED_SIGNATURES = [
-  'operation not permitted',
-  'permission denied',
-  'os error 1)',
-  'os error 13)',
-];
+const DENIED_SIGNATURES: readonly string[] = PERMISSION_DENIED_SIGNATURES;
 
 export function classifyVaultAccessError(message: unknown): VaultAccessErrorKind {
   const text = typeof message === 'string' ? message : messageOf(message);
@@ -58,20 +53,8 @@ export function deniedFolderName(rootPath: string | null | undefined): string | 
   return name ? name : null;
 }
 
-/**
- * Signatures of "that folder is not there any more", as each runtime words it.
- *
- * The browser throws a `DOMException` named `NotFoundError` whose message is a sentence written
- * for a developer ("A requested file or directory could not be found at the time an operation was
- * processed."), and that sentence used to reach a Korean screen verbatim. Rust words the same fact
- * as `No such file or directory (os error 2)`.
- */
-const MISSING_SIGNATURES = [
-  'notfounderror',
-  'no such file or directory',
-  'os error 2)',
-  'could not be found',
-];
+/** Shared with every other catch site — see the note on `DENIED_SIGNATURES` above. */
+const MISSING_SIGNATURES: readonly string[] = MISSING_TARGET_SIGNATURES;
 
 /**
  * Is this failure "the folder is gone" rather than "the read broke"?

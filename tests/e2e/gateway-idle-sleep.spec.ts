@@ -71,8 +71,17 @@ test("관문은 무입력이 이어지면 프레임 일을 그만두고, 입력 
   // input, so the sleep clock starts here.
   await page.mouse.move(4, 4);
 
-  // ① While awake, the electric field and dome really work. Without this floor the
-  //    sleep assertion below would also be green on a page that draws nothing.
+  /*
+   * ① While awake, the electric field and dome really work. Without this floor the
+   *    sleep assertion below would also be green on a page that draws nothing.
+   *
+   * ⚠️ **These three waits stay in milliseconds on purpose** (2026-09-13 sweep of the
+   * fixed sleeps that gate an assertion). They are not waiting for a settle: the
+   * subject of every claim here is elapsed real time against the gateway's own sleep
+   * delay (30 s) and ramp (2 s), and `idleCost` measures CPU per second over a window.
+   * A condition wait would have nothing to wait for — the page's whole promise is that
+   * it *stops* doing anything after a fixed stretch of no input.
+   */
   await page.waitForTimeout(6_000);
   const awake = await idleCost(4_000);
   expect(awake.frames).toBeGreaterThan(20);

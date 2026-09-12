@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { failureCodeOf } from '@/shared/lib/failure-code';
 import type { VaultShape } from '@/shared/lib/vault-shape';
 import { shouldClearCreateIntent, shouldScaffoldAfterOpen } from './vault-create-flow';
 
@@ -51,9 +52,16 @@ export function useVaultCreateFlow(vault: VaultCreateFlowVault, starterLocale: s
         setScaffolding(true);
         (shape ? vault.scaffoldOntology(starterLocale, shape) : vault.scaffoldOntology(starterLocale))
           .catch((err: unknown) => {
-            // `''` (rather than null) marks "an error occurred but there is no message", so the caller
-            // (FirstRunPage and the like) can fill in a locale-specific fallback. null means no error.
-            setActionError(err instanceof Error && err.message ? err.message : '');
+            /**
+ * `actionError` carries a **failure code**, not a sentence.
+ *
+ * `''` still means "it failed and there is nothing more specific to say"; a non-empty value is a
+ * code the screen looks up in the `failures` catalogue. It used to be `err.message` — the
+ * developer's English — which a Korean screen then printed verbatim (installed-app inspection
+ * before v1.2.2, B2). A module that throws cannot know the reader's language, so it names the
+ * failure and the screen owns the sentence.
+ */
+            setActionError(failureCodeOf(err) ?? '');
           })
           .finally(() => setScaffolding(false));
         return;

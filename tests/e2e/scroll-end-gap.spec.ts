@@ -7,6 +7,20 @@ import { PAGE_FRAME_FORM } from "@/shared/ui/page-frame";
 /** The form column's rendered max width, read from the spec so a re-decided value cannot drift. */
 const FORM_FRAME_WIDTH = /max-w-\[(\d+px)\]/.exec(PAGE_FRAME_FORM)?.[1] ?? "";
 import { stubDirectoryPicker } from "./vault-picker-stub";
+import { waitForBoxStill } from "./settle";
+
+/**
+ * The route has arrived and its layout has stopped moving.
+ *
+ * Every measurement below is a rect or a scroll height, so it has to be taken on a laid
+ * out screen. The 900 and 1,200 ms sleeps this replaces were two guesses at hydration
+ * finishing on this machine.
+ */
+async function routeSettled(page: import("@playwright/test").Page) {
+  await page.waitForLoadState("networkidle");
+  await waitForBoxStill(page.locator("body"));
+}
+
 
 /**
  * Whether the bottom gap survives at the end of a scroll — the shell body slot's
@@ -315,7 +329,7 @@ for (const vp of VIEWPORTS) {
 
     for (const [label, url] of ROUTES) {
       await page.goto(url, { waitUntil: "domcontentloaded" });
-      await page.waitForTimeout(900);
+      await routeSettled(page);
       const m = await measure(page);
       if (!m.slot) {
         expect(
@@ -542,7 +556,7 @@ for (const vp of VAULT_VIEWPORTS) {
 
     for (const url of VAULT_ROUTES) {
       await page.goto(url, { waitUntil: "domcontentloaded" });
-      await page.waitForTimeout(1200);
+      await routeSettled(page);
       const m = await measure(page);
       expect(m.slot, `${url}: 셸 본문 슬롯을 못 찾았다 — 셸 구조가 바뀌었다`).toBe(true);
       if (!m.scrollable) continue;
@@ -576,14 +590,14 @@ for (const vp of VAULT_VIEWPORTS) {
      * the wiki reader with a page open, and the index column.
      */
     await page.goto("/ko/library/", { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(1200);
+    await routeSettled(page);
     await page.getByTestId("library-index-segment-wiki").click({ timeout: 15_000 });
     const firstPage = page.locator('[data-testid^="library-wiki-wiki/"]').first();
     expect(await firstPage.count(), "/ko/library/: the fixture's wiki page is not listed — nothing below is measured").toBeGreaterThan(0);
     {
       await firstPage.click();
       await page.getByTestId("library-reading-pane").waitFor({ timeout: 15_000 });
-      await page.waitForTimeout(600);
+      await waitForBoxStill(page.getByTestId("library-reading-pane"));
       const reader = await measureInner(page, '[data-testid="library-reading-pane"]');
       if (reader.scrollable) {
         if (reader.gap === null) violations.push("/ko/library/ reader: 잉크를 하나도 못 찾았다 — 계측 실패이지 통과가 아니다");

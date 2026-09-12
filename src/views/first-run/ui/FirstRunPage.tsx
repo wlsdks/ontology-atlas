@@ -7,6 +7,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import { useJustStartVault, useVaultCreateFlow } from "@/features/docs-vault-local";
+import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
 import { deniedFolderName } from "@/entities/vault-session";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
@@ -46,6 +47,7 @@ export function FirstRunPage() {
   const t = useTranslations("firstRun");
   const toast = useToast();
   const vault = useLocalVault();
+  const failureSentence = useFailureSentence();
   // Both creation paths produce a starter in the screen's language — the same action must not produce a
   // vault in a different language depending on the entry path (walkthrough 2026-07-26).
   const locale = useLocale();
@@ -97,11 +99,17 @@ export function FirstRunPage() {
     clearCreatedPath();
   }, [createdPath, clearCreatedPath, toast, t]);
 
+  /*
+   * ⚠️ Both hooks hand over a **failure code**, never a thrown sentence. Until v1.2.2 they handed
+   * over `err.message`, and this line printed the developer's English onto a Korean screen
+   * (installed-app inspection, B2). An unrecognised code falls through to this screen's own
+   * fallback, which is the sentence somebody wrote for exactly this press.
+   */
   const errorText =
     justStartError !== null
-      ? justStartError || t("errorFallback")
+      ? failureSentence(justStartError, t("errorFallback")).sentence
       : actionError !== null
-        ? actionError || t("errorFallback")
+        ? failureSentence(actionError, t("errorFallback")).sentence
         : vault.status === "error"
           ? // A "cannot be a vault root" case is a rejection, not a failure. Showing "please try again"
             // here would make the screen lie, since every retry gives the same result.

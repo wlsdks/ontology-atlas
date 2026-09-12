@@ -8,6 +8,7 @@ import { describeVaultShape, type VaultShape } from '@/shared/lib/vault-shape';
 import { useLocalVault } from '@/entities/vault-session';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { Chip } from '@/shared/ui/controls';
+import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
 import { useToast } from '@/shared/ui/toast';
 import { SettingsRow } from './settings-primitives';
 
@@ -24,6 +25,7 @@ export function VaultShapeSettings() {
   const t = useTranslations('settings');
   const locale = useLocale();
   const toast = useToast();
+  const failureSentence = useFailureSentence();
   const localVault = useLocalVault();
   const [busy, setBusy] = useState<'map' | 'wiki' | null>(null);
   if (localVault.status !== 'loaded' || !localVault.manifest) return null;
@@ -35,7 +37,8 @@ export function VaultShapeSettings() {
       await localVault.scaffoldOntology(locale, chosen);
       toast.show(t('workspaceShapeStarted'), 'success');
     } catch (err) {
-      toast.show(err instanceof Error && err.message ? err.message : t('workspaceFolderErrorFallback'), 'error');
+      // A translated sentence for the failure kind; the raw text stays for the console (B2).
+      toast.show(failureSentence(err, t('workspaceFolderErrorFallback')).sentence, 'error');
     } finally {
       setBusy(null);
     }

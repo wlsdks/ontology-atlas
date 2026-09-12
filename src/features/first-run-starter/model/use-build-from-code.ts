@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 
 import { CURRENT_LOCAL_FS_HANDLE_ID, type LocalFsHandleRecord } from '@/entities/local-fs-handle';
+import { failureCodeOf } from '@/shared/lib/failure-code';
 import {
   createTauriVaultHandle,
   isTauriVaultRuntime,
@@ -159,7 +160,11 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
   return { ...state, chooseProject, confirm, reset };
 }
 
-/** `''` means "it failed and there is no sentence to show", which the screen fills in locale-side. */
+/**
+ * The **failure code** this screen looks up, or `''` for "it failed and nothing recognised it",
+ * which the screen fills in locale-side. Never the thrown English: a module that throws cannot
+ * know the reader's language (installed-app inspection before v1.2.2, B2).
+ */
 function messageOf(err: unknown): string {
-  return err instanceof Error && err.message ? err.message : '';
+  return failureCodeOf(err) ?? '';
 }

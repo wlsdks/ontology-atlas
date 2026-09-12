@@ -4,6 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { parseFrontmatter } from '../../src/shared/lib/parse-frontmatter';
 import { seedFirstRunSeen } from './first-run-seed';
+import enMessages from '../../messages/en.json';
 import {
   installLibraryWorkHarness,
   LIBRARY_WORK_CODEX_CONFIG,
@@ -16,6 +17,7 @@ const VAULT_ROOT = '/Users/probe/Ontology Atlas/launch';
 const SOURCE = 'sources/retention.md';
 const AUDIT = 'sources/audit.md';
 const ANSWER = 'wiki/answers/retention.md';
+const TURN_INCOMPLETE = enMessages.failures['answer-turn-incomplete'];
 const ORIGINAL = 'Keep records for 24 days.\nThe owner must approve external communication.\n';
 const REVISED = 'Keep records for 18 days, replacing the previous 24-day guidance.\nThe owner must approve external communication.\n';
 const AUDIT_TEXT = 'The audit worksheet lists 24 days.\nThe worksheet review is pending.\n';
@@ -214,7 +216,13 @@ for (const runtimeId of ['claude-acp', 'codex-acp'] as const) {
 
     const beforeCancel = await harness.snapshot(page);
     await page.getByRole('button', { name: 'Stop', exact: true }).click();
-    await expect(page.getByTestId('retained-answer-context')).toContainText('did not complete');
+/*
+     * The sentence is read from the catalogue rather than typed here. It used to be the string
+     * `answer-revision-store.ts` threw, which is exactly what finding B2 replaced: a Korean reader
+     * met it in English. Pinning a literal would put this spec back in the business of asserting
+     * the developer's wording instead of the reader's.
+     */
+    await expect(page.getByTestId('retained-answer-context')).toContainText(TURN_INCOMPLETE);
     await expect.poll(async () => (await harness.snapshot(page)).calls.some((call) => call.method === 'session/cancel')).toBe(true);
 
     const afterCancel = await harness.snapshot(page);

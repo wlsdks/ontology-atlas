@@ -3,6 +3,7 @@
 import { Fragment } from 'react';
 import { useTranslations } from 'next-intl';
 
+import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
 import { Dialog } from '@/shared/ui/dialog';
 import { controlClass } from '@/shared/ui/control-class';
 
@@ -34,6 +35,7 @@ export function BuildFromCodeConfirmDialog({
   build: ReturnType<typeof useBuildFromCode>;
 }) {
   const t = useTranslations('firstRunStarter');
+  const failureSentence = useFailureSentence();
   const location = build.location;
   const creating = build.stage === 'creating';
 
@@ -97,7 +99,7 @@ export function BuildFromCodeConfirmDialog({
           data-testid="build-from-code-error"
           className="mt-2 text-label leading-label text-[color:var(--color-danger-text)]"
         >
-          {build.errorText || t('buildFromCodeFailed')}
+          {failureSentence(build.errorText, t('buildFromCodeFailed')).sentence}
         </p>
       ) : null}
 

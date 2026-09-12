@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
+import { waitForDomeEntered, waitForMapStill, waitFrames } from "./settle";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+
+
 
 /**
  * **The Cone view's drawing, measured on the real vault** (2026-09-05, owner
@@ -93,9 +96,11 @@ async function openCone(page: Page, width: number, height: number) {
   });
   await page.goto("/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
-  // Past the assembly (≈1.1s) and the entry sweep (1.5s): while either is alive
-  // the drawn pose keeps moving and the fit is still in flight.
-  await page.waitForTimeout(6000);
+  // Past the assembly and the entry sweep: while either is alive the drawn pose
+  // keeps moving and the fit is still in flight. Both clocks belong to the dome,
+  // so it is asked whether it has arrived rather than given six seconds to.
+  await waitForDomeEntered(page);
+  await waitForMapStill(page, { what: "camera" });
 }
 
 async function readCone(page: Page) {
@@ -300,15 +305,10 @@ for (const screen of SCREENS) {
  * draw order exist to show it — and to nothing else.
  */
 async function settleConeCamera(page: Page) {
-  let previous: string | null = null;
-  for (let i = 0; i < 40; i += 1) {
-    const camera = await page.evaluate(() =>
-      JSON.stringify((window as unknown as { __atlasMap: { camera: () => unknown } }).__atlasMap.camera()),
-    );
-    if (camera === previous) return;
-    previous = camera;
-    await page.waitForTimeout(150);
-  }
+  // Stillness judged in the page, on drawn frames: two samples 150 ms apart from
+  // the test process could both land inside one slow step and call a moving camera
+  // settled, and on a fast machine they threw 150 ms away per sample.
+  await waitForMapStill(page, { what: "camera" });
 }
 
 type ConeDrawnNode = { id: string; label: string; x: number; y: number; radius: number; hidden: boolean };
@@ -406,7 +406,16 @@ for (const screen of [SCREENS[0], SCREENS[3]]) {
       if (i > 0) {
         const spare = await coneEmptyPoint(page);
         await page.mouse.click(canvas.x + spare.x, canvas.y + spare.y);
-        await page.waitForTimeout(400);
+        /*
+         * ⚠️ **This click does not deselect, and the sleep it replaced never waited
+         * for one either** (measured 2026-09-13). Inside the dome an empty-ground
+         * press is an orbit grab, not a deselect (`map-3d-grip.spec.ts`), so the
+         * selection survives it — polling for a cleared selection here sat for the
+         * full timeout holding `capability:carrier-integration`. What the click
+         * does do is end the ego dim and the tier reveal, and it does that inside
+         * the pointer handler, so the next drawn frames already carry it.
+         */
+        await waitFrames(page, 3);
       }
       await settleConeCamera(page);
       const drawn = await coneDrawnNodes(page);
@@ -420,7 +429,14 @@ for (const screen of [SCREENS[0], SCREENS[3]]) {
         );
       const offset = clear(wanted[i]) ? wanted[i] : 0;
       await page.mouse.click(canvas.x + node!.x + offset, canvas.y + node!.y);
-      await page.waitForTimeout(500);
+      /*
+       * The hit test runs inside the pointer handler, so the selection this click
+       * produced — including the miss this case exists to catch — is already
+       * decided by the next frames. Polling for a *correct* selection instead would
+       * turn every miss into a timeout and throw away the message below, which
+       * names what was hit.
+       */
+      await waitFrames(page, 3);
       const selection = await page.evaluate(
         () =>
           (

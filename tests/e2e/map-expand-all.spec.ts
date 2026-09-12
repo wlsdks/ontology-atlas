@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForMapStill } from "./settle";
 
 /**
  * **Does "expand all" actually reveal the count it claims** (promoted from the
@@ -36,22 +37,9 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * position is where the next click will land.
  */
 async function settleLayout(page: import("@playwright/test").Page) {
-  const snapshot = () =>
-    page.evaluate(() => {
-      const m = (window as unknown as { __atlasMap?: { nodes: () => Array<{ id: string; x: number; y: number }> } })
-        .__atlasMap;
-      return m ? m.nodes().map((n) => `${n.id}:${Math.round(n.x)},${Math.round(n.y)}`).join("|") : "";
-    });
-  await expect
-    .poll(
-      async () => {
-        const before = await snapshot();
-        await page.waitForTimeout(250);
-        return before !== "" && before === (await snapshot());
-      },
-      { timeout: 30_000, message: "배치가 멈추지 않아 클릭 좌표를 믿을 수 없다" },
-    )
-    .toBe(true);
+  // Stillness judged in the page, on drawn frames, so the click coordinate taken next
+  // is the one the frame drew — not one read halfway through a 250 ms round trip.
+  await waitForMapStill(page);
 }
 
 test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다", async ({ page }) => {
@@ -60,7 +48,7 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   await seedFirstRunSeen(page);
   await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(2500);
+  await waitForMapStill(page);
 
   const nodePos = () =>
     page.evaluate(() => {
@@ -82,7 +70,14 @@ test("모두 펼치기는 주장한 수를 드러내고, 접기로 되돌린다"
   const first = await nodePos();
   expect(first, "주문 도메인을 지도에서 못 찾았다 — 이 스펙이 공회전한다").not.toBeNull();
   await page.mouse.click(first!.px, first!.py);
-  await page.waitForTimeout(1200);
+  // The chip the next lines read belongs to the node this click selected.
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __atlasMap: { selection: () => { nodeId: string | null } } }).__atlasMap.selection().nodeId), {
+      timeout: 15_000,
+      message: "주문 도메인이 선택되지 않았다",
+    })
+    .toBe("domain:order");
+  await waitForMapStill(page);
 
   const before = await visibleCount();
   const chipBefore = await orderChip();

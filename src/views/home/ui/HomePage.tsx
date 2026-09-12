@@ -166,6 +166,7 @@ const MountedGlobalSearch = dynamic(
 const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 import { GestureHint } from "@/widgets/gesture-hint";
+import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip, ChromeTile, LiveAnnouncer, Surface, Tooltip, WidgetErrorFallback, controlClass, useToast } from "@/shared/ui";
 import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { MOTION } from "@/shared/motion";
@@ -626,6 +627,8 @@ function HomePageImpl() {
    * alone. The widget filters repeats (`shouldAnnounceDeadEnd`).
    */
   const toast = useToast();
+  /** The starter scaffold's failures reach a person as a sentence, not as a thrown string (B2). */
+  const failureSentence = useFailureSentence();
 
   const prefetchedProjectHrefsRef = useRef(new Set<string>());
   const preloadedImageUrlsRef = useRef(new Set<string>());
@@ -4090,14 +4093,13 @@ function HomePageImpl() {
         "success",
       );
     } catch (err) {
-      toast.show(
-        err instanceof Error && err.message ? err.message : t("createNode.toastError"),
-        "error",
-      );
+      // The sentence a reader gets is written here or in `messages/*.json`, never thrown from a
+      // module that cannot know their language (B2, installed-app inspection before v1.2.2).
+      toast.show(failureSentence(err, t("createNode.toastError")).sentence, "error");
     } finally {
       setStarterScaffolding(false);
     }
-  }, [vault, toast, t, activeLocale]);
+  }, [vault, toast, t, activeLocale, failureSentence]);
 
   // Single source for domain size (a graph BFS), so INDEX tree rows, `/projects`, and
   // insights all state the same number.
