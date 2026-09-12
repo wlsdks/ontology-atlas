@@ -1647,7 +1647,7 @@
       "headings": [],
       "excerpt": "The ability for a developer and coding agent to compare human-reviewed architecture intent with a revision-stamped source observation, decide what should change, and verify the result against the same contract. The Architecture workbench starts the guarded Draft, Change, or Verify conversation inside its own route and ",
       "wordCount": 458,
-      "updatedAt": "2026-09-05",
+      "updatedAt": "2026-09-12",
       "linksOut": []
     },
     {
@@ -2029,7 +2029,7 @@
       "headings": [],
       "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The MCP server is the stdio JSON-RPC surface that lets an AI coding age",
       "wordCount": 3908,
-      "updatedAt": "2026-09-11",
+      "updatedAt": "2026-09-12",
       "linksOut": []
     },
     {
@@ -2457,7 +2457,7 @@
       "headings": [],
       "excerpt": "Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user. README.md: \"Your agent reads and maintains it",
       "wordCount": 259,
-      "updatedAt": "2026-09-07",
+      "updatedAt": "2026-09-12",
       "linksOut": []
     },
     {
@@ -2946,8 +2946,8 @@
       },
       "headings": [],
       "excerpt": "The machine-readable architecture-profile/v1 contract and conformance evaluator that keeps declared pattern axes, scoped roles, dependency rules, governed import usages, observed imports, violations, and unknowns in one fail-closed result. It differs from the workbench element because it produces usage-qualified typed ",
-      "wordCount": 279,
-      "updatedAt": "2026-09-04",
+      "wordCount": 281,
+      "updatedAt": "2026-09-12",
       "linksOut": []
     },
     {
@@ -4015,9 +4015,9 @@
         "created_by": "agent:codex"
       },
       "headings": [],
-      "excerpt": "Task-scoped agent brief projection is the read-side implementation that turns one selected project and one request-local coding task into a bounded handoff of currentness, broad capability meaning, cited implementation anchors, explicit unknowns, and exact next reads. mcp/src/agent-brief-compact.mjs mcp/src/index.js mc",
+      "excerpt": "Task-scoped agent brief projection is the read-side implementation that turns one selected project and one request-local coding task into a bounded handoff of currentness, broad capability meaning, cited implementation anchors, explicit unknowns, and exact next reads. mcp/src/agent-brief-compact.mjs mcp/src/tools/graph",
       "wordCount": 381,
-      "updatedAt": "2026-09-05",
+      "updatedAt": "2026-09-12",
       "linksOut": []
     },
     {

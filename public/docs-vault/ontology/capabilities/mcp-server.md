@@ -55,7 +55,7 @@ The MCP server is the stdio JSON-RPC surface that lets an AI coding agent read a
 
 ## Active Tool Inventory Contract
 
-- The current set of tools is `TOOLS_FOR_LIST`, which applies annotations and a read-only filter to the registry in `mcp/src/index.js`. Both the `Tool inventory` section of `tools/list` and initialize derive from the same array, so no other document owns a numeric or full name list.
+- The current set of tools is `TOOLS_FOR_LIST`, which applies annotations and a read-only filter to the registry in `mcp/src/server/registry.mjs`. Both the `Tool inventory` section of `tools/list` and initialize derive from the same array, so no other document owns a numeric or full name list.
 - A read-only server advertises neither write tools nor exposes them in its initial announcement. In both full mode and read-only mode, the header count and the set of read/write names must exactly match those in `tools/list`.
 - `mcp-verify` independently compares the live `tools/list` with the counts, classifications, and name sets in the initialize announcement. Documents and configuration screens reference `tools/list` and `mcp-verify`, avoiding promises to users about mutable fixed counts.
 
@@ -140,7 +140,7 @@ Rust repositories expose bounded static source receipts through the same `infer_
 
 ## Implementation Basis
 
-- `mcp/src/index.js` · `mcp/src/tool-inventory.mjs`: Boundary that creates both
+- `mcp/src/server/registry.mjs` · `mcp/src/tool-inventory.mjs`: Boundary that creates both
   `tools/list` and mode-specific initialize inventory from the active tool registry.
 - `mcp/src/analyze.mjs` · `mcp/src/rust-feature-evidence.mjs` ·
   `mcp/src/infer-imports.mjs`: Bounded repository meaning ingress, Rust configuration provenance,

@@ -15,7 +15,7 @@ The machine-readable `architecture-profile/v1` contract and conformance evaluato
 
 ## Evidence
 - `mcp/src/architecture-profile.mjs`: canonical profile parsing, role mapping, `dependency_usages`, and `architectureConformance:v1`
-- `mcp/src/index.js`: public `inspect_architecture` tool and closed usage-qualified output schema
+- `mcp/src/tools/repo-analysis.mjs` · `mcp/src/server/tool-schemas.mjs`: public `inspect_architecture` tool and closed usage-qualified output schema
 - `cli/src/lib/architecture-results.mjs`: fail-closed consumer validation for governed usages, receipt counts, and unknown usage
 - `tests/contract/architecture-profile.contract.test.ts`: web/MCP parser parity and legacy default behavior
 - `mcp/src/architecture-profile.test.mjs`: type-only exclusion, upward value violation, and unknown-usage probes
