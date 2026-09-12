@@ -62,8 +62,13 @@ export const MISSING_TARGET_SIGNATURES = [
   'could not be found',
 ] as const;
 
-/** Signatures of "something is already there, and nothing was overwritten". */
-export const ALREADY_EXISTS_SIGNATURES = [
+/**
+ * Signatures of "something is already there, and nothing was overwritten".
+ *
+ * Not exported: unlike the two tables above it has no second reader, and an export nothing
+ * imports is what `pnpm knip` exists to refuse.
+ */
+const ALREADY_EXISTS_SIGNATURES = [
   'already exists',
   'file exists',
   'os error 17)',

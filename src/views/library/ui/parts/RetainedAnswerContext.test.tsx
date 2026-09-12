@@ -158,6 +158,10 @@ async function thrownBy(run: () => Promise<unknown>): Promise<unknown> {
  */
 const MALFORMED_THREAD = 'answer_thread: "dispute-records"\n';
 
+/** The real Korean catalogue, read the way the screen reads it. */
+const FAILURES: Record<string, string> = koMessages.failures;
+const ANSWERS = koMessages.library.answers;
+
 describe('the answer page speaks the reader\'s language when a refresh fails', () => {
   it.each([
     ['a malformed thread edge', MALFORMED_THREAD, 'answer-history-unreadable'],
@@ -169,7 +173,7 @@ describe('the answer page speaks the reader\'s language when a refresh fails', (
     expect((thrown as Error).message).toContain(code);
 
     const copy = copyFor(thrown, 'unused fallback');
-    expect(copy.sentence).toBe((koMessages as Record<string, Record<string, string>>).failures[code]);
+    expect(copy.sentence).toBe(FAILURES[code]);
 
     draw({ error: copy, onRefresh: () => {} });
     const alert = screen.getByTestId('answer-refresh-error');
@@ -187,10 +191,9 @@ describe('the answer page speaks the reader\'s language when a refresh fails', (
       prepareAnswerRefresh(fakeStore(pageText(''), new Map()), SLUG, [SOURCE]),
     );
     const copy = copyFor(thrown, 'unused fallback');
-    const catalogue = (koMessages as Record<string, Record<string, string>>).failures;
-    expect(copy.sentence).toBe(catalogue['answer-sources-unmeasured']);
+    expect(copy.sentence).toBe(FAILURES['answer-sources-unmeasured']);
     // Two different failures must not collapse into one sentence, or the reader cannot act.
-    expect(copy.sentence).not.toBe(catalogue['answer-history-unreadable']);
+    expect(copy.sentence).not.toBe(FAILURES['answer-history-unreadable']);
 
     draw({ error: copy, onRefresh: () => {} });
     expect(englishSentences(screen.getByTestId('answer-refresh-error').textContent ?? '')).toEqual([]);
@@ -205,9 +208,7 @@ describe('the answer page speaks the reader\'s language when a refresh fails', (
     store.create = vi.fn(async () => false);
     const thrown = await thrownBy(() => saveAnswerRevision(store, snapshot, page));
     const copy = copyFor(thrown, 'unused fallback');
-    expect(copy.sentence).toBe(
-      (koMessages as Record<string, Record<string, string>>).failures['answer-revision-exists'],
-    );
+    expect(copy.sentence).toBe(FAILURES['answer-revision-exists']);
     draw({ error: copy, onRefresh: () => {} });
     expect(englishSentences(screen.getByTestId('answer-refresh-error').textContent ?? '')).toEqual([]);
   });
@@ -247,13 +248,9 @@ describe('a press the page knows would be refused is not offered', () => {
     // The reason is on the row, not behind the `answers.evidenceMore` disclosure: a state that
     // changes what the page can do may not be hidden behind a press.
     const reason = screen.getByTestId('answer-refresh-blocked-history');
-    expect(reason.textContent).toBe(
-      (koMessages as { library: { answers: Record<string, string> } }).library.answers.refreshBlockedHistory,
-    );
+    expect(reason.textContent).toBe(ANSWERS.refreshBlockedHistory);
     // One wording for one fact: the index card's own words open the sentence.
-    expect(reason.textContent).toContain(
-      (koMessages as { library: { answers: { version: Record<string, string> } } }).library.answers.version.unresolved,
-    );
+    expect(reason.textContent).toContain(ANSWERS.version.unresolved);
     // And it is the sentence the control is described by, so a screen reader hears the
     // reason rather than the observation.
     expect(button.getAttribute('aria-describedby')).toBe('answer-refresh-blocked-history');
