@@ -253,15 +253,21 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     // The column is the measure spent at the root plus two absolute gutters, so it grows by
     // the measure and not by a factor of two: 709.1 → 1338.1.
     expect(after.get("--measure-doc-column")).toBeCloseTo(docColumnPxAtRoot(ZOOMED_ROOT_PX), 0);
-    // The line cap doubles because both sides of `ch` scale with the font size — true in any
-    // face, which is exactly why this is the ratio and not the pixel. The band is relative for
-    // the same reason: a rasterizer that rounds `ch` at one size need not round it the same way
-    // at twice that size, and 0.5% of a 1258px cap is six pixels of slack against a claim that
-    // would fail by 629 if it were wrong.
+    // The line cap follows the root because both sides of `ch` scale with the font size —
+    // true in any face, which is why this is a ratio and not a pixel.
+    //
+    // ⚠️ **The band is wide because `ch` is rounded per size, not scaled.** `1ch` is the
+    // advance of `0` in the face actually rendering, and a rasterizer rounds that advance at
+    // each size independently: measured on a CI runner's fallback, `66ch` came to 660px at a
+    // 16px root and 1254px at a 32px one — a ratio of **1.9**, not 2, because 10px per `ch`
+    // became 19 rather than 20. On Pretendard the same pair is 629.06 and 1258.13, a ratio of
+    // 2.0002. Both are the cap following the root; the difference is the font's own rounding.
+    // The band would still fail decisively on the defect it is about, where a `px` ramp leaves
+    // the ratio at **1.0**.
     const measureRatio =
       (after.get("--measure-prose") ?? 0) / (before.get("--measure-prose") ?? 1);
-    expect(measureRatio, "the line cap did not follow the root").toBeGreaterThan(1.995);
-    expect(measureRatio).toBeLessThan(2.005);
+    expect(measureRatio, "the line cap did not follow the root").toBeGreaterThan(1.8);
+    expect(measureRatio, "the line cap grew by more than the root did").toBeLessThan(2.1);
     // The column grows by the measure and not by a factor of two, because the two gutters are
     // absolute: 709.1 + 629.06 = 1338.1. `PROSE_MEASURE_PX` is font-independent here — it is
     // derived from the measured constant, not from a rendered `ch`.
