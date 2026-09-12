@@ -14,6 +14,7 @@ import {
   mergeFiredCi,
   parseArgs,
   refuseLanding,
+  otherCheckState,
   requiredCheckState,
   runInFlight,
   describeCleanup,
@@ -685,3 +686,87 @@ describe('one landing, in order', () => {
   assert.ok(commands.some((command) => command.includes('vitest run tests/contract')));
   assert.ok(local.commands.some((row) => row.command.includes('AppSettingsMenu.test.tsx')));
  });
+
+/**
+ * **The Windows lane that was red for three landings** (recorded 2026-09-13).
+ *
+ * `windows-beta-check.yml` produces no required context, so a rollup exactly this
+ * shape read as "every required context is green" and merged. It had been red on
+ * `main` since the records migration and was red on the v1.2.2 release pull request
+ * eight minutes before that pull request landed. Two release attempts were then spent
+ * rediscovering what it had already reported.
+ */
+const ROLLUP_WITH_RED_UNREQUIRED = [
+  ...REQUIRED_CONTEXTS.map((name) => ({ __typename: 'CheckRun', name, status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: 'Checks' })),
+  { __typename: 'CheckRun', name: 'Audit JavaScript production dependencies', status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: 'Windows x64 Beta Check' },
+  {
+    __typename: 'CheckRun',
+    name: 'Verify unsigned Windows x64 beta',
+    status: 'COMPLETED',
+    conclusion: 'FAILURE',
+    detailsUrl: 'https://github.com/wlsdks/ontology-atlas/actions/runs/34720027112/job/103625133745',
+    workflowName: 'Windows x64 Beta Check',
+  },
+];
+
+const readyWithRedUnrequired = readyPr({ statusCheckRollup: ROLLUP_WITH_RED_UNREQUIRED });
+
+describe('checks main does not require', () => {
+  it('refuses to land on a red unrequired lane, and names it with its job URL', () => {
+    const verdict = otherCheckState({ rollup: ROLLUP_WITH_RED_UNREQUIRED, requiredContexts: REQUIRED_CONTEXTS });
+    assert.equal(verdict.state, 'failed');
+    assert.deepEqual(verdict.failed.map((c) => c.name), ['Verify unsigned Windows x64 beta']);
+    assert.match(verdict.failed[0].url, /34720027112/);
+    // The required gate is green on the very same rollup: that disagreement is the bug.
+    assert.equal(requiredCheckState({ rollup: ROLLUP_WITH_RED_UNREQUIRED, requiredContexts: REQUIRED_CONTEXTS }).state, 'green');
+    assert.equal(
+      decideNext({ ...holding, pr: readyWithRedUnrequired, localChecksPassed: true }).action,
+      'fail-other-checks',
+    );
+  });
+
+  it('lands when the failing lane is accepted by name, and reports the acceptance', () => {
+    const step = decideNext({
+      ...holding,
+      pr: readyWithRedUnrequired,
+      localChecksPassed: true,
+      allowFailing: ['Verify unsigned Windows x64 beta'],
+    });
+    assert.equal(step.action, 'merge');
+    assert.deepEqual(step.other.accepted.map((c) => c.name), ['Verify unsigned Windows x64 beta']);
+    assert.deepEqual(step.other.failed, []);
+  });
+
+  it('refuses a red required context however it is named, so the escape cannot reach one', () => {
+    const redRequired = readyPr({ statusCheckRollup: RECORDED_ROLLUP });
+    for (const allowFailing of [[], ['Unit · Contract'], ['Unit · Contract', 'Verify unsigned Windows x64 beta']]) {
+      assert.equal(
+        decideNext({ ...holding, pr: redRequired, localChecksPassed: true, allowFailing }).action,
+        'fail-checks',
+        `--allow-failing=${allowFailing.join(',')} must not reach a required context`,
+      );
+    }
+  });
+
+  it('says so when an accepted name is not failing, rather than implying it protected something', () => {
+    const green = readyPr({ statusCheckRollup: ROLLUP_WITH_RED_UNREQUIRED.filter((r) => r.conclusion !== 'FAILURE') });
+    const step = decideNext({ ...holding, pr: green, localChecksPassed: true, allowFailing: ['Verify unsigned Windows x64 beta'] });
+    assert.equal(step.action, 'merge');
+    assert.deepEqual(step.other.unmatched, ['Verify unsigned Windows x64 beta']);
+  });
+
+  it('treats a skipped or still-running unrequired lane as no failure', () => {
+    const rollup = [
+      ...REQUIRED_CONTEXTS.map((name) => ({ __typename: 'CheckRun', name, status: 'COMPLETED', conclusion: 'SUCCESS' })),
+      { __typename: 'CheckRun', name: 'inactive lane', status: 'COMPLETED', conclusion: 'SKIPPED' },
+      { __typename: 'CheckRun', name: 'still going', status: 'IN_PROGRESS', conclusion: '' },
+    ];
+    assert.equal(otherCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS }).state, 'clear');
+  });
+
+  it('parses --allow-failing into named contexts and refuses an empty list', () => {
+    assert.deepEqual(parseArgs(['1595', '--allow-failing=A,B']).allowFailing, ['A', 'B']);
+    assert.deepEqual(parseArgs(['1595']).allowFailing, []);
+    assert.throws(() => parseArgs(['1595', '--allow-failing=']), /must name at least one check context/);
+  });
+});
