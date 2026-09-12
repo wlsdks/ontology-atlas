@@ -64,8 +64,8 @@ describe('dead-code gate wiring', () => {
     }
   });
 
-  it('runs the analyzer as a repo-wide pre-push lane', () => {
-    expect(PRE_PUSH).toContain("lane dead_code 'pnpm knip'");
+  it('defers the whole-graph analyzer to CI', () => {
+    expect(PRE_PUSH).not.toContain("lane dead_code 'pnpm knip'");
   });
 
   it('runs the analyzer in Unit · Contract only after both dependency installs', () => {

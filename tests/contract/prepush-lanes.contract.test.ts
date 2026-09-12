@@ -112,7 +112,7 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
     const laneLine = (name: string) =>
       executable.split("\n").find((line) => new RegExp(`lane ${name} `).test(line)) ?? "";
 
-    for (const name of ["unit", "contract"]) {
+    for (const name of ["unit"]) {
       const lane = laneLine(name);
       expect(lane, `${name} 레인을 못 찾았다 — 이 시험이 헛돈다`).not.toBe("");
       expect(lane, "worker 상한은 시계에 기댄 시험을 가리는 값이다 — 그 시험을 고쳐라").not.toContain(
@@ -188,7 +188,7 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
    * scanners are unconditional for that reason, so every push runs at least these.
    */
   it("무조건 도는 레인이 있다 — 아무것도 안 도는 푸시가 없다", () => {
-    for (const always of ["tests/contract/", "check-comment-refs.mjs", "decisions:check"]) {
+    for (const always of ["check-comment-refs.mjs", "decisions:check"]) {
       expect(executable, `무조건 도는 레인에 ${always} 가 없다`).toContain(always);
     }
   });

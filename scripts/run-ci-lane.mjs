@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { appendFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
 import { decodePlan, FULL_LANE_COMMANDS } from './classify-change.mjs';
@@ -157,8 +158,15 @@ export function runCommands({
   const failures = [];
   for (const [index, command] of commands.entries()) {
     stdout.write(`\n[ci-lane] (${index + 1}/${commands.length}) ${command}\n`);
+    const started = Date.now();
     const result = spawn(command, { cwd, env, shell: true, stdio: 'inherit' });
     const status = result.status ?? 1;
+    const seconds = ((Date.now() - started) / 1000).toFixed(1);
+    stdout.write(`[ci-lane] ${status === 0 ? 'PASS' : 'FAIL'} ${seconds}s: ${command}\n`);
+    if (env.GITHUB_STEP_SUMMARY) {
+      const safe = command.replace(/[|`\r\n]/g, ' ');
+      try { appendFileSync(env.GITHUB_STEP_SUMMARY, `- ${status === 0 ? 'PASS' : 'FAIL'} **${seconds}s**: ${safe}\n`); } catch { /* Reporting cannot change the gate verdict. */ }
+    }
     if (status !== 0) failures.push({ command, status });
   }
   if (failures.length > 0) {
