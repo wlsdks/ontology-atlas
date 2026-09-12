@@ -104,7 +104,7 @@ describe('retained answer evidence', () => {
    * **The card and the button must not disagree** (installed-app inspection before v1.2.2, B2).
    *
    * The fixture's answer carried `answer_thread: "dispute-records"`. `retainedAnswerHeads` read
-   * that as a broken edge and the index card said 「이력 확인 필요」, while the answer page offered
+   * that as a broken edge and the index card said `answers.version.unresolved`, while the answer page offered
    * the refresh anyway; the press then threw, and its English landed in the page body. Both sides
    * now read `answerHistoryUnreadable`, so a malformed thread is refused before it is offered.
    */

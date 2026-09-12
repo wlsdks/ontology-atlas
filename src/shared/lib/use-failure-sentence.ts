@@ -10,7 +10,7 @@ import { failureCodeOf, failureDetailOf } from './failure-code';
  *
  * `sentence` is the reader's language and is the only half that may reach the page body.
  * `detail` is the machine's English and belongs in a `data-*` attribute, the console, or a
- * 「기술 정보」 fold — the places a developer looks and a reader does not.
+ * technical-information fold — the places a developer looks and a reader does not.
  */
 export interface FailureCopy {
   sentence: string;

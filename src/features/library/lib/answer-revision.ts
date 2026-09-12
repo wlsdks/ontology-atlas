@@ -64,7 +64,7 @@ export function answerObservation(
  *
  * `prepareAnswerRefresh` reads the file from disk and throws when the retained question or the
  * thread edge cannot be read. The answer page holds the same frontmatter in its manifest, and
- * before v1.2.2 it did not ask: it drew 「에이전트에 갱신 초안 요청」 enabled, the press threw, and
+ * before v1.2.2 it did not ask: it drew `library.answers.refresh` enabled, the press threw, and
  * the developer's English landed in the page body (installed-app inspection, B2). One predicate
  * read by both sides is what keeps "the page knows" and "the button is offered" from disagreeing.
  */

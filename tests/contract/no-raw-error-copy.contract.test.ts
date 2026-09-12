@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
  * ## The measured defect
  *
  * Installed-app inspection before v1.2.2, finding B2. On a Korean screen, pressing
- * 「에이전트에 갱신 초안 요청」 printed
+ * the answer page's redraft button (`library.answers.refresh`) printed
  *
  * > The retained question or its history cannot be read.
  *

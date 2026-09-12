@@ -3,10 +3,10 @@
  *
  * ## The defect this exists to remove
  *
- * Installed-app inspection before v1.2.2 (finding B2): pressing 「에이전트에 갱신 초안
- * 요청」 on a Korean screen printed **"The retained question or its history cannot be
- * read."** into the page body, in brighter ink than the Korean around it. That sentence
- * is a `throw new Error(...)` argument written for whoever reads the stack — and the UI
+ * Installed-app inspection before v1.2.2 (finding B2): pressing the answer page's redraft
+ * button (`library.answers.refresh`) on a Korean screen printed **"The retained question or
+ * its history cannot be read."** into the page body, brighter than the copy around it. That
+ * sentence is a `throw new Error(...)` argument written for whoever reads the stack, and the UI
  * preferred it over the sentence the product had already written, at **eight sites across
  * six files**, all sharing one shape:
  *
@@ -128,7 +128,7 @@ export function failureCodeOf(err: unknown): string | null {
 
 /**
  * The English fact behind the failure, for a place a developer reads — a `data-*`
- * attribute, the console, a 「기술 정보」 fold. **Never for the page body.**
+ * attribute, the console, a technical-information fold. **Never for the page body.**
  */
 export function failureDetailOf(err: unknown): string | null {
   if (err instanceof CodedFailure) return err.detail;

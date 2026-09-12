@@ -69,7 +69,7 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
   agentDoor?: boolean;
   /**
    * **The page already knows this press would throw** (installed-app inspection before v1.2.2,
-   * B2). A malformed thread edge makes the index card read 「이력 확인 필요」 while this block
+   * B2). A malformed thread edge makes the index card read `answers.version.unresolved` while this block
    * offered the refresh anyway; pressing it threw, and the developer's English landed in the body.
    * Set from the same predicate `prepareAnswerRefresh` refuses on (`answerHistoryUnreadable`), so
    * the two cannot disagree.
@@ -163,7 +163,7 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
         {historyState !== 'none' ? <p data-testid="answer-history-state" className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)]">{t(`answers.history.${historyState}`)}</p> : null}
         {/*
           The reason the press is not offered, on the row that holds the press. It carries the
-          index card's own 「이력 확인 필요」 opening so a reader meets one wording for one fact.
+          index card's own `answers.version.unresolved` opening, so a reader meets one wording for one fact.
         */}
         {historyBlocked ? (
           <p

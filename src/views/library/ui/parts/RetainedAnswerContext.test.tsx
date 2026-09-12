@@ -18,7 +18,7 @@ import { RetainedAnswerContext } from './RetainedAnswerContext';
  * **B2, and the two halves of it** (installed-app inspection before v1.2.2).
  *
  * A Korean reader opened a saved answer whose `answer_thread` was malformed, pressed
- * 「에이전트에 갱신 초안 요청」, and got
+ * the redraft button (`library.answers.refresh`), and got
  *
  * > The retained question or its history cannot be read.
  *
@@ -27,7 +27,7 @@ import { RetainedAnswerContext } from './RetainedAnswerContext';
  * 1. **The sentence was the developer's.** Thrown from a module that cannot know which
  *    language the reader chose, and preferred over the copy the product had written.
  * 2. **The press should never have been offered.** The index card beside it already read
- *    「이력 확인 필요」, computed from the same frontmatter this block had in hand.
+ *    `answers.version.unresolved`, computed from the same frontmatter this block had in hand.
  *
  * `tests/contract/no-raw-error-copy.contract.test.ts` guards the shape in source. This
  * file guards the **rendered tree**: what the DOM actually carries after each failure the
@@ -244,7 +244,7 @@ describe('a press the page knows would be refused is not offered', () => {
     const button = screen.getByTestId('answer-refresh-start');
     expect(button).toBeDisabled();
 
-    // The reason is on the row, not behind the 「관찰 내용 보기」 disclosure: a state that
+    // The reason is on the row, not behind the `answers.evidenceMore` disclosure: a state that
     // changes what the page can do may not be hidden behind a press.
     const reason = screen.getByTestId('answer-refresh-blocked-history');
     expect(reason.textContent).toBe(
