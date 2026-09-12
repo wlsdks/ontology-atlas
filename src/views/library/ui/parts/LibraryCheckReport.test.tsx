@@ -291,7 +291,7 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     mount(<Harness structural={STRUCTURAL} />);
     const uncited = group("uncited-fact");
     // The heading a person reads is a sentence, not the validator's token.
-    expect(uncited.querySelector("h4")!.textContent).toContain("A fact is written with no original behind it");
+    expect(uncited.querySelector("h4")!.textContent).toContain("No original backs this up");
     expect(uncited.querySelector("h4")!.textContent).not.toContain("uncited-fact");
     // Nothing is taken away: the code, its line anchor and the English message the CLI
     // prints are under the same disclosure the wiki page beside it uses.
@@ -390,8 +390,8 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     };
     mount(<TestOutline />);
     const parsed = JSON.parse(screen.getByTestId("outline").textContent!) as string[];
-    expect(parsed).toContain("A cited original cannot be found 1");
-    expect(parsed).toContain("No other page points at these yet 2");
+    expect(parsed).toContain("A cited original is not here 1");
+    expect(parsed).toContain("No other page points here 2");
     expect(parsed.some((text) => text.startsWith("orphan-page"))).toBe(false);
   });
 

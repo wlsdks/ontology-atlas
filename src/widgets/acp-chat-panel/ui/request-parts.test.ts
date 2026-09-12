@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ANALYSIS_FINDINGS_INSTRUCTION } from '@/features/acp-session';
+import { buildLintBrief } from '@/features/library';
 
 import { splitAppRequest } from './request-parts';
 
@@ -93,6 +94,36 @@ describe("a Library brief folds at its folder anchor", () => {
      there is no readable half in front of it for the bubble to stand on. */
   it('folds nothing when the anchor is the first line', () => {
     expect(splitAppRequest('폴더: /tmp/v\n\n위키를 고쳐 줘.').detail).toBeNull();
+  });
+});
+
+/**
+ * **The real brief, not a stand-in for it.**
+ *
+ * The fold and the text it folds are written in two files, so the case that matters is the
+ * one built from the composer itself: a reworded brief that stops folding must fail here.
+ */
+describe('the Check-the-wiki brief, as it is actually sent', () => {
+  const brief = buildLintBrief({
+    pages: [{ slug: 'wiki/plan', title: 'Plan', sourcePaths: ['sources/plan.pdf'], createdBy: 'agent:claude', compiledAt: null }],
+    locale: 'ko',
+    vaultRoot: '/Users/probe/Atlas/launch',
+  });
+
+  it('stands one readable line up and folds the schema, the fences and the rules', () => {
+    const { lead, detail } = splitAppRequest(brief);
+    expect(lead.split('\n')).toHaveLength(1);
+    expect(lead).toContain('목록으로 돌려줘');
+    // None of what filled the dock is in the bubble any more.
+    expect(lead).not.toContain('```');
+    expect(lead).not.toContain('nodeCandidates');
+    expect(lead).not.toContain('"counts"');
+    expect(detail).toContain('nodeCandidates');
+    expect(detail).toContain('"counts"');
+    // The bubble is a small fraction of the turn, and the turn is whole.
+    expect(lead.length).toBeLessThan(brief.length / 5);
+    // The blank line between the two halves is the only byte the split spends.
+    expect(`${lead}\n\n${detail}`).toBe(brief.trim());
   });
 });
 
