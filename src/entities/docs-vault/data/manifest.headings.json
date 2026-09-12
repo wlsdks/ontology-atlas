@@ -4295,6 +4295,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-13 · Unreleased: moving between destinations stops reloading the app",
+      "slug": "2026-09-13-unreleased-moving-between-destinations-stops-reloading-the-app"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-12 · v1.2.1: the Library opens on its graph, and the graph stays readable at three hundred pages",
       "slug": "2026-09-12-v121-the-library-opens-on-its-graph-and-the-graph-stays-readable-at-three-hundred-pages"
     },
@@ -6643,6 +6648,11 @@
       "depth": 2,
       "text": "Record format",
       "slug": "record-format"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-13 — A rail press in the installed app is a route change, not a new document",
+      "slug": "2026-09-13-a-rail-press-in-the-installed-app-is-a-route-change-not-a-new-document"
     },
     {
       "depth": 2,

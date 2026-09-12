@@ -6,6 +6,7 @@ import {
   evaluateDesktopReleasePreflight,
 } from "./lib/release-script-contract.mjs";
 import { inspectCodexRunContract } from "./lib/codex-run-contract.mjs";
+import { connectSrcIsExact, DESKTOP_CONNECT_SRC_TOKENS } from "./lib/desktop-csp.mjs";
 
 const root = process.cwd();
 
@@ -1829,20 +1830,26 @@ if (missingFolderUsageKeys.length === 0) {
   );
 }
 
+/** The `connect-src` list and why `'self'` is on it live in `scripts/lib/desktop-csp.mjs`. */
 const tauriCsp = tauriConfig?.app?.security?.csp;
 if (
   tauriCsp &&
   typeof tauriCsp === "object" &&
   tauriCsp["default-src"]?.includes("'self'") &&
-  tauriCsp["connect-src"] === "ipc: http://ipc.localhost" &&
+  connectSrcIsExact(tauriCsp["connect-src"]) &&
   tauriCsp["img-src"]?.includes("data:") &&
   tauriCsp["style-src"]?.includes("'self'") &&
   !JSON.stringify(tauriCsp).includes("https://")
 ) {
-  pass("Tauri CSP is enabled for local app assets, images, styles, and IPC only");
+  pass(
+    "Tauri CSP is enabled for local app assets, images, styles, own-origin route payloads, and IPC only",
+  );
 } else {
   fail(
-    "src-tauri/tauri.conf.json must enable a scoped CSP for local app assets, data/blob images, styles, and Tauri IPC",
+    "src-tauri/tauri.conf.json must enable a scoped CSP for local app assets, data/blob images, " +
+      `styles, and Tauri IPC, with connect-src exactly ${DESKTOP_CONNECT_SRC_TOKENS.join(" ")} — ` +
+      "without 'self' the App Router cannot fetch the arriving route and every rail press " +
+      "becomes a full document load (inspection 122, B1/R1)",
   );
 }
 

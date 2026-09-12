@@ -45,6 +45,10 @@
 
 ---
 
+## 2026-09-13 · Unreleased: moving between destinations stops reloading the app
+
+**Fixed**: in the installed app a rail press is a route change again rather than a reload of the whole app, so the window no longer goes blank on the way (0.1-0.3 s on a 104-document folder), and no longer shows another folder's screen, complete with a download button, on the way in.
+
 ## 2026-09-12 · v1.2.1: the Library opens on its graph, and the graph stays readable at three hundred pages
 
 **Added**: the Library computes the structural check itself and keeps it, behind a report door naming whether a check runs, what it covered and what it has not; the README points at the MCP directory listings.

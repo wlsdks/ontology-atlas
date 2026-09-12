@@ -18,14 +18,32 @@
  * ⚠️ **What is captured is the pane, and only while a transition runs**
  * (2026-09-13). The crossfade used to capture the whole document and lift the nav
  * rail out of it under its own name. In WebKit — the installed app's engine — the
- * root group paints over every other group, so the rail was covered by the old
- * screen's snapshot and the window read as blank, rail included, for the length of
- * the transition (inspection 122, B1; the measurements are in `app/globals.css`).
- * `ROUTE_CROSSFADE_CLASS` is therefore put on the document element for exactly as
- * long as the transition lasts: the stylesheet uses it to stop capturing the root
- * and to name the shell's pane instead. Off a transition the document carries no
- * `view-transition-name` at all, so nothing here changes paint or containment
- * while the app is sitting still.
+ * root group paints over every other group, so a named sibling spends the whole
+ * transition underneath the departing screen's snapshot (the engine table is in
+ * `app/globals.css`). `ROUTE_CROSSFADE_CLASS` is therefore put on the document
+ * element for exactly as long as the transition lasts: the stylesheet uses it to
+ * stop capturing the root and to name the shell's pane instead. Off a transition
+ * the document carries no `view-transition-name` at all, so nothing here changes
+ * paint or containment while the app is sitting still.
+ *
+ * ⚠️ **This was not what blanked the installed app, and the record used to say it
+ * was** (corrected 2026-09-13). Inspection 122's B1 — *"every rail navigation
+ * blanks the whole window, rail included"* — survived the change above, and the
+ * reason is that a rail press in the installed app was never a route change at
+ * all. `src-tauri/tauri.conf.json`'s `connect-src` refused the App Router's fetch
+ * of the arriving route's own payload, so the router fell back to a **full document
+ * load**: the blank was the app booting and restoring the folder again, which is
+ * why it lasted 33-67 ms on a six-document folder and 100-300 ms on a
+ * 104-document one. `scripts/lib/desktop-csp.mjs` carries that measurement and the
+ * gates.
+ *
+ * With navigation restored to a route change, the crossfade **paints correctly on
+ * WKWebView**. Measured on the installed app, change-driven frame burst at 1/120 s
+ * over a rail band and a pane band: a Library crossing ran the transition for 231 ms
+ * with its four `::view-transition` animations occupying the declared 180 ms, and
+ * **every frame of it was painted** — rail ink 0.0243-0.0307, never 0. So the
+ * crossfade is not engine-gated and no surface opts out of it; a browser without
+ * the API still takes the direct path below, as it always has.
  *
  * **Why the promise resolves on the pathname, not on `router.push`.** The App
  * Router's push returns before the new tree is committed. The transition must
