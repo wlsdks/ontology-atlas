@@ -312,7 +312,18 @@ export function AppNavRail({
       data-testid="app-nav-rail"
       data-hidden={hidden ? "true" : "false"}
       className={cn(
-        "app-nav-rail-view-transition",
+        /*
+         * ⚠️ **The rail is deliberately not named for the view transition** (2026-09-13).
+         *
+         * It used to carry `app-nav-rail-view-transition`, so the route crossfade lifted it
+         * out of the document snapshot and it did not fade. In WebKit — the installed app's
+         * engine — the root group paints over every other group, so the rail was covered by
+         * the departing screen's snapshot and the whole window read as blank, rail included,
+         * for 0.3-0.5 s (inspection 122, B1). The crossfade now captures only the shell's
+         * pane and never the document, so the rail stays live: it is not snapshotted at all,
+         * which is why its active indicator can still slide during the crossfade rather than
+         * being a picture of one. The measurements are in `app/globals.css`.
+         */
         "hidden w-[var(--app-nav-rail-width)] shrink-0 flex-col items-center border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-3 lg:flex",
         hidden && "lg:hidden",
         className,
