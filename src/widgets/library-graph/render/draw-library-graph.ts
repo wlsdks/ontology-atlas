@@ -378,14 +378,14 @@ const STALE_DOT_BREATH = 1.1;
  * |---|---|---|
  * | `vault-zero-answers` | 6 | 0.86% |
  * | `vault` | 10 | 0.82% |
- * | `vault-60` | 48 | **2.16%** |
- * | `vault-300` | 480 | **15.64%** |
+ * | `vault-60` | 48 | **2.18%** |
+ * | `vault-300` | 480 | **15.67%** |
  *
  * 48 is the densest folder the 2026-09-12 and 2026-09-13 reviews read as legible, so the
- * cap has to sit above it. Its own narrowest window draws 19,523 pixels of ink, and 4% of
- * that is 781 amber pixels, which at the worst measured 11.2 per dot is **70 dots** — so
+ * cap has to sit above it. Its own narrowest window draws 19,517 pixels of ink, and 4% of
+ * that is 781 amber pixels, which at the worst measured 11.3 per dot is **69 dots** — so
  * the cap has to sit below that or the folder it was chosen for cannot afford it. 64 is the
- * round number between the two, 1.33x the folder that must keep every dot and 0.91x what
+ * round number between the two, 1.33x the folder that must keep every dot and 0.93x what
  * that folder's own ink can pay for.
  *
  * ## What happens above it
@@ -754,7 +754,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
      *
      * Standing was the fix; standing **at every scale** was the defect. On the
      * three-hundred-source folder 480 citations are unverified, and one dot each measured
-     * 5,227 pixels of strict amber against 33,417 of ink — **15.6% of the picture**, with
+     * 5,236 pixels of strict amber against 33,416 of ink — **15.7% of the picture**, with
      * total graph ink up 48% on the installed app. The reviewer's sentence is the
      * statistic: *"the picture's dominant mark is now a warning, not a document"*, which
      * is the "reader who calls dense amber noise" the 2026-09-13 record listed as its own

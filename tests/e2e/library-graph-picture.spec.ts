@@ -88,11 +88,11 @@ const STALE_DOT_STANDING_MAX = 64;
  *
  * R2 measured the three-hundred-source folder at **23,298 amber pixels against 0** with
  * total graph ink up **48%**, and called the result a warning field rather than a folder
- * with some stale citations. In this suite's own units the same state read **15.64%** of
+ * with some stale citations. In this suite's own units the same state read **15.67%** of
  * the canvas's ink at 1040x720. Both sides of 4% are measured rather than chosen: the
  * densest folder the 2026-09-12 and 2026-09-13 reviews read as legible (`vault-60`, 48
- * stale citations) draws **2.16%** at its narrowest window, and the folder the finding is
- * about draws **5.97%** at its widest. 4% sits between them at 1.85x the observed-good
+ * stale citations) draws **2.18%** at its narrowest window, and the folder the finding is
+ * about draws **5.96%** at its widest. 4% sits between them at 1.83x the observed-good
  * ceiling and 0.67x the observed-bad floor.
  *
  * ⚠️ **At rest only.** Pressing the strip's `N sources changed` clause is a person asking
@@ -374,6 +374,57 @@ async function openGraph(page: Page, seed: Record<string, string>): Promise<void
   // One more frame after the settle, so `labels()` holds the resting placement. A frame
   // is the unit; 120 ms was this machine's estimate of one.
   await waitFrames(page, 2);
+  await settleToRest(page);
+}
+
+/**
+ * **Waits for the picture the home spends its life in, rather than racing the arrival.**
+ *
+ * Two states sit between "the simulation has settled" and "at rest", and both put amber on
+ * the canvas that the resting bars are not about:
+ *
+ * 1. **The home's own breath.** Every stale citation's dot grows by half a radius for two
+ *    settle budgets, once per visit (`pulseRef.homeAt`, exposed as `flow().pulsing`). It is
+ *    worth about 3.4x the dot's resting amber, because a small disc's edge pixels are mostly
+ *    partial coverage and growing it turns them into interior — measured on a loaded CI
+ *    runner as **1,537 amber pixels on `vault-60` against 453 at rest**, i.e. 5.10% of that
+ *    picture's ink against 1.56%.
+ * 2. **A neighbourhood nobody asked for.** The press that opens the folder leaves the
+ *    pointer where the door was, and the canvas may mount under it; a held focus set keeps
+ *    its dim ramp — and, past the standing cap, its dots — alive while the ramp runs.
+ *    Measured on the same runner as 634–1,614 amber pixels at rest on `vault-300`, a
+ *    partial set at partial alpha, where an unloaded machine read 0.
+ *
+ * So the pointer is parked off the canvas and the breath is waited out. This is not a sleep:
+ * both waits are conditions the canvas reaches and publishes.
+ */
+async function settleToRest(page: Page): Promise<void> {
+  const box = await page.getByTestId("library-graph-canvas").boundingBox();
+  if (box) await page.mouse.move(box.x + box.width / 2, Math.max(0, box.y - 24));
+  await expect
+    .poll(() => page.evaluate(() => window.__atlasLibraryGraph?.flow()?.pulsing ?? false), {
+      timeout: 20_000,
+    })
+    .toBe(false);
+  /*
+   * And the canvas has stopped changing: two reads of the same pixel statistic, six frames
+   * apart, that agree. A picture that never stops changing fails on the timeout rather than
+   * being measured mid-ramp, and one that is wrongly amber stabilises at that number, so the
+   * bars below still fire.
+   */
+  let previous = -1;
+  await expect
+    .poll(
+      async () => {
+        const now = (await canvasInk(page)).amber;
+        const stable = now === previous;
+        previous = now;
+        if (!stable) await waitFrames(page, 6);
+        return stable;
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true);
 }
 
 /**
@@ -911,7 +962,7 @@ for (const size of SIZES) {
     // The same press lifts it, and the canvas goes back to calm.
     await clause.click();
     await expect(clause).toHaveAttribute("aria-pressed", "false");
-    await waitFrames(page, 12);
+    await settleToRest(page);
     expect((await canvasInk(page)).amber, "the lit state did not lift").toBe(0);
 
     // ── 2. The card. ──
@@ -946,8 +997,7 @@ for (const size of SIZES) {
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("library-graph-card")).toBeHidden();
     // The pointer is off the mark and the dim has ramped out: calm again, and measurably so.
-    await page.mouse.move(box.x + box.width / 2, box.y - 40);
-    await waitFrames(page, 12);
+    await settleToRest(page);
     expect(
       (await canvasInk(page)).amber,
       "the dots stayed behind after the card closed and the pointer left",
@@ -1164,7 +1214,7 @@ for (const fixture of FIXTURES) {
        * ── The standing amber holds its share of the picture's ink. ──
        *
        * Re-inspection 122 R2, the defect this bar exists for: 480 standing dots on the
-       * three-hundred-source folder, 15.64% of the canvas's ink at 1040x720, and *"the
+       * three-hundred-source folder, 15.67% of the canvas's ink at 1040x720, and *"the
        * picture's dominant mark is now a warning, not a document"*.
        */
       expect(
