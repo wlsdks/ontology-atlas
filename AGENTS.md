@@ -158,11 +158,10 @@ When delegation is justified, the brief must state: isolated port; read-only
 files; no stash/worktree deletion/`git add -A`; scratch outside the repo;
 baselines; and primary sources.
 
-If `.codegraph/` exists, start structural code questions there with exact
-symbols or paths, and treat the compiler and tests as the authority for absence
-and safety. `.claude/rules/codegraph.md` owns the routing table and the failure
-modes; every code directory's `AGENTS.md` points at it. Without CodeGraph, use
-targeted `rg` and reads.
+Default to native search and targeted reads. With `.codegraph/`, optionally use
+CodeGraph for cross-file calls, dynamic dispatch, or change impact. Follow
+`.claude/rules/codegraph.md`; code directories point there. Compiler results
+and required tests govern absence and safety.
 
 ## Source authority and ontology loop
 
