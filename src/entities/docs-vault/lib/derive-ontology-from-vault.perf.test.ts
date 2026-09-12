@@ -99,8 +99,12 @@ describe('deriveOntologyFromVault — live-update perf baseline', () => {
       `[perf] deriveOntologyFromVault — ${docCount} docs → ${result.nodes.length} nodes / ${result.edges.length} edges in ${elapsed.toFixed(1)}ms`,
     );
 
-    // Lenient absolute threshold to absorb jsdom noise. Breaking this line means a
-    // regression in the derive hot path.
+    /*
+     * A product budget with headroom, printed above so it stays auditable. Measured
+     * 2026-09-12: **7.6 ms** for 611 docs, so 2,500 ms is roughly 300x headroom. Nothing
+     * a slow or loaded runner does reaches that; what reaches it is the derive hot path
+     * going quadratic (`.claude/rules/testing.md`, "The timing rule").
+     */
     expect(elapsed).toBeLessThan(2500);
   });
 });

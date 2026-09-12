@@ -8,8 +8,10 @@
   `.githooks/commit-msg` blocks Hangul, kana and Han; merge, revert and
   fixup subjects are exempt because Git generates them.
 - Allowed prefixes: `feat:` · `fix:` · `docs:` · `refactor:` · `chore:` ·
-  `test:` · `style:` · `perf:`.
-- Do not invent non-conventional prefixes.
+  `test:` · `style:` · `perf:` · `design:`, an optional `(scope)`, then a space.
+  `.githooks/commit-msg` enforces the list and its refusal repeats it; merge,
+  revert and fixup subjects are exempt because Git writes them. `wip` is not a
+  prefix — the subject is what a reviewer and `git log` get.
 - Examples:
   - `feat: move the search palette into a mobile sheet`
   - `fix: restore dark-mode alpha tokens at :root`

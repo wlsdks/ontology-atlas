@@ -278,6 +278,9 @@ describe("the arrival's settle budget", () => {
       // Ten times the local measurement, for the same reason the frame budget above is a
       // ceiling rather than the number that was measured.
       expect(mountMs).toBeLessThan(order > 500 ? 4000 : 1500);
+      // One 60fps frame per tick, and the measurement is printed above. Measured
+      // 2026-09-12: 0.27ms per tick at 312 marks and 1.21ms at 992, so 16.7ms is 62x
+      // and 14x headroom respectively.
       expect(settleMs / Math.max(1, sim.ticks)).toBeLessThan(16.7);
     }
   });

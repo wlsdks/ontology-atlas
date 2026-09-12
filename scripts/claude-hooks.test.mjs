@@ -508,6 +508,57 @@ describe('commit-msg language gate', () => {
     assert.equal((await runHook(`chore: ${'\uFF76\uFF80\uFF76\uFF85'} pass\n`)).status, 1);
   });
 
+  /**
+   * The shape half of `.claude/rules/git.md`'s "Commit messages". The language half
+   * was enforced on 2026-08-24 for the reason a rule nothing checks is not a rule;
+   * the prefix list stayed unchecked until `wip`, `wip2` and `wip3` reached a branch
+   * on 2026-09-12.
+   */
+  it('refuses a subject with no conventional prefix and quotes the allowed list', async () => {
+    for (const subject of ['wip', 'wip2', 'WIP: the library work', 'just fixing things']) {
+      const { status, stderr } = await runHook(`${subject}\n`);
+      assert.equal(status, 1, `"${subject}" must not commit`);
+      assert.match(stderr, /conventional prefix/);
+      // A blocked agent reads only the refusal, so the whole list has to be in it.
+      for (const prefix of ['feat:', 'fix:', 'docs:', 'refactor:', 'chore:', 'test:', 'style:', 'perf:', 'design:']) {
+        assert.match(stderr, new RegExp(prefix.replace(':', ':')), `${prefix} missing from the refusal`);
+      }
+      assert.match(stderr, /rules\/git\.md/);
+      assert.match(stderr, /"wip" is not a prefix/);
+    }
+  });
+
+  it('accepts every prefix the rule lists, with and without a scope', async () => {
+    for (const prefix of ['feat', 'fix', 'docs', 'refactor', 'chore', 'test', 'style', 'perf', 'design']) {
+      assert.equal((await runHook(`${prefix}: make the thing clearer\n`)).status, 0, prefix);
+      assert.equal((await runHook(`${prefix}(map): make the thing clearer\n`)).status, 0, `${prefix}(map)`);
+    }
+  });
+
+  it('refuses a near-miss shape rather than guessing what was meant', async () => {
+    // No space after the colon, a capitalised prefix, and a prefix that is not on
+    // the list. Each one looks conventional and is not.
+    assert.equal((await runHook('feat:no space\n')).status, 1);
+    assert.equal((await runHook('Feat: capitalised\n')).status, 1);
+    assert.equal((await runHook('build: not on the list\n')).status, 1);
+    assert.equal((await runHook('feat(): empty scope\n')).status, 1);
+  });
+
+  it('refuses none of the last 200 real subjects — the gate matches the practice', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const { checkCommitMessage } = await import('../.githooks/commit-msg-language.mjs');
+    const subjects = execFileSync('git', ['log', '--format=%s', '-200'], { encoding: 'utf8' })
+      .split('\n')
+      .filter(Boolean);
+    assert.ok(subjects.length > 100, 'no history read — this test would be idling');
+    const refused = subjects.filter((subject) => !checkCommitMessage(`${subject}\n`).ok);
+    assert.deepEqual(
+      refused,
+      [],
+      `the gate refuses subjects this repository actually writes:\n${refused.join('\n')}`,
+    );
+  });
+
   it('leaves generated subjects alone — merge, revert, fixup', async () => {
     assert.equal((await runHook("Merge branch 'x' into main\n")).status, 0);
     assert.equal((await runHook('Revert "feat: 관문 모션 셋"\n')).status, 0);

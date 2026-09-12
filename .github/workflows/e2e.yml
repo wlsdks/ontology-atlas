@@ -37,7 +37,8 @@ jobs:
     name: E2E impact plan
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # budget: 35s
+    timeout-minutes: 2
     outputs:
       plan: ${{ steps.impact.outputs.plan }}
       playwright: ${{ steps.impact.outputs.playwright }}
@@ -64,6 +65,8 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
+    # budget: 150s (cache-hit p95; the cold path adds the bounded browser
+    # install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
     timeout-minutes: 30
     env:
       ACTIVE: ${{ needs.changes.outputs.static }}
@@ -106,6 +109,8 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
+    # budget: 160s (cache-hit p95; the cold path adds the bounded browser
+    # install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
     timeout-minutes: 30
     env:
       ACTIVE: ${{ needs.changes.outputs.web }}
@@ -148,6 +153,8 @@ jobs:
     needs: changes
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
+    # budget: 600s (cache-hit p95; the cold path adds the bounded browser
+    # install, whose 12-minute worst case ci-bounded-network.contract.test.ts owns)
     timeout-minutes: 30
     strategy:
       fail-fast: false

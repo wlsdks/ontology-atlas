@@ -1,4 +1,4 @@
-import { act, render } from "@testing-library/react";
+import { act, render, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -138,19 +138,26 @@ describe("closing the dock puts the conversation away", () => {
     });
   }
 
+  /**
+   * The exit window has closed when the frame says `put-away` — the same fact the screen
+   * shows. Sleeping 400 ms instead asserted `EXIT_WINDOW_MS` is under 400, which is a
+   * claim about a constant the test does not read and a clock it cannot control.
+   */
+  async function pastTheExitWindow(view: ReturnType<typeof mount>) {
+    await waitFor(() =>
+      expect(
+        view.getByTestId("library-agent-dock-frame").getAttribute("data-dock-state"),
+      ).toBe("put-away"),
+    );
+  }
+
   it("keeps the panel mounted after the exit window has closed", async () => {
     settleFrames();
     const view = mount("narrow");
     await act(async () => {});
     view.close();
-    // Well past `EXIT_WINDOW_MS`, which is when the panel used to be destroyed.
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-    });
+    await pastTheExitWindow(view);
     expect(view.queryByTestId("chat-panel")).not.toBeNull();
-    expect(view.getByTestId("library-agent-dock-frame").getAttribute("data-dock-state")).toBe(
-      "put-away",
-    );
   });
 
   it("puts the shut frame out of reach — hidden is not the same as unreachable", async () => {
@@ -161,9 +168,7 @@ describe("closing the dock puts the conversation away", () => {
     expect(frame.hasAttribute("inert")).toBe(false);
     expect(frame.getAttribute("aria-hidden")).toBeNull();
     view.close();
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-    });
+    await pastTheExitWindow(view);
     expect(frame.hasAttribute("inert")).toBe(true);
     expect(frame.getAttribute("aria-hidden")).toBe("true");
   });
@@ -174,9 +179,7 @@ describe("closing the dock puts the conversation away", () => {
     await act(async () => {});
     const panel = view.getByTestId("chat-panel");
     view.close();
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-    });
+    await pastTheExitWindow(view);
     view.reopen();
     await act(async () => {});
     // The same DOM node, so React never unmounted it — the ACP session behind it is the one

@@ -82,9 +82,7 @@ describe("SearchPalette", () => {
     // rank2 — the exit unmounts only after the opacity/translateY spring has played
     // through (AnimatePresence). The "only the closing properties change and it
     // vanishes instantly" regression is caught here too.
-    await waitForElementToBeRemoved(() => screen.queryByRole("dialog"), {
-      timeout: 2000,
-    });
+    await waitForElementToBeRemoved(() => screen.queryByRole("dialog"));
   });
 
   it("닫히면 트리거로 포커스가 복귀한다", async () => {
@@ -94,9 +92,7 @@ describe("SearchPalette", () => {
     fireEvent.click(trigger);
     fireEvent.keyDown(window, { key: "Escape" });
 
-    await waitForElementToBeRemoved(() => screen.queryByRole("dialog"), {
-      timeout: 2000,
-    });
+    await waitForElementToBeRemoved(() => screen.queryByRole("dialog"));
 
     // AnimatePresence removes the dialog before React finishes every effect
     // cleanup. Under a loaded full-suite worker, the mutation observer can

@@ -140,6 +140,15 @@ describe("findDependencyCycles", () => {
     const result = findDependencyCycles(g, edges);
     const elapsed = performance.now() - t0;
     expect(result.totalCycles).toBeGreaterThanOrEqual(1);
+    /*
+     * The bound is a product budget with headroom, not a stopwatch: this runs while the
+     * insights page is being typed into, so a scan that drifts into tens of milliseconds
+     * is felt. Measured 2026-09-12: **1 ms**, so 50 ms is 50x headroom and the number is
+     * printed rather than trusted — a future reader can re-derive the ratio instead of
+     * guessing whether the bound still means anything (`.claude/rules/testing.md`, "The
+     * timing rule").
+     */
+    console.log(`[perf] findDependencyCycles — 300 nodes, ${edges.length} edges in ${elapsed.toFixed(1)}ms (bound 50ms)`);
     expect(elapsed).toBeLessThan(50);
   });
 });

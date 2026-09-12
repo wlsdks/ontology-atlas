@@ -138,7 +138,11 @@ describe("화면 글자 용어집 계약", () => {
   /** The glossary document must exist so that error message guidance does not become a dead link. */
   it("정본 문서가 실재하고 표를 갖고 있다", () => {
     const glossary = read("docs/GLOSSARY.md");
-    expect(glossary).toContain("the info block at the top of the file");
+    /*
+     * The rows are required below; the wording inside them is not. A literal
+     * `toContain("the info block at the top of the file")` stood here until 2026-09-12
+     * and pinned one human-written cell against `docs/DECISIONS.md` 2026-08-01.
+     */
     for (const { word, glossaryMarker } of BANNED) {
       expect(
         glossary,

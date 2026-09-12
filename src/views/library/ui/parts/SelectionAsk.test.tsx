@@ -104,11 +104,11 @@ describe("select a passage, ask the agent about it", () => {
     fireEvent.change(input, { target: { value: "Is this figure final?" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(onAsk).toHaveBeenCalledWith("budget becomes 221,400 aft", "custom", "Is this figure final?");
-    await waitFor(() => expect(screen.queryByRole("complementary")).toBeNull(), { timeout: 1500 });
+    await waitFor(() => expect(screen.queryByRole("complementary")).toBeNull());
     await selectPassage();
     expect(screen.getByRole("complementary")).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "Escape" });
     // The surface keeps its exit window before it unmounts, so the assertion waits for it.
-    await waitFor(() => expect(screen.queryByRole("complementary")).toBeNull(), { timeout: 1500 });
+    await waitFor(() => expect(screen.queryByRole("complementary")).toBeNull());
   });
 });

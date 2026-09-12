@@ -269,6 +269,15 @@ const RULES = [
       /^src\/views\/ontology-insights\//,
     ],
   },
+  /*
+   * The bridge check compiles the Tauri crate, and `tauri.conf.json` names a sidecar
+   * (`src-tauri/binaries/ontology-atlas-mcp-<triple>`) that `.gitignore` excludes. In a
+   * fresh checkout or worktree `cargo test` therefore dies in the build script with
+   * "resource path ... doesn't exist" — a missing prerequisite wearing the costume of a
+   * defect, and the only place the prerequisite was written down was one line of
+   * `docs/DEVELOPMENT-CHECKS.md`. The script now builds the sidecar itself (2.6 s when
+   * it is already current), so the recommendation runs wherever it is given.
+   */
   {
     command: 'pnpm test:desktop:bridge',
     reason: 'native macOS vault bridge changed',

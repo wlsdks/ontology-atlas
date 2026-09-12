@@ -94,28 +94,88 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
     );
   });
 
-  it("정확성 시험은 바쁜 로컬 훅에서 worker를 나누고 넉넉한 timeout을 쓴다", () => {
-    // Four workers in each correctness lane still starved two ordinary React
-    // state-transition tests past five seconds when eleven lanes ran together
-    // (2026-08-28). Two is the measured local saturation boundary; CI keeps its
-    // normal pool on a quiet runner below.
-    const correctnessLanes = ["unit", "contract"].map((name) =>
-      executable.split("\n").find((line) => new RegExp(`lane ${name} `).test(line)) ?? "",
-    );
+  /**
+   * The 2026-08-28 cap is gone, and this is the assertion that replaces it.
+   *
+   * The hook ran both correctness lanes at `--maxWorkers=2 --testTimeout=30000`
+   * because four workers starved two React tests "past their explicit 5-second
+   * wait". Those explicit waits were hand-raised per-call `waitFor` ceilings, which
+   * `.claude/rules/testing.md` ("The timing rule") now forbids — `vitest.setup.ts`
+   * sets one `asyncUtilTimeout` instead. With the cause removed, the cap was pure
+   * cost: 377.7 s against 124.3 s on the same 759-file suite (measured 2026-09-12).
+   *
+   * So what is pinned now is the opposite: **no lane may buy quiet with the clock.**
+   * A worker cap or a stretched per-test timeout in this hook is the signature of a
+   * test that reads the clock, and the fix belongs in that test.
+   */
+  it("정확성 레인은 시계로 조용함을 사지 않는다 — worker 상한도 늘린 timeout도 없다", () => {
+    const laneLine = (name: string) =>
+      executable.split("\n").find((line) => new RegExp(`lane ${name} `).test(line)) ?? "";
 
-    for (const lane of correctnessLanes) {
-      expect(lane, "unit/contract 레인을 못 찾았다 — 이 시험이 헛돈다").not.toBe("");
-      expect(lane, "병렬 레인이 Vitest worker를 무제한으로 늘려 다른 정확성 시험을 굶긴다").toContain(
-        "--maxWorkers=2",
+    for (const name of ["unit", "contract"]) {
+      const lane = laneLine(name);
+      expect(lane, `${name} 레인을 못 찾았다 — 이 시험이 헛돈다`).not.toBe("");
+      expect(lane, "worker 상한은 시계에 기댄 시험을 가리는 값이다 — 그 시험을 고쳐라").not.toContain(
+        "--maxWorkers",
       );
-      expect(lane, "병렬 부하에서 기본 timeout이 정확성 시험을 오탐한다").toContain(
-        "--testTimeout=30000",
-      );
+      expect(lane, "늘린 per-test timeout 도 같은 가림막이다").not.toContain("--testTimeout");
     }
 
-    // CI stays authoritative and keeps the normal timeout on its quiet runner.
+    // The unit lane is selected by Vitest's module graph from the same three-dot
+    // base the lane filters use. Running all 759 files to judge a leaf change is
+    // what made this hook 367 s for a one-file diff.
+    expect(laneLine("unit"), "unit 레인이 아직 전체 suite 를 돈다").toContain("--changed=");
+    expect(executable, "unit 레인의 기준이 3점 병합 기점이 아니다").toMatch(
+      /merge-base "\$BASE_REF" HEAD/,
+    );
+
+    // CI stays authoritative and keeps its normal pool and timeout on a quiet runner.
     const ci = readFileSync(path.join(ROOT, ".github/workflows/checks.yml"), "utf8");
     expect(ci).not.toContain("--testTimeout");
+    expect(ci).not.toContain("--maxWorkers");
+  });
+
+  /**
+   * The repo-wide ESLint pass is CI's. ESLint is per-file, so 84.9 s of whole-tree
+   * linting to judge one changed file buys nothing a few seconds cannot say. The
+   * configuration is the exception, because it can move every file's verdict.
+   */
+  it("lint 레인은 바뀐 파일만 본다 — 설정이 바뀌면 전체를 본다", () => {
+    expect(executable, "eslint 설정 변경에 전체 lint 가 안 걸린다").toMatch(
+      /touched '\^eslint\\\.config\\\.mjs\$'; then\s*\n\s*lane lint 'pnpm lint'/,
+    );
+    expect(executable, "바뀐 파일만 보는 갈래가 없다").toContain("pnpm exec eslint --max-warnings=0");
+
+    const ci = readFileSync(path.join(ROOT, ".github/workflows/checks.yml"), "utf8");
+    expect(ci, "CI 가 run-ci-lane 을 통해 전사 lint 를 쥐고 있어야 한다").toContain(
+      "node scripts/run-ci-lane.mjs --lane=gates",
+    );
+    expect(
+      readFileSync(path.join(ROOT, "scripts/classify-change.mjs"), "utf8"),
+      "전사 lint 가 CI 의 exhaustive gates 목록에서 사라졌다",
+    ).toContain("'pnpm lint'");
+  });
+
+  /**
+   * A cost nobody prints is a cost that grows. This hook measured **367 s for a
+   * one-file change** on 2026-09-12 and nothing said so, which is how it got there.
+   *
+   * Reported, never enforced: refusing a green push because the machine was busy is
+   * the exact failure `.claude/rules/testing.md` forbids, so the budget line must
+   * not be able to change the push's fate.
+   */
+  it("레인마다 걸린 시간을 찍고 예산과 견준다 — 그러나 예산으로 막지는 않는다", () => {
+    // Anchored: an unanchored /BUDGET_SECONDS=90/ matched `=900` and the probe that
+    // widened the budget tenfold passed (measured 2026-09-12).
+    expect(executable, "예산이 90초가 아니다").toMatch(/^BUDGET_SECONDS=90$/m);
+    expect(executable, "레인별 시간을 재지 않는다").toContain(".secs");
+    expect(executable, "예산과 견주는 줄이 없다").toMatch(/\$total.*-gt.*\$BUDGET_SECONDS/);
+
+    // The budget comparison must not reach an exit. Only the lane verdicts may.
+    const budgetBlock = executable.slice(executable.indexOf("BUDGET_SECONDS"));
+    const budgetCompare = budgetBlock.slice(budgetBlock.indexOf('"$total" -gt'));
+    const guard = budgetCompare.slice(0, budgetCompare.indexOf("\nfi"));
+    expect(guard, "예산 초과가 푸시를 막는다 — 시계를 게이트로 쓴 것이다").not.toMatch(/exit\s+1/);
   });
 
   it("실패한 레인만 출력한다 — 여덟 개가 동시에 떠들면 아무도 안 읽는다", () => {

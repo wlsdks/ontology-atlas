@@ -157,12 +157,83 @@ export function describeLock(lock) {
  * and only `missing` means CI was never fired. Both wait, and the printed line
  * says which it is.
  */
+/**
+ * How much a rollup entry is worth when a name reports more than once.
+ *
+ * 2 — completed with a real verdict. 1 — still running. 0 — `SKIPPED`.
+ */
+function verdictRank(run) {
+  const status = String(run?.status ?? run?.state ?? '').toUpperCase();
+  const conclusion = String(run?.conclusion ?? run?.state ?? '').toUpperCase();
+  if (status !== 'COMPLETED') return 1;
+  return conclusion === 'SKIPPED' ? 0 : 2;
+}
+
+/**
+ * When a rollup entry's check run **started**, which is what orders two runs.
+ *
+ * `startedAt` and not `completedAt`: a superseded run is cancelled *after* the run
+ * that superseded it began, so its completion is the later timestamp, and ordering by
+ * it puts the corpse in front. Starting time also survives the placeholder GitHub
+ * writes as the completion of anything still in flight
+ * (`0001-01-01T00:00:00Z`) — `completedAt` is the fallback only for an entry that
+ * reports no start, where that placeholder reads as the oldest thing there is, which
+ * is the right answer for something that has not finished.
+ */
+function runStamp(run) {
+  for (const field of [run?.startedAt, run?.completedAt]) {
+    if (!field) continue;
+    const ms = Date.parse(field);
+    if (Number.isFinite(ms)) return ms;
+  }
+  return 0;
+}
+
 export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
+  /*
+   * ⚠️ **One name, several entries** (measured 2026-09-12, PR #1578).
+   *
+   * The draft design means every context reports **twice**: once as `SKIPPED`
+   * while the pull request was a draft, and once for real after `gh pr ready`.
+   * Both stay in the rollup. A plain `byName.set` keeps whichever the API
+   * happened to list last, and for `Unit · Contract` that was the `SKIPPED`
+   * one — so a context that had genuinely **FAILED** read as "never ran",
+   * which this function treats as `waiting`. The landing then held the lock
+   * for 45 minutes, polling, while the answer had been on the screen the
+   * whole time and no other pull request could land.
+   *
+   * So a duplicate is resolved rather than overwritten: a real verdict beats
+   * `SKIPPED`, a running job beats `SKIPPED`, and between two real verdicts
+   * the later one wins, which is what a re-run means.
+   */
   const byName = new Map();
   for (const run of rollup) {
     const name = run?.name ?? run?.context;
     if (!name) continue;
-    byName.set(name, run);
+    const held = byName.get(name);
+    if (!held) {
+      byName.set(name, run);
+      continue;
+    }
+    /*
+     * **The newest run wins, and only then does the verdict matter.**
+     *
+     * Measured 2026-09-12 on this very pull request, twice, in opposite directions.
+     *
+     * Ranking by verdict first fixed the draft twin and then broke the case after
+     * it: the merge push's run set was cancelled 13 s later by the toggle's set
+     * (`concurrency: cancel-in-progress`), and a completed `CANCELLED` outranked the
+     * live `IN_PROGRESS` — `MCP` cancelled at 14:34:27 against `MCP` running from
+     * 14:34:55. The landing then aborted on its **own** superseded run.
+     *
+     * A cancelled verdict is decisive only when nothing newer exists for this head.
+     * Recency settles that in one comparison, and it still settles the draft twin,
+     * whose `SKIPPED` is always older than the real run. The verdict rank remains as
+     * the tie-break for entries that report no usable timestamp at all.
+     */
+    const newer = runStamp(run) - runStamp(held);
+    const better = newer > 0 || (newer === 0 && verdictRank(run) > verdictRank(held));
+    if (better) byName.set(name, run);
   }
   const pending = [];
   const failed = [];
@@ -174,8 +245,8 @@ export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
       missing.push(context);
       continue;
     }
-    const status = run.status ?? run.state ?? '';
-    const conclusion = run.conclusion ?? run.state ?? '';
+    const status = String(run.status ?? run.state ?? '').toUpperCase();
+    const conclusion = String(run.conclusion ?? run.state ?? '').toUpperCase();
     if (status !== 'COMPLETED') {
       pending.push(context);
       continue;
@@ -190,6 +261,20 @@ export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
   const unrun = [...missing, ...skipped];
   const state = failed.length > 0 ? 'failed' : pending.length + unrun.length > 0 ? 'waiting' : 'green';
   return { state, pending, failed, missing, skipped, unrun, neverRan: pending.length === 0 && unrun.length === requiredContexts.length };
+}
+
+/**
+ * Is any check run for this head still queued or running?
+ *
+ * `neverRan` asks "did the eight required contexts report", which is `true` in the
+ * seconds between a push and its run set appearing. This asks the different
+ * question that decides whether to ask GitHub for a run at all: is one coming.
+ */
+export function runInFlight(pr) {
+  return (pr?.statusCheckRollup ?? []).some((run) => {
+    const status = String(run?.status ?? run?.state ?? '').toUpperCase();
+    return status === 'QUEUED' || status === 'IN_PROGRESS' || status === 'WAITING' || status === 'PENDING';
+  });
 }
 
 /**
@@ -255,6 +340,7 @@ export function decideNext({
   selfLock = null,
   ciRequested = false,
   localChecksPassed = false,
+  emptyRollupObservations = 0,
 }) {
   if (pr?.state === 'MERGED') return { action: 'done' };
   const refusal = refuseLanding(pr);
@@ -284,7 +370,25 @@ export function decideNext({
   // by hand before this repository's draft rule, or its run was cancelled) has
   // no event left to fire. Toggling draft and back is the only way to ask
   // GitHub for that one run.
-  if (!ciRequested && checks.neverRan) return { action: 'refire-ci', checks };
+  /*
+   * ⚠️ **"Nothing ran" has to be observed twice** (measured 2026-09-12).
+   *
+   * Pushing to a **ready** pull request fires `synchronize`, and GitHub registers
+   * that run set a little after the push returns. This machine read the rollup in
+   * that gap, saw an empty one, called it `neverRan`, and toggled draft — firing a
+   * second set whose `cancel-in-progress` killed the first. One wasted run set, and
+   * then an abort on the corpse.
+   *
+   * `runInFlight` is not the guard: a queued entry already makes `pending` non-empty,
+   * so `neverRan` is false and this branch is never reached. The empty rollup is the
+   * whole problem, and the only thing that distinguishes "no run is coming" from "the
+   * run has not appeared yet" is having looked again. So an empty rollup waits once,
+   * and only a second empty reading asks GitHub for the run.
+   */
+  if (!ciRequested && checks.neverRan) {
+    if (runInFlight(pr) || emptyRollupObservations < 2) return { action: 'wait-checks', checks };
+    return { action: 'refire-ci', checks };
+  }
   if (checks.state === 'waiting') return { action: 'wait-checks', checks };
   return { action: 'merge' };
 }
@@ -704,11 +808,18 @@ export function runPrLand(argv, io = console) {
   const deadline = Date.now() + args.timeoutMinutes * 60_000;
   let ciRequested = false;
   let localChecksPassed = false;
+  let emptyRollupObservations = 0;
 
   while (Date.now() < deadline) {
     const { payload } = readLockPayload(slug);
     const lock = classifyLock({ payload, nowMs: Date.now() });
     const behindBy = held ? readBehindBy(slug, pr.headRefOid) : 0;
+    // Consecutive readings that found no run at all for this head. One of those is
+    // the gap between a push and its run set appearing; two is a pull request with no
+    // event left to fire.
+    if ((pr.statusCheckRollup ?? []).length === 0) emptyRollupObservations += 1;
+    else emptyRollupObservations = 0;
+
     const step = decideNext({
       pr,
       lock,
@@ -717,6 +828,7 @@ export function runPrLand(argv, io = console) {
       selfLock: held ? token : null,
       ciRequested,
       localChecksPassed,
+      emptyRollupObservations,
     });
 
     if (step.action === 'refuse') {

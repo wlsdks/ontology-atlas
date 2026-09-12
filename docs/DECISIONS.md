@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — A gate may check the product, never the clock
+
+**Why**: pre-push took 367 s for a one-file change and printed no timing; `Unit · Contract` averaged 437 s and peaked at 705 s inside a 20-minute timeout; three jobs had no timeout at all. The cause sat in the hook: `--maxWorkers=2` on both correctness lanes, bought on 2026-08-28 because four workers starved two React tests past "their explicit 5-second wait" — hand-raised `waitFor` ceilings, tests asserting how fast the machine is.
+**Prior**: keeps (94), (95), (96); the parallel, path-scoped, three-dot, no-e2e shape is unchanged and only (96)'s worker cap and per-test timeout are superseded. Applies 2026-08-01 "check only what a machine can produce" by deleting eight prose pins, while `source-inventory-bound`'s file count stays as one early warning: crossing it flips the MCP handoff receipt to `review_required`.
+**Decision**: no test asserts a wall-clock number it did not measure and none waits by sleeping. Condition waits are the default under one ceiling in `vitest.setup.ts`; ratios are measured in one run; a product budget prints its measurement and keeps >= 5x headroom. Pre-push drops the cap, selects the unit lane by module graph from the merge base, lints changed files while CI keeps the repo-wide pass, keeps `tests/contract` unconditional, and prints each lane's seconds against a 90 s budget that is reported, never enforced. CI shards `Unit · Contract` three ways and every job declares its measured p95 beside a `timeout-minutes` between that budget and 1.5x it.
+**Dissent**: the cap bought something real — a saturated machine cannot be trusted, and a module-graph selection can miss a test no import reaches. Narrowed, not kept: CI runs the same selection and the full contract sweep on every pull request.
+**Falsifier**: a test failing only under load; a `{ timeout: n }` back at a call site; a fixed sleep gating an assertion; a lane regaining `--maxWorkers`; a job with no declared budget; the budget line changing a push's fate.
+**Owner**: jinan
+
 ## 2026-09-12 — A press on a Library mark opens a card beside it, and citations flow toward the page
 
 **Why**: the owner: *"a press should raise a popup and show me something … the flow of information should be visible"*. A press left the picture, so *what is this made of, can I believe it* cost a navigation.

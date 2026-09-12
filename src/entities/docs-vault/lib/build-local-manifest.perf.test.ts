@@ -83,12 +83,12 @@ describe('large vault perf', () => {
     expect(fingerprintMs).toBeLessThan(buildMs * 0.85);
   });
 
-  it('build 자체는 5 초 안에 끝나야 한다 (regression sanity)', async () => {
-    const root = makeLargeRoot(FILE_COUNT);
-    const t0 = ms();
-    const built = await buildLocalManifest(root);
-    const elapsed = ms() - t0;
-    expect(built.manifest.docs.length).toBe(FILE_COUNT);
-    expect(elapsed).toBeLessThan(5_000);
-  });
+  /*
+   * Deleted 2026-09-12: a second test built the same 200-file root and asserted
+   * `elapsed < 5_000`. Measured build cost is **17.7 ms**, so the bound could only fire
+   * on a hang — which Vitest's own test timeout already reports, with a better message.
+   * Its `docs.length` assertion repeated the test above verbatim. The falsifier that
+   * matters (fingerprinting must stay cheaper than building) lives in the ratio gate
+   * above and is measured in the same run.
+   */
 });

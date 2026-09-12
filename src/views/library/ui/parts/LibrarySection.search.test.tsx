@@ -270,12 +270,9 @@ describe("the index search reads the sources", () => {
     renderWith({ handles, sources: many as unknown as typeof SOURCES });
 
     fireEvent.change(screen.getByTestId("library-search"), { target: { value: "T+2" } });
-    await waitFor(
-      () => {
-        expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
-      },
-      { timeout: 5000 },
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
+    });
     /* Its own line, so it cannot wrap the counting line on one folder and not the next. */
     expect(screen.getByTestId("library-search-capped")).toHaveTextContent("read the first 200 only");
     expect(screen.getByTestId("library-search-matches")).not.toHaveTextContent("read the first 200 only");

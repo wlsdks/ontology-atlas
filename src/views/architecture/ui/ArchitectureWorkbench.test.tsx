@@ -600,9 +600,8 @@ describe('ArchitectureWorkbench', () => {
       ).toBeInTheDocument(),
     );
     /* The confirmation leaves, and the chosen task stays on the button. */
-    await waitFor(
-      () => expect(screen.getByRole('button', { name: 'Copy the “Find improvements” task' })).toBeInTheDocument(),
-      { timeout: 2000 },
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Copy the “Find improvements” task' })).toBeInTheDocument(),
     );
     /* Activating an item returns focus to the trigger, never to body. */
     expect(screen.getByRole('button', { name: 'Choose another agent task' })).toHaveFocus();

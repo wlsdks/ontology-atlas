@@ -921,7 +921,15 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
         phase: 'committing',
       }),
     );
-    await new Promise((resolve) => window.setTimeout(resolve, 80));
+    /*
+     * The claim is an **order**, not a duration: the answer must not be sent until the
+     * commit motion has been entered. Observing `committing` above is the moment the
+     * motion started, so an answer that is still absent *here* proves the guard held.
+     * Without the guard the answer leaves in the click's own tick and would already be
+     * defined at this line. An 80 ms sleep used to stand in for this, which asserted
+     * "the guard is still closed after 80 ms" — a claim about the machine's clock that a
+     * loaded runner can break while the product is perfectly correct.
+     */
     expect(
       answerFor(89),
       '확정 모션이 끝나기 전에 ACP 도구를 진행하면 빠른 쓰기에서 실선이 보이지 않는다',
@@ -1324,9 +1332,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     if (card) {
       expect(card.closest('[inert]'), '퇴장 중인 카드가 여전히 눌린다').not.toBeNull();
     }
-    await waitFor(() => expect(screen.queryByTestId('acp-permission-card')).toBeNull(), {
-      timeout: 2000,
-    });
+    await waitFor(() => expect(screen.queryByTestId('acp-permission-card')).toBeNull());
   });
 
   it('「이번만 허용」을 누르면 그 한 번만 허용된다', async () => {

@@ -34,7 +34,10 @@ env:
 
 jobs:
   build:
+    name: Build the static export
     runs-on: ubuntu-latest
+    # budget: 120s
+    timeout-minutes: 3
     steps:
       # fetch-depth: 0 is required — `pnpm build` regenerates the document
       # manifest via `docs-vault:build` and reads the "last changed date" per document
@@ -78,8 +81,11 @@ jobs:
           retention-days: 1
 
   deploy:
+    name: Deploy to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
+    # budget: 30s
+    timeout-minutes: 2
     permissions:
       pages: write
       id-token: write
@@ -94,7 +100,8 @@ jobs:
     name: Verify hosted download surface
     needs: deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # budget: 40s
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6

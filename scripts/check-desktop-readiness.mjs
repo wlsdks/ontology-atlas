@@ -457,13 +457,25 @@ if (
   );
 }
 
+/*
+ * The sidecar build is part of this script, not a prerequisite someone must remember.
+ * `tauri.conf.json` names `src-tauri/binaries/ontology-atlas-mcp-<triple>`, which
+ * `.gitignore` excludes, so in a fresh checkout or worktree `cargo test` dies in the
+ * build script with "resource path ... doesn't exist" — a missing prerequisite wearing
+ * a defect's costume, and it cost a measured debug cycle on 2026-09-12. Building it
+ * first takes 2.6 s when it is already current.
+ */
 if (
   pkg.scripts?.["test:desktop:bridge"] ===
-  "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/agent-config-status.test.ts && cargo test --manifest-path src-tauri/Cargo.toml"
+  "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml"
 ) {
-  pass("desktop native vault bridge tests cover WebView handle shim, agent config validation, and Rust path guard");
+  pass(
+    "desktop native vault bridge tests build the sidecar, then cover WebView handle shim, agent config validation, and Rust path guard",
+  );
 } else {
-  fail("package.json must expose test:desktop:bridge for the Tauri vault bridge contract");
+  fail(
+    "package.json must expose test:desktop:bridge for the Tauri vault bridge contract, building the MCP sidecar before cargo test so a fresh worktree does not fail on the missing resource",
+  );
 }
 
 if (

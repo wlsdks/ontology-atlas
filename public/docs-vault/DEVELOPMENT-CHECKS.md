@@ -19,6 +19,49 @@ Do not hand-pick from its list. Escalate to `pnpm test:run`, `pnpm lint`,
 contract, routing, configuration, release surface, or user workflow requires
 it; the entries below name that condition per area.
 
+## Lane budgets
+
+Every lane costs someone's afternoon, so every lane says what it costs. Measured
+2026-09-12 — locally on a 12-core Apple-silicon machine, in CI over the last 20
+runs.
+
+| Lane | Budget | Measured | What it guards |
+|---|---|---|---|
+| **pre-push, whole hook** | 90 s | **80 s** (was 367 s) | the common failure, found before CI |
+| pre-push `contract` | — | 80 s | repo-wide ratchets no path filter can see |
+| pre-push `dead_code` | — | 33 s | an unreferenced export or dependency |
+| pre-push `unit` | — | 6-19 s | the tests that import the change |
+| pre-push `source_language` | — | 7 s | Korean in source comments |
+| pre-push `lint` | — | 1-3 s | ESLint on the changed files |
+| pre-push `typecheck` · `comment_refs` · `decisions` | — | ~1 s each | types, code-comment citations, a route with no record |
+| **PR CI, wall clock** | 8 min | plan 25 s, then the slowest job | — |
+| Checks · Check impact plan | 25 s | 21 s avg | a missing plan is RED |
+| Checks · Types · Lint · Docs | 240 s | 150 s avg / 238 s max | type, lint and documentation gates |
+| Checks · Unit · Contract (x3) | 180 s | was 437 s avg / 705 s max unsharded | unit regressions and the full contract sweep |
+| Checks · MCP | 390 s | 146 s avg / 382 s max | the MCP and CLI boundary |
+| E2E · Playwright static / web | 150 s · 160 s | 73 s · 125 s avg | static-export-only behaviour, the unattended gateway |
+| E2E · Playwright chromium (x3) | 600 s | 392-421 s avg | rendered journeys |
+| Vault freshness | 30 s | 24 s avg | frontmatter integrity and node drift (FYI, never fails the PR) |
+| Windows beta · verify | 700 s | 582 s avg | Windows-only bundle facts |
+| Pages · build · deploy · verify | 120 s · 30 s · 40 s | 97 s · 9 s · 18 s | the static export builds and the hosted surface answers |
+
+The budget is declared in the workflow as `# budget: <n>s` beside the job's
+`timeout-minutes`, which must sit between the budget and 1.5x it;
+`tests/contract/workflow-budgets.contract.test.ts` refuses a job without both.
+Playwright jobs are exempt from the ceiling half, because
+`ci-bounded-network.contract.test.ts` already requires them to leave half the
+job for tests after a bounded 12-minute browser install.
+
+Two things the numbers are not. The pre-push budget is **printed, not
+enforced** — a gate that refused a green push because the machine was busy is
+the defect `.claude/rules/testing.md` ("The timing rule") exists to stop. And a
+lane's measured time is not a pass condition anywhere: only a job's own
+`timeout-minutes` can fail on the clock, which is the mechanism these budgets
+bound.
+
+To re-measure a CI job: `gh run list --limit 20` then
+`gh run view <id> --json jobs`.
+
 ## How to read an entry
 
 Every entry under `## Checks` is the template below, and

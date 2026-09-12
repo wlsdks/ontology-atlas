@@ -112,7 +112,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop native vault bridge tests cover WebView handle shim, agent config validation, and Rust path guard/,
+    /✓ desktop native vault bridge tests build the sidecar, then cover WebView handle shim, agent config validation, and Rust path guard/,
   );
   assert.match(
     result.stdout,

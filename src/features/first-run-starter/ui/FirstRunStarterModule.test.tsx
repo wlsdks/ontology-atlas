@@ -694,29 +694,18 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     expect(screen.getByTestId('index-body'), '렌즈를 껐다고 트리가 사라졌다').toBeInTheDocument();
   });
 
-/**
-   * **A wait budget must be smaller than the test budget.**
+/*
+   * These two cases wait for the dialog to **close** — a condition, not a duration.
    *
-   * These two cases are the only ones in this file that wait 5,000 ms for the dialog to close —
-   * and `vitest.config.ts` sets no `testTimeout`, so the whole test also gets 5,000 ms. The two
-   * numbers being equal means the `waitFor` can **never** report: the test dies first, and what
-   * CI prints is a bare "Test timed out in 5000ms" pointing at the `it(...)` line rather than the
-   * assertion that was actually waiting.
-   *
-   * That is what happened on 2026-09-12 (run 34693905255): 1,025 of 1,026 files green, these two
-   * timed out at 5007 and 5002 ms, and the run's own figures show why — environment 590 s against
-   * 421 s of wall clock, i.e. an oversubscribed two-core runner. Run alone the same two cases take
-   * **152 ms and 15 ms**, so nothing here is slow; they were simply the only cases with no
-   * headroom, and a starved test with zero headroom is the first to tip over. The comment inside
-   * the first one already records this pair failing "under suite load" once before.
-   *
-   * So the product-meaningful bound stays at 5,000 ms — "the dialog closes within five seconds" —
-   * and the test is given room to say so. Raising only the test budget changes no assertion: a
-   * genuine regression now fails as the `waitFor` it is, with the queried element named.
+   * They carried `timeout: CLOSES_WITHIN_MS` (5,000 ms) as a "product-meaningful bound",
+   * with the case budget raised to 20 s so the wait could report. The wait was still the
+   * thing that tripped: it failed again in a 411 s pre-push `unit` lane on a branch that
+   * does not touch this file, having cost 152 ms and 15 ms run alone. A 5-second wall
+   * clock in a jsdom unit test is not a product bound, it is a bet on the machine —
+   * `.claude/rules/testing.md` ("The timing rule") forbids it, and one global ceiling in
+   * `vitest.setup.ts` replaces it. The product claim that survives is the one being
+   * waited for: the dialog closes.
    */
-  const CLOSES_WITHIN_MS = 5_000;
-  /** Room for the wait above to report before the case is cut off. Not a product value. */
-  const CASE_TIMEOUT_MS = 20_000;
   /*
    * ⚠️ The door for someone who already has code (decision, 2026-08-24). Measured on the shipped
    * card: of its four actions none makes an ontology from a repository that already exists.
@@ -752,25 +741,38 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     // Finish the async open-and-handoff path before cleanup. Leaving the old
     // undefined `openRecent` mock to reject after the assertion leaked a pending
     // state update into the following cancellation test under suite load.
-    await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull(), {
-      timeout: CLOSES_WITHIN_MS,
-    });
+    await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull());
     expect(mocks.vault.openRecent).toHaveBeenCalledTimes(1);
     expect(mocks.requestAgentChat).toHaveBeenCalledTimes(1);
-  }, CASE_TIMEOUT_MS);
+  });
 
   it('취소하면 만들지 않고 경로도 치운다', async () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
     await act(async () => {
       fireEvent.click(screen.getByTestId('first-run-build-from-code'));
     });
+    /*
+     * Wait for the dialog to be **open** before cancelling it.
+     *
+     * ⚠️ The click above starts an async project pick, and `act` flushing does not
+     * guarantee that pick has resolved — on a loaded machine it resolves *after* the
+     * cancel below, so the path appears once more and nothing clears it again. The
+     * failure then looks like "cancel does not close the dialog" and no amount of
+     * waiting fixes it, because the element genuinely is there: measured in a 760-file
+     * pre-push lane, where it persisted past a 15-second ceiling having cost 15 ms run
+     * alone.
+     *
+     * This is the ordinary shape of the defect the timing rule names: the test assumed
+     * the machine had reached a state instead of waiting for it
+     * (`.claude/rules/testing.md`, "The timing rule"). Waiting costs nothing when the
+     * pick has already landed.
+     */
+    await screen.findByTestId('build-from-code-path');
     fireEvent.click(screen.getByTestId('build-from-code-cancel'));
     // The dialog closes, so the path it was showing is gone from the document.
-    await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull(), {
-      timeout: CLOSES_WITHIN_MS,
-    });
+    await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull());
     expect(mocks.ensureChildDir).not.toHaveBeenCalled();
-  }, CASE_TIMEOUT_MS);
+  });
 
   /*
    * ⚠️ **The correction this door needed** (owner, 2026-08-24): *"shouldn't it be person B who has

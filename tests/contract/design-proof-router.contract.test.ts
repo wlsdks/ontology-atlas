@@ -159,42 +159,34 @@ describe('Atlas design proof routing', () => {
     });
   });
 
-  it('keeps the active policy mirrored and reachable from the agent router', () => {
+  /*
+   * Mirror byte-identity is `pnpm agents:check`'s job, and it does every pair in the
+   * tree generically (`cli/src/commands/agent-files.mjs`: ".claude/skills ↔
+   * .agents/skills byte diff", same for agents). Re-asserting three named pairs here
+   * added no falsifier and made a new seat look guarded when it was not (removed
+   * 2026-09-12).
+   */
+  it('keeps the active policy reachable from the agent router', () => {
     const agents = read('AGENTS.md');
     expect(agents).toContain('pnpm design:route');
     expect(JSON.parse(read('package.json')).scripts['design:route']).toBe(
       'node scripts/design-proof-router.mjs',
     );
-    for (const skill of ['design-directions', 'design-build', 'design-audit', 'design-council']) {
-      expect(read(`.agents/skills/${skill}/SKILL.md`)).toBe(read(`.claude/skills/${skill}/SKILL.md`));
-    }
   });
 
-  it('makes iterative observation, not end-only imagination, the build contract', () => {
-    const build = read('.agents/skills/design-build/SKILL.md');
-    for (const marker of [
-      'computer-use-loop',
-      'Capture the exact baseline state',
-      'one coherent visual slice',
-      'fresh Computer Use accessibility tree and screenshot',
-      'Fix the observed defect before starting the next slice',
-    ]) {
-      expect(build).toContain(marker);
-    }
-    expect(read('docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md')).toContain(
-      'Do not build a whole UI from imagination',
-    );
-  });
-
-  it('removes the retired universal ceremony triggers', () => {
-    expect(read('.agents/skills/design-directions/SKILL.md')).not.toMatch(
-      /before any non-trivial visual/i,
-    );
-    expect(read('.agents/skills/design-audit/SKILL.md')).not.toMatch(
-      /after every frontend implementation/i,
-    );
-    expect(read('.agents/skills/design-council/SKILL.md')).not.toMatch(
-      /hierarchy and system always attend/i,
-    );
+  /*
+   * Only the routed token, not the sentences around it.
+   *
+   * This test used to also require five exact sentences out of `design-build/SKILL.md`
+   * and one out of the operating system document, and to forbid three exact retired
+   * phrasings. `docs/DECISIONS.md` 2026-08-01 settled that class of check: "check only
+   * what a machine can produce; do not check sentences a human judged and wrote." Those
+   * eight pins failed on a faithful rewrite and passed on the retired *behaviour*
+   * returning under new words — wrong in both directions. What a machine can produce is
+   * the routing token the router actually emits, so that is what stays (removed
+   * 2026-09-12).
+   */
+  it('makes the routed loop reachable from the skill the router names', () => {
+    expect(read('.agents/skills/design-build/SKILL.md')).toContain('computer-use-loop');
   });
 });

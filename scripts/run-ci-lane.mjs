@@ -30,6 +30,16 @@ function planFromEnvironment(env = process.env) {
  */
 export const MACOS_ONLY_GATE_COMMANDS = Object.freeze(['pnpm test:desktop:bridge']);
 
+/** `"2/3"` -> `[2, 3]`, refusing anything that is not a shard. */
+export function shardParts(shard) {
+  if (!/^[1-9]\d*\/[1-9]\d*$/.test(String(shard))) {
+    throw new Error(`invalid shard: ${shard}`);
+  }
+  const [index, total] = String(shard).split('/').map(Number);
+  if (index > total) throw new Error(`shard ${shard} is out of range`);
+  return [index, total];
+}
+
 export function commandsForLane({
   lane,
   plan,
@@ -56,22 +66,48 @@ export function commandsForLane({
     );
   }
 
+  /**
+   * The slowest job in PR CI, and the only one that was unsharded.
+   *
+   * Measured over the last 20 runs (2026-09-12): **437 s average, 705 s at the
+   * tail**, against an 8-minute budget for the whole PR. Nothing in it was wasted
+   * work — the impact plan already selects it — it was simply one runner doing all
+   * of it. Both Vitest invocations take `--shard`, so three runners split the files
+   * and the job's wall clock falls to roughly a third.
+   *
+   * What must **not** be sharded is everything that is not a Vitest file sweep:
+   * `pnpm knip` walks the whole dependency graph and a third of the files would
+   * report two thirds of the exports as unused. Those commands run on shard 1 and
+   * the other shards say so in their log, the same way an inactive lane does.
+   */
   if (lane === 'unit') {
     const unit = plan.lanes.unit;
-    if (unit.mode === 'full') return [...FULL_LANE_COMMANDS.unit];
+    const [index, total] = shardParts(shard);
+    const sharded = (command) => (total > 1 ? `${command} --shard=${index}/${total}` : command);
+    const wholeGraphOnly = index === 1;
+    if (unit.mode === 'full') {
+      return FULL_LANE_COMMANDS.unit.flatMap((command) => {
+        if (command === 'pnpm test:run') return [sharded('pnpm exec vitest run')];
+        return wholeGraphOnly ? [command] : [];
+      });
+    }
     const commands = [];
-    if (unit.knip) commands.push('pnpm knip');
+    if (unit.knip && wholeGraphOnly) commands.push('pnpm knip');
     if (unit.affected) {
       if (!base) throw new Error('affected Vitest lane requires a comparison base');
       commands.push(
-        `pnpm exec vitest run --changed=${shellArgument(base)} --exclude='tests/contract/**' --passWithNoTests`,
+        sharded(
+          `pnpm exec vitest run --changed=${shellArgument(base)} --exclude='tests/contract/**' --passWithNoTests`,
+        ),
       );
     }
-    if (unit.contract === 'full') commands.push('pnpm exec vitest run tests/contract');
+    if (unit.contract === 'full') commands.push(sharded('pnpm exec vitest run tests/contract'));
     if (unit.contract === 'focused') {
-      commands.push(`pnpm exec vitest run ${unit.contractFiles.join(' ')}`);
+      // A focused list is already small; splitting it three ways pays three startups
+      // to run a handful of files and two shards would have nothing to do.
+      if (wholeGraphOnly) commands.push(`pnpm exec vitest run ${unit.contractFiles.join(' ')}`);
     }
-    commands.push(...unit.extraCommands);
+    if (wholeGraphOnly) commands.push(...unit.extraCommands);
     return unique(commands);
   }
 
@@ -93,9 +129,7 @@ export function commandsForLane({
         `pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test ${e2e.specs.join(' ')}`,
       ];
     }
-    if (!/^[1-9]\d*\/[1-9]\d*$/.test(shard)) {
-      throw new Error(`invalid Playwright shard: ${shard}`);
-    }
+    shardParts(shard);
     if (e2e.mode === 'smoke') {
       return [
         `pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test --project=smoke --shard=${shard}`,

@@ -83,7 +83,15 @@ describe('local-fs-handle store', () => {
       lastAccessedAt: 100,
     });
     const before = (await getLocalFsHandle())!;
-    await new Promise((r) => setTimeout(r, 2));
+    /*
+     * `touch` writes `Date.now()`, so the assertion below needs the clock to have moved.
+     * A 2 ms sleep assumed it would; a coarse clock can tie and the test then fails on
+     * the timer, not on the store. Waiting for the condition itself — a different
+     * millisecond — is instant on a fast clock and correct on a slow one.
+     */
+    await vi.waitFor(() => {
+      if (Date.now() === before.lastAccessedAt) throw new Error('clock has not advanced yet');
+    });
     await touchLocalFsHandle();
     const after = (await getLocalFsHandle())!;
     expect(after.createdAt).toBe(before.createdAt);
