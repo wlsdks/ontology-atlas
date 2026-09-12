@@ -8,6 +8,7 @@ import {
   edgeControlPoint,
   hitTestLibraryGraph,
   NODE_RADIUS,
+  STALE_DOT_STANDING_MAX,
 } from "./draw-library-graph";
 import type { LibraryGraphInk } from "./library-graph-ink";
 
@@ -594,6 +595,71 @@ describe("what moves while a card is open", () => {
     const clean = recorder();
     drawLibraryGraph(clean.ctx, frame({ flow: null }));
     expect(clean.fills.filter((fill) => fill === "stale-ink")).toHaveLength(0);
+  });
+
+  it("stops repeating the amber once the folder has more stale citations than the cap", () => {
+    /*
+     * Re-inspection 122 R2: 480 standing dots on the three-hundred-source folder measured
+     * 5,227 pixels of strict amber against 33,417 of ink — 15.6% of the picture — and the
+     * reviewer read it as a warning field rather than a folder. `STALE_DOT_STANDING_MAX`
+     * is the boundary; this case stands on both sides of it and on the way back.
+     *
+     * Built here rather than reusing `frame()` because the cap is a count, so the only
+     * fixture that can measure it is one with enough citations to cross it.
+     */
+    const many = (count: number, attend: string[] = []) => {
+      const marks: LibraryGraphNode[] = [
+        { id: "page:wiki/hub", kind: "page", label: "Hub", ref: "wiki/hub", href: null },
+      ];
+      const lines: LibraryGraphEdge[] = [];
+      const places = new Map<string, { x: number; y: number }>([["page:wiki/hub", { x: 300, y: 160 }]]);
+      for (let index = 0; index < count; index += 1) {
+        const id = `source:sources/f${index}.csv`;
+        marks.push({ id, kind: "source", label: `f${index}.csv`, ref: `sources/f${index}.csv`, href: null });
+        places.set(id, { x: 20 + (index % 20) * 28, y: 20 + Math.floor(index / 20) * 60 });
+        lines.push({ id: `c${index}`, source: "page:wiki/hub", target: id, relation: "cites", certainty: "unverified" });
+      }
+      return frame({
+        nodes: marks,
+        edges: lines,
+        positions: places,
+        flow: null,
+        focus: attend.length > 0 ? new Set(attend) : null,
+        dim: attend.length > 0 ? 1 : 0,
+      });
+    };
+    const dots = (rec: ReturnType<typeof recorder>) => rec.arcs.filter((arc) => arc.style === "stale-ink").length;
+
+    // At the cap the picture is unchanged: one dot per unverified citation, standing.
+    const atCap = recorder();
+    drawLibraryGraph(atCap.ctx, many(STALE_DOT_STANDING_MAX));
+    expect(dots(atCap)).toBe(STALE_DOT_STANDING_MAX);
+
+    // One citation past it, nothing stands — all or nothing, never a sample, so an
+    // undotted stale citation can never be read as a fresh one.
+    const overCap = recorder();
+    drawLibraryGraph(overCap.ctx, many(STALE_DOT_STANDING_MAX + 1));
+    expect(dots(overCap)).toBe(0);
+
+    // And the mark is still reachable: the reader's own neighbourhood keeps its dots.
+    const attended = recorder();
+    drawLibraryGraph(
+      attended.ctx,
+      many(STALE_DOT_STANDING_MAX + 1, ["page:wiki/hub", "source:sources/f3.csv"]),
+    );
+    expect(dots(attended)).toBe(STALE_DOT_STANDING_MAX + 1);
+
+    // A single stale citation on a four-hundred-mark folder keeps its dot: the cap counts
+    // the dots, never the marks.
+    const oneStale = many(STALE_DOT_STANDING_MAX + 1);
+    const sparse = recorder();
+    drawLibraryGraph(sparse.ctx, {
+      ...oneStale,
+      edges: oneStale.edges.map((edge, index) =>
+        index === 7 ? edge : { ...edge, certainty: "current" as const },
+      ),
+    });
+    expect(dots(sparse)).toBe(1);
   });
 
   it("breathes an amber dot in the gap a broken citation already leaves", () => {
