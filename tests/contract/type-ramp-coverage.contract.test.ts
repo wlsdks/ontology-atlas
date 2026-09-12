@@ -179,6 +179,9 @@ describe("램프 lint 커버리지 — 새 표면이 첫날부터 덮이는가",
     // If the selector array is empty, every universal assertion below goes green for free.
     expect(rampSelectors.length).toBeGreaterThanOrEqual(20);
     expect(rampSelectors.some((selector) => selector.includes("text-\\[[0-9.]+px"))).toBe(true);
+    // Both spellings, since the ramp itself is `rem` (2026-09-12): a selector set that knows
+    // only `px` leaves `text-[0.8125rem]` outside every rule.
+    expect(rampSelectors.some((selector) => selector.includes("text-\\[[0-9.]+rem"))).toBe(true);
   });
 
   it("아직 없는 경로도 램프 셀렉터를 전부 받는다", async () => {

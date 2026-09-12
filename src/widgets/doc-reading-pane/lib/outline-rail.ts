@@ -137,10 +137,22 @@ export const OUTLINE_RAIL_LEFT_CLASS = {
   wide: "left-[calc(50%_+_var(--measure-doc-column)_/_2_-_84px)]",
 } as const;
 
-/** The pane width at which a rail of `railWidth` first fits one gap past the column. */
-export function outlineRailPaneFloor(railWidth: number): number {
+/**
+ * The pane width at which a rail of `railWidth` first fits one gap past the column.
+ *
+ * ⚠️ **`columnPx` is an argument because the column is no longer one number** (2026-09-12).
+ * `--measure-doc-column` is derived from `--text-reading`, and the type ramp is written in
+ * `rem`, so a browser's text-only zoom moves the rendered column: 709.1px at the 16px root,
+ * 1338.1px at a 32px one (both measured). The rail's *position* was already expressed against
+ * the token (`OUTLINE_RAIL_LEFT_CLASS`), so it followed the zoom on its own — while a floor
+ * computed from the 100% number went on saying "wide fits" to a 1168px pane whose column had
+ * grown to 1338. That is the 2026-09-06 overlap defect this file exists to prevent, reached
+ * through the font setting instead of through a dock. `useOutlineRailFit` passes the column at
+ * the live root; the default keeps every existing caller and test on the 100% value.
+ */
+export function outlineRailPaneFloor(railWidth: number, columnPx: number = DOC_COLUMN_PX): number {
   return Math.ceil(
-    DOC_COLUMN_PX + OUTLINE_RAIL_COLUMN_GAP + railWidth + 2 * OUTLINE_RAIL_MIN_GUTTER,
+    columnPx + OUTLINE_RAIL_COLUMN_GAP + railWidth + 2 * OUTLINE_RAIL_MIN_GUTTER,
   );
 }
 
@@ -149,8 +161,11 @@ export const OUTLINE_RAIL_WIDE_PANE_MIN = outlineRailPaneFloor(OUTLINE_RAIL_WIDE
 
 export type OutlineRailFit = "hidden" | "narrow" | "wide";
 
-export function resolveOutlineRailFit(paneWidth: number): OutlineRailFit {
-  if (paneWidth >= OUTLINE_RAIL_WIDE_PANE_MIN) return "wide";
-  if (paneWidth >= OUTLINE_RAIL_NARROW_PANE_MIN) return "narrow";
+export function resolveOutlineRailFit(
+  paneWidth: number,
+  columnPx: number = DOC_COLUMN_PX,
+): OutlineRailFit {
+  if (paneWidth >= outlineRailPaneFloor(OUTLINE_RAIL_WIDE_WIDTH, columnPx)) return "wide";
+  if (paneWidth >= outlineRailPaneFloor(OUTLINE_RAIL_NARROW_WIDTH, columnPx)) return "narrow";
   return "hidden";
 }

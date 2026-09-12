@@ -520,7 +520,7 @@ After four consecutive prescriptions for the size series (zoom removal → field
 
 | Body font | **Pretendard Variable** (self-hosted) | `--font-sans` |
 
-| Type ramp | caption 9.5 · label 11 · body 12.5 · body-lg 14 · title 16 · display 23 · hero 30 | `--text-*` |
+| Type ramp | caption 9.5 · label 11 · body 12.5 · body-lg 14 · title 16 · reading 16 · display 23 · hero 30 — **declared in `rem` against the 16px root** since 2026-09-12, so a browser's text-only zoom reaches them; the pixels are those numbers | `--text-*` |
 
 | Leading ramp | Paired 1:1 with size 14 · **16** · 20 · 22 · 24 · 28 · 34 + free 2 (1.06 · 1.7) | `--leading-*` |
 
@@ -2143,6 +2143,80 @@ braking the "codification redesign" principle. New code must pair them together 
 **Closest-convergence rule** (on substitution): Snap each literal px to the nearest step
 (±1px absorbed by ramp). Exactly between steps (e.g. 15px) goes to the upper step; off-ramp values (≥1.5px deviation) remain only via "explicit exceptions" below.
 
+#### The unit is `rem`, and that is the whole of the accessibility story (2026-09-12)
+
+The `px` column above is what the ramp **renders**. What it is **declared** in is `rem`, each
+step divided by the 16px root: `9.5px → 0.59375rem`, `11px → 0.6875rem`, `12.5px → 0.78125rem`,
+`14px → 0.875rem`, `16px → 1rem`, `23px → 1.4375rem`, `30px → 1.875rem`, `34px → 2.125rem`. Every
+numerator is a multiple of 0.5 over a denominator of 16, so each quotient terminates exactly in
+binary: at the default root the rendered pixel is the same one, with no rounding step. Measured
+before and after on a fresh-element computed-style probe across all nine steps and all eight
+`px` leading steps, on `/ko/docs/`, `/ko/library/`, `/ko/topology/` and `/ko/download/`:
+identical `font-size` and `line-height` strings, and a 0-pixel screenshot diff at 1512 and 1040.
+
+**Why it had to change.** A browser has two zooms. *Page* zoom scales the layout, so larger words
+come with a narrower window. *Text-only* zoom — Chrome's Appearance → Font size, Firefox's "Zoom
+text only", Safari's accessibility text size — multiplies the **root font size and nothing else**,
+and it is the control a person uses when the window is already the size they want. A `px` ramp is
+immune to it: until this change, every one of those settings, at every step up to 200%, left Atlas
+rendering pixel-for-pixel identical. The setting was inert on every surface. Carry-forward finding,
+U2 council, 2026-09-11.
+
+**The `leading` ramp moved with it, or the fix is worse than the defect.** The eight px steps in
+the line-height table below are bound to the sizes above through the `--text-<step>--line-height`
+companions. Left in `px` while the sizes doubled, a 25px glyph would sit in a 20px line box and
+consecutive paragraphs would overlap; they are the same quantity as the size they pair with, so
+they follow the same root. The three ratio steps (`display-tight` 1.06, `prose` 1.7, `monument`
+1.08) already followed and are untouched.
+
+**Type follows the reader; boxes do not.** What stays in `px` is chrome geometry —
+`--chrome-tile-size` (36), `--app-nav-rail-icon-size` (20), the rail and dock widths, the hit
+floors, the dialog tiers, `--measure-doc-gutter` (40) — because the fixed-scale contract pins them
+and a hit target that moved with a font setting would be a different promise than the one every
+other gate measures. Measured at a 32px root: all eleven hold their value. `--text-monument` also
+stays, because it is derived from its own container (`clamp(40px, 4.8cqw, 96px)`) and its
+specification is that the headline stands on one line inside its measure; text zoom cannot reach a
+`cqw` term at all, so converting only the clamp arms would make it scale or not depending on which
+arm won.
+
+**What follows for free.** `--measure-doc-column` is derived from `--text-reading`, so the reading
+column grows with the words inside it: **709.1px at the 16px root, 1338.1px at a 32px one** (the
+measure doubles, the two gutters hold). `--measure-prose` is in `ch`, which is relative to the
+element's own font size, so the line cap followed the moment the size did: 629.1 → 1258.1px. The
+three JS consumers that cannot read a CSS variable each decided separately — the popout window and
+the image `sizes` hint are now written in `rem`, and the outline rail's fit verdict reads the live
+root through `docColumnPxAtRoot`, because a verdict about overlap must describe the column on
+screen. That table lives in `src/shared/ui/reading-measure.ts`.
+
+**The one open cost: the map toolbar's two clusters meet.** Measured across seven bands at a 32px
+root, `/ko/topology/`: the rail is clean (0 item overlaps at any width — its labels wrap inside the
+63px item and nothing is cut), but the map toolbar's **left and right clusters are anchored to
+opposite ends of one row they do not share**, so when their labels grow the two walk into each
+other: **36px of tile overlap at 1280, 36px at 1440, 18px at 1512, 20px at 1920**, and none at
+1024, 1680 or 2560. Pressing the centre of `topology-view-3d` at 1512 lands inside that overlap.
+This is the toolbar's own layout — two absolutely anchored clusters with no shared flex row and no
+bound on the labelled pill's width — not a ramp fault, and the ramp is what made it visible. It is
+written into the decision record's `Dissent` and `Falsifier` as the observation that would move the
+two chrome grades (`caption`, `label`) to `px` as a named second dialect.
+
+**Where 200% truncates instead.** Measured on the four routes at every band: no text is cut off
+without an ellipsis, a line clamp or a scroller, and nothing reaches past the viewport unclipped.
+Several boxes that already truncate at a narrow window now reach that state through the type
+instead — a docs sidebar sentence, a rail label, a `line-clamp-2` caption — which is the behaviour
+their author chose for a narrow box, arrived at sooner. ⚠️ **`html` and `body` both carry
+`overflow-x: hidden`**, so `documentElement.scrollWidth` can never exceed `clientWidth`: a
+horizontal-overflow gate built on that number is green before it is written. The gate therefore
+measures the **text** — is a leaf taller or wider than its box, and does the box that clips it
+offer a way to the rest.
+
+Gates: `tests/contract/type-ramp-root-relative.contract.test.ts` (no ramp step may be reintroduced
+in `px`; the documented exceptions are a named list) and `tests/e2e/text-zoom-ramp.spec.ts` (the
+pinned pixels at 100%, exact doubling at a 32px root, the eleven chrome boxes holding still, and
+the cut-text sweep — each with its own planted defect). `eslint.config.mjs` bans `text-[Nrem]`
+beside `text-[Npx]`, because a selector that knows only the px spelling reopened the off-ramp hole
+the moment the ramp changed unit. Record: `docs/DECISIONS.md`, "The type ramp follows the root
+size, so a browser's text zoom reaches it".
+
 **Calling a non-existent step renders at root 16px** (recorded 2026-07-27). Since Tailwind
 creates no class for undefined steps, names not in the ramp like `text-large` are **syntactically valid but apply no size**. This is invisible to any value checker — non-existent things leave no hardcoding literals either,
 falling outside `type-ramp-coverage`'s view, and tsc/eslint do not check strings.
@@ -2166,6 +2240,11 @@ so it must be fixed in px so that the rhythm of repeated card sets does not depe
 The values are on a 2px grid, and the three pairs (label 16 · body 20 · title 24) already have
 the **same values** as the previously used
 `leading-4/5/6`. This is not a new specification but merely naming what is already the trend.
+
+The eight px rows below are **declared in `rem`** (`14px → 0.875rem` … `38px → 2.375rem`) for the
+reason written under the type ramp: they are the line box of a size that follows the root, and a
+fixed line box under a doubled glyph is overlapping paragraphs. The px column is what they render
+at the default root. The three ratio rows are unit-free and unchanged.
 
 | slot | token (util) | value | pair (font) | ratio | usage — when to choose this line-height |
 |---|---|---|---|---|---|

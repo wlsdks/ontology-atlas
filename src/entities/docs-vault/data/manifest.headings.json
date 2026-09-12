@@ -6636,6 +6636,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-12 — The type ramp follows the root size, so a browser's text zoom reaches it",
+      "slug": "2026-09-12-the-type-ramp-follows-the-root-size-so-a-browsers-text-zoom-reaches-it"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-12 — The Library's toast stands in the corner of the pane it is about",
       "slug": "2026-09-12-the-librarys-toast-stands-in-the-corner-of-the-pane-it-is-about"
     },
@@ -10446,6 +10451,11 @@
       "depth": 3,
       "text": "Type ramp — 7 steps",
       "slug": "type-ramp-7-steps"
+    },
+    {
+      "depth": 4,
+      "text": "The unit is `rem`, and that is the whole of the accessibility story (2026-09-12)",
+      "slug": "the-unit-is-rem-and-that-is-the-whole-of-the-accessibility-story-2026-09-12"
     },
     {
       "depth": 3,

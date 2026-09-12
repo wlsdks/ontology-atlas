@@ -612,6 +612,20 @@ export const arbitrarySizeSelectors = [
     message:
       'Geometry Codex — text-[Npx] 하드코딩 금지 (template literal). text-* 램프로.',
   },
+  // The ramp moved to `rem` on 2026-09-12 so that a browser's text-only zoom reaches it
+  // (`app/globals.css`, "The ramp is written in `rem`"). The two selectors above only know the
+  // px spelling, so `text-[0.8125rem]` was an off-ramp size no rule could see — the same hole
+  // the px selectors were written to close, reopened by the unit. Both spellings are banned.
+  {
+    selector: 'Literal[value=/text-\\[[0-9.]+rem\\]/]',
+    message:
+      'Geometry Codex — text-[Nrem] 하드코딩 금지. text-caption/label/body/body-lg/title/display/hero 램프로. 램프 밖이면 eslint-disable + 사유.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/text-\\[[0-9.]+rem\\]/]',
+    message:
+      'Geometry Codex — text-[Nrem] 하드코딩 금지 (template literal). text-* 램프로.',
+  },
   {
     selector:
       'Literal[value=/rounded-((t|b|l|r|s|e|tl|tr|bl|br|ss|se|es|ee)-)?\\[[0-9.]+px\\]/]',

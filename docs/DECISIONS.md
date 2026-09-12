@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — The type ramp follows the root size, so a browser's text zoom reaches it
+
+**Why**: U2 carry-forward, 2026-09-11: *"Text-only 200% zoom has no effect — the type scale is absolute px."* Measured first: at a 32px root, all that zoom does, all nine `--text-*` steps still rendered 9.5 through 34px and the column still 709.05px. Inert everywhere.
+**Prior**: upholds the fixed-scale contract (owner, 2026-07-24): the type's unit changes, the chrome's geometry does not. Reverses one sentence of the 2026-09-08 `--measure-doc-column` block ("a box must not change width with the type inside it") — it argued about the *element's* font size, never about the reader's setting.
+**Decision**: the nine `--text-*` and eight px `--leading-*` steps are declared in `rem` against the 16px root. Each numerator is a multiple of 0.5 over 16, so every quotient terminates in binary and no pixel moves: byte-identical computed styles over the seventeen steps, **0 differing pixels** on `/ko/library/` and `/ko/docs/` at 1512 and 1040. Leading follows: a 25px glyph in a 20px line box overlaps the paragraph under it. `--text-monument` stays px (a `cqw` clamp zoom cannot reach); the eleven chrome boxes hold at a 32px root. The three JS mirrors follow: popout and image `sizes` in `rem`, the rail's fit from the live root, since a stale floor drew a rail over a column grown 709.1 → 1338.1px.
+**Dissent**: the same contract one step on — a chrome label growing in a box that cannot is waiting to collide. **Half true measured**: the rail holds (0 item overlaps at any band, labels wrap inside 63px, nothing cut), but the map toolbar's two anchored clusters meet at a 32px root — 36 · 36 · 18 · 20px of tile overlap at 1280 · 1440 · 1512 · 1920, none at 1024/1680/2560. That toolbar shares no row; it is the open cost.
+**Falsifier**: that overlap, if a reader at 200% presses the wrong map control — then `caption` and `label` return to px as a chrome dialect. Also any text cut with no ellipsis, clamp or scroller: 0 over 7 bands × 4 routes × both roots.
+**Owner**: jinan
+
 ## 2026-09-12 — The Library's toast stands in the corner of the pane it is about
 
 **Why**: the owner, on the installed app's Library: *"the toast at the top — its position is odd too, right? (and of course a toast should adjust its position adaptively)"*. Measured at 1512×901: a top-centred box on this surface needed a 124px push down (173 below 601px) only to clear the pane's own chrome, and at the end of that push it still reported the **right** pane's work while resting above the **left** column's title.
