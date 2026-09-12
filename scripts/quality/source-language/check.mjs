@@ -52,12 +52,28 @@ export const SOURCE_COMMENT_LANGUAGE_BASELINES = Object.freeze({
  */
 export const SOURCE_STRING_LANGUAGE_ALLOWLIST = Object.freeze([
   Object.freeze({
-    id: 'mcp-korean-user-input',
-    path: 'mcp/src/index.js',
+    id: 'mcp-korean-bootstrap-request-instructions',
+    path: 'mcp/src/server/instructions.mjs',
     why:
-      'A `display_ko` example value and the Korean sentence a user actually types to start a '
-      + 'bootstrap. Both are input the server must recognise, not output it writes.',
-    allow: /이 codebase 분석해줘|"ko": "결제"/,
+      'The Korean sentence a user actually types to start a bootstrap, quoted in the '
+      + '`initialize` instructions. It is input the server must recognise, not output it writes.',
+    allow: /이 codebase 분석해줘/,
+  }),
+  Object.freeze({
+    id: 'mcp-korean-bootstrap-request-registry',
+    path: 'mcp/src/server/registry.mjs',
+    why:
+      'The same typed request, quoted in the `index_project` description so an agent recognises '
+      + 'it at the moment of the call.',
+    allow: /이 codebase 분석해줘/,
+  }),
+  Object.freeze({
+    id: 'mcp-korean-display-locale-example',
+    path: 'mcp/src/server/tool-schemas.mjs',
+    why:
+      'A `display_ko` example value in the locale-labels schema description. The example is the '
+      + 'locale data itself, so translating it would stop showing what the field holds.',
+    allow: /"ko": "결제"/,
   }),
   Object.freeze({
     id: 'verify-app-korean-ui-labels',

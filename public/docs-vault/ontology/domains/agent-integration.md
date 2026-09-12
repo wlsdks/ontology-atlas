@@ -16,7 +16,7 @@ Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers t
 
 ## Evidence
 - README.md: "Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection."
-- mcp/src/index.js · mcp/src/tool-inventory.mjs: coupled boundary deriving `tools/list` and
+- mcp/src/server/registry.mjs · mcp/src/tool-inventory.mjs: coupled boundary deriving `tools/list` and
   full/read-only initialize inventory from active registry
 - cli/src/commands/agent-brief.mjs: passing `--project` as explicit project selector matching MCP `agent_brief.project`
 

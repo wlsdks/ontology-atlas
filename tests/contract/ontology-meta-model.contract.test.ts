@@ -52,9 +52,13 @@ describe("Atlas meta-model — one public canon reaches every authoring channel"
     expect(APP_META_MODEL_RULES_EN).toBe(MCP_META_MODEL_RULES_EN);
     expect(flat(MCP_META_MODEL_RULES_EN)).toContain(flat(MCP_META_MODEL_REFERENCE));
 
-    const indexSource = read("mcp/src/index.js");
-    expect(indexSource).toContain("${META_MODEL_RULES_EN}");
-    expect(indexSource).not.toContain(flat(MCP_META_MODEL_RULES_EN));
+    // The instructions template owns the interpolation; the entry point and the
+    // tool table must still not carry a hand-copied duplicate of the text.
+    const instructionsSource = read("mcp/src/server/instructions.mjs");
+    expect(instructionsSource).toContain("${META_MODEL_RULES_EN}");
+    for (const file of ["mcp/src/server/instructions.mjs", "mcp/src/server/registry.mjs", "mcp/src/index.js"]) {
+      expect(read(file)).not.toContain(flat(MCP_META_MODEL_RULES_EN));
+    }
   });
 
   it("compact boundary exposes current broader/is_a support without inventing an API", () => {

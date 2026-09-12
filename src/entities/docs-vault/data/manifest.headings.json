@@ -213,6 +213,11 @@
       "slug": "high-level-shape"
     },
     {
+      "depth": 3,
+      "text": "MCP server modules (2026-09-12)",
+      "slug": "mcp-server-modules-2026-09-12"
+    },
+    {
       "depth": 2,
       "text": "Surface contract — web and app",
       "slug": "surface-contract-web-and-app"
@@ -6648,6 +6653,11 @@
       "depth": 2,
       "text": "2026-09-12 — A wiki finding is one sentence, one place and one way out; the codes go behind one fold",
       "slug": "2026-09-12-a-wiki-finding-is-one-sentence-one-place-and-one-way-out-the-codes-go-behind-one-fold"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-12 — The MCP entry point is wiring; workflows live in their own modules",
+      "slug": "2026-09-12-the-mcp-entry-point-is-wiring-workflows-live-in-their-own-modules"
     },
     {
       "depth": 2,

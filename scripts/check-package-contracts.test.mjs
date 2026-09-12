@@ -415,11 +415,15 @@ describe('package contract helpers', () => {
 
   it('keeps the embedded SERVER_VERSION in sync with mcp/package.json', () => {
     const pkg = JSON.parse(readFileSync('mcp/package.json', 'utf-8'));
-    const source = readFileSync('mcp/src/index.js', 'utf-8');
+    // The `Server` construction moved to `server/instance.mjs` when the entry
+    // point became wiring only (docs/DECISIONS.md, 2026-09-12); that is the file
+    // that must import the version instead of writing one in.
+    const source = readFileSync('mcp/src/server/instance.mjs', 'utf-8');
 
     assert.equal(SERVER_VERSION, pkg.version);
     assert.equal(isCoveredByFiles('src/server-version.mjs', pkg.files), true);
-    assert.match(source, /import \{ SERVER_VERSION \} from '\.\/server-version\.mjs'/);
+    assert.equal(isCoveredByFiles('src/server/instance.mjs', pkg.files), true);
+    assert.match(source, /import \{ SERVER_VERSION \} from '\.\.\/server-version\.mjs'/);
     assert.doesNotMatch(source, /version: '\d+\.\d+\.\d+'/);
   });
 

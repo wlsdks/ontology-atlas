@@ -22,10 +22,15 @@ import {
  * (`/ontology-*`) and `npx ontology-atlas`, which is not in the registry. Both are
  * 404s in a user's environment.
  */
-const MCP_INDEX = join(process.cwd(), "mcp", "src", "index.js");
+const MCP_REGISTRY = join(process.cwd(), "mcp", "src", "server", "registry.mjs");
+/** Names and descriptions live in the registry; the response field names live in the schemas it is built from. */
+const MCP_SURFACE_FILES = [
+  MCP_REGISTRY,
+  join(process.cwd(), "mcp", "src", "server", "tool-schemas.mjs"),
+];
 
 function registeredToolNames(): Set<string> {
-  const source = readFileSync(MCP_INDEX, "utf8");
+  const source = readFileSync(MCP_REGISTRY, "utf8");
   const names = new Set<string>();
   for (const match of source.matchAll(/name:\s*["']([a-z][a-z0-9_]*)["']/g)) {
     names.add(match[1]);
@@ -141,7 +146,7 @@ describe("복사 지시문 — 실재하는 것만 부른다", () => {
     const namesWriteTools = /add_concepts?|add_relations?/.test(prompt);
     expect(namesWriteTools).toBe(true);
 
-    const source = readFileSync(MCP_INDEX, "utf8");
+    const source = MCP_SURFACE_FILES.map((file) => readFileSync(file, "utf8")).join("\n");
     for (const field of ["canWrite", "writePlan", "nextStep"]) {
       expect(
         source.includes(`${field}:`),
@@ -177,7 +182,7 @@ describe("복사 지시문 — 실재하는 것만 부른다", () => {
    */
   it("혼자서는 닿을 수 없는 상태를 쫓지 않고, 열려 있는 길을 말한다", () => {
     const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
-    const source = readFileSync(MCP_INDEX, "utf8");
+    const source = MCP_SURFACE_FILES.map((file) => readFileSync(file, "utf8")).join("\n");
     expect(
       source.includes("maker-independence") || source.includes("source-hidden"),
       "the server must still require an evaluator distinct from the builder",

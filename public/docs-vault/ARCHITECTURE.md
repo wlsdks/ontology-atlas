@@ -97,6 +97,22 @@ folder — called the **vault** everywhere in this repo — is the single source
 truth. Both the MCP server (used by the AI agent) and the CLI (used by the
 developer) read and write that same folder.
 
+### MCP server modules (2026-09-12)
+
+`mcp/src/index.js` is wiring: the two request handlers, one switch that routes a
+tool name, and the transport. The public surface — every tool name, description,
+schema and annotation — is `mcp/src/server/registry.mjs`, with its schema
+fragments in `server/tool-schemas.mjs` and the `initialize` instructions in
+`server/instructions.mjs`. Handlers live in `mcp/src/tools/` by workflow: reads,
+git, the compiled graph, vault validation, repo analysis, project source,
+concept writes, relation writes, the destructive lifecycle, and absorb, with
+node identity in `tools/vault-nodes.mjs` and post-write maintenance in
+`tools/maintenance.mjs`. The full table is in
+[`mcp/README.md`](../mcp/README.md#source-layout).
+
+`scripts/check-decision-record.mjs` watches `server/registry.mjs` alongside the
+entry point, because that is where a public-contract change now lands.
+
 The public app/website brand is **Ontology Atlas**. The macOS app bundle,
 bundle identifier, and DMG assets use the Ontology Atlas identity, while the
 repo, CLI binary, and MCP package remain under `ontology-atlas`, so product

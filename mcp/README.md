@@ -1631,6 +1631,40 @@ graph health. Once an agent starts *committing* its analysis of your codebase
 through the server's verified runtime inventory, the human + AI co-authoring
 loop is officially open.
 
+## Source layout
+
+`src/index.js` is the entry point and nothing else: it attaches the two request
+handlers, routes a tool name to the module that owns it, and connects the stdio
+transport. Everything a change would actually touch lives beside it.
+
+| File | What it owns |
+|---|---|
+| `src/server/registry.mjs` | the `TOOLS` table — every name, description, schema and annotation. **This is the public surface**, and what `pnpm docs:surface:check` measures |
+| `src/server/tool-schemas.mjs` | the JSON Schema fragments `tools/list` is assembled from |
+| `src/server/instructions.mjs` | the `initialize` instructions template |
+| `src/server/instance.mjs` | the one `Server` object |
+| `src/server/runtime.mjs` | vault and repository roots, how each was resolved, the compiled-ontology cache |
+| `src/server/rpc.mjs` | the result and error envelope, including the nearest-value hints |
+| `src/server/validate.mjs` | argument validation for every call |
+| `src/server/write-log.mjs` | the local audit line each write contributes |
+| `src/tools/read.mjs` | the side-effect-free vault reads |
+| `src/tools/git.mjs` | `git_status`, `git_history`, `git_snapshot` |
+| `src/tools/graph.mjs` | `compile_ontology` and every `query_ontology` operation |
+| `src/tools/validate-vault.mjs` | `validate_vault`, `validate_wiki` |
+| `src/tools/repo-analysis.mjs` | the four folder-scanning tools and the scan-root guard |
+| `src/tools/project-source.mjs` | connect / disconnect / finalize a project binding |
+| `src/tools/write-concepts.mjs` | `add_concept`, `add_concepts`, `patch_concept` |
+| `src/tools/write-relations.mjs` | the four edge writes |
+| `src/tools/lifecycle.mjs` | `rename_concept`, `reclassify_concept`, `merge_concepts`, `delete_concept` |
+| `src/tools/absorb.mjs` | `absorb_document` |
+| `src/tools/vault-nodes.mjs` | node identity, the gates every write passes, and the whole-vault issue finders |
+| `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
+| `src/tools/maintenance.mjs` | what a result carries rather than being asked for |
+
+Adding a module means adding it to `files` in `mcp/package.json` — the bundle and
+the MCPB artifact copy that list, so an undeclared import ships a server that
+cannot boot.
+
 ## Design principles
 
 - **stdin/stdout JSON-RPC** — Claude Code spawns the server as a child process. stdout is *protocol-only*; logs go to stderr.

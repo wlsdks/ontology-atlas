@@ -6,11 +6,11 @@
 // recurring contract (3-way parser, 2-way validator); the same grammar applies to
 // tool definitions.
 //
-// `mcp/src/index.js` boots a stdio server the moment it is imported
-// (`await server.connect(transport)`), so it cannot be loaded as a module.
-// Instead the **source is read** and each tool block inside `const TOOLS = [...]`
-// yields its name, argument keys, and required list for comparison. Adding or
-// renaming an argument on the MCP side breaks this immediately.
+// The **source is read** rather than imported, and each tool block inside
+// `const TOOLS = [...]` yields its name, argument keys, and required list for
+// comparison. Adding or renaming an argument on the MCP side breaks this
+// immediately. The table lives in `mcp/src/server/registry.mjs`; reading the
+// entry point would find only the wiring.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -18,7 +18,7 @@ import { describe, expect, it } from 'vitest';
 import { AGENT_READ_TOOLS, AGENT_TOOLS, AGENT_WRITE_TOOLS } from '@/features/vault-agent/model/tool-catalog';
 
 const MCP_SOURCE = readFileSync(
-  join(__dirname, '../../mcp/src/index.js'),
+  join(__dirname, '../../mcp/src/server/registry.mjs'),
   'utf-8',
 );
 
