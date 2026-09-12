@@ -36,6 +36,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:harness:report',
     'pnpm test:harness:smoke',
     'pnpm test:harness:outcomes',
+    'pnpm test:pr:land',
     'pnpm test:decisions',
     'pnpm test:changelog',
     'pnpm changelog:check',
@@ -373,7 +374,7 @@ function gatesPlan({ suggestions, full }) {
 /**
  * @param {{ files?: string[], deletedFiles?: string[], forceFull?: boolean }} [options]
  */
-export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = false } = {}) {
+export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = false, fullReason = null } = {}) {
   const paths = unique([...files, ...deletedFiles].map(normalizeChangedPath).filter(Boolean));
   const existing = unique(files.map(normalizeChangedPath).filter(Boolean));
   const deleted = unique(deletedFiles.map(normalizeChangedPath).filter(Boolean));
@@ -406,7 +407,7 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
     paths,
     unknownPaths,
     reason: forceFull
-      ? 'no safe PR comparison or default-branch push — exhaustive lanes'
+      ? fullReason ?? 'no safe PR comparison or default-branch push — exhaustive lanes'
       : plannerChanged
         ? 'CI impact authority changed — exhaustive self-verification'
         : rootAllChanged
@@ -428,8 +429,17 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
  * }} input
  */
 export function decide({ base, head, files = [], deletedFiles = [], eventName = 'pull_request' }) {
-  const forceFull = eventName !== 'pull_request' || !base || (head && base === head);
-  return buildImpactPlan({ files, deletedFiles, forceFull });
+  // A merge group is a tree nothing has ever built: GitHub stacks one or more
+  // pull requests on today's main and asks whether the combination is green.
+  // Narrowing that to one pull request's paths would test the part and merge
+  // the whole, so it is exhaustive by name here rather than by accident of the
+  // `eventName !== 'pull_request'` fallthrough below.
+  const mergeGroup = eventName === 'merge_group';
+  const forceFull = mergeGroup || eventName !== 'pull_request' || !base || (head && base === head);
+  const fullReason = mergeGroup
+    ? 'merge group: this combination has never been built — exhaustive lanes'
+    : null;
+  return buildImpactPlan({ files, deletedFiles, forceFull, fullReason });
 }
 
 function git(args) {

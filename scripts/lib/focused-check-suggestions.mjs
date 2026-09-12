@@ -26,6 +26,13 @@ const RULES = [
     matches: [...CI_PLANNER_SURFACE_PATTERNS],
   },
   {
+    // The lander decides when a pull request is safe to merge; its state
+    // machine is the one place a wrong verdict merges something untested.
+    command: 'pnpm test:pr:land',
+    reason: 'the landing sequence or its state machine changed',
+    matches: [/^scripts\/pr-land(?:\.test)?\.mjs$/],
+  },
+  {
     // 2026-09-01 review: check:tokens and design:toc:check were unconditional
     // CI steps before the impact-aware rework and existed afterwards only in
     // the push-to-main full lane — a raw color slipping into globals.css or a

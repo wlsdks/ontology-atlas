@@ -2,10 +2,23 @@
 # status names stay stable; inactive lanes start, explain the skip, and finish in
 # seconds. A missing plan is RED. Pushes to main and planner changes run every
 # command registered in `scripts/classify-change.mjs`.
+#
+# A pull request is opened as a **draft** and runs nothing. When it is that
+# branch's turn, `pnpm pr:land` merges today's main into it, runs the local
+# lanes, and marks it ready; `ready_for_review` fires this workflow **once**, on
+# exactly the tree that is about to land. Owner's shape, 2026-09-12: most
+# changes overlap, so CI on a branch that is not yet the thing being merged is a
+# round paid twice. `docs/DECISIONS.md` carries the record.
+#
+# `merge_group` is wired for the day this repository belongs to an organization
+# and GitHub's own merge queue becomes available. Until then no merge group is
+# ever created, so the trigger is inert rather than wrong.
 name: Checks
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  merge_group:
   push:
     branches:
       - main
@@ -23,6 +36,7 @@ env:
 jobs:
   plan:
     name: Check impact plan
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -43,12 +57,15 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
           EVENT_NAME: ${{ github.event_name }}
-        run: node scripts/classify-change.mjs --event="$EVENT_NAME" --base="origin/$BASE_REF"
+          # A merge group has no base branch ref, and its two SHAs are minted by
+          # GitHub, so they are data rather than a string anyone can choose.
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: node scripts/classify-change.mjs --event="$EVENT_NAME" --base="${MERGE_GROUP_BASE_SHA:-origin/$BASE_REF}"
 
   gates:
     name: Types · Lint · Docs
     needs: plan
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -102,7 +119,7 @@ jobs:
   unit:
     name: Unit · Contract
     needs: plan
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -156,7 +173,7 @@ jobs:
   mcp:
     name: MCP
     needs: plan
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

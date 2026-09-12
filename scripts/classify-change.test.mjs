@@ -251,3 +251,22 @@ test('the Playwright setup action is planner surface and forces the full plan', 
   const plan = buildImpactPlan({ files: ['.github/actions/setup-playwright/action.yml'] });
   assert.equal(plan.full, true);
 });
+
+test('a merge group builds every lane and says why', () => {
+  // A merge group stacks pull requests on today's main, so the combination has
+  // no prior evidence at all. Narrowing it to one pull request's paths would
+  // test the part and merge the whole.
+  const plan = decide({
+    base: 'aaaaaaa',
+    head: 'bbbbbbb',
+    files: ['README.md'],
+    eventName: 'merge_group',
+  });
+  assert.equal(plan.full, true);
+  assert.match(plan.reason, /merge group/);
+  assert.equal(plan.lanes.unit.mode, 'full');
+  assert.equal(plan.lanes.mcp.mode, 'full');
+  assert.equal(plan.lanes.e2e.mode, 'full');
+  assert.equal(plan.lanes.e2e.staticExport, true);
+  assert.equal(plan.lanes.e2e.webSurface, true);
+});

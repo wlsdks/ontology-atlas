@@ -140,6 +140,9 @@ When documentation changes, keep the owner current: public behavior in
 is English; `display_ko` frontmatter and `cli/templates/vault-ko/**` are
 localized data. Ledgers remain append-only. Current docs links must resolve.
 
+Land with `pnpm pr:land <number>`; open pull requests as drafts. The lander
+locks, merges `main` in, checks locally, then fires the one CI run.
+
 Use an English conventional prefix and subject for commits. Never use
 `--no-verify`, force-push `main`, `git reset --hard`, or `git push --force`
 without explicit user authority. Never run a publish command unless the user
