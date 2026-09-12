@@ -5000,10 +5000,20 @@ function HomePageImpl() {
                         last square tile of this row. The same component owns both feeds and
                         outside click/Escape to avoid duplicating polling/read state. */}
                     <AgentActivityChip
-                      suppressed={Boolean(v2DatasheetModel) || selectedEdgeOwnsRightRail}
+                      /*
+                       * The stack recedes for a datasheet — but not out from under an open
+                       * notification panel. Pressing a result focuses that node on the map,
+                       * which raises the datasheet, which used to unmount the bell mid-read:
+                       * one press on the first of four unread rows and the other three had no
+                       * door left (design-interaction, 2026-09-12).
+                       */
+                      suppressed={
+                        (Boolean(v2DatasheetModel) || selectedEdgeOwnsRightRail) && !activityInboxOpen
+                      }
                       liveWork={acpLiveWork}
                       onOpenChange={setActivityInboxOpen}
                       onOpenNode={handleSelect}
+                      onOpenConversation={openVaultAgent}
                     />
                       </div>
                     </div>
