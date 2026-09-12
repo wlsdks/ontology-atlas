@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { AUDITED_ROUTES } from './audited-routes';
 import { seedFirstRunSeen } from './first-run-seed';
+import { waitForAnimationsDone } from "./settle";
 
 /**
  * **Caps tracking is a Latin device** (owner, 2026-09-06, of the installed app in Korean):
@@ -92,7 +93,13 @@ for (const route of KOREAN_ROUTES) {
     if (localised) {
       await expect.poll(() => page.evaluate(() => document.documentElement.lang)).toBe('ko');
     }
-    await page.waitForTimeout(400);
+    /*
+     * Letter spacing is measured off the settled type, so the wait is for the fonts to
+     * be in and for nothing to still be animating — both states the page reports, where
+     * 400 ms was a guess that a web font would have swapped in by then.
+     */
+    await page.evaluate(() => document.fonts.ready);
+    await waitForAnimationsDone(page.locator("body"));
     const offenders = await trackedHangul(page, MAX_HANGUL_TRACKING_PX, HANGUL_SOURCE);
     expect(
       offenders,
