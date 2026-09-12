@@ -724,10 +724,23 @@
    * them ended at 497px — two widths stacked inside one reading column, which is worse than
    * one wrong width. So the box is now the measure, and everything in the column follows it.
    *
-   * It stays a separate **token** because it is a different **quantity**: absolute, because
-   * eleven consumers read it from `text-label` (11px) to the 16px root and a box must not
-   * change width with the type inside it. `--measure-prose` stays in `ch` because a *line*
-   * must.
+   * It stays a separate **token** because it is a different **quantity**. `--measure-prose` is
+   * in `ch`, which is relative to *the element's own* font size, and that is right for a line:
+   * a cap on how far the eye travels along the glyphs it is reading. A **box** cannot be
+   * element-relative, because the eleven consumers that wear this one read it from
+   * `text-label` (11px) to the 16px root, and a `ch`-bearing column resolved to three
+   * different widths on one page (measured on `/en/docs/`: 651.9px on the viewer article and
+   * the frontmatter block, 473.2px on the meta bar). So the box converts the measure once, at
+   * the size the body is actually set in, and every consumer gets the same width.
+   *
+   * ⚠️ That is a statement about **the type inside the box**, not about the reader's font
+   * setting — a distinction the token could ignore while the ramp was absolute and cannot
+   * ignore now (2026-09-12). `--text-reading` is `1rem`, so this column is root-relative: one
+   * width per page, still, because every consumer resolves the same root — and a width that
+   * grows when the reader asks for bigger words, because a reading column whose words doubled
+   * inside it is not a reading column. 709.1px at the 16px root, 1338.1px at a 32px one, both
+   * measured. The three JS consumers that cannot read this variable each decide separately
+   * whether to follow the root; `src/shared/ui/reading-measure.ts` holds that table.
    *
    * Two consumers cannot see a CSS variable at all — the popout window's inlined stylesheet
    * and Next's `sizes` hints — and they read `DOC_COLUMN_PX` from
@@ -1056,11 +1069,65 @@
      font-size utilities. letter-spacing is managed separately via the `--tracking-*`
      pair — combining it automatically with text-<step> would change tracking for ~1k elements at once, violating the "not a codification redesign" principle. The codex table specifies which tracking pairs with which, and new code applies that pair together.
      Apple optical principle: small steps use positive tracking to secure reading lines, large steps use negative tracking for cohesion. */
-  --text-caption: 9.5px; /* micro labels/legends/timestamps (pair: tracking-caption) */
-  --text-label: 11px; /* chips/badges/auxiliary labels (pair: tracking-label) */
-  --text-body: 12.5px; /* default body/list rows (pair: tracking-body) */
-  --text-body-lg: 14px; /* emphasized body/subtitles (pair: tracking-body-lg) */
-  --text-title: 16px; /* panel/card titles (pair: tracking-title) */
+  /*
+   * ── The ramp is written in `rem`, so browser text zoom reaches it (2026-09-12) ──────
+   *
+   * Every step below is the **same rendered pixel** it has always been, divided by the 16px
+   * root: `9.5px → 0.59375rem`, `12.5px → 0.78125rem`, `23px → 1.4375rem`. Each numerator is
+   * a multiple of 0.5 and each denominator is 16, so every quotient terminates exactly in
+   * binary — at the default root there is no rounding step and no sub-pixel drift. Measured:
+   * a fresh-element computed-style probe over all nine steps and all eight `leading` steps on
+   * `/ko/library/`, `/ko/docs/`, `/ko/topology/` and `/ko/download/` reports byte-identical
+   * `font-size` and `line-height` strings before and after, and the four routes screenshot
+   * to a **0-pixel** diff at 1512 and 1040.
+   *
+   * **Why it had to change.** A browser's *text-only* zoom (Chrome → Appearance → Font size,
+   * Firefox → Zoom text only, Safari's Accessibility text size) multiplies the **root font
+   * size** and nothing else. A ramp written in `px` is immune to it: before this change,
+   * every one of those settings, at every step up to 200%, left Atlas rendering pixel-for-pixel
+   * identical — the accessibility setting was inert on every surface. Carry-forward finding,
+   * U2 council, 2026-09-11: *"Text-only 200% zoom has no effect — the type scale is absolute
+   * px."* Page zoom worked, but page zoom is not the same setting: it scales the layout, so a
+   * person who wants larger words without a narrower window had no way to ask for them.
+   *
+   * **The `leading` ramp moves with it, or the fix is worse than the defect.** These eight
+   * steps are bound to the steps above through the `--text-<step>--line-height` companions
+   * further down, and they are *px line boxes on a 2px grid* on purpose (see that block). Left
+   * in px while the sizes doubled, a 25px glyph would sit in a 20px line box and consecutive
+   * paragraphs would overlap. They are the same quantity as the size they pair with, so they
+   * follow the same root. The three **ratio** steps (`--leading-display-tight`,
+   * `--leading-prose`, `--leading-monument`) already followed and are untouched.
+   *
+   * **What deliberately stays in `px`** — the boundary is *type follows the reader, boxes do
+   * not*:
+   *   - **Chrome geometry.** `--chrome-tile-size` (36), `--app-nav-rail-icon-size` (20), rail
+   *     and dock widths, hit floors, the dialog tiers, `--measure-doc-gutter` (40). The
+   *     fixed-scale contract (owner, 2026-07-24) pins them, and a hit target that shrank or
+   *     grew with a font setting would be a different promise than the one measured.
+   *   - **`--text-monument`.** `clamp(40px, 4.8cqw, 96px)` is not a ramp step spent on
+   *     reading; it is derived from its own container, and its whole specification is that the
+   *     owner's two-line headline *stands on one line inside its measure* (the derivation and
+   *     its gates are written beside the token). Text zoom cannot reach a `cqw` term at all,
+   *     so converting only the clamp arms would produce a size that scales or not depending on
+   *     which arm wins. It is honest in px, and at its 53.4px floor it is already more than
+   *     200% of the body around it.
+   *   - **`DOC_COLUMN_PX` in `src/shared/ui/reading-measure.ts`.** Three consumers cannot read
+   *     a CSS variable; the reason each one stays a number at the 100% root is written there.
+   *
+   * **What follows for free.** `--measure-doc-column` is derived from `--text-reading`, so the
+   * reading column now grows with the words inside it: 709.1px at the 16px root, 1338.2px at a
+   * 32px root (629.06 × 2 + two 40px gutters). `--measure-prose` is in `ch`, which is
+   * font-relative, so the line cap followed the moment the size did.
+   *
+   * Gates: `tests/e2e/text-zoom-ramp.spec.ts` (the probe described above, plus the 200% reflow
+   * assertions at 1512 and 1040) and `tests/contract/type-ramp-root-relative.contract.test.ts`
+   * (no ramp step may be reintroduced in `px`).
+   */
+  --text-caption: 0.59375rem; /* micro labels/legends/timestamps (pair: tracking-caption) */
+  --text-label: 0.6875rem; /* chips/badges/auxiliary labels (pair: tracking-label) */
+  --text-body: 0.78125rem; /* default body/list rows (pair: tracking-body) */
+  --text-body-lg: 0.875rem; /* emphasized body/subtitles (pair: tracking-body-lg) */
+  --text-title: 1rem; /* panel/card titles (pair: tracking-title) */
   /*
    * **The size authored prose is read at** (2026-09-12) — the same 16px as `--text-title`
    * and a different quantity, which is why it is a step and not an alias.
@@ -1073,14 +1140,14 @@
    * the line against the void beside it (`docs/DECISIONS.md`, 2026-09-12); captions,
    * labels, tables and chrome keep their own grades.
    */
-  --text-reading: 16px; /* authored document body (pair: leading-prose) */
-  --text-display: 23px; /* page headlines (pair: tracking-display) */
-  --text-hero: 30px; /* hero headlines */
+  --text-reading: 1rem; /* authored document body (pair: leading-prose) */
+  --text-display: 1.4375rem; /* page headlines (pair: tracking-display) */
+  --text-hero: 1.875rem; /* hero headlines */
   /* gateway headline — one step above the top of the ramp. On surfaces where maps cover the full view, 30px competes with the background, while 34px falls within the reference hero band (2.5–3.0) at 2.72x relative to lead (12.5px).
      Same optical zone, so no new pair is created.
      Reason for promotion: The repo already wanted this size twice —
      `DesktopVaultWelcome` was bypassing the ramp with `md:text-[34px]` + eslint-disable. The moment a second consumer appears is when to promote the value to a name. */
-  --text-hero-lg: 34px; /* old gateway headline */
+  --text-hero-lg: 2.125rem; /* old gateway headline */
 
   /* Monument headline for the gateway landing (2026-08-18 remake, `docs/DECISIONS.md`).
      The step at the top of the ramp — a single space where the owner's two-line headline becomes the protagonist of the first screen.
@@ -1110,7 +1177,17 @@
 
      Pairing: tracking-monument(−0.018em) · leading-monument(1.08, ratio — since clamp size,
      creating px pairings would require tokens per size. Same category as display-tight). */
-  --text-monument: clamp(40px, 4.8cqw, 96px); /* Gateway monument headline (pair: tracking-monument) */
+  /*
+   * ⚠️ **The floor is the reader's, the `cqw` term is the column's, the ceiling is the
+   * layout's** (2026-09-12). `2.5rem` is the same 40px it has always been at the default
+   * root, and it is `rem` because that arm is the *guarantee* — the size below which the
+   * headline stops being a monument. Measured on `/ko/download/` at a browser text size of
+   * 200%: with a `40px` floor the `h1` rendered **40px at 768 and 44.54px at 1024 while its
+   * own `h2`s rendered 46px** — a page whose headline was smaller than its sections. The
+   * `4.8cqw` term still answers to the container, and the `96px` ceiling stays absolute
+   * because it is the layout's limit, not the reader's.
+   */
+  --text-monument: clamp(2.5rem, 4.8cqw, 96px); /* Gateway monument headline (pair: tracking-monument) */
   --tracking-monument: -0.018em;
 
   /* Type ramp letter-spacing pair — 1:1 with text-<step>. Used via tracking-<step>
@@ -1182,15 +1259,15 @@
      Values are on a 2px grid, and three pairs (label 16 · body 20 · title 24) have the same values as already used leading-4/5/6 — giving names to what is already the trend, not creating new specs.
 
      Korean sets the upper limit: Korean boxes are tighter than Latin, so same line height reads denser. So shared ramp values are set by **the margin Korean requires**, and Latin follows that margin (Latin is generous with wide line height, Korean is not generous with narrow line height). No locale branching — since the app mixes two languages in one paragraph, branching would misalign line heights within the same paragraph. */
-  --leading-caption: 14px; /* Pair: text-caption 9.5px — micro label · transcript */
-  --leading-label: 16px; /* Pair: text-label 11px — chip · badge · chrome label (16px of the lock contract) */
-  --leading-body: 20px; /* Pair: text-body 12.5px — default body · list row */
-  --leading-body-lg: 22px; /* Pair: text-body-lg 14px — emphasized body · subtitle */
-  --leading-title: 24px; /* Pair: text-title 16px — panel/card title */
-  --leading-display: 28px; /* Pair: text-display 23px — page headline */
-  --leading-hero: 34px; /* Pair: text-hero 30px — hero headline */
+  --leading-caption: 0.875rem; /* Pair: text-caption 9.5px — micro label · transcript */
+  --leading-label: 1rem; /* Pair: text-label 11px — chip · badge · chrome label (16px of the lock contract) */
+  --leading-body: 1.25rem; /* Pair: text-body 12.5px — default body · list row */
+  --leading-body-lg: 1.375rem; /* Pair: text-body-lg 14px — emphasized body · subtitle */
+  --leading-title: 1.5rem; /* Pair: text-title 16px — panel/card title */
+  --leading-display: 1.75rem; /* Pair: text-display 23px — page headline */
+  --leading-hero: 2.125rem; /* Pair: text-hero 30px — hero headline */
   /* Pair: text-hero-lg 34px — gateway headline. Continues the trend of tightening ratios as you go up the ramp (28/23=1.217 → 34/30=1.133 → 38/34=1.118). 2px grid. */
-  --leading-hero-lg: 38px;
+  --leading-hero-lg: 2.375rem;
 
   /* Free step 2 — Reason for non-unit: these two are steps that sit on sizes outside the ramp (clamp hero, nested sizes inside markdown), so fixing them in px would require another token per size. This is where ratio equals intent (cohesion/relaxation). */
   --leading-display-tight: 1.06; /* Places read as a single block like name · value. Max 2 lines */
@@ -2785,7 +2862,14 @@
        Same precedent as `--pad-card`/`--pad-panel`: tokens no one uses are misinformation, not specifications. */
     --topology-chrome-icon-size: 12px;
     --topology-chrome-gap: clamp(5px, 0.4vw, 6px);
-    --topology-chrome-title-size: 12px;
+    /*
+     * The same 12px at the default root, in `rem` because this is a **type size** consumed
+     * through `text-[length:var(…)]` (`TopologyReviewLink`, `TopologyChangeAnnouncement`) —
+     * a size token outside the `--text-*` prefix is still type, and the ramp's own rule
+     * applies to it or the prefix becomes the specification instead of the quantity
+     * (2026-09-12). The deliberate 13 → 12 step above is unchanged; only the unit moves.
+     */
+    --topology-chrome-title-size: 0.75rem;
     --topology-utility-lane-height: var(--topology-chrome-control-height);
     --topology-utility-lane-gap: var(--topology-chrome-gap);
     --topology-utility-lane-compact-width: var(--topology-chrome-control-height);
@@ -3002,11 +3086,28 @@
     /* #67 — Scrollable signal (scroll edge). Bottom fade indicating "more below" rather than "end here" when a list is clipped. Only one step lighter than panel color, not a decorative gradient, and does not move. */
     --topology-shortcut-sheet-scroll-fade: 28px;
     --topology-bottom-tab-min-height: 56px;
+    /*
+     * **The bar's content, not its floor** (2026-09-12).
+     *
+     * A reserve derived from a `min-height` is a reserve only while the minimum is what
+     * binds. The bar is an icon shell (`h-6` inside its row) plus a `gap-0.5` plus one
+     * `leading-caption` line, and the type ramp is now root-relative — so at a browser
+     * text size of 200% the bar measured **73.13px** while the reserve still said 56px,
+     * and three text leaves on `/ko/docs/` at 600 wide and one at 768 sat **behind** it
+     * (measured with `elementFromPoint`, so genuinely covered, not merely intersecting).
+     * At the default root the content comes to 40px and the 56px floor still wins, so
+     * `max()` renders the same pixel it always did.
+     *
+     * The label is not shrunk to fit the old floor: the label growing is the reader's
+     * instruction, and the room the page owes it is the page's side of that.
+     */
+    --topology-bottom-tab-content: calc(1.5rem + 0.125rem + var(--leading-caption));
     --topology-bottom-tab-surface: #08090a;
     /* 2026-08-06 audit: value was `rgba(255,255,255,0.09)` — the third value **sandwiched between** global `--color-divider` (0.08) and `--color-overlay-3` (0.1). The job of this line is to separate the bar from content, which is the definition of a divider, so it now references the global token. Alpha difference of 0.01 means screen appearance is effectively unchanged. */
     --topology-bottom-tab-border: var(--color-divider);
     --topology-mobile-bottom-tab-reserve: calc(
-      var(--topology-bottom-tab-min-height) + env(safe-area-inset-bottom)
+      max(var(--topology-bottom-tab-min-height), var(--topology-bottom-tab-content)) +
+        env(safe-area-inset-bottom)
     );
     --topology-shortcuts-help-phone-top: 188px;
     --topology-shortcuts-help-focus-phone-top: 208px;

@@ -65,10 +65,20 @@ import { ICON_SIZE } from '../../src/shared/ui/icon-size';
 const ROOT = process.cwd();
 const CSS = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
 
+/**
+ * A ramp token's length **in pixels at the default 16px root**.
+ *
+ * `px` and `rem` are both read, because since 2026-09-12 the type ramp is written in `rem` so
+ * that a browser's text-only zoom reaches it (`app/globals.css`, "The ramp is written in
+ * `rem`"), while the icon ramp beside it stays in `px` — an icon is a box. The unit used to be
+ * hard-coded into this regex, which made the first `rem` step read as **"the token is
+ * missing"** rather than as a changed value; that is the one thing this helper must never say
+ * about a token that is right there.
+ */
 function cssPx(name: string): number {
-  const m = CSS.match(new RegExp(`^\\s*${name}\\s*:\\s*([0-9.]+)px;`, 'm'));
+  const m = CSS.match(new RegExp(`^\\s*${name}\\s*:\\s*([0-9.]+)(px|rem);`, 'm'));
   if (!m) throw new Error(`${name} 이 app/globals.css 에 없다`);
-  return Number(m[1]);
+  return m[2] === 'rem' ? Number(m[1]) * 16 : Number(m[1]);
 }
 
 /** Terminates an opening tag by brace depth — the trap the control ratchet stepped on twice. */

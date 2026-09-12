@@ -198,20 +198,26 @@ const FOCUS_RING_GAP = 6;
 /** Activity remains outside selection/focus rings, so it cannot erase either state. */
 const ACTIVITY_RING_GAP = FOCUS_RING_GAP + 2;
 /**
- * **Two type steps, and they come from the ramp** — `ink.pageLabelPx` (`--text-body`) for a
- * page's name and `ink.labelPx` (`--text-label`) for a file's or a concept's.
+ * **Two type steps, and they come from the ramp** — `ink.pageLabelPx` (`--text-label`, 11px at
+ * a 16px root) for a page's name and `ink.captionPx` (`--text-caption`, 9.5px) for a file's or
+ * a concept's.
  *
- * ⚠️ This was one literal `11`. The canvas became the Library's whole pane on 2026-09-12 and
- * eleven pixels of grey on a 1088×819 field is what the owner read as *"an ugly popup"*; the
- * subject of the picture is the page, so the page's name takes the step above and everything
- * else keeps the label step. They are resolved from CSS in `library-graph-ink.ts` rather than
- * written here, because a JS copy of a ramp step is the drift the motion token mirror exists
- * to stop and because the ramp is being recalibrated in a parallel change.
+ * ⚠️ A page's name was briefly `--text-body` (12.5px), taken on 2026-09-12 when twelve marks
+ * stood on a 1088×819 field and eleven pixels of grey read as an afterthought. Three hundred
+ * documents is the case that step was never measured against: at `--text-body` the page names
+ * collide often enough that the placement pass hides a third of them, so the larger step
+ * *costs* names. A page is back at the label step and a file — whose name only appears zoomed
+ * in or pointed at — drops to the caption step, so a page's name is the larger of the two
+ * wherever both are on the canvas.
+ *
+ * Both are resolved from CSS in `library-graph-ink.ts`, through `cssLengthToPx`, because since
+ * 2026-09-12 the ramp is declared in `rem` and a `parseFloat` of `"0.6875rem"` is 0.6875 — a
+ * number that is finite, positive, and off by a factor of sixteen.
  *
  * The hover box keeps the label step at every kind: it is chrome around a name, not the name.
  */
 function labelFontPx(ink: LibraryGraphInk, kind: LibraryGraphNodeKind): number {
-  return kind === "page" ? ink.pageLabelPx : ink.labelPx;
+  return kind === "page" ? ink.pageLabelPx : ink.captionPx;
 }
 /**
  * A citation, the heavier claim of the two relations — and the widest line this canvas
