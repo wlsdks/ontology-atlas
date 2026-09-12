@@ -28,6 +28,14 @@
   <a href="#status--read-this-before-installing">Status</a>
 </p>
 
+<p align="center">
+  <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" /></a>
+</p>
+
+<p align="center">
+  <a href="https://glama.ai/mcp/servers/@wlsdks/ontology-atlas"><img width="300" src="https://glama.ai/mcp/servers/@wlsdks/ontology-atlas/badge" alt="Ontology Atlas MCP server on Glama" /></a>
+</p>
+
 ![The current Ontology Atlas macOS app with the Online Store project selected: the domains it contains named around it, everything unrelated receding, and the right inspector showing the project record, its code-evidence state, and the offer to connect a code folder](docs/assets/readme/topology-overview.png)
 
 <p align="center">
