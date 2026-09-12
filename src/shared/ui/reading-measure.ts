@@ -85,8 +85,15 @@ export const DOC_COLUMN_GUTTER_PX = 40;
 export const PROSE_MEASURE_REM = PROSE_MEASURE_STEPS * PROSE_ZERO_ADVANCE_EM;
 
 
-/** The measure resolved at a given root size. At 16 it is 629.1px; at a 32px root, 1258.1px. */
-export function proseMeasurePxAtRoot(rootFontPx: number): number {
+/**
+ * The measure resolved at a given root size. At 16 it is 629.1px; at a 32px root, 1258.1px.
+ *
+ * Not exported: `docColumnPxAtRoot` is the quantity consumers want, and the two gates that
+ * check the line cap assert its **ratio** rather than its pixel — `1ch` is the advance of `0`
+ * in whatever face is rendering, so a pinned pixel is a font assertion in disguise (measured:
+ * 629.06px on Pretendard, 660px on a CI runner's fallback).
+ */
+function proseMeasurePxAtRoot(rootFontPx: number): number {
   return PROSE_MEASURE_REM * rootFontPx;
 }
 
