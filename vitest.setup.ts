@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { beforeEach } from 'vitest';
 
-import { clearArrivalMemory } from './src/shared/lib/route-arrival-memory';
+import { clearArrivalMemory } from './src/shared/lib/route-arrival-memory-store';
 
 /**
  * jsdom lacks `ResizeObserver` — this is **a hole in the environment**, not a product constraint,
@@ -69,6 +69,10 @@ if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
  * neighbours, and the next person would read the red as their own doing. React state is already
  * torn down between cases by Testing Library; this is the one store that is not, so it is the
  * one that needs saying once.
+ *
+ * ⚠️ Imported from the **store** file, not the hook's. Importing the hook's module put React in
+ * every test file's setup graph — 128 ms of setup per file against 101 ms, roughly +27 ms ×
+ * 1026 files on CI, which is pressure on the one resource an oversubscribed runner lacks.
  */
 beforeEach(() => {
   clearArrivalMemory();

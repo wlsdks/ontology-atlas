@@ -2,6 +2,8 @@
 
 import { useCallback, useState } from "react";
 
+import { readArrivalMemory, writeArrivalMemory } from "./route-arrival-memory-store";
+
 /**
  * **What a pane already knows, kept across a route change.**
  *
@@ -62,26 +64,14 @@ import { useCallback, useState } from "react";
  * changed key re-derives during render rather than in an effect (an effect would cost the
  * extra painted frame this module exists to remove).
  *
- * Memory lives for the life of the tab. It is deliberately not `sessionStorage`: a value from
- * a previous run of the app would be drawn before anything had verified the folder still says
- * so, and that is a different and worse defect than a skeleton.
+ * The store itself is `route-arrival-memory-store.ts` — a separate file so the test setup can
+ * forget it between cases without pulling React into every test file's setup graph.
  */
-const memory = new Map<string, unknown>();
-
-/** The last value remembered under `key`, or `undefined` if there is none. */
-export function readArrivalMemory<T>(key: string): T | undefined {
-  return memory.has(key) ? (memory.get(key) as T) : undefined;
-}
-
-/** Remembers `value` under `key` for the life of the tab. */
-export function writeArrivalMemory<T>(key: string, value: T): void {
-  memory.set(key, value);
-}
-
-/** Test-only: forgets everything, so one case cannot seed the next. */
-export function clearArrivalMemory(): void {
-  memory.clear();
-}
+export {
+  clearArrivalMemory,
+  readArrivalMemory,
+  writeArrivalMemory,
+} from "./route-arrival-memory-store";
 
 /**
  * A `useState` that survives the unmount a route change causes.
