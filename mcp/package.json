@@ -21,6 +21,10 @@
   "main": "./src/index.js",
   "files": [
     "src/index.js",
+    "src/server/runtime.mjs",
+    "src/server/tool-schemas.mjs",
+    "src/server/instructions.mjs",
+    "src/server/registry.mjs",
     "src/server-version.mjs",
     "src/source-text.mjs",
     "src/tool-inventory.mjs",
