@@ -1061,6 +1061,40 @@ node 3.97:1 over a major grid line — and the grid is 1.07:1 from the canvas it
 `tests/e2e/library-graph-picture.spec.ts` holds the occupancy, the band, both fills and the
 name placement at both windows on all three folders.
 
+**A press opens a card beside the mark, and the picture shows where knowledge flows**
+(2026-09-12). A press used to leave for the page, which is the one thing a person cannot
+undo by looking: the owner, on this screen — *"when I click it just navigates straight to
+the page; I want a press to raise a popup that shows me something, and for the motion to
+show something like knowledge flowing."* A press now holds the neighbourhood's ink and hangs
+a ≤320px card off the mark, one gap clear of it and clamped inside the canvas — so it can
+reach neither the mark it belongs to nor the clauses above the picture, and it flips to the
+mark's other side, or below it, rather than spilling off an edge. The card says, in this
+order: the mark's own glyph, its name and its kind; one sentence (a page's `## Summary`
+opening sentence, a file's format · size · state, a concept's place); one facts line, amber
+the moment a citation cannot be vouched for; the marks at the other end of its relations with
+each one's state, five of them and a door to the rest; then the doors — `Open`, which is the
+commit the press used to be, `Ask for a redraft` where a stale page has something that could
+write one (the folder's existing Compile brief, not a second write path) and the sentence
+saying why where it has not, and `See it on the map` for a concept. Escape, a second press on
+the same mark, a press on the empty canvas and the card's own `✕` each close it and give the
+canvas its keyboard back; a double press is still the shortcut straight to the page.
+
+Three motions carry the direction, all bounded: while a card is open its **citations drift**
+from each original toward the write-up — one 9px dash period per 900ms canvas settle budget,
+measured at 10px/s, stalls 0 and cv 0.33 on a real 60fps recording sampled at 66ms; the
+**amber midpoint** of a citation the folder cannot vouch for breathes once per 1.8s while its
+card is open, and once for every such citation as the home arrives; and a page Compile has
+just written **brightens** while its own citations drift once toward it. Under
+`prefers-reduced-motion` each becomes a still equivalent — a chevron on the line and a
+full-size amber dot — and the canvas is byte-identical frame to frame with a card open.
+Nothing else moves: at rest, and with a concept's card open, the loop asks for zero frames.
+The added frame cost is +0.05ms at 372 marks and +0.53ms at 992 (`< 2ms`, gated in
+`library-force-simulation.perf.test.ts`); in a browser a frame with a card open averages
+1.29–1.74ms at 372 marks. `tests/e2e/library-graph-card.spec.ts` holds the geometry, the
+three ways out, both commits, which lines flow, the bounded arrival breath and the frame
+budget; `library-graph-card.test.ts` sweeps 1,638 mark positions for the two rules a
+screenshot cannot check — the card never covers its mark, and never leaves the canvas.
+
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
 the action: one cited source is a single **View original** button carrying the file name;
 several keep a list under the same words; a citation naming a file that is not in the

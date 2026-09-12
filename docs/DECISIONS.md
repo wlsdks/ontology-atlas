@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — A press on a Library mark opens a card beside it, and citations flow toward the page
+
+**Why**: the owner: *"클릭하면 팝업뜨면서 정보를 표시하고 … 정보의 흐름같은게 보여지기도"*. A press left the picture for the page, so *what is this made of, can I believe it* cost a navigation.
+**Prior**: `forbidden.md`'s Don't — node click → full-screen detail — and the map's rule it protects: ego focus, a compact popover, detail explicit inside. 2026-09-08 "The Library graph stands still" is **narrowed**: nothing moves unasked, and every exception ends on its own.
+**Decision**: the press holds the ego ink and hangs `transientSurface("anchored")` off the mark in the Library's own popup material — no new token, ≤320px, clamped inside the canvas box, flipping rather than spilling — carrying its facts, its neighbours' states, and two doors: `Open`, the old press named, and `Ask for a redraft` on the **existing Compile brief**. Escape, a second press, an outside press and `✕` close it, handing the keyboard back; a double press keeps the shortcut. Three bounded motions, on tokens already read here: the card's citations drift 9px per settle budget **toward the page**, a stale midpoint breathes once per two budgets and once as the home arrives, and a page Compile just wrote brightens as its citations drift once — reduced motion gets a chevron and a dot. Over 42 states: card over its mark 0, the strip 0, marks moved 0.00px, frames at rest 0, +0.05ms/frame at 372 marks.
+**Dissent**: a page is two presses away now; `Open` first and the double press are the mitigation. design-interaction's harder objection, confirmed: a drifting dash is the loading idiom, and three walkers read it so before finding a sentence. Answered by holding the drift to the card's own lines and naming it there.
+**Falsifier**: a walker who reads the drift as loading with the card's sentence in front of them; a card over its mark, the strip, or off the canvas; a mark that moves on a press; a frame over 2ms at 372 marks, or any frame at rest.
+**Owner**: jinan
+
 ## 2026-09-12 — One folder is one picture; the canvas is a window onto it
 
 **Why**: the owner on G1 (#1567): *"the graph is too big and ugly.. what happens when a few hundred documents pile up..?"* The fit was unclamped: over four folders at three windows the camera ran **0.18–5.11**, one twelve-mark folder wearing 26.1px marks at 1040 and 34.0 at 1920. At 372 marks the label threshold turned **every** name off: the home answered *which write-ups exist* with anonymous dots on graph paper.

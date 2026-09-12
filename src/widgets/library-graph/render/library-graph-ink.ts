@@ -61,6 +61,15 @@ export interface LibraryGraphInk {
   /** A real failed operation. This is not inferred from an absent completion. */
   danger: string;
   /**
+   * **The one amber on this canvas**, and it says exactly one thing: this citation is
+   * one the folder can no longer vouch for.
+   *
+   * `--color-status-warning`, the product's own warning signal, so the dot in a broken
+   * citation's gap is the same hue as the `N sources changed` clause the strip above the
+   * picture prints. No token is minted here — the rule this file opens with holds.
+   */
+  stale: string;
+  /**
    * **The ground a page mark clears around itself.**
    *
    * A ring of this colour is laid down one line width wider than the mark, so every
@@ -120,6 +129,7 @@ const TOKENS = {
   selected: "--color-indigo-brand",
   selectedRing: "--color-indigo-accent",
   danger: "--color-status-danger",
+  stale: "--color-status-warning",
   pageHalo: "--graph-page-halo",
   sourceLabel: "--color-text-tertiary",
   hoverRing: "--color-border-strong",

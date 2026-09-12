@@ -1,7 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 
+import { drawLibraryGraph } from "../render/draw-library-graph";
 import type { LibraryGraph, LibraryGraphEdge, LibraryGraphNode } from "./build-library-graph";
+import { libraryGraphFlowEdges, libraryGraphStaleEdges } from "./library-graph-card";
 import {
   isLibrarySimulationRunning,
   LIBRARY_SETTLE_MAX_TICKS,
@@ -273,4 +275,115 @@ describe("the arrival's settle budget", () => {
       expect(settleMs / Math.max(1, sim.ticks)).toBeLessThan(16.7);
     }
   });
+});
+
+/**
+ * **What an open card costs, per frame, at three hundred marks and at a thousand.**
+ *
+ * The card's citation drift is the first motion on this canvas that paints without a hand
+ * on it (`docs/DECISIONS.md`, 2026-09-12 "a press opens a card beside the mark"), so the
+ * question it has to answer is the one the 2026-09-08 stillness record leaves open: *how
+ * much of a frame does it take?* The budget on the record is **2 ms of added frame cost**
+ * at 372 marks and at 992.
+ *
+ * ⚠️ **This measures the frame's own arithmetic, not the rasteriser.** `drawLibraryGraph`
+ * runs here against a recording context, so what is timed is every line of this
+ * repository's per-frame work — the flow sets, the dash phase, the label pass, the arcs and
+ * curves issued — and not the GPU's. The rasterised number is measured in a real browser
+ * through `window.__atlasLibraryGraph.paint()` and written into the round's measurements;
+ * the two are complementary, and only this one can be a gate.
+ */
+describe("what an open card costs per frame", () => {
+  /** A 2D context that records nothing and costs nothing: what is left is our own code. */
+  function nullContext(): CanvasRenderingContext2D {
+    const noop = (): void => undefined;
+    return {
+      save: noop, restore: noop, beginPath: noop, moveTo: noop, lineTo: noop,
+      quadraticCurveTo: noop, closePath: noop, arc: noop, fill: noop, stroke: noop,
+      fillRect: noop, strokeRect: noop, setLineDash: noop, fillText: noop, strokeText: noop,
+      measureText: () => ({ width: 40 }) as TextMetrics,
+      strokeStyle: "", fillStyle: "", lineWidth: 1, globalAlpha: 1, lineDashOffset: 0,
+      lineCap: "butt", lineJoin: "round", textBaseline: "alphabetic", textAlign: "left", font: "",
+    } as unknown as CanvasRenderingContext2D;
+  }
+
+  const INK = {
+    ground: "#000", page: "#fff", source: "#888", concept: "#888", edge: "#888",
+    selected: "#55f", selectedRing: "#77f", danger: "#f55", stale: "#fb3", pageHalo: "#111",
+    hoverRing: "#666", labelSurface: "#111", labelBorder: "#333", labelInk: "#fff", sourceLabel: "#999",
+    fontFamily: "sans-serif", pageLabelPx: 11, labelPx: 11, captionPx: 9.5,
+  };
+
+  it("adds well under 2ms a frame at 372 and 992 marks, and nothing at all at rest", () => {
+    for (const [pages, sources] of [
+      [60, 300],
+      [180, 800],
+    ] as const) {
+      const graph = wiki(pages, sources);
+      const order = graph.nodes.length;
+      const box = { width: 1088, height: 819 };
+      const sim = createLibrarySimulation({ graph, box });
+      settleLibrarySimulation(sim);
+      const positions = new Map<string, { x: number; y: number }>();
+      for (const node of sim.nodes) positions.set(node.id, { x: node.x, y: node.y });
+      // The busiest page: the worst card a person can open on this folder.
+      const card = graph.nodes.find((node) => node.kind === "page")!.id;
+
+      const sets = () => {
+        const started = performance.now();
+        for (let round = 0; round < 20; round += 1) {
+          libraryGraphFlowEdges(graph, card);
+          libraryGraphStaleEdges(graph);
+        }
+        return (performance.now() - started) / 20;
+      };
+      const setsMs = sets();
+
+      const { flow: flowEdges, stale } = libraryGraphFlowEdges(graph, card);
+      const frame = (withCard: boolean) => {
+        const ctx = nullContext();
+        const base = {
+          nodes: graph.nodes, edges: graph.edges, positions, width: box.width, height: box.height,
+          ink: INK, selectedId: null, hoveredId: null, focusedId: null, activeLabel: null,
+          standingLabels: true, sourceLabels: false,
+        };
+        // Warm, then measure: the first call pays for this file's own JIT.
+        for (let round = 0; round < 3; round += 1) {
+          drawLibraryGraph(ctx, { ...base, flow: withCard ? cardFlow(0.3) : null });
+        }
+        const started = performance.now();
+        const rounds = 12;
+        for (let round = 0; round < rounds; round += 1) {
+          drawLibraryGraph(ctx, { ...base, flow: withCard ? cardFlow(round / rounds) : null });
+        }
+        return (performance.now() - started) / rounds;
+      };
+      const cardFlow = (phase: number) => ({
+        edges: flowEdges,
+        phase,
+        arrivalEdges: new Set<string>(),
+        arrivalPhase: 0,
+        arrived: new Map<string, number>(),
+        pulse: stale,
+        pulsePhase: phase,
+        still: false,
+      });
+
+      const without = frame(false);
+      const withCard = frame(true);
+      process.stdout.write(
+        `[library-graph] ${order} marks, card open: frame ${without.toFixed(2)} → ${withCard.toFixed(2)}ms (+${(withCard - without).toFixed(2)}), flow sets ${setsMs.toFixed(3)}ms\n`,
+      );
+
+      /*
+       * The gate is the **added** cost, because the frame itself is the picture's and was
+       * measured by G2. Ten times the local delta would still be under a frame; the number
+       * here is the budget the record states, not the measurement.
+       */
+      expect(withCard - without).toBeLessThan(2);
+      // Resolving the sets is not a per-frame cost at all — the engine recomputes them when
+      // the card or the folder changes — but if they ever became one they would still fit.
+      expect(setsMs).toBeLessThan(2);
+    }
+  }, 30_000);
 });

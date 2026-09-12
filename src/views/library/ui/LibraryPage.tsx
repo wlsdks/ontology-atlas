@@ -68,7 +68,12 @@ import {
   useDocReadingScrollSpy,
 } from "@/widgets/doc-reading-pane";
 import { DocsVaultViewer } from "@/widgets/docs-vault";
-import { LibraryGraph } from "@/widgets/library-graph";
+import {
+  LibraryGraph,
+  type LibraryGraphCardFacts,
+  type LibraryGraphCardRow,
+  type LibraryGraphNode,
+} from "@/widgets/library-graph";
 import { LibraryWorkActivityStrip } from "@/widgets/library-work-activity";
 import { LibraryImportDialog } from "@/widgets/library-import";
 import {
@@ -99,7 +104,8 @@ import {
 import { SegmentedControl } from "@/shared/ui/segmented-control";
 import { Button, Tooltip, TooltipProvider, useToast, useToastAnchor } from "@/shared/ui";
 
-import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
+import { compactOntologyDescription } from "@/shared/lib/ontology-description";
+import { isWikiFurnitureSlug, WIKI_CITATION_PATTERN } from "@/shared/lib/wiki-page-schema";
 import {
   libraryCompileBlockedReason,
   libraryProviderDisclosure,
@@ -109,6 +115,7 @@ import { libraryWaitingLine } from "../lib/stage-steps";
 import { libraryOffTemplateCount } from "../lib/merge-wiki-verdict";
 import { useCitedPassage } from "../lib/use-cited-passage";
 import { useSourceOutline } from "../lib/use-source-outline";
+import { sectionSlices } from "../lib/section-slices";
 import { useLibraryModel } from "../lib/use-library-model";
 import { useObservedWikiWork } from "../lib/use-observed-wiki-work";
 import { useLibraryAgent } from "../lib/use-library-agent";
@@ -1493,6 +1500,132 @@ export function LibraryPage() {
             ? t("stage.blockedNoAgent")
             : t("stage.blockedLocalOnly");
 
+  /**
+   * **What the card beside a pressed mark says** (direction B, 2026-09-12).
+   *
+   * A press on the picture used to leave for the page. It now opens a card hung from the
+   * mark, and this is the half of that card the *folder* knows: a page's opening sentence
+   * and its four counts, a file's three facts, and at the other end of every citation the
+   * mark it points at, with that end's own state. The wording lives in the widget, beside
+   * the rest of this canvas's words; nothing here renders a string.
+   *
+   * ⚠️ **Every fact is one the Library already derived.** `model.pairing` is the crossing
+   * in both directions and already reports a cited file that has left the folder as
+   * `state: null`, which no source row can express because the row is gone. Deriving any
+   * of this a second time here is how the picture and the list beside it come to disagree
+   * — the defect this canvas's own 2026-09-06 record is about.
+   */
+  const conceptSlugs = useMemo(() => {
+    const slugs = new Set<string>();
+    for (const doc of docs) {
+      const kind = doc.frontmatter?.kind;
+      if (typeof kind === "string" && kind.trim() !== "") slugs.add(doc.slug);
+    }
+    return slugs;
+  }, [docs]);
+  const docsBySlug = useMemo(() => new Map(docs.map((doc) => [doc.slug, doc])), [docs]);
+  /** A page naming another page is a real link but not a concept; same rule as the graph's. */
+  const wikiPageSlugs = useMemo(
+    () => new Set(model.wikiPages.map((page) => page.slug)),
+    [model.wikiPages],
+  );
+  const cardFacts = useCallback(
+    (node: LibraryGraphNode): LibraryGraphCardFacts | null => {
+      if (node.kind === "concept") return null;
+
+      if (node.kind === "source") {
+        const row = model.sources.find((source) => source.path === node.ref);
+        if (!row) return null;
+        const rows: LibraryGraphCardRow[] = (model.pairing.writeUpsBySource.get(row.path) ?? []).map(
+          (page) => ({ id: `page:${page.slug}`, label: page.title, freshness: page.freshness }),
+        );
+        return {
+          file: { format: row.format, bytes: row.bytes, state: row.state },
+          rows,
+          // The browser has no Finder and no absolute path; `handleOpenSource` answers both
+          // hosts, and the door only exists where there is something to show.
+          onReveal:
+            nativeVaultRootPath !== null || localVault.sourceHandles.has(row.path)
+              ? () => handleOpenSource(row)
+              : null,
+        };
+      }
+
+      const page = model.wikiPages.find((candidate) => candidate.slug === node.ref);
+      if (!page) return null;
+      const doc = docsBySlug.get(page.slug);
+      const originals = model.pairing.originalsByWiki.get(page.slug) ?? [];
+      /*
+       * **The Summary's first sentence, and the frontmatter's `summary` until the body has
+       * been read.** `pageTexts` is filled lazily — a slug that is absent means *not read
+       * yet*, never *empty* — and `summary` is a required field of the wiki contract whose
+       * own description is "one sentence, what this page is about". So the card always has
+       * a true sentence, and it is the page's own either way.
+       */
+      const text = model.pageTexts.get(page.slug);
+      const summarySection = text ? sectionSlices(text).sections.get("Summary") : undefined;
+      const frontmatterSummary =
+        typeof doc?.frontmatter?.summary === "string" ? doc.frontmatter.summary : null;
+      const sentence =
+        compactOntologyDescription(summarySection ?? frontmatterSummary ?? undefined) ?? null;
+      const stale = originals.filter((original) => original.state === "stale").length;
+      const mentions = (doc?.linksOut ?? []).filter(
+        (target) => conceptSlugs.has(target) && !wikiPageSlugs.has(target),
+      ).length;
+      const rows: LibraryGraphCardRow[] = originals.map((original) => ({
+        id: original.state === null ? null : `source:${original.path}`,
+        label: original.name,
+        state: original.state,
+      }));
+      return {
+        sentence,
+        counts: {
+          sources: page.sourcePaths.length,
+          // Null, not zero: the body is read lazily, and this page may not have been read.
+          cites: text ? [...text.matchAll(new RegExp(WIKI_CITATION_PATTERN, "g"))].length : null,
+          mentions,
+          stale,
+        },
+        rows,
+        /*
+         * **The draft is the folder's existing Compile, not a second write path.** A stale
+         * page is stale because the files under it changed, and Compile is the one brief
+         * that reads changed files and writes the page again — so the door runs it, and
+         * every approval, permission card and receipt on that path is unchanged. Where no
+         * agent and no runner is connected there is nothing that could write a draft, and
+         * the sentence that already says why stands in the door's place.
+         */
+        refresh:
+          stale > 0
+            ? {
+                onRequest:
+                  compileBlocked === null && (agent.route === "agent" || agent.route === "local")
+                    ? handleCompile
+                    : null,
+                reason: compileBlocked ?? agentOnlyReason,
+              }
+            : undefined,
+      };
+    },
+    [
+      agent.route,
+      agentOnlyReason,
+      compileBlocked,
+      conceptSlugs,
+      docsBySlug,
+      handleCompile,
+      handleOpenSource,
+      localVault.sourceHandles,
+      model.pageTexts,
+      model.pairing,
+      model.sources,
+      model.wikiPages,
+      nativeVaultRootPath,
+      wikiPageSlugs,
+    ],
+  );
+
+
   /*
    * **Where that sentence is printed — one paragraph per surface** (2026-09-11, rewritten
    * 2026-09-12).
@@ -2481,6 +2614,7 @@ export function LibraryPage() {
                   setHomeSurface(null);
                   choose(next.kind === "wiki" ? { kind: "wiki", slug: next.ref } : { kind: "source", path: next.ref });
                 }}
+                cardFacts={cardFacts}
                 headerEnd={
                   <LibraryHomeStrip
                     clauses={homeClauses}

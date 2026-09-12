@@ -21,6 +21,7 @@ const INK: LibraryGraphInk = {
   selected: "selected-ink",
   selectedRing: "ring-ink",
   danger: "danger-ink",
+  stale: "stale-ink",
   pageHalo: "page-halo",
   sourceLabel: "source-label-ink",
   labelSurface: "label-surface",
@@ -47,6 +48,14 @@ interface Recorder {
   alphaAt: Array<{ style: string; alpha: number }>;
   /** Standing names stroked in the ground before they are filled. */
   outlined: Array<{ text: string; style: string; width: number }>;
+  /**
+   * The dash pattern and its offset at each stroke.
+   *
+   * ⚠️ **The offset is the whole of the flow.** A drifting citation differs from a resting
+   * one by `lineDashOffset` alone, so a recorder that kept only styles and patterns could
+   * not tell a line that travels from one that does not, in either direction.
+   */
+  strokedDash: Array<{ pattern: unknown[]; offset: number }>;
 }
 
 function recorder(): Recorder {
@@ -58,7 +67,8 @@ function recorder(): Recorder {
   const texts: Array<{ text: string; x: number; y: number }> = [];
   const alphaAt: Array<{ style: string; alpha: number }> = [];
   const outlined: Array<{ text: string; style: string; width: number }> = [];
-  const state = { strokeStyle: "", fillStyle: "", lineWidth: 0, globalAlpha: 1 };
+  const strokedDash: Array<{ pattern: unknown[]; offset: number }> = [];
+  const state = { strokeStyle: "", fillStyle: "", lineWidth: 0, globalAlpha: 1, dash: [] as unknown[], dashOffset: 0 };
   const pending: Array<{ x: number; y: number; r: number }> = [];
   const ctx = {
     save: vi.fn(),
@@ -77,6 +87,7 @@ function recorder(): Recorder {
     stroke: vi.fn(() => {
       strokes.push(state.strokeStyle);
       alphaAt.push({ style: state.strokeStyle, alpha: state.globalAlpha });
+      strokedDash.push({ pattern: [...state.dash], offset: state.dashOffset });
       for (const arc of pending) arcs.push({ ...arc, style: state.strokeStyle });
     }),
     fillRect: vi.fn((x: number, y: number, w: number, h: number) => {
@@ -88,7 +99,16 @@ function recorder(): Recorder {
       strokes.push(state.strokeStyle);
       alphaAt.push({ style: state.strokeStyle, alpha: state.globalAlpha });
     }),
-    setLineDash: vi.fn((pattern: unknown[]) => dashes.push(pattern)),
+    setLineDash: vi.fn((pattern: unknown[]) => {
+      state.dash = pattern;
+      dashes.push(pattern);
+    }),
+    set lineDashOffset(value: number) {
+      state.dashOffset = value;
+    },
+    get lineDashOffset() {
+      return state.dashOffset;
+    },
     measureText: vi.fn(() => ({ width: 40 })),
     fillText: vi.fn((text: string, x: number, y: number) => texts.push({ text, x, y })),
     strokeText: vi.fn((text: string) => outlined.push({ text, style: state.strokeStyle, width: state.lineWidth })),
@@ -121,7 +141,7 @@ function recorder(): Recorder {
     textBaseline: "alphabetic",
     font: "",
   } as unknown as CanvasRenderingContext2D;
-  return { ctx, strokes, fills, dashes, rects, arcs, texts, alphaAt, outlined };
+  return { ctx, strokes, fills, dashes, rects, arcs, texts, alphaAt, outlined, strokedDash };
 }
 
 const nodes: LibraryGraphNode[] = [
@@ -468,5 +488,133 @@ describe("hit testing", () => {
       ["concept:domains/checkout", { x: 300, y: 300 }],
     ]);
     expect(hitTestLibraryGraph({ nodes, positions: crowded }, { x: 105, y: 100 })?.kind).toBe("source");
+  });
+});
+
+/**
+ * **The motion, measured where it exists: in the draw calls.**
+ *
+ * The drift is one canvas property — `lineDashOffset` — and the direction it carries is
+ * the whole claim of direction B (2026-09-12): *knowledge flows from the original toward
+ * the write-up*. A screenshot cannot show it and a person cannot be asked to eyeball it,
+ * so these cases read the property off the stroke that actually ran.
+ */
+describe("what moves while a card is open", () => {
+  const flowing = (overrides: Partial<Parameters<typeof drawLibraryGraph>[1]["flow"] & object> = {}) => ({
+    edges: new Set(["c"]),
+    phase: 0.25,
+    arrivalEdges: new Set<string>(),
+    arrivalPhase: 0,
+    arrived: new Map<string, number>(),
+    pulse: new Set<string>(),
+    pulsePhase: 0,
+    still: false,
+    ...overrides,
+  });
+
+  it("dashes the card's citation and moves that dash toward the page", () => {
+    const first = recorder();
+    drawLibraryGraph(first.ctx, frame({ flow: flowing({ phase: 0 }) }));
+    const later = recorder();
+    drawLibraryGraph(later.ctx, frame({ flow: flowing({ phase: 0.5 }) }));
+
+    // The citation is the first stroke of the frame, and it is dashed only while flowing.
+    expect(first.strokedDash[0]!.pattern).toEqual([5, 4]);
+    expect(first.strokedDash[0]!.offset).toBe(0);
+    /*
+     * ⚠️ **A rising offset is travel toward the path's start, and the path is stroked
+     * page→file.** So rising means the ink moves from the file to the write-up, which is
+     * the direction the knowledge went. Falling would draw the write-up leaking into its
+     * own sources.
+     */
+    expect(later.strokedDash[0]!.offset).toBeGreaterThan(first.strokedDash[0]!.offset);
+    // The mention is left alone: it is not knowledge moving, it is a page pointing.
+    expect(later.strokedDash[1]!.pattern).toEqual([2.5, 3.5]);
+    expect(later.strokedDash[1]!.offset).toBe(0);
+  });
+
+  it("leaves nothing travelling under reduced motion, and keeps the direction as a chevron", () => {
+    const rec = recorder();
+    drawLibraryGraph(rec.ctx, frame({ flow: flowing({ still: true }) }));
+    // Solid again, no offset: one paint, nothing to animate.
+    expect(rec.strokedDash[0]!.pattern).toEqual([]);
+    for (const stroke of rec.strokedDash) expect(stroke.offset).toBe(0);
+    // The chevron is three points on the curve, drawn after the line it belongs to.
+    const arms = rec.ctx.lineTo as unknown as { mock: { calls: unknown[][] } };
+    expect(arms.mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it("breathes an amber dot in the gap a broken citation already leaves", () => {
+    const broken: LibraryGraphEdge[] = [{ ...edges[0]!, certainty: "unverified" }, edges[1]!];
+    const small = recorder();
+    drawLibraryGraph(
+      small.ctx,
+      frame({ edges: broken, flow: flowing({ pulse: new Set(["c"]), pulsePhase: 0 }) }),
+    );
+    const big = recorder();
+    drawLibraryGraph(
+      big.ctx,
+      frame({ edges: broken, flow: flowing({ pulse: new Set(["c"]), pulsePhase: 1 }) }),
+    );
+    const dot = (rec: ReturnType<typeof recorder>) =>
+      rec.arcs.find((arc) => arc.style === "stale-ink")!;
+    // At the midpoint of the citation — which is exactly where the line's own break is.
+    expect(dot(small).x).toBeCloseTo(150, 0);
+    expect(dot(big).r).toBeGreaterThan(dot(small).r);
+    // Amber is the only thing it is ever painted in: one hue, one meaning.
+    expect(small.fills.filter((fill) => fill === "stale-ink")).toHaveLength(1);
+  });
+
+  it("brightens a page that has just been written, and drifts its citations once", () => {
+    const rec = recorder();
+    drawLibraryGraph(
+      rec.ctx,
+      frame({
+        flow: flowing({
+          edges: new Set<string>(),
+          arrivalEdges: new Set(["c"]),
+          arrivalPhase: 0.2,
+          arrived: new Map([["page:wiki/plan", 0.2]]),
+        }),
+      }),
+    );
+    // The arrival's own drift, on the citations of the page that landed.
+    expect(rec.strokedDash[0]!.pattern).toEqual([5, 4]);
+    expect(rec.strokedDash[0]!.offset).toBeCloseTo(0.2 * 9, 5);
+    /*
+     * Two channels, never one: the page is over-painted in the selection's indigo, fading
+     * as the arrival settles, while its own ink stays underneath. The same ink strokes the
+     * drifting line, which is why this reads the **fill** — the last paint of the pair.
+     */
+    expect(rec.fills.filter((fill) => fill === "selected-ink")).toHaveLength(1);
+    const bright = rec.alphaAt.filter((paint) => paint.style === "selected-ink");
+    expect(bright[bright.length - 1]!.alpha).toBeCloseTo((1 - 0.2) * 0.65, 5);
+    const disc = rec.arcs.filter((arc) => arc.style === "selected-ink");
+    expect(disc).toHaveLength(1);
+    expect([disc[0]!.x, disc[0]!.y]).toEqual([100, 100]);
+  });
+
+  it("draws exactly what it drew before when nothing is flowing", () => {
+    const without = recorder();
+    drawLibraryGraph(without.ctx, frame());
+    const empty = recorder();
+    drawLibraryGraph(
+      empty.ctx,
+      frame({
+        flow: {
+          edges: new Set<string>(),
+          phase: 0.5,
+          arrivalEdges: new Set<string>(),
+          arrivalPhase: 0,
+          arrived: new Map<string, number>(),
+          pulse: new Set<string>(),
+          pulsePhase: 0.5,
+          still: false,
+        },
+      }),
+    );
+    expect(empty.strokedDash).toEqual(without.strokedDash);
+    expect(empty.fills).toEqual(without.fills);
+    expect(empty.arcs).toEqual(without.arcs);
   });
 });

@@ -4674,24 +4674,40 @@
       "counts": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {concepts, plural, one {# concept} other {# concepts}} · {cites} cites · {mentions} mentions",
       "empty": "Nothing to draw yet. Once Compile writes a page, this shows which source it was written from and which concepts it names.",
       "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
-      "legend": "A filled circle is a page, a square a source, a ring a concept on the map. A thicker line is a citation, a dashed one a mention, either way. Drag a dot out of the tangle, scroll to zoom, drag the background to move, click to open.",
+      "legend": "A filled circle is a page, a square a source, a ring a concept on the map. A thicker line is a citation, a dashed one a mention, either way. Drag a dot out of the tangle, scroll to zoom, drag the background to move, press a dot for a card beside it.",
       "legendShort": "A circle is a page, a square a source, a ring a concept.",
       "readerClose": "Close the page",
-      "keys": "Arrow keys move between dots, Enter opens the one you are on, Escape leaves it.",
+      "keys": "Arrow keys move between dots, Enter opens a card beside the one you are on, Escape closes it.",
       "announce": "{kind} {name}, {position} of {total}. Enter {action}.",
       "kind": {
         "page": "Wiki page",
         "source": "Source",
         "concept": "Concept"
       },
-      "actionSelect": "opens it here",
-      "actionMap": "opens it on the map",
+      "actionSelect": "shows what it is",
+      "actionMap": "shows what it is",
       "openOnMap": "open on the map",
       "fit": "Fit the whole picture",
       "describe": {
-        "source": "{name}: an original file. A thick line leads to the page written from it; no line means nobody has written it up yet. Press to open it.",
-        "page": "{name}: a wiki page. Thick lines lead to the originals it cites, dashed lines to concepts it names. Press to read it.",
-        "concept": "{name}: a concept on the map. The dashed lines lead to the wiki pages it names or was drawn from. Press to open it on the map."
+        "source": "{name}: an original file. A thick line leads to the page written from it; no line means nobody has written it up yet. Press for a card beside it.",
+        "page": "{name}: a wiki page. Thick lines lead to the originals it cites, dashed lines to concepts it names. Press for a card beside it.",
+        "concept": "{name}: a concept on the map. The dashed lines lead to the wiki pages it names or was drawn from. Press for a card beside it."
+      },
+      "card": {
+        "close": "Close this card",
+        "conceptSentence": "A concept on the map.",
+        "fileFacts": "{format} · {size} · {state}",
+        "sourcesLabel": "What it leans on",
+        "pagesLabel": "Written up in",
+        "rowMissing": "not in this folder",
+        "open": "Open",
+        "refresh": "Ask for a redraft",
+        "seeAll": "See all {count} originals",
+        "factOriginals": "{count, plural, one {# original} other {# originals}}",
+        "factMentions": "{count, plural, one {# mention} other {# mentions}}",
+        "factPassages": "{count, plural, one {# quoted passage} other {# quoted passages}}",
+        "flowInline": "Citations flow from each original into this write-up.",
+        "flowInlineStale": "Citations flow from each original into this write-up; an amber dot marks one this folder can no longer vouch for."
       }
     },
     "home": {
