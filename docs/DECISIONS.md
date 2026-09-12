@@ -5669,3 +5669,13 @@ record stays in Git history before commit `e4fb49a89`.
 **Dissent**: one automatic compilation queue would be simpler. It would erase the distinction between revising a source write-up and preserving the prior answer that a person returned to compare.
 **Falsifier**: a reserved answer is replaced by ordinary Compile, immutable history keeps source compilation permanently queued, a stale ordinary write-up disappears behind a current one, or a nested Wiki replacement loses its exact address or read/currentness guard.
 **Owner**: jinan
+
+
+## 2026-09-13 — Scope verification and collapse exact repeated test commands
+
+**Why**: The owner requested lower CI/pre-push cost. Every push ran full contract and Knip; every main push ran exhaustive CI. Recent successful PR medians were 442.5 seconds for Checks and 529 seconds for E2E.
+**Prior**: Supersedes unconditional local scans in 2026-08-22 (96), 2026-08-23 (109), and exhaustive-every-main verification. Keeps 2026-09-12 “One pull request is one CI run” and the no-clock-verdict rule.
+**Decision**: Pre-push keeps quick checks. The lander defers whole unit/contract suites and Knip to required PR CI, keeping focused checks. Main uses its verified push-before ancestor; invalid history, unknown paths and planner/shared-root changes stay exhaustive. Daily/manual sweeps have separate cancellation groups. Collapse only later exact test-file commands covered by an earlier default invocation; retain flags and lifecycle hooks. Record lane/command durations. Reject persistent caching: dependency fingerprinting cost 5.5 seconds each way against 13.6 seconds for Knip. Preserve behavior tests.
+**Dissent**: Every-main sweeps catch mapper blind spots sooner. Accept detection at the daily sweep for those unknown defects; release qualification stays unchanged. Revisit cross-run caching only with sufficient measured savings and reliable input identity.
+**Falsifier**: A changed invocation is omitted, failed earlier evidence permits progress, invalid push history narrows coverage, a failing selected lane permits push, or required PR evidence disappears.
+**Owner**: jinan

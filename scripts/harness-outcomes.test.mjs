@@ -24,6 +24,13 @@ describe('pre-push ledger', () => {
     assert.deepEqual(record, { at: '2026-09-02T00:00:00.000Z', files: 12, lanes: ['typecheck', 'lint', 'unit'], failed: ['lint'] });
   });
 
+  it('retains measured lane durations without changing older records', () => {
+    const record = prepushRecord({ files: '1', lanes: 'lint', failed: '', totalSeconds: 4, laneSeconds: { lint: 3 }, now: NOW });
+    assert.equal(record.totalSeconds, 4);
+    assert.deepEqual(record.laneSeconds, { lint: 3 });
+    assert.equal('totalSeconds' in prepushRecord({ files: '1', lanes: 'lint', failed: '' }), false);
+  });
+
   it('records a clean push with an empty failed list, not a missing one', () => {
     assert.deepEqual(prepushRecord({ files: '1', lanes: 'docs', failed: '' }).failed, []);
   });
