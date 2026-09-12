@@ -9,7 +9,6 @@ import {
   saveAnswerRevision,
   type AnswerRevisionStore,
 } from '@/features/library/lib/answer-revision-store';
-import { codedFailure } from '@/shared/lib/failure-code';
 import { useFailureSentence, type FailureCopy } from '@/shared/lib/use-failure-sentence';
 import type { AnswerObservation } from '@/features/library';
 
@@ -85,20 +84,31 @@ function draw(props: Parameters<typeof Harness>[0]) {
   );
 }
 
-/** Turns a thrown value into the copy the hook would hand this block, via the real lookup. */
+/**
+ * Turns a thrown value into the copy the hook would hand this block, via the real lookup.
+ *
+ * The copy is read back off the DOM rather than out of a closure: assigning to a variable
+ * declared outside a component during render is the side effect `react-hooks/globals`
+ * refuses, and it is refused for a real reason — this probe renders once, but nothing in the
+ * test says it must.
+ */
 function copyFor(thrown: unknown, fallback: string): FailureCopy {
-  let captured: FailureCopy | null = null;
   function Probe() {
-    captured = useFailureSentence()(thrown, fallback);
-    return null;
+    const copy = useFailureSentence()(thrown, fallback);
+    return <i data-testid="failure-probe" data-sentence={copy.sentence} data-detail={copy.detail ?? ''} />;
   }
-  render(
+  const view = render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <Probe />
     </NextIntlClientProvider>,
   );
-  if (!captured) throw new Error('the failure lookup did not run');
-  return captured;
+  const node = view.getByTestId('failure-probe');
+  const copy: FailureCopy = {
+    sentence: node.getAttribute('data-sentence') ?? '',
+    detail: node.getAttribute('data-detail') || null,
+  };
+  view.unmount();
+  return copy;
 }
 
 /* ------------------------------------------------------------------ *
