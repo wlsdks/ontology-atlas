@@ -19,6 +19,31 @@ Do not hand-pick from its list. Escalate to `pnpm test:run`, `pnpm lint`,
 contract, routing, configuration, release surface, or user workflow requires
 it; the entries below name that condition per area.
 
+## Local result reuse and CI ownership
+
+Pre-push owns quick path-scoped checks; full contract and Knip scans remain in
+impact-planned PR CI. `pr:land` also defers whole unit/contract suites and Knip
+to required PR CI, retaining direct tests, types and generated-file checks
+locally. Main uses the exact previous push tip. Missing, zero, or
+non-ancestor push bases run exhaustive checks. Checks and E2E also run in full
+daily at 19:17 UTC and through manual dispatch; planner and shared-root changes
+still promote to full verification.
+
+`checks:changed` and `pr:land` collapse later exact Node test-file commands
+already covered by an earlier default invocation, alongside the existing Vitest
+contract deduplication. Flags, lifecycle hooks and compound commands are retained.
+Failure of an earlier command stops execution before any covered command is omitted.
+
+Persistent success caching was measured and rejected: dependency fingerprinting
+cost 5.5 seconds each way, against a 13.6-second Knip run. Paying that cost on the
+first run did not amortize over the usual two runs. Cross-run tests always execute;
+no stale-success state or dependency-install assumption is introduced.
+
+Pre-push persists total and lane durations in `.tmp/harness/prepush.jsonl`.
+CI prints each command's duration and adds it to the job summary. Use those
+measurements and reproduced failure causes before deleting a contract test;
+source-reading tests are not automatically redundant.
+
 ## Lane budgets
 
 Every lane costs someone's afternoon, so every lane says what it costs. Measured
@@ -28,8 +53,8 @@ runs.
 | Lane | Budget | Measured | What it guards |
 |---|---|---|---|
 | **pre-push, whole hook** | 90 s | **80 s** (was 367 s) | the common failure, found before CI |
-| pre-push `contract` | — | 80 s | repo-wide ratchets no path filter can see |
-| pre-push `dead_code` | — | 33 s | an unreferenced export or dependency |
+| PR CI `contract` | — | formerly 80 s locally | full ratchets stay in CI; removed from pre-push |
+| PR CI `dead_code` | — | formerly 33 s locally | whole-graph Knip stays in CI; removed from pre-push |
 | pre-push `unit` | — | 6-19 s | the tests that import the change |
 | pre-push `source_language` | — | 7 s | Korean in source comments |
 | pre-push `lint` | — | 1-3 s | ESLint on the changed files |
@@ -109,8 +134,8 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### CI impact plan
 
 **Run**: `pnpm test:ci:impact`
-**Proves**: `scripts/classify-change.mjs` and `scripts/run-ci-lane.mjs` route every changed path to evidence or a full-boundary promotion, with no unexplained green skip and default-branch verification exhaustive.
-**Escalate**: Run the workflow contracts above, inspect all eight required statuses on a narrow PR, then confirm the exhaustive sweep on the following `main` push
+**Proves**: `scripts/classify-change.mjs` and `scripts/run-ci-lane.mjs` route every changed path to evidence or a full-boundary promotion, with no unexplained green skip; main uses the verified push-before range, while scheduled/manual runs are exhaustive.
+**Escalate**: Run the workflow contracts above, inspect all eight required statuses on a narrow PR, then confirm the main push comparison and an exhaustive manual run
 **Fix**: update `scripts/classify-change.mjs`'s path-to-check rules so the new or moved path is classified instead of falling through as unknown.
 
 ### Landing a pull request

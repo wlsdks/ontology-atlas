@@ -1,6 +1,6 @@
 # Browser CI uses the same impact plan as unit/MCP CI. Exact source-to-spec
 # mappings run on shard 1 only; unmapped rendered dependencies fail closed to
-# the three-shard PR smoke project. Main and planner changes run every project.
+# the three-shard PR smoke project. Scheduled/manual runs and planner changes run every project.
 #
 # A pull request is opened as a **draft** and runs nothing. When it is that
 # branch's turn, `pnpm pr:land` merges today's main into it, runs the local
@@ -18,6 +18,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
+  schedule:
+    - cron: "17 19 * * *"
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -26,11 +29,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  group: e2e-${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'change' }}
   cancel-in-progress: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PUSH_BEFORE: ${{ github.event.before }}
 
 jobs:
   changes:
@@ -55,6 +59,7 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
           EVENT_NAME: ${{ github.event_name }}
+          PUSH_BEFORE: ${{ github.event.before }}
           # A merge group has no base branch ref, and its two SHAs are minted by
           # GitHub, so they are data rather than a string anyone can choose.
           MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}

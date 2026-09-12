@@ -9,6 +9,7 @@ import {
   decideNext,
   describeLock,
   isBrowserCommand,
+  isCiOwnedCommand,
   localCheckPlan,
   mergeFiredCi,
   parseArgs,
@@ -233,7 +234,7 @@ describe('the local lanes, and what is left to CI', () => {
     const plan = localCheckPlan(['scripts/pr-land.mjs', 'app/globals.css']);
     assert.ok(plan.commands.length > 0, 'a changed script must recommend at least one local lane');
     assert.equal(plan.commands.some((row) => isBrowserCommand(row.command)), false);
-    assert.equal(plan.deferred.every((row) => isBrowserCommand(row.command)), true);
+    assert.equal(plan.deferred.every((row) => isCiOwnedCommand(row.command)), true);
     // Nothing is silently dropped: every suggestion is either run or deferred.
     assert.equal(plan.commands.length + plan.deferred.length, plan.suggestions.commands.length);
   });
@@ -623,3 +624,19 @@ describe('one landing, in order', () => {
     assert.deepEqual(seen, ['take-lock', 'merge-main', 'local-checks', 'make-ready', 'wait-checks', 'merge']);
   });
 });
+
+ it('defers whole suites to required CI but retains focused checks and custom invocations', async () => {
+  for (const command of ['pnpm knip', 'pnpm test:contracts', 'pnpm test:run']) assert.equal(isCiOwnedCommand(command), true);
+  for (const command of ['pnpm test:run src/a.test.ts', 'pnpm test:contracts --reporter=json', 'pnpm lint', 'pnpm exec tsc --noEmit']) assert.equal(isCiOwnedCommand(command), false);
+  const { buildImpactPlan } = await import('./classify-change.mjs');
+  const { commandsForLane } = await import('./run-ci-lane.mjs');
+  const paths = ['app/globals.css', 'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx'];
+  const local = localCheckPlan(paths);
+  const ci = buildImpactPlan({ files: paths });
+  assert.ok(local.deferred.some((row) => row.command === 'pnpm knip'));
+  assert.ok(local.deferred.some((row) => row.command === 'pnpm test:contracts'));
+  const commands = commandsForLane({lane:'unit', plan:ci, base:'origin/main', shard:'1/1'});
+  assert.ok(commands.includes('pnpm knip'));
+  assert.ok(commands.some((command) => command.includes('vitest run tests/contract')));
+  assert.ok(local.commands.some((row) => row.command.includes('AppSettingsMenu.test.tsx')));
+ });
