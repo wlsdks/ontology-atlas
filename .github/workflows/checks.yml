@@ -293,3 +293,73 @@ jobs:
       - name: Skip unaffected MCP setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
         run: echo "MCP and CLI boundaries are untouched — skipped both dependency trees and tests"
+
+  # ── The Windows install canary ────────────────────────────────────────────────
+  #
+  # **Why it lives here and not in `windows-beta-check.yml`** (2026-09-13). A trigger is
+  # workflow-scoped and `paths` is a trigger-level filter: GitHub offers no per-job path
+  # condition. Putting an unfiltered job in that file would mean deleting its `push` paths
+  # list, which would run its 17-minute native build on every merge — exactly what #834's
+  # measurement forbids (that PR fired the 12-minute job five times, 60 minutes, for a
+  # one-line `package.json` change). This workflow already carries an unfiltered
+  # `push: main`, so the canary costs no new trigger and that file stays untouched.
+  #
+  # **What it is the canary for: any change can break `pnpm install`.** That is why it
+  # carries no path filter. `windows-beta-check.yml` is path-filtered by design and
+  # deliberately excludes `package.json` and `pnpm-lock.yaml`, so it is blind to this
+  # class. Measured: the records migration froze three ledgers and hashed their raw bytes,
+  # a Windows checkout hands them back as CRLF, and `prepare` failed inside
+  # `pnpm install` — reached only on release day, twice, because no cheap Windows lane
+  # spoke after a merge.
+  #
+  # It runs after a merge, not on a pull request, because it is a canary rather than a
+  # gate: `pnpm pr:land` now refuses on any failing check, required or not, so a red
+  # canary on `main` stops the next landing without spending Windows minutes per PR.
+  # It stays non-required, so no merge-group build waits on it.
+  #
+  # The `draft == false` clause is vacuous for `push` and `workflow_dispatch` — neither
+  # event carries a pull request — and is written because
+  # `tests/contract/workflow-security.contract.test.ts` holds that every job in a
+  # workflow with a `pull_request` trigger names the draft guard.
+  install-windows-canary:
+    name: Windows install canary
+    if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.event.pull_request.draft == false }}
+    runs-on: windows-2022
+    # budget: 100s
+    # 120 s is GitHub's whole-minute granularity, and 100 s <= 120 s <= 150 s keeps the
+    # 1.5x ceiling `workflow-budgets.contract.test.ts` enforces. The 100 s budget is
+    # derived, not yet measured: the release workflow's own Windows job spent 57 s on the
+    # identical checkout, Node, Corepack and install steps (its install failed inside
+    # `prepare`, so that excludes the ledger composition this job adds). Replaced with
+    # this job's own p95 once it has runs of its own.
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        shell: pwsh
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      # The whole point: `prepare` runs here, and `prepare` composes the ledgers.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # These readers parse authored Markdown, which is what a CRLF checkout changes.
+      # They need no dependency tree of their own, so they cost seconds.
+      - name: Ledger readers on a native CRLF checkout
+        run: node --test scripts/lib/record-ledgers.test.mjs scripts/lib/changelog-entry-template.test.mjs scripts/decisions-find.test.mjs scripts/lib/po-pilot-records.test.mjs
+
+      - name: Compose the changelog and the decision ledger
+        run: |
+          pnpm changelog:check
+          pnpm decisions:check
+          pnpm po:pilot -- --check

@@ -137,6 +137,7 @@ runs.
 | E2E · Playwright chromium (x3) | 600 s | 392-421 s avg | rendered journeys |
 | Vault freshness | 30 s | 24 s avg | frontmatter integrity and node drift (FYI, never fails the PR) |
 | Windows beta · verify | 700 s | 582 s avg | Windows-only bundle facts |
+| Checks · Windows install canary | 100 s | derived from the release job's 57 s of shared steps | that **any** change can break `pnpm install` on Windows, which is why it carries no path filter |
 | Pages · build · deploy · verify | 120 s · 30 s · 40 s | 97 s · 9 s · 18 s | the static export builds and the hosted surface answers |
 
 The budget is declared in the workflow as `# budget: <n>s` beside the job's
@@ -155,6 +156,32 @@ bound.
 
 To re-measure a CI job: `gh run list --limit 20` then
 `gh run view <id> --json jobs`.
+
+### The Windows install canary, and why a path filter cannot be one
+
+`Checks · Windows install canary` runs `pnpm install --frozen-lockfile` and the
+ledger readers on a native Windows checkout after every push to `main`, and on
+manual dispatch. It is the canary for one fact: **any change can break
+`pnpm install`**, so it carries **no path filter**.
+
+`Windows beta · verify` is path-filtered on purpose and deliberately excludes
+`package.json` and `pnpm-lock.yaml` (its own header carries the measurement:
+one unrelated line in `package.json` fired that 12-minute job five times). That
+filter is correct for a native bundle check and blind to install breakage.
+
+Measured on 2026-09-13. The records migration froze three ledgers and compared
+their raw bytes; a Windows checkout hands the same files back as CRLF, so
+`prepare` failed inside `pnpm install`. `Windows beta · verify` reported the
+failure on `main` and on the release pull request itself, but it produces no
+required status context, so `pnpm pr:land` merged on "every required context is
+green" and two release attempts were spent rediscovering it. Both halves are
+now closed: this canary speaks after every merge whatever changed, and
+`pnpm pr:land` refuses on any failing check rather than only the required ones,
+with `--allow-failing <context>` as the named escape.
+
+The canary stays **non-required**. With the lander reading every check, a red
+canary on `main` stops the next landing without spending Windows minutes on
+each pull request or each merge-group build.
 
 ## How to read an entry
 
