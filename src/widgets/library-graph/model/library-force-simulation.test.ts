@@ -665,3 +665,123 @@ describe("the library graph's force simulation", () => {
     expect(pageRadius("wiki/page-4")).toBeGreaterThan(pageRadius("wiki/page-3"));
   });
 });
+
+/**
+ * **The loose group's index, and the branch that had no fixture.**
+ *
+ * `looseGroup` is written in two places and read in two, and until 2026-09-12 it was named
+ * `looseCell` while only one of the two writers produced a cell index (read-only probe,
+ * `opus-loose/loose-cell.probe.test.ts`: 5 of 9 cases red on that confusion). Nothing
+ * crashed, because the one cell-shaped reader tests `packed` first — which is exactly the
+ * kind of invariant that survives a rewrite by luck. These cases state it instead.
+ *
+ * The second half is a fixture that did not exist: `looseFolder()` above builds **two**
+ * connected masses, so `composeLibraryGroups`' single-mass branch — the one that keeps the
+ * 2026-09-07 ring around the mass, and the one whose `looseGroup` is not a cell index — was
+ * never entered by any test in this file.
+ */
+
+/** One connected mass plus unattached marks: the single-mass branch, which had no fixture. */
+function oneMassPlusLooseFolder(): LibraryGraph {
+  const nodes: LibraryGraphNode[] = [];
+  const edges: LibraryGraphEdge[] = [];
+  const mass = ["sources/m1.pdf", "sources/m2.pdf", "sources/m3.pdf"];
+  const loose = ["sources/x.pdf", "sources/y.pdf", "sources/z.pdf"];
+  for (const path of [...mass, ...loose]) {
+    nodes.push({ id: `source:${path}`, kind: "source", label: path, ref: path, href: null });
+  }
+  // One page citing all three of the mass's files, so the mass is a single component.
+  nodes.push({ id: "page:wiki/mass", kind: "page", label: "wiki/mass", ref: "wiki/mass", href: null });
+  for (const path of mass) {
+    edges.push({
+      id: `cites:wiki/mass→${path}`,
+      source: "page:wiki/mass",
+      target: `source:${path}`,
+      relation: "cites",
+      certainty: "current",
+    });
+  }
+  return { nodes, edges, counts: { sources: 6, pages: 1, concepts: 0, cites: edges.length, mentions: 0 } };
+}
+
+describe("the unattached group's own index", () => {
+  const shapes: Array<[string, () => LibraryGraph]> = [
+    ["one mass plus loose (unpacked)", oneMassPlusLooseFolder],
+    ["several masses plus loose (packed)", looseFolder],
+    ["a dense folder with nothing loose", denseFolder],
+  ];
+
+  for (const [shape, build] of shapes) {
+    it(`addresses the degree-0 marks in \`groupNodes\`: ${shape}`, () => {
+      const sim = settleLibrarySimulation(createLibrarySimulation({ graph: build(), box: BOX }));
+      const loose = sim.nodes.filter((node) => node.orbit !== null).map((node) => node.id).sort();
+
+      if (loose.length === 0) {
+        expect(sim.looseGroup, "no unattached mark, so there is no loose group").toBeNull();
+      } else {
+        expect(sim.looseGroup, "unattached marks exist, so the group must be named").not.toBeNull();
+        expect(
+          (sim.groupNodes[sim.looseGroup!] ?? []).map((node) => node.id).sort(),
+          "`groupNodes[looseGroup]` is not exactly the degree-0 set",
+        ).toEqual(loose);
+      }
+
+      /*
+       * ⚠️ **The cell claim holds only while packed, and that is the whole correction.**
+       * Packed, every group has a place, so the index addresses both lists and the ring can
+       * read `cells[looseGroup]`. Unpacked there is one cell — the whole field — and the
+       * loose group's index is 1, which is why the field is no longer named for a cell.
+       */
+      if (sim.packed) {
+        expect(sim.cells.length, "packed, so one cell per group").toBe(sim.groupNodes.length);
+        if (sim.looseGroup !== null) expect(sim.cells[sim.looseGroup]).toBeDefined();
+      } else {
+        expect(sim.cells.length, "unpacked is one field").toBe(1);
+      }
+    });
+  }
+
+  /**
+   * **The single-mass branch's own claim, measured** (`composeLibraryGroups`, the note above
+   * its `components.length < 2` test): one field, one centre, and the unattached marks on a
+   * ring *around* the mass rather than in a place of their own — which is what keeps a
+   * sixty-mark folder with one uncited file from stretching to make room for it.
+   */
+  it("keeps one field and puts the loose marks outside the mass, not in a cell of their own", () => {
+    const sim = settleLibrarySimulation(
+      createLibrarySimulation({ graph: oneMassPlusLooseFolder(), box: BOX }),
+    );
+    expect(sim.packed, "one connected mass must not be composed as peers").toBe(false);
+    expect(sim.cells.length).toBe(1);
+    expect(sim.groupNodes.length, "the mass and the loose marks are the two groups").toBe(2);
+
+    const held = sim.nodes.filter((node) => node.orbit === null);
+    const loose = sim.nodes.filter((node) => node.orbit !== null);
+    expect(held.length).toBe(4);
+    expect(loose.length).toBe(3);
+
+    const box = {
+      minX: Math.min(...held.map((node) => node.x - node.radius)),
+      maxX: Math.max(...held.map((node) => node.x + node.radius)),
+      minY: Math.min(...held.map((node) => node.y - node.radius)),
+      maxY: Math.max(...held.map((node) => node.y + node.radius)),
+    };
+    // Not one unattached mark inside the connected mass's own box: the 2026-09-07 record's
+    // live falsifier, on the branch that record is about.
+    for (const node of loose) {
+      const inside =
+        node.x > box.minX && node.x < box.maxX && node.y > box.minY && node.y < box.maxY;
+      expect(inside, `${node.id} stands inside the connected mass`).toBe(false);
+    }
+
+    // The ring is measured from the mass, not from a cell — the unpacked path of
+    // `libraryOrphanRing` — and every loose mark stands on it.
+    const ring = libraryOrphanRing(sim)!;
+    expect(ring, "a folder with unattached marks has a ring").not.toBeNull();
+    for (const node of loose) {
+      const radial = Math.hypot((node.x - ring.cx) / ring.rx, (node.y - ring.cy) / ring.ry);
+      expect(radial, `${node.id} is not on the ring`).toBeGreaterThan(0.9);
+      expect(radial, `${node.id} is not on the ring`).toBeLessThan(1.1);
+    }
+  });
+});
