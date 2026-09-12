@@ -1,10 +1,13 @@
 "use client";
 
+import { useTranslations } from 'next-intl';
 import { useCallback, useRef, useState } from 'react';
 import {
   answerRefreshBrief, answerRevisionStore, buildAnswerRevision,
   prepareAnswerRefresh, saveAnswerRevision, type AnswerRefreshSnapshot,
 } from '@/features/library';
+import { codedFailure } from '@/shared/lib/failure-code';
+import { useFailureSentence, type FailureCopy } from '@/shared/lib/use-failure-sentence';
 
 interface RefreshTurn {
   id: number;
@@ -16,7 +19,13 @@ interface RefreshState {
   phase: 'idle' | 'preparing' | 'running' | 'review' | 'saving';
   snapshot: AnswerRefreshSnapshot | null;
   proposal: ReturnType<typeof buildAnswerRevision> | null;
-  error: string | null;
+  /**
+   * **Not a string.** It used to be `error.message`, and on a Korean screen that meant
+   * "The retained question or its history cannot be read." in the page body (installed-app
+   * inspection before v1.2.2, B2). A `FailureCopy` carries the translated sentence and keeps the
+   * English where only a developer looks, and its type is what stops a raw message being put back.
+   */
+  error: FailureCopy | null;
 }
 
 const INITIAL: RefreshState = { phase: 'idle', snapshot: null, proposal: null, error: null };
@@ -28,6 +37,13 @@ export function useAnswerRefresh({ handle, sources, writer, vaultRoot, start }: 
   vaultRoot: string | null;
   start: (text: string, kind: 'refresh') => void;
 }) {
+  const t = useTranslations('library');
+  const failureCopy = useFailureSentence();
+  /** Every catch below turns a thrown failure into copy here, so no branch can skip the step. */
+  const copyOf = useCallback(
+    (error: unknown): FailureCopy => failureCopy(error, t('answers.refreshFailed')),
+    [failureCopy, t],
+  );
   const [state, setState] = useState<RefreshState>(INITIAL);
   const generation = useRef(0);
   const pending = useRef<RefreshTurn | null>(null);
@@ -49,25 +65,25 @@ export function useAnswerRefresh({ handle, sources, writer, vaultRoot, start }: 
         vaultRoot, sources: snapshot.sourcePaths,
       }), 'refresh');
     } catch (error) {
-      if (generation.current === id) setState({ ...INITIAL, error: error instanceof Error ? error.message : String(error) });
+      if (generation.current === id) setState({ ...INITIAL, error: copyOf(error) });
     } finally { locked.current = false; }
-  }, [handle, sources, start, vaultRoot, writer]);
+  }, [copyOf, handle, sources, start, vaultRoot, writer]);
 
   const capture = useCallback(() => pending.current, []);
   const receive = useCallback((turn: RefreshTurn, response: string | null, outcome: string) => {
     if (generation.current !== turn.id || pending.current !== turn) return;
     pending.current = null;
     if (outcome !== 'completed' || !response?.trim()) {
-      setState({ phase: 'idle', snapshot: turn.snapshot, proposal: null, error: 'The refresh did not complete. The previous answer is unchanged.' });
+      setState({ phase: 'idle', snapshot: turn.snapshot, proposal: null, error: copyOf(codedFailure('answer-turn-incomplete', outcome)) });
       return;
     }
     try {
       const proposal = buildAnswerRevision({ ...turn.snapshot, response, writer: turn.writer, now: new Date(), knownSources: turn.snapshot.sourcePaths });
       setState({ phase: 'review', snapshot: turn.snapshot, proposal, error: null });
     } catch (error) {
-      setState({ phase: 'idle', snapshot: turn.snapshot, proposal: null, error: error instanceof Error ? error.message : String(error) });
+      setState({ phase: 'idle', snapshot: turn.snapshot, proposal: null, error: copyOf(error) });
     }
-  }, []);
+  }, [copyOf]);
 
   const save = useCallback(async () => {
     if (!handle || !state.snapshot || !state.proposal || state.proposal.problems.length || locked.current) return null;
@@ -79,10 +95,10 @@ export function useAnswerRefresh({ handle, sources, writer, vaultRoot, start }: 
       if (generation.current === id) setState(INITIAL);
       return result;
     } catch (error) {
-      if (generation.current === id) setState((current) => ({ ...current, phase: 'review', error: error instanceof Error ? error.message : String(error) }));
+      if (generation.current === id) setState((current) => ({ ...current, phase: 'review', error: copyOf(error) }));
       return null;
     } finally { locked.current = false; }
-  }, [handle, state.proposal, state.snapshot]);
+  }, [copyOf, handle, state.proposal, state.snapshot]);
 
   const dismiss = useCallback(() => {
     if (locked.current) return;

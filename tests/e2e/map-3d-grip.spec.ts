@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForDomeEntered, waitForMapStill, waitFrames } from "./settle";
 
 /**
  * **The 3D grip — inside the dome rotates, outside it pans** (2026-08-18, ledger
@@ -100,10 +101,11 @@ test("3D — 돔 안을 끌면 돌고, 돔 밖 검은 자리를 끌면 지도가
   });
   await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
-  // Measure after assembly (≈1.1s) and the entry sweep (1.5s) finish — while the
-  // sweep is alive the drawn attitude keeps moving and cannot be told apart from what
-  // the drag changed.
-  await page.waitForTimeout(4000);
+  // Measure after assembly and the entry sweep both finish — while the sweep is
+  // alive the drawn attitude keeps moving and cannot be told apart from what the
+  // drag changed. Both have clocks the dome advances itself, so the dome is asked
+  // whether it has arrived rather than told how long that takes here.
+  await waitForDomeEntered(page);
 
   const box = await domeScreenBox(page);
   expect(box, "3D 노드를 하나도 못 읽었다 — 계기가 공회전하고 있다").not.toBeNull();
@@ -123,10 +125,13 @@ test("3D — 돔 안을 끌면 돌고, 돔 밖 검은 자리를 끌면 지도가
   await page.mouse.down();
   for (let i = 1; i <= 8; i += 1) {
     await page.mouse.move(outsideX + i * 14, outsideY + i * 9);
-    await page.waitForTimeout(16);
+    // One drawn frame between moves: a drag is delivered in frames, and 16 ms is
+    // this machine's guess at one.
+    await waitFrames(page, 1);
   }
   await page.mouse.up();
-  await page.waitForTimeout(400);
+  // The release hands the pan to its inertia; read where it comes to rest.
+  await waitForMapStill(page, { what: "camera" });
   const after1 = await readPose(page);
   expect(after1).not.toBeNull();
 
@@ -140,7 +145,6 @@ test("3D — 돔 안을 끌면 돌고, 돔 밖 검은 자리를 끌면 지도가
   ).toBeLessThan(0.02);
 
   /* ── ② Drag inside the dome = orbit rotation ───────────────────────────── */
-  await page.waitForTimeout(600);
   /*
    * **Re-measure the dome's position.** ① moved the map, so an "inside" coordinate
    * computed before it may now be outside — which is exactly why the first version
@@ -157,10 +161,16 @@ test("3D — 돔 안을 끌면 돌고, 돔 밖 검은 자리를 끌면 지도가
   await page.mouse.down();
   for (let i = 1; i <= 8; i += 1) {
     await page.mouse.move(insideX2 + i * 14, insideY2);
-    await page.waitForTimeout(16);
+    await waitFrames(page, 1);
   }
   await page.mouse.up();
-  await page.waitForTimeout(60);
+  /*
+   * The orbit keeps closing its remaining gap after velocity reaches zero
+   * (`yawSnap`), and the hand that just dragged disarmed the auto-spin, so the pose
+   * really does come to rest. Waiting for that rest reads the landing rather than
+   * whatever 60 ms of this machine happened to reach.
+   */
+  await waitForMapStill(page, { what: "dome" });
   const after2 = await readPose(page);
 
   expect(
@@ -182,7 +192,7 @@ test("3D — 커서가 두 구역을 말한다 (돔 위 grab · 바깥 move)", a
   });
   await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(4000);
+  await waitForDomeEntered(page);
 
   const box = await domeScreenBox(page);
   expect(box, "3D 노드를 하나도 못 읽었다 — 계기가 공회전하고 있다").not.toBeNull();
@@ -200,8 +210,7 @@ test("3D — 커서가 두 구역을 말한다 (돔 위 grab · 바깥 move)", a
   const outsideX = Math.max(b.left + 8, b.left + b.minX - 160);
   const outsideY = Math.max(b.top + 8, b.top + b.minY - 120);
   await page.mouse.move(outsideX, outsideY);
-  await page.waitForTimeout(200);
-  expect(await cursor(), "돔 바깥에서 «옮길 수 있다»는 표시가 없다").toBe("move");
+  await expect.poll(cursor, { message: "돔 바깥에서 «옮길 수 있다»는 표시가 없다" }).toBe("move");
 
   // Pick empty space between the rings, avoiding node discs — over a node the node's
   // cursor wins (a separate contract; measuring it here blurs what is being
@@ -231,6 +240,5 @@ test("3D — 커서가 두 구역을 말한다 (돔 위 grab · 바깥 move)", a
   });
   expect(gap, "돔 안에서 노드와 겹치지 않는 빈 자리를 못 찾았다").not.toBeNull();
   await page.mouse.move(gap!.px, gap!.py);
-  await page.waitForTimeout(200);
-  expect(await cursor(), "돔 위에서 «잡아 돌릴 수 있다»는 표시가 없다").toBe("grab");
+  await expect.poll(cursor, { message: "돔 위에서 «잡아 돌릴 수 있다»는 표시가 없다" }).toBe("grab");
 });

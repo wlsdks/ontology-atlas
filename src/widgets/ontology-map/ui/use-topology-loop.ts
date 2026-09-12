@@ -6263,6 +6263,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           poseTween: d.poseTween !== null,
           active: d.active,
           ramp: d.rampClock / DOME_ASSEMBLE_TOTAL_MS,
+          /*
+           * Is the entry sweep still putting the pose down? It has its **own**
+           * clock, 1500 ms against the assembly's 1120 ms (`dome-view.ts`), so
+           * `ramp >= 1` is not "the dome has arrived" — the last 380 ms of turning
+           * happens after it. E2E had no way to see that and slept 4 seconds to
+           * cover both, which asserts the machine's speed rather than the dome's
+           * state; the idle gate already reads this flag for the same reason.
+           */
+          entryArmed: d.entryArmed,
         };
       },
       /**

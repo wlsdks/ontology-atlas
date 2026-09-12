@@ -9,6 +9,7 @@ import {
 } from './first-run-starter-dismiss';
 import { isDesktopShell } from '@/shared/lib/desktop-shell';
 import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
+import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
 import { deniedFolderName } from '@/entities/vault-session';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { buildFromCodePrompt } from './build-from-code-prompt';
@@ -115,9 +116,14 @@ export function useFirstRunStarter() {
    * screens were answering the same fact differently.
    */
   const t = useTranslations('firstRunStarter');
+  const failureSentence = useFailureSentence();
+  /*
+   * ⚠️ `actionError` is a **failure code**, not a sentence — see `use-vault-create-flow.ts`. It
+   * used to be the thrown English, which this card then showed to a Korean reader (B2).
+   */
   const errorText =
     actionError !== null
-      ? actionError
+      ? failureSentence(actionError, t('errorFallback')).sentence
       : vault.status === 'error'
         ? (vault.errorCode === 'root-rejected'
             ? t('errorRootRejected')

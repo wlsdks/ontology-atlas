@@ -16,6 +16,8 @@ import {
   refuseLanding,
   requiredCheckState,
   runInFlight,
+  describeCleanup,
+  worktreeToRemove,
 } from './pr-land.mjs';
 
 /**
@@ -132,6 +134,49 @@ describe('pr:land argument parsing', () => {
     assert.equal(parseArgs(['12', '--cleanup=/tmp/wt']).cleanup, '/tmp/wt');
     assert.equal(parseArgs(['12', '--worktree', '/tmp/wt']).worktree, '/tmp/wt');
     assert.equal(parseArgs(['12', '--worktree=/tmp/wt']).worktree, '/tmp/wt');
+  });
+
+  /**
+   * ⚠️ **`--worktree` removes nothing, in either spelling.**
+   *
+   * On 2026-09-13 an agent landed with `--worktree <path>`, found that path gone
+   * afterwards, and reported that the landing had deleted it along with the
+   * gitignored evidence inside it. The landing's own log carried no `cleanup:`
+   * line, so it had not — but nothing in this suite said so, and the next agent
+   * had only the source to trust. Both flag shapes are pinned here now, for both
+   * flags, so this script can be ruled out by reading.
+   */
+  it('removes a worktree only when --cleanup asks, never for --worktree', () => {
+    assert.equal(worktreeToRemove(parseArgs(['12', '--worktree', '/tmp/wt'])), null);
+    assert.equal(worktreeToRemove(parseArgs(['12', '--worktree=/tmp/wt'])), null);
+    assert.equal(worktreeToRemove(parseArgs(['12', '--cleanup', '/tmp/wt'])), '/tmp/wt');
+    assert.equal(worktreeToRemove(parseArgs(['12', '--cleanup=/tmp/wt'])), '/tmp/wt');
+    // Both together is the deliberate shape: run the lanes here, then remove it.
+    assert.equal(
+      worktreeToRemove(parseArgs(['12', '--worktree=/tmp/wt', '--cleanup=/tmp/wt'])),
+      '/tmp/wt',
+    );
+    // And a bare landing removes nothing at all.
+    assert.equal(worktreeToRemove(parseArgs(['12'])), null);
+  });
+
+  /**
+   * A removal says what it is about to do, and says the one thing that made the
+   * 2026-09-13 loss possible: `git status --porcelain` does not count ignored
+   * files, so a worktree holding only gitignored captures reads clean.
+   */
+  it('announces the path and the judgement before removing anything', () => {
+    const clean = describeCleanup({ path: '/tmp/wt', status: '' });
+    assert.match(clean, /^removing \/tmp\/wt/);
+    assert.match(clean, /ignored files are not counted/);
+    assert.equal(
+      describeCleanup({ path: '/tmp/wt', status: ' M src/a.ts' }),
+      '/tmp/wt still has uncommitted work; left alone',
+    );
+    assert.equal(
+      describeCleanup({ path: '/tmp/nope', status: null }),
+      '/tmp/nope is not a Git worktree; left alone',
+    );
   });
 
   it('defaults the worktree to the caller, which is the branch it wrote', () => {
