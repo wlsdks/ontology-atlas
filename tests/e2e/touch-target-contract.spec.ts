@@ -589,3 +589,79 @@ test.describe("최소 타깃 계약 (pointer: fine — WCAG 2.5.8 AA)", () => {
     ).not.toContain("probe-check-labelled");
   });
 });
+
+/**
+ * **A wide screen somebody touches** (2026-09-12).
+ *
+ * Every case above runs at 390–768 with `isMobile`, so the whole file only ever measured
+ * a phone. The floor's query moved from `pointer: coarse` to `any-pointer: coarse` the
+ * same day — `pointer` reports the **primary** device, so a touchscreen laptop or a tablet
+ * with a trackpad answered *fine* and every `.atlas-touch-floor` control on it kept its
+ * 28/32px mouse height (carried forward from the slice 1 guardian pass, and again from the
+ * U2 council, which added two more finger targets inheriting the same floor).
+ *
+ * ⚠️ **A browser cannot be put in the hybrid state, so this case cannot prove the query.**
+ * Measured in Chromium 2026-09-12 across three context shapes and four CDP calls
+ * (`Emulation.setTouchEmulationEnabled`, `setEmitTouchEventsForMouse` in both `desktop`
+ * and `mobile` configurations, `setDeviceMetricsOverride` with `mobile: false`): the
+ * moment touch exists at all, `pointer: coarse` **and** `any-pointer: coarse` both match
+ * and `any-pointer: fine` stops matching. There is no combination where the primary
+ * pointer is fine and a coarse one is attached. The query itself is therefore pinned
+ * where the bytes are readable — `tests/contract/touch-floor-layer.contract.test.ts`,
+ * which asserts both directions because `pointer: coarse` is a substring of the new one.
+ *
+ * What this case does prove is the other half, and it is the half a widened query can
+ * break: the floor still reaches every control **at a desktop width**, which no case in
+ * this file had ever measured. `primaryIsCoarse` is asserted as `true` on purpose — it is
+ * the emulator's limit, not the product's contract, so the day Chromium can separate the
+ * two this assertion goes red and whoever sees it can tighten the case instead of
+ * inheriting a blind spot.
+ */
+test.describe("터치 타깃 계약 (터치 되는 넓은 화면)", () => {
+  test.use({ hasTouch: true, isMobile: false, viewport: { width: 1280, height: 900 } });
+
+  test("넓은 화면에서도 자료실 손가락 바닥이 전부 44px 에 닿는다", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await installLibraryCheckBridge(page);
+    await openLibraryCheckReport(page);
+
+    const measured = await page.evaluate((min) => {
+      const floored = [...document.querySelectorAll(".atlas-touch-floor")].filter((target) => {
+        const rect = target.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && getComputedStyle(target).visibility !== "hidden";
+      });
+      const name = (target: Element) =>
+        target.getAttribute("data-testid") || (target.textContent ?? "").trim().slice(0, 24) || target.tagName;
+      return {
+        primaryIsCoarse: window.matchMedia("(pointer: coarse)").matches,
+        coarseAvailable: window.matchMedia("(any-pointer: coarse)").matches,
+        token: getComputedStyle(document.documentElement).getPropertyValue("--touch-target-min").trim(),
+        width: window.innerWidth,
+        scanned: floored.length,
+        short: floored
+          .map((target) => ({ id: name(target), h: Math.round(target.getBoundingClientRect().height) }))
+          .filter(({ h }) => h < min),
+      };
+    }, MIN);
+
+    expect(measured.coarseAvailable, "터치가 붙은 기기로 에뮬레이션되지 않았다 — 이 계약이 성립하지 않는다").toBe(
+      true,
+    );
+    /*
+     * The emulator's limit, written down as an assertion rather than as a comment: when
+     * Chromium can report a fine primary pointer beside an attached coarse one, this flips
+     * and the real hybrid case becomes writable here.
+     */
+    expect(
+      measured.primaryIsCoarse,
+      "크로미움이 하이브리드를 흉내낼 수 있게 됐다 — 이 자리에 진짜 하이브리드 케이스를 써라",
+    ).toBe(true);
+    expect(measured.width, "좁은 폭으로 접혔다 — 이 케이스는 넓은 화면의 손가락이다").toBe(1280);
+    expect(measured.token, "--touch-target-min 이 44px 가 아니다").toBe("44px");
+    expect(measured.scanned, "손가락 바닥을 쓰는 컨트롤을 충분히 재지 못했다").toBeGreaterThan(2);
+    expect(
+      measured.short,
+      `넓은 화면에서 44px 미만인 atlas-touch-floor: ${JSON.stringify(measured.short)}`,
+    ).toEqual([]);
+  });
+});

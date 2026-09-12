@@ -97,9 +97,37 @@ describe('손가락 바닥은 캐스케이드 레이어 밖에 산다', () => {
     ).toEqual([]);
   });
 
-  it('`@media (pointer: coarse)` 안에만 있다 — 마우스에서는 규칙 자체가 안 만들어진다', () => {
-    const coarse = (ancestors ?? []).filter((a) => a.includes('pointer: coarse'));
-    expect(coarse.length, `조상: ${(ancestors ?? []).join(' > ')}`).toBe(1);
+  /**
+   * **`any-pointer`, not `pointer` — and this is the only layer that can see which**
+   * (2026-09-12).
+   *
+   * `pointer` reports the *primary* pointing device, so a touchscreen laptop or a tablet
+   * with a trackpad answered *fine* and every floored control on it kept its 28/32px
+   * mouse height. `any-pointer` asks whether **any** attached device is coarse, which is
+   * the question a finger floor exists to answer.
+   *
+   * ⚠️ **A browser cannot be put in that state, so no e2e can guard this line.** Measured
+   * in Chromium 2026-09-12 across three context shapes and four CDP calls
+   * (`Emulation.setTouchEmulationEnabled`, `setEmitTouchEventsForMouse` in both
+   * configurations, `setDeviceMetricsOverride` with `mobile: false`): the moment touch
+   * exists at all, `pointer: coarse` **and** `any-pointer: coarse` both match and
+   * `any-pointer: fine` stops matching. There is no combination where the primary pointer
+   * is fine and a coarse one is attached. So the runtime case in
+   * `tests/e2e/touch-target-contract.spec.ts` can only prove the floor still promotes
+   * where it used to; the query itself is pinned here, where the bytes are readable.
+   *
+   * Both directions are asserted, because `'pointer: coarse'` is a substring of
+   * `'any-pointer: coarse'` — a check written the loose way stays green on a revert.
+   */
+  it('`@media (any-pointer: coarse)` 안에만 있다 — 하이브리드 기기의 손가락도 포함한다', () => {
+    const trail = (ancestors ?? []).join(' > ');
+    const any = (ancestors ?? []).filter((a) => a.includes('any-pointer: coarse'));
+    expect(any.length, `조상: ${trail}`).toBe(1);
+    const primaryOnly = (ancestors ?? []).filter((a) => /\(\s*pointer:\s*coarse\s*\)/.test(a));
+    expect(
+      primaryOnly,
+      `주 포인터만 묻는 질의로 돌아갔다: ${trail}. 하이브리드 기기는 pointer:fine 로 답하므로 바닥이 안 닿는다.`,
+    ).toEqual([]);
   });
 
   it('바닥값은 리터럴이 아니라 `--touch-target-min` 을 참조한다', () => {
