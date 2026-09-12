@@ -583,10 +583,22 @@ export function LibraryGraph({
             canvas has no reason to grow. */}
         <div className="pointer-events-none absolute bottom-3 right-3 hidden md:block">
           <div className="pointer-events-auto">
+            {/*
+              ⚠️ **Disabled while the picture is already framed.** Inspection 122 pressed
+              this tile a second time on the home and measured a **pixel-identical frame**
+              (S1): the control was offering to do something it had already done, which is
+              the "a chip that does nothing reads as a broken product" finding in another
+              corner. It re-frames from any camera a person has taken — a pan, a wheel, a
+              mark dragged out — and says so by moving; with nothing to re-frame it takes
+              the disabled grammar `ChromeTile` already owns and names the state in its
+              tooltip instead.
+            */}
             <ChromeTile
               data-testid="library-graph-fit"
+              data-framed={engine.framed ? "true" : "false"}
               icon={<Maximize2 />}
-              title={t("graph.fit")}
+              title={engine.framed ? t("graph.fitDone") : t("graph.fit")}
+              disabled={engine.framed}
               onClick={engine.fitToView}
             />
           </div>
@@ -618,7 +630,9 @@ export function LibraryGraph({
               compact && "line-clamp-1",
             )}
           >
-            {compact ? t("graph.legendShort") : t("graph.legend")}
+            {compact
+              ? t(cardNode ? "graph.legendShortCardOpen" : "graph.legendShort")
+              : t(cardNode ? "graph.legendCardOpen" : "graph.legend")}
           </p>
           <p
             id="library-graph-hint"
@@ -641,9 +655,21 @@ export function LibraryGraph({
               on is gone … the moment I open a card I lose the key to the picture"*
               (2026-09-12). The card says what is moving, beside the lines; this line goes
               on saying what the marks mean.
+
+              ⚠️ **What it stops saying is how to open a card, once one is open.** The
+              sentence ended in *press a dot for a card beside it* while the card stood on
+              screen — an instruction for the thing that had already happened (inspection
+              122, S19). The vocabulary is the half a reader still needs and is kept
+              verbatim; only the gesture clause is swapped, for the two ways back out.
             */}
             {activeNode
-              ? t(`graph.describe.${activeNode.kind}`, { name: activeNode.label })
+              ? /* The mark whose card is open is described by how to leave it, not by how
+                   to open it; pointing at some *other* mark while a card stands open still
+                   answers with what pressing that one would do, because it would. */
+                t(
+                  `graph.${activeNode.id === cardId ? "describeOpen" : "describe"}.${activeNode.kind}`,
+                  { name: activeNode.label },
+                )
               : highlightNote
                 ? /* The emphasis a sentence off-canvas is holding, said in words: what is
                      lit, and the two ways back. See `highlightNote`. */
@@ -654,8 +680,8 @@ export function LibraryGraph({
                      column took the mark vocabulary away from a first-time reader and
                      from assistive technology at the same moment (design-infoviz,
                      2026-09-08). Compact states it in one line instead of four. */
-                  t("graph.legendShort")
-                : t("graph.legend")}
+                  t(cardNode ? "graph.legendShortCardOpen" : "graph.legendShort")
+                : t(cardNode ? "graph.legendCardOpen" : "graph.legend")}
           </p>
         </div>
         {/* The keyboard path is said to the people who need it and not to the ones

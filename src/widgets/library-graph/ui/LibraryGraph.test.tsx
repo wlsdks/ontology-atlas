@@ -127,6 +127,54 @@ describe("the library graph section", () => {
     expect(screen.queryByTestId("library-graph-card")).toBeNull();
   });
 
+  /**
+   * **The legend answers the state the canvas is actually in.**
+   *
+   * With a card open it still read *press a dot for a card beside it* — an instruction for
+   * the thing that had just happened (inspection 122, S19). The mark vocabulary is the half
+   * a reader still needs while the card stands there, so it is kept verbatim and only the
+   * gesture clause is swapped for the two ways back out.
+   */
+  it("stops telling a person how to open the card they already have open", () => {
+    renderGraph();
+    const hint = () => screen.getByTestId("library-graph-hint").textContent ?? "";
+    expect(hint()).toContain("점을 누르면 그 옆에 카드가 열립니다");
+    expect(hint()).not.toContain("Escape");
+
+    fireEvent.keyDown(canvas(), { key: "ArrowRight" });
+    // Pointed at, nothing open: the line describes the mark and says what a press does.
+    expect(hint()).toContain("누르면 옆에 카드가 열립니다");
+    fireEvent.keyDown(canvas(), { key: "Enter" });
+    expect(screen.getByTestId("library-graph-card")).toBeTruthy();
+    /*
+     * The card is open on the mark the keyboard is on, so this line — which is that mark's
+     * description while a mark is active — says the card is open and how to leave it. The
+     * facts above it (what the lines from this mark mean) are unchanged: only the verb is.
+     */
+    expect(hint()).not.toContain("누르면 옆에 카드가 열립니다");
+    expect(hint()).toContain("Escape");
+    expect(hint()).toContain("굵은 선은 이 원문으로 쓴 위키 문서로 이어지고");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(hint()).toContain("누르면 옆에 카드가 열립니다");
+    expect(hint()).not.toContain("Escape");
+  });
+
+  /**
+   * **The fit tile never offers a press that could only repaint the same pixels.** Pressed a
+   * second time on the home it produced a pixel-identical frame (inspection 122, S1).
+   */
+  it("stops offering the fit while the picture is already framed", () => {
+    renderGraph();
+    const tile = screen.getByTestId("library-graph-fit");
+    // jsdom paints no frames, so `framed` is only ever published by the loop; what this
+    // asserts is the wiring — the attribute the surface writes from it, and the disabled
+    // grammar that follows it. The camera's own arithmetic is `isSameView`'s unit case and
+    // the rendered claim is `library-graph-picture.spec.ts`.
+    expect(tile.getAttribute("data-framed")).toBe("false");
+    expect(tile).not.toBeDisabled();
+  });
+
   it("closes the card on Escape, on its own control, and on a second Enter", () => {
     renderGraph();
     fireEvent.keyDown(canvas(), { key: "ArrowRight" });

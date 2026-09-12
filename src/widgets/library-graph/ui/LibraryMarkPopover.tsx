@@ -372,6 +372,13 @@ export function LibraryMarkPopover({
           data-testid="library-graph-card-flow"
           className="text-label leading-body text-[color:var(--color-text-quaternary)]"
         >
+          {/*
+            ⚠️ **The amber clause is printed only when an amber dot is on the canvas.**
+            `flowStale` is `libraryGraphFlowEdges(graph, cardId).stale`, i.e. exactly this
+            mark's own unverified citations — and since 2026-09-13 every one of those
+            carries the dot in its break at rest, not only during a breath. Before that the
+            sentence named a mark the default window never drew (inspection 122, S2).
+          */}
           {t(flowStale ? "graph.card.flowInlineStale" : "graph.card.flowInline")}
         </p>
       ) : null}

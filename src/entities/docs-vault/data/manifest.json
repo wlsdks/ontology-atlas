@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-09-12",
+  "generatedAt": "2026-09-13",
   "docs": [
     {
       "slug": "AGENT-DESIGN-METHOD",
@@ -965,8 +965,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 134590,
-      "updatedAt": "2026-09-12",
+      "wordCount": 134955,
+      "updatedAt": "2026-09-13",
       "linksOut": [
         "src:sources/settlement-policy.md",
         "wiki/…",
