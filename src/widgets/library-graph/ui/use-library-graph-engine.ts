@@ -13,6 +13,7 @@ import {
   isLibrarySimulationRunning,
   LIBRARY_LABEL_ALLOWANCE,
   libraryPositions,
+  LIBRARY_COLLISION_PAD,
   libraryMarkRadii,
   librarySimulationBounds,
   pinLibraryNode,
@@ -40,6 +41,8 @@ import {
   drawLibraryGraph,
   hitTestLibraryGraph,
   type LibraryGraphActivityMark,
+  libraryStandingLabelReach,
+  type LibraryGraphLabelBox,
 } from "../render/draw-library-graph";
 import { readLibraryGraphInk, type LibraryGraphInk } from "../render/library-graph-ink";
 
@@ -92,7 +95,26 @@ const DRAG_THRESHOLD_PX = 7;
  * taken from there rather than written twice: a mark the physics placed at the boundary
  * and the fit that draws it must not disagree about where the boundary is.
  */
-const FIT_PADDING = LIBRARY_LABEL_ALLOWANCE;
+/**
+ * What the fit reserves on every side, in CSS px — **the room the outermost mark's own name
+ * needs**, which now follows the mark band and the type step rather than being a constant.
+ *
+ * `LIBRARY_LABEL_ALLOWANCE` (34) stays the floor: it is the value the orphan ring's own
+ * geometry is written against in the simulation, and a padding below it would put a loose
+ * mark's name off the canvas.
+ */
+function fitPaddingFor(
+  radii: ReadonlyMap<string, number>,
+  ink: { pageLabelPx: number } | null,
+): number {
+  let maxRadius = 0;
+  for (const radius of radii.values()) maxRadius = Math.max(maxRadius, radius);
+  if (maxRadius <= 0 || !ink) return LIBRARY_LABEL_ALLOWANCE;
+  return Math.max(
+    LIBRARY_LABEL_ALLOWANCE,
+    libraryStandingLabelReach(maxRadius, ink.pageLabelPx),
+  );
+}
 
 /** How fast an auto-fitting view catches up with the settling picture, per frame. */
 const AUTO_FIT_FOLLOW = 0.16;
@@ -269,6 +291,14 @@ export function useLibraryGraphEngine({
   /** Screen-space positions of the last painted frame — what the pointer is tested against. */
   const screenRef = useRef<Map<string, LayoutPoint>>(new Map());
   const radiiRef = useRef<Map<string, number>>(new Map());
+  /**
+   * **The placed names of the last frame, for a measurement and never for the product.**
+   *
+   * Null while nothing is measuring, which is every ordinary session: the greedy label
+   * pass then fills no array and the frame allocates nothing extra. The `e2e` probe effect
+   * below sets it, and `labels()` reads it.
+   */
+  const labelReportRef = useRef<LibraryGraphLabelBox[] | null>(null);
   const boxRef = useRef({ width: 0, height: 0, dpr: 1 });
   const pendingBoxRef = useRef<{ width: number; height: number; dpr: number } | null>(null);
   const rectRef = useRef<{ left: number; top: number }>({ left: 0, top: 0 });
@@ -378,7 +408,7 @@ export function useLibraryGraphEngine({
       const box = { width, height };
       const bounds = librarySimulationBounds(sim);
       if (autoFitRef.current.on) {
-        const target = fitView(bounds, box, FIT_PADDING);
+        const target = fitView(bounds, box, fitPaddingFor(radiiRef.current, inkRef.current));
         const current = viewRef.current;
         // Instant under reduced motion, and instant on the first frame, where there is
         // nothing to travel from.
@@ -521,6 +551,9 @@ export function useLibraryGraphEngine({
         stateRef.current.reducedMotion,
       );
 
+      // The pass below appends; without this the measurement's array would be every
+      // frame's names at once.
+      if (labelReportRef.current) labelReportRef.current.length = 0;
       drawLibraryGraph(context, {
         nodes,
         edges: graphRef.current.edges,
@@ -534,6 +567,7 @@ export function useLibraryGraphEngine({
         activeLabel: stateRef.current.activeLabel,
         standingLabels: stateRef.current.standingLabels,
         radii: radiiRef.current,
+        labelReport: labelReportRef.current ?? undefined,
         opacity,
         dim: dimState.value,
         focus,
@@ -730,9 +764,11 @@ export function useLibraryGraphEngine({
         MOTION.base.duration * 1000 + MOTION.settle.duration * 1000,
       ),
     };
-    radiiRef.current = libraryMarkRadii(graph);
 
     const box = pendingBoxRef.current ?? boxRef.current;
+    // The band the marks are drawn in follows the canvas, so the box is read before the radii
+    // rather than after: a mark's size is a fact about how much room it has.
+    radiiRef.current = libraryMarkRadii(graph, box);
     const existing = simRef.current;
     if (!existing) {
       if (box.width === 0 || box.height === 0) return;
@@ -785,7 +821,16 @@ export function useLibraryGraphEngine({
       pendingBoxRef.current = { width: rect.width, height: rect.height, dpr };
       rectRef.current = { left: rect.left, top: rect.top };
       const sim = simRef.current;
-      if (sim) resizeLibrarySimulation(sim, { width: rect.width, height: rect.height });
+      if (sim) {
+        resizeLibrarySimulation(sim, { width: rect.width, height: rect.height });
+        // The mark band is a fact about the room each mark has, so a box that changed hands
+        // back a different band. Collision reach follows it, or a grown mark would overlap
+        // the neighbour the pass was told to keep it off.
+        radiiRef.current = libraryMarkRadii(graph, { width: rect.width, height: rect.height });
+        for (const node of sim.nodes) {
+          node.radius = (radiiRef.current.get(node.id) ?? 5) + LIBRARY_COLLISION_PAD;
+        }
+      }
       // The first measurement is also what makes the simulation possible: it runs in the
       // canvas's own pixels, so before there is a box there is nothing to create.
       else if (rect.width > 0 && rect.height > 0) syncSimulationRef.current();
@@ -824,7 +869,7 @@ export function useLibraryGraphEngine({
       ) {
         const box = { width: rect.width, height: rect.height };
         const ratio = Math.min(box.width / previous.width, box.height / previous.height);
-        const limits = scaleBounds(fitView(librarySimulationBounds(sim), box, FIT_PADDING).scale);
+        const limits = scaleBounds(fitView(librarySimulationBounds(sim), box, fitPaddingFor(radiiRef.current, inkRef.current)).scale);
         const view = viewRef.current;
         viewRef.current = {
           ...view,
@@ -992,7 +1037,7 @@ export function useLibraryGraphEngine({
           const distance = Math.hypot(second!.x - first!.x, second!.y - first!.y);
           const mid = { x: (first!.x + second!.x) / 2, y: (first!.y + second!.y) / 2 };
           if (pinch.distance > 0) {
-            const bounds = fitBounds(sim, box);
+            const bounds = fitBounds(sim, box, fitPaddingFor(radiiRef.current, inkRef.current));
             let next = zoomViewAbout(viewRef.current, box, mid, distance / pinch.distance, bounds);
             // Two fingers travelling together pan as well as pinch; the midpoint's own
             // movement is that pan, and taking it here is why one gesture does both.
@@ -1117,7 +1162,7 @@ export function useLibraryGraphEngine({
         boxRef.current,
         { x: event.clientX - rect.left, y: event.clientY - rect.top },
         wheelZoomFactor(pixels),
-        fitBounds(simRef.current, boxRef.current),
+        fitBounds(simRef.current, boxRef.current, fitPaddingFor(radiiRef.current, inkRef.current)),
       );
       wake();
     };
@@ -1174,11 +1219,22 @@ export function useLibraryGraphEngine({
         nodeId: pointerRef.current.drag?.nodeId ?? null,
       }),
       view: () => ({ ...viewRef.current, ...boxRef.current }),
+      /**
+       * Every name the last frame actually placed, in canvas CSS pixels.
+       *
+       * Which names are drawn and where is decided by a greedy screen-space pass that
+       * slides, truncates and drops — so a claim that the picture's names are readable and
+       * do not collide can only be measured from the pass's own output. Empty until one
+       * frame has run with the report armed, which the next line does.
+       */
+      labels: () => labelReportRef.current ?? [],
       /** Where the simulation is: above the floor it is still arranging itself. */
       alpha: () => simRef.current?.alpha ?? 0,
     };
+    labelReportRef.current = [];
     (window as unknown as { __atlasLibraryGraph?: typeof probe }).__atlasLibraryGraph = probe;
     return () => {
+      labelReportRef.current = null;
       delete (window as unknown as { __atlasLibraryGraph?: typeof probe }).__atlasLibraryGraph;
     };
   }, []);
@@ -1196,8 +1252,12 @@ export function useLibraryGraphEngine({
 }
 
 /** The zoom's floor and ceiling, always relative to what the fit would be right now. */
-function fitBounds(sim: LibrarySimulation | null, box: { width: number; height: number }) {
-  const fitted = fitView(sim ? librarySimulationBounds(sim) : null, box, FIT_PADDING);
+function fitBounds(
+  sim: LibrarySimulation | null,
+  box: { width: number; height: number },
+  padding: number,
+) {
+  const fitted = fitView(sim ? librarySimulationBounds(sim) : null, box, padding);
   return scaleBounds(fitted.scale);
 }
 

@@ -1,6 +1,7 @@
 import type { LibraryGraph, LibraryGraphNodeKind } from "./build-library-graph";
 import { LibraryQuadtree } from "./library-graph-quadtree";
 import { seedPositions, type LayoutPoint } from "./library-graph-layout";
+import { packGroupBoxes, type PackBox, type PackSlot } from "./library-graph-packing";
 
 /**
  * **The library graph is a live force simulation** — the picture is being held in place
@@ -104,7 +105,8 @@ const REHEAT_ALPHA = 0.42;
 /** Iterations of the link/collision relaxation per tick. Two is enough to hold a chain. */
 const RELAX_PASSES = 2;
 /** Extra room around a mark that no other mark may enter. */
-const COLLISION_PAD = 7;
+export const LIBRARY_COLLISION_PAD = 7;
+const COLLISION_PAD = LIBRARY_COLLISION_PAD;
 /**
  * Order above which the collision pass bins into a uniform grid instead of testing every
  * pair. Below it the grid's own bookkeeping costs more than the pairs it skips.
@@ -227,6 +229,13 @@ interface SimulationNode {
    * and the same on every visit.
    */
   orbit: number | null;
+  /**
+   * Which of {@link LibrarySimulation.cells} this mark is held in — the index of its own
+   * group of the folder. A folder that is one connected graph has one cell covering the
+   * whole field, and then this is 0 for everybody and nothing about the physics differs
+   * from what it was before the packing existed.
+   */
+  cell: number;
 }
 
 interface SimulationLink {
@@ -247,6 +256,30 @@ export interface LibrarySimulation {
   /** Half-width and half-height of the field, which is where the aspect-aware gravity comes from. */
   box: { width: number; height: number };
   /**
+   * **One place per group of the folder**, in the simulation's own units — see
+   * `library-graph-packing.ts` for why a composition rather than a force decides this.
+   * Exactly one cell, covering the whole field, when the folder is a single connected
+   * graph.
+   */
+  cells: PackSlot[];
+  /**
+   * The nodes of each group, by cell index, as references — rebuilt when the composition
+   * is, never per tick. The many-body pass walks these rather than the whole array, which
+   * is what stops two groups with no relation between them from pushing each other at the
+   * walls.
+   */
+  groupNodes: SimulationNode[][];
+  /** Which cell holds the unattached marks, or `null` when the folder has none. */
+  looseCell: number | null;
+  /** Radius of the ring they stand on inside it. 0 when there is only one of them. */
+  looseRadius: number;
+  /**
+   * Whether the groups were composed at all. False for a single-group folder — where the
+   * one cell is the whole field — and for a folder of nothing but unattached files, whose
+   * ring is still the field's own ellipse.
+   */
+  packed: boolean;
+  /**
    * Order above which the many-body force switches to the Barnes–Hut tree.
    *
    * It is state rather than a constant **only so the perf test can measure both passes on
@@ -259,17 +292,64 @@ export interface LibrarySimulation {
   ticks: number;
 }
 
-/** The drawn half-extent of a mark, graded by degree inside the 5–10px band. */
-function markRadius(degree: number, maxDegree: number): number {
-  if (maxDegree <= 0) return 5;
+/**
+ * **The band the marks are drawn in, graded to the room each one has.**
+ *
+ * The 5–10px band was set on 2026-09-06, when this canvas was a 320px strip above the
+ * reader. It became the whole pane on 2026-09-12 and the band never followed: measured on the
+ * owner's folder at 1512×901, twelve marks stood on 891,000 square pixels wearing 20px of
+ * diameter at most — 0.35% of the canvas carried ink, and the owner read the result as *"an
+ * ugly popup, very poor"*. A dot is small or large relative to the room around it, and this
+ * is that room: the side of the square each mark would get if the canvas were divided evenly
+ * between them.
+ *
+ * The two ends are floors and ceilings, not tuning:
+ *
+ * - **10px is the floor of the top of the band**, which is exactly what 2026-09-06 measured,
+ *   so no folder ever gets *smaller* marks than the ones that shipped. A dense folder keeps
+ *   the band it had.
+ * - **17px is the ceiling**, because a mark is a point on a picture: past a fifth of the
+ *   shortest rest length (52) two marks that cite the same file begin to touch, and the
+ *   collision pass would be deciding the layout instead of the springs.
+ * - **0.55 of the top** is the bottom, which holds the 2:1 area ratio between the busiest
+ *   mark and the quietest that the degree grading has always drawn.
+ */
+const MARK_TOP_MIN = 10;
+const MARK_TOP_MAX = 17;
+const MARK_BOTTOM_RATIO = 0.55;
+/** How much of a mark's own share of the canvas it fills across. */
+const MARK_ROOM_SHARE = 0.075;
+
+/** The band this folder's marks are drawn in, on this canvas. */
+export function libraryMarkBand(
+  order: number,
+  box?: { width: number; height: number },
+): { min: number; max: number } {
+  if (!box) return { min: 5, max: MARK_TOP_MIN };
+  const room = Math.sqrt((box.width * box.height) / Math.max(1, order));
+  const max = Math.min(MARK_TOP_MAX, Math.max(MARK_TOP_MIN, room * MARK_ROOM_SHARE));
+  return { min: max * MARK_BOTTOM_RATIO, max };
+}
+
+/** The drawn half-extent of a mark, graded by degree inside the band. */
+function markRadius(degree: number, maxDegree: number, band: { min: number; max: number }): number {
+  if (maxDegree <= 0) return band.min;
   // Square-rooted, so the band reads as "more links" rather than as a bar chart: area
   // grows with degree, which is how a person judges a dot's size.
   const t = Math.sqrt(Math.min(degree, maxDegree) / maxDegree);
-  return 5 + 5 * t;
+  return band.min + (band.max - band.min) * t;
 }
 
-/** Every node's drawn half-extent, in one pass. Pure; the renderer takes the result. */
-export function libraryMarkRadii(graph: LibraryGraph): Map<string, number> {
+/**
+ * Every node's drawn half-extent, in one pass. Pure; the renderer takes the result.
+ *
+ * `box` is the canvas. Without it the band is the 5–10px one this canvas shipped with, which
+ * is what every test written before the band followed the canvas still measures.
+ */
+export function libraryMarkRadii(
+  graph: LibraryGraph,
+  box?: { width: number; height: number },
+): Map<string, number> {
   const degree = new Map<string, number>();
   for (const node of graph.nodes) degree.set(node.id, 0);
   for (const edge of graph.edges) {
@@ -278,9 +358,10 @@ export function libraryMarkRadii(graph: LibraryGraph): Map<string, number> {
   }
   let max = 0;
   for (const value of degree.values()) max = Math.max(max, value);
+  const band = libraryMarkBand(graph.nodes.length, box);
   const out = new Map<string, number>();
   for (const node of graph.nodes) {
-    const radius = markRadius(degree.get(node.id) ?? 0, max);
+    const radius = markRadius(degree.get(node.id) ?? 0, max, band);
     // A square reads heavier than a circle of the same extent, so a source keeps the
     // 5/6 step the renderer already used between them rather than matching by box.
     out.set(node.id, node.kind === "source" ? radius * (5 / 6) : radius);
@@ -296,15 +377,22 @@ export function createLibrarySimulation({
   graph,
   box,
   exactMaxOrder = MANY_BODY_EXACT_MAX_ORDER,
+  compose = true,
 }: {
   graph: LibraryGraph;
   box: { width: number; height: number };
   /** Measurement-only override; see {@link LibrarySimulation.exactMaxOrder}. */
   exactMaxOrder?: number;
+  /**
+   * False only for the footprint pass `composeLibraryGroups` runs on one group at a time:
+   * a single group has nothing to compose, and saying so explicitly is what keeps the
+   * recursion one level deep by construction rather than by argument.
+   */
+  compose?: boolean;
 }): LibrarySimulation {
   const ids = graph.nodes.map((node) => node.id);
   const seeds = seedPositions(ids);
-  const radii = libraryMarkRadii(graph);
+  const radii = libraryMarkRadii(graph, box);
   const degree = new Map<string, number>();
   for (const edge of graph.edges) {
     degree.set(edge.source, (degree.get(edge.source) ?? 0) + 1);
@@ -325,20 +413,28 @@ export function createLibrarySimulation({
       entered: 1,
       degree: degree.get(node.id) ?? 0,
       orbit: null,
+      cell: 0,
     };
   });
   assignOrbits(nodes);
   const index = new Map(nodes.map((node, position) => [node.id, position]));
-  return {
+  const sim: LibrarySimulation = {
     nodes,
     index,
     links: buildLinks(graph, index, degree),
     alpha: 1,
     alphaTarget: 0,
     box: { width: Math.max(1, box.width), height: Math.max(1, box.height) },
+    cells: [],
+    groupNodes: [],
+    looseCell: null,
+    looseRadius: 0,
+    packed: false,
     exactMaxOrder,
     ticks: 0,
   };
+  composeLibraryGroups(sim, compose ? graph : null);
+  return sim;
 }
 
 function buildLinks(
@@ -370,6 +466,314 @@ function buildLinks(
     });
   }
   return links;
+}
+
+/**
+ * Order above which the footprint pass is skipped and the folder is drawn in one field, as
+ * it was before the packing existed.
+ *
+ * The pass settles each group once, synchronously, on mount. That is the same work one
+ * arrival already costs, split across groups — Σ n<sub>i</sub>² ≤ n² — so on every folder
+ * the composition is for it is free. It is bounded because the *defect* is bounded: the
+ * empty middle is a sparse-folder failure, and it is already gone by 60 marks (measured
+ * 2026-09-12 on a 60-node folder: 75% and 79% cell occupancy, a 26px band, against 54% and
+ * a 167px band on the owner's 12-mark folder). A 600-mark folder is one dense component
+ * with nothing to compose, and paying a synchronous 240-tick settle of it on mount to find
+ * that out would be a first frame a person waits for.
+ */
+const PACK_PREPASS_MAX_ORDER = 240;
+
+/**
+ * Footprint per mark used **only** above {@link PACK_PREPASS_MAX_ORDER}, where the pass
+ * that measures it is skipped. From the same 2026-09-12 calibration: a settled component's
+ * bounding-box area per mark climbs from 2.3k at three marks and saturates near 19k above
+ * forty, because a small component is a star held at one rest length while a large one has
+ * an interior. 14k is the middle of the band this estimate is ever used in.
+ */
+const PACK_ESTIMATE_AREA_PER_MARK = 14000;
+
+/**
+ * **The composition**: every group of the folder is given its own place, and every mark is
+ * told which place it belongs to.
+ *
+ * Three steps, and the middle one is the whole reason this is not a force.
+ *
+ * 1. **The groups.** The connected components of the relation graph, biggest first with the
+ *    smallest member id breaking ties, and then — as one more group — the unattached marks,
+ *    which have no relation to answer for and stand on a ring of their own inside their own
+ *    cell.
+ * 2. **The footprints.** Each component is settled *on its own*, by this very file's
+ *    forces, and its bounding box measured. So the rectangle a group is given already has
+ *    the shape of what goes in it, which is what a weight-proportional treemap cell cannot
+ *    promise: a wide cluster in a square cell overflows onto its neighbour. The settled
+ *    offsets are kept and used to seed the real simulation, so the picture *starts*
+ *    composed and the arrival a person sees is the last of the settling rather than four
+ *    clusters travelling across the canvas.
+ * 3. **The packing.** `packGroupBoxes` lays the footprints in rows across an arrangement of
+ *    the canvas's aspect, with {@link ORPHAN_RING_GAP} of clear space around every group —
+ *    the same number that has always said how far a mark with no relation stands off
+ *    everything else.
+ *
+ * A folder that is **one** connected graph, with no unattached files, has one group; it
+ * takes one cell covering the whole field and every line below behaves exactly as it did
+ * before this function existed. That is the case the perf gate and most of the unit suite
+ * measure, and it is deliberately byte-for-byte the old path.
+ *
+ * `graph` is null when there is nothing to measure a footprint from — the footprint pass
+ * needs the folder, not the simulation — and then the estimate above stands in.
+ */
+function composeLibraryGroups(sim: LibrarySimulation, graph: LibraryGraph | null): void {
+  const { nodes, links } = sim;
+  const wholeField: PackSlot = {
+    cx: 0,
+    cy: 0,
+    halfWidth: sim.box.width / 2,
+    halfHeight: sim.box.height / 2,
+  };
+  if (nodes.length === 0) {
+    sim.cells = [wholeField];
+    sim.groupNodes = [[]];
+    sim.looseCell = null;
+    sim.looseRadius = 0;
+    sim.packed = false;
+    return;
+  }
+
+  // ── 1. The groups. ──
+  const parent = nodes.map((_, index) => index);
+  const find = (start: number): number => {
+    let index = start;
+    while (parent[index] !== index) {
+      parent[index] = parent[parent[index]!]!;
+      index = parent[index]!;
+    }
+    return index;
+  };
+  for (const link of links) {
+    const first = find(link.source);
+    const second = find(link.target);
+    // The lower index always wins, so the roots do not depend on the order the links
+    // happened to arrive in.
+    if (first !== second) parent[Math.max(first, second)] = Math.min(first, second);
+  }
+  const byRoot = new Map<number, number[]>();
+  const loose: number[] = [];
+  nodes.forEach((node, index) => {
+    if (node.orbit !== null) {
+      loose.push(index);
+      return;
+    }
+    const root = find(index);
+    const members = byRoot.get(root);
+    if (members) members.push(index);
+    else byRoot.set(root, [index]);
+  });
+  const components = [...byRoot.values()].sort(
+    (first, second) =>
+      second.length - first.length ||
+      (nodes[first[0]!]!.id < nodes[second[0]!]!.id ? -1 : 1),
+  );
+  const groups = loose.length > 0 ? [...components, loose] : components;
+
+  const looseRadius = looseRingRadius(loose.map((index) => nodes[index]!));
+  /*
+   * ⚠️ **A folder with one connected mass keeps the picture it had** — one field, one centre,
+   * and the ring of unattached marks around that mass, exactly as 2026-09-07 decided.
+   *
+   * This is a measurement, not deference. On a 60-mark folder that is one component plus one
+   * uncited file, composing the two as peers gave the single loose mark a place the size of a
+   * group and stretched the picture to make room for it: the band went 26 → 82px and the
+   * height filled fell 0.94 → 0.76. The composition is the answer when there is **no** single
+   * mass to be the picture — three clusters and a loose file have no shared centre — and the
+   * ring is the answer when there is one. Both cases are measured, and each keeps what it
+   * measured better.
+   */
+  if (components.length < 2) {
+    sim.cells = [wholeField];
+    // The one group is the connected mass; the unattached marks are listed after it so the
+    // many-body pass skips them, which is what it did before this function existed.
+    sim.groupNodes = loose.length > 0
+      ? [components[0]?.map((index) => nodes[index]!) ?? [], loose.map((index) => nodes[index]!)]
+      : [components[0]?.map((index) => nodes[index]!) ?? []];
+    sim.looseCell = loose.length > 0 ? 1 : null;
+    sim.looseRadius = looseRadius;
+    sim.packed = false;
+    for (const node of nodes) node.cell = 0;
+    return;
+  }
+
+  // ── 2. The footprints. ──
+  /*
+   * Each group is settled **on its own**, by this file's own forces and against the canvas's
+   * own aspect — which is the aspect its gravity will keep once it is in its cell — so the
+   * box the packing stacks is exactly the box the group will occupy. The settled offsets are
+   * kept and used to seed the real simulation, so the picture *starts* composed and the
+   * arrival a person sees is the last of the settling rather than four clusters travelling
+   * across the canvas.
+   */
+  const prepass = graph !== null && nodes.length <= PACK_PREPASS_MAX_ORDER;
+  const looseIndex = loose.length > 0 ? groups.length - 1 : -1;
+  const looseBox = (): PackBox => {
+    let reach = 0;
+    for (const index of loose) reach = Math.max(reach, nodes[index]!.radius);
+    // The ring, plus the room its own marks take: the cell has to hold the mark, not only
+    // the circle its centre sits on.
+    const extent = (looseRadius + reach) * 2;
+    // ⚠️ Unattached marks are the one group whose box is **not** solid: no line runs between
+    // them, so the rows between two slots on the ring hold nothing, and the packing has to
+    // know that or it will stack another group against a gap.
+    const slotSpans = (project: (orbit: number) => number) =>
+      loose.map((index) => {
+        const node = nodes[index]!;
+        const centre = node.orbit === null ? 0 : project(node.orbit) * looseRadius;
+        return { from: centre - node.radius, to: centre + node.radius };
+      });
+    return {
+      width: extent,
+      height: extent,
+      spans: slotSpans(Math.sin),
+      xSpans: slotSpans(Math.cos),
+    };
+  };
+  const measure = (): {
+    boxes: PackBox[];
+    seeds: Array<Map<string, LayoutPoint> | null>;
+  } => {
+    const boxes: PackBox[] = [];
+    const seeds: Array<Map<string, LayoutPoint> | null> = [];
+    groups.forEach((members, groupIndex) => {
+      if (groupIndex === looseIndex) {
+        boxes.push(looseBox());
+        seeds.push(null);
+        return;
+      }
+      const measured = prepass
+        ? settledFootprint(graph!, members.map((index) => nodes[index]!.id), sim.box)
+        : null;
+      if (measured) {
+        boxes.push(measured.box);
+        seeds.push(measured.offsets);
+        return;
+      }
+      const extent = Math.sqrt(members.length * PACK_ESTIMATE_AREA_PER_MARK);
+      boxes.push({ width: extent, height: extent });
+      seeds.push(null);
+    });
+    return { boxes, seeds };
+  };
+
+  const aspect = sim.box.width / sim.box.height;
+  const { boxes, seeds } = measure();
+  const cells = packGroupBoxes(boxes, aspect, ORPHAN_RING_GAP);
+
+  // ── 3. The places. ──
+  sim.cells = cells;
+  sim.groupNodes = groups.map((members) => members.map((index) => nodes[index]!));
+  sim.looseCell = loose.length > 0 ? groups.length - 1 : null;
+  sim.looseRadius = looseRadius;
+  sim.packed = true;
+  groups.forEach((members, groupIndex) => {
+    const cell = cells[groupIndex]!;
+    const offsets = seeds[groupIndex];
+    for (const index of members) {
+      const node = nodes[index]!;
+      node.cell = groupIndex;
+      // A mark that has been on the canvas keeps its position — a composition is not a
+      // reason to throw a picture away — and one that has not is put where it belongs.
+      if (node.entered >= 1 && sim.ticks > 0) continue;
+      const offset = offsets?.get(node.id);
+      if (offset) {
+        node.x = cell.cx + offset.x;
+        node.y = cell.cy + offset.y;
+        node.vx = 0;
+        node.vy = 0;
+      } else if (node.orbit !== null) {
+        node.x = cell.cx + Math.cos(node.orbit) * looseRadius;
+        node.y = cell.cy + Math.sin(node.orbit) * looseRadius;
+        node.vx = 0;
+        node.vy = 0;
+      }
+    }
+  });
+}
+
+/**
+ * **The radius of the ring the unattached marks stand on**, inside their own cell.
+ *
+ * One loose file has no ring: a circle of one is a point, and the point is the middle of
+ * its cell. Above that the radius is whichever is larger of one slot's worth of arc and the
+ * circumference the marks need not to collide — so a folder with twenty unwritten files
+ * gets a wide ring and one with two gets a narrow one, and neither is a number written down
+ * here. The spacing is the collision diameter with a third more room, which is the same
+ * clearance the collision pass would have insisted on anyway.
+ */
+function looseRingRadius(loose: readonly SimulationNode[]): number {
+  if (loose.length <= 1) return 0;
+  let reach = 0;
+  for (const node of loose) reach = Math.max(reach, node.radius);
+  const spacing = reach * 2 * 1.35;
+  return Math.max(spacing, (loose.length * spacing) / (Math.PI * 2));
+}
+
+/**
+ * Settles one group on its own and returns the box it took and where each of its marks
+ * stood inside it, relative to the box's centre.
+ *
+ * It runs **this file's own forces**, through `createLibrarySimulation` with the
+ * composition switched off, so the footprint measured is the footprint the group will have.
+ * Two things are deliberately approximate: the mark radii are graded against this group's
+ * own busiest mark rather than the folder's, and the gravity's aspect is the canvas's rather
+ * than the cell's it has not been given yet. Both move the box by a few per cent, and the
+ * packing's gutter is what absorbs that.
+ */
+function settledFootprint(
+  graph: LibraryGraph,
+  ids: readonly string[],
+  box: { width: number; height: number },
+): { box: PackBox; offsets: Map<string, LayoutPoint> } | null {
+  const wanted = new Set(ids);
+  const sub: LibraryGraph = {
+    nodes: graph.nodes.filter((node) => wanted.has(node.id)),
+    edges: graph.edges.filter((edge) => wanted.has(edge.source) && wanted.has(edge.target)),
+    counts: graph.counts,
+  };
+  if (sub.nodes.length === 0) return null;
+  const sim = settleLibrarySimulation(
+    createLibrarySimulation({ graph: sub, box, compose: false }),
+  );
+  const bounds = librarySimulationBounds(sim);
+  if (!bounds) return null;
+  const cx = (bounds.minX + bounds.maxX) / 2;
+  const cy = (bounds.minY + bounds.maxY) / 2;
+  const offsets = new Map<string, LayoutPoint>();
+  for (const node of sim.nodes) offsets.set(node.id, { x: node.x - cx, y: node.y - cy });
+  /*
+   * **Which rows the group really covers**, for the packing's own scoring: every mark's own
+   * extent, plus the rows each line runs through. A group is usually one span from top to
+   * bottom because its lines connect it, but a component whose marks sit in a ring leaves its
+   * middle open and this is where that is noticed.
+   */
+  const spans: Array<{ from: number; to: number }> = [];
+  const xSpans: Array<{ from: number; to: number }> = [];
+  for (const node of sim.nodes) {
+    spans.push({ from: node.y - cy - node.radius, to: node.y - cy + node.radius });
+    xSpans.push({ from: node.x - cx - node.radius, to: node.x - cx + node.radius });
+  }
+  for (const link of sim.links) {
+    const from = sim.nodes[link.source]!;
+    const to = sim.nodes[link.target]!;
+    spans.push({ from: Math.min(from.y, to.y) - cy, to: Math.max(from.y, to.y) - cy });
+    xSpans.push({ from: Math.min(from.x, to.x) - cx, to: Math.max(from.x, to.x) - cx });
+  }
+  return {
+    box: {
+      width: Math.max(1, bounds.maxX - bounds.minX),
+      height: Math.max(1, bounds.maxY - bounds.minY),
+      spans,
+      xSpans,
+    },
+    offsets,
+  };
 }
 
 /**
@@ -424,6 +828,29 @@ function assignOrbits(nodes: SimulationNode[]): void {
 export function libraryOrphanRing(
   sim: LibrarySimulation,
 ): { cx: number; cy: number; rx: number; ry: number } | null {
+  /*
+   * ⚠️ **Once the folder's groups are composed, the ring is inside the loose group's own
+   * cell** (2026-09-12) — the centre and the radius come from the cell, not from the
+   * connected mass.
+   *
+   * The 2026-09-07 record put it around the mass because the mass was the only other thing
+   * in the field and a loose mark's alternative was a wall. With the groups composed there
+   * is no single mass to be around — there are three or four cells — and a ring drawn
+   * around all of them would be a rim the fit has to make room for, which is the 167px band
+   * this change exists to delete, restated as a circle. The unattached marks are a group of
+   * the folder like any other, so they get a place like any other, and inside it they still
+   * stand on a ring rather than against anything.
+   *
+   * Both of that record's live falsifiers are still answered: the ring is not between two
+   * marks that have a relation, and no loose mark is inside a cluster — its cell is its own,
+   * with {@link ORPHAN_RING_GAP} of clear space around it.
+   */
+  if (sim.packed) {
+    if (sim.looseCell === null) return null;
+    const cell = sim.cells[sim.looseCell];
+    if (!cell) return null;
+    return { cx: cell.cx, cy: cell.cy, rx: sim.looseRadius, ry: sim.looseRadius };
+  }
   let loose = 0;
   let minX = Infinity;
   let minY = Infinity;
@@ -552,18 +979,29 @@ export function stepLibrarySimulation(sim: LibrarySimulation): LibrarySimulation
  * a folder's real layout should not depend on how many files nobody cited.
  */
 function applyManyBody(sim: LibrarySimulation, alpha: number): void {
-  const { nodes } = sim;
   const charge = MANY_BODY_STRENGTH * alpha;
   /*
-   * The orphans are taken out **once**, not tested inside the pair loop: a branch in there
-   * runs n²/2 times, and adding one to it measured the 200-node exact pass at 0.62ms
-   * against 0.35 (2026-09-07, the perf test's own crossover case, which is exactly why
-   * that gate is stated as a comparison rather than a wall-clock ceiling). The copy is a
-   * list of references, made only on a folder that has an orphan at all.
+   * ⚠️ **Repulsion runs inside a group and never between two of them** (2026-09-12).
+   *
+   * Between two clusters with no relation it was the only force with an opinion, and its
+   * opinion is always the same: as far apart as the field allows. That is what put three
+   * clusters at three walls of the owner's own folder with 54% of the canvas holding
+   * nothing. Where two groups stand is composed instead — `composeLibraryGroups` — and
+   * what repulsion is *for*, keeping marks that have nothing between them out of one
+   * place, is still paid inside every group, plus collision everywhere.
+   *
+   * The lists are references built when the composition was, so the pass allocates nothing
+   * per tick: a branch inside the pair loop runs n²/2 times and measured the 200-node exact
+   * pass at 0.62ms against 0.35 (2026-09-07).
    */
-  const held = nodes.some((node) => node.orbit !== null)
-    ? nodes.filter((node) => node.orbit === null)
-    : nodes;
+  for (let group = 0; group < sim.groupNodes.length; group += 1) {
+    if (group === sim.looseCell) continue;
+    applyGroupManyBody(sim, sim.groupNodes[group]!, charge);
+  }
+}
+
+/** One group's many-body pass — exact below the crossover, Barnes–Hut above it. */
+function applyGroupManyBody(sim: LibrarySimulation, held: SimulationNode[], charge: number): void {
   if (held.length === 0) return;
   if (held.length > sim.exactMaxOrder) {
     const tree = new LibraryQuadtree(held);
@@ -620,6 +1058,24 @@ function applyManyBody(sim: LibrarySimulation, alpha: number): void {
  * about its own aspect, the lever is the link rest lengths, not this.
  */
 function applyGravity(sim: LibrarySimulation, alpha: number): void {
+  /*
+   * **The centre is the mark's own cell; the aspect is still the canvas's.**
+   *
+   * A folder that is one connected graph has one cell centred on the origin, so the two
+   * lines below then evaluate to exactly what they did before the packing existed. A folder
+   * of several groups gets several centres, which is the whole of what stops repulsion from
+   * being the only force with an opinion about where two unrelated clusters go.
+   *
+   * ⚠️ **The aspect is deliberately not the cell's**, and one measurement decides it. Shaping
+   * a group to its cell makes its footprint a function of the cell, and the cell is packed
+   * from the footprint — a feedback loop. `composeLibraryGroups` measures each group by
+   * settling it, so its box was up to a quarter taller than what the group then became inside
+   * its own cell, and the packing reserved height nothing filled: a 170px empty strip at
+   * 1512×901 on the owner's folder. Measuring twice made other folders worse (cell occupancy
+   * 0.83 → 0.54 at 1512) because the second round moved the composition again. With the
+   * canvas's aspect the footprint measured *is* the footprint drawn, and the boxes the
+   * packing stacks are exact.
+   */
   const aspect = sim.box.width / sim.box.height;
   const skew = Math.sqrt(Math.min(4, Math.max(0.25, aspect)));
   const strengthX = (GRAVITY / skew) * alpha;
@@ -627,8 +1083,10 @@ function applyGravity(sim: LibrarySimulation, alpha: number): void {
   for (const node of sim.nodes) {
     // An unattached mark answers to its ring slot instead; two centres would fight.
     if (node.orbit !== null) continue;
-    node.vx -= node.x * strengthX;
-    node.vy -= node.y * strengthY;
+    const cell = sim.cells[node.cell] ?? sim.cells[0];
+    if (!cell) continue;
+    node.vx -= (node.x - cell.cx) * strengthX;
+    node.vy -= (node.y - cell.cy) * strengthY;
   }
 }
 
@@ -806,7 +1264,40 @@ export function resizeLibrarySimulation(
   const height = Math.max(1, box.height);
   if (sim.box.width === width && sim.box.height === height) return;
   sim.box = { width, height };
+  /*
+   * The composition follows the box's shape — rows are laid out to fill the canvas's aspect
+   * — so a resize re-packs. It re-packs from the footprints the groups **currently have**
+   * rather than settling each one again: a resize is not a new picture, the marks are
+   * already where the springs put them, and measuring what is on the canvas is both cheaper
+   * and more truthful than re-deriving it.
+   */
+  if (sim.packed) repackLibraryGroups(sim);
   reheatLibrarySimulation(sim, 0.2);
+}
+
+/** Re-runs only the packing, from the footprints the groups have right now. */
+function repackLibraryGroups(sim: LibrarySimulation): void {
+  const boxes: PackBox[] = sim.groupNodes.map((members, group) => {
+    if (group === sim.looseCell) {
+      let reach = 0;
+      for (const node of members) reach = Math.max(reach, node.radius);
+      const extent = (sim.looseRadius + reach) * 2;
+      return { width: extent, height: extent };
+    }
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const node of members) {
+      minX = Math.min(minX, node.x - node.radius);
+      minY = Math.min(minY, node.y - node.radius);
+      maxX = Math.max(maxX, node.x + node.radius);
+      maxY = Math.max(maxY, node.y + node.radius);
+    }
+    if (!Number.isFinite(minX)) return { width: 1, height: 1 };
+    return { width: Math.max(1, maxX - minX), height: Math.max(1, maxY - minY) };
+  });
+  sim.cells = packGroupBoxes(boxes, sim.box.width / sim.box.height, ORPHAN_RING_GAP);
 }
 
 /**
@@ -843,7 +1334,7 @@ export function syncLibrarySimulation(
     link(edge.target, edge.source);
   }
 
-  const radii = libraryMarkRadii(graph);
+  const radii = libraryMarkRadii(graph, sim.box);
   const degree = new Map<string, number>();
   for (const edge of graph.edges) {
     degree.set(edge.source, (degree.get(edge.source) ?? 0) + 1);
@@ -876,6 +1367,7 @@ export function syncLibrarySimulation(
       entered: 0,
       degree: degree.get(node.id) ?? 0,
       orbit: null,
+      cell: existingCell(byId, neighbours, node.id),
     };
   });
   // A page that just gained its first citation stops being an orphan, and one whose last
@@ -886,8 +1378,32 @@ export function syncLibrarySimulation(
   sim.nodes = nodes;
   sim.index = new Map(nodes.map((node, position) => [node.id, position]));
   sim.links = buildLinks(graph, sim.index, degree);
+  // A page that Compile has just written can join two groups into one, or leave one behind
+  // as loose, so the composition is re-derived from the new relations rather than carried
+  // over. Marks already on the canvas keep their positions; `composeLibraryGroups` only
+  // seeds the ones that have not arrived.
+  composeLibraryGroups(sim, graph);
   if (entered.length > 0 || removed.length > 0) reheatLibrarySimulation(sim);
   return { entered, removed };
+}
+
+/**
+ * The cell a brand-new mark starts in: whichever attached neighbour is already on the
+ * canvas is in, or the first. It is only a starting value — `composeLibraryGroups` runs a
+ * few lines later and decides every cell from the new relations — but a node is created
+ * before that runs and a cell of 0 would put an arriving page in the biggest group's cell
+ * for one frame.
+ */
+function existingCell(
+  byId: ReadonlyMap<string, SimulationNode>,
+  neighbours: ReadonlyMap<string, string[]>,
+  id: string,
+): number {
+  for (const neighbour of neighbours.get(id) ?? []) {
+    const found = byId.get(neighbour);
+    if (found) return found.cell;
+  }
+  return 0;
 }
 
 /** Where each node is, in the simulation's own units. */

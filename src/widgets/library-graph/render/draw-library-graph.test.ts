@@ -21,10 +21,14 @@ const INK: LibraryGraphInk = {
   selected: "selected-ink",
   selectedRing: "ring-ink",
   danger: "danger-ink",
+  gridMinor: "grid-minor",
+  gridMajor: "grid-major",
   labelSurface: "label-surface",
   labelBorder: "label-border",
   labelInk: "label-ink",
   fontFamily: "Test",
+  pageLabelPx: 12.5,
+  labelPx: 11,
 };
 
 interface Recorder {
@@ -214,9 +218,10 @@ describe("drawing the library graph", () => {
     const rec = recorder();
     const unverified = { ...edges[0], certainty: "unverified" as const };
     drawLibraryGraph(rec.ctx, frame({ edges: [unverified, edges[1]] }));
-    // A broken edge is two arcs: two moveTo/quadraticCurveTo pairs instead of one.
-    const moves = (rec.ctx.moveTo as unknown as { mock: { calls: unknown[] } }).mock.calls.length;
-    expect(moves).toBe(3);
+    // A broken edge is two arcs: two `quadraticCurveTo` calls instead of one, so two edges
+    // where one is unverified draw three. Counted on the curve and not on `moveTo`, which the
+    // ruled ground under the picture also calls.
+    expect(rec.ctx.quadraticCurveTo).toHaveBeenCalledTimes(3);
   });
 
   it("draws a source nobody has written up as a hollow square, not as a missing line", () => {

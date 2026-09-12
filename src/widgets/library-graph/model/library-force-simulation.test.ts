@@ -241,23 +241,58 @@ describe("the library graph's force simulation", () => {
     };
     const sim = settleLibrarySimulation(createLibrarySimulation({ graph, box: BOX }));
     const at = (id: string) => sim.nodes[sim.index.get(id)!]!;
+
+    /*
+     * ⚠️ **Restated on 2026-09-12, and the reason is a trade this change made on purpose.**
+     *
+     * What stood here was that *every* source of a page is nearer to it than *any* source of
+     * the other group. That held because cross-group repulsion pushed two unconnected
+     * clusters as far apart as the field allowed — which is exactly what left 54% of the
+     * canvas empty on the owner's folder and is why the groups are now composed into adjacent
+     * cells (`library-graph-packing.ts`). Packed, the far side of your own cluster can be 100
+     * units away while the nearest mark of the cluster beside it is 96, and no gutter fixes
+     * that without giving the empty middle back.
+     *
+     * So the claim is the one a reader actually uses: the **groups are separate places** —
+     * their bounding boxes do not overlap — and every mark is nearer to its own group's centre
+     * than to the other's. Which cluster a mark belongs to is said by the lines that run to
+     * it, and the composition's job is to put the two somewhere a person can tell apart.
+     * `docs/DECISIONS.md`, 2026-09-12, carries the trade and the dissent against it.
+     */
+    const boxOf = (group: number) => {
+      const points = [0, 1, 2, 3]
+        .map((index) => at(`source:sources/g${group}-${index}.pdf`))
+        .concat([0, 1].map((page) => at(`page:wiki/g${group}-page-${page}`)));
+      return {
+        minX: Math.min(...points.map((point) => point.x)),
+        maxX: Math.max(...points.map((point) => point.x)),
+        minY: Math.min(...points.map((point) => point.y)),
+        maxY: Math.max(...points.map((point) => point.y)),
+        cx: points.reduce((sum, point) => sum + point.x, 0) / points.length,
+        cy: points.reduce((sum, point) => sum + point.y, 0) / points.length,
+      };
+    };
+    const first = boxOf(0);
+    const second = boxOf(1);
+    const overlaps =
+      first.minX < second.maxX &&
+      first.maxX > second.minX &&
+      first.minY < second.maxY &&
+      first.maxY > second.minY;
+    expect(overlaps, "the two groups were drawn on top of one another").toBe(false);
+
     for (const group of [0, 1]) {
-      const other = group === 0 ? 1 : 0;
-      for (let page = 0; page < 2; page += 1) {
-        const from = at(`page:wiki/g${group}-page-${page}`);
-        const near = Math.max(
-          ...Array.from({ length: 4 }, (_, index) => {
-            const point = at(`source:sources/g${group}-${index}.pdf`);
-            return Math.hypot(point.x - from.x, point.y - from.y);
-          }),
-        );
-        const far = Math.min(
-          ...Array.from({ length: 4 }, (_, index) => {
-            const point = at(`source:sources/g${other}-${index}.pdf`);
-            return Math.hypot(point.x - from.x, point.y - from.y);
-          }),
-        );
-        expect(near).toBeLessThan(far);
+      const own = group === 0 ? first : second;
+      const other = group === 0 ? second : first;
+      for (const id of [
+        ...[0, 1, 2, 3].map((index) => `source:sources/g${group}-${index}.pdf`),
+        ...[0, 1].map((page) => `page:wiki/g${group}-page-${page}`),
+      ]) {
+        const mark = at(id);
+        expect(
+          Math.hypot(mark.x - own.cx, mark.y - own.cy),
+          `${id} settled nearer the other group's centre`,
+        ).toBeLessThan(Math.hypot(mark.x - other.cx, mark.y - other.cy));
       }
     }
   });
@@ -434,7 +469,7 @@ describe("the library graph's force simulation", () => {
    * before and none after; canvas filled 78.2% wide before and 89.1% after, which is the
    * whole of what the fit's padding leaves.
    */
-  it("settles an unattached mark on a ring around the connected mass, never against a wall", () => {
+  it("settles an unattached mark on a ring in its own place, never against a wall", () => {
     for (const box of [BOX, { width: 1156, height: 847 }, { width: 1400, height: 393 }, { width: 420, height: 300 }]) {
       const shape = `${box.width}×${box.height}`;
       const sim = settleLibrarySimulation(createLibrarySimulation({ graph: looseFolder(), box }));
@@ -449,10 +484,35 @@ describe("the library graph's force simulation", () => {
         expect(radialOf(at(id)), `${id} left the ring band at ${shape}`).toBeGreaterThan(0.82);
         expect(radialOf(at(id)), `${id} left the ring band at ${shape}`).toBeLessThan(1.18);
       }
-      // And the ring really is around the mass: nothing the springs hold reaches it.
-      const massEdge = Math.max(...sim.nodes.filter((node) => node.orbit === null).map(radialOf));
-      const nearest = Math.min(...LOOSE_IDS.map((id) => radialOf(at(id))));
-      expect(massEdge, `the ring runs through the mass at ${shape}`).toBeLessThan(nearest);
+      /*
+       * ⚠️ **The ring is its own place, not a rim around the clusters** (2026-09-12).
+       *
+       * The claim that used to stand here was that the ring encircled the connected mass
+       * and nothing the springs hold reached it. Since the folder's groups are composed —
+       * each one packed into a cell of its own — the unattached marks are a group like any
+       * other and the ring is inside their cell. What has to stay true is the thing that
+       * record was protecting: **no loose mark is inside a cluster**. So it is measured
+       * against every component's own bounding box rather than against a shared rim.
+       * `docs/DECISIONS.md`, 2026-09-12, carries the narrowing.
+       */
+      const clusters = new Map<number, { minX: number; minY: number; maxX: number; maxY: number }>();
+      for (const node of sim.nodes) {
+        if (node.orbit !== null) continue;
+        const box = clusters.get(node.cell) ?? { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+        box.minX = Math.min(box.minX, node.x - node.radius);
+        box.minY = Math.min(box.minY, node.y - node.radius);
+        box.maxX = Math.max(box.maxX, node.x + node.radius);
+        box.maxY = Math.max(box.maxY, node.y + node.radius);
+        clusters.set(node.cell, box);
+      }
+      for (const id of LOOSE_IDS) {
+        const mark = at(id);
+        for (const [cell, box] of clusters) {
+          const inside =
+            mark.x > box.minX && mark.x < box.maxX && mark.y > box.minY && mark.y < box.maxY;
+          expect(inside, `${id} settled inside cluster ${cell} at ${shape}`).toBe(false);
+        }
+      }
 
       // ── Spread, because two loose marks in one direction is the old picture ─────────
       const angles = LOOSE_IDS.map((id) => Math.atan2(at(id).y - ring!.cy, at(id).x - ring!.cx)).sort(
@@ -517,13 +577,21 @@ describe("the library graph's force simulation", () => {
     reheatLibrarySimulation(sim);
     settleLibrarySimulation(sim);
     const ring = libraryOrphanRing(sim)!;
-    // Home is the slot, not the pixel: the mark shoved its way through the mass on the way
-    // in, so the mass — and with it the ring the mass decides — is a little different.
-    expect(Math.hypot(at().x, at().y), "the released mark stayed where it was dropped").toBeGreaterThan(100);
+    // Measured from where it was **dropped**, not from the origin: since the folder's
+    // groups are composed the loose group's cell is somewhere of its own, and the origin is
+    // the middle of the whole arrangement rather than the middle of the mass.
+    expect(Math.hypot(at().x, at().y), "the released mark stayed where it was dropped").toBeGreaterThan(
+      ring.rx * 0.5,
+    );
+    // Home is the slot, not the pixel: the mark shoved its way through its neighbours on
+    // the way in, so it comes back to within its own width of where it stood rather than to
+    // the same coordinate. A fraction of the ring is the wrong scale for this — a folder with
+    // three loose files has a small ring — and it is stated against the mark's own collision
+    // reach so that the band following the canvas cannot silently loosen it.
     expect(
       Math.hypot(at().x - home.x, at().y - home.y),
       "the released mark did not come home",
-    ).toBeLessThan(ring.rx * 0.15);
+    ).toBeLessThan(at().radius * 2);
   });
 
   /**

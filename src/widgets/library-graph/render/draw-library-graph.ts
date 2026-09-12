@@ -115,6 +115,30 @@ export interface LibraryGraphFrame {
    * provenance, not an execution path.
    */
   activity?: readonly LibraryGraphActivityMark[];
+  /**
+   * **Where the names actually landed**, filled in by this function when the caller hands
+   * it an array to fill.
+   *
+   * A standing name is placed by a greedy screen-space pass that may slide it, truncate it
+   * or drop it, so *which* names are on the picture and *where* is decided here and nowhere
+   * else. From outside the canvas that is invisible: a screenshot shows a person the
+   * overlap and hides it from a gate, which is how five names with an edge through their
+   * glyphs shipped in 2026-09-08. The engine passes this only while the `e2e` probe is
+   * mounted, so the ordinary frame allocates nothing for it.
+   */
+  labelReport?: LibraryGraphLabelBox[];
+}
+
+/** One placed name, in canvas CSS pixels. `text` is what was drawn, ellipsis included. */
+export interface LibraryGraphLabelBox {
+  nodeId: string;
+  kind: LibraryGraphNodeKind;
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontPx: number;
 }
 
 type LibraryGraphActivityKind = "read" | "proposal" | "waiting" | "write" | "error";
@@ -164,8 +188,22 @@ const SELECTION_RING_GAP = 3.5;
 const FOCUS_RING_GAP = 6;
 /** Activity remains outside selection/focus rings, so it cannot erase either state. */
 const ACTIVITY_RING_GAP = FOCUS_RING_GAP + 2;
-/** `text-label`. The one type step this canvas draws, hover box and standing name alike. */
-const LABEL_FONT_PX = 11;
+/**
+ * **Two type steps, and they come from the ramp** — `ink.pageLabelPx` (`--text-body`) for a
+ * page's name and `ink.labelPx` (`--text-label`) for a file's or a concept's.
+ *
+ * ⚠️ This was one literal `11`. The canvas became the Library's whole pane on 2026-09-12 and
+ * eleven pixels of grey on a 1088×819 field is what the owner read as *"an ugly popup"*; the
+ * subject of the picture is the page, so the page's name takes the step above and everything
+ * else keeps the label step. They are resolved from CSS in `library-graph-ink.ts` rather than
+ * written here, because a JS copy of a ramp step is the drift the motion token mirror exists
+ * to stop and because the ramp is being recalibrated in a parallel change.
+ *
+ * The hover box keeps the label step at every kind: it is chrome around a name, not the name.
+ */
+function labelFontPx(ink: LibraryGraphInk, kind: LibraryGraphNodeKind): number {
+  return kind === "page" ? ink.pageLabelPx : ink.labelPx;
+}
 /**
  * A citation, the heavier claim of the two relations — and the widest line this canvas
  * draws, which is why the label halo is stated against it rather than against a number.
@@ -173,8 +211,37 @@ const LABEL_FONT_PX = 11;
 export const CITES_WIDTH = 1.5;
 /** A mention: the page names the file, nothing says it was written from it. */
 const MENTIONS_WIDTH = 1;
+
+/**
+ * **The line weight follows the mark band**, floored at the two widths above.
+ *
+ * Those two were measured on 2026-09-06 against 5–10px marks in a 320px strip. The strip
+ * became the pane and the marks grew with it (`libraryMarkBand`), and a 1.5px line between
+ * two 34px dots reads as a hairline somebody forgot: the *ratio* is what a person sees, so
+ * the ratio is what is held. The scale is the band's top over the 10px it was measured at,
+ * and it never goes below 1 — a dense folder keeps exactly the lines that shipped, which is
+ * also what keeps the 5.23:1 contrast measurement those widths were taken with honest.
+ */
+export function libraryEdgeWidth(relation: "cites" | "mentions", maxRadius: number): number {
+  const base = relation === "mentions" ? MENTIONS_WIDTH : CITES_WIDTH;
+  return base * Math.max(1, maxRadius / 10);
+}
 /** Gap between a mark and the name standing under it. */
 const STANDING_LABEL_GAP = 5;
+
+/**
+ * **The room the outermost mark needs for its own name**, which is what the fit reserves on
+ * every side.
+ *
+ * It was the constant `LIBRARY_LABEL_ALLOWANCE` (34) — "an 11px label on a 15px line, 5px
+ * under a mark up to 10px". Two of those three numbers now follow the canvas: the mark band
+ * grows on an emptier canvas and a page's name is set a step up the ramp. A constant would
+ * either clip the name at the bottom edge or reserve a margin nothing uses, so the reach is
+ * derived from the same two values the renderer draws with.
+ */
+export function libraryStandingLabelReach(maxRadius: number, pageLabelPx: number): number {
+  return maxRadius + STANDING_LABEL_GAP + Math.round(pageLabelPx * 1.35) + 2;
+}
 /** No standing name is allowed to be wider than this; past it a name is truncated. */
 const STANDING_LABEL_MAX_WIDTH = 132;
 const LABEL_PAD_X = 6;
@@ -195,8 +262,12 @@ const FINE_HIT_REACH = 4;
  */
 const EDGE_BOW_RATIO = 0.11;
 const EDGE_BOW_MAX = 17;
-/** The ground each mark clears around itself so it reads over the lines beneath it. */
-const MARK_HALO = 1.5;
+/**
+ * The ground each mark clears around itself so it reads over the lines beneath it — **one
+ * line width's worth**, since what it is clearing is a line. Stated as a ratio of the widest
+ * line for the same reason the widths are: on an emptier canvas both grow together.
+ */
+const MARK_HALO_RATIO = 1;
 /**
  * Half-width of the ground outline every standing name is stroked with, in CSS px.
  *
@@ -214,6 +285,49 @@ const MARK_HALO = 1.5;
  * letterform is never thickened by it — not a glow, and it never animates.
  */
 const LABEL_OUTLINE_PX = 2;
+
+/**
+ * The outline, once the widest line on the canvas is wider than the 1.5px it was measured
+ * against: the clearance a name needs is the width of what crosses it, so it is one citation
+ * width plus the half pixel that took 1.5 to 2.
+ */
+function labelOutlinePx(maxRadius: number): number {
+  return Math.max(LABEL_OUTLINE_PX, libraryEdgeWidth("cites", maxRadius) + 0.5);
+}
+
+/**
+ * The ruled ground, in screen space — see `LibraryGraphInk.gridMinor` for why it is the
+ * map's grid and not something of this canvas's own.
+ *
+ * Two paths and two strokes for the whole field: 45 verticals and 34 horizontals at
+ * 1088×819, against the several hundred operations a frame of this picture already costs.
+ * Both spacings are the map's (`grid.ts`): 24px minor, every fifth line major.
+ */
+const GRID_MINOR_SPACING = 24;
+const GRID_CELLS_PER_MAJOR = 5;
+
+function drawGround(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame): void {
+  ctx.fillStyle = frame.ink.ground;
+  ctx.fillRect(0, 0, frame.width, frame.height);
+  const major = GRID_MINOR_SPACING * GRID_CELLS_PER_MAJOR;
+  ctx.lineWidth = 1;
+  for (const pass of ["minor", "major"] as const) {
+    ctx.strokeStyle = pass === "minor" ? frame.ink.gridMinor : frame.ink.gridMajor;
+    ctx.beginPath();
+    for (let x = 0; x <= frame.width; x += GRID_MINOR_SPACING) {
+      if ((x % major === 0) !== (pass === "major")) continue;
+      // The half pixel is what puts a 1px line on one device row instead of across two.
+      ctx.moveTo(x + 0.5, 0);
+      ctx.lineTo(x + 0.5, frame.height);
+    }
+    for (let y = 0; y <= frame.height; y += GRID_MINOR_SPACING) {
+      if ((y % major === 0) !== (pass === "major")) continue;
+      ctx.moveTo(0, y + 0.5);
+      ctx.lineTo(frame.width, y + 0.5);
+    }
+    ctx.stroke();
+  }
+}
 
 function nodeCentre(frame: LibraryGraphFrame, id: string): LayoutPoint | null {
   return frame.positions.get(id) ?? null;
@@ -329,6 +443,9 @@ function roundedRect(
 
 export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame): void {
   const { ink } = frame;
+  // The band's own top, which the line weights and the halo are stated against.
+  let maxRadius = 0;
+  for (const node of frame.nodes) maxRadius = Math.max(maxRadius, radiusOf(frame, node));
   const dim = frame.dim ?? 0;
   const focus = frame.focus ?? null;
   const opacity = frame.opacity;
@@ -350,8 +467,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
 
   ctx.save();
   ctx.globalAlpha = 1;
-  ctx.fillStyle = ink.ground;
-  ctx.fillRect(0, 0, frame.width, frame.height);
+  drawGround(ctx, frame);
 
   // ── Edges first, so no line crosses the mark it points at. ──
   // `butt`, not `round`: a round cap adds half a line width to each dash end, which
@@ -386,8 +502,11 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
      * decode. A citation is the heavier claim and now looks it. Value stays reserved for
      * the selection — this is width, a third channel, and the one the legend needed.
      */
-    const relationWidth = edge.relation === "mentions" ? MENTIONS_WIDTH : CITES_WIDTH;
-    ctx.lineWidth = relationWidth + (touchesSelection ? 0.75 : touchesActive ? 0.5 : 0);
+    const relationWidth = libraryEdgeWidth(edge.relation, maxRadius);
+    // The two answers a line can give about attention are half a relation width each, so they
+    // stay legible against a line that is itself wider on an emptier canvas.
+    ctx.lineWidth =
+      relationWidth * (touchesSelection ? 1.5 : touchesActive ? 1.33 : 1);
     const control = edgeControlPoint(from, to);
     if (edge.certainty === "unverified") {
       /*
@@ -439,16 +558,18 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
      * what "the ground shows through" means once there are lines to show through it.
      *
      * This is not a glow. A glow spreads a *colour* outward and usually pulses; this is
-     * the background, it is exactly {@link MARK_HALO} wide, and it never animates.
+     * the background, it is one line width wide ({@link MARK_HALO_RATIO}), and it never
+     * animates.
      */
     ctx.globalAlpha = opacity?.get(node.id) ?? 1;
     ctx.fillStyle = ink.ground;
+    const halo = libraryEdgeWidth("cites", maxRadius) * MARK_HALO_RATIO;
     if (node.kind === "source") {
-      const reach = radius + MARK_HALO;
+      const reach = radius + halo;
       ctx.fillRect(centre.x - reach, centre.y - reach, reach * 2, reach * 2);
     } else {
       ctx.beginPath();
-      ctx.arc(centre.x, centre.y, radius + MARK_HALO, 0, Math.PI * 2);
+      ctx.arc(centre.x, centre.y, radius + halo, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -533,10 +654,8 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
    * the thing it is not naming.
    */
   if (frame.standingLabels) {
-    ctx.font = `${LABEL_FONT_PX}px ${ink.fontFamily}`;
     ctx.textBaseline = "top";
     ctx.textAlign = "center";
-    const lineHeight = Math.round(LABEL_FONT_PX * 1.35);
     const taken: Array<{ x: number; y: number; width: number; height: number; of?: string }> = [];
     for (const node of frame.nodes) {
       const centre = nodeCentre(frame, node.id);
@@ -583,6 +702,11 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       if (node.id === active) continue;
       const centre = nodeCentre(frame, node.id);
       if (!centre) continue;
+      // Per kind, before anything is measured: a page's name is set one step up the ramp, so
+      // its width, its line and the box the collision pass tests are all that step's.
+      const fontPx = labelFontPx(ink, node.kind);
+      ctx.font = `${fontPx}px ${ink.fontFamily}`;
+      const lineHeight = Math.round(fontPx * 1.35);
       const text = truncateToWidth(
         ctx,
         node.label,
@@ -612,6 +736,16 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       if (box.y + box.height > frame.height - 2) continue;
       if (taken.some((other) => other.of !== node.id && overlaps(box, other))) continue;
       taken.push(box);
+      frame.labelReport?.push({
+        nodeId: node.id,
+        kind: node.kind,
+        text,
+        x: box.x,
+        y: box.y,
+        width: box.width,
+        height: box.height,
+        fontPx,
+      });
       /*
        * A page is what somebody wrote and is the subject of this canvas; a file and a
        * concept are what it stands on. The two inks are the ones the marks already
@@ -630,7 +764,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
        * never thickened by it.
        */
       ctx.strokeStyle = ink.ground;
-      ctx.lineWidth = LABEL_OUTLINE_PX * 2;
+      ctx.lineWidth = labelOutlinePx(maxRadius) * 2;
       ctx.lineJoin = "round";
       ctx.strokeText(text, box.x + box.width / 2, box.y);
       /*
@@ -654,7 +788,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   const activeNode = active ? frame.nodes.find((node) => node.id === active) ?? null : null;
   const activeCentre = active ? nodeCentre(frame, active) : null;
   if (activeNode && activeCentre && frame.activeLabel) {
-    ctx.font = `${LABEL_FONT_PX}px ${ink.fontFamily}`;
+    ctx.font = `${ink.labelPx}px ${ink.fontFamily}`;
     ctx.textBaseline = "middle";
     /*
      * **The label is fitted to the canvas before it is placed** (2026-09-06). The box was
@@ -668,7 +802,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     const text = truncateToWidth(ctx, frame.activeLabel, maxBoxWidth - LABEL_PAD_X * 2);
     const textWidth = ctx.measureText(text).width;
     const boxWidth = textWidth + LABEL_PAD_X * 2;
-    const boxHeight = LABEL_FONT_PX + LABEL_PAD_Y * 2;
+    const boxHeight = ink.labelPx + LABEL_PAD_Y * 2;
     // Flip to the other side rather than let the label leave the canvas: a name that
     // runs off the edge is the same as no name.
     // Measured from the **edge of the mark and its ring**, not from the node's centre:
