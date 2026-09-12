@@ -1,4 +1,72 @@
 #!/usr/bin/env node
+/**
+ * ontology-atlas-mcp — local ontology read/write server.
+ *
+ * Lets an AI agent (Claude Code, Cursor, Codex, …) read and write the vault's
+ * ontology.
+ *
+ * This file is the wiring, not the work. It attaches the two request handlers to
+ * the transport and routes each tool name to the workflow that owns it:
+ *
+ *   server/registry.mjs      the tool table, descriptions, schemas, annotations
+ *   server/instructions.mjs  the `initialize` instructions
+ *   server/instance.mjs      the one Server object
+ *   server/runtime.mjs       vault and repository roots, the compiled cache
+ *   server/rpc.mjs           the result and error envelope
+ *   server/validate.mjs      argument validation
+ *   server/write-log.mjs     the local write audit line
+ *   tools/read.mjs           vault reads
+ *   tools/git.mjs            git status, history, snapshot
+ *   tools/graph.mjs          compile_ontology and every query_ontology operation
+ *   tools/validate-vault.mjs validate_vault and validate_wiki
+ *   tools/repo-analysis.mjs  the four folder-scanning tools
+ *   tools/project-source.mjs connect / disconnect / finalize a project binding
+ *   tools/write-concepts.mjs add_concept, add_concepts, patch_concept
+ *   tools/write-relations.mjs the four edge writes
+ *   tools/lifecycle.mjs      rename, reclassify, merge, delete
+ *   tools/absorb.mjs         absorb_document
+ *   tools/vault-nodes.mjs    node identity and the gates every write passes
+ *   tools/relation-keys.mjs  which frontmatter key holds which relation
+ *   tools/maintenance.mjs    what a result carries rather than being asked for
+ *
+ * The authority on the current tool surface is `TOOLS_FOR_LIST` in
+ * `server/registry.mjs` — the `TOOLS` registry enriched with annotations and
+ * filtered by read-only mode. Both the `initialize` instructions and
+ * `tools/list` derive from that one array, so no count or name list is copied
+ * into this header.
+ *
+ * Environment:
+ *   OATLAS_VAULT=/abs/path/to/vault     — vault root. Defaults to cwd.
+ *   OATLAS_REPO_ROOT=/abs/path/to/repo  — repository root. Defaults to the
+ *                                         vault's git top-level, else cwd.
+ *
+ * Run:
+ *   $ node /absolute/path/to/ontology-atlas/mcp/src/index.js
+ *   or register the server bundled in the app in `.mcp.json` (see README).
+ */
+
+/**
+ * MCP TypeScript SDK **v2** (`@modelcontextprotocol/server`).
+ *
+ * v1's single `@modelcontextprotocol/sdk` package was split into `core` /
+ * `server` / `node` on 2026-07-27, and v2 is the stable line (v1 dropped to a
+ * `v1.x` branch that receives bug and security fixes only, for at least six
+ * months).
+ *
+ * ⚠️ **The wire protocol does not move yet.** Spec `2026-07-28` shipped, but
+ * v2's `SUPPORTED_PROTOCOL_VERSIONS` is identical to v1's (measured:
+ * `["2025-11-25","2025-06-18","2025-03-26","2024-11-05","2024-10-07"]`,
+ * `LATEST = 2025-11-25`). The new spec's `server/discover` and stateless mode
+ * exist in the type definitions only, not in the negotiation constants. The
+ * value of this migration is not a capability gained now — it is sitting in the
+ * vessel that will carry one.
+ *
+ * **Old-client compatibility was verified by measurement**: sending this v2
+ * server an old-style `initialize` (`protocolVersion: "2024-11-05"`) negotiates
+ * that version, and `tools/list` / `tools/call` answer normally. Claude Code and
+ * Codex do not break.
+ */
+
 import { server } from './server/instance.mjs';
 import {
   READ_ONLY_MODE,
@@ -76,76 +144,6 @@ import {
   requestWriteConsent,
 } from './write-consent.mjs';
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
-
-/**
- * ontology-atlas-mcp — local ontology read/write server.
- *
- * Lets an AI agent (Claude Code, Cursor, Codex, …) read and write the vault's
- * ontology.
- *
- * This file is the wiring, not the work. It attaches the two request handlers to
- * the transport and routes each tool name to the workflow that owns it:
- *
- *   server/registry.mjs      the tool table, descriptions, schemas, annotations
- *   server/instructions.mjs  the `initialize` instructions
- *   server/instance.mjs      the one Server object
- *   server/runtime.mjs       vault and repository roots, the compiled cache
- *   server/rpc.mjs           the result and error envelope
- *   server/validate.mjs      argument validation
- *   server/write-log.mjs     the local write audit line
- *   tools/read.mjs           vault reads
- *   tools/git.mjs            git status, history, snapshot
- *   tools/graph.mjs          compile_ontology and every query_ontology operation
- *   tools/validate-vault.mjs validate_vault and validate_wiki
- *   tools/repo-analysis.mjs  the four folder-scanning tools
- *   tools/project-source.mjs connect / disconnect / finalize a project binding
- *   tools/write-concepts.mjs add_concept, add_concepts, patch_concept
- *   tools/write-relations.mjs the four edge writes
- *   tools/lifecycle.mjs      rename, reclassify, merge, delete
- *   tools/absorb.mjs         absorb_document
- *   tools/vault-nodes.mjs    node identity and the gates every write passes
- *   tools/relation-keys.mjs  which frontmatter key holds which relation
- *   tools/maintenance.mjs    what a result carries rather than being asked for
- *
- * The authority on the current tool surface is `TOOLS_FOR_LIST` in
- * `server/registry.mjs` — the `TOOLS` registry enriched with annotations and
- * filtered by read-only mode. Both the `initialize` instructions and
- * `tools/list` derive from that one array, so no count or name list is copied
- * into this header.
- *
- * Environment:
- *   OATLAS_VAULT=/abs/path/to/vault     — vault root. Defaults to cwd.
- *   OATLAS_REPO_ROOT=/abs/path/to/repo  — repository root. Defaults to the
- *                                         vault's git top-level, else cwd.
- *
- * Run:
- *   $ node /absolute/path/to/ontology-atlas/mcp/src/index.js
- *   or register the server bundled in the app in `.mcp.json` (see README).
- */
-
-/**
- * MCP TypeScript SDK **v2** (`@modelcontextprotocol/server`).
- *
- * v1's single `@modelcontextprotocol/sdk` package was split into `core` /
- * `server` / `node` on 2026-07-27, and v2 is the stable line (v1 dropped to a
- * `v1.x` branch that receives bug and security fixes only, for at least six
- * months).
- *
- * ⚠️ **The wire protocol does not move yet.** Spec `2026-07-28` shipped, but
- * v2's `SUPPORTED_PROTOCOL_VERSIONS` is identical to v1's (measured:
- * `["2025-11-25","2025-06-18","2025-03-26","2024-11-05","2024-10-07"]`,
- * `LATEST = 2025-11-25`). The new spec's `server/discover` and stateless mode
- * exist in the type definitions only, not in the negotiation constants. The
- * value of this migration is not a capability gained now — it is sitting in the
- * vessel that will carry one.
- *
- * **Old-client compatibility was verified by measurement**: sending this v2
- * server an old-style `initialize` (`protocolVersion: "2024-11-05"`) negotiates
- * that version, and `tools/list` / `tools/call` answer normally. Claude Code and
- * Codex do not break.
- */
-
-
 
 // v2 takes a **method string**, not a schema object. Passing the old
 // `ListToolsRequestSchema` makes v2 throw "not a spec request method" — it fails

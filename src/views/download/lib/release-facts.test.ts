@@ -101,8 +101,10 @@ describe("release-facts", () => {
     expect(pkg.scripts?.["desktop:verify-release-dmg"]).toContain("--require-notarized");
   });
 
-  it("matches the MCP tool count declared in mcp/src/index.js", () => {
-    const source = readFileSync(join(process.cwd(), "mcp/src/index.js"), "utf8");
+  it("matches the MCP tool count declared in mcp/src/server/registry.mjs", () => {
+    // The `TOOLS` table left `index.js` when the entry point became wiring only
+    // (docs/DECISIONS.md, 2026-09-12).
+    const source = readFileSync(join(process.cwd(), "mcp/src/server/registry.mjs"), "utf8");
     const start = source.indexOf("const TOOLS = [");
     expect(start).toBeGreaterThan(-1);
     const block = source.slice(start, source.indexOf("\n];", start));
