@@ -263,6 +263,16 @@ function isLocaleRoot(pathname: string): boolean {
  * the static export, by `local-vault-route-identity.spec.ts` — the bundled sample reaches no frame
  * of any rail crossing. `rail-stays-painted.spec.ts` is what keeps the neutral pane from coming
  * back to a route change.
+ *
+ * ⚠️ **Why the arm existed at all, finally measured** (2026-09-13). "Next can briefly commit that
+ * prerendered destination" was true, and the reason was not React scheduling: `connect-src`
+ * refused the App Router's fetch of the arriving route's payload, so **every rail press was a full
+ * document load** and what the owner caught at 30 fps was the app's own pre-hydration HTML — the
+ * bundled sample on a workbench destination, and on History a rail carrying every destination, the
+ * *browser* copy and a download button inside the installed app. The arm was covering for that.
+ * The cause is fixed in `src-tauri/tauri.conf.json` and gated in `scripts/lib/desktop-csp.mjs`;
+ * measured on the installed app afterwards, a rail crossing changes the shell exactly once — rail
+ * items 4 → 4, no neutral pane, no download marker, the probe's own document counter unmoved.
  */
 function VaultRouteIdentityBoundary({
   pathname,

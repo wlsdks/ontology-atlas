@@ -107,8 +107,14 @@ for a macOS prototype:
   ontology vault when macOS asks about protected Documents, Downloads, Desktop,
   network, or removable-volume folders.
 - the Tauri WebView CSP is enabled instead of left open: it allows local app
-  assets, data/blob images, local styles, and the Tauri IPC endpoint required by
-  native vault commands, without allowing arbitrary remote hosts.
+  assets, data/blob images, local styles, the app's own origin, and the Tauri IPC
+  endpoint required by native vault commands, without allowing arbitrary remote
+  hosts. `connect-src` names exactly `'self' ipc: http://ipc.localhost`, and
+  `'self'` is load-bearing rather than lax: without it the App Router cannot read
+  the arriving route's payload out of the bundle and falls back to a full document
+  load, which made every rail press re-boot the app (inspection 122, B1/R1). The
+  measurement, and the two gates that keep the list exact in both directions, are
+  in `scripts/lib/desktop-csp.mjs`.
 - `src-tauri/capabilities/default.json` stays scoped to the `main` window, but
   no longer through the `core:default` umbrella: that umbrella expands to nine
   permission sets, and four of them — `core:image`, `core:resources`,

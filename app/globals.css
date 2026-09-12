@@ -1905,9 +1905,16 @@
    * | not named at all | 0.9808 | 0.9808 |
    *
    * Nothing about the pair's styling reaches it; only whether the root is captured does.
-   * That is the installed app's "every rail navigation blanks the whole window, rail
-   * included, for 0.3-0.5 s" (inspection 122, B1) — the rail was never unmounted, it was
-   * painted underneath the old screen's snapshot.
+   *
+   * ⚠️ **This table is right and the conclusion drawn from it in 2026-09-13 was not.** It
+   * was read as the explanation of the installed app's "every rail navigation blanks the
+   * whole window, rail included" (inspection 122, B1), and the blank survived the change.
+   * The blank was a **full document load**: `connect-src` refused the App Router's fetch of
+   * the arriving route's payload, so every rail press re-booted the app and restored the
+   * folder again (`scripts/lib/desktop-csp.mjs`). With that fixed, a crossing on WKWebView
+   * runs its 180 ms crossfade with **every frame painted** — rail ink 0.0243-0.0307, never
+   * 0, measured on the installed app at 1/120 s. Capturing the pane rather than the root
+   * stays, on the strength of the table above alone.
    *
    * So the root is **not** captured during a route change and the shell's body slot is.
    * The rail, the page frame and everything else the shell owns stay part of the live
