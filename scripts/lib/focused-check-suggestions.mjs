@@ -20,6 +20,7 @@ export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
 ]);
 
 const RULES = [
+  { command: 'node --test scripts/prepush.test.mjs', reason: 'pre-push scope or failure propagation changed', matches: [/^scripts\/prepush(?:\.test)?\.mjs$/, /^\.githooks\/pre-push$/, /^scripts\/suggest-focused-checks\.mjs$/] },
   {
     command: 'pnpm test:ci:impact',
     reason: 'CI impact planner, executor, or workflow wiring changed',

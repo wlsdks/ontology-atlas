@@ -409,3 +409,18 @@ describe('contract coverage within one focused run', () => {
     assert.deepEqual(collapseCoveredContractCommands(input, {}).commands, input);
   });
 });
+
+it('exact Node test file coverage is reused within a run without dropping flags or hooks', () => {
+  const scripts = { 'test:pair': 'node --test scripts/first.test.mjs scripts/second.test.mjs' };
+  const pair = { command: 'pnpm test:pair' };
+  const single = { command: 'pnpm exec node --test scripts/first.test.mjs' };
+  const flagged = { command: 'node --test --test-name-pattern=one scripts/first.test.mjs' };
+  const unknown = { command: 'node --test scripts/third.test.mjs' };
+  assert.deepEqual(collapseCoveredContractCommands([pair, single, flagged, unknown], scripts), {
+    commands: [pair, flagged, unknown], covered: [single.command],
+  });
+  assert.deepEqual(collapseCoveredContractCommands([pair, single], {
+    ...scripts, 'pretest:pair': 'node setup.mjs',
+  }).commands, [pair, single]);
+  assert.deepEqual(collapseCoveredContractCommands([flagged, single], scripts).commands, [flagged, single]);
+});
