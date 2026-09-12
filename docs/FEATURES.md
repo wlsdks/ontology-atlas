@@ -1107,7 +1107,7 @@ Three motions carry the direction, all bounded: while a card is open its **citat
 from each original toward the write-up — one 9px dash period per 900ms canvas settle budget,
 measured at 10px/s, stalls 0 and cv 0.33 on a real 60fps recording sampled at 66ms; the
 **amber midpoint** of a citation the folder cannot vouch for breathes once per 1.8s while its
-card is open, and once for every such citation as the home arrives; and a page Compile has
+card is open, and once for every standing dot as the home arrives; and a page Compile has
 just written **brightens** while its own citations drift once toward it. Under
 `prefers-reduced-motion` each becomes a still equivalent — a chevron on the line and a
 full-size amber dot — and the canvas is byte-identical frame to frame with a card open.
@@ -1118,6 +1118,20 @@ The added frame cost is +0.05ms at 372 marks and +0.53ms at 992 (`< 2ms`, gated 
 three ways out, both commits, which lines flow, the bounded arrival breath and the frame
 budget; `library-graph-card.test.ts` sweeps 1,638 mark positions for the two rules a
 screenshot cannot check — the card never covers its mark, and never leaves the canvas.
+
+**A stale citation is visible on a small folder and calm on a large one** (2026-09-13). Every
+unverified citation carries its amber dot at rest, at every window, up to **64 standing dots**;
+past that the picture stops repeating the fact and the strip's `N sources changed` clause says
+the number instead. The dots are still drawn for the citations a reader has in hand — the open
+card's own, the pointed-at mark's neighbourhood, and every one of them while that clause is
+held, which lights both ends and prints both counts — and it is all or nothing above the cap,
+never a sample, so an undotted citation cannot be read as a fresh one. The budget is the
+canvas's own ink: the standing amber holds no more than **4%** of it at rest. Measured on the
+four picture fixtures at 1512x901, 1040x720 and 1920x1080: the three folders under the cap are
+unchanged to within 0.1% of their ink (the six-document folder keeps 97 strict-amber pixels at
+1512), and the three-hundred-source folder with 480 unverified citations goes from 5,215 amber
+pixels and 15.64% of its ink at the narrowest window to 0, with total graph ink down 9.5-22.4%.
+`tests/e2e/library-graph-picture.spec.ts` holds both arms and the three routes back.
 
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
 the action: one cited source is a single **View original** button carrying the file name;

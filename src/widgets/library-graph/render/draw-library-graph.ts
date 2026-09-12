@@ -355,6 +355,51 @@ const FLOW_CHEVRON_PX = 3.5;
 const STALE_DOT_RADIUS = 2.2;
 const STALE_DOT_RADIUS_MIN = 1.5;
 const STALE_DOT_BREATH = 1.1;
+/**
+ * **How many standing amber dots a folder may draw at rest, before the picture says the
+ * number instead of painting it once per citation.**
+ *
+ * ⚠️ **This is a count of unverified citations, not of marks.** The amber ink is
+ * proportional to the dots, and only to the dots: measured at **9–11 canvas pixels of
+ * strict amber per dot** on all four picture fixtures and at all three windows, because the
+ * dot is a screen-space constant and does not shrink with the camera. A folder of four
+ * hundred marks with two stale citations should keep both of them, and a mark-count
+ * threshold would take them away.
+ *
+ * ## Where 64 comes from
+ *
+ * The budget this holds is recorded in `docs/DECISIONS.md`, 2026-09-13 "The standing amber
+ * is a share of the picture's ink": **the standing amber may hold no more than 4% of the
+ * canvas's ink at rest**, ink being
+ * re-inspection 122's own statistic (a canvas pixel brighter than luma 30). Both sides of
+ * 64 are measured, on `tests/e2e/library-graph-picture.spec.ts`'s own fixtures:
+ *
+ * | folder | stale citations | amber / ink at 1040x720 |
+ * |---|---|---|
+ * | `vault-zero-answers` | 6 | 0.86% |
+ * | `vault` | 10 | 0.82% |
+ * | `vault-60` | 48 | **2.16%** |
+ * | `vault-300` | 480 | **15.64%** |
+ *
+ * 48 is the densest folder the 2026-09-12 and 2026-09-13 reviews read as legible, so the
+ * cap has to sit above it. Its own narrowest window draws 19,523 pixels of ink, and 4% of
+ * that is 781 amber pixels, which at the worst measured 11.2 per dot is **70 dots** — so
+ * the cap has to sit below that or the folder it was chosen for cannot afford it. 64 is the
+ * round number between the two, 1.33x the folder that must keep every dot and 0.91x what
+ * that folder's own ink can pay for.
+ *
+ * ## What happens above it
+ *
+ * Not a sample: a folder above the cap draws **no** standing dot at all, so an undotted
+ * stale citation can never be misread as a fresh one. The dots stay on the citations the
+ * reader has in hand — the open card's own, the pointed-at mark's neighbourhood, and every
+ * one of them while the strip's `N sources changed` clause is held, which is one press and
+ * says both counts. The fact is never off the screen; it stops being repeated 480 times.
+ *
+ * Re-inspection 122 R2 is what this answers: 23,298 amber pixels against 0, total graph
+ * ink up **48%**, and *"the picture's dominant mark is now a warning, not a document"*.
+ */
+export const STALE_DOT_STANDING_MAX = 64;
 const LABEL_RADIUS = 4;
 /** Pointer slop around a mark for a mouse. A 5px square is smaller than any pointer. */
 const FINE_HIT_REACH = 4;
@@ -689,10 +734,11 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
    * *the amber dot is a citation this folder can no longer vouch for* — named a mark the
    * default window never drew.
    *
-   * So every unverified citation carries the dot whenever its line is drawn, at the line's
+   * So an unverified citation carries the dot whenever its line is drawn, at the line's
    * own ink, and the breath is what it does **on top of** that: `pulse` grows it, and
    * reduced motion takes the grown one as its still frame. Nothing about this moves a mark,
-   * and a folder with no stale citation draws no amber at all.
+   * and a folder with no stale citation draws no amber at all. How many dots stand at once
+   * is bounded by {@link STALE_DOT_STANDING_MAX}, which the block below owns.
    *
    * ⚠️ **The breath is a size, not a brightness, and that is not a taste.** Held at the old
    * 0.55 resting alpha the dot composites to `rgb(139, 105, 33)` over this ground — it fails
@@ -702,8 +748,81 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
    */
   {
     const breath = flow === null ? 0 : flow.still ? 1 : flow.pulsePhase;
+    /*
+     * ⚠️ **Above {@link STALE_DOT_STANDING_MAX} the folder says the number instead of
+     * painting it once per citation** (re-inspection 122, R2).
+     *
+     * Standing was the fix; standing **at every scale** was the defect. On the
+     * three-hundred-source folder 480 citations are unverified, and one dot each measured
+     * 5,227 pixels of strict amber against 33,417 of ink — **15.6% of the picture**, with
+     * total graph ink up 48% on the installed app. The reviewer's sentence is the
+     * statistic: *"the picture's dominant mark is now a warning, not a document"*, which
+     * is the "reader who calls dense amber noise" the 2026-09-13 record listed as its own
+     * falsifier.
+     *
+     * Two other levers were arithmetic dead ends and are not taken. **Alpha** is refused by
+     * the same record's own measurement: at 0.55 the dot composites to `rgb(139,105,33)`
+     * over this ground, which is not this product's warning amber and does not pass the
+     * gate's scan. **Radius** has one step of room — 2.2 down to the 3px mark floor at 1.5
+     * — worth 54% of the area, not the order of magnitude the 300-source folder needs, and
+     * it would spend it on the six-document folder where the dot is the only amber there
+     * is. The count is the only lever with range, so the count is the lever.
+     *
+     * Below the cap nothing changes: every unverified citation carries its dot at rest, at
+     * every window, which is the bar inspection 122 raised (0 -> 97 strict amber pixels on
+     * the six-document folder at 1512). Above it the dots stay on the citations the reader
+     * has in hand, and **all or nothing** — never a sample, so an undotted stale citation
+     * can never be read as a fresh one:
+     *
+     * - `frame.focus` holds the pointed-at mark's neighbourhood, the open card's, and —
+     *   since slice L0 — every stale citation's two ends while the strip's
+     *   `N sources changed` clause is held. That clause is on the screen at rest whatever
+     *   the folder's size, says both counts, and is one press.
+     * - Nothing else does. `flow`'s own sets are the home's arrival breath and a freshly
+     *   written page's citations, neither of which is a reader pointing at something; see
+     *   `revealOf` for what exempting them measured.
+     *
+     * The card's `graph.card.flowInlineStale` sentence — *an amber dot marks one this folder
+     * can no longer vouch for* — is printed from that mark's own unverified citations, so it
+     * still names a mark that is drawn whenever it is printed: a card open means its mark is
+     * the selection, and the selection is in `focus`.
+     */
+    let standing = 0;
+    for (const edge of frame.edges) if (edge.certainty === "unverified") standing += 1;
+    const everyDot = standing <= STALE_DOT_STANDING_MAX;
+    /**
+     * **How far a dot is revealed: 1, 0, or wherever the dim's own ramp has got to.**
+     *
+     * ⚠️ **Attention means the reader's, and nothing in `flow` counts as it.** `flow.pulse`
+     * is the whole folder's stale set for two settle budgets as the home settles, and
+     * `flow.arrivalEdges` is every citation of a page Compile has just written — so
+     * exempting either one put the 480-dot field back on the canvas for the first two
+     * seconds of every visit, which is the same field measured against a stopwatch instead
+     * of a screenshot. A card open is already the reader's attention by a shorter route:
+     * `cardId` drives `dim` to 1 and puts the card's mark and its neighbours in `focus`.
+     *
+     * ⚠️ **It rides `dim` rather than switching, and that is load-bearing, not polish.**
+     * `focus` is deliberately **kept while the ramp runs back out** so the un-dim is not a
+     * hard cut, which means a reveal that only asked "is it in focus" would light the dots
+     * once and never put them away: measured as 6,542 amber pixels still on the canvas
+     * after the stale clause was lifted and `aria-pressed` read `false`. Riding the eased
+     * value costs nothing new — no clock, no second ramp — and the settled state is `dim`
+     * at exactly 1, so a standing dot is still painted at the line's own full ink, which is
+     * the half of the 2026-09-13 record that says a dimmed amber is not amber.
+     */
+    const revealOf = (edge: LibraryGraphEdge): number => {
+      if (everyDot) return 1;
+      const inHand =
+        (focus !== null && (focus.has(edge.source) || focus.has(edge.target))) ||
+        edge.source === frame.selectedId ||
+        edge.target === frame.selectedId ||
+        (active !== null && (edge.source === active || edge.target === active));
+      return inHand ? dim : 0;
+    };
     for (const edge of frame.edges) {
       if (edge.certainty !== "unverified") continue;
+      const reveal = revealOf(edge);
+      if (reveal <= 0) continue;
       const from = nodeCentre(frame, edge.source);
       const to = nodeCentre(frame, edge.target);
       if (!from || !to) continue;
@@ -722,7 +841,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         frame.selectedId !== null && (edge.source === frame.selectedId || edge.target === frame.selectedId)
           ? 1
           : Math.min(alphaOf(edge.source), alphaOf(edge.target));
-      ctx.globalAlpha = edgeAlpha;
+      ctx.globalAlpha = edgeAlpha * reveal;
       ctx.fillStyle = ink.stale;
       ctx.beginPath();
       ctx.arc(middle.x, middle.y, radius, 0, Math.PI * 2);

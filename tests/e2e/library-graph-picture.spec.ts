@@ -74,6 +74,32 @@ const LEADER_MAX_MARKS = 120;
  * at. Below it no mark may be anonymous at any window.
  */
 const NAMES_ALL_FIT_MARKS = 30;
+/**
+ * Mirrors `STALE_DOT_STANDING_MAX`: how many standing amber dots a folder may draw at rest
+ * before the picture says the number instead of painting it once per citation. A count of
+ * unverified **citations**, never of marks — the amber ink is proportional to the dots and
+ * to nothing else, measured at 9-11 canvas pixels of strict amber per dot on every fixture
+ * and window below.
+ */
+const STALE_DOT_STANDING_MAX = 64;
+/**
+ * **The ink budget the standing amber holds to at rest**, and the number re-inspection 122
+ * R2 is graded against.
+ *
+ * R2 measured the three-hundred-source folder at **23,298 amber pixels against 0** with
+ * total graph ink up **48%**, and called the result a warning field rather than a folder
+ * with some stale citations. In this suite's own units the same state read **15.64%** of
+ * the canvas's ink at 1040x720. Both sides of 4% are measured rather than chosen: the
+ * densest folder the 2026-09-12 and 2026-09-13 reviews read as legible (`vault-60`, 48
+ * stale citations) draws **2.16%** at its narrowest window, and the folder the finding is
+ * about draws **5.97%** at its widest. 4% sits between them at 1.85x the observed-good
+ * ceiling and 0.67x the observed-bad floor.
+ *
+ * ⚠️ **At rest only.** Pressing the strip's `N sources changed` clause is a person asking
+ * for exactly this field, and it dims everything else to say so; a budget that bound that
+ * state would forbid the answer to the question it is the answer to.
+ */
+const AMBER_INK_BUDGET = 0.04;
 
 /**
  * The three windows the Library is judged at: the 14-inch workbench, a narrow laptop, and the
@@ -351,7 +377,8 @@ async function openGraph(page: Page, seed: Record<string, string>): Promise<void
 }
 
 /**
- * **How much amber is on the canvas**, counted inside the page.
+ * **How much amber is on the canvas, and how much ink the picture has at all** — both
+ * counted inside the page, in one pass over the same buffer.
  *
  * The dot that says *this citation is no longer vouched for* is the one mark on this
  * picture with no DOM, no label box and no probe entry — it is painted into the break of a
@@ -360,24 +387,34 @@ async function openGraph(page: Page, seed: Record<string, string>): Promise<void
  * and 0 at 1512×901** (S2): the mark existed only during a breath that lasts two settle
  * budgets and never returns, so which window drew it was decided by when the shutter fell.
  *
+ * ⚠️ **Both predicates are the re-inspection's own, to the constant**, because the finding
+ * this gate now holds was stated in them: `amber` is `measure.py::amber`'s strict scan
+ * (`R>190, 140<G<210, B<120`) and `ink` is `measure.py::bbox`'s `inkPixels` — a canvas
+ * pixel brighter than luma 30 on a ground of `rgb(8,9,10)`. Re-inspection 122 R2 measured
+ * this picture's ink up **48%** on the three-hundred-source folder with 23,298 amber
+ * pixels against 0, and called the result a warning field rather than a folder. A gate
+ * written in a statistic of its own could not be compared against that sentence.
+ *
  * ⚠️ **Counted in the page, never transferred.** Handing an `ImageData` array back over CDP
  * costs about twelve seconds on a canvas this size; the same count inside the page is three
  * milliseconds.
  */
-async function amberPixels(page: Page): Promise<number> {
+async function canvasInk(page: Page): Promise<{ amber: number; ink: number; share: number }> {
   return page.evaluate(() => {
     const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="library-graph-canvas"]');
     const context = canvas?.getContext("2d");
-    if (!canvas || !context) return -1;
+    if (!canvas || !context) return { amber: -1, ink: -1, share: -1 };
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-    let hits = 0;
+    let amber = 0;
+    let ink = 0;
     for (let index = 0; index < data.length; index += 4) {
       const red = data[index]!;
       const green = data[index + 1]!;
       const blue = data[index + 2]!;
-      if (red > 190 && green > 140 && green < 210 && blue < 120) hits += 1;
+      if (0.2126 * red + 0.7152 * green + 0.0722 * blue > 30) ink += 1;
+      if (red > 190 && green > 140 && green < 210 && blue < 120) amber += 1;
     }
-    return hits;
+    return { amber, ink, share: ink === 0 ? 0 : amber / ink };
   });
 }
 
@@ -816,13 +853,116 @@ for (const size of SIZES) {
   });
 }
 
+/**
+ * **On a folder past the standing cap, a stale citation is still one press away.**
+ *
+ * The other half of re-inspection 122 R2. The finding was that 480 standing dots read as a
+ * warning field; the answer is that the picture stops repeating the fact, which is only
+ * honest if the fact is still reachable. Three routes, all of them already on the screen
+ * before this change and none of them new UI:
+ *
+ * 1. the strip's `N sources changed` clause — a toggle that lights every stale citation's
+ *    two ends and prints both counts in the legend's own slot (slice L0, 2026-09-12);
+ * 2. a press on a page, which opens its card and flows its own citations;
+ * 3. the pointer, which holds the same neighbourhood a card does.
+ *
+ * Run at all three windows rather than at one, because the strip folds its non-lead clauses
+ * below `lg` and a control measured only at the width where it is shown makes a gate that is
+ * green forever (the 2026-09-04 width-conditional finding).
+ */
+for (const size of SIZES) {
+  test(`a stale citation on the three-hundred-source folder is one press away at ${size.name}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: size.width, height: size.height });
+    await openGraph(page, seedFolder(FIXTURES[3]!.shape()));
+    const graph = page.getByTestId("library-graph-canvas");
+
+    // The state the home spends its life in: 480 unverified citations and a calm picture.
+    const resting = await canvasInk(page);
+    const stale = await page.evaluate(
+      () => window.__atlasLibraryGraph!.edges().filter((edge) => edge.certainty === "unverified").length,
+    );
+    expect(stale, "this folder no longer crosses the standing cap, so the case proves nothing").toBeGreaterThan(
+      STALE_DOT_STANDING_MAX,
+    );
+    expect(resting.amber, "the folder is past the cap and still painting a field of amber").toBe(0);
+
+    // ── 1. The clause. ──
+    const clause = page.getByTestId("library-strip-stale");
+    await expect(clause, "the count that replaces the dots is not on the screen").toBeVisible();
+    // It carries a number, which is what the dots stop saying 480 times.
+    await expect(clause).toContainText(/\d+/);
+    await clause.click();
+    await expect(clause).toHaveAttribute("aria-pressed", "true");
+    await waitFrames(page, 6);
+    const lit = await canvasInk(page);
+    expect(
+      lit.amber,
+      "the clause was pressed and no stale citation lit: the count leads nowhere",
+    ).toBeGreaterThan(0);
+    // And the legend says what is lit, with both counts, so the picture can be checked.
+    await expect(page.getByTestId("library-graph-hint")).toContainText("lit");
+    if (outDir) {
+      await graph.screenshot({ path: join(outDir, `vault-300-${size.name}-lit.png`) });
+      await page.screenshot({ path: join(outDir, `vault-300-${size.name}-lit-window.png`) });
+    }
+
+    // The same press lifts it, and the canvas goes back to calm.
+    await clause.click();
+    await expect(clause).toHaveAttribute("aria-pressed", "false");
+    await waitFrames(page, 12);
+    expect((await canvasInk(page)).amber, "the lit state did not lift").toBe(0);
+
+    // ── 2. The card. ──
+    const box = (await graph.boundingBox())!;
+    const busiest = (await page.evaluate(() => {
+      const probe = window.__atlasLibraryGraph!;
+      const staleEnds = new Set<string>();
+      for (const edge of probe.edges()) {
+        if (edge.certainty !== "unverified") continue;
+        staleEnds.add(edge.source);
+      }
+      const pages = probe.nodes().filter((node) => node.kind === "page" && staleEnds.has(node.id));
+      return pages.sort((first, second) => second.radius - first.radius)[0] ?? null;
+    }))!;
+    expect(busiest, "no page on this folder carries an unverified citation").not.toBeNull();
+    await page.mouse.click(box.x + busiest.x, box.y + busiest.y);
+    await expect(page.getByTestId("library-graph-card")).toBeVisible();
+    await waitFrames(page, 6);
+    const withCard = await canvasInk(page);
+    expect(
+      withCard.amber,
+      "a card is open on a page whose citations are unverified and no amber dot is drawn, so its own sentence names a mark nobody can see",
+    ).toBeGreaterThan(0);
+    // The card's sentence is the one that names the mark; it must be the one printed.
+    await expect(page.getByTestId("library-graph-card-flow")).toContainText("amber dot");
+
+    if (outDir) {
+      await graph.screenshot({ path: join(outDir, `vault-300-${size.name}-card.png`) });
+      await page.screenshot({ path: join(outDir, `vault-300-${size.name}-card-window.png`) });
+    }
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("library-graph-card")).toBeHidden();
+    // The pointer is off the mark and the dim has ramped out: calm again, and measurably so.
+    await page.mouse.move(box.x + box.width / 2, box.y - 40);
+    await waitFrames(page, 12);
+    expect(
+      (await canvasInk(page)).amber,
+      "the dots stayed behind after the card closed and the pointer left",
+    ).toBe(0);
+  });
+}
+
 for (const fixture of FIXTURES) {
   for (const size of SIZES) {
     test(`the ${fixture.name} picture stays legible at ${size.name}`, async ({ page }) => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await openGraph(page, seedFolder(fixture.shape()));
       const picture = await measure(page);
-      const amber = await amberPixels(page);
+      const pixels = await canvasInk(page);
+      const staleEdges = picture.edges.filter((edge) => edge.certainty === "unverified").length;
 
       if (outDir) {
         const stem = `${fixture.name}-${size.name}`;
@@ -857,7 +997,10 @@ for (const fixture of FIXTURES) {
               allowedScale: Number(picture.allowedScale.toFixed(4)),
               ceiling: Number(picture.ceiling.toFixed(4)),
               anonymous: picture.anonymous,
-              amberPixels: amber,
+              amberPixels: pixels.amber,
+              inkPixels: pixels.ink,
+              amberInkShare: Number(pixels.share.toFixed(4)),
+              staleEdges,
               minSourceMarkPx: Number(picture.minSourceMarkPx.toFixed(2)),
               maxNodeDiameterPx: Number(picture.maxNodeDiameterPx.toFixed(2)),
               centreOfMassOffset: Number(picture.centreOfMassOffset.toFixed(4)),
@@ -1002,19 +1145,50 @@ for (const fixture of FIXTURES) {
       }
 
       /*
-       * ── The amber dot is on the canvas, at every window. ──
+       * ── The amber dot is on the canvas at every window, and holds its share of the ink. ──
        *
        * Every fixture here writes a hash that cannot match on a third of its pages, so every
-       * one of them has unverified citations and must paint the mark that says so. The same
-       * scan on `origin/main` returns **0** at rest on all twelve cases: the dot existed only
-       * during the arrival breath (S2).
+       * one of them has unverified citations. Two bars, one per side of
+       * {@link STALE_DOT_STANDING_MAX}:
+       *
+       * - **under the cap the mark must be painted**, at every window. The same scan before
+       *   2026-09-13 returned **0** at rest on all twelve cases, because the dot existed only
+       *   during the arrival breath (inspection 122, S2). On the six-document folder at
+       *   1512x901 that bar is 0 -> 97 strict amber pixels, and this file is what keeps it.
+       * - **over it the picture must be calm at rest**, inside {@link AMBER_INK_BUDGET}.
+       *   Re-inspection 122 R2 is the other side of the same mark: standing was the fix, and
+       *   standing 480 times was the next defect.
        */
-      const staleEdges = picture.edges.filter((edge) => edge.certainty === "unverified").length;
       expect(staleEdges, "the fixture has no unverified citation, so this case proves nothing").toBeGreaterThan(0);
+      /*
+       * ── The standing amber holds its share of the picture's ink. ──
+       *
+       * Re-inspection 122 R2, the defect this bar exists for: 480 standing dots on the
+       * three-hundred-source folder, 15.64% of the canvas's ink at 1040x720, and *"the
+       * picture's dominant mark is now a warning, not a document"*.
+       */
       expect(
-        amber,
-        "no amber pixel on a folder with unverified citations: the card's own sentence names a mark nobody can see",
-      ).toBeGreaterThan(0);
+        pixels.share,
+        `the standing amber holds ${(pixels.share * 100).toFixed(2)}% of this picture's ink, past the ${
+          AMBER_INK_BUDGET * 100
+        }% budget: ${pixels.amber} amber pixels of ${pixels.ink}, from ${staleEdges} unverified citations`,
+      ).toBeLessThanOrEqual(AMBER_INK_BUDGET);
+      if (staleEdges <= STALE_DOT_STANDING_MAX) {
+        expect(
+          pixels.amber,
+          "no amber pixel on a folder with unverified citations: the card's own sentence names a mark nobody can see",
+        ).toBeGreaterThan(0);
+      } else {
+        /*
+         * All or nothing, never a sample: a folder past the cap draws no standing dot, so no
+         * undotted stale citation can be read as a fresh one. That the mark is still one
+         * press away is the next test's claim, asserted there rather than assumed here.
+         */
+        expect(
+          pixels.amber,
+          "a folder past the standing cap is still painting amber at rest, so any ink budget it holds is luck",
+        ).toBe(0);
+      }
 
       // ── The marks. ──
       /*
