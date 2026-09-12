@@ -61,6 +61,14 @@ vi.mock('@/shared/lib/agent-chat-intent', () => ({
   requestAgentChat: (...args: unknown[]) => mocks.requestAgentChat(...args),
 }));
 
+// These cases prove confirm/cancel state and handoff. Exit-frame scheduling is
+// owned by dialog.test.tsx and the real-browser transient-surface contract.
+// Let presence follow React state here instead of retaining exiting children in jsdom.
+vi.mock('framer-motion', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('framer-motion')>()),
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => 'ko',
@@ -694,18 +702,6 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     expect(screen.getByTestId('index-body'), '렌즈를 껐다고 트리가 사라졌다').toBeInTheDocument();
   });
 
-/*
-   * These two cases wait for the dialog to **close** — a condition, not a duration.
-   *
-   * They carried `timeout: CLOSES_WITHIN_MS` (5,000 ms) as a "product-meaningful bound",
-   * with the case budget raised to 20 s so the wait could report. The wait was still the
-   * thing that tripped: it failed again in a 411 s pre-push `unit` lane on a branch that
-   * does not touch this file, having cost 152 ms and 15 ms run alone. A 5-second wall
-   * clock in a jsdom unit test is not a product bound, it is a bet on the machine —
-   * `.claude/rules/testing.md` ("The timing rule") forbids it, and one global ceiling in
-   * `vitest.setup.ts` replaces it. The product claim that survives is the one being
-   * waited for: the dialog closes.
-   */
   /*
    * ⚠️ The door for someone who already has code (decision, 2026-08-24). Measured on the shipped
    * card: of its four actions none makes an ontology from a repository that already exists.
@@ -751,22 +747,7 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     await act(async () => {
       fireEvent.click(screen.getByTestId('first-run-build-from-code'));
     });
-    /*
-     * Wait for the dialog to be **open** before cancelling it.
-     *
-     * ⚠️ The click above starts an async project pick, and `act` flushing does not
-     * guarantee that pick has resolved — on a loaded machine it resolves *after* the
-     * cancel below, so the path appears once more and nothing clears it again. The
-     * failure then looks like "cancel does not close the dialog" and no amount of
-     * waiting fixes it, because the element genuinely is there: measured in a 760-file
-     * pre-push lane, where it persisted past a 15-second ceiling having cost 15 ms run
-     * alone.
-     *
-     * This is the ordinary shape of the defect the timing rule names: the test assumed
-     * the machine had reached a state instead of waiting for it
-     * (`.claude/rules/testing.md`, "The timing rule"). Waiting costs nothing when the
-     * pick has already landed.
-     */
+    // The project picker is asynchronous; cancel only after its result is shown.
     await screen.findByTestId('build-from-code-path');
     fireEvent.click(screen.getByTestId('build-from-code-cancel'));
     // The dialog closes, so the path it was showing is gone from the document.

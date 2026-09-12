@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import koMessages from "../../../../messages/ko.json";
 import { describe, expect, it, vi } from "vitest";
 import { buildFullDetailGroups } from "../lib/full-detail-groups";
 import { buildFullDetailReachModel } from "../lib/full-detail-reach";
@@ -61,6 +62,7 @@ const messages = {
       freshDotTitle: "최근 갱신",
     },
     reach: {
+      domainsHiddenRoute: koMessages.fullDetailA1.reach.domainsHiddenRoute,
       leadIn: "이 노드에서",
       stepUnit: "단계",
       afterSteps: "안에 닿는 개념",
