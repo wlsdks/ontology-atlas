@@ -7,6 +7,7 @@ import {
   GATEWAY_CHANGELOG_KEEP_SECTIONS,
   trimToRecentSections as generatorTrim,
 } from '../../scripts/build-docs-vault.mjs';
+import { readLedgerSource } from '../../scripts/lib/record-ledgers.mjs';
 
 /**
  * **Always-on size gate** for the bundled vault data (2026-08-19).
@@ -98,10 +99,17 @@ describe('번들 볼트 데이터 상시 예산', () => {
 });
 
 describe('관문 CHANGELOG 미리보기 계약', () => {
-  const changelogRaw = readFileSync(
-    path.join(process.cwd(), 'docs', 'CHANGELOG.md'),
-    'utf8',
-  );
+  /*
+   * ⚠️ **The changelog is composed, not read** (2026-09-13). `docs/CHANGELOG.md` is a frozen
+   * historical document since the records migration, and the current changelog is that document
+   * plus every `docs/records/changes/*.md` fact and release marker. This assertion used to read
+   * the frozen file, which matched the generator only while no change record existed: the first
+   * one ever written shifted the preview's section window and turned this red for the right
+   * input and the wrong reason. `readLedgerSource` is the same composer the generator uses, so
+   * the drift contract below still compares two implementations of the trim rather than two
+   * sources.
+   */
+  const changelogRaw = readLedgerSource('docs/CHANGELOG.md')?.content ?? '';
   const committed = JSON.parse(
     readFileSync(path.join(DATA_DIR, 'gateway-changelog.json'), 'utf8'),
   ) as { body: string; omittedSections: number };
