@@ -355,7 +355,9 @@ export function LibraryGraph({
    */
   const placeCard = engine.placeCard;
   useLayoutEffect(() => {
-    if (cardNode) placeCard();
+    // The id is passed, not read: the engine's own state ref is filled by a passive effect
+    // that React runs after this one.
+    placeCard(cardNode?.id ?? null);
   }, [cardExpanded, cardNode, placeCard]);
   const cardStale = useMemo(
     () => libraryGraphFlowEdges(graph, cardId).stale.size > 0,

@@ -206,6 +206,9 @@ test.describe("a press on a mark opens a card beside it", () => {
     const rightmost = all.reduce((furthest, node) => (node.x > furthest.x ? node : furthest), all[0]!);
     await pressMark(page, rightmost);
     await expect(page.getByTestId("library-graph-card")).toBeVisible();
+    await expect
+      .poll(async () => page.evaluate(() => window.__atlasLibraryGraph!.card() !== null))
+      .toBe(true);
     const placement = (await page.evaluate(() => window.__atlasLibraryGraph!.card()))!;
     const view = await page.evaluate(() => window.__atlasLibraryGraph!.view());
     // Either there was room on the right, or it flipped — never a card hanging off the edge.
@@ -316,6 +319,13 @@ test.describe("a press on a mark opens a card beside it", () => {
      * the window (2026-09-12). The legend under the canvas keeps teaching the marks.
      */
     await expect(page.getByTestId("library-graph-card-flow")).toContainText("flow from each original");
+    /*
+     * And the slot below the canvas is still the picture's. With the pointer off the marks
+     * it is the legend again — the key a walker reported losing when the card took this
+     * line for its own sentence (2026-09-12).
+     */
+    const box = (await page.getByTestId("library-graph-canvas").boundingBox())!;
+    await page.mouse.move(box.x + 3, box.y + 3);
     await expect(page.getByTestId("library-graph-hint")).toContainText("A filled circle is a page");
   });
 

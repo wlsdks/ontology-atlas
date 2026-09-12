@@ -211,7 +211,7 @@ describe("the library graph section", () => {
   });
 
   /*
-   * ⚠️ **The concept's label used to carry `· 지도에서 열기`**, because its press was the one
+   * ⚠️ **The concept's label used to carry "open on the map"**, because its press was the one
    * press on this canvas that left the screen. No press does now: the concept's card says
    * what it is and offers the map as a door. So the destination is still named before
    * anything leaves — one control further in, and pressed on purpose.

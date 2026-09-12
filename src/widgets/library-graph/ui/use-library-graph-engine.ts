@@ -243,8 +243,11 @@ export interface LibraryGraphEngine {
   fitToView: () => void;
   /** The settled picture's width over its height, for `data-picture-aspect`. */
   pictureAspect: number | null;
-  /** Places the open card now, synchronously — what a layout effect calls on open. */
-  placeCard: () => void;
+  /**
+   * Places the open card now, synchronously — what a layout effect calls on open, passing
+   * the card's own id because this hook's own state ref is not filled until after it.
+   */
+  placeCard: (openNow?: string | null) => void;
 }
 
 export function useLibraryGraphEngine({
@@ -462,8 +465,16 @@ export function useLibraryGraphEngine({
    * last frame already filled, so running it synchronously on open is exact rather than a
    * guess.
    */
-  const placeCard = useCallback(() => {
-    const openCardId = stateRef.current.cardId;
+  const placeCard = useCallback((openNow?: string | null) => {
+    /*
+     * ⚠️ **The caller may name the card, and on open it must.** `stateRef` is filled by a
+     * passive effect, which React runs *after* the layout effect that calls this — so on the
+     * frame a card opens, reading the ref here answers `null`, the placement is not published,
+     * and the surface is visible for one frame with no box. Measured as a race in
+     * `library-graph-card.spec.ts`: `card()` came back null right after the card became
+     * visible, on the faster of two runs of the same spec.
+     */
+    const openCardId = openNow === undefined ? stateRef.current.cardId : openNow;
     if (openCardId === null) {
       if (cardBoxRef.current !== null) {
         cardBoxRef.current = null;

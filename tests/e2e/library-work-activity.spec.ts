@@ -39,7 +39,14 @@ test.describe("Library live work activity", () => {
     });
     await expect.poll(() => page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0)).toBeGreaterThan(5);
     await canvas.press("ArrowRight");
+    /*
+     * ⚠️ **`Enter` opens the card, and `Open` inside it is what selects the document**
+     * (2026-09-12, "a press opens a card beside the mark"). Before that, `Enter` *was* the
+     * commit; the claim this case makes — active work cannot paint a canvas that has been
+     * replaced by the reader — is unchanged, only the press that replaces it is.
+     */
     await canvas.press("Enter");
+    await page.getByTestId("library-graph-card-open").click();
     await expect(canvas).toHaveCount(0);
     const hiddenPaints = await page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0);
     await page.waitForTimeout(500);

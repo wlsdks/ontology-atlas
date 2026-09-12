@@ -305,7 +305,13 @@ async function openGraph(page: Page, seed: Record<string, string>): Promise<void
   await stubDirectoryPicker(page, seed);
   await page.goto("/en/library/?guides=off&e2e=1");
   await page.getByTestId("library-open-vault").click();
-  await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+  /*
+   * ⚠️ **Its own timeout, because the 300-file folder is written into OPFS and read back
+   * before anything is drawn.** At the suite's 15s default this case went red on a laptop
+   * running four branches at once while passing alone — a lane failing on machine load
+   * rather than on the picture (measured 2026-09-12, 16.0s to first canvas).
+   */
+  await expect(page.getByTestId("library-graph-canvas")).toBeVisible({ timeout: 60_000 });
   await expect
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.nodes().length ?? 0), {
       timeout: 20_000,
