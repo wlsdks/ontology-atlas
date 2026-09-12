@@ -3,6 +3,7 @@
 import type { useTranslations } from 'next-intl';
 import type { RefObject } from 'react';
 import type { AnswerObservation } from '@/features/library';
+import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
 import { Button, controlClass } from '@/shared/ui';
 import { AgentDoor } from './AgentDoor';
 
@@ -51,7 +52,7 @@ import { AgentDoor } from './AgentDoor';
  * `library-answer-comparison-rows.spec.ts` had to move — and leaving drops out of the group
  * to the very end of the page, below the answer it leaves.
  */
-export function RetainedAnswerContext({ observation, phase, historyState, older, onRefresh, refreshButtonRef, agentDoor = false, error, t }: {
+export function RetainedAnswerContext({ observation, phase, historyState, older, onRefresh, refreshButtonRef, agentDoor = false, historyBlocked = false, error, t }: {
   observation: AnswerObservation;
   phase: string;
   historyState: string;
@@ -66,10 +67,23 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
    * missing thing is the app itself.
    */
   agentDoor?: boolean;
-  error: string | null;
+  /**
+   * **The page already knows this press would throw** (installed-app inspection before v1.2.2,
+   * B2). A malformed thread edge makes the index card read `answers.version.unresolved` while this block
+   * offered the refresh anyway; pressing it threw, and the developer's English landed in the body.
+   * Set from the same predicate `prepareAnswerRefresh` refuses on (`answerHistoryUnreadable`), so
+   * the two cannot disagree.
+   */
+  historyBlocked?: boolean;
+  /**
+   * The translated sentence, and the English fact behind it. Typed rather than `string | null`
+   * because `string` is what let `error.message` reach the page body in the first place.
+   */
+  error: FailureCopy | null;
   t: ReturnType<typeof useTranslations<'library'>>;
 }) {
   const working = phase === 'preparing' || phase === 'running' || phase === 'saving';
+  const refusable = onRefresh !== null && !historyBlocked;
   const paths = (['changed', 'missing', 'added'] as const).filter((kind) => observation[kind].length);
   return (
     /*
@@ -112,7 +126,18 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
              * so; this is the only live control in that state, so it stands first.
              */}
             {agentDoor && onRefresh === null ? <AgentDoor testId="answer-refresh-blocked-door" /> : null}
-            <Button ref={refreshButtonRef} className="atlas-touch-floor max-w-full" size="sm" variant="outline" disabled={working || onRefresh === null} aria-describedby="answer-refresh-lede" onClick={onRefresh ?? undefined} data-testid="answer-refresh-start">{t(working ? `answers.phase.${phase}` : 'answers.refresh')}</Button>
+            <Button
+              ref={refreshButtonRef}
+              className="atlas-touch-floor max-w-full"
+              size="sm"
+              variant="outline"
+              disabled={working || !refusable}
+              /* The reason moves with the control: when the thread edge is broken, the sentence
+                 the button is described by is the one that says so, not the observation. */
+              aria-describedby={historyBlocked ? 'answer-refresh-blocked-history' : 'answer-refresh-lede'}
+              onClick={refusable ? onRefresh ?? undefined : undefined}
+              data-testid="answer-refresh-start"
+            >{t(working ? `answers.phase.${phase}` : 'answers.refresh')}</Button>
           </span>
         </div>
         {/*
@@ -136,7 +161,22 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
         {/* Not behind a press: each of these says the page is not what a reader assumes. */}
         {older ? <p className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)]">{t('answers.older')}</p> : null}
         {historyState !== 'none' ? <p data-testid="answer-history-state" className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)]">{t(`answers.history.${historyState}`)}</p> : null}
-        {error ? <p role="alert" className="mt-2 text-body leading-body text-[color:var(--color-text-primary)]">{error}</p> : null}
+        {/*
+          The reason the press is not offered, on the row that holds the press. It carries the
+          index card's own `answers.version.unresolved` opening, so a reader meets one wording for one fact.
+        */}
+        {historyBlocked ? (
+          <p
+            id="answer-refresh-blocked-history"
+            data-testid="answer-refresh-blocked-history"
+            className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)]"
+          >
+            {t('answers.refreshBlockedHistory')}
+          </p>
+        ) : null}
+        {/* `data-failure-detail` is where the English goes: a developer reads the attribute, a
+            reader reads the sentence. It is never rendered. */}
+        {error ? <p role="alert" data-testid="answer-refresh-error" data-failure-detail={error.detail ?? undefined} className="mt-2 text-body leading-body text-[color:var(--color-text-primary)]">{error.sentence}</p> : null}
       </div>
     </section>
   );

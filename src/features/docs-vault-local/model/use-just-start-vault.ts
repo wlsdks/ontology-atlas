@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { codedFailure, failureCodeOf } from '@/shared/lib/failure-code';
 import type { VaultShape } from '@/shared/lib/vault-shape';
 import { CURRENT_LOCAL_FS_HANDLE_ID, type LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import {
@@ -55,7 +56,7 @@ export function useJustStartVault(vault: JustStartVaultVault, starterLocale: str
     try {
       const parentDir = await ensureDefaultVaultParentDir();
       if (!parentDir) {
-        throw new Error('Tauri vault runtime is not available.');
+        throw codedFailure('app-required');
       }
       const existingNames = await listTauriDirectoryNames(parentDir);
       const dirName = resolveUniqueVaultDirName(existingNames);
@@ -74,7 +75,16 @@ export function useJustStartVault(vault: JustStartVaultVault, starterLocale: str
       // vault — the same race avoidance as `useVaultCreateFlow`.
       setArmed(true);
     } catch (err) {
-      setActionError(err instanceof Error && err.message ? err.message : '');
+      /**
+ * `actionError` carries a **failure code**, not a sentence.
+ *
+ * `''` still means "it failed and there is nothing more specific to say"; a non-empty value is a
+ * code the screen looks up in the `failures` catalogue. It used to be `err.message` — the
+ * developer's English — which a Korean screen then printed verbatim (installed-app inspection
+ * before v1.2.2, B2). A module that throws cannot know the reader's language, so it names the
+ * failure and the screen owns the sentence.
+ */
+      setActionError(failureCodeOf(err) ?? '');
     } finally {
       setPreparing(false);
     }
@@ -90,7 +100,7 @@ export function useJustStartVault(vault: JustStartVaultVault, starterLocale: str
         setScaffolding(true);
         (shape ? vault.scaffoldOntology(starterLocale, shape) : vault.scaffoldOntology(starterLocale))
           .catch((err: unknown) => {
-            setActionError(err instanceof Error && err.message ? err.message : '');
+            setActionError(failureCodeOf(err) ?? '');
           })
           .finally(() => setScaffolding(false));
         return;

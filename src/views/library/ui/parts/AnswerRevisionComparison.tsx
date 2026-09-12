@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { answerObservation } from '@/features/library';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
 import {
   normalizeOriginalPaths,
   resolveSourceCitation,
@@ -169,7 +170,8 @@ export function AnswerRevisionComparison({ open, question, before, after, proble
   before: string;
   after: string;
   problems: ReadonlyArray<WikiTemplateProblem>;
-  error: string | null;
+  /** Typed copy, not a raw string — see `RetainedAnswerContext` and the B2 note in `failure-code.ts`. */
+  error: FailureCopy | null;
   saving: boolean;
   onClose: () => void;
   onSave: () => void;
@@ -369,7 +371,7 @@ export function AnswerRevisionComparison({ open, question, before, after, proble
           the footer, which at 390 is off screen while the greyed-out button is not.
         */}
         {error || blockingWords ? <div role="alert" data-testid="answer-comparison-blocked" className="min-w-0 flex-1 basis-full text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all] sm:basis-0">
-          {error ? <p className="max-w-[var(--measure-prose)]">{error}</p> : null}
+          {error ? <p data-testid="answer-comparison-error" data-failure-detail={error.detail ?? undefined} className="max-w-[var(--measure-prose)]">{error.sentence}</p> : null}
           {blockingWords ? <p className="max-w-[var(--measure-prose)]">{blockingWords.sentence}{blockingWords.action ? ` ${blockingWords.action}` : ''}</p> : null}
           {problems.length > 1 ? <p className="mt-1 font-mono text-caption text-[color:var(--color-text-tertiary)]">{problems.slice(1).map((problem) => problem.code).join(' · ')}</p> : null}
         </div> : null}
