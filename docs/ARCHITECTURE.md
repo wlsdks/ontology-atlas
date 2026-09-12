@@ -543,7 +543,7 @@ until a local manifest exists.
                            vault workbench (2026-07-30 ledger). Order and slugs live once in
                            src/views/gateway-doc/model/guide-pages.ts
 /guide/[segment]           one chapter; static params come from that same registry
-/changelog                 renders docs/CHANGELOG.md from the vault, most recent sections only
+/changelog                 renders the composed changelog (frozen history plus change/release fragments), most recent sections only
 ```
 
 All routes are wrapped under `/[locale]/` by next-intl (en, ko).
@@ -625,7 +625,7 @@ to an agent.
 
 ```bash
 pnpm docs-vault:build      # docs/ontology/*.md → src/entities/docs-vault/data/manifest.json
-pnpm docs-vault:check      # verify committed docs-vault outputs are fresh
+pnpm docs-vault:check      # verify local materialized docs-vault outputs are fresh
 pnpm build                 # next build → static export → out/
 pnpm vault:validate        # R11+ — frontmatter integrity + graph array drift
 pnpm test:vault:validate   # focused validator CLI argument contract

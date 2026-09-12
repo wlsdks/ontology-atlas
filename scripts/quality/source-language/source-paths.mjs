@@ -7,6 +7,8 @@ const HASH_COMMENT_FILES = new Set([
   '.env.example',
   '.githooks/pre-commit',
   '.githooks/pre-push',
+  '.githooks/post-checkout',
+  '.githooks/post-merge',
 ]);
 
 function extensionOf(path) {

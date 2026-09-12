@@ -1,5 +1,7 @@
 # CHANGELOG
 
+> Frozen release history since 2026-09-13. Add change facts and release markers under `docs/records/`; the Docs Vault composes the current changelog. See [record workflow](records/README.md). Historical recording instructions below describe the former format.
+
 > Major change history. Code commit messages answer *why*; this file answers
 > *when / which surface changed*, for a person who uses the product.
 >
@@ -44,10 +46,6 @@
 > before commit `ed15e6ec5`.
 
 ---
-
-## 2026-09-13 · Unreleased: moving between destinations stops reloading the app
-
-**Fixed**: in the installed app a rail press is a route change again rather than a reload of the whole app, so the window no longer goes blank on the way (0.1-0.3 s on a 104-document folder), and no longer shows another folder's screen, complete with a download button, on the way in.
 
 ## 2026-09-12 · v1.2.1: the Library opens on its graph, and the graph stays readable at three hundred pages
 

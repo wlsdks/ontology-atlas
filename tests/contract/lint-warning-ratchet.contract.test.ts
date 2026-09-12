@@ -1,8 +1,8 @@
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-import { ESLint } from "eslint";
-import { beforeAll, describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
+import { describe, expect, it } from "vitest";
 
 import { FULL_LANE_COMMANDS } from "../../scripts/classify-change.mjs";
 
@@ -44,9 +44,9 @@ import { FULL_LANE_COMMANDS } from "../../scripts/classify-change.mjs";
  * (`.claude/rules/design-gates.md`: *"the 125 were not cleared in the same PR
  * because of their nature, not their number"*).
  *
- * So **today's count is pinned as the cap** (it cannot rise) and **the cap cannot
- * float above the measurement** (no free headroom). Fixing values and switching the
- * gate on are kept separate.
+ * So the repository-wide command has a zero-warning cap. The command itself owns the
+ * exhaustive scan; this contract proves the cap, live warning/error behavior, and CI
+ * wiring without paying for the same scan a second time inside the full Vitest lane.
  *
  * ### This ratchet **still passes on the day warnings reach 0**
  *
@@ -59,27 +59,12 @@ import { FULL_LANE_COMMANDS } from "../../scripts/classify-change.mjs";
  *
  * ### The number is written in **one place only**
  *
- * Repeating the baseline as a constant in this file would make two copies with
+ * Repeating the cap as a constant in this file would make two copies with
  * `package.json`, and two copies with no gate means drift is the default. So this
  * file holds no number — it **reads** it from the lint script in `package.json`.
- * Moving the cap is a one-line diff, and that line is where the "why" goes.
  */
 
 const REPO_ROOT = path.resolve(__dirname, "../..");
-
-/**
- * **The only contract that actually sweeps the whole repository, so it is slow** —
- * about 26s locally (1,847 files). CI runners are slower, so the budget is
- * generous.
- *
- * The lesson `type-ramp-coverage.contract.test.ts` left behind: *"a gate that fails
- * on time is noise."* If a red light from a spec violation cannot be told apart
- * from a red light from a slow runner, the next person learns to ignore red.
- */
-const ESLINT_SWEEP_TIMEOUT_MS = 300_000;
-
-/** Floor on files swept — under a third of the measured 1,847. It measures **field of view**, not debt. */
-const MIN_SCANNED_FILES = 500;
 
 const packageJson = JSON.parse(
   readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"),
@@ -90,24 +75,10 @@ const capMatch = /--max-warnings[= ](-?\d+)/.exec(lintScript);
 /** `package.json` is the authority for this number; here it is only read. */
 const cap = capMatch ? Number(capMatch[1]) : Number.NaN;
 
-let census: { files: number; warnings: number; errors: number };
-
 /** A probe that produces one real warning — proof the warn severity is alive. */
 const WARNING_PROBE = "export function probe() {\n  const unusedByProbe = 1;\n  return 2;\n}\n";
-const WARNING_PROBE_PATH = "src/shared/lib/__lint-warning-probe__.ts";
-
-beforeAll(async () => {
-  // Sweeps the same set as `pnpm lint` (= `eslint` with no arguments). Counting a
-  // different set makes "the cap does not float above the measurement" below turn
-  // red on a falsehood.
-  const eslint = new ESLint({ cwd: REPO_ROOT });
-  const results = await eslint.lintFiles(["."]);
-  census = {
-    files: results.length,
-    warnings: results.reduce((sum, result) => sum + result.warningCount, 0),
-    errors: results.reduce((sum, result) => sum + result.errorCount, 0),
-  };
-}, ESLINT_SWEEP_TIMEOUT_MS);
+/** A parser failure proves the same configured engine still reports blocking errors. */
+const ERROR_PROBE = "export const broken = ;\n";
 
 describe("lint 경고 래칫 — 상한이 실제로 물려 있는가", () => {
   it("`pnpm lint` 가 경고 상한을 지고 있다 — 없으면 warn 룰은 게이트가 아니다", () => {
@@ -120,40 +91,24 @@ describe("lint 경고 래칫 — 상한이 실제로 물려 있는가", () => {
     expect(Number.isInteger(cap) && cap >= 0, `--max-warnings ${cap} 은 상한이 아니다`).toBe(true);
   });
 
-  it("실측이 상한을 넘지 않는다 — 넘었다면 `pnpm lint` 도 이미 빨갛다", () => {
-    expect(
-      census.warnings,
-      `경고가 ${cap} → ${census.warnings} 로 늘었다. 새로 생긴 경고를 고쳐라 — ` +
-        `상한을 올리는 것은 래칫을 푸는 것이다.`,
-    ).toBeLessThanOrEqual(cap);
+  it("`pnpm lint` 는 경고 하나도 허용하지 않는다", () => {
+    expect(cap, `경고 상한은 0 이어야 한다 (지금: ${cap})`).toBe(0);
   });
 
-  it("상한이 실측보다 위로 뜨지 않는다 — 헐거운 멈춤쇠는 멈춤쇠가 아니다", () => {
-    expect(
-      census.warnings,
-      `경고가 ${cap} → ${census.warnings} 로 줄었다. ` +
-        `package.json 의 "lint" 스크립트도 --max-warnings ${census.warnings} 로 내려라.`,
-    ).toBeGreaterThanOrEqual(cap);
+  it.each([
+    ['warning', WARNING_PROBE, 1, 0, true],
+    ['error', ERROR_PROBE, 1, 1, false],
+    ['valid', 'export const probe = 1;\n', 0, 0, false],
+  ] as const)('the actual lint command handles %s input', (_kind, input, status, errors, warns) => {
+    const result = spawnSync('pnpm --silent lint --stdin --stdin-filename src/shared/lib/__lint-probe__.ts --format json', {
+      cwd: REPO_ROOT, shell: true, input, encoding: 'utf8',
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(status);
+    const [diagnostic] = JSON.parse(result.stdout) as { errorCount: number; warningCount: number }[];
+    expect(diagnostic.errorCount).toBe(errors);
+    expect(diagnostic.warningCount > 0).toBe(warns);
   });
 
-  it("탐지기가 빈 집합 위에서 놀지 않는다 — 저장소를 실제로 훑었다", () => {
-    expect(
-      census.files,
-      `훑은 파일이 ${census.files}개뿐이다 — eslint 가 저장소를 다 안 보고 있다`,
-    ).toBeGreaterThanOrEqual(MIN_SCANNED_FILES);
-  });
-
-  it("경고 심각도가 실재한다 — 상한이 셀 것이 있는 계량이다", async () => {
-    // This must still pass on the day warnings reach 0, so it measures **whether a
-    // warning can be produced**, not how many exist. A probe of 0 means the warn-level
-    // rules are switched off entirely, and then even a cap of 0 is not a gate.
-    const eslint = new ESLint({ cwd: REPO_ROOT });
-    const [result] = await eslint.lintText(WARNING_PROBE, { filePath: WARNING_PROBE_PATH });
-    expect(
-      result.warningCount,
-      "일부러 심은 미사용 변수가 경고로 안 잡힌다 — warn 레벨 룰이 꺼져 있다",
-    ).toBeGreaterThan(0);
-  });
 });
 
 describe("CI 가 이 상한을 지나간다 — 안 물린 게이트는 주석이다", () => {

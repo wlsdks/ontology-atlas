@@ -133,7 +133,7 @@ describe('focused check suggestion CLI', () => {
     assert.equal(exitCode, 0);
     assert.deepEqual(calls[0].args, ['diff', '--name-only', 'HEAD', '--']);
     assert.deepEqual(calls[1].args, ['ls-files', '--others', '--exclude-standard']);
-    assert.match(output.join(''), /pnpm docs-vault:check/);
+    assert.match(output.join(''), /pnpm docs-vault:build/);
     assert.match(output.join(''), /pnpm test:mcp:registration/);
     assert.match(output.join(''), /pnpm test:checks:changed/);
   });

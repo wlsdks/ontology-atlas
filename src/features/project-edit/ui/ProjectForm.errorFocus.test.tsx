@@ -91,7 +91,16 @@ describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", ()
     expect(onSubmit, "저장이 호출되지 않았다 — 이 시험이 헛돈다").toHaveBeenCalledTimes(1);
 
     const banner = await screen.findByTestId("project-error-banner");
-    expect(banner).toHaveTextContent("데모 모드에서는 저장할 수 없습니다");
+    /*
+     * ⚠️ The banner shows **the copy written for a failed save**, not the thrown message
+     * (v1.2.2: `no-raw-error-copy` R1). This fixture throws Korean; the real rejections throw
+     * English from the vault layer, and a screen cannot translate either of them. The thrown
+     * text is kept where a developer reads it and a reader does not.
+     */
+    expect(banner).toHaveTextContent(koMessages.settings.projectForm.validation.saveFailed);
+    expect(banner.getAttribute("data-failure-detail")).toContain(
+      "데모 모드에서는 저장할 수 없습니다",
+    );
     expect(
       document.activeElement,
       "저장이 거절됐는데 초점이 그대로다 — 긴 폼·짧은 화면에서는 이유가 화면 밖에 뜬다",

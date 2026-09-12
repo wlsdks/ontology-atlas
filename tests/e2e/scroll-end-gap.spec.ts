@@ -1,3 +1,4 @@
+import { waitForDocumentPaint } from './visual-ready';
 import { test, expect } from "@playwright/test";
 import { AUDITED_ROUTES } from "./audited-routes";
 import { FIXTURE_VAULT } from "./fixture-vault";
@@ -329,7 +330,8 @@ for (const vp of VIEWPORTS) {
 
     for (const [label, url] of ROUTES) {
       await page.goto(url, { waitUntil: "domcontentloaded" });
-      await routeSettled(page);
+      await waitForDocumentPaint(page);
+      await waitForBoxStill(page.locator("body"));
       const m = await measure(page);
       if (!m.slot) {
         expect(

@@ -1,33 +1,6 @@
-# Mark generated artifacts — files created by `pnpm docs-vault:build` in `docs/` and `samples/storefront/`.
-#
-# Why committed: Static export (`output: 'export'`) bakes the sample vault into the bundle.
-# Additionally, `manifest.json`/`content.json` are targets for **static import** by
-# `static-vault-source.ts`; without them, `tsc --noEmit`, vitest, lint, and editors
-# all break. Thus, they cannot be excluded via .gitignore; instead, generation must be deterministic
-# (contract: "determinism contract" in `scripts/build-docs-vault.test.mjs`,
-# `tests/contract/generated-vault-determinism.contract.test.ts`).
-#
-# What `linguist-generated` does: Hides these files in GitHub PR diffs and excludes them
-# from language statistics/search. Since these are not files humans edit by hand, it is correct
-# for them to be absent from the default review view — eliminating the problem of 400KB JSON diffs
-# obscuring actual changes.
-#
-# Merge drivers remain intentionally unspecified: `merge=ours`-like strategies can silently discard
-# document bodies (`content.json`) actually added by the other side, while Git's built-in `union`
-# driver does not preserve deterministic ledger order. If a merge or rebase conflicts only in
-# `docs/CHANGELOG.md`, `docs/DECISIONS.md`, and the generated paths below, use the fail-closed
-# semantic resolver:
-#
-#     pnpm docs-vault:resolve-conflicts -- --dry-run
-#     pnpm docs-vault:resolve-conflicts
-#
-# It accepts prepend-only dated records while requiring every existing record to remain byte-identical,
-# then regenerates and stages every derived output. It refuses unrelated conflicts or historical edits.
-# Never manually edit JSON conflicts — conflict markers have previously survived and broken tsc.
-
-src/entities/docs-vault/data/manifest.json           linguist-generated=true
-src/entities/docs-vault/data/content.json            linguist-generated=true
-src/entities/docs-vault/data/sample-storefront.manifest.json linguist-generated=true
-src/entities/docs-vault/data/sample-storefront.content.json  linguist-generated=true
+# Reproducible Docs Vault outputs are ignored and materialized per worktree.
+# These attributes also keep historical generated diffs readable.
+# No merge driver may silently discard authored records or combine invalid JSON.
+src/entities/docs-vault/data/** linguist-generated=true
+public/docs-vault/** linguist-generated=true
 src/views/download/model/dogfood-census.generated.ts linguist-generated=true
-public/docs-vault/**                                 linguist-generated=true

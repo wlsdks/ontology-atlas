@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "documents": {
+    "docs/DECISIONS.md": {
+      "sha256": "1a98545dd2c13f8bba4c0185ee488639230c5a30b69e0654f1420e358b09d63c",
+      "blob": "4fbd9d65fe9e4c13679181a7838c9575d80d639c"
+    },
+    "docs/CHANGELOG.md": {
+      "sha256": "9bf78389afa57c1509d68c1e931cc6ef3ef36335b01b57980e255a8ecd8f8250",
+      "blob": "aaa5e0d869b4523fd686a5d3926a97b9bdb8c0cc"
+    },
+    "docs/PO-PILOT.md": {
+      "sha256": "d9fcf38fc6f0e895691c55236d72c15d75be6073dba9b648db7fa38932b27c5f",
+      "blob": "03bd256c71e5982a98de27ec6416c971bfba9a65"
+    }
+  }
+}

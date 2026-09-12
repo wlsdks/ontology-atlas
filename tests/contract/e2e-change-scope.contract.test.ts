@@ -45,7 +45,6 @@ describe('E2E impact planning precedes expensive setup', () => {
     expect(jobBlock('suite'), 'the three Playwright shards disappeared').toContain(
       'shard: [1, 2, 3]',
     );
-    expect(2 + 3).toBe(5);
   });
 
   it('one checkout-only job publishes the encoded plan and three browser decisions', () => {
@@ -69,7 +68,7 @@ describe('E2E impact planning precedes expensive setup', () => {
 
   it.each(PROTECTED_JOB_IDS)('%s refuses a missing plan', (id) => {
     const job = jobBlock(id);
-    expect(job, 'job does not wait for the impact plan').toContain('needs: changes');
+    expect(job, 'job does not wait for the impact plan').toContain('needs: [changes, build]');
     // `!cancelled()` keeps the required status alive when the planner fails;
     // the draft clause keeps a draft pull request from spending a runner at all
     // (2026-09-12). The two are one expression, so both halves are pinned.
@@ -111,5 +110,25 @@ describe('E2E impact planning precedes expensive setup', () => {
   it('keeps classification out of the expensive setup action', () => {
     expect(setupAction).not.toContain('classify-change.mjs');
     expect(setupAction).not.toMatch(/^outputs:\s*$/m);
+  });
+});
+
+describe('one immutable build feeds every protected browser job', () => {
+  it('builds once and publishes a run-local artifact for this source SHA', () => {
+    expect((workflow.match(/run: pnpm build/g) ?? []).length).toBe(1);
+    const build = jobBlock('build');
+    expect(build).toContain('if-no-files-found: error');
+    expect(build).not.toContain('continue-on-error');
+    expect(stepBlock(jobBlock('suite'), 'Upload timing evidence')).toContain('continue-on-error: true');
+    expect(build).toContain('name: playwright-export-${{ github.sha }}');
+  });
+  it.each(PROTECTED_JOB_IDS)('%s fails if the shared build fails and downloads the same source', (id) => {
+    const job=jobBlock(id);
+    expect(job).toContain('needs: [changes, build]');
+    expect(job).toContain('PLAYWRIGHT_PREBUILT: "1"');
+    const guard=stepBlock(job,'Require browser artifact');
+    expect(guard).toContain("needs.build.result != 'success'");
+    expect(guard).toContain('run: exit 1');
+    expect(stepBlock(job,'Download static export')).toContain('name: playwright-export-${{ github.sha }}');
   });
 });

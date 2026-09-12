@@ -8,6 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import { useJustStartVault, useVaultCreateFlow } from "@/features/docs-vault-local";
 import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
+import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
 import { deniedFolderName } from "@/entities/vault-session";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
@@ -104,25 +105,28 @@ export function FirstRunPage() {
    * over `err.message`, and this line printed the developer's English onto a Korean screen
    * (installed-app inspection, B2). An unrecognised code falls through to this screen's own
    * fallback, which is the sentence somebody wrote for exactly this press.
+   *
+   * Every branch resolves to a `FailureCopy`, so the sentence and the machine half never share a
+   * slot: `sentence` is rendered, `detail` only ever reaches `data-failure-detail`.
    */
-  const errorText =
+  const failure: FailureCopy | null =
     justStartError !== null
-      ? failureSentence(justStartError, t("errorFallback")).sentence
+      ? failureSentence(justStartError, t("errorFallback"))
       : actionError !== null
-        ? failureSentence(actionError, t("errorFallback")).sentence
+        ? failureSentence(actionError, t("errorFallback"))
         : vault.status === "error"
           ? // A "cannot be a vault root" case is a rejection, not a failure. Showing "please try again"
             // here would make the screen lie, since every retry gives the same result.
             vault.errorCode === "root-rejected"
-            ? t("errorRootRejected")
+            ? { sentence: t("errorRootRejected"), detail: null }
             : /*
                * ⚠️ "the folder is gone" is **also not something a retry fixes** (review
-               * 2026-08-16). This branch used to fall through to `errorMessage`, but that
-               * value is deliberately blank so the raw cause is not leaked — so what
-               * actually showed was "please try again", with the same result every press.
+               * 2026-08-16). `use-local-vault.ts` leaves `errorMessage` null on this code
+               * alone, so falling through to it showed "please try again", with the same
+               * result every press.
                */
               vault.errorCode === "path-missing"
-              ? t("errorPathMissing")
+              ? { sentence: t("errorPathMissing"), detail: null }
               : /*
                  * ⚠️ The operating system refused, and a retry gives the same refusal. The raw
                  * `Operation not permitted (os error 1)` names an errno, not a folder, and never
@@ -130,13 +134,27 @@ export function FirstRunPage() {
                  * sentence that names the folder and where to allow it.
                  */
                 vault.errorCode === "permission-denied"
-                ? t("errorPermissionDenied", {
-                    folder:
-                      deniedFolderName(
-                        vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null,
-                      ) ?? t("errorPermissionDeniedThisFolder"),
-                  })
-                : vault.errorMessage ?? t("errorFallback")
+                ? {
+                    sentence: t("errorPermissionDenied", {
+                      folder:
+                        deniedFolderName(
+                          vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null,
+                        ) ?? t("errorPermissionDeniedThisFolder"),
+                    }),
+                    detail: vault.errorMessage,
+                  }
+                : /*
+                   * ⚠️ `access-failed` is the branch that **does** carry a cause string
+                   * (`use-local-vault.ts:241` documents it: "errorMessage carries the cause
+                   * string, including a Tauri command's Err(String)"). A comment here once
+                   * claimed the opposite — that the value is "deliberately blank so the raw
+                   * cause is not leaked" — and on the strength of that claim this line rendered
+                   * it directly, which put raw English on the first-run screen while the gate
+                   * that change shipped stayed green (re-inspection before v1.2.2, S20). The
+                   * same lookup the coded branches use recognises the OS signatures in that
+                   * string and otherwise falls back to this screen's own sentence.
+                   */
+                  failureSentence(vault.errorMessage, t("errorFallback"))
           : null;
 
   const cardBase = controlClass({
@@ -309,12 +327,13 @@ export function FirstRunPage() {
         </div>
         )}
 
-        {errorText ? (
+        {failure ? (
           <p
             role="alert"
+            data-failure-detail={failure.detail ?? undefined}
             className="break-keep text-center text-label text-[color:var(--color-status-danger)]"
           >
-            {errorText}
+            {failure.sentence}
           </p>
         ) : null}
 
