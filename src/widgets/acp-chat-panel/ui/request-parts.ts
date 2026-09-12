@@ -34,6 +34,12 @@ export interface RequestParts {
  * - `Architecture task context:` — the architecture workbench's typed handoff packet, followed by
  *   its instruction sentences. It has to be listed here *and* stand after the readable sentence in
  *   `buildArchitectureAgentPrompt`: a marker on line 0 folds nothing.
+ * - `Folder:` / `폴더:` — the anchor line every Library brief writes before its instructions
+ *   (`compile-brief`, `lint-brief`, `propose-node-brief`, and the three that open on it). ⚠️
+ *   Pressing 「서식 맞는지 확인」 opened the dock on ~2,000 characters of schema, fenced blocks and
+ *   taxonomy rules (installed app, 2026-09-13). A brief whose *first* line is this anchor folds
+ *   nothing, by the rule above, and that is the honest outcome: there is no readable half in front
+ *   of it to stand on.
  * - the response-format contract — `ANALYSIS_FINDINGS_INSTRUCTION`'s own first line, taken from
  *   the constant rather than copied, so the two cannot drift apart.
  */
@@ -42,6 +48,8 @@ const APP_BLOCK_MARKERS = [
   'Continue analysis ',
   'Selected relation:',
   'Architecture task context:',
+  'Folder: ',
+  '폴더: ',
   ANALYSIS_FINDINGS_INSTRUCTION.split('\n')[0],
 ] as const;
 

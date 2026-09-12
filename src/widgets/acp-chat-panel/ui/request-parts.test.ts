@@ -57,6 +57,46 @@ describe('splitAppRequest — the transcript opens on the readable sentence', ()
 });
 
 /**
+ * **The Library's briefs, measured on the installed app 2026-09-13.**
+ *
+ * Pressing 「서식 맞는지 확인」 opened the dock on the outgoing instruction verbatim — a JSON
+ * schema, fenced blocks, `{"counts":{"disagreement":0,…}`, `nodeCandidates` and the taxonomy
+ * rules — the largest block on the screen, in front of somebody who had pressed a Korean
+ * button. Every Library brief writes the same anchor line before its instructions, so one
+ * marker folds all of them, and the readable sentence each one opens with is what stands.
+ */
+describe("a Library brief folds at its folder anchor", () => {
+  const KO = [
+    '이 폴더의 위키를 읽고, 빠진 연결을 목록으로 돌려줘. 파일은 하나도 고치지 않아.',
+    '',
+    '폴더: /Users/probe/Atlas/launch',
+    '',
+    '`wiki/sources/` 는 열지 마: 판단 대상은 문서야.',
+  ].join('\n');
+
+  it('stands the readable sentence up alone and folds the instructions', () => {
+    const { lead, detail } = splitAppRequest(KO);
+    expect(lead).toBe('이 폴더의 위키를 읽고, 빠진 연결을 목록으로 돌려줘. 파일은 하나도 고치지 않아.');
+    expect(detail).toContain('폴더: /Users/probe/Atlas/launch');
+    expect(detail).toContain('는 열지 마');
+  });
+
+  it('folds the English anchor the same way', () => {
+    const { lead, detail } = splitAppRequest(
+      'Read the wiki in this folder and come back with a list.\n\nFolder: /tmp/v\n\nRead every page.',
+    );
+    expect(lead).toBe('Read the wiki in this folder and come back with a list.');
+    expect(detail).toContain('Folder: /tmp/v');
+  });
+
+  /* The briefs that open on the anchor fold nothing, and that is the honest outcome:
+     there is no readable half in front of it for the bubble to stand on. */
+  it('folds nothing when the anchor is the first line', () => {
+    expect(splitAppRequest('폴더: /tmp/v\n\n위키를 고쳐 줘.').detail).toBeNull();
+  });
+});
+
+/**
  * **The architecture workbench's packet, measured on the installed app 2026-09-09.**
  *
  * Pressing 「source check」 on a Korean build drew a bubble opening
