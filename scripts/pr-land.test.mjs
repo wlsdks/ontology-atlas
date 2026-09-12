@@ -14,6 +14,7 @@ import {
   parseArgs,
   refuseLanding,
   requiredCheckState,
+  runInFlight,
 } from './pr-land.mjs';
 
 /**
@@ -304,6 +305,119 @@ describe('the required contexts, read from the protection', () => {
     assert.deepEqual(reversed.failed.map((check) => check.name), ['Unit · Contract']);
   });
 
+  /**
+   * **The landing aborted on its own superseded run** (measured 2026-09-12, #1578).
+   *
+   * Pushing to a **ready** pull request fires `synchronize`. That run set appeared at
+   * 14:34:11; the lander decided nothing had run yet and toggled draft, firing a
+   * second set at 14:34:24, whose `cancel-in-progress` killed the first. Both stay in
+   * the rollup, so `MCP` reported `CANCELLED` (started 14:34:27) beside `MCP`
+   * `IN_PROGRESS` (started 14:34:55) — and resolving by verdict put the corpse in
+   * front, because a completed cancellation outranks a running job.
+   *
+   * Recency settles it. `startedAt` and not `completedAt`: a superseded run is
+   * cancelled *after* its successor began, so its completion is the later stamp.
+   */
+  it('treats a cancelled context as pending when a newer run for the same head is live', () => {
+    const superseded = (name) => ({
+      name,
+      status: 'COMPLETED',
+      conclusion: 'CANCELLED',
+      startedAt: '2026-09-12T14:34:27Z',
+      completedAt: '2026-09-12T14:34:27Z',
+      detailsUrl: 'https://github.com/wlsdks/ontology-atlas/actions/runs/34699667144/job/1',
+    });
+    const live = (name) => ({
+      name,
+      status: 'IN_PROGRESS',
+      conclusion: null,
+      startedAt: '2026-09-12T14:34:55Z',
+      // GitHub writes the year 1 as the completion of anything still running.
+      completedAt: '0001-01-01T00:00:00Z',
+    });
+
+    const rollup = REQUIRED_CONTEXTS.flatMap((name) => [superseded(name), live(name)]);
+    const verdict = requiredCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS });
+    assert.equal(verdict.state, 'waiting', 'a landing must not abort on its own superseded run');
+    assert.deepEqual(verdict.failed, []);
+    assert.equal(verdict.pending.length, REQUIRED_CONTEXTS.length);
+
+    // Order must not decide it, in either direction.
+    const reversed = requiredCheckState({ rollup: [...rollup].reverse(), requiredContexts: REQUIRED_CONTEXTS });
+    assert.equal(reversed.state, 'waiting');
+
+    // And once nothing newer exists, the cancellation is decisive again.
+    const alone = requiredCheckState({
+      rollup: REQUIRED_CONTEXTS.map(superseded),
+      requiredContexts: REQUIRED_CONTEXTS,
+    });
+    assert.equal(alone.state, 'failed');
+    assert.equal(alone.failed.length, REQUIRED_CONTEXTS.length);
+  });
+
+  it('does not ask GitHub for a run while one is already on its way', () => {
+    const queued = { name: 'MCP', status: 'QUEUED', conclusion: null, startedAt: '2026-09-12T14:34:11Z' };
+    const done = { name: 'MCP', status: 'COMPLETED', conclusion: 'SUCCESS', startedAt: '2026-09-12T14:34:11Z' };
+    assert.equal(runInFlight({ statusCheckRollup: [queued] }), true);
+    assert.equal(runInFlight({ statusCheckRollup: [{ ...queued, status: 'IN_PROGRESS' }] }), true);
+    assert.equal(runInFlight({ statusCheckRollup: [done] }), false);
+    assert.equal(runInFlight({ statusCheckRollup: [] }), false);
+    assert.equal(runInFlight({}), false);
+
+    // The push's run set has appeared but not reported: nothing to re-fire.
+    const ready = readyPr({ statusCheckRollup: [queued] });
+    assert.equal(
+      decideNext({ ...holding, pr: ready, localChecksPassed: true }).action,
+      'wait-checks',
+      'toggling here fires a second run set that cancels the first',
+    );
+
+    /*
+     * The gap that actually caused it: an **empty** rollup, read in the moment
+     * between a push to a ready pull request and GitHub registering its run set.
+     * `runInFlight` cannot see that — there is nothing to see — so the only thing
+     * separating "no run is coming" from "it has not appeared yet" is looking twice.
+     */
+    const silent = readyPr({ statusCheckRollup: [] });
+    assert.equal(
+      decideNext({ ...holding, pr: silent, localChecksPassed: true, emptyRollupObservations: 1 }).action,
+      'wait-checks',
+      'one empty reading is the push-to-run-set gap, not a pull request with no event left',
+    );
+    assert.equal(
+      decideNext({ ...holding, pr: silent, localChecksPassed: true, emptyRollupObservations: 2 }).action,
+      'refire-ci',
+      'a second empty reading means there really is no run to wait for',
+    );
+  });
+
+  it('reads a running check from startedAt, not from the year 1 it reports as completion', () => {
+    // GitHub writes `0001-01-01T00:00:00Z` as the completion of anything in flight.
+    // Parsed as a real instant it makes every running check the oldest entry there
+    // is, which hands the verdict straight back to a superseded run.
+    const superseded = {
+      name: 'MCP',
+      status: 'COMPLETED',
+      conclusion: 'CANCELLED',
+      startedAt: '2026-09-12T14:34:27Z',
+      completedAt: '2026-09-12T14:34:27Z',
+    };
+    const live = {
+      name: 'MCP',
+      status: 'IN_PROGRESS',
+      conclusion: null,
+      startedAt: '2026-09-12T14:34:55Z',
+      completedAt: '0001-01-01T00:00:00Z',
+    };
+    const rest = GREEN_ROLLUP.filter((run) => run.name !== 'MCP');
+    for (const order of [[superseded, live], [live, superseded]]) {
+      const verdict = requiredCheckState({ rollup: [...rest, ...order], requiredContexts: REQUIRED_CONTEXTS });
+      assert.equal(verdict.state, 'waiting');
+      assert.deepEqual(verdict.pending, ['MCP']);
+      assert.deepEqual(verdict.failed, []);
+    }
+  });
+
   it('ends the landing on a cancelled required context, not only a failed one', () => {
     // A shard cancelled by its own `timeout-minutes` is how #1578 actually went
     // red. `CANCELLED` is not `SUCCESS` and not `SKIPPED`, so it must be decisive.
@@ -421,12 +535,20 @@ describe('one landing, in order', () => {
   });
 
   it('asks for the one run a ready pull request never had, exactly once', () => {
-    const step = decideNext({ ...holding, pr: readyPr({ statusCheckRollup: [] }) });
-    assert.equal(step.action, 'refire-ci');
+    /*
+     * Two empty readings, not one (measured 2026-09-12, #1578). `mergeFiredCi` only
+     * knows about the merge **this landing** made; a push someone else made to a ready
+     * pull request fires `synchronize` too, and the run set takes a moment to appear.
+     * Reading one empty rollup and toggling fired a second set that cancelled the
+     * first, and the landing then aborted on the corpse.
+     */
+    const empty = readyPr({ statusCheckRollup: [] });
+    assert.equal(decideNext({ ...holding, pr: empty, emptyRollupObservations: 1 }).action, 'wait-checks');
+    assert.equal(decideNext({ ...holding, pr: empty, emptyRollupObservations: 2 }).action, 'refire-ci');
     // With the run already requested there is nothing left to do but wait; a
     // second toggle would cancel the run it just asked for.
     assert.equal(
-      decideNext({ ...holding, pr: readyPr({ statusCheckRollup: [] }), ciRequested: true }).action,
+      decideNext({ ...holding, pr: empty, ciRequested: true, emptyRollupObservations: 9 }).action,
       'wait-checks',
     );
   });
@@ -451,8 +573,10 @@ describe('one landing, in order', () => {
     // ever ran". With the push counted as the request, the lander waits.
     const freshHead = readyPr({ statusCheckRollup: [], headRefOid: 'f00dcafe0' });
     assert.equal(decideNext({ ...holding, pr: freshHead, ciRequested: true }).action, 'wait-checks');
-    // Without it, it would toggle draft and buy a second run.
-    assert.equal(decideNext({ ...holding, pr: freshHead }).action, 'refire-ci');
+    // Without it, it would toggle draft and buy a second run — once the empty rollup
+    // has been seen twice, which is the separate guard for a run that is merely slow
+    // to appear.
+    assert.equal(decideNext({ ...holding, pr: freshHead, emptyRollupObservations: 2 }).action, 'refire-ci');
   });
 
   it('stops on a failing required check and names the job to open', () => {
