@@ -3,6 +3,7 @@ import { FIRST_RUN_STARTER_DISMISSED_KEY } from "../../src/features/first-run-st
 import { seedFirstRunSeen } from "./first-run-seed";
 // The `window.__atlasMap` type is declared in exactly one place — two copies raise TS2717.
 import "./atlas-map-probe";
+import { waitForMapStill, waitFrames } from "./settle";
 
 /**
  * **Walking the map by keyboard.**
@@ -53,35 +54,22 @@ async function pressAndSettle(
   while (Date.now() < deadline) {
     now = await selectedId(page);
     if (now && now !== from) return now;
-    await page.waitForTimeout(50);
+    // A poll interval, not a gate: the loop returns the moment the selection moves.
+    await waitFrames(page, 3);
   }
   return now;
 }
 
 /**
- * **Wait for coordinates to settle before reading them.** Until the selected
- * node's screen coordinates repeat twice in a row — measuring mid camera
+ * **Wait for coordinates to settle before reading them.** Measuring mid camera
  * transition makes "off screen" accidentally true.
+ *
+ * Stillness is judged in the page, on the frames it drew: two samples taken 150 ms
+ * apart from here could both land inside one slow step and call a moving camera
+ * settled, and on a fast machine each threw 150 ms away.
  */
 async function settleSelectedPosition(page: import("@playwright/test").Page) {
-  const snapshot = () =>
-    page.evaluate(() => {
-      const probe = window.__atlasMap;
-      const id = probe?.selection().nodeId;
-      if (!probe || !id) return "";
-      const node = probe.nodes().find((n) => n.id === id);
-      return node ? `${id}:${Math.round(node.x)},${Math.round(node.y)}` : "";
-    });
-  await expect
-    .poll(
-      async () => {
-        const before = await snapshot();
-        await page.waitForTimeout(150);
-        return before !== "" && before === (await snapshot());
-      },
-      { timeout: 20_000, message: "카메라가 멈추지 않아 좌표를 믿을 수 없다" },
-    )
-    .toBe(true);
+  await waitForMapStill(page);
 }
 
 /** Presses all four directions in turn to find one that moves **at all**. */
@@ -107,7 +95,9 @@ async function walkOneStep(
 async function walkUntilDeadEnd(page: import("@playwright/test").Page, direction = "ArrowLeft") {
   for (let i = 0; i < 12; i += 1) {
     await page.keyboard.press(direction);
-    await page.waitForTimeout(140);
+    // A press is answered within a few drawn frames; frames are the unit, and 140 ms
+    // was this machine's guess at eight of them.
+    await waitFrames(page, 8);
     if ((await page.locator("[data-walk-notice]").count()) > 0) return true;
   }
   return false;
@@ -328,7 +318,7 @@ test.describe("지도 키보드 걷기", () => {
       const id = await selectedId(page);
       if (id) seen.add(id);
       await page.keyboard.press(key);
-      await page.waitForTimeout(200);
+      await waitFrames(page, 12);
     }
     const last = await selectedId(page);
     if (last) seen.add(last);
@@ -681,7 +671,12 @@ test.describe("지도 키보드 걷기", () => {
       );
     });
     for (const key of DIRECTIONS) await page.keyboard.press(key);
-    await page.waitForTimeout(300);
+    // The listener records one entry per key, so the count **is** the condition.
+    const recorded = () =>
+      page.evaluate(() => (window as unknown as { __keyPrevented: boolean[] }).__keyPrevented.length);
+    await expect
+      .poll(recorded, { timeout: 15_000, message: "방향키 사건이 하나도 안 잡혔다 — 이 시험이 공회전한다" })
+      .toBe(4);
     const flags = await page.evaluate(
       () => (window as unknown as { __keyPrevented: boolean[] }).__keyPrevented,
     );
@@ -708,7 +703,9 @@ test.describe("지도 키보드 걷기", () => {
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await page.locator("body").press("ArrowUp");
     await page.locator("body").press("ArrowDown");
-    await page.waitForTimeout(400);
+    // An **absence**: nothing positive marks "these presses did nothing", so the wait is
+    // an opportunity for a move to happen, counted in drawn frames.
+    await waitFrames(page, 30);
     expect(await selectedId(page), "초점이 없는데 지도가 움직였다").toBe(pinned);
   });
 });

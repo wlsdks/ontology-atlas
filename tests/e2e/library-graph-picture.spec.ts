@@ -9,6 +9,7 @@ import type {
   LibraryGraphProbeNode as ProbeNode,
 } from "./library-graph-probe";
 import { stubDirectoryPicker } from "./vault-picker-stub";
+import { waitFrames } from "./settle";
 
 /**
  * **Is the picture legible — at six documents, at sixty, and at three hundred?**
@@ -320,8 +321,9 @@ async function openGraph(page: Page, seed: Record<string, string>): Promise<void
   await expect
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.alpha() ?? 1), { timeout: 20_000 })
     .toBeLessThan(0.01);
-  // One more frame after the settle, so `labels()` holds the resting placement.
-  await page.waitForTimeout(120);
+  // One more frame after the settle, so `labels()` holds the resting placement. A frame
+  // is the unit; 120 ms was this machine's estimate of one.
+  await waitFrames(page, 2);
 }
 
 interface Box {

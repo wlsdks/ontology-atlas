@@ -5,6 +5,24 @@ import { expect, test } from '@playwright/test';
 
 import { seedFirstRunSeen } from './first-run-seed';
 import { stubDirectoryPicker } from './vault-picker-stub';
+import { waitForAnimationsDone, waitForBoxStill } from "./settle";
+
+/**
+ * The architecture graph has finished rearranging.
+ *
+ * A selection cuts strokes, scrolls a box into view and fades sentences in, and a resize
+ * relays the whole ladder — so what the measurements below need is "the arrangement has
+ * landed", which is the graph's box repeating across frames with nothing still animating
+ * inside it. The 300–900 ms sleeps this replaces were four different guesses at the same
+ * state.
+ */
+async function graphSettled(page: import("@playwright/test").Page) {
+  const graph = page.locator('[data-testid="architecture-graph"]');
+  await expect(graph).toHaveCount(1, { timeout: 30_000 });
+  await waitForAnimationsDone(graph);
+  await waitForBoxStill(graph);
+}
+
 
 /**
  * The role ledger — **the receipt has to fit the box, and the chain has to fit the canvas.**
@@ -407,10 +425,11 @@ test('a skip sentence never sits on another arc, sampled along the strokes', asy
     { width: 1920, height: 800 },
   ]) {
     await page.setViewportSize(size);
-    await page.waitForTimeout(500);
+    // The ladder relays out for the new width; measure the arrangement it lands on.
+    await graphSettled(page);
     for (const role of ['entities', 'views']) {
       await page.getByTestId(`architecture-graph-box-${role}`).click();
-      await page.waitForTimeout(400);
+      await graphSettled(page);
       const touches = await page.evaluate(() => {
         const visible = (el: Element) => Number(getComputedStyle(el).opacity) > 0.05;
         const sentences = [...document.querySelectorAll('[data-edge-sentence]')]
@@ -489,7 +508,7 @@ test('choosing a role does not turn the chain, and the chosen box is in view', a
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('[data-testid^="architecture-role-ledger-"]')).toHaveCount(7, { timeout: 30_000 });
-  await page.waitForTimeout(600);
+  await graphSettled(page);
   const axisOf = () =>
     page.evaluate(() => {
       const boxes = [...document.querySelectorAll('[data-testid^="architecture-graph-box-"]')].map((b) => b.getBoundingClientRect());
@@ -500,7 +519,7 @@ test('choosing a role does not turn the chain, and the chosen box is in view', a
   expect(await axisOf(), 'the seven-role chain runs down at 1920×1080 at rest').toBe('down');
   for (const role of ['shared', 'routing', 'entities']) {
     await page.getByTestId(`architecture-graph-box-${role}`).click();
-    await page.waitForTimeout(900);
+    await graphSettled(page);
     expect(await axisOf(), `choosing ${role} turned the chain`).toBe('down');
     const seen = await page.evaluate((id) => {
       const box = document.querySelector(`[data-testid="architecture-graph-box-${id}"]`)!.getBoundingClientRect();
@@ -524,6 +543,6 @@ test('choosing a role does not turn the chain, and the chosen box is in view', a
     expect(counts.sentences, 'a sentence element per stroke').toBe(counts.strokes);
     expect(counts.alike, 'two sentence elements share one stroke').toBe(0);
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(300);
+    await graphSettled(page);
   }
 });

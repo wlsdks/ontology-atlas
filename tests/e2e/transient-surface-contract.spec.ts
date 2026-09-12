@@ -1,6 +1,25 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { FIRST_RUN_STARTER_DISMISSED_KEY } from "../../src/features/first-run-starter/model/first-run-starter-dismiss";
+import { waitForAnimationsDone, waitForBoxStill, waitForMapStill, waitFrames } from "./settle";
+
+/**
+ * The route has arrived and its layout has stopped moving.
+ *
+ * The sweep below enumerates every trigger on the screen and measures boxes, so what it
+ * needs is a laid-out screen — not one second of this machine, which on a slow run is
+ * the middle of hydration and on a fast one is 900 ms thrown away.
+ *
+ * ⚠️ Deliberately **not** `waitForAnimationsDone(body)`: some of these routes always
+ * have something animating somewhere, so a page-wide animation wait sat for the full
+ * hang ceiling (measured 2026-09-13). The body's box repeating across frames is the
+ * condition these measurements actually need.
+ */
+async function routeSettled(page: import("@playwright/test").Page) {
+  await page.waitForLoadState("networkidle");
+  await waitForBoxStill(page.locator("body"));
+}
+
 
 /**
  * **Sweeps three contracts for transient surfaces across every route** (2026-08-11).
@@ -100,7 +119,7 @@ test.describe("잠깐 뜨는 표면 3계약", () => {
 
     for (const route of ROUTES) {
       await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
-      await page.waitForTimeout(1_000);
+      await routeSettled(page);
 
       const triggerCount = await page.evaluate(
         () =>
@@ -128,7 +147,7 @@ test.describe("잠깐 뜨는 표면 3계약", () => {
          */
         if (index > 0) {
           await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
-          await page.waitForTimeout(900);
+          await routeSettled(page);
         }
         const trigger = await page.evaluate((idx) => {
           const el = [...document.querySelectorAll("[aria-expanded],[aria-haspopup]")].filter((candidate) => {
@@ -149,7 +168,11 @@ test.describe("잠깐 뜨는 표면 3계약", () => {
 
         await page.locator("[data-sweep-trigger]").first().focus();
         await page.keyboard.press("Enter");
-        // Just after the first frame of the entrance — measuring here catches the animation still alive.
+        /*
+         * Just after the first frame of the entrance — measuring **here** is the point:
+         * this sample has to land while the animation is still alive, so the 70 ms is the
+         * subject of the measurement and not a settle to wait out.
+         */
         await page.waitForTimeout(70);
 
         const shot = await page.evaluate(() => {
@@ -193,13 +216,13 @@ test.describe("잠깐 뜨는 표면 3계약", () => {
           }
 
           /*
-           * ⚠️ **Give it time to settle.** A first version that pressed Escape 70ms after
+           * ⚠️ **Let it settle first.** A first version that pressed Escape 70ms after
            * appearance falsely reported "focus does not return" on two routes — the sheet was
            * still moving focus inside itself, and closing mid-move leaves no settled place to
-           * return to. A person does not close something after 70ms, and the animation
-           * measurement already finished above.
+           * return to. The condition is the surface's entrance being over, which the browser's
+           * own animation registry reports; 420 ms was a guess at the same thing.
            */
-          await page.waitForTimeout(420);
+          await waitForAnimationsDone(page.locator("[data-transient-surface]").first());
           await page.keyboard.press("Escape");
           /*
            * ⚠️ **Wait for the exit.** A first version that measured once and decided falsely
@@ -212,13 +235,20 @@ test.describe("잠깐 뜨는 표면 3계약", () => {
            * card, a detail panel) happened to be up on the map. Whether it closed is a
            * question about **that surface**.
            */
+          /*
+           * A condition poll: it returns the moment that kind is gone. The interval is
+           * drawn frames rather than 220 ms, so a slow machine gets a longer exit to
+           * finish in instead of a stricter deadline. The loop still ends by itself
+           * because the verdict is collected into `violations` per route rather than
+           * thrown here.
+           */
           let stillOpen = true;
-          for (let wait = 0; wait < 6; wait += 1) {
-            await page.waitForTimeout(220);
+          for (let attempt = 0; attempt < 40; attempt += 1) {
             if (!(await visibleKinds(page)).includes(shot.kind)) {
               stillOpen = false;
               break;
             }
+            await waitFrames(page, 12);
           }
           /*
            * ⚠️ **Compare focus return by identity, never by a marker planted in the DOM.**
@@ -302,11 +332,12 @@ test.describe("잠깐 뜨는 표면 3계약", () => {
     await canvas.waitFor({ state: "visible", timeout: 20_000 });
     await canvas.focus();
     await page.keyboard.press("ArrowRight");
-    await page.waitForTimeout(400);
+    await waitForMapStill(page, { what: "camera" });
     let found = false;
     for (let i = 0; i < 12; i += 1) {
       await page.keyboard.press("ArrowLeft");
-      await page.waitForTimeout(140);
+      // A press is answered within a few drawn frames; frames are the unit.
+      await waitFrames(page, 8);
       if ((await page.locator('[data-transient-surface="notice"]').count()) > 0) {
         found = true;
         break;
@@ -387,9 +418,9 @@ test.describe("잠깐 뜨는 표면 3계약", () => {
      * ⚠️ **Close after the camera transition finishes.** A version that pressed Escape
      * mid-transition left the popover in place (measured). A person does not close while
      * the map is moving, and what this test measures is whether it closes, not whether it
-     * closes mid-transition.
+     * closes mid-transition. "Finished" is the camera's own frames repeating, not 600 ms.
      */
-    await page.waitForTimeout(600);
+    await waitForMapStill(page, { what: "camera" });
     await page.keyboard.press("Escape");
     await expect(anchored, "Escape 로 팝오버가 닫히지 않는다").toBeHidden({ timeout: 4_000 });
     // Focus must stay on the canvas — here the canvas is what called it.

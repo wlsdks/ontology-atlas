@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 import type {} from "./atlas-map-probe";
+import { waitForMapStill, waitFrames } from "./settle";
 
 /**
  * **Hovering a datasheet row makes the map beside it point at that node.**
@@ -41,7 +42,7 @@ test("데이터시트 줄 호버 — 지도가 그 노드를 가리키고, 떼�
   await seedFirstRunSeen(page);
   await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(2500);
+  await waitForMapStill(page);
 
   // Select one node to open the datasheet (a canvas-coordinate click, the same method as `map-trail.spec.ts`).
   const target = await page.evaluate(() => {
@@ -54,8 +55,9 @@ test("데이터시트 줄 호버 — 지도가 그 노드를 가리키고, 떼�
   });
   expect(target, "주문 도메인을 못 찾았다 — 공회전").not.toBeNull();
   await page.mouse.click(target!.px, target!.py);
-  await page.waitForTimeout(1500);
-  expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe("domain:order");
+  await expect
+    .poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId), { timeout: 15_000 })
+    .toBe("domain:order");
 
   const hover = () => page.evaluate(() => window.__atlasMap!.hover());
 
@@ -104,7 +106,8 @@ test("데이터시트 줄 호버 — 지도가 그 노드를 가리키고, 떼�
   /** Parks the cursor on empty space off the map — neither a canvas nor a panel hover. */
   const parkCursor = async () => {
     await page.mouse.move(20, 20);
-    await page.waitForTimeout(900);
+    // Parked means the map is pointing at nothing — the state itself, not 900 ms.
+    await expect.poll(hover, { message: "커서를 치웠는데 지도가 계속 가리킨다" }).toBeNull();
   };
 
   // Pick a relation row whose node is **currently drawn on the map**. (A child
@@ -123,13 +126,16 @@ test("데이터시트 줄 호버 — 지도가 그 노드를 가리키고, 떼�
 
   // Noise — the difference between two frames with nothing done. The numbers below only mean something at 0.
   const base = await captureBaseline();
-  await page.waitForTimeout(700);
+  // The noise floor is "what two frames differ by with nothing done", so some frames
+  // have to be drawn. Counting them in frames measures the thing the number is about.
+  await waitFrames(page, 42);
   const noise = await changedSince(base);
 
   // ① Hovering the row — the state is that node and the screen really changes.
   await page.locator(`[data-datasheet-connection="${drawnRow!.id}"]`).hover();
-  await page.waitForTimeout(900);
-  expect(await hover(), "지도가 그 노드를 가리키지 않는다").toBe(drawnRow!.id);
+  await expect.poll(hover, { message: "지도가 그 노드를 가리키지 않는다" }).toBe(drawnRow!.id);
+  // …and the frames that carry the change onto the canvas.
+  await waitFrames(page, 3);
   const hoveredPixels = await changedSince(base);
   expect(
     hoveredPixels,
@@ -152,7 +158,7 @@ test("데이터시트 줄 호버 — 지도가 그 노드를 가리키고, 떼�
   );
   if (evidenceSlug !== null) {
     await page.locator(`[data-datasheet-evidence="${evidenceSlug}"]`).hover();
-    await page.waitForTimeout(700);
+    await expect.poll(hover, { message: "근거 문서 행이 지도를 가리키지 않는다" }).not.toBeNull();
     const resolved = await hover();
     const mapIds = await page.evaluate(() => window.__atlasMap!.nodes().map((n) => n.id));
     expect(resolved, "근거 문서 행이 지도 이름 공간으로 안 옮겨졌다").not.toBe(evidenceSlug);
@@ -164,7 +170,10 @@ test("데이터시트 줄 호버 — 지도가 그 노드를 가리키고, 떼�
   // ④ Hovering a non-node area (a group heading) leaves the map still — the
   //    highlight is bound to a row, not to the panel.
   await page.locator('[data-datasheet-group-total="contains"]').hover();
-  await page.waitForTimeout(700);
+  // An **absence**: polling for null would pass on the null already standing. The
+  // hover handler runs on the pointer event, so the frames right after the hover are
+  // where a reaction would already be.
+  await waitFrames(page, 3);
   expect(await hover(), "패널 아무 데나 올려도 지도가 반응한다").toBeNull();
 
   expect(pageErrors, "호버 도중 콘솔 예외").toEqual([]);

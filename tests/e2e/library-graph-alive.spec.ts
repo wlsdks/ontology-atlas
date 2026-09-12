@@ -3,6 +3,25 @@ import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 import type { LibraryGraphProbeNode as ProbeNode } from "./library-graph-probe";
 import { stubDirectoryPicker } from "./vault-picker-stub";
+import { waitFrames as frames } from "./settle";
+
+/**
+ * A cheap hash of the whole canvas, so two frames can be compared exactly. Reading
+ * pixels asks nothing of `requestAnimationFrame`, which matters in the case that
+ * counts those calls.
+ */
+const canvasHash = (page: import("@playwright/test").Page) =>
+  page.evaluate(() => {
+    const element = document.querySelector<HTMLCanvasElement>('[data-testid="library-graph-canvas"]')!;
+    const { data } = element.getContext("2d")!.getImageData(0, 0, element.width, element.height);
+    let hash = 2166136261;
+    for (let index = 0; index < data.length; index += 97) {
+      hash ^= data[index]!;
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16);
+  });
+
 
 /**
  * **The library graph is alive** — the five claims only a running browser can settle.
@@ -164,7 +183,9 @@ test.describe("the library graph responds", () => {
     // teleport, and the pointer state machine is entitled to read it as one.
     for (let step = 1; step <= 8; step += 1) {
       await page.mouse.move(box.x + target.x + step * 16, box.y + target.y + step * 10);
-      await page.waitForTimeout(24);
+      // One drawn frame between steps. A drag is delivered in frames; 24 ms was this
+      // machine's guess at one and a half of them.
+      await frames(page, 1);
     }
 
     // ⚠️ The assertion that makes every other one in this case mean anything: the gesture
@@ -232,9 +253,15 @@ test.describe("the library graph responds", () => {
     await page.mouse.move(box.x + target.x, box.y + target.y);
     await page.mouse.move(box.x + target.x + 1, box.y + target.y);
     await expect(canvas).toHaveAttribute("data-hovered-node-id", target.id);
-    // The dim ramps over `--motion-fast`; a frame or two is enough for it to finish.
-    await page.waitForTimeout(300);
-
+    /*
+     * The dim ramps over `--motion-fast`. The assertion **is** the condition — the
+     * outsider's ink is below 60% of its resting value — so it is polled rather than
+     * slept in front of: no ramp budget is read or guessed here, and a slow machine
+     * simply takes more frames to reach the same ink.
+     */
+    await expect
+      .poll(() => inkAt(outsider), { message: "the dim never reached the outsider" })
+      .toBeLessThan(restingOutsider * 0.6);
     const dimmedOutsider = await inkAt(outsider);
     const heldTarget = await inkAt(target);
     // Down to about 35%, so anything at or below 60% of its resting ink is the dim rather
@@ -263,7 +290,7 @@ test.describe("the library graph responds", () => {
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     for (let notch = 0; notch < 4; notch += 1) {
       await page.mouse.wheel(0, 120);
-      await page.waitForTimeout(60);
+      await frames(page, 1);
     }
     await expect.poll(async () => Number(await canvas.getAttribute("data-view-scale"))).toBeLessThan(fitted * 0.85);
 
@@ -321,13 +348,45 @@ test.describe("the library graph responds", () => {
      * to say stops asking for frames* — and the wait is now past the one thing that has
      * something to say. `library-graph-card.spec.ts` owns the other half: that the breath
      * is bounded rather than a loop.
+     *
+     * ⚠️ **Watched, not timed.** Three seconds was the sum of two budgets nobody here can
+     * read. The condition is the picture itself: four samples in a row drawing the same
+     * bytes is the breath having let go, and it is **not** the claim below — a loop that
+     * keeps asking for frames to redraw the same picture still fails the count, which is
+     * the other half of what this case owns.
+     *
+     * `alpha() < 0.01` alone was tried and is not enough: the simulation goes cold while
+     * the amber breath is still painting, and this fixture has stale citations in it
+     * (measured 2026-09-13 — 224 frames over the window that followed).
+     *
+     * ⚠️ `waitFrames` must not be used from here on: this case has replaced
+     * `requestAnimationFrame` with a counting wrapper, so a frame wait would be counted
+     * as the canvas asking for one.
      */
-    await page.waitForTimeout(3_000);
+    let previousFrame: string | null = null;
+    let repeats = 0;
+    await expect
+      .poll(
+        async () => {
+          const drawn = await canvasHash(page);
+          repeats = previousFrame !== null && drawn === previousFrame ? repeats + 1 : 0;
+          previousFrame = drawn;
+          return repeats >= 3;
+        },
+        { timeout: 25_000, message: "the picture never stopped changing, so it is not settled at all" },
+      )
+      .toBe(true);
 
     const readFrames = () =>
       page.evaluate(() => (window as unknown as { __rafCount: { frames: number } }).__rafCount.frames);
     const idleFrom = await readFrames();
     const restingPositions = await nodes(page);
+    /*
+     * A **measurement window**, not a wait: the claim is that no frame is asked for over a
+     * stretch of real time, so the stretch has to pass. It stays in milliseconds because
+     * this case has replaced `requestAnimationFrame` with a counting wrapper, and any
+     * frame-based wait would be counted as the canvas asking for one.
+     */
     await page.waitForTimeout(3_000);
     expect(
       (await readFrames()) - idleFrom,
@@ -349,13 +408,12 @@ test.describe("the library graph responds", () => {
     // reported, then a hold: neither may move anything.
     const target = restingPositions.sort((first, second) => second.radius - first.radius)[0]!;
     await page.mouse.move(box.x + 4, box.y + 4);
-    await page.waitForTimeout(400);
+    await expect(canvas, "the pointer never left the marks").toHaveAttribute("data-hovered-node-id", "");
     const beforeHover = await nodes(page);
     for (let step = 1; step <= 12; step += 1) {
       await page.mouse.move(box.x + (target.x * step) / 12, box.y + (target.y * step) / 12);
-      await page.waitForTimeout(30);
     }
-    await page.waitForTimeout(600);
+    // The attribute assertion retries on its own, so the sweep needs nothing in front of it.
     await expect(canvas).toHaveAttribute("data-hovered-node-id", target.id);
     expect(travelled(beforeHover, await nodes(page)), "hover moved a mark").toBe(0);
   });
@@ -376,18 +434,7 @@ test.describe("the library graph responds", () => {
         await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches),
         "the reduced-motion emulation did not survive the navigation",
       ).toBe(true);
-      /** A cheap hash of the whole canvas, so two frames can be compared exactly. */
-      const frameHash = () =>
-        page.evaluate(() => {
-          const element = document.querySelector<HTMLCanvasElement>('[data-testid="library-graph-canvas"]')!;
-          const { data } = element.getContext("2d")!.getImageData(0, 0, element.width, element.height);
-          let hash = 2166136261;
-          for (let index = 0; index < data.length; index += 97) {
-            hash ^= data[index]!;
-            hash = Math.imul(hash, 16777619);
-          }
-          return (hash >>> 0).toString(16);
-        });
+      const frameHash = () => canvasHash(page);
 
       /*
        * ⚠️ **The pointer leaves the canvas first, and that is the whole of "at rest."**
@@ -405,10 +452,25 @@ test.describe("the library graph responds", () => {
        */
       await page.mouse.move(0, 0);
       await expect(page.getByTestId("library-graph-canvas")).toHaveAttribute("data-hovered-node-id", "");
-      await page.waitForTimeout(300);
+      /*
+       * Let the ink ramp finish by watching it finish: two identical frames mean the
+       * picture has stopped changing, which is what "one ramp's worth of time" was
+       * standing in for.
+       */
+      await expect
+        .poll(
+          async () => {
+            const sample = await frameHash();
+            await frames(page, 2);
+            return (await frameHash()) === sample;
+          },
+          { timeout: 20_000, message: "the picture never stopped changing" },
+        )
+        .toBe(true);
 
       const first = await frameHash();
-      // Longer than one ambient period would have moved a mark by its full amplitude.
+      // A **measurement window**: the claim is that nothing drifts over a stretch longer
+      // than one ambient period, so the stretch has to pass.
       await page.waitForTimeout(2_000);
       const second = await frameHash();
       await page.waitForTimeout(2_000);
