@@ -14,6 +14,7 @@ import {
   AGENT_TASK_VISIBLE_WINDOW_MS,
   activeSession,
   deriveAgentWorkSessions,
+  type AgentWorkSession,
 } from '@/shared/lib/agent-work-session';
 import {
   AGENT_NOTIFICATION_KINDS,
@@ -112,11 +113,26 @@ export interface AgentActivityFeed {
   /** The target is a batch or a document absorb and so has no name, or it vanished from the vault. */
   lastTargetUnnamed: boolean;
   notifications: AgentNotification[];
+  /**
+   * Work sessions behind those notifications — the bell's result rows need each task's
+   * duration and write counts, which only the session carries.
+   */
+  sessions: AgentWorkSession[];
   /** Human allow/reject decisions made in the in-app ACP workbench. */
   workReceipts: AcpWorkReceipt[];
   unreadCount: number;
+  /** The "seen up to here" boundary, so a row can draw its own unread mark. */
+  readAt: number;
   notificationsEnabled: boolean;
   markAllRead: () => void;
+  /**
+   * Moves the boundary to one row's own time.
+   *
+   * Opening a row in a newest-first list means everything under it has been seen, which
+   * is exactly what one timestamp can honestly say — the reason `read-at-storage.ts`
+   * refuses per-item flags. It never moves backwards.
+   */
+  markReadUpTo: (at: number) => void;
 }
 
 export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null): AgentActivityFeed {
@@ -269,6 +285,14 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
     });
   }, [sessions, liveEvents, mutedKinds, snapshot]);
 
+  const markReadUpTo = useCallback((at: number) => {
+    if (!Number.isFinite(at)) return;
+    const current = readReadAt(vaultScope);
+    if (at <= current) return;
+    writeReadAt(vaultScope, at);
+    window.dispatchEvent(new CustomEvent(READ_AT_EVENT));
+  }, [vaultScope]);
+
   const markAllRead = useCallback(() => {
     try {
       writeReadAt(vaultScope, Date.now());
@@ -288,9 +312,12 @@ export function useAgentActivityFeed(liveWork: AgentLiveWorkInput | null = null)
     lastNode,
     lastTargetUnnamed: lastAt !== null && lastNode === null,
     notifications: notificationsEnabled ? notifications : [],
+    sessions,
     workReceipts: acpWorkReceipts ?? [],
     unreadCount: notificationsEnabled ? countUnread(notifications, readAt) : 0,
+    readAt,
     notificationsEnabled,
     markAllRead,
+    markReadUpTo,
   };
 }

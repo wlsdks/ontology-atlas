@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — A wiki finding is one sentence, one place and one way out; the codes go behind one fold
+
+**Why**: the owner opened a page their own agent had written and met, above its Summary, `uncited-fact:31`, a citation grammar in backticks and the names of `wiki-validate` and `validate_wiki`: *"I cannot tell what this is saying from a person's side — it just looks like alien script."* They then did nothing: the card named a defect and carried no control. The finding had three maintained retellings, and the only thing to act on was the card's smallest type.
+**Prior**: 2026-09-09 "A folder finding is not an off-template verdict" stands, both cards kept. The 2026-09-12 council's "the report's group headings keep the code" stands — hence codes fold only on the page card. 2026-09-07 "A wiki page that fits its contract is written without a card" stands, and is what this card's copy must now say truthfully.
+**Decision**: one describer serves all four surfaces. A finding is one sentence in the reader's language plus one action; pages and files are named by their titles and pressable; the place is words, pressable where a section exists; identical findings fold into one row carrying every place. Codes, line anchors, the validator's English, the page's path and the CLI/tool note sit behind one closed disclosure per card. The own-shape card carries one action — an agent turn over that page's shape findings, Finder, or nothing on the web — naming the checkpoint the write mode runs; the folder card carries none.
+**Dissent**: po-evidence held the turn should force `ask` whatever the write mode: `validateWikiPage` never resolves a citation anchor, so `uncited-fact` closes on a plausible string and the page lands cardless. Overruled on the half that seat called equal — the control no longer promises a checkpoint the default removes.
+**Falsifier**: a repaired page carrying a citation whose anchor, pressed, does not state its claim; a reader who cannot name the file a finding is about without leaving the card.
+**Owner**: jinan
+
 ## 2026-09-12 — The MCP entry point is wiring; workflows live in their own modules
 
 **Why**: `mcp/src/index.js` was 12,276 lines — 2,124 of JSON Schema, a 4,109-line `TOOLS` table, and all 38 handlers in one file. Finding what `rename_concept` does meant paging past `infer_imports`, and five contract gates plus one unit test read the file as text, so the file's size was itself part of the contract surface.
@@ -61,6 +70,15 @@ record stays in Git history before commit `e4fb49a89`.
 **Decision**: the entry point keeps only the two request handlers, the name-to-module switch, and the transport (269 lines). The public surface moves whole to `server/registry.mjs` with `server/tool-schemas.mjs` and `server/instructions.mjs`; handlers move to `tools/` by workflow. `scripts/check-decision-record.mjs` now watches `server/registry.mjs` too, so the contract gate follows the contract rather than the filename. Zero behaviour change: `initialize` instructions and `tools/list` captured from the running server are byte-identical to the pre-split capture.
 **Dissent**: one file is one `rg`, and 21 files means a reader has to know which one holds `getConcept` before searching; answered by keeping shared helpers with their handlers and by the module table in `mcp/README.md`, not by a re-export barrel that would make the surface ambiguous again.
 **Falsifier**: a tool whose description or schema changes without `pnpm decisions:check` firing, or a handler that has to import from a second module to stay correct — either means the cut was drawn in the wrong place.
+**Owner**: jinan
+
+## 2026-09-12 — The bell separates what needs me from what was done
+
+**Why**: the owner: the panel's inside matters very much, because it may be the only place the difference can be told; tabs inside it are fine. On a folder of four turns, two decisions and one turn blocked on permission, it printed a receipt's title plus **four dot-separated state words**, then one task's start and end as **two rows saying the same thing**, and **nothing** about the blocked request. Opening the bell marked everything read: the badge went 8 → none on the first press.
+**Prior**: 2026-08-01 "the inbox reports whole tasks only" stands; this folds the pair it grouped. `read-at-storage.ts`'s refusal of per-item read flags stands, so the boundary is still one timestamp.
+**Decision**: three tabs, counts engraved, the tab remembered only when nothing waits: **things to do** (a turn blocked on permission; a folder problem for 24 hours), **results** (one row per task, start and end folded, identical neighbours folded, unread until opened, a verb-first sentence over its facts), **history** (those plus shape, problem and the person's own decisions, under a day label). The waiting row does not answer the request — that callback lives in the chat panel's session, where the write is reviewed against a diff — so it states the fact and opens that card. Measured: one 52px pitch per tab (from 60·46·60·62), one sentence column (from 1117/1101/1097).
+**Dissent**: design-lead: results and history read as one list twice; both kept, because only the timeline addresses a day older than today, answered by putting the person's decisions into it. po-evidence: the waiting row cannot outlive its heartbeat, so that tab can be empty while an ask waits; kept, its empty sentence narrowed to what reached the list.
+**Falsifier**: a person who opens the bell and cannot say what waits on them; a badge digit disagreeing with the tab counts; a row whose sentence is a state word; a fold printing an allow over a rejection.
 **Owner**: jinan
 
 ## 2026-09-12 — One folder is one picture; the canvas is a window onto it
