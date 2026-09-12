@@ -6646,6 +6646,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-12 — A gate may check the product, never the clock",
+      "slug": "2026-09-12-a-gate-may-check-the-product-never-the-clock"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-12 — One pull request is one CI run, fired by the lander that holds the lock",
       "slug": "2026-09-12-one-pull-request-is-one-ci-run-fired-by-the-lander-that-holds-the-lock"
     },
@@ -10910,6 +10915,11 @@
       "depth": 2,
       "text": "Default gate",
       "slug": "default-gate"
+    },
+    {
+      "depth": 2,
+      "text": "Lane budgets",
+      "slug": "lane-budgets"
     },
     {
       "depth": 2,
