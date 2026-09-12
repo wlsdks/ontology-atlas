@@ -1,4 +1,82 @@
 #!/usr/bin/env node
+import { server } from './server/instance.mjs';
+import {
+  READ_ONLY_MODE,
+  READ_TOOL_NAMES,
+  TOOLS_FOR_LIST,
+  TOOL_BY_NAME,
+  WRITE_CONSENT_MODE,
+} from './server/registry.mjs';
+import {
+  error,
+  formatUnknownToolError,
+  ok,
+} from './server/rpc.mjs';
+import { VAULT_ROOT } from './server/runtime.mjs';
+import { normalizeToolArguments } from './server/validate.mjs';
+import { logWrite } from './server/write-log.mjs';
+import { absorbDocumentTool } from './tools/absorb.mjs';
+import {
+  gitHistoryTool,
+  gitSnapshotTool,
+  gitStatusTool,
+} from './tools/git.mjs';
+import {
+  compileOntologyTool,
+  queryOntologyTool,
+} from './tools/graph.mjs';
+import {
+  deleteConcept,
+  mergeConcepts,
+  reclassifyConcept,
+  renameConcept,
+} from './tools/lifecycle.mjs';
+import {
+  connectProjectSourceTool,
+  disconnectProjectSourceTool,
+  finalizeProjectMeaningTool,
+} from './tools/project-source.mjs';
+import {
+  connectionInfoTool,
+  findBacklinksTool,
+  findEvidence,
+  findNeighborsTool,
+  findOrphansTool,
+  findPathTool,
+  getConcept,
+  getConceptsBatch,
+  listConcepts,
+  listKindsTool,
+  queryConceptsTool,
+  readSourceTool,
+} from './tools/read.mjs';
+import {
+  analyzeRepoStructureTool,
+  indexProjectTool,
+  inferImportsTool,
+  inspectArchitectureTool,
+} from './tools/repo-analysis.mjs';
+import {
+  validateVaultTool,
+  validateWikiTool,
+} from './tools/validate-vault.mjs';
+import {
+  addConcept,
+  addConceptsBatch,
+  patchConcept,
+} from './tools/write-concepts.mjs';
+import {
+  addRelation,
+  addRelationsBatch,
+  removeRelation,
+  replaceRelation,
+} from './tools/write-relations.mjs';
+import {
+  CONSENT_DECLINED,
+  requestWriteConsent,
+} from './write-consent.mjs';
+import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
+
 /**
  * ontology-atlas-mcp — local ontology read/write server.
  *
@@ -26,6 +104,7 @@
  *   tools/lifecycle.mjs      rename, reclassify, merge, delete
  *   tools/absorb.mjs         absorb_document
  *   tools/vault-nodes.mjs    node identity and the gates every write passes
+ *   tools/relation-keys.mjs  which frontmatter key holds which relation
  *   tools/maintenance.mjs    what a result carries rather than being asked for
  *
  * The authority on the current tool surface is `TOOLS_FOR_LIST` in
@@ -65,95 +144,8 @@
  * that version, and `tools/list` / `tools/call` answer normally. Claude Code and
  * Codex do not break.
  */
-import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 
-import {
-  requestWriteConsent,
-  CONSENT_DECLINED,
-} from './write-consent.mjs';
 
-import {
-  VAULT_ROOT,
-} from './server/runtime.mjs';
-import {
-  READ_TOOL_NAMES,
-  READ_ONLY_MODE,
-  WRITE_CONSENT_MODE,
-  TOOLS_FOR_LIST,
-  TOOL_BY_NAME,
-} from './server/registry.mjs';
-import {
-  formatUnknownToolError,
-  ok,
-  error,
-} from './server/rpc.mjs';
-import {
-  normalizeToolArguments,
-} from './server/validate.mjs';
-import {
-  logWrite,
-} from './server/write-log.mjs';
-import {
-  listConcepts,
-  getConcept,
-  getConceptsBatch,
-  findEvidence,
-  connectionInfoTool,
-  findBacklinksTool,
-  findNeighborsTool,
-  findPathTool,
-  listKindsTool,
-  findOrphansTool,
-  queryConceptsTool,
-  readSourceTool,
-} from './tools/read.mjs';
-import {
-  gitStatusTool,
-  gitHistoryTool,
-  gitSnapshotTool,
-} from './tools/git.mjs';
-import {
-  compileOntologyTool,
-  queryOntologyTool,
-} from './tools/graph.mjs';
-import {
-  connectProjectSourceTool,
-  disconnectProjectSourceTool,
-  finalizeProjectMeaningTool,
-} from './tools/project-source.mjs';
-import {
-  validateWikiTool,
-  validateVaultTool,
-} from './tools/validate-vault.mjs';
-import {
-  analyzeRepoStructureTool,
-  inspectArchitectureTool,
-  inferImportsTool,
-  indexProjectTool,
-} from './tools/repo-analysis.mjs';
-import {
-  addConcept,
-  addConceptsBatch,
-  patchConcept,
-} from './tools/write-concepts.mjs';
-import {
-  addRelation,
-  removeRelation,
-  replaceRelation,
-  addRelationsBatch,
-} from './tools/write-relations.mjs';
-import {
-  renameConcept,
-  reclassifyConcept,
-  mergeConcepts,
-  deleteConcept,
-} from './tools/lifecycle.mjs';
-import {
-  absorbDocumentTool,
-} from './tools/absorb.mjs';
-import {
-  server,
-} from './server/instance.mjs';
 
 // v2 takes a **method string**, not a schema object. Passing the old
 // `ListToolsRequestSchema` makes v2 throw "not a spec request method" — it fails

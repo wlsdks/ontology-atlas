@@ -4,11 +4,16 @@
  * human-reserved and review-field checks, the authorship stamp, and the shared
  * destructive dry-run preview fields.
  *
+ * It also holds the whole-vault issue finders — dangling graph refs, duplicate
+ * slugs and uids — because they answer the same question (does this reference
+ * resolve to a node?) and both `get_concept` and `validate_vault` ask it.
+ *
  * Read and write workflows both sit on this, which is why it is its own module
- * rather than living with either side.
+ * rather than living with either side. Nothing here imports a handler.
  */
-import { server } from '../server/instance.mjs';
+
 import { resolveAgentName } from '../activity-log.mjs';
+import { collectNodeRevisions } from '../git-tools.mjs';
 import { buildSlugNotFoundGrowthHint } from '../growth-hint.mjs';
 import {
   CREATED_BY_KEY,
@@ -21,23 +26,37 @@ import {
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
   agentCreatedBy,
+  nodeUidIssue,
   reviewCurrentness,
 } from '../schema.mjs';
-import { VAULT_ROOT } from '../server/runtime.mjs';
+import { server } from '../server/instance.mjs';
+import {
+  REPO_ROOT,
+  VAULT_ROOT,
+} from '../server/runtime.mjs';
 import { GRAPH_REF_ARRAY_MAX_ITEMS } from '../server/tool-schemas.mjs';
 import {
   requireNonBlankString,
   requireOptionalStringArray,
 } from '../server/validate.mjs';
 import {
+  SUMMARY_KINDS,
+  describeStaleParent,
+  findStaleParentSummaries,
+  staleParentScore,
+} from '../stale-parent.mjs';
+import {
   GRAPH_ARRAY_KEYS,
   canonicalDiskSlug,
+  collectNeighborRefs,
   findGraphReferences,
   loadVaultDocs,
   readDoc,
   slugToPath,
   suggestSimilarSlugs,
 } from '../vault.mjs';
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 // The "Doc not found" text stays exactly as it is (the get_concepts batch and the
 // verify contract depend on the literal string); only growthHint rides on the
@@ -378,13 +397,250 @@ function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
   return lines.join(' ');
 }
 
+// validate_vault — one call gives an agent the whole vault's health, in the same
+// shape as CLI `ontology-atlas validate --json`. It fills the gap between per-doc
+// `warnings` (get_concept) and the vault aggregate (`vaultWarnings` in
+// list_concepts): a detailed report combining both.
+/**
+ * Builds the summary-freshness section of `validate_vault`.
+ *
+ * Reports domains and projects whose containment list changed after their
+ * description was last written — the update path nothing else in this tool checks.
+ * `pathDrift` asks whether a node still points at real code; this asks whether a
+ * node still describes what it holds.
+ *
+ * Advisory only. A stale description blocks nothing and is never rewritten here:
+ * the body is a human judgement, so the tool asks for a re-judgement and stops.
+ *
+ * Degrades to `checked: false` outside a repository rather than reporting a clean
+ * bill, because not looking is not the same as finding nothing. History reading is
+ * bounded to summary nodes (8 of 83 in the dogfood vault), so a vault of ordinary
+ * size pays well under a second.
+ */
+function buildSummaryFreshness(docs) {
+  const summarySlugs = docs
+    .filter((doc) => SUMMARY_KINDS.includes(doc?.frontmatter?.kind))
+    .map((doc) => doc.slug);
+  if (summarySlugs.length === 0) {
+    return {
+      checked: true,
+      summaryNodes: 0,
+      stale: [],
+      hint: 'no domain or project nodes to check.',
+    };
+  }
+  const revisions = collectNodeRevisions({
+    repoRoot: REPO_ROOT,
+    vaultRoot: VAULT_ROOT,
+    slugs: summarySlugs,
+  });
+  if (!revisions.ok) {
+    return {
+      checked: false,
+      summaryNodes: summarySlugs.length,
+      stale: [],
+      hint: `Summary freshness was NOT checked (${revisions.reason}). This comparison reads Git history, so a vault outside a repository cannot be judged — read each domain against the nodes it contains by hand.`,
+    };
+  }
+  const stale = findStaleParentSummaries({
+    docs,
+    revisionsOf: (slug) => revisions.revisionsBySlug.get(slug) ?? [],
+  }).map((row) => ({ ...row, score: staleParentScore(row), hint: describeStaleParent(row) }));
+
+  return {
+    checked: true,
+    summaryNodes: summarySlugs.length,
+    stale,
+    hint:
+      stale.length > 0
+        ? `${stale.length} summary node(s) declare a membership that changed after their description was last written. Nothing is blocked; read each against the nodes it contains and re-judge the body.`
+        : `all ${summarySlugs.length} summary node(s) were described after their membership last changed.`,
+  };
+}
+
+function listVaultSourcePaths() {
+  const out = [];
+  const stack = [{ dir: join(VAULT_ROOT, 'sources'), prefix: 'sources' }];
+  while (stack.length > 0) {
+    const { dir, prefix } = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue;
+      const relative = `${prefix}/${entry.name}`;
+      if (entry.isDirectory()) stack.push({ dir: join(dir, entry.name), prefix: relative });
+      else if (entry.isFile()) out.push(relative);
+    }
+  }
+  return out;
+}
+
+function isPathLikeGraphRef(ref) {
+  return (
+    ref.startsWith('src/') ||
+    ref.startsWith('mcp/') ||
+    ref.startsWith('cli/') ||
+    ref.startsWith('scripts/') ||
+    ref.startsWith('.claude/') ||
+    /\.[A-Za-z0-9]+$/.test(ref)
+  );
+}
+
+function findDanglingGraphReferenceIssues(docs) {
+  const slugs = new Set(docs.map((d) => d.slug));
+  const tailToFull = new Map();
+  const frontmatterSlugToFull = new Map();
+  for (const slug of slugs) {
+    const tail = slug.split('/').pop();
+    if (tail && tail !== slug && !tailToFull.has(tail)) {
+      tailToFull.set(tail, slug);
+    }
+  }
+  for (const doc of docs) {
+    const fmSlug = doc.frontmatter.slug;
+    if (typeof fmSlug === 'string' && fmSlug.trim() && !frontmatterSlugToFull.has(fmSlug)) {
+      frontmatterSlugToFull.set(fmSlug, doc.slug);
+    }
+  }
+  const resolveRef = (rawRef) => {
+    if (typeof rawRef !== 'string') return null;
+    // Normalise references to NFC as well — slugs are already NFC via
+    // `pathToSlug`. Normalising one side only leaves characters that look
+    // identical but do not match.
+    const ref = rawRef.normalize('NFC');
+    if (slugs.has(ref)) return ref;
+    if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
+    if (tailToFull.has(ref)) return tailToFull.get(ref);
+    for (const slug of slugs) {
+      if (slug.endsWith(`/${ref}`)) return slug;
+    }
+    return null;
+  };
+  const issues = [];
+  for (const doc of docs) {
+    for (const { key, ref } of collectNeighborRefs(doc)) {
+      if (typeof ref !== 'string' || ref.trim() === '') continue;
+      if (key === 'elements' && isPathLikeGraphRef(ref)) continue;
+      if (resolveRef(ref)) continue;
+      issues.push({
+        slug: doc.slug,
+        issue: {
+          code: 'dangling-graph-reference',
+          severity: 'warning',
+          message: `\`${key}:\` graph reference "${ref}" does not resolve to any node in the vault.`,
+        },
+      });
+    }
+  }
+  return issues;
+}
+
+function groupDanglingIssuesBySlug(docs) {
+  const bySlug = new Map();
+  for (const { slug, issue } of findDanglingGraphReferenceIssues(docs)) {
+    if (!bySlug.has(slug)) bySlug.set(slug, []);
+    bySlug.get(slug).push(issue);
+  }
+  // Duplicate slugs ride the same whole-vault pass: both are the kind of defect
+  // that looks fine one file at a time, so this is the only place that can see them.
+  for (const { slug, issue } of findDuplicateSlugIssues(docs)) {
+    if (!bySlug.has(slug)) bySlug.set(slug, []);
+    bySlug.get(slug).push(issue);
+  }
+  for (const { slug, issue } of findDuplicateUidIssues(docs)) {
+    if (!bySlug.has(slug)) bySlug.set(slug, []);
+    bySlug.get(slug).push(issue);
+  }
+  return bySlug;
+}
+
+/**
+ * Two documents claiming the same canonical slug (measured 2026-07-29).
+ *
+ * **A per-file check cannot catch this in principle** — either file alone looks
+ * fine. It arises because `patch_concept` did not stop `frontmatter.slug` being
+ * overwritten with a value another node already uses (add_concept blocks it and
+ * rename_concept demands `overwrite`; only this path was open). Once it happens,
+ * no relation naming that slug can be resolved to one side. The compiler saw
+ * `ambiguous-alias` while `validate_vault` quietly returned clean.
+ */
+function findDuplicateSlugIssues(docs) {
+  const byDeclared = new Map();
+  for (const doc of docs ?? []) {
+    const declared = doc?.frontmatter?.slug;
+    const value = typeof declared === 'string' ? declared.trim() : '';
+    if (!value) continue;
+    if (!byDeclared.has(value)) byDeclared.set(value, []);
+    byDeclared.get(value).push(doc);
+  }
+  const issues = [];
+  for (const [declared, group] of byDeclared) {
+    if (group.length < 2) continue;
+    const all = group.map((doc) => doc.slug);
+    for (const doc of group) {
+      const rest = all.filter((slug) => slug !== doc.slug);
+      issues.push({
+        slug: doc.slug,
+        issue: {
+          code: 'duplicate-slug',
+          severity: 'error',
+          message:
+            `\`slug: ${declared}\` is also claimed by ${rest.join(', ')}. ` +
+            `Relations naming it cannot resolve to one node — change one slug or merge with rename_concept.`,
+        },
+      });
+    }
+  }
+  return issues;
+}
+
+function findDuplicateUidIssues(docs) {
+  const claimsByUid = new Map();
+  for (const doc of docs ?? []) {
+    const claims = new Set([
+      doc?.frontmatter?.uid,
+      ...(Array.isArray(doc?.frontmatter?.merged_uids) ? doc.frontmatter.merged_uids : []),
+    ]);
+    for (const uid of claims) {
+      if (nodeUidIssue(uid)) continue;
+      if (!claimsByUid.has(uid)) claimsByUid.set(uid, []);
+      claimsByUid.get(uid).push(doc);
+    }
+  }
+
+  const issues = [];
+  for (const [uid, group] of claimsByUid) {
+    if (group.length < 2) continue;
+    const all = group.map((doc) => doc.slug);
+    for (const doc of group) {
+      const rest = all.filter((slug) => slug !== doc.slug);
+      issues.push({
+        slug: doc.slug,
+        issue: {
+          code: 'duplicate-uid',
+          severity: 'error',
+          message:
+            `UID ${uid} is also claimed by ${rest.join(', ')} as a primary or merged identity. ` +
+            'Permanent identity must resolve to exactly one surviving node.',
+        },
+      });
+    }
+  }
+  return issues;
+}
+
 export {
+  groupDanglingIssuesBySlug,
+  listVaultSourcePaths,
+  buildSummaryFreshness,
   docNotFoundError,
   uidNotFoundError,
   ADD_CONCEPT_KINDS,
-  GRAPH_ARRAY_KEY_SET,
   requireValidFrontmatterPatch,
-  requireAgentWritableReviewFields,
   readDocIfPresent,
   describeReview,
   requireNodeNotReservedForHuman,

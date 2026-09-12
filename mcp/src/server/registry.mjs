@@ -7,6 +7,7 @@
  * This is the file `pnpm docs:surface:check` measures and the decision ledger
  * gate watches; a change here changes what every connected agent sees.
  */
+
 import { AGENT_BRIEF_TASK_MAX_CHARS } from '../agent-brief-compact.mjs';
 import { CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA } from '../construction-qualification.mjs';
 import {
@@ -4304,15 +4305,9 @@ const TOOLS_FOR_LIST = READ_ONLY_MODE
 const TOOL_BY_NAME = new Map(TOOLS_FOR_LIST_ALL.map((tool) => [tool.name, tool]));
 
 export {
-  TOOLS,
   READ_TOOL_NAMES,
-  DESTRUCTIVE_TOOL_NAMES,
-  IDEMPOTENT_TOOL_NAMES,
-  toolTitle,
-  parseReadOnlyEnv,
   READ_ONLY_MODE,
   WRITE_CONSENT_MODE,
-  TOOLS_FOR_LIST_ALL,
   TOOLS_FOR_LIST,
   TOOL_BY_NAME,
 };

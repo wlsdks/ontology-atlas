@@ -1657,7 +1657,8 @@ transport. Everything a change would actually touch lives beside it.
 | `src/tools/write-relations.mjs` | the four edge writes |
 | `src/tools/lifecycle.mjs` | `rename_concept`, `reclassify_concept`, `merge_concepts`, `delete_concept` |
 | `src/tools/absorb.mjs` | `absorb_document` |
-| `src/tools/vault-nodes.mjs` | node identity and the gates every write passes |
+| `src/tools/vault-nodes.mjs` | node identity, the gates every write passes, and the whole-vault issue finders |
+| `src/tools/relation-keys.mjs` | which frontmatter key holds which relation, and how a stored ref matches |
 | `src/tools/maintenance.mjs` | what a result carries rather than being asked for |
 
 Adding a module means adding it to `files` in `mcp/package.json` — the bundle and

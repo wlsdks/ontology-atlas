@@ -3,6 +3,7 @@
  * concepts, prose evidence, backlinks, neighbors, paths, kinds, orphans,
  * filtered queries, and source passages.
  */
+
 import { scoreEvidence } from '../evidence-rank.mjs';
 import {
   buildFindEvidenceZeroHitsGrowthHint,
@@ -59,25 +60,21 @@ import {
   relationNoteFor,
   slugToPath,
 } from '../vault.mjs';
-import { groupDanglingIssuesBySlug } from './validate-vault.mjs';
+import {
+  normalizeGraphRelationKey,
+  relationRefsFor,
+} from './relation-keys.mjs';
 import {
   describeReview,
   docNotFoundError,
+  groupDanglingIssuesBySlug,
   resolveExistingVaultSlug,
   resolveExistingVaultUid,
   uidNotFoundError,
 } from './vault-nodes.mjs';
-import {
-  RELATION_KEY,
-  relationRefsFor,
-} from './write-relations.mjs';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import {
-  readFileSync,
-  readdirSync,
-} from 'node:fs';
-import {
-  join,
   resolve,
   sep,
 } from 'node:path';
@@ -604,13 +601,6 @@ function findNeighborsTool({ slug, direction = 'both', types, includeNodes = tru
   };
 }
 
-function normalizeGraphRelationKey(type) {
-  if (typeof type !== 'string') return null;
-  const trimmed = type.trim();
-  if (!trimmed) return null;
-  return RELATION_KEY[trimmed] || trimmed;
-}
-
 function summarizeDoc(doc) {
   return {
     uid: doc.frontmatter.uid,
@@ -766,27 +756,6 @@ function readSourceTool({ path, from, limit, sheet } = {}) {
   return answer;
 }
 
-function listVaultSourcePaths() {
-  const out = [];
-  const stack = [{ dir: join(VAULT_ROOT, 'sources'), prefix: 'sources' }];
-  while (stack.length > 0) {
-    const { dir, prefix } = stack.pop();
-    let entries;
-    try {
-      entries = readdirSync(dir, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      if (entry.name.startsWith('.')) continue;
-      const relative = `${prefix}/${entry.name}`;
-      if (entry.isDirectory()) stack.push({ dir: join(dir, entry.name), prefix: relative });
-      else if (entry.isFile()) out.push(relative);
-    }
-  }
-  return out;
-}
-
 export {
   listConcepts,
   getConcept,
@@ -795,14 +764,9 @@ export {
   connectionInfoTool,
   findBacklinksTool,
   findNeighborsTool,
-  normalizeGraphRelationKey,
-  summarizeDoc,
-  resolveGraphRef,
   findPathTool,
-  summarizePathNode,
   listKindsTool,
   findOrphansTool,
   queryConceptsTool,
   readSourceTool,
-  listVaultSourcePaths,
 };

@@ -3,6 +3,7 @@
  * `merge_concepts`, `delete_concept` — each a dry-run preview first, then a
  * confirmed write that rewrites every backlink.
  */
+
 import {
   buildMarkdown,
   parseFrontmatter,
@@ -546,9 +547,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
 }
 
 export {
-  publicBacklinkUpdates,
   renameConcept,
-  looksLikeGeneratedStarter,
   reclassifyConcept,
   mergeConcepts,
   deleteConcept,

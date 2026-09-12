@@ -1,4 +1,3 @@
-/** The three git tools: working-tree status, recent history, and a vault snapshot commit. */
 import {
   inspectVaultGit,
   inspectVaultGitHistory,
@@ -14,6 +13,8 @@ import {
   requireOptionalPositiveInteger,
 } from '../server/validate.mjs';
 import { validateVaultTool } from './validate-vault.mjs';
+
+/** The three git tools: working-tree status, recent history, and a vault snapshot commit. */
 
 function gitStatusTool() {
   return inspectVaultGit({ repoRoot: REPO_ROOT, vaultRoot: VAULT_ROOT });

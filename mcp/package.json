@@ -41,6 +41,7 @@
     "src/tools/write-relations.mjs",
     "src/tools/lifecycle.mjs",
     "src/tools/absorb.mjs",
+    "src/tools/relation-keys.mjs",
     "src/server-version.mjs",
     "src/source-text.mjs",
     "src/tool-inventory.mjs",

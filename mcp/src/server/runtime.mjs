@@ -7,6 +7,7 @@
  * a throw at import time leaks a stack trace to stderr before the stdio transport
  * attaches, which a client reads as a silent crash.
  */
+
 import { createCompiledOntologyCache } from '../compiled-cache.mjs';
 import { discoverGitRepositoryRoot } from '../git-tools.mjs';
 import { compileOntology } from '../ontology-compiler.mjs';
@@ -14,7 +15,16 @@ import {
   ensureVaultRoot,
   loadVaultDocs,
 } from '../vault.mjs';
-import { resolve } from 'node:path';
+import {
+  existsSync,
+  realpathSync,
+} from 'node:fs';
+import {
+  isAbsolute,
+  relative,
+  resolve,
+  sep,
+} from 'node:path';
 
 // The v2 stdio transport attaches one temporary error listener (and, while
 // backpressured, one drain listener) per in-flight response. Atlas' installed
@@ -76,11 +86,60 @@ try {
   process.exit(1);
 }
 
+// Thin wrapper over analyze_repo_structure. Zero side effects — it never touches
+// vault frontmatter. Only the exact writePlan returned after reviewPlan plus
+// independent qualification is a truth entry point for the batch writer.
+/**
+ * Is this a place we may scan — **it must be inside the vault or its repository.**
+ *
+ * **Why** (review 2026-08-16, confirmed by measurement): `analyze_repo_structure`,
+ * `infer_imports`, `index_project`, and `validate_vault` took a `rootPath` (or
+ * `repoRoot`), called `resolve()` on it, and **checked no boundary at all**. So
+ * this call succeeded as written:
+ *
+ * ```
+ * analyze_repo_structure {"rootPath":"/etc"}  → ok, returns the directory structure
+ * ```
+ *
+ * Worse, all four are **read tools**, so `OATLAS_READ_ONLY` does not stop them.
+ * That mode is recommended when whoever registered the server is not the vault's
+ * owner — and it left them unable to write but **able to scan the entire disk**.
+ *
+ * This collides head-on with what the product promises its users: *"files on the
+ * user's disk such as passwords or credentials are never scanned automatically"*
+ * (`.claude/rules/local-first.md`), *"we do not scan the user's disk
+ * automatically"* (the trust charter). A tool call steered by one line of prompt
+ * would break that promise.
+ *
+ * So only the vault, or that vault's repository, is allowed. Real paths are
+ * resolved before comparison to close the symlink escape — the same grammar
+ * `absorb_document` already uses.
+ */
+function assertScanRootAllowed(target, argName = 'rootPath') {
+  const canonical = existsSync(target) ? realpathSync(target) : resolve(target);
+  const roots = [];
+  for (const root of [VAULT_ROOT, REPO_ROOT]) {
+    try {
+      roots.push(existsSync(root) ? realpathSync(root) : resolve(root));
+    } catch {
+      roots.push(resolve(root));
+    }
+  }
+  const inside = roots.some((root) => {
+    if (canonical === root) return true;
+    const rel = relative(root, canonical);
+    return rel !== '' && rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+  });
+  if (inside) return canonical;
+  throw new Error(
+    `${argName} must be inside the vault (${roots[0]}) or its repository (${roots[1]}). ` +
+      'This server only reads the folder it was opened for.',
+  );
+}
+
 export {
-  STDIO_MAX_LISTENERS,
+  assertScanRootAllowed,
   VAULT_ROOT,
-  VAULT_GIT_ROOT,
-  DISCOVERED_REPO_ROOT,
   REPO_ROOT,
   REPO_ROOT_IS_GROUNDED,
   VAULT_RESOLUTION,

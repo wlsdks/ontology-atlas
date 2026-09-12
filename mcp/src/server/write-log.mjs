@@ -5,12 +5,13 @@
  * Dry runs and invalid-only batches are not recorded — the log carries what
  * happened, nothing else — and a failed append never affects the write result.
  */
-import { server } from './instance.mjs';
+
 import {
   appendActivityEntry,
   buildActivityEntry,
   resolveAgentName,
 } from '../activity-log.mjs';
+import { server } from './instance.mjs';
 import { VAULT_ROOT } from './runtime.mjs';
 
 // ── Activity log — one local audit line per successful write (best-effort) ──
@@ -116,6 +117,5 @@ function logWrite(name, args, result) {
 }
 
 export {
-  summarizeWrite,
   logWrite,
 };

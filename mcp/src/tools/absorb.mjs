@@ -2,6 +2,7 @@
  * `absorb_document` — pulling an external markdown file into the vault as a
  * node, backing up the source before rewriting it in place.
  */
+
 import {
   buildAbsorptionPlan,
   buildSlimPointer,
@@ -259,7 +260,5 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
 }
 
 export {
-  ABSORB_BACKUP_SUFFIX,
-  reservedSourceIssue,
   absorbDocumentTool,
 };

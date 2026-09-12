@@ -3,16 +3,17 @@
  * (frontmatter, dangling graph refs, duplicate slugs and uids) and
  * `validate_wiki`.
  */
+
 import {
   detectVaultPathDrift,
   suggestPathReconciliations,
 } from '../detect-drift.mjs';
 import { listSourceFiles } from '../infer-imports.mjs';
-import { nodeUidIssue } from '../schema.mjs';
 import {
   REPO_ROOT,
   REPO_ROOT_IS_GROUNDED,
   VAULT_ROOT,
+  assertScanRootAllowed,
 } from '../server/runtime.mjs';
 import { requireOptionalNonBlankString } from '../server/validate.mjs';
 import {
@@ -20,19 +21,18 @@ import {
   suppressParentedExpectedFieldIssues,
   validateVaultDocument,
 } from '../validate.mjs';
-import {
-  collectNeighborRefs,
-  loadVaultDocs,
-} from '../vault.mjs';
+import { loadVaultDocs } from '../vault.mjs';
 import {
   WIKI_DIR,
   isWikiFurnitureSlug,
   validateWikiFolder,
   validateWikiPage,
 } from '../wiki-schema.mjs';
-import { buildSummaryFreshness } from './maintenance.mjs';
-import { listVaultSourcePaths } from './read.mjs';
-import { assertScanRootAllowed } from './repo-analysis.mjs';
+import {
+  buildSummaryFreshness,
+  groupDanglingIssuesBySlug,
+  listVaultSourcePaths,
+} from './vault-nodes.mjs';
 import { existsSync } from 'node:fs';
 import { relative } from 'node:path';
 
@@ -263,166 +263,7 @@ function validateVaultTool({ repoRoot } = {}) {
   };
 }
 
-function findDanglingGraphReferenceIssues(docs) {
-  const slugs = new Set(docs.map((d) => d.slug));
-  const tailToFull = new Map();
-  const frontmatterSlugToFull = new Map();
-  for (const slug of slugs) {
-    const tail = slug.split('/').pop();
-    if (tail && tail !== slug && !tailToFull.has(tail)) {
-      tailToFull.set(tail, slug);
-    }
-  }
-  for (const doc of docs) {
-    const fmSlug = doc.frontmatter.slug;
-    if (typeof fmSlug === 'string' && fmSlug.trim() && !frontmatterSlugToFull.has(fmSlug)) {
-      frontmatterSlugToFull.set(fmSlug, doc.slug);
-    }
-  }
-  const resolveRef = (rawRef) => {
-    if (typeof rawRef !== 'string') return null;
-    // Normalise references to NFC as well — slugs are already NFC via
-    // `pathToSlug`. Normalising one side only leaves characters that look
-    // identical but do not match.
-    const ref = rawRef.normalize('NFC');
-    if (slugs.has(ref)) return ref;
-    if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
-    if (tailToFull.has(ref)) return tailToFull.get(ref);
-    for (const slug of slugs) {
-      if (slug.endsWith(`/${ref}`)) return slug;
-    }
-    return null;
-  };
-  const issues = [];
-  for (const doc of docs) {
-    for (const { key, ref } of collectNeighborRefs(doc)) {
-      if (typeof ref !== 'string' || ref.trim() === '') continue;
-      if (key === 'elements' && isPathLikeGraphRef(ref)) continue;
-      if (resolveRef(ref)) continue;
-      issues.push({
-        slug: doc.slug,
-        issue: {
-          code: 'dangling-graph-reference',
-          severity: 'warning',
-          message: `\`${key}:\` graph reference "${ref}" does not resolve to any node in the vault.`,
-        },
-      });
-    }
-  }
-  return issues;
-}
-
-/**
- * Two documents claiming the same canonical slug (measured 2026-07-29).
- *
- * **A per-file check cannot catch this in principle** — either file alone looks
- * fine. It arises because `patch_concept` did not stop `frontmatter.slug` being
- * overwritten with a value another node already uses (add_concept blocks it and
- * rename_concept demands `overwrite`; only this path was open). Once it happens,
- * no relation naming that slug can be resolved to one side. The compiler saw
- * `ambiguous-alias` while `validate_vault` quietly returned clean.
- */
-function findDuplicateSlugIssues(docs) {
-  const byDeclared = new Map();
-  for (const doc of docs ?? []) {
-    const declared = doc?.frontmatter?.slug;
-    const value = typeof declared === 'string' ? declared.trim() : '';
-    if (!value) continue;
-    if (!byDeclared.has(value)) byDeclared.set(value, []);
-    byDeclared.get(value).push(doc);
-  }
-  const issues = [];
-  for (const [declared, group] of byDeclared) {
-    if (group.length < 2) continue;
-    const all = group.map((doc) => doc.slug);
-    for (const doc of group) {
-      const rest = all.filter((slug) => slug !== doc.slug);
-      issues.push({
-        slug: doc.slug,
-        issue: {
-          code: 'duplicate-slug',
-          severity: 'error',
-          message:
-            `\`slug: ${declared}\` is also claimed by ${rest.join(', ')}. ` +
-            `Relations naming it cannot resolve to one node — change one slug or merge with rename_concept.`,
-        },
-      });
-    }
-  }
-  return issues;
-}
-
-function findDuplicateUidIssues(docs) {
-  const claimsByUid = new Map();
-  for (const doc of docs ?? []) {
-    const claims = new Set([
-      doc?.frontmatter?.uid,
-      ...(Array.isArray(doc?.frontmatter?.merged_uids) ? doc.frontmatter.merged_uids : []),
-    ]);
-    for (const uid of claims) {
-      if (nodeUidIssue(uid)) continue;
-      if (!claimsByUid.has(uid)) claimsByUid.set(uid, []);
-      claimsByUid.get(uid).push(doc);
-    }
-  }
-
-  const issues = [];
-  for (const [uid, group] of claimsByUid) {
-    if (group.length < 2) continue;
-    const all = group.map((doc) => doc.slug);
-    for (const doc of group) {
-      const rest = all.filter((slug) => slug !== doc.slug);
-      issues.push({
-        slug: doc.slug,
-        issue: {
-          code: 'duplicate-uid',
-          severity: 'error',
-          message:
-            `UID ${uid} is also claimed by ${rest.join(', ')} as a primary or merged identity. ` +
-            'Permanent identity must resolve to exactly one surviving node.',
-        },
-      });
-    }
-  }
-  return issues;
-}
-
-function groupDanglingIssuesBySlug(docs) {
-  const bySlug = new Map();
-  for (const { slug, issue } of findDanglingGraphReferenceIssues(docs)) {
-    if (!bySlug.has(slug)) bySlug.set(slug, []);
-    bySlug.get(slug).push(issue);
-  }
-  // Duplicate slugs ride the same whole-vault pass: both are the kind of defect
-  // that looks fine one file at a time, so this is the only place that can see them.
-  for (const { slug, issue } of findDuplicateSlugIssues(docs)) {
-    if (!bySlug.has(slug)) bySlug.set(slug, []);
-    bySlug.get(slug).push(issue);
-  }
-  for (const { slug, issue } of findDuplicateUidIssues(docs)) {
-    if (!bySlug.has(slug)) bySlug.set(slug, []);
-    bySlug.get(slug).push(issue);
-  }
-  return bySlug;
-}
-
-function isPathLikeGraphRef(ref) {
-  return (
-    ref.startsWith('src/') ||
-    ref.startsWith('mcp/') ||
-    ref.startsWith('cli/') ||
-    ref.startsWith('scripts/') ||
-    ref.startsWith('.claude/') ||
-    /\.[A-Za-z0-9]+$/.test(ref)
-  );
-}
-
 export {
   validateWikiTool,
   validateVaultTool,
-  findDanglingGraphReferenceIssues,
-  findDuplicateSlugIssues,
-  findDuplicateUidIssues,
-  groupDanglingIssuesBySlug,
-  isPathLikeGraphRef,
 };

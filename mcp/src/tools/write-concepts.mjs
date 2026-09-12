@@ -1,4 +1,3 @@
-/** Creating and patching nodes: `add_concept`, `add_concepts`, `patch_concept`. */
 import {
   CREATED_BY_KEY,
   buildFrontmatter,
@@ -34,6 +33,8 @@ import {
   requireNodeNotReservedForHuman,
   requireValidFrontmatterPatch,
 } from './vault-nodes.mjs';
+
+/** Creating and patching nodes: `add_concept`, `add_concepts`, `patch_concept`. */
 
 function addConcept({ slug, kind, title, domain, capabilities, elements, path, body, labels }, options = {}) {
   requireNonBlankString(slug, 'slug');

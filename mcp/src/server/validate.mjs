@@ -4,6 +4,7 @@
  * recoverable error, so a rejected call always names the field and the allowed
  * values rather than failing deep inside a handler.
  */
+
 import {
   NODE_KIND_VALUES,
   RELATION_TYPE_VALUES,
@@ -227,5 +228,4 @@ export {
   requireOptionalPlainObject,
   requirePlainObject,
   requireAllowedObjectKeys,
-  closestAllowedObjectField,
 };

@@ -2,6 +2,7 @@
  * The MCP `instructions` string carried in the `initialize` response, with the
  * live tool inventory left as a placeholder `registry.mjs` fills in.
  */
+
 import { CONSTRUCTION_LIFECYCLE_EN } from '../construction-lifecycle.mjs';
 import {
   CONSTRUCTION_RULES_EN,

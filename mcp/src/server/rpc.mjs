@@ -3,6 +3,7 @@
  * `content` + `structuredContent`, and how a thrown error becomes a typed code,
  * a readable message, and the nearest-value hints an agent recovers from.
  */
+
 import { closestAllowedValue } from '../suggestions.mjs';
 import { VaultConflictError } from '../vault.mjs';
 import { TOOL_BY_NAME } from './registry.mjs';
@@ -247,12 +248,5 @@ export {
   formatUnknownToolError,
   ok,
   error,
-  structuredErrorDetails,
   structuredRowErrorDetails,
-  extractUnknownArgumentHints,
-  splitCommaList,
-  extractQuotedList,
-  parseReceivedValueText,
-  omitUndefined,
-  classifyErrorCode,
 };

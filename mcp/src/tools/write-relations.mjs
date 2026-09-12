@@ -3,7 +3,7 @@
  * `add_relations`, `remove_relation`, `replace_relation`, with the alias-key
  * resolution that makes one edge one edge however it was authored.
  */
-import { WRITE_RELATION_TYPE_VALUES } from '../ontology-engine.mjs';
+
 import { structuredRowErrorDetails } from '../server/rpc.mjs';
 import { VAULT_ROOT } from '../server/runtime.mjs';
 import {
@@ -15,7 +15,6 @@ import {
 } from '../server/validate.mjs';
 import { formatAllowedValueError } from '../suggestions.mjs';
 import {
-  NEIGHBOR_KEY_ALIASES,
   VaultConflictError,
   normalizeRelationRefs,
   patchFrontmatter,
@@ -24,6 +23,15 @@ import {
 } from '../vault.mjs';
 import { compactPostWriteMaintenance } from './maintenance.mjs';
 import {
+  RELATION_KEY,
+  RELATION_TYPES,
+  matchingRelationNoteKeys,
+  relationExists,
+  relationKeyPatch,
+  relationRefMatches,
+  relationRefsFor,
+} from './relation-keys.mjs';
+import {
   assertGraphNodeEndpoint,
   destructivePreviewState,
   missingSlugMessage,
@@ -31,19 +39,6 @@ import {
   requireNodeNotReservedForHuman,
   resolveExistingVaultSlug,
 } from './vault-nodes.mjs';
-
-const RELATION_KEY = {
-  depends_on: 'dependencies',
-  relates: 'relates',
-  contains: 'contains',
-  describes: 'describes',
-  domains: 'domains',
-  capabilities: 'capabilities',
-  elements: 'elements',
-  domain: 'domain',
-};
-
-const RELATION_TYPES = WRITE_RELATION_TYPE_VALUES;
 
 function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   requireNonBlankString(from, 'from');
@@ -145,58 +140,6 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
       ? {}
       : { postWriteMaintenance: compactPostWriteMaintenance() }),
   };
-}
-
-function relationRefMatches(storedRef, canonicalTo) {
-  if (typeof storedRef !== 'string') return false;
-  const candidate = storedRef.trim();
-  if (!candidate) return false;
-  if (candidate === canonicalTo) return true;
-  return resolveExistingVaultSlug(candidate) === canonicalTo;
-}
-
-/*
- * `depends_on:` is a legal authoring alias for `dependencies:` — the read layer
- * (collectNeighborRefs, the compiler) canonicalizes it, so the write layer must
- * see the same edges. Reading only the literal canonical key made an aliased
- * edge visible to get_concept's outgoingEdges yet "nonexistent" to
- * add/remove/replace_relation, which could then append a duplicate under a
- * second key or refuse to remove an edge the graph plainly renders.
- */
-function aliasKeysFor(canonicalKey) {
-  return Object.keys(NEIGHBOR_KEY_ALIASES)
-    .filter((alias) => NEIGHBOR_KEY_ALIASES[alias] === canonicalKey);
-}
-
-function relationRefsFor(doc, canonicalKey) {
-  const refs = [];
-  for (const key of [canonicalKey, ...aliasKeysFor(canonicalKey)]) {
-    const value = doc.frontmatter[key];
-    if (Array.isArray(value)) refs.push(...value);
-  }
-  return refs;
-}
-
-/*
- * A write to a relation key consolidates its alias spellings into the canonical
- * key in the same patch: the alias arrays fold into `nextRefs` and are deleted,
- * so one edit never leaves the same edge type split across two frontmatter keys.
- */
-function relationKeyPatch(doc, canonicalKey, nextRefs) {
-  const patch = { [canonicalKey]: nextRefs };
-  for (const alias of aliasKeysFor(canonicalKey)) {
-    if (doc.frontmatter[alias] !== undefined) patch[alias] = null;
-  }
-  return patch;
-}
-
-function relationExists(doc, key, canonicalTo) {
-  if (key === 'domain') return relationRefMatches(doc.frontmatter.domain, canonicalTo);
-  return relationRefsFor(doc, key).some((ref) => relationRefMatches(ref, canonicalTo));
-}
-
-function matchingRelationNoteKeys(notes, canonicalTo) {
-  return Object.keys(notes).filter((ref) => relationRefMatches(ref, canonicalTo));
 }
 
 function removeRelation({ from, to, type, confirm = false, expected_mtime }) {
@@ -382,15 +325,7 @@ function addRelationsBatch({ relations }) {
 }
 
 export {
-  RELATION_KEY,
-  RELATION_TYPES,
   addRelation,
-  relationRefMatches,
-  aliasKeysFor,
-  relationRefsFor,
-  relationKeyPatch,
-  relationExists,
-  matchingRelationNoteKeys,
   removeRelation,
   replaceRelation,
   addRelationsBatch,

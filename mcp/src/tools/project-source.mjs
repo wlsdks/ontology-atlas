@@ -3,6 +3,7 @@
  * `connect_project_source`, `disconnect_project_source`, and the
  * `finalize_project_meaning` receipt.
  */
+
 import {
   MEANING_COMPETENCY_CONTRACT,
   MEANING_COMPETENCY_EVALUATOR,
@@ -378,9 +379,6 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
 }
 
 export {
-  PROJECT_SOURCE_CONNECT_CONTRACT,
-  PROJECT_SOURCE_DISCONNECT_CONTRACT,
-  resolveProjectNodeSlug,
   connectProjectSourceTool,
   disconnectProjectSourceTool,
   finalizeProjectMeaningTool,

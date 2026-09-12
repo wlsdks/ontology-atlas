@@ -3,25 +3,19 @@
  * every read carries, the compact post-write maintenance queue, and the summary
  * freshness a maintenance plan is judged against.
  */
-import { collectNodeRevisions } from '../git-tools.mjs';
+
 import { loadOntologyAtlasIgnore } from '../ontology-atlas-ignore.mjs';
 import { queryCompiledOntology } from '../ontology-engine.mjs';
 import {
   COMPILED_ONTOLOGY_CACHE,
-  REPO_ROOT,
   VAULT_ROOT,
 } from '../server/runtime.mjs';
-import {
-  SUMMARY_KINDS,
-  describeStaleParent,
-  findStaleParentSummaries,
-  staleParentScore,
-} from '../stale-parent.mjs';
 import {
   drainNodeEligibilityFindings,
   loadVaultDocs,
 } from '../vault.mjs';
 import { validateVaultTool } from './validate-vault.mjs';
+import { buildSummaryFreshness } from './vault-nodes.mjs';
 
 function attachVaultValidation(result, args = {}) {
   const validation = validateVaultTool({});
@@ -199,71 +193,7 @@ function compactMaintenanceNodes(nodesValue) {
   return undefined;
 }
 
-// validate_vault — one call gives an agent the whole vault's health, in the same
-// shape as CLI `ontology-atlas validate --json`. It fills the gap between per-doc
-// `warnings` (get_concept) and the vault aggregate (`vaultWarnings` in
-// list_concepts): a detailed report combining both.
-/**
- * Builds the summary-freshness section of `validate_vault`.
- *
- * Reports domains and projects whose containment list changed after their
- * description was last written — the update path nothing else in this tool checks.
- * `pathDrift` asks whether a node still points at real code; this asks whether a
- * node still describes what it holds.
- *
- * Advisory only. A stale description blocks nothing and is never rewritten here:
- * the body is a human judgement, so the tool asks for a re-judgement and stops.
- *
- * Degrades to `checked: false` outside a repository rather than reporting a clean
- * bill, because not looking is not the same as finding nothing. History reading is
- * bounded to summary nodes (8 of 83 in the dogfood vault), so a vault of ordinary
- * size pays well under a second.
- */
-function buildSummaryFreshness(docs) {
-  const summarySlugs = docs
-    .filter((doc) => SUMMARY_KINDS.includes(doc?.frontmatter?.kind))
-    .map((doc) => doc.slug);
-  if (summarySlugs.length === 0) {
-    return {
-      checked: true,
-      summaryNodes: 0,
-      stale: [],
-      hint: 'no domain or project nodes to check.',
-    };
-  }
-  const revisions = collectNodeRevisions({
-    repoRoot: REPO_ROOT,
-    vaultRoot: VAULT_ROOT,
-    slugs: summarySlugs,
-  });
-  if (!revisions.ok) {
-    return {
-      checked: false,
-      summaryNodes: summarySlugs.length,
-      stale: [],
-      hint: `Summary freshness was NOT checked (${revisions.reason}). This comparison reads Git history, so a vault outside a repository cannot be judged — read each domain against the nodes it contains by hand.`,
-    };
-  }
-  const stale = findStaleParentSummaries({
-    docs,
-    revisionsOf: (slug) => revisions.revisionsBySlug.get(slug) ?? [],
-  }).map((row) => ({ ...row, score: staleParentScore(row), hint: describeStaleParent(row) }));
-
-  return {
-    checked: true,
-    summaryNodes: summarySlugs.length,
-    stale,
-    hint:
-      stale.length > 0
-        ? `${stale.length} summary node(s) declare a membership that changed after their description was last written. Nothing is blocked; read each against the nodes it contains and re-judge the body.`
-        : `all ${summarySlugs.length} summary node(s) were described after their membership last changed.`,
-  };
-}
-
 export {
   attachVaultValidation,
   compactPostWriteMaintenance,
-  compactMaintenanceAction,
-  compactMaintenanceNodes,
-  buildSummaryFreshness,
 };

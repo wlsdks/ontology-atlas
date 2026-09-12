@@ -3,6 +3,7 @@
  * operation, the agent-brief project scoping, and the meaning-readiness and
  * project-meaning facts a brief carries.
  */
+
 import {
   AGENT_BRIEF_TASK_MAX_CHARS,
   buildCompactAgentBrief,
@@ -58,10 +59,8 @@ import {
   requireOptionalStringArray,
 } from '../server/validate.mjs';
 import { loadVaultDocs } from '../vault.mjs';
-import {
-  attachVaultValidation,
-  buildSummaryFreshness,
-} from './maintenance.mjs';
+import { attachVaultValidation } from './maintenance.mjs';
+import { buildSummaryFreshness } from './vault-nodes.mjs';
 
 function compileOntologyTool({
   includeIndexes,
@@ -371,7 +370,6 @@ const MEANING_AUTHORED_NOT_FINALIZED_HINT =
   'This project\'s five competency answers are already written, but this vault '
   + 'has no finalize receipt for them. Nothing is broken. Call '
   + 'finalize_project_meaning to record the receipt.';
-
 
 const MEANING_NEXT_ACTION_HINTS = Object.freeze({
   // Never assert "the section is missing" — a vault can have the section and
@@ -826,18 +824,8 @@ function validateQueryOntologyArgs(args = {}) {
 
 export {
   compileOntologyTool,
-  resolveAgentBriefProject,
-  completeAgentBriefProjectScope,
-  scopedAgentBriefInput,
-  privateCurrentProjectSourceAccess,
   queryOntologyTool,
-  MEANING_AUTHORED_NOT_FINALIZED_HINT,
-  MEANING_NEXT_ACTION_HINTS,
-  meaningReadinessCheck,
-  attachMeaningReadiness,
   meaningSourceFromProjectSource,
   projectSourceScope,
   projectMeaningContext,
-  attachProjectMeaning,
-  validateQueryOntologyArgs,
 };
