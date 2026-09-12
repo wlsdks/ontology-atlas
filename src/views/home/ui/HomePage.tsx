@@ -4983,6 +4983,7 @@ function HomePageImpl() {
                       liveWork={acpLiveWork}
                       onOpenChange={setActivityInboxOpen}
                       onOpenNode={handleSelect}
+                      onOpenConversation={openVaultAgent}
                     />
                       </div>
                     </div>

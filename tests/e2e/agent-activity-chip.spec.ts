@@ -152,9 +152,20 @@ test("알림함의 작업 알림이 에이전트 이름으로 말한다", async 
   await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
   await bell.click();
 
+  /*
+   * The panel opens on the tab that has something in it — with nothing waiting on the
+   * person, that is `결과`. Both tabs carry the agent's name on the row's second line,
+   * beside the duration; the first line says what the work did. Both are checked,
+   * because the name reaching one tab and not the other is the drift this spec exists
+   * to catch.
+   */
+  const resultRow = page.getByTestId("agent-inbox-result-row");
+  await expect(resultRow).toHaveCount(1);
+  await expect(resultRow, "끝난 작업 줄이 이름을 잃었다").toContainText("Claude Code");
+  await page.getByRole("tab", { name: /기록/ }).click();
   const endRow = page
-    .getByTestId("agent-activity-inbox-row")
+    .getByTestId("agent-inbox-history-row")
     .and(page.locator('[data-kind="task-end"]'));
   await expect(endRow).toHaveCount(1);
-  await expect(endRow, "끝난 작업 줄이 이름을 잃었다").toContainText("Claude Code 작업 끝");
+  await expect(endRow, "기록의 접힌 작업이 이름을 잃었다").toContainText("Claude Code");
 });

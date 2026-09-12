@@ -2,108 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { Bell, ChevronRight } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { Bell } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';
 import { getTopologyFocusHref } from '@/entities/project';
 import { ChromeChip, CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/chrome-chip';
 import { controlClass } from '@/shared/ui/control-class';
-import { RowButton } from '@/shared/ui/controls';
 import { Surface } from '@/shared/ui/surface';
 import { cn } from '@/shared/lib/cn';
-import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
-import { agentDisplayName } from '@/shared/lib/agent-display-name';
-import type { AgentNotification, AgentNotificationKind } from '@/shared/lib/agent-notifications';
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 import { elapsedParts } from '@/shared/lib/elapsed';
+import { AgentInboxPanel, MarkAllReadDoor } from './AgentInboxPanel';
+import { deriveBellInbox } from '../model/bell-inbox';
 import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
 import type { AgentLiveWorkInput } from '../model/agent-work-projection';
-
-function WorkReceiptRow({ receipt, nowMs }: { receipt: AcpWorkReceipt; nowMs: number }) {
-  const t = useTranslations('agentActivity');
-  const format = useFormatter();
-  const [open, setOpen] = useState(false);
-  const { mounted, boxRef, contentRef } = useRowDisclosure(open);
-  const bodyId = `agent-receipt-${receipt.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
-  const result = t(`receiptResult.${receipt.result}`);
-  const decision = t(`receiptDecision.${receipt.decision}`);
-
-  return (
-    <div className="border-b border-[color:var(--color-divider)] last:border-b-0">
-      <RowButton
-        size="sm"
-        tone={open ? 'strong' : 'secondary'}
-        active={open}
-        hoverInk="strong"
-        hoverSurface="lift"
-        aria-expanded={open}
-        aria-controls={bodyId}
-        data-testid="agent-work-receipt-row"
-        onClick={() => setOpen((value) => !value)}
-        className="w-full py-2"
-      >
-        <ChevronRight
-          size={ICON_SIZE.sm}
-          aria-hidden
-          className="shrink-0 transition-transform"
-          style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
-        />
-        <span className="grid min-w-0 flex-1 gap-0.5 text-left">
-          <span className="truncate text-label text-[color:var(--color-text-primary)]">
-            {receipt.request}
-          </span>
-          <span className="flex min-w-0 items-center gap-1.5 text-caption text-[color:var(--color-text-quaternary)]">
-            <span>{agentDisplayName(receipt.agent)}</span>
-            <span aria-hidden>·</span>
-            <span>{decision}</span>
-            <span aria-hidden>·</span>
-            <span>{result}</span>
-            <span aria-hidden>·</span>
-            <span>{t('receiptItems', { count: receipt.items.length })}</span>
-          </span>
-        </span>
-      </RowButton>
-      <div
-        ref={boxRef}
-        id={bodyId}
-        data-state={open ? 'open' : 'closed'}
-        className="ai-row-disclosure"
-        inert={!open}
-      >
-        {mounted ? (
-          <div
-            ref={contentRef}
-            className="ai-row-disclosure-body grid gap-2 px-2 pb-2 pl-7 text-caption leading-label"
-          >
-            <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1">
-              <dt className="text-[color:var(--color-text-quaternary)]">{t('toolLabel')}</dt>
-              <dd className="min-w-0 truncate font-mono text-[color:var(--color-text-tertiary)]">
-                {receipt.tool}
-              </dd>
-              <dt className="text-[color:var(--color-text-quaternary)]">{t('receiptAt')}</dt>
-              <dd className="text-[color:var(--color-text-tertiary)]">
-                {format.relativeTime(new Date(receipt.updatedAt), nowMs)}
-              </dd>
-            </dl>
-            <ol className="grid max-h-32 gap-1 overflow-y-auto border-t border-[color:var(--color-divider)] pt-2">
-              {receipt.items.map((item, index) => (
-                <li
-                  key={`${receipt.id}:${index}`}
-                  className="break-all font-mono text-[color:var(--color-text-tertiary)]"
-                >
-                  {item.relation
-                    ? `${item.relation.from} → ${item.relation.type} → ${item.relation.to}`
-                    : item.target ?? item.fields.join(' · ')}
-                </li>
-              ))}
-            </ol>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
 
 /**
  * Verified 「Current/Last Task」 reading and past notifications are presented in one feed, in two lines.
@@ -123,6 +34,7 @@ export function AgentActivityChip({
   liveWork = null,
   onOpenChange,
   onOpenNode,
+  onOpenConversation,
 }: {
   suppressed?: boolean;
   /** The current state the in-app ACP on the right already knows. Updates the same chip before file polling. */
@@ -144,10 +56,45 @@ export function AgentActivityChip({
   onOpenChange?: (open: boolean) => void;
   /** Already on the map: updates the same HomePage selection state without a route remount. */
   onOpenNode?: (slug: string) => void;
+  /**
+   * Opens the conversation dock.
+   *
+   * The `할 일` tab's door for a waiting request. Atlas cannot answer that request from
+   * here: the allow/reject callback lives inside `useAcpSession`, owned by the chat panel,
+   * and an ontology write is reviewed against a directional diff (`OntologyChangeReview`)
+   * inside the permission card. A 352px popover is the wrong place to decide that, so the
+   * row states the fact and this door goes to the place that can decide it.
+   */
+  onOpenConversation?: () => void;
 } = {}) {
   const t = useTranslations('agentActivity');
   const format = useFormatter();
   const feed = useAgentActivityFeed(liveWork);
+  /*
+   * Derived here rather than inside the panel: the bell's own badge has to know whether
+   * anything waits on the person **before** the panel is ever opened.
+   */
+  const inbox = useMemo(
+    () =>
+      deriveBellInbox({
+        sessions: feed.sessions,
+        notifications: feed.notifications,
+        receipts: feed.workReceipts,
+        work: feed.work,
+        readAt: feed.readAt,
+        nowMs: feed.nowMs,
+      }),
+    [feed.sessions, feed.notifications, feed.workReceipts, feed.work, feed.readAt, feed.nowMs],
+  );
+  const todoCount = inbox.todos.length;
+  /*
+   * One mark, two grades (the brief asked for the `할 일` count; the code says it cannot be
+   * that alone). `할 일` is zero most of the time, so making it the only badge deletes the
+   * unread mark in exactly the moment this slice was written for — four finished turns
+   * waiting after an hour. So: something waiting on the person wins the badge and its
+   * filled indigo; otherwise the badge keeps saying how many notifications are unread.
+   */
+  const badgeCount = todoCount > 0 ? todoCount : feed.unreadCount;
   const [openSurface, setOpenSurface] = useState<'status' | 'notifications' | null>(null);
   const open = openSurface !== null;
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -246,7 +193,6 @@ export function AgentActivityChip({
     }
     openTriggerRef.current = trigger;
     setOpenSurface(surface);
-    if (trigger === 'bell') feed.markAllRead();
   };
 
   return (
@@ -353,9 +299,11 @@ export function AgentActivityChip({
           aria-haspopup="true"
           aria-expanded={openSurface === 'notifications'}
           aria-label={
-            feed.unreadCount > 0
-              ? t('bellUnreadAria', { count: feed.unreadCount })
-              : t('bellAria')
+            todoCount > 0
+              ? t('bellTodoAria', { count: todoCount })
+              : feed.unreadCount > 0
+                ? t('bellUnreadAria', { count: feed.unreadCount })
+                : t('bellAria')
           }
           data-testid="agent-activity-bell"
           data-agent-activity-bell-slot="utility-row-end"
@@ -369,16 +317,22 @@ export function AgentActivityChip({
            */
           className={cn(
             'relative shrink-0 overflow-visible',
-            feed.unreadCount > 0 && 'text-[color:var(--color-text-primary)]',
+            badgeCount > 0 && 'text-[color:var(--color-text-primary)]',
           )}
-          icon={<Bell aria-hidden fill={feed.unreadCount > 0 ? 'currentColor' : 'none'} />}
+          icon={<Bell aria-hidden fill={badgeCount > 0 ? 'currentColor' : 'none'} />}
           badge={
-            feed.unreadCount > 0 ? (
+            badgeCount > 0 ? (
               <span
                 data-testid="agent-activity-unread"
-                className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--color-indigo-a32)] px-1 font-mono text-caption tabular-nums text-[color:var(--color-indigo-text-soft)]"
+                data-badge-grade={todoCount > 0 ? 'waiting' : 'unread'}
+                className={cn(
+                  'absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono text-caption tabular-nums',
+                  todoCount > 0
+                    ? 'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)]'
+                    : 'bg-[color:var(--color-indigo-a32)] text-[color:var(--color-indigo-text-soft)]',
+                )}
               >
-                {feed.unreadCount > 99 ? '99+' : feed.unreadCount}
+                {badgeCount > 99 ? '99+' : badgeCount}
               </span>
             ) : null
           }
@@ -404,6 +358,13 @@ export function AgentActivityChip({
           <span className="min-w-0 flex-1 truncate">
             {t(openSurface === 'notifications' ? 'notificationTitle' : 'inboxTitle')}
           </span>
+          {/*
+            The one door that moves the read boundary in a single press. It appears only
+            with something unread behind it — a control that can change nothing is noise.
+          */}
+          {openSurface === 'notifications' && feed.unreadCount > 0 ? (
+            <MarkAllReadDoor onPress={feed.markAllRead} label={t('markAllRead')} />
+          ) : null}
         </div>
 
         {openSurface === 'status' && feed.work.mode !== 'idle' ? (
@@ -483,50 +444,13 @@ export function AgentActivityChip({
         ) : null}
 
         {openSurface === 'notifications' ? (
-          <>
-            {feed.workReceipts.length > 0 ? (
-              <section
-                data-testid="agent-work-receipts"
-                className="border-b border-[color:var(--topology-floating-panel-divider)]"
-              >
-                <p className="px-3 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-                  {t('receiptTitle')}
-                </p>
-                <div className="max-h-[240px] overflow-y-auto px-2 py-1.5">
-                  {[...feed.workReceipts].slice(-5).reverse().map((receipt) => (
-                    <WorkReceiptRow key={receipt.id} receipt={receipt} nowMs={feed.nowMs} />
-                  ))}
-                </div>
-              </section>
-            ) : null}
-            {feed.notifications.length === 0 && feed.workReceipts.length === 0 ? (
-              <p
-                data-testid="agent-activity-inbox-empty"
-                className="px-3 py-4 text-caption leading-label text-[color:var(--color-text-tertiary)]"
-              >
-                {t('inboxEmpty')}
-              </p>
-            ) : feed.notifications.length > 0 ? (
-              <>
-                <p className="px-3 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-                  {t('historyTitle')}
-                </p>
-                <ul
-                  data-testid="agent-activity-inbox-list"
-                  className="flex max-h-[240px] flex-col overflow-y-auto px-2 py-1.5"
-                >
-                  {feed.notifications.map((item) => (
-                    <NotificationRow
-                      key={item.id}
-                      item={item}
-                      age={relative(item.at)}
-                      onOpenNode={onOpenNode}
-                    />
-                  ))}
-                </ul>
-              </>
-            ) : null}
-          </>
+          <AgentInboxPanel
+            inbox={inbox}
+            feed={feed}
+            onOpenNode={onOpenNode}
+            onOpenConversation={onOpenConversation}
+            onClose={() => close(false)}
+          />
         ) : null}
 
         <p className="border-t border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-label text-[color:var(--color-text-quaternary)]">
@@ -534,123 +458,5 @@ export function AgentActivityChip({
         </p>
       </Surface>
     </div>
-  );
-}
-
-/** Kind → copy key. A new kind grows this one place only. */
-const EVENT_LABEL_KEY: Readonly<Record<AgentNotificationKind, string>> = {
-  'task-start': 'event.taskStart',
-  'task-end': 'event.taskEnd',
-  'domain-added': 'event.domainAdded',
-  'domain-removed': 'event.domainRemoved',
-  'bridge-inserted': 'event.bridgeInserted',
-  'vault-problem': 'event.vaultProblem',
-};
-
-/** Copy for a work notification whose agent is known — same grammar as the status chip. */
-const EVENT_LABEL_KEY_WITH_AGENT: Readonly<Partial<Record<AgentNotificationKind, string>>> = {
-  'task-start': 'event.taskStartAgent',
-  'task-end': 'event.taskEndAgent',
-};
-
-/**
- * A row is **fixed at two lines** — long title or short, with details or without, it reads with the
- * same rhythm (dimensional regularity: in a repeated set, height decided by character count destroys
- * the grid).
- */
-function NotificationRow({
-  item,
-  age,
-  onOpenNode,
-}: {
-  item: AgentNotification;
-  age: string;
-  onOpenNode?: (slug: string) => void;
-}) {
-  const t = useTranslations('agentActivity');
-  const problem = item.kind === 'vault-problem';
-
-  const detail = useMemo(() => {
-    if (item.counts) {
-      // A kind at zero is not drawn — "0 deletions" is noise, not information.
-      const parts: string[] = [];
-      if (item.counts.added > 0) parts.push(t('summaryAdded', { count: item.counts.added }));
-      if (item.counts.edited > 0) parts.push(t('summaryEdited', { count: item.counts.edited }));
-      if (item.counts.removed > 0) parts.push(t('summaryRemoved', { count: item.counts.removed }));
-      return parts.join(t('summaryJoin'));
-    }
-    if (item.problems) {
-      const parts: string[] = [];
-      if (item.problems.unresolvedEdges > 0) {
-        parts.push(t('problemUnresolved', { count: item.problems.unresolvedEdges }));
-      }
-      if (item.problems.dependencyCycles > 0) {
-        parts.push(t('problemCycles', { count: item.problems.dependencyCycles }));
-      }
-      return parts.join(t('summaryJoin'));
-    }
-    if (item.childCount) return t('bridgeChildren', { count: item.childCount });
-    return item.label ?? '';
-  }, [item, t]);
-
-  return (
-    <li
-      data-testid="agent-activity-inbox-row"
-      data-kind={item.kind}
-      className="flex h-12 shrink-0 flex-col justify-center gap-0.5 px-1"
-    >
-      <div className="flex min-w-0 items-baseline gap-1.5">
-        <span
-          className={cn(
-            'shrink-0 text-label',
-            problem
-              ? 'text-[color:var(--color-status-warning)]'
-              : 'text-[color:var(--color-text-primary)]',
-          )}
-        >
-          {item.agent && EVENT_LABEL_KEY_WITH_AGENT[item.kind]
-            ? t(EVENT_LABEL_KEY_WITH_AGENT[item.kind] as string, { agent: agentDisplayName(item.agent) ?? item.agent })
-            : t(EVENT_LABEL_KEY[item.kind])}
-        </span>
-        {item.node ? (
-          onOpenNode ? (
-            <button
-              type="button"
-              onClick={() => onOpenNode(item.node!.slug)}
-              aria-label={t('openOnMap', { name: item.node.name })}
-              className={controlClass({
-                shape: 'link',
-                tone: 'accent',
-                truncate: true,
-                hoverInk: 'strong',
-                className:
-                  'min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
-              })}
-            >
-              {item.node.name}
-            </button>
-          ) : (
-            <Link
-              href={getTopologyFocusHref(item.node.slug)}
-              aria-label={t('openOnMap', { name: item.node.name })}
-              className={controlClass({
-                shape: 'link',
-                tone: 'accent',
-                truncate: true,
-                hoverInk: 'strong',
-                className:
-                  'min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
-              })}
-            >
-              {item.node.name}
-            </Link>
-          )
-        ) : null}
-      </div>
-      {/* This line holds its place even with no details — an optional clause must not change the line count. */}
-      <p className="min-w-0 truncate text-caption text-[color:var(--color-text-tertiary)]">
-        {detail ? `${detail} · ${age}` : age}
-      </p>
-    </li>
   );
 }
