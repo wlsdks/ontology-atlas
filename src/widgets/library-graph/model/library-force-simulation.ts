@@ -213,6 +213,40 @@ export const LIBRARY_FIT_PADDING = 64;
  * width that record's falsifier is stated against.
  */
 const ORPHAN_RING_GAP = 56;
+/*
+ * ⚠️ **Why this gap is not stretched for a small folder, measured 2026-09-13.**
+ *
+ * Inspection 122 (S1) found a twelve-mark folder drawing 38.4% x 38.7% of a 1512 window.
+ * Raising the camera's ceiling to the map's own node chrome took that to 45.9% x 47.8% and
+ * ran out: the mark may not be drawn wider. The next lever is the *world* — make the picture
+ * bigger in simulation units and the camera keeps its size while the picture grows.
+ *
+ * Not the springs. {@link CITES_REST} was cut 52 -> 28 in G2 exactly because at 52 "a page
+ * and the six files it was written from occupied as much of the picture as three unrelated
+ * pages did: the hub and its satellites read as a constellation of equals rather than as one
+ * thing" — measured on a folder this size, which is the folder the finding is about. A rest
+ * length is a claim about meaning and may not be spent on fill.
+ *
+ * This gap carries no such claim, so it was the candidate, scaled by mark count alone (never
+ * by the window). Three values were built and measured over the four fixtures at three
+ * windows:
+ *
+ * | gap x | `vault` fill at 1512 | 6x4 occupancy at 1512 | camera / widest mark at 1040 |
+ * |---|---|---|---|
+ * | 1.00 (this) | 45.9% x 47.8% | 0.417 | 2.00 / 36.0px |
+ * | 1.15 | 47.8% x 49.8% | 0.375 | 2.00 / 36.0px |
+ * | 1.28 | 49.5% x 51.5% | 0.375 | 2.00 / 36.0px |
+ * | 1.55 | 59.8% x 51.4% | 0.375 | **1.74 / 31.4px** |
+ *
+ * So it is refused, on its own numbers. The 60% that a fill target asks for arrives only at
+ * 1.55, where the 1040x720 canvas can no longer hold the picture at the ceiling and the same
+ * folder wears **31.4px marks on one window and 36px on another** — the G1 observation
+ * verbatim ("26.1px at 1040 and 34.0 at 1920"), and red in
+ * `library-graph-picture.spec.ts`, "one folder, one mark size". And below that, every step
+ * buys bounding box while *losing* the occupancy of a fixed 6x4 grid: the extra area is air
+ * between groups, not picture. The statistic in the complaint improves while the better
+ * statistic gets worse, which is the fill objective G2 deleted, re-entering through a gap.
+ */
 /** Ring radius when there is no connected mass to stand off from — a folder of loose files. */
 const ORPHAN_RING_MIN_RADIUS = 90;
 /**

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForMapStill } from "./settle";
 
 /**
  * **The trail round trip** (promoted from the 2026-08-13 walkthrough — zero gates
@@ -20,7 +21,7 @@ test("걸어온 길 — 쌓이고, 목록이 맞고, 뒤로 점프하고, 지워
   await seedFirstRunSeen(page);
   await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(2500);
+  await waitForMapStill(page);
 
   const selection = () =>
     page.evaluate(
@@ -54,7 +55,8 @@ test("걸어온 길 — 쌓이고, 목록이 맞고, 뒤로 점프하고, 지워
   const chip = page.getByText(/걸어온 길 · 3/);
   await expect(chip, "자취 칩이 걸음 수를 안 센다").toBeVisible();
   await chip.click();
-  await page.waitForTimeout(700);
+  // The rows below are `toBeVisible` assertions, which retry on their own — the
+  // popover's reveal needs no sleep in front of them.
 
   // The list — here now, one step back, two steps back
   await expect(page.getByText("지금 여기")).toBeVisible();
@@ -63,13 +65,12 @@ test("걸어온 길 — 쌓이고, 목록이 맞고, 뒤로 점프하고, 지워
 
   // Jump back — pressing the two-steps-back (orders) row returns the selection
   await page.getByText("주문", { exact: true }).last().click();
-  await page.waitForTimeout(900);
-  expect(await selection(), "자취 행이 그 노드로 데려가지 않았다").toBe("domain:order");
+  await expect
+    .poll(selection, { timeout: 15_000, message: "자취 행이 그 노드로 데려가지 않았다" })
+    .toBe("domain:order");
 
   // Clear — the chip disappears
   await page.getByText(/걸어온 길 · \d/).click();
-  await page.waitForTimeout(500);
   await page.getByText("지우기", { exact: true }).click();
-  await page.waitForTimeout(700);
   await expect(page.getByText(/걸어온 길 · \d/)).toHaveCount(0);
 });

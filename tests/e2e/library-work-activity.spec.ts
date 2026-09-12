@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { openLibraryWorkScenario } from "./library-work-harness";
+import { waitFrames } from "./settle";
 
 interface PaintWindow extends Window {
   __libraryPaintCount?: number;
@@ -49,7 +50,14 @@ test.describe("Library live work activity", () => {
     await page.getByTestId("library-graph-card-open").click();
     await expect(canvas).toHaveCount(0);
     const hiddenPaints = await page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0);
-    await page.waitForTimeout(500);
+    /*
+     * The claim is an **absence** — a hidden canvas paints nothing — so something has to
+     * pass before the count means anything. Thirty drawn frames is that something, and it
+     * is the unit the claim is about: a painting canvas would have painted on each of
+     * them, and a slow machine spends longer over the same thirty rather than being asked
+     * a weaker question.
+     */
+    await waitFrames(page, 30);
     expect(await page.evaluate(() => (window as unknown as PaintWindow).__libraryPaintCount ?? 0)).toBe(hiddenPaints);
     // The way back to the picture is the reader's own close control.
     await page.getByTestId("library-reader-back").click();

@@ -9,6 +9,7 @@ import type {
   LibraryGraphProbeNode as ProbeNode,
 } from "./library-graph-probe";
 import { stubDirectoryPicker } from "./vault-picker-stub";
+import { waitFrames } from "./settle";
 
 /**
  * **Is the picture legible — at six documents, at sixty, and at three hundred?**
@@ -49,6 +50,30 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /** Mirrors `library-graph-view.ts`; a spec that imports the widget's own floor proves nothing. */
 const MIN_SOURCE_MARK_PX = 3;
+/**
+ * The ceiling, mirrored on the same terms: the widest mark a folder may draw, in canvas
+ * pixels, and the world radius the band tops out at. 36 is the map's own node chrome — the
+ * family this picture belongs to — and the camera may take a folder no closer than that.
+ */
+const LIBRARY_MAX_MARK_PX = 36;
+const WIDEST_MARK_WORLD_RADIUS = 9;
+const NAMED_MARK_WORLD_RADIUS_MIN = 5;
+/** Mirrors `LIBRARY_FIT_PADDING`: what the fit reserves on every side, in canvas pixels. */
+const FIT_PADDING = 64;
+/** Mirrors `SOURCE_LABEL_MIN_SCALE`: the zoom at which a file carries its own name. */
+const SOURCE_LABEL_MIN_SCALE = 1.4;
+/**
+ * Mirrors `LEADER_MAX_MARKS`. Below it every mark that carries a name gets one, on a leader
+ * if its four places are taken; above it the folder has already chosen a subset of names and
+ * the collision order is what is judged instead.
+ */
+const LEADER_MAX_MARKS = 120;
+/**
+ * The order at which every mark of a folder can carry its name at once — the owner's own
+ * folder and the one it was reviewed against, and the order inspection 122's S18 was raised
+ * at. Below it no mark may be anonymous at any window.
+ */
+const NAMES_ALL_FIT_MARKS = 30;
 
 /**
  * The three windows the Library is judged at: the 14-inch workbench, a narrow laptop, and the
@@ -320,8 +345,40 @@ async function openGraph(page: Page, seed: Record<string, string>): Promise<void
   await expect
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.alpha() ?? 1), { timeout: 20_000 })
     .toBeLessThan(0.01);
-  // One more frame after the settle, so `labels()` holds the resting placement.
-  await page.waitForTimeout(120);
+  // One more frame after the settle, so `labels()` holds the resting placement. A frame
+  // is the unit; 120 ms was this machine's estimate of one.
+  await waitFrames(page, 2);
+}
+
+/**
+ * **How much amber is on the canvas**, counted inside the page.
+ *
+ * The dot that says *this citation is no longer vouched for* is the one mark on this
+ * picture with no DOM, no label box and no probe entry — it is painted into the break of a
+ * line — so the only honest question is whether its pixels are there. Inspection 122 ran
+ * exactly this scan on two captures of the identical state and got **28 hits at 1040×720
+ * and 0 at 1512×901** (S2): the mark existed only during a breath that lasts two settle
+ * budgets and never returns, so which window drew it was decided by when the shutter fell.
+ *
+ * ⚠️ **Counted in the page, never transferred.** Handing an `ImageData` array back over CDP
+ * costs about twelve seconds on a canvas this size; the same count inside the page is three
+ * milliseconds.
+ */
+async function amberPixels(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="library-graph-canvas"]');
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return -1;
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    let hits = 0;
+    for (let index = 0; index < data.length; index += 4) {
+      const red = data[index]!;
+      const green = data[index + 1]!;
+      const blue = data[index + 2]!;
+      if (red > 190 && green > 140 && green < 210 && blue < 120) hits += 1;
+    }
+    return hits;
+  });
 }
 
 interface Box {
@@ -349,8 +406,14 @@ interface Picture {
   labelsOverMarks: Array<[string, string]>;
   namedFraction: number;
   labelFontPx: number[];
-  /** The camera's scale after the fit — clamped into `[LIBRARY_ZOOM_MIN, 1.6]`. */
+  /** The camera's scale after the fit — clamped into `[LIBRARY_ZOOM_MIN, the folder's ceiling]`. */
   viewScale: number;
+  /** The scale the fit was allowed to take: the canvas's own wish, clamped the same way. */
+  allowedScale: number;
+  /** This folder's ceiling: the camera at which its widest mark is `LIBRARY_MAX_MARK_PX`. */
+  ceiling: number;
+  /** Marks that carry a name at this zoom and did not get one. */
+  anonymous: string[];
   /** The smallest source square drawn, across, in canvas pixels. */
   minSourceMarkPx: number;
   /** The largest mark drawn, across — a page's widest disc. */
@@ -571,6 +634,43 @@ async function measure(page: Page): Promise<Picture> {
     (massY - canvas.height / 2) / Math.max(1, canvas.height),
   );
 
+  /*
+   * **The fit the camera was allowed to take**, recomputed here from the drawn picture.
+   *
+   * The world span is the drawn span divided by the scale, so this spec can ask the same
+   * question `fitView` asks — *how close may this folder come* — without importing it. It is
+   * what turns the fill finding into a falsifiable claim: the picture is as large as the
+   * rule permits, or the rule is what is wrong. Inspection 122's S1 measured the opposite,
+   * a picture at 38% of its canvas with the camera still 25% short of its own ceiling.
+   */
+  const widestWorldRadius = Math.max(
+    0,
+    ...raw.nodes.map((node) => node.radius / Math.max(1e-6, raw.scale)),
+  );
+  const ceiling =
+    LIBRARY_MAX_MARK_PX / (2 * Math.max(NAMED_MARK_WORLD_RADIUS_MIN, widestWorldRadius));
+  // Centres, not extents: `librarySimulationBounds` is the fit's own input and it bounds
+  // the marks' positions. The padding is what covers their radii and their names.
+  const centreSpanX = Math.max(...raw.nodes.map((node) => node.x)) - Math.min(...raw.nodes.map((node) => node.x));
+  const centreSpanY = Math.max(...raw.nodes.map((node) => node.y)) - Math.min(...raw.nodes.map((node) => node.y));
+  const wanted = Math.min(
+    Math.max(1, canvas.width - FIT_PADDING * 2) / Math.max(1e-6, centreSpanX / raw.scale),
+    Math.max(1, canvas.height - FIT_PADDING * 2) / Math.max(1e-6, centreSpanY / raw.scale),
+  );
+  const allowedScale = Math.min(ceiling, Math.max(MIN_SOURCE_MARK_PX / 7, wanted));
+
+  /*
+   * **Who was left anonymous.** A page always carries its name; a file and a concept carry
+   * theirs once the camera is past `SOURCE_LABEL_MIN_SCALE`. Anything in that set without a
+   * label box is a mark a person cannot ask a question about.
+   */
+  const namedAlready = new Set(raw.labels.map((label) => label.nodeId));
+  const anonymous = raw.nodes
+    .filter((node) => Number.isFinite(node.x))
+    .filter((node) => node.kind === "page" || raw.scale >= SOURCE_LABEL_MIN_SCALE)
+    .filter((node) => !namedAlready.has(node.id))
+    .map((node) => node.id);
+
   const sourceMarks = raw.nodes.filter((node) => node.kind === "source");
   const pages = raw.nodes.filter((node) => node.kind === "page");
   const namedIds = new Set(raw.labels.map((label) => label.nodeId));
@@ -604,6 +704,9 @@ async function measure(page: Page): Promise<Picture> {
     namedFraction: raw.nodes.length > 0 ? raw.labels.length / raw.nodes.length : 0,
     labelFontPx: [...new Set(raw.labels.map((label) => label.fontPx))].sort((a, b) => a - b),
     viewScale: raw.scale,
+    allowedScale,
+    ceiling,
+    anonymous,
     minSourceMarkPx: sourceMarks.length > 0 ? Math.min(...sourceMarks.map((node) => node.radius * 2)) : Infinity,
     maxNodeDiameterPx: Math.max(0, ...raw.nodes.map((node) => node.radius * 2)),
     centreOfMassOffset,
@@ -619,12 +722,107 @@ async function measure(page: Page): Promise<Picture> {
 
 const outDir = process.env.ATLAS_PICTURE_OUT;
 
+/**
+ * **The legend under the canvas answers the state the canvas is in.**
+ *
+ * With a card open it went on reading *press a dot for a card beside it* — instructions for
+ * the thing that had already happened (inspection 122, S19). What a reader still needs while
+ * the card stands there is the mark vocabulary, so that half is kept verbatim and only the
+ * gesture clause is swapped for the two ways back out.
+ *
+ * Run in the browser rather than in jsdom because the state it is about — *a card open with
+ * nothing under the pointer* — is reached by pressing a painted mark and then taking the
+ * pointer off the canvas, and both of those are hit tests against a real frame.
+ */
+test("the legend swaps its gesture for the way out while a card is open", async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 901 });
+  await openGraph(page, seedFolder(FIXTURES[0]!.shape()));
+  const hint = page.getByTestId("library-graph-hint");
+  await expect(hint).toContainText("press a dot for a card beside it");
+
+  const canvas = page.getByTestId("library-graph-canvas");
+  const box = (await canvas.boundingBox())!;
+  const mark = (await page.evaluate(() => {
+    const nodes = window.__atlasLibraryGraph!.nodes().filter((node) => node.kind === "page");
+    // The busiest page: the widest mark on the picture, so the press cannot miss it.
+    return nodes.sort((first, second) => second.radius - first.radius)[0]!;
+  }))!;
+  await page.mouse.click(box.x + mark.x, box.y + mark.y);
+  await expect(page.getByTestId("library-graph-card")).toBeVisible();
+
+  // Pointer off the canvas: no mark is active, so this line is the legend's again.
+  await page.mouse.move(box.x + box.width / 2, box.y - 40);
+  await expect(hint).not.toContainText("press a dot for a card beside it");
+  await expect(hint).toContainText("close the card");
+  // The vocabulary stays: it is the key to the picture, and a walker recorded the cost of
+  // losing it (2026-09-12).
+  await expect(hint).toContainText("a square a source");
+
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("library-graph-card")).toBeHidden();
+  await expect(hint).toContainText("press a dot for a card beside it");
+});
+
+/**
+ * **The fit tile never answers a press with the same pixels.**
+ *
+ * Inspection 122 pressed it twice on the Library home and measured a **pixel-identical
+ * frame — 0 changed pixels above a threshold of 8** (S1). The picture was already framed, so
+ * there was nothing for the press to do; what was wrong was that it was still offered. The
+ * tile re-frames from any camera a person has taken, and with nothing to re-frame it takes
+ * the disabled grammar `ChromeTile` already owns.
+ *
+ * Three claims, in one session on one folder: offered exactly when the camera is off the
+ * fit, moving the picture when pressed, and back to not-offered afterwards.
+ */
+for (const size of SIZES) {
+  test(`the fit tile only offers a press that moves the picture at ${size.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: size.width, height: size.height });
+    await openGraph(page, seedFolder(FIXTURES[0]!.shape()));
+    const tile = page.getByTestId("library-graph-fit");
+    const canvas = page.getByTestId("library-graph-canvas");
+
+    // Framed on arrival: the press would repaint the same pixels, so it is not offered.
+    await expect(tile).toBeDisabled();
+    await expect(tile).toHaveAttribute("data-framed", "true");
+    const framedShot = await canvas.screenshot();
+
+    /*
+     * Take the camera by hand — a wheel over the canvas, which is the gesture a person uses
+     * — and the tile becomes the way back.
+     */
+    const box = (await canvas.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, 240);
+    await expect(tile).toBeEnabled();
+    const movedShot = await canvas.screenshot();
+    expect(movedShot.equals(framedShot), "the wheel did not move the picture, so this case proves nothing").toBe(
+      false,
+    );
+
+    await tile.click();
+    /*
+     * The travel is eased, so what is waited for is the landing: the tile stops offering
+     * again exactly when the camera has arrived at the fit.
+     */
+    await expect(tile).toBeDisabled({ timeout: 5_000 });
+    const backShot = await canvas.screenshot();
+    expect(backShot.equals(movedShot), "the fit tile was pressed and the picture did not move").toBe(false);
+    // And it landed on the fit, not merely somewhere else.
+    expect(
+      await page.evaluate(() => window.__atlasLibraryGraph?.view().scale ?? 0),
+      "the press moved the camera somewhere that is not the fit",
+    ).toBeCloseTo(await measure(page).then((picture) => picture.allowedScale), 2);
+  });
+}
+
 for (const fixture of FIXTURES) {
   for (const size of SIZES) {
     test(`the ${fixture.name} picture stays legible at ${size.name}`, async ({ page }) => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await openGraph(page, seedFolder(fixture.shape()));
       const picture = await measure(page);
+      const amber = await amberPixels(page);
 
       if (outDir) {
         const stem = `${fixture.name}-${size.name}`;
@@ -656,6 +854,10 @@ for (const fixture of FIXTURES) {
               labelsOverMarks: picture.labelsOverMarks,
               namedFraction: Number(picture.namedFraction.toFixed(3)),
               viewScale: Number(picture.viewScale.toFixed(4)),
+              allowedScale: Number(picture.allowedScale.toFixed(4)),
+              ceiling: Number(picture.ceiling.toFixed(4)),
+              anonymous: picture.anonymous,
+              amberPixels: amber,
               minSourceMarkPx: Number(picture.minSourceMarkPx.toFixed(2)),
               maxNodeDiameterPx: Number(picture.maxNodeDiameterPx.toFixed(2)),
               centreOfMassOffset: Number(picture.centreOfMassOffset.toFixed(4)),
@@ -693,6 +895,34 @@ for (const fixture of FIXTURES) {
 
       // ── The names. ──
       expect(picture.labelOverlaps, "two names cross each other").toEqual([]);
+      /*
+       * ⚠️ **Nobody is anonymous on the folder a person starts with.**
+       *
+       * A name that loses all four of its places is pushed out on a leader rather than
+       * dropped. Inspection 122 measured the alternative on the owner's own six files: five
+       * named, and the sixth — colliding with the `Settlement` label — left with no identity
+       * at all (S18). Counted over this matrix, marks carrying a name and not given one:
+       *
+       * | folder | 1040 | 1512 | 1920 |
+       * |---|---|---|---|
+       * | `vault`, `vault-zero-answers` | 1 → **0** | 1 → **0** | 1 → **0** |
+       * | `vault-60` | 6 → **1** | 2 → **0** | 1 → **0** |
+       *
+       * So the bar is zero for a folder of {@link NAMES_ALL_FIT_MARKS} or fewer — the order
+       * the finding was raised at, and the order at which every mark can be named at once —
+       * and one for the sixty-mark folder, whose tightest window (616×594 of canvas holding
+       * 79% × 84% of picture) leaves one write-up with nothing free inside a leader's reach.
+       * Above `LEADER_MAX_MARKS` the folder has chosen a subset of names on purpose and the
+       * collision order is what is judged, two bars below.
+       */
+      if (picture.nodes.length <= NAMES_ALL_FIT_MARKS) {
+        expect(picture.anonymous, "a mark that carries a name at this zoom was left without one").toEqual([]);
+      } else if (picture.nodes.length <= LEADER_MAX_MARKS) {
+        expect(
+          picture.anonymous.length,
+          "more than one mark carrying a name was left without one",
+        ).toBeLessThanOrEqual(1);
+      }
       expect(picture.labelsOverMarks, "a name sits on a mark it does not belong to").toEqual([]);
       // `--text-label` (11) for a page, `--text-caption` (9.5) for a file or a concept. A
       // page's name is never the smaller of the two on one canvas.
@@ -725,6 +955,67 @@ for (const fixture of FIXTURES) {
         "the named write-ups are systematically quieter than the unnamed ones, so the priority is inverted",
       ).toBeGreaterThanOrEqual(0.97);
 
+      /*
+       * ── The fill, stated as the fit rather than as a fraction. ──
+       *
+       * ⚠️ **A flat fill percentage cannot be the bar, and inspection 122 is where both
+       * halves of that were measured.** The finding is real — the owner's six-document
+       * folder drew a picture over 38% of a 1512 window, with ~340px of empty gutter on each
+       * side (S1) — but the fix it proposed, "fit to 60–75% of the shorter axis", is the
+       * fill objective G2 removed: at 1512 that scale draws the busiest page at **43px**,
+       * which is the exact balloon the owner rejected, and at 1920 it is larger still. One
+       * folder would again be a different size on every monitor.
+       *
+       * What is asserted instead is that **the fit takes every bit of camera it is
+       * allowed**: the scale is the canvas's own wish clamped into the folder's band, and
+       * the band's top is the widest mark the picture may draw. That is red both ways — a
+       * fit that stops short of the canvas (the S1 defect, whose camera sat 25% under its
+       * own ceiling) and a fit that pushes past the mark cap (the G2 defect).
+       */
+      expect(
+        picture.viewScale,
+        "the fit stopped short of the camera this folder is allowed, so the canvas is emptier than the rule asks",
+      ).toBeCloseTo(picture.allowedScale, 2);
+      expect(
+        picture.maxNodeDiameterPx,
+        "a mark is wider than a map node, which is the balloon the ceiling exists to stop",
+      ).toBeLessThanOrEqual(LIBRARY_MAX_MARK_PX + 1e-6);
+      /*
+       * ⚠️ **One folder, one mark size — at every window, and this is the bar that holds it.**
+       *
+       * A folder small enough to fit any of these canvases sits *against* the ceiling, so its
+       * widest mark is drawn at exactly `LIBRARY_MAX_MARK_PX` on all three. That is the whole
+       * of what G1 answered: the owner's complaint was "one twelve-mark folder wearing 26.1px
+       * marks at 1040 and 34.0 at 1920".
+       *
+       * It is also what bounds every future attempt to fill the canvas by making the *world*
+       * bigger. Measured on this branch, stretching the gap between unrelated groups (the one
+       * distance on this canvas that carries no claim about meaning) to 1.55× its value takes
+       * `vault` to 59.8% of the 1512 window's width — and drops the 1040 camera to 1.74, its
+       * widest mark to **31.4px** while 1512 still draws 36. This bar goes red there.
+       */
+      if (picture.nodes.length <= NAMES_ALL_FIT_MARKS) {
+        expect(
+          picture.maxNodeDiameterPx,
+          "a small folder's widest mark is not at the ceiling, so this window draws it a different size than the others do",
+        ).toBeCloseTo(LIBRARY_MAX_MARK_PX, 5);
+      }
+
+      /*
+       * ── The amber dot is on the canvas, at every window. ──
+       *
+       * Every fixture here writes a hash that cannot match on a third of its pages, so every
+       * one of them has unverified citations and must paint the mark that says so. The same
+       * scan on `origin/main` returns **0** at rest on all twelve cases: the dot existed only
+       * during the arrival breath (S2).
+       */
+      const staleEdges = picture.edges.filter((edge) => edge.certainty === "unverified").length;
+      expect(staleEdges, "the fixture has no unverified citation, so this case proves nothing").toBeGreaterThan(0);
+      expect(
+        amber,
+        "no amber pixel on a folder with unverified citations: the card's own sentence names a mark nobody can see",
+      ).toBeGreaterThan(0);
+
       // ── The marks. ──
       /*
        * **A mark's drawn size comes from the camera and nothing else.** The camera is clamped
@@ -736,11 +1027,13 @@ for (const fixture of FIXTURES) {
         picture.minSourceMarkPx,
         "a file's square is under three pixels across at the fitted zoom",
       ).toBeGreaterThanOrEqual(MIN_SOURCE_MARK_PX - 1e-6);
-      expect(picture.viewScale, "the camera zoomed past its ceiling").toBeLessThanOrEqual(1.6 + 1e-6);
+      expect(picture.viewScale, "the camera zoomed past its ceiling").toBeLessThanOrEqual(
+        picture.ceiling + 1e-6,
+      );
       expect(
-        picture.maxNodeDiameterPx,
-        "a mark is wider than the clamped ceiling, so the canvas is deciding the size again",
-      ).toBeLessThanOrEqual(9 * 1.6 * 2 + 1e-6);
+        picture.ceiling * 2 * WIDEST_MARK_WORLD_RADIUS,
+        "the ceiling stopped being the widest mark this folder may draw",
+      ).toBeLessThanOrEqual(LIBRARY_MAX_MARK_PX + 1e-6);
 
       // ── The composition. ──
       /*

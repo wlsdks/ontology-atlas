@@ -3,11 +3,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   fitView,
+  isSameView,
   isWheelZoomIntent,
+  LIBRARY_MAX_MARK_PX,
   LIBRARY_ZOOM_MAX,
   LIBRARY_ZOOM_MIN,
+  libraryZoomMax,
   MIN_SOURCE_MARK_PX,
+  NAMED_MARK_WORLD_RADIUS_MIN,
   SOURCE_MARK_WORLD_RADIUS,
+  WIDEST_MARK_WORLD_RADIUS,
   panView,
   scaleBounds,
   screenToWorld,
@@ -96,6 +101,42 @@ describe("the library graph's view", () => {
     // which would drift the centre a hair on every further notch.
     const pinned = zoomViewAbout(close, BOX, { x: 10, y: 10 }, 100, bounds);
     expect(pinned).toBe(close);
+  });
+
+  /**
+   * **The ceiling is a drawn mark, not a number of times.** A page at the top of the band is
+   * drawn at exactly a map node's 36px and never wider; a folder whose marks are all at the
+   * band's floor is allowed closer, because what is capped is the mark.
+   */
+  it("states the ceiling as the widest mark a folder may draw", () => {
+    expect(WIDEST_MARK_WORLD_RADIUS * 2 * libraryZoomMax(WIDEST_MARK_WORLD_RADIUS)).toBeCloseTo(
+      LIBRARY_MAX_MARK_PX,
+      6,
+    );
+    expect(LIBRARY_ZOOM_MAX).toBe(libraryZoomMax(WIDEST_MARK_WORLD_RADIUS));
+    const quiet = libraryZoomMax(NAMED_MARK_WORLD_RADIUS_MIN);
+    expect(quiet).toBeGreaterThan(LIBRARY_ZOOM_MAX);
+    // A folder of nothing but files does not get 36px squares: the floor of the band a
+    // named thing is drawn at is the smallest radius the ceiling is ever computed from.
+    expect(libraryZoomMax(SOURCE_MARK_WORLD_RADIUS)).toBe(quiet);
+    // And the fit obeys whichever ceiling it is handed.
+    const tiny = { minX: -50, maxX: 50, minY: -30, maxY: 30 };
+    expect(fitView(tiny, BOX, 64, quiet).scale).toBe(quiet);
+    expect(fitView(tiny, BOX, 64).scale).toBe(LIBRARY_ZOOM_MAX);
+  });
+
+  /**
+   * **What the fit tile reads before it offers a press.** A press that could only repaint
+   * the same pixels is the affordance inspection 122 measured as a pixel-identical frame.
+   */
+  it("tells a camera that is already the fit from one that is not", () => {
+    const fit = { scale: 1.6, x: 40, y: -12 };
+    expect(isSameView(fit, fit)).toBe(true);
+    // A quarter of a pixel of travel at this scale is not a picture anyone can see move.
+    expect(isSameView({ ...fit, x: fit.x + 0.25 / fit.scale }, fit)).toBe(true);
+    // Four pixels is.
+    expect(isSameView({ ...fit, x: fit.x + 4 / fit.scale }, fit)).toBe(false);
+    expect(isSameView({ ...fit, scale: 1.2 }, fit)).toBe(false);
   });
 
   it("pans by the screen delta divided by the scale, so the hand tracks the picture", () => {

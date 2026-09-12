@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { waitForDomeEntered, waitForMapStill } from "./settle";
 
 import { seedFirstRunSeen } from "./first-run-seed";
 
@@ -108,8 +109,11 @@ async function open3d(page: Page, arrangement: string) {
   }, arrangement);
   await page.goto("/en/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
-  // Past the assembly (≈1.1s) and the entry sweep (1.5s).
-  await page.waitForTimeout(6000);
+  // Past the assembly and the entry sweep: while either is alive the drawn pose
+  // keeps moving and the fit is still in flight. Both clocks belong to the dome,
+  // so it is asked whether it has arrived rather than given six seconds to.
+  await waitForDomeEntered(page);
+  await waitForMapStill(page, { what: "camera" });
 }
 
 /**

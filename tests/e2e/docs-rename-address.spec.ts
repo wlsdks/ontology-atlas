@@ -33,31 +33,42 @@ test("이름 변경 뒤 — 경고가 안 뜨고 주소가 새 이름을 가리�
   await seedFirstRunSeen(page);
   await stubDirectoryPicker(page, VAULT);
   await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2000);
+  await expect(page.getByTestId("first-run-starter-open")).toBeVisible({ timeout: 30_000 });
   await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
   await page.getByTestId("first-run-starter-open").click();
-  await page.waitForTimeout(500);
-  const pick = page.getByTestId("vault-guide-pick-existing");
-  if (await pick.isVisible().catch(() => false)) await pick.click();
-  await page.waitForTimeout(2500);
+  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
+  await page.getByTestId("vault-guide-pick-existing").click();
+  /*
+   * The folder is open once the first-run door is gone. The map canvas is deliberately
+   * **not** the condition: this fixture is three files with no project node, and such a
+   * vault opens the Library rather than the map (`AGENTS.md`, routing) — asserting the
+   * canvas here failed on every run.
+   */
+  await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
 
   await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2500);
+  // `click()` waits for its own target, so the tree needs nothing in front of it.
   await page.getByText("capabilities", { exact: true }).first().click();
-  await page.waitForTimeout(500);
   await page.getByText("장바구니", { exact: true }).first().click();
-  await page.waitForTimeout(1200);
+  // The document is open when the address says so — the state the rename then moves.
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("slug"), { timeout: 20_000 })
+    .toBe("capabilities/cart");
 
   // Palette → rename command (the dialog handler above answers the prompt with the new address)
   await page.keyboard.press("Meta+k");
-  await page.waitForTimeout(600);
+  const palette = page.getByRole("dialog").filter({ has: page.locator('input[type="text"]') }).first();
+  await expect(palette, "팔레트가 안 열렸다").toBeVisible();
   await page.keyboard.type("이름 변경");
-  await page.waitForTimeout(600);
+  // Enter takes the **active** row, so the condition is that the active row is the
+  // command we typed for — not that 600 ms of this machine has gone by.
+  await expect(palette.locator('[role="option"][aria-selected="true"]')).toContainText("이름 변경");
   await page.keyboard.press("Enter");
 
-  // Watches across the manifest-refresh gap (web polling at 1.5s/5s) for the
-  // banner never appearing — a single frame during the gap is already a false
-  // warning.
+  // A **watch window**, not a wait: the claim is that the banner never appears across
+  // the manifest-refresh gap (web polling at 1.5s/5s), and a single frame during that
+  // gap is already a false warning. Six seconds of real time is the subject of the
+  // claim, so it is spent deliberately.
   const banner = page.getByText(/못 찾았어요/);
   for (let i = 0; i < 12; i += 1) {
     await page.waitForTimeout(500);
@@ -82,25 +93,35 @@ test("삭제 뒤 — 경고가 안 뜨고 주소가 지운 문서를 가리키�
   await seedFirstRunSeen(page);
   await stubDirectoryPicker(page, VAULT);
   await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2000);
+  await expect(page.getByTestId("first-run-starter-open")).toBeVisible({ timeout: 30_000 });
   await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
   await page.getByTestId("first-run-starter-open").click();
-  await page.waitForTimeout(500);
-  const pick = page.getByTestId("vault-guide-pick-existing");
-  if (await pick.isVisible().catch(() => false)) await pick.click();
-  await page.waitForTimeout(2500);
+  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
+  await page.getByTestId("vault-guide-pick-existing").click();
+  /*
+   * The folder is open once the first-run door is gone. The map canvas is deliberately
+   * **not** the condition: this fixture is three files with no project node, and such a
+   * vault opens the Library rather than the map (`AGENTS.md`, routing) — asserting the
+   * canvas here failed on every run.
+   */
+  await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
 
   await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(2500);
+  // `click()` waits for its own target, so the tree needs nothing in front of it.
   await page.getByText("capabilities", { exact: true }).first().click();
-  await page.waitForTimeout(500);
   await page.getByText("장바구니", { exact: true }).first().click();
-  await page.waitForTimeout(1200);
+  // The document is open when the address says so — the state the rename then moves.
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("slug"), { timeout: 20_000 })
+    .toBe("capabilities/cart");
 
   await page.keyboard.press("Meta+k");
-  await page.waitForTimeout(600);
+  const palette = page.getByRole("dialog").filter({ has: page.locator('input[type="text"]') }).first();
+  await expect(palette, "팔레트가 안 열렸다").toBeVisible();
   await page.keyboard.type("삭제");
-  await page.waitForTimeout(600);
+  // Enter takes the **active** row, so the condition is that the active row is the
+  // command we typed for — not that 600 ms of this machine has gone by.
+  await expect(palette.locator('[role="option"][aria-selected="true"]')).toContainText("삭제");
   await page.keyboard.press("Enter");
 
   const banner = page.getByText(/못 찾았어요/);

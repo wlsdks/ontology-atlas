@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
 import type { AtlasMapProbe } from "./atlas-map-probe";
+import { waitForMapSettled } from "./settle";
 
 /**
  * **When the cursor leaves the canvas the map goes back to sleep** (measured defect,
@@ -55,7 +56,7 @@ test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린�
 
   const canvas = page.getByTestId("ontology-map-canvas");
   await expect(canvas).toBeVisible();
-  await page.waitForTimeout(3000);
+  await waitForMapSettled(page);
 
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
@@ -88,14 +89,13 @@ test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린�
     }, ms);
 
   await page.mouse.move(box!.x + target!.x, box!.y + target!.y);
-  await page.waitForTimeout(400);
   // The conclusion only means something if the premise holds — pin down that the
   // hover actually took. (Without this line, "the hover never took" and "the gate
-  // closed" are the same green.)
-  const hovered = await page.evaluate(
-    () => (window as unknown as { __atlasMap?: AtlasMapProbe }).__atlasMap?.hover() ?? null,
-  );
-  expect(hovered).toBe(target!.id);
+  // closed" are the same green.) That is also the condition, so it is polled rather
+  // than slept in front of.
+  const hovered = () =>
+    page.evaluate(() => (window as unknown as { __atlasMap?: AtlasMapProbe }).__atlasMap?.hover() ?? null);
+  await expect.poll(hovered, { timeout: 15_000 }).toBe(target!.id);
 
   /*
    * Move in one step onto chrome layered **over** the canvas — the left nav rail.
@@ -115,8 +115,12 @@ test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린�
   const railBox = await rail.boundingBox();
   expect(railBox).not.toBeNull();
   await page.mouse.move(railBox!.x + railBox!.width / 2, railBox!.y + railBox!.height / 2);
-  // The grace period (1,200ms) plus time for the ramp to decay.
-  await page.waitForTimeout(3500);
+  /*
+   * The hover has to be released and the canvas has to fall quiet again. The release
+   * is a state — `hover()` goes null — and the quiet is the idle gate's grace period
+   * elapsing with nothing to draw, which shows up as the picture no longer changing.
+   */
+  await expect.poll(hovered, { message: "레일로 나갔는데 호버가 안 풀렸다" }).toBeNull();
 
   // ① Was the highlight actually released — the cause side. A verdict with no timing noise.
   expect(
@@ -125,7 +129,31 @@ test("커서가 캔버스를 벗어나면 지도가 프레임을 그만 그린�
     ),
   ).toBeNull();
 
-  // ② Did the gate actually close — the consequence side. Caught here even if the cause moves to another ref.
+  /*
+   * ② Did the gate actually close — the consequence side. Caught here even if the cause
+   * moves to another ref.
+   *
+   * ⚠️ **This wait stays in milliseconds, and here is the measurement that says why**
+   * (2026-09-13 sweep of the fixed sleeps that gate an assertion; `?synth=800`, against
+   * the 12 ms/s bound below):
+   *
+   * | state waited for instead | cost over the next 1.5 s |
+   * |---|---|
+   * | camera and layout still | 38 ms/s |
+   * | the map's idle gate skipping without waking for 1.5 s | 45 ms/s |
+   * | 3,500 ms after the pointer left | **2.7 ms/s** |
+   *
+   * The map's own gate was skipping every frame of the middle row, so that cost is **not
+   * the map's**: with the pointer parked on a rail tile, roughly one further
+   * `requestAnimationFrame` callback per frame keeps working for about three seconds, and
+   * that loop exposes no state to wait on — `document.getAnimations()` reports nothing,
+   * because it is script-driven rather than WAAPI.
+   *
+   * So this is a measurement window over another subsystem's tail, not a settle this
+   * spec can ask about. Giving that subsystem an observable is its own change; until
+   * then the numbers are written down rather than the duration guessed at.
+   */
+  await page.waitForTimeout(3_500);
   const after = await idleCost(1500);
   // If no frames arrived at all (a backgrounded tab, say) this measurement is void.
   expect(after.frames).toBeGreaterThan(20);
