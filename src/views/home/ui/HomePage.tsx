@@ -269,6 +269,7 @@ import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
 import { MapEntryLoadingVisual } from "@/shared/ui/map-entry-loading-visual";
+import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
 
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
@@ -385,10 +386,30 @@ const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
  */
 export function HomePage() {
   const tMapEntry = useTranslations('mapEntry');
-  const [bootRenderReady, setBootRenderReady] = useState(false);
+  /*
+   * **The split is for the first load, and only the first load** (2026-09-12).
+   *
+   * The two-commit boot above exists so the very first paint of this route is not the 6,800-line
+   * tree rendered in one blocking commit. It was doing that on **every** arrival, including a
+   * rail click from a screen the person was already looking at: measured at 1512×901 on the
+   * static export, `map-entry-fallback` mounted 34 ms after the click and was gone by 57 ms, so
+   * the route crossfade was fading the old screen into a *loading* visual which the real map
+   * then replaced. 23 ms is about a frame and a half — short, and still the wrong picture in the
+   * one frame the browser captured.
+   *
+   * Remembering that this route has already booted (`shared/lib/route-arrival-memory.ts`) keeps
+   * the split exactly where it earns its keep. The memory is empty during the static render and
+   * during hydration, so the exported HTML and the first client commit are unchanged and there
+   * is no mismatch; it is only true from the second arrival onwards, when the person is already
+   * inside the app and the map's code, tokens and derived graph are all in memory.
+   */
+  const [bootedOnce, rememberBooted] = useArrivalMemory("home-map-booted", false);
+  const [bootRenderReady, setBootRenderReady] = useState(bootedOnce);
   useEffect(() => {
+    rememberBooted(true);
+    if (bootRenderReady) return;
     startTransition(() => setBootRenderReady(true));
-  }, []);
+  }, [bootRenderReady, rememberBooted]);
   if (!bootRenderReady) {
     return (
       <MapEntryLoadingVisual

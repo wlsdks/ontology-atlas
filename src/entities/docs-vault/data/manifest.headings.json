@@ -6646,6 +6646,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-12 — One pull request is one CI run, fired by the lander that holds the lock",
+      "slug": "2026-09-12-one-pull-request-is-one-ci-run-fired-by-the-lander-that-holds-the-lock"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-12 — A wiki finding is one sentence, one place and one way out; the codes go behind one fold",
       "slug": "2026-09-12-a-wiki-finding-is-one-sentence-one-place-and-one-way-out-the-codes-go-behind-one-fold"
     },
@@ -10930,6 +10935,11 @@
       "depth": 3,
       "text": "CI impact plan",
       "slug": "ci-impact-plan"
+    },
+    {
+      "depth": 3,
+      "text": "Landing a pull request",
+      "slug": "landing-a-pull-request"
     },
     {
       "depth": 3,

@@ -694,6 +694,29 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     expect(screen.getByTestId('index-body'), '렌즈를 껐다고 트리가 사라졌다').toBeInTheDocument();
   });
 
+/**
+   * **A wait budget must be smaller than the test budget.**
+   *
+   * These two cases are the only ones in this file that wait 5,000 ms for the dialog to close —
+   * and `vitest.config.ts` sets no `testTimeout`, so the whole test also gets 5,000 ms. The two
+   * numbers being equal means the `waitFor` can **never** report: the test dies first, and what
+   * CI prints is a bare "Test timed out in 5000ms" pointing at the `it(...)` line rather than the
+   * assertion that was actually waiting.
+   *
+   * That is what happened on 2026-09-12 (run 34693905255): 1,025 of 1,026 files green, these two
+   * timed out at 5007 and 5002 ms, and the run's own figures show why — environment 590 s against
+   * 421 s of wall clock, i.e. an oversubscribed two-core runner. Run alone the same two cases take
+   * **152 ms and 15 ms**, so nothing here is slow; they were simply the only cases with no
+   * headroom, and a starved test with zero headroom is the first to tip over. The comment inside
+   * the first one already records this pair failing "under suite load" once before.
+   *
+   * So the product-meaningful bound stays at 5,000 ms — "the dialog closes within five seconds" —
+   * and the test is given room to say so. Raising only the test budget changes no assertion: a
+   * genuine regression now fails as the `waitFor` it is, with the queried element named.
+   */
+  const CLOSES_WITHIN_MS = 5_000;
+  /** Room for the wait above to report before the case is cut off. Not a product value. */
+  const CASE_TIMEOUT_MS = 20_000;
   /*
    * ⚠️ The door for someone who already has code (decision, 2026-08-24). Measured on the shipped
    * card: of its four actions none makes an ontology from a repository that already exists.
@@ -730,11 +753,11 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     // undefined `openRecent` mock to reject after the assertion leaked a pending
     // state update into the following cancellation test under suite load.
     await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull(), {
-      timeout: 5_000,
+      timeout: CLOSES_WITHIN_MS,
     });
     expect(mocks.vault.openRecent).toHaveBeenCalledTimes(1);
     expect(mocks.requestAgentChat).toHaveBeenCalledTimes(1);
-  });
+  }, CASE_TIMEOUT_MS);
 
   it('취소하면 만들지 않고 경로도 치운다', async () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
@@ -744,10 +767,10 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     fireEvent.click(screen.getByTestId('build-from-code-cancel'));
     // The dialog closes, so the path it was showing is gone from the document.
     await waitFor(() => expect(screen.queryByTestId('build-from-code-path')).toBeNull(), {
-      timeout: 5_000,
+      timeout: CLOSES_WITHIN_MS,
     });
     expect(mocks.ensureChildDir).not.toHaveBeenCalled();
-  });
+  }, CASE_TIMEOUT_MS);
 
   /*
    * ⚠️ **The correction this door needed** (owner, 2026-08-24): *"shouldn't it be person B who has

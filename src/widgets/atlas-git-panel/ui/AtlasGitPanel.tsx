@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useState, useSyncExternalStore } from "react";
 import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
+import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { useFormatter, useTranslations } from "next-intl";
 // `History as HistoryIcon` — usability review P0 (2026-07-23): under certain
@@ -237,6 +238,23 @@ type GitWorkspaceRead = {
   history: GitCommitInfo[];
 };
 
+/**
+ * One workspace read plus the instant it was read at, which is what the panel remembers
+ * across a route change (`shared/lib/route-arrival-memory.ts`).
+ */
+type GitWorkspaceMemory = {
+  read: GitWorkspaceRead;
+  referenceMs: number;
+};
+
+/*
+ * Stable empty values. Returning a fresh `[]` when nothing is remembered would give every
+ * `useMemo` below a new dependency on every render, which turns a memoisation into a
+ * recomputation on a screen that is trying to arrive in one frame.
+ */
+const NO_CHANGES: readonly GitChangeEntry[] = [];
+const NO_HISTORY: readonly GitCommitInfo[] = [];
+
 async function readGitWorkspace(vaultPath: string): Promise<GitWorkspaceRead | null> {
   const status = await gitStatus(vaultPath);
   if (!status) return null;
@@ -337,20 +355,40 @@ export function AtlasGitPanel({
   );
   const desktop = bridgeAvailable && Boolean(vaultPath);
 
-  const [status, setStatus] = useState<GitStatusResult | null>(null);
-  const [changes, setChanges] = useState<GitChangeEntry[]>([]);
-  const [diffText, setDiffText] = useState("");
-  const [historyState, setHistoryState] = useState<{
-    rows: GitCommitInfo[];
-    referenceMs: number;
-  }>({ rows: [], referenceMs: 0 });
-  const history = historyState.rows;
+  /*
+   * **One workspace read, remembered for the life of the tab** (2026-09-12).
+   *
+   * These four values used to be four `useState`s initialised empty. Every arrival at the
+   * History destination therefore re-entered `stage === "loading"` — measured at 1512×901
+   * with 120 ms native answers, the skeleton and the connect stepper held the pane for
+   * **240 ms on the second arrival exactly as on the first** (43-282 ms, workbench at 285 ms),
+   * and the route crossfade captured that skeleton as the screen it was fading *into*, so the
+   * real workbench then arrived as an unanimated cut. That is the flicker the owner reported.
+   *
+   * They are now **one unit** rather than four. Four separate memories could be seeded from
+   * four different reads, which would put a status from one moment beside a diff from another
+   * — the panel would then state two facts that were never true together. `referenceMs` rides
+   * along for the same reason: the relative times must be formatted against the instant *its*
+   * rows were read.
+   *
+   * Keyed on the vault path, so a different folder never draws this one's history
+   * (`shared/lib/route-arrival-memory.ts` explains why that key matters). `refresh()` still
+   * runs on every mount and overwrites this in place.
+   */
+  const [workspace, rememberWorkspace] = useArrivalMemory<GitWorkspaceMemory | null>(
+    vaultPath ? `atlas-git-workspace:${vaultPath}` : null,
+    null,
+  );
+  const status = workspace?.read.status ?? null;
+  const changes = workspace?.read.changes ?? NO_CHANGES;
+  const diffText = workspace?.read.diffText ?? "";
+  const history = workspace?.read.history ?? NO_HISTORY;
   // The bridge's `relativeTime` is useful only as a compatibility fallback: it
   // is preformatted by git and can therefore arrive in a different language.
   // Capture one reference instant per successful workspace read. Unrelated
   // renders cannot churn wording, while an explicit refresh/snapshot cannot keep
   // formatting against an hours-old mount instant.
-  const historyNowMs = historyState.referenceMs;
+  const historyNowMs = workspace?.referenceMs ?? 0;
   const localizedHistory = useMemo(
     () =>
       history.map((commit) => {
@@ -408,7 +446,17 @@ export function AtlasGitPanel({
   /** The concept being viewed inside an expanded step. Collapsing the step clears it. */
   const [focusedConceptId, setFocusedConceptId] = useState<string | null>(null);
 
-  const [gitInstalled, setGitInstalled] = useState<boolean | null>(null);
+  /*
+   * Remembered too, and for the same reason as the workspace read. On a machine with no git
+   * this value goes `null` (unknown, so the screen draws the normal path) → `false`
+   * (not-installed guidance) on **every** arrival, which is a second screen replacing a first
+   * one a few hundred milliseconds in. It is not keyed on the vault: whether git exists is a
+   * fact about the computer, and the same answer is correct for every folder on it.
+   */
+  const [gitInstalled, setGitInstalled] = useArrivalMemory<boolean | null>(
+    "atlas-git-installed",
+    null,
+  );
   const probeGit = useCallback(async () => {
     try {
       const probe = await gitProbe();
@@ -423,7 +471,7 @@ export function AtlasGitPanel({
        */
       setGitInstalled(null);
     }
-  }, []);
+  }, [setGitInstalled]);
   const applyInitialProbe = useEffectEvent((probe: Awaited<ReturnType<typeof gitProbe>>) => {
     setGitInstalled(probe === null ? null : probe.installed);
   });
@@ -508,14 +556,14 @@ export function AtlasGitPanel({
   const [remoteError, setRemoteError] = useState<string | null>(null);
   const [remoteNotice, setRemoteNotice] = useState<string | null>(null);
 
-  const applyWorkspaceRead = useCallback((next: GitWorkspaceRead) => {
-    setLoadErrorText(null);
-    setStatus(next.status);
-    setChanges(next.changes);
-    setDiffText(next.diffText);
-    setHistoryState({ rows: next.history, referenceMs: Date.now() });
-    setLoadState("ready");
-  }, []);
+  const applyWorkspaceRead = useCallback(
+    (next: GitWorkspaceRead) => {
+      setLoadErrorText(null);
+      rememberWorkspace({ read: next, referenceMs: Date.now() });
+      setLoadState("ready");
+    },
+    [rememberWorkspace],
+  );
   const reportWorkspaceReadFailure = useCallback((err: unknown) => {
     setLoadErrorText(gitErrorMessage(err, nativeErrors));
     setLoadState("error");

@@ -63,6 +63,15 @@ record stays in Git history before commit `e4fb49a89`.
 **Falsifier**: a walker who reads the drift as loading with the card's sentence in front of them; a card over its mark, the strip or the canvas edge; a mark that moves on a press; a frame over 2ms at 372 marks, or one at rest.
 **Owner**: jinan
 
+## 2026-09-12 — One pull request is one CI run, fired by the lander that holds the lock
+
+**Why**: five pull requests cost about four CI rounds each. `main` required eight contexts with `strict = true`, so every merge turned every other pull request BEHIND and the `gh pr update-branch` that followed bought a round for a tree the next merge invalidated again. The owner: wait for the landing in flight, take the merged source, then land the next; and *"most of the code will overlap anyway, so wouldn't it be better to run CI on the branch with the merged source poured in?"*
+**Prior**: (96), the pre-push lane, stands unchanged. GitHub's merge queue was the first plan and is impossible here, being organization-only on a personally owned repository: `POST /rulesets` answers `422 Invalid rule 'merge_queue'` with no parameters at all, and `requiresMergeQueue` is absent from this account's schema.
+**Decision**: `pnpm pr:land <number>` is the only way to `main`. A pull request is opened as a draft and every job carries `github.event.pull_request.draft == false`, so a draft runs nothing. One landing: take `refs/atlas/landing-lock` (a Git-refs create, so a second creator gets 422 and `main` cannot move while it is held), merge today's `main` in, run the local lanes on that source, mark it ready, which fires the one CI run, then squash merge, delete the branch, release the lock. Settings: `strict` true to false, `allow_auto_merge` and `delete_branch_on_merge` false to true. `merge_group` is wired on the two workflows producing a required context, inert until an organization transfer.
+**Dissent**: strict existed so no combination merged untested. Kept, narrowed: `main` cannot move while the lock is held, so CI measures the tree that lands; what is given up is the push-to-`main` lane as the first place a bad combination shows.
+**Falsifier**: a landing that merges while a required context reads `skipped`; two pull requests merged in the same minute; a pull request paying more than one CI run; a lock `pnpm pr:land --release` cannot clear.
+**Owner**: jinan
+
 ## 2026-09-12 — A wiki finding is one sentence, one place and one way out; the codes go behind one fold
 
 **Why**: the owner opened a page their own agent had written and met, above its Summary, `uncited-fact:31`, a citation grammar in backticks and the names of `wiki-validate` and `validate_wiki`: *"I cannot tell what this is saying from a person's side — it just looks like alien script."* They then did nothing: the card named a defect and carried no control. The finding had three maintained retellings, and the only thing to act on was the card's smallest type.

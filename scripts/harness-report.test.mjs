@@ -34,6 +34,50 @@ const recent = NOW - 60_000;
 const old = NOW - 40 * 24 * 60 * 60 * 1000;
 
 describe('harness report', () => {
+
+  it('counts what the block guards refused, per guard and per rule', () => {
+    // Measured 2026-09-12: none of the three older block guards recorded a
+    // refusal, so "the guard works" had never been a number. This is that
+    // number, and the window has to hold: a refusal from last month must not
+    // vouch for this week.
+    const refusal = (rule, at) =>
+      JSON.stringify({ at: new Date(at).toISOString(), guard: 'block-manual-landing', tree: 'claude', rule });
+    const report = withHarnessState(
+      {
+        'session-a.edits': `${recent}\tsrc/a.ts\n`,
+        'refusals.jsonl':
+          `${refusal('gh-pr-merge', recent)}\n`
+          + `${refusal('gh-pr-merge', recent)}\n`
+          + `${refusal('gh-pr-create-without-draft', recent)}\n`
+          + `${refusal('gh-pr-merge', old)}\n`
+          + 'not json\n',
+      },
+      () => buildHarnessReport({ now: NOW }),
+    );
+    assert.equal(report.refusals.total, 3);
+    assert.deepEqual(report.refusals.byGuard, { 'block-manual-landing': 3 });
+    assert.deepEqual(report.refusals.byRule, { 'gh-pr-merge': 2, 'gh-pr-create-without-draft': 1 });
+  });
+
+  it('reads no refusal ledger as no claim, and never as a failing lane', () => {
+    const quiet = withHarnessState(
+      { 'session-a.edits': `${recent}\tsrc/a.ts\n`, 'findings.jsonl': `${JSON.stringify({ at: new Date(recent).toISOString(), kind: 'eslint' })}\n` },
+      () => buildHarnessReport({ now: NOW }),
+    );
+    assert.equal(quiet.refusals, null);
+    // The verdict is the sensor's, and a guard nobody reached must not move it.
+    assert.equal(quiet.verdict, 'sensor-earning-its-place');
+
+    const reached = withHarnessState(
+      {
+        'session-a.edits': `${recent}\tsrc/a.ts\n`,
+        'refusals.jsonl': `${JSON.stringify({ at: new Date(recent).toISOString(), guard: 'block-manual-landing', rule: 'gh-pr-merge' })}\n`,
+      },
+      () => buildHarnessReport({ now: NOW }),
+    );
+    assert.equal(reached.verdict, 'sensor-caught-nothing');
+  });
+
   it('counts edits, unverified stops, and findings by kind', () => {
     const report = withHarnessState(
       {

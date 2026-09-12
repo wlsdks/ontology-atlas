@@ -1,10 +1,23 @@
 # Browser CI uses the same impact plan as unit/MCP CI. Exact source-to-spec
 # mappings run on shard 1 only; unmapped rendered dependencies fail closed to
 # the three-shard PR smoke project. Main and planner changes run every project.
+#
+# A pull request is opened as a **draft** and runs nothing. When it is that
+# branch's turn, `pnpm pr:land` merges today's main into it, runs the local
+# lanes, and marks it ready; `ready_for_review` fires this workflow **once**, on
+# exactly the tree that is about to land. Owner's shape, 2026-09-12: most
+# changes overlap, so CI on a branch that is not yet the thing being merged is a
+# round paid twice. `docs/DECISIONS.md` carries the record.
+#
+# `merge_group` is wired for the day this repository belongs to an organization
+# and GitHub's own merge queue becomes available. Until then no merge group is
+# ever created, so the trigger is inert rather than wrong.
 name: E2E smoke
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  merge_group:
   push:
     branches:
       - main
@@ -22,6 +35,7 @@ env:
 jobs:
   changes:
     name: E2E impact plan
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -40,12 +54,15 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
           EVENT_NAME: ${{ github.event_name }}
-        run: node scripts/classify-change.mjs --event="$EVENT_NAME" --base="origin/$BASE_REF"
+          # A merge group has no base branch ref, and its two SHAs are minted by
+          # GitHub, so they are data rather than a string anyone can choose.
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: node scripts/classify-change.mjs --event="$EVENT_NAME" --base="${MERGE_GROUP_BASE_SHA:-origin/$BASE_REF}"
 
   static-export:
     name: Playwright (static export)
     needs: changes
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -87,7 +104,7 @@ jobs:
   web-smoke:
     name: Playwright (web surface)
     needs: changes
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -129,7 +146,7 @@ jobs:
   suite:
     name: Playwright (chromium ${{ matrix.shard }}/3)
     needs: changes
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:

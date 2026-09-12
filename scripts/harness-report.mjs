@@ -186,6 +186,45 @@ function readUsage(now, days = USAGE_DAYS) {
   };
 }
 
+/**
+ * How often a block guard actually refused something.
+ *
+ * Measured 2026-09-12: the three PreToolUse block guards (publish, unsafe git,
+ * generated files) wrote **nothing**, so "the guard works" had never been a
+ * number in this repository, only a passing parity test. The landing guard
+ * added that day appends one row per refusal here, and the shape is per-guard
+ * so the older three can join with one line each.
+ *
+ * This deliberately does not touch `verdict`. A window with no refusals is a
+ * window where nobody tried, which is the guard succeeding as deterrence, not
+ * a lane failing to earn its place.
+ */
+function readRefusals(sinceMs) {
+  const path = join(harnessDir(), 'refusals.jsonl');
+  if (!existsSync(path)) return null;
+  const byGuard = {};
+  const byRule = {};
+  let total = 0;
+  try {
+    for (const line of readFileSync(path, 'utf8').split('\n')) {
+      if (!line.trim()) continue;
+      try {
+        const row = JSON.parse(line);
+        const at = Date.parse(row?.at ?? '');
+        if (!Number.isFinite(at) || at < sinceMs || typeof row.guard !== 'string') continue;
+        total += 1;
+        byGuard[row.guard] = (byGuard[row.guard] ?? 0) + 1;
+        if (typeof row.rule === 'string') byRule[row.rule] = (byRule[row.rule] ?? 0) + 1;
+      } catch {
+        continue; // a torn line costs one refusal, never the report
+      }
+    }
+  } catch {
+    return null;
+  }
+  return { total, byGuard, byRule };
+}
+
 export function buildHarnessReport({ days = 14, now = Date.now() } = {}) {
   const sinceMs = now - days * 24 * 60 * 60 * 1000;
   const sessions = readSessions(sinceMs);
@@ -195,6 +234,7 @@ export function buildHarnessReport({ days = 14, now = Date.now() } = {}) {
   );
   const prepush = readPrepush(process.cwd(), sinceMs);
   const usage = readUsage(now);
+  const refusals = readRefusals(sinceMs);
 
   const withEdits = sessions.filter((session) => session.files.size > 0);
   const unverified = withEdits.filter((session) => session.lastVerified < session.lastEdit);
@@ -217,6 +257,7 @@ export function buildHarnessReport({ days = 14, now = Date.now() } = {}) {
     smoke,
     prepush,
     usage,
+    refusals,
     /**
      * The sensor earns its place by catching things. Zero findings across a
      * window with real edits is the falsifier its own header names.
@@ -259,6 +300,22 @@ function format(report) {
       `[harness] usage (${usageDays}d): agents ${agents.used}/${agents.total} used, unused: ${list(agents.unused)}`,
     );
     if (!recorded) lines.push('[harness] no usage ledger yet; the record-usage hook writes one from the first Skill, Task, or skill-file Read.');
+  }
+  if (report.refusals) {
+    const rules = Object.entries(report.refusals.byRule)
+      .sort((a, b) => b[1] - a[1])
+      .map(([rule, n]) => `${rule} ${n}`)
+      .join(' · ');
+    lines.push(
+      `[harness] guard refusals=${report.refusals.total}${
+        report.refusals.total > 0
+          ? ` (${Object.entries(report.refusals.byGuard)
+              .sort((a, b) => b[1] - a[1])
+              .map(([guard, n]) => `${guard} ${n}`)
+              .join(' · ')}${rules ? `; ${rules}` : ''})`
+          : ' in this window; a guard nobody reached is deterrence, not a dead lane'
+      }`,
+    );
   }
   const runtimes = Object.entries(report.smoke ?? {});
   if (runtimes.length === 0) {
