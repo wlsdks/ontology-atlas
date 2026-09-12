@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-13 — The camera's ceiling is the widest mark a folder may draw, and the fit tile stops offering a press it cannot answer
+
+**Why**: inspection 122 on the installed `23cbf6d64`: the six-document home drew **38.4% × 38.7%** of a 1512 window and the fit tile pressed twice gave a **pixel-identical frame** (S1); the amber dot for an unverified citation scanned **28 pixels at 1040 and 0 at 1512** in one state (S2); one of six files was left anonymous by a label collision (S18); the legend under an open card said how to open one (S19).
+**Prior**: **narrows** 2026-09-12 "One folder is one picture; the canvas is a window onto it" on its own design-lead dissent — six documents over 28% of a 1920 window reading as unfinished — which S1 is. Its world mark scale, band and legibility gate stand; the ceiling's number moves. 2026-09-08 "The Library graph stands still" stands: no mark moves.
+**Decision**: the ceiling becomes a drawn mark — **36px, the map's own node chrome, never wider** — so `libraryZoomMax` gives an ordinary folder 2.0 (was 1.6, 28.8px) and one with every mark at the band's floor up to 3.6. The fit tile reads `isSameView` and takes `ChromeTile`'s disabled grammar while the picture is framed. Every unverified citation keeps its amber dot **at rest**, at the line's ink, inside half its break, floored at 3px; the pulse adds radius, not brightness. A name losing all four places goes onto 12 spokes to 44px with a leader, skipped above 120 marks. The legend swaps its gesture for the way out.
+**Dissent**: 60–75% of the shorter axis was asked for and refused: that needs a camera of 2.4 and a **43px** page, the balloon G2 records the owner rejecting, and being window-relative it restores that record's falsifier. Fill stops at 45.9% × 47.8%. design-infoviz survives: 120 standing dots at 372 marks.
+**Falsifier**: a page mark wider than 36px; a camera differing across windows while the ceiling binds; a fit press that changes no pixel; a stale citation with no amber at rest; a named mark drawn without its name under 30 marks; a reader who calls dense amber noise.
+**Owner**: jinan
+
 ## 2026-09-12 — A gate may check the product, never the clock
 
 **Why**: pre-push took 367 s for a one-file change and printed no timing; `Unit · Contract` averaged 437 s and peaked at 705 s inside a 20-minute timeout; three jobs had no timeout at all. The cause sat in the hook: `--maxWorkers=2` on both correctness lanes, bought on 2026-08-28 because four workers starved two React tests past "their explicit 5-second wait" — hand-raised `waitFor` ceilings, tests asserting how fast the machine is.

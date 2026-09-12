@@ -4792,6 +4792,8 @@
       "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
       "legend": "A filled circle is a page, a square a source, a ring a concept on the map. A thicker line is a citation, a dashed one a mention, either way. Drag a dot out of the tangle, scroll to zoom, drag the background to move, press a dot for a card beside it.",
       "legendShort": "A circle is a page, a square a source, a ring a concept.",
+      "legendCardOpen": "A filled circle is a page, a square a source, a ring a concept on the map. A thicker line is a citation, a dashed one a mention, either way. Press Escape, or the same dot again, to close the card.",
+      "legendShortCardOpen": "A circle is a page, a square a source, a ring a concept. Escape closes the card.",
       "readerClose": "Close the page",
       "keys": "Arrow keys move between dots, Enter opens a card beside the one you are on, Escape closes it.",
       "announce": "{kind} {name}, {position} of {total}. Enter {action}.",
@@ -4804,10 +4806,16 @@
       "actionMap": "shows what it is",
       "openOnMap": "open on the map",
       "fit": "Fit the whole picture",
+      "fitDone": "The whole picture is already framed",
       "describe": {
         "source": "{name}: an original file. A thick line leads to the page written from it; no line means nobody has written it up yet. Press for a card beside it.",
         "page": "{name}: a wiki page. Thick lines lead to the originals it cites, dashed lines to concepts it names. Press for a card beside it.",
         "concept": "{name}: a concept on the map. The dashed lines lead to the wiki pages it names or was drawn from. Press for a card beside it."
+      },
+      "describeOpen": {
+        "source": "{name}: an original file. A thick line leads to the page written from it; no line means nobody has written it up yet. Its card is open beside it: Escape, or press again, closes it.",
+        "page": "{name}: a wiki page. Thick lines lead to the originals it cites, dashed lines to concepts it names. Its card is open beside it: Escape, or press again, closes it.",
+        "concept": "{name}: a concept on the map. The dashed lines lead to the wiki pages it names or was drawn from. Its card is open beside it: Escape, or press again, closes it."
       },
       "card": {
         "close": "Close this card",

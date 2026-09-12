@@ -33,7 +33,10 @@ import {
 } from "../model/library-force-simulation";
 import {
   fitView,
+  isSameView,
   isWheelZoomIntent,
+  LIBRARY_ZOOM_MAX,
+  libraryZoomMax,
   panView,
   scaleBounds,
   screenToWorld,
@@ -241,6 +244,13 @@ export interface LibraryGraphEngine {
   onDoubleClick: (event: ReactPointerEvent<HTMLCanvasElement>) => void;
   /** Frames the whole picture again. The corner control and a double-click both call it. */
   fitToView: () => void;
+  /**
+   * Whether the camera is already where {@link LibraryGraphEngine.fitToView} would put it.
+   *
+   * The surface uses it to stop offering a press that could only repaint the same pixels —
+   * see `isSameView`.
+   */
+  framed: boolean;
   /** The settled picture's width over its height, for `data-picture-aspect`. */
   pictureAspect: number | null;
   /**
@@ -327,6 +337,15 @@ export function useLibraryGraphEngine({
   /** Screen-space positions of the last painted frame — what the pointer is tested against. */
   const screenRef = useRef<Map<string, LayoutPoint>>(new Map());
   const radiiRef = useRef<Map<string, number>>(new Map());
+  /**
+   * **The camera's ceiling, which is this folder's own** — see `libraryZoomMax`.
+   *
+   * It is a ref rather than a constant because the cap is stated as a drawn mark
+   * ({@link LIBRARY_MAX_MARK_PX}) and the widest mark is a fact about the folder: a wiki of
+   * one-source write-ups may come closer than one with a ten-source hub, and neither may
+   * draw a mark wider than a map node. Rebuilt beside `radiiRef`, from the same map.
+   */
+  const zoomMaxRef = useRef(LIBRARY_ZOOM_MAX);
   /**
    * The same radii **in canvas pixels** — the world scale times the camera's — rebuilt once
    * per painted frame.
@@ -422,6 +441,18 @@ export function useLibraryGraphEngine({
   }, [graph]);
 
   const [pictureAspect, setPictureAspect] = useState<number | null>(null);
+
+  /**
+   * **Whether the picture is already framed**, published for the fit tile.
+   *
+   * State rather than a ref, because what reads it is a React surface deciding whether a
+   * control is pressable — and `publishAspect` below is the same shape for the same reason.
+   * It flips on a gesture and on the arrival, never per frame.
+   */
+  const [framed, setFramed] = useState(false);
+  const publishFramed = useCallback((next: boolean) => {
+    setFramed((current) => (current === next ? current : next));
+  }, []);
 
   // ── The neighbourhood that keeps its ink while everything else dims. ──
   const neighboursRef = useRef<Map<string, Set<string>>>(new Map());
@@ -568,8 +599,16 @@ export function useLibraryGraphEngine({
 
       const box = { width, height };
       const bounds = librarySimulationBounds(sim);
+      /*
+       * **Where the fit tile would take the camera** — computed on every frame, whether or
+       * not the camera is on the leash, because the surface has to be able to say whether
+       * pressing the tile would do anything at all. Inspection 122 measured a press from the
+       * fitted home producing a pixel-identical frame (S1): an affordance that answers
+       * nothing. The tile stops offering instead, and this is what it reads.
+       */
+      const fitTarget = fitView(bounds, box, FIT_PADDING, zoomMaxRef.current);
       if (autoFitRef.current.on) {
-        const target = fitView(bounds, box, FIT_PADDING);
+        const target = fitTarget;
         const current = viewRef.current;
         // Instant under reduced motion, and instant on the first frame, where there is
         // nothing to travel from.
@@ -606,6 +645,7 @@ export function useLibraryGraphEngine({
         }
       }
       const view = viewRef.current;
+      publishFramed(isSameView(view, fitTarget));
 
       const world = libraryPositions(sim);
       const screen = new Map<string, LayoutPoint>();
@@ -845,7 +885,7 @@ export function useLibraryGraphEngine({
       record.frames += 1;
       if (cost > record.worst) record.worst = cost;
     },
-    [canvasRef, placeCard],
+    [canvasRef, placeCard, publishFramed],
   );
 
   // ── The loop. ──
@@ -1057,6 +1097,8 @@ export function useLibraryGraphEngine({
     // A fixed world scale: the box is not consulted, and the radii are the same map on a
     // phone and on a 1920 window.
     radiiRef.current = libraryMarkRadii(graph);
+    zoomMaxRef.current =
+      radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
     const existing = simRef.current;
     if (!existing) {
       if (box.width === 0 || box.height === 0) return;
@@ -1150,7 +1192,7 @@ export function useLibraryGraphEngine({
       ) {
         const box = { width: rect.width, height: rect.height };
         const ratio = Math.min(box.width / previous.width, box.height / previous.height);
-        const limits = scaleBounds();
+        const limits = scaleBounds(zoomMaxRef.current);
         const view = viewRef.current;
         viewRef.current = {
           ...view,
@@ -1206,8 +1248,9 @@ export function useLibraryGraphEngine({
 
   const fitToView = useCallback(() => {
     autoFitRef.current = { on: true, converged: false };
+    publishFramed(false);
     wake();
-  }, [wake]);
+  }, [publishFramed, wake]);
 
   /** Any deliberate gesture takes the camera off the leash; only `fitToView` puts it back. */
   const takeCamera = (): void => {
@@ -1333,7 +1376,7 @@ export function useLibraryGraphEngine({
           const distance = Math.hypot(second!.x - first!.x, second!.y - first!.y);
           const mid = { x: (first!.x + second!.x) / 2, y: (first!.y + second!.y) / 2 };
           if (pinch.distance > 0) {
-            const bounds = scaleBounds();
+            const bounds = scaleBounds(zoomMaxRef.current);
             let next = zoomViewAbout(viewRef.current, box, mid, distance / pinch.distance, bounds);
             // Two fingers travelling together pan as well as pinch; the midpoint's own
             // movement is that pan, and taking it here is why one gesture does both.
@@ -1467,7 +1510,7 @@ export function useLibraryGraphEngine({
         boxRef.current,
         { x: event.clientX - rect.left, y: event.clientY - rect.top },
         wheelZoomFactor(pixels),
-        scaleBounds(),
+        scaleBounds(zoomMaxRef.current),
       );
       wake();
     };
@@ -1582,6 +1625,7 @@ export function useLibraryGraphEngine({
     onPointerLeave,
     onDoubleClick,
     fitToView,
+    framed,
     pictureAspect,
     placeCard,
   };
