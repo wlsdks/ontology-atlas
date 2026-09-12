@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   hasPendingRouteViewTransition,
+  hasPendingRouteViewTransitionBound,
   navigateWithViewTransition,
+  readCrossfadeBudgetMs,
+  ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS,
   ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS,
   settleRouteViewTransition,
 } from "./route-view-transition";
@@ -43,9 +46,13 @@ describe("route view transition — the old screen is held until the new route c
       void update();
     });
     let scheduled: (() => void) | null = null;
+    // Only the first schedule is the safety net; settling then arms the crossfade budget
+    // (see "the hold is bounded from the commit" below), which schedules its own callback.
     const setTimeoutFn = vi.fn((fn: () => void, ms: number) => {
-      expect(ms).toBe(ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS);
-      scheduled = fn;
+      if (scheduled === null) {
+        expect(ms).toBe(ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS);
+        scheduled = fn;
+      }
       return 0;
     }) as unknown as typeof setTimeout;
     navigateWithViewTransition(() => undefined, { startViewTransition: start, setTimeoutFn });
@@ -130,5 +137,141 @@ describe("route view transition — the old screen is held until the new route c
       navigateWithViewTransition(() => undefined, { startViewTransition: start, setTimeoutFn }),
     ).not.toThrow();
     settleRouteViewTransition();
+  });
+});
+
+/**
+ * **The bound on how long the arriving screen may refuse input.**
+ *
+ * While a view transition runs, the captured document is not painted and therefore not
+ * hit-tested: a press lands on nothing. Measured on the static export at 1512x901, the
+ * Library's own first render pushed the crossfade's start out to 229-239 ms, so the
+ * transition finished at 480-489 ms and a press at +300 ms landed on `HTML` instead of
+ * the door. One crossfade's worth of time after the route commits, a fade that has not
+ * begun never will, and the transition is skipped.
+ *
+ * The pixel proof is `tests/e2e/route-transition-input.spec.ts`; this layer pins the
+ * decision — *when* the budget starts, and that a fade already running is never cut.
+ */
+describe("route view transition — the hold is bounded from the commit, not from the click", () => {
+  /** A fake `startViewTransition` that hands back a handle whose skip is observable. */
+  const fakeTransition = () => {
+    const skipTransition = vi.fn();
+    const start = (update: () => Promise<void> | void) => {
+      void update();
+      return { skipTransition };
+    };
+    return { start, skipTransition };
+  };
+
+  /** Collects the callbacks scheduled at each delay, so a test can fire exactly one. */
+  const recorder = () => {
+    const calls: { fn: () => void; ms: number }[] = [];
+    const setTimeoutFn = ((fn: () => void, ms: number) => {
+      calls.push({ fn, ms });
+      return 0;
+    }) as unknown as typeof setTimeout;
+    return { calls, setTimeoutFn };
+  };
+
+  it("arms the budget only once the route has committed", () => {
+    const { start, skipTransition } = fakeTransition();
+    const { calls, setTimeoutFn } = recorder();
+    navigateWithViewTransition(() => undefined, {
+      startViewTransition: start,
+      setTimeoutFn,
+      crossfadeMs: 180,
+      animations: () => [],
+    });
+    // Only the settle safety net is scheduled while the old screen is still held: a budget
+    // started at the click would spend itself on the route's own render.
+    expect(calls.map((call) => call.ms)).toEqual([ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS]);
+    expect(hasPendingRouteViewTransitionBound()).toBe(false);
+    settleRouteViewTransition();
+    expect(calls.map((call) => call.ms)).toEqual([ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS, 180]);
+    expect(hasPendingRouteViewTransitionBound()).toBe(true);
+    expect(skipTransition).not.toHaveBeenCalled();
+  });
+
+  it("skips a crossfade that never began", () => {
+    const { start, skipTransition } = fakeTransition();
+    const { calls, setTimeoutFn } = recorder();
+    navigateWithViewTransition(() => undefined, {
+      startViewTransition: start,
+      setTimeoutFn,
+      crossfadeMs: 180,
+      // Pseudo-element animations exist but none has a start time — the browser never got
+      // a frame in which to begin them.
+      animations: () => [{ pseudo: "::view-transition-new(root)", startTime: null }],
+    });
+    settleRouteViewTransition();
+    calls.find((call) => call.ms === 180)!.fn();
+    expect(skipTransition).toHaveBeenCalledTimes(1);
+    expect(hasPendingRouteViewTransitionBound()).toBe(false);
+  });
+
+  it("never cuts a crossfade that is already running", () => {
+    const { start, skipTransition } = fakeTransition();
+    const { calls, setTimeoutFn } = recorder();
+    navigateWithViewTransition(() => undefined, {
+      startViewTransition: start,
+      setTimeoutFn,
+      crossfadeMs: 180,
+      animations: () => [{ pseudo: "::view-transition-old(root)", startTime: 12 }],
+    });
+    settleRouteViewTransition();
+    calls.find((call) => call.ms === 180)!.fn();
+    expect(skipTransition, "돌고 있는 페이드를 잘랐다").not.toHaveBeenCalled();
+  });
+
+  it("ignores animations that are not the transition's own", () => {
+    const { start, skipTransition } = fakeTransition();
+    const { calls, setTimeoutFn } = recorder();
+    navigateWithViewTransition(() => undefined, {
+      startViewTransition: start,
+      setTimeoutFn,
+      crossfadeMs: 180,
+      // A running animation somewhere else on the page is not evidence that the crossfade
+      // began, and reading it as such would leave the hold unbounded.
+      animations: () => [{ pseudo: null, startTime: 4 }],
+    });
+    settleRouteViewTransition();
+    calls.find((call) => call.ms === 180)!.fn();
+    expect(skipTransition).toHaveBeenCalledTimes(1);
+  });
+
+  it("a second navigation disarms the first budget instead of skipping the new transition", () => {
+    const first = fakeTransition();
+    const second = fakeTransition();
+    const { calls, setTimeoutFn } = recorder();
+    const options = { setTimeoutFn, crossfadeMs: 180, animations: () => [] };
+    navigateWithViewTransition(() => undefined, { ...options, startViewTransition: first.start });
+    settleRouteViewTransition();
+    const staleBound = calls.find((call) => call.ms === 180)!.fn;
+    navigateWithViewTransition(() => undefined, { ...options, startViewTransition: second.start });
+    staleBound();
+    expect(first.skipTransition, "지난 전환의 예산이 새 전환을 끊었다").not.toHaveBeenCalled();
+    expect(second.skipTransition).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The budget is read from `--motion-base` so the stylesheet and this module cannot drift.
+ * ⚠️ The computed value arrives in **seconds** (`0.18s`) rather than as authored
+ * (`180ms`), which is why the unit is parsed rather than assumed.
+ */
+describe("the crossfade budget is the stylesheet's own number", () => {
+  it("reads seconds and milliseconds alike", () => {
+    expect(readCrossfadeBudgetMs(() => "0.18s")).toBe(180);
+    expect(readCrossfadeBudgetMs(() => " 180ms ")).toBe(180);
+    expect(readCrossfadeBudgetMs(() => "0.24s")).toBe(240);
+  });
+
+  it("falls back to the shipped number rather than to zero", () => {
+    // Zero would skip every crossfade at once; an unreadable token must cost nothing.
+    expect(readCrossfadeBudgetMs(() => "")).toBe(ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS);
+    expect(readCrossfadeBudgetMs(() => "fast")).toBe(ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS);
+    expect(readCrossfadeBudgetMs(null)).toBe(ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS);
+    expect(ROUTE_VIEW_TRANSITION_CROSSFADE_FALLBACK_MS).toBeGreaterThan(0);
   });
 });

@@ -1904,6 +1904,47 @@
     animation: none;
   }
 
+  /*
+   * ⚠️ **The transition may not outlive the crossfade it declares** (2026-09-12).
+   *
+   * Above, this block sets the crossfade to `--motion-base` (180 ms) — but the two
+   * rules above it are the only ones anybody chose. The browser also runs a *group*
+   * animation per captured name, at the UA's own 250 ms, and a transition holds the
+   * screen until **every** one of its animations is done. While it holds, the captured
+   * document is not painted and therefore not hit-testable: `elementFromPoint` answers
+   * `html` at every point and a press lands on nothing.
+   *
+   * Measured on the static export at 1512x901, six rail crossings, no sampling load:
+   *
+   * | arriving at | route committed | animations started | transition finished |
+   * |---|---|---|---|
+   * | Agents / MCP / History | 20-43 ms | 39-56 ms | **278-301 ms** |
+   * | Library | 22-24 ms | 229-239 ms | **480-489 ms** |
+   *
+   * A press aimed at `library-open-vault` at +100 ms and +300 ms landed on `HTML`; at
+   * +700 ms it landed on the door. So somebody who crossed the rail and reached for the
+   * control they could already see got nothing for a third of a second past the end of
+   * the fade — and on the Library, for a quarter-second past that.
+   *
+   * The group animations are the part with nothing to show. A route change does not move
+   * or resize the root box, so `-ua-view-transition-group-anim-root` interpolates a
+   * rectangle onto itself; the rail's pair is already excluded from the crossfade
+   * (`animation: none` above, so it does not read as a second event), which leaves its
+   * group animating a box that neither moves nor fades. Removing both makes the
+   * transition exactly as long as the crossfade this file declares — the whole hold is
+   * then the 180 ms somebody chose, plus whatever the arriving route's own first render
+   * costs, which `shared/lib/route-view-transition.ts` bounds.
+   *
+   * ⚠️ Not `pointer-events: none` on `::view-transition`, which was tried first and
+   * measured to change nothing (`html` still owned every point): the overlay is not what
+   * the hit test reaches — the captured document is simply not painted while a transition
+   * is running, so the only cure is for the transition to end.
+   */
+  ::view-transition-group(root),
+  ::view-transition-group(app-nav-rail) {
+    animation: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     ::view-transition-old(root),
     ::view-transition-new(root) {
@@ -5468,7 +5509,36 @@ html[data-gateway-stage] {
   transition-delay: 0ms;
 }
 
-@media (pointer: coarse) {
+/*
+ * ⚠️ **`any-pointer`, not `pointer` — a hybrid machine has fingers too** (2026-09-12).
+ *
+ * `pointer: coarse` asks about the **primary** pointing device, so a touchscreen laptop,
+ * an iPad with a trackpad attached, or a Surface in laptop posture answers *fine* and
+ * every control here kept its 28/32px rest height — the mouse size — while the screen
+ * in front of the person is the thing they reach for. `any-pointer: coarse` asks whether
+ * **any** attached device is coarse, which is the question this floor exists to answer:
+ * can a finger hit it. It is strictly wider (a phone matches both), so nothing that
+ * promoted before stops promoting.
+ *
+ * Carried forward from the slice 1 guardian pass and again from the U2 council, which
+ * added two more finger targets inheriting the same floor.
+ *
+ * ⚠️ **No browser can be put in that state, so no rendered measurement can prove this
+ * line.** Measured 2026-09-12 in Chromium across three context shapes and four CDP calls
+ * (`Emulation.setTouchEmulationEnabled`, `setEmitTouchEventsForMouse` in both `desktop`
+ * and `mobile` configurations, `setDeviceMetricsOverride` with `mobile: false`): the
+ * moment touch exists at all, `(pointer: coarse)` **and** `(any-pointer: coarse)` both
+ * match and `(any-pointer: fine)` stops matching — there is no combination reporting a
+ * fine primary pointer beside an attached coarse one. The query is therefore pinned by
+ * `tests/contract/touch-floor-layer.contract.test.ts`, which reads these bytes and
+ * asserts **both** directions, because `pointer: coarse` is a substring of the new query
+ * and a loosely written check would stay green on a revert.
+ * `tests/e2e/touch-target-contract.spec.ts` proves the other half in a real browser: the
+ * floor still reaches every control, now at a desktop width as well as at 390.
+ *
+ * The values still come from `--touch-target-min`; only the question changed.
+ */
+@media (any-pointer: coarse) {
   .atlas-touch-floor {
     min-height: var(--touch-target-min);
   }
