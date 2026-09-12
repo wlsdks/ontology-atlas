@@ -51,6 +51,8 @@
  *   5. **Merge, prune, release.** Wait for the required contexts (read from the
  *      branch protection, never listed here), squash merge, delete the remote
  *      branch, prune locally, and always release the lock, including on Ctrl-C.
+ *      **No worktree is removed** unless `--cleanup <path>` asks for one:
+ *      `--worktree` only says where step 3 runs. See `worktreeToRemove`.
  *
  * One landing, in order: **lock, merge main, local checks, ready, one CI run,
  * merge, clean.**
@@ -574,16 +576,51 @@ function sleep(seconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Math.round(seconds * 1000));
 }
 
+/**
+ * **Which worktree a landing removes: `--cleanup`'s path, and nothing else.**
+ *
+ * ⚠️ Written as a named function of the parsed flags, and exported, because on
+ * 2026-09-13 an agent whose landing worktree disappeared read `--worktree` as
+ * "the worktree this landing owns" and reported that a successful
+ * `pnpm pr:land <n> --worktree <path>` had removed it, taking gitignored
+ * evidence with it. It had not: removal has always been `--cleanup`'s alone,
+ * and that landing's log carries no `cleanup:` line at all. The two flags
+ * answer different questions — `--worktree` is *where the local lanes run*,
+ * `--cleanup` is *what to remove when the landing is done* — and the inline
+ * `if (args.cleanup)` was true but unprovable. This is the same rule with a
+ * name and a recorded test, so the next agent can read the guarantee instead
+ * of inferring it from a missing directory.
+ *
+ * Whatever removed that worktree was outside this script; the flag separation
+ * is now pinned so this file can be ruled out by reading rather than by trust.
+ */
+export function worktreeToRemove(args) {
+  return args.cleanup ?? null;
+}
+
+/**
+ * What a removal says **before** it happens.
+ *
+ * It announced itself only afterwards, and only on success, so a landing that
+ * removed a worktree and a landing that never touched one read identically
+ * until the directory was gone. The path and the judgement go out first.
+ *
+ * ⚠️ The clean/dirty judgement is `git status --porcelain`, which **does not
+ * count ignored files**. That is the whole of the trap the 2026-09-13 landing
+ * hit: a worktree holding nothing but gitignored captures under `output/` reads
+ * clean, so the announcement says so out loud rather than implying the tree was
+ * empty.
+ */
+export function describeCleanup({ path, status }) {
+  if (status === null) return `${path} is not a Git worktree; left alone`;
+  if (status !== '') return `${path} still has uncommitted work; left alone`;
+  return `removing ${path} — tracked files clean (ignored files are not counted, so anything under an ignored path goes with it)`;
+}
+
 function cleanupWorktree(path) {
   const status = git(['-C', path, 'status', '--porcelain'], { allowFailure: true });
-  if (status === null) {
-    log(`cleanup: ${path} is not a Git worktree; left alone`);
-    return;
-  }
-  if (status !== '') {
-    log(`cleanup: ${path} still has uncommitted work; left alone`);
-    return;
-  }
+  log(`cleanup: ${describeCleanup({ path, status })}`);
+  if (status === null || status !== '') return;
   const branch = git(['-C', path, 'rev-parse', '--abbrev-ref', 'HEAD'], { allowFailure: true });
   git(['worktree', 'remove', path], { allowFailure: true });
   if (branch && branch !== 'main' && branch !== 'HEAD') {
@@ -775,7 +812,8 @@ export function runPrLand(argv, io = console) {
 
   if (pr?.state === 'MERGED') {
     io.log(`[pr-land] PR #${number} is already merged: ${pr.url}`);
-    if (args.cleanup) cleanupWorktree(args.cleanup);
+    const removal = worktreeToRemove(args);
+    if (removal) cleanupWorktree(removal);
     return 0;
   }
   const refusal = refuseLanding(pr);
@@ -968,7 +1006,8 @@ export function runPrLand(argv, io = console) {
       }
       git(['fetch', '--prune', 'origin'], { allowFailure: true });
       release();
-      if (args.cleanup) cleanupWorktree(args.cleanup);
+      const removal = worktreeToRemove(args);
+      if (removal) cleanupWorktree(removal);
       log('done. Next agent: `pnpm pr:land <number>`.');
       return 0;
     }

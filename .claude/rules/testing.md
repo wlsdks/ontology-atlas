@@ -135,6 +135,13 @@ Escalate only when the risk requires it:
 The final report names what ran and why that scope was sufficient. Do not run
 the full suite by habit.
 
+Measurements, captures and harness scripts live **outside** the repository —
+`/Users/jinan/scratch/<fixture>/…` — never in a worktree's gitignored `output/`
+or `.qa-scratch/`. A worktree is removed when its work lands, and
+`git status --porcelain` does not count ignored files, so an ignored evidence
+directory reads clean and goes with it. Measured 2026-09-13: a report cited
+ko+en captures at a path that no longer existed by the time it was read.
+
 ## Verify web and app separately (2026-07-27)
 
 Web and app no longer promise identical screens (`.claude/rules/surfaces.md`),
