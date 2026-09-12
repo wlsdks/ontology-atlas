@@ -184,6 +184,42 @@ jobs:
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
         run: echo "No affected unit or contract evidence"
 
+  # `Unit · Contract` is one of the eight required status contexts on `main`. Sharding
+  # renamed it to three, and a required context that never reports again blocks every
+  # merge forever — `pnpm pr:land`'s own falsifier names "a landing that merges while a
+  # required context reads skipped". Rather than edit branch protection, the name stays
+  # and this job carries it: it passes only if every shard did, so the required context
+  # means exactly what it meant before, and `tests/contract/workflow-budgets.contract.test.ts`
+  # asserts each required name still resolves to a real job.
+  #
+  # The sharded job keeps the key `unit`, not the name, because
+  # `dead-code-gate-wiring` and `mcp-source-ci-deps` locate the job that installs and
+  # executes by that key. Both would otherwise have read this aggregator's empty step
+  # list as "the unit lane lost its MCP install".
+  unit-required:
+    name: Unit · Contract
+    needs: [plan, unit]
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    runs-on: ubuntu-latest
+    # budget: 10s
+    timeout-minutes: 2
+    steps:
+      - name: Require every shard
+        env:
+          SHARDS: ${{ needs.unit.result }}
+          PLAN: ${{ needs.plan.result }}
+        run: |
+          if [ "$PLAN" != "success" ]; then
+            echo "::error::CI impact planning failed; refusing to turn a missing verdict into green"
+            exit 1
+          fi
+          # A matrix `needs` result is `success` only when every leg succeeded.
+          if [ "$SHARDS" != "success" ]; then
+            echo "::error::a Unit · Contract shard reported $SHARDS"
+            exit 1
+          fi
+          echo "all three Unit · Contract shards passed"
+
   mcp:
     name: MCP
     needs: plan

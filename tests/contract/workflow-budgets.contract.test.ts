@@ -165,6 +165,59 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
 
+  /**
+   * **A required context that stops reporting blocks every merge, forever.**
+   *
+   * `main` requires eight status contexts by exact name. Sharding `Unit · Contract`
+   * renamed the job that produced one of them, and nothing in the repository would have
+   * said so: the pull request would simply have waited for a check that no longer
+   * existed. `pnpm pr:land`'s own falsifier names this — "a landing that merges while a
+   * required context reads skipped".
+   *
+   * The names are pinned here rather than read from the API, because a test must not
+   * need the network to say whether the workflows still produce what `main` asks for. If
+   * branch protection changes, this list changes with it in the same pull request.
+   */
+  const REQUIRED_CONTEXTS = [
+    "Types · Lint · Docs",
+    "Unit · Contract",
+    "MCP",
+    "Playwright (static export)",
+    "Playwright (web surface)",
+    "Playwright (chromium 1/3)",
+    "Playwright (chromium 2/3)",
+    "Playwright (chromium 3/3)",
+  ];
+
+  it("still produces every status context main requires, by exact name", () => {
+    const names = readdirSync(WORKFLOWS)
+      .filter((name) => name.endsWith(".yml"))
+      .flatMap((file) =>
+        readFileSync(path.join(WORKFLOWS, file), "utf8")
+          .split("\n")
+          .map((line) => /^ {4}name: (.+)$/.exec(line)?.[1]?.trim())
+          .filter((name): name is string => Boolean(name)),
+      );
+    expect(names.length, "no job names parsed — this test would be idling").toBeGreaterThan(15);
+
+    /** `Playwright (chromium ${{ matrix.shard }}/3)` produces 1/3, 2/3 and 3/3. */
+    const produced = new Set(
+      names.flatMap((name) =>
+        name.includes("${{ matrix.shard }}")
+          ? [1, 2, 3].map((shard) => name.replaceAll("${{ matrix.shard }}", String(shard)))
+          : [name],
+      ),
+    );
+
+    const missing = REQUIRED_CONTEXTS.filter((context) => !produced.has(context));
+    expect(
+      missing,
+      `main requires these contexts and no job produces them any more:\n${missing.join("\n")}\n` +
+        "Renaming a required job blocks every merge until branch protection is edited. " +
+        "Either keep the name (an aggregating job may carry it) or change both together.",
+    ).toEqual([]);
+  });
+
   it("cancels superseded runs per ref so a new push does not queue behind the old one", () => {
     for (const file of readdirSync(WORKFLOWS).filter((name) => name.endsWith(".yml"))) {
       const text = readFileSync(path.join(WORKFLOWS, file), "utf8");
