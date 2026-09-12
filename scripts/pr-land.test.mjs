@@ -165,7 +165,11 @@ describe('pr:land refusals', () => {
     assert.equal(dirty, CONFLICT_INSTRUCTION);
     assert.match(dirty, /git fetch origin && git merge origin\/main/);
     assert.match(dirty, /pnpm pr:land <number>/);
-    assert.match(dirty, /landing lock was released/);
+    assert.match(dirty, /landing lock was\n  released/);
+    // Generated docs-vault JSON, the changelog and the ledger are the recurring
+    // conflict in this repository, and hand-resolving them is forbidden
+    // (`.claude/rules/git.md`, "Do not"), so the refusal names the tool.
+    assert.match(dirty, /pnpm docs-vault:resolve-conflicts/);
     // `mergeable` and `mergeStateStatus` disagree while GitHub is still
     // computing the merge; either saying conflict is a refusal.
     assert.equal(refuseLanding({ ...RECORDED_PR, mergeable: 'CONFLICTING' }), CONFLICT_INSTRUCTION);

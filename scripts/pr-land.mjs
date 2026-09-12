@@ -86,8 +86,10 @@ export const CONFLICT_INSTRUCTION =
   'conflicts with main, and only its author can resolve that:\n'
   + '    git fetch origin && git merge origin/main\n'
   + '    # resolve the conflict, commit, then push the branch\n'
-  + '  Then run `pnpm pr:land <number>` again. The landing lock was released, so '
-  + 'another pull request can land meanwhile.';
+  + '  If only generated docs-vault JSON, the changelog or the ledger conflict, do not\n'
+  + '  resolve those by hand: `pnpm docs-vault:resolve-conflicts -- --dry-run`, then the\n'
+  + '  write command. Then run `pnpm pr:land <number>` again. The landing lock was\n'
+  + '  released, so another pull request can land meanwhile.';
 
 /** A pull request this script refuses to touch, with the reason a person can act on. */
 export function refuseLanding(pr) {
@@ -826,7 +828,17 @@ export function runPrLand(argv, io = console) {
 
     if (step.action === 'merge') {
       log(`every required context is green on ${pr.headRefOid.slice(0, 9)}; squash merging`);
-      gh(['pr', 'merge', String(number), '--squash', '--delete-branch']);
+      /*
+       * No `--delete-branch`. Measured on the first real landing (#1576, which
+       * merged and then crashed here): that flag makes `gh` do local Git work,
+       * switching the checkout to `main` and deleting the local branch, and in
+       * a worktree setup `main` belongs to another checkout — `fatal: 'main' is
+       * already used by worktree at ...`. The pull request was already merged
+       * by then, so the landing "failed" after succeeding, which is the worst
+       * shape an error can have. The remote branch is deleted below, through
+       * the API, by the repository's own `delete_branch_on_merge` or by us.
+       */
+      gh(['pr', 'merge', String(number), '--squash']);
       const merged = readPr(number);
       if (merged.state !== 'MERGED') {
         release();
@@ -834,6 +846,11 @@ export function runPrLand(argv, io = console) {
         return 1;
       }
       log(`PR #${number} merged: ${merged.url}`);
+      const remote = gh(['api', `repos/${slug}/git/ref/heads/${pr.headRefName}`], { allowFailure: true });
+      if (typeof remote === 'string') {
+        gh(['api', '-X', 'DELETE', `repos/${slug}/git/refs/heads/${pr.headRefName}`], { allowFailure: true });
+        log(`deleted the remote branch ${pr.headRefName}`);
+      }
       git(['fetch', '--prune', 'origin'], { allowFailure: true });
       release();
       if (args.cleanup) cleanupWorktree(args.cleanup);
