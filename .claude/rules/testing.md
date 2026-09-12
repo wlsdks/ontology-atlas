@@ -101,6 +101,11 @@ Consequences that follow from the rule:
 - **Performance lanes never block.** `*.perf.test.*` runs where the number means
   something: CI on a quiet runner, not the pre-push hook, which deliberately
   saturates the machine.
+- **In e2e, the conditions live in `tests/e2e/settle.ts`.** A canvas has no DOM,
+  so the map's stillness is read from the `?e2e=1` probe's own drawn values and a
+  DOM reveal from `Element.getAnimations()` — never from a token's duration
+  copied into the spec. A sleep that survives there says in place why it is a
+  measurement window rather than a wait.
 
 ## TDD
 

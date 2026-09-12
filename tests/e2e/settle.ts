@@ -33,15 +33,13 @@ const HANG_TIMEOUT_MS = 30_000;
 /** Distinct storage per call site, so two waits in one test never share a counter. */
 let stillKeySeed = 0;
 
-export type MapStillness =
+type MapStillness =
   /** Camera spring only — pan, zoom, fit, focus framing. */
   | "camera"
   /** Camera plus every drawn node coordinate — physics, expansion, auto-arrange. */
   | "layout"
   /** 3D dome pose, its inertia and its assembly ramp. */
-  | "dome"
-  /** The galaxy altitude ramp. */
-  | "altitude";
+  | "dome";
 
 export interface MapStillOptions {
   /** Which of the map's motions must stop. Default `"layout"`. */
@@ -77,7 +75,6 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
           poseTween: boolean;
           orbiting: boolean;
         } | null;
-        altitude?: () => number;
       };
       const probe = (window as unknown as { __atlasMap?: Probe }).__atlasMap;
       if (!probe) return false;
@@ -107,11 +104,6 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
           dome.ramp * 1e3,
         )},${dome.poseTween},${dome.orbiting}`;
       }
-      if (argument.what === "altitude") {
-        const altitude = probe.altitude?.();
-        if (altitude === undefined) return false;
-        signature = String(Math.round(altitude * 1e3));
-      }
       const store = ((window as unknown as { __atlasStill?: Record<string, { signature: string; count: number }> })
         .__atlasStill ??= {});
       const seen = store[argument.key];
@@ -134,7 +126,7 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
  * is the honest "the map is up" condition — `toBeVisible()` on the canvas passes
  * while it is still empty.
  */
-export async function waitForMapReady(page: Page, timeout = HANG_TIMEOUT_MS): Promise<void> {
+async function waitForMapReady(page: Page, timeout = HANG_TIMEOUT_MS): Promise<void> {
   await page.waitForFunction(
     () => {
       const probe = (window as unknown as { __atlasMap?: { nodes?: () => unknown[] } }).__atlasMap;
@@ -153,12 +145,19 @@ export async function waitForMapSettled(page: Page, options: MapStillOptions = {
 }
 
 /**
- * Resolve once no CSS animation or transition is running on `locator` or inside it.
+ * Resolve once no **finite** CSS animation or transition is running on `locator` or
+ * inside it.
  *
  * This is the browser's own registry (`Element.getAnimations({ subtree: true })`),
  * so it covers a reveal whose duration comes from a token without the spec having
  * to read — or guess — that token. An element that never animates resolves on the
  * first poll.
+ *
+ * ⚠️ **Infinite animations are skipped**, because they are never done: an ambient
+ * pulse or spinner somewhere on the page would otherwise hold this open until the
+ * hang ceiling (measured 2026-09-13 — `waitForAnimationsDone(body)` on the route
+ * sweep sat for the full 30 s). Something ambient that also moves the layout is
+ * caught by {@link waitForBoxStill} instead.
  */
 export async function waitForAnimationsDone(locator: Locator, timeout = HANG_TIMEOUT_MS): Promise<void> {
   await locator.evaluate(
@@ -168,6 +167,7 @@ export async function waitForAnimationsDone(locator: Locator, timeout = HANG_TIM
         const check = () => {
           const running = element
             .getAnimations({ subtree: true })
+            .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
             .some((animation) => animation.playState === "running");
           if (!running) {
             resolve();
@@ -215,42 +215,6 @@ export async function waitForBoxStill(
           }
           if (performance.now() > deadline) {
             reject(new Error("box never stopped moving"));
-            return;
-          }
-          requestAnimationFrame(check);
-        };
-        check();
-      }),
-    { frames, hang: timeout },
-  );
-}
-
-/**
- * Resolve once the page has been scrolled to a position that stays put for
- * {@link STILL_FRAMES} frames — the end of a smooth scroll, including the momentum
- * of `scrollIntoView({ behavior: "smooth" })`.
- */
-export async function waitForScrollStill(
-  page: Page,
-  options: { frames?: number; timeout?: number } = {},
-): Promise<void> {
-  const { frames = STILL_FRAMES, timeout = HANG_TIMEOUT_MS } = options;
-  await page.evaluate(
-    (argument) =>
-      new Promise<void>((resolve, reject) => {
-        const deadline = performance.now() + argument.hang;
-        let previous = Number.NaN;
-        let repeats = 0;
-        const check = () => {
-          const position = Math.round(window.scrollY * 10);
-          repeats = position === previous ? repeats + 1 : 1;
-          previous = position;
-          if (repeats >= argument.frames) {
-            resolve();
-            return;
-          }
-          if (performance.now() > deadline) {
-            reject(new Error("the page never stopped scrolling"));
             return;
           }
           requestAnimationFrame(check);

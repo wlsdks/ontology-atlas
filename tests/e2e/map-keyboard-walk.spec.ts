@@ -61,21 +61,14 @@ async function pressAndSettle(
 }
 
 /**
- * **Wait for coordinates to settle before reading them.** Until the selected
- * node's screen coordinates repeat twice in a row — measuring mid camera
+ * **Wait for coordinates to settle before reading them.** Measuring mid camera
  * transition makes "off screen" accidentally true.
+ *
+ * Stillness is judged in the page, on the frames it drew: two samples taken 150 ms
+ * apart from here could both land inside one slow step and call a moving camera
+ * settled, and on a fast machine each threw 150 ms away.
  */
 async function settleSelectedPosition(page: import("@playwright/test").Page) {
-  const snapshot = () =>
-    page.evaluate(() => {
-      const probe = window.__atlasMap;
-      const id = probe?.selection().nodeId;
-      if (!probe || !id) return "";
-      const node = probe.nodes().find((n) => n.id === id);
-      return node ? `${id}:${Math.round(node.x)},${Math.round(node.y)}` : "";
-    });
-  // Judged in the page, on drawn frames: two samples 150 ms apart from here could both
-  // land inside one slow step and call a moving camera settled.
   await waitForMapStill(page);
 }
 
@@ -710,7 +703,9 @@ test.describe("지도 키보드 걷기", () => {
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await page.locator("body").press("ArrowUp");
     await page.locator("body").press("ArrowDown");
-    await page.waitForTimeout(400);
+    // An **absence**: nothing positive marks "these presses did nothing", so the wait is
+    // an opportunity for a move to happen, counted in drawn frames.
+    await waitFrames(page, 30);
     expect(await selectedId(page), "초점이 없는데 지도가 움직였다").toBe(pinned);
   });
 });
