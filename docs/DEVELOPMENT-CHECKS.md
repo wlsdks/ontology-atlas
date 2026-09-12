@@ -27,8 +27,11 @@ GitHub Actions. The impact planner records the PR, head and tree as provenance.
 It still checks the calendar-sensitive PO pilot without installing dependencies.
 Direct pushes, API errors/timeouts, incomplete pagination, unknown paths,
 unresolved ruleset policy and changed trees retain normal CI. PR, merge-group,
-daily and manual verification never use this shortcut. The read is bounded to
-one eight-second request; no success result is cached.
+daily and manual verification never use this shortcut. The parallel read requests share
+one eight-second deadline; no success result is cached. Protection is read through
+GitHub's ordinary branch and effective-rules APIs, without administrative access.
+A reader change also probes the real Actions credential against the base tree;
+that diagnostic never narrows the PR's own verification.
 
 Pre-push owns quick path-scoped checks; full contract and Knip scans remain in
 impact-planned PR CI. `pr:land` also defers whole unit/contract suites and Knip

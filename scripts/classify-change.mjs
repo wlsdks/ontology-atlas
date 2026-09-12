@@ -671,6 +671,15 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
       stdio: 'inherit', timeout: 10_000,
     }).status !== 0) proof = { skip: false, reason: 'standing PO policy needs fresh verification' };
     console.log(`[ci-impact] main-push reuse: ${proof.reason}`);
+  } else if (eventName === 'pull_request' && base && process.env.GITHUB_ACTIONS === 'true' &&
+      files.some((path) => /^scripts\/(?:lib\/)?reviewed-main-push(?:\.test)?\.mjs$/.test(path))) {
+    // Exercise the real read-only Actions credential when this reader changes.
+    // This diagnostic never replaces the PR's own verification plan.
+    const credentialProbe = await verifyReviewedMainPush({
+      eventName: 'push', ref: 'refs/heads/main', sha: base,
+      currentTreeSha: git(['rev-parse', `${base}^{tree}`]),
+    });
+    console.log(`[ci-impact] read-only credential probe: ${JSON.stringify(credentialProbe)}`);
   }
   emit(reuseReviewedMainPlan(plan, proof, { eventName, base, head }));
 }
