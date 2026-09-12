@@ -68,7 +68,7 @@ jobs:
     needs: plan
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
-    # budget: 240s
+    # budget: 260s
     timeout-minutes: 6
     env:
       ACTIVE: ${{ needs.plan.outputs.gates }}
@@ -125,13 +125,21 @@ jobs:
   # take `--shard`, and `run-ci-lane.mjs` keeps whole-graph commands (`pnpm knip`)
   # on shard 1, where a third of the files would otherwise call two thirds of the
   # exports unused.
+  #
+  # Measured on the first real sharded run (34696960152): **179 s, 206 s and >244 s**
+  # against the 437 s average it replaces. The third number is the correction — shard 1
+  # carries `pnpm knip` on top of its share of the files, so it is not one third of the
+  # job, and a budget of 180 s cancelled it at the 4-minute timeout. 260 s is the
+  # measured cost of the *widest* shard, which is what a matrix's shared ceiling has to
+  # cover. The aggregating job below refused to go green for the cancelled shard, which
+  # is the whole reason it exists.
   unit:
     name: Unit · Contract ${{ matrix.shard }}/3
     needs: plan
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
-    # budget: 180s
-    timeout-minutes: 4
+    # budget: 260s (shard 1 also carries the whole-graph commands)
+    timeout-minutes: 6
     strategy:
       fail-fast: false
       matrix:

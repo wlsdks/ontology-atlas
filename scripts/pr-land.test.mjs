@@ -250,6 +250,79 @@ describe('the required contexts, read from the protection', () => {
     assert.match(verdict.failed[0].url, /actions\/runs\//);
   });
 
+  /**
+   * **The state that wedged the repository** (measured 2026-09-12, PR #1578).
+   *
+   * The draft design makes every context report twice: `SKIPPED` while the pull
+   * request was a draft, then for real after `gh pr ready`. Both stay in the
+   * rollup, in no guaranteed order. Keeping whichever came last read a genuinely
+   * FAILED `Unit · Contract` as `SKIPPED`, which this function calls "never ran",
+   * which polls — so the landing held the lock for 45 minutes with the answer
+   * already on the screen, and nothing else could land.
+   *
+   * The recorded mixture below is the real rollup from that pull request: fourteen
+   * green, one failure, and the draft's `SKIPPED` twin for every one of them.
+   */
+  it('resolves a name that reported twice, so a draft skip cannot bury a real failure', () => {
+    const draftTwin = (name) => ({
+      name,
+      status: 'COMPLETED',
+      conclusion: 'SKIPPED',
+      startedAt: '2026-09-12T13:20:00Z',
+      completedAt: '2026-09-12T13:20:01Z',
+    });
+    const real = (name, conclusion) => ({
+      name,
+      status: 'COMPLETED',
+      conclusion,
+      startedAt: '2026-09-12T13:38:00Z',
+      completedAt: '2026-09-12T13:42:30Z',
+      detailsUrl: 'https://github.com/wlsdks/ontology-atlas/actions/runs/34696960152/job/1',
+    });
+
+    // The failure first and its draft twin last: the order that caused the hang.
+    const mixed = [
+      real('Unit · Contract', 'FAILURE'),
+      ...REQUIRED_CONTEXTS.filter((name) => name !== 'Unit · Contract').map((name) => real(name, 'SUCCESS')),
+      ...REQUIRED_CONTEXTS.map(draftTwin),
+      // The phantom a matrix job reports when its own `if` skips it before expansion.
+      draftTwin('Unit · Contract ${{ matrix.shard }}/3'),
+      draftTwin('Playwright (chromium ${{ matrix.shard }}/3)'),
+    ];
+
+    const verdict = requiredCheckState({ rollup: mixed, requiredContexts: REQUIRED_CONTEXTS });
+    assert.equal(verdict.state, 'failed', 'a real failure must end the landing, not poll');
+    assert.deepEqual(verdict.failed.map((check) => check.name), ['Unit · Contract']);
+    assert.match(verdict.failed[0].url, /actions\/runs\//, 'the refusal must name where to look');
+    assert.deepEqual(verdict.skipped, [], 'no required context is still reading as skipped');
+    assert.deepEqual(verdict.pending, []);
+
+    // The same mixture with the twin first must read identically — order is not
+    // allowed to decide a verdict.
+    const reversed = requiredCheckState({ rollup: [...mixed].reverse(), requiredContexts: REQUIRED_CONTEXTS });
+    assert.equal(reversed.state, 'failed');
+    assert.deepEqual(reversed.failed.map((check) => check.name), ['Unit · Contract']);
+  });
+
+  it('ends the landing on a cancelled required context, not only a failed one', () => {
+    // A shard cancelled by its own `timeout-minutes` is how #1578 actually went
+    // red. `CANCELLED` is not `SUCCESS` and not `SKIPPED`, so it must be decisive.
+    const rollup = GREEN_ROLLUP.map((run) =>
+      run.name === 'Unit · Contract' ? { ...run, conclusion: 'CANCELLED' } : run,
+    );
+    const verdict = requiredCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS });
+    assert.equal(verdict.state, 'failed');
+    assert.deepEqual(verdict.failed.map((check) => check.conclusion), ['CANCELLED']);
+  });
+
+  it('takes the later of two real verdicts, which is what a re-run means', () => {
+    const first = { name: 'MCP', status: 'COMPLETED', conclusion: 'FAILURE', completedAt: '2026-09-12T13:00:00Z' };
+    const rerun = { name: 'MCP', status: 'COMPLETED', conclusion: 'SUCCESS', completedAt: '2026-09-12T14:00:00Z' };
+    const rest = GREEN_ROLLUP.filter((run) => run.name !== 'MCP');
+    assert.equal(requiredCheckState({ rollup: [...rest, first, rerun], requiredContexts: REQUIRED_CONTEXTS }).state, 'green');
+    assert.equal(requiredCheckState({ rollup: [...rest, rerun, first], requiredContexts: REQUIRED_CONTEXTS }).state, 'green');
+  });
+
   it('is green only when every required context reported success', () => {
     assert.equal(requiredCheckState({ rollup: GREEN_ROLLUP, requiredContexts: REQUIRED_CONTEXTS }).state, 'green');
   });

@@ -218,6 +218,43 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
     ).toEqual([]);
   });
 
+  /**
+   * **Why a check named `Unit · Contract ${{ matrix.shard }}/3` is tolerated.**
+   *
+   * A matrix job skipped by its own `if` is skipped *before* the matrix expands, so
+   * GitHub reports one check with the expression still in the name. Two of those sat
+   * in PR #1578's rollup in `SKIPPED` state, and the landing hung — but not because
+   * of them. It hung because `pr-land.mjs` resolved a name that reported twice (the
+   * draft's `SKIPPED` and the real verdict) by keeping whichever came last, and read
+   * a FAILED required context as "never ran". That is fixed at the lander, where the
+   * defect was, and `scripts/pr-land.test.mjs` pins it with the recorded rollup —
+   * both phantom names included — and asserts the verdict is order-independent.
+   *
+   * Removing the phantom itself would cost more than it is worth. Moving the gate
+   * into the steps makes the matrix expand, and breaks
+   * `workflow-security.contract.test.ts`: "skips every job on a draft, so a draft
+   * costs no runner minute" requires the guard in every job **header**, which is a
+   * standing decision. Writing the three shards out as static jobs instead would
+   * triplicate about fifty lines of YAML each, in a repository that keeps
+   * `setup-playwright` as one composite action "rather than five drifting copies".
+   *
+   * So the phantom stays, cannot match a required context name, and no longer
+   * confuses the only thing that read it. This test records that trade rather than
+   * enforcing it, and names where the enforcement actually lives.
+   */
+  it("keeps the draft guard in every matrix job header, as the draft-cost decision requires", () => {
+    const guard = "github.event.pull_request.draft == false";
+    for (const file of ["checks.yml", "e2e.yml"]) {
+      const text = readFileSync(path.join(WORKFLOWS, file), "utf8");
+      const matrixJobs = text.split(/^ {2}(?=[A-Za-z][\w-]*:\s*$)/m).filter((block) => /^ {4}strategy:/m.test(block));
+      expect(matrixJobs.length, `${file}: no matrix job found — this test would be idling`).toBeGreaterThan(0);
+      for (const block of matrixJobs) {
+        const name = /^([A-Za-z][\w-]*):/.exec(block)?.[1] ?? "?";
+        expect(block, `${file}:${name} would run on a draft`).toContain(guard);
+      }
+    }
+  });
+
   it("cancels superseded runs per ref so a new push does not queue behind the old one", () => {
     for (const file of readdirSync(WORKFLOWS).filter((name) => name.endsWith(".yml"))) {
       const text = readFileSync(path.join(WORKFLOWS, file), "utf8");

@@ -157,12 +157,52 @@ export function describeLock(lock) {
  * and only `missing` means CI was never fired. Both wait, and the printed line
  * says which it is.
  */
+/**
+ * How much a rollup entry is worth when a name reports more than once.
+ *
+ * 2 — completed with a real verdict. 1 — still running. 0 — `SKIPPED`.
+ */
+function verdictRank(run) {
+  const status = String(run?.status ?? run?.state ?? '').toUpperCase();
+  const conclusion = String(run?.conclusion ?? run?.state ?? '').toUpperCase();
+  if (status !== 'COMPLETED') return 1;
+  return conclusion === 'SKIPPED' ? 0 : 2;
+}
+
+function completedStamp(run) {
+  return Date.parse(run?.completedAt ?? run?.startedAt ?? '') || 0;
+}
+
 export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
+  /*
+   * ⚠️ **One name, several entries** (measured 2026-09-12, PR #1578).
+   *
+   * The draft design means every context reports **twice**: once as `SKIPPED`
+   * while the pull request was a draft, and once for real after `gh pr ready`.
+   * Both stay in the rollup. A plain `byName.set` keeps whichever the API
+   * happened to list last, and for `Unit · Contract` that was the `SKIPPED`
+   * one — so a context that had genuinely **FAILED** read as "never ran",
+   * which this function treats as `waiting`. The landing then held the lock
+   * for 45 minutes, polling, while the answer had been on the screen the
+   * whole time and no other pull request could land.
+   *
+   * So a duplicate is resolved rather than overwritten: a real verdict beats
+   * `SKIPPED`, a running job beats `SKIPPED`, and between two real verdicts
+   * the later one wins, which is what a re-run means.
+   */
   const byName = new Map();
   for (const run of rollup) {
     const name = run?.name ?? run?.context;
     if (!name) continue;
-    byName.set(name, run);
+    const held = byName.get(name);
+    if (!held) {
+      byName.set(name, run);
+      continue;
+    }
+    const better =
+      verdictRank(run) > verdictRank(held)
+      || (verdictRank(run) === verdictRank(held) && completedStamp(run) > completedStamp(held));
+    if (better) byName.set(name, run);
   }
   const pending = [];
   const failed = [];
@@ -174,8 +214,8 @@ export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
       missing.push(context);
       continue;
     }
-    const status = run.status ?? run.state ?? '';
-    const conclusion = run.conclusion ?? run.state ?? '';
+    const status = String(run.status ?? run.state ?? '').toUpperCase();
+    const conclusion = String(run.conclusion ?? run.state ?? '').toUpperCase();
     if (status !== 'COMPLETED') {
       pending.push(context);
       continue;
