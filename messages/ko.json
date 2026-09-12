@@ -4642,7 +4642,7 @@
       "fixWithAgentTooltipAsk": "이 문서를 서식에 맞게 고치는 에이전트 턴 한 번을 시작합니다. 쓰기는 허락 카드에서 멈춥니다.",
       "fixMyself": "직접 고치기",
       "fixMyselfTooltip": "이 문서 파일을 Finder에서 골라 줍니다. 어느 편집기에서 고쳐도 목록이 파일을 따라옵니다.",
-      "technical": "기술 정보 — 점검 코드와 줄 번호",
+      "technical": "기술 정보 · 점검 코드와 줄 번호",
       "technicalNote": "ontology-atlas wiki-validate 명령과 validate_wiki 도구가 아래와 같은 코드를 알려 줍니다.",
       "technicalFile": "파일: {path}",
       "goToPlace": "{place}로 가기",

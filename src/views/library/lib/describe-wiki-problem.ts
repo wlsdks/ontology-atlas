@@ -82,8 +82,14 @@ export interface WikiProblemWhere {
   line?: number;
 }
 
-/** A sentence in order: text, a name to press, or the place to press. */
-export type WikiProblemSegment =
+/**
+ * A sentence in order: text, a name to press, or the place to press.
+ *
+ * Not exported: every consumer reaches it through `WikiProblemWords.segments`, and an
+ * exported name with no importer is the kind of misinformation the dead-code ratchet
+ * exists to refuse.
+ */
+type WikiProblemSegment =
   | { kind: "text"; text: string }
   | { kind: "target"; target: WikiProblemTarget }
   | { kind: "where"; where: WikiProblemWhere };

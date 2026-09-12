@@ -4642,7 +4642,7 @@
       "fixWithAgentTooltipAsk": "Starts one agent turn that brings this page back to the template. Writing stops at the permission card.",
       "fixMyself": "Fix it myself",
       "fixMyselfTooltip": "Selects this page's file in Finder. Fix it in any editor and the list follows the file.",
-      "technical": "Technical detail — check codes and line numbers",
+      "technical": "Technical detail · check codes and line numbers",
       "technicalNote": "The ontology-atlas wiki-validate command and the validate_wiki tool report these same codes.",
       "technicalFile": "File: {path}",
       "goToPlace": "Go to {place}",
