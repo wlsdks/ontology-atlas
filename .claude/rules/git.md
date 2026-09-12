@@ -13,8 +13,6 @@
 - Examples:
   - `feat: move the search palette into a mobile sheet`
   - `fix: restore dark-mode alpha tokens at :root`
-  - `docs: document the retired light-mode switch`
-  - `refactor: unify vault ontology behind a mode-aware adapter hook`
 
 The body explains **why** the change was needed; the diff already says what
 changed. Keep lines within 80 characters.
@@ -23,8 +21,7 @@ changed. Keep lines within 80 characters.
 
 - Use `feat/...`, `fix/...`, `docs/...`, `chore/...`, or `refactor/...`.
 - Never push directly to `main`; use a pull request.
-- Do not put company codenames, personal names, or other product names in a
-  branch name.
+- No codenames or personal names in a branch name.
 
 ## Commit scope
 
@@ -35,11 +32,9 @@ changed. Keep lines within 80 characters.
 
 ### Code and documentation move together
 
-This table lives here rather than in `documentation.md` because the person who
-needs it is changing code. `git`, `forbidden`, and `local-first` load every turn;
-other rules load only after a matching file is opened. Putting the table in a
-Markdown-triggered rule reaches only someone who already decided to edit docs,
-not the person most likely to forget them (audit finding, 2026-07-31).
+This table lives here, not in `documentation.md`, because the person who needs
+it is changing code: a Markdown-triggered rule reaches only someone who already
+decided to edit docs (audit finding, 2026-07-31).
 
 | Code change | Documentation that must change with it |
 |---|---|
@@ -51,17 +46,25 @@ not the person most likely to forget them (audit finding, 2026-07-31).
 | Add a capability, domain, or element | `docs/ontology/<kind>s/<slug>.md` |
 | Change `.claude/rules/` loading conditions | the table in `CLAUDE.md` and `tests/contract/rules-path-scope.contract.test.ts` |
 
-Do not pick a subset from the `checks:changed` list. That choice, not the list,
-caused two wasted CI rounds on 2026-08-20. Run
-`pnpm checks:changed -- --run`; it executes every recommendation and stops at
-the first failure.
+Do not pick a subset from the `checks:changed` list; that cost two CI rounds on
+2026-08-20.
+
+## Landing a pull request
+
+`pnpm pr:land <number>` is the only way to `main`: it serializes. Open every
+pull request as a draft (`gh pr create --draft`), which runs no CI.
+One landing, in order: take the shared lock, merge today's `main` in, run the
+local lanes on it, mark it ready, which fires the **one** CI run for that pull
+request, then squash merge, delete the branch, release the lock.
+`pnpm pr:queue` names the holder and the waiters; `pnpm pr:ci <n>` buys an early
+run; `pnpm pr:land --release` frees a wedged lock. Why, and why GitHub's own
+merge queue is unavailable: `scripts/pr-land.mjs`.
 
 ## Pull requests
 
 - Start the title with one of the conventional prefixes above. Use `Summary`
   and `Test plan` sections in the body.
-- Record passing `pnpm exec tsc --noEmit`, `pnpm lint`, and `pnpm test:run` when
-  their risk scopes apply.
+- Record which checks ran and passed.
 - Attach before/after screenshots for visual changes. Use dark mode; the app has
   no light mode.
 
@@ -69,16 +72,14 @@ the first failure.
 
 - Do not bypass hooks with `--no-verify`. `commit-msg` checks the message
   language; `pre-commit` catches generated drift; `pre-push` runs CI-like path
-  lanes in parallel, leaving e2e to CI. Run the command it prints. If a lane
-  is wrong, repair the lane instead of skipping it. Rationale and dissent:
-  `docs/DECISIONS.md` (94), (95) and (96) — (96) overturns (95) and is the
-  standing decision for the hook that exists today.
-- Run `git reset --hard` or `git push --force` only when the user explicitly
-  requests it. Never force-push `main`.
-- Never hand-resolve conflicts in generated JSON. Files under
-  `src/entities/docs-vault/data/*` and `public/docs-vault/**` come from
-  `pnpm docs-vault:build`. If only those paths plus `docs/CHANGELOG.md` /
-  `docs/DECISIONS.md` conflict, run `pnpm docs-vault:resolve-conflicts --
-  --dry-run`, then the write command. It accepts only prepended dated records on
-  byte-identical history, regenerates/stages outputs, and refuses anything else.
+  lanes. If a lane is wrong, repair the lane instead of skipping it. Rationale:
+  `docs/DECISIONS.md` (96).
+- Run `git reset --hard` or `git push --force` only when the user asks for it,
+  and never on `main`.
+- Do not run `gh pr merge`, `gh pr update-branch`, or `gh pr create` without
+  `--draft`. Each one either spends a CI round or merges past the agent already
+  landing; `.claude/hooks/block-manual-landing.sh` refuses all three.
+- Never hand-resolve conflicts in generated JSON under
+  `src/entities/docs-vault/data/*` or `public/docs-vault/**`: run
+  `pnpm docs-vault:resolve-conflicts -- --dry-run`, then the write command.
   Details: `docs/DEVELOPMENT-CHECKS.md`.

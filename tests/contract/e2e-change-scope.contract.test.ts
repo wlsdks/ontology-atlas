@@ -60,14 +60,22 @@ describe('E2E impact planning precedes expensive setup', () => {
     expect(planner).toContain('node scripts/classify-change.mjs');
     expect(planner).toContain('EVENT_NAME: ${{ github.event_name }}');
     expect(planner).toContain('BASE_REF: ${{ github.base_ref }}');
-    expect(planner).toContain('--event="$EVENT_NAME" --base="origin/$BASE_REF"');
+    // A merge group has no base branch ref, so the comparison falls back to the
+    // SHA GitHub minted for the group (2026-09-12). Both spellings have to be
+    // here: dropping either plans a merge group from nothing.
+    expect(planner).toContain('MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}');
+    expect(planner).toContain('--event="$EVENT_NAME" --base="${MERGE_GROUP_BASE_SHA:-origin/$BASE_REF}"');
   });
 
   it.each(PROTECTED_JOB_IDS)('%s refuses a missing plan', (id) => {
     const job = jobBlock(id);
     expect(job, 'job does not wait for the impact plan').toContain('needs: changes');
-    expect(job, 'required status disappears after upstream failure').toContain(
-      'if: ${{ !cancelled() }}',
+    // `!cancelled()` keeps the required status alive when the planner fails;
+    // the draft clause keeps a draft pull request from spending a runner at all
+    // (2026-09-12). The two are one expression, so both halves are pinned.
+    expect(job, 'required status disappears after upstream failure').toContain('!cancelled()');
+    expect(job, 'a draft pull request would pay for this job').toContain(
+      "github.event.pull_request.draft == false",
     );
     const guard = stepBlock(job, 'Require impact plan');
     expect(guard, 'plan failure guard is missing').toContain(
