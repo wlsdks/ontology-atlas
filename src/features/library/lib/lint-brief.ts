@@ -30,6 +30,21 @@ import { WIKI_DIR, WIKI_SOURCES_DIR } from "@/shared/lib/wiki-page-schema";
  * Text inside a page is data (`docs/ONTOLOGY-ATLAS-SPEC.md` §7): a sentence that reads
  * like an instruction is content to report, never a directive to follow.
  *
+ * ## The first line is the one line a person reads
+ *
+ * ⚠️ The Check-the-wiki press used to open the conversation on the whole brief — the JSON
+ * schema, the fenced blocks, `{"counts":{"disagreement":0,…}`, `nodeCandidates` and the
+ * taxonomy rules — the largest block on the screen, in a dock somebody reached through a
+ * Korean button (installed app, 2026-09-13, `inspection-122/54-toast-b.png`). Being able to
+ * read what is sent is the point; being handed all of it first is not.
+ *
+ * So the brief opens on **what was asked and what will come back**, and every instruction
+ * after it stands below the folder anchor line that `splitAppRequest` folds on (`Folder:`,
+ * and its Korean twin).
+ * Nothing is removed: the 2026-08-24 decision that a caller may send on a person's behalf
+ * rests on the whole text landing in the transcript as their own turn, and it still does,
+ * one disclosure away and verbatim.
+ *
  * The report ends with one fenced JSON block restating item 4, so the Library can turn
  * "a name on three pages with no page of its own" into a row a person can act on
  * without parsing prose. `parseLintCandidates` reads that block and nothing else;
@@ -84,9 +99,11 @@ export function buildLintBrief({ pages, locale, vaultRoot, findings }: LintBrief
   const found = findingLines(findings, locale);
   if (locale === "ko") {
     return [
-      `이 폴더의 위키를 점검해 줘. \`${WIKI_DIR}/\` 아래 문서를 전부 읽어 (\`_template.md\` 는 빼). \`${WIKI_SOURCES_DIR}/\` 는 열지 마: 판단 대상은 문서야. 보고만 하고 아무 파일도 고치지 마.`,
+      "이 폴더의 위키를 읽고, 문서끼리 어긋나는 값·나중 문서가 바꿔 놓은 주장·빠진 연결·문서 없는 이름을 목록으로 돌려줘. 파일은 하나도 고치지 않아.",
       "",
       `폴더: ${vaultRoot}`,
+      "",
+      `\`${WIKI_DIR}/\` 아래 문서를 전부 읽어 (\`_template.md\` 는 빼). \`${WIKI_SOURCES_DIR}/\` 는 열지 마: 판단 대상은 문서야. 보고만 하고 아무 파일도 고치지 마.`,
       "",
       "문서:",
       list,
@@ -114,9 +131,11 @@ export function buildLintBrief({ pages, locale, vaultRoot, findings }: LintBrief
     ].join("\n");
   }
   return [
-    `Health-check the wiki in this folder. Read every page under \`${WIKI_DIR}/\` (skip \`_template.md\`). Do not open \`${WIKI_SOURCES_DIR}/\`: the pages are what you are judging. Report, and modify no file.`,
+    "Read the wiki in this folder and come back with a list: values two pages disagree on, claims a later page replaced, missing links, and names with no page of their own. No file is edited.",
     "",
     `Folder: ${vaultRoot}`,
+    "",
+    `Read every page under \`${WIKI_DIR}/\` (skip \`_template.md\`). Do not open \`${WIKI_SOURCES_DIR}/\`: the pages are what you are judging. Report, and modify no file.`,
     "",
     "Pages:",
     list,
