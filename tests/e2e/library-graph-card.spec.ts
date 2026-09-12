@@ -382,6 +382,8 @@ test.describe("a press on a mark opens a card beside it", () => {
       })
       .toBe(false);
     const quietFrom = await read();
+    // A **measurement window**, not a wait: "the breath became a loop" is a claim about a
+    // stretch of real time with no frame asked for, so the stretch has to pass.
     await page.waitForTimeout(2_000);
     expect((await read()) - quietFrom, "the breath became a loop").toBe(0);
   });
@@ -396,6 +398,8 @@ test.describe("a press on a mark opens a card beside it", () => {
     await expect(page.getByTestId("library-graph-card")).toBeVisible();
 
     await page.evaluate(() => window.__atlasLibraryGraph!.paint().reset());
+    // A **measurement window**: the budget is per painted frame, so some have to be
+    // painted before the mean and the worst mean anything.
     await page.waitForTimeout(1_000);
     const paint = await page.evaluate(() => {
       const { last, mean, worst, frames } = window.__atlasLibraryGraph!.paint();
@@ -438,6 +442,8 @@ test.describe("with reduced motion", () => {
       .poll(
         async () => {
           const first = await hash();
+          // The gap between the two samples of a stability poll, not a gate: the poll
+          // returns the moment two frames agree.
           await page.waitForTimeout(260);
           return (await hash()) === first;
         },
@@ -469,6 +475,8 @@ test.describe("with reduced motion", () => {
      * break — one paint, nothing travelling. So three frames a third of a second apart are
      * the same bytes, which is the 2026-09-08 stillness promise holding with a card open.
      */
+    // Three **measurement** samples a third of a second apart: the claim is about a
+    // stretch of real time in which nothing may change.
     const first = await hash();
     await page.waitForTimeout(320);
     const second = await hash();
