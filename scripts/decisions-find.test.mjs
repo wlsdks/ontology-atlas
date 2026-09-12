@@ -62,6 +62,19 @@ describe('decision ledger retrieval', () => {
     );
   });
 
+  /**
+   * A CRLF checkout made `HEADING`'s `(.+)$` unmatchable (`\r` is a regex line
+   * terminator), so the whole ledger parsed as zero records. Found on v1.2.2's Windows
+   * job; this file's own "hundreds of records" floor is what caught it rather than a
+   * silent pass, which is why that floor stays.
+   */
+  it('splits the same ledger on a CRLF checkout', () => {
+    const crlf = parseLedger(LEDGER.replace(/\n/g, '\r\n'));
+    assert.equal(crlf.length, records.length);
+    assert.deepEqual(crlf.map((r) => [r.date, r.number, r.title]), records.map((r) => [r.date, r.number, r.title]));
+    assert.deepEqual(crlf.map((r) => r.fields), records.map((r) => r.fields));
+  });
+
   it('reads decision and falsifier fields under English and Korean labels alike', () => {
     assert.match(records[0].fields.decision, /^a tool call whose path/);
     assert.match(records[0].fields.falsifier, /^an unasked write/);

@@ -66,7 +66,12 @@ export function readFrozenDocument(relativePath, { root = process.cwd() } = {}) 
   return raw;
 }
 
-function parseFrontmatter(raw, file) {
+function parseFrontmatter(input, file) {
+  // Same normalization `scripts/lib/parse-frontmatter.mjs` already performs, and for the
+  // same reason: a Windows checkout hands this `---\r\n`, so every `\n` test below reads a
+  // record as having no frontmatter at all. Normalizing here rather than at the two call
+  // sites keeps a third reader from reintroducing it.
+  const raw = input.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   if (!raw.startsWith('---\n')) throw new RecordLedgerError(`${file}: frontmatter is required`);
   const end = raw.indexOf('\n---\n', 4);
   if (end < 0) throw new RecordLedgerError(`${file}: frontmatter is not closed`);

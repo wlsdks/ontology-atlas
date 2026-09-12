@@ -65,7 +65,10 @@ function firstSentence(text, max = 180) {
 
 /** Split the ledger into records; the preamble before the first dated heading is dropped. */
 export function parseLedger(text) {
-  const lines = text.split('\n');
+  // As in `parseChangelog`: `\r` is a regex line terminator, so `HEADING`'s `(.+)$` cannot
+  // reach end-of-input on a CRLF checkout and every record heading stops matching. This
+  // one is caught by its own test's "hundreds of records" floor rather than passing empty.
+  const lines = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').split('\n');
   const records = [];
   let current = null;
   for (let i = 0; i < lines.length; i += 1) {
