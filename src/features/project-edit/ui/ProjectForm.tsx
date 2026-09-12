@@ -14,6 +14,9 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
+
+import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
+import type { FailureCopy } from "@/shared/lib/use-failure-sentence";
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { ChevronDown } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -209,6 +212,7 @@ export function ProjectForm({
   openVaultAction,
 }: Props) {
   const t = useTranslations("settings.projectForm");
+  const failureSentence = useFailureSentence();
   const reducedMotion = usePrefersReducedMotion();
   // The freshness model returns a grade only; the screen chooses the words.
   const tFreshness = useTranslations("projectFreshness");
@@ -341,7 +345,12 @@ export function ProjectForm({
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
-  const [globalError, setGlobalError] = useState<string | null>(null);
+  /*
+   * A failed save keeps **both halves**: the sentence the banner shows and the English cause a
+   * developer reads off `data-failure-detail`. It used to hold `err.message`, which put the
+   * vault layer's English into this banner on a Korean screen.
+   */
+  const [globalError, setGlobalError] = useState<FailureCopy | null>(null);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const submitBehaviorRef = useRef<"stay" | "return">("stay");
   const [sectionOpen, setSectionOpen] = useState<Record<string, boolean>>(() =>
@@ -697,7 +706,7 @@ export function ProjectForm({
         );
       }
     } catch (err) {
-      setGlobalError(err instanceof Error ? err.message : t("validation.saveFailed"));
+      setGlobalError(failureSentence(err, t("validation.saveFailed")));
     } finally {
       setSubmitting(false);
     }
@@ -710,7 +719,7 @@ export function ProjectForm({
     try {
       await onDelete();
     } catch (err) {
-      setGlobalError(err instanceof Error ? err.message : t("validation.deleteFailed"));
+      setGlobalError(failureSentence(err, t("validation.deleteFailed")));
     } finally {
       setDeleting(false);
     }
@@ -1187,10 +1196,11 @@ export function ProjectForm({
         role="alert"
         tabIndex={-1}
         data-testid="project-error-banner"
+        data-failure-detail={globalError?.detail ?? undefined}
         className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-3 text-body-lg text-[color:var(--color-status-danger)]"
       >
         <p className="font-[var(--font-weight-signature)]">
-          {globalError ?? t("validation.globalErrorBanner")}
+          {globalError?.sentence ?? t("validation.globalErrorBanner")}
         </p>
         {Object.keys(errors).length > 0 ? (
           <>

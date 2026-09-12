@@ -250,11 +250,34 @@ describe('첫 실행 카드 — 말할 수 있는 실패는 말한다', () => {
     ).toBe('errorPermissionDenied');
   });
 
-  it('그 밖의 실패는 원문을 쓰되, 비어 있어도 카드가 뜬다', () => {
+  it('그 밖의 실패는 원문 대신 문장을 쓰고, 원문은 detail 로 내려간다', () => {
     mocks.vault.errorCode = 'access-failed';
     const { result } = renderHook(() => useFirstRunStarter());
-    // An empty string drops the screen to `errorFallback` — null would show no card at all.
-    expect(result.current.errorText).toBe('');
+    // `access-failed` is the one code that carries a cause string. With nothing to recognise it
+    // falls back to the card's own sentence rather than showing a blank line.
+    expect(result.current.errorText).toBe('errorFallback');
+    expect(result.current.errorDetail).toBeNull();
+  });
+
+  /*
+   * Re-inspection before v1.2.2, S20: this branch handed `vault.errorMessage` to the card, which
+   * printed it as a "quiet clue" beneath the Korean sentence — the cause string in English on a
+   * Korean screen, while `no-raw-error-copy` stayed green.
+   */
+  it('access-failed 의 원문 영어는 화면 문장에 절대 오지 않는다', () => {
+    mocks.vault.errorCode = 'access-failed';
+    mocks.vault.errorMessage = 'Tauri command failed: EPIPE writing manifest';
+    const { result } = renderHook(() => useFirstRunStarter());
+    expect(result.current.errorText).toBe('errorFallback');
+    expect(result.current.errorDetail).toBe('Tauri command failed: EPIPE writing manifest');
+  });
+
+  it('OS 가 막은 폴더도 errno 는 detail 로만 남는다', () => {
+    mocks.vault.errorCode = 'permission-denied';
+    mocks.vault.errorMessage = 'Operation not permitted (os error 1)';
+    const { result } = renderHook(() => useFirstRunStarter());
+    expect(result.current.errorText).toBe('errorPermissionDenied');
+    expect(result.current.errorDetail).toBe('Operation not permitted (os error 1)');
   });
 
 });

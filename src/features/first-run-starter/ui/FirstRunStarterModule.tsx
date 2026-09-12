@@ -178,6 +178,7 @@ export function FirstRunStarterModule({
     busy,
     scaffolding,
     errorText,
+    errorDetail,
     fsaUnsupported,
   } = useFirstRunStarter();
   const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
@@ -706,27 +707,26 @@ export function FirstRunStarterModule({
         </p>
       )}
 
-      {/* The raw browser string (`errorText`) used to occupy the whole
-          user-facing slot. `window.showDirectoryPicker is not a function` is not
-          a sentence a person can read and choose a next action from. Now one
-          human sentence comes first and the cause string stays beneath it as a
-          quiet clue — the cause is kept while the reading order is inverted.
+      {/* The raw browser string used to occupy the whole user-facing slot.
+          `window.showDirectoryPicker is not a function` is not a sentence a person can
+          read and choose a next action from.
           2026-08-02 — when the reference block moved to the bottom, this warning
           was pushed to the end of the card, far from the button it explains. It
-          stays inside the action layer. */}
+          stays inside the action layer.
+          ⚠️ v1.2.2 — the "quiet clue beneath the sentence" that this block used to render was
+          `vault.errorMessage`, i.e. the cause string in English on a Korean card
+          (re-inspection, S20). The hook now hands over a sentence for the slot and the English on
+          `errorDetail`, which goes to `data-failure-detail` — read by a developer, not a reader.
+          The visible line is also no longer the generic fallback for every failure: when the code
+          is recognised it is the sentence written for that exact failure. */}
       {errorText !== null ? (
-        <div role="alert" className="mt-2">
-          <p className="text-label text-[color:var(--color-status-danger)]">
-            {t("errorFallback")}
-          </p>
-          {errorText ? (
-            <p
-              data-testid="first-run-starter-error-detail"
-              className="mt-0.5 break-words text-label leading-label text-[color:var(--map-panel-text-quaternary)]"
-            >
-              {errorText}
-            </p>
-          ) : null}
+        <div
+          role="alert"
+          className="mt-2"
+          data-testid="first-run-starter-error"
+          data-failure-detail={errorDetail ?? undefined}
+        >
+          <p className="text-label text-[color:var(--color-status-danger)]">{errorText}</p>
         </div>
       ) : null}
 

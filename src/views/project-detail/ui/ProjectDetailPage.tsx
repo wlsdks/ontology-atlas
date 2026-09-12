@@ -38,6 +38,7 @@ import { VaultConflictError } from "@/entities/vault-session";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { CopyProjectLinkButton } from "@/features/project-share";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
+import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
 import { useTaxonomy } from "@/features/taxonomy";
 import { ProjectQuickEditPanel } from "@/features/project-quick-edit";
 import { useConstructionReviewSession } from "@/features/construction-review-local";
@@ -233,6 +234,7 @@ export function ProjectDetailPage({
   initialRelated = [],
 }: Props) {
   const t = useTranslations("projectPages.detail");
+  const failureSentence = useFailureSentence();
   const router = useRouter();
   const constructionReview = useConstructionReviewSession(slug);
   // The tab lives in the URL — it has to be shareable and reproducible by an agent. Left as hidden
@@ -396,12 +398,18 @@ export function ProjectDetailPage({
   const handoffSnippet = buildAgentHandoffSnippet(project.slug);
 
   const canManageProject = projectMutations.canEdit;
-  const projectSaveErrorMessage = (err: unknown) =>
-    err instanceof VaultConflictError
-      ? t("saveErrorConflict")
-      : err instanceof Error
-        ? err.message
-        : t("saveErrorGeneric");
+  /*
+   * ⚠️ The toast prefix wraps this in a Korean sentence (`saveErrorPrefix`), so what goes inside it
+   * must be a sentence in the same language. It used to be `err.message` — the vault layer's
+   * English, spliced into Korean prose. A toast has no `data-*` attribute to hide the machine half
+   * in, so the English goes to the console, which is the other place the gate permits.
+   */
+  const projectSaveErrorMessage = (err: unknown) => {
+    if (err instanceof VaultConflictError) return t("saveErrorConflict");
+    const failure = failureSentence(err, t("saveErrorGeneric"));
+    if (failure.detail) console.error("project save failed", failure.detail);
+    return failure.sentence;
+  };
   const saveProjectField = async (
     field: "name" | "description",
     next: string,
