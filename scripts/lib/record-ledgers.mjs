@@ -45,8 +45,16 @@ function policyAt(root) {
   }
 }
 
+/**
+ * The freeze is a claim about a ledger's **content**, not about the line endings this
+ * filesystem happened to check out. A Windows checkout with `core.autocrlf` hands the
+ * same three ledgers back as CRLF, so hashing raw bytes reported every one of them as
+ * tampered with and refused to compose the changelog at all. Normalizing first keeps
+ * `legacy.json`'s existing checksums valid, so nothing is re-frozen and no history moves,
+ * and it returns one canonical text so a composed document does not vary by platform.
+ */
 export function readFrozenDocument(relativePath, { root = process.cwd() } = {}) {
-  const raw = readFileSync(path.join(root, relativePath), 'utf8');
+  const raw = readFileSync(path.join(root, relativePath), 'utf8').replace(/\r\n/g, '\n');
   const policy = policyAt(root);
   if (!policy) return raw;
   const expected = policy.policy.documents[relativePath];
