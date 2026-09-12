@@ -4278,6 +4278,20 @@
     "connector-secret-missing": "A token this connector needs is not in this machine’s keychain. Open Connectors, enter it again, or switch the connector off.",
     "acp-line-rewrite-failed": "The message to the agent could not be prepared. Try opening the conversation again."
   },
+  "failures": {
+    "permission-denied": "This folder refused the write, so nothing changed. Allow Ontology Atlas to reach this folder in System Settings, under Privacy & Security, then try again.",
+    "target-missing": "That folder or file is no longer there. It may have moved or been deleted, so open the folder again and retry.",
+    "already-exists": "A file of that name is already there, so nothing was overwritten. Check the existing file or use another name, then try again.",
+    "app-required": "This action works only in the installed app. In a browser you can read, but not write.",
+    "answer-history-unreadable": "This answer's question or its link to earlier versions could not be read. Check that answer_thread in the info block at the top of the file starts with wiki/answers/, then try again.",
+    "answer-path-invalid": "This answer does not live under wiki/answers/. Move the answer page into that folder, then try again.",
+    "answer-sources-unmeasured": "One of the cited originals cannot be read right now, so the refresh did not start. Put the original files back, then try again.",
+    "answer-previous-changed": "The previous answer or an original changed while this was being prepared, so it stopped. Nothing was saved; ask for the draft again.",
+    "answer-draft-mismatch": "What you reviewed and what was about to be saved no longer match, so nothing was saved. Open the comparison again, then save.",
+    "answer-draft-invalid": "The agent's draft cannot become a new version. Ask again for one body with its citations.",
+    "answer-revision-exists": "A page already exists at that address, so nothing was overwritten. Open it in the Library to see what is there.",
+    "answer-turn-incomplete": "The refresh did not finish. The previous answer is unchanged. Ask again when you are ready."
+  },
   "analysisWorkbench": {
     "meaningTitle": "Meaning review",
     "architectureTitle": "Architecture review",
@@ -5086,7 +5100,9 @@
         "alternative": "Alternative draft",
         "unresolved": "History incomplete"
       },
-      "evidenceMore": "Show what was observed"
+      "evidenceMore": "Show what was observed",
+      "refreshBlockedHistory": "Revision history needs review. The link to earlier versions is not valid, so a refresh cannot be asked for. Fix answer_thread in the info block at the top of the file, then reopen this answer.",
+      "refreshFailed": "The refresh draft could not be requested. Try again in a moment."
     }
   },
   "libraryImport": {

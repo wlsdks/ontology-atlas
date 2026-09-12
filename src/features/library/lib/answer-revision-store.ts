@@ -1,8 +1,9 @@
+import { codedFailure } from '@/shared/lib/failure-code';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import { getTauriVaultRootPath, nativeVaultFileHashes } from '@/shared/lib/tauri-vault-fs';
 import { validateWikiPage } from '@/shared/lib/wiki-page-schema';
 import type { AnswerPageResult } from './answer-page';
-import { isRetainedAnswerPath } from './answer-revision';
+import { answerHistoryUnreadable, isRetainedAnswerPath } from './answer-revision';
 import { createWikiFile } from './write-wiki-file';
 
 export interface AnswerRevisionStore {
@@ -31,10 +32,10 @@ export async function answerTextHash(text: string): Promise<string> {
 /** The production adapter uses the same native exclusive create as initial answer filing. */
 export function answerRevisionStore(vault: FileSystemDirectoryHandle): AnswerRevisionStore {
   const root = getTauriVaultRootPath(vault);
-  if (!root) throw new Error('Answer refresh filing requires the installed app.');
+  if (!root) throw codedFailure('app-required');
   return {
     read: async (slug) => {
-      if (!isRetainedAnswerPath(slug)) throw new Error('Invalid retained answer path.');
+      if (!isRetainedAnswerPath(slug)) throw codedFailure('answer-path-invalid', slug);
       const parts = `${slug}.md`.split('/');
       const name = parts.pop()!;
       let directory = vault;
@@ -51,20 +52,26 @@ export async function prepareAnswerRefresh(
   previousSlug: string,
   sourcePaths: readonly string[],
 ): Promise<AnswerRefreshSnapshot> {
-  if (!isRetainedAnswerPath(previousSlug)) throw new Error('Invalid retained answer path.');
+  if (!isRetainedAnswerPath(previousSlug)) throw codedFailure('answer-path-invalid', previousSlug);
   const previousText = await store.read(previousSlug);
   const { frontmatter } = parseFrontmatter(previousText);
-  const question = typeof frontmatter.answer_question === 'string' ? frontmatter.answer_question : frontmatter.title;
   const thread = typeof frontmatter.answer_thread === 'string' ? frontmatter.answer_thread : previousSlug;
-  if (typeof question !== 'string' || !question.trim() || !isRetainedAnswerPath(thread) || frontmatter.kind) {
-    throw new Error('The retained question or its history cannot be read.');
+  /*
+   * The same predicate the answer page reads before it draws the button, so a press that would
+   * land here is not offered in the first place (installed-app inspection before v1.2.2, B2).
+   * Kept as a throw as well: this side reads the file as it is on disk right now, while the page
+   * reads the manifest, and only one of the two is fresh.
+   */
+  if (answerHistoryUnreadable(previousSlug, frontmatter)) {
+    throw codedFailure('answer-history-unreadable', `thread=${JSON.stringify(frontmatter.answer_thread ?? null)}`);
   }
+  const question = (typeof frontmatter.answer_question === 'string' ? frontmatter.answer_question : frontmatter.title) as string;
   const paths = [...new Set(sourcePaths)].sort();
   const observations = await store.observe(paths);
   if (paths.length === 0 || paths.some((path) => !/^[a-f0-9]{64}$/i.test(observations.get(path) ?? ''))) {
-    throw new Error('Could not measure every original in this refresh scope. Restore readable originals and try again.');
+    throw codedFailure('answer-sources-unmeasured', paths.join(' '));
   }
-  if (await store.read(previousSlug) !== previousText) throw new Error('The previous answer changed while preparing the refresh.');
+  if (await store.read(previousSlug) !== previousText) throw codedFailure('answer-previous-changed', previousSlug);
   return {
     question: question.trim(), previousSlug, previousText, previousHash: await answerTextHash(previousText),
     thread, observedAt: new Date().toISOString(), observations: new Map(observations), sourcePaths: paths,
@@ -91,9 +98,9 @@ export async function saveAnswerRevision(
     || page.problems.length || !validateWikiPage(page.text, { knownSources: snapshot.sourcePaths }).ok
     || frontmatter.answer_previous !== snapshot.previousSlug || frontmatter.answer_thread !== snapshot.thread
     || frontmatter.answer_previous_hash !== snapshot.previousHash) {
-    throw new Error('The proposed revision does not match the reviewed answer.');
+    throw codedFailure('answer-draft-mismatch', page.slug);
   }
-  if (!await inputsUnchanged(store, snapshot)) throw new Error('The previous answer or source evidence changed or could not be remeasured. Generate a fresh comparison before saving.');
-  if (!await store.create(page.slug, page.text)) throw new Error('A page already exists at that revision path. Nothing was overwritten.');
+  if (!await inputsUnchanged(store, snapshot)) throw codedFailure('answer-previous-changed', snapshot.previousSlug);
+  if (!await store.create(page.slug, page.text)) throw codedFailure('answer-revision-exists', page.slug);
   return { state: await inputsUnchanged(store, snapshot) ? 'saved' : 'saved-needs-review', slug: page.slug };
 }

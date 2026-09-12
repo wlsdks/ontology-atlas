@@ -381,7 +381,9 @@ describe('내 코드로 지도 만들기 — 코드를 이미 가진 사람의 �
     });
 
     expect(result.current.build.stage).toBe('confirm');
-    expect(result.current.build.errorText).toBe('permission denied');
+    // The OS refusal is recognised as a code; `failures.permission-denied` is the sentence the
+    // dialog shows, and the raw errno never reaches the screen (B2).
+    expect(result.current.build.errorText).toBe('permission-denied');
     expect(result.current.build.location?.displayPath).toBe('/Users/dana/my-product/atlas');
     expect(
       mocks.requestAgentChat,

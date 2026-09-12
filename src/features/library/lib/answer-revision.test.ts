@@ -3,6 +3,7 @@ import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import {
   answerObservation,
   buildAnswerRevision,
+  answerHistoryUnreadable,
   retainedAnswerHeads,
   isRetainedAnswerPath,
   automaticWikiWriteAllowed,
@@ -98,5 +99,30 @@ describe('retained answer evidence', () => {
     for (const path of ['wiki/answers/one.md', 'wiki/answers//one.md', 'wiki/notes/../answers/one.md', 'wiki/answers/./one.md']) {
       expect(automaticWikiWriteAllowed(path)).toBe(false);
     }
+  });
+  /**
+   * **The card and the button must not disagree** (installed-app inspection before v1.2.2, B2).
+   *
+   * The fixture's answer carried `answer_thread: "dispute-records"`. `retainedAnswerHeads` read
+   * that as a broken edge and the index card said 「이력 확인 필요」, while the answer page offered
+   * the refresh anyway; the press then threw, and its English landed in the page body. Both sides
+   * now read `answerHistoryUnreadable`, so a malformed thread is refused before it is offered.
+   */
+  it('names a malformed thread edge to the card and to the refusal alike', () => {
+    // `frontmatter`, not the row's derived `title`: this is the same object
+    // `prepareAnswerRefresh` reads back out of the file, which is what makes the two agree.
+    const malformed = { title: 'When?', answer_thread: 'dispute-records' };
+    const heads = retainedAnswerHeads([{ slug: previous, title: 'When?', frontmatter: malformed }]);
+    expect(heads[0]!.historyProblem, 'the index card would not have marked this').toBe('invalid');
+    expect(answerHistoryUnreadable(previous, malformed), 'the press would still be offered').toBe(true);
+
+    // A thread edge that reads cleanly is offered, so this is not a gate that always refuses.
+    const clean = { title: 'When?', answer_thread: previous };
+    expect(retainedAnswerHeads([{ slug: previous, title: 'When?', frontmatter: clean }])[0]!.historyProblem).toBeNull();
+    expect(answerHistoryUnreadable(previous, clean)).toBe(false);
+
+    // The other two facts `prepareAnswerRefresh` refuses on, named before the press as well.
+    expect(answerHistoryUnreadable(previous, { title: '   ' })).toBe(true);
+    expect(answerHistoryUnreadable(previous, { title: 'When?', kind: 'capability' })).toBe(true);
   });
 });
