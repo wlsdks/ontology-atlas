@@ -38,6 +38,10 @@ export function BuildFromCodeConfirmDialog({
   const failureSentence = useFailureSentence();
   const location = build.location;
   const creating = build.stage === 'creating';
+  // The sentence is the reader's; the code stays on `data-failure-detail` so a developer can still
+  // tell `permission-denied` from `already-exists` without it being on screen.
+  const failure =
+    build.errorText !== null ? failureSentence(build.errorText, t('buildFromCodeFailed')) : null;
 
   return (
     <Dialog
@@ -94,12 +98,13 @@ export function BuildFromCodeConfirmDialog({
         ))}
       </code>
 
-      {build.errorText !== null ? (
+      {failure !== null ? (
         <p
           data-testid="build-from-code-error"
+          data-failure-detail={failure.detail ?? undefined}
           className="mt-2 text-label leading-label text-[color:var(--color-danger-text)]"
         >
-          {failureSentence(build.errorText, t('buildFromCodeFailed')).sentence}
+          {failure.sentence}
         </p>
       ) : null}
 

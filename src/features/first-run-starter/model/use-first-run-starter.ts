@@ -10,6 +10,7 @@ import {
 import { isDesktopShell } from '@/shared/lib/desktop-shell';
 import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
 import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
+import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
 import { deniedFolderName } from '@/entities/vault-session';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { buildFromCodePrompt } from './build-from-code-prompt';
@@ -106,10 +107,10 @@ export function useFirstRunStarter() {
   /**
    * **Say whatever can be said about what went wrong.**
    *
-   * ⚠️ This used to read `vault.errorMessage` alone. But "not a valid root",
-   * "folder is gone", and "no permission" **deliberately leave that value
-   * `null`** so the raw string is not leaked to the screen. So all three became
-   * states where this card **said nothing at all** (review 2026-08-16). Silence
+   * ⚠️ This used to read `vault.errorMessage` alone. But "not a valid root" and
+   * "folder is gone" leave that value `null` so no raw string reaches the
+   * screen, and "no permission" leaves an errno. So all three became states
+   * where this card **said nothing useful at all** (review 2026-08-16). Silence
    * on screen while the code knows the meaning is worse than leaking the raw string.
    *
    * The neighbouring screen (`FirstRunPage`) already handled these branches — two
@@ -121,24 +122,37 @@ export function useFirstRunStarter() {
    * ⚠️ `actionError` is a **failure code**, not a sentence — see `use-vault-create-flow.ts`. It
    * used to be the thrown English, which this card then showed to a Korean reader (B2).
    */
-  const errorText =
+  const failure: FailureCopy | null =
     actionError !== null
-      ? failureSentence(actionError, t('errorFallback')).sentence
+      ? failureSentence(actionError, t('errorFallback'))
       : vault.status === 'error'
-        ? (vault.errorCode === 'root-rejected'
-            ? t('errorRootRejected')
-            : vault.errorCode === 'path-missing'
-              ? t('errorPathMissing')
-              : vault.errorCode === 'permission-denied'
-                // The OS refused; a retry gives the same refusal, so name the folder and the setting.
-                ? t('errorPermissionDenied', {
+        ? vault.errorCode === 'root-rejected'
+          ? { sentence: t('errorRootRejected'), detail: null }
+          : vault.errorCode === 'path-missing'
+            ? { sentence: t('errorPathMissing'), detail: null }
+            : vault.errorCode === 'permission-denied'
+              // The OS refused; a retry gives the same refusal, so name the folder and the setting.
+              ? {
+                  sentence: t('errorPermissionDenied', {
                     folder:
                       deniedFolderName(
                         vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null,
                       ) ?? t('errorPermissionDeniedThisFolder'),
-                  })
-                : vault.errorMessage) ?? ''
+                  }),
+                  detail: vault.errorMessage,
+                }
+              /*
+               * ⚠️ `access-failed` is the one code that **does** carry a cause string, and this
+               * branch used to hand it straight to the card, which printed it beneath the
+               * Korean line as a "quiet clue" — raw English on the first-run screen
+               * (re-inspection before v1.2.2, S20). The same lookup the coded branches use
+               * recognises the OS signatures in that string; anything else falls back to this
+               * card's own sentence and keeps the English on `detail`.
+               */
+              : failureSentence(vault.errorMessage, t('errorFallback'))
         : null;
+  const errorText = failure?.sentence ?? null;
+  const errorDetail = failure?.detail ?? null;
 
   useEffect(() => {
     if (!visible) return;
@@ -178,7 +192,10 @@ export function useFirstRunStarter() {
     createVault: handleCreate,
     busy,
     scaffolding,
+    /** The sentence the card renders. Always the reader's language, never a thrown message. */
     errorText,
+    /** The machine half of the same failure. Only ever for `data-failure-detail` or the console. */
+    errorDetail,
     /**
      * Detects a browser without File System Access (Safari, Firefox). Both open-folder
      * and create-vault use FSA, so when unsupported the primary CTA is degraded

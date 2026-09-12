@@ -5,6 +5,7 @@ import { Fragment } from 'react';
 import { Bot } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
 import { controlClass } from '@/shared/ui/control-class';
 
 import { BuildFromCodeConfirmDialog } from './BuildFromCodeConfirmDialog';
@@ -40,7 +41,18 @@ export interface BuildFromCodeDoorProps {
 
 export function BuildFromCodeDoor({ build, variant, disabled = false }: BuildFromCodeDoorProps) {
   const t = useTranslations('firstRunStarter');
+  const failureSentence = useFailureSentence();
   const busy = build.stage === 'choosing' || build.stage === 'creating';
+  /*
+   * ⚠️ `build.errorText` is a **failure code**, not a sentence — `use-build-from-code.ts` returns
+   * `failureCodeOf(err) ?? ''`. Until this line was converted it rendered that token raw, so a
+   * folder-pick refused by macOS printed the literal `permission-denied` onto a Korean screen
+   * (re-inspection before v1.2.2, R3). Its sibling `BuildFromCodeConfirmDialog` was converted with
+   * the other eight consumers in the same change and this one was not, which is why the gate that
+   * change shipped now also watches the `a || t(…)` spelling and not only `err.message ? …`.
+   */
+  const failure =
+    build.errorText !== null ? failureSentence(build.errorText, t('buildFromCodeFailed')) : null;
 
   return (
     <>
@@ -91,17 +103,21 @@ export function BuildFromCodeDoor({ build, variant, disabled = false }: BuildFro
       */}
       <BuildFromCodeConfirmDialog build={build} />
 
-      {build.location === null && build.errorText !== null ? (
+      {build.location === null && failure !== null ? (
         /*
          * A failure before a project is chosen has no dialog to live in — the dialog opens on a
          * location, and there is none. Without this the button simply did nothing and the person
          * pressed it again.
+         *
+         * `data-failure-detail` is where the machine half goes: a developer reads the attribute,
+         * a reader reads the sentence.
          */
         <p
           data-testid={variant === 'card' ? 'first-run-build-error' : 'index-build-error'}
+          data-failure-detail={failure.detail ?? undefined}
           className="mt-1 break-keep text-caption leading-caption text-[color:var(--color-danger-text)]"
         >
-          {build.errorText || t('buildFromCodeFailed')}
+          {failure.sentence}
         </p>
       ) : variant === 'card' ? (
         /* What will actually happen, before it happens — including that it asks before writing. */

@@ -5,6 +5,8 @@ import { CheckCircle2, ClipboardCopy, Sparkles } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
 import { copyText } from '@/shared/lib/copy-text';
+import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
+import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
 import { ATLAS_CLI } from '@/shared/config/cli-invocation';
 import { controlClass } from '@/shared/ui/control-class';
 
@@ -115,8 +117,15 @@ export function buildOntologyStarterAgentVerifyPrompt(
  */
 export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: Props) {
   const t = useTranslations('featuresMisc.starterCta');
+  const failureSentence = useFailureSentence();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /*
+   * The failure is kept as a sentence **plus** its English detail, never as the thrown message.
+   * Scaffolding writes into a folder the person chose, so the two failures that actually happen
+   * here are `permission-denied` and `already-exists`, and the `failures` catalogue has a sentence
+   * with a next step for both. The thrown English goes to `data-failure-detail`.
+   */
+  const [error, setError] = useState<FailureCopy | null>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const [cliCopyState, setCliCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const [jsonGateCopyState, setJsonGateCopyState] = useState<
@@ -140,7 +149,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
     try {
       await onScaffold();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errorFallback'));
+      setError(failureSentence(err, t('errorFallback')));
     } finally {
       setBusy(false);
     }
@@ -312,9 +321,10 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         {error ? (
           <p
             role="alert"
+            data-failure-detail={error.detail ?? undefined}
             className="mt-3 break-keep text-label text-[color:var(--color-status-danger)]"
           >
-            {error}
+            {error.sentence}
           </p>
         ) : null}
       </section>
