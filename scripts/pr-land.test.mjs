@@ -10,6 +10,7 @@ import {
   describeLock,
   isBrowserCommand,
   localCheckPlan,
+  mergeFiredCi,
   parseArgs,
   refuseLanding,
   requiredCheckState,
@@ -356,6 +357,25 @@ describe('one landing, in order', () => {
   it('never re-fires when a run is already in flight', () => {
     const partial = [GREEN_ROLLUP[3], { name: 'MCP', status: 'IN_PROGRESS', conclusion: null }];
     assert.equal(decideNext({ ...holding, pr: readyPr({ statusCheckRollup: partial }) }).action, 'wait-checks');
+  });
+
+  it('knows which push already asked for the one CI run', () => {
+    // A ready pull request's merge commit is a `synchronize` event, so CI is
+    // already starting; a draft's push runs nothing. Reading this backwards
+    // makes the lander toggle draft on a run in flight, cancelling it and
+    // paying for a second.
+    assert.equal(mergeFiredCi({ merged: true, isDraft: false }), true);
+    assert.equal(mergeFiredCi({ merged: true, isDraft: true }), false);
+    assert.equal(mergeFiredCi({ merged: false, isDraft: false }), false);
+  });
+
+  it('never re-fires CI on a ready pull request whose merge commit just landed', () => {
+    // The merge commit is a head with no checks yet, which reads as "nothing
+    // ever ran". With the push counted as the request, the lander waits.
+    const freshHead = readyPr({ statusCheckRollup: [], headRefOid: 'f00dcafe0' });
+    assert.equal(decideNext({ ...holding, pr: freshHead, ciRequested: true }).action, 'wait-checks');
+    // Without it, it would toggle draft and buy a second run.
+    assert.equal(decideNext({ ...holding, pr: freshHead }).action, 'refire-ci');
   });
 
   it('stops on a failing required check and names the job to open', () => {

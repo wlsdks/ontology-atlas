@@ -219,6 +219,23 @@ export function localCheckPlan(paths) {
 }
 
 /**
+ * Did merging `main` in already ask GitHub for the one CI run?
+ *
+ * On a **ready** pull request the push of that merge commit is a `synchronize`
+ * event, and `synchronize` is in every workflow's trigger, so CI is already
+ * starting. On a **draft** the same push runs nothing, and `gh pr ready` is the
+ * request instead.
+ *
+ * Getting this backwards is not cosmetic. The merge commit is a head with no
+ * checks yet, which reads as "no required context ever ran", and the lander
+ * would answer by toggling draft and back: that cancels the run that was
+ * already starting and pays for a second one, on a pull request whose whole
+ * promise is one run. Found by reading the machine against a ready pull request
+ * before the first of them was landed.
+ */
+export const mergeFiredCi = ({ merged, isDraft }) => merged === true && isDraft !== true;
+
+/**
  * One step of the landing state machine, as a value.
  *
  * Every branch of the landing decision is here and nowhere else, so the whole
@@ -744,6 +761,10 @@ export function runPrLand(argv, io = console) {
         return 1;
       }
       log(merged.state === 'merged' ? 'main merged into the branch' : 'the branch already contained main');
+      if (mergeFiredCi({ merged: merged.state === 'merged', isDraft: pr.isDraft })) {
+        ciRequested = true;
+        log('that push is this landing\'s one CI run: the pull request was already ready');
+      }
       pr = readPr(number);
       continue;
     }
