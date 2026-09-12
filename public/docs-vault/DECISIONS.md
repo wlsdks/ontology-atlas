@@ -54,6 +54,24 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-12 — A press on a Library mark opens a card beside it, and citations flow toward the page
+
+**Why**: the owner: *"클릭하면 팝업뜨면서 정보를 표시하고 … 정보의 흐름같은게 보여지기도"*. A press left the picture for the page, so *what is this made of, can I believe it* cost a navigation.
+**Prior**: `forbidden.md`'s Don't — node click → full-screen detail — and the map's rule it protects: ego focus, a compact popover, detail explicit inside. 2026-09-08 "The Library graph stands still" is **narrowed**: nothing moves unasked, and every exception ends on its own.
+**Decision**: the press holds the ego ink and hangs `transientSurface("anchored")` off the mark in the Library's own popup material — no new token, ≤320px, clamped inside the canvas box, flipping rather than spilling — carrying its facts, its neighbours' states, and two doors: `Open`, the old press named, and `Ask for a redraft` on the **existing Compile brief**. Escape, a second press, an outside press and `✕` close it, handing the keyboard back; a double press keeps the shortcut. Three bounded motions, on tokens already read here: the card's citations drift 9px per settle budget **toward the page**, a stale midpoint breathes once per two budgets and once as the home arrives, and a page Compile just wrote brightens as its citations drift once — reduced motion gets a chevron and a dot. Over 42 states: card over its mark 0, the strip 0, marks moved 0.00px, frames at rest 0, +0.05ms/frame at 372 marks.
+**Dissent**: a page is two presses away now; `Open` first and the double press are the mitigation. design-interaction's harder objection, confirmed: a drifting dash is the loading idiom, and three walkers read it so before finding a sentence. Answered by holding the drift to the card's own lines and naming it there.
+**Falsifier**: a walker who reads the drift as loading with the card's sentence in front of them; a card over its mark, the strip, or off the canvas; a mark that moves on a press; a frame over 2ms at 372 marks, or any frame at rest.
+**Owner**: jinan
+
+## 2026-09-12 — The bell separates what needs me from what was done
+
+**Why**: the owner: the panel's inside matters very much, because it may be the only place the difference can be told; tabs inside it are fine. On a folder of four turns, two decisions and one turn blocked on permission, it printed a receipt's title plus **four dot-separated state words**, then one task's start and end as **two rows saying the same thing**, and **nothing** about the blocked request. Opening the bell marked everything read: the badge went 8 → none on the first press.
+**Prior**: 2026-08-01 "the inbox reports whole tasks only" stands; this folds the pair it grouped. `read-at-storage.ts`'s refusal of per-item read flags stands, so the boundary is still one timestamp.
+**Decision**: three tabs, counts engraved, the tab remembered only when nothing waits: **things to do** (a turn blocked on permission; a folder problem for 24 hours), **results** (one row per task, start and end folded, identical neighbours folded, unread until opened, a verb-first sentence over its facts), **history** (those plus shape, problem and the person's own decisions, under a day label). The waiting row does not answer the request — that callback lives in the chat panel's session, where the write is reviewed against a diff — so it states the fact and opens that card. Measured: one 52px pitch per tab (from 60·46·60·62), one sentence column (from 1117/1101/1097).
+**Dissent**: design-lead: results and history read as one list twice; both kept, because only the timeline addresses a day older than today, answered by putting the person's decisions into it. po-evidence: the waiting row cannot outlive its heartbeat, so that tab can be empty while an ask waits; kept, its empty sentence narrowed to what reached the list.
+**Falsifier**: a person who opens the bell and cannot say what waits on them; a badge digit disagreeing with the tab counts; a row whose sentence is a state word; a fold printing an allow over a rejection.
+**Owner**: jinan
+
 ## 2026-09-12 — One folder is one picture; the canvas is a window onto it
 
 **Why**: the owner on G1 (#1567): *"the graph is too big and ugly.. what happens when a few hundred documents pile up..?"* The fit was unclamped: over four folders at three windows the camera ran **0.18–5.11**, one twelve-mark folder wearing 26.1px marks at 1040 and 34.0 at 1920. At 372 marks the label threshold turned **every** name off: the home answered *which write-ups exist* with anonymous dots on graph paper.
