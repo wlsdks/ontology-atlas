@@ -34,9 +34,34 @@
 #     main into the branch does not drag main's changes into the lane filters.
 #  4. **No e2e.** Playwright is CI's job — sharded three ways there, serial here.
 #     Its absence is deliberate and the contract test asserts it.
+#  5. **A budget, printed.** 90 seconds. Every lane reports its own wall time and
+#     the total is compared against the budget, because a cost nobody prints is a
+#     cost that grows.
 #
 # **CI remains the authoritative gate.** This hook exists to make the common
 # failure cheap to find, not to replace the judgement.
+#
+# ## What the 2026-09-12 measurement changed
+#
+# The report was that this took far too long every single time. It did: **367 s for
+# a one-file change**. Two lanes were 95% of it and both paid for the wrong thing.
+#
+#  - **`unit` ran the whole suite** — 759 files, 7,499 tests — to judge one file,
+#    at `--maxWorkers=2`. Measured: 377.7 s capped, 124.3 s at the normal pool, and
+#    **6 s** now that the lane is selected by Vitest's module graph. The cap existed
+#    because four workers starved two React tests past "their explicit 5-second
+#    wait"; those hand-raised ceilings are gone (one `asyncUtilTimeout` in
+#    `vitest.setup.ts` — `.claude/rules/testing.md`, "The timing rule").
+#  - **`lint` ran ESLint over the whole tree** — 84.9 s — when ESLint is per-file
+#    and the branch changed one. Measured at **1 s** on the changed file. CI's
+#    `Types · Lint · Docs` keeps the repo-wide pass.
+#
+# Measured after: **79 s** end to end for a leaf change, inside the budget.
+#
+# `contract` stays unconditional and whole. Its ratchets scan the filesystem, so no
+# path filter can see them, and that is what catches a token or mirror drift a push
+# would otherwise land. It is now the longest pole at ~80-104 s; what it no longer
+# does is compete with two lanes three times its size.
 #
 # ## Bypass
 #
@@ -47,6 +72,8 @@ set -e
 
 BASE_REF="origin/main"
 ZERO="0000000000000000000000000000000000000000"
+# Reported, not enforced — see the note beside the summary below.
+BUDGET_SECONDS=90
 
 # git feeds `<local ref> <local sha> <remote ref> <remote sha>` on stdin.
 have_push=0
@@ -92,7 +119,19 @@ lane() {
   shift
   lane_count=$((lane_count + 1))
   lane_names="$lane_names $name"
-  ( eval "$@" >"$TMP/$name.log" 2>&1; echo $? >"$TMP/$name.code" ) &
+  # `set -e` is deliberately lifted around the lane itself. Inherited into this
+  # subshell it aborts at the first non-zero `eval`, so a FAILING lane never reached
+  # the lines that record its exit code and its duration — the summary's `|| echo 1`
+  # fallback made that look correct and the timing print exposed it as `0s`
+  # (measured 2026-09-12). A lane's own result is exactly what must survive its
+  # failure.
+  ( started=$(date +%s)
+    set +e
+    eval "$@" >"$TMP/$name.log" 2>&1
+    code=$?
+    set -e
+    echo "$code" >"$TMP/$name.code"
+    echo "$(( $(date +%s) - started ))" >"$TMP/$name.secs" ) &
   eval "pid_$name=$!"
 }
 
@@ -103,7 +142,19 @@ APP='^src/|^app/'
 DOCS='^docs/|^[A-Z0-9_-]+\.md$|^\.claude/|^\.agents/'
 
 touched "$TS" "$APP" && lane typecheck 'pnpm exec tsc --noEmit'
-touched "$APP" '^eslint\.config\.mjs$' && lane lint 'pnpm lint'
+# ESLint is per-file, so linting the whole tree to judge one changed file costs
+# 84.9 s to learn what a few seconds can say (measured 2026-09-12). A configuration
+# change is the exception — it can move every file's verdict — and still lints
+# everything. CI's `Types · Lint · Docs` runs the repo-wide pass on every PR either
+# way, so nothing is lost, only moved off the push.
+if touched '^eslint\.config\.mjs$'; then
+  lane lint 'pnpm lint'
+elif touched "$APP"; then
+  LINT_FILES=$(printf '%s\n' "$CHANGED" | grep -E '^(src|app)/.*\.(ts|tsx|mjs|js)$' || true)
+  if [ -n "$LINT_FILES" ]; then
+    lane lint "pnpm exec eslint --max-warnings=0 $(printf '%s' "$LINT_FILES" | tr '\n' ' ')"
+  fi
+fi
 # `*.perf.test.*` is excluded here and **only** here — those three compare a fast
 # path against a naive one and read the clock to do it. This hook deliberately
 # saturates the machine (eight lanes, ~900% CPU measured), which is the one
@@ -113,13 +164,21 @@ touched "$APP" '^eslint\.config\.mjs$' && lane lint 'pnpm lint'
 # `tests/contract/**` has its own unconditional lane below. Running those 209 files
 # here too duplicated 2,101 tests under the same saturation and repeatedly pushed a
 # 3.2s filesystem-glob assertion past 15s without adding any coverage.
-# Unit and contract assertions are correctness gates, not performance gates. This
-# hook can run twelve lanes at once. Four workers in each correctness lane still
-# starved two ordinary React state-transition tests past their explicit 5-second
-# wait on 2026-08-28, so only these saturated local invocations get two workers
-# and a 30-second per-test timeout. Focused runs and CI retain Vitest's normal
-# worker pool and timeout.
-touched "$APP" '^messages/' && lane unit 'pnpm exec vitest run --maxWorkers=2 --testTimeout=30000 --exclude "**/*.perf.test.*" --exclude "tests/contract/**"'
+# Unit and contract assertions are correctness gates, not performance gates.
+#
+# These lanes used to run at `--maxWorkers=2 --testTimeout=30000`, because on
+# 2026-08-28 four workers per lane starved two React state-transition tests past
+# "their explicit 5-second wait". Those explicit waits were the defect: hand-raised
+# per-call `waitFor` ceilings, which `.claude/rules/testing.md` ("The timing rule")
+# now forbids in favour of one `asyncUtilTimeout` set in `vitest.setup.ts`. With the
+# cause removed the cap is pure cost — 377.7 s against 124.3 s on the same suite —
+# so both lanes run at Vitest's normal pool, the same as CI.
+# Selected by Vitest's own module graph from the merge base, which is the same
+# three-dot scope the lane filters use. Running all 759 unit files to judge a leaf
+# change cost 377.7 s; the tests that actually import the change cost a fraction of
+# that, and CI re-runs the identical `--changed` selection on the PR.
+MERGE_BASE=$(git merge-base "$BASE_REF" HEAD 2>/dev/null || echo "$BASE_REF")
+touched "$APP" '^messages/' && lane unit "pnpm exec vitest run --changed=$MERGE_BASE --exclude '**/*.perf.test.*' --exclude 'tests/contract/**' --passWithNoTests"
 touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
 # The lane selector covers agents:check's full subject set: `.codex/**` (the
 # hook/config mirror and the MCP-grant denominator via .codex/config.toml),
@@ -143,20 +202,29 @@ touched '^docs/DESIGN-SYSTEM\.md$' && lane design_toc 'pnpm design:toc:check'
 # Cheap enough (~1 min) that filtering would buy noise, not time.
 lane source_language 'pnpm source:language'
 lane dead_code 'pnpm knip'
-lane contract 'pnpm exec vitest run --maxWorkers=2 --testTimeout=30000 tests/contract/'
+lane contract 'pnpm exec vitest run tests/contract/'
 lane comment_refs 'node scripts/check-comment-refs.mjs'
 lane decisions 'pnpm decisions:check'
 
 echo "[pre-push] Running $lane_count lanes:$lane_names"
+started_all=$(date +%s)
 wait
+total=$(( $(date +%s) - started_all ))
 
 failed=""
+slowest_name=""
+slowest_secs=0
 for name in $lane_names; do
   code=$(cat "$TMP/$name.code" 2>/dev/null || echo 1)
+  secs=$(cat "$TMP/$name.secs" 2>/dev/null || echo 0)
+  if [ "$secs" -gt "$slowest_secs" ]; then
+    slowest_secs=$secs
+    slowest_name=$name
+  fi
   if [ "$code" = "0" ]; then
-    printf '  ok    %s\n' "$name"
+    printf '  ok    %-16s %3ss\n' "$name" "$secs"
   else
-    printf '  FAIL  %s\n' "$name"
+    printf '  FAIL  %-16s %3ss\n' "$name" "$secs"
     failed="$failed $name"
   fi
 done
@@ -180,4 +248,15 @@ if [ -n "$failed" ]; then
   exit 1
 fi
 
-echo "[pre-push] All local lanes passed. CI owns the three parallel e2e shards."
+# The budget is reported, never enforced. A hook that refused a green push because
+# the machine was slow would be the very thing `.claude/rules/testing.md` forbids —
+# a gate on the clock. What this line buys is that the cost cannot creep unseen:
+# 367 s was the measured wall time for a one-file change on 2026-09-12, and nobody
+# knew, because nothing printed it.
+if [ "$total" -gt "$BUDGET_SECONDS" ]; then
+  echo "[pre-push] All local lanes passed in ${total}s — over the ${BUDGET_SECONDS}s budget, slowest lane '$slowest_name' at ${slowest_secs}s."
+  echo "[pre-push] If that lane is now the wrong shape, fix the lane; see docs/DEVELOPMENT-CHECKS.md, \"Lane budgets\"."
+else
+  echo "[pre-push] All local lanes passed in ${total}s (budget ${BUDGET_SECONDS}s, slowest '$slowest_name' at ${slowest_secs}s)."
+fi
+echo "[pre-push] CI owns the three parallel e2e shards and the repo-wide lint pass."
