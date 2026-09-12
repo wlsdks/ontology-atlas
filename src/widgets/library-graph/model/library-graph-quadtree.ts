@@ -146,8 +146,9 @@ export class LibraryQuadtree {
     y: number,
     strength: number,
     out: { fx: number; fy: number },
+    maxDistance = Infinity,
   ): void {
-    this.walk(this.root, x, y, strength, out);
+    this.walk(this.root, x, y, strength, out, maxDistance * maxDistance);
   }
 
   private walk(
@@ -156,11 +157,22 @@ export class LibraryQuadtree {
     y: number,
     strength: number,
     out: { fx: number; fy: number },
+    maxDistanceSquared: number,
   ): void {
     if (cell.mass === 0) return;
     const dx = cell.x - x;
     const dy = cell.y - y;
     const distanceSquared = dx * dx + dy * dy;
+    /*
+     * **Out of range, and the *cell* is tested rather than each point in it.** A cell whose
+     * nearest corner is already beyond the cutoff holds nothing that can contribute, so the
+     * whole subtree is skipped — which is what makes the cutoff a speed-up as well as a
+     * shape decision.
+     */
+    if (distanceSquared > maxDistanceSquared) {
+      const nearest = Math.max(0, Math.sqrt(distanceSquared) - cell.half * Math.SQRT2);
+      if (nearest * nearest > maxDistanceSquared) return;
+    }
     if (cell.children === null) {
       if (distanceSquared < 1e-9) {
         // The leaf holds the point being solved for. On its own it contributes nothing,
@@ -174,18 +186,20 @@ export class LibraryQuadtree {
         out.fy += 1e-3 * weight;
         return;
       }
+      if (distanceSquared > maxDistanceSquared) return;
       const weight = (strength * cell.mass) / distanceSquared;
       out.fx += dx * weight;
       out.fy += dy * weight;
       return;
     }
     if (distanceSquared > 1e-9 && (cell.half * 2) / Math.sqrt(distanceSquared) < BARNES_HUT_THETA) {
+      if (distanceSquared > maxDistanceSquared) return;
       const weight = (strength * cell.mass) / distanceSquared;
       out.fx += dx * weight;
       out.fy += dy * weight;
       return;
     }
-    for (const child of cell.children) this.walk(child, x, y, strength, out);
+    for (const child of cell.children) this.walk(child, x, y, strength, out, maxDistanceSquared);
   }
 }
 

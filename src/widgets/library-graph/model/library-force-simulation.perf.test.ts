@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 
 import type { LibraryGraph, LibraryGraphEdge, LibraryGraphNode } from "./build-library-graph";
 import {
+  isLibrarySimulationRunning,
+  LIBRARY_SETTLE_MAX_TICKS,
   MANY_BODY_EXACT_MAX_ORDER,
   createLibrarySimulation,
+  settleLibrarySimulation,
   stepLibrarySimulation,
 } from "./library-force-simulation";
 
@@ -186,5 +189,88 @@ describe("the live simulation's frame budget", () => {
     expect(aboveTree).toBeLessThan(aboveExact);
     expect(MANY_BODY_EXACT_MAX_ORDER).toBeGreaterThan(below);
     expect(MANY_BODY_EXACT_MAX_ORDER).toBeLessThan(above);
+  });
+});
+
+/**
+ * **The folder G2 is about: sixty write-ups over three hundred files, in six clusters.**
+ *
+ * The `folder` fixture above is one long chain, which is the right shape for the crossover
+ * and the wrong one for the arrival: what a real wiki of this size looks like is a handful
+ * of themed components, each a set of pages citing an overlapping run of the same files. The
+ * composition pass settles every one of those **synchronously on mount**, so this is the
+ * shape whose settle a person actually waits for.
+ */
+function wiki(pageCount: number, sourceCount: number): LibraryGraph {
+  const nodes: LibraryGraphNode[] = [];
+  const edges: LibraryGraphEdge[] = [];
+  const clusters = 6;
+  const perCluster = Math.floor(sourceCount / clusters);
+  const pagesPerCluster = Math.floor(pageCount / clusters);
+  for (let index = 0; index < sourceCount; index += 1) {
+    nodes.push({ id: `s${index}`, kind: "source", state: "compiled", label: `s${index}`, ref: `s${index}`, href: null });
+  }
+  for (let index = 0; index < clusters * 2; index += 1) {
+    nodes.push({ id: `k${index}`, kind: "concept", label: `k${index}`, ref: `k${index}`, href: "/topology" });
+  }
+  for (let page = 0; page < pageCount; page += 1) {
+    const cluster = Math.min(clusters - 1, Math.floor(page / pagesPerCluster));
+    const within = page % pagesPerCluster;
+    nodes.push({ id: `p${page}`, kind: "page", label: `p${page}`, ref: `p${page}`, href: null });
+    const cited = 6 + (within % 5);
+    for (let k = 0; k < cited; k += 1) {
+      const source = cluster * perCluster + ((within * 5 + k) % perCluster);
+      edges.push({ id: `c${page}-${k}`, source: `p${page}`, target: `s${source}`, relation: "cites", certainty: "current" });
+    }
+    if (within % 3 === 0) {
+      edges.push({ id: `m${page}`, source: `p${page}`, target: `k${cluster * 2 + (within % 2)}`, relation: "mentions", certainty: "current" });
+    }
+  }
+  return {
+    nodes,
+    edges,
+    counts: {
+      sources: sourceCount,
+      pages: pageCount,
+      concepts: clusters * 2,
+      cites: edges.filter((edge) => edge.relation === "cites").length,
+      mentions: edges.filter((edge) => edge.relation === "mentions").length,
+    },
+  };
+}
+
+describe("the arrival's settle budget", () => {
+  /**
+   * **The whole arrival, not one tick.** A tick inside a frame says nothing about whether a
+   * person waits: the composition settles every component synchronously before the first
+   * paint, and then the picture settles again on `requestAnimationFrame`. Both are measured
+   * here, at the two orders G2 is claimed for.
+   */
+  it("settles 300 and 1000 marks inside the budget, and idles after", () => {
+    for (const [pages, sources] of [
+      [60, 240],
+      [180, 800],
+    ] as const) {
+      const graph = wiki(pages, sources);
+      const order = graph.nodes.length;
+      const startedMount = performance.now();
+      const sim = createLibrarySimulation({ graph, box: { width: 1088, height: 819 } });
+      const mountMs = performance.now() - startedMount;
+      const startedSettle = performance.now();
+      settleLibrarySimulation(sim);
+      const settleMs = performance.now() - startedSettle;
+      process.stdout.write(
+        `[library-graph] ${order} marks: mount (composition) ${mountMs.toFixed(0)}ms, settle ${settleMs.toFixed(0)}ms over ${sim.ticks} ticks, ${(settleMs / Math.max(1, sim.ticks)).toFixed(2)}ms per tick\n`,
+      );
+      // The picture is at rest and the loop may stop: this canvas stands still
+      // (`docs/DECISIONS.md`, 2026-09-08), and a settle that never lands is that promise
+      // broken rather than a slow arrival.
+      expect(isLibrarySimulationRunning(sim)).toBe(false);
+      expect(sim.ticks).toBeLessThanOrEqual(LIBRARY_SETTLE_MAX_TICKS);
+      // Ten times the local measurement, for the same reason the frame budget above is a
+      // ceiling rather than the number that was measured.
+      expect(mountMs).toBeLessThan(order > 500 ? 4000 : 1500);
+      expect(settleMs / Math.max(1, sim.ticks)).toBeLessThan(16.7);
+    }
   });
 });

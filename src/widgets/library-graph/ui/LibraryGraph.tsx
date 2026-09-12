@@ -150,16 +150,23 @@ export interface LibraryGraphProps {
  */
 const CANVAS_CLASS = "min-h-0 w-full flex-1";
 /**
- * The order at which every mark stops carrying its own name and hover takes over.
+ * ⚠️ **The standing names used to be switched off above sixty marks**, on the argument that
+ * past some order the picture is a field of hidden labels plus the few that happened to win,
+ * which reads as an arbitrary subset rather than a policy.
  *
- * **Chosen by what fits, not by taste.** A standing name is about 11px tall and up to
- * 132px wide, and the collision pass hides whichever ones cannot stand clear — so past
- * some order the picture is a field of hidden labels plus the few that happened to win,
- * which reads as an arbitrary subset rather than a policy. 60 is where the seeded folders
- * measured here stop placing most of them; above it the honest answer is that this is an
- * overview and a name is something you ask a dot for.
+ * The argument was right about the subset and wrong about the remedy. Measured on the G2
+ * fixture — sixty write-ups over three hundred files — the threshold turned **every** name
+ * off, so the home of a folder that size answered *which write-ups exist* with three hundred
+ * and seventy-two anonymous dots. A person cannot ask a dot for a name they have no reason to
+ * point at.
+ *
+ * What makes the subset a policy rather than an accident is **which** names are dropped, and
+ * that is now decided in two places that can be stated: a page always carries its name and a
+ * file carries its own only when the screen is about it (`sourceLabels`,
+ * `SOURCE_LABEL_MIN_SCALE`), and inside the page names a collision is resolved against the
+ * page with fewer citations (`draw-library-graph.ts`, `rank`). So the names that survive are
+ * the folder's busiest write-ups, at every order and every window size.
  */
-const STANDING_LABEL_MAX_NODES = 60;
 
 function selectionNodeId(selection: LibraryGraphSelection | null): string | null {
   if (!selection) return null;
@@ -224,7 +231,9 @@ export function LibraryGraph({
     [onSelect, router],
   );
 
-  const standingLabels = graph.nodes.length <= STANDING_LABEL_MAX_NODES;
+  // A page always carries its name; what the order changes is which *files* are named, and
+  // the camera decides that. See the note above the removed threshold.
+  const standingLabels = true;
   const engine = useLibraryGraphEngine({
     graph,
     canvasRef,
@@ -370,7 +379,7 @@ export function LibraryGraph({
           data-picture-aspect={engine.pictureAspect === null ? "" : engine.pictureAspect.toFixed(3)}
           /* Which naming policy is in force. Same reason as the four above: a claim about
              what a canvas draws has to be checkable from outside it. */
-          data-labels={standingLabels ? "standing" : "hover"}
+          data-labels="standing"
           data-active-kind={activeNode?.kind ?? ""}
           /*
            * `group`, not `application`. `OntologyMap` decided this for the identical

@@ -21,14 +21,15 @@ const INK: LibraryGraphInk = {
   selected: "selected-ink",
   selectedRing: "ring-ink",
   danger: "danger-ink",
-  gridMinor: "grid-minor",
-  gridMajor: "grid-major",
+  pageHalo: "page-halo",
+  sourceLabel: "source-label-ink",
   labelSurface: "label-surface",
   labelBorder: "label-border",
   labelInk: "label-ink",
   fontFamily: "Test",
-  pageLabelPx: 12.5,
+  pageLabelPx: 11,
   labelPx: 11,
+  captionPx: 9.5,
 };
 
 interface Recorder {
@@ -165,6 +166,9 @@ function frame(overrides: Partial<Parameters<typeof drawLibraryGraph>[1]> = {}) 
     // The default frame is the hover policy, so every case written before standing names
     // existed still measures what it was written to measure.
     standingLabels: false,
+    // Zoomed out, so a file's own name exists only when it is pointed at or in the open
+    // page's neighbourhood — the policy every case below either measures or does not touch.
+    sourceLabels: false,
     ...overrides,
   } satisfies Parameters<typeof drawLibraryGraph>[1];
 }
@@ -393,10 +397,14 @@ describe("drawing the library graph", () => {
    * order alone let the marks the dim had just pushed away take the room: measured on a
    * 50-node folder at 1512 with a page open beside the canvas (287×852), the three names
    * the column had space for were all dimmed ones, and the open page and every source it
-   * cites were unnamed. Two labels that cannot both stand is the smallest frame in which
-   * that choice is visible, so it is the one the gate holds.
+   * cites were unnamed.
+   *
+   * ⚠️ Two marks 8px apart used to leave room for exactly one name, and this case asserted
+   * which one. Since 2026-09-12 a name may stand in any of four places around its mark, so
+   * both now fit — and what the pass decides is no longer *whether* the second is named but
+   * **which one is asked first**, which is the same claim read off the order.
    */
-  it("names the neighbourhood before the rest of the folder when only one name fits", () => {
+  it("names the neighbourhood before the rest of the folder", () => {
     const crowd: LibraryGraphNode[] = [
       { id: "page:wiki/elsewhere", kind: "page", label: "Elsewhere", ref: "wiki/elsewhere", href: null },
       { id: "page:wiki/open", kind: "page", label: "Open page", ref: "wiki/open", href: null },
@@ -410,7 +418,7 @@ describe("drawing the library graph", () => {
     // Nothing open: no ego set, so the graph's own order decides and the first one wins.
     const plain = recorder();
     drawLibraryGraph(plain.ctx, frame({ nodes: crowd, edges: [], positions: where, standingLabels: true }));
-    expect(plain.texts.map((entry) => entry.text)).toEqual(["Elsewhere"]);
+    expect(plain.texts.map((entry) => entry.text)).toEqual(["Elsewhere", "Open page"]);
 
     // The second page open: the same single slot, and it goes to the page being read.
     const ego = recorder();
@@ -426,7 +434,9 @@ describe("drawing the library graph", () => {
         focus: new Set(["page:wiki/open"]),
       }),
     );
-    expect(ego.texts.map((entry) => entry.text)).toEqual(["Open page"]);
+    expect(ego.texts.map((entry) => entry.text)).toEqual(["Open page", "Elsewhere"]);
+    // Asked first, it also keeps the place a name belongs in: under its own mark.
+    expect(ego.texts[0]!.y).toBeGreaterThan(100);
   });
 
   it("paints its own ground: the canvas is opaque", () => {

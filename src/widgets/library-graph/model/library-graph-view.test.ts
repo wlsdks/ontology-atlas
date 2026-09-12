@@ -4,6 +4,10 @@ import { describe, expect, it } from "vitest";
 import {
   fitView,
   isWheelZoomIntent,
+  LIBRARY_ZOOM_MAX,
+  LIBRARY_ZOOM_MIN,
+  MIN_SOURCE_MARK_PX,
+  SOURCE_MARK_WORLD_RADIUS,
   panView,
   scaleBounds,
   screenToWorld,
@@ -26,12 +30,28 @@ describe("the library graph's view", () => {
   });
 
   it("fits the picture with one scale for both axes", () => {
-    const view = fitView({ minX: -200, maxX: 200, minY: -50, maxY: 50 }, BOX, 26);
-    // 400 world units across a 948px inner box is 2.37; 100 down a 548px box is 5.48.
+    const view = fitView({ minX: -600, maxX: 600, minY: -150, maxY: 150 }, BOX, 26);
+    // 1200 world units across a 948px inner box is 0.79; 300 down a 548px box is 1.83.
     // The smaller wins, or the picture would be stretched.
-    expect(view.scale).toBeCloseTo(948 / 400, 6);
+    expect(view.scale).toBeCloseTo(948 / 1200, 6);
     expect(view.x).toBe(0);
     expect(view.y).toBe(0);
+  });
+
+  /**
+   * **The fit frames, it does not magnify** (2026-09-12, G2). A folder of six documents on a
+   * 1920 window asks for whatever scale spreads six dots across the width, and the marks are
+   * a fixed world size, so an unclamped fit hands their drawn size straight back to the
+   * window — which is the picture the owner rejected.
+   */
+  it("clamps the fit at both ends rather than magnifying a small folder", () => {
+    const tiny = fitView({ minX: -50, maxX: 50, minY: -30, maxY: 30 }, BOX, 64);
+    expect(tiny.scale).toBe(LIBRARY_ZOOM_MAX);
+    const huge = fitView({ minX: -4000, maxX: 4000, minY: -2000, maxY: 2000 }, BOX, 64);
+    expect(huge.scale).toBe(LIBRARY_ZOOM_MIN);
+    // Clamped low, the picture is wider than the canvas and the person pans — which is
+    // honest, where a source mark under three pixels across is not.
+    expect(SOURCE_MARK_WORLD_RADIUS * 2 * huge.scale).toBeCloseTo(MIN_SOURCE_MARK_PX, 6);
   });
 
   it("centres a single node rather than dividing by a zero span", () => {
@@ -61,12 +81,17 @@ describe("the library graph's view", () => {
   });
 
   it("stops at the bounds instead of zooming forever", () => {
-    const bounds = scaleBounds(2);
-    expect(bounds).toEqual({ min: 1, max: 8 });
-    const wide = zoomViewAbout({ scale: 2, x: 0, y: 0 }, BOX, { x: 10, y: 10 }, 0.01, bounds);
-    expect(wide.scale).toBe(1);
-    const close = zoomViewAbout({ scale: 2, x: 0, y: 0 }, BOX, { x: 10, y: 10 }, 100, bounds);
-    expect(close.scale).toBe(8);
+    const bounds = scaleBounds();
+    // Absolute, not fit-relative: a mark is a fixed world size, so the camera is the only
+    // thing deciding how big it is drawn and a fit-relative ceiling would hand that back to
+    // the window.
+    expect(bounds).toEqual({ min: LIBRARY_ZOOM_MIN, max: LIBRARY_ZOOM_MAX });
+    // A source's square never drops under three canvas pixels across.
+    expect(SOURCE_MARK_WORLD_RADIUS * 2 * bounds.min).toBeCloseTo(MIN_SOURCE_MARK_PX, 6);
+    const wide = zoomViewAbout({ scale: 1, x: 0, y: 0 }, BOX, { x: 10, y: 10 }, 0.01, bounds);
+    expect(wide.scale).toBe(LIBRARY_ZOOM_MIN);
+    const close = zoomViewAbout({ scale: 1, x: 0, y: 0 }, BOX, { x: 10, y: 10 }, 100, bounds);
+    expect(close.scale).toBe(LIBRARY_ZOOM_MAX);
     // At the bound the view is returned unchanged rather than re-anchored by a no-op zoom,
     // which would drift the centre a hair on every further notch.
     const pinned = zoomViewAbout(close, BOX, { x: 10, y: 10 }, 100, bounds);

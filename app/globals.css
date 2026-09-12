@@ -3542,6 +3542,23 @@
     --map-vignette-far-alpha: 0.18;
 
     /*
+     * **The Library graph's page halo** — the ring of ground a page mark clears around
+     * itself so the citations running underneath stop at the disc instead of crossing it.
+     *
+     * Why a token rather than `--color-canvas` reused: at three hundred documents eight or
+     * ten lines meet one page, and a halo painted in the flat ground colour cuts a visible
+     * hole in the picture there. One step above the ground (#08090a → #0e0f13, the same
+     * distance `--map-grid-minor` stands off it) reads as the page *sitting on* the lines
+     * instead. It is a flat fill of one width, never a glow and never animated; the mark
+     * itself is painted over it, so this colour is only ever seen as a rim.
+     *
+     * Named `--graph-*` rather than `--library-*` because the canvas it belongs to is the
+     * Library's *graph*, and `docs/DESIGN-SYSTEM.md` carries the registration.
+     * Consumer: `src/widgets/library-graph/render/library-graph-ink.ts`.
+     */
+    --graph-page-halo: #0e0f13;
+
+    /*
      * Latitude ring of the 3D dome — **coordinate system ink drawn only in 3D**.
      *
      * Why not `--map-grid-major` (#121218): that value is for a **planar grid**,

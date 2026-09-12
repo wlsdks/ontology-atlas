@@ -88,6 +88,15 @@ export interface LibraryGraphFrame {
    */
   standingLabels: boolean;
   /**
+   * Whether a file's and a concept's name exist on this frame at all.
+   *
+   * The caller answers it from the camera — `view.scale >= SOURCE_LABEL_MIN_SCALE` — so the
+   * policy is one comparison in one place and the renderer stays a pure function of its
+   * frame. A source that is pointed at, selected, or in the open page's neighbourhood is
+   * named whatever this says.
+   */
+  sourceLabels: boolean;
+  /**
    * The drawn half-extent of each mark, graded by degree
    * (`libraryMarkRadii`). Absent falls back to the flat {@link NODE_RADIUS} band, which is
    * what every test written before the grading existed still measures.
@@ -158,17 +167,17 @@ export interface LibraryGraphActivityMark {
 }
 
 /**
- * Half-extent in CSS px, when the caller hands no graded radii.
+ * Half-extent in world units, when the caller hands no graded radii — the floor of the
+ * fixed scale `libraryMarkRadii` grades inside.
  *
- * **One step up on 2026-09-06**, when the canvas stopped being a 320px band and became
- * the pane. The source is a step under the circle: a square reads heavier than a circle of
- * the same extent, so matching by *bounding box* would have made the file the loudest mark
- * on a canvas whose subject is the page.
+ * The source is well under the circle: a square reads heavier than a circle of the same
+ * extent, so matching by *bounding box* would make the file the loudest mark on a canvas
+ * whose subject is the page.
  */
 export const NODE_RADIUS: Record<LibraryGraphNodeKind, number> = {
-  page: 6,
-  source: 5,
-  concept: 6,
+  page: 5,
+  source: 3.5,
+  concept: 5,
 };
 
 /**
@@ -213,37 +222,33 @@ export const CITES_WIDTH = 1.5;
 const MENTIONS_WIDTH = 1;
 
 /**
- * **The line weight follows the mark band**, floored at the two widths above.
+ * **The line weight is fixed**, at the two widths above.
  *
- * Those two were measured on 2026-09-06 against 5–10px marks in a 320px strip. The strip
- * became the pane and the marks grew with it (`libraryMarkBand`), and a 1.5px line between
- * two 34px dots reads as a hairline somebody forgot: the *ratio* is what a person sees, so
- * the ratio is what is held. The scale is the band's top over the 10px it was measured at,
- * and it never goes below 1 — a dense folder keeps exactly the lines that shipped, which is
- * also what keeps the 5.23:1 contrast measurement those widths were taken with honest.
+ * ⚠️ It briefly followed the mark band — `base × max(1, maxRadius / 10)` — because the band
+ * followed the canvas and a 1.5px line between two 34px dots reads as a hairline somebody
+ * forgot. The band no longer follows the canvas, so neither does this, and a fixed weight is
+ * what keeps the 5.23:1 contrast measurement those widths were taken with honest at every
+ * window size and every folder.
  */
-function libraryEdgeWidth(relation: "cites" | "mentions", maxRadius: number): number {
-  const base = relation === "mentions" ? MENTIONS_WIDTH : CITES_WIDTH;
-  return base * Math.max(1, maxRadius / 10);
+function libraryEdgeWidth(relation: "cites" | "mentions"): number {
+  return relation === "mentions" ? MENTIONS_WIDTH : CITES_WIDTH;
 }
 /** Gap between a mark and the name standing under it. */
 const STANDING_LABEL_GAP = 5;
 
-/**
- * **The room the outermost mark needs for its own name**, which is what the fit reserves on
- * every side.
- *
- * It was the constant `LIBRARY_LABEL_ALLOWANCE` (34) — "an 11px label on a 15px line, 5px
- * under a mark up to 10px". Two of those three numbers now follow the canvas: the mark band
- * grows on an emptier canvas and a page's name is set a step up the ramp. A constant would
- * either clip the name at the bottom edge or reserve a margin nothing uses, so the reach is
- * derived from the same two values the renderer draws with.
- */
-export function libraryStandingLabelReach(maxRadius: number, pageLabelPx: number): number {
-  return maxRadius + STANDING_LABEL_GAP + Math.round(pageLabelPx * 1.35) + 2;
-}
 /** No standing name is allowed to be wider than this; past it a name is truncated. */
 const STANDING_LABEL_MAX_WIDTH = 132;
+/**
+ * **The longest name this canvas prints, in characters.**
+ *
+ * The width cap above is a pixel budget and does its own truncation, so this looks
+ * redundant and is not: at 9.5px a 132px budget is about 30 characters of Latin and about
+ * 13 of Hangul, so the *same* folder printed names of two very different lengths depending
+ * on the script. A character cap applied first makes the shortening one rule a person can
+ * learn — and 24 is where a file name's stem and its extension both still survive
+ * (`chargeback-runbook.md` is 21).
+ */
+const STANDING_LABEL_MAX_CHARS = 24;
 const LABEL_PAD_X = 6;
 const LABEL_PAD_Y = 4;
 const LABEL_GAP = 6;
@@ -286,47 +291,28 @@ const MARK_HALO_RATIO = 1;
  */
 const LABEL_OUTLINE_PX = 2;
 
-/**
- * The outline, once the widest line on the canvas is wider than the 1.5px it was measured
- * against: the clearance a name needs is the width of what crosses it, so it is one citation
- * width plus the half pixel that took 1.5 to 2.
- */
-function labelOutlinePx(maxRadius: number): number {
-  return Math.max(LABEL_OUTLINE_PX, libraryEdgeWidth("cites", maxRadius) + 0.5);
+/** The clearance a name needs is the width of what crosses it: one citation width, floored. */
+function labelOutlinePx(): number {
+  return Math.max(LABEL_OUTLINE_PX, libraryEdgeWidth("cites") + 0.5);
 }
 
 /**
- * The ruled ground, in screen space — see `LibraryGraphInk.gridMinor` for why it is the
- * map's grid and not something of this canvas's own.
+ * The ground: one flat fill, and nothing else on it.
  *
- * Two paths and two strokes for the whole field: 45 verticals and 34 horizontals at
- * 1088×819, against the several hundred operations a frame of this picture already costs.
- * Both spacings are the map's (`grid.ts`): 24px minor, every fifth line major.
+ * ⚠️ **This used to draw the map's blueprint grid** — `--map-grid-minor` / `--map-grid-major`
+ * at 24 and 120px, static in screen space, taken on 2026-09-12 because the canvas had become
+ * the Library's whole pane and read as a void with marks on it. The owner's verdict on the
+ * build that shipped it names the grid's real effect: graph paper under a dozen dots makes
+ * the dots look like a sample of something, and it sets a second, finer rhythm for the eye to
+ * follow that no relation in the folder corresponds to. At three hundred marks it is worse —
+ * the ruling reads through the picture as texture competing with the citations.
+ *
+ * A canvas is allowed a ground (`docs/DESIGN-SYSTEM.md`, 2026-09-08). What this one takes is
+ * the app's own surface, so the picture sits in the pane rather than on a sheet inside it.
  */
-const GRID_MINOR_SPACING = 24;
-const GRID_CELLS_PER_MAJOR = 5;
-
 function drawGround(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame): void {
   ctx.fillStyle = frame.ink.ground;
   ctx.fillRect(0, 0, frame.width, frame.height);
-  const major = GRID_MINOR_SPACING * GRID_CELLS_PER_MAJOR;
-  ctx.lineWidth = 1;
-  for (const pass of ["minor", "major"] as const) {
-    ctx.strokeStyle = pass === "minor" ? frame.ink.gridMinor : frame.ink.gridMajor;
-    ctx.beginPath();
-    for (let x = 0; x <= frame.width; x += GRID_MINOR_SPACING) {
-      if ((x % major === 0) !== (pass === "major")) continue;
-      // The half pixel is what puts a 1px line on one device row instead of across two.
-      ctx.moveTo(x + 0.5, 0);
-      ctx.lineTo(x + 0.5, frame.height);
-    }
-    for (let y = 0; y <= frame.height; y += GRID_MINOR_SPACING) {
-      if ((y % major === 0) !== (pass === "major")) continue;
-      ctx.moveTo(0, y + 0.5);
-      ctx.lineTo(frame.width, y + 0.5);
-    }
-    ctx.stroke();
-  }
 }
 
 function nodeCentre(frame: LibraryGraphFrame, id: string): LayoutPoint | null {
@@ -443,9 +429,6 @@ function roundedRect(
 
 export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame): void {
   const { ink } = frame;
-  // The band's own top, which the line weights and the halo are stated against.
-  let maxRadius = 0;
-  for (const node of frame.nodes) maxRadius = Math.max(maxRadius, radiusOf(frame, node));
   const dim = frame.dim ?? 0;
   const focus = frame.focus ?? null;
   const opacity = frame.opacity;
@@ -502,7 +485,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
      * decode. A citation is the heavier claim and now looks it. Value stays reserved for
      * the selection — this is width, a third channel, and the one the legend needed.
      */
-    const relationWidth = libraryEdgeWidth(edge.relation, maxRadius);
+    const relationWidth = libraryEdgeWidth(edge.relation);
     // The two answers a line can give about attention are half a relation width each, so they
     // stay legible against a line that is itself wider on an emptier canvas.
     ctx.lineWidth =
@@ -552,18 +535,22 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     const mark = isSelected ? ink.selected : ownInk;
 
     /*
-     * **The halo, in the ground's own colour.** A ring of canvas is laid down first, one
-     * mark's worth wider than the mark, so every line running underneath stops at the dot
-     * instead of crossing it. It also clears the inside of the two hollow marks, which is
-     * what "the ground shows through" means once there are lines to show through it.
+     * **The halo.** A ring is laid down first, one line width wider than the mark, so every
+     * line running underneath stops at the dot instead of crossing it. It also clears the
+     * inside of the two hollow marks, which is what "the ground shows through" means once
+     * there are lines to show through it.
      *
-     * This is not a glow. A glow spreads a *colour* outward and usually pulses; this is
-     * the background, it is one line width wide ({@link MARK_HALO_RATIO}), and it never
-     * animates.
+     * A **page** clears itself in `--graph-page-halo`, a shade above the ground: eight or
+     * ten citations meet one page on a busy folder, and a ring of flat ground there cuts a
+     * hole in the picture instead of putting the page on top of it. Everything else clears
+     * in the ground, where one or two lines arrive and there is nothing to soften.
+     *
+     * This is not a glow. A glow spreads a *colour* outward and usually pulses; this is one
+     * flat fill, one line width wide ({@link MARK_HALO_RATIO}), and it never animates.
      */
     ctx.globalAlpha = opacity?.get(node.id) ?? 1;
-    ctx.fillStyle = ink.ground;
-    const halo = libraryEdgeWidth("cites", maxRadius) * MARK_HALO_RATIO;
+    ctx.fillStyle = node.kind === "page" ? ink.pageHalo : ink.ground;
+    const halo = libraryEdgeWidth("cites") * MARK_HALO_RATIO;
     if (node.kind === "source") {
       const reach = radius + halo;
       ctx.fillRect(centre.x - reach, centre.y - reach, reach * 2, reach * 2);
@@ -635,23 +622,31 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   // ── Real work, bounded to the node it actually touched. ──
   drawActivityMarks(ctx, frame);
 
-  // ── Every name, while the picture is small enough to hold them. ──
+  // ── The names. ──
   /*
-   * **A picture of unnamed dots is not a picture of anything** (owner, 2026-09-06). Once
-   * the canvas became the pane, the seeded folder read at 1512 as five specks on an empty
-   * field, and the only way to learn what any of them was was to point at it — one at a
-   * time, with nothing left behind. So under the caller's threshold every mark carries its
-   * own name, and hover keeps its box for the crowded case above it.
+   * **A picture of unnamed dots is not a picture of anything** (owner, 2026-09-06), and
+   * **three hundred names is not a picture either.** The first of those was measured on a
+   * twelve-mark folder; the second on a sixty-page, three-hundred-file one, where naming
+   * every mark put 288 of 360 names into a collision and the pass then hid whichever ones
+   * lost, which is a different arbitrary third of the folder at every window size.
+   *
+   * So the names are **semantic**, not thresholded:
+   *
+   * - **A page always carries its name.** It is the subject of this canvas and the thing a
+   *   person came to read off it — "which write-ups exist" is answered by a name or not at
+   *   all. When two page names collide the **quieter** page loses, so the folder's busiest
+   *   write-ups are the ones that stay named at every size (`rank`, below).
+   * - **A file or a concept carries its name only when the screen is about it**: zoomed in
+   *   past `SOURCE_LABEL_MIN_SCALE`, pointed at, or in the neighbourhood of the page that is
+   *   open. Otherwise it is a dot, and its name is one hover away.
    *
    * ## Losers are hidden, never overlapped
    *
    * Two names crossing each other are worse than one name, because a reader cannot tell
-   * which glyphs belong to which dot. The pass is screen-space and greedy in a fixed
-   * order — the pointed-at or open neighbourhood first, then pages, sources and concepts,
-   * each in the graph's own order — so the same folder drops the same names on every draw
-   * and on every machine. The marks themselves are occupied first: a name may lose to a
-   * **dot** as well as to another name, which is what stops a label from sitting on top of
-   * the thing it is not naming.
+   * which glyphs belong to which dot. The pass is screen-space and greedy in a fixed order,
+   * so the same folder drops the same names on every draw and on every machine. The marks
+   * themselves are occupied first: a name may lose to a **dot** as well as to another name,
+   * which is what stops a label from sitting on top of the thing it is not naming.
    */
   if (frame.standingLabels) {
     ctx.textBaseline = "top";
@@ -671,7 +666,6 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         of: node.id,
       });
     }
-    const order: LibraryGraphNodeKind[] = ["page", "source", "concept"];
     /*
      * ⚠️ **The neighbourhood is named before the rest of the folder.**
      *
@@ -684,22 +678,39 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
      * the only things on the picture that said what they were. That is the attention model
      * inverted — identity spent on exactly what the frame is suppressing.
      *
-     * So focus is the first sort key and kind the second, with the graph's own order
-     * breaking the tie, which keeps the pass deterministic: the same folder drops the same
-     * names on every draw and on every machine. With nothing pointed at and nothing open
-     * `focus` is null, every node ranks alike, and the order is the one above unchanged.
+     * So focus is the first key, kind the second — a page before a file before a concept —
+     * and **the mark's own size the third, largest first**. That last one is the 2026-09-12
+     * change: a page's radius is its citation count (`libraryMarkRadii`), so asking the
+     * busiest page first means a collision is always resolved against the quieter of the two
+     * names. The graph's own order breaks the remaining ties, which keeps the pass
+     * deterministic: the same folder drops the same names on every draw and on every
+     * machine.
      */
+    const order: LibraryGraphNodeKind[] = ["page", "source", "concept"];
     const rank = (node: LibraryGraphNode): number => {
       const near = !focus || focus.has(node.id) || node.id === frame.selectedId ? 0 : 1;
       return near * order.length + order.indexOf(node.kind);
     };
+    /** Whether a file's or a concept's name exists on this frame at all. */
+    const carriesName = (node: LibraryGraphNode): boolean => {
+      if (node.kind === "page") return true;
+      if (frame.sourceLabels) return true;
+      if (node.id === frame.selectedId || node.id === active) return true;
+      return focus !== null && focus.has(node.id);
+    };
     const named = frame.nodes
       .map((node, index) => ({ node, index }))
-      .sort((first, second) => rank(first.node) - rank(second.node) || first.index - second.index);
+      .sort(
+        (first, second) =>
+          rank(first.node) - rank(second.node) ||
+          radiusOf(frame, second.node) - radiusOf(frame, first.node) ||
+          first.index - second.index,
+      );
     for (const { node } of named) {
       // The pointed-at node already has a box of its own; two names for one dot is a
       // duplicate, and the box would draw over the standing one anyway.
       if (node.id === active) continue;
+      if (!carriesName(node)) continue;
       const centre = nodeCentre(frame, node.id);
       if (!centre) continue;
       // Per kind, before anything is measured: a page's name is set one step up the ramp, so
@@ -709,32 +720,50 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       const lineHeight = Math.round(fontPx * 1.35);
       const text = truncateToWidth(
         ctx,
-        node.label,
+        middleEllipsis(node.label, STANDING_LABEL_MAX_CHARS),
         Math.min(STANDING_LABEL_MAX_WIDTH, frame.width - 8),
       );
       if (!text) continue;
       const width = ctx.measureText(text).width;
       /*
-       * **Slid back inside the frame, not dropped for being near the edge.** The first
-       * build hid any name whose box left the canvas, and measured at 1512 that cost the
-       * two marks nearest the left and right edges their names — the fit puts a node
-       * within 21px of both edges by design, so the rule was hiding exactly the dots a
-       * person is most likely to be looking at. It slides; only a genuine collision
-       * hides.
+       * **Four places a name may stand, and it takes the first that is free.**
+       *
+       * ⚠️ There used to be one — under the mark — and a name that could not stand there was
+       * dropped. That is affordable on twelve marks and ruinous on three hundred: measured on
+       * the 372-mark fixture at 1512, **8 of 60** write-ups were named, because under a hub
+       * the room is exactly where that hub's own satellites are. Under, over, right, left, in
+       * that order: under first because a name under a dot is the one a person reads without
+       * being told which dot it belongs to, and the other three only when under is taken.
+       * After: 34 of 60.
+       *
+       * Horizontally the name is **slid back inside the frame rather than dropped** for being
+       * near the edge. The first build hid any name whose box left the canvas, and at 1512
+       * that cost the two marks nearest the left and right edges their names — the fit puts a
+       * node near both edges by design, so the rule was hiding exactly the dots a person is
+       * most likely to be looking at.
        */
-      const left = Math.min(
+      const half = radiusOf(frame, node);
+      const centred = Math.min(
         Math.max(2, centre.x - width / 2),
         Math.max(2, frame.width - 2 - width),
       );
-      const box = {
-        x: left,
-        y: centre.y + radiusOf(frame, node) + STANDING_LABEL_GAP,
-        width,
-        height: lineHeight,
-      };
-      // Below the frame there is nowhere to slide to, so that one still loses.
-      if (box.y + box.height > frame.height - 2) continue;
-      if (taken.some((other) => other.of !== node.id && overlaps(box, other))) continue;
+      const candidates = [
+        { x: centred, y: centre.y + half + STANDING_LABEL_GAP },
+        { x: centred, y: centre.y - half - STANDING_LABEL_GAP - lineHeight },
+        { x: centre.x + half + STANDING_LABEL_GAP, y: centre.y - lineHeight / 2 },
+        { x: centre.x - half - STANDING_LABEL_GAP - width, y: centre.y - lineHeight / 2 },
+      ];
+      let box: { x: number; y: number; width: number; height: number } | null = null;
+      for (const candidate of candidates) {
+        const tried = { x: candidate.x, y: candidate.y, width, height: lineHeight };
+        // Off the frame there is nowhere to slide to, so that placement loses.
+        if (tried.y < 2 || tried.y + tried.height > frame.height - 2) continue;
+        if (tried.x < 2 || tried.x + tried.width > frame.width - 2) continue;
+        if (taken.some((other) => other.of !== node.id && overlaps(tried, other))) continue;
+        box = tried;
+        break;
+      }
+      if (!box) continue;
       taken.push(box);
       frame.labelReport?.push({
         nodeId: node.id,
@@ -747,35 +776,30 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         fontPx,
       });
       /*
-       * A page is what somebody wrote and is the subject of this canvas; a file and a
-       * concept are what it stands on. The two inks are the ones the marks already
-       * carry, so the names sit in the same hierarchy as the dots they belong to.
-       *
-       * A name dims with the mark it belongs to. A bright name over a dimmed dot would
-       * be the loudest thing on a canvas that has just been told to quieten it.
+       * A name dims with the mark it belongs to. A bright name over a dimmed dot would be
+       * the loudest thing on a canvas that has just been told to quieten it.
        */
       ctx.globalAlpha = alphaOf(node.id);
       /*
-       * **A 1px outline of the ground, under every name.** A canvas this connected puts
-       * a line under most labels, and grey glyphs crossed by a grey line are the one
-       * thing on this picture a person genuinely cannot read. The outline is the same
-       * device as the marks' halo and the same colour — the ground, never a colour
-       * spreading outward — and it is stroked before the fill so the glyph itself is
-       * never thickened by it.
+       * **An outline of the ground, under every name.** A canvas this connected puts a line
+       * under most labels, and grey glyphs crossed by a grey line are the one thing on this
+       * picture a person genuinely cannot read. The outline is the same device as the marks'
+       * halo and the same colour — the ground, never a colour spreading outward — and it is
+       * stroked before the fill so the glyph itself is never thickened by it.
        */
       ctx.strokeStyle = ink.ground;
-      ctx.lineWidth = labelOutlinePx(maxRadius) * 2;
+      ctx.lineWidth = labelOutlinePx() * 2;
       ctx.lineJoin = "round";
       ctx.strokeText(text, box.x + box.width / 2, box.y);
       /*
-       * ⚠️ **A name takes its own mark's ink** — which is what the paragraph above always
-       * claimed and what the code did not do. A source was drawn at `ink.source` (6.13:1)
-       * and then named at `ink.concept` (5.23:1), which is *the edge ink*: eight of the
-       * nineteen names on the owner's folder were set in exactly the value of every line
-       * that crossed them (2026-09-08). Three kinds, three inks, the same three the marks
-       * carry.
+       * ⚠️ **A name is set one step brighter than its own mark, never in the mark's ink.**
+       * A source's mark is `--color-text-quaternary`, which is also the edge ink: eight of
+       * nineteen names on the owner's folder were once set in exactly the value of every
+       * line that crossed them (2026-09-08). A page's name takes the page ink, which is
+       * already the brightest on the canvas; a file's and a concept's take
+       * `--color-text-tertiary`, one step above their own dot and clear of the lines.
        */
-      ctx.fillStyle = node.kind === "page" ? ink.page : node.kind === "source" ? ink.source : ink.concept;
+      ctx.fillStyle = node.kind === "page" ? ink.page : ink.sourceLabel;
       // Drawn from the box, not the centre: a slid label is no longer centred on its dot.
       ctx.fillText(text, box.x + box.width / 2, box.y);
     }
@@ -942,6 +966,17 @@ function truncateToWidth(
   const ellipsis = "…";
   if (ctx.measureText(ellipsis).width > maxWidth) return "";
   /*
+   * **A phrase is cut off the end, at a word boundary**, for the reason `middleEllipsis`
+   * gives: a middle ellipsis through a sentence leaves two half-words. Only a name with no
+   * space in it — a file name, whose extension is half of what it says — keeps the tail.
+   */
+  if (text.includes(" ")) {
+    const head = headThatFits(ctx, text, maxWidth - ctx.measureText(ellipsis).width);
+    const lastSpace = head.lastIndexOf(" ");
+    const cut = lastSpace > head.length / 2 ? head.slice(0, lastSpace) : head;
+    return `${cut.trimEnd()}${ellipsis}`;
+  }
+  /*
    * The tail is the shorter half. A stem is usually longer than what distinguishes it, and a
    * name cut to two equal halves reads as two fragments rather than as one name shortened.
    */
@@ -960,6 +995,44 @@ function truncateToWidth(
   }
   const head = headThatFits(ctx, text, maxWidth - ctx.measureText(suffix).width);
   return `${head}${suffix}`;
+}
+
+/**
+ * **The character cap — out of the middle of a file name, off the end of a phrase.**
+ *
+ * ⚠️ **One rule for both was the walkthrough's finding.** Three cold walkers on the
+ * 372-mark folder each named three write-ups inside ten seconds and each, unprompted,
+ * reported the same defect: `What compliance…not see`, `What support o…he rest`,
+ * `What the paymen…not say` — a middle ellipsis through a *sentence* cuts words in half at
+ * both ends and leaves something a person cannot read as English.
+ *
+ * A file name and a title are shortened for different reasons, so they are shortened
+ * differently:
+ *
+ * - **A file name has no spaces and its tail is what distinguishes it** —
+ *   `payments-settlement-01.csv` against `payments-settlement-02.csv`, and the extension is
+ *   half of what the mark means. It keeps the middle ellipsis, head and tail both.
+ * - **A title is a phrase, and a phrase reads from the front.** It is cut at the last word
+ *   boundary that fits, with the ellipsis at the end, so what is left is still a readable
+ *   run of words.
+ */
+function middleEllipsis(text: string, maxChars: number): string {
+  const glyphs = [...text];
+  if (glyphs.length <= maxChars) return text;
+  const keep = maxChars - 1;
+  if (text.includes(" ")) {
+    const head = glyphs.slice(0, keep).join("");
+    const lastSpace = head.lastIndexOf(" ");
+    // Only snap back to a word boundary when a word actually survives it; a first word
+    // longer than the budget is cut where the budget ends rather than erased.
+    const cut = lastSpace > keep / 2 ? head.slice(0, lastSpace) : head;
+    return `${cut.trimEnd()}…`;
+  }
+  // One of the budget goes to the ellipsis; the tail keeps a third of what is left, which
+  // is the same split `truncateToWidth` uses so the two rules do not disagree in shape.
+  const tail = Math.max(1, Math.floor(keep / 3));
+  const head = keep - tail;
+  return `${glyphs.slice(0, head).join("")}…${glyphs.slice(glyphs.length - tail).join("")}`;
 }
 
 /** The longest prefix of `text` whose width is within `budget`. */

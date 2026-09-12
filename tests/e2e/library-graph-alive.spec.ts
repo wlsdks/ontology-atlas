@@ -252,12 +252,20 @@ test.describe("the library graph responds", () => {
     const fitted = Number(await canvas.getAttribute("data-view-scale"));
     expect(fitted).toBeGreaterThan(0);
 
+    /*
+     * ⚠️ **The wheel is driven *out*, and the reason is the 2026-09-12 clamp.** The zoom's
+     * ceiling is absolute now (1.6) and the fit is clamped into the same pair, so on a folder
+     * this small the fitted view **is** the ceiling and four notches inward are four no-ops —
+     * which is the contract, not a defect: a mark's drawn size is the camera's, and a camera
+     * that could be pushed past its ceiling would hand that size back to the window. Out is
+     * the direction with room, and it measures the same two claims.
+     */
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     for (let notch = 0; notch < 4; notch += 1) {
-      await page.mouse.wheel(0, -120);
+      await page.mouse.wheel(0, 120);
       await page.waitForTimeout(60);
     }
-    await expect.poll(async () => Number(await canvas.getAttribute("data-view-scale"))).toBeGreaterThan(fitted * 1.2);
+    await expect.poll(async () => Number(await canvas.getAttribute("data-view-scale"))).toBeLessThan(fitted * 0.85);
 
     // The page itself did not scroll: the canvas took the gesture.
     const pageScrolled = await page.evaluate(() => window.scrollY);
@@ -266,7 +274,7 @@ test.describe("the library graph responds", () => {
     await page.getByTestId("library-graph-fit").click();
     await expect
       .poll(async () => Number(await canvas.getAttribute("data-view-scale")), { timeout: 5_000 })
-      .toBeLessThan(fitted * 1.15);
+      .toBeGreaterThan(fitted * 0.95);
     // And the whole picture is inside the box again.
     const inside = await page.evaluate(() => {
       const probe = window.__atlasLibraryGraph!;

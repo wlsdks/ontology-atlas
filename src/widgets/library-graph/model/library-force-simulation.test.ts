@@ -9,7 +9,11 @@ import {
   libraryPositions,
   libraryMarkRadii,
   libraryOrphanRing,
-  LIBRARY_LABEL_ALLOWANCE,
+  LIBRARY_CONCEPT_RADIUS,
+  LIBRARY_FIT_PADDING,
+  LIBRARY_PAGE_RADIUS_MAX,
+  LIBRARY_PAGE_RADIUS_MIN,
+  LIBRARY_SOURCE_RADIUS,
   librarySimulationBounds,
   pinLibraryNode,
   reheatLibrarySimulation,
@@ -530,20 +534,20 @@ describe("the library graph's force simulation", () => {
        *
        * ⚠️ Measured **after the fit**, which is the only place the claim means anything:
        * the simulation's box is a field shape, and it is `fitView` that decides where a
-       * world coordinate lands on the canvas. It reserves `LIBRARY_LABEL_ALLOWANCE` on
+       * world coordinate lands on the canvas. It reserves `LIBRARY_FIT_PADDING` on
        * every side for the name that stands under the outermost mark — the same number the
        * ring's own documentation is written against.
        */
-      const view = fitView(librarySimulationBounds(sim), box, LIBRARY_LABEL_ALLOWANCE);
+      const view = fitView(librarySimulationBounds(sim), box, LIBRARY_FIT_PADDING);
       for (const id of LOOSE_IDS) {
         const point = worldToScreen(at(id), view, box);
         const fromSide = Math.min(point.x, box.width - point.x);
         const fromEnd = Math.min(point.y, box.height - point.y);
         expect(fromSide, `${id} is against a side wall at ${shape}`).toBeGreaterThanOrEqual(
-          LIBRARY_LABEL_ALLOWANCE - 0.5,
+          LIBRARY_FIT_PADDING - 0.5,
         );
         expect(fromEnd, `${id} is against the top or bottom at ${shape}`).toBeGreaterThanOrEqual(
-          LIBRARY_LABEL_ALLOWANCE - 0.5,
+          LIBRARY_FIT_PADDING - 0.5,
         );
         // And never against two of them at once. A mark that is the outermost thing on
         // both axes lands in a corner however generous the margin is, which is where
@@ -624,39 +628,36 @@ describe("the library graph's force simulation", () => {
   });
 
   /**
-   * **A mark is small or large relative to the room around it** (2026-09-12). The 5–10px band
-   * was measured when this canvas was a 320px strip; it is the Library's whole pane now, and
-   * twelve marks on 891,000 square pixels wearing 20px of diameter is what the owner read as
-   * an ugly popup. The band follows the canvas, floored at the old top so a dense folder never
-   * gets smaller marks than the ones that shipped.
+   * **The mark scale is fixed, and no window changes it** (2026-09-12, G2). The band briefly
+   * graded from the room each mark had on the canvas, which gave one folder as many pictures
+   * as a person had window sizes — the owner's verdict on that build is why this asserts the
+   * opposite: the same folder returns the same radii whatever it is drawn on.
    */
-  it("grades the band by the room each mark has, and never below the band that shipped", () => {
+  it("returns the same radii whatever the canvas is", () => {
     const graph = denseFolder();
-    const sparse = libraryMarkRadii(graph, { width: 1088, height: 819 });
-    const dense = libraryMarkRadii(
-      { ...graph, nodes: graph.nodes },
-      { width: 200, height: 150 },
-    );
-    const top = (radii: Map<string, number>) => Math.max(...radii.values());
-    // An 18-mark folder on the 14-inch workbench's canvas gets the band's ceiling.
-    expect(top(sparse)).toBeCloseTo(17, 5);
-    // A canvas with almost no room per mark still never goes under the 2026-09-06 top.
-    expect(top(dense)).toBeCloseTo(10, 5);
-    // And with no box at all, the band is exactly the one that shipped.
-    expect(top(libraryMarkRadii(graph))).toBeCloseTo(10, 5);
-    // Degree still grades inside whichever band it is.
-    const busiest = sparse.get("page:wiki/page-4")!;
-    const quietest = sparse.get("page:wiki/page-3")!;
-    expect(busiest).toBeGreaterThan(quietest);
+    const radii = libraryMarkRadii(graph);
+    // There is no box parameter left to pass; the map is a fact about the folder alone.
+    expect([...radii.entries()]).toEqual([...libraryMarkRadii(graph).entries()]);
+    const pages = graph.nodes.filter((node) => node.kind === "page");
+    const top = Math.max(...pages.map((node) => radii.get(node.id)!));
+    const bottom = Math.min(...pages.map((node) => radii.get(node.id)!));
+    expect(top).toBeCloseTo(LIBRARY_PAGE_RADIUS_MAX, 6);
+    expect(bottom).toBeGreaterThanOrEqual(LIBRARY_PAGE_RADIUS_MIN - 1e-9);
+    for (const node of graph.nodes) {
+      if (node.kind === "source") expect(radii.get(node.id)).toBeCloseTo(LIBRARY_SOURCE_RADIUS, 6);
+      if (node.kind === "concept") expect(radii.get(node.id)).toBeCloseTo(LIBRARY_CONCEPT_RADIUS, 6);
+    }
+    // Citations still grade inside the band.
+    expect(radii.get("page:wiki/page-4")!).toBeGreaterThan(radii.get("page:wiki/page-3")!);
   });
 
-  it("grades the mark by degree inside the 5–10px band, keeping the source a step smaller", () => {
+  it("grades the mark by citations inside the 5–9 band, keeping the source well under it", () => {
     const graph = denseFolder();
     const radii = libraryMarkRadii(graph);
     for (const node of graph.nodes) {
       const radius = radii.get(node.id)!;
-      expect(radius).toBeGreaterThanOrEqual(5 * (5 / 6) - 1e-9);
-      expect(radius).toBeLessThanOrEqual(10 + 1e-9);
+      expect(radius).toBeGreaterThanOrEqual(LIBRARY_SOURCE_RADIUS - 1e-9);
+      expect(radius).toBeLessThanOrEqual(LIBRARY_PAGE_RADIUS_MAX + 1e-9);
     }
     // The busiest page is drawn larger than the quietest one: that is the whole of what
     // the band encodes.

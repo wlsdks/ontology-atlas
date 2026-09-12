@@ -11,9 +11,8 @@ import {
   createLibrarySimulation,
   hasPinnedNode,
   isLibrarySimulationRunning,
-  LIBRARY_LABEL_ALLOWANCE,
+  LIBRARY_FIT_PADDING,
   libraryPositions,
-  LIBRARY_COLLISION_PAD,
   libraryMarkRadii,
   librarySimulationBounds,
   pinLibraryNode,
@@ -31,6 +30,7 @@ import {
   panView,
   scaleBounds,
   screenToWorld,
+  SOURCE_LABEL_MIN_SCALE,
   wheelPixelDelta,
   wheelZoomFactor,
   worldToScreen,
@@ -41,7 +41,6 @@ import {
   drawLibraryGraph,
   hitTestLibraryGraph,
   type LibraryGraphActivityMark,
-  libraryStandingLabelReach,
   type LibraryGraphLabelBox,
 } from "../render/draw-library-graph";
 import { readLibraryGraphInk, type LibraryGraphInk } from "../render/library-graph-ink";
@@ -89,32 +88,14 @@ import { readLibraryGraphInk, type LibraryGraphInk } from "../render/library-gra
 const DRAG_THRESHOLD_PX = 7;
 
 /**
- * Padding the fit reserves for the names that stand under the outermost marks.
+ * What the fit reserves on every side, in CSS px.
  *
- * The simulation's orphan ring is held the same distance off its own box, so the value is
- * taken from there rather than written twice: a mark the physics placed at the boundary
- * and the fit that draws it must not disagree about where the boundary is.
+ * ⚠️ It was derived — the widest mark plus its own name's line — because both of those
+ * followed the canvas. Neither does now (`libraryMarkRadii` is a fixed world scale), so the
+ * margin is the simulation's own constant and the same at every window size, which is what
+ * makes one folder one framing.
  */
-/**
- * What the fit reserves on every side, in CSS px — **the room the outermost mark's own name
- * needs**, which now follows the mark band and the type step rather than being a constant.
- *
- * `LIBRARY_LABEL_ALLOWANCE` (34) stays the floor: it is the value the orphan ring's own
- * geometry is written against in the simulation, and a padding below it would put a loose
- * mark's name off the canvas.
- */
-function fitPaddingFor(
-  radii: ReadonlyMap<string, number>,
-  ink: { pageLabelPx: number } | null,
-): number {
-  let maxRadius = 0;
-  for (const radius of radii.values()) maxRadius = Math.max(maxRadius, radius);
-  if (maxRadius <= 0 || !ink) return LIBRARY_LABEL_ALLOWANCE;
-  return Math.max(
-    LIBRARY_LABEL_ALLOWANCE,
-    libraryStandingLabelReach(maxRadius, ink.pageLabelPx),
-  );
-}
+const FIT_PADDING = LIBRARY_FIT_PADDING;
 
 /** How fast an auto-fitting view catches up with the settling picture, per frame. */
 const AUTO_FIT_FOLLOW = 0.16;
@@ -292,6 +273,16 @@ export function useLibraryGraphEngine({
   const screenRef = useRef<Map<string, LayoutPoint>>(new Map());
   const radiiRef = useRef<Map<string, number>>(new Map());
   /**
+   * The same radii **in canvas pixels** — the world scale times the camera's — rebuilt once
+   * per painted frame.
+   *
+   * It exists because a mark's drawn size now comes from the camera (`library-graph-view.ts`,
+   * "Marks scale with the zoom"), and two readers outside the paint need the drawn size
+   * rather than the world one: the hit test, which is answering a question about a pointer
+   * on a screen, and the `e2e` probe, whose whole job is to report what is on the canvas.
+   */
+  const screenRadiiRef = useRef<Map<string, number>>(new Map());
+  /**
    * **The placed names of the last frame, for a measurement and never for the product.**
    *
    * Null while nothing is measuring, which is every ordinary session: the greedy label
@@ -408,7 +399,7 @@ export function useLibraryGraphEngine({
       const box = { width, height };
       const bounds = librarySimulationBounds(sim);
       if (autoFitRef.current.on) {
-        const target = fitView(bounds, box, fitPaddingFor(radiiRef.current, inkRef.current));
+        const target = fitView(bounds, box, FIT_PADDING);
         const current = viewRef.current;
         // Instant under reduced motion, and instant on the first frame, where there is
         // nothing to travel from.
@@ -449,6 +440,11 @@ export function useLibraryGraphEngine({
       const world = libraryPositions(sim);
       const screen = new Map<string, LayoutPoint>();
       for (const [id, point] of world) screen.set(id, worldToScreen(point, view, box));
+      // A mark's drawn size is its world radius through the same camera its position goes
+      // through, so a zoom moves the dots and grows them by exactly the same factor.
+      const screenRadii = screenRadiiRef.current;
+      screenRadii.clear();
+      for (const [id, radius] of radiiRef.current) screenRadii.set(id, radius * view.scale);
 
       /*
        * ── The dim ramp, one `--motion-fast` from end to end, reduced motion included. ──
@@ -566,7 +562,8 @@ export function useLibraryGraphEngine({
         focusedId: stateRef.current.focusedId,
         activeLabel: stateRef.current.activeLabel,
         standingLabels: stateRef.current.standingLabels,
-        radii: radiiRef.current,
+        radii: screenRadiiRef.current,
+        sourceLabels: view.scale >= SOURCE_LABEL_MIN_SCALE,
         labelReport: labelReportRef.current ?? undefined,
         opacity,
         dim: dimState.value,
@@ -766,9 +763,9 @@ export function useLibraryGraphEngine({
     };
 
     const box = pendingBoxRef.current ?? boxRef.current;
-    // The band the marks are drawn in follows the canvas, so the box is read before the radii
-    // rather than after: a mark's size is a fact about how much room it has.
-    radiiRef.current = libraryMarkRadii(graph, box);
+    // A fixed world scale: the box is not consulted, and the radii are the same map on a
+    // phone and on a 1920 window.
+    radiiRef.current = libraryMarkRadii(graph);
     const existing = simRef.current;
     if (!existing) {
       if (box.width === 0 || box.height === 0) return;
@@ -821,21 +818,9 @@ export function useLibraryGraphEngine({
       pendingBoxRef.current = { width: rect.width, height: rect.height, dpr };
       rectRef.current = { left: rect.left, top: rect.top };
       const sim = simRef.current;
-      if (sim) {
-        resizeLibrarySimulation(sim, { width: rect.width, height: rect.height });
-        // The mark band is a fact about the room each mark has, so a box that changed hands
-        // back a different band. Collision reach follows it, or a grown mark would overlap
-        // the neighbour the pass was told to keep it off.
-        // `graphRef`, not `graph`: this effect is the box observer and must not be torn down
-        // and re-created on every folder change.
-        radiiRef.current = libraryMarkRadii(graphRef.current, {
-          width: rect.width,
-          height: rect.height,
-        });
-        for (const node of sim.nodes) {
-          node.radius = (radiiRef.current.get(node.id) ?? 5) + LIBRARY_COLLISION_PAD;
-        }
-      }
+      // A resize records the new box and moves nothing: the mark scale, the collision reach
+      // and the composition are all facts about the folder now, never about the window.
+      if (sim) resizeLibrarySimulation(sim, { width: rect.width, height: rect.height });
       // The first measurement is also what makes the simulation possible: it runs in the
       // canvas's own pixels, so before there is a box there is nothing to create.
       else if (rect.width > 0 && rect.height > 0) syncSimulationRef.current();
@@ -859,9 +844,9 @@ export function useLibraryGraphEngine({
        * box is the same rule read the other way, which is what makes closing the dock give
        * the picture the room back.
        *
-       * The result is still folded into `scaleBounds` for the new box: those are the same
-       * floor and ceiling a wheel gesture obeys, and a camera the person took should not end
-       * up somewhere they could not have reached by hand.
+       * The result is still folded into `scaleBounds`: those are the same absolute floor and
+       * ceiling a wheel gesture obeys, and a camera the person took should not end up
+       * somewhere they could not have reached by hand.
        */
       if (
         !autoFitRef.current.on &&
@@ -874,7 +859,7 @@ export function useLibraryGraphEngine({
       ) {
         const box = { width: rect.width, height: rect.height };
         const ratio = Math.min(box.width / previous.width, box.height / previous.height);
-        const limits = scaleBounds(fitView(librarySimulationBounds(sim), box, fitPaddingFor(radiiRef.current, inkRef.current)).scale);
+        const limits = scaleBounds();
         const view = viewRef.current;
         viewRef.current = {
           ...view,
@@ -912,7 +897,7 @@ export function useLibraryGraphEngine({
   const hitTest = useCallback(
     (point: LayoutPoint): LibraryGraphNode | null =>
       hitTestLibraryGraph(
-        { nodes: graphRef.current.nodes, positions: screenRef.current, radii: radiiRef.current },
+        { nodes: graphRef.current.nodes, positions: screenRef.current, radii: screenRadiiRef.current },
         point,
         coarsePointer() ? COARSE_HIT_REACH : undefined,
       ),
@@ -1042,7 +1027,7 @@ export function useLibraryGraphEngine({
           const distance = Math.hypot(second!.x - first!.x, second!.y - first!.y);
           const mid = { x: (first!.x + second!.x) / 2, y: (first!.y + second!.y) / 2 };
           if (pinch.distance > 0) {
-            const bounds = fitBounds(sim, box, fitPaddingFor(radiiRef.current, inkRef.current));
+            const bounds = scaleBounds();
             let next = zoomViewAbout(viewRef.current, box, mid, distance / pinch.distance, bounds);
             // Two fingers travelling together pan as well as pinch; the midpoint's own
             // movement is that pan, and taking it here is why one gesture does both.
@@ -1167,7 +1152,7 @@ export function useLibraryGraphEngine({
         boxRef.current,
         { x: event.clientX - rect.left, y: event.clientY - rect.top },
         wheelZoomFactor(pixels),
-        fitBounds(simRef.current, boxRef.current, fitPaddingFor(radiiRef.current, inkRef.current)),
+        scaleBounds(),
       );
       wake();
     };
@@ -1203,7 +1188,7 @@ export function useLibraryGraphEngine({
             label: node.label,
             x: point?.x ?? Number.NaN,
             y: point?.y ?? Number.NaN,
-            radius: radiiRef.current.get(node.id) ?? 0,
+            radius: screenRadiiRef.current.get(node.id) ?? 0,
           };
         }),
       /**
@@ -1254,16 +1239,6 @@ export function useLibraryGraphEngine({
     fitToView,
     pictureAspect,
   };
-}
-
-/** The zoom's floor and ceiling, always relative to what the fit would be right now. */
-function fitBounds(
-  sim: LibrarySimulation | null,
-  box: { width: number; height: number },
-  padding: number,
-) {
-  const fitted = fitView(sim ? librarySimulationBounds(sim) : null, box, padding);
-  return scaleBounds(fitted.scale);
 }
 
 /**

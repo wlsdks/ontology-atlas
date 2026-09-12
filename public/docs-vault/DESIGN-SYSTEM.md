@@ -682,6 +682,29 @@ are copied into the "bar coloring" section of `.claude/rules/design.md`.
 - `rgba(255,255,255,0.08)` — default
 - `rgba(255,255,255,0.12)` — strong
 
+### Library graph ink — `--graph-page-halo` (2026-09-12)
+
+One token, one consumer, and the reason it is a token rather than `--color-canvas` reused.
+
+| Token | Value | On `--color-canvas` | What it is |
+|---|---|---|---|
+| `--graph-page-halo` | `#0e0f13` | 1.04:1 | the ring of ground a **page** mark clears around itself on the Library graph |
+
+The Library canvas draws each mark over a halo one line width wider than the mark, so the
+citations running underneath stop at the disc instead of crossing it. Every other mark clears
+in the flat ground; a page does not, because on a folder of three hundred files eight or ten
+lines meet one page and a hole cut in the flat ground reads as a bite taken out of the
+picture. One step above the ground — the same distance `--map-grid-minor` stands off it — puts
+the page *on* the lines. Flat fill, one width, never animated, and the mark is painted over
+it, so the colour is only ever seen as a rim: it is not a glow and the 2026-09-08 expression
+record's "every value goes through a token and its ramp" is what it is here to satisfy.
+
+The rest of that canvas's ink borrows existing tokens and mints nothing:
+`--color-text-primary` (page mark and page name, 18.73:1), `--color-text-tertiary` (a file's
+or a concept's name, 6.13:1), `--color-text-quaternary` (a file's mark, a concept's ring and
+every relation line, 5.23:1), `--color-indigo-brand` (the selection, 4.24:1). Consumer:
+`src/widgets/library-graph/render/library-graph-ink.ts`.
+
 ### Typography
 
 - Primary: `Inter Variable` (OpenType `"cv01", "ss03"` applied globally)

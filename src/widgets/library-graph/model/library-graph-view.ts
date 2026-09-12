@@ -7,17 +7,21 @@ import type { LayoutPoint } from "./library-graph-layout";
  * `topology-camera-math.ts` is separate from its loop: a claim about what a gesture did
  * to the view is testable here and only assertable through pixels anywhere else.
  *
- * ## Marks do not grow with the zoom, and that is the design
+ * ## Marks scale with the zoom; names do not
  *
- * Zooming scales **positions** and leaves every mark, line width and name at its own
- * fixed size. Two reasons, and the second is a repository rule:
+ * ⚠️ **Both used to be fixed in screen pixels.** That was the right rule while the mark
+ * band was itself a function of the canvas — the canvas decided the size, so the wheel had
+ * better not decide it again. The band is now a fixed **world** scale
+ * (`libraryMarkRadii`), which means the camera is the single place a drawn size comes
+ * from, and a mark that ignored the camera would be a dot that stays 18px across whether a
+ * person is looking at the whole folder or at one page's satellites. So a mark's drawn
+ * half-extent is its world radius times {@link LibraryGraphView.scale}, and the scale is
+ * clamped at both ends, which is what bounds the drawn size without asking the window.
  *
- * 1. On a folder where six pages cite the same seven sources, what a person zooms in for
- *    is to get the lines apart — not to make the dots bigger. Spreading answers that;
- *    magnifying does not.
- * 2. `.claude/rules/design.md` fixes the type scale, and a name is set in `text-label`
- *    (11px). A canvas that scaled its labels with a wheel would be running an unbounded
- *    type ramp nothing can gate.
+ * A **name** still does not scale, and the reason is a repository rule rather than a
+ * preference: `.claude/rules/design.md` fixes the type scale, and a canvas that ran its
+ * labels up and down with a wheel would be an unbounded type ramp nothing can gate. What
+ * the zoom decides about names is *which ones exist* — see {@link SOURCE_LABEL_MIN_SCALE}.
  */
 
 export interface LibraryGraphView {
@@ -29,16 +33,52 @@ export interface LibraryGraphView {
 }
 
 /**
- * Zoom bounds, relative to the fit.
+ * **Absolute zoom bounds, and the mark scale is why.**
  *
- * They are **ratios of whatever the fit turned out to be**, not absolute scales — the
- * same rule the map settled on, and for the same reason: an absolute floor either forbids
- * zooming out on a small folder or lets a large one shrink to a smudge. Half the fit is as
- * far out as anything is worth seeing, and four times it puts a page's own cluster across
- * the pane.
+ * ⚠️ They used to be ratios of whatever the fit turned out to be — half the fit out, four
+ * times it in — which is the right rule when marks are a fixed number of *screen* pixels,
+ * because then the zoom only ever changes how far apart things are. It is the wrong rule
+ * here. A mark is a fixed size in **world** units now (`libraryMarkRadii`), so the camera's
+ * scale is the only thing between a folder and how big its dots look, and a fit-relative
+ * bound hands that back to the canvas: six documents on a 1920 window would fit at a scale
+ * of three and wear 43px marks, which is the picture the owner rejected.
+ *
+ * So both ends are absolute.
+ *
+ * - **{@link LIBRARY_ZOOM_MAX} = 1.6.** A page's widest mark is 9, so nothing on this canvas
+ *   is ever drawn wider than 28.8px — one step under the map's own 36px node chrome, which
+ *   is the family this picture belongs to. Six marks on a wide window look small, by design.
+ * - **{@link LIBRARY_ZOOM_MIN}** is whatever keeps a source's square at
+ *   {@link MIN_SOURCE_MARK_PX} across. Below that a file stops being a mark and becomes
+ *   noise, and a picture that cannot be zoomed out far enough to fit is better honest about
+ *   it — the camera clamps and the person pans — than legible at nothing.
  */
-const VIEW_ZOOM_OUT_RATIO = 0.5;
-const VIEW_ZOOM_IN_RATIO = 4;
+export const LIBRARY_ZOOM_MAX = 1.6;
+/** The smallest a source's square may be drawn, across, in canvas pixels. */
+export const MIN_SOURCE_MARK_PX = 3;
+/**
+ * Mirrors `LIBRARY_SOURCE_RADIUS`. It is repeated rather than imported because the view is
+ * the one module in this widget with no model dependency, and `library-graph-view.test.ts`
+ * asserts the two agree.
+ */
+export const SOURCE_MARK_WORLD_RADIUS = 3.5;
+export const LIBRARY_ZOOM_MIN = MIN_SOURCE_MARK_PX / (SOURCE_MARK_WORLD_RADIUS * 2);
+
+/**
+ * **The zoom at which a file's own name appears.**
+ *
+ * Sixty pages and three hundred files cannot all be named at once — measured, 288 of the
+ * 360 names collide at the fitted scale — and naming the files is the half of that a person
+ * has not asked for: the question the home answers is *which write-ups exist*, and a page's
+ * name answers it. So a source is a dot until either the person has zoomed in far enough
+ * that its neighbourhood is what the screen is about (this), or they have pointed at it, or
+ * it belongs to the page they have open.
+ *
+ * 1.4 is between the fitted scale of every fixture measured (0.43–1.6) and the ceiling, so
+ * the threshold is reachable by a wheel from any of them and is not crossed by the fit of
+ * any of them.
+ */
+export const SOURCE_LABEL_MIN_SCALE = 1.4;
 
 /**
  * Wheel sensitivity: `exp(-pixelDelta × this)`, about 1.32× per 120px notch.
@@ -120,7 +160,14 @@ export function fitView(
   const innerHeight = Math.max(1, box.height - padding * 2);
   // A single node, or a row of nodes on one axis, has zero span there. Scaling by it
   // divides by zero; scale 1 centres them instead, which is what a person expects to see.
-  const scale = Math.min(spanX > 0 ? innerWidth / spanX : 1, spanY > 0 ? innerHeight / spanY : 1);
+  const wanted = Math.min(spanX > 0 ? innerWidth / spanX : 1, spanY > 0 ? innerHeight / spanY : 1);
+  /*
+   * ⚠️ **Clamped, so the fit is a frame and not a magnification.** Uncapped, a folder of six
+   * documents on a 1920 window asks for whatever scale spreads six dots across 1800px, and
+   * every mark grows with it. Clamped, the picture keeps its own size and the canvas simply
+   * has room to spare — which is what six nodes on the map look like too.
+   */
+  const scale = Math.min(LIBRARY_ZOOM_MAX, Math.max(LIBRARY_ZOOM_MIN, wanted));
   return {
     scale,
     x: (bounds.minX + bounds.maxX) / 2,
@@ -128,10 +175,12 @@ export function fitView(
   };
 }
 
-/** The interactive floor and ceiling, derived from the fit rather than fixed. */
-export function scaleBounds(fitScale: number): { min: number; max: number } {
-  const base = fitScale > 0 ? fitScale : 1;
-  return { min: base * VIEW_ZOOM_OUT_RATIO, max: base * VIEW_ZOOM_IN_RATIO };
+/**
+ * The interactive floor and ceiling. Absolute, and the same pair the fit is clamped into,
+ * so a wheel can never take a mark anywhere the fit would not have put it.
+ */
+export function scaleBounds(): { min: number; max: number } {
+  return { min: LIBRARY_ZOOM_MIN, max: LIBRARY_ZOOM_MAX };
 }
 
 /**
