@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { parseCLI } from 'vitest/node';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
@@ -9,6 +10,9 @@ const domContracts = [
   'tests/contract/brand-asset-parity.contract.test.ts',
   'tests/contract/node-kind-shape-parity.contract.test.ts',
 ];
+// Vitest 4 does not forward CLI exclude options into inline projects.
+// Use its own parser and carry the exclusions into both project inventories.
+const cliExcludes = parseCLI(['vitest', ...process.argv.slice(2)], { allowUnknownOptions: true }).options.exclude ?? [];
 
 export default defineConfig({
   plugins: [react()],
@@ -49,7 +53,7 @@ export default defineConfig({
           environment: 'node',
           setupFiles: [],
           include: ['tests/contract/**/*.test.ts'],
-          exclude: domContracts,
+          exclude: [...domContracts, ...cliExcludes],
         },
       },
       {
@@ -65,7 +69,7 @@ export default defineConfig({
             'src/**/*.spec.{ts,tsx}',
             ...domContracts,
           ],
-          exclude: ['tests/e2e/**'],
+          exclude: ['tests/e2e/**', ...cliExcludes],
         },
       },
     ],

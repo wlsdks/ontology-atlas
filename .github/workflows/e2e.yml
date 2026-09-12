@@ -7,7 +7,8 @@
 # lanes, and marks it ready; `ready_for_review` fires this workflow **once**, on
 # exactly the tree that is about to land. Owner's shape, 2026-09-12: most
 # changes overlap, so CI on a branch that is not yet the thing being merged is a
-# round paid twice. `docs/DECISIONS.md` carries the record.
+# round paid twice. An identical main tree reuses that successful review;
+# unproven main pushes and scheduled/manual runs still execute their evidence.
 #
 # `merge_group` is wired for the day this repository belongs to an organization
 # and GitHub's own merge queue becomes available. Until then no merge group is
@@ -39,6 +40,10 @@ env:
 jobs:
   changes:
     name: E2E impact plan
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     # budget: 35s
@@ -57,6 +62,7 @@ jobs:
       - name: Build impact plan
         id: impact
         env:
+          GH_TOKEN: ${{ github.token }}
           BASE_REF: ${{ github.base_ref }}
           EVENT_NAME: ${{ github.event_name }}
           PUSH_BEFORE: ${{ github.event.before }}

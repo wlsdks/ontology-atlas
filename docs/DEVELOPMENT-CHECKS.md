@@ -21,6 +21,15 @@ it; the entries below name that condition per area.
 
 ## Local result reuse and CI ownership
 
+A main push reuses its reviewed PR only when the Git trees match exactly and
+GitHub reports every current required check's latest run as successful under
+GitHub Actions. The impact planner records the PR, head and tree as provenance.
+It still checks the calendar-sensitive PO pilot without installing dependencies.
+Direct pushes, API errors/timeouts, incomplete pagination, unknown paths,
+unresolved ruleset policy and changed trees retain normal CI. PR, merge-group,
+daily and manual verification never use this shortcut. The read is bounded to
+one eight-second request; no success result is cached.
+
 Pre-push owns quick path-scoped checks; full contract and Knip scans remain in
 impact-planned PR CI. `pr:land` also defers whole unit/contract suites and Knip
 to required PR CI, retaining direct tests, types and generated-file checks
@@ -54,7 +63,10 @@ Focused-only Node suites remain discoverable through the actual impact plan.
 
 Vitest source/parser contracts run in the `contract-node` project without browser
 setup. The two contracts that render React components stay in `jsdom` alongside
-app/src tests. A new contract defaults to Node; add a DOM exception in
+app/src tests. The shared config forwards CLI exclusions into both projects
+because Vitest 4 does not inherit that flag automatically. Pre-push targets exact
+files for test-only changes even when package metadata also changed; production
+changes retain dependency-graph selection. A new contract defaults to Node; add a DOM exception in
 `vitest.config.ts` only when it actually renders. `pnpm test:contracts` and exact
 file, changed-file and shard invocations keep the same test inventory.
 

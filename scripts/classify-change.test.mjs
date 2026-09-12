@@ -9,7 +9,32 @@ import {
   encodePlan,
   FULL_LANE_COMMANDS,
   unitUsesAllShards,
+  reuseReviewedMainPlan,
 } from './classify-change.mjs';
+
+test('only a proven main push reuses every lane while retaining changed-path evidence', () => {
+  const base = 'a'.repeat(40); const head = 'b'.repeat(40);
+  const plan = buildImpactPlan({ files: ['scripts/classify-change.mjs'] });
+  const proof = { skip: true, commit: head, tree: 'c'.repeat(40), reviewedHead: 'd'.repeat(40), pullRequest: 12 };
+  const reused = reuseReviewedMainPlan(plan, proof, { eventName: 'push', base, head });
+  const decoded = decodePlan(encodePlan(reused));
+  assert.equal(decoded.full, false);
+  assert.deepEqual(decoded.paths, plan.paths);
+  assert.equal(decoded.lanes.gates.run, false);
+  for (const lane of ['unit', 'mcp', 'e2e']) assert.equal(decoded.lanes[lane].mode, 'skip');
+  assert.equal(decoded.reusedFrom.tree, proof.tree);
+  assert.equal(plan.full, true, 'reuse must not mutate the original fallback plan');
+  for (const options of [
+    { eventName: 'pull_request', base, head }, { eventName: 'schedule', base, head },
+    { eventName: 'workflow_dispatch', base, head }, { eventName: 'merge_group', base, head },
+    { eventName: 'push', base: null, head }, { eventName: 'push', base, head: 'e'.repeat(40) },
+  ]) assert.equal(reuseReviewedMainPlan(plan, proof, options), plan);
+  for (const invalid of [undefined, { ...proof, skip: false }, { ...proof, tree: '' }, { ...proof, pullRequest: 0 }]) {
+    assert.equal(reuseReviewedMainPlan(plan, invalid, { eventName: 'push', base, head }), plan);
+  }
+  const unknown = buildImpactPlan({ files: ['unknown-system/input'] });
+  assert.equal(reuseReviewedMainPlan(unknown, proof, { eventName: 'push', base, head }), unknown);
+});
 
 test('scheduled runs and missing comparisons run every exhaustive lane', () => {
   for (const input of [

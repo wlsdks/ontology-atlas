@@ -9,8 +9,9 @@
  * to CI lanes.
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
+import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
 
 import {
   CI_PLANNER_SURFACE_PATTERNS,
@@ -449,6 +450,21 @@ export function decide({ base, head, files = [], deletedFiles = [], eventName = 
   return buildImpactPlan({ files, deletedFiles, forceFull, fullReason });
 }
 
+export function reuseReviewedMainPlan(plan, proof, { eventName, base, head } = {}) {
+  if (eventName !== 'push' || !base || !head || proof?.skip !== true || proof.commit !== head ||
+      !/^[a-f0-9]{40}$/.test(proof.tree ?? '') || !/^[a-f0-9]{40}$/.test(proof.reviewedHead ?? '') ||
+      !Number.isSafeInteger(proof.pullRequest) || proof.pullRequest < 1 || plan.unknownPaths.length > 0) return plan;
+  const idle = buildImpactPlan();
+  idle.lanes.gates.run = false;
+  return {
+    ...plan,
+    full: false,
+    reason: `exact Git tree already passed required CI in PR #${proof.pullRequest}`,
+    lanes: idle.lanes,
+    reusedFrom: { pullRequest: proof.pullRequest, commit: head, tree: proof.tree, reviewedHead: proof.reviewedHead },
+  };
+}
+
 export function unitUsesAllShards(unit) {
   return unit.mode === 'full' || unit.affected === true || unit.contract === 'full';
 }
@@ -498,7 +514,12 @@ export function validatePlan(plan) {
   requireStringArray(plan.unknownPaths, 'unknownPaths');
 
   const { gates, unit, mcp, e2e } = plan.lanes;
-  if (!gates || gates.run !== true || typeof gates.needsMcp !== 'boolean') {
+  const reused = plan.reusedFrom;
+  if (reused && (!Number.isSafeInteger(reused.pullRequest) || reused.pullRequest < 1 ||
+      !['commit', 'tree', 'reviewedHead'].every((key) => /^[a-f0-9]{40}$/.test(reused[key] ?? '')))) {
+    reject('reviewed tree provenance');
+  }
+  if (!gates || (gates.run !== true && !(reused && gates.run === false)) || typeof gates.needsMcp !== 'boolean') {
     reject('gates verdict');
   }
   requireStringArray(gates.commands, 'gates.commands');
@@ -551,6 +572,11 @@ export function validatePlan(plan) {
   }
   if (e2e.mode === 'skip' && (e2e.specs.length > 0 || e2e.unmappedPaths.length > 0)) {
     reject('Playwright skip contains suite work');
+  }
+
+  if (reused && (plan.full || gates.run || gates.commands.length || unit.mode !== 'skip' ||
+      mcp.mode !== 'skip' || e2e.mode !== 'skip' || e2e.staticExport || e2e.webSurface)) {
+    reject('reviewed tree reuse contains unverified lane work');
   }
 
   if (
@@ -633,5 +659,18 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
   }
   const files = changedFiles(base, 'ACMRTUXB');
   const deletedFiles = changedFiles(base, 'D');
-  emit(decide({ base, head, files, deletedFiles, eventName }));
+  const plan = decide({ base, head, files, deletedFiles, eventName });
+  let proof;
+  if (eventName === 'push' && base && head) {
+    proof = await verifyReviewedMainPush({
+      eventName, ref: process.env.GITHUB_REF, sha: head,
+      currentTreeSha: git(['rev-parse', 'HEAD^{tree}']),
+    });
+    // A source tree is immutable; the pilot's calendar deadline is not.
+    if (proof.skip && spawnSync(process.execPath, ['scripts/po-pilot.mjs', '--check'], {
+      stdio: 'inherit', timeout: 10_000,
+    }).status !== 0) proof = { skip: false, reason: 'standing PO policy needs fresh verification' };
+    console.log(`[ci-impact] main-push reuse: ${proof.reason}`);
+  }
+  emit(reuseReviewedMainPlan(plan, proof, { eventName, base, head }));
 }

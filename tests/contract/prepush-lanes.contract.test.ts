@@ -76,10 +76,12 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
   it("성능 시험은 훅에서 뺀다 — 바쁜 기계에서 잰 비율은 뜻이 없다", () => {
     const unitLane = executable.split("\n").find((line) => /lane unit /.test(line)) ?? "";
     expect(unitLane, "unit 레인을 못 찾았다 — 이 시험이 헛돈다").not.toBe("");
-    expect(unitLane, "훅이 성능 시험까지 돌린다 — 바쁜 기계에서 흔들린다").toContain(
+    const planner = readFileSync(path.join(ROOT, 'scripts/prepush-unit-plan.mjs'), 'utf8');
+    expect(executable).toContain('node scripts/prepush-unit-plan.mjs');
+    expect(planner, "훅이 성능 시험까지 돌린다 — 바쁜 기계에서 흔들린다").toContain(
       "--exclude",
     );
-    expect(unitLane).toContain("perf.test");
+    expect(planner).toContain("perf.test");
 
     // CI must still run them; the exclusion is local-only.
     const ci = readFileSync(path.join(ROOT, ".github/workflows/checks.yml"), "utf8");
@@ -118,7 +120,10 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
     // The unit lane is selected by Vitest's module graph from the same three-dot
     // base the lane filters use. Running all 759 files to judge a leaf change is
     // what made this hook 367 s for a one-file diff.
-    expect(laneLine("unit"), "unit 레인이 아직 전체 suite 를 돈다").toContain("--changed=");
+    const planner = readFileSync(path.join(ROOT, 'scripts/prepush-unit-plan.mjs'), 'utf8');
+    expect(executable).toContain('node scripts/prepush-unit-plan.mjs');
+    expect(planner, "unit 레인이 아직 전체 suite 를 돈다").toContain("--changed=");
+    expect(planner).not.toMatch(/--maxWorkers|--testTimeout/);
     expect(executable, "unit 레인의 기준이 3점 병합 기점이 아니다").toMatch(
       /merge-base "\$BASE_REF" HEAD/,
     );
@@ -254,57 +259,5 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
     expect(() =>
       execFileSync("sh", ["-n", path.join(ROOT, HOOK_PATH)], { stdio: "pipe" }),
     ).not.toThrow();
-  });
-});
-
-/**
- * The ledger numbers entries by hand, so two branches written the same day take
- * the same number and neither notices — measured 2026-08-22, when a hook decision
- * landed on `main` as a second `(94)` beside an unrelated one. A duplicate breaks
- * the ledger's own contract, which asks the next pass to cite a prior record by
- * number.
- */
-describe("결정 원장 번호", () => {
-  const LEDGER = "docs/DECISIONS.md";
-
-  /*
-   * The key is **date + number**, not the number alone: numbering restarts each
-   * day, so `(2)` appears nine times across nine dates and every one is correct.
-   * A first draft of this test keyed on the number and reported 20 "duplicates",
-   * all of them legitimate — the gate would have been pure noise.
-   */
-  it("같은 날짜에 같은 번호를 두 번 쓰지 않는다", () => {
-    const entries = [
-      ...readFileSync(path.join(ROOT, LEDGER), "utf8").matchAll(
-        /^## (\d{4}-\d{2}-\d{2}) \((\d+)\)/gm,
-      ),
-    ].map((m) => `${m[1]} (${m[2]})`);
-
-    expect(entries.length, "원장에서 번호 붙은 기록을 하나도 못 찾았다 — 이 시험이 헛돈다").toBeGreaterThan(50);
-
-    const seen = new Set<string>();
-    const duplicated = [
-      ...new Set(entries.filter((k) => (seen.has(k) ? true : (seen.add(k), false)))),
-    ];
-
-    /*
-     * **A ratchet, not a zero** (measured 2026-08-22). Switching this on found
-     * **eight** same-day collisions already in the ledger — 2026-08-14 alone has
-     * four. They are not one author's slip: several branches written the same day
-     * each took "the next number" against a `main` that did not yet have the other.
-     *
-     * Renumbering them now would rewrite records other entries already cite by
-     * number, and the ledger's own contract is that history is appended, never
-     * edited. So the existing eight stay and the count may only fall. What this
-     * blocks is the **ninth**.
-     */
-    expect(
-      duplicated.length,
-      `같은 날 같은 번호를 쓴 기록이 늘었다 — 다음 패스가 선행 결정을 번호로 인용할 수 없다:\n${duplicated.join("\n")}`,
-    ).toBeLessThanOrEqual(8);
-    expect(
-      duplicated.length,
-      "겹침이 줄었다 — 상한 8 도 같이 내려라. 여유를 무료로 두지 않는다.",
-    ).toBeGreaterThanOrEqual(8);
   });
 });

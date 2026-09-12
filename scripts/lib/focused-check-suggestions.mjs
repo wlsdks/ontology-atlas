@@ -16,6 +16,8 @@ export const BROWSER_EXECUTION_SURFACE_PATTERNS = Object.freeze([
 ]);
 
 export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
+  /^scripts\/(?:lib\/)?reviewed-main-push(?:\.test)?\.mjs$/,
+  /^scripts\/fixtures\/reviewed-main-push\.json$/,
   /^scripts\/classify-change(?:\.test)?\.mjs$/,
   /^scripts\/run-ci-lane(?:\.test)?\.mjs$/,
   /^scripts\/lib\/focused-check-suggestions(?:\.test)?\.mjs$/,
@@ -32,7 +34,7 @@ const RULES = [
     reason: 'browser file allocation, coverage verification, or timing estimates changed',
     matches: [/^scripts\/run-playwright-ci(?:\.test)?\.mjs$/, /^scripts\/data\/playwright-file-durations\.json$/, /^scripts\/run-ci-lane(?:\.test)?\.mjs$/],
   },
-  { command: 'node --test scripts/prepush.test.mjs', reason: 'pre-push scope or failure propagation changed', matches: [/^scripts\/prepush(?:\.test)?\.mjs$/, /^\.githooks\/pre-push$/, /^scripts\/suggest-focused-checks\.mjs$/] },
+  { command: 'node --test scripts/prepush.test.mjs', reason: 'pre-push scope or failure propagation changed', matches: [/^scripts\/prepush(?:-unit-plan)?(?:\.test)?\.mjs$/, /^\.githooks\/pre-push$/, /^scripts\/suggest-focused-checks\.mjs$/] },
   {
     command: 'pnpm test:ci:impact',
     reason: 'CI impact planner, executor, or workflow wiring changed',
