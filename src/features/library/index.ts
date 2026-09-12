@@ -14,6 +14,7 @@ export { buildCompileBrief, selectCompileTargets } from "./lib/compile-brief";
 export { buildLintBrief, isMapKind, parseLintCandidates, parseLintFindings, dropCandidatesWithNodes } from "./lib/lint-brief";
 export type { LintFinding } from "./lib/lint-brief";
 export { buildFixBrief } from "./lib/fix-brief";
+export { buildWikiShapeFixBrief } from "./lib/wiki-fix-brief";
 export type { LintNodeCandidate } from "./lib/lint-brief";
 export { buildProposeNodeBrief } from "./lib/propose-node-brief";
 export { judgePageWrite, wikiPagePathOf } from "./lib/judge-page-write";
