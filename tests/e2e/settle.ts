@@ -260,3 +260,29 @@ export async function waitForScrollStill(
     { frames, hang: timeout },
   );
 }
+
+/**
+ * Resolve after `count` animation frames have been painted.
+ *
+ * For the handful of places where the condition genuinely is "the next frame or
+ * two" — a value the loop writes once per frame, read after the frame that writes
+ * it. Frames are the engine's unit; milliseconds are the machine's.
+ */
+export async function waitFrames(page: Page, count = 2): Promise<void> {
+  await page.evaluate(
+    (frames) =>
+      new Promise<void>((resolve) => {
+        let remaining = frames;
+        const step = () => {
+          remaining -= 1;
+          if (remaining <= 0) {
+            resolve();
+            return;
+          }
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }),
+    count,
+  );
+}
