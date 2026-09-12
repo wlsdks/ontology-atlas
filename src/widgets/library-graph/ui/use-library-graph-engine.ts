@@ -826,7 +826,12 @@ export function useLibraryGraphEngine({
         // The mark band is a fact about the room each mark has, so a box that changed hands
         // back a different band. Collision reach follows it, or a grown mark would overlap
         // the neighbour the pass was told to keep it off.
-        radiiRef.current = libraryMarkRadii(graph, { width: rect.width, height: rect.height });
+        // `graphRef`, not `graph`: this effect is the box observer and must not be torn down
+        // and re-created on every folder change.
+        radiiRef.current = libraryMarkRadii(graphRef.current, {
+          width: rect.width,
+          height: rect.height,
+        });
         for (const node of sim.nodes) {
           node.radius = (radiiRef.current.get(node.id) ?? 5) + LIBRARY_COLLISION_PAD;
         }
