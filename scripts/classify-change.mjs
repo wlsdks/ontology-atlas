@@ -14,6 +14,7 @@ import { appendFileSync } from 'node:fs';
 
 import {
   CI_PLANNER_SURFACE_PATTERNS,
+  BROWSER_EXECUTION_SURFACE_PATTERNS,
   normalizeChangedPath,
   suggestFocusedChecks,
 } from './lib/focused-check-suggestions.mjs';
@@ -53,7 +54,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:skills:audit',
     'pnpm test:cli:args',
     'pnpm test:cli:mcp-call',
-    'pnpm test:architecture',
+    'pnpm integration:cli:architecture',
     'pnpm test:mcp:verify',
     'pnpm test:vault:validate',
     'pnpm test:vault:audit',
@@ -82,6 +83,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm integration:cli:setup',
     'pnpm test:mcp:unit',
     'pnpm integration:mcp',
+    'pnpm test:mcp:rpc',
     'pnpm docs:surface:check',
     // The ecosystem channel's own agreement: the bundle ships the server's
     // declared files, the image's ownership label repeats the registry name, and
@@ -116,6 +118,7 @@ const MCP_FULL_INPUTS = [
 ];
 
 const E2E_FULL_INPUTS = [
+  ...BROWSER_EXECUTION_SURFACE_PATTERNS,
   /^playwright\.config\.ts$/,
   /^next\.config\.ts$/,
   /^postcss\.config\.mjs$/,
@@ -445,6 +448,10 @@ export function decide({ base, head, files = [], deletedFiles = [], eventName = 
   return buildImpactPlan({ files, deletedFiles, forceFull, fullReason });
 }
 
+export function unitUsesAllShards(unit) {
+  return unit.mode === 'full' || unit.affected === true || unit.contract === 'full';
+}
+
 function git(args) {
   return execFileSync('git', args, { encoding: 'utf8' }).trim();
 }
@@ -584,6 +591,7 @@ function emit(plan) {
     gates_needs_mcp: gates.needsMcp,
     unit: unit.mode,
     unit_needs_mcp: unit.needsMcp,
+    unit_sharded: unitUsesAllShards(unit),
     mcp: mcp.mode,
     playwright: e2e.mode,
     static: e2e.staticExport,

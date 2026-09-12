@@ -174,11 +174,21 @@ touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
 # above runs three of its five parts.
 touched '^docs/DESIGN-SYSTEM\.md$' && lane design_toc 'pnpm design:toc:check'
 
-# Repo-wide scanners: these read the whole tree, so almost any edit can move them.
-# Cheap enough (~1 min) that filtering would buy noise, not time.
-lane source_language 'pnpm source:language'
+# Reuse the scanner's actual source classifier; a failed scope read runs broadly.
+SOURCE_CHANGED=$(node --input-type=module -e '
+  import { execFileSync } from "node:child_process";
+  import { isSupportedSourcePath } from "./scripts/quality/source-language/source-paths.mjs";
+  const paths = execFileSync("git", ["diff", "--name-only", "-z", process.argv[1]], { encoding: "utf8" }).split("\0").filter(Boolean);
+  console.log(paths.some(isSupportedSourcePath) ? "yes" : "no");
+' "$BASE_REF...HEAD" || true)
+if [ "$SOURCE_CHANGED" != "no" ] || touched '^scripts/quality/source-language/|^package\.json$'; then
+  lane source_language 'pnpm source:language'
+fi
+# A citation can break when its source or its Markdown target changes.
+if [ "$SOURCE_CHANGED" != "no" ] || touched '\.md$'; then
+  lane comment_refs 'node scripts/check-comment-refs.mjs'
+fi
 # Full contract and Knip evidence is owned by the impact-planned PR CI.
-lane comment_refs 'node scripts/check-comment-refs.mjs'
 lane decisions 'pnpm decisions:check'
 
 echo "[pre-push] Running $lane_count lanes:$lane_names"

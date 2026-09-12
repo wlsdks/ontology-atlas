@@ -44,6 +44,29 @@ CI prints each command's duration and adds it to the job summary. Use those
 measurements and reproduced failure causes before deleting a contract test;
 source-reading tests are not automatically redundant.
 
+## Avoid repeated and unrelated work
+
+The full lint command owns the repository scan. Its contract probes the actual
+command with warning, error and valid stdin fixtures; it does not lint the tree
+again. Full architecture verification reuses Vitest, MCP and CLI library lanes,
+with `pnpm integration:cli:architecture` retaining the unique CLI transport case.
+Focused-only Node suites remain discoverable through the actual impact plan.
+
+Browser timing/allocator changes promote browser evidence, not unrelated MCP,
+type or full unit suites. Focused unit work starts only the shard with commands;
+missing distribution metadata conservatively starts all shards.
+
+`pnpm mcp:catalogue:check` compares generation with independently captured inputs
+in `scripts/data/mcp-registry-snapshot.json` without network access. Human refresh
+still fetches registry data. `pnpm mcp:catalogue:check-online` checks live freshness
+on scheduled/manual CI with bounded concurrent requests. Captured inputs and the
+app's catalogue remain tracked, including their provenance.
+
+`pnpm test:mcp:rpc` verifies the response-driven stdio harness. Integration calls
+close stdin after all expected responses and require a clean process exit;
+timeouts are failures and terminated children are reaped. No read/write,
+authorization, UID or modification-time assertion is removed.
+
 ## Browser execution
 
 Browser jobs download one static export built in the same workflow run, named
@@ -53,13 +76,14 @@ commands retain their build step.
 `scripts/run-playwright-ci.mjs` discovers the current Playwright inventory and
 assigns whole files longest-first using advisory measurements in
 `scripts/data/playwright-file-durations.json`. New files receive an estimated
-weight and remain included. File hooks and serial suites stay intact. The runner
+weight and remain included. File hooks and serial suites stay intact; independent hover audits explicitly
+use both workers inside their assigned file. The runner
 compares the actual report's file/test inventory with its assignment before
 accepting success. Dedicated web/static specs leave the broad shards only when
 the corresponding protected job owns them; otherwise they stay in the suite.
 
 Assignments and JSON reports are uploaded as `playwright-timings-*` artifacts on
-successful and failed runs. The timing baseline cites three successful source
+successful and failed runs. The timing baseline cites its successful source
 runs; stale estimates can affect balance, never test selection. Re-measure from
 first-attempt results before refreshing weights. The PR smoke inventory remains
 unchanged; this optimization does not move behavioral coverage into nightly CI.
@@ -85,8 +109,8 @@ runs.
 | pre-push `typecheck` · `comment_refs` · `decisions` | — | ~1 s each | types, code-comment citations, a route with no record |
 | **PR CI, wall clock** | 8 min | plan 25 s, then the slowest job | — |
 | Checks · Check impact plan | 25 s | 21 s avg | a missing plan is RED |
-| Checks · Types · Lint · Docs | 240 s | 150 s avg / 238 s max | type, lint and documentation gates |
-| Checks · Unit · Contract (x3) | 180 s | was 437 s avg / 705 s max unsharded | unit regressions and the full contract sweep |
+| Checks · Types · Lint · Docs | 260 s | 150 s avg / 238 s max | type, lint and documentation gates |
+| Checks · Unit · Contract (x3) | 260 s | was 437 s avg / 705 s max unsharded | unit regressions and the full contract sweep |
 | Checks · MCP | 390 s | 146 s avg / 382 s max | the MCP and CLI boundary |
 | E2E · Playwright static / web | 150 s · 160 s | 73 s · 125 s avg | static-export-only behaviour, the unattended gateway |
 | E2E · Playwright chromium (x3) | 600 s | 392-421 s avg | rendered journeys |

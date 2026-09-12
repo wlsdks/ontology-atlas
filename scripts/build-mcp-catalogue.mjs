@@ -46,7 +46,8 @@
  *
  * Usage:
  *   node scripts/build-mcp-catalogue.mjs            # rebuild from the registry
- *   node scripts/build-mcp-catalogue.mjs --check    # fail if the committed file differs
+ *   node scripts/build-mcp-catalogue.mjs --check    # deterministic check from committed capture
+ *   node scripts/build-mcp-catalogue.mjs --check-online # compare current live registry facts
  *   node scripts/build-mcp-catalogue.mjs --offline  # rebuild curated rows only (no network)
  */
 
@@ -56,7 +57,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'src', 'shared', 'config', 'mcp-catalogue.generated.ts');
+const REGISTRY_SNAPSHOT = join(ROOT, 'scripts', 'data', 'mcp-registry-snapshot.json');
 const REGISTRY = 'https://registry.modelcontextprotocol.io/v0/servers';
+const REGISTRY_TIMEOUT_MS = 15_000;
 
 /**
  * The services a person actually asks for by name, in the order they appear.
@@ -196,9 +199,12 @@ const CURATION = [
  */
 const REGISTRY_FIELDS = ['packageId', 'args', 'env'];
 
-async function fetchRegistryEntry(registryName) {
+async function fetchRegistryEntry(registryName, { fetchImpl = fetch } = {}) {
   const url = `${REGISTRY}?search=${encodeURIComponent(registryName)}&limit=50`;
-  const response = await fetch(url, { headers: { accept: 'application/json' } });
+  const response = await fetchImpl(url, {
+    headers: { accept: 'application/json' },
+    signal: AbortSignal.timeout(REGISTRY_TIMEOUT_MS),
+  });
   if (!response.ok) throw new Error(`registry ${response.status} for ${registryName}`);
   const body = await response.json();
   const matches = (body.servers ?? [])
@@ -208,6 +214,48 @@ async function fetchRegistryEntry(registryName) {
   // The registry keeps every published version; the last one it returns for a name is the newest
   // it has, and taking anything else would pin the catalogue to an old package on purpose.
   return matches[matches.length - 1];
+}
+
+async function fetchRegistrySnapshot({ fetchImpl = fetch } = {}) {
+  const names = CURATION.map((entry) => entry.registryName).filter(Boolean);
+  const rows = await Promise.all(
+    names.map(async (name) => [name, await fetchRegistryEntry(name, { fetchImpl })]),
+  );
+  return { version: 1, servers: Object.fromEntries(rows) };
+}
+
+function validateRegistrySnapshot(snapshot) {
+  if (!snapshot || snapshot.version !== 1 || !snapshot.servers || Array.isArray(snapshot.servers)) {
+    throw new Error('MCP registry snapshot must have version 1 and a servers object');
+  }
+  for (const curated of CURATION) {
+    if (!curated.registryName) continue;
+    if (!Object.hasOwn(snapshot.servers, curated.registryName)) {
+      throw new Error(`MCP registry snapshot is missing ${curated.registryName}`);
+    }
+    const server = snapshot.servers[curated.registryName];
+    if (server !== null && server?.name !== curated.registryName) {
+      throw new Error(`MCP registry snapshot entry ${curated.registryName} has the wrong name`);
+    }
+  }
+  return snapshot;
+}
+
+function readRegistrySnapshot(path = REGISTRY_SNAPSHOT) {
+  let source;
+  try {
+    source = readFileSync(path, 'utf8');
+  } catch (error) {
+    throw new Error(`MCP registry snapshot is missing: ${path}`, { cause: error });
+  }
+  try {
+    return validateRegistrySnapshot(JSON.parse(source));
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new Error(`MCP registry snapshot is invalid JSON: ${path}`, { cause: error });
+    }
+    throw error;
+  }
 }
 
 /** Registry `environmentVariables[]` → this catalogue's `env[]`. Flags come from the publisher. */
@@ -289,14 +337,16 @@ function refuseHostedOauth(curated) {
   }
 }
 
-async function build({ offline }) {
+async function build({ offline, registryServers = null, fetchImpl = fetch }) {
   const entries = [];
   for (const curated of CURATION) {
     refuseHostedOauth(curated);
     const variants = curated.variants.map((variant) => ({ ...variant, source: 'curated' }));
     let registryChecked = false;
     if (!offline && curated.registryName) {
-      const server = await fetchRegistryEntry(curated.registryName);
+      const server = registryServers
+        ? registryServers[curated.registryName]
+        : await fetchRegistryEntry(curated.registryName, { fetchImpl });
       if (server) {
         registryChecked = true;
         // A hosted address the registry also lists is an independently published fact, so the
@@ -394,35 +444,67 @@ export const MCP_CATALOGUE: readonly CatalogueEntry[] = ${JSON.stringify(entries
 `;
 }
 
-async function main() {
-  const check = process.argv.includes('--check');
-  const offline = process.argv.includes('--offline');
+function parseArgs(argv = process.argv.slice(2)) {
+  const allowed = new Set(['--check', '--check-online', '--offline']);
+  const unknown = argv.filter((arg) => !allowed.has(arg));
+  if (unknown.length > 0) throw new Error(`unknown argument: ${unknown[0]}`);
+  const check = argv.includes('--check');
+  const checkOnline = argv.includes('--check-online');
+  const offline = argv.includes('--offline');
+  if (checkOnline && (check || offline)) {
+    throw new Error('--check-online cannot be combined with --check or --offline');
+  }
+  return { check, checkOnline, offline };
+}
+
+async function runCatalogue({
+  argv = process.argv.slice(2),
+  outPath = OUT,
+  snapshotPath = REGISTRY_SNAPSHOT,
+  fetchImpl = fetch,
+} = {}) {
+  const { check, checkOnline, offline } = parseArgs(argv);
   const existing = (() => {
     try {
-      return readFileSync(OUT, 'utf8');
+      return readFileSync(outPath, 'utf8');
     } catch {
       return null;
     }
   })();
-  // In --check the date must come from the committed file, or every run would differ by a day and
+  // In either check mode the date must come from the committed file, or every run would differ by a day and
   // the check would fail on a calendar change rather than on a real drift.
-  const generatedAt = check
+  const generatedAt = check || checkOnline
     ? (existing?.match(/MCP_CATALOGUE_CAPTURED_AT = '([\d-]+)'/)?.[1] ?? today())
     : today();
-  const entries = await build({ offline });
-  const next = render(entries, generatedAt);
-  if (check) {
-    if (existing !== next) {
-      console.error(
-        `${OUT} differs from what the generator produces. Run: node scripts/build-mcp-catalogue.mjs`,
-      );
-      process.exit(1);
-    }
-    console.log(`mcp catalogue: ${entries.length} services, unchanged.`);
-    return;
+  let snapshot = null;
+  if (!offline) {
+    snapshot = check
+      ? readRegistrySnapshot(snapshotPath)
+      : await fetchRegistrySnapshot({ fetchImpl });
   }
-  writeFileSync(OUT, next);
-  console.log(`mcp catalogue: wrote ${entries.length} services to ${OUT}`);
+  const entries = await build({
+    offline,
+    registryServers: snapshot?.servers ?? null,
+    fetchImpl,
+  });
+  const next = render(entries, generatedAt);
+  if (check || checkOnline) {
+    if (existing !== next) {
+      throw new Error(
+        `${outPath} differs from what ${offline ? 'the curated inputs' : checkOnline ? 'the live registry' : 'the committed registry snapshot'} produces. Run: node scripts/build-mcp-catalogue.mjs`,
+      );
+    }
+    return `mcp catalogue: ${entries.length} services, unchanged${checkOnline ? ' against the live registry' : ''}.`;
+  }
+  if (snapshot) {
+    writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
+  }
+  writeFileSync(outPath, next);
+  return `mcp catalogue: wrote ${entries.length} services to ${outPath}`;
+}
+
+async function main() {
+  console.log(await runCatalogue());
 }
 
 /**
@@ -435,8 +517,22 @@ function today() {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-export { build, registryArgs, registryEnv, render, CURATION };
+export {
+  build,
+  fetchRegistrySnapshot,
+  parseArgs,
+  readRegistrySnapshot,
+  registryArgs,
+  registryEnv,
+  render,
+  runCatalogue,
+  validateRegistrySnapshot,
+  CURATION,
+};
 
 if (process.argv[1] && process.argv[1].endsWith('build-mcp-catalogue.mjs')) {
-  await main();
+  main().catch((error) => {
+    console.error(`mcp catalogue: ${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  });
 }

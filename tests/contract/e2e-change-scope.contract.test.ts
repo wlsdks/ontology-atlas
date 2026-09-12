@@ -45,7 +45,6 @@ describe('E2E impact planning precedes expensive setup', () => {
     expect(jobBlock('suite'), 'the three Playwright shards disappeared').toContain(
       'shard: [1, 2, 3]',
     );
-    expect(2 + 3).toBe(5);
   });
 
   it('one checkout-only job publishes the encoded plan and three browser decisions', () => {

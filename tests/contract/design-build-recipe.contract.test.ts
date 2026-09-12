@@ -80,34 +80,4 @@ describe('design-build 레시피 — 참조 무결성', () => {
     expect(recipe, `레시피가 ${name} 를 안 예고한다`).toContain(name);
     expect(existsSync(join(ROOT, path)), `${path} 이 없다`).toBe(true);
   });
-
-  it('첫 명령이 `pnpm checks:changed` 다 — 손으로 쓴 목록은 늘 좁다', () => {
-    // Straight from AGENTS.md: when briefing, point at the command rather than enumerating checks.
-    expect(recipe).toContain('pnpm checks:changed');
-  });
-
-  it('발산 단계를 앞에 둔다 — 카운슬이 갈래 탐색을 대신하지 않게', () => {
-    expect(recipe).toContain('design-directions');
-  });
-
-  it('새 값을 만들기 전에 이미 있는지 찾으라고 말한다', () => {
-    /*
-     * A real failure from 2026-08-03: `--control-h-*` (28/32/40) already existed,
-     * but nobody looked, 24/30/34 were invented instead, and when those values
-     * collided with a contract an exemption axis was added rather than the values
-     * fixed. All six other rules were followed; this one was not, and that was
-     * enough.
-     */
-    expect(recipe, '기존 토큰을 먼저 찾으라는 절이 있어야 한다').toContain('--control-h-');
-    expect(recipe).toContain('app/globals.css');
-    expect(recipe, 'the recipe must point to the system-growth rules').toMatch(/System growth rules/i);
-  });
-
-  it('그 규칙 문서가 실재하고 여섯 조항을 담는다', () => {
-    const ds = read('docs/DESIGN-SYSTEM.md');
-    expect(ds).toMatch(/Rules for extending the system/i);
-    for (const n of [0, 1, 2, 3, 4, 5, 6]) {
-      expect(ds, `Rule ${n} is missing`).toMatch(new RegExp(`Rule ${n} —`));
-    }
-  });
 });

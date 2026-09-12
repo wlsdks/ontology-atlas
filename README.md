@@ -560,6 +560,9 @@ Pre-push keeps quick checks local; full contract and Knip scans belong to PR CI.
 Main CI uses the push diff, with exhaustive daily and manual runs. Exact
 test-file duplicates are collapsed within a local check run; CI always executes. Browser CI shares one build and balances whole test files by
 measured duration; `node --test scripts/run-playwright-ci.test.mjs` verifies allocation.
+MCP harness probes use `pnpm test:mcp:rpc`; full CI keeps the unique CLI boundary
+through `pnpm integration:cli:architecture`. Catalogue checks use captured inputs;
+`pnpm mcp:catalogue:check-online` explicitly checks current registry facts.
 Details: [development checks](docs/DEVELOPMENT-CHECKS.md).
 
 Verification starts with `pnpm checks:changed`, which picks the focused gates for

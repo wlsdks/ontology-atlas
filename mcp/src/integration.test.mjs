@@ -7,11 +7,10 @@
 // the input → routing → output flow of the tool handlers themselves.
 
 import assert from "node:assert/strict";
-import { execFileSync, spawn } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
-import { StringDecoder } from "node:string_decoder";
 import { fileURLToPath } from "node:url";
 import {
   EXPECTED_DESTRUCTIVE_TOOLS,
@@ -45,6 +44,7 @@ import {
   formatTestFilterSuffix,
   resolveTestNamePattern,
 } from "../../scripts/lib/test-name-pattern.mjs";
+import { runJsonRpcProcess } from "../../scripts/lib/mcp-test-rpc.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_ENTRY = resolve(__dirname, "index.js");
@@ -141,46 +141,16 @@ function gitCalls(tracePath, command) {
 
 /**
  * Spawns the server on a tmp vault, sends the requests as JSON-RPC, and collects
- * every response. SIGTERM after a 1.5s timeout. Responses are the stdout lines
- * that JSON.parse accepts.
+ * every expected response. Once all request IDs have answered, stdin closes and
+ * the server must exit cleanly. The timeout is only a hang detector.
  */
 function rpc(vaultRoot, requests, timeoutMs = 1500, extraEnv = {}) {
-  return new Promise((resolveP, rejectP) => {
-    const proc = spawn("node", [SERVER_ENTRY], {
-      env: { ...process.env, OATLAS_VAULT: vaultRoot, ...extraEnv },
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    const stdoutDecoder = new StringDecoder("utf8");
-    const stderrDecoder = new StringDecoder("utf8");
-    let stdout = "";
-    let stderr = "";
-    proc.stdout.on("data", (b) => (stdout += stdoutDecoder.write(b)));
-    proc.stderr.on("data", (b) => (stderr += stderrDecoder.write(b)));
-
-    const lines = requests.map((r) => JSON.stringify(r)).join("\n") + "\n";
-    proc.stdin.write(lines);
-
-    const timer = setTimeout(() => proc.kill("SIGTERM"), timeoutMs);
-
-    proc.on("close", () => {
-      clearTimeout(timer);
-      stdout += stdoutDecoder.end();
-      stderr += stderrDecoder.end();
-      const responses = stdout
-        .split("\n")
-        .filter(Boolean)
-        .map((s) => {
-          try {
-            return JSON.parse(s);
-          } catch {
-            return null;
-          }
-        })
-        .filter(Boolean);
-      resolveP({ responses, stderr });
-    });
-
-    proc.on("error", rejectP);
+  return runJsonRpcProcess({
+    command: process.execPath,
+    args: [SERVER_ENTRY],
+    env: { ...process.env, OATLAS_VAULT: vaultRoot, ...extraEnv },
+    requests,
+    timeoutMs,
   });
 }
 

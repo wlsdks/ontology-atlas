@@ -9773,6 +9773,11 @@
       "depth": 2,
       "text": "2026-09-13 — Browser CI shares one build and balances measured work without reducing coverage",
       "slug": "2026-09-13-browser-ci-shares-one-build-and-balances-measured-work-without-reducing-coverage"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-13 — Verification owns evidence once and completes on responses",
+      "slug": "2026-09-13-verification-owns-evidence-once-and-completes-on-responses"
     }
   ],
   "DEMO-SCENARIO": [
@@ -10935,6 +10940,11 @@
       "depth": 2,
       "text": "Local result reuse and CI ownership",
       "slug": "local-result-reuse-and-ci-ownership"
+    },
+    {
+      "depth": 2,
+      "text": "Avoid repeated and unrelated work",
+      "slug": "avoid-repeated-and-unrelated-work"
     },
     {
       "depth": 2,

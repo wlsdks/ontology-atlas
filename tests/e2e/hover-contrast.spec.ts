@@ -51,6 +51,9 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * Actually hovering and reading `getComputedStyle` produced 5. **Inference is not
  * measurement.**
  */
+// Each audit owns its page and pointer; no file hooks or shared mutable state.
+test.describe.configure({ mode: 'parallel' });
+
 const VIEWPORT = { width: 1512, height: 900 };
 
 /** Composites ancestors' translucent backgrounds into an opaque one (required in an app with many alpha tokens). */

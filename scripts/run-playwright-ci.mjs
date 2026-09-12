@@ -25,9 +25,9 @@ export function balanceFiles(files, history, total) {
   if (new Set(files.map((row) => row.file)).size !== files.length) throw new Error('duplicate inventory file');
   const weighted = files.map((row) => {
     const measured = history.files?.[row.file];
-    const perTest = measured && measured.seconds > 0 && measured.tests > 0
-      ? measured.seconds / measured.tests : 5;
-    return { ...row, seconds: perTest * row.tests };
+    const seconds = measured && measured.seconds > 0
+      ? measured.seconds : 5 * row.tests;
+    return { ...row, seconds };
   }).sort((a, b) => b.seconds - a.seconds || a.file.localeCompare(b.file, 'en'));
   const shards = Array.from({ length: total }, () => ({ files: [], seconds: 0, tests: 0 }));
   for (const row of weighted) {

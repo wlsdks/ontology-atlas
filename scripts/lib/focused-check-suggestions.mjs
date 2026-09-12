@@ -10,9 +10,12 @@ import { isSupportedSourcePath } from '../quality/source-language/source-paths.m
  * setup-playwright/action.yml, which then rode a focused plan built on the
  * assumption the CI infrastructure had not changed.
  */
-export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
+export const BROWSER_EXECUTION_SURFACE_PATTERNS = Object.freeze([
   /^scripts\/run-playwright-ci(?:\.test)?\.mjs$/,
   /^scripts\/data\/playwright-file-durations\.json$/,
+]);
+
+export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
   /^scripts\/classify-change(?:\.test)?\.mjs$/,
   /^scripts\/run-ci-lane(?:\.test)?\.mjs$/,
   /^scripts\/lib\/focused-check-suggestions(?:\.test)?\.mjs$/,
@@ -22,6 +25,8 @@ export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
 ]);
 
 const RULES = [
+  { command: 'pnpm test:mcp:rpc', reason: 'stdio integration harness lifecycle changed', matches: [/^scripts\/lib\/mcp-test-rpc(?:\.test)?\.mjs$/, /^mcp\/src\/integration\.test\.mjs$/] },
+  { command: 'pnpm mcp:catalogue:check', reason: 'captured registry inputs changed', matches: [/^scripts\/data\/mcp-registry-snapshot\.json$/] },
   {
     command: 'node --test scripts/run-playwright-ci.test.mjs',
     reason: 'browser file allocation, coverage verification, or timing estimates changed',
@@ -31,7 +36,7 @@ const RULES = [
   {
     command: 'pnpm test:ci:impact',
     reason: 'CI impact planner, executor, or workflow wiring changed',
-    matches: [...CI_PLANNER_SURFACE_PATTERNS],
+    matches: [...CI_PLANNER_SURFACE_PATTERNS, ...BROWSER_EXECUTION_SURFACE_PATTERNS],
   },
   {
     // The lander decides when a pull request is safe to merge; its state
