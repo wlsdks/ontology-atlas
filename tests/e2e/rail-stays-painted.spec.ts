@@ -25,8 +25,20 @@ import { installDesktopRailRuntime, mountDesktopVault } from "./desktop-rail-arr
  * 0.0000, and no styling of the pair changed it; only not capturing the root did. The full
  * measurement table is in `app/globals.css`.
  *
- * The fix is to capture the pane instead of the document, so the rail, the page frame and
- * everything else the shell owns stay part of the live document.
+ * Capturing the pane instead of the document is what this gate holds in place, so the rail,
+ * the page frame and everything else the shell owns stay part of the live document.
+ *
+ * ## ⚠️ It was not the whole story, and the ink above is not this gate's evidence
+ *
+ * The blank survived that change (inspection 122, re-inspection). A rail press in the
+ * installed app was not a route change at all: `connect-src` refused the App Router's fetch
+ * of the arriving route's payload, so the router fell back to a **full document load**, and
+ * the blank was the app booting and restoring the folder again — 33-67 ms on six documents,
+ * 100-300 ms on 104. The cause and its gates are in `scripts/lib/desktop-csp.mjs`; with it
+ * fixed, a crossing on WKWebView runs the crossfade with every frame painted (rail ink
+ * 0.0243-0.0307, measured on the installed app at 1/120 s). So the ink table above records a
+ * real WebKit behaviour and a wrong diagnosis, and what follows guards only what it can
+ * actually see.
  *
  * ## ⚠️ Why this gate hit-tests instead of reading pixels
  *

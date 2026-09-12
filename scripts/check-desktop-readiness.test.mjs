@@ -300,9 +300,15 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ macOS Info\.plist explains selected vault-folder access for protected locations/,
   );
+  /*
+   * ★ `own-origin route payloads` is load-bearing. Without `'self'` in `connect-src` the App
+   * Router cannot read the arriving route out of the bundle and every rail press in the
+   * installed app becomes a full document load (inspection 122, B1/R1 — the measurement is in
+   * `scripts/lib/desktop-csp.mjs`).
+   */
   assert.match(
     result.stdout,
-    /✓ Tauri CSP is enabled for local app assets, images, styles, and IPC only/,
+    /✓ Tauri CSP is enabled for local app assets, images, styles, own-origin route payloads, and IPC only/,
   );
   assert.match(
     result.stdout,
