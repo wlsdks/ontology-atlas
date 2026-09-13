@@ -36,12 +36,12 @@ need their own scoped PO/design/evidence proof before implementation.
 | ID | Status | Concrete deliverable | Prerequisite / evidence |
 |---|---|---|---|
 | V1.0 | done(ffcdce35a) | Typed and readable measurement scope; discovery/oracle pass remains distinct from unmeasured construction | First slice; preserve existing thresholds and per-fixture/empty failure behavior |
-| V1.1 | in_progress | Frozen unfamiliar backend task, six owner-approved questions, source reference, license/scope manifest | Preserve the original question approval; independently verify task-specific reference |
-| V1.2 | blocked(V1.1) | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
-| V1.3 | blocked(V1.1) | Scoped document/config evidence retaining current/planned/negated/conflicting context | Activate only witnessed gaps; follow applicable V1.2 decisions |
+| V1.1 | done(8ea129383) | Frozen unfamiliar backend task, six owner-approved questions, source reference, license/scope manifest | Preserve the original question approval; independently verify task-specific reference |
+| V1.2 | ready | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
+| V1.3 | hold(witnessed document/config gap) | Scoped document/config evidence retaining current/planned/negated/conflicting context | Activate only witnessed gaps; follow applicable V1.2 decisions |
 | V1.4 | blocked(V1.2) | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | V1.2 and V1.3 where the task needs them |
 | V1.5 | blocked(V1.4) | Independent candidate and persisted handoff, full-answer source audit, matched prompt/access comparisons | Exact meaning/gap/write approval; frozen run and holdout |
-| V2.1 | blocked(V1.1) | Task/non-goal resolution with supported selection, alternatives or abstention | A reviewed starting vault may isolate reuse; disclose construction cost |
+| V2.1 | hold(reviewed starting vault) | Task/non-goal resolution with supported selection, alternatives or abstention | A reviewed starting vault may isolate reuse; disclose construction cost |
 | V2.2 | blocked(V2.1) | Compact action context preserving conditions, exceptions, currentness and unknowns | Same claims survive budgets and full-body follow-ups |
 | V2.3 | blocked(V2.2) | Actual host-to-MCP task entry and honest unavailable-context fallback | Optional UI links wait for V3.1; initial MCP proof does not |
 | V2.4 | blocked(V2.3) | Atlas-on/off real coding outcomes with equivalent source tools and independent review | V1.5 additionally required for construction claims |
@@ -77,7 +77,7 @@ contract only; independent construction quality, actual human comprehension,
 V3 UX and repeated-use benefit remain unproven. This made V1.1 the next slice.
 
 
-**V1.1 registration evidence (2026-09-13):** a new permissively licensed Python
+**V1.1 registration evidence (2026-09-13, `8ea129383`):** a new permissively licensed Python
 backend and one existing state/history/notification task are pinned outside the
 checkout at `/Users/jinan/scratch/atlas-v1-2026-09-13/`. `REPORT.md` is the entry;
 `control/registration.json` freezes source/runtime/actor coordinates, the exact
@@ -100,7 +100,10 @@ project-wide exclusion in q6; these are reference limits, not builder scores.
 There was no construction, source-hidden evaluator, upstream runtime test or
 ontology write. New concrete cases/model/tool budgets and actual isolation probes
 must be frozen before the later measured launches. The next work is a measured
-source-access gap, not an assumed new reader or parser.
+source-access gap in V1.2, not an assumed new reader or parser. All seven
+registration recommendations from `checks:changed -- --run` passed. V1.3
+waits for a witnessed document/config gap; V2.1 still needs a reviewed starting
+vault, so finishing this registration does not silently unlock either claim.
 
 V1 and the reuse value in V2/V4 are separate risks: a manually reviewed starting
 vault can test reuse, but its creation method and cost must remain visible and
