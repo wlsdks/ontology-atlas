@@ -37,7 +37,7 @@ need their own scoped PO/design/evidence proof before implementation.
 |---|---|---|---|
 | V1.0 | done(ffcdce35a) | Typed and readable measurement scope; discovery/oracle pass remains distinct from unmeasured construction | First slice; preserve existing thresholds and per-fixture/empty failure behavior |
 | V1.1 | done(8ea129383) | Frozen unfamiliar backend task, six owner-approved questions, source reference, license/scope manifest | Preserve the original question approval; independently verify task-specific reference |
-| V1.2 | ready | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
+| V1.2 | in_progress | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
 | V1.3 | hold(witnessed document/config gap) | Scoped document/config evidence retaining current/planned/negated/conflicting context | Activate only witnessed gaps; follow applicable V1.2 decisions |
 | V1.4 | blocked(V1.2) | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | V1.2 and V1.3 where the task needs them |
 | V1.5 | blocked(V1.4) | Independent candidate and persisted handoff, full-answer source audit, matched prompt/access comparisons | Exact meaning/gap/write approval; frozen run and holdout |

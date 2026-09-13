@@ -1,4 +1,5 @@
 import { evaluateQuantifiedCompetencyCoverage } from "./competency-coverage.mjs";
+import { isPersistableEvidenceReference, isPersistablePathWitness, parseSourceRangeCitation } from './source-range-citation.mjs';
 
 /**
  * Deterministic project-meaning assessment.
@@ -201,9 +202,9 @@ function normalizeQuestions(competency, projectSlug) {
       && Array.isArray(witnesses.relations)
       && witnesses.relations.every(safeRelation)
       && Array.isArray(witnesses.evidence)
-      && witnesses.evidence.every(safeRelativePath)
+      && witnesses.evidence.every(isPersistableEvidenceReference)
       && Array.isArray(witnesses.paths)
-      && witnesses.paths.every(safeRelativePath)
+      && witnesses.paths.every(isPersistablePathWitness)
       && Array.isArray(row.unresolvedWitnesses)
       && row.unresolvedWitnesses.every(safeOpaque);
     if (
@@ -223,7 +224,8 @@ function normalizeQuestions(competency, projectSlug) {
       || witnesses.relations.some((relation) => relation.type === "depends_on");
     const witnessesResolve = witnesses.concepts.every((slug) => inventory.concepts.has(slug))
       && witnesses.relations.every((relation) => inventory.relations.has(relationKey(relation)))
-      && witnesses.evidence.every((path) => inventory.evidence.has(path))
+      && witnesses.evidence.every((reference) =>
+        parseSourceRangeCitation(reference) === null && inventory.evidence.has(reference))
       && witnesses.paths.every((path) => inventory.paths.has(path));
     const quantifiedCoverage = competencyCoverage({
       id: contract.id,

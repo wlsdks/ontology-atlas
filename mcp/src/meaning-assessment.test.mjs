@@ -59,7 +59,7 @@ test('a real agent_brief 100/100 cannot override missing semantic witnesses', ()
     { status: 'ready', score: 100 },
   );
 
-  const assessment = deriveMeaningAssessment({
+  const input = {
     projectSlug: 'sample-product',
     graphHash: GRAPH_HASH,
     structure: { status: 'ready' },
@@ -99,7 +99,8 @@ test('a real agent_brief 100/100 cannot override missing semantic witnesses', ()
       measuredAt: '2026-08-02T06:38:07.944Z',
       topGapId: null,
     },
-  });
+  };
+  const assessment = deriveMeaningAssessment(input);
 
   assert.equal(assessment.status, 'needs_evidence');
   assert.deepEqual(assessment.topGap, {
@@ -212,4 +213,36 @@ test('a fresh assessment rejects answered competency witnesses that cover only a
     assessment.dimensions.competency.questions.find(({ id }) => id === 'abilities'),
     { id: 'abilities', status: 'answered', witnessStatus: 'missing' },
   );
+});
+
+test('a supported underlying path cannot resolve an exact source-range witness', () => {
+  const reference = `source:src/a.ts#L1-L1@sha256:${'a'.repeat(64)}`;
+  const questions = MEANING_COMPETENCY_QUESTIONS.map(({ id }) => ({
+    id,
+    status: id === 'evidence' ? 'answered' : 'visible-gap',
+    witnesses: id === 'evidence'
+      ? { concepts: ['capabilities/a'], relations: [], evidence: [reference], paths: ['src/a.ts'] }
+      : { concepts: [], relations: [], evidence: [], paths: [] },
+    unresolvedWitnesses: id === 'evidence' ? [] : ['declared_gap'],
+  }));
+  const rangeInput = {
+    projectSlug: 'sample-product', graphHash: GRAPH_HASH, structure: { status: 'ready' },
+    competency: {
+      contract: MEANING_COMPETENCY_CONTRACT, receiptVersion: 1,
+      evaluator: MEANING_COMPETENCY_EVALUATOR, graphHash: GRAPH_HASH,
+      inventory: {
+        contract: MEANING_WITNESS_INVENTORY_CONTRACT, graphHash: GRAPH_HASH,
+        sourceFingerprint: 'git:abc123:clean', concepts: ['capabilities/a'],
+        kinds: { 'capabilities/a': 'capability' }, relations: [],
+        evidence: ['src/a.ts'], paths: ['src/a.ts'],
+      },
+      questions,
+    },
+    source: { status: 'verified_current', currentness: 'current' },
+  };
+  const assessment = deriveMeaningAssessment(rangeInput);
+  const evidence = assessment.dimensions.competency.questions.find((row) => row.id === 'evidence');
+  assert.equal(evidence.witnessStatus, 'missing');
+  questions.find((row) => row.id === 'evidence').witnesses.paths = [reference];
+  assert.equal(deriveMeaningAssessment(rangeInput).status, 'invalid');
 });

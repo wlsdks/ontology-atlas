@@ -11,6 +11,7 @@ import {
   readVaultSidecarText,
   replaceVaultSidecarText,
 } from './vault-sidecar.mjs';
+import { isPersistableEvidenceReference, isPersistablePathWitness } from './source-range-citation.mjs';
 
 export const PROJECT_MEANING_RECEIPT_VERSION = 1;
 export const PROJECT_MEANING_STATE_RELATIVE_PATH = '.ontology-atlas/project-meaning.json';
@@ -59,15 +60,6 @@ function safeOpaque(value) {
     && /^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(value);
 }
 
-function safeRelativePath(value) {
-  if (typeof value !== 'string' || value.length === 0 || value.length > 500) return false;
-  const normalized = value.replaceAll('\\', '/');
-  return !normalized.startsWith('/')
-    && !/^[A-Za-z]:\//.test(normalized)
-    && !normalized.split('/').includes('..')
-    && !normalized.includes('\0');
-}
-
 function safeMeasuredAt(value) {
   if (typeof value !== 'string') return false;
   const parsed = Date.parse(value);
@@ -109,7 +101,7 @@ function normalizeAnswerRows(answers) {
     if (!witnesses.concepts.every((value) => safeVaultSlug(value))) {
       fail(`${id} concept witnesses are malformed`);
     }
-    if (!witnesses.evidence.every(safeRelativePath) || !witnesses.paths.every(safeRelativePath)) {
+    if (!witnesses.evidence.every(isPersistableEvidenceReference) || !witnesses.paths.every(isPersistablePathWitness)) {
       fail(`${id} path witnesses are malformed`);
     }
     if (!witnesses.relations.every((relation) => relation
@@ -262,8 +254,8 @@ export function parseProjectCompetencyMarkdown(body) {
       seen.add(label);
       if (label === 'Concepts') witnesses.concepts = parseBacktickList(value, safeVaultSlug, label);
       else if (label === 'Relations') witnesses.relations = parseRelations(value, label);
-      else if (label === 'Evidence') witnesses.evidence = parseBacktickList(value, safeRelativePath, label);
-      else if (label === 'Paths') witnesses.paths = parseBacktickList(value, safeRelativePath, label);
+      else if (label === 'Evidence') witnesses.evidence = parseBacktickList(value, isPersistableEvidenceReference, label);
+      else if (label === 'Paths') witnesses.paths = parseBacktickList(value, isPersistablePathWitness, label);
       else if (label === 'Gap') {
         if (!value.trim() || value.trim() !== value) fail(`${contract.id} Gap is malformed`);
         gap = value;

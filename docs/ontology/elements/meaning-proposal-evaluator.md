@@ -19,6 +19,10 @@ A Definition, Includes, Excludes, relation rationale, or answered competency tha
 
 One exact current candidate unit plus one matching implementation witness may support only a capability proposal below 0.8 confidence. The path is not a second semantic authority and cannot establish domain, ownership, completeness, an answered competency, qualification, approval, or write.
 
+## Observed source citations
+
+Freshly returned bounded source-range citations can resolve provenance without entering the semantic-authority map. Every selected replay must succeed. Range Evidence remains byte-identical when stored, while source-role inventory decodes its safe underlying path. That path support does not verify a range or hash: shared assessment keeps exact range evidence unresolved, and any answered competency containing it is refused before review. Honest partial/visible gaps remain usable; source remeasurement cannot silently certify the recorded range. The reader and lifecycle separately bind source bytes, selected ranges and exact review/acceptance identities; none of these checks authenticates meaning as true.
+
 ## Exact body contract
 
 Generated concept bodies use the parser canonical full-body representation with exactly one structural leading newline. The Markdown writer removes that representation-only prefix before serialization and the parser restores it on read, so `reviewPlan.body`, accepted `writePlan.body`, and a persisted full-body read remain byte-identical without changing Markdown content.

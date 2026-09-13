@@ -68,3 +68,7 @@ Literal repository root `.` is a valid explicit competency and element path. It 
 - Does not conflate current source with old competency provenance as a single source defect.
 - Re-evaluation does not auto-approve existing typed witnesses nor write/finalize; it maintains user approval.
 - Representative qualification fixture is evidence of contract execution, not quality evidence for three actual products.
+
+## Bounded source reference boundary
+
+A persisted competency Evidence entry may retain an exact source-range URI. Source-role inventory extracts its safe underlying file path without dropping ordinary sibling citations; Paths remains an ordinary-path field. This receipt establishes file support and repository fingerprint currentness, not the URI's range/hash truth. Exact range evidence stays unresolved in shared meaning assessment, and an answered competency containing it is refused before proposal review. A source remeasurement cannot silently certify that recorded range.
