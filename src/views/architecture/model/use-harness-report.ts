@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
-import { scanHarness, type HarnessReport, type HarnessScanPort } from '@/entities/agent-files';
+import {
+  scanHarness,
+  type HarnessReport,
+  type HarnessScanPort,
+  type HarnessScanProgress,
+} from '@/entities/agent-files';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
 import {
   getTauriVaultRootPath,
@@ -29,7 +34,7 @@ import {
 export type HarnessReportState =
   | { status: 'unsupported' }
   | { status: 'no-source' }
-  | { status: 'loading'; sourceRoot: string }
+  | { status: 'loading'; sourceRoot: string; progress: HarnessScanProgress | null }
   | { status: 'ready'; sourceRoot: string; report: HarnessReport }
   | { status: 'failed'; sourceRoot: string; message: string };
 
@@ -109,7 +114,7 @@ export function useHarnessReport(
         setState({ status: 'no-source' });
         return;
       }
-      setState({ status: 'loading', sourceRoot });
+      setState({ status: 'loading', sourceRoot, progress: null });
       try {
         /*
          * The ontology folder is excluded from the document census when it lives inside the
@@ -125,6 +130,14 @@ export function useHarnessReport(
         const report = await scanHarness(bridgePort(sourceRoot), {
           capabilityPaths: capabilityKey ? capabilityKey.split('\0') : [],
           excludedFolders,
+          /*
+           * Straight through to state. The scan awaits a bridge call between every report, so each
+           * one lands on its own task and React paints it — no throttling is needed, and adding one
+           * would make the screen claim a pass had lasted longer than it did.
+           */
+          onProgress: (progress) => {
+            if (!cancelled) setState({ status: 'loading', sourceRoot, progress });
+          },
         });
         if (!cancelled) setState({ status: 'ready', sourceRoot, report });
       } catch (error) {

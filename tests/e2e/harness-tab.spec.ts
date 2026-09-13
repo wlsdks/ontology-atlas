@@ -42,16 +42,16 @@ test.describe("하네스 탭", () => {
     expect(new URL(page.url()).pathname).toBe("/ko/architecture/");
   });
 
-  test("기본 보기는 커버리지고, 세그먼트가 보기를 주소에 적는다", async ({ page }) => {
+  test("기본 보기는 청사진이고, 세그먼트가 보기를 주소에 적는다", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/");
-    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("architecture-flow-panel")).toBeVisible({ timeout: 30_000 });
 
     await page.locator("#harness-tab-guides").click();
     await expect(page).toHaveURL(/\?view=guides$/);
-    await page.locator("#harness-tab-structure").click();
-    await expect(page).toHaveURL(/\?view=structure$/);
-    await expect(page.getByTestId("architecture-flow-panel")).toBeVisible();
+    await page.locator("#harness-tab-coverage").click();
+    await expect(page).toHaveURL(/\?view=coverage$/);
+    await expect(page.getByTestId("harness-coverage")).toBeVisible();
 
     /*
      * The address is rewritten in place, not pushed — switching view inside one destination is not
@@ -60,31 +60,28 @@ test.describe("하네스 탭", () => {
      * refresh and a shared link landing on the same view.
      */
     await page.reload();
-    await expect(page.getByTestId("architecture-flow-panel")).toBeVisible();
-    await expect(page).toHaveURL(/\?view=structure$/);
+    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(/\?view=coverage$/);
   });
 
-  test("은퇴한 sensors 주소와 ?role= 링크가 각자 뜻하던 곳으로 간다", async ({ page }) => {
+  test("은퇴한 sensors 주소는 그 질문에 답하는 보기로 간다", async ({ page }) => {
     /*
      * The sensors view named this exact question — which checks cover each domain's paths, and
      * where nobody is watching — and said it was not built. It is built now, so that address opens
-     * the answer. A `?role=` link — the ladder's own deep link — still opens the ladder, while the
-     * shell-wide `?focus=main` skip anchor every left-rail link carries does not.
+     * the answer. The plain address and the shell-wide `?focus=main` that every left-rail link
+     * carries both open the blueprint, which is what they have always meant.
      */
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/?view=sensors");
     await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
 
-    await page.goto("/ko/architecture/?role=views");
-    await expect(page.getByTestId("architecture-flow-panel")).toBeVisible({ timeout: 30_000 });
-
     await page.goto("/ko/architecture/?focus=main");
-    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("architecture-flow-panel")).toBeVisible({ timeout: 30_000 });
   });
 
   test("커버리지 표가 영역마다 말해둔 것·막는 것·지켜보는 것을 말하고, 빈 칸은 문장으로 말한다", async ({ page }) => {
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/");
+    await page.goto("/ko/architecture/?view=coverage");
     const matrix = page.getByTestId("harness-coverage");
     await expect(matrix).toBeVisible({ timeout: 30_000 });
 
@@ -136,7 +133,7 @@ test.describe("하네스 탭", () => {
      * AGENTS.md names by path, and one that nothing names.
      */
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/");
+    await page.goto("/ko/architecture/?view=coverage");
     const reach = page.getByTestId("harness-reach");
     await expect(reach).toBeVisible({ timeout: 30_000 });
     await expect(reach.locator('[data-harness-reach-row="guides"]')).toContainText("지침");
@@ -160,7 +157,7 @@ test.describe("하네스 탭", () => {
      * unchanged; it costs nothing until a reader asks for it.
      */
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/");
+    await page.goto("/ko/architecture/?view=coverage");
     await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
     const rule = page.getByText("어떤 파일이 선언한 경로가", { exact: false });
     await expect(rule).toBeHidden();

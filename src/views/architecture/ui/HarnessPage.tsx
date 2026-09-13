@@ -24,16 +24,17 @@ import { useHarnessReport } from '../model/use-harness-report';
 import { ArchitecturePage } from './ArchitecturePage';
 import { HarnessCoverageView } from './HarnessCoverageView';
 import { HarnessGuidesView } from './HarnessGuidesView';
+import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
 
 /**
  * **The Harness destination: one spine, and two views that detail it.**
  *
- * The spine is the **coverage matrix** — this repository's own areas on the rows, and what tells,
- * gates and watches each one on the columns. That is the view this destination is for, so it is the
- * default and the first tab. The other two are details of it: `guides` is the per-file inventory
- * with its citations, `structure` the reviewed layer ladder. `?view=sensors` — the view that named
- * this question and said it was not built — resolves to the matrix, and a `?role=` link still opens
- * the ladder that can show a role (`harness-view-state.ts`).
+ * The spine is the **coverage matrix** — this repository's own domains on the rows, and what tells,
+ * gates and watches each one on the columns. That is the view this destination is *for*, and it is
+ * one press away at `?view=coverage`; the view a person walks into is the reviewed layer ladder
+ * (owner, 2026-09-13), which also keeps the plain `/architecture/` address meaning exactly what
+ * every link written before this slice meant. `?view=sensors` — the view that named the coverage
+ * question and said it was not built — resolves to the matrix (`harness-view-state.ts`).
  *
  * ⚠️ **One chrome row, and the name shares it with the tabs.** Three measurements decided this
  * shape, in order:
@@ -87,9 +88,7 @@ function HarnessPageInner() {
    * URL with `replaceState`, which `useSearchParams` does not observe.
    */
   const [viewOverride, setViewOverride] = useState<HarnessView | null>(null);
-  const addressView = parseHarnessView(searchParams.get('view'), {
-    hasRole: searchParams.has('role'),
-  });
+  const addressView = parseHarnessView(searchParams.get('view'));
   const view = viewOverride ?? addressView;
   const [reloadNonce, setReloadNonce] = useState(0);
   const mode = useDataSourceMode();
@@ -136,7 +135,7 @@ function HarnessPageInner() {
        what putting the view in the URL was meant to prevent. */
     const onPopState = () => {
       const params = new URL(window.location.href).searchParams;
-      setViewOverride(parseHarnessView(params.get('view'), { hasRole: params.has('role') }));
+      setViewOverride(parseHarnessView(params.get('view')));
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -268,7 +267,7 @@ function HarnessPageInner() {
                 )}
               </>
             ) : reportState.status === 'loading' ? (
-              <p className="text-body text-[color:var(--color-text-tertiary)]">{t('loading')}</p>
+              <HarnessScanProgressPanel progress={reportState.progress} />
             ) : reportState.status === 'no-source' ? (
               <EmptyState title={t('noSource')} description={t('noSourceBody')} />
             ) : reportState.status === 'failed' ? (

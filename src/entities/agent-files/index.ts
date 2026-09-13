@@ -43,6 +43,7 @@ export {
   scanHarness,
   type HarnessReport,
   type HarnessScanPort,
+  type HarnessScanProgress,
 } from './model/repo-scan';
 export { citesPath, type DocumentReach } from './model/document-reach';
 export { type HookConfigFacts } from './model/hook-wiring';

@@ -1591,6 +1591,45 @@
     }
   }
 
+  /*
+   * **The harness read's indeterminate bar.**
+   *
+   * It runs only while a pass whose denominator is genuinely unknown is running — the walk across
+   * the checkout for authored Markdown, whose directory count nobody has before the walk. Every
+   * other pass draws a determinate bar from a real count, so this animation is the drawing of "we
+   * do not know how many", not a decoration standing in for one. Nothing moves at rest: the element
+   * only exists while the read is in flight.
+   */
+  @keyframes harnessScanSweep {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+  }
+
+  .harness-scan-sweep {
+    animation: harnessScanSweep calc(var(--motion-settle) * 5) var(--motion-ease) infinite;
+  }
+
+  /*
+   * The reduced-motion equivalent keeps time and drops the moving axis: the track fills and breathes
+   * on opacity instead of sweeping on transform. `animation: none` would be a hard cut — the mark
+   * that says "a pass is running" would become indistinguishable from a stalled one, which is the
+   * information this animation carries and the reason `reduced-motion-equivalent.contract.test.ts`
+   * requires the equivalent to recover its duration token rather than delete it.
+   */
+  @keyframes harnessScanBreath {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.62; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .harness-scan-sweep {
+      animation-name: harnessScanBreath;
+      animation-duration: calc(var(--motion-settle) * 6);
+      transform: none !important;
+      width: 100% !important;
+    }
+  }
+
   /* Agent panel waiting dot — reuses same heartbeat syntax (slow low-contrast cycle).
      Only opacity moves, not glow, and this is **not fake progress**:
      turns on only while actual round-trip runs, and the fact of progress is told by the tool row below. prefers-reduced-motion automatically stops it via base layer global rule below — dot remains visible and "thinking · N sec" text beside it continues telling same fact, so information does not decrease at all. */

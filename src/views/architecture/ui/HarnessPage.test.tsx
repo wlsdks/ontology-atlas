@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -7,7 +7,12 @@ import type { HarnessReport } from '@/entities/agent-files';
 
 const state = {
   mode: 'local' as 'local' | 'static',
-  report: null as null | { status: string; sourceRoot?: string; report?: HarnessReport },
+  report: null as null | {
+    status: string;
+    sourceRoot?: string;
+    report?: HarnessReport;
+    progress?: { stage: string; done: number; total: number | null } | null;
+  },
 };
 
 vi.mock('@/entities/vault-session', () => ({
@@ -116,27 +121,17 @@ describe('the destination identity', () => {
     ).toBeNull();
   });
 
-  it('opens on the coverage matrix, which is what this destination is for', () => {
-    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
-    mount();
-    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
-  });
-
-  it('keeps a ?role= deep link on the ladder, and lets a rail click through', () => {
-    /*
-     * `?role=` is the ladder's own deep link. `?focus=main` is the app shell's skip-to-content
-     * anchor and every left-rail link carries it — measured in the installed app, where keying the
-     * carve-out on `focus` made one rail click open the ladder and left the new default unreachable.
-     */
-    window.history.replaceState(null, '', '/ko/architecture/?role=views');
+  it('opens on the blueprint, where every link written before this slice points', () => {
+    /* The matrix is the tab's spine and one press away; the view a person walks into is the ladder
+       (owner, 2026-09-13), which also keeps the plain address meaning what it always meant. */
     mount();
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+  });
 
-    cleanup();
+  it('lets the rail through, which carries ?focus=main on every link', () => {
     window.history.replaceState(null, '', '/ko/architecture/?focus=main');
-    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
+    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
   });
 
   it('keeps one tab set above the panel, never inside it', () => {
@@ -163,15 +158,15 @@ describe('the segmented control', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     act(() => {
-      fireEvent.click(document.querySelector('#harness-tab-structure')!);
-    });
-    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
-    expect(window.location.search).toBe('?view=structure');
-
-    act(() => {
       fireEvent.click(document.querySelector('#harness-tab-coverage')!);
     });
     expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
+    expect(window.location.search).toBe('?view=coverage');
+
+    act(() => {
+      fireEvent.click(document.querySelector('#harness-tab-structure')!);
+    });
+    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
     // The default view leaves the plain address a person copies.
     expect(window.location.search).toBe('');
   });
@@ -179,20 +174,21 @@ describe('the segmented control', () => {
   it('follows the address when history moves under it', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
+    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
     act(() => {
-      window.history.replaceState(null, '', '/ko/architecture/?view=structure');
+      window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
     // The address saying one view while the screen draws another is exactly what putting the
     // view in the URL was for.
-    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
   });
 
   it('opens the view the address names', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=structure');
+    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
   });
 
   it('sends the retired sensors address to the view that answers it', () => {
@@ -202,6 +198,46 @@ describe('the segmented control', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
+  });
+
+  it('shows the passes it is actually running rather than a word on a black screen', () => {
+    /*
+     * The wait is a screen. It names each pass `scanHarness` runs and fills a bar only where the
+     * denominator was known before the pass started; the walk across the checkout, whose length
+     * nobody knows in advance, moves instead of claiming a number.
+     */
+    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+    state.report = {
+      status: 'loading',
+      sourceRoot: '/repo',
+      progress: { stage: 'citations', done: 40, total: 401 },
+    };
+    mount();
+    const panel = screen.getByTestId('harness-scan-progress');
+    expect(panel).toHaveTextContent('문서 사이의 인용');
+    expect(panel).toHaveTextContent('401개 중 41개');
+    expect(panel.querySelector('[data-harness-stage="citations"]')).toHaveAttribute(
+      'data-harness-stage-state',
+      'running',
+    );
+    expect(panel.querySelector('[data-harness-stage="roots"]')).toHaveAttribute(
+      'data-harness-stage-state',
+      'done',
+    );
+  });
+
+  it('never invents a denominator for a pass whose length it cannot know', () => {
+    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+    state.report = {
+      status: 'loading',
+      sourceRoot: '/repo',
+      progress: { stage: 'documents', done: 0, total: null },
+    };
+    mount();
+    const panel = screen.getByTestId('harness-scan-progress');
+    expect(panel).toHaveTextContent('세는 중');
+    expect(panel.querySelector('.harness-scan-sweep')).not.toBeNull();
+    expect(panel.textContent).not.toMatch(/%/);
   });
 });
 
@@ -253,7 +289,8 @@ describe('honest degradation', () => {
 });
 
 describe('the coverage matrix', () => {
-  it('says what it cannot show when the ontology records no area, and still answers the half that needs none', () => {
+  it('says what it cannot show when the ontology records no domain, and still answers the half that needs none', () => {
+    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
     /*
      * A repository with agent files and no ontology. The grid would otherwise print three column
      * headers over nothing, which reads as a broken screen rather than as the true statement — and
@@ -267,6 +304,7 @@ describe('the coverage matrix', () => {
   });
 
   it('never renders a score, a grade or a percentage', () => {
+    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
     /*
      * The thing every competitor ships and this screen may not. A number here would assert a
      * judgement the files cannot support, which is exactly how a scanner rated an official

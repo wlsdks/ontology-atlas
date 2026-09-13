@@ -327,7 +327,6 @@
     "failed": "Could not read it",
     "empty": "No agent guide files",
     "emptyBody": "There is no AGENTS.md, CLAUDE.md or .claude/rules here. Agents start on this repository having been told nothing about it.",
-    "loading": "Reading",
     "fileCount": "{count, plural, one {# file} other {# files}}",
     "sourceRoot": "Read from {path}",
     "coverageHeadline": "{unwatched, plural, =0 {A check names every one of its {areas} domains.} other {No check names # of its {areas} domains.}}",
@@ -385,7 +384,18 @@
     "reachBreakdownOpen": "Where they are",
     "reachSourceRoot": "Read from {path}",
     "coverageDiscoveredTests": "{count, plural, =0 {No test file sits under its recorded paths either.} one {# test file sits under its recorded paths and runs under the repository-wide lanes.} other {# test files sit under its recorded paths and run under the repository-wide lanes.}}",
-    "reachNamedDirect": "{count} of them named by a guide directly, the rest after {hops, plural, one {# hop} other {# hops}} of citation"
+    "reachNamedDirect": "{count} of them named by a guide directly, the rest after {hops, plural, one {# hop} other {# hops}} of citation",
+    "loadingTitle": "Reading this repository",
+    "loadingStageRoots": "Root guides",
+    "loadingStageNested": "Nested AGENTS.md",
+    "loadingStageAgentDirectories": "Agent directories",
+    "loadingStageHooks": "Hook configs",
+    "loadingStageDocuments": "Authored documents",
+    "loadingStageCitations": "Citations between them",
+    "loadingStageCoverage": "Declared path scopes",
+    "loadingCounted": "{done} of {total}",
+    "loadingCounting": "counting",
+    "loadingAria": "Reading this repository: {stage}"
   },
   "architecture": {
     "eyebrow": "CODE ARCHITECTURE",

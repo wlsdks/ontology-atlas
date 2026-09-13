@@ -327,7 +327,6 @@
     "failed": "읽지 못했습니다",
     "empty": "에이전트 지침 파일이 없습니다",
     "emptyBody": "AGENTS.md, CLAUDE.md, .claude/rules 같은 파일이 하나도 없습니다. 에이전트는 이 저장소에 대해 아무 말도 듣지 않고 시작합니다.",
-    "loading": "읽는 중",
     "fileCount": "파일 {count}개",
     "sourceRoot": "읽은 곳 {path}",
     "coverageHeadline": "{unwatched, plural, =0 {도메인 {areas}개 모두 이름을 부르는 검사가 있습니다.} other {도메인 {areas}개 중 #개는 어떤 검사도 이름을 부르지 않습니다.}}",
@@ -385,7 +384,18 @@
     "reachBreakdownOpen": "어디에 있는지",
     "reachSourceRoot": "읽은 곳 {path}",
     "coverageDiscoveredTests": "{count, plural, =0 {기록된 경로 아래에 테스트 파일도 없습니다.} other {기록된 경로 아래에 테스트 파일 #개가 있고, 저장소 전체 레인에서 돕니다.}}",
-    "reachNamedDirect": "그중 {count}개는 지침이 바로 이름을 댔고, 나머지는 인용을 {hops}단계 따라가서 닿습니다"
+    "reachNamedDirect": "그중 {count}개는 지침이 바로 이름을 댔고, 나머지는 인용을 {hops}단계 따라가서 닿습니다",
+    "loadingTitle": "이 저장소를 읽는 중",
+    "loadingStageRoots": "최상위 지침",
+    "loadingStageNested": "하위 AGENTS.md",
+    "loadingStageAgentDirectories": "에이전트 폴더",
+    "loadingStageHooks": "훅 설정",
+    "loadingStageDocuments": "작성된 문서",
+    "loadingStageCitations": "문서 사이의 인용",
+    "loadingStageCoverage": "선언된 경로 범위",
+    "loadingCounted": "{total}개 중 {done}개",
+    "loadingCounting": "세는 중",
+    "loadingAria": "이 저장소를 읽는 중: {stage}"
   },
   "architecture": {
     "eyebrow": "코드 아키텍처",

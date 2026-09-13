@@ -299,6 +299,32 @@ function checkScripts(packageJsonText: string | null): Map<string, string> {
   return out;
 }
 
+/**
+ * **What the reader is waiting on, reported as it happens.**
+ *
+ * This read is genuinely long — it opens every root guide, walks eight dot directories, crosses the
+ * whole checkout for authored Markdown, follows citations to a fixpoint and probes declared scopes
+ * against the disk. A bare "Reading" on a black screen tells none of that, and a percentage
+ * invented over an unknown denominator would be the lie this whole surface exists not to tell. So
+ * each pass reports its own name, and a count only where the denominator is actually known before
+ * the pass starts.
+ */
+export interface HarnessScanProgress {
+  /** Which pass is running. The screen turns this into one word. */
+  stage:
+    | 'roots'
+    | 'nested'
+    | 'agent-directories'
+    | 'hooks'
+    | 'documents'
+    | 'citations'
+    | 'coverage';
+  /** Units finished in this pass. */
+  done: number;
+  /** Units this pass will do, when that is known before it starts. `null` means it is not. */
+  total: number | null;
+}
+
 /** What the coverage join needs from the vault. Absent means the coverage pass does not run. */
 export interface HarnessScanOptions {
   /** Canonical implementation paths the vault records, one per capability. */
@@ -312,6 +338,8 @@ export interface HarnessScanOptions {
    * the reader, and hiding it would make the census agree with itself.
    */
   excludedFolders?: readonly string[];
+  /** Called as each pass advances. Never called with a fabricated denominator. */
+  onProgress?: (progress: HarnessScanProgress) => void;
 }
 
 /**
@@ -381,15 +409,21 @@ export async function scanHarness(
 ): Promise<HarnessReport> {
   const files: AgentFileEntry[] = [];
   const times: HarnessFileTime[] = [];
+  const report = options.onProgress ?? (() => {});
 
-  for (const path of ROOT_FILES) {
+  for (const [index, path] of ROOT_FILES.entries()) {
+    report({ stage: 'roots', done: index, total: ROOT_FILES.length });
     const file = await port.readText(path);
     if (!file) continue;
     files.push({ path, content: file.text });
     times.push({ path, lastModified: file.lastModified });
   }
+  report({ stage: 'nested', done: 0, total: null });
   await nestedAgentsFiles(port, files, times);
-  for (const dir of SCAN_DIRS) await walk(port, dir, 0, files, times);
+  for (const [index, dir] of SCAN_DIRS.entries()) {
+    report({ stage: 'agent-directories', done: index, total: SCAN_DIRS.length });
+    await walk(port, dir, 0, files, times);
+  }
 
   const existingPaths = files.map((file) => file.path);
   const analysis = analyzeAgentFiles({ files, existingPaths });
@@ -400,7 +434,8 @@ export async function scanHarness(
     return (await port.readText(path)) !== null;
   };
   const hookGroups: HookConfigFacts[] = [];
-  for (const config of HOOK_CONFIGS) {
+  for (const [index, config] of HOOK_CONFIGS.entries()) {
+    report({ stage: 'hooks', done: index, total: HOOK_CONFIGS.length });
     const text = contentByPath.get(config.path) ?? (await port.readText(config.path))?.text ?? null;
     if (text === null) continue;
     hookGroups.push(
@@ -417,6 +452,7 @@ export async function scanHarness(
   const guideDocumentCount = analysis.records.filter(isGuideRecord).length;
 
   const capabilityPaths = options.capabilityPaths ?? [];
+  report({ stage: 'coverage', done: 0, total: capabilityPaths.length });
   const coverage = capabilityPaths.length
     ? await resolveScopeDeclarations(
         candidateScopeDeclarations({
@@ -441,6 +477,9 @@ export async function scanHarness(
     ...ignoredDirectories(gitignore?.text ?? null),
   ];
   const markdownPaths = [...contentByPath.keys()].filter((path) => /\.mdc?$/.test(path));
+  /* The checkout's directory count is not known before the walk, so this pass reports its name and
+     its running count and no denominator. An indeterminate bar is the honest drawing of that. */
+  report({ stage: 'documents', done: 0, total: null });
   const budget = { directories: MARKDOWN_MAX_DIRECTORIES };
   const testFiles: string[] = [];
   let truncated = await walkMarkdown(
@@ -468,7 +507,9 @@ export async function scanHarness(
   const uniqueMarkdown = [...new Set(markdownPaths)].sort();
   const reachContents = new Map(contentByPath);
   let budgetLeft = MARKDOWN_MAX_READS;
-  for (const path of uniqueMarkdown) {
+  for (const [index, path] of uniqueMarkdown.entries()) {
+    /* Here the denominator IS known — the walk just produced it — so this pass counts. */
+    report({ stage: 'citations', done: index, total: uniqueMarkdown.length });
     if (reachContents.has(path)) continue;
     if (budgetLeft <= 0) {
       truncated = true;

@@ -130,37 +130,64 @@ function groupByOrigin(
  * scanner cannot make, and it was previously set at body size in the fourth column where a row with
  * a gap carried exactly as much weight as a row without one.
  */
-function CellMark({ count, t }: { count: number; t: TranslateFn }) {
+/**
+ * **A mark that carries the count, or no mark at all.**
+ *
+ * The first build put a fixed 20×24 rounded rectangle before every count — amber when the cell was
+ * empty, grey otherwise. The owner read it correctly: *what does this block mean?* It meant nothing.
+ * Its colour repeated the word beside it, its size did not move with the number, and it was
+ * `aria-hidden`, so it occupied the most scannable position in the cell and encoded no fact.
+ * `design.md` and the infoviz seat both hold that every mark maps to a typed fact.
+ *
+ * So the mark is now a bar whose length **is** the count, against the largest count in its own
+ * column — length for quantity, which is the encoding a reader compares most accurately. A column
+ * can be read as a shape before any number in it is read, which is what the matrix is for. An empty
+ * cell keeps the amber, and the amber is now the *absence* of a bar inside a drawn track rather
+ * than a filled block: the one cell with nothing to measure is the one cell whose track is empty.
+ *
+ * It stays `aria-hidden` because the button that wraps it already carries the fact in words —
+ * `coverageOpenNames` reads "{column} for {domain}: N declarations" or "nothing names this domain".
+ * A second announcement of the same number would be noise, not access.
+ */
+function CellMark({ count, max, t }: { count: number; max: number; t: TranslateFn }) {
   /*
    * `shrink-0` and `whitespace-nowrap` are load-bearing, not tidiness. At 390 the cell's content box
-   * is 39px: an empty span's automatic minimum size is 0, so the flex row ate the slab first —
+   * is 39px: an empty span's automatic minimum size is 0, so the flex row ate the mark first —
    * measured 18.3px against its neighbour's 24 — and the gap mark came out *narrower* than the
-   * non-gap mark, in the one column it exists to shout in. Korean broke its two-syllable word across two lines at
-   * the same width; English overran the cell by 11.5px and stole the next column's hit area, so a
-   * press on the left edge of Watched opened Gated (design-responsive, 2026-09-13). Below `sm` the
-   * word steps aside and the slab carries the state alone; the cell's `aria-label` already says it
-   * in words.
+   * non-gap mark, in the one column it exists to shout in. Korean broke its two-syllable word across
+   * two lines at the same width; English overran the cell by 11.5px and stole the next column's hit
+   * area, so a press on the left edge of Watched opened Gated (design-responsive, 2026-09-13). Below
+   * `sm` the word steps aside and the mark carries the state alone; the cell's `aria-label` already
+   * says it in words.
    */
-  if (count === 0) {
-    return (
-      <span className="flex items-center gap-2">
-        <span
-          aria-hidden
-          className="h-5 w-6 shrink-0 rounded-micro bg-[color:var(--color-amber-source-a35)]"
-        />
-        <span className="hidden whitespace-nowrap text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-a90)] sm:inline">
-          {t('coverageNone')}
-        </span>
-      </span>
-    );
-  }
+  const empty = count === 0;
+  /* A floor of one step, so a count of 1 is a mark rather than a hairline nobody can see. */
+  const filled = empty ? 0 : Math.max(0.18, count / Math.max(max, 1));
   return (
     <span className="flex items-center gap-2">
       <span
         aria-hidden
-        className="h-5 w-6 shrink-0 rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)]"
-      />
-      <span className="text-body tabular-nums text-[color:var(--color-text-primary)]">{count}</span>
+        className={cn(
+          'h-5 w-6 shrink-0 overflow-hidden rounded-micro border',
+          empty
+            ? 'border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)]'
+            : 'border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]',
+        )}
+      >
+        {empty ? null : (
+          <span
+            className="block h-full rounded-micro bg-[color:var(--color-indigo-a60)]"
+            style={{ width: `${Math.round(filled * 100)}%` }}
+          />
+        )}
+      </span>
+      {empty ? (
+        <span className="hidden whitespace-nowrap text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-a90)] sm:inline">
+          {t('coverageNone')}
+        </span>
+      ) : (
+        <span className="text-body tabular-nums text-[color:var(--color-text-primary)]">{count}</span>
+      )}
     </span>
   );
 }
@@ -513,6 +540,14 @@ export function HarnessCoverageView({
     );
   }
 
+  /* The denominator a bar is drawn against: the largest count in its own column. Comparing across
+     columns would say Told and Watched are the same kind of quantity, which they are not. */
+  const columnMax: Record<CoverageColumn, number> = {
+    told: Math.max(1, ...matrix.areas.map((area) => area.told.length)),
+    gated: Math.max(1, ...matrix.areas.map((area) => area.gated.length)),
+    watched: Math.max(1, ...matrix.areas.map((area) => area.watched.length)),
+  };
+
   const outsideFolders = [
     ...new Set(
       matrix.outsideAreas.flatMap((entry) =>
@@ -653,7 +688,11 @@ export function HarnessCoverageView({
                             className: 'h-full items-start px-3 py-3',
                           })}
                         >
-                          <CellMark count={entries.length} t={t} />
+                          <CellMark
+                            count={entries.length}
+                            max={columnMax[column]}
+                            t={t}
+                          />
                           <ChevronRight
                             size={ICON_SIZE.sm}
                             aria-hidden
