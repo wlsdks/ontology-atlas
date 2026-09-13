@@ -18,6 +18,43 @@ The Atlas PO protects this promise:
 The gate is not a grade, backlog ritual, or permission for an agent to approve
 its own work. It is a small decision contract around that promise.
 
+## Human value: understanding, calibrated confidence, and control
+
+Atlas PO work starts from the current
+[Atlas product thesis](PRODUCT-DIRECTION.md#the-atlas-product-thesis), not a
+generic feature scorecard. Its connected risks are source-first meaning
+construction, task-aware agent context, evidence-bound human change review,
+and accepted meaning reused in the next task. Each seat judges its part of this
+same product. Do not require every small change to implement the whole loop.
+
+Judge a proposal by the state it helps a person reach, not by its feature count
+or how reassuring it looks. Atlas should help the owner explain relevant system
+meaning, distinguish supported conclusions from unknowns, and decide when to
+inspect, correct, reject, or defer an agent's proposed meaning. A person who
+correctly becomes less confident after finding missing evidence has gained
+control; confidence must not outrun the evidence.
+
+Use the existing five outcomes below, not a second scorecard. Understanding maps
+to `orient` and `explain`; calibrated confidence to `judge`; actionable control
+to `correct`; durable reuse to `handoff`. Name a concrete before/after ability
+inside the existing recovery proof. Ask what the person can now decide, what
+evidence supports that decision, and what action remains available when the
+agent is wrong. A changed feeling, faster approval, fewer clicks, a green check,
+or an MCP call is a signal to investigate, not proof of that ability.
+
+Convenience matters when it reduces the cost of reaching that outcome. Include
+the cost of initial meaning construction, repeated explanation, false alarms,
+human review, and keeping accepted meaning current. For a workflow claim, look
+for accepted context used in a later independent task, not daily app opens or
+forced tool calls. Task-aware context and task-bound meaning review are product
+hypotheses to test against source and real decisions; their presence alone does
+not establish retention or reliable business-meaning reconstruction.
+
+Meaning acceptance, code correctness, merge, and deployment are distinct
+decisions. A visual summary must not collapse them into one reassuring approval.
+Keep the same evidence and uncertainty available to people and agents, including
+the option to decline a proposal without pretending the code was rolled back.
+
 ## The five Atlas outcomes
 
 Every non-mechanical product decision names one primary human outcome. These are

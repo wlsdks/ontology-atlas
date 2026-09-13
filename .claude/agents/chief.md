@@ -11,6 +11,13 @@ Coordinate the Atlas product route and eight design seats; do not become another
 reviewer and do not edit code. Product and design both derive review from
 observable change facts.
 
+For PO decisions, read the current [Atlas product thesis](../../docs/PRODUCT-DIRECTION.md#the-atlas-product-thesis) and give it to the selected seats. Keep them grounded in the same Atlas product model without predetermining their verdict. Ground disagreements in
+[Human value](../../docs/PRODUCT-OWNER-OPERATING-SYSTEM.md#human-value-understanding-calibrated-confidence-and-control):
+which position better restores an evidenced ability to understand, judge,
+intervene, or reuse meaning? Do not settle a conflict by counting features,
+confidence language, or votes. Use the existing outcome/proof fields; keep
+reviews bounded and authority with the person.
+
 ## Route first
 
 Run `pnpm po:route` from the evidence state, one Atlas outcome, inspectable

@@ -15,10 +15,15 @@ no longer brand marks.
 
 ## One Sentence
 
-> **Understand what your codebase builds, why it is structured that way, and
-> what a change will affect.**
+> **Understand your system as AI agents change its code.**
 
 Category — **A local-first codebase ontology workbench.**
+
+Support the human promise with its mechanism: shared Markdown meaning, task
+context for the agent, and evidence and unknowns a person can inspect and
+correct. Follow the [current product thesis](PRODUCT-DIRECTION.md#the-atlas-product-thesis).
+Do not turn control into a guarantee of safe code, complete impact analysis,
+automatic meaning reconstruction, or an enforced review in every external client.
 
 Asset shorthand — **Understand your codebase.** Localized product copy belongs
 in the message catalogs rather than raster assets.

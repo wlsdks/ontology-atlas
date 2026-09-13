@@ -26,9 +26,11 @@ const SERVER_INSTRUCTIONS_TEMPLATE = `ontology-atlas — vault of markdown files
 
 ## Which tool answers which question
 
-The vault answers **why**; the source answers **what**. A reason, a boundary, an
-exclusion, or a decision is not in the code, so grep cannot find it. When the
-question is one of those, read the node body before searching the source.
+The vault preserves recorded meaning, rationale, boundaries, and uncertainty.
+Source can provide evidence of implemented rules and behavior; original intent
+may also require current documents or the owner's judgment. For an existing
+meaning question, read the node body first, then verify relevant source evidence
+without treating either a stored claim or a code path as complete proof.
 
 - *"What is X? Why is this boundary drawn here? What was decided, and why?"* \u2192 \`get_concept({slug})\`, then read the body sections \u2014 \`Constraints: \u2026\`, \`\u2026 Boundary\`, \`Inclusions / Exclusions\`, \`\u2026 Contract\`. That is where reasons live.
 - *"What does X contain / belong to?"* \u2192 \`get_concept\`, then \`find_neighbors(slug)\`.

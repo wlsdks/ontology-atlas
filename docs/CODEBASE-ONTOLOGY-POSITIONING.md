@@ -1,12 +1,13 @@
 # Codebase Ontology Positioning
 
-> Current product framing for launch, README copy, and prioritization.
-> Last updated: 2026-09-01.
+> Current messaging companion for README, download, and guide copy.
+> Last updated: 2026-09-13. The
+> [Atlas product thesis](PRODUCT-DIRECTION.md#the-atlas-product-thesis) owns
+> direction; [BACKLOG.md](BACKLOG.md) owns execution order.
 
 ## One-line Position
 
-**Understand what your codebase builds, why it is structured that way, and what
-a change will affect.**
+**Understand your system as AI agents change its code.**
 
 Ontology Atlas is a local-first codebase ontology workbench. It keeps product
 meaning, capability boundaries, implementation evidence, dependencies, and
@@ -16,9 +17,9 @@ same ontology; Git diffs remain the judgment surface.
 The campaign lens is the human-comprehension gap created by agent-speed
 development:
 
-> AI agents can change a codebase faster than people can review every line.
-> Atlas shows what the codebase has become at the capability and boundary level
-> before a person accepts the work.
+> Agents change your code. Keep understanding your system.
+> Give agents recorded task context; inspect its meaning, evidence, and unknowns
+> yourself, and decide which proposed meaning changes to keep.
 
 This sharpens the motivating moment without replacing the category or the
 one-line position. It is not a `100x` claim and it does not claim faster work,
@@ -55,12 +56,12 @@ The current alternatives each retain their authority and their limit:
 | Producing agent's summary | A compact account of its own work | A durable claim another person can correct, reject, or accept independently of that session |
 | Source search, AST indexes, language servers, CodeGraph | Definitions, callers, imports, routes, and structural paths | The product meaning and verification path that explain why those facts matter |
 
-The minimum supported path is intentionally plain: connect Atlas MCP or run the
-Atlas CLI from Claude Code, Codex, Cursor, or another coding agent, and the agent
-should already receive a useful workspace brief, graph health check, handoff
-packet, and reviewable memory-diff workflow. No CodeGraph, Serena, language
-server, grep wrapper, or external source-index service is required for the
-product to be usable.
+The entry path is intentionally plain: connect Atlas MCP or use the source CLI.
+A populated vault can supply task-aware context, graph diagnostics, and exact
+meaning-write proposals. Source inspection and configured host permissions still
+matter. No optional source index is required to read the recorded meaning, but
+connection alone does not create useful business meaning or a complete semantic
+diff of the agent's work.
 
 AI coding agents benefit because the answers survive between sessions, but
 agent memory is a benefit rather than the product category.
@@ -80,7 +81,8 @@ ontology explains a real codebase and stays current as that codebase changes.
 
 The core loop is:
 
-1. Open a repo and generate an ontology draft automatically.
+1. Build and review an evidence-bound ontology draft for a real task; reliable
+   unfamiliar-repository construction remains a capability to validate.
 2. Let the agent implement real code work, then explicitly propose the
    capability, boundary, dependency, evidence, or uncertainty that changed.
 3. Let the developer correct, reject, or accept that semantic delta through
@@ -101,14 +103,14 @@ code-intelligence tools.
 
 The strongest positioning is the concrete outcome:
 
-> Understand what your codebase builds, why it is structured that way, and what
-> a change will affect.
+> Understand your system as AI agents change its code.
 
 The strongest campaign hook names the moment that makes that outcome urgent:
 
-> Agents write the code. People accumulate the cognitive debt.
+> Agents change your code. Keep understanding your system.
 >
-> Atlas keeps what the code means reviewable before the work is accepted.
+> Recorded capabilities, rules, evidence, and unknowns give the agent context
+> and the person something concrete to inspect and correct.
 
 This is clearer than either implementation-first or memory-first framing:
 
@@ -130,7 +132,11 @@ init -> bootstrap -> agent changes code -> agent proposes a semantic delta
 -> developer corrects/approves the Markdown diff -> next session retrieves it
 ```
 
-Target: the first visible value should appear within 10 minutes.
+Measure recovered understanding, correct judgment, correction ability, and reuse
+in the next task, then the effort required to achieve them. The earlier
+ten-minute first-value target was a research goal, not a delivered timing
+promise or a substitute for meaningful answers. Neither retention nor reduced
+risk is established by tool-call counts or a successful walkthrough.
 
 ## Failure Conditions
 
@@ -165,14 +171,15 @@ loop:
 - `analyze_repo_structure` and `infer_imports` reduce the cost of creating the
   first draft from code.
 
-This is the difference between a markdown graph toy and an agent-usable memory
-workbench.
+These are foundations for a usable meaning workflow, not proof of decision
+quality, comprehensive impact, or the complete task-to-review-to-reuse loop.
 
-## Agent Builder Concerns Lens
+## Historical agent-builder research lens — 2026-06-05
 
-Use this lens when deciding whether a new Ontology Atlas feature is worth adding.
-The point is not to copy any agent framework UI. The point is to answer the
-operational problems that experienced agent builders keep designing around.
+The following scan and its implications record the earlier reasoning. Current
+feature decisions use the Atlas product thesis and PO recovery proof; this
+section is not a second current priority list or a claim that its referenced
+products still behave identically.
 
 Current research scan, 2026-06-05:
 
@@ -242,10 +249,10 @@ Use the plain outcome in launch copy and first-contact README text. Use
 "codebase ontology workbench" to name the category. Use "agent memory" only for
 the specific continuity benefit, never as the master identity.
 
-Campaign copy may open with the after-agent, before-acceptance comprehension
-gap, but it must resolve immediately to the review object: changed capabilities,
-boundaries, dependencies, evidence, provenance, and unknowns. The reusable
-contrast is:
+Campaign copy names the human outcome and then the actual review object:
+recorded capabilities, boundaries, dependencies, evidence, and unknowns.
+Task-bound Meaning Diff remains a development direction; copy must not imply
+that every code change is already converted into verified meaning. The roles are:
 
 ```text
 Git shows which lines changed.
@@ -258,9 +265,10 @@ Those are mechanism details or benefits after the product outcome is clear.
 Never publish `100x`, speed, quality, cost, completeness, or automatic-current
 claims without a separate measurement that directly supports them.
 
-The promise is not that users can draw a better graph or model arbitrary
-knowledge. The promise is that they can see what a codebase builds, why it has
-its current shape, and what a change will affect.
+Atlas's human value is understanding, confidence proportionate to evidence, and
+actionable control over accepted meaning. Meaning approval, code correctness,
+merge, and deployment stay separate. Declared dependencies and a current source
+path are not complete runtime impact or a code-safety certificate.
 
 When explaining the code side, use this boundary:
 

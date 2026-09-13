@@ -8,12 +8,11 @@
 </p>
 
 <p align="center">
-  <strong>Understand what your codebase builds, why it is structured that way,<br />
-  and what a change will affect.</strong>
+  <strong>Understand your system as AI agents change its code.</strong>
 </p>
 
 <p align="center">
-  <sub>One codebase ontology in repository Markdown, maintained by people and AI agents.</sub>
+  <sub>Give agents task context. Inspect the meaning, evidence, and unknowns yourself.</sub>
 </p>
 
 <p align="center">
@@ -41,8 +40,8 @@
 <p align="center">
   <sub>The installed macOS app reading
   <a href="samples/storefront"><code>samples/storefront</code></a> — an online
-  store written as nothing but Markdown files in a folder. Every write, human or
-  agent, lands as Markdown a person reviews in a Git diff; the
+  store described by Markdown files in a folder. Meaning changes remain visible
+  in files and Git diffs for a person to inspect, correct, reject, or keep; the
   <a href="docs/FEATURES.md">feature inventory</a> is the current behavior
   contract.</sub>
 </p>
@@ -58,10 +57,10 @@
 
 ## In 30 seconds
 
-AI agents change a codebase faster than a person can review every line. A Git
-diff records which lines moved; the agent's summary is its own claim. Neither
-preserves which product capability the code serves, why its boundaries exist, or
-what the change can affect.
+When an agent finishes a change, you still need to judge what it understood,
+which rules matter, and what needs your attention. File lists and the producing
+agent's summary are starting points; they do not by themselves establish that
+the system's meaning or boundaries were preserved.
 
 Atlas keeps those answers in an `atlas/` folder of Markdown **inside the
 repository**, so meaning is cloned, branched, and reviewed with the code. Each
@@ -69,16 +68,43 @@ file's frontmatter declares what it is — `project`, `domain`, `capability`,
 `element`, or a linked `document` — and what it points at. That folder is the
 whole database.
 
-Because the kinds and relation types are a small fixed set, the folder is not
-just readable but **computable**. Atlas compiles it and answers what a notes tool
-cannot: *what breaks if I change this, what is this capability's blast radius,
-which paths connect these two things, what is disconnected, what is stale.* Your
-agent asks over MCP; you read the same answers as a map. An agent's write is not
-accepted meaning — it lands as Markdown and a Git diff a person can correct,
-reject, or keep, and the answers stay bounded: observed capabilities are never
-treated as exhaustive and unknown coverage is never shown as green. The five-kind
-discriminator and the standards boundary live in the
+Atlas compiles that folder into a typed graph. Your coding agent can request
+context for a task: recorded capabilities, implementation anchors, declared
+dependencies, evidence, and unknowns. You can inspect those same records and
+relations in the workbench, open their evidence, and decide which proposed
+meaning changes to keep. The files remain available to the next person or
+agent, alongside the code in Git.
+
+The goal is understanding and actionable control, with confidence proportionate
+to the evidence. A graph path is a declared relationship, not proof of a complete
+runtime blast radius. A current source path does not prove its recorded meaning
+is correct. Atlas keeps those distinctions visible so missing evidence can lead
+to further inspection rather than automatic reassurance. Its five-kind
+discriminator and standards boundary live in the
 [vault specification](docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
+
+## Use it in the next task
+
+With a populated vault and an MCP connection, ask your agent for the context of
+the change you want to make. The current task-aware entry is
+`query_ontology` with `operation: "agent_brief"`, `detail: "compact"`, a selected
+`project`, and your `task`. It supplies bounded context and follow-up reads;
+the coding agent still inspects source and verifies its work.
+
+When meaning changes, review the exact proposal and its evidence, then keep the
+accepted Markdown change with the code's Git history. You need not open Atlas
+for every task; its map, documents, and change review are there when you need
+to understand or correct the recorded meaning. Meaning acceptance, code review,
+merge, and deployment are separate decisions. Host support and configured
+permissions determine how agent writes reach review; an MCP connection alone
+does not enforce every agent's behavior.
+
+**What still needs proof:** reliable meaning reconstruction from unfamiliar
+legacy code, a complete task-bound Meaning Diff, and improved outcomes across
+successive real tasks remain development and validation work. Current graph,
+write-review, and task-context features do not guarantee that an agent's code
+change is safe. See the [quality authority map](docs/ONTOLOGY-QUALITY.md) and
+[development priorities](docs/BACKLOG.md).
 
 ## Status — read this before installing
 
@@ -345,8 +371,9 @@ from how the documents link to each other.
 
 ## What your agent gets
 
-Ask *what breaks if I change this?* and Atlas follows only approved dependency
-declarations. It does not turn folder structure into causal confidence:
+Ask which recorded dependencies deserve inspection for a change. Atlas follows
+declared relationships; their presence alone does not establish human approval
+or complete runtime impact:
 
 ```console
 $ node $ATLAS blast-radius capabilities/mcp-server docs/ontology --depth 2
