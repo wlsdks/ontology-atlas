@@ -247,7 +247,7 @@ function HarnessPageInner() {
             </p>
             {sentence}
             {reportState.status === 'ready' ? (
-              <>
+              <div className="architecture-result-arrive">
                 {view === 'coverage' ? (
                   <HarnessCoverageView
                     report={reportState.report}
@@ -265,7 +265,7 @@ function HarnessPageInner() {
                     </p>
                   </>
                 )}
-              </>
+              </div>
             ) : reportState.status === 'loading' ? (
               <HarnessScanProgressPanel progress={reportState.progress} />
             ) : reportState.status === 'no-source' ? (

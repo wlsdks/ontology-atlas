@@ -1600,35 +1600,69 @@
    * do not know how many", not a decoration standing in for one. Nothing moves at rest: the element
    * only exists while the read is in flight.
    */
+  /*
+   * **The result arriving, rather than a spinner being swapped for a table.**
+   *
+   * The read ends and the whole region changed in one commit: the wait unmounted and the matrix
+   * mounted with no easing on either side — 100% of the region hard-cutting, which is the defect
+   * the charter's first rule names. The finding is the protagonist (the one `text-title` line on
+   * the screen, "no check names N of M domains"), so it rises and the body follows it inside one
+   * event: 8px on `--motion-base`, entry easing, well under the window where a stagger stops
+   * reading as one thing (design-motion, 2026-09-13).
+   */
+  @keyframes harnessResultArrive {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .architecture-result-arrive {
+    animation: harnessResultArrive var(--motion-base) var(--motion-ease) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* The axis that moves is the one reduced motion removes; the crossfade keeps the arrival
+       legible as a change rather than as a replacement. */
+    .architecture-result-arrive {
+      animation-name: panelCrossfadeIn;
+      animation-duration: var(--motion-base) !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+
   @keyframes harnessScanSweep {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(300%); }
   }
 
+  /*
+   * ⚠️ **`linear`, not `--motion-ease`.** The ease family is the *entry* curve: it decelerates into
+   * place, which is right for arriving and wrong for a loop that never arrives. Measured on the
+   * curve: cubic-bezier(.25,.1,.25,1) puts 80% of the travel in the first half of the cycle, so the
+   * bar covered 444px in 600ms and the remaining 111px in the next 600ms — a 4x velocity ratio
+   * inside one cycle, read as burst, crawl, burst, on the one mark whose whole job is to prove the
+   * read has not stalled (design-motion, 2026-09-13). `.architecture-observation-scan` already runs
+   * its scan line `linear`; this takes the same curve and the same period rather than inventing a
+   * second scan rhythm with no reason written down.
+   */
   .harness-scan-sweep {
-    animation: harnessScanSweep calc(var(--motion-settle) * 5) var(--motion-ease) infinite;
+    animation: harnessScanSweep calc(var(--motion-settle) * 4) linear infinite;
   }
 
   /*
-   * The reduced-motion equivalent keeps time and drops the moving axis: the track fills and breathes
-   * on opacity instead of sweeping on transform. `animation: none` would be a hard cut — the mark
-   * that says "a pass is running" would become indistinguishable from a stalled one, which is the
-   * information this animation carries and the reason `reduced-motion-equivalent.contract.test.ts`
-   * requires the equivalent to recover its duration token rather than delete it.
+   * ⚠️ **Under reduced motion this mark stops, and that decision is registered rather than written
+   * in CSS here.** The first attempt added a `@media (prefers-reduced-motion: reduce)` block that
+   * swapped the sweep for an opacity breath — and it was dead on arrival: the global kill rule 2,800
+   * lines below is `!important` in the same layer, so the override lost, and what a reduced-motion
+   * reader actually saw was a **static, solid, full-width indigo bar for the whole read** — the
+   * universal picture of "100% done", on the one screen built never to assert a number its files
+   * cannot support (design-motion, 2026-09-13).
+   *
+   * So it takes the answer this repository already decided for the same shape: the global rule stops
+   * the travel, the bar rests left-anchored at a third of the track — which claims no scale — and
+   * the stage name, the running count and the seven-stage route list carry the fact, all of them
+   * driven by state rather than by CSS. Registered in `INTENTIONALLY_STILL` beside
+   * `.architecture-observation-scan`, whose reasoning is identical.
    */
-  @keyframes harnessScanBreath {
-    0%, 100% { opacity: 0.35; }
-    50% { opacity: 0.62; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .harness-scan-sweep {
-      animation-name: harnessScanBreath;
-      animation-duration: calc(var(--motion-settle) * 6);
-      transform: none !important;
-      width: 100% !important;
-    }
-  }
 
   /* Agent panel waiting dot — reuses same heartbeat syntax (slow low-contrast cycle).
      Only opacity moves, not glow, and this is **not fake progress**:

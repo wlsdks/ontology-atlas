@@ -412,8 +412,10 @@ export async function scanHarness(
   const report = options.onProgress ?? (() => {});
 
   for (const [index, path] of ROOT_FILES.entries()) {
-    report({ stage: 'roots', done: index, total: ROOT_FILES.length });
     const file = await port.readText(path);
+    /* Reported after the unit, not before it: `done` is what is finished. Counting the unit that is
+       still running put the last pass at its own total while it was still working. */
+    report({ stage: 'roots', done: index + 1, total: ROOT_FILES.length });
     if (!file) continue;
     files.push({ path, content: file.text });
     times.push({ path, lastModified: file.lastModified });
@@ -421,8 +423,8 @@ export async function scanHarness(
   report({ stage: 'nested', done: 0, total: null });
   await nestedAgentsFiles(port, files, times);
   for (const [index, dir] of SCAN_DIRS.entries()) {
-    report({ stage: 'agent-directories', done: index, total: SCAN_DIRS.length });
     await walk(port, dir, 0, files, times);
+    report({ stage: 'agent-directories', done: index + 1, total: SCAN_DIRS.length });
   }
 
   const existingPaths = files.map((file) => file.path);
@@ -452,7 +454,13 @@ export async function scanHarness(
   const guideDocumentCount = analysis.records.filter(isGuideRecord).length;
 
   const capabilityPaths = options.capabilityPaths ?? [];
-  report({ stage: 'coverage', done: 0, total: capabilityPaths.length });
+  /*
+   * One report, and deliberately no denominator. `resolveScopeDeclarations` probes its scopes in
+   * one `Promise.all` and reports nothing from inside, so a total here would draw a determinate bar
+   * frozen at one unit for the whole pass — a bar that asserts a scale and then does not move,
+   * which is a worse claim than saying the length is not known (design-motion, 2026-09-13).
+   */
+  report({ stage: 'coverage', done: 0, total: null });
   const coverage = capabilityPaths.length
     ? await resolveScopeDeclarations(
         candidateScopeDeclarations({
@@ -509,7 +517,7 @@ export async function scanHarness(
   let budgetLeft = MARKDOWN_MAX_READS;
   for (const [index, path] of uniqueMarkdown.entries()) {
     /* Here the denominator IS known — the walk just produced it — so this pass counts. */
-    report({ stage: 'citations', done: index, total: uniqueMarkdown.length });
+    report({ stage: 'citations', done: index + 1, total: uniqueMarkdown.length });
     if (reachContents.has(path)) continue;
     if (budgetLeft <= 0) {
       truncated = true;
