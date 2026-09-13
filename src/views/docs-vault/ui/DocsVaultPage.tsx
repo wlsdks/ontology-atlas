@@ -188,7 +188,10 @@ import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 import {
   buildOntologyInsightsReturnHref,
+  buildTopologyReturnHref,
+  buildTopologyReturnMarker,
   parseInsightsReturnMarker,
+  parseTopologyReturnMarker,
 } from "@/entities/knowledge-graph";
 
 function DocsVaultContent() {
@@ -219,23 +222,36 @@ function DocsVaultContent() {
   const insightsReviewId = insightsReturnTab
     ? searchParams?.get('review') ?? null
     : null;
+  /*
+   * `via=topology:<nodeId>` — the node the reader left from. Full detail's "Open document"
+   * used to land here with a crumb pointing at a bare `/topology`, which opens the map with
+   * nothing selected: the node was simply gone (owner, 2026-09-14). With the marker the
+   * crumb goes back to that node, selected.
+   */
+  const topologyReturnNode = parseTopologyReturnMarker(searchParams?.get('via'));
   const projectsListHref = '/projects/';
   // UX audit (2026-07): on a hard navigation `/` falls through to the gateway because
   // the vault has not been restored yet, so the crumb always goes straight to the map.
   const workspaceHref = insightsReturnTab
     ? buildOntologyInsightsReturnHref(insightsReturnTab, insightsReviewId)
-    : '/topology';
+    : topologyReturnNode
+      ? buildTopologyReturnHref(topologyReturnNode)
+      : '/topology';
   const getDocHref = useCallback(
     (slug: string, hash?: string) =>
       buildDocsVaultHref({
         slug,
         hash,
+        // Walking to another document inside the vault keeps whichever origin brought the
+        // reader here, so the crumb does not quietly lose its way back after one hop.
         via: insightsReturnTab
           ? `insights:${insightsReturnTab}`
-          : null,
+          : topologyReturnNode
+            ? buildTopologyReturnMarker(topologyReturnNode)
+            : null,
         reviewId: insightsReviewId,
       }),
-    [insightsReturnTab, insightsReviewId],
+    [insightsReturnTab, insightsReviewId, topologyReturnNode],
   );
   // The map contract: every link promising the map targets /topology. `/?p=`
   // hard-navigated to the locale-less root, whose redirect dropped the query

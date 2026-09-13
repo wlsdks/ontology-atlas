@@ -69,8 +69,12 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     ]);
     const model = renderModel(selected, [selected]);
 
+    // What this suite protects is **which document the link points at**. Since 2026-09-14
+    // the address also carries `via=topology:<node>`, the way back from the document to the
+    // map; `ontology-node-href.test.ts` is where that marker itself is measured.
     expect(model.v2DatasheetModel?.documentHref).toBe(
-      "/docs/?slug=ontology%2Fcapabilities%2Ffrontmatter-to-ontology",
+      "/docs/?slug=ontology%2Fcapabilities%2Ffrontmatter-to-ontology" +
+        "&via=topology%3Acapability%3Afrontmatter-to-ontology",
     );
     expect(model.v2DatasheetModel?.mentionDocumentHref).toBeNull();
   });
@@ -88,7 +92,8 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     // The information is not discarded: it stays in a separate field for the
     // surfaces that label the destination (context menu, full detail).
     expect(model.v2DatasheetModel?.mentionDocumentHref).toBe(
-      `/docs/?slug=${encodeURIComponent(citedBy)}`,
+      `/docs/?slug=${encodeURIComponent(citedBy)}` +
+        "&via=topology%3Aelement%3Aderive-ontology-from-vault",
     );
     // The evidence row remains — the popover already shows that document by name.
     expect(model.v2DatasheetModel?.evidence.total).toBe(1);
@@ -130,7 +135,7 @@ describe("useNodeDatasheetModel — 문서 링크 정직성", () => {
     const model = renderModel(selected, [selected]);
 
     expect(model.v2DatasheetModel?.documentHref).toBe(
-      "/docs/?slug=capabilities%2Flegacy",
+      "/docs/?slug=capabilities%2Flegacy&via=topology%3Acapability%3Alegacy",
     );
   });
 

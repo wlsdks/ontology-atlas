@@ -23,6 +23,9 @@ export {
   ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ONTOLOGY_DEEPLINK_ASK_KEY,
   parseInsightsReturnMarker,
+  buildTopologyReturnMarker,
+  buildTopologyReturnHref,
+  parseTopologyReturnMarker,
   resolveOntologyBuilderNodeSlug,
 } from "./lib/ontology-node-href";
 export type { MeaningEditRelation } from "./lib/ontology-node-href";

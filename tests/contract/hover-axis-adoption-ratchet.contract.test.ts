@@ -83,8 +83,13 @@ const ROOT = process.cwd();
  * them (the chooser's and the rail switcher's) take the neutral lift from
  * `hoverSurface: 'lift'` instead of writing it. Three hand declarations became none:
  * genuine adoption, and one fewer place for the lift to drift.
+ *
+ * 302 → 301 (2026-09-14): full detail's 1/2/3 reach steps were a hand-rolled radiogroup
+ * whose inactive chips wrote their own `hover:border-…`, and they are a `SegmentedControl`
+ * now. The hand declaration went with the hand-rolled group, which is the adoption this
+ * ratchet exists to bank.
  */
-const CEILING = 302;
+const CEILING = 301;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
