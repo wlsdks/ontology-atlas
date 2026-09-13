@@ -1,17 +1,6 @@
-const COMPETENCY_HEADING = '## Competency answers';
+import { isPersistableRelativePath, parseSourceRangeCitation } from './source-range-citation.mjs';
 
-function safeRelativePath(value) {
-  if (value === '.') return true;
-  return typeof value === 'string'
-    && value.length > 0
-    && value.length <= 500
-    && value.trim() === value
-    && !value.startsWith('/')
-    && !/^[A-Za-z]:[\\/]/.test(value)
-    && !value.includes('\\')
-    && !/[\u0000-\u001f\u007f]/u.test(value)
-    && value.split('/').every((segment) => segment !== '' && segment !== '.' && segment !== '..');
-}
+const COMPETENCY_HEADING = '## Competency answers';
 
 /**
  * Extract only the evidence/path rows emitted inside the exact, persisted
@@ -32,14 +21,19 @@ export function extractProjectMeaningEvidencePaths(body) {
   const paths = new Set();
 
   for (const line of section.split('\n')) {
-    const row = /^- (?:Evidence|Paths): (.+)$/.exec(line);
+    const row = /^- (Evidence|Paths): (.+)$/.exec(line);
     if (!row) continue;
-    const values = row[1].split(', ');
+    const values = row[2].split(', ');
     if (values.length === 0) return [];
     for (const value of values) {
       const literal = /^`([^`]+)`$/.exec(value);
-      if (!literal || !safeRelativePath(literal[1])) return [];
-      paths.add(literal[1]);
+      if (!literal) return [];
+      const range = row[1] === 'Evidence' ? parseSourceRangeCitation(literal[1]) : null;
+      if (literal[1].startsWith('source:') && !range) return [];
+      if (row[1] === 'Paths' && literal[1].startsWith('source:')) return [];
+      const path = range?.path ?? literal[1];
+      if (!isPersistableRelativePath(path, { allowRoot: true })) return [];
+      paths.add(path);
     }
   }
 

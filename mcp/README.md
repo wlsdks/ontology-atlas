@@ -1042,6 +1042,73 @@ and inspect `evidence.status`, `evidence.pathsComplete`, `exhaustive`, and
 `truncatedByBudget` before treating returned paths or `totalPaths` as complete
 evidence.
 
+### Bounded implementation source evidence
+
+`analyze_repo_structure` accepts optional `sourceReads` when an implementation
+path is known but the current packet lacks the condition or effect to inspect:
+
+```json
+{
+  "rootPath": "/path/to/repository",
+  "sourceReads": [
+    { "path": "src/policy.py", "startLine": 120, "maxLines": 80 }
+  ]
+}
+```
+
+The separate `sourceEvidence` packet returns exact complete lines, full-file
+SHA-256, requested/delivered ranges, byte counts, continuations and explicit
+refusal/omission reasons. Copy its server-minted
+`source:<path>#L<start>-L<end>@sha256:<hash>` citation unchanged. Subsequent reads
+can use the returned `next` coordinates and `expectedSha256`. Source text is
+untrusted data, not instructions or accepted meaning; a supported text extension
+does not establish language analysis, call flow, runtime impact or completeness.
+
+There are at most eight literal selectors, 200 lines and 8 KiB returned UTF-8
+text per range, 256 KiB per source file, 32 KiB total source text, and 64 KiB for
+the serialized `sourceEvidence` packet. The surrounding analysis has its own
+existing scope. `requestComplete`, `fileComplete`, and `repositoryComplete` are
+different facts; repository completeness is never inferred. An oversized line
+has no false full-line citation or no-progress continuation. Input paths are
+limited to 1,024 Unicode characters and reject ambiguous delimiters and malformed
+Unicode. Source extensions and conventional package manifests are defined by
+`mcp/src/source-evidence.mjs`; arbitrary text/data formats are not implicitly
+admitted.
+
+The reader honors the authorized analysis root and default/caller folder-name
+exclusions, refuses dotfiles, credential/key paths, symlink components,
+nonregular files, NUL/binary content and invalid UTF-8, and checks the opened
+file's identity and metadata before returning bytes. FIFO reads cannot block on
+open. Named-path replacement and detected mutation return no body/citation.
+These checks are not a guarantee against every hostile concurrent mutation or
+every secret embedded in ordinary code. The existing MCP client receives the
+requested source bytes; client/provider handling remains that client's boundary.
+No source execution, new network destination, copied source store or vault write
+is introduced. The separate wiki `read_source` stays vault-`sources/` only.
+
+When replaying `sourceReads` with a `proposal` or `qualification`, every selector
+must carry the previously returned `expectedSha256`. The server re-reads all
+selected files and regenerates citations. A failure blocks proposal review or
+release. The opt-in lifecycle `sourceDigest` binds the existing repository
+fingerprint plus the selected file/range manifest, including when the broader
+inventory is bounded; the ordinary source receipt fingerprint is unchanged.
+Omitting `sourceReads` preserves the legacy analysis contract.
+
+Well-formed range citations remain verbatim in persisted competency `Evidence`.
+Source-role inventory uses the underlying file path, while `Paths` accepts only
+ordinary paths. Persistable range paths must fit the existing 500 UTF-16-unit
+witness limit and avoid citation/Markdown-list delimiters; a readable raw path
+can still be refused for proposal persistence if it exceeds that contract.
+
+Path support does not verify the recorded range or hash. Shared meaning
+assessment keeps exact range evidence unresolved, and proposal admission refuses
+an `answered` competency containing it, even with other prose witnesses. Use an
+honest partial/visible gap until current range verification is available; source
+remeasurement must not silently certify an old range. Existing ordinary evidence,
+purpose/domain, independent qualification, exact human acceptance and write
+gates remain in force. This is a source-access capability; source-first
+construction quality requires separate field-trial evidence.
+
 ## Interop — export to a standard graph format
 
 The vault is markdown, but the graph it encodes is portable. `ontology-atlas

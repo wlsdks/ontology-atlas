@@ -177,6 +177,29 @@ test('canonical competency Markdown renderer round-trips through the strict pars
   assert.deepEqual(parseProjectCompetencyMarkdown(rendered), parsed);
 });
 
+test('source-range Evidence round-trips byte-exactly while Paths remain ordinary paths', () => {
+  const parsed = parseProjectCompetencyMarkdown(competencyBody());
+  const answers = Object.fromEntries(parsed.questions.map((row) => [row.id, {
+    answer: row.answer,
+    status: row.status,
+    witnesses: structuredClone(row.witnesses),
+    ...(row.gap === undefined ? {} : { gap: row.gap }),
+  }]));
+  const reference = `source:${'a/'.repeat(220)}file.ts#L1-L2@sha256:${'b'.repeat(64)}`;
+  answers.evidence.status = 'partial';
+  answers.evidence.gap = 'Exact source range remains unresolved.';
+  answers.evidence.witnesses.evidence.push(reference);
+  const rendered = renderProjectCompetencyMarkdown(answers);
+  assert.ok(rendered.includes(`\`${reference}\``));
+  assert.ok(parseProjectCompetencyMarkdown(rendered).questions.find((row) => row.id === 'evidence').witnesses.evidence.includes(reference));
+  answers.evidence.witnesses.paths.push(reference);
+  assert.throws(() => renderProjectCompetencyMarkdown(answers), /path witnesses are malformed/);
+  assert.throws(
+    () => parseProjectCompetencyMarkdown(rendered.replace(/^(- Paths: .+)$/m, `$1, \`${reference}\``)),
+    /Paths is malformed/,
+  );
+});
+
 test('legacy em-dash competency headings remain readable', () => {
   const legacyBody = competencyBody().replaceAll(/^(### [a-z]+): /gm, '$1 — ');
   assert.equal(parseProjectCompetencyMarkdown(legacyBody).questions.length, 5);

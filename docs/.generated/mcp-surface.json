@@ -82,7 +82,8 @@
           "maxDepth",
           "proposal",
           "qualification",
-          "rootPath"
+          "rootPath",
+          "sourceReads"
         ],
         "required": []
       },

@@ -16,6 +16,7 @@ import {
 } from '../infer-imports.mjs';
 import { compileOntology } from '../ontology-compiler.mjs';
 import { inspectProjectSource } from '../project-source-inspection.mjs';
+import { composeSourceDigest, readSourceEvidence, validateSourceReadSelectors } from '../source-evidence.mjs';
 import {
   buildNextImportRelationReview,
   reconcileImportEdges,
@@ -48,14 +49,25 @@ import {
   sep,
 } from 'node:path';
 
-function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualification } = {}) {
+function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, sourceReads, proposal, qualification } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalNonNegativeInteger(maxDepth, 'maxDepth', { max: 10 });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
   const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
+  if (sourceReads !== undefined) validateSourceReadSelectors(sourceReads);
+  if (sourceReads !== undefined && (proposal != null || qualification != null)) {
+    const missingHash = sourceReads.findIndex((row) => row?.expectedSha256 === undefined);
+    if (missingHash >= 0) {
+      throw new Error(`sourceReads[${missingHash}].expectedSha256 is required with proposal or qualification.`);
+    }
+  }
+  const sourceBefore = proposal == null ? undefined : inspectProjectSource(target).fingerprint;
+  const sourceEvidence = sourceReads === undefined
+    ? undefined
+    : readSourceEvidence(target, sourceReads, { ignore });
   const sourceDigest = proposal == null
     ? undefined
-    : inspectProjectSource(target).fingerprint;
+    : composeSourceDigest(sourceBefore, sourceEvidence);
   // A proposal may cite up to four exact endpoints already observable through
   // infer_imports. Recompute that bounded, read-only receipt in the proposal
   // call so validation does not depend on hidden state from an earlier
@@ -63,7 +75,7 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualif
   const proposalImportEvidence = proposal == null
     ? undefined
     : inferImports(target, { ignore });
-  return analyzeRepoStructure(target, {
+  const result = analyzeRepoStructure(target, {
     maxDepth,
     ignore,
     ...(proposalImportEvidence === undefined
@@ -72,7 +84,15 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualif
     proposal,
     qualification,
     sourceDigest,
+    sourceEvidence,
   });
+  const sourceAfter = proposal != null && sourceReads !== undefined
+    ? inspectProjectSource(target).fingerprint
+    : sourceBefore;
+  if (sourceReads !== undefined && sourceBefore !== sourceAfter) {
+    throw new Error('Repository source changed during source-sensitive proposal analysis; retry against one stable snapshot.');
+  }
+  return result;
 }
 
 function inspectArchitectureTool({ rootPath, profileSlug, maxFiles } = {}) {

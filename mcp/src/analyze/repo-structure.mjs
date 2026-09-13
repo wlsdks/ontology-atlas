@@ -573,6 +573,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     configurationEvidence,
     suggestedRelations,
     skipped,
+    ...(options.sourceEvidence === undefined ? {} : { sourceEvidence: options.sourceEvidence }),
   };
   const proposalValidation = validateMeaningProposalAgainstAnalysis(
     result,
@@ -584,6 +585,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
         ...pythonImportBoundaryElements,
         ...goPackageBoundaryElements,
       ],
+      sourceEvidence: options.sourceEvidence,
     },
   );
   const candidateWritePlan = proposalValidation.writePlan;

@@ -724,6 +724,15 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       "analyze_repo_structure rootPath schema documents default root",
     );
     assert.equal(analyzeRepo?.inputSchema?.properties?.ignore?.maxItems, 200);
+    const sourceRowsSchema = analyzeRepo?.outputSchema?.properties?.sourceEvidence?.properties?.rows;
+    assert.equal(sourceRowsSchema?.minItems, 1);
+    assert.deepEqual(sourceRowsSchema?.items?.oneOf?.[0]?.required, [
+      "actualRange", "text", "citation", "fullFileSha256", "fileBytes",
+      "fileLines", "returnedBytes", "truncated", "fileComplete",
+    ]);
+    assert.deepEqual(sourceRowsSchema?.items?.oneOf?.[1]?.not?.anyOf, [
+      { required: ["text"] }, { required: ["citation"] },
+    ]);
     assert.equal(analyzeRepo?.outputSchema?.type, "object");
     assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "extractionContract", "semanticEvidence", "configurationEvidence", "proposalValidation", "suggestedRelations", "skipped"]);
     assert.equal(analyzeRepo?.outputSchema?.additionalProperties, false);
@@ -2498,6 +2507,40 @@ await test("analyze_repo_structure — bootstrap candidates expose structuredCon
     assert.ok(result.suggestedRelations.some((relation) => relation.from === "domains/auth" && relation.to === "capabilities/auth" && relation.type === "contains"));
     assert.equal(result.proposalValidation.status, "not-provided");
     assert.equal(result.proposalValidation.canWrite, false);
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
+await test("analyze_repo_structure — round-trips bounded sourceReads through MCP", async () => {
+  const vaultRoot = makeVault();
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-source-read-")));
+  try {
+    writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "source-read" }), "utf-8");
+    mkdirSync(join(repoRoot, "src"));
+    writeFileSync(join(repoRoot, "src", "policy.ts"), "const allow = true;\r\nexport { allow };\r\n", "utf-8");
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", {
+        rootPath: repoRoot,
+        sourceReads: [
+          { path: "src/policy.ts", startLine: 1, maxLines: 1 },
+          { path: "src/missing.ts", startLine: 1, maxLines: 1 },
+        ],
+      }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.deepEqual(getCallStructured(responses, 2), result);
+    assert.equal(result.sourceEvidence.rows[0].text, "const allow = true;\r\n");
+    assert.match(result.sourceEvidence.rows[0].citation, /^source:src\/policy\.ts#L1-L1@sha256:[a-f0-9]{64}$/);
+    assert.deepEqual(
+      { status: result.sourceEvidence.rows[1].status, reason: result.sourceEvidence.rows[1].reason },
+      { status: "refused", reason: "not_found" },
+    );
+    assert.equal("text" in result.sourceEvidence.rows[1], false);
+    assert.equal("citation" in result.sourceEvidence.rows[1], false);
+    assert.equal(result.semanticEvidence.some((row) => row.source.startsWith("source:")), false);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });

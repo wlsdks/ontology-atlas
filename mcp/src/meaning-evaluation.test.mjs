@@ -193,6 +193,77 @@ test('repository proposal passes only when definitions, citations, domains, and 
   assert.ok(Object.values(result.gates).every(Boolean));
 });
 
+test('raw source citation can resolve provenance but cannot solely answer a competency question', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  const citation = `source:src/features/checkout/index.ts#L1-L1@sha256:${'a'.repeat(64)}`;
+  proposal.competencyAnswers.scope.witnesses.evidence = [citation];
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal, {
+    sourceEvidence: {
+      rows: [{ status: 'read', citation }],
+    },
+  });
+  assert.ok(result.findings.some((row) => row.code === 'source-only-competency-authority'));
+  assert.equal(result.canWrite, false);
+});
+
+test('package contracts and unrelated current prose cannot corroborate an answered raw-source competency', () => {
+  const citation = `source:src/features/checkout/index.ts#L1-L1@sha256:${'b'.repeat(64)}`;
+  for (const addedEvidence of [
+    {
+      source: 'package.json',
+      role: 'package-contract',
+      title: 'Checkout package',
+      excerpt: 'Checkout inventory purchase scope and responsibilities.',
+      trust: 'candidate-evidence',
+    },
+    {
+      source: 'docs/unrelated.md',
+      role: 'mission',
+      title: 'Unrelated coordination',
+      excerpt: 'Coordinates visual theme preferences for workspace operators.',
+      trust: 'candidate-evidence',
+    },
+  ]) {
+    const analysis = analyzeRepoStructure(fixtureRoot);
+    analysis.semanticEvidence = [
+      ...analysis.semanticEvidence.filter((row) => row.source !== addedEvidence.source),
+      addedEvidence,
+    ];
+    const proposal = completeTypedRepositoryProposal();
+    proposal.competencyAnswers.scope.witnesses.evidence = [citation, addedEvidence.source];
+    const result = validateMeaningProposalAgainstAnalysis(analysis, proposal, {
+      sourceEvidence: { rows: [{ status: 'read', citation }] },
+    });
+    assert.ok(result.findings.some((row) => row.code === 'source-only-competency-authority'));
+    assert.equal(result.canWrite, false);
+  }
+});
+
+test('claim-aligned prose cannot make an answered exact source range persistably resolved', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  const citation = `source:src/features/checkout/index.ts#L1-L1@sha256:${'c'.repeat(64)}`;
+  const corroboration = {
+    source: 'docs/current-scope.md',
+    role: 'mission',
+    title: 'Current repository scope',
+    excerpt: proposal.competencyAnswers.scope.answer,
+    trust: 'candidate-evidence',
+  };
+  analysis.semanticEvidence.push(corroboration);
+  proposal.competencyAnswers.scope.witnesses.evidence = [
+    citation,
+    corroboration.source,
+    ...proposal.competencyAnswers.scope.witnesses.evidence,
+  ];
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal, {
+    sourceEvidence: { rows: [{ status: 'read', citation }] },
+  });
+  assert.equal(result.findings.some((row) => row.code === 'source-only-competency-authority'), true);
+  assert.equal(result.canWrite, false);
+});
+
 test('repository write-plan bodies round-trip through the canonical vault parser byte-exactly', () => {
   const analysis = analyzeRepoStructure(fixtureRoot);
   const proposal = completeTypedRepositoryProposal();

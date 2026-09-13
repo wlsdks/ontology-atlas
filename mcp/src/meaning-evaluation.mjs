@@ -9,6 +9,7 @@ import {
   parseTaskNavigationEvidenceSource,
   verifyTaskNavigationEvidenceCoordinate,
 } from './task-navigation-evidence.mjs';
+import { parseSourceRangeCitation } from './source-range-citation.mjs';
 
 const DEFAULT_THRESHOLDS = Object.freeze({
   conceptPrecision: 0.8,
@@ -402,13 +403,36 @@ export function validateMeaningProposalAgainstAnalysis(
   const importEndpointSources = new Set(
     observedImportEdges.flatMap((row) => [row.from, row.to]),
   );
+  const sourceEvidenceRows = (importEvidence.sourceEvidence?.rows ?? [])
+    .filter((row) => row.status === 'read');
+  const sourceEvidenceCitations = new Set(sourceEvidenceRows.map((row) => row.citation));
+  for (const citation of sourceEvidenceCitations) {
+    if (parseSourceRangeCitation(citation) !== null) continue;
+    findings.push(finding(
+      'source-citation-unpersistable',
+      'error',
+      'sourceReads',
+      'Source-range evidence must use a persistable safe relative path and exact range/hash grammar.',
+      [citation],
+    ));
+  }
   const availableSources = new Set([
     ...evidenceBySource.keys(),
     ...analysis.domains.map((row) => row.evidence?.source),
     ...analysis.capabilities.map((row) => row.evidence?.source),
     ...analysis.elements.map((row) => row.evidence?.source),
     ...importEndpointSources,
+    ...sourceEvidenceCitations,
   ].filter(Boolean));
+  if ((importEvidence.sourceEvidence?.rows ?? []).some((row) => row.status !== 'read')) {
+    findings.push(finding(
+      'incomplete-source-replay',
+      'error',
+      'sourceReads',
+      'Every requested source range must be freshly delivered before proposal review or release.',
+      (importEvidence.sourceEvidence?.rows ?? []).filter((row) => row.status !== 'read').map((row) => row.path),
+    ));
+  }
   const concepts = [
     proposal.project,
     ...proposal.domains,
@@ -752,6 +776,7 @@ export function validateMeaningProposalAgainstAnalysis(
     proposal,
     availableSources,
     evidenceBySource,
+    sourceEvidenceCitations,
     sharedDomains,
     conceptSlugs: relationEndpoints,
     proposalPaths: new Set(concepts.map((row) => row.path).filter(nonEmpty)),
@@ -946,6 +971,7 @@ function validateCompetencyAnswers({
   proposal,
   availableSources,
   evidenceBySource,
+  sourceEvidenceCitations,
   sharedDomains,
   conceptSlugs,
   proposalPaths,
@@ -1038,6 +1064,15 @@ function validateCompetencyAnswers({
         continue;
       }
       const semantic = evidenceBySource.get(source);
+      if (row.status === 'answered' && sourceEvidenceCitations.has(source)) {
+        findings.push(finding(
+          'source-only-competency-authority',
+          'error',
+          `${path}.witnesses.evidence[${index}]`,
+          'Raw implementation source is observed evidence, not semantic authority for an answered competency. Mark the answer partial or provide current semantic authority.',
+          [source],
+        ));
+      }
       if (semantic?.trust === 'untrusted-instruction') {
         findings.push(finding(
           'untrusted-competency-evidence',

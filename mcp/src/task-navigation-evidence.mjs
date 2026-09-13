@@ -650,11 +650,36 @@ function sourceBlockEndLine(lines, startLine, path) {
   let depth = 0;
   let opened = false;
   const state = sourceLexicalState();
+  const multilineJavaScriptFunction = javascriptSourcePath(path) &&
+    /\b(?:async\s+)?function\b/.test(lines[startIndex]);
+  let parameterDepth = 0;
+  let parametersStarted = false;
   for (let index = startIndex; index < lines.length; index += 1) {
     const braces = braceDelta(lines[index], state, path);
     if (braces.unsupported) return null;
-    if (braces.openings > 0) opened = true;
-    depth += braces.delta;
+    let openings = braces.openings;
+    let delta = braces.delta;
+    if (multilineJavaScriptFunction && (!parametersStarted || parameterDepth > 0)) {
+      openings = 0;
+      delta = 0;
+      for (const char of braces.code) {
+        if (char === '(') {
+          parametersStarted = true;
+          parameterDepth += 1;
+        } else if (char === ')' && parametersStarted) {
+          parameterDepth = Math.max(0, parameterDepth - 1);
+        } else if (parametersStarted && parameterDepth === 0) {
+          if (char === '{') {
+            openings += 1;
+            delta += 1;
+          } else if (char === '}') {
+            delta -= 1;
+          }
+        }
+      }
+    }
+    if (openings > 0) opened = true;
+    depth += delta;
     if (opened && depth <= 0) return index + 1;
     if (!opened && /;\s*$/.test(lines[index])) return index + 1;
   }
