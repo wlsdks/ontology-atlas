@@ -20,6 +20,7 @@ import {
   describeCleanup,
   worktreeToRemove,
 } from './pr-land.mjs';
+import { existingPaths } from './suggest-focused-checks.mjs';
 
 /**
  * The landing state machine, driven by `gh` output recorded from this
@@ -768,5 +769,21 @@ describe('checks main does not require', () => {
     assert.deepEqual(parseArgs(['1595', '--allow-failing=A,B']).allowFailing, ['A', 'B']);
     assert.deepEqual(parseArgs(['1595']).allowFailing, []);
     assert.throws(() => parseArgs(['1595', '--allow-failing=']), /must name at least one check context/);
+  });
+});
+
+/*
+ * A path this branch deleted must never reach the local lanes. `git diff --name-only`
+ * returns deleted paths, and `eslint <deleted file>` fails on the pattern rather than on
+ * the code — which is how #1604 was blocked from landing on 2026-09-13 by deleting one
+ * component. The filter lives in `suggest-focused-checks.mjs` and had been there since
+ * 2026-08-21; this caller was the one that skipped it.
+ */
+describe('the local lanes never receive a deleted path', () => {
+  it('drops a path that no longer exists on disk', () => {
+    const kept = existingPaths(['scripts/pr-land.mjs', 'scripts/this-file-was-deleted.mjs'], {
+      cwd: process.cwd(),
+    });
+    assert.deepEqual(kept, ['scripts/pr-land.mjs']);
   });
 });
