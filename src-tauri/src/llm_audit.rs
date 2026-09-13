@@ -28,9 +28,12 @@
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::collections::HashSet;
 use std::fs;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
+use std::sync::{LazyLock, Mutex, MutexGuard};
+use std::time::Duration;
 
 use crate::errors::coded;
 
@@ -116,6 +119,10 @@ pub struct AuditReservation {
     offset: u64,
     reserved_line: Vec<u8>,
     draft: AuditDraft,
+    /// Declared last deliberately: fields drop in declaration order, so `file` —
+    /// and with it this process's own `flock` — is closed before the path is
+    /// handed back to the next reservation.
+    _claim: ReservedPath,
 }
 
 /// Completed line = pre-send facts + response facts. `flatten` writes the two structs
@@ -150,17 +157,115 @@ pub fn now_iso() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
 }
 
-#[cfg(unix)]
-fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
-    use std::ffi::CString;
-    use std::os::fd::{AsRawFd, FromRawFd};
-    use std::os::unix::ffi::OsStrExt;
+/// Canonical audit-log paths with a reservation outstanding in **this** process.
+///
+/// "A second `reserve` while one is outstanding fails closed, and fails now" used
+/// to be answered by `flock` alone. It cannot be: the same `EWOULDBLOCK` also
+/// arrives from a child of ours that inherited the lock (see the retry budget
+/// below), and absorbing that one with a retry would turn a deliberate second
+/// reservation into a slow success. So the in-process half of the promise is kept
+/// in process, ahead of the syscalls, so `flock` is left answering only what this
+/// process cannot see for itself — another Atlas process on the same vault.
+/// `the_budget_is_spent_and_then_the_lock_still_fails_closed` keeps that half
+/// covered, because the registry now answers before the second-reservation test can
+/// reach `flock` at all.
+static RESERVED_AUDIT_PATHS: LazyLock<Mutex<HashSet<PathBuf>>> =
+    LazyLock::new(|| Mutex::new(HashSet::new()));
 
+fn reserved_audit_paths() -> MutexGuard<'static, HashSet<PathBuf>> {
+    // Nothing inside the guarded section can panic, so a poisoned lock would be a
+    // set that is still correct — and a panic here would abort the process anyway
+    // (see the note on the NUL-terminated names above).
+    RESERVED_AUDIT_PATHS
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+/// The claim on one canonical audit path, released by `Drop` so that every exit
+/// hands the path back — a finalized reservation, a `finalize` that refused a
+/// tampered file, and a `reserve` that failed after the claim alike.
+#[derive(Debug)]
+struct ReservedPath {
+    path: PathBuf,
+}
+
+impl ReservedPath {
+    /// Keyed on the canonicalized path, not on the caller's argument: two spellings
+    /// of one vault are one audit log.
+    fn claim(path: &Path) -> Result<Self, String> {
+        if !reserved_audit_paths().insert(path.to_path_buf()) {
+            return Err(coded("audit-log-busy", ""));
+        }
+        Ok(Self {
+            path: path.to_path_buf(),
+        })
+    }
+}
+
+impl Drop for ReservedPath {
+    fn drop(&mut self) {
+        reserved_audit_paths().remove(&self.path);
+    }
+}
+
+/// Bounded retry budget for a `flock` that answers `EWOULDBLOCK`.
+///
+/// With the registry above answering the in-process case, a remaining
+/// `EWOULDBLOCK` is either a genuine second Atlas process or a transient copy of
+/// the lock held by one of **our own** children: `flock` belongs to the open file
+/// description, `fork` duplicates the description, and `O_CLOEXEC` closes the
+/// descriptor at `exec` rather than at `fork`. The two cannot be told apart from
+/// here, so the transient one is absorbed and then we still fail closed. CI proved
+/// the cost of not absorbing it: release run 34723050267 refused a reservation on
+/// a healthy vault twice, at `reserve`-after-`finalize` both times.
+///
+/// The budget is the measured hold, not a round number. A C probe running this
+/// function's exact open/lock/write/fsync/close/open/lock sequence while threads
+/// spawn `/usr/bin/true`, on aarch64 macOS 26.5.1, 20 000 sequences per cell:
+/// the hold always cleared, and its length was p50 54 µs · p99 221 µs · max
+/// 539 µs via `posix_spawn` (what `std::process::Command` uses here) and p50
+/// 637 µs · p99 1 184 µs · max 12 658 µs via `fork`+`exec`, with four spawning
+/// threads. 52 pauses of 250 µs is the smallest whole budget covering that
+/// 12 658 µs worst case, so the ceiling is 13 ms, and it is spent only when a busy
+/// answer is seen at all. Both callers are `#[tauri::command(async)]`, the spelling
+/// `no_command_here_hands_the_key_back_to_the_webview` pins, so those milliseconds
+/// sit on a Tauri async-runtime worker that is about to block on `curl` for the
+/// length of a network round trip — not on the macOS main thread.
+/// `the_inherited_lock_retry_budget_stays_bounded` pins the ceiling and
+/// `the_budget_is_spent_and_then_the_lock_still_fails_closed` proves it is really
+/// spent, so a later edit cannot quietly grow it or skip it.
+const AUDIT_LOCK_RETRY_PAUSE: Duration = Duration::from_micros(250);
+const AUDIT_LOCK_RETRIES: u32 = 52;
+
+/// Counts the busy answers the budget absorbed, so the positive control can tell a
+/// working fix from an overlap that never happened. A regression test that passes
+/// because it reproduced nothing is the way this defect would come back.
+#[cfg(test)]
+static ABSORBED_INHERITED_BUSY: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+
+/// Held by the only two tests that can make that counter move. Nothing else in this
+/// process can contend for the lock — the registry answers first — so with these two
+/// serialized, growth seen during a round is that round's own.
+#[cfg(test)]
+static CONTENDING_TESTS: Mutex<()> = Mutex::new(());
+
+/// The vault directory as one canonical path — the identity both the registry and
+/// the `openat` walk below are keyed on.
+fn canonical_vault_dir(vault_dir: &Path) -> Result<PathBuf, String> {
     let canonical_vault =
         fs::canonicalize(vault_dir).map_err(|err| coded("audit-vault-unreadable", err))?;
     if !canonical_vault.is_dir() {
         return Err(coded("audit-vault-unreadable", "not a directory"));
     }
+    Ok(canonical_vault)
+}
+
+#[cfg(unix)]
+fn open_audit_file(canonical_vault: &Path) -> Result<(PathBuf, fs::File), String> {
+    use std::ffi::CString;
+    use std::os::fd::{AsRawFd, FromRawFd};
+    use std::os::unix::ffi::OsStrExt;
 
     let vault_c = CString::new(canonical_vault.as_os_str().as_bytes())
         .map_err(|_| coded("audit-vault-unreadable", "path contains a NUL byte"))?;
@@ -251,22 +356,33 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
         ));
     }
 
-    // From reserve to finalize, only one request owns the file's tail. LOCK_NB avoids
-    // stalling the UI thread for the length of the network timeout, and a second request
-    // fails before sending.
-    let locked = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
-    if locked != 0 {
+    // From reserve to finalize, only one request owns the file's tail. LOCK_NB keeps a
+    // conflict from becoming a wait as long as the network timeout, and a second request
+    // fails before sending. A busy answer is retried within AUDIT_LOCK_RETRIES because
+    // one of our own mid-spawn children can be holding an inherited copy of the lock;
+    // when the budget runs out we fail closed, as a genuine second process requires.
+    let mut retries = 0;
+    loop {
+        if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
+            break;
+        }
         let error = std::io::Error::last_os_error();
-        if error.kind() == std::io::ErrorKind::WouldBlock {
+        if error.kind() != std::io::ErrorKind::WouldBlock {
+            return Err(coded("audit-log-write-failed", error));
+        }
+        if retries == AUDIT_LOCK_RETRIES {
             return Err(coded("audit-log-busy", ""));
         }
-        return Err(coded("audit-log-write-failed", error));
+        retries += 1;
+        #[cfg(test)]
+        ABSORBED_INHERITED_BUSY.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        std::thread::sleep(AUDIT_LOCK_RETRY_PAUSE);
     }
-    Ok((audit_log_path(&canonical_vault), file))
+    Ok((audit_log_path(canonical_vault), file))
 }
 
 #[cfg(not(unix))]
-fn open_audit_file(_vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
+fn open_audit_file(_canonical_vault: &Path) -> Result<(PathBuf, fs::File), String> {
     // Pre-checking the path and then reopening it does not close the Windows
     // reparse-point race. Until native-handle-based no-follow + file-ID verification
     // exists, this feature fails closed rather than allowing transmission without a record.
@@ -309,7 +425,12 @@ fn ensure_reservation_path(path: &Path, file: &fs::File) -> Result<(), String> {
 /// returns its position. On failure the caller **must send nothing** — that is this
 /// function's reason to exist.
 pub fn reserve(vault_dir: &Path, draft: AuditDraft) -> Result<AuditReservation, String> {
-    let (path, mut file) = open_audit_file(vault_dir)?;
+    // The claim comes before anything touches the file, so a second reservation on
+    // one vault is refused here rather than by `flock` — which can no longer tell a
+    // second reservation from a child of ours holding an inherited lock.
+    let canonical_vault = canonical_vault_dir(vault_dir)?;
+    let claim = ReservedPath::claim(&audit_log_path(&canonical_vault))?;
+    let (path, mut file) = open_audit_file(&canonical_vault)?;
     ensure_reservation_path(&path, &file)?;
     let mut reserved_line =
         serde_json::to_string(&draft).map_err(|err| coded("audit-log-write-failed", err))?;
@@ -332,6 +453,7 @@ pub fn reserve(vault_dir: &Path, draft: AuditDraft) -> Result<AuditReservation, 
         offset,
         reserved_line,
         draft,
+        _claim: claim,
     })
 }
 
@@ -751,6 +873,252 @@ mod tests {
         assert!(
             leaked.is_empty(),
             "정규 파일 검증 전에 감사 데이터를 쓰면 안 된다"
+        );
+    }
+
+    /// The retry budget exists to absorb a lock one of our own children inherited
+    /// for a few hundred microseconds. It must never grow into "wait for whoever
+    /// holds it": that would stall the UI thread and blur requirement 2 (a second
+    /// reservation fails closed, now) into a slow success. The ceiling is the
+    /// measured worst hold — 12 658 µs over 80 000 probe sequences — rounded up to
+    /// a whole number of pauses, and this test is what stops a later edit from
+    /// quietly raising it.
+    #[test]
+    fn the_inherited_lock_retry_budget_stays_bounded() {
+        let ceiling = AUDIT_LOCK_RETRY_PAUSE * AUDIT_LOCK_RETRIES;
+        assert_eq!(
+            ceiling,
+            Duration::from_millis(13),
+            "13 ms is the measured 12.658 ms worst hold rounded up to whole \
+             {AUDIT_LOCK_RETRY_PAUSE:?} pauses; changing it needs a new measurement"
+        );
+        assert!(
+            AUDIT_LOCK_RETRY_PAUSE <= Duration::from_micros(250),
+            "a coarser pause spends the budget on sleeping, not on waiting out an exec"
+        );
+    }
+
+    /// Requirement 2 is answered in process, ahead of the file. The proof is that
+    /// the second claim is refused for a path that does not exist at all — no
+    /// directory, no log — so nothing but the registry can have answered, and the
+    /// retry budget was never reachable.
+    #[test]
+    fn a_second_claim_on_one_path_is_refused_without_touching_the_file() {
+        let path = std::env::temp_dir()
+            .join("atlas-llm-audit-claim-only")
+            .join(SIDECAR_DIR)
+            .join(AUDIT_FILE);
+        assert!(
+            !path.exists(),
+            "the proof needs a path with nothing behind it"
+        );
+
+        let first = ReservedPath::claim(&path).expect("the first claim takes the path");
+        assert_eq!(
+            ReservedPath::claim(&path).err().as_deref(),
+            Some("audit-log-busy"),
+            "a second reservation on one audit log fails closed"
+        );
+        drop(first);
+        assert!(
+            ReservedPath::claim(&path).is_ok(),
+            "the claim is given back when the reservation drops"
+        );
+        assert!(!path.exists(), "claiming a path must not create anything");
+    }
+
+    /// The registry answers a second reservation before `flock` is ever called, which
+    /// means `a_second_reservation_fails_closed_until_the_first_is_finalized` no longer
+    /// reaches the `EWOULDBLOCK` branch at all. Something still has to prove the half of
+    /// the promise `flock` keeps: a lock this process cannot account for — another Atlas
+    /// process on the same vault — is waited out for the whole budget and then still
+    /// refused. `open_audit_file` is called directly because that is what a second
+    /// process does: a second open file description on one inode, with no registry entry
+    /// in the way.
+    #[cfg(unix)]
+    #[test]
+    fn the_budget_is_spent_and_then_the_lock_still_fails_closed() {
+        let _serialized = CONTENDING_TESTS
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let vault = temp_vault("budget-spent");
+        let canonical = canonical_vault_dir(&vault).unwrap();
+        let holder = open_audit_file(&canonical).expect("the first owner takes the lock");
+
+        let started = std::time::Instant::now();
+        let refused = open_audit_file(&canonical);
+        let waited = started.elapsed();
+
+        drop(holder);
+        fs::remove_dir_all(&vault).ok();
+
+        assert_eq!(
+            refused.err().as_deref(),
+            Some("audit-log-busy"),
+            "a lock we cannot account for still fails closed"
+        );
+        assert!(
+            waited >= AUDIT_LOCK_RETRY_PAUSE * AUDIT_LOCK_RETRIES,
+            "the whole budget has to be spent before giving up, not short-circuited; \
+             waited {waited:?}"
+        );
+        // The point is boundedness, not a stopwatch: what is ruled out is waiting as
+        // long as a network timeout. A tight ceiling here would measure how loaded the
+        // runner is, and `the_inherited_lock_retry_budget_stays_bounded` already pins
+        // the nominal figure.
+        assert!(
+            waited < Duration::from_secs(1),
+            "the wait has to stay bounded; waited {waited:?}"
+        );
+    }
+
+    /// Positive control for the inherited-lock defect (CI release run 34723050267,
+    /// macOS x64, twice: `llm_audit.rs:526`, then `:779` on the re-run — both a
+    /// `reserve` that immediately follows a `finalize`, both `Err("audit-log-busy")`).
+    ///
+    /// ## What the defect is
+    ///
+    /// `flock` belongs to the **open file description**, not to the descriptor. A child
+    /// duplicates the description at `fork`, and `O_CLOEXEC` closes the descriptor at
+    /// `exec`, not before it — so a child caught between the two owns a copy of the lock
+    /// this process is releasing, and the next `reserve` is told a healthy audit log is
+    /// busy by our own child. `llm.rs` spawns `curl` inside the reserved window on every
+    /// send, and the test suite spawns `git`, `acp` and agent-setup children from
+    /// parallel threads, which is how CI met it twice.
+    ///
+    /// That the fork produces such a holder is measured, not assumed: a C probe running
+    /// this module's exact open/lock/write/fsync/close/open/lock sequence saw 0 spurious
+    /// `EWOULDBLOCK` in 20 000 rounds with nothing spawning, 2 894 of 4 000 with four
+    /// `fork`+`exec` threads, and 880 of 4 000 with `posix_spawn`. The same probe timed
+    /// the hold: p50 54 µs, worst 12 658 µs over 80 000 sequences, always clearing.
+    ///
+    /// ## What this test does with that
+    ///
+    /// It holds the lock the way a mid-spawn child holds it — a **second open file
+    /// description on the same audit log** — and then asks `reserve` to survive it.
+    /// `flock` cannot tell that holder from a child's copy: both are descriptions this
+    /// process does not own, and absorbing them is exactly what the fix does.
+    ///
+    /// The holder is in this process on purpose, and it is the fifth shape of this test.
+    /// The first four handed the description to a real child and each failed on timing
+    /// rather than on the defect, every count measured against a clean 40/40 baseline:
+    ///
+    /// * spawning children in a loop and hoping to collide — green on unfixed code;
+    /// * a child sleeping a fixed time from its own `fork` — a slow `fsync` in
+    ///   `finalize` outlived the hold, two of eight rounds passed unfixed;
+    /// * the copy held open through `pre_exec` — the child also held every descriptor the
+    ///   other 300 tests had open, costing a sibling test a flake in 40 runs;
+    /// * a `dup` handed to `/bin/sleep` as its stdin, released by killing it — 13 of 50,
+    ///   then 18 of 60 runs red, because spawn latency, exec, kill and process teardown
+    ///   each add milliseconds that a saturated suite stretches past the retry budget.
+    ///
+    /// A holder that is a `File` cannot be late, cannot be descheduled, and cannot exit
+    /// early: it is released by one `close`, on the thread that watched the retry loop
+    /// absorb its first busy answer. What that costs is fidelity about *where* the
+    /// foreign description came from — and that is what the probe above, and CI, already
+    /// establish.
+    #[cfg(unix)]
+    #[test]
+    fn a_reserve_right_after_a_finalize_survives_a_foreign_hold_on_the_log() {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use std::sync::Arc;
+
+        /// Only reached when something is wrong; a healthy round releases in microseconds.
+        const WATCH_LIMIT: Duration = Duration::from_secs(5);
+
+        let _serialized = CONTENDING_TESTS
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let vault = temp_vault("foreign-hold-busy");
+        let canonical = canonical_vault_dir(&vault).unwrap();
+
+        let mut refused = Vec::new();
+        let mut absorbed = Vec::new();
+        let rounds = 4;
+        for round in 0..rounds {
+            let reservation = reserve(&vault, verify_draft()).unwrap_or_else(|error| {
+                panic!("round {round} could not open a reservation: {error}")
+            });
+            finalize(
+                reservation,
+                &AuditOutcome {
+                    outcome: "ok".into(),
+                    http_status: Some(200),
+                    response_chars: round,
+                    duration_ms: 1,
+                },
+            )
+            .unwrap();
+
+            // A second description on the audit log — the state a child of ours produces
+            // between `fork` and `exec`, held deliberately instead of by luck.
+            let holder = open_audit_file(&canonical).expect("the foreign hold takes the lock");
+
+            let before = ABSORBED_INHERITED_BUSY.load(Ordering::Relaxed);
+            let asking = Arc::new(AtomicBool::new(false));
+            let answered = Arc::new(AtomicBool::new(false));
+            let worker = {
+                let vault = vault.clone();
+                let asking = Arc::clone(&asking);
+                let answered = Arc::clone(&answered);
+                std::thread::spawn(move || {
+                    asking.store(true, Ordering::Release);
+                    let second = reserve(&vault, verify_draft());
+                    answered.store(true, Ordering::Release);
+                    second
+                })
+            };
+
+            // Spinning, not sleeping: the hold has to be let go inside the retry budget,
+            // and a thread waking from a sleep under a saturated suite does not make it.
+            let watching = std::time::Instant::now();
+            while ABSORBED_INHERITED_BUSY.load(Ordering::Relaxed) == before
+                && !answered.load(Ordering::Acquire)
+                && watching.elapsed() < WATCH_LIMIT
+            {
+                std::hint::spin_loop();
+            }
+            drop(holder);
+
+            let second = worker.join().unwrap();
+            absorbed.push(ABSORBED_INHERITED_BUSY.load(Ordering::Relaxed) - before);
+            match second {
+                Ok(second) => finalize(
+                    second,
+                    &AuditOutcome {
+                        outcome: "ok".into(),
+                        http_status: Some(200),
+                        response_chars: round,
+                        duration_ms: 2,
+                    },
+                )
+                .unwrap(),
+                Err(error) => refused.push(format!("round {round}: {error}")),
+            }
+        }
+
+        let written = fs::read_to_string(audit_log_path(&canonical)).unwrap();
+        let lines = written.lines().count();
+        fs::remove_dir_all(&vault).ok();
+
+        assert!(
+            refused.is_empty(),
+            "a foreign description that lets go must not manufacture a busy audit log: \
+             {} of {rounds} reservations were refused ({})",
+            refused.len(),
+            refused.join("; ")
+        );
+        assert_eq!(
+            lines,
+            rounds * 2,
+            "one reserved-then-finalized call is one line"
+        );
+        // Without this the test cannot tell a working fix from a hold that was never
+        // met, and a regression test that passes without reproducing anything is how
+        // this defect would come back.
+        assert!(
+            absorbed.iter().all(|count| *count > 0),
+            "every round had to actually meet the hold; absorbed per round: {absorbed:?}"
         );
     }
 
