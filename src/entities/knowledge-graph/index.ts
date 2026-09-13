@@ -44,6 +44,13 @@ export {
   type OntologyChangeSet,
 } from "./lib/ontology-change-set";
 export {
+  buildProposalBinding,
+  type ComparisonBasis,
+  type TaskReviewIdentity,
+  type TaskReviewRequest,
+  type TrustedBeforeSnapshot,
+} from "./lib/task-meaning-review";
+export {
   buildOntologyRelationEditPlan,
   buildOntologyRelationRemovalPlan,
   RELATION_EDGE_TYPE,

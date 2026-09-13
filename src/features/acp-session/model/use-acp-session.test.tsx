@@ -108,7 +108,30 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
   },
 }));
 
-import { useAcpSession } from './use-acp-session';
+import { snapshotPermissionRequest, useAcpSession } from './use-acp-session';
+
+describe('queued permission identity', () => {
+  it('snapshots and freezes each request raw guards and options independently', () => {
+    const make = (id: number) => ({
+      requestId: id, sessionId: 's-1', title: 'patch', toolCallId: `tool-${id}`,
+      toolName: 'mcp__atlas-vault__patch_concept', toolKind: 'other' as const,
+      filePath: null, reviewKind: 'ontology-write' as const,
+      rawInput: { slug: `capabilities/${id}`, expected_mtime: id, confirm: true },
+      options: [{ optionId: `allow-${id}`, kind: 'allow_once', name: 'Allow' }],
+    });
+    const first = make(1); const second = make(2);
+    const queuedFirst = snapshotPermissionRequest(first);
+    const queuedSecond = snapshotPermissionRequest(second);
+    first.rawInput.expected_mtime = 99; first.options[0].optionId = 'mutated-first';
+    second.rawInput.confirm = false; second.options[0].optionId = 'mutated-second';
+    expect(queuedFirst.rawInput).toEqual({ slug: 'capabilities/1', expected_mtime: 1, confirm: true });
+    expect(queuedFirst.options[0].optionId).toBe('allow-1');
+    expect(queuedSecond.rawInput).toEqual({ slug: 'capabilities/2', expected_mtime: 2, confirm: true });
+    expect(queuedSecond.options[0].optionId).toBe('allow-2');
+    expect(Object.isFrozen(queuedFirst.rawInput)).toBe(true);
+    expect(Object.isFrozen(queuedSecond.options)).toBe(true);
+  });
+});
 
 /*
  * The hook reads the interface language so a button-started turn has one to answer in.
@@ -736,6 +759,41 @@ describe('도구 입력 refinement — 실제 Claude ACP 순서', () => {
 });
 
 describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다', () => {
+  it('온톨로지 요청에 실제 turn, generation, JSON-RPC id와 구조화되지 않은 non-goal 상태를 묶는다', async () => {
+    bridge.holdPrompt = true;
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => { bridge.release?.(); await starting; });
+    void result.current.send('Change refund eligibility; keep capture unchanged.');
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+    await waitFor(() => expect(result.current.events.some((event) => event.kind === 'user')).toBe(true));
+    const user = result.current.events.find((event) => event.kind === 'user');
+    act(() => {
+      bridge.listener?.(JSON.stringify({
+        jsonrpc: '2.0', method: 'session/update', params: { sessionId: 's-1', update: {
+          sessionUpdate: 'tool_call', toolCallId: 'tool-0', title: 'mcp__atlas-vault__patch_concept',
+          kind: 'other', status: 'pending', rawInput: { slug: 'capabilities/refund', expected_mtime: 100 },
+        } },
+      }));
+      bridge.listener?.(JSON.stringify({
+        jsonrpc: '2.0', id: 0, method: 'session/request_permission', params: {
+          sessionId: 's-1', options: [
+            { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+            { kind: 'allow_once', name: 'Allow', optionId: 'allow' },
+          ], toolCall: { toolCallId: 'tool-0', title: 'mcp__atlas-vault__patch_concept', kind: 'other', rawInput: { slug: 'capabilities/refund', expected_mtime: 100 } },
+        },
+      }));
+    });
+    await waitFor(() => expect(result.current.pending?.request.requestId).toBe(0));
+    expect(result.current.pending?.origin).toEqual({
+      sessionGeneration: 0,
+      turn: { sessionId: 's-1', vaultRoot: '/vault', userEventId: user?.id, text: 'Change refund eligibility; keep capture unchanged.' },
+      task: { outcome: 'Change refund eligibility; keep capture unchanged.', nonGoals: null, structure: 'unstructured' },
+    });
+    await act(async () => { result.current.pending?.resolve('reject'); await result.current.stop(); });
+  });
+
   it('두 번째 요청이 첫 카드를 덮어쓰지 않고, 두 JSON-RPC id 모두 답장이 나간다', async () => {
     /*
      * Caught in the 2026-09-01 review. With a single resolver slot, the second concurrent
@@ -782,6 +840,9 @@ describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다
     // The first card presents alone, and answering it answers **its own** id.
     await waitFor(() => expect(result.current.pending).toBeTruthy());
     expect(result.current.pending?.request.filePath).toBe('/outside/a.md');
+    expect(result.current.pending?.request.requestId).toBe(101);
+    expect(result.current.pending?.request.sessionId).toBe('s-1');
+    expect(result.current.pending?.origin).toEqual({ sessionGeneration: 0, turn: null, task: null });
     await act(async () => {
       result.current.pending?.resolve('allow');
     });

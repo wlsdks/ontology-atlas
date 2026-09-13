@@ -870,8 +870,16 @@ describe('toPermissionRequest — 제목이 아니라 경로를 본다', () => {
     expect(parsed.options).toEqual([{ optionId: 'a', kind: 'allow_once', name: 'Allow' }]);
   });
 
+  it('보존된 JSON-RPC 요청 id는 숫자 0도 유효하며 새 id로 바꾸지 않는다', () => {
+    const parsed = toPermissionRequest({ sessionId: 's-1' }, null, 0);
+    expect(parsed.requestId).toBe(0);
+    expect(parsed.sessionId).toBe('s-1');
+  });
+
   it('모양이 달라도 터지지 않는다 — 어댑터가 바뀌어도 대화가 죽지 않아야 한다', () => {
     expect(toPermissionRequest({})).toEqual({
+      requestId: null,
+      sessionId: null,
       title: null,
       toolCallId: null,
       // Null when even the tool name is unknown — the MCP auto-allow verdict reads this value.

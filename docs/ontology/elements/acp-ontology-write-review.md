@@ -22,6 +22,8 @@ The ACP permission boundary that lets Atlas read tools continue automatically bu
 - Deciding, per ACP tool call, whether a write pauses on a typed change-review card or continues automatically.
 - Classifying a non-Atlas tool as read-only or as edit/delete/move/execute/unknown by its declared kind, independent of path containment.
 - Offering `allow_once`/`reject_once` on a paused card while withholding `allow_always` for semantic writes.
+- Capturing immutable queued request arguments, guards and options together with the originating user event, vault and session generation. Numeric and string JSON-RPC permission request IDs remain distinct.
+- Refusing an ontology-write permission request with a missing origin or a mismatched session/vault before presenting it. This binds execution permission; it does not establish semantic acceptance, code verification, merge or deployment.
 
 ## Excludes
 

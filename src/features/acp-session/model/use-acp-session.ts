@@ -98,8 +98,26 @@ export type AcpSessionStatus =
 
 export interface PendingPermission {
   request: AcpPermissionRequest;
+  origin?: {
+    sessionGeneration: number;
+    turn: Pick<AcpTurnStart, 'sessionId' | 'vaultRoot' | 'userEventId' | 'text'> | null;
+    task: { outcome: string; nonGoals: null; structure: 'unstructured' } | null;
+  };
   /** Passes the user's choice back to the agent. `null` is a rejection. */
   resolve: (optionId: string | null) => void;
+}
+
+function deepFreeze<Value>(value: Value): Value {
+  if (value && typeof value === 'object') {
+    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+/** Capture a queued permission before another request can delay its presentation. */
+export function snapshotPermissionRequest(request: AcpPermissionRequest): AcpPermissionRequest {
+  return deepFreeze(structuredClone(request));
 }
 
 export interface UseAcpSessionOptions {
@@ -699,11 +717,31 @@ export function useAcpSession({
 
   /** Creates the promise that waits until the screen answers. Concurrent asks queue up. */
   const askUser = useCallback((request: AcpPermissionRequest) => {
+    request = snapshotPermissionRequest(request);
     const generation = generationRef.current;
+    const activeStart = activeTurnRef.current?.start ?? null;
+    const origin = {
+      sessionGeneration: generation,
+      turn: activeStart
+        ? { sessionId: activeStart.sessionId, vaultRoot: activeStart.vaultRoot, userEventId: activeStart.userEventId, text: activeStart.text }
+        : null,
+      task: activeStart
+        ? { outcome: activeStart.text, nonGoals: null, structure: 'unstructured' as const }
+        : null,
+    };
     const present = () => new Promise<string | null>((resolve) => {
       // A question that waited in the queue may outlive its session: answered-by-nobody beats
       // presenting a card for a conversation that is already stopped or dead.
       if (generationRef.current !== generation || statusRef.current === 'exited') {
+        resolve(null);
+        return;
+      }
+      if (request.reviewKind === 'ontology-write' && (
+        !origin.turn
+        || request.requestId == null
+        || request.sessionId !== origin.turn.sessionId
+        || origin.turn.vaultRoot !== vaultRoot
+      )) {
         resolve(null);
         return;
       }
@@ -719,6 +757,7 @@ export function useAcpSession({
       pendingResolverRef.current = resolve;
       setPending({
         request,
+        origin,
         resolve: (optionId) => {
           const selectedKind = request.options.find((option) => option.optionId === optionId)?.kind;
           const ontologyWrite = request.reviewKind === 'ontology-write' && Boolean(request.toolName);
@@ -766,7 +805,7 @@ export function useAcpSession({
     // The chain must survive any outcome, or one settled question blocks every later one.
     askChainRef.current = result.catch(() => null);
     return result;
-  }, [approvalSettleMs, emitWorkReceipt, push, runtimeId, setApprovedOntologyWriteTracked]);
+  }, [approvalSettleMs, emitWorkReceipt, push, runtimeId, setApprovedOntologyWriteTracked, vaultRoot]);
 
   const start = useCallback(async () => {
     if (!isAcpBridgeAvailable() || !vaultRoot) return;

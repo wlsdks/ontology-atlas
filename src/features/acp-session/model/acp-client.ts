@@ -221,6 +221,10 @@ function normalizeFolder(value: unknown): string | null {
 
 /** One permission request, reduced to what the screen shows the user. */
 export interface AcpPermissionRequest {
+  /** Exact JSON-RPC request id. Numeric zero is valid and is never replaced. */
+  requestId?: string | number | null;
+  /** Session named by the permission request itself. */
+  sessionId?: string | null;
   /** The human-readable line, exactly as the adapter gave it. */
   title: string | null;
   /** The ACP identifier linking this decision to the same tool's progress and completion updates. */
@@ -486,7 +490,7 @@ export function createAcpClient(
     params: Record<string, unknown>,
     correlatedMcpTool: CorrelatedMcpToolContext | null = null,
   ) => {
-    const request = toPermissionRequest(params, correlatedMcpTool);
+    const request = toPermissionRequest(params, correlatedMcpTool, id);
     const allowOnce = request.options.find((o) => o.kind === 'allow_once');
     const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
 
@@ -910,11 +914,14 @@ function readPermissionTitle(toolCall: Record<string, unknown>): string | null {
 export function toPermissionRequest(
   params: Record<string, unknown>,
   correlatedMcpTool: CorrelatedMcpToolContext | null = null,
+  requestId: unknown = null,
 ): AcpPermissionRequest {
   const toolCall = asRecord(params.toolCall);
   const rawInput = correlatedMcpTool?.arguments ?? asRecord(toolCall.rawInput);
   const rawOptions = Array.isArray(params.options) ? params.options : [];
   return {
+    requestId: typeof requestId === 'string' || typeof requestId === 'number' ? requestId : null,
+    sessionId: typeof params.sessionId === 'string' ? params.sessionId : null,
     title: readPermissionTitle(toolCall),
     toolCallId: typeof toolCall.toolCallId === 'string' ? toolCall.toolCallId : null,
     toolName: correlatedMcpTool

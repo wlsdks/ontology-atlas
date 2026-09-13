@@ -276,6 +276,21 @@ meaning, immutable history, and the still-mounted conversation. The native
 into ontology nodes. The Architecture view may reconstruct a dated observation
 only against its matching profile snapshot. [Contract and boundaries](ANALYSIS-RECORDS.md).
 
+Queued permission requests preserve the JSON-RPC request ID without coercing
+numeric and string IDs together. `use-acp-session` snapshots the request, guards
+and options before waiting, with the originating turn, vault and generation;
+missing or mismatched ontology-write origins are refused. Unstructured user text
+is retained as the requested outcome; unrecorded non-goals remain unknown.
+
+The internal `task-meaning-review` model binds the exact proposal and keeps
+historical comparison evidence separate from current decision reuse. Complete
+trusted reads distinguish absent values from unavailable ones; shape changes and
+removed map entries remain inspectable data. The ACP task adapter returns an
+unverified preparation or named missing inputs. These helpers do not yet connect
+a trusted historical vault read or a new semantic acceptance controller to the
+workbench. Existing execution permission and diagnostic finding review retain
+their separate authority; missing code, merge and deployment receipts are unknown.
+
 The app can launch a coding agent the user already installed (Claude Code,
 Codex, …) and speak the Agent Client Protocol v1 to it over stdio. It is a
 desktop-only ability, so it attaches through the bridge convention above. Both
