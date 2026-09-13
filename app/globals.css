@@ -4506,6 +4506,26 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
   }
 
   /*
+   * **The stopped scan mark must rest somewhere a reader can see.**
+   *
+   * The global rule above stops the travel, which is the decision registered for this class in
+   * `reduced-motion-equivalent.contract.test.ts`. What it does not do is undo the keyframe's
+   * starting transform, and that start is `translateX(-100%)` — measured through a fresh-element
+   * computed-style probe with reduced motion emulated: `matrix(1, 0, 0, 1, -400, 0)`, the bar
+   * parked entirely off the left edge of its own track. An empty track and a stalled read look
+   * identical, which is the confusion the whole waiting screen exists to remove.
+   *
+   * `transform` is not one of the properties the global rule marks `!important`, so this wins
+   * wherever it sits; it lives after that rule anyway, which is the ordering the note below the
+   * list-row equivalent spells out for anything that has to beat it.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .harness-scan-sweep {
+      transform: none !important;
+    }
+  }
+
+  /*
    * List-row disclosure is a reduced-motion **equivalent**, not an off switch.
    *
    * The global rule above cuts every transition to 0.01ms. Here, motion is not
