@@ -28,7 +28,7 @@ const LOCAL_AGENT_STATE_PREFIXES = ['.agents/', '.codex/'];
  * should break). But that is **the contract checks' job**; handing a non-existent path
  * to a tool that reads files is simply a malfunction.
  */
-function existingPaths(paths, { cwd = process.cwd(), exists = existsSync } = {}) {
+export function existingPaths(paths, { cwd = process.cwd(), exists = existsSync } = {}) {
   return paths.filter((path) => exists(resolve(cwd, path)));
 }
 
