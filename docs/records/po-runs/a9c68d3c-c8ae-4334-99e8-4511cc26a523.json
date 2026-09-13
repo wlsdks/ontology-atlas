@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-13",
+  "decision": "Document ontology foundations, prompt ownership, and measured quality boundaries",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "judge",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-13",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "a9c68d3c-c8ae-4334-99e8-4511cc26a523",
+  "recordedAt": "2026-09-13T03:37:42.986Z"
+}

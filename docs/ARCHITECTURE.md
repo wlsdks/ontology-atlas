@@ -113,6 +113,24 @@ node identity in `tools/vault-nodes.mjs` and post-write maintenance in
 `scripts/check-decision-record.mjs` watches `server/registry.mjs` alongside the
 entry point, because that is where a public-contract change now lands.
 
+### Agent instruction ownership
+
+Atlas has several instruction channels, each with a different runtime boundary:
+
+| Channel | Instruction owner | Delivery and scope |
+|---|---|---|
+| Vault conversation | `src/features/vault-agent/model/system-prompt.ts` (`buildSystemPrompt`) | `use-vault-agent.ts` passes the assembled text to the provider as `system`; `AgentPromptDisclosure` displays that same value. This agent reads the vault and proposes changes for review. |
+| Local wiki Compile | `src/features/vault-agent/model/compile-system-prompt.ts` (`buildCompileSystemPrompt`) | `use-local-compile.ts` supplies the turn-specific system text for source reading and wiki proposals. This is a separate task from ontology construction. |
+| ACP coding agent | `src/features/acp-session/model/use-acp-session.ts` (`vaultHandoffPrompt`) | `acp-client.ts` supplies `_meta.systemPrompt.append` on the Claude adapter path. This augments that agent's own instructions; it does not replace them or establish universal ACP support. |
+| External MCP client | `mcp/src/server/instructions.mjs` | `server/instance.mjs` attaches the registry's instructions to the MCP initialization response. The receiving host controls their inclusion and placement in model context. |
+
+The shared meta-model block in `mcp/src/construction-rules.mjs` and the vault
+conversation prompt is checked by `tests/contract/ontology-meta-model.contract.test.ts`.
+Prompt parity proves consistent guidance, not semantic correctness or obedience.
+Although `buildSystemPrompt` accepts optional owner instructions, the current
+`VaultAgentPanel` passes `projectInstructions: null`; its file-name constant
+does not establish a working custom-instructions loader.
+
 The public app/website brand is **Ontology Atlas**. The macOS app bundle,
 bundle identifier, and DMG assets use the Ontology Atlas identity, while the
 repo, CLI binary, and MCP package remain under `ontology-atlas`, so product

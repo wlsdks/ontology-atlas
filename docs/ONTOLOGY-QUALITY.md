@@ -2,6 +2,28 @@
 
 This document is not the place to create new ontology rules. It is an authoritative map that lets you find, in one place, where the canonical answer for any question lies and what is machine-enforced, what is a review signal, and what requires human judgment. If values or public tool contracts below differ from those in other documents and code, fix the owning canonical source, not this document.
 
+## Reading quality evidence
+
+`pnpm eval:meaning-extraction` measures candidate retrieval against a fixed
+corpus and checks an oracle proposal built from the expected data. Its candidate
+projection omits definitions and competency answers; the runner explicitly sets
+the definition, citation-recall, and competency-coverage thresholds to zero.
+Read the separate metrics with `node scripts/evaluate-meaning-corpus.mjs --json`.
+A candidate PASS is not a completed construction or a semantic quality score.
+The owners are `scripts/evaluate-meaning-corpus.mjs` and
+`mcp/src/meaning-evaluation.mjs`; the oracle checks the evaluator contract, not
+an independent agent's construction ability.
+
+Whole-vault validation establishes scanned shape, reference, and path facts.
+`health` also reports meaning currentness; neither a resolvable path nor a fresh
+receipt proves that a definition is correct. Meaning and handoff claims require
+the independent evidence defined by the existing
+[field-trial protocol](../.agents/skills/ontology-field-trial/SKILL.md).
+The [13 September 2026 audit](audits/ONTOLOGY-FOUNDATIONS-2026-09-13.md)
+records a dated baseline, public research, and remaining probes; it is not a
+second meta-model or a current quality certificate. Instruction owners are
+listed in [Architecture](ARCHITECTURE.md#agent-instruction-ownership).
+
 ## Public Quality Contract
 
 - There is **no upper limit on the number of nodes** in the entire vault or project.
@@ -29,7 +51,7 @@ This document is not the place to create new ontology rules. It is an authoritat
 1. First, change the owning canonical source in the table above. Do not create separate norms in this document for values or enums owned by code.
 2. Rules that machines can judge must prove red/green with tests and gate probes in the same change. For rules requiring human judgment like meaning exclusivity, leave sentences and refutation conditions.
 3. If public invariant principles change, update the short contract in `README.md`. Do not replicate detailed algorithms or variable caps in README.
-4. Append rationale, failed counterarguments, and re-review conditions to `docs/DECISIONS.md`. This document does not rewrite that history.
+4. Record rationale, failed counterarguments, and re-review conditions through `pnpm record:new` in `docs/records/decisions/`, following `docs/records/README.md`. The historical `docs/DECISIONS.md` is frozen.
 5. Finally, run verification pointed out by `pnpm checks:changed -- <touched paths>`, and if ontology meaning has changed, sync the dogfood vault by augmenting existing nodes.
 
 ## Observations Viewed as Failures

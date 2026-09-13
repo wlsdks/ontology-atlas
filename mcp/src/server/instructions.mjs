@@ -14,8 +14,9 @@ import {
   RELATION_TYPE_UNION,
 } from './tool-schemas.mjs';
 
-// MCP `instructions` field — carried in the `initialize` response, so every
-// connected agent sees it at system-prompt level. Tool descriptions alone never
+// MCP `instructions` field — carried in the `initialize` response. The host
+// decides whether and how to include it in model context; delivery does not
+// guarantee system-message placement or model compliance. Tool descriptions alone never
 // convey call order, what the kind hierarchy means, the dry-run/confirm pattern
 // of the write tools, the mtime conflict gate, the bootstrap workflow, or the
 // fact that an error message names the next tool to call. Without this, agents
