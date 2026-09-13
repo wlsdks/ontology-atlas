@@ -278,7 +278,7 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
     { width: 1920, height: 1080 },
   ]) {
     await page.setViewportSize(size);
-    await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+    await page.goto('/en/architecture/?view=structure&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('architecture-flow-panel')).toBeVisible({ timeout: 60_000 });
     await expect(page.locator('[data-testid^="architecture-role-ledger-"]')).toHaveCount(7, {
       timeout: 30_000,
@@ -414,7 +414,7 @@ test('a skip sentence never sits on another arc, sampled along the strokes', asy
    */
   test.setTimeout(180_000);
   await openSeededVault(page);
-  await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await page.goto('/en/architecture/?view=structure&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
   await expect(page.getByTestId('architecture-flow-panel')).toBeVisible({ timeout: 60_000 });
   await expect(page.locator('[data-testid^="architecture-role-ledger-"]')).toHaveCount(7, { timeout: 30_000 });
   for (const size of [
@@ -472,7 +472,7 @@ test('the count of what is below sits inside the faded strip, never on opaque in
    */
   test.setTimeout(180_000);
   await openSeededVault(page);
-  await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await page.goto('/en/architecture/?view=structure&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
   await expect(page.getByTestId('architecture-flow-panel')).toBeVisible({ timeout: 60_000 });
   await expect(page.locator('[data-testid^="architecture-role-ledger-"]')).toHaveCount(7, { timeout: 30_000 });
   await page.setViewportSize({ width: 1512, height: 620 });
@@ -506,7 +506,7 @@ test('choosing a role does not turn the chain, and the chosen box is in view', a
   test.setTimeout(180_000);
   await openSeededVault(page);
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await page.goto('/en/architecture/?view=structure&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('[data-testid^="architecture-role-ledger-"]')).toHaveCount(7, { timeout: 30_000 });
   await graphSettled(page);
   const axisOf = () =>

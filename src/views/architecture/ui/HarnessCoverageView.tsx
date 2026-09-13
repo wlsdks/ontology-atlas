@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import {
@@ -12,7 +12,10 @@ import {
   type HarnessReport,
   type ScopeDeclaration,
 } from '@/entities/agent-files';
-import { Disclosure, EmptyState, InfoHint } from '@/shared/ui';
+import { ChevronRight } from 'lucide-react';
+
+import { Disclosure, EmptyState } from '@/shared/ui';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
 
@@ -128,14 +131,24 @@ function groupByOrigin(
  * a gap carried exactly as much weight as a row without one.
  */
 function CellMark({ count, t }: { count: number; t: TranslateFn }) {
+  /*
+   * `shrink-0` and `whitespace-nowrap` are load-bearing, not tidiness. At 390 the cell's content box
+   * is 39px: an empty span's automatic minimum size is 0, so the flex row ate the slab first —
+   * measured 18.3px against its neighbour's 24 — and the gap mark came out *narrower* than the
+   * non-gap mark, in the one column it exists to shout in. Korean broke 「없음」 across two lines at
+   * the same width; English overran the cell by 11.5px and stole the next column's hit area, so a
+   * press on the left edge of Watched opened Gated (design-responsive, 2026-09-13). Below `sm` the
+   * word steps aside and the slab carries the state alone; the cell's `aria-label` already says it
+   * in words.
+   */
   if (count === 0) {
     return (
       <span className="flex items-center gap-2">
         <span
           aria-hidden
-          className="h-5 w-6 rounded-micro bg-[color:var(--color-amber-source-a35)]"
+          className="h-5 w-6 shrink-0 rounded-micro bg-[color:var(--color-amber-source-a35)]"
         />
-        <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-a90)]">
+        <span className="hidden whitespace-nowrap text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-a90)] sm:inline">
           {t('coverageNone')}
         </span>
       </span>
@@ -145,7 +158,7 @@ function CellMark({ count, t }: { count: number; t: TranslateFn }) {
     <span className="flex items-center gap-2">
       <span
         aria-hidden
-        className="h-5 w-6 rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)]"
+        className="h-5 w-6 shrink-0 rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)]"
       />
       <span className="text-body tabular-nums text-[color:var(--color-text-primary)]">{count}</span>
     </span>
@@ -228,18 +241,35 @@ function CellDetail({
       )}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
-          {t(COLUMN_HEAD[column])}
+        {/* The domain's own name, because once the header has scrolled away the open detail said
+            only "Watched" and nothing said which row it belonged to — and at 390 the row's name is
+            truncated, so this is also the only place the full name is recoverable. */}
+        <p className="min-w-0 text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+          {t(COLUMN_HEAD[column])} · <span className="normal-case">{area.title}</span>
         </p>
         <button
           type="button"
           onClick={onClose}
-          className={controlClass({ shape: 'link', size: 'sm', tone: 'muted', hoverInk: 'strong' })}
+          className={controlClass({
+            shape: 'link',
+            size: 'sm',
+            tone: 'muted',
+            hoverInk: 'strong',
+            /* `link` carries no touch floor, and this is the only dismissal a finger has. */
+            className: 'shrink-0 touch-hit-expand',
+          })}
         >
           {t('coverageCloseNames')}
         </button>
       </div>
-      <div className="mt-2 max-h-[22rem] overflow-y-auto">
+      {/* Focusable, because a scroll container with no focusable child cannot be scrolled by a
+          keyboard at all once a declaration list passes its height. */}
+      <div
+        className="mt-2 max-h-[22rem] overflow-y-auto"
+        tabIndex={0}
+        role="group"
+        aria-label={t(COLUMN_HEAD[column])}
+      >
         {entries.length === 0 ? (
           <div className="flex flex-col gap-2">
             <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-a90)]">
@@ -248,6 +278,21 @@ function CellDetail({
             {/* The vault's own record of the area's purpose, which is what makes a gap judgeable
                 rather than merely absent. */}
             <p className="text-body text-[color:var(--color-text-secondary)]">{area.purpose}</p>
+            {/*
+              The second operand, and the reason this cell is safe to read. "No check names this
+              domain" is about how commands are written in `package.json`; it says nothing about
+              whether a runner discovers tests there. On this repository the Topology domain's whole
+              entrypoint holds 76 colocated test files under an empty Watched cell, and a reader who
+              met the amber mark alone concluded the map was untested (Evidence seat, 2026-09-13).
+            */}
+            {column === 'watched' ? (
+              <p
+                data-testid="harness-coverage-discovered-tests"
+                className="text-body tabular-nums text-[color:var(--color-text-secondary)]"
+              >
+                {t('coverageDiscoveredTests', { count: area.discoveredTests })}
+              </p>
+            ) : null}
             <ul className="flex flex-col gap-0.5">
               {area.capabilities.map((capability) => (
                 <li
@@ -337,6 +382,11 @@ function DocumentReachBlock({
                     {t('reachMirrored', { count: reach.mirroredGuides })}
                   </span>
                 ) : null}
+                {row.key === 'named' && reach.hops > 1 ? (
+                  <span className="ml-2 text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                    {t('reachNamedDirect', { count: reach.namedDirect, hops: reach.hops - 1 })}
+                  </span>
+                ) : null}
               </span>
               {row.key === 'unnamed' && reach.unnamedByFolder.length > 0 ? (
                 /* The breakdown opens on a press. Permanently spilled, it made the most important
@@ -351,7 +401,7 @@ function DocumentReachBlock({
                     size: 'sm',
                     tone: 'muted',
                     hoverInk: 'strong',
-                    className: 'shrink-0',
+                    className: 'shrink-0 touch-hit-expand',
                   })}
                 >
                   {t('reachBreakdownOpen')}
@@ -409,10 +459,32 @@ export function HarnessCoverageView({
 }) {
   const t = useTranslations('harness');
   const matrix = useMemo(
-    () => buildCoverageMatrix(report.coverage, areas),
-    [report.coverage, areas],
+    () => buildCoverageMatrix(report.coverage, areas, report.testFiles),
+    [report.coverage, areas, report.testFiles],
   );
   const [openCell, setOpenCell] = useState<string | null>(null);
+  /*
+   * The detail lives in a different `<tr>` from the cell that opened it, so closing it unmounts the
+   * focused element and focus falls to `<body>` — the next Tab restarts at the top of the document,
+   * which costs a keyboard reader the whole rail and table to get back. Every close path goes
+   * through `closeCell`, which puts focus back where the press came from (design-interaction,
+   * 2026-09-13).
+   */
+  const cellRefs = useRef(new Map<string, HTMLButtonElement>());
+  const closeCell = useCallback(() => {
+    setOpenCell((current) => {
+      if (current) cellRefs.current.get(current)?.focus();
+      return null;
+    });
+  }, []);
+  useEffect(() => {
+    if (!openCell) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeCell();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [openCell, closeCell]);
 
   if (matrix.areas.length === 0) {
     /*
@@ -444,7 +516,7 @@ export function HarnessCoverageView({
     <section data-testid="harness-coverage" className="flex flex-col gap-5">
       <p
         data-testid="harness-coverage-headline"
-        className="max-w-prose text-title font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-primary)]"
+        className="max-w-prose break-keep text-title font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-primary)]"
       >
         {t('coverageHeadline', {
           unwatched: matrix.unwatchedAreas.length,
@@ -476,19 +548,19 @@ export function HarnessCoverageView({
                 <th
                   key={column}
                   scope="col"
-                  /* `scope="col"` hands this cell's text to every cell under it as its header name,
-                     and the hint panel inside it is a paragraph. Measured in the installed app
-                     before this line existed: each of the three column heads announced its whole
-                     hint, uppercased by the heading's own `text-transform`, in front of every cell
-                     in its column. The label is the column's name; the hint keeps its own button —
-                     the same repair the guides table's two hinted heads already carry. */
-                  aria-label={t(COLUMN_HEAD[column])}
+                  /*
+                    No `InfoHint` here. Each head carried one and `scope="col"` handed the whole
+                    paragraph to every cell under it as a header name, uppercased by the heading's
+                    own `text-transform`. An `aria-label` repaired that, and then the measurement
+                    said the button should not be here at all: three 44px coarse-pointer hit areas
+                    inside three 63px columns overlapped their neighbours by 15px and 22px, and the
+                    third icon left the 390 viewport entirely. The detail already prints the same
+                    hint at its foot, so the head was a duplicate with a cost (design-lead and
+                    design-responsive, 2026-09-13).
+                  */
                   className="px-3 pb-2 text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]"
                 >
-                  <span className="flex items-center gap-1">
-                    {t(COLUMN_HEAD[column])}
-                    <InfoHint label={t(COLUMN_HEAD[column])}>{t(COLUMN_HINT[column])}</InfoHint>
-                  </span>
+                  {t(COLUMN_HEAD[column])}
                 </th>
               ))}
             </tr>
@@ -509,28 +581,47 @@ export function HarnessCoverageView({
                     the first build ran 80px to 160px purely on how token lists wrapped.
                   */}
                   <th scope="row" className="px-3 py-3 align-top font-normal">
-                    <span className="block truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                      {area.title}
+                    <span className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                        {area.title}
+                      </span>
+                      <span className="text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                        {t('coveragePathCount', { count: area.capabilities.length })}
+                      </span>
                     </span>
-                    {/* Two lines, reserved. `line-clamp-2` caps the tall case and says nothing
-                        about the short one, so at 768 and 390 a one-line purpose made its row 81px
-                        beside a two-line neighbour's 95px — the content-decided height
-                        `forbidden.md` rules out. The reserve is em-relative, so it follows the type
-                        ramp instead of pinning a pixel. */}
-                    <span className="mt-1 line-clamp-2 block min-h-[2.9em] text-caption text-[color:var(--color-text-tertiary)]">
+                    {/*
+                      ⚠️ **Two lines, both ends fixed, and `block` must not be here.** `line-clamp-2`
+                      emits `display:-webkit-box`; the `block` utility sits later in the same layer
+                      at the same specificity and won, so the clamp was dead and the reserve was a
+                      floor with no ceiling. On the real vault every purpose is a 320-character
+                      excerpt: rows ran 70px against 84px at 768 and 220px+ at 390 — the
+                      content-decided height `forbidden.md` rules out, caused by a utility nobody
+                      would look at twice (design-responsive, 2026-09-13).
+                    */}
+                    <span className="mt-1 line-clamp-2 min-h-[2.8em] text-body text-[color:var(--color-text-secondary)]">
                       {area.purpose}
                     </span>
-                    <span className="mt-1 block text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                      {t('coveragePathCount', { count: area.capabilities.length })}
+                    {/* The node behind the row. Without it a reader can refute a cell — every
+                        declaration is cited — and cannot refute the sentence the row rests on
+                        (Steward seat, 2026-09-13). */}
+                    <span className="mt-1 block font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                      {area.slug}
                     </span>
                   </th>
                   {COLUMNS.map((column) => {
                     const entries = area[column];
                     const key = `${area.slug}:${column}`;
                     return (
-                      <td key={column} className="p-0 align-top">
+                      /* `h-px` on the cell gives `h-full` on the button something definite to
+                         resolve against. Without it the button was 44px inside a 94px row and 54%
+                         of every cell was not pressable (design-responsive, 2026-09-13). */
+                      <td key={column} className="h-px p-0 align-top">
                         <button
                           type="button"
+                          ref={(node) => {
+                            if (node) cellRefs.current.set(key, node);
+                            else cellRefs.current.delete(key);
+                          }}
                           onClick={() => setOpenCell((current) => (current === key ? null : key))}
                           aria-expanded={openCell === key}
                           aria-label={t('coverageOpenNames', {
@@ -540,17 +631,28 @@ export function HarnessCoverageView({
                           })}
                           data-harness-cell={column}
                           data-harness-cell-empty={String(entries.length === 0)}
+                          /* The open state rides the `active` axis rather than a `className`
+                             background. As a class it survived the hover compound, so hovering the
+                             OPEN cell repainted it `--color-overlay-1` over its own
+                             `--color-overlay-2` and the selected cell went dimmer under the pointer
+                             (design-interaction, 2026-09-13). */
                           className={controlClass({
                             shape: 'row',
                             size: 'md',
                             hoverSurface: 'lift',
-                            className: cn(
-                              'h-full items-start px-3 py-3',
-                              openCell === key && 'bg-[color:var(--color-overlay-2)]',
-                            ),
+                            active: openCell === key,
+                            className: 'h-full items-start px-3 py-3',
                           })}
                         >
                           <CellMark count={entries.length} t={t} />
+                          <ChevronRight
+                            size={ICON_SIZE.sm}
+                            aria-hidden
+                            className={cn(
+                              'ml-auto mt-0.5 shrink-0 text-[color:var(--color-text-quaternary)] transition-transform',
+                              openCell === key && 'rotate-90',
+                            )}
+                          />
                         </button>
                       </td>
                     );
@@ -585,9 +687,9 @@ export function HarnessCoverageView({
       */}
       <section
         data-testid="harness-coverage-everywhere"
-        className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className="border-t border-[color:var(--color-border-soft)] pt-3"
       >
-        <h2 className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
+        <h2 className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
           {t('coverageEverywhereTitle')}
         </h2>
         <p className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">

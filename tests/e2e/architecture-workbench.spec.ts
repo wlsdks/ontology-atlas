@@ -605,13 +605,17 @@ for (const locale of ['ko', 'en'] as const) {
         (plane) => plane.getBoundingClientRect(),
       );
       const boxes = [...document.querySelectorAll('[data-graph-box]')].map((box) => box.getBoundingClientRect());
-      const headings = [...document.querySelectorAll('[data-testid="architecture-paired-lane-headings"] text')];
+      /* The lane group holds the three headings AND the one-per-column notes that sit under them.
+         Excluding only the observation note left the delta note — added the same day, in the same
+         slot and at the same y — inside `headingBottom`, which reported the gap as −13 and read as
+         the overlap this test exists to catch. Both notes are excluded by their id suffix. */
+      const headings = [
+        ...document.querySelectorAll('[data-testid="architecture-paired-lane-headings"] text'),
+      ].filter((el) => !(el.getAttribute('data-testid') ?? '').endsWith('-column-note'));
       const note = document.querySelector('[data-testid="architecture-observation-column-note"]')!;
       const face = document.querySelector('[data-testid^="architecture-observation-box-"]')!;
       const noteRect = note.getBoundingClientRect();
-      const headingBottom = Math.max(
-        ...headings.filter((h) => h !== note).map((h) => h.getBoundingClientRect().bottom),
-      );
+      const headingBottom = Math.max(...headings.map((h) => h.getBoundingClientRect().bottom));
       const left = Math.min(...boxes.map((b) => b.left));
       const right = Math.max(...boxes.map((b) => b.right));
       return {

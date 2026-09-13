@@ -2,6 +2,7 @@
 uid: 1d2e6601-19af-4547-9e3b-bddf98ce9a77
 slug: domains/topology-navigation
 kind: domain
+description: The canvas graph a person browses the whole ontology through, with its search and index panel: the product's main visual entry point.
 title: Topology Map Navigation
 display_ko: 토폴로지 지도 탐색
 display_en: Topology Map Navigation

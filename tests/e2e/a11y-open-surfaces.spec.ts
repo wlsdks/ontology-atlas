@@ -237,7 +237,12 @@ async function openAndAudit(page: Page, o: Opener) {
       window.localStorage.setItem("demo:sample-source:v1", "dogfood");
     });
   }
-  await page.goto(`${o.route}?guides=off`, { waitUntil: "domcontentloaded" });
+  /* A route may already carry a query — `/ko/architecture/` needs `?view=structure` now that the
+     blueprint is a view rather than the destination's default — so the separator is chosen rather
+     than assumed. Appending a second `?` made `view=structure?guides=off`, which parses as no view
+     at all and opened the coverage matrix instead (measured 2026-09-13). */
+  const separator = o.route.includes("?") ? "&" : "?";
+  await page.goto(`${o.route}${separator}guides=off`, { waitUntil: "domcontentloaded" });
   // The map's screen is only settled once the physics simulation converges.
   await page.waitForTimeout(2500);
 

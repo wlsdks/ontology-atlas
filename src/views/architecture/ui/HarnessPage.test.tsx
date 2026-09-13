@@ -75,9 +75,10 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
     hookGroups: [],
     coverage: [],
     documentReach: {
-      total: 0, guides: 0, mirroredGuides: 0, named: 0, unnamed: 0,
+      total: 0, guides: 0, mirroredGuides: 0, named: 0, namedDirect: 0, hops: 0, unnamed: 0,
       unnamedByFolder: [], excluded: [], truncated: false,
     },
+    testFiles: [],
     times: [],
     contents: new Map(),
     checks: { wiredHooks: 20, gitHooks: 3, scripts: new Array(57).fill('x'), total: 80 },
@@ -212,9 +213,11 @@ describe('the sentence', () => {
     const sentence = screen.getByTestId('harness-sentence');
     expect(sentence).toHaveTextContent('문서 93개');
     expect(sentence).toHaveTextContent('검사 80개');
-    // The number never stands bare: its three parts are printed beside it.
-    expect(sentence).toHaveTextContent('훅 20개');
-    expect(sentence).toHaveTextContent('Git 훅 3개');
+    /* The number never stands bare: its three parts are printed beside it, and each part now names
+       what it counts rather than what it implies — a hook mirrored for two tools is two scripts for
+       one guard, and `.githooks/` holds helper modules beside its hooks (Evidence seat). */
+    expect(sentence).toHaveTextContent('훅 스크립트 20개');
+    expect(sentence).toHaveTextContent('.githooks/ 파일 3개');
     expect(sentence).toHaveTextContent('스크립트 57개');
   });
 

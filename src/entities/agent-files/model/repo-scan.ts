@@ -81,6 +81,8 @@ const SCAN_MAX_DEPTH = 4;
  */
 const MARKDOWN_MAX_DEPTH = 8;
 const MARKDOWN_MAX_DIRECTORIES = 3000;
+/** Documents read for the citation walk beyond the ones the harness scan already holds. */
+const MARKDOWN_MAX_READS = 600;
 
 /** The hook configs this scan knows how to read, and whether the tool gates execution on approval. */
 const HOOK_CONFIGS: ReadonlyArray<{ path: string; approvalGate: boolean }> = Object.freeze([
@@ -131,6 +133,17 @@ export function isGuideRecord(record: { kind: string }): boolean {
   return record.kind !== 'config';
 }
 
+/**
+ * A file a test runner finds by its own discovery glob rather than by being named in a command.
+ *
+ * This exists because of the one reading an empty Watched cell must not invite. On this repository
+ * `src/widgets/ontology-map` — the Topology domain's whole recorded entrypoint — holds 76 colocated
+ * test files and is named by no `package.json` script, because `vitest run` discovers it. A cell
+ * that said only "no check names this domain" beside an amber mark was read as "this is not
+ * tested", which is false and is the decision's own falsifier (Evidence seat, 2026-09-13).
+ */
+const TEST_FILE_NAME = /\.(test|spec)\.[cm]?[jt]sx?$/;
+
 /** `package.json` script names that run a linter, a type check, or a test suite. */
 const CHECK_SCRIPT_NAME = /^(lint|test|typecheck)(:|$)/;
 
@@ -174,6 +187,13 @@ export interface HarnessReport {
   coverage: readonly ScopeDeclaration[];
   /** Authored Markdown split by whether a guide sends an agent to it. */
   documentReach: DocumentReach;
+  /**
+   * Every file a test runner discovers by name rather than by being named in a command.
+   *
+   * The second operand an empty Watched cell needs: "no check names this domain" and "no test file
+   * sits under it" are different statements, and only the pair of them is safe to read.
+   */
+  testFiles: readonly string[];
   /**
    * `true` always, and stated on screen: these timestamps are filesystem modification times, not
    * commit dates. A fresh clone or a new worktree stamps every file with the checkout time, so the
@@ -308,6 +328,7 @@ async function walkMarkdown(
   depth: number,
   excluded: readonly string[],
   out: string[],
+  testFiles: string[],
   budget: { directories: number },
 ): Promise<boolean> {
   if (depth > MARKDOWN_MAX_DEPTH) return true;
@@ -321,10 +342,13 @@ async function walkMarkdown(
     if (entry.kind === 'directory') {
       if (SKIPPED_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
       if (excluded.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) continue;
-      truncated = (await walkMarkdown(port, path, depth + 1, excluded, out, budget)) || truncated;
+      truncated =
+        (await walkMarkdown(port, path, depth + 1, excluded, out, testFiles, budget)) || truncated;
       continue;
     }
     if (/\.mdc?$/.test(entry.name)) out.push(path);
+    /* Collected on the same walk, for the one thing an empty Watched cell must not be read as. */
+    if (TEST_FILE_NAME.test(entry.name)) testFiles.push(path);
   }
   return truncated;
 }
@@ -418,16 +442,45 @@ export async function scanHarness(
   ];
   const markdownPaths = [...contentByPath.keys()].filter((path) => /\.mdc?$/.test(path));
   const budget = { directories: MARKDOWN_MAX_DIRECTORIES };
-  let truncated = await walkMarkdown(port, '', 0, excludedFolders, markdownPaths, budget);
+  const testFiles: string[] = [];
+  let truncated = await walkMarkdown(
+    port,
+    '',
+    0,
+    excludedFolders,
+    markdownPaths,
+    testFiles,
+    budget,
+  );
   /* The walk skips dot directories because the main scan already read the ones that hold agent
      files. `.github` is the exception it does not cover: only `copilot-instructions.md` is on the
      root list, so an issue template or a contributing note there would be missing from a census
      that claims to count every authored document. */
   truncated =
-    (await walkMarkdown(port, '.github', 1, excludedFolders, markdownPaths, budget)) || truncated;
+    (await walkMarkdown(port, '.github', 1, excludedFolders, markdownPaths, testFiles, budget)) ||
+    truncated;
+  /*
+   * The citation walk is transitive, so it needs the text of the documents the guides reach, not
+   * only the guides'. Reading every authored Markdown file would be hundreds of round trips for a
+   * census; this reads the ones outside the already-scanned set up to a bound and reports the walk
+   * as truncated if it hits it, because a count that stopped early is a floor.
+   */
+  const uniqueMarkdown = [...new Set(markdownPaths)].sort();
+  const reachContents = new Map(contentByPath);
+  let budgetLeft = MARKDOWN_MAX_READS;
+  for (const path of uniqueMarkdown) {
+    if (reachContents.has(path)) continue;
+    if (budgetLeft <= 0) {
+      truncated = true;
+      break;
+    }
+    budgetLeft -= 1;
+    const file = await port.readText(path);
+    reachContents.set(path, file?.text ?? '');
+  }
   const documentReach = buildDocumentReach({
-    markdownPaths: [...new Set(markdownPaths)].sort(),
-    contents: contentByPath,
+    markdownPaths: uniqueMarkdown,
+    contents: reachContents,
     excluded: excludedFolders,
     truncated,
   });
@@ -447,6 +500,7 @@ export async function scanHarness(
     guideDocumentCount,
     coverage,
     documentReach,
+    testFiles: [...new Set(testFiles)].sort(),
     timesAreFileMtime: true,
   };
 }

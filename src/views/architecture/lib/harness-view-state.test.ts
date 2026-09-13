@@ -58,4 +58,16 @@ describe('buildHarnessViewHref', () => {
   it('keeps the locale-prefixed pathname it was given', () => {
     expect(buildHarnessViewHref('guides', '/ko/architecture/')).toBe('/ko/architecture/?view=guides');
   });
+
+  it('keeps every other parameter, because the other writer of this URL does', () => {
+    /* `buildArchitectureHref` preserves the route's orthogonal flags; building the address from
+       scratch here erased them, so one tab round trip silently discarded a chosen role — and a
+       `replaceState` meant Back could not bring it back either. */
+    expect(buildHarnessViewHref('guides', '/ko/architecture/', '?role=views&guides=off')).toBe(
+      '/ko/architecture/?role=views&guides=off&view=guides',
+    );
+    expect(buildHarnessViewHref('coverage', '/ko/architecture/', '?view=structure&role=views')).toBe(
+      '/ko/architecture/?role=views',
+    );
+  });
 });

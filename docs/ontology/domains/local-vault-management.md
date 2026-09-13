@@ -2,6 +2,7 @@
 uid: 48bf1a02-e1f8-4b8c-b06e-d6f261466109
 slug: domains/local-vault-management
 kind: domain
+description: A local-first data source layer with no backend: it opens a Markdown folder on the local disk, treats Git as the source of truth, and ships sample folders to start from.
 title: "Local Vault & Data Source Management"
 display_ko: 로컬 볼트 및 데이터소스 관리
 display_en: "Local Vault & Data Source Management"

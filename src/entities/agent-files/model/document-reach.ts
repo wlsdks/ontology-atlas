@@ -40,6 +40,10 @@ export interface DocumentReach {
   /** Authored Markdown files found, after the stated exclusions. */
   total: number;
   guides: number;
+  /** Documents a guide names directly. One hop. */
+  namedDirect: number;
+  /** How many hops the citation walk took before nothing new was reached. */
+  hops: number;
   /**
    * Guides that are the Codex-side copy of a `.claude/skills` guide the repository declares
    * byte-identical. Printed beside the guide count so it is not read as that many distinct
@@ -96,12 +100,28 @@ export function citesPath(text: string, path: string): boolean {
 export interface DocumentReachInput {
   /** Every authored Markdown path found, repo-relative. */
   markdownPaths: readonly string[];
-  /** Guide text by path, for the citation search. Only guides are searched. */
+  /** Text by path for every document the walk reads: the guides, and each document they reach. */
   contents: ReadonlyMap<string, string>;
   excluded: readonly string[];
   truncated: boolean;
 }
 
+/**
+ * **Reachability is transitive, and measuring one hop is the flattering mistake in the other
+ * direction.**
+ *
+ * The failure this census is about is a document an agent will never open. An agent that opens
+ * `AGENTS.md`, follows it to `docs/ARCHITECTURE.md`, and follows that to `docs/FOUNDATIONS.md` has
+ * opened `FOUNDATIONS.md` — so counting only what a guide names *directly* calls it unread, which
+ * is exactly as wrong as counting a glob's whole subtree as read. The first build shipped one hop
+ * and called the remainder "named by nothing"; on this repository that moved 34 documents,
+ * including `CONTRIBUTING.md`, `SECURITY.md` and this feature's own decision record, into a bucket
+ * the screen said an agent would never open (Evidence seat, 2026-09-13).
+ *
+ * So the walk runs to a fixpoint and the screen prints both numbers: what a guide names directly,
+ * and what is reachable by following citations. Neither is a guess about how far an agent will
+ * follow a link — both are counts of links that exist.
+ */
 export function buildDocumentReach({
   markdownPaths,
   contents,
@@ -110,11 +130,22 @@ export function buildDocumentReach({
 }: DocumentReachInput): DocumentReach {
   const guides = markdownPaths.filter(isGuideDocument);
   const rest = markdownPaths.filter((path) => !isGuideDocument(path));
-  const guideText = guides.map((path) => contents.get(path) ?? '').join('\n');
 
-  const named: string[] = [];
-  const unnamed: string[] = [];
-  for (const path of rest) (citesPath(guideText, path) ? named : unnamed).push(path);
+  const reached = new Set<string>();
+  let frontier = guides.map((path) => contents.get(path) ?? '').join('\n');
+  let namedDirect = 0;
+  let hops = 0;
+  while (frontier) {
+    hops += 1;
+    const found = rest.filter((path) => !reached.has(path) && citesPath(frontier, path));
+    if (hops === 1) namedDirect = found.length;
+    if (found.length === 0) break;
+    for (const path of found) reached.add(path);
+    frontier = found.map((path) => contents.get(path) ?? '').join('\n');
+  }
+
+  const named = rest.filter((path) => reached.has(path));
+  const unnamed = rest.filter((path) => !reached.has(path));
 
   const byFolder = new Map<string, number>();
   for (const path of unnamed) {
@@ -125,6 +156,8 @@ export function buildDocumentReach({
   return {
     total: markdownPaths.length,
     guides: guides.length,
+    namedDirect,
+    hops,
     mirroredGuides: guides.filter((path) => path.startsWith('.agents/skills/')).length,
     named: named.length,
     unnamed: unnamed.length,

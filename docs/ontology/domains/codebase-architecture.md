@@ -2,6 +2,7 @@
 uid: f088ee9c-cde9-4119-8955-4bb91e452538
 slug: domains/codebase-architecture
 kind: domain
+description: Declares the reviewed implementation roles and dependency rules a codebase intends, then compares the imports observed in source against that intent.
 title: Codebase Architecture
 display_en: Codebase Architecture
 display_ko: 코드베이스 아키텍처

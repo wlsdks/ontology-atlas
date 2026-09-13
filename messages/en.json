@@ -277,8 +277,8 @@
       "coverage": "Coverage"
     },
     "sentence": "This repository speaks to agents through {documents, plural, one {# document} other {# documents}} and has {checks, plural, one {# check} other {# checks}} in place.",
-    "checksBreakdown": "{hooks, plural, one {# hook} other {# hooks}} · {gitHooks, plural, one {# Git hook} other {# Git hooks}} · {scripts, plural, one {# package.json script} other {# package.json scripts}}",
-    "checksHint": "\"Checks\" counts only what is declared: hook scripts a config names that exist on disk, files under .githooks/, and package.json lint, typecheck and test scripts. Whether they run, or have ever caught anything, is not something we can know from files.",
+    "checksBreakdown": "{hooks, plural, one {# hook script} other {# hook scripts}} · {gitHooks, plural, one {# file under .githooks/} other {# files under .githooks/}} · {scripts, plural, one {# package.json script} other {# package.json scripts}}",
+    "checksHint": "\"Checks\" counts declarations, not distinct guards: a hook mirrored for Claude Code and for Codex is two scripts for one guard, .githooks/ holds helper modules beside its hooks, and the script list includes watch mode and the lanes a single run re-runs. What it counts is hook scripts a config names that exist on disk, files under .githooks/, and package.json lint, typecheck and test scripts. Whether any of them runs, or has ever caught anything, is not something we can know from files.",
     "retry": "Read it again",
     "checksBreakdownLabel": "How checks are counted",
     "guidesTitle": "Guides: what the agents were told",
@@ -361,10 +361,10 @@
     "reachTotal": "{total, plural, one {# authored Markdown file} other {# authored Markdown files}} · {excluded, plural, =0 {nothing excluded} one {# folder excluded} other {# folders excluded}}",
     "reachGuides": "Guides",
     "reachGuidesBody": "Read without being asked.",
-    "reachNamed": "Named by a guide",
-    "reachNamedBody": "A guide writes this path, so an agent is sent here when it is needed.",
-    "reachUnnamed": "Named by nothing",
-    "reachUnnamedBody": "On disk, and no guide points at it. An agent will not open these.",
+    "reachNamed": "Reached through a guide",
+    "reachNamedBody": "A guide names this path, or a document a guide names does. Reached when it is needed.",
+    "reachUnnamed": "No guide leads here",
+    "reachUnnamedBody": "On disk, and no chain of citations from any guide reaches it. An agent will not open these.",
     "reachMirrored": "{count} of them the Codex copy of a declared pair",
     "reachRule": "Counted by citation, not by glob: a rule's paths: list says when to load that rule, not which documents to read. Excluded are the ontology folder and the folders this repository's own .gitignore marks as generated. Nothing else is filtered: a sample ontology folder or an archive belongs in the third row, and which of those should be unreferenced is yours to judge. A named design file is a reference, never proof the agent saw the design.",
     "reachTruncated": "The walk stopped at its bound, so these counts are a floor rather than a total.",
@@ -383,7 +383,9 @@
     "coverageEverywhereBody": "Declares no path, so it applies everywhere. Listed once here instead of in all {areas} rows. It is also why an empty cell above reads “nothing names this domain” rather than “nothing runs over it”.",
     "coverageProvenance": "How this page counts",
     "reachBreakdownOpen": "Where they are",
-    "reachSourceRoot": "Read from {path}"
+    "reachSourceRoot": "Read from {path}",
+    "coverageDiscoveredTests": "{count, plural, =0 {No test file sits under its recorded paths either.} one {# test file sits under its recorded paths and runs under the repository-wide lanes.} other {# test files sit under its recorded paths and run under the repository-wide lanes.}}",
+    "reachNamedDirect": "{count} of them named by a guide directly, the rest after {hops, plural, one {# hop} other {# hops}} of citation"
   },
   "architecture": {
     "eyebrow": "CODE ARCHITECTURE",

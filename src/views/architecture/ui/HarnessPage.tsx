@@ -75,9 +75,22 @@ function HarnessPageInner() {
   const t = useTranslations('harness');
   const locale = useLocale();
   const searchParams = useSearchParams();
-  const [view, setViewState] = useState<HarnessView>(() =>
-    parseHarnessView(searchParams.get('view'), { hasRole: searchParams.has('role') }),
-  );
+  /*
+   * ⚠️ **The address is read on every render, not captured once.** `useSearchParams()` returns an
+   * empty set during the prerender pass of a static export and fills in after hydration, so a
+   * `useState` initializer keeps the empty one — the view the URL named was simply lost. The old
+   * default hid this: the empty read and `?view=structure` happened to agree. The moment the
+   * default moved, `/ko/architecture/?view=structure` started opening the matrix, and the a11y
+   * sweep caught it by pressing a trigger that only the ladder has (measured 2026-09-13).
+   *
+   * A press still wins over the address until the next history move, because `setView` rewrites the
+   * URL with `replaceState`, which `useSearchParams` does not observe.
+   */
+  const [viewOverride, setViewOverride] = useState<HarnessView | null>(null);
+  const addressView = parseHarnessView(searchParams.get('view'), {
+    hasRole: searchParams.has('role'),
+  });
+  const view = viewOverride ?? addressView;
   const [reloadNonce, setReloadNonce] = useState(0);
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
@@ -102,7 +115,7 @@ function HarnessPageInner() {
   );
 
   const setView = useCallback((next: HarnessView) => {
-    setViewState(next);
+    setViewOverride(next);
     /*
      * `history.replaceState`, not a router push: switching view inside one destination is not a new
      * place a person navigated to, and pushing would make Back walk the segmented control instead of
@@ -114,7 +127,7 @@ function HarnessPageInner() {
     window.history.replaceState(
       window.history.state,
       '',
-      buildHarnessViewHref(next, url.pathname) + url.hash,
+      buildHarnessViewHref(next, url.pathname, url.search) + url.hash,
     );
   }, []);
 
@@ -123,7 +136,7 @@ function HarnessPageInner() {
        what putting the view in the URL was meant to prevent. */
     const onPopState = () => {
       const params = new URL(window.location.href).searchParams;
-      setViewState(parseHarnessView(params.get('view'), { hasRole: params.has('role') }));
+      setViewOverride(parseHarnessView(params.get('view'), { hasRole: params.has('role') }));
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -156,7 +169,15 @@ function HarnessPageInner() {
 
   const sentence = report ? (
     <div className="mb-4" data-testid="harness-sentence">
-      <div className="flex max-w-prose flex-wrap items-center gap-x-1 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+      {/*
+        ⚠️ **Demoted, so the finding can win.** This sentence and the coverage headline shared one
+        token — `text-title` · emphasis · primary — 58px apart, and measured as ink-by-contrast the
+        census was 2.5× the finding's mass: a reader met "N checks in place" before "no check names
+        N domains" and read the reassuring one first. It is context, not the thesis, so it takes the
+        subtitle step and leaves exactly one `text-title` line on the screen (design-lead,
+        2026-09-13).
+      */}
+      <div className="flex max-w-prose flex-wrap items-center gap-x-1 break-keep text-body-lg text-[color:var(--color-text-secondary)]">
         <span className="tabular-nums">
           {t('sentence', {
             documents: report.guideDocumentCount,
@@ -198,12 +219,28 @@ function HarnessPageInner() {
           harnessPanelLabelledBy="harness-tab-structure"
         />
       ) : (
+        /*
+          ⚠️ **The panel is the `main` landmark, and it has to be.** The blueprint branch gets one
+          from `ArchitectureWorkbench`; this branch did not, so the moment the default view stopped
+          being the blueprint the route rendered with no `main` at all — the skip link pointed at
+          `#main` and landed nowhere, and every shared sweep that waits for the landmark
+          (`waitForDocumentPaint`, the scroll-end gate, the a11y ratchet) timed out on a screen that
+          looked perfectly fine. `role="tabpanel"` overrides the implicit landmark role, so the two
+          cannot be the same element: the landmark is outside, the tabpanel inside it.
+        */
+        <main
+          id="main"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        >
         <div
           role="tabpanel"
           id={`harness-tabpanel-${view}`}
           aria-labelledby={`harness-tab-${view}`}
           tabIndex={-1}
-          className="min-h-0 flex-1 overflow-y-auto px-5 pb-[var(--topology-mobile-bottom-tab-reserve)] md:px-10 lg:pb-[var(--page-bottom-breath)]"
+          /* The tab-bar reserve alone left 5px of clearance with the provenance disclosure closed
+             and −1px with it open. Reserve plus breath is the calc `globals.css` already uses for
+             the download band below `lg` (design-responsive, 2026-09-13). */
+          className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] md:px-10 lg:pb-[var(--page-bottom-breath)]"
         >
           <div className="mx-auto w-full max-w-[var(--page-max)]">
             <p className="mb-4 max-w-prose text-body-lg text-[color:var(--color-text-tertiary)]">
@@ -252,6 +289,7 @@ function HarnessPageInner() {
             )}
           </div>
         </div>
+        </main>
       )}
     </div>
   );

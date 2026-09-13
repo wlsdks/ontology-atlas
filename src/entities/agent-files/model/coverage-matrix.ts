@@ -15,8 +15,10 @@ import {
  *
  * So this module never grades. It joins two lists of facts:
  *
- * - **From the vault**: the areas a person defined and approved, each with the implementation paths
- *   its capabilities point at, and the sentence saying what the area is for.
+ * - **From the vault**: the domains recorded in files a person can read, correct and reject in a
+ *   diff, each with the implementation paths its capabilities point at and the sentence saying what
+ *   the domain is for. Not "approved": the vault's own approval keys are used by one node in 105,
+ *   and the claim this screen may make is that the meaning is owned and overrulable, not signed.
  * - **From the repository**: files that declare a path scope (`coverage-scopes.ts`).
  *
  * A declaration lands in an area when a path it declares reaches a path the vault records for that
@@ -53,6 +55,11 @@ export interface CoverageAreaRow extends CoverageAreaInput {
   told: readonly ScopeDeclaration[];
   gated: readonly ScopeDeclaration[];
   watched: readonly ScopeDeclaration[];
+  /**
+   * Test files sitting under this area's recorded paths, found by a runner's own discovery rather
+   * than by being named in a command. The second half of what an empty Watched cell means.
+   */
+  discoveredTests: number;
 }
 
 export interface CoverageMatrix {
@@ -93,15 +100,32 @@ function sortDeclarations(list: ScopeDeclaration[]): ScopeDeclaration[] {
 export function buildCoverageMatrix(
   declarations: readonly ScopeDeclaration[],
   areas: readonly CoverageAreaInput[],
+  testFiles: readonly string[] = [],
 ): CoverageMatrix {
-  const scoped = declarations.filter((entry) => entry.declaresPath && entry.scopes.length > 0);
+  /*
+   * A scope that reaches every recorded area is universal in fact even though it declares a path,
+   * and it belongs in the strip for the same reason a path-less one does: printed in every row it
+   * turns one fact into eight findings. Measured here — `pre-push`'s `^(src|app)/` reached all
+   * eight of this repository's domains, so the Gated column said one bit eight times and read as
+   * decoration (design-lead, 2026-09-13).
+   */
+  const reachesEveryArea = (entry: ScopeDeclaration) =>
+    areas.length > 1 &&
+    areas.every((area) =>
+      area.capabilities.some((capability) =>
+        entry.scopes.some((scope) => scopeReaches(scope, capability.path)),
+      ),
+    );
+  const scoped = declarations.filter(
+    (entry) => entry.declaresPath && entry.scopes.length > 0 && !reachesEveryArea(entry),
+  );
   const everywhere: Record<CoverageColumn, ScopeDeclaration[]> = {
     told: [],
     gated: [],
     watched: [],
   };
   for (const entry of declarations) {
-    if (!entry.declaresPath) everywhere[entry.column].push(entry);
+    if (!entry.declaresPath || reachesEveryArea(entry)) everywhere[entry.column].push(entry);
   }
   for (const column of COLUMNS) sortDeclarations(everywhere[column]);
 
@@ -118,7 +142,18 @@ export function buildCoverageMatrix(
       if (hits) buckets[entry.column].push(entry);
     }
     for (const column of COLUMNS) sortDeclarations(buckets[column]);
-    return { ...area, told: buckets.told, gated: buckets.gated, watched: buckets.watched };
+    const discoveredTests = testFiles.filter((file) =>
+      area.capabilities.some(
+        (capability) => file === capability.path || file.startsWith(`${capability.path}/`),
+      ),
+    ).length;
+    return {
+      ...area,
+      told: buckets.told,
+      gated: buckets.gated,
+      watched: buckets.watched,
+      discoveredTests,
+    };
   });
 
   const unreachedCapabilities: CoverageCapability[] = [];

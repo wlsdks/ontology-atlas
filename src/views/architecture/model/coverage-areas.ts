@@ -4,8 +4,15 @@ import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 /**
  * **The rows of the coverage matrix come from the vault, and only from the vault.**
  *
- * A domain is on screen because a person defined it and approved it, and each of its capabilities
- * carries one canonical repo-relative `path` — the implementation entrypoint. Those two facts are
+ * A domain is on screen because it is written down in the ontology as a file a person can read,
+ * correct and reject in a Git diff, and each of its capabilities carries one canonical
+ * repo-relative `path` — the implementation entrypoint.
+ *
+ * ⚠️ **"Reviewed" is a weaker word here than it sounds, and the screen must not spend the stronger
+ * one.** The vault has first-class approval keys (`review_state`, `reviewed_by`, `reviewed_at`) and
+ * exactly one node in 105 uses any of them; two of the eight domains carry
+ * `created_by: "agent:unknown"`. What is true is that meaning lives in files a person owns and can
+ * overrule, not that a person has signed each one (Steward seat, 2026-09-13). Those two facts are
  * what let an empty cell say "this area does X and no check names it" instead of "a file is
  * absent", which is the sentence no file-only scanner can write.
  *

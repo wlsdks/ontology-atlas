@@ -54,11 +54,28 @@ export function parseHarnessView(
 }
 
 /**
- * The address for a view. The default omits `?view=` so the destination's plain URL stays the one a
- * person copies.
+ * The address for a view, keeping every other parameter that was already there.
+ *
+ * ⚠️ **Two writers share this URL and they must not contradict each other.** `buildArchitectureHref`
+ * starts from `window.location.search` and deliberately preserves the route's orthogonal flags;
+ * this one used to build the address from scratch and therefore erased them. Walk it: pick a role
+ * (`?view=structure&role=views`), press Guides, press Structure — `role` is gone, the inspector
+ * closes, and because tab switching is a `replaceState` the entry that carried it was overwritten,
+ * so Back does not bring it either. `?guides=off`, which the e2e harness sets, was lost the same
+ * way (design-interaction, 2026-09-13).
+ *
+ * The default still omits `?view=` so the destination's plain URL stays the one a person copies.
  */
-export function buildHarnessViewHref(view: HarnessView, pathname = '/architecture/'): string {
-  return view === DEFAULT_HARNESS_VIEW ? pathname : `${pathname}?view=${view}`;
+export function buildHarnessViewHref(
+  view: HarnessView,
+  pathname = '/architecture/',
+  search = '',
+): string {
+  const params = new URLSearchParams(search);
+  if (view === DEFAULT_HARNESS_VIEW) params.delete('view');
+  else params.set('view', view);
+  const query = params.toString();
+  return query ? `${pathname}?${query}` : pathname;
 }
 
 export const HARNESS_VIEW_ORDER: readonly HarnessView[] = HARNESS_VIEWS;

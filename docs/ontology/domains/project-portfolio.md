@@ -2,6 +2,7 @@
 uid: f63e231d-819b-4bf8-a7b7-e715f629efcb
 slug: domains/project-portfolio
 kind: domain
+description: Lists, opens, edits and shares the several projects that live inside one ontology folder.
 title: Project Portfolio Management
 display_ko: 프로젝트 포트폴리오 관리
 display_en: Project Portfolio Management

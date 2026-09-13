@@ -32,6 +32,13 @@ Beside the matrix, every authored Markdown file is split by whether a guide send
 - Writing. Adding what the matrix reports missing is a separate slice and needs the directional-preview-and-approval pattern relation writing already uses.
 - Any claim that a gate ran or a check ever caught something. A wired hook says its script exists.
 
+## Evidence
+
+- `src/entities/agent-files/model/coverage-scopes.ts`: `scopeReaches` is bidirectional prefix containment, not glob matching. A capability `path` is one entrypoint and often a directory, so a rule scoped to `src/**/*.tsx` governs it without matching its string. This is the loosest rule in the join and the reason three rules land on nearly every domain.
+- `src/views/architecture/model/coverage-areas.ts`: a domain's purpose is its `description:` when a person wrote one, otherwise a 320-character excerpt of the body. The eight domains in this vault carry `description:` as of 2026-09-13; a domain without one renders a body slice that can run out of its Definition and into its Evidence.
+- `src/entities/agent-files/model/repo-scan.ts`: a capability `path` is never checked against the disk by this join. A stale path fails silently in both directions: code that moved out of a scoped folder leaves a cell filled, and code that moved into one leaves a domain marked as named by nothing. `validate_vault`'s `pathDrift` checks existence only, and nothing on this route calls it.
+- The Watched column measures how a check command is written in `package.json`, which in a repository whose runner discovers tests by glob is close to orthogonal to what is tested. `discoveredTests` is the second operand the cell prints for that reason.
+
 ## Confidence
 
 high (0.9): the join is covered by `tests/contract/harness-coverage.contract.test.ts`, which runs the real scan over this checkout.

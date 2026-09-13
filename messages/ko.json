@@ -277,8 +277,8 @@
       "coverage": "커버리지"
     },
     "sentence": "이 저장소는 에이전트에게 문서 {documents}개로 말하고, 검사 {checks}개를 걸어두었습니다.",
-    "checksBreakdown": "훅 {hooks}개 · Git 훅 {gitHooks}개 · package.json 스크립트 {scripts}개",
-    "checksHint": "「검사」는 선언된 것만 셉니다: 설정이 이름을 부른 훅 스크립트 중 실제로 파일이 있는 것, .githooks/ 안의 파일, package.json의 lint·typecheck·test 스크립트. 실제로 도는지, 무언가를 잡아낸 적이 있는지는 여기서 알 수 없습니다.",
+    "checksBreakdown": "훅 스크립트 {hooks}개 · .githooks/ 파일 {gitHooks}개 · package.json 스크립트 {scripts}개",
+    "checksHint": "「검사」는 서로 다른 보호 장치가 아니라 선언을 셉니다. Claude Code 용과 Codex 용으로 미러링된 훅은 보호 장치 하나에 스크립트 둘이고, .githooks/에는 훅 옆에 도우미 모듈도 있으며, 스크립트 목록에는 감시 모드와 한 번의 실행이 다시 도는 레인도 들어 있습니다. 세는 대상은 설정이 이름을 부른 훅 스크립트 중 실제로 파일이 있는 것, .githooks/ 안의 파일, package.json의 lint·typecheck·test 스크립트입니다. 실제로 도는지, 무언가를 잡아낸 적이 있는지는 여기서 알 수 없습니다.",
     "retry": "다시 읽기",
     "checksBreakdownLabel": "검사를 세는 방법",
     "guidesTitle": "지침: 에이전트에게 알려준 것",
@@ -361,10 +361,10 @@
     "reachTotal": "작성된 마크다운 {total}개 · 제외한 폴더 {excluded}개",
     "reachGuides": "지침",
     "reachGuidesBody": "시키지 않아도 읽습니다.",
-    "reachNamed": "지침이 이름을 댄 문서",
-    "reachNamedBody": "지침이 이 경로를 적어 두어, 필요할 때 에이전트가 찾아갑니다.",
-    "reachUnnamed": "아무도 이름을 대지 않은 문서",
-    "reachUnnamedBody": "디스크에 있지만 어떤 지침도 가리키지 않습니다. 에이전트는 이 문서를 열지 않습니다.",
+    "reachNamed": "지침에서 닿는 문서",
+    "reachNamedBody": "지침이 이 경로를 적었거나, 지침이 적은 문서가 적었습니다. 필요할 때 찾아갑니다.",
+    "reachUnnamed": "아무 지침도 닿지 않는 문서",
+    "reachUnnamedBody": "디스크에 있지만 어떤 지침에서도 인용을 따라 닿을 수 없습니다. 에이전트는 이 문서를 열지 않습니다.",
     "reachMirrored": "그중 {count}개는 선언된 쌍의 Codex 사본",
     "reachRule": "글롭이 아니라 인용으로 셉니다. 규칙의 paths: 는 그 규칙을 언제 불러올지 말할 뿐, 어떤 문서를 읽을지 말하지 않습니다. 온톨로지 폴더와 이 저장소의 .gitignore가 생성물로 표시한 폴더만 제외했습니다. 그 밖에는 거르지 않았습니다. 샘플 온톨로지 폴더나 보관 문서가 셋째 줄에 있는 것은 당연하며, 그중 무엇이 그대로여도 되는지는 읽는 사람이 판단합니다. 이름을 댄 디자인 파일은 참조일 뿐, 에이전트가 그 디자인을 보았다는 증거가 아닙니다.",
     "reachTruncated": "탐색이 한도에서 멈췄으므로 이 수치는 총계가 아니라 하한입니다.",
@@ -383,7 +383,9 @@
     "coverageEverywhereBody": "경로를 선언하지 않아 어디에나 적용됩니다. 도메인 {areas}개 줄마다 반복하지 않고 여기 한 번만 적습니다. 위의 빈 칸이 「아무것도 돌지 않는다」가 아니라 「이 도메인을 가리키는 것이 없다」로 읽히는 이유이기도 합니다.",
     "coverageProvenance": "이 화면이 세는 방법",
     "reachBreakdownOpen": "어디에 있는지",
-    "reachSourceRoot": "읽은 곳 {path}"
+    "reachSourceRoot": "읽은 곳 {path}",
+    "coverageDiscoveredTests": "{count, plural, =0 {기록된 경로 아래에 테스트 파일도 없습니다.} other {기록된 경로 아래에 테스트 파일 #개가 있고, 저장소 전체 레인에서 돕니다.}}",
+    "reachNamedDirect": "그중 {count}개는 지침이 바로 이름을 댔고, 나머지는 인용을 {hops}단계 따라가서 닿습니다"
   },
   "architecture": {
     "eyebrow": "코드 아키텍처",
