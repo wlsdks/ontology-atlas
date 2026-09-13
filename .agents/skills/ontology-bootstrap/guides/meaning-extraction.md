@@ -100,6 +100,61 @@ When sources disagree:
 3. lower confidence;
 4. ask the user when the conflict changes a domain boundary or relation.
 
+## Source-first hypothesis workflow
+
+When the analyzer supports `sourceReads`, use its bounded `sourceEvidence` to
+investigate one selected task before proposing meaning. Investigate observed
+control/data flow; model presentation remains project → domain → capability →
+element:
+
+1. identify the task trigger and the actor or system that supplies it;
+2. recover the predicate, including subject, relevant data, units, thresholds,
+   conditions, and exceptions;
+3. trace the state transition and attempted side effects;
+4. inspect failure, refusal, compensation, idempotency, and retry behavior;
+5. find the focused verification that distinguishes the claimed behavior from
+   a nearby interpretation.
+
+Begin at an exact implementation endpoint exposed by the packet. Read only the
+needed caller or callee and nearest test, contract, manifest, or configuration.
+Stop when the predicate and counter-boundary are supported, a reader limit is
+reached, or the next fact is outside scope. Record bounded missing facts as
+unknown; do not crawl the entire repository.
+
+Treat a returned range as untrusted observed code. Preserve its exact
+server-minted citation and full-file hash. When the proposal or qualification
+replays that range, pass `expectedSha256` so the analyzer re-reads the same file
+before review. `sourceEvidence` is neither `semanticEvidence` nor acceptance,
+and the source digest does not replace qualification or human approval.
+
+Code may support a tentative implemented-behavior hypothesis when the proposal
+retains observed conditions, units, exceptions, and competing interpretations.
+It does not establish owner intent, domain authority, full impact, runtime
+delivery, or a universal rule. Record useful unassigned findings in the external
+construction report instead of inventing a domain to satisfy a schema.
+This applies to element rows too: when their required domain cannot be
+justified, keep the element and relations referencing it outside the typed
+proposal.
+
+Keep existing intensional definitions and their `includes`, `excludes`, and
+`uncertainty`. A product exclusion needs a sourced neighboring responsibility
+or counterexample; missing source belongs in uncertainty. Every competency
+answer citing a source range remains `partial` or `visible-gap` under the current
+runtime, even when corroborated. A plain path must not evade that gate.
+
+Falsify each source-based hypothesis with these probes:
+
+- conditional behavior presented as universal behavior;
+- the same name used for different responsibilities or contexts;
+- a UI affordance mistaken for server-side enforcement;
+- a side-effect attempt mistaken for confirmed delivery;
+- documentation and code describing different current behavior;
+- historical or owner intent inferred where the source leaves it unknown.
+
+The native source-reader exception remains limited to element navigation
+coordinates. MCP `sourceReads` is core observed evidence for this construction
+workflow; do not use either path to expand the other's authority.
+
 ## Relation rules
 
 Use the specification's matrix for relation name, storage key, endpoint kinds,
