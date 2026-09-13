@@ -36,12 +36,12 @@ need their own scoped PO/design/evidence proof before implementation.
 | ID | Status | Concrete deliverable | Prerequisite / evidence |
 |---|---|---|---|
 | V1.0 | done(ffcdce35a) | Typed and readable measurement scope; discovery/oracle pass remains distinct from unmeasured construction | First slice; preserve existing thresholds and per-fixture/empty failure behavior |
-| V1.1 | ready | Frozen unfamiliar backend task, six owner-approved questions, source reference, license/scope manifest | Preserve the original question approval; independently verify task-specific reference |
-| V1.2 | blocked(V1.1) | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
-| V1.3 | blocked(V1.1) | Scoped document/config evidence retaining current/planned/negated/conflicting context | Activate only witnessed gaps; follow applicable V1.2 decisions |
+| V1.1 | done(8ea129383) | Frozen unfamiliar backend task, six owner-approved questions, source reference, license/scope manifest | Preserve the original question approval; independently verify task-specific reference |
+| V1.2 | ready | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
+| V1.3 | hold(witnessed document/config gap) | Scoped document/config evidence retaining current/planned/negated/conflicting context | Activate only witnessed gaps; follow applicable V1.2 decisions |
 | V1.4 | blocked(V1.2) | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | V1.2 and V1.3 where the task needs them |
 | V1.5 | blocked(V1.4) | Independent candidate and persisted handoff, full-answer source audit, matched prompt/access comparisons | Exact meaning/gap/write approval; frozen run and holdout |
-| V2.1 | blocked(V1.1) | Task/non-goal resolution with supported selection, alternatives or abstention | A reviewed starting vault may isolate reuse; disclose construction cost |
+| V2.1 | hold(reviewed starting vault) | Task/non-goal resolution with supported selection, alternatives or abstention | A reviewed starting vault may isolate reuse; disclose construction cost |
 | V2.2 | blocked(V2.1) | Compact action context preserving conditions, exceptions, currentness and unknowns | Same claims survive budgets and full-body follow-ups |
 | V2.3 | blocked(V2.2) | Actual host-to-MCP task entry and honest unavailable-context fallback | Optional UI links wait for V3.1; initial MCP proof does not |
 | V2.4 | blocked(V2.3) | Atlas-on/off real coding outcomes with equivalent source tools and independent review | V1.5 additionally required for construction claims |
@@ -74,7 +74,36 @@ every fixture diagnostic. Primary outputs and logs remain outside the repository
 at `/Users/jinan/scratch/atlas-delivery-2026-09-13/` (`v1-0-before.json`,
 `v1-0-after.json`, `v1-0-after.txt`, `v1-0-checks.log`). This closes the reporting
 contract only; independent construction quality, actual human comprehension,
-V3 UX and repeated-use benefit remain unproven. V1.1 is the next ready slice.
+V3 UX and repeated-use benefit remain unproven. This made V1.1 the next slice.
+
+
+**V1.1 registration evidence (2026-09-13, `8ea129383`):** a new permissively licensed Python
+backend and one existing state/history/notification task are pinned outside the
+checkout at `/Users/jinan/scratch/atlas-v1-2026-09-13/`. `REPORT.md` is the entry;
+`control/registration.json` freezes source/runtime/actor coordinates, the exact
+original six-question approval, task and branch probes, both source conditions,
+and the independently checked reference. Registration SHA-256:
+`3538f59999d2717f91fc1d1eacf2f0cedef492ed2b1974064ed5170d13c5e05f`.
+
+The documents-present/absent conditions contain 154/139 files; every common file
+is byte-identical, and their difference is exactly 15 standalone documents.
+License notices remain in both; code comments, tests and config descriptions
+also remain. Sol low implemented the external packager; Astra review corrected
+exclusion precedence and rooted file reads, with tamper detection and parity
+verification. No third-party code or experiment identifiers entered Atlas.
+
+A separate Astra source review required six corrections to the initial reference;
+the revised 19 scoped claims and 73 source coordinates were independently checked
+against both packets. Preserve the initial draft/audit and revised receipt in
+`reference/`. Coverage is explicitly partial for q1–q5 and a visible gap for
+project-wide exclusion in q6; these are reference limits, not builder scores.
+There was no construction, source-hidden evaluator, upstream runtime test or
+ontology write. New concrete cases/model/tool budgets and actual isolation probes
+must be frozen before the later measured launches. The next work is a measured
+source-access gap in V1.2, not an assumed new reader or parser. All seven
+registration recommendations from `checks:changed -- --run` passed. V1.3
+waits for a witnessed document/config gap; V2.1 still needs a reviewed starting
+vault, so finishing this registration does not silently unlock either claim.
 
 V1 and the reuse value in V2/V4 are separate risks: a manually reviewed starting
 vault can test reuse, but its creation method and cost must remain visible and
