@@ -29,7 +29,7 @@
 #     sum. Output is buffered per lane and printed only for lanes that fail —
 #     interleaved live output from eight processes is unreadable.
 #  2. **Path-scoped.** A lane runs only when the branch touched files its glob
-#     matches. A docs-only push runs the docs lane and nothing else.
+#     matches. A docs-only push runs docs and the small shared scanners.
 #  3. **Three-dot diff.** `origin/main...HEAD` is the merge-base diff, so merging
 #     main into the branch does not drag main's changes into the lane filters.
 #  4. **No e2e.** Playwright is CI's job — sharded three ways there, serial here.
@@ -41,32 +41,8 @@
 # **CI remains the authoritative gate.** This hook exists to make the common
 # failure cheap to find, not to replace the judgement.
 #
-# ## What the 2026-09-12 measurement changed
-#
-# The report was that this took far too long every single time. It did: **367 s for
-# a one-file change**. Two lanes were 95% of it and both paid for the wrong thing.
-#
-#  - **`unit` ran the whole suite** — 759 files, 7,499 tests — to judge one file,
-#    at `--maxWorkers=2`. Measured: 377.7 s capped, 124.3 s at the normal pool, and
-#    **6 s** now that the lane is selected by Vitest's module graph. The cap existed
-#    because four workers starved two React tests past "their explicit 5-second
-#    wait"; those hand-raised ceilings are gone (one `asyncUtilTimeout` in
-#    `vitest.setup.ts` — `.claude/rules/testing.md`, "The timing rule").
-#  - **`lint` ran ESLint over the whole tree** — 84.9 s — when ESLint is per-file
-#    and the branch changed one. Measured at **1 s** on the changed file. CI's
-#    `Types · Lint · Docs` keeps the repo-wide pass.
-#
-# Measured after: **79 s** end to end for a leaf change, inside the budget.
-#
-# `contract` stays unconditional and whole. Its ratchets scan the filesystem, so no
-# path filter can see them, and that is what catches a token or mirror drift a push
-# would otherwise land. It is now the longest pole at ~80-104 s; what it no longer
-# does is compete with two lanes three times its size.
-#
-# ## Bypass
-#
-# `--no-verify`, which `.claude/rules/git.md` forbids. If a lane is wrong, fix the
-# lane — do not step around the hook silently.
+# Full contract and dead-code scans belong to PR CI. Local checks report timing
+# and retain per-lane timing evidence for future scope decisions.
 
 set -e
 
@@ -141,6 +117,11 @@ TS='\.tsx?$|\.mjs$|tsconfig.*\.json$|next\.config\.ts$'
 APP='^src/|^app/'
 DOCS='^docs/|^[A-Z0-9_-]+\.md$|^\.claude/|^\.agents/'
 
+# Materialize once before parallel readers; derived output is never staged.
+if touched '^docs/|^samples/storefront/|^scripts/(build-docs-vault|lib/(record-ledgers|po-pilot-records|parse-frontmatter))'; then
+  pnpm docs-vault:build || exit 1
+fi
+
 touched "$TS" "$APP" && lane typecheck 'pnpm exec tsc --noEmit'
 # ESLint is per-file, so linting the whole tree to judge one changed file costs
 # 84.9 s to learn what a few seconds can say (measured 2026-09-12). A configuration
@@ -161,8 +142,8 @@ fi
 # condition under which a timing ratio cannot be trusted; it went red once on a
 # push whose diff could not affect it. CI runs them on a quiet runner, where the
 # number means something.
-# `tests/contract/**` has its own unconditional lane below. Running those 209 files
-# here too duplicated 2,101 tests under the same saturation and repeatedly pushed a
+# `tests/contract/**` belongs to PR CI. Running these files
+# here too duplicated tests under the same saturation and repeatedly pushed a
 # 3.2s filesystem-glob assertion past 15s without adding any coverage.
 # Unit and contract assertions are correctness gates, not performance gates.
 #
@@ -178,7 +159,11 @@ fi
 # change cost 377.7 s; the tests that actually import the change cost a fraction of
 # that, and CI re-runs the identical `--changed` selection on the PR.
 MERGE_BASE=$(git merge-base "$BASE_REF" HEAD 2>/dev/null || echo "$BASE_REF")
-touched "$APP" '^messages/' && lane unit "pnpm exec vitest run --changed=$MERGE_BASE --exclude '**/*.perf.test.*' --exclude 'tests/contract/**' --passWithNoTests"
+if touched '^(src|app)/.*\.(ts|tsx|js|mjs|css)$' '^messages/'; then
+  UNIT_COMMAND=$(node scripts/prepush-unit-plan.mjs "--base=$MERGE_BASE") ||
+    UNIT_COMMAND="pnpm exec vitest run --changed=$MERGE_BASE --exclude '**/*.perf.test.*' --exclude 'tests/contract/**' --passWithNoTests"
+  lane unit "$UNIT_COMMAND"
+fi
 touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
 # The lane selector covers agents:check's full subject set: `.codex/**` (the
 # hook/config mirror and the MCP-grant denominator via .codex/config.toml),
@@ -188,7 +173,7 @@ touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:mes
 # silently and only CI's unconditional agents:check caught it (bug sweep
 # 2026-09-01 — the same half-subject-set failure noted here on 2026-08-24).
 touched '^AGENTS\.md$|^CLAUDE\.md$|^\.claude/|^\.agents/|^\.codex/|^\.mcp\.json$|(^|/)AGENTS\.md$' && lane agents 'pnpm agents:check'
-touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:language && pnpm docs:links && pnpm docs-vault:check'
+touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:language && pnpm docs:links'
 # The gateway shows one vault file verbatim; the committed copy must match the vault.
 touched '^docs/ontology/' '^scripts/generate-evidence-specimen' '^src/views/download/model/evidence-specimen' && lane specimen 'pnpm gateway:specimen:check'
 touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
@@ -198,12 +183,21 @@ touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
 # above runs three of its five parts.
 touched '^docs/DESIGN-SYSTEM\.md$' && lane design_toc 'pnpm design:toc:check'
 
-# Repo-wide scanners: these read the whole tree, so almost any edit can move them.
-# Cheap enough (~1 min) that filtering would buy noise, not time.
-lane source_language 'pnpm source:language'
-lane dead_code 'pnpm knip'
-lane contract 'pnpm exec vitest run tests/contract/'
-lane comment_refs 'node scripts/check-comment-refs.mjs'
+# Reuse the scanner's actual source classifier; a failed scope read runs broadly.
+SOURCE_CHANGED=$(node --input-type=module -e '
+  import { execFileSync } from "node:child_process";
+  import { isSupportedSourcePath } from "./scripts/quality/source-language/source-paths.mjs";
+  const paths = execFileSync("git", ["diff", "--name-only", "-z", process.argv[1]], { encoding: "utf8" }).split("\0").filter(Boolean);
+  console.log(paths.some(isSupportedSourcePath) ? "yes" : "no");
+' "$BASE_REF...HEAD" || true)
+if [ "$SOURCE_CHANGED" != "no" ] || touched '^scripts/quality/source-language/|^package\.json$'; then
+  lane source_language 'pnpm source:language'
+fi
+# A citation can break when its source or its Markdown target changes.
+if [ "$SOURCE_CHANGED" != "no" ] || touched '\.md$'; then
+  lane comment_refs 'node scripts/check-comment-refs.mjs'
+fi
+# Full contract and Knip evidence is owned by the impact-planned PR CI.
 lane decisions 'pnpm decisions:check'
 
 echo "[pre-push] Running $lane_count lanes:$lane_names"
@@ -233,7 +227,7 @@ done
 # number that says whether the gate earns its minutes: `pnpm harness:outcomes`
 # sets pushes refused here against PR commits that failed in CI. Measurement
 # only; a failed write never changes the push's fate.
-node scripts/harness-prepush-ledger.mjs "$n_changed" "$lane_names" "$failed" 2>/dev/null || true
+node scripts/harness-prepush-ledger.mjs "$n_changed" "$lane_names" "$failed" "$total" "$TMP" 2>/dev/null || true
 
 if [ -n "$failed" ]; then
   for name in $failed; do

@@ -1,7 +1,30 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
-import { CURATION, build, registryArgs, registryEnv, render } from './build-mcp-catalogue.mjs';
+import {
+  CURATION,
+  build,
+  readRegistrySnapshot,
+  registryArgs,
+  registryEnv,
+  render,
+  runCatalogue,
+} from './build-mcp-catalogue.mjs';
+
+const COMMITTED_OUT = new URL('../src/shared/config/mcp-catalogue.generated.ts', import.meta.url);
+const COMMITTED_SNAPSHOT = new URL('./data/mcp-registry-snapshot.json', import.meta.url);
+
+function fixture() {
+  const dir = mkdtempSync(join(tmpdir(), 'atlas-mcp-catalogue-'));
+  const outPath = join(dir, 'mcp-catalogue.generated.ts');
+  const snapshotPath = join(dir, 'mcp-registry-snapshot.json');
+  writeFileSync(outPath, readFileSync(COMMITTED_OUT));
+  writeFileSync(snapshotPath, readFileSync(COMMITTED_SNAPSHOT));
+  return { dir, outPath, snapshotPath };
+}
 
 /**
  * The generator writes a file that ends up in front of a person deciding what to run on their own
@@ -113,6 +136,96 @@ test('offline still produces every entry, marked as curated', async () => {
     assert.equal(entry.registryChecked, false);
     for (const variant of entry.variants) assert.equal(variant.source, 'curated');
   }
+});
+
+test('ordinary check is deterministic and never fetches', async (t) => {
+  const paths = fixture();
+  t.after(() => rmSync(paths.dir, { recursive: true, force: true }));
+  let fetches = 0;
+  const message = await runCatalogue({
+    argv: ['--check'],
+    ...paths,
+    fetchImpl: async () => {
+      fetches += 1;
+      throw new Error('ordinary check reached the network');
+    },
+  });
+  assert.equal(fetches, 0);
+  assert.match(message, /unchanged/);
+});
+
+test('ordinary check rejects tampered generated output', async (t) => {
+  const paths = fixture();
+  t.after(() => rmSync(paths.dir, { recursive: true, force: true }));
+  writeFileSync(paths.outPath, `${readFileSync(paths.outPath, 'utf8')}\n// tampered\n`);
+  await assert.rejects(
+    runCatalogue({ argv: ['--check'], ...paths, fetchImpl: assert.fail }),
+    /differs from what the committed registry snapshot produces/,
+  );
+});
+
+test('ordinary check rejects tampered registry capture', async (t) => {
+  const paths = fixture();
+  t.after(() => rmSync(paths.dir, { recursive: true, force: true }));
+  const snapshot = readRegistrySnapshot(paths.snapshotPath);
+  snapshot.servers['io.github.microsoft/playwright-mcp'].packages[0].identifier =
+    '@playwright/mcp-tampered';
+  writeFileSync(paths.snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
+  await assert.rejects(
+    runCatalogue({ argv: ['--check'], ...paths, fetchImpl: assert.fail }),
+    /differs from what the committed registry snapshot produces/,
+  );
+});
+
+test('ordinary check fails closed when the registry capture is missing', async (t) => {
+  const paths = fixture();
+  t.after(() => rmSync(paths.dir, { recursive: true, force: true }));
+  rmSync(paths.snapshotPath);
+  await assert.rejects(
+    runCatalogue({ argv: ['--check'], ...paths, fetchImpl: assert.fail }),
+    /MCP registry snapshot is missing/,
+  );
+});
+
+test('online check keeps registry errors visible', async (t) => {
+  const paths = fixture();
+  t.after(() => rmSync(paths.dir, { recursive: true, force: true }));
+  await assert.rejects(
+    runCatalogue({
+      argv: ['--check-online'],
+      ...paths,
+      fetchImpl: async () => {
+        throw new Error('registry unavailable');
+      },
+    }),
+    /registry unavailable/,
+  );
+});
+
+test('normal regeneration captures live inputs and writes output that deterministic check accepts', async (t) => {
+  const paths = fixture();
+  t.after(() => rmSync(paths.dir, { recursive: true, force: true }));
+  const live = readRegistrySnapshot(paths.snapshotPath);
+  rmSync(paths.snapshotPath);
+  rmSync(paths.outPath);
+  const requested = [];
+  const fetchImpl = async (url) => {
+    const name = new URL(url).searchParams.get('search');
+    requested.push(name);
+    return {
+      ok: true,
+      json: async () => ({ servers: [{ server: live.servers[name] }] }),
+    };
+  };
+
+  await runCatalogue({ argv: [], ...paths, fetchImpl });
+  assert.deepEqual(new Set(requested), new Set(CURATION.map((entry) => entry.registryName)));
+  assert.deepEqual(readRegistrySnapshot(paths.snapshotPath), live);
+  await runCatalogue({
+    argv: ['--check'],
+    ...paths,
+    fetchImpl: async () => assert.fail('deterministic follow-up check fetched'),
+  });
 });
 
 test('every curated entry carries the page and the date a person read it', () => {

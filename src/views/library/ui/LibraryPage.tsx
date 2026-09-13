@@ -43,6 +43,7 @@ import {
   parseLintFindings,
   buildAnswerPage,
   automaticWikiWriteAllowed,
+  answerHistoryUnreadable,
   answerObservation,
   isRetainedAnswerPath,
   buildHumanPage,
@@ -103,6 +104,7 @@ import {
   LIBRARY_TOAST_RIGHT_OFFSET,
 } from "@/shared/ui/toast-position";
 import { SegmentedControl } from "@/shared/ui/segmented-control";
+import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
 import { Button, Tooltip, TooltipProvider, useToast, useToastAnchor } from "@/shared/ui";
 
 import { compactOntologyDescription } from "@/shared/lib/ontology-description";
@@ -123,7 +125,7 @@ import { useLibraryAgent } from "../lib/use-library-agent";
 import { useAnswerRefresh } from '../lib/use-answer-refresh';
 import { useAnswerHistory } from '../lib/use-answer-history';
 import { AgentDoor } from "./parts/AgentDoor";
-import { LibraryCheckReport, findingKey, reportOutline } from "./parts/LibraryCheckReport";
+import { LibraryCheckReport, advisoryReportSlugs, findingKey, reportOutline } from "./parts/LibraryCheckReport";
 import { LibrarySection } from "./parts/LibrarySection";
 import { CompileBrainSelect } from "./parts/CompileBrainSelect";
 import { LibraryStage } from "./parts/LibraryStage";
@@ -236,6 +238,14 @@ export function LibraryPage() {
   const tChat = useTranslations("acpChat");
   const locale = useLocale();
   const toast = useToast();
+  /*
+   * **A failure speaks the reader's language.** Both catch sites below used to prefer
+   * `err.message` — the developer's English — over the sentence written for that press, which is
+   * how a Korean screen printed a thrown English string (installed-app inspection before v1.2.2,
+   * B2). The raw text is still available on the returned copy's `detail`, for a `data-*`
+   * attribute or the console.
+   */
+  const failureSentence = useFailureSentence();
   const localVault = useLocalVault();
   const { markSelfWrite } = localVault;
   const workVaultScope = useVaultSessionIdentityScope();
@@ -483,7 +493,23 @@ export function LibraryPage() {
    */
   const reportSpy = useDocReadingScrollSpy(opened?.kind === "report" ? "library:report" : null, "report");
   const reportBackToTop = useBackToTop(reportSpy.articleScrollRef, opened?.kind === "report" ? "library:report" : null);
-  const handleReportHeadingNavigate = useCallback(
+  /**
+   * **The report's advisory fold is opened from here, because the rail that names it is.**
+   *
+   * ⚠️ Two of the report's six outline entries were dead (installed app, 2026-09-13):
+   * `orphan-page` and `shared-source-unlinked` marked themselves active when pressed and
+   * the page did not move, because the sections they name sit inside a fold that starts
+   * closed. The anchors resolved — the report plants a placeholder while collapsed — so the
+   * scroll ran and landed on the fold's own chip, which is already on screen. A rail entry
+   * that goes nowhere teaches a person the rail goes nowhere.
+   *
+   * The expansion cannot be done inside `scrollIntoView`'s own frame: the section does not
+   * exist until React has committed the open state, so the jump is held in a ref and run by
+   * the effect below, after the commit.
+   */
+  const [reportAdvisoryOpen, setReportAdvisoryOpen] = useState(false);
+  const pendingReportJumpRef = useRef<string | null>(null);
+  const jumpToReportSection = useCallback(
     (slug: string) => {
       document.getElementById(slug)?.scrollIntoView({
         behavior: reducedMotion ? 'auto' : 'smooth',
@@ -493,6 +519,25 @@ export function LibraryPage() {
     },
     [reducedMotion, reportSpy],
   );
+  const advisorySlugs = useMemo(() => advisoryReportSlugs(model.structural), [model.structural]);
+  const handleReportHeadingNavigate = useCallback(
+    (slug: string) => {
+      if (advisorySlugs.has(slug) && !reportAdvisoryOpen) {
+        pendingReportJumpRef.current = slug;
+        reportSpy.setActiveHeadingSlug(slug);
+        setReportAdvisoryOpen(true);
+        return;
+      }
+      jumpToReportSection(slug);
+    },
+    [advisorySlugs, jumpToReportSection, reportAdvisoryOpen, reportSpy],
+  );
+  useEffect(() => {
+    const slug = pendingReportJumpRef.current;
+    if (!slug || !reportAdvisoryOpen) return;
+    pendingReportJumpRef.current = null;
+    jumpToReportSection(slug);
+  }, [jumpToReportSection, reportAdvisoryOpen]);
   const outlineHeadings = useMemo(() => {
     const headings = (selectedWikiDoc?.headings ?? []).filter(
       (heading) => heading.depth >= 2 && heading.depth <= 3,
@@ -1154,10 +1199,10 @@ export function LibraryPage() {
           },
         });
       } catch (err) {
-        toast.show(err instanceof Error && err.message ? err.message : t("wiki.newPageFailed"), "error");
+        toast.show(failureSentence(err, t("wiki.newPageFailed")).sentence, "error");
       }
     },
-    [handle, knownSlugs, markSelfWrite, nativeVaultRootPath, t, toast],
+    [failureSentence, handle, knownSlugs, markSelfWrite, nativeVaultRootPath, t, toast],
   );
 
   const handleFileAnswer = useCallback(async () => {
@@ -1227,11 +1272,11 @@ export function LibraryPage() {
       });
     } catch (err) {
       filedAnswersRef.current.delete(filed);
-      toast.show(err instanceof Error && err.message ? err.message : t("wiki.fileAnswerRejected", { code: "write" }), "error");
+      toast.show(failureSentence(err, t("wiki.fileAnswerRejected", { code: "write" })).sentence, "error");
     } finally {
       setFilingAnswer((current) => current === filed ? null : current);
     }
-  }, [agent.runtime, handle, lastAnswer, markSelfWrite, model.pairing.originalsByWiki, model.sources, nativeVaultRootPath, t, toast]);
+  }, [agent.runtime, failureSentence, handle, lastAnswer, markSelfWrite, model.pairing.originalsByWiki, model.sources, nativeVaultRootPath, t, toast]);
 
   const autoDecide = useCallback(
     (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null; toolName: string | null }) => {
@@ -2771,6 +2816,8 @@ export function LibraryPage() {
                 onLint={agent.route === "agent" ? handleLint : null}
                 lintBlockedReason={agentOnlyReason}
                 onJumpToSection={handleReportHeadingNavigate}
+                advisoryOpen={reportAdvisoryOpen}
+                onAdvisoryOpenChange={setReportAdvisoryOpen}
                 onFix={agent.route === "agent" ? handleFix : null}
                 onPropose={agent.route === "agent" && hasOntology ? handlePropose : null}
                 onOpenPage={(slug) => choose({ kind: "wiki", slug })}
@@ -2829,6 +2876,10 @@ export function LibraryPage() {
                 older={!retainedAnswers.some((answer) => answer.slug === selectedAnswer.slug)}
                 onRefresh={agent.route === 'agent' && nativeVaultRootPath ? () => { void answerRefresh.begin(selectedAnswer.slug); } : null}
                 agentDoor={agentDoor}
+                /* The press is not offered when the page can already read that it would be
+                   refused (`answerHistoryUnreadable`, the predicate `prepareAnswerRefresh`
+                   throws on). B2, installed-app inspection before v1.2.2. */
+                historyBlocked={answerHistoryUnreadable(selectedAnswer.slug, selectedAnswer.frontmatter)}
                 error={answerRefresh.error} t={t} /> : null}
               {/* The passage a person selects here can be asked about at once; the chip and
                   its list hang from the selection inside this positioned box. */}

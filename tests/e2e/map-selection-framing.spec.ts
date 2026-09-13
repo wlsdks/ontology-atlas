@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForMapStill } from "./settle";
 
 /**
  * Three usability defects found by walking every map control on 2026-09-03,
@@ -47,27 +48,32 @@ test.beforeEach(async ({ page }) => {
   await seedFirstRunSeen(page);
   await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
   await expect.poll(async () => (await readMap(page)).visible, { timeout: 20_000 }).toBeGreaterThan(0);
-  await page.waitForTimeout(1500);
+  // The first reveal homes the camera and the physics is still warm; measure the
+  // screen it comes to rest on, not the one 1.5 s of this machine's clock leaves.
+  await waitForMapStill(page);
 });
 
 test("a node picked from the search palette is framed left of the detail panel", async ({ page }) => {
   // The map's search chip opens the unified palette (an `aria-modal` dialog).
   const palette = page.getByRole("dialog", { name: "이 지도에서 검색" });
-  await expect
-    .poll(
-      async () => {
-        await page.locator('[data-testid="topology-concept-search"]').click();
-        await page.waitForTimeout(400);
-        return palette.isVisible();
-      },
-      { timeout: 15_000, message: "검색 칩이 팔레트를 연다" },
-    )
-    .toBe(true);
+  await page.locator('[data-testid="topology-concept-search"]').click();
+  await expect(palette, "검색 칩이 팔레트를 연다").toBeVisible();
   await page.keyboard.type("배송");
-  await page.waitForTimeout(600);
+  /*
+   * Enter takes the **active** option, so the condition the old 600 ms sleep was
+   * standing in for is "the row Enter will take is the one we typed for". Waiting
+   * for that row is also the only form that cannot pick the previous query's
+   * result on a slow machine.
+   */
+  await expect(
+    palette.locator('[role="option"][aria-selected="true"]'),
+    "고른 결과가 배송이다",
+  ).toContainText("배송");
   await page.keyboard.press("Enter");
   await expect(page.locator('[data-testid="map-detail-panel"]')).toBeVisible({ timeout: 5_000 });
-  await page.waitForTimeout(1800);
+  // The focus camera reframes around the panel; read where it lands, not where it is
+  // 1.8 s in.
+  await waitForMapStill(page, { what: "camera" });
   const after = await readMap(page);
   expect(after.selected, "검색으로 고른 노드가 선택된다").not.toBeNull();
   expect(after.panelLeft, "상세 패널이 오른쪽에 있다").not.toBeNull();
@@ -79,15 +85,15 @@ test("a node picked from the search palette is framed left of the detail panel",
 test("auto-arrange while everything is expanded keeps every node on screen", async ({ page }) => {
   await page.locator('[data-testid="topology-expand-all"]').click();
   await expect.poll(async () => (await readMap(page)).visible, { timeout: 10_000 }).toBeGreaterThan(100);
-  await page.waitForTimeout(2500);
+  await waitForMapStill(page);
   await page.locator('[data-testid="topology-auto-arrange"]').click();
-  await page.waitForTimeout(3500);
+  await waitForMapStill(page);
   const arranged = await readMap(page);
   expect(arranged.offscreen, "정렬 후 펼친 노드가 화면 밖으로 나가지 않는다").toBe(0);
   // The `0` key is the same fit and must agree.
   await page.mouse.click(700, 800);
   await page.keyboard.press("0");
-  await page.waitForTimeout(2500);
+  await waitForMapStill(page);
   expect((await readMap(page)).offscreen).toBe(0);
   // (Selecting a node ends expand-all by design, so the panel-close return is
   // covered by `map-viewport-reframe.spec.ts` in the plain state instead.)
@@ -99,7 +105,22 @@ test("the Korean relation sentence joins its particles to the names", async ({ p
   const domain = m.domains.find((d) => d.label === "배송")!;
   const mid = { x: (m.project!.x + domain.x) / 2, y: (m.project!.y + domain.y) / 2 };
   await page.mouse.move(box.x + mid.x, box.y + mid.y);
-  await page.waitForTimeout(300);
+  /*
+   * The old 300 ms sleep was aiming, not waiting: it gave the hover a moment and
+   * hoped the midpoint really was on the edge. `edgeAt` answers the aim itself —
+   * the click goes out once the frame reports an edge under that exact point.
+   */
+  await page.waitForFunction(
+    (point) =>
+      Boolean(
+        (window as unknown as { __atlasMap?: { edgeAt?: (x: number, y: number) => unknown } }).__atlasMap?.edgeAt?.(
+          point.x,
+          point.y,
+        ),
+      ),
+    mid,
+    { polling: "raf", timeout: 15_000 },
+  );
   await page.mouse.click(box.x + mid.x, box.y + mid.y);
   const sentence = page.locator('[data-testid="map-edge-sentence"]');
   await expect(sentence).toBeVisible({ timeout: 5_000 });
@@ -123,7 +144,7 @@ test("an edit intent that arrives by URL on the sample says why it cannot edit a
 test("a deep link that opens one domain frames its revealed children, and the 0 key agrees", async ({ page }) => {
   await page.goto("/ko/topology/?e2e=1&guides=off&open=domain%3Amarketing", { waitUntil: "domcontentloaded" });
   await expect.poll(async () => (await readMap(page)).visible, { timeout: 20_000 }).toBeGreaterThan(40);
-  await page.waitForTimeout(3000);
+  await waitForMapStill(page);
   // Capabilities are density-gated at overview altitude (not drawn, not hidden), so
   // only the tiers the overview draws are measured: spine and the revealed elements.
   const drawnOffscreen = () =>
@@ -138,6 +159,6 @@ test("a deep link that opens one domain frames its revealed children, and the 0 
   expect(await drawnOffscreen(), "딥링크로 펼친 도메인의 요소가 화면 밖에 남지 않는다").toBe(0);
   await page.mouse.click(700, 820);
   await page.keyboard.press("0");
-  await page.waitForTimeout(2500);
+  await waitForMapStill(page);
   expect(await drawnOffscreen(), "0 키 맞춤도 펼친 요소를 담는다").toBe(0);
 });

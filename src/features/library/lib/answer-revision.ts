@@ -1,3 +1,4 @@
+import { codedFailure } from '@/shared/lib/failure-code';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import { WIKI_CITATION_PATTERN, validateWikiPage } from '@/shared/lib/wiki-page-schema';
 import { answerSlug, type AnswerPageResult } from './answer-page';
@@ -56,6 +57,21 @@ export function answerObservation(
     else if (old.toLowerCase() !== current.toLowerCase()) changed.push(path);
   }
   return { state: missing.length ? 'missing' : changed.length ? 'changed' : added.length ? 'new-sources' : unmeasured.length || !paths.length ? 'unmeasured' : 'unchanged', changed, missing, unmeasured, added };
+}
+
+/**
+ * **What a refresh refuses, decided from facts the page already holds.**
+ *
+ * `prepareAnswerRefresh` reads the file from disk and throws when the retained question or the
+ * thread edge cannot be read. The answer page holds the same frontmatter in its manifest, and
+ * before v1.2.2 it did not ask: it drew `library.answers.refresh` enabled, the press threw, and
+ * the developer's English landed in the page body (installed-app inspection, B2). One predicate
+ * read by both sides is what keeps "the page knows" and "the button is offered" from disagreeing.
+ */
+export function answerHistoryUnreadable(slug: string, frontmatter: Record<string, unknown>): boolean {
+  const question = typeof frontmatter.answer_question === 'string' ? frontmatter.answer_question : frontmatter.title;
+  const thread = typeof frontmatter.answer_thread === 'string' ? frontmatter.answer_thread : slug;
+  return typeof question !== 'string' || !question.trim() || !isRetainedAnswerPath(thread) || Boolean(frontmatter.kind);
 }
 
 interface AnswerDocument {
@@ -121,7 +137,7 @@ export function buildAnswerRevision(input: AnswerRevisionInput): AnswerPageResul
   const filingId = input.filingId ?? globalThis.crypto.randomUUID();
   if (!UUID.test(filingId) || !answerReference(input.previousSlug) || !answerReference(input.thread)
     || !SHA256.test(input.previousHash) || !input.question.trim() || Number.isNaN(Date.parse(input.observedAt))) {
-    throw new Error('An answer revision requires a valid prior page, content digest, question and observation time.');
+    throw codedFailure('answer-draft-invalid', `previous=${input.previousSlug} thread=${input.thread}`);
   }
   const fenced = [...input.response.matchAll(/^```(?:markdown|md)\s*\n([\s\S]*?)^```\s*$/gm)];
   // A live ACP draft copied the old app-generated footer. Bind navigation once to

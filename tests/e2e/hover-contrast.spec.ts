@@ -1,3 +1,4 @@
+import { waitForDocumentPaint, waitForFiniteAnimations } from './visual-ready';
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { judgeText } from "../../scripts/lib/contrast.mjs";
@@ -50,6 +51,9 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * Actually hovering and reading `getComputedStyle` produced 5. **Inference is not
  * measurement.**
  */
+// Each audit owns its page and pointer; no file hooks or shared mutable state.
+test.describe.configure({ mode: 'parallel' });
+
 const VIEWPORT = { width: 1512, height: 900 };
 
 /** Composites ancestors' translucent backgrounds into an opaque one (required in an app with many alpha tokens). */
@@ -137,7 +141,7 @@ async function parkPointer(page: Page): Promise<void> {
       .catch(() => false);
     if (clear) {
       await page.mouse.move(x, y);
-      await page.waitForTimeout(30);
+      await waitForFiniteAnimations(page);
       return;
     }
   }
@@ -205,7 +209,7 @@ async function auditRoute(page: Page) {
     const rest = resting[i];
     if (!rest) continue;
     await el.hover({ timeout: 1500 }).catch(() => {});
-    await page.waitForTimeout(50);
+    await waitForFiniteAnimations(page);
     const hover = await readState(el);
     if (!hover) continue;
     // A control whose colours do not change on hover is out of this check's scope.
@@ -258,7 +262,7 @@ for (const route of HOVER_ROUTES) {
       waitUntil: "domcontentloaded",
     });
     await page.waitForSelector("main", { timeout: 20_000 });
-    await page.waitForTimeout(800);
+    await waitForDocumentPaint(page);
     const { offenders, compared } = await auditRoute(page);
     /*
      * **Each route has a floor** (2026-08-15). With only the assertion above, a route
@@ -289,7 +293,7 @@ test("계기가 헛돌지 않는다 — 비교 대상이 있고, 심어 둔 미�
   await page.setViewportSize(VIEWPORT);
   await page.goto("/ko/?guides=off", { waitUntil: "domcontentloaded" });
   await page.waitForSelector("main", { timeout: 20_000 });
-  await page.waitForTimeout(800);
+  await waitForDocumentPaint(page);
 
   const { compared } = await auditRoute(page);
   expect(compared, "호버로 색이 바뀌는 컨트롤이 하나도 없다 — 게이트가 헛돈다").toBeGreaterThan(5);

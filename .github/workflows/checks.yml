@@ -1,6 +1,6 @@
 # PR checks are impact-planned before any dependency install. The exact required
 # status names stay stable; inactive lanes start, explain the skip, and finish in
-# seconds. A missing plan is RED. Pushes to main and planner changes run every
+# seconds. A missing plan is RED. Scheduled/manual runs and planner changes run every
 # command registered in `scripts/classify-change.mjs`.
 #
 # A pull request is opened as a **draft** and runs nothing. When it is that
@@ -8,7 +8,8 @@
 # lanes, and marks it ready; `ready_for_review` fires this workflow **once**, on
 # exactly the tree that is about to land. Owner's shape, 2026-09-12: most
 # changes overlap, so CI on a branch that is not yet the thing being merged is a
-# round paid twice. `docs/DECISIONS.md` carries the record.
+# round paid twice. An identical main tree reuses that successful review;
+# unproven main pushes and scheduled/manual runs still execute their evidence.
 #
 # `merge_group` is wired for the day this repository belongs to an organization
 # and GitHub's own merge queue becomes available. Until then no merge group is
@@ -19,6 +20,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   merge_group:
+  schedule:
+    - cron: "17 19 * * *"
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -27,15 +31,20 @@ permissions:
   contents: read
 
 concurrency:
-  group: checks-${{ github.workflow }}-${{ github.ref }}
+  group: checks-${{ github.workflow }}-${{ github.ref }}-${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'full' || 'change' }}
   cancel-in-progress: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PUSH_BEFORE: ${{ github.event.before }}
 
 jobs:
   plan:
     name: Check impact plan
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     # budget: 25s
@@ -46,6 +55,7 @@ jobs:
       gates_needs_mcp: ${{ steps.impact.outputs.gates_needs_mcp }}
       unit: ${{ steps.impact.outputs.unit }}
       unit_needs_mcp: ${{ steps.impact.outputs.unit_needs_mcp }}
+      unit_sharded: ${{ steps.impact.outputs.unit_sharded }}
       mcp: ${{ steps.impact.outputs.mcp }}
     steps:
       - name: Checkout
@@ -56,8 +66,10 @@ jobs:
       - name: Build impact plan
         id: impact
         env:
+          GH_TOKEN: ${{ github.token }}
           BASE_REF: ${{ github.base_ref }}
           EVENT_NAME: ${{ github.event_name }}
+          PUSH_BEFORE: ${{ github.event.before }}
           # A merge group has no base branch ref, and its two SHAs are minted by
           # GitHub, so they are data rather than a string anyone can choose.
           MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
@@ -112,7 +124,11 @@ jobs:
         if: env.ACTIVE == 'true'
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: node scripts/run-ci-lane.mjs --lane=gates --base="origin/$BASE_REF"
+        run: node scripts/run-ci-lane.mjs --lane=gates --base="${PUSH_BEFORE:-origin/$BASE_REF}"
+
+      - name: Check live catalogue freshness
+        if: env.ACTIVE == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        run: node scripts/build-mcp-catalogue.mjs --check-online
 
       - name: Skip unaffected gate setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
@@ -145,7 +161,7 @@ jobs:
       matrix:
         shard: [1, 2, 3]
     env:
-      ACTIVE: ${{ needs.plan.outputs.unit != 'skip' }}
+      ACTIVE: ${{ needs.plan.outputs.unit != 'skip' && (needs.plan.outputs.unit_sharded != 'false' || matrix.shard == 1) }}
       NEED_MCP: ${{ needs.plan.outputs.unit_needs_mcp }}
       CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}
     steps:
@@ -186,7 +202,7 @@ jobs:
         if: env.ACTIVE == 'true'
         env:
           BASE_REF: ${{ github.base_ref }}
-        run: node scripts/run-ci-lane.mjs --lane=unit --base="origin/$BASE_REF" --shard=${{ matrix.shard }}/3
+        run: node scripts/run-ci-lane.mjs --lane=unit --base="${PUSH_BEFORE:-origin/$BASE_REF}" --shard=${{ matrix.shard }}/3
 
       - name: Skip unaffected unit setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
@@ -277,3 +293,77 @@ jobs:
       - name: Skip unaffected MCP setup
         if: env.ACTIVE != 'true' && needs.plan.result == 'success'
         run: echo "MCP and CLI boundaries are untouched — skipped both dependency trees and tests"
+
+  # ── The Windows install canary ────────────────────────────────────────────────
+  #
+  # **Why it lives here and not in `windows-beta-check.yml`** (2026-09-13). A trigger is
+  # workflow-scoped and `paths` is a trigger-level filter: GitHub offers no per-job path
+  # condition. Putting an unfiltered job in that file would mean deleting its `push` paths
+  # list, which would run its 17-minute native build on every merge — exactly what #834's
+  # measurement forbids (that PR fired the 12-minute job five times, 60 minutes, for a
+  # one-line `package.json` change). This workflow already carries an unfiltered
+  # `push: main`, so the canary costs no new trigger and that file stays untouched.
+  #
+  # **What it is the canary for: any change can break `pnpm install`.** That is why it
+  # carries no path filter. `windows-beta-check.yml` is path-filtered by design and
+  # deliberately excludes `package.json` and `pnpm-lock.yaml`, so it is blind to this
+  # class. Measured: the records migration froze three ledgers and hashed their raw bytes,
+  # a Windows checkout hands them back as CRLF, and `prepare` failed inside
+  # `pnpm install` — reached only on release day, twice, because no cheap Windows lane
+  # spoke after a merge.
+  #
+  # It runs after a merge, not on a pull request, because it is a canary rather than a
+  # gate: `pnpm pr:land` now refuses on any failing check, required or not, so a red
+  # canary on `main` stops the next landing without spending Windows minutes per PR.
+  # It stays non-required, so no merge-group build waits on it.
+  #
+  # The `draft == false` clause is vacuous for `push` and `workflow_dispatch` — neither
+  # event carries a pull request — and is written because
+  # `tests/contract/workflow-security.contract.test.ts` holds that every job in a
+  # workflow with a `pull_request` trigger names the draft guard.
+  install-windows-canary:
+    name: Windows install canary
+    if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.event.pull_request.draft == false }}
+    runs-on: windows-2022
+    # budget: 60s
+    # Measured, replacing the 100 s that was derived before this job had run. Its three
+    # successful runs on `main` took 47 s, 48 s and 50 s; `pnpm install --frozen-lockfile`
+    # is 17 s of that. Three samples is not a p95 and is not called one — 60 s is the
+    # observed 50 s maximum plus room for a slower runner, and the next few runs should
+    # tighten or widen it. The earlier 100 s was wrong in a specific way worth keeping:
+    # it assumed a 22 s checkout from the release workflow's Windows job, and this job's
+    # checkout is 8 s, because that job checks out submodules and build inputs this one
+    # does not need. A derived budget inherits the shape of whatever it was derived from.
+    # `timeout-minutes` stays 2: GitHub's granularity is whole minutes, and
+    # `workflow-budgets.contract.test.ts` allows up to max(1.5x budget, 120 s).
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        shell: pwsh
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      # The whole point: `prepare` runs here, and `prepare` composes the ledgers.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # These readers parse authored Markdown, which is what a CRLF checkout changes.
+      # They need no dependency tree of their own, so they cost seconds.
+      - name: Ledger readers on a native CRLF checkout
+        run: node --test scripts/lib/record-ledgers.test.mjs scripts/lib/changelog-entry-template.test.mjs scripts/decisions-find.test.mjs scripts/lib/po-pilot-records.test.mjs
+
+      - name: Compose the changelog and the decision ledger
+        run: |
+          pnpm changelog:check
+          pnpm decisions:check
+          pnpm po:pilot -- --check

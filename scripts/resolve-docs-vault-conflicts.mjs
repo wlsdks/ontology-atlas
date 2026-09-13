@@ -209,6 +209,10 @@ function isGeneratedPath(filePath) {
   );
 }
 
+function isMaterializedDocsVaultPath(filePath) {
+  return GENERATED_PREFIXES.some((prefix) => filePath.startsWith(prefix));
+}
+
 export function classifyConflictPaths(paths) {
   const ledgers = [];
   const generated = [];
@@ -322,6 +326,15 @@ export async function resolveRepositoryConflicts({
   }
   assertNoUntrackedOrUnstagedDocs(root, unmerged);
 
+  if (
+    classified.ledgers.length > 0 &&
+    existsSync(path.join(root, 'docs', 'records', 'legacy.json'))
+  ) {
+    throw new LedgerConflictError(
+      'legacy ledgers are frozen by docs/records/legacy.json; restore the frozen ledger, move each new fact into scripts/new-record.mjs fragments on its originating branch, then retry the merge',
+    );
+  }
+
   const plans = classified.ledgers.map((filePath) => ({
     path: filePath,
     merged: mergeAppendOnlyLedger({
@@ -345,13 +358,21 @@ export async function resolveRepositoryConflicts({
   for (const plan of plans) {
     await writeFile(path.join(root, plan.path), plan.merged, 'utf8');
   }
+
+  // These paths used to be committed mirrors. During the migration, an older
+  // branch that modified one can meet main's deletion as an unmerged modify/delete
+  // path. Remove only those exact conflict paths from the index while retaining the
+  // worktree copy; regeneration below replaces conflict-marker/stale bytes with the
+  // local ignored materialization.
+  const materializedConflicts = classified.generated.filter(isMaterializedDocsVaultPath);
+  if (materializedConflicts.length > 0) {
+    gitOutput(root, ['rm', '--cached', '-f', '--ignore-unmatch', '--', ...materializedConflicts]);
+  }
   await regenerate({ root });
 
   const stagePaths = [
     ...plans.map((plan) => plan.path),
-    'src/entities/docs-vault/data',
-    ...GENERATED_EXACT_PATHS,
-    'public/docs-vault',
+    ...classified.generated.filter((filePath) => GENERATED_EXACT_PATHS.includes(filePath)),
   ].filter(
     (filePath) =>
       existsSync(path.join(root, filePath)) || classified.generated.includes(filePath),
@@ -368,6 +389,20 @@ export async function resolveRepositoryConflicts({
   }
   await verifyGenerated({ root });
 
+  const accidentallyTracked = materializedConflicts.filter((filePath) => {
+    try {
+      gitOutput(root, ['ls-files', '--error-unmatch', '--', filePath]);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  if (accidentallyTracked.length > 0) {
+    throw new LedgerConflictError(
+      `materialized Docs Vault outputs remained tracked: ${accidentallyTracked.join(', ')}`,
+    );
+  }
+
   return {
     dryRun: false,
     root,
@@ -381,8 +416,8 @@ export function usage() {
   return [
     'Usage: node scripts/resolve-docs-vault-conflicts.mjs [--dry-run]',
     '',
-    'Resolves only append-only CHANGELOG/DECISIONS conflicts plus generated docs-vault outputs.',
-    'It refuses unrelated conflicts and historical ledger edits, regenerates artifacts, and stages the result.',
+    'Resolves legacy append-only ledger conflicts plus generated Docs Vault migration conflicts.',
+    'Materialized Docs Vault outputs stay out of the index; unrelated conflicts and frozen ledger edits are refused.',
   ].join('\n');
 }
 

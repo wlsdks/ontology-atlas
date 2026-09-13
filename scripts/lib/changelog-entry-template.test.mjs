@@ -63,6 +63,35 @@ describe('changelog entry template', () => {
     assert.match(checkChangelogShape(parseChangelog(unreleased('2026-09-04') + unreleased('2026-09-03')))[0], /2 Unreleased entries/);
   });
 
+  /**
+   * **A CRLF checkout made this gate measure nothing and pass** (v1.2.2's Windows job).
+   * `\r` is a line terminator in a JavaScript regex, so `.` never matches it and
+   * `HEADING`'s `(.+)$` cannot reach end-of-input: every heading stopped matching, the
+   * gate reported "0 frozen entries ✓" and exited 0 while judging no entry at all. So
+   * this asserts both halves — CRLF parses, and an empty parse is refused.
+   */
+  it('parses a CRLF checkout, and refuses to pass when it measures nothing', () => {
+    const crlf = `# CHANGELOG\n\n${GOOD}`.replace(/\n/g, '\r\n');
+    assert.equal(parseChangelog(crlf).length, 1, 'a CRLF changelog must still yield its entry');
+    assert.equal(parseChangelog(crlf)[0].title, parseChangelog(`# CHANGELOG\n\n${GOOD}`)[0].title);
+    assert.deepEqual(checkEntryTemplate(parseChangelog(crlf)[0]), []);
+
+    const dir = mkdtempSync(join(tmpdir(), 'changelog-crlf-'));
+    const io = { logs: [], errors: [], log(l) { this.logs.push(l); }, error(l) { this.errors.push(l); } };
+    try {
+      mkdirSync(join(dir, 'docs'));
+      writeFileSync(join(dir, 'docs', 'CHANGELOG.md'), crlf);
+      assert.equal(runChangelogCheck([], io, { cwd: dir }), 0);
+      assert.match(io.logs.join('\n'), /1 frozen entries/);
+      // A ledger the parse lost looks exactly like a clean one without this floor.
+      writeFileSync(join(dir, 'docs', 'CHANGELOG.md'), '# CHANGELOG\n\nno dated entry here\n');
+      assert.equal(runChangelogCheck([], io, { cwd: dir }), 2);
+      assert.match(io.errors.join('\n'), /parsed 0 entries/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('the gate passes a conforming file and names the broken entry in a failing one', () => {
     const dir = mkdtempSync(join(tmpdir(), 'changelog-check-'));
     const io = { logs: [], errors: [], log(l) { this.logs.push(l); }, error(l) { this.errors.push(l); } };
@@ -70,7 +99,7 @@ describe('changelog entry template', () => {
       mkdirSync(join(dir, 'docs'));
       writeFileSync(join(dir, 'docs', 'CHANGELOG.md'), `# CHANGELOG\n\n${GOOD}`);
       assert.equal(runChangelogCheck([], io, { cwd: dir }), 0);
-      assert.match(io.logs.join('\n'), /1 entries fit the template/);
+      assert.match(io.logs.join('\n'), /1 frozen entries \+ 0 change facts \+ 0 release markers fit their templates/);
       writeFileSync(join(dir, 'docs', 'CHANGELOG.md'), `# CHANGELOG\n\n${GOOD}\n## 2026-09-04 · Unreleased: late\n\n- an old-shape bullet\n`);
       assert.equal(runChangelogCheck([], io, { cwd: dir }), 1);
       assert.match(io.errors.join('\n'), /belongs at the top/);

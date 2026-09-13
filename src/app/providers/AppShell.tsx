@@ -182,8 +182,18 @@ function ShellColumn({ children }: { children: ReactNode }) {
           had it been wrong the other way it would have silently measured the wrong
           element. Naming the target makes that class of failure impossible.
         */}
+        {/*
+          `data-app-shell-pane` is what the route crossfade captures (`app/globals.css`).
+          It is an attribute rather than a class because the stylesheet only names it while
+          a transition is running: off a transition this box carries no
+          `view-transition-name`, so it is not a stacking context or a containing block for
+          the fixed-position surfaces pages put inside it. The rail and everything else the
+          shell owns are deliberately **not** captured — they stay part of the live document
+          so they keep painting and keep taking presses while the pane fades.
+        */}
         <div
           data-testid="app-shell-body-slot"
+          data-app-shell-pane=""
           className="flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0"
         >
           <VaultRouteIdentityBoundary pathname={pathname}>
@@ -222,7 +232,7 @@ function isLocaleRoot(pathname: string): boolean {
 }
 
 /**
- * Keeps one vault identity on screen during route and folder transitions.
+ * Keeps one vault identity on screen while a folder loads.
  *
  * The static export contains a complete bundled sample so a vault-less web visitor has a useful
  * first paint. In the installed app, however, Next can briefly commit that prerendered destination
@@ -230,11 +240,39 @@ function isLocaleRoot(pathname: string): boolean {
  * owner caught the result at 30fps: Storefront Insights/Projects/Architecture appeared, then the
  * selected Atlas vault replaced it; Docs also carried the sample `domains/order` slug into local.
  *
- * A selected local vault always wins. For a route change, this boundary commits one neutral body
- * for the layout-effect turn and releases the destination before the browser paints. That makes the
- * new page mount against the existing local manifest instead of painting its static HTML. A genuine
- * folder load/switch remains neutral until `load()` atomically publishes the new manifest; a same-
- * vault refresh keeps its current pixels through `isReloadingSameVault`.
+ * A selected local vault always wins. A genuine folder load/switch stays neutral until `load()`
+ * atomically publishes the new manifest; a same-vault refresh keeps its current pixels through
+ * `isReloadingSameVault`; and a workbench destination reached with no vault at all goes home.
+ *
+ * ⚠️ **A route change is no longer one of the cases** (2026-09-13). It used to be: the boundary
+ * committed one neutral pane on every route change and released it from a microtask, so the
+ * destination would mount against the restored manifest rather than against its own prerendered
+ * HTML. What that actually bought was a blank screen with no upper bound. React already keeps the
+ * *departing* screen on the glass until the arriving route can render — a route change is a
+ * transition — but a committed neutral pane replaces that screen with nothing, and then the
+ * arriving route's first render suspends against it. Traced on the dev server: `pend` went false
+ * within 16 ms of the commit and the pane stayed on the glass for **four more frames** while the
+ * destination's render retried. `queueMicrotask`, a synchronous setState in the layout effect and
+ * `flushSync` from a microtask were each measured and each left those frames, because what holds
+ * the pane is the arriving route, not the release. On the installed app this is the body half of
+ * inspection 122's B1 — body ink 0.0000 at +0.15 s, +0.30 s and +0.47 s, because the route
+ * crossfade captured the blank pane as the arriving screen.
+ *
+ * Removing it restores React's own answer: the pane keeps the screen it has until the destination
+ * has one to put there. The identity guarantee is unchanged and is still proved frame by frame, on
+ * the static export, by `local-vault-route-identity.spec.ts` — the bundled sample reaches no frame
+ * of any rail crossing. `rail-stays-painted.spec.ts` is what keeps the neutral pane from coming
+ * back to a route change.
+ *
+ * ⚠️ **Why the arm existed at all, finally measured** (2026-09-13). "Next can briefly commit that
+ * prerendered destination" was true, and the reason was not React scheduling: `connect-src`
+ * refused the App Router's fetch of the arriving route's payload, so **every rail press was a full
+ * document load** and what the owner caught at 30 fps was the app's own pre-hydration HTML — the
+ * bundled sample on a workbench destination, and on History a rail carrying every destination, the
+ * *browser* copy and a download button inside the installed app. The arm was covering for that.
+ * The cause is fixed in `src-tauri/tauri.conf.json` and gated in `scripts/lib/desktop-csp.mjs`;
+ * measured on the installed app afterwards, a rail crossing changes the shell exactly once — rail
+ * items 4 → 4, no neutral pane, no download marker, the probe's own document counter unmoved.
  */
 function VaultRouteIdentityBoundary({
   pathname,
@@ -255,26 +293,13 @@ function VaultRouteIdentityBoundary({
     (vault.status === "opening" || vault.status === "loading") &&
     !localReady;
   const desktopWithoutVault = desktop && workbenchDestination && !vault.manifest;
-  const [releasedPathname, setReleasedPathname] = useState(pathname);
-  const routeCommitPending = localReady && releasedPathname !== pathname;
-
-  useLayoutEffect(() => {
-    if (!routeCommitPending) return;
-    let cancelled = false;
-    window.queueMicrotask(() => {
-      if (!cancelled) setReleasedPathname(pathname);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [pathname, routeCommitPending]);
 
   useEffect(() => {
     if (!desktopWithoutVault || !vault.restoreAttempted) return;
     router.replace("/");
   }, [desktopWithoutVault, router, vault.restoreAttempted]);
 
-  if (routeCommitPending || localLoadPending || desktopWithoutVault) {
+  if (localLoadPending || desktopWithoutVault) {
     return (
       <div
         data-testid="vault-route-identity-pending"

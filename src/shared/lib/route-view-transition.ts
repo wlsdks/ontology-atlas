@@ -11,11 +11,39 @@
  * The browser's View Transitions API does the work: `document.startViewTransition`
  * snapshots the old screen, the navigation updates the DOM, and the two are
  * crossfaded by the compositor. `app/globals.css` sets the crossfade to
- * `--motion-base` on the `--motion-ease` curve and keeps the nav rail out of the
- * crossfade (its active indicator already slides on its own transition, and a
- * rail that fades under a sliding indicator reads as two events). Reduced motion
- * keeps the crossfade: an opacity-only change is the least-shaking equivalent the
- * design system asks for, not something to switch off.
+ * `--motion-base` on the `--motion-ease` curve. Reduced motion keeps the
+ * crossfade: an opacity-only change is the least-shaking equivalent the design
+ * system asks for, not something to switch off.
+ *
+ * ⚠️ **What is captured is the pane, and only while a transition runs**
+ * (2026-09-13). The crossfade used to capture the whole document and lift the nav
+ * rail out of it under its own name. In WebKit — the installed app's engine — the
+ * root group paints over every other group, so a named sibling spends the whole
+ * transition underneath the departing screen's snapshot (the engine table is in
+ * `app/globals.css`). `ROUTE_CROSSFADE_CLASS` is therefore put on the document
+ * element for exactly as long as the transition lasts: the stylesheet uses it to
+ * stop capturing the root and to name the shell's pane instead. Off a transition
+ * the document carries no `view-transition-name` at all, so nothing here changes
+ * paint or containment while the app is sitting still.
+ *
+ * ⚠️ **This was not what blanked the installed app, and the record used to say it
+ * was** (corrected 2026-09-13). Inspection 122's B1 — *"every rail navigation
+ * blanks the whole window, rail included"* — survived the change above, and the
+ * reason is that a rail press in the installed app was never a route change at
+ * all. `src-tauri/tauri.conf.json`'s `connect-src` refused the App Router's fetch
+ * of the arriving route's own payload, so the router fell back to a **full document
+ * load**: the blank was the app booting and restoring the folder again, which is
+ * why it lasted 33-67 ms on a six-document folder and 100-300 ms on a
+ * 104-document one. `scripts/lib/desktop-csp.mjs` carries that measurement and the
+ * gates.
+ *
+ * With navigation restored to a route change, the crossfade **paints correctly on
+ * WKWebView**. Measured on the installed app, change-driven frame burst at 1/120 s
+ * over a rail band and a pane band: a Library crossing ran the transition for 231 ms
+ * with its four `::view-transition` animations occupying the declared 180 ms, and
+ * **every frame of it was painted** — rail ink 0.0243-0.0307, never 0. So the
+ * crossfade is not engine-gated and no surface opts out of it; a browser without
+ * the API still takes the direct path below, as it always has.
  *
  * **Why the promise resolves on the pathname, not on `router.push`.** The App
  * Router's push returns before the new tree is committed. The transition must
@@ -145,6 +173,34 @@ let pendingSettle: (() => void) | null = null;
 /** The bound armed for the transition now running, so a second click replaces it. */
 let pendingBound: (() => void) | null = null;
 
+/**
+ * The class that makes the stylesheet capture the pane instead of the document.
+ *
+ * It is added before `startViewTransition` — the browser reads the old state inside that
+ * call, so a class added afterwards would name nothing — and removed once the transition
+ * has finished, however it ended. A skipped transition settles `finished` too, so the
+ * class is never left behind; the counter below is what keeps a second navigation from
+ * having the first one's cleanup strip the name out from under it.
+ */
+/** Paired with `html.route-crossfade` in `app/globals.css`; not exported, so the name lives
+ *  in exactly two places and `pnpm knip` does not carry an unused export. */
+const ROUTE_CROSSFADE_CLASS = "route-crossfade";
+
+let crossfadeGeneration = 0;
+
+function beginCrossfadeCapture(): number {
+  if (typeof document === "undefined") return 0;
+  crossfadeGeneration += 1;
+  document.documentElement.classList.add(ROUTE_CROSSFADE_CLASS);
+  return crossfadeGeneration;
+}
+
+function endCrossfadeCapture(generation: number): void {
+  if (typeof document === "undefined") return;
+  if (generation !== crossfadeGeneration) return;
+  document.documentElement.classList.remove(ROUTE_CROSSFADE_CLASS);
+}
+
 function viewTransitionApi(): StartViewTransition | null {
   if (typeof document === "undefined") return null;
   const candidate = (document as unknown as { startViewTransition?: unknown }).startViewTransition;
@@ -180,6 +236,7 @@ export function navigateWithViewTransition(
   // not chain two held snapshots.
   pendingSettle?.();
   pendingBound = null;
+  const generation = beginCrossfadeCapture();
   const handle = start(
     () =>
       new Promise<void>((resolve) => {
@@ -205,7 +262,28 @@ export function navigateWithViewTransition(
       }),
   ) as ViewTransitionHandle;
   silenceSkippedTransition(handle);
+  releaseCaptureWhenSettled(handle, generation);
   return "transition";
+}
+
+/**
+ * Puts the document back to capturing nothing once the transition is over.
+ *
+ * `finished` settles on a skipped transition as well as a completed one, and a handle that
+ * carries neither (an older implementation, or a test's fake) is released immediately —
+ * leaving the class on would keep a `view-transition-name` on the pane for the rest of the
+ * session, which is a containing block the pane does not otherwise have.
+ */
+function releaseCaptureWhenSettled(handle: ViewTransitionHandle | null, generation: number): void {
+  const settled = handle?.finished ?? handle?.updateCallbackDone;
+  if (typeof settled?.then !== "function") {
+    endCrossfadeCapture(generation);
+    return;
+  }
+  settled.then(
+    () => endCrossfadeCapture(generation),
+    () => endCrossfadeCapture(generation),
+  );
 }
 
 /** Called by the shell once the new route has committed: releases the held snapshot. */

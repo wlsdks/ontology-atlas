@@ -49,6 +49,7 @@ import {
 } from "./lib/design-spec-census.mjs";
 import { parseLedger } from "./decisions-find.mjs";
 import { FIELDS, LIMITS, TEMPLATE, checkLedgerTemplate } from "./lib/decision-record-template.mjs";
+import { readLedgerSource } from "./lib/record-ledgers.mjs";
 
 const LEDGER = "docs/DECISIONS.md";
 
@@ -61,7 +62,10 @@ const LEDGER = "docs/DECISIONS.md";
  * eleven records a day.
  */
 function templateFailures() {
-  const broken = checkLedgerTemplate(parseLedger(readFileSync(LEDGER, "utf8")));
+  let source;
+  try { source = readLedgerSource(LEDGER, { root: process.cwd() }); }
+  catch (error) { console.error(error.message); return true; }
+  const broken = checkLedgerTemplate(parseLedger(source.content));
   if (broken.length === 0) return false;
   console.error(`[decisions] ${broken.length} record(s) do not fit the template:`);
   for (const { record, problems } of broken) {
@@ -97,7 +101,7 @@ function printHelp() {
 
 Fails when a change adds or removes a user-facing route, edits the MCP/CLI
 public contract, or moves the design system's vocabulary/ramps, without
-appending to ${LEDGER} in the same change.
+adding a decision fragment in the same change.
 
 The design-spec trigger files are read from ${SPEC_RULE_DOC} — that document
 is the single source of the list, and this script never copies it.
@@ -148,6 +152,7 @@ function resolveBase(explicit) {
 }
 
 const base = resolveBase(parseArgs(process.argv.slice(2)));
+if (process.argv.includes("--template")) { console.log(TEMPLATE); process.exit(0); }
 if (templateFailures()) process.exit(1);
 if (!base) {
   console.log("[decisions] no comparable base ref — skipping (nothing to diff against)");
@@ -233,19 +238,20 @@ if (triggers.length === 0) {
   process.exit(0);
 }
 
-if (changedPaths.has(LEDGER)) {
-  console.log(`[decisions] trigger present and ${LEDGER} was updated ✓`);
+const decisionFragmentChanged = entries.some((entry) => entry.status === "A" && /^docs\/records\/decisions\/[^/]+\.md$/.test(entry.path));
+if (decisionFragmentChanged) {
+  console.log(`[decisions] trigger present and a decision fragment was added ✓`);
   for (const trigger of triggers) console.log(`[decisions]   ${trigger}`);
   process.exit(0);
 }
 
-console.error(`[decisions] this change tripped a significant-decision trigger but ${LEDGER} holds no record of it:`);
+console.error('[decisions] this change tripped a significant-decision trigger but adds no decision fragment:');
 for (const trigger of triggers) console.error(`[decisions]   - ${trigger}`);
 console.error(`
 [decisions] Do one of these:
 [decisions]   1. run /po-pass (or pnpm po:route) with one Atlas outcome and every change/boundary fact
 [decisions]   2. if the route is review, run /po-council with Evidence plus the selected specialist
-[decisions]   3. append the before-state, decision delta, dissent, and falsifier to ${LEDGER}
+[decisions]   3. create a decision fragment with the before-state, decision delta, dissent, and falsifier
 [decisions]   4. if the trigger is a false positive (a route file move, say), say so in one line in the record
 [decisions]
 [decisions] For a «specification …» trigger, declare design-contract to pnpm design:route;

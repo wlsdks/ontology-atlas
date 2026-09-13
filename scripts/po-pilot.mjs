@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 import { evaluatePoPilot, parsePoPilot, pilotCheckFailures } from './lib/po-pilot.mjs';
+import { loadPoPilotRecords } from './lib/po-pilot-records.mjs';
 
 const DEFAULT_PILOT = 'docs/PO-PILOT.md';
 
@@ -50,7 +51,9 @@ export function runPoPilot(argv, io = console) {
       io.log(help());
       return 0;
     }
-    const pilot = parsePoPilot(readFileSync(args.file, 'utf8'));
+    const pilot = args.file === DEFAULT_PILOT
+      ? loadPoPilotRecords().pilot
+      : parsePoPilot(readFileSync(args.file, 'utf8'));
     const result = evaluatePoPilot(pilot, args.asOf);
     const failures = pilotCheckFailures(result);
     io.log(args.json ? JSON.stringify(result, null, 2) : formatPoPilot(result));

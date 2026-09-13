@@ -108,7 +108,13 @@ second direct source.
 Not a roadmap. This summarizes behavior documented in the
 [feature inventory](docs/FEATURES.md), the
 [specification](docs/ONTOLOGY-ATLAS-SPEC.md), and the
-[decision ledger](docs/DECISIONS.md).
+[decision history](docs/DECISIONS.md) and [independent record workflow](docs/records/README.md).
+
+Each worktree adds its own decision/change/pilot fragments with `pnpm record:new`
+and `pnpm po:record`. `pnpm test:records` checks composition and writer contracts.
+Docs Vault JSON and public copies are ignored build products, materialized by
+installation and checkout/merge hooks; use `pnpm docs-vault:build` after an
+installation with scripts disabled.
 
 **Working today**
 
@@ -555,6 +561,17 @@ forks, and that is a security boundary rather than a formality. Inside this
 repository [AGENTS.md](AGENTS.md) is canonical for people and agents alike, and
 product decisions route through `pnpm po:route -- --help` from change facts
 rather than a self-declared risk.
+
+Pre-push keeps quick checks local; full contract and Knip scans belong to PR CI.
+Main CI reuses a successful PR only for the identical Git tree with complete
+live required-check proof; unproven pushes use their diff. Daily and manual
+runs remain exhaustive. Exact test-file duplicates are collapsed within a
+local check run. Browser CI shares one build and balances whole test files by
+measured duration; `node --test scripts/run-playwright-ci.test.mjs` verifies allocation.
+MCP harness probes use `pnpm test:mcp:rpc`; full CI keeps the unique CLI boundary
+through `pnpm integration:cli:architecture`. Catalogue checks use captured inputs;
+`pnpm mcp:catalogue:check-online` explicitly checks current registry facts.
+Details: [development checks](docs/DEVELOPMENT-CHECKS.md).
 
 Verification starts with `pnpm checks:changed`, which picks the focused gates for
 the files you changed; `-- --run` executes every recommendation and stops at the

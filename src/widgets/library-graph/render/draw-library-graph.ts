@@ -19,7 +19,7 @@ import type { LibraryGraphInk } from "./library-graph-ink";
  * |---|---|
  * | cites, hash still matching | solid, 1.5px |
  * | mentions | dashed, 1px |
- * | either, unverified | broken once at its midpoint |
+ * | either, unverified | broken once at its midpoint, with an amber dot in the break |
  *
  * A source nobody has written up is a **hollow** square: the state the list beside this
  * canvas prints as "not compiled" gets a mark of its own rather than being inferred from
@@ -294,6 +294,34 @@ const STANDING_LABEL_MAX_WIDTH = 132;
  * (`chargeback-runbook.md` is 21).
  */
 const STANDING_LABEL_MAX_CHARS = 24;
+/**
+ * The leader search: how far a name may be pushed from its mark, in how many steps, on how
+ * many spokes.
+ *
+ * 44px is about three line heights at `--text-label`. Past that a name is not read as *that*
+ * dot's name even with a line drawn to it; short of it, measured on the sixty-mark folder at
+ * 1040×720 — 616×594 of canvas, the tightest case in the matrix — three of the twenty-four
+ * write-ups were still anonymous at 30px on eight spokes. Four steps on twelve spokes is 48
+ * further offers, which is what clears that folder, and only a name that has already lost
+ * all four of its own places pays for any of them.
+ */
+const LEADER_REACH_MAX = 44;
+const LEADER_STEPS = 4;
+const LEADER_SPOKES = 12;
+/**
+ * Above this many marks the leader search is skipped, and a name that loses its four places
+ * is dropped as it was before.
+ *
+ * Two reasons, and the second alone would be enough. A folder of several hundred marks has
+ * already chosen a **subset** of names (`SOURCE_LABEL_MIN_SCALE`, and the collision order
+ * that resolves against the quieter page), so there is no promise here that every mark is
+ * named — and a name pushed 30px through a cluster that dense attaches itself to whichever
+ * dot it lands beside, which is worse than no name. The other is arithmetic: the search
+ * offers 24 more boxes per name and each is tested against every box already placed, so on
+ * the 372-mark folder it would cost about seven times the whole label pass, against a frame
+ * budget of 2ms.
+ */
+const LEADER_MAX_MARKS = 120;
 const LABEL_PAD_X = 6;
 const LABEL_PAD_Y = 4;
 const LABEL_GAP = 6;
@@ -316,9 +344,62 @@ const FLOW_PERIOD = FLOW_DASH + FLOW_GAP;
 /** Where a still frame's chevron sits along the curve, and how wide its arms are. */
 const FLOW_CHEVRON_T = 0.62;
 const FLOW_CHEVRON_PX = 3.5;
-/** The amber dot in a broken citation's gap: its resting radius and its breath. */
+/**
+ * The amber dot in a broken citation's gap: its resting radius, its floor, and its breath.
+ *
+ * The floor is the mark floor — 3px across, the same number a file's square may never drop
+ * under — because the dot is the whole of what says a citation is unverified once a person
+ * has stopped hovering it. It never grows past half the break it stands in, so on a short
+ * edge it stays a dot in a gap rather than a bead over a line.
+ */
 const STALE_DOT_RADIUS = 2.2;
+const STALE_DOT_RADIUS_MIN = 1.5;
 const STALE_DOT_BREATH = 1.1;
+/**
+ * **How many standing amber dots a folder may draw at rest, before the picture says the
+ * number instead of painting it once per citation.**
+ *
+ * ⚠️ **This is a count of unverified citations, not of marks.** The amber ink is
+ * proportional to the dots, and only to the dots: measured at **6–11 canvas pixels of
+ * strict amber per dot** on all four picture fixtures and at all three windows, because the
+ * dot is a screen-space constant and does not shrink with the camera. A folder of four
+ * hundred marks with two stale citations should keep both of them, and a mark-count
+ * threshold would take them away.
+ *
+ * ## Where 64 comes from
+ *
+ * The budget this holds is recorded in
+ * `docs/records/decisions/2026-09-13-standing-amber-ink-share-e7854c6f-2475-49ae-821d-2c6dc5bcbdc6.md`:
+ * **the standing amber may hold no more than 4% of the canvas's ink at rest**, ink being
+ * re-inspection 122's own statistic (a canvas pixel brighter than luma 30). Both sides of
+ * 64 are measured, on `tests/e2e/library-graph-picture.spec.ts`'s own fixtures:
+ *
+ * | folder | stale citations | amber / ink at 1040x720 |
+ * |---|---|---|
+ * | `vault-zero-answers` | 6 | 0.67% |
+ * | `vault` | 10 | 0.56% |
+ * | `vault-60` | 48 | **2.09%** |
+ * | `vault-300` | 480 | **15.57%** |
+ *
+ * 48 is the densest folder the 2026-09-12 and 2026-09-13 reviews read as legible, so the
+ * cap has to sit above it. Its own narrowest window draws 19,517 pixels of ink, and 4% of
+ * that is 781 amber pixels, which at the worst measured 10.8 per dot is **72 dots** — so
+ * the cap has to sit below that or the folder it was chosen for cannot afford it. 64 is the
+ * round number between the two, 1.33x the folder that must keep every dot and 0.89x what
+ * that folder's own ink can pay for.
+ *
+ * ## What happens above it
+ *
+ * Not a sample: a folder above the cap draws **no** standing dot at all, so an undotted
+ * stale citation can never be misread as a fresh one. The dots stay on the citations the
+ * reader has in hand — the open card's own, the pointed-at mark's neighbourhood, and every
+ * one of them while the strip's `N sources changed` clause is held, which is one press and
+ * says both counts. The fact is never off the screen; it stops being repeated 480 times.
+ *
+ * Re-inspection 122 R2 is what this answers: 23,298 amber pixels against 0, total graph
+ * ink up **48%**, and *"the picture's dominant mark is now a warning, not a document"*.
+ */
+export const STALE_DOT_STANDING_MAX = 64;
 const LABEL_RADIUS = 4;
 /** Pointer slop around a mark for a mouse. A 5px square is smaller than any pointer. */
 const FINE_HIT_REACH = 4;
@@ -638,24 +719,132 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
    *
    * A stale citation is drawn as two arcs with a hole at the midpoint (see
    * `BROKEN_EDGE_GAP`), and the hole is exactly where the fact lives: *this line may no
-   * longer describe that file*. The pulse fills it rather than adding a mark somewhere
-   * else, so the breath is read as being about the break and not about the page or the
-   * file at either end. `--color-status-warning` is the product's one warning amber; this
-   * canvas mints nothing.
+   * longer describe that file*. The dot fills it rather than adding a mark somewhere else,
+   * so it is read as being about the break and not about the page or the file at either
+   * end. `--color-status-warning` is the product's one warning amber; this canvas mints
+   * nothing.
+   *
+   * ⚠️ **It is a standing mark, and it used to be only a breath.** The dot was drawn solely
+   * while `flow.pulse` held the edge — one breath as the home settled, or while a card
+   * stood open on one of its ends — so on a folder at rest, which is the state the home
+   * spends its life in, *nothing amber was on the canvas at all*. Inspection 122 caught it
+   * as a phantom: an amber-pixel scan over the identical state returned 28 hits at one
+   * window and 0 at another (S2), because the two captures fell on either side of a breath
+   * that lasts two settle budgets and never returns. Meanwhile the card's own sentence —
+   * *the amber dot is a citation this folder can no longer vouch for* — named a mark the
+   * default window never drew.
+   *
+   * So an unverified citation carries the dot whenever its line is drawn, at the line's
+   * own ink, and the breath is what it does **on top of** that: `pulse` grows it, and
+   * reduced motion takes the grown one as its still frame. Nothing about this moves a mark,
+   * and a folder with no stale citation draws no amber at all. How many dots stand at once
+   * is bounded by {@link STALE_DOT_STANDING_MAX}, which the block below owns.
+   *
+   * ⚠️ **The breath is a size, not a brightness, and that is not a taste.** Held at the old
+   * 0.55 resting alpha the dot composites to `rgb(139, 105, 33)` over this ground — it fails
+   * the amber scan the gate runs, which is another way of saying a person would not read it
+   * as the product's warning amber. `--color-status-warning` at the line's own ink is the
+   * mark; what the pulse adds is half again its radius.
    */
-  if (flow !== null && flow.pulse.size > 0) {
-    const breath = flow.still ? 1 : flow.pulsePhase;
+  {
+    const breath = flow === null ? 0 : flow.still ? 1 : flow.pulsePhase;
+    /*
+     * ⚠️ **Above {@link STALE_DOT_STANDING_MAX} the folder says the number instead of
+     * painting it once per citation** (re-inspection 122, R2).
+     *
+     * Standing was the fix; standing **at every scale** was the defect. On the
+     * three-hundred-source folder 480 citations are unverified, and one dot each measured
+     * 5,202 pixels of strict amber against 33,416 of ink — **15.6% of the picture**, with
+     * total graph ink up 48% on the installed app. The reviewer's sentence is the
+     * statistic: *"the picture's dominant mark is now a warning, not a document"*, which
+     * is the "reader who calls dense amber noise" the 2026-09-13 ceiling record listed as
+     * its own falsifier.
+     *
+     * Two other levers were arithmetic dead ends and are not taken. **Alpha** is refused by
+     * the same record's own measurement: at 0.55 the dot composites to `rgb(139,105,33)`
+     * over this ground, which is not this product's warning amber and does not pass the
+     * gate's scan. **Radius** has one step of room — 2.2 down to the 3px mark floor at 1.5
+     * — worth 54% of the area, not the order of magnitude the 300-source folder needs, and
+     * it would spend it on the six-document folder where the dot is the only amber there
+     * is. The count is the only lever with range, so the count is the lever.
+     *
+     * Below the cap nothing changes: every unverified citation carries its dot at rest, at
+     * every window, which is the bar inspection 122 raised (0 -> 97 strict amber pixels on
+     * the six-document folder at 1512, 59 of them outside its placed names). Above it the dots stay on the citations the reader
+     * has in hand, and **all or nothing** — never a sample, so an undotted stale citation
+     * can never be read as a fresh one:
+     *
+     * - `frame.focus` holds the pointed-at mark's neighbourhood, the open card's, and —
+     *   since slice L0 — every stale citation's two ends while the strip's
+     *   `N sources changed` clause is held. That clause is on the screen at rest whatever
+     *   the folder's size, says both counts, and is one press.
+     * - Nothing else does. `flow`'s own sets are the home's arrival breath and a freshly
+     *   written page's citations, neither of which is a reader pointing at something; see
+     *   `revealOf` for what exempting them measured.
+     *
+     * The card's `graph.card.flowInlineStale` sentence — *an amber dot marks one this folder
+     * can no longer vouch for* — is printed from that mark's own unverified citations, so it
+     * still names a mark that is drawn whenever it is printed: a card open means its mark is
+     * the selection, and the selection is in `focus`.
+     */
+    let standing = 0;
+    for (const edge of frame.edges) if (edge.certainty === "unverified") standing += 1;
+    const everyDot = standing <= STALE_DOT_STANDING_MAX;
+    /**
+     * **How far a dot is revealed: 1, 0, or wherever the dim's own ramp has got to.**
+     *
+     * ⚠️ **Attention means the reader's, and nothing in `flow` counts as it.** `flow.pulse`
+     * is the whole folder's stale set for two settle budgets as the home settles, and
+     * `flow.arrivalEdges` is every citation of a page Compile has just written — so
+     * exempting either one put the 480-dot field back on the canvas for the first two
+     * seconds of every visit, which is the same field measured against a stopwatch instead
+     * of a screenshot. A card open is already the reader's attention by a shorter route:
+     * `cardId` drives `dim` to 1 and puts the card's mark and its neighbours in `focus`.
+     *
+     * ⚠️ **It rides `dim` rather than switching, and that is load-bearing, not polish.**
+     * `focus` is deliberately **kept while the ramp runs back out** so the un-dim is not a
+     * hard cut, which means a reveal that only asked "is it in focus" would light the dots
+     * once and never put them away: measured as 6,542 amber pixels still on the canvas
+     * after the stale clause was lifted and `aria-pressed` read `false`. Riding the eased
+     * value costs nothing new — no clock, no second ramp — and the settled state is `dim`
+     * at exactly 1, so a standing dot is still painted at the line's own full ink, which is
+     * the half of the 2026-09-13 record that says a dimmed amber is not amber.
+     */
+    const revealOf = (edge: LibraryGraphEdge): number => {
+      if (everyDot) return 1;
+      const inHand =
+        (focus !== null && (focus.has(edge.source) || focus.has(edge.target))) ||
+        edge.source === frame.selectedId ||
+        edge.target === frame.selectedId ||
+        (active !== null && (edge.source === active || edge.target === active));
+      return inHand ? dim : 0;
+    };
     for (const edge of frame.edges) {
-      if (!flow.pulse.has(edge.id)) continue;
+      if (edge.certainty !== "unverified") continue;
+      const reveal = revealOf(edge);
+      if (reveal <= 0) continue;
       const from = nodeCentre(frame, edge.source);
       const to = nodeCentre(frame, edge.target);
       if (!from || !to) continue;
+      const pulsing = flow !== null && flow.pulse.has(edge.id);
+      const rise = pulsing ? breath : 0;
       const control = edgeControlPoint(from, to);
       const middle = quadraticAt(from, control, to, 0.5);
-      ctx.globalAlpha = 0.55 + 0.45 * breath;
+      const gap = Math.min(BROKEN_EDGE_GAP, Math.hypot(to.x - from.x, to.y - from.y) / 3);
+      const radius =
+        Math.max(STALE_DOT_RADIUS_MIN, Math.min(STALE_DOT_RADIUS, gap / 2)) + STALE_DOT_BREATH * rise;
+      /*
+       * The line's own alpha, so a dimmed citation's break dims with it and the selected
+       * page's stays at full ink — the rule every other mark on this canvas follows.
+       */
+      const edgeAlpha =
+        frame.selectedId !== null && (edge.source === frame.selectedId || edge.target === frame.selectedId)
+          ? 1
+          : Math.min(alphaOf(edge.source), alphaOf(edge.target));
+      ctx.globalAlpha = edgeAlpha * reveal;
       ctx.fillStyle = ink.stale;
       ctx.beginPath();
-      ctx.arc(middle.x, middle.y, STALE_DOT_RADIUS + STALE_DOT_BREATH * breath, 0, Math.PI * 2);
+      ctx.arc(middle.x, middle.y, radius, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -909,18 +1098,72 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         { x: centre.x + half + STANDING_LABEL_GAP, y: centre.y - lineHeight / 2 },
         { x: centre.x - half - STANDING_LABEL_GAP - width, y: centre.y - lineHeight / 2 },
       ];
+      /*
+       * ⚠️ **A name that loses all four places is pushed out on a leader, not deleted.**
+       *
+       * Inspection 122 found the cost on the owner's own folder: six files were drawn, five
+       * carried a name, and the sixth was **anonymous** because its four places were taken
+       * by a page's label (S18). A mark with no identity is the one thing this canvas cannot
+       * afford — the whole argument for naming the marks is that a person cannot ask a dot
+       * for a name they have no reason to point at.
+       *
+       * So the four places become the first ring of a search: the same eight directions are
+       * tried at growing offsets, and a name that lands past the first ring is tied to its
+       * mark by a hairline. The push stops at {@link LEADER_REACH_MAX} because a name far
+       * enough from its dot belongs to nothing — past that the old behaviour is still the
+       * right one and the name is dropped.
+       */
+      for (let step = 1; frame.nodes.length <= LEADER_MAX_MARKS && step <= LEADER_STEPS; step += 1) {
+        const reach = half + STANDING_LABEL_GAP + (LEADER_REACH_MAX / LEADER_STEPS) * step;
+        for (let spoke = 0; spoke < LEADER_SPOKES; spoke += 1) {
+          // Starting below the mark and going round, so the first offers stay near the two
+          // places a reader looks first and the order is the same on every machine.
+          const angle = Math.PI / 2 + (spoke * 2 * Math.PI) / LEADER_SPOKES;
+          const at = { x: centre.x + Math.cos(angle) * reach, y: centre.y + Math.sin(angle) * reach };
+          // Slid back inside the frame rather than dropped for being near an edge — the same
+          // rule the four base places take, and for the same reason: the fit puts marks
+          // against both edges by design, so an unslid ring hides exactly the names a
+          // person is most likely to be looking for.
+          candidates.push({
+            x: Math.min(Math.max(2, at.x - width / 2), Math.max(2, frame.width - 2 - width)),
+            y: at.y - lineHeight / 2,
+          });
+        }
+      }
       let box: { x: number; y: number; width: number; height: number } | null = null;
-      for (const candidate of candidates) {
+      let placement = 0;
+      for (const [index, candidate] of candidates.entries()) {
         const tried = { x: candidate.x, y: candidate.y, width, height: lineHeight };
         // Off the frame there is nowhere to slide to, so that placement loses.
         if (tried.y < 2 || tried.y + tried.height > frame.height - 2) continue;
         if (tried.x < 2 || tried.x + tried.width > frame.width - 2) continue;
         if (taken.some((other) => other.of !== node.id && overlaps(tried, other))) continue;
         box = tried;
+        placement = index;
         break;
       }
       if (!box) continue;
       taken.push(box);
+      /*
+       * The leader: from the edge of the mark to the edge of the box, in the name's own
+       * ink and one hairline wide. Only for a name that was pushed past its own four
+       * places — a line to a label already touching its dot would be drawing a relation
+       * that is not one.
+       */
+      if (placement >= 4) {
+        const anchor = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+        const away = Math.hypot(anchor.x - centre.x, anchor.y - centre.y) || 1;
+        const unit = { x: (anchor.x - centre.x) / away, y: (anchor.y - centre.y) / away };
+        const stop = Math.max(0, away - Math.max(box.width, box.height) / 2 - 2);
+        ctx.globalAlpha = alphaOf(node.id);
+        ctx.strokeStyle = node.kind === "page" ? ink.page : ink.sourceLabel;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(centre.x + unit.x * (half + 1), centre.y + unit.y * (half + 1));
+        ctx.lineTo(centre.x + unit.x * stop, centre.y + unit.y * stop);
+        ctx.stroke();
+      }
       frame.labelReport?.push({
         nodeId: node.id,
         kind: node.kind,

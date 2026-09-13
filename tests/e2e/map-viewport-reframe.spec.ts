@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { waitForMapStill, waitFrames } from "./settle";
 
 type Camera = { x: number; y: number; scale: number; width: number; height: number };
 
@@ -8,30 +9,16 @@ async function readCamera(page: Page): Promise<Camera | null> {
   return page.evaluate(() => window.__atlasMap?.camera() ?? null);
 }
 
-/** Measures the screen after the camera target and actual value arrive and stop. */
+/**
+ * Measures the screen after the camera target and actual value arrive and stop.
+ *
+ * The stillness is judged **in the page**, on animation frames: the spring is
+ * settled when the frames it draws stop differing, which is the same event on a
+ * fast machine and a slow one. Sampling every 250 ms from the test process only
+ * asked how far this laptop's clock had got.
+ */
 async function settleCamera(page: Page) {
-  await expect
-    .poll(
-      async () => {
-        const samples: Camera[] = [];
-        for (let index = 0; index < 3; index += 1) {
-          const camera = await readCamera(page);
-          if (!camera) return false;
-          samples.push(camera);
-          if (index < 2) await page.waitForTimeout(250);
-        }
-        return samples.slice(1).every((camera, index) => {
-          const before = samples[index];
-          return (
-            Math.abs(before.x - camera.x) < 0.02 &&
-            Math.abs(before.y - camera.y) < 0.02 &&
-            Math.abs(before.scale - camera.scale) < 0.0002
-          );
-        });
-      },
-      { timeout: 30_000, message: "카메라가 정착하지 않아 프레이밍을 비교할 수 없다" },
-    )
-    .toBe(true);
+  await waitForMapStill(page, { what: "camera" });
 }
 
 test("짧은 선택 인스펙터도 실제 자유 영역으로 카메라를 민다", async ({ page }) => {
@@ -229,15 +216,36 @@ test("우측 도크로 지도 폭이 줄면 현재 overview를 새 가용영역�
     .toBeLessThan(before!.width - 350);
   // Two frames after the last resize, when the expensive viewport layer has settled.
   // Unrelated rerenders like ACP boot should not wake the camera after this point.
-  await page.waitForTimeout(100);
+  await waitFrames(page, 2);
   const atResizeSettle = await readCamera(page);
   expect(atResizeSettle).not.toBeNull();
-  const postResizeSamples: Camera[] = [atResizeSettle!];
-  for (let sample = 0; sample < 6; sample += 1) {
-    await page.waitForTimeout(100);
-    const camera = await readCamera(page);
-    if (camera) postResizeSamples.push(camera);
-  }
+  /*
+   * The bounce window. This is a **measurement**, not a wait: it has to watch for a
+   * while to catch an underdamped camera swinging back. Watching in frames rather
+   * than in 100 ms round trips both samples what the screen actually drew — a round
+   * trip can straddle several frames and miss the peak — and lets a slow machine
+   * take longer over the same number of frames.
+   */
+  const postResizeSamples: Camera[] = [
+    atResizeSettle!,
+    ...(await page.evaluate(
+      (frames) =>
+        new Promise<Camera[]>((resolve) => {
+          const collected: Camera[] = [];
+          const step = () => {
+            const camera = window.__atlasMap?.camera() ?? null;
+            if (camera) collected.push(camera);
+            if (collected.length >= frames) {
+              resolve(collected);
+              return;
+            }
+            requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        }),
+      36,
+    )),
+  ];
   await settleCamera(page);
   const automatic = await readCamera(page);
   expect(automatic).not.toBeNull();

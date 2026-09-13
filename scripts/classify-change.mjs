@@ -2,18 +2,20 @@
 /**
  * Build one fail-closed CI impact plan from a Git diff.
  *
- * PRs pay for evidence that can see their changed paths. Pushes to main, shared
- * test configuration, and changes to this planner itself run the exhaustive
+ * PRs and verified main push ranges pay for affected evidence. Scheduled runs,
+ * shared test configuration, and changes to this planner run the exhaustive
  * lanes. The focused mapping is not duplicated here: `checks:changed` remains
  * the repository's path -> check authority and this module assigns those checks
  * to CI lanes.
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
+import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
 
 import {
   CI_PLANNER_SURFACE_PATTERNS,
+  BROWSER_EXECUTION_SURFACE_PATTERNS,
   normalizeChangedPath,
   suggestFocusedChecks,
 } from './lib/focused-check-suggestions.mjs';
@@ -38,12 +40,15 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:harness:outcomes',
     'pnpm test:pr:land',
     'pnpm test:decisions',
+    'pnpm test:records',
     'pnpm test:changelog',
     'pnpm changelog:check',
     'pnpm dev-checks:check',
     'pnpm test:dev-checks',
     'pnpm test:checks:changed',
     'pnpm test:ci:impact',
+    'node --test scripts/run-playwright-ci.test.mjs',
+    'node --test scripts/prepush.test.mjs',
     'pnpm test:source:language',
     'pnpm test:docs:language',
     'pnpm test:docs:checks',
@@ -51,7 +56,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:skills:audit',
     'pnpm test:cli:args',
     'pnpm test:cli:mcp-call',
-    'pnpm test:architecture',
+    'pnpm integration:cli:architecture',
     'pnpm test:mcp:verify',
     'pnpm test:vault:validate',
     'pnpm test:vault:audit',
@@ -80,6 +85,7 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm integration:cli:setup',
     'pnpm test:mcp:unit',
     'pnpm integration:mcp',
+    'pnpm test:mcp:rpc',
     'pnpm docs:surface:check',
     // The ecosystem channel's own agreement: the bundle ships the server's
     // declared files, the image's ownership label repeats the registry name, and
@@ -114,6 +120,7 @@ const MCP_FULL_INPUTS = [
 ];
 
 const E2E_FULL_INPUTS = [
+  ...BROWSER_EXECUTION_SURFACE_PATTERNS,
   /^playwright\.config\.ts$/,
   /^next\.config\.ts$/,
   /^postcss\.config\.mjs$/,
@@ -408,7 +415,7 @@ export function buildImpactPlan({ files = [], deletedFiles = [], forceFull = fal
     paths,
     unknownPaths,
     reason: forceFull
-      ? fullReason ?? 'no safe PR comparison or default-branch push — exhaustive lanes'
+      ? fullReason ?? 'no safe comparison or exhaustive event — all lanes'
       : plannerChanged
         ? 'CI impact authority changed — exhaustive self-verification'
         : rootAllChanged
@@ -436,11 +443,30 @@ export function decide({ base, head, files = [], deletedFiles = [], eventName = 
   // the whole, so it is exhaustive by name here rather than by accident of the
   // `eventName !== 'pull_request'` fallthrough below.
   const mergeGroup = eventName === 'merge_group';
-  const forceFull = mergeGroup || eventName !== 'pull_request' || !base || (head && base === head);
+  const forceFull = mergeGroup || !['pull_request', 'push'].includes(eventName) || !base || (head && base === head);
   const fullReason = mergeGroup
     ? 'merge group: this combination has never been built — exhaustive lanes'
     : null;
   return buildImpactPlan({ files, deletedFiles, forceFull, fullReason });
+}
+
+export function reuseReviewedMainPlan(plan, proof, { eventName, base, head } = {}) {
+  if (eventName !== 'push' || !base || !head || proof?.skip !== true || proof.commit !== head ||
+      !/^[a-f0-9]{40}$/.test(proof.tree ?? '') || !/^[a-f0-9]{40}$/.test(proof.reviewedHead ?? '') ||
+      !Number.isSafeInteger(proof.pullRequest) || proof.pullRequest < 1 || plan.unknownPaths.length > 0) return plan;
+  const idle = buildImpactPlan();
+  idle.lanes.gates.run = false;
+  return {
+    ...plan,
+    full: false,
+    reason: `exact Git tree already passed required CI in PR #${proof.pullRequest}`,
+    lanes: idle.lanes,
+    reusedFrom: { pullRequest: proof.pullRequest, commit: head, tree: proof.tree, reviewedHead: proof.reviewedHead },
+  };
+}
+
+export function unitUsesAllShards(unit) {
+  return unit.mode === 'full' || unit.affected === true || unit.contract === 'full';
 }
 
 function git(args) {
@@ -488,7 +514,12 @@ export function validatePlan(plan) {
   requireStringArray(plan.unknownPaths, 'unknownPaths');
 
   const { gates, unit, mcp, e2e } = plan.lanes;
-  if (!gates || gates.run !== true || typeof gates.needsMcp !== 'boolean') {
+  const reused = plan.reusedFrom;
+  if (reused && (!Number.isSafeInteger(reused.pullRequest) || reused.pullRequest < 1 ||
+      !['commit', 'tree', 'reviewedHead'].every((key) => /^[a-f0-9]{40}$/.test(reused[key] ?? '')))) {
+    reject('reviewed tree provenance');
+  }
+  if (!gates || (gates.run !== true && !(reused && gates.run === false)) || typeof gates.needsMcp !== 'boolean') {
     reject('gates verdict');
   }
   requireStringArray(gates.commands, 'gates.commands');
@@ -543,6 +574,11 @@ export function validatePlan(plan) {
     reject('Playwright skip contains suite work');
   }
 
+  if (reused && (plan.full || gates.run || gates.commands.length || unit.mode !== 'skip' ||
+      mcp.mode !== 'skip' || e2e.mode !== 'skip' || e2e.staticExport || e2e.webSurface)) {
+    reject('reviewed tree reuse contains unverified lane work');
+  }
+
   if (
     plan.full &&
     (gates.commands.length === 0 ||
@@ -582,6 +618,7 @@ function emit(plan) {
     gates_needs_mcp: gates.needsMcp,
     unit: unit.mode,
     unit_needs_mcp: unit.needsMcp,
+    unit_sharded: unitUsesAllShards(unit),
     mcp: mcp.mode,
     playwright: e2e.mode,
     static: e2e.staticExport,
@@ -601,7 +638,19 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
     process.argv.find((arg) => arg.startsWith('--event='))?.slice('--event='.length) ||
     process.env.GITHUB_EVENT_NAME ||
     'pull_request';
-  const base = resolveBase(baseArg?.trim());
+  // A push must use its exact previous tip, never origin/main (already HEAD).
+  // Missing/deleted history fails closed; do not fall back to another range.
+  let base;
+  if (eventName === 'push') {
+    try {
+      const before = process.env.PUSH_BEFORE;
+      if (!/^[a-f0-9]{40}$/.test(before ?? '') || /^0+$/.test(before)) throw new Error('missing push base');
+      base = git(['rev-parse', '--verify', `${before}^{commit}`]);
+      git(['merge-base', '--is-ancestor', base, 'HEAD']);
+    } catch { base = null; }
+  } else {
+    base = resolveBase(baseArg?.trim());
+  }
   let head = null;
   try {
     head = git(['rev-parse', 'HEAD']);
@@ -610,5 +659,27 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
   }
   const files = changedFiles(base, 'ACMRTUXB');
   const deletedFiles = changedFiles(base, 'D');
-  emit(decide({ base, head, files, deletedFiles, eventName }));
+  const plan = decide({ base, head, files, deletedFiles, eventName });
+  let proof;
+  if (eventName === 'push' && base && head) {
+    proof = await verifyReviewedMainPush({
+      eventName, ref: process.env.GITHUB_REF, sha: head,
+      currentTreeSha: git(['rev-parse', 'HEAD^{tree}']),
+    });
+    // A source tree is immutable; the pilot's calendar deadline is not.
+    if (proof.skip && spawnSync(process.execPath, ['scripts/po-pilot.mjs', '--check'], {
+      stdio: 'inherit', timeout: 10_000,
+    }).status !== 0) proof = { skip: false, reason: 'standing PO policy needs fresh verification' };
+    console.log(`[ci-impact] main-push reuse: ${proof.reason}`);
+  } else if (eventName === 'pull_request' && base && process.env.GITHUB_ACTIONS === 'true' &&
+      files.some((path) => /^scripts\/(?:lib\/)?reviewed-main-push(?:\.test)?\.mjs$/.test(path))) {
+    // Exercise the real read-only Actions credential when this reader changes.
+    // This diagnostic never replaces the PR's own verification plan.
+    const credentialProbe = await verifyReviewedMainPush({
+      eventName: 'push', ref: 'refs/heads/main', sha: base,
+      currentTreeSha: git(['rev-parse', `${base}^{tree}`]),
+    });
+    console.log(`[ci-impact] read-only credential probe: ${JSON.stringify(credentialProbe)}`);
+  }
+  emit(reuseReviewedMainPlan(plan, proof, { eventName, base, head }));
 }

@@ -25,7 +25,7 @@ export { FindDocumentsDialog } from "./ui/FindDocumentsDialog";
 export { buildAskBrief } from "./lib/ask-brief";
 export type { AskQuestionId } from "./lib/ask-brief";
 export { buildAnswerPage } from "./lib/answer-page";
-export { answerObservation, answerRefreshBrief, automaticWikiWriteAllowed, buildAnswerRevision, isRetainedAnswerPath, retainedAnswerHeads } from './lib/answer-revision';
+export { answerHistoryUnreadable, answerObservation, answerRefreshBrief, automaticWikiWriteAllowed, buildAnswerRevision, isRetainedAnswerPath, retainedAnswerHeads } from './lib/answer-revision';
 export type { AnswerObservation, RetainedAnswerHead } from './lib/answer-revision';
 export { answerRevisionStore, answerTextHash, prepareAnswerRefresh, saveAnswerRevision } from './lib/answer-revision-store';
 export type { AnswerRefreshSnapshot } from './lib/answer-revision-store';

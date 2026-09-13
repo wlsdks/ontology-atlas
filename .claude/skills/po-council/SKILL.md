@@ -101,8 +101,9 @@ one; neither the caller role nor a reviewer verdict grants new authority.
   reviewers must not manufacture a delta for the pilot.
 - Record the strongest losing argument, falsifier, revisit condition, review
   footprint, independence limits, and unique contributor.
-- Append significant decisions to `docs/DECISIONS.md`; append one typed run and
-  outcome row to `docs/PO-PILOT.md`.
+- Create significant decisions with `pnpm record:new -- --kind=decision ...`;
+  create the typed UUID run and its initial pending outcome with
+  `pnpm po:record -- --type=run --input=/tmp/po-run.json`.
 
 ## Owner-facing output
 
@@ -122,8 +123,8 @@ the summary means, rewrite it instead of stacking another explanation.
 ## Significant record
 
 Six fields within one screen; `pnpm decisions:check` refuses anything else.
-Route, evidence state, review turns, delta, and later result go to the typed
-run in `docs/PO-PILOT.md`, not into the record.
+Route, evidence state, review turns, and delta go in the typed run fragment;
+later results go in UUID-referencing update fragments, not in the decision record.
 
 ```md
 ## YYYY-MM-DD — <the decision in one line>

@@ -1,3 +1,4 @@
+import { waitForDocumentPaint } from './visual-ready';
 import { test, expect } from "@playwright/test";
 
 /**
@@ -81,7 +82,7 @@ for (const vp of VIEWPORTS) {
 
     for (const url of ROUTES) {
       await page.goto(url, { waitUntil: "domcontentloaded" });
-      await page.waitForTimeout(800);
+      await waitForDocumentPaint(page);
       const measured = await measureOverflow(page);
       if (isOverflowing(measured)) {
         violations.push({ route: url, ...measured });
@@ -116,7 +117,7 @@ for (const vp of VIEWPORTS) {
 test("계기 프로브 — 넘친 원소를 실제로 잡고, documentElement 만으로는 못 잡는다", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(600);
+  await waitForDocumentPaint(page);
 
   const clean = await measureOverflow(page);
   expect(
@@ -130,7 +131,7 @@ test("계기 프로브 — 넘친 원소를 실제로 잡고, documentElement �
       '<div data-testid="ovf-probe" style="width:900px;height:8px"></div>',
     );
   });
-  await page.waitForTimeout(200);
+  await waitForDocumentPaint(page);
   const dirty = await measureOverflow(page);
 
   /* **Calls the gate's own predicate** — asserting the measurement alone stays green when a term is deleted. */
@@ -157,17 +158,17 @@ test("overflow sweep — resize transition 1920↔2560", async ({ page }) => {
   for (const url of ROUTES) {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto(url, { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(800);
+    await waitForDocumentPaint(page);
 
     await page.setViewportSize({ width: 2560, height: 1440 });
-    await page.waitForTimeout(300);
+    await waitForDocumentPaint(page);
     const afterGrow = await measureOverflow(page);
     if (afterGrow.scroll > afterGrow.client) {
       violations.push({ step: "1920→2560", route: url, ...afterGrow });
     }
 
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.waitForTimeout(300);
+    await waitForDocumentPaint(page);
     const afterShrink = await measureOverflow(page);
     if (afterShrink.scroll > afterShrink.client) {
       violations.push({ step: "2560→1920", route: url, ...afterShrink });

@@ -1,0 +1,15 @@
+{
+  "branch": {
+    "name": "main", "protected": true,
+    "commit": { "sha": "ad0206f4ff1c3f50e0d72743fdd1273cf26a2b93", "commit": { "tree": { "sha": "6526175a0ead7d755869cb72019221054515c097" } } },
+    "protection": { "enabled": true, "required_status_checks": { "enforcement_level": "everyone", "contexts": ["Types · Lint · Docs", "Unit · Contract", "MCP"], "checks": [{"context":"Types · Lint · Docs","app_id":15368},{"context":"Unit · Contract","app_id":15368},{"context":"MCP","app_id":15368}] } }
+  },
+  "rules": [],
+  "pulls": [{ "number": 1593, "state": "closed", "merged_at": "2026-09-12T20:47:04Z", "base": { "ref": "main" }, "merge_commit_sha": "ad0206f4ff1c3f50e0d72743fdd1273cf26a2b93", "head": { "sha": "42b6e9bdb27f36d1e04ef8c1f16f0f38c38415ea" } }],
+  "headCommit": { "sha": "42b6e9bdb27f36d1e04ef8c1f16f0f38c38415ea", "tree": { "sha": "6526175a0ead7d755869cb72019221054515c097" } },
+  "checks": { "total_count": 3, "check_runs": [
+    {"id":103617666249,"name":"Types · Lint · Docs","head_sha":"42b6e9bdb27f36d1e04ef8c1f16f0f38c38415ea","status":"completed","conclusion":"success","started_at":"2026-09-12T20:38:01Z","completed_at":"2026-09-12T20:41:54Z","app":{"id":15368,"slug":"github-actions"}},
+    {"id":103618152225,"name":"Unit · Contract","head_sha":"42b6e9bdb27f36d1e04ef8c1f16f0f38c38415ea","status":"completed","conclusion":"success","started_at":"2026-09-12T20:41:50Z","completed_at":"2026-09-12T20:41:54Z","app":{"id":15368,"slug":"github-actions"}},
+    {"id":103617666262,"name":"MCP","head_sha":"42b6e9bdb27f36d1e04ef8c1f16f0f38c38415ea","status":"completed","conclusion":"success","started_at":"2026-09-12T20:38:01Z","completed_at":"2026-09-12T20:40:18Z","app":{"id":15368,"slug":"github-actions"}}
+  ] }
+}

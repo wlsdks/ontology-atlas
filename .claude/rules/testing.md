@@ -101,6 +101,18 @@ Consequences that follow from the rule:
 - **Performance lanes never block.** `*.perf.test.*` runs where the number means
   something: CI on a quiet runner, not the pre-push hook, which deliberately
   saturates the machine.
+- **In e2e, the conditions live in `tests/e2e/settle.ts`.** A canvas has no DOM,
+  so the map's stillness is read from the `?e2e=1` probe's own drawn values and a
+  DOM reveal from `Element.getAnimations()` — never from a token's duration
+  copied into the spec. A sleep that survives there says in place why it is a
+  measurement window rather than a wait.
+- **Run Playwright in the foreground, and let it own its server.** A dev server
+  started as a background command gets reaped, and the specs in flight then fail
+  against a dead server in about a second each — which reads as a flake in
+  whatever was being changed. Two "flakes" in `download-gateway-grid` were that
+  and nothing else (2026-09-13). So: no pre-started background server, a port of
+  your own via `PLAYWRIGHT_BASE_URL` so a stale server from another session
+  cannot answer instead, and batches short enough to finish in the foreground.
 
 ## TDD
 
@@ -134,6 +146,13 @@ Escalate only when the risk requires it:
 
 The final report names what ran and why that scope was sufficient. Do not run
 the full suite by habit.
+
+Measurements, captures and harness scripts live **outside** the repository —
+`/Users/jinan/scratch/<fixture>/…` — never in a worktree's gitignored `output/`
+or `.qa-scratch/`. A worktree is removed when its work lands, and
+`git status --porcelain` does not count ignored files, so an ignored evidence
+directory reads clean and goes with it. Measured 2026-09-13: a report cited
+ko+en captures at a path that no longer existed by the time it was read.
 
 ## Verify web and app separately (2026-07-27)
 

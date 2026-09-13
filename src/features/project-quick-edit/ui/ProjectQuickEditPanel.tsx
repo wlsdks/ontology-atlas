@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+
+import { useFailureSentence } from "@/shared/lib/use-failure-sentence";
+import type { FailureCopy } from "@/shared/lib/use-failure-sentence";
 import { PencilLine, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { type Project } from "@/entities/project";
@@ -142,6 +145,7 @@ export function ProjectQuickEditPanel({
   settingsHref,
 }: Props) {
   const t = useTranslations("settings.quickEdit");
+  const failureSentence = useFailureSentence();
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<QuickEditValues>(() =>
     toQuickEditValues(project),
@@ -150,7 +154,11 @@ export function ProjectQuickEditPanel({
     toQuickEditValues(project),
   );
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /*
+   * Both halves of the failure. The empty-name refusal is copy this panel wrote, so its `detail`
+   * is null; a rejected patch carries the vault layer's English on `detail` and shows a sentence.
+   */
+  const [error, setError] = useState<FailureCopy | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const { patchProject } = useProjectMutations();
 
@@ -217,7 +225,7 @@ export function ProjectQuickEditPanel({
     // Only the name is required — the description is optional (the counterpart of not
     // making anyone delete the starter default).
     if (!nextPatch.name?.trim()) {
-      setError(t("errorEmpty"));
+      setError({ sentence: t("errorEmpty"), detail: null });
       return;
     }
 
@@ -241,11 +249,7 @@ export function ProjectQuickEditPanel({
           : t("noticeAppliedNoLabels"),
       );
     } catch (submitError) {
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : t("errorGeneric"),
-      );
+      setError(failureSentence(submitError, t("errorGeneric")));
     } finally {
       setPending(false);
     }
@@ -374,7 +378,12 @@ export function ProjectQuickEditPanel({
             </div>
 
             {error ? (
-              <p className="text-body text-[color:var(--color-status-danger)]">{error}</p>
+              <p
+                data-failure-detail={error.detail ?? undefined}
+                className="text-body text-[color:var(--color-status-danger)]"
+              >
+                {error.sentence}
+              </p>
             ) : null}
 
             {notice ? (

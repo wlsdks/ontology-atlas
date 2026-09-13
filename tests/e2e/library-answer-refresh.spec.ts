@@ -4,6 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { parseFrontmatter } from '../../src/shared/lib/parse-frontmatter';
 import { installLibraryWorkHarness, type LibraryWorkHarness } from './library-work-harness';
 import { seedFirstRunSeen } from './first-run-seed';
+import enMessages from '../../messages/en.json';
 
 const SOURCE = 'sources/storage.md';
 const AUDIT = 'sources/audit.md';
@@ -12,6 +13,7 @@ const ORIGINAL = 'Keep records for 24 days.\nThe owner must approve external com
 const REVISED = 'Keep records for 18 days, replacing the previous 24-day guidance.\nThe owner must approve external communication.\n';
 const AUDIT_TEXT = 'The audit worksheet lists 24 days.\nThe worksheet review is pending.\n';
 const hash = (text: string) => createHash('sha256').update(text).digest('hex');
+const TURN_INCOMPLETE = enMessages.failures['answer-turn-incomplete'];
 const OLD_BODY = `## Summary
 The recorded period is 24 days.
 
@@ -245,7 +247,13 @@ test('a running refresh remains visibly reopenable and can be stopped after clos
   await reopen.click();
   await page.getByRole('button', { name: 'Stop', exact: true }).click();
   await expect(page.getByTestId('answer-refresh-start')).toBeEnabled();
-  await expect(page.getByTestId('retained-answer-context')).toContainText('did not complete');
+/*
+   * The sentence is read from the catalogue rather than typed here. It used to be the string
+   * `answer-revision-store.ts` threw, which is exactly what finding B2 replaced: a Korean reader
+   * met it in English. Pinning a literal would put this spec back in the business of asserting
+   * the developer's wording instead of the reader's.
+   */
+  await expect(page.getByTestId('retained-answer-context')).toContainText(TURN_INCOMPLETE);
   expect((await harness.snapshot(page)).files[ANSWER]).toBe(OLD_PAGE);
 });
 

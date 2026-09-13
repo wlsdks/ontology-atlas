@@ -1877,81 +1877,106 @@
   }
 }
 
-  /* Route crossfade (2026-09-02) — `shared/lib/route-view-transition.ts` runs a rail
-     navigation inside `document.startViewTransition`, and these rules give the
-     browser's default crossfade this system's time and curve. Measured before on
-     the static build: 84–99% of a route change landed in one frame. The nav rail
-     is named so it is captured on its own and does not fade: its active indicator
-     already slides on its own transition, and a rail fading under a sliding
-     indicator reads as two events. Reduced motion keeps the crossfade — an
-     opacity-only change is the less-shaking equivalent, not something to remove. */
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
+  /*
+   * **Route crossfade** (2026-09-02) — `shared/lib/route-view-transition.ts` runs a rail
+   * navigation inside `document.startViewTransition`, and these rules give the browser's
+   * crossfade this system's time and curve. Measured before it existed, on the static
+   * build: 84-99% of a route change landed in one frame, on the one surface in the app
+   * with no motion at all.
+   *
+   * ⚠️ **The subject of the capture changed on 2026-09-13: the crossfade captures the
+   * pane, not the document.**
+   *
+   * Until then the root element was captured (the UA's own `:root { view-transition-name:
+   * root }`) and the nav rail was named `app-nav-rail` so it would be lifted out of that
+   * snapshot and not fade. In Chromium that works. In WebKit — which is what the installed
+   * app runs — **the root group paints over every other group**, so a named sibling is
+   * covered by the root snapshot for the whole transition and shows nothing at all.
+   *
+   * Measured on the same page in both engines (rail band ink fraction, `::view-transition`
+   * running, 1000x700):
+   *
+   * | rail styling | Chromium | WebKit |
+   * |---|---|---|
+   * | named, `animation: none` on old/new/group (what shipped) | 0.9808 | **0.0000** |
+   * | named, UA defaults, nothing overridden | 0.9808 | **0.0000** |
+   * | named, `z-index` raised on its group | 0.9808 | **0.0000** |
+   * | root pair forced to `opacity: .2` (proves the cover) | — | 0.9808 |
+   * | not named at all | 0.9808 | 0.9808 |
+   *
+   * Nothing about the pair's styling reaches it; only whether the root is captured does.
+   *
+   * ⚠️ **This table is right and the conclusion drawn from it in 2026-09-13 was not.** It
+   * was read as the explanation of the installed app's "every rail navigation blanks the
+   * whole window, rail included" (inspection 122, B1), and the blank survived the change.
+   * The blank was a **full document load**: `connect-src` refused the App Router's fetch of
+   * the arriving route's payload, so every rail press re-booted the app and restored the
+   * folder again (`scripts/lib/desktop-csp.mjs`). With that fixed, a crossing on WKWebView
+   * runs its 180 ms crossfade with **every frame painted** — rail ink 0.0243-0.0307, never
+   * 0, measured on the installed app at 1/120 s. Capturing the pane rather than the root
+   * stays, on the strength of the table above alone.
+   *
+   * So the root is **not** captured during a route change and the shell's body slot is.
+   * The rail, the page frame and everything else the shell owns stay part of the live
+   * document: they are not snapshotted, not covered, and — with the overlay declining
+   * pointer events below — not blocked either. Only the pane, the one box whose content
+   * actually changes, crossfades. `route-view-transition.ts` owns the class, which exists
+   * only while a transition is running, so nothing here changes the document's paint or
+   * containment when the app is sitting still.
+   */
+  html.route-crossfade {
+    view-transition-name: none;
+  }
+
+  html.route-crossfade [data-app-shell-pane] {
+    view-transition-name: app-pane;
+  }
+
+  ::view-transition-old(app-pane),
+  ::view-transition-new(app-pane) {
     animation-duration: var(--motion-base);
     animation-timing-function: var(--motion-ease);
-  }
-
-  .app-nav-rail-view-transition {
-    view-transition-name: app-nav-rail;
-  }
-
-  ::view-transition-old(app-nav-rail) {
-    animation: none;
-    opacity: 0;
-  }
-
-  ::view-transition-new(app-nav-rail) {
-    animation: none;
   }
 
   /*
    * ⚠️ **The transition may not outlive the crossfade it declares** (2026-09-12).
    *
-   * Above, this block sets the crossfade to `--motion-base` (180 ms) — but the two
-   * rules above it are the only ones anybody chose. The browser also runs a *group*
-   * animation per captured name, at the UA's own 250 ms, and a transition holds the
-   * screen until **every** one of its animations is done. While it holds, the captured
-   * document is not painted and therefore not hit-testable: `elementFromPoint` answers
-   * `html` at every point and a press lands on nothing.
-   *
-   * Measured on the static export at 1512x901, six rail crossings, no sampling load:
-   *
-   * | arriving at | route committed | animations started | transition finished |
-   * |---|---|---|---|
-   * | Agents / MCP / History | 20-43 ms | 39-56 ms | **278-301 ms** |
-   * | Library | 22-24 ms | 229-239 ms | **480-489 ms** |
-   *
-   * A press aimed at `library-open-vault` at +100 ms and +300 ms landed on `HTML`; at
-   * +700 ms it landed on the door. So somebody who crossed the rail and reached for the
-   * control they could already see got nothing for a third of a second past the end of
-   * the fade — and on the Library, for a quarter-second past that.
-   *
-   * The group animations are the part with nothing to show. A route change does not move
-   * or resize the root box, so `-ua-view-transition-group-anim-root` interpolates a
-   * rectangle onto itself; the rail's pair is already excluded from the crossfade
-   * (`animation: none` above, so it does not read as a second event), which leaves its
-   * group animating a box that neither moves nor fades. Removing both makes the
-   * transition exactly as long as the crossfade this file declares — the whole hold is
-   * then the 180 ms somebody chose, plus whatever the arriving route's own first render
-   * costs, which `shared/lib/route-view-transition.ts` bounds.
-   *
-   * ⚠️ Not `pointer-events: none` on `::view-transition`, which was tried first and
-   * measured to change nothing (`html` still owned every point): the overlay is not what
-   * the hit test reaches — the captured document is simply not painted while a transition
-   * is running, so the only cure is for the transition to end.
+   * The browser runs a *group* animation per captured name at the UA's own 250 ms, and a
+   * transition holds until **every** one of its animations is done. A route change does not
+   * move or resize the pane, so that animation interpolates a rectangle onto itself while
+   * the hold it adds is real: measured at 278-301 ms on three destinations and 480-489 ms on
+   * the Library, against the 180 ms this file declares. Removing it makes the transition
+   * exactly as long as the crossfade somebody chose, plus the arriving route's own first
+   * render, which `shared/lib/route-view-transition.ts` bounds.
    */
-  ::view-transition-group(root),
-  ::view-transition-group(app-nav-rail) {
+  ::view-transition-group(app-pane) {
     animation: none;
   }
 
+  /*
+   * **The live frame keeps taking presses while the pane crossfades** (2026-09-13).
+   *
+   * `pointer-events: none` here was tried on 2026-09-12 and measured to change nothing,
+   * correctly: with the root captured the whole document was unpainted and therefore
+   * unhit-testable, so the overlay was never what the hit test reached. With only the pane
+   * captured the document *is* painted, and then the overlay is the only thing in the way.
+   * Measured over a full transition, `elementFromPoint` on a rail tile:
+   *
+   * | | Chromium | WebKit |
+   * |---|---|---|
+   * | overlay left alone | `HTML` on 182 of 183 frames | `HTML` on 91 of 93 |
+   * | overlay declining presses | `HTML` on 1 of 183 | `HTML` on 0 of 93 |
+   */
+  ::view-transition {
+    pointer-events: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    ::view-transition-old(root),
-    ::view-transition-new(root) {
+    ::view-transition-old(app-pane),
+    ::view-transition-new(app-pane) {
       animation-duration: var(--motion-base);
     }
   }
-
   /* Route loading subtitle — most entries finish within 400ms, so we stay silent before that.
      Rendering immediately causes subtitles to flash on every normal entry, which is worse
      than the blank screen we aimed to fix.

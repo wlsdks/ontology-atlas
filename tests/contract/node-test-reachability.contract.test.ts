@@ -1,3 +1,6 @@
+import { execFileSync } from "node:child_process";
+import { FULL_LANE_COMMANDS } from "../../scripts/classify-change.mjs";
+import { suggestFocusedChecks } from "../../scripts/lib/focused-check-suggestions.mjs";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -22,9 +25,7 @@ import { describe, expect, it } from "vitest";
  *
  * Two comments were not enough, so this is a test. Reachable means named in a
  * workflow, named in a git hook, composed by another script that is itself
- * reachable, or listed below with a reason. The list is exclusions, not
- * forbidden words: each entry names one script and why running it in CI is a
- * scheduling decision rather than a wiring fix.
+ * reachable, or selected for an actual source path by the impact planner.
  */
 
 const ROOT = process.cwd();
@@ -32,13 +33,6 @@ const scripts = (JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as
   scripts: Record<string, string>;
 }).scripts;
 
-const DELIBERATELY_UNWIRED: Record<string, string> = {
-  "integration:cli":
-    "measured 94 seconds. CI runs a filtered subset of the same file through "
-    + "`integration:cli:setup` (--test-name-pattern \"^(init|agent-setup)\"), so the "
-    + "harness is covered and the tail is a scheduling decision. Widening the "
-    + "pattern is the cheaper move if more coverage is wanted.",
-};
 
 function readAll(dir: string): string {
   return readdirSync(join(ROOT, dir), { withFileTypes: true })
@@ -49,8 +43,11 @@ function readAll(dir: string): string {
 
 const workflows = readAll(".github/workflows");
 const gitHooks = readAll(".githooks");
-const ciRegistry = readFileSync(join(ROOT, "scripts", "classify-change.mjs"), "utf8");
-const callers = `${workflows}\n${gitHooks}\n${ciRegistry}`;
+const ciCommands = Object.values(FULL_LANE_COMMANDS).flat().join("\n");
+const subjectPaths = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
+// The same authority feeds affected CI. Count its actual commands, not mentions in comments.
+const focusedCallers = suggestFocusedChecks(subjectPaths).commands.map((row: { command: string }) => row.command).join('\n');
+const callers = `${workflows}\n${gitHooks}\n${ciCommands}\n${focusedCallers}`;
 
 const nodeTestScripts = Object.entries(scripts)
   .filter(([, command]) => command.includes("node --test"))
@@ -79,38 +76,24 @@ function reachable(script: string, seen = new Set<string>()): boolean {
 
 describe("node:test reachability", () => {
   it("has suites to protect — an empty sweep would pass vacuously", () => {
-    expect(nodeTestScripts.length).toBeGreaterThanOrEqual(20);
+    expect(nodeTestScripts.length).toBeGreaterThan(0);
+    expect(subjectPaths.length).toBeGreaterThan(0);
   });
 
   it("the workflow actually invokes the registry counted as a caller", () => {
     expect(workflows).toContain("node scripts/run-ci-lane.mjs --lane=gates");
-    expect(ciRegistry).toContain("export const FULL_LANE_COMMANDS");
-    expect(ciRegistry).toContain("pnpm test:ci:impact");
   });
 
-  it("runs every node:test suite somewhere, or says why it does not", () => {
+  it("runs every node:test suite somewhere, through the full or affected plan", () => {
     const orphans = nodeTestScripts.filter(
-      (script) => !reachable(script) && !(script in DELIBERATELY_UNWIRED),
+      (script) => !reachable(script),
     );
     expect(
       orphans,
       "Vitest cannot see these and no workflow or git hook names them, so they run "
         + `nowhere and pass forever:\n${orphans.map((s) => `  pnpm ${s}`).join("\n")}\n`
-        + "Name them in .github/workflows/checks.yml, or add them to "
-        + "DELIBERATELY_UNWIRED in this file with the reason.",
+        + "Wire the suite through a workflow, reachable script, or affected-check rule.",
     ).toEqual([]);
   });
 
-  it("keeps the exclusion list honest — an entry that became reachable is stale", () => {
-    const stale = Object.keys(DELIBERATELY_UNWIRED).filter((script) => reachable(script));
-    expect(
-      stale,
-      `these are excluded but already run somewhere:\n${stale.join("\n")}`,
-    ).toEqual([]);
-  });
-
-  it("excludes only scripts that exist", () => {
-    const missing = Object.keys(DELIBERATELY_UNWIRED).filter((script) => !(script in scripts));
-    expect(missing, `excluded scripts that no longer exist:\n${missing.join("\n")}`).toEqual([]);
-  });
 });

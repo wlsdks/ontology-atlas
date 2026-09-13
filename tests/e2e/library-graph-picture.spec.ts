@@ -9,6 +9,7 @@ import type {
   LibraryGraphProbeNode as ProbeNode,
 } from "./library-graph-probe";
 import { stubDirectoryPicker } from "./vault-picker-stub";
+import { waitFrames } from "./settle";
 
 /**
  * **Is the picture legible — at six documents, at sixty, and at three hundred?**
@@ -49,6 +50,56 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /** Mirrors `library-graph-view.ts`; a spec that imports the widget's own floor proves nothing. */
 const MIN_SOURCE_MARK_PX = 3;
+/**
+ * The ceiling, mirrored on the same terms: the widest mark a folder may draw, in canvas
+ * pixels, and the world radius the band tops out at. 36 is the map's own node chrome — the
+ * family this picture belongs to — and the camera may take a folder no closer than that.
+ */
+const LIBRARY_MAX_MARK_PX = 36;
+const WIDEST_MARK_WORLD_RADIUS = 9;
+const NAMED_MARK_WORLD_RADIUS_MIN = 5;
+/** Mirrors `LIBRARY_FIT_PADDING`: what the fit reserves on every side, in canvas pixels. */
+const FIT_PADDING = 64;
+/** Mirrors `SOURCE_LABEL_MIN_SCALE`: the zoom at which a file carries its own name. */
+const SOURCE_LABEL_MIN_SCALE = 1.4;
+/**
+ * Mirrors `LEADER_MAX_MARKS`. Below it every mark that carries a name gets one, on a leader
+ * if its four places are taken; above it the folder has already chosen a subset of names and
+ * the collision order is what is judged instead.
+ */
+const LEADER_MAX_MARKS = 120;
+/**
+ * The order at which every mark of a folder can carry its name at once — the owner's own
+ * folder and the one it was reviewed against, and the order inspection 122's S18 was raised
+ * at. Below it no mark may be anonymous at any window.
+ */
+const NAMES_ALL_FIT_MARKS = 30;
+/**
+ * Mirrors `STALE_DOT_STANDING_MAX`: how many standing amber dots a folder may draw at rest
+ * before the picture says the number instead of painting it once per citation. A count of
+ * unverified **citations**, never of marks — the amber ink is proportional to the dots and
+ * to nothing else, measured at 6-11 canvas pixels of strict amber per dot on every fixture
+ * and window below.
+ */
+const STALE_DOT_STANDING_MAX = 64;
+/**
+ * **The ink budget the standing amber holds to at rest**, and the number re-inspection 122
+ * R2 is graded against.
+ *
+ * R2 measured the three-hundred-source folder at **23,298 amber pixels against 0** with
+ * total graph ink up **48%**, and called the result a warning field rather than a folder
+ * with some stale citations. In this suite's own units the same state read **15.57%** of
+ * the canvas's ink at 1040x720. Both sides of 4% are measured rather than chosen: the
+ * densest folder the 2026-09-12 and 2026-09-13 reviews read as legible (`vault-60`, 48
+ * stale citations) draws **2.09%** at its narrowest window, and the folder the finding is
+ * about draws **5.77%** at its widest. 4% sits between them at 1.91x the observed-good
+ * ceiling and 0.69x the observed-bad floor.
+ *
+ * ⚠️ **At rest only.** Pressing the strip's `N sources changed` clause is a person asking
+ * for exactly this field, and it dims everything else to say so; a budget that bound that
+ * state would forbid the answer to the question it is the answer to.
+ */
+const AMBER_INK_BUDGET = 0.04;
 
 /**
  * The three windows the Library is judged at: the 14-inch workbench, a narrow laptop, and the
@@ -320,8 +371,155 @@ async function openGraph(page: Page, seed: Record<string, string>): Promise<void
   await expect
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.alpha() ?? 1), { timeout: 20_000 })
     .toBeLessThan(0.01);
-  // One more frame after the settle, so `labels()` holds the resting placement.
-  await page.waitForTimeout(120);
+  // One more frame after the settle, so `labels()` holds the resting placement. A frame
+  // is the unit; 120 ms was this machine's estimate of one.
+  await waitFrames(page, 2);
+  await settleToRest(page);
+}
+
+/**
+ * **Waits for the picture the home spends its life in, rather than racing the arrival.**
+ *
+ * Every resting bar below is about the state a folder is in when nobody is touching it, and
+ * two things sit between "the simulation has settled" and that state:
+ *
+ * 1. **The home's own breath** — `pulseRef.homeAt`, exposed as `flow().pulsing`, grows every
+ *    standing dot from `STALE_DOT_RADIUS` to `STALE_DOT_RADIUS + STALE_DOT_BREATH` for two
+ *    settle budgets, once per visit. That is 2.25x the disc's area, and more than that in
+ *    strict-amber pixels, because a small disc's edge is mostly partial coverage and growing
+ *    it turns those pixels into interior.
+ * 2. **The dim ramp.** `focus` is deliberately kept while it runs back out, so the un-dim is
+ *    not a hard cut; past the standing cap a dot rides that same eased value, so the
+ *    neighbourhood a press or a pointer established fades rather than cutting.
+ *
+ * Neither wait is a sleep: `pulsing` is a condition the canvas publishes, and the second is
+ * two reads of the same pixel statistic that agree. A picture that never stops changing
+ * fails on the timeout rather than being measured mid-ramp, and one that is wrongly amber
+ * stabilises at that number, so the bars still fire — each was re-probed red through here.
+ */
+async function settleToRest(page: Page): Promise<void> {
+  const box = await page.getByTestId("library-graph-canvas").boundingBox();
+  if (box) await page.mouse.move(box.x + box.width / 2, Math.max(0, box.y - 24));
+  await expect
+    .poll(() => page.evaluate(() => window.__atlasLibraryGraph?.flow()?.pulsing ?? false), {
+      timeout: 20_000,
+    })
+    .toBe(false);
+  /*
+   * And the canvas has stopped changing: two reads of the same pixel statistic, six frames
+   * apart, that agree. A picture that never stops changing fails on the timeout rather than
+   * being measured mid-ramp, and one that is wrongly amber stabilises at that number, so the
+   * bars below still fire.
+   */
+  let previous = -1;
+  await expect
+    .poll(
+      async () => {
+        const now = (await canvasInk(page)).mark;
+        const stable = now === previous;
+        previous = now;
+        if (!stable) await waitFrames(page, 6);
+        return stable;
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true);
+}
+
+/**
+ * **How much amber is on the canvas, how much of it is a mark, and how much ink the picture
+ * has at all** — all counted inside the page, in one pass over the same buffer.
+ *
+ * The dot that says *this citation is no longer vouched for* is the one mark on this
+ * picture with no DOM, no label box and no probe entry — it is painted into the break of a
+ * line — so the only honest question is whether its pixels are there. Inspection 122 ran
+ * exactly this scan on two captures of the identical state and got **28 hits at 1040×720
+ * and 0 at 1512×901** (S2): the mark existed only during a breath that lasts two settle
+ * budgets and never returns, so which window drew it was decided by when the shutter fell.
+ *
+ * ⚠️ **Both predicates are the re-inspection's own, to the constant**, because the finding
+ * this gate now holds was stated in them: `amber` is `measure.py::amber`'s strict scan
+ * (`R>190, 140<G<210, B<120`) and `ink` is `measure.py::bbox`'s `inkPixels` — a canvas
+ * pixel brighter than luma 30 on a ground of `rgb(8,9,10)`. Re-inspection 122 R2 measured
+ * this picture's ink up **48%** on the three-hundred-source folder with 23,298 amber
+ * pixels against 0, and called the result a warning field rather than a folder. A gate
+ * written in a statistic of its own could not be compared against that sentence.
+ *
+ * ⚠️ **`mark` is the number the bars are stated in, and it excludes the placed names.**
+ * The strict predicate does not only match this canvas's amber: a **name's own
+ * antialiasing** matches it too, wherever the text engine puts warm pixels on the edge of a
+ * light glyph against this dark ground. That is a property of the runner and not of the
+ * picture — on this machine it scores nothing, and on the Linux CI runner it scored **973,
+ * 634 and 1,614 pixels on the three-hundred-source folder in a state whose renderer drew no
+ * dot at all**, deterministic across all three retries and proportional to the number of
+ * names the window placed (about 33 per name). So the count is split by the label boxes the
+ * renderer itself reports (`labels()`, which is where every name actually landed, ellipsis
+ * and slide included): the mark being gated lives in the break of a line and never inside a
+ * name's box, and a name is never painted in this canvas's warning amber. Both halves are
+ * reported, so nothing is quietly dropped: on this machine `amberInNames` is 13–52 pixels of
+ * real dot that happen to land under a name, and on a runner whose text engine warms its
+ * glyph edges it is that plus the artefact.
+ *
+ * ⚠️ **Counted in the page, never transferred.** Handing an `ImageData` array back over CDP
+ * costs about twelve seconds on a canvas this size; the same count inside the page is three
+ * milliseconds.
+ */
+interface CanvasInk {
+  /** Every strict-amber pixel on the canvas — 122's own scan, unmodified. */
+  amber: number;
+  /** Of those, the ones inside a placed name's box: the text engine's, not the mark's. */
+  amberInNames: number;
+  /** Of those, the ones that are a mark. This is what the bars below are stated in. */
+  mark: number;
+  /** Canvas pixels brighter than luma 30 — 122's `inkPixels`. */
+  ink: number;
+  /** `mark / ink`: the share the standing amber holds of the picture. */
+  share: number;
+  /** How many names the window placed, so the artefact above can be divided by it. */
+  names: number;
+}
+
+async function canvasInk(page: Page): Promise<CanvasInk> {
+  return page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="library-graph-canvas"]');
+    const context = canvas?.getContext("2d");
+    const probe = window.__atlasLibraryGraph;
+    if (!canvas || !context || !probe) {
+      return { amber: -1, amberInNames: -1, mark: -1, ink: -1, share: -1, names: -1 };
+    }
+    /*
+     * One pixel of slack around each box, because a glyph's antialiasing may sit a fraction
+     * outside the box the renderer measured for it.
+     */
+    const boxes = probe.labels().map((label) => ({
+      left: label.x - 1,
+      right: label.x + label.width + 1,
+      top: label.y - 1,
+      bottom: label.y + label.height + 1,
+    }));
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    const width = canvas.width;
+    let amber = 0;
+    let amberInNames = 0;
+    let ink = 0;
+    for (let index = 0; index < data.length; index += 4) {
+      const red = data[index]!;
+      const green = data[index + 1]!;
+      const blue = data[index + 2]!;
+      if (0.2126 * red + 0.7152 * green + 0.0722 * blue > 30) ink += 1;
+      if (red > 190 && green > 140 && green < 210 && blue < 120) {
+        amber += 1;
+        const pixel = index / 4;
+        const x = pixel % width;
+        const y = (pixel - x) / width;
+        if (boxes.some((box) => x >= box.left && x <= box.right && y >= box.top && y <= box.bottom)) {
+          amberInNames += 1;
+        }
+      }
+    }
+    const mark = amber - amberInNames;
+    return { amber, amberInNames, mark, ink, share: ink === 0 ? 0 : mark / ink, names: boxes.length };
+  });
 }
 
 interface Box {
@@ -349,8 +547,14 @@ interface Picture {
   labelsOverMarks: Array<[string, string]>;
   namedFraction: number;
   labelFontPx: number[];
-  /** The camera's scale after the fit — clamped into `[LIBRARY_ZOOM_MIN, 1.6]`. */
+  /** The camera's scale after the fit — clamped into `[LIBRARY_ZOOM_MIN, the folder's ceiling]`. */
   viewScale: number;
+  /** The scale the fit was allowed to take: the canvas's own wish, clamped the same way. */
+  allowedScale: number;
+  /** This folder's ceiling: the camera at which its widest mark is `LIBRARY_MAX_MARK_PX`. */
+  ceiling: number;
+  /** Marks that carry a name at this zoom and did not get one. */
+  anonymous: string[];
   /** The smallest source square drawn, across, in canvas pixels. */
   minSourceMarkPx: number;
   /** The largest mark drawn, across — a page's widest disc. */
@@ -571,6 +775,43 @@ async function measure(page: Page): Promise<Picture> {
     (massY - canvas.height / 2) / Math.max(1, canvas.height),
   );
 
+  /*
+   * **The fit the camera was allowed to take**, recomputed here from the drawn picture.
+   *
+   * The world span is the drawn span divided by the scale, so this spec can ask the same
+   * question `fitView` asks — *how close may this folder come* — without importing it. It is
+   * what turns the fill finding into a falsifiable claim: the picture is as large as the
+   * rule permits, or the rule is what is wrong. Inspection 122's S1 measured the opposite,
+   * a picture at 38% of its canvas with the camera still 25% short of its own ceiling.
+   */
+  const widestWorldRadius = Math.max(
+    0,
+    ...raw.nodes.map((node) => node.radius / Math.max(1e-6, raw.scale)),
+  );
+  const ceiling =
+    LIBRARY_MAX_MARK_PX / (2 * Math.max(NAMED_MARK_WORLD_RADIUS_MIN, widestWorldRadius));
+  // Centres, not extents: `librarySimulationBounds` is the fit's own input and it bounds
+  // the marks' positions. The padding is what covers their radii and their names.
+  const centreSpanX = Math.max(...raw.nodes.map((node) => node.x)) - Math.min(...raw.nodes.map((node) => node.x));
+  const centreSpanY = Math.max(...raw.nodes.map((node) => node.y)) - Math.min(...raw.nodes.map((node) => node.y));
+  const wanted = Math.min(
+    Math.max(1, canvas.width - FIT_PADDING * 2) / Math.max(1e-6, centreSpanX / raw.scale),
+    Math.max(1, canvas.height - FIT_PADDING * 2) / Math.max(1e-6, centreSpanY / raw.scale),
+  );
+  const allowedScale = Math.min(ceiling, Math.max(MIN_SOURCE_MARK_PX / 7, wanted));
+
+  /*
+   * **Who was left anonymous.** A page always carries its name; a file and a concept carry
+   * theirs once the camera is past `SOURCE_LABEL_MIN_SCALE`. Anything in that set without a
+   * label box is a mark a person cannot ask a question about.
+   */
+  const namedAlready = new Set(raw.labels.map((label) => label.nodeId));
+  const anonymous = raw.nodes
+    .filter((node) => Number.isFinite(node.x))
+    .filter((node) => node.kind === "page" || raw.scale >= SOURCE_LABEL_MIN_SCALE)
+    .filter((node) => !namedAlready.has(node.id))
+    .map((node) => node.id);
+
   const sourceMarks = raw.nodes.filter((node) => node.kind === "source");
   const pages = raw.nodes.filter((node) => node.kind === "page");
   const namedIds = new Set(raw.labels.map((label) => label.nodeId));
@@ -604,6 +845,9 @@ async function measure(page: Page): Promise<Picture> {
     namedFraction: raw.nodes.length > 0 ? raw.labels.length / raw.nodes.length : 0,
     labelFontPx: [...new Set(raw.labels.map((label) => label.fontPx))].sort((a, b) => a - b),
     viewScale: raw.scale,
+    allowedScale,
+    ceiling,
+    anonymous,
     minSourceMarkPx: sourceMarks.length > 0 ? Math.min(...sourceMarks.map((node) => node.radius * 2)) : Infinity,
     maxNodeDiameterPx: Math.max(0, ...raw.nodes.map((node) => node.radius * 2)),
     centreOfMassOffset,
@@ -619,12 +863,209 @@ async function measure(page: Page): Promise<Picture> {
 
 const outDir = process.env.ATLAS_PICTURE_OUT;
 
+/**
+ * **The legend under the canvas answers the state the canvas is in.**
+ *
+ * With a card open it went on reading *press a dot for a card beside it* — instructions for
+ * the thing that had already happened (inspection 122, S19). What a reader still needs while
+ * the card stands there is the mark vocabulary, so that half is kept verbatim and only the
+ * gesture clause is swapped for the two ways back out.
+ *
+ * Run in the browser rather than in jsdom because the state it is about — *a card open with
+ * nothing under the pointer* — is reached by pressing a painted mark and then taking the
+ * pointer off the canvas, and both of those are hit tests against a real frame.
+ */
+test("the legend swaps its gesture for the way out while a card is open", async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 901 });
+  await openGraph(page, seedFolder(FIXTURES[0]!.shape()));
+  const hint = page.getByTestId("library-graph-hint");
+  await expect(hint).toContainText("press a dot for a card beside it");
+
+  const canvas = page.getByTestId("library-graph-canvas");
+  const box = (await canvas.boundingBox())!;
+  const mark = (await page.evaluate(() => {
+    const nodes = window.__atlasLibraryGraph!.nodes().filter((node) => node.kind === "page");
+    // The busiest page: the widest mark on the picture, so the press cannot miss it.
+    return nodes.sort((first, second) => second.radius - first.radius)[0]!;
+  }))!;
+  await page.mouse.click(box.x + mark.x, box.y + mark.y);
+  await expect(page.getByTestId("library-graph-card")).toBeVisible();
+
+  // Pointer off the canvas: no mark is active, so this line is the legend's again.
+  await page.mouse.move(box.x + box.width / 2, box.y - 40);
+  await expect(hint).not.toContainText("press a dot for a card beside it");
+  await expect(hint).toContainText("close the card");
+  // The vocabulary stays: it is the key to the picture, and a walker recorded the cost of
+  // losing it (2026-09-12).
+  await expect(hint).toContainText("a square a source");
+
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("library-graph-card")).toBeHidden();
+  await expect(hint).toContainText("press a dot for a card beside it");
+});
+
+/**
+ * **The fit tile never answers a press with the same pixels.**
+ *
+ * Inspection 122 pressed it twice on the Library home and measured a **pixel-identical
+ * frame — 0 changed pixels above a threshold of 8** (S1). The picture was already framed, so
+ * there was nothing for the press to do; what was wrong was that it was still offered. The
+ * tile re-frames from any camera a person has taken, and with nothing to re-frame it takes
+ * the disabled grammar `ChromeTile` already owns.
+ *
+ * Three claims, in one session on one folder: offered exactly when the camera is off the
+ * fit, moving the picture when pressed, and back to not-offered afterwards.
+ */
+for (const size of SIZES) {
+  test(`the fit tile only offers a press that moves the picture at ${size.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: size.width, height: size.height });
+    await openGraph(page, seedFolder(FIXTURES[0]!.shape()));
+    const tile = page.getByTestId("library-graph-fit");
+    const canvas = page.getByTestId("library-graph-canvas");
+
+    // Framed on arrival: the press would repaint the same pixels, so it is not offered.
+    await expect(tile).toBeDisabled();
+    await expect(tile).toHaveAttribute("data-framed", "true");
+    const framedShot = await canvas.screenshot();
+
+    /*
+     * Take the camera by hand — a wheel over the canvas, which is the gesture a person uses
+     * — and the tile becomes the way back.
+     */
+    const box = (await canvas.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, 240);
+    await expect(tile).toBeEnabled();
+    const movedShot = await canvas.screenshot();
+    expect(movedShot.equals(framedShot), "the wheel did not move the picture, so this case proves nothing").toBe(
+      false,
+    );
+
+    await tile.click();
+    /*
+     * The travel is eased, so what is waited for is the landing: the tile stops offering
+     * again exactly when the camera has arrived at the fit.
+     */
+    await expect(tile).toBeDisabled({ timeout: 5_000 });
+    const backShot = await canvas.screenshot();
+    expect(backShot.equals(movedShot), "the fit tile was pressed and the picture did not move").toBe(false);
+    // And it landed on the fit, not merely somewhere else.
+    expect(
+      await page.evaluate(() => window.__atlasLibraryGraph?.view().scale ?? 0),
+      "the press moved the camera somewhere that is not the fit",
+    ).toBeCloseTo(await measure(page).then((picture) => picture.allowedScale), 2);
+  });
+}
+
+/**
+ * **On a folder past the standing cap, a stale citation is still one press away.**
+ *
+ * The other half of re-inspection 122 R2. The finding was that 480 standing dots read as a
+ * warning field; the answer is that the picture stops repeating the fact, which is only
+ * honest if the fact is still reachable. Three routes, all of them already on the screen
+ * before this change and none of them new UI:
+ *
+ * 1. the strip's `N sources changed` clause — a toggle that lights every stale citation's
+ *    two ends and prints both counts in the legend's own slot (slice L0, 2026-09-12);
+ * 2. a press on a page, which opens its card and flows its own citations;
+ * 3. the pointer, which holds the same neighbourhood a card does.
+ *
+ * Run at all three windows rather than at one, because the strip folds its non-lead clauses
+ * below `lg` and a control measured only at the width where it is shown makes a gate that is
+ * green forever (the 2026-09-04 width-conditional finding).
+ */
+for (const size of SIZES) {
+  test(`a stale citation on the three-hundred-source folder is one press away at ${size.name}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: size.width, height: size.height });
+    await openGraph(page, seedFolder(FIXTURES[3]!.shape()));
+    const graph = page.getByTestId("library-graph-canvas");
+
+    // The state the home spends its life in: 480 unverified citations and a calm picture.
+    const resting = await canvasInk(page);
+    const stale = await page.evaluate(
+      () => window.__atlasLibraryGraph!.edges().filter((edge) => edge.certainty === "unverified").length,
+    );
+    expect(stale, "this folder no longer crosses the standing cap, so the case proves nothing").toBeGreaterThan(
+      STALE_DOT_STANDING_MAX,
+    );
+    expect(resting.mark, "the folder is past the cap and still painting a field of amber").toBe(0);
+
+    // ── 1. The clause. ──
+    const clause = page.getByTestId("library-strip-stale");
+    await expect(clause, "the count that replaces the dots is not on the screen").toBeVisible();
+    // It carries a number, which is what the dots stop saying 480 times.
+    await expect(clause).toContainText(/\d+/);
+    await clause.click();
+    await expect(clause).toHaveAttribute("aria-pressed", "true");
+    await waitFrames(page, 6);
+    const lit = await canvasInk(page);
+    expect(
+      lit.mark,
+      "the clause was pressed and no stale citation lit: the count leads nowhere",
+    ).toBeGreaterThan(0);
+    // And the legend says what is lit, with both counts, so the picture can be checked.
+    await expect(page.getByTestId("library-graph-hint")).toContainText("lit");
+    if (outDir) {
+      await graph.screenshot({ path: join(outDir, `vault-300-${size.name}-lit.png`) });
+      await page.screenshot({ path: join(outDir, `vault-300-${size.name}-lit-window.png`) });
+    }
+
+    // The same press lifts it, and the canvas goes back to calm.
+    await clause.click();
+    await expect(clause).toHaveAttribute("aria-pressed", "false");
+    await settleToRest(page);
+    expect((await canvasInk(page)).mark, "the lit state did not lift").toBe(0);
+
+    // ── 2. The card. ──
+    const box = (await graph.boundingBox())!;
+    const busiest = (await page.evaluate(() => {
+      const probe = window.__atlasLibraryGraph!;
+      const staleEnds = new Set<string>();
+      for (const edge of probe.edges()) {
+        if (edge.certainty !== "unverified") continue;
+        staleEnds.add(edge.source);
+      }
+      const pages = probe.nodes().filter((node) => node.kind === "page" && staleEnds.has(node.id));
+      return pages.sort((first, second) => second.radius - first.radius)[0] ?? null;
+    }))!;
+    expect(busiest, "no page on this folder carries an unverified citation").not.toBeNull();
+    await page.mouse.click(box.x + busiest.x, box.y + busiest.y);
+    await expect(page.getByTestId("library-graph-card")).toBeVisible();
+    await waitFrames(page, 6);
+    const withCard = await canvasInk(page);
+    expect(
+      withCard.mark,
+      "a card is open on a page whose citations are unverified and no amber dot is drawn, so its own sentence names a mark nobody can see",
+    ).toBeGreaterThan(0);
+    // The card's sentence is the one that names the mark; it must be the one printed.
+    await expect(page.getByTestId("library-graph-card-flow")).toContainText("amber dot");
+
+    if (outDir) {
+      await graph.screenshot({ path: join(outDir, `vault-300-${size.name}-card.png`) });
+      await page.screenshot({ path: join(outDir, `vault-300-${size.name}-card-window.png`) });
+    }
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("library-graph-card")).toBeHidden();
+    // The pointer is off the mark and the dim has ramped out: calm again, and measurably so.
+    await settleToRest(page);
+    expect(
+      (await canvasInk(page)).mark,
+      "the dots stayed behind after the card closed and the pointer left",
+    ).toBe(0);
+  });
+}
+
 for (const fixture of FIXTURES) {
   for (const size of SIZES) {
     test(`the ${fixture.name} picture stays legible at ${size.name}`, async ({ page }) => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await openGraph(page, seedFolder(fixture.shape()));
       const picture = await measure(page);
+      const pixels = await canvasInk(page);
+      const staleEdges = picture.edges.filter((edge) => edge.certainty === "unverified").length;
 
       if (outDir) {
         const stem = `${fixture.name}-${size.name}`;
@@ -656,6 +1097,15 @@ for (const fixture of FIXTURES) {
               labelsOverMarks: picture.labelsOverMarks,
               namedFraction: Number(picture.namedFraction.toFixed(3)),
               viewScale: Number(picture.viewScale.toFixed(4)),
+              allowedScale: Number(picture.allowedScale.toFixed(4)),
+              ceiling: Number(picture.ceiling.toFixed(4)),
+              anonymous: picture.anonymous,
+              amberPixels: pixels.mark,
+              amberPixelsWithNames: pixels.amber,
+              amberPixelsInNames: pixels.amberInNames,
+              inkPixels: pixels.ink,
+              amberInkShare: Number(pixels.share.toFixed(4)),
+              staleEdges,
               minSourceMarkPx: Number(picture.minSourceMarkPx.toFixed(2)),
               maxNodeDiameterPx: Number(picture.maxNodeDiameterPx.toFixed(2)),
               centreOfMassOffset: Number(picture.centreOfMassOffset.toFixed(4)),
@@ -693,6 +1143,34 @@ for (const fixture of FIXTURES) {
 
       // ── The names. ──
       expect(picture.labelOverlaps, "two names cross each other").toEqual([]);
+      /*
+       * ⚠️ **Nobody is anonymous on the folder a person starts with.**
+       *
+       * A name that loses all four of its places is pushed out on a leader rather than
+       * dropped. Inspection 122 measured the alternative on the owner's own six files: five
+       * named, and the sixth — colliding with the `Settlement` label — left with no identity
+       * at all (S18). Counted over this matrix, marks carrying a name and not given one:
+       *
+       * | folder | 1040 | 1512 | 1920 |
+       * |---|---|---|---|
+       * | `vault`, `vault-zero-answers` | 1 → **0** | 1 → **0** | 1 → **0** |
+       * | `vault-60` | 6 → **1** | 2 → **0** | 1 → **0** |
+       *
+       * So the bar is zero for a folder of {@link NAMES_ALL_FIT_MARKS} or fewer — the order
+       * the finding was raised at, and the order at which every mark can be named at once —
+       * and one for the sixty-mark folder, whose tightest window (616×594 of canvas holding
+       * 79% × 84% of picture) leaves one write-up with nothing free inside a leader's reach.
+       * Above `LEADER_MAX_MARKS` the folder has chosen a subset of names on purpose and the
+       * collision order is what is judged, two bars below.
+       */
+      if (picture.nodes.length <= NAMES_ALL_FIT_MARKS) {
+        expect(picture.anonymous, "a mark that carries a name at this zoom was left without one").toEqual([]);
+      } else if (picture.nodes.length <= LEADER_MAX_MARKS) {
+        expect(
+          picture.anonymous.length,
+          "more than one mark carrying a name was left without one",
+        ).toBeLessThanOrEqual(1);
+      }
       expect(picture.labelsOverMarks, "a name sits on a mark it does not belong to").toEqual([]);
       // `--text-label` (11) for a page, `--text-caption` (9.5) for a file or a concept. A
       // page's name is never the smaller of the two on one canvas.
@@ -725,6 +1203,101 @@ for (const fixture of FIXTURES) {
         "the named write-ups are systematically quieter than the unnamed ones, so the priority is inverted",
       ).toBeGreaterThanOrEqual(0.97);
 
+      /*
+       * ── The fill, stated as the fit rather than as a fraction. ──
+       *
+       * ⚠️ **A flat fill percentage cannot be the bar, and inspection 122 is where both
+       * halves of that were measured.** The finding is real — the owner's six-document
+       * folder drew a picture over 38% of a 1512 window, with ~340px of empty gutter on each
+       * side (S1) — but the fix it proposed, "fit to 60–75% of the shorter axis", is the
+       * fill objective G2 removed: at 1512 that scale draws the busiest page at **43px**,
+       * which is the exact balloon the owner rejected, and at 1920 it is larger still. One
+       * folder would again be a different size on every monitor.
+       *
+       * What is asserted instead is that **the fit takes every bit of camera it is
+       * allowed**: the scale is the canvas's own wish clamped into the folder's band, and
+       * the band's top is the widest mark the picture may draw. That is red both ways — a
+       * fit that stops short of the canvas (the S1 defect, whose camera sat 25% under its
+       * own ceiling) and a fit that pushes past the mark cap (the G2 defect).
+       */
+      expect(
+        picture.viewScale,
+        "the fit stopped short of the camera this folder is allowed, so the canvas is emptier than the rule asks",
+      ).toBeCloseTo(picture.allowedScale, 2);
+      expect(
+        picture.maxNodeDiameterPx,
+        "a mark is wider than a map node, which is the balloon the ceiling exists to stop",
+      ).toBeLessThanOrEqual(LIBRARY_MAX_MARK_PX + 1e-6);
+      /*
+       * ⚠️ **One folder, one mark size — at every window, and this is the bar that holds it.**
+       *
+       * A folder small enough to fit any of these canvases sits *against* the ceiling, so its
+       * widest mark is drawn at exactly `LIBRARY_MAX_MARK_PX` on all three. That is the whole
+       * of what G1 answered: the owner's complaint was "one twelve-mark folder wearing 26.1px
+       * marks at 1040 and 34.0 at 1920".
+       *
+       * It is also what bounds every future attempt to fill the canvas by making the *world*
+       * bigger. Measured on this branch, stretching the gap between unrelated groups (the one
+       * distance on this canvas that carries no claim about meaning) to 1.55× its value takes
+       * `vault` to 59.8% of the 1512 window's width — and drops the 1040 camera to 1.74, its
+       * widest mark to **31.4px** while 1512 still draws 36. This bar goes red there.
+       */
+      if (picture.nodes.length <= NAMES_ALL_FIT_MARKS) {
+        expect(
+          picture.maxNodeDiameterPx,
+          "a small folder's widest mark is not at the ceiling, so this window draws it a different size than the others do",
+        ).toBeCloseTo(LIBRARY_MAX_MARK_PX, 5);
+      }
+
+      /*
+       * ── The amber dot is on the canvas at every window, and holds its share of the ink. ──
+       *
+       * Every fixture here writes a hash that cannot match on a third of its pages, so every
+       * one of them has unverified citations. Two bars, one per side of
+       * {@link STALE_DOT_STANDING_MAX}:
+       *
+       * - **under the cap the mark must be painted**, at every window. The same scan before
+       *   2026-09-13 returned **0** at rest on all twelve cases, because the dot existed only
+       *   during the arrival breath (inspection 122, S2). On the six-document folder at
+       *   1512x901 that bar is 0 -> 97 strict amber pixels (59 outside its placed names),
+       *   and this file is what keeps it.
+       * - **over it the picture must be calm at rest**, inside {@link AMBER_INK_BUDGET}.
+       *   Re-inspection 122 R2 is the other side of the same mark: standing was the fix, and
+       *   standing 480 times was the next defect.
+       */
+      expect(staleEdges, "the fixture has no unverified citation, so this case proves nothing").toBeGreaterThan(0);
+      /*
+       * ── The standing amber holds its share of the picture's ink. ──
+       *
+       * Re-inspection 122 R2, the defect this bar exists for: 480 standing dots on the
+       * three-hundred-source folder, 15.57% of the canvas's ink at 1040x720, and *"the
+       * picture's dominant mark is now a warning, not a document"*.
+       */
+      expect(
+        pixels.share,
+        `the standing amber holds ${(pixels.share * 100).toFixed(2)}% of this picture's ink, past the ${
+          AMBER_INK_BUDGET * 100
+        }% budget: ${pixels.mark} amber pixels of ${pixels.ink}, from ${staleEdges} unverified citations (${
+          pixels.amberInNames
+        } more sit inside the ${pixels.names} placed names, where a mark cannot be told from a glyph's own antialiasing)`,
+      ).toBeLessThanOrEqual(AMBER_INK_BUDGET);
+      if (staleEdges <= STALE_DOT_STANDING_MAX) {
+        expect(
+          pixels.mark,
+          "no amber pixel on a folder with unverified citations: the card's own sentence names a mark nobody can see",
+        ).toBeGreaterThan(0);
+      } else {
+        /*
+         * All or nothing, never a sample: a folder past the cap draws no standing dot, so no
+         * undotted stale citation can be read as a fresh one. That the mark is still one
+         * press away is the next test's claim, asserted there rather than assumed here.
+         */
+        expect(
+          pixels.mark,
+          "a folder past the standing cap is still painting amber at rest, so any ink budget it holds is luck",
+        ).toBe(0);
+      }
+
       // ── The marks. ──
       /*
        * **A mark's drawn size comes from the camera and nothing else.** The camera is clamped
@@ -736,11 +1309,13 @@ for (const fixture of FIXTURES) {
         picture.minSourceMarkPx,
         "a file's square is under three pixels across at the fitted zoom",
       ).toBeGreaterThanOrEqual(MIN_SOURCE_MARK_PX - 1e-6);
-      expect(picture.viewScale, "the camera zoomed past its ceiling").toBeLessThanOrEqual(1.6 + 1e-6);
+      expect(picture.viewScale, "the camera zoomed past its ceiling").toBeLessThanOrEqual(
+        picture.ceiling + 1e-6,
+      );
       expect(
-        picture.maxNodeDiameterPx,
-        "a mark is wider than the clamped ceiling, so the canvas is deciding the size again",
-      ).toBeLessThanOrEqual(9 * 1.6 * 2 + 1e-6);
+        picture.ceiling * 2 * WIDEST_MARK_WORLD_RADIUS,
+        "the ceiling stopped being the widest mark this folder may draw",
+      ).toBeLessThanOrEqual(LIBRARY_MAX_MARK_PX + 1e-6);
 
       // ── The composition. ──
       /*

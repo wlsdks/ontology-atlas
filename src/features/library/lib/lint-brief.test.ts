@@ -32,6 +32,29 @@ describe("the Lint brief reports and never writes", () => {
     });
   }
 
+  /**
+   * ⚠️ The dock opened on the whole brief — schema, fenced blocks, taxonomy rules — for
+   * somebody who had pressed a Korean button (installed app, 2026-09-13). The fold in
+   * `splitAppRequest` cuts at the folder anchor line, so the one line in front of it
+   * is the only line a person is handed, and it has to say what was asked and what comes
+   * back. Nothing after it is removed; it is one disclosure away.
+   */
+  for (const locale of ["en", "ko"]) {
+    it(`${locale}: opens on one readable line saying what was asked and what comes back`, () => {
+      const lines = buildLintBrief({ pages: PAGES, locale, vaultRoot: VAULT_ROOT }).split("\n");
+      expect(lines[0]).toBe(
+        locale === "ko"
+          ? "이 폴더의 위키를 읽고, 문서끼리 어긋나는 값·나중 문서가 바꿔 놓은 주장·빠진 연결·문서 없는 이름을 목록으로 돌려줘. 파일은 하나도 고치지 않아."
+          : "Read the wiki in this folder and come back with a list: values two pages disagree on, claims a later page replaced, missing links, and names with no page of their own. No file is edited.",
+      );
+      // The anchor the conversation folds on stands after it, never on line 0.
+      const anchor = lines.findIndex((line) => line.startsWith(locale === "ko" ? "폴더: " : "Folder: "));
+      expect(anchor).toBeGreaterThan(0);
+      // Every instruction the agent needs is still in the brief, below that anchor.
+      expect(lines.slice(anchor).join("\n")).toContain(locale === "ko" ? "는 열지 마" : "Do not open");
+    });
+  }
+
   it("en: says report only and forbids modifying files", () => {
     const brief = buildLintBrief({ pages: PAGES, locale: "en", vaultRoot: VAULT_ROOT });
     expect(brief).toContain("modify no file");

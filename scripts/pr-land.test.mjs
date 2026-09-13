@@ -9,12 +9,16 @@ import {
   decideNext,
   describeLock,
   isBrowserCommand,
+  isCiOwnedCommand,
   localCheckPlan,
   mergeFiredCi,
   parseArgs,
   refuseLanding,
+  otherCheckState,
   requiredCheckState,
   runInFlight,
+  describeCleanup,
+  worktreeToRemove,
 } from './pr-land.mjs';
 
 /**
@@ -133,6 +137,49 @@ describe('pr:land argument parsing', () => {
     assert.equal(parseArgs(['12', '--worktree=/tmp/wt']).worktree, '/tmp/wt');
   });
 
+  /**
+   * ⚠️ **`--worktree` removes nothing, in either spelling.**
+   *
+   * On 2026-09-13 an agent landed with `--worktree <path>`, found that path gone
+   * afterwards, and reported that the landing had deleted it along with the
+   * gitignored evidence inside it. The landing's own log carried no `cleanup:`
+   * line, so it had not — but nothing in this suite said so, and the next agent
+   * had only the source to trust. Both flag shapes are pinned here now, for both
+   * flags, so this script can be ruled out by reading.
+   */
+  it('removes a worktree only when --cleanup asks, never for --worktree', () => {
+    assert.equal(worktreeToRemove(parseArgs(['12', '--worktree', '/tmp/wt'])), null);
+    assert.equal(worktreeToRemove(parseArgs(['12', '--worktree=/tmp/wt'])), null);
+    assert.equal(worktreeToRemove(parseArgs(['12', '--cleanup', '/tmp/wt'])), '/tmp/wt');
+    assert.equal(worktreeToRemove(parseArgs(['12', '--cleanup=/tmp/wt'])), '/tmp/wt');
+    // Both together is the deliberate shape: run the lanes here, then remove it.
+    assert.equal(
+      worktreeToRemove(parseArgs(['12', '--worktree=/tmp/wt', '--cleanup=/tmp/wt'])),
+      '/tmp/wt',
+    );
+    // And a bare landing removes nothing at all.
+    assert.equal(worktreeToRemove(parseArgs(['12'])), null);
+  });
+
+  /**
+   * A removal says what it is about to do, and says the one thing that made the
+   * 2026-09-13 loss possible: `git status --porcelain` does not count ignored
+   * files, so a worktree holding only gitignored captures reads clean.
+   */
+  it('announces the path and the judgement before removing anything', () => {
+    const clean = describeCleanup({ path: '/tmp/wt', status: '' });
+    assert.match(clean, /^removing \/tmp\/wt/);
+    assert.match(clean, /ignored files are not counted/);
+    assert.equal(
+      describeCleanup({ path: '/tmp/wt', status: ' M src/a.ts' }),
+      '/tmp/wt still has uncommitted work; left alone',
+    );
+    assert.equal(
+      describeCleanup({ path: '/tmp/nope', status: null }),
+      '/tmp/nope is not a Git worktree; left alone',
+    );
+  });
+
   it('defaults the worktree to the caller, which is the branch it wrote', () => {
     assert.equal(parseArgs(['12']).worktree, null);
   });
@@ -233,7 +280,7 @@ describe('the local lanes, and what is left to CI', () => {
     const plan = localCheckPlan(['scripts/pr-land.mjs', 'app/globals.css']);
     assert.ok(plan.commands.length > 0, 'a changed script must recommend at least one local lane');
     assert.equal(plan.commands.some((row) => isBrowserCommand(row.command)), false);
-    assert.equal(plan.deferred.every((row) => isBrowserCommand(row.command)), true);
+    assert.equal(plan.deferred.every((row) => isCiOwnedCommand(row.command)), true);
     // Nothing is silently dropped: every suggestion is either run or deferred.
     assert.equal(plan.commands.length + plan.deferred.length, plan.suggestions.commands.length);
   });
@@ -621,5 +668,105 @@ describe('one landing, in order', () => {
       else break;
     }
     assert.deepEqual(seen, ['take-lock', 'merge-main', 'local-checks', 'make-ready', 'wait-checks', 'merge']);
+  });
+});
+
+ it('defers whole suites to required CI but retains focused checks and custom invocations', async () => {
+  for (const command of ['pnpm knip', 'pnpm test:contracts', 'pnpm test:run']) assert.equal(isCiOwnedCommand(command), true);
+  for (const command of ['pnpm test:run src/a.test.ts', 'pnpm test:contracts --reporter=json', 'pnpm lint', 'pnpm exec tsc --noEmit']) assert.equal(isCiOwnedCommand(command), false);
+  const { buildImpactPlan } = await import('./classify-change.mjs');
+  const { commandsForLane } = await import('./run-ci-lane.mjs');
+  const paths = ['app/globals.css', 'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx'];
+  const local = localCheckPlan(paths);
+  const ci = buildImpactPlan({ files: paths });
+  assert.ok(local.deferred.some((row) => row.command === 'pnpm knip'));
+  assert.ok(local.deferred.some((row) => row.command === 'pnpm test:contracts'));
+  const commands = commandsForLane({lane:'unit', plan:ci, base:'origin/main', shard:'1/1'});
+  assert.ok(commands.includes('pnpm knip'));
+  assert.ok(commands.some((command) => command.includes('vitest run tests/contract')));
+  assert.ok(local.commands.some((row) => row.command.includes('AppSettingsMenu.test.tsx')));
+ });
+
+/**
+ * **The Windows lane that was red for three landings** (recorded 2026-09-13).
+ *
+ * `windows-beta-check.yml` produces no required context, so a rollup exactly this
+ * shape read as "every required context is green" and merged. It had been red on
+ * `main` since the records migration and was red on the v1.2.2 release pull request
+ * eight minutes before that pull request landed. Two release attempts were then spent
+ * rediscovering what it had already reported.
+ */
+const ROLLUP_WITH_RED_UNREQUIRED = [
+  ...REQUIRED_CONTEXTS.map((name) => ({ __typename: 'CheckRun', name, status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: 'Checks' })),
+  { __typename: 'CheckRun', name: 'Audit JavaScript production dependencies', status: 'COMPLETED', conclusion: 'SUCCESS', workflowName: 'Windows x64 Beta Check' },
+  {
+    __typename: 'CheckRun',
+    name: 'Verify unsigned Windows x64 beta',
+    status: 'COMPLETED',
+    conclusion: 'FAILURE',
+    detailsUrl: 'https://github.com/wlsdks/ontology-atlas/actions/runs/34720027112/job/103625133745',
+    workflowName: 'Windows x64 Beta Check',
+  },
+];
+
+const readyWithRedUnrequired = readyPr({ statusCheckRollup: ROLLUP_WITH_RED_UNREQUIRED });
+
+describe('checks main does not require', () => {
+  it('refuses to land on a red unrequired lane, and names it with its job URL', () => {
+    const verdict = otherCheckState({ rollup: ROLLUP_WITH_RED_UNREQUIRED, requiredContexts: REQUIRED_CONTEXTS });
+    assert.equal(verdict.state, 'failed');
+    assert.deepEqual(verdict.failed.map((c) => c.name), ['Verify unsigned Windows x64 beta']);
+    assert.match(verdict.failed[0].url, /34720027112/);
+    // The required gate is green on the very same rollup: that disagreement is the bug.
+    assert.equal(requiredCheckState({ rollup: ROLLUP_WITH_RED_UNREQUIRED, requiredContexts: REQUIRED_CONTEXTS }).state, 'green');
+    assert.equal(
+      decideNext({ ...holding, pr: readyWithRedUnrequired, localChecksPassed: true }).action,
+      'fail-other-checks',
+    );
+  });
+
+  it('lands when the failing lane is accepted by name, and reports the acceptance', () => {
+    const step = decideNext({
+      ...holding,
+      pr: readyWithRedUnrequired,
+      localChecksPassed: true,
+      allowFailing: ['Verify unsigned Windows x64 beta'],
+    });
+    assert.equal(step.action, 'merge');
+    assert.deepEqual(step.other.accepted.map((c) => c.name), ['Verify unsigned Windows x64 beta']);
+    assert.deepEqual(step.other.failed, []);
+  });
+
+  it('refuses a red required context however it is named, so the escape cannot reach one', () => {
+    const redRequired = readyPr({ statusCheckRollup: RECORDED_ROLLUP });
+    for (const allowFailing of [[], ['Unit · Contract'], ['Unit · Contract', 'Verify unsigned Windows x64 beta']]) {
+      assert.equal(
+        decideNext({ ...holding, pr: redRequired, localChecksPassed: true, allowFailing }).action,
+        'fail-checks',
+        `--allow-failing=${allowFailing.join(',')} must not reach a required context`,
+      );
+    }
+  });
+
+  it('says so when an accepted name is not failing, rather than implying it protected something', () => {
+    const green = readyPr({ statusCheckRollup: ROLLUP_WITH_RED_UNREQUIRED.filter((r) => r.conclusion !== 'FAILURE') });
+    const step = decideNext({ ...holding, pr: green, localChecksPassed: true, allowFailing: ['Verify unsigned Windows x64 beta'] });
+    assert.equal(step.action, 'merge');
+    assert.deepEqual(step.other.unmatched, ['Verify unsigned Windows x64 beta']);
+  });
+
+  it('treats a skipped or still-running unrequired lane as no failure', () => {
+    const rollup = [
+      ...REQUIRED_CONTEXTS.map((name) => ({ __typename: 'CheckRun', name, status: 'COMPLETED', conclusion: 'SUCCESS' })),
+      { __typename: 'CheckRun', name: 'inactive lane', status: 'COMPLETED', conclusion: 'SKIPPED' },
+      { __typename: 'CheckRun', name: 'still going', status: 'IN_PROGRESS', conclusion: '' },
+    ];
+    assert.equal(otherCheckState({ rollup, requiredContexts: REQUIRED_CONTEXTS }).state, 'clear');
+  });
+
+  it('parses --allow-failing into named contexts and refuses an empty list', () => {
+    assert.deepEqual(parseArgs(['1595', '--allow-failing=A,B']).allowFailing, ['A', 'B']);
+    assert.deepEqual(parseArgs(['1595']).allowFailing, []);
+    assert.throws(() => parseArgs(['1595', '--allow-failing=']), /must name at least one check context/);
   });
 });

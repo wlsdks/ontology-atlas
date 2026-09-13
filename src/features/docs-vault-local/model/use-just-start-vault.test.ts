@@ -105,7 +105,9 @@ describe('useJustStartVault', () => {
       await result.current.justStart();
     });
 
-    expect(result.current.actionError).toBe('Tauri vault runtime is not available.');
+    // A code, not a thrown sentence: the screen looks it up in `failures` and writes the
+    // language the reader chose (installed-app inspection before v1.2.2, B2).
+    expect(result.current.actionError).toBe('app-required');
     expect(vault.openRecent).not.toHaveBeenCalled();
     expect(vault.scaffoldOntology).not.toHaveBeenCalled();
   });

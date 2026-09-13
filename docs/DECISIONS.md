@@ -1,5 +1,7 @@
 # DECISIONS — the council decision ledger
 
+> Frozen history since 2026-09-13. Add new decisions under `docs/records/decisions/` with `pnpm record:new`; `pnpm decisions:find` and the Docs Vault compose all records. See [record workflow](records/README.md). Historical recording instructions below describe the former format.
+
 > This file keeps **the decisions and the arguments that lost when they were
 > made**. `docs/CHANGELOG.md` answers *what changed and when*; this file
 > answers ***why it was decided that way, and what was staked on it***.
@@ -54,22 +56,13 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
-## 2026-09-13 — The Architecture tab becomes Harness, and says only what files can prove
+## 2026-09-13 — The camera's ceiling is the widest mark a folder may draw, and the fit tile stops offering a press it cannot answer
 
-**Why**: the owner: *"change Architecture to harness, and pick between harness makeup and architecture inside it"*. A tech lead cannot say what the agents in a repository were told, what stops them, or where nothing does: the answer is scattered across `AGENTS.md`, its nested copies, `CLAUDE.md`, `.claude/rules`, `.claude/hooks`, `.agents/`, `.codex/`. Routed `door=one-way · risk=scope · reviewers=po-evidence,po-leverage`, `council=yes`; directions `directions-H.md` (B).
-**Prior**: none here. Cites 2026-07-31 (the 32 KiB Codex diet) as the incident the size column measures, and `forbidden.md`'s "never two canonical stores for one concept" as what decided where the reading lives.
-**Decision**: the route is unchanged and only the label moves, with an explainer line and a segmented control on `?view=guides|structure|sensors` defaulting to `structure`, where every older link lands. The reading is this repository's own classifier, promoted `views/docs-vault/lib/agent-files.ts` → `entities/agent-files`, plus what it lacked: a cited source per tool×file claim, the hook wiring a config declares, and a bridge scan reaching the dot directories a browser cannot see. Four honesty rules are the contract, detailed in `docs/FEATURES.md`: the Codex bar measures the merged document, not one file; only declared pairs are compared; a hook says its script exists, never that it runs; the change column is a labelled mtime.
-**Dissent**: po-leverage would ship two segments and cut the sensors placeholder, the hook rows and the check count as H3 wearing H1's name. Answered by publishing the denominator on screen and keeping the placeholder silent about quantity; the cut is the fallback if a walker reads either as cover.
-**Falsifier**: a walker who cannot name one file Codex reads that Claude Code does not; one reading a wired hook or the check count as proof something runs; a tool×file row with neither source nor an uncited marker; a second inventory beside this one.
-**Owner**: jinan
-
-## 2026-09-13 — The blueprint ladder takes the card's width so its sentences finish
-
-**Why**: inspection 122, S8. At 1512×949 in the installed-app window the ladder held its 280/72/240 faces whatever the card was: the band was **592px inside a 1448px card (41 %)**, **124px left of centre**, and **all seven role sentences ended in an ellipsis** while 856px stood empty. The tight ladder cut them: it buys height by dropping the sentence's second line, and one 280px line cannot hold a Korean sentence. The seven observation cells each repeated "not inspected yet" under a heading that already said the source needed checking.
-**Prior**: narrows 2026-09-03 ("the ladder is chosen by height") and 2026-09-08 (Direction B's planes); axis choice, row heights and plane geometry are unchanged. Applies the owner's standing priority of a finished sentence over box symmetry.
-**Decision**: the contract face grows into ground neither lane wants — the contract lane's 48px floor and the observation lane's 360px cap come out first — up to 560px, derived: the longest dogfood sentence estimates at 472px and `captionLineRoom` spends 24 on padding. What the lanes still do not need is split evenly, so the drawing sits on the card's centre line. The observation column states the fact once under its heading and leaves the faces empty when no role has a receipt. Re-measured: band **872px of 1448 (60 %)**, centred to the pixel, **0 of 7 cut**, height unchanged.
-**Dissent**: 280/72/240 was the selected structure of the 2026-09-02 dual-evidence direction, and a face that changes width is one less fixed thing to rely on. Answered by the floor: it never shrinks below 280, and a narrow canvas draws exactly what it drew.
-**Falsifier**: a role sentence ending in an ellipsis on any canvas the paired ladder chooses; a band under half its card; the drawing over 8px off centre; the ladder's height moving where it used to fit.
+**Why**: inspection 122 on the installed `23cbf6d64`: the six-document home drew **38.4% × 38.7%** of a 1512 window and the fit tile pressed twice gave a **pixel-identical frame** (S1); the amber dot for an unverified citation scanned **28 pixels at 1040 and 0 at 1512** in one state (S2); one of six files was left anonymous by a label collision (S18); the legend under an open card said how to open one (S19).
+**Prior**: **narrows** 2026-09-12 "One folder is one picture; the canvas is a window onto it" on its own design-lead dissent — six documents over 28% of a 1920 window reading as unfinished — which S1 is. Its world mark scale, band and legibility gate stand; the ceiling's number moves. 2026-09-08 "The Library graph stands still" stands: no mark moves.
+**Decision**: the ceiling becomes a drawn mark — **36px, the map's own node chrome, never wider** — so `libraryZoomMax` gives an ordinary folder 2.0 (was 1.6, 28.8px) and one with every mark at the band's floor up to 3.6. The fit tile reads `isSameView` and takes `ChromeTile`'s disabled grammar while the picture is framed. Every unverified citation keeps its amber dot **at rest**, at the line's ink, inside half its break, floored at 3px; the pulse adds radius, not brightness. A name losing all four places goes onto 12 spokes to 44px with a leader, skipped above 120 marks. The legend swaps its gesture for the way out.
+**Dissent**: 60–75% of the shorter axis was asked for and refused: that needs a camera of 2.4 and a **43px** page, the balloon G2 records the owner rejecting, and being window-relative it restores that record's falsifier. Fill stops at 45.9% × 47.8%. design-infoviz survives: 120 standing dots at 372 marks.
+**Falsifier**: a page mark wider than 36px; a camera differing across windows while the ceiling binds; a fit press that changes no pixel; a stale citation with no amber at rest; a named mark drawn without its name under 30 marks; a reader who calls dense amber noise.
 **Owner**: jinan
 
 ## 2026-09-12 — A gate may check the product, never the clock
@@ -5686,4 +5679,34 @@ record stays in Git history before commit `e4fb49a89`.
 **Decision**: retain related-page retrieval, per-page freshness and inventoried nested Wiki addresses. Reserved answer paths stay visible in citations and their question/history surfaces but use explicit refresh and create-only revision saving; they do not enter ordinary Compile's replacement queue. Local source hashes describe the complete bytes read. A replacement still needs complete prior context, its receipt and current text/time checks.
 **Dissent**: one automatic compilation queue would be simpler. It would erase the distinction between revising a source write-up and preserving the prior answer that a person returned to compare.
 **Falsifier**: a reserved answer is replaced by ordinary Compile, immutable history keeps source compilation permanently queued, a stale ordinary write-up disappears behind a current one, or a nested Wiki replacement loses its exact address or read/currentness guard.
+**Owner**: jinan
+
+
+## 2026-09-13 — Scope verification and collapse exact repeated test commands
+
+**Why**: The owner requested lower CI/pre-push cost. Every push ran full contract and Knip; every main push ran exhaustive CI. Recent successful PR medians were 442.5 seconds for Checks and 529 seconds for E2E.
+**Prior**: Supersedes unconditional local scans in 2026-08-22 (96), 2026-08-23 (109), and exhaustive-every-main verification. Keeps 2026-09-12 “One pull request is one CI run” and the no-clock-verdict rule.
+**Decision**: Pre-push keeps quick checks. The lander defers whole unit/contract suites and Knip to required PR CI, keeping focused checks. Main uses its verified push-before ancestor; invalid history, unknown paths and planner/shared-root changes stay exhaustive. Daily/manual sweeps have separate cancellation groups. Collapse only later exact test-file commands covered by an earlier default invocation; retain flags and lifecycle hooks. Record lane/command durations. Reject persistent caching: dependency fingerprinting cost 5.5 seconds each way against 13.6 seconds for Knip. Preserve behavior tests.
+**Dissent**: Every-main sweeps catch mapper blind spots sooner. Accept detection at the daily sweep for those unknown defects; release qualification stays unchanged. Revisit cross-run caching only with sufficient measured savings and reliable input identity.
+**Falsifier**: A changed invocation is omitted, failed earlier evidence permits progress, invalid push history narrows coverage, a failing selected lane permits push, or required PR evidence disappears.
+**Owner**: jinan
+
+
+## 2026-09-13 — Browser CI shares one build and balances measured work without reducing coverage
+
+**Why**: The owner requested Playwright optimization. Three recent full runs put shard 3 at 7.9 minutes of testing, while the latest shard 1 took 4.9. Five jobs rebuilt the same export and 16 dedicated surface tests also ran inside the broad suite.
+**Prior**: Extends 2026-09-13 “Scope verification and collapse exact repeated test commands”; keeps the smoke/sweep boundary and all protected browser statuses.
+**Decision**: Build one run-local SHA-named export. Active consumers fail if it is unavailable. Discover tests live and balance whole files by advisory measured duration; new files stay included with estimated weights. Verify executed file/test counts against assignments. Remove dedicated surface duplicates only while the corresponding required job owns them. Retain two workers and serial suites; independent hover cases opt into parallel execution within their assigned file. Replace fixed route/hover waits in four layout audits with font and finite-animation completion. Preserve actual idle/physics measurement windows and all PR smoke tests.
+**Dissent**: A shared build introduces a dependency and artifact transfer; duration estimates can become stale. Accept these costs only with measured critical-path improvement. No timing estimate can remove a test or turn a failed process green.
+**Falsifier**: A discovered test disappears or runs twice across its owners; missing build/report evidence passes; a serial file splits; a planted visual defect escapes; or full CI loses its measured runtime improvement.
+**Owner**: jinan
+
+
+## 2026-09-13 — Verification owns evidence once and completes on responses
+
+**Why**: The owner requested elimination of redundant checks and meaningless tests. Full lint ran again inside a contract for 111 seconds. MCP integration spent most of 310 seconds waiting for per-call shutdown timers; 146 unchanged cases completed locally in 40.9 seconds after response-driven closure.
+**Prior**: Extends the 2026-09-13 verification-scope and browser-execution decisions; preserves the 2026-08-01 rule against authored-prose pins and all required PR contexts.
+**Decision**: Keep one full lint scan with real stdin warning/error probes. Reuse existing architecture unit/transport coverage. Scope browser execution changes to browser verification; avoid setup on empty unit shards. Validate catalogue output against independent captured inputs offline, retaining bounded live freshness on scheduled/manual CI. Close MCP test processes after every expected response, rejecting missing responses, timeouts and abnormal exits. Remove tautologies, stale hand-counted denominators and authored-prose pins; retain nonempty scans, reference integrity and real browser geometry.
+**Dissent**: Aggressive subtraction can confuse similar assertions with equivalent coverage. Keep computed browser token checks because source declarations alone do not prove the cascade, and retain the original a11y opener coverage floors when moving them into the real browser test.
+**Falsifier**: A real warning passes, a required response is missing on success, unrelated registry availability blocks ordinary CI, a live test loses its owner, or a removed assertion exposes a distinct defect not caught by retained evidence.
 **Owner**: jinan

@@ -51,9 +51,25 @@
  *   5. **Merge, prune, release.** Wait for the required contexts (read from the
  *      branch protection, never listed here), squash merge, delete the remote
  *      branch, prune locally, and always release the lock, including on Ctrl-C.
+ *      **No worktree is removed** unless `--cleanup <path>` asks for one:
+ *      `--worktree` only says where step 3 runs. See `worktreeToRemove`.
  *
  * One landing, in order: **lock, merge main, local checks, ready, one CI run,
  * merge, clean.**
+ *
+ * **Required is not the same as "what matters"** (2026-09-13). Step 5 waited on the
+ * branch protection's list and merged on "every required context is green".
+ * `windows-beta-check.yml` produces no required context, had been red on `main` since
+ * the records migration, and was red on the v1.2.2 release pull request eight minutes
+ * before it landed here. The instrument existed and was correct; nothing surfaced its
+ * verdict, and two release attempts were spent rediscovering what it had reported.
+ *
+ * So every check on the exact tree being merged is read, not just the required ones,
+ * and an unnamed failure refuses. The escape is `--allow-failing <context>[,...]`,
+ * never a blanket `--force`: a flaky unrequired lane must not block all landing, but
+ * accepting a red lane is a decision someone makes by name, and the acceptance is
+ * logged in the line printed before the merge. The escape cannot reach a **required**
+ * context, which refuses however it is named.
  *
  * Never call `gh pr merge` or `gh pr update-branch` by hand, and never open a
  * pull request without `--draft`: each of those spends a CI round nobody asked
@@ -189,7 +205,12 @@ function runStamp(run) {
   return 0;
 }
 
-export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
+/**
+ * The newest real verdict per context name, resolving the duplicates the draft
+ * design creates. Shared by the required gate and the everything-else gate so the
+ * two cannot disagree about which run is current.
+ */
+export function latestByName(rollup = []) {
   /*
    * ⚠️ **One name, several entries** (measured 2026-09-12, PR #1578).
    *
@@ -235,6 +256,54 @@ export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
     const better = newer > 0 || (newer === 0 && verdictRank(run) > verdictRank(held));
     if (better) byName.set(name, run);
   }
+  return byName;
+}
+
+/**
+ * A context's completed verdict is a failure: not success, not skipped, not still
+ * running. `SKIPPED` is how an inactive lane reports and is never a failure.
+ */
+function isFailedRun(run) {
+  const status = String(run?.status ?? run?.state ?? '').toUpperCase();
+  if (status !== 'COMPLETED') return false;
+  const conclusion = String(run?.conclusion ?? run?.state ?? '').toUpperCase();
+  return conclusion !== 'SUCCESS' && conclusion !== 'SKIPPED';
+}
+
+/**
+ * **Every check that is not a required context, and whether it failed** (2026-09-13).
+ *
+ * The measurement that put this here: `windows-beta-check.yml` had been red on `main`
+ * since the records migration and was red on the v1.2.2 release pull request itself,
+ * 8 minutes before that pull request landed. It produces no required context, so this
+ * lander read "every required context is green" and merged. The instrument existed and
+ * was correct; nothing surfaced its verdict. Two releases were then spent rediscovering
+ * what it had already reported.
+ *
+ * A flaky non-required lane must not block all landing, so the escape exists — but
+ * accepting a red lane is a decision someone makes **by name**, never a blanket
+ * `--force`. Named acceptances are logged with the merge.
+ */
+export function otherCheckState({ rollup = [], requiredContexts = [], allowFailing = [] }) {
+  const required = new Set(requiredContexts);
+  const allowed = new Set(allowFailing);
+  const failed = [];
+  const accepted = [];
+  for (const [name, run] of latestByName(rollup)) {
+    if (required.has(name) || !isFailedRun(run)) continue;
+    const row = {
+      name,
+      conclusion: String(run.conclusion ?? run.state ?? '').toUpperCase(),
+      url: run.detailsUrl ?? run.targetUrl ?? null,
+    };
+    (allowed.has(name) ? accepted : failed).push(row);
+  }
+  const unmatched = [...allowed].filter((name) => !accepted.some((row) => row.name === name));
+  return { state: failed.length > 0 ? 'failed' : 'clear', failed, accepted, unmatched };
+}
+
+export function requiredCheckState({ rollup = [], requiredContexts = [] }) {
+  const byName = latestByName(rollup);
   const pending = [];
   const failed = [];
   const missing = [];
@@ -296,12 +365,15 @@ export const isBrowserCommand = (command) =>
  * (`scripts/lib/focused-check-suggestions.mjs`), so a landing never carries a
  * second, drifting idea of which check a path needs.
  */
+export const isCiOwnedCommand = (command) =>
+  isBrowserCommand(command) || ['pnpm knip', 'pnpm test:contracts', 'pnpm test:run'].includes(command);
+
 export function localCheckPlan(paths) {
   const suggestions = suggestFocusedChecks(paths);
   return {
     suggestions,
-    commands: suggestions.commands.filter((row) => !isBrowserCommand(row.command)),
-    deferred: suggestions.commands.filter((row) => isBrowserCommand(row.command)),
+    commands: suggestions.commands.filter((row) => !isCiOwnedCommand(row.command)),
+    deferred: suggestions.commands.filter((row) => isCiOwnedCommand(row.command)),
   };
 }
 
@@ -341,6 +413,7 @@ export function decideNext({
   ciRequested = false,
   localChecksPassed = false,
   emptyRollupObservations = 0,
+  allowFailing = [],
 }) {
   if (pr?.state === 'MERGED') return { action: 'done' };
   const refusal = refuseLanding(pr);
@@ -390,7 +463,17 @@ export function decideNext({
     return { action: 'refire-ci', checks };
   }
   if (checks.state === 'waiting') return { action: 'wait-checks', checks };
-  return { action: 'merge' };
+
+  /*
+   * The required contexts are green. Everything else on this exact tree is read now,
+   * because "required" is a branch-protection list, not a statement about what matters:
+   * a lane can be correct, red, and unrequired all at once, which is how a Windows
+   * install failure rode into two release attempts. A named acceptance passes through
+   * and is logged with the merge; an unnamed failure refuses.
+   */
+  const other = otherCheckState({ rollup: pr.statusCheckRollup ?? [], requiredContexts, allowFailing });
+  if (other.state === 'failed') return { action: 'fail-other-checks', other };
+  return { action: 'merge', other };
 }
 
 /* ------------------------------------------------------------------ *
@@ -571,16 +654,51 @@ function sleep(seconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Math.round(seconds * 1000));
 }
 
+/**
+ * **Which worktree a landing removes: `--cleanup`'s path, and nothing else.**
+ *
+ * ⚠️ Written as a named function of the parsed flags, and exported, because on
+ * 2026-09-13 an agent whose landing worktree disappeared read `--worktree` as
+ * "the worktree this landing owns" and reported that a successful
+ * `pnpm pr:land <n> --worktree <path>` had removed it, taking gitignored
+ * evidence with it. It had not: removal has always been `--cleanup`'s alone,
+ * and that landing's log carries no `cleanup:` line at all. The two flags
+ * answer different questions — `--worktree` is *where the local lanes run*,
+ * `--cleanup` is *what to remove when the landing is done* — and the inline
+ * `if (args.cleanup)` was true but unprovable. This is the same rule with a
+ * name and a recorded test, so the next agent can read the guarantee instead
+ * of inferring it from a missing directory.
+ *
+ * Whatever removed that worktree was outside this script; the flag separation
+ * is now pinned so this file can be ruled out by reading rather than by trust.
+ */
+export function worktreeToRemove(args) {
+  return args.cleanup ?? null;
+}
+
+/**
+ * What a removal says **before** it happens.
+ *
+ * It announced itself only afterwards, and only on success, so a landing that
+ * removed a worktree and a landing that never touched one read identically
+ * until the directory was gone. The path and the judgement go out first.
+ *
+ * ⚠️ The clean/dirty judgement is `git status --porcelain`, which **does not
+ * count ignored files**. That is the whole of the trap the 2026-09-13 landing
+ * hit: a worktree holding nothing but gitignored captures under `output/` reads
+ * clean, so the announcement says so out loud rather than implying the tree was
+ * empty.
+ */
+export function describeCleanup({ path, status }) {
+  if (status === null) return `${path} is not a Git worktree; left alone`;
+  if (status !== '') return `${path} still has uncommitted work; left alone`;
+  return `removing ${path} — tracked files clean (ignored files are not counted, so anything under an ignored path goes with it)`;
+}
+
 function cleanupWorktree(path) {
   const status = git(['-C', path, 'status', '--porcelain'], { allowFailure: true });
-  if (status === null) {
-    log(`cleanup: ${path} is not a Git worktree; left alone`);
-    return;
-  }
-  if (status !== '') {
-    log(`cleanup: ${path} still has uncommitted work; left alone`);
-    return;
-  }
+  log(`cleanup: ${describeCleanup({ path, status })}`);
+  if (status === null || status !== '') return;
   const branch = git(['-C', path, 'rev-parse', '--abbrev-ref', 'HEAD'], { allowFailure: true });
   git(['worktree', 'remove', path], { allowFailure: true });
   if (branch && branch !== 'main' && branch !== 'HEAD') {
@@ -698,6 +816,9 @@ export function parseArgs(argv) {
     // standing in the worktree that wrote it.
     worktree: null,
     timeoutMinutes: 180,
+    // Check contexts whose failure the operator has accepted, by name. Never a
+    // blanket force: an unnamed red lane still refuses.
+    allowFailing: [],
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -721,6 +842,10 @@ export function parseArgs(argv) {
         throw new Error(`--timeout-minutes must be positive; received ${arg}`);
       }
       args.timeoutMinutes = minutes;
+    } else if (arg.startsWith('--allow-failing=')) {
+      const names = arg.slice('--allow-failing='.length).split(',').map((name) => name.trim()).filter(Boolean);
+      if (names.length === 0) throw new Error('--allow-failing must name at least one check context');
+      args.allowFailing = [...new Set([...(args.allowFailing ?? []), ...names])];
     } else if (/^#?\d+$/.test(arg)) args.number = Number(arg.replace('#', ''));
     else throw new Error(`unknown argument: ${arg}`);
   }
@@ -772,7 +897,8 @@ export function runPrLand(argv, io = console) {
 
   if (pr?.state === 'MERGED') {
     io.log(`[pr-land] PR #${number} is already merged: ${pr.url}`);
-    if (args.cleanup) cleanupWorktree(args.cleanup);
+    const removal = worktreeToRemove(args);
+    if (removal) cleanupWorktree(removal);
     return 0;
   }
   const refusal = refuseLanding(pr);
@@ -821,6 +947,7 @@ export function runPrLand(argv, io = console) {
     else emptyRollupObservations = 0;
 
     const step = decideNext({
+      allowFailing: args.allowFailing,
       pr,
       lock,
       behindBy,
@@ -927,6 +1054,19 @@ export function runPrLand(argv, io = console) {
       return 1;
     }
 
+    if (step.action === 'fail-other-checks') {
+      release();
+      io.error(`[pr-land] PR #${number} has ${step.other.failed.length} failing check(s) that main does not require:`);
+      for (const check of step.other.failed) {
+        io.error(`[pr-land]   ${check.name} ${check.conclusion} ${check.url ?? ''}`.trimEnd());
+      }
+      io.error('[pr-land] a lane can be correct, red, and unrequired at once: windows-beta-check.yml was red on');
+      io.error('[pr-land] main and on the v1.2.2 release pull request, and landing on "required is green" cost');
+      io.error('[pr-land] two release attempts. Fix it, or accept it by name:');
+      io.error(`[pr-land]   pnpm pr:land ${number} --allow-failing=${step.other.failed.map((c) => c.name).join(',')}`);
+      return 1;
+    }
+
     if (step.action === 'wait-checks') {
       const { pending, unrun } = step.checks;
       log(
@@ -939,7 +1079,14 @@ export function runPrLand(argv, io = console) {
     }
 
     if (step.action === 'merge') {
-      log(`every required context is green on ${pr.headRefOid.slice(0, 9)}; squash merging`);
+      for (const name of step.other?.unmatched ?? []) {
+        log(`--allow-failing named ${name}, which is not failing on this tree; it accepted nothing`);
+      }
+      const accepted = step.other?.accepted ?? [];
+      const acceptedNote = accepted.length > 0
+        ? `, accepting ${accepted.length} named failing check(s): ${accepted.map((c) => `${c.name} ${c.conclusion}`).join(', ')}`
+        : '';
+      log(`every required context is green on ${pr.headRefOid.slice(0, 9)}${acceptedNote}; squash merging`);
       /*
        * No `--delete-branch`. Measured on the first real landing (#1576, which
        * merged and then crashed here): that flag makes `gh` do local Git work,
@@ -965,7 +1112,8 @@ export function runPrLand(argv, io = console) {
       }
       git(['fetch', '--prune', 'origin'], { allowFailure: true });
       release();
-      if (args.cleanup) cleanupWorktree(args.cleanup);
+      const removal = worktreeToRemove(args);
+      if (removal) cleanupWorktree(removal);
       log('done. Next agent: `pnpm pr:land <number>`.');
       return 0;
     }

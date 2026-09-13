@@ -4349,6 +4349,20 @@
     "connector-secret-missing": "A token this connector needs is not in this machine’s keychain. Open Connectors, enter it again, or switch the connector off.",
     "acp-line-rewrite-failed": "The message to the agent could not be prepared. Try opening the conversation again."
   },
+  "failures": {
+    "permission-denied": "This folder refused the write, so nothing changed. Allow Ontology Atlas to reach this folder in System Settings, under Privacy & Security, then try again.",
+    "target-missing": "That folder or file is no longer there. It may have moved or been deleted, so open the folder again and retry.",
+    "already-exists": "A file of that name is already there, so nothing was overwritten. Check the existing file or use another name, then try again.",
+    "app-required": "This action creates a file directly in the folder, so only the installed app can do it.",
+    "answer-history-unreadable": "This answer's question or its link to earlier versions could not be read. Check that answer_thread in the info block at the top of the file starts with wiki/answers/, then try again.",
+    "answer-path-invalid": "This answer does not live under wiki/answers/. Move the answer page into that folder, then try again.",
+    "answer-sources-unmeasured": "One of the cited originals cannot be read right now, so the refresh did not start. Put the original files back, then try again.",
+    "answer-previous-changed": "The previous answer or an original changed while this was being prepared, so it stopped. Nothing was saved; ask for the draft again.",
+    "answer-draft-mismatch": "What you reviewed and what was about to be saved no longer match, so nothing was saved. Open the comparison again, then save.",
+    "answer-draft-invalid": "The agent's draft cannot become a new version. Ask again for one body with its citations.",
+    "answer-revision-exists": "A page already exists at that address, so nothing was overwritten. Open it in the Library to see what is there.",
+    "answer-turn-incomplete": "The refresh did not finish. The previous answer is unchanged. Ask again when you are ready."
+  },
   "analysisWorkbench": {
     "meaningTitle": "Meaning review",
     "architectureTitle": "Architecture review",
@@ -4849,6 +4863,8 @@
       "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
       "legend": "A filled circle is a page, a square a source, a ring a concept on the map. A thicker line is a citation, a dashed one a mention, either way. Drag a dot out of the tangle, scroll to zoom, drag the background to move, press a dot for a card beside it.",
       "legendShort": "A circle is a page, a square a source, a ring a concept.",
+      "legendCardOpen": "A filled circle is a page, a square a source, a ring a concept on the map. A thicker line is a citation, a dashed one a mention, either way. Press Escape, or the same dot again, to close the card.",
+      "legendShortCardOpen": "A circle is a page, a square a source, a ring a concept. Escape closes the card.",
       "readerClose": "Close the page",
       "keys": "Arrow keys move between dots, Enter opens a card beside the one you are on, Escape closes it.",
       "announce": "{kind} {name}, {position} of {total}. Enter {action}.",
@@ -4861,10 +4877,16 @@
       "actionMap": "shows what it is",
       "openOnMap": "open on the map",
       "fit": "Fit the whole picture",
+      "fitDone": "The whole picture is already framed",
       "describe": {
         "source": "{name}: an original file. A thick line leads to the page written from it; no line means nobody has written it up yet. Press for a card beside it.",
         "page": "{name}: a wiki page. Thick lines lead to the originals it cites, dashed lines to concepts it names. Press for a card beside it.",
         "concept": "{name}: a concept on the map. The dashed lines lead to the wiki pages it names or was drawn from. Press for a card beside it."
+      },
+      "describeOpen": {
+        "source": "{name}: an original file. A thick line leads to the page written from it; no line means nobody has written it up yet. Its card is open beside it: Escape, or press again, closes it.",
+        "page": "{name}: a wiki page. Thick lines lead to the originals it cites, dashed lines to concepts it names. Its card is open beside it: Escape, or press again, closes it.",
+        "concept": "{name}: a concept on the map. The dashed lines lead to the wiki pages it names or was drawn from. Its card is open beside it: Escape, or press again, closes it."
       },
       "card": {
         "close": "Close this card",
@@ -5077,6 +5099,19 @@
       "fixed": "Fixed · check again to re-judge",
       "gone": "What the agent read does not survive reopening the app; the list above is computed from the folder each time and does. Check the wiki again to see the agent's half.",
       "emptyLede": "Checking the wiki reads and reports. It writes nothing.",
+      "rule": {
+        "kind-present": "This page is marked for the map",
+        "missing-field": "A required line is missing",
+        "describes-needs-approval": "Nobody has confirmed this claim",
+        "section-order": "Sections are missing or misordered",
+        "bad-truncation-record": "The read-so-far record disagrees",
+        "uncited-fact": "No original backs this up",
+        "bad-citation": "A citation cannot be read",
+        "citation-target-missing": "A cited original is not here",
+        "dangling-wikilink": "A link points at no page",
+        "orphan-page": "No other page points here",
+        "shared-source-unlinked": "Two write-ups do not link"
+      },
       "namesTitle": "Names without a page",
       "open": "Check results {count}",
       "running": "Checking the wiki…",
@@ -5157,7 +5192,9 @@
         "alternative": "Alternative draft",
         "unresolved": "History incomplete"
       },
-      "evidenceMore": "Show what was observed"
+      "evidenceMore": "Show what was observed",
+      "refreshBlockedHistory": "Revision history needs review. The link to earlier versions is not valid, so a refresh cannot be asked for. Fix answer_thread in the info block at the top of the file, then reopen this answer.",
+      "refreshFailed": "The refresh draft could not be requested. Try again in a moment."
     }
   },
   "libraryImport": {
