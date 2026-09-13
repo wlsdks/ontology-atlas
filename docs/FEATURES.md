@@ -561,7 +561,7 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 ### `/architecture` — Harness: guides, structure, sensors
 
 **The tab is Harness (`harness.title`) and it answers "how are agents set up to work in this repository"**
-(2026-09-13, `docs/DECISIONS.md`). The route is unchanged, the label moved: the destination
+(2026-09-13, `docs/records/decisions/2026-09-13-architecture-tab-becomes-harness-3a63ada4-031c-41af-8b9d-6d6f7f2a5138.md`). The route is unchanged, the label moved: the destination
 already held one half of the answer (the reviewed structure) and nothing at all of the other
 (what the agents were told, and what catches them). Under the title one line says what the tab
 is for, and a segmented control picks one of three views on `?view=`; the default is
@@ -589,8 +589,8 @@ listed by script: wired (`harness.hookWired`) means the script the config names 
 — a script the config names and the disk does not have is called out, because that failure
 produces no error at all, and the Codex group carries its approval requirement (`harness.hookApprovalGate`) as a standing
 fact instead of a green, since `/hooks` trust lives in no file. Measured on this repository:
-98 guide documents in 9 groups, 81 checks (20 + 4 + 57), `AGENTS.md` 12,132 B merging to
-13,080 of 32,768, both declared pairs matching, 20 of 20 hook scripts wired.
+98 guide documents in 9 groups, 85 checks (20 + 6 + 59), `AGENTS.md` 12,142 B merging to
+13,090 of 32,768, both declared pairs matching, 20 of 20 hook scripts wired.
 
 **Sensors (`harness.views.sensors`)** — declared not built. It names what it will hold and says it is empty, with no
 rows and no numbers: a plausible-looking table would launder the field's own open problem, that a
