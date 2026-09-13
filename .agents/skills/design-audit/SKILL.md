@@ -1,6 +1,6 @@
 ---
 name: design-audit
-description: Audit a finished frontend change by measuring rendered rects and computed styles before using screenshots as human-checkable evidence.
+description: Audit a rendered Atlas UI change when design routing requests geometry and visual evidence, or when the user requests a design audit.
 ---
 
 # Measure a finished UI change

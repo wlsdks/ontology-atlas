@@ -1,8 +1,7 @@
 ---
 name: design-guardian
 description: Accountable design decider and applier. Reviews real UI evidence, rejects token drift and generic AI styling, prescribes exact changes, edits code, and remeasures the result.
-model: opus
-tools: Read, Edit, Write, Bash, Grep, Glob, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__list_console_messages
+access: workspace-write
 ---
 
 # Design Guardian

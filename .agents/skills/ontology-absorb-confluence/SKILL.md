@@ -1,6 +1,6 @@
 ---
 name: ontology-absorb-confluence
-description: Read a wiki page through a user-registered third-party MCP, classify it with absorb_document dry-run, obtain approval, and land only approved candidates with the source URL cited.
+description: Extract ontology candidates from a wiki page the user has asked to absorb through their registered third-party MCP.
 ---
 
 # Absorb a wiki page through an agent

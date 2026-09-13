@@ -293,9 +293,9 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Agent instruction files
 
 **Run**: `pnpm agents:check`
-**Proves**: the agent-file drift checks (`claude-agents-bridge`, `skill-copy`, `agent-copy`, `at-refs`, `agent-language`, `mcp-grants`, `codex-size-cap`) all pass.
-**Escalate**: the `tests/contract/` contracts named below (`agent-files`, `nested-agents-pointers`, `skill-routing`, `rules-path-scope`, `secret-read-guard`, `node-test-reachability`, `agent-file-citations`)
-**Fix**: fix the reported drift: a broken `@AGENTS.md` import, a `.claude`/`.agents` byte mismatch, a dead `@reference`, non-English text, an undeclared MCP grant, or an oversized instruction set.
+**Proves**: each harness has valid discovery metadata and local references; bridge, language, MCP grants, and size checks pass. Differences between harnesses are informational.
+**Escalate**: the agent-files, skill-routing, rules-path-scope, and agent-file-citations contracts for the named failure
+**Fix**: repair the named harness's missing reference, identity/access metadata, bridge, language, grant, or size violation; do not synchronize independent files.
 
 ### macOS desktop readiness
 
@@ -1153,9 +1153,9 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Design routing and agent wiring
 
 **Run**: `pnpm test:design-gates`
-**Proves**: Executable routing, documented seat references, agent metadata, and mirrored files agree; it does not judge human prose or rendered quality.
+**Proves**: Executable routing, documented seat references, and each harness's own agent metadata agree; it does not judge human prose or rendered quality.
 **Escalate**: `pnpm agents:check` when shared skill or agent wiring changes beyond the design bench.
-**Fix**: Repair the reported route, metadata, reference, or mirror mismatch; do not pin replacement prose.
+**Fix**: Repair the reported route, metadata, reference, or missing seat; do not pin replacement prose.
 
 
 ## Independent record composition

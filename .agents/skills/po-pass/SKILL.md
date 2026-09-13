@@ -1,6 +1,6 @@
 ---
 name: po-pass
-description: Route Atlas product work from observable change facts and one human-recovery outcome; use a compact solo pass for reversible work.
+description: Route Atlas product, UX, MCP, CLI, or workflow changes through the product gate. Mechanical maintenance skips product review.
 ---
 
 # Atlas product pass — recover human understanding
@@ -8,6 +8,18 @@ description: Route Atlas product work from observable change facts and one human
 This is not a general PO scorecard. It protects the moment where coding-agent
 velocity has made a person unable to find, explain, judge, correct, or hand off
 what their codebase now means.
+
+## 0. Skip real maintenance
+
+Typos, dependency bumps, CI plumbing, lint configuration, isolated fixtures, and
+equivalent maintenance go straight to technical checks:
+
+```bash
+pnpm po:route -- --mechanical
+```
+
+A change with any product or sovereignty signal is not mechanical. The router
+must reject that combination.
 
 Read `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` before using this skill. Run
 `pnpm po:route -- --help`; never supply your own door or risk verdict.
@@ -24,18 +36,6 @@ construction-quality risk, task-aware context as the repeated entry, Meaning
 Diff as a human-review direction, and next-task reuse as the loop's closing
 proof. Distinguish each hypothesis from shipped behavior. These are Atlas's
 working priorities, not reasons to approve any feature that uses those names.
-
-## 0. Skip real maintenance
-
-Typos, dependency bumps, CI plumbing, lint configuration, isolated fixtures, and
-equivalent maintenance go straight to technical checks:
-
-```bash
-pnpm po:route -- --mechanical
-```
-
-A change with any product or sovereignty signal is not mechanical. The router
-must reject that combination.
 
 ## 1. Read the one prior decision you need
 

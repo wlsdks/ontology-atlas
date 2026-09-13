@@ -1,6 +1,6 @@
 ---
 name: motion-verify
-description: Verify canvas and UI motion with a real macOS recording, uniform 30fps frames, a visual phase strip, and frame-to-frame pixel-diff statistics.
+description: Verify changed Atlas motion through a real screen recording when motion proof is requested or selected by design routing.
 ---
 
 # Motion verification from a recording

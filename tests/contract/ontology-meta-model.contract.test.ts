@@ -93,11 +93,20 @@ describe("Atlas meta-model — one public canon reaches every authoring channel"
   });
 
   it.each([
-    ".agents/skills/ontology-bootstrap/SKILL.md",
+    ".agents/skills/ontology-bootstrap/guides/construction.md",
     ".claude/skills/ontology-bootstrap/SKILL.md",
-  ])("%s keeps proposal boundaries in the MCP array shape", (path) => {
-    const skill = flat(read(path));
-    expect(skill).toMatch(/includes.*excludes.*JSON string arrays.*never prose scalars/i);
+  ])("%s uses array-shaped boundary fields in its proposal template", (path) => {
+    // Inspect the payload example, not the author's explanatory sentence.
+    const templates = [...read(path).matchAll(/```text\n([\s\S]*?)```/g)]
+      .map((match) => match[1]).filter((block) => /^includes:/m.test(block));
+    expect(templates.length, `${path}: missing proposal template`).toBeGreaterThan(0);
+    for (const template of templates) {
+      for (const field of ["includes", "excludes"]) {
+        expect(template, `${path}: ${field} must be an array`).toMatch(
+          new RegExp(`^${field}: \\[.+\\]$`, "m"),
+        );
+      }
+    }
   });
 
   it("the public canon owns the stable anchor consumed above", () => {

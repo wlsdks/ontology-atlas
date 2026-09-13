@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DESIGN_CHANGE_SIGNALS } from '../../scripts/lib/design-proof-router.mjs';
 
-// Check callable metadata, references, and mirror bytes. Human review prose is
+// Check each harness's metadata, references, and routed seat availability. Human review prose is
 // intentionally not pinned: the router tests own executable proof selection.
 const ROOT = process.cwd();
 const read = (path: string): string => readFileSync(join(ROOT, path), 'utf8');
@@ -26,12 +26,11 @@ function tableAgents(body: string): string[] {
     .flatMap((line) => [...line.matchAll(/`(design-[a-z-]+)`/g)].map((match) => match[1])))].sort();
 }
 
-function requireMirroredAgent(name: string, load: (path: string) => string): string {
-  const canonical = `.claude/agents/${name}.md`;
-  const mirror = `.agents/agents/${name}.md`;
-  const body = load(canonical);
-  assert.equal(metadata(body, 'name'), name, `${canonical}: frontmatter identity mismatch`);
-  assert.equal(load(mirror), body, `${mirror}: differs from ${canonical}`);
+function requireAgent(tree: string, name: string, load: (path: string) => string): string {
+  const path = `${tree}/agents/${name}.md`;
+  const body = load(path);
+  assert.equal(metadata(body, 'name'), name, `${path}: frontmatter identity mismatch`);
+  assert(metadata(body, 'description'), `${path}: missing description`);
   return body;
 }
 
@@ -46,56 +45,56 @@ describe('Design Council wiring', () => {
     ]) expect(tableAgents(read(path)), path).toEqual(seats);
   });
 
-  it('resolves every routed seat to matching metadata and identical mirrored files', () => {
-    const models = new Set<string>();
-    for (const name of seats) {
-      const body = requireMirroredAgent(name, read);
-      const model = metadata(body, 'model');
-      expect(model, `${name}: missing model`).not.toBe('');
-      models.add(model);
-      expect(metadata(body, 'tools').split(/,\s*/), name).toContain('Read');
-      expect(metadata(body, 'tools').split(/,\s*/), name).toContain('WebSearch');
-      expect(Buffer.byteLength(body, 'utf8'), name).toBeLessThanOrEqual(MAX_AGENT_BYTES);
-    }
-    expect(models.size).toBeGreaterThanOrEqual(2);
-  });
+  for (const tree of ['.claude', '.agents']) {
+    it(`resolves every routed seat independently in ${tree}`, () => {
+      const models = new Set<string>();
+      for (const name of seats) {
+        const body = requireAgent(tree, name, read);
+        expect(Buffer.byteLength(body, 'utf8'), name).toBeLessThanOrEqual(MAX_AGENT_BYTES);
+        if (tree === '.claude') {
+          expect(metadata(body, 'model'), name).not.toBe('');
+          models.add(metadata(body, 'model'));
+          expect(metadata(body, 'tools').split(/,\s*/), name).toContain('Read');
+          expect(metadata(body, 'tools').split(/,\s*/), name).toContain('WebSearch');
+        } else {
+          expect(metadata(body, 'access'), name).toBe('read-only');
+          expect(metadata(body, 'model'), name).toBe('');
+          expect(metadata(body, 'tools'), name).toBe('');
+        }
+      }
+      if (tree === '.claude') expect(models.size).toBeGreaterThanOrEqual(2);
+      const chief = requireAgent(tree, 'chief', read);
+      const guardian = requireAgent(tree, 'design-guardian', read);
+      if (tree === '.claude') {
+        expect(metadata(chief, 'tools').split(/,\s*/)).not.toContain('Edit');
+        expect(metadata(chief, 'tools').split(/,\s*/)).not.toContain('Write');
+      } else {
+        expect(metadata(chief, 'access')).toBe('read-only');
+        expect(metadata(guardian, 'access')).toBe('workspace-write');
+      }
+    });
+  }
 
-  it('keeps coordinator metadata non-editing and both accountable roles mirrored', () => {
-    const chief = requireMirroredAgent('chief', read);
-    const tools = metadata(chief, 'tools').split(/,\s*/);
-    expect(tools).not.toContain('Edit');
-    expect(tools).not.toContain('Write');
-    requireMirroredAgent('design-guardian', read);
-  });
-
-  /*
-   * Mirror byte-identity is `pnpm agents:check`'s job, and it does every pair in the
-   * tree generically (`cli/src/commands/agent-files.mjs`: ".claude/skills ↔
-   * .agents/skills byte diff", same for agents). Re-asserting two named pairs here
-   * added no falsifier and made a new seat look guarded when it was not (removed
-   * 2026-09-12).
-   */
-
-  it('rejects missing, misidentified, and divergent agent files', () => {
+  it('rejects missing or misidentified seats but permits different client prose', () => {
     const name = seats[0];
-    expect(name).toBeTruthy();
-    const canonical = `.claude/agents/${name}.md`;
-    const mirror = `.agents/agents/${name}.md`;
-    const files = new Map([[canonical, read(canonical)], [mirror, read(mirror)]]);
+    const files = new Map(['.claude', '.agents'].map((tree) => {
+      const path = `${tree}/agents/${name}.md`;
+      return [path, read(path)] as const;
+    }));
     const load = (path: string): string => {
       const body = files.get(path);
       assert.notEqual(body, undefined, `Missing agent file: ${path}`);
       return body!;
     };
-    const original = files.get(mirror)!;
-    files.delete(mirror);
-    expect(() => requireMirroredAgent(name, load)).toThrow(`Missing agent file: ${mirror}`);
-    files.set(mirror, `${original}\n`);
-    expect(() => requireMirroredAgent(name, load)).toThrow(`${mirror}: differs`);
-    files.set(mirror, original);
-    files.set(canonical, original.replace(`name: ${name}`, 'name: wrong-identity'));
-    expect(() => requireMirroredAgent(name, load)).toThrow('frontmatter identity mismatch');
-    files.set(canonical, original);
-    expect(() => requireMirroredAgent(name, load)).not.toThrow();
+    for (const tree of ['.claude', '.agents']) {
+      const path = `${tree}/agents/${name}.md`;
+      const original = files.get(path)!;
+      files.delete(path);
+      expect(() => requireAgent(tree, name, load)).toThrow(`Missing agent file: ${path}`);
+      files.set(path, original.replace(`name: ${name}`, 'name: wrong-identity'));
+      expect(() => requireAgent(tree, name, load)).toThrow('frontmatter identity mismatch');
+      files.set(path, `${original}\nIndependent client instructions.\n`);
+      expect(() => requireAgent(tree, name, load)).not.toThrow();
+    }
   });
 });

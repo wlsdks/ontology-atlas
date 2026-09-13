@@ -617,6 +617,7 @@ because outside the lander neither waits for the landing already in flight.
 | Command | What it answers |
 |---|---|
 | `pnpm checks:changed` | Which gates this change actually needs |
+| `pnpm agents:check` | Each harness's instruction integrity; independent Codex and Claude files need not match |
 | `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check` |
 | `pnpm knip` | Dead files, exports and types across every scope |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision record to cite or overturn, and whether this change owes one |

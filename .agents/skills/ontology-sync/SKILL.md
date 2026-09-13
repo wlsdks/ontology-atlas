@@ -1,6 +1,6 @@
 ---
 name: ontology-sync
-description: After a code change, sync the project's ontology vault — read what's already there, identify new capabilities / elements / domains introduced by the change, and write them back via the MCP server (or fall back to the CLI). Use this at the end of any task that introduces a new feature, refactors a module, or renames a unit. Skip when the change is purely a typo, style nudge, or test fixture tweak.
+description: Sync an existing Atlas ontology after feature, refactor, rename, or cleanup work that may change modeled meaning. Inspect the delta and apply only confirmed, authorized updates; skip prose, style-only, lint, and fixture changes.
 ---
 
 # /ontology-sync — keep the vault in step with the code

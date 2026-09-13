@@ -1,6 +1,6 @@
 ---
 name: ontology-extract
-description: Extract a small, evidence-bound set of ontology candidates from prose, check the existing vault for duplicates, obtain user approval, and land only the approved nodes and relations.
+description: Extract reviewable Atlas ontology candidates when the user requests extraction from prose. Pasted text alone does not request vault changes.
 ---
 
 # Extract ontology from prose

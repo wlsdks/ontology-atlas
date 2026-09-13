@@ -1,6 +1,6 @@
 ---
 name: design-build
-description: Build UI from this repository's primitives and ramps in a deterministic order, then prove the rendered result with the matching instruments and gates.
+description: Implement or revise Atlas UI using existing primitives and tokens, with the proof selected by design routing.
 ---
 
 # Build from the design system
