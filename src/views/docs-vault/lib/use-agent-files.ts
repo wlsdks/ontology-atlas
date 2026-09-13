@@ -7,7 +7,7 @@ import {
   selectAgentFileDocs,
   WEB_SCAN_ANALYZE_OPTIONS,
   type AgentFilesUiModel,
-} from './agent-files';
+} from '@/entities/agent-files';
 
 /**
  * Read-only agent-file detection for the docs workbench sidebar.

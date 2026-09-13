@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { analyzeAgentFiles, WEB_SCAN_ANALYZE_OPTIONS } from './agent-files';
+import { analyzeAgentFiles, WEB_SCAN_ANALYZE_OPTIONS } from '@/entities/agent-files';
 import { readDesktopSkillTrees } from './read-desktop-skill-trees';
 import { buildSkillParityModel, type SkillParityModel } from './skill-parity';
 

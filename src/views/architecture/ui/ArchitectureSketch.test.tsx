@@ -176,10 +176,19 @@ describe('the evidence split plane', () => {
       const graph = screen.getByTestId('architecture-graph');
       expect(graph).toHaveAttribute('data-architecture-axis', 'down');
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
-      /* 56 + 280 + 72 + 240 faces, and the two side lanes. The contract lane no longer sits at
-         its 48px floor: seven layer planes drift 6×14 and lean 11 more, so the stack claims 112
-         on each side and the observation lane keeps its 360px cap (Direction B, 2026-09-08). */
-      expect(graph).toHaveAttribute('width', '1120');
+      /*
+       * ⚠️ **The drawing takes the canvas it is given, centred** (inspection 122, S8, 2026-09-13).
+       * It used to be 1120 in a 1200 canvas with the faces frozen at 280/72/240: the contract face
+       * held its width however much ground the card had, so at 1512 the band was 592px inside a
+       * 1448px card and all seven role sentences ended in an ellipsis. The face now grows into the
+       * spare width up to `PAIRED_CONTRACT_W_MAX`, and whatever the two lanes still do not need is
+       * split evenly, so the width is the canvas and the band sits on its centre line.
+       *
+       * 1200 = 56 padding + 424 contract + 72 gutter + 240 observation + 204 on each side. 424 is
+       * 280 plus the 144 this canvas has beyond the ladder's minimum, the contract lane's 48px
+       * floor and the observation lane's 360px cap.
+       */
+      expect(graph).toHaveAttribute('width', '1200');
       /* 8 + 20 + 7×72 + 6×24 + 8, plus the 8px head room the top plane's lit edge needs to stop
          reading as a rule under the lane headings and the 3px ledge under the last role. */
       expect(graph).toHaveAttribute('height', '695');
@@ -192,8 +201,19 @@ describe('the evidence split plane', () => {
       expect(screen.getByTestId('architecture-delta-marker-widgets')).toHaveTextContent('○');
       expect(screen.getByTestId('architecture-graph-box-widgets')).toHaveAttribute(
         'data-box-width',
-        '280',
+        '424',
       );
+      /* The whole point of the wider face: the sentence finishes. An ellipsis anywhere in the
+         contract lane means the face went back to being narrower than its own copy. */
+      const sentences = [...container.querySelectorAll('[data-testid^="architecture-box-line-"]')]
+        .map((node) => node.textContent ?? '');
+      expect(sentences.length).toBeGreaterThan(0);
+      expect(sentences.filter((line) => line.trimEnd().endsWith('…'))).toEqual([]);
+      /* And the observation column states "not inspected yet" once rather than seven times. */
+      expect(screen.getByTestId('architecture-observation-column-note')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('architecture-role-observation-widgets').textContent,
+      ).toBe('');
       expect(screen.getByTestId('architecture-observation-box-widgets')).toHaveAttribute(
         'width',
         '240',

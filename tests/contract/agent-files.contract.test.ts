@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CASES } from "../fixtures/agent-files-cases.mjs";
-import { analyzeAgentFiles as analyzeWeb } from "@/views/docs-vault/lib/agent-files";
+import { analyzeAgentFiles as analyzeWeb } from "@/entities/agent-files";
 import { analyzeAgentFiles as analyzeCli } from "../../cli/src/lib/agent-files.mjs";
 
 /**
@@ -8,7 +8,7 @@ import { analyzeAgentFiles as analyzeCli } from "../../cli/src/lib/agent-files.m
  * 2 places that cannot share a physical module:
  *   - cli/src/lib/agent-files.mjs (separate package — `ontology-atlas agent-files`,
  *     a full-fs scanner running all six drift checks, dot-dirs included)
- *   - src/views/docs-vault/lib/agent-files.ts (web docs surface — an FSA scanner;
+ *   - src/entities/agent-files/model/agent-files.ts (web docs surface — an FSA scanner;
  *     dot-dirs are invisible to it, so it degrades honestly to `unverifiable`)
  *
  * Against the same fixture matrix (tests/fixtures/agent-files-cases.mjs), the two
@@ -22,7 +22,7 @@ type Analysis = ReturnType<typeof analyzeWeb>;
 
 const IMPLEMENTATIONS = {
   "cli/src/lib/agent-files.mjs": analyzeCli as unknown as typeof analyzeWeb,
-  "src/views/docs-vault/lib/agent-files.ts": analyzeWeb,
+  "src/entities/agent-files/model/agent-files.ts": analyzeWeb,
 };
 
 /** Structural projection — message phrasing and byte counts stay unpinned

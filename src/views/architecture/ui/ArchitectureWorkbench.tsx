@@ -103,8 +103,12 @@ export function ArchitectureWorkbench({
   agentActivity = null,
   copyFeedbackMs = COPY_FEEDBACK_MS,
   offersInstalledApp = false,
+  embedded = false,
 }: {
   profiles: ArchitectureProfile[];
+  /** Embedded in the Harness destination: the identity below replaces this view's own header. */
+  embedded?: boolean;
+
   /** Architecture documents this surface could not read, named rather than silently dropped. */
   profileProblems?: ReadonlyArray<ArchitectureProfileProblem>;
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
@@ -466,7 +470,10 @@ export function ArchitectureWorkbench({
         {profileNotices ? <div className="w-full max-w-[var(--measure-stage-column)]">{profileNotices}</div> : null}
         <EmptyState
           title={t('noProfiles')}
-          titleAs="h1"
+          /* Embedded under the Harness shell the page headline is already spoken above, so this
+             fallback drops a rung rather than putting a second `h1` on one screen. Standing alone
+             it is the route's only headline and keeps it. */
+          titleAs={embedded ? 'h2' : 'h1'}
           description={
             agentRoute === 'clipboard'
               ? `${t('noProfilesBody')} ${t('draftNoAgentBody')}`
@@ -709,25 +716,36 @@ export function ArchitectureWorkbench({
           className="min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 md:px-8 lg:col-start-1 lg:col-end-3 xl:col-start-1 xl:col-end-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:border-b-0 xl:pb-3 xl:pt-3"
           data-testid="architecture-flow-panel"
         >
-          <header className="mb-3 shrink-0 px-1">
-            <div className="min-w-0">
-              <p className="text-caption font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-                {t('eyebrow')}
-              </p>
-              <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h1 className="text-display font-[var(--font-weight-strong)] leading-display-tight text-[color:var(--color-text-primary)]">
-                  {t('title')}
-                </h1>
-                <span className="text-body-lg text-[color:var(--color-text-tertiary)]">
-                  {selected.title}
-                </span>
+          {/*
+            ⚠️ **Embedded, this header owns nothing but a problem report.** The Harness chrome row
+            above already names the destination, and the canvas cannot afford a second header
+            saying it again: the ladder needs 573px of canvas column to tighten its seven rows
+            instead of hiding the seventh, and at the app's 1280×800 window the block below cost
+            36 of them. The profile's name and its review door move into the control row that was
+            already there, so they cost nothing, and this element collapses to zero height unless a
+            profile could not be read — which is the one thing that must not be quiet.
+          */}
+          <header className={cn('shrink-0 px-1', !embedded && 'mb-3')}>
+            {embedded ? null : (
+              <div className="min-w-0">
+                <p className="text-caption font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
+                  {t('eyebrow')}
+                </p>
+                <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <h1 className="text-display font-[var(--font-weight-strong)] leading-display-tight text-[color:var(--color-text-primary)]">
+                    {t('title')}
+                  </h1>
+                  <span className="text-body-lg text-[color:var(--color-text-tertiary)]">
+                    {selected.title}
+                  </span>
+                </div>
+                <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
+                  {t('description')}
+                </p>
               </div>
-              <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
-                {t('description')}
-              </p>
-            </div>
-            {profileNotices ? <div className="mt-3">{profileNotices}</div> : null}
-            {onOpenReview ? <div className="mt-3"><Chip data-testid="architecture-review-open" onClick={() => { setInspector(null); setEvidenceOpen(false); onOpenReview(selected.slug, selectedRole); }}>{tReview('history')}</Chip></div> : null}
+            )}
+            {profileNotices ? <div className={embedded ? 'mb-3' : 'mt-3'}>{profileNotices}</div> : null}
+            {!embedded && onOpenReview ? <div className="mt-3"><Chip data-testid="architecture-review-open" onClick={() => { setInspector(null); setEvidenceOpen(false); onOpenReview(selected.slug, selectedRole); }}>{tReview('history')}</Chip></div> : null}
           </header>
           {/*
             The provenance explanation is available in one press, but it does not own a permanent
@@ -735,6 +753,25 @@ export function ArchitectureWorkbench({
             glance; the full plane opens over the canvas below.
           */}
           <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 md:flex-nowrap">
+              {embedded ? (
+                <>
+                  <h2 className="min-w-0 shrink truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                    {selected.title}
+                  </h2>
+                  {onOpenReview ? (
+                    <Chip
+                      data-testid="architecture-review-open"
+                      onClick={() => {
+                        setInspector(null);
+                        setEvidenceOpen(false);
+                        onOpenReview(selected.slug, selectedRole);
+                      }}
+                    >
+                      {tReview('history')}
+                    </Chip>
+                  ) : null}
+                </>
+              ) : null}
               <ArchitectureEvidenceRail
                 ariaLabel={evidenceOpen ? t('evidenceClose') : t('evidenceOpen')}
                 buttonRef={evidenceTriggerRef}
