@@ -4,11 +4,11 @@ slug: capabilities/mcp-server
 kind: capability
 title: MCP Server
 domain: domains/agent-integration
-elements: [elements/installed-mcp-identity-gate, elements/task-scoped-agent-brief-projection]
+elements: [elements/bounded-source-evidence-reader, elements/installed-mcp-identity-gate, elements/task-scoped-agent-brief-projection]
 path: mcp/src
 created_by: "agent:unknown"
 dependencies: [capabilities/vault-ontology]
-relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract.", elements/task-scoped-agent-brief-projection: The compact projection is the concrete MCP read-side implementation that produces bounded selected-project task handoffs., elements/installed-mcp-identity-gate: "The MCP server capability relies on this gate to prove the compiled, signed, and installed sidecar preserves exact source-address semantics." }
+relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract.", elements/task-scoped-agent-brief-projection: The compact projection is the concrete MCP read-side implementation that produces bounded selected-project task handoffs., elements/installed-mcp-identity-gate: "The MCP server capability relies on this gate to prove the compiled, signed, and installed sidecar preserves exact source-address semantics.", elements/bounded-source-evidence-reader: Repository analysis uses this reader to return and revalidate bounded implementation source ranges without granting semantic or write authority. }
 display_ko: AI 연결 서버
 display_en: AI Connection Server
 ---
@@ -19,7 +19,7 @@ It provides a stdio JSON-RPC interface so that an AI coding agent can read and s
 
 ## Definition
 
-The MCP server is the stdio JSON-RPC surface that lets an AI coding agent read and safely change a local Markdown vault through the same files a person reads. It registers the tool inventory, parses and writes vault frontmatter, compiles the graph, and answers questions about meaning, relationships, evidence, and impact scope. It owns no separate database, no embedding index, and no model execution loop; every write passes a read-first, dry-run, and human-approval gate.
+The MCP server is the stdio JSON-RPC surface that lets an AI coding agent read and safely change a local Markdown vault through the same files a person reads. It registers the tool inventory, parses and writes vault frontmatter, compiles the graph, and answers questions about meaning, relationships, evidence, and impact scope. It owns no separate database, no embedding index, and no model execution loop; construction proposals require independent qualification and exact human acceptance, while other tools enforce their documented validation, concurrency, and destructive-confirmation boundaries.
 
 ## Includes
 
@@ -42,7 +42,7 @@ The MCP server is the stdio JSON-RPC surface that lets an AI coding agent read a
 - An embedding store or any semantic index built over source code.
 - Model selection, an agent loop, or any model execution inside the server.
 - A backend, accounts, or any canonical store other than the user's Markdown files.
-- Auto-saving creation proposals without human approval, or any write before `confirm: true`.
+- Auto-accepting construction proposals or bypassing the confirmation and concurrency requirements of the specific write operation.
 - Proof of runtime behaviour, reverse or transitive dependency, or business truth from a declared import edge alone.
 - A package-registry channel. npm publishing was retired on 2026-07-27 and `npx ontology-atlas` is not a channel; the ecosystem listing reaches strangers through a release asset and an image instead. No agent publishes either: the entry is written to a scratch file and a person runs the publisher.
 
@@ -107,6 +107,10 @@ After the installed app binds a human-selected source root to the sidecar, new M
 When a repository proposal signs competency as `answered`, it only checks that the required witness array is not empty. It verifies that `abilities` cover all proposed domains via typed domain→capability witnesses, and that `evidence` cites every capability slug and canonical path together. If only some are covered, it returns a structured error with the missing target slugs and does not create a write plan. Honest `partial`/`visible-gap` proposals can still be reviewed and stored.
 
 If project purpose, proposed domain, or project→domain relation has confidence ≥0.8, or `scope`/`domains` are `answered`, two distinct current semantic sources must actually support the non-literal meaning of that claim. The purpose requires both sources to align with the purpose claim; domains require both sources to provide a domain name and an explicit responsibility sentence. Duplicated text across documents, unrelated trusted documents, roadmap/negated/deprecated evidence, package manifests, and implementation paths do not count as a second semantic authority. If only one source exists, it remains below confidence 0.8 with an explicit `partial` gap (reviewable), but inflating it to high-confidence/completed causes failure before review/write plan. The analyzer also prioritizes project identity sentences over later feature sentences, and marks domains as corroborated candidates only when separate product/architecture responsibility sentences exist. Implementation elements overlapping domain names or having only one candidate are not auto-assigned roles but remain as project-scoped evidence.
+
+## Constraints: Bounded implementation evidence
+
+Optional `sourceReads` on `analyze_repo_structure` return explicit implementation ranges in `sourceEvidence`, with full-file hashes, byte limits, continuation and refusal state. The source reader is an observed-data boundary, not a source search engine or semantic authority. Proposal/release replay re-reads the same selectors with expected hashes and binds the selected manifest into the opt-in lifecycle source digest; ordinary source receipts and legacy calls are unchanged. Invalid, unsafe or stale reads cannot support review or release. Exact range citations remain preserved in Evidence and decode only for source-role path inventory. Range/hash provenance remains unresolved in shared meaning assessment, so answered competencies containing these references are refused before review; path existence or remeasurement cannot verify the recorded range. Source text neither qualifies meaning nor authorizes a write. The exact read contract is owned by `mcp/README.md`.
 
 ## Constraints: Cold-start evidence reading
 

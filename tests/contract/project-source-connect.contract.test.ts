@@ -82,6 +82,15 @@ const NODES = [
 ];
 
 describe("witness derivation parity", () => {
+  it("decodes source-range Evidence paths identically without treating the URI as a filesystem path", () => {
+    const sourcePath = `${"segment/".repeat(54)}file.ts`;
+    const reference = `source:${sourcePath}#L1-L2@sha256:${"a".repeat(64)}`;
+    const body = `## Competency answers\n\n- Evidence: \`README.md\`, \`${reference}\`\n- Paths: \`src/main.ts\``;
+    const expected = [sourcePath, "README.md", "src/main.ts"].sort();
+    expect(extractMcpMeaningEvidence(body)).toEqual(expected);
+    expect(extractAppMeaningEvidence(body)).toEqual(expected);
+  });
+
   it("derives the same source claims in the app and in the MCP server", () => {
     const fromGraph = deriveProjectSourceWitnesses({
       projectSlug: "music-streaming",

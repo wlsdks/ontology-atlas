@@ -143,6 +143,30 @@ Full-detail graph manuals and task persistence.
     assert.equal(JSON.stringify(result).includes('return input'), false);
   });
 
+  test('starts a multiline JavaScript function body after balanced destructured default parameters', () => {
+    const root = box();
+    write(root, 'src/reader.mjs', [
+      'export function readEvidence(',
+      '  rootPath,',
+      '  selectors,',
+      '  { ignore = [], hooks = {} } = {},',
+      ') {',
+      '  const rows = selectors.map((selector) => selector.path);',
+      '  return { rootPath, rows, ignore, hooks };',
+      '}',
+    ].join('\n'));
+    const result = current(root, [doc('elements/reader', `
+## Evidence
+- Primary implementation: \`src/reader.mjs#readEvidence\`
+## Includes
+Bounded source evidence reads.
+## Excludes
+Semantic inference.
+`)]);
+    assert.equal(result.primary?.line, 1);
+    assert.equal(result.primary?.endLine, 8);
+  });
+
   test('ignores braces inside comments, raw strings, and Rust lifetimes when resolving spans', () => {
     const root = box();
     write(root, 'reader.go', [
