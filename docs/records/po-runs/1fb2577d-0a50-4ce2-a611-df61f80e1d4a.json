@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-14",
+  "decision": "Explain compact task abstention with bounded follow-ups after a reviewed-vault baseline (V2.1)",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "orient",
+  "changes": [
+    "public-contract"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "affected",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-14",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "1fb2577d-0a50-4ce2-a611-df61f80e1d4a",
+  "recordedAt": "2026-09-13T15:43:37.546Z"
+}

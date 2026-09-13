@@ -38,6 +38,10 @@ function normalizeText(value) {
 }
 
 function canonicalToken(token) {
+  if (/^[가-힣]{3,}$/u.test(token)) {
+    const withoutParticle = token.replace(/(?:에게서|으로|에서|에게|까지|부터|처럼|보다|은|는|이|가|을|를|에|로|와|과|도|만)$/u, '');
+    if (withoutParticle.length >= 2 && withoutParticle !== token) return withoutParticle;
+  }
   if (/^(?:writer|writes|writing|written|produce|produces|produced|producing|production)$/.test(token)) return 'write';
   if (/^(?:parser|parses|parsing|parsed|interpret|interprets|interpreted|interpreting|interpretation)$/.test(token)) return 'parse';
   if (/^(?:encoder|encodes|encoding|encoded)$/.test(token)) return 'encode';
@@ -102,7 +106,7 @@ function taskTerms(task) {
   return [...new Set([...expansions, ...terms])];
 }
 
-const NON_GOAL_CLAUSE = /\b(?:do\s+not|must\s+not|should\s+not|never|without|out\s+of\s+scope|not\s+in\s+scope|(?:leave|keep)\b.*\bunchanged|(?:must|should)\s+(?:remain|stay)\s+unchanged|(?:are|is)\s+unchanged)\b/iu;
+const NON_GOAL_CLAUSE = /(?:\b(?:do\s+not|must\s+not|should\s+not|never|without|out\s+of\s+scope|not\s+in\s+scope|(?:leave|keep)\b.*\bunchanged|(?:must|should)\s+(?:remain|stay)\s+unchanged|(?:are|is)\s+unchanged)\b|범위\s*밖|제외|하지\s*마(?:세요)?|하지\s*말)/iu;
 
 function splitInlineBoundaryClause(clause) {
   for (const pattern of [
@@ -127,7 +131,10 @@ function stripNonGoalMarker(clause) {
     .replace(/\bnot\s+in\s+scope\b/giu, ' ')
     .replace(/\b(?:leave|keep)\b/giu, ' ')
     .replace(/\bunchanged\b/giu, ' ')
-    .replace(/\bwithout\b/giu, ' ');
+    .replace(/\bwithout\b/giu, ' ')
+    .replace(/(?:은|는|이|가)?\s*범위\s*밖(?:입니다|이다)?/gu, ' ')
+    .replace(/(?:에서)?\s*제외(?:합니다|하다)?/gu, ' ')
+    .replace(/하지\s*마(?:세요)?|하지\s*말(?:아|아주세요)?/gu, ' ');
 }
 
 function taskIntent(task) {
@@ -146,6 +153,8 @@ function taskIntent(task) {
     allTerms: taskTerms(task),
     desiredTerms: taskTerms(desiredClauses.join(' ')),
     nonGoalTerms: taskTerms(nonGoalClauses.join(' ')),
+    desiredClauseTerms: desiredClauses.map((clause) => taskTerms(clause)),
+    nonGoalClauseTerms: nonGoalClauses.map((clause) => taskTerms(clause)),
   };
 }
 
@@ -186,8 +195,15 @@ function compactDoc(doc) {
 }
 
 function scoreLexicalDocument(doc, terms) {
+  const titleTokens = new Set(lexicalTokens(doc.frontmatter?.title || doc.frontmatter?.name || ''));
+  const aliasTokens = new Set(lexicalTokens([
+    doc.frontmatter?.display_en,
+    doc.frontmatter?.display_ko,
+  ].filter((value) => typeof value === 'string').join(' '))
+    .filter((term) => !titleTokens.has(term)));
   const fields = [
-    ['title', 8, new Set(lexicalTokens(doc.frontmatter?.title || doc.frontmatter?.name || ''))],
+    ['title', 8, titleTokens],
+    ['alias', 8, aliasTokens],
     ['slug', 6, new Set(lexicalTokens(doc.slug))],
     ['path', 4, new Set(lexicalTokens(doc.frontmatter?.path || ''))],
     ['definition', 3, new Set(lexicalTokens(markdownSection(doc.body, 'Definition')))],
@@ -275,6 +291,8 @@ function scoreCapabilityClaim(doc, intent) {
   // so refusal only gets stricter.
   const identity = new Set(lexicalTokens([
     doc.frontmatter?.title || doc.frontmatter?.name || '',
+    doc.frontmatter?.display_en || '',
+    doc.frontmatter?.display_ko || '',
     doc.slug,
     doc.frontmatter?.path || '',
   ].join(' ')));
@@ -316,7 +334,20 @@ function scoreCapabilityClaim(doc, intent) {
   const namedSupport = new Set([...identitySupport, ...includesSupport]);
   const hasClaimSupport = (namedSupport.size >= 1 && desiredPositive.length >= 2)
     || (desiredPositive.length >= 1 && nonGoalExcluded.length >= 1);
-  const conflict = desiredExcluded.length > 0 || nonGoalPositive.length > 0;
+  const namedClaim = new Set([...identity, ...includes]);
+  const clauseClaimOverlap = intent.desiredClauseTerms.some((desiredClause) => {
+    const desiredClaimTerms = new Set(desiredClause.filter((term) => namedClaim.has(term)));
+    return intent.nonGoalClauseTerms.some((nonGoalClause) => (
+      nonGoalClause.filter((term) => desiredClaimTerms.has(term) && namedClaim.has(term)).length >= 2
+    ));
+  });
+  // Flat desired/non-goal sets intentionally de-duplicate repeated words for
+  // scoring. Keep clause provenance for the narrower refusal case where the
+  // task positively requests and then negates the same named/Includes-backed
+  // claim. Requiring two claim terms avoids turning one broad shared noun such
+  // as "ticket" into a semantic contradiction. This remains lexical evidence,
+  // never proof that the underlying business requirements conflict.
+  const conflict = desiredExcluded.length > 0 || nonGoalPositive.length > 0 || clauseClaimOverlap;
   const termWeight = (term) => (
     includes.has(term) || identity.has(term) ? 6 : definition.has(term) ? 4 : 2
   );
@@ -332,6 +363,8 @@ function scoreCapabilityClaim(doc, intent) {
       ...(nonGoalExcluded.length > 0 ? ['excludes'] : []),
       ...(identitySupport.length > 0 ? ['identity'] : []),
     ],
+    claimSupported: hasClaimSupport && score > 0,
+    conflict,
     qualified: hasClaimSupport && !conflict && score > 0,
   };
 }
@@ -372,6 +405,8 @@ function selectCapability(docs, intent) {
       for (const row of matchedChildren) {
         const identity = new Set(lexicalTokens([
           row.doc.frontmatter?.title || row.doc.frontmatter?.name || '',
+          row.doc.frontmatter?.display_en || '',
+          row.doc.frontmatter?.display_ko || '',
           row.doc.slug,
           row.doc.frontmatter?.path || '',
         ].join(' ')));
@@ -385,13 +420,47 @@ function selectCapability(docs, intent) {
       score: claim.score + Math.min(childIdentityTerms.size, 4) * 3,
       matchedTerms,
       matchedChildren,
+      claimSupported: claim.claimSupported,
+      conflict: claim.conflict,
       qualified: claim.qualified,
     };
-  }).filter((row) => row.qualified);
-  rows.sort((left, right) => right.score - left.score || left.doc.slug.localeCompare(right.doc.slug));
-  if (rows.length === 0 || rows[0].score <= 0) return null;
-  if (rows[1]?.score === rows[0].score) return null;
-  return rows[0];
+  });
+  const ordered = (values) => [...values]
+    .sort((left, right) => right.score - left.score || left.doc.slug.localeCompare(right.doc.slug));
+  const candidates = (values) => {
+    const all = ordered(values);
+    return {
+      candidates: all.slice(0, 3).map((row) => ({
+        slug: row.doc.slug,
+        matchedTerms: uniqueBoundedStrings(row.matchedTerms, 6),
+      })),
+      total: all.length,
+      omitted: Math.max(0, all.length - 3),
+    };
+  };
+  const evidenceLimit = {
+    no_match: 'Selector evidence only; this does not prove the behavior or product scope is absent.',
+    boundary_conflict: 'Clause-level lexical selector evidence only; this does not prove a semantic contradiction or approve a boundary.',
+    ambiguous: 'Selector evidence only; a score tie does not prove semantic equivalence or approve a candidate.',
+  };
+  const qualified = ordered(rows.filter((row) => row.qualified));
+  if (qualified.length === 0 || qualified[0].score <= 0) {
+    const conflicts = rows.filter((row) => row.claimSupported && row.conflict && row.score > 0);
+    return {
+      selected: null,
+      refusal: conflicts.length > 0
+        ? { reason: 'boundary_conflict', ...candidates(conflicts), evidenceLimit: evidenceLimit.boundary_conflict }
+        : { reason: 'no_match', candidates: [], total: 0, omitted: 0, evidenceLimit: evidenceLimit.no_match },
+    };
+  }
+  const tied = qualified.filter((row) => row.score === qualified[0].score);
+  if (tied.length > 1) {
+    return {
+      selected: null,
+      refusal: { reason: 'ambiguous', ...candidates(tied), evidenceLimit: evidenceLimit.ambiguous },
+    };
+  }
+  return { selected: qualified[0], refusal: null };
 }
 
 function liveWitnessesSupported(projectSource) {
@@ -625,6 +694,9 @@ function buildCompactHandoffPrompt(result) {
     `Validation: ${result.validation.status} (${result.validation.errorFiles} errors, ${result.validation.warningFiles} warnings)`,
     `Purpose: ${result.purpose.statement || 'not recorded'}`,
     `Task match: ${capability ? `${capability.slug} (selection, not proof)` : 'not recorded'}`,
+    ...(result.focus.refusal
+      ? [`Task refusal: ${result.focus.refusal.reason}; ${result.focus.refusal.total} unselected candidate(s), ${result.focus.refusal.omitted} omitted; selector evidence only.`]
+      : []),
     `Known evidence: ${anchors.length > 0 ? anchors.map((row) => `${row.slug}${row.path ? ` at ${row.path}` : ''}`).join(', ') : 'none recorded'}`,
     `Impact: ${result.focus.impact.status}/${result.focus.impact.completeness}`,
     `Unknown: ${result.focus.unknowns[0] ?? 'no additional bounded unknown was recorded'}`,
@@ -653,7 +725,8 @@ export function buildCompactAgentBrief({
   const projectDoc = scopedDocs.find((doc) => doc.slug === brief.projectSlug && doc.frontmatter?.kind === 'project') ?? null;
   const intent = taskIntent(task);
   const terms = intent.allTerms;
-  const selected = selectCapability(scopedDocs, intent);
+  const selection = selectCapability(scopedDocs, intent);
+  const selected = selection.selected;
   const capabilityDoc = selected?.doc ?? null;
   const anchorDocs = selected?.matchedChildren.map((row) => row.doc).slice(0, 3) ?? [];
   let evidenceAnchors = taskEvidenceAnchors(selected, brief);
@@ -744,9 +817,10 @@ export function buildCompactAgentBrief({
     meaningGap,
   ]);
   const nextSlugs = [...new Set([
+    ...(selection.refusal?.candidates.map((row) => row.slug) ?? []),
     capabilityDoc?.slug,
     ...evidenceAnchors.map((row) => row.slug),
-    ...(capabilityDoc ? [] : [brief.projectSlug]),
+    ...(capabilityDoc || selection.refusal?.candidates.length > 0 ? [] : [brief.projectSlug]),
   ].filter(Boolean))].slice(0, 4);
   const compact = {
     contract: AGENT_BRIEF_COMPACT_CONTRACT,
@@ -799,6 +873,7 @@ export function buildCompactAgentBrief({
             statement: boundedSection(capabilityDoc.body, 'Definition', 240),
           }
         : null,
+      ...(selection.refusal ? { refusal: selection.refusal } : {}),
       evidenceAnchors,
       startingPointStatus: evidenceAnchors.some((row) => row.path) ? 'partial' : 'unknown',
       impact,
@@ -809,7 +884,11 @@ export function buildCompactAgentBrief({
     nextReads: [
       ...(nextSlugs.length > 0
         ? [{
-            reason: 'Read complete bodies and qualifiers before use.',
+            reason: selection.refusal?.reason === 'ambiguous'
+              ? 'Read complete candidate bodies and qualifiers before resolving selector ambiguity.'
+              : selection.refusal?.reason === 'boundary_conflict'
+                ? 'Read complete candidate bodies and qualifiers before resolving the selector boundary conflict.'
+                : 'Read complete bodies and qualifiers before use.',
             tool: 'get_concepts',
             arguments: { slugs: nextSlugs, body: 'full' },
           }]

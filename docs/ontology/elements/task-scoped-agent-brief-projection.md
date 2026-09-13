@@ -32,10 +32,12 @@ Task-scoped agent brief projection is the read-side implementation that turns on
 - Project-scoped counts, hubs, entrypoints, and final readiness wording.
 - A compact v2 opt-in response with a 12,000-byte UTF-8 JSON ceiling.
 - Claim-compatible selection of one broad persisted capability from Definition, Includes, and Excludes, with boundary conflicts, unsupported claims, and ties refused.
+- Selector-level abstention reasons for missing support, clause-level boundary overlap, and tied candidates; at most three deterministic unselected candidates retain total/omitted counts and exact full-body next reads. These diagnostics do not prove product absence, semantic contradiction, equivalence, or acceptance.
+- Recorded `display_en` and `display_ko` identity aliases and explicitly delimited English/Korean non-goals, with no translation or general natural-language interpretation. Repeated positive and negative named claims remain unselected; shared words alone do not establish a conflict.
 - Only task-matched element anchors after the parent capability claim is compatible.
 - A source-current task-navigation receipt for reviewed implementation, supporting, and focused-test coordinates.
 - Whole-vault validation, source and meaning currentness, approval guards, and explicit unknowns.
-- Capability selection from the persisted Definition/Includes/Excludes, the capability's own title, slug, and path, and the names of the elements it declares; a document without those sections is read on its first paragraph, never its whole body.
+- Capability selection from the persisted Definition/Includes/Excludes, the capability's own title, recorded locale labels, slug, and path, and the names of the elements it declares; a document without those sections is read on its first paragraph, never its whole body.
 - Coordinates from the one element whose Evidence is read, verified against the measured receipt or, when the receipt is behind the source and every witness still resolves, against the live files (`live_verified`).
 
 ## Excludes

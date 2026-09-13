@@ -286,6 +286,13 @@ DER parsing and unrelated encodings.
     assert.equal(result.focus.capability, null);
     assert.deepEqual(result.focus.evidenceAnchors, []);
     assert.equal(result.focus.startingPointStatus, 'unknown');
+    assert.deepEqual(result.focus.refusal, {
+      reason: 'no_match',
+      candidates: [],
+      total: 0,
+      omitted: 0,
+      evidenceLimit: 'Selector evidence only; this does not prove the behavior or product scope is absent.',
+    });
   });
 
   it('does not turn passive encoded input into a writing match', () => {
@@ -431,6 +438,22 @@ DER parsing and unrelated encodings.
     });
     assert.equal(ambiguous.focus.status, 'not_recorded');
     assert.equal(ambiguous.focus.capability, null);
+    assert.equal(ambiguous.focus.refusal.reason, 'ambiguous');
+    assert.deepEqual(
+      ambiguous.focus.refusal.candidates.map((row) => row.slug),
+      ['capabilities/local-cache-1', 'capabilities/local-cache-2'],
+    );
+    assert.equal(ambiguous.focus.refusal.total, 2);
+    assert.equal(ambiguous.focus.refusal.omitted, 0);
+    assert.match(ambiguous.focus.refusal.evidenceLimit, /score tie does not prove semantic equivalence/);
+    assert.deepEqual(ambiguous.nextReads[0], {
+      reason: 'Read complete candidate bodies and qualifiers before resolving selector ambiguity.',
+      tool: 'get_concepts',
+      arguments: {
+        slugs: ['capabilities/local-cache-1', 'capabilities/local-cache-2'],
+        body: 'full',
+      },
+    });
 
     const excludesOnly = buildCompactAgentBrief({
       brief,
@@ -440,6 +463,19 @@ DER parsing and unrelated encodings.
     });
     assert.equal(excludesOnly.focus.status, 'not_recorded');
     assert.equal(excludesOnly.focus.capability, null);
+
+    const conflict = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], boundaryDocs[1]],
+      task: 'Retain accepted records and purge rejected records.',
+    });
+    assert.equal(conflict.focus.status, 'not_recorded');
+    assert.equal(conflict.focus.refusal.reason, 'boundary_conflict');
+    assert.match(conflict.focus.refusal.evidenceLimit, /does not prove a semantic contradiction/);
+    assert.deepEqual(conflict.focus.refusal.candidates.map((row) => row.slug), [
+      'capabilities/retain-cache',
+    ]);
 
     const commaBoundary = buildCompactAgentBrief({
       brief,
@@ -503,6 +539,198 @@ DER parsing and unrelated encodings.
       task: 'Review lunar behavior.',
     });
     assert.equal(weak.focus.capability, null);
+  });
+
+  it('does not label an unrelated Excludes-only mention as a boundary conflict', () => {
+    const result = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [
+        docs[0],
+        {
+          slug: 'capabilities/archive-records',
+          frontmatter: { kind: 'capability', title: 'Archive Records' },
+          body: '## Definition\n\nArchive old records.\n\n## Excludes\n\n- Rotating lunar camera rigs.\n',
+        },
+      ],
+      task: 'Rotate a lunar camera rig.',
+    });
+    assert.equal(result.focus.status, 'not_recorded');
+    assert.equal(result.focus.refusal.reason, 'no_match');
+    assert.deepEqual(result.focus.refusal.candidates, []);
+  });
+
+  it('refuses clause-level positive/non-goal overlap without rejecting a shared broad noun', () => {
+    const project = docs[0];
+    const updateTicket = {
+      slug: 'capabilities/update-existing-ticket',
+      frontmatter: { kind: 'capability', title: 'Update an existing support ticket' },
+      body: '## Definition\n\nApply an existing-ticket follow-up update and notification policy.\n\n## Includes\n\n- Record follow-up updates and conditionally notify interested roles.\n',
+    };
+    const realCase = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [project, updateTicket],
+      task: 'Change existing-ticket follow-up update notification policy, but keep existing-ticket follow-up updates out of scope',
+    });
+    assert.equal(realCase.focus.status, 'not_recorded');
+    assert.equal(realCase.focus.refusal.reason, 'boundary_conflict');
+    assert.deepEqual(realCase.focus.refusal.candidates.map((row) => row.slug), [
+      'capabilities/update-existing-ticket',
+    ]);
+
+    const labelCapability = {
+      slug: 'capabilities/ticket-labels',
+      frontmatter: { kind: 'capability', title: 'Ticket Labels' },
+      body: '## Definition\n\nChange ticket labels and their formatting.\n\n## Excludes\n\n- Ticket state transitions.\n',
+    };
+    const distinctBoundary = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [project, labelCapability],
+      task: 'Change ticket labels, but do not change ticket state.',
+    });
+    assert.equal(distinctBoundary.focus.capability?.slug, 'capabilities/ticket-labels');
+
+    const repeatedClaim = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [{ ...project }, {
+        ...labelCapability,
+        frontmatter: { kind: 'capability', title: 'Ticket Label History' },
+        body: '## Definition\n\nChange ticket label history.\n',
+      }],
+      task: 'Change ticket label history, but do not change ticket label history.',
+    });
+    assert.equal(repeatedClaim.focus.status, 'not_recorded');
+    assert.equal(repeatedClaim.focus.refusal.reason, 'boundary_conflict');
+
+    const excludesAligned = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [project, labelCapability],
+      task: 'Change label formatting; ticket state is out of scope.',
+    });
+    assert.equal(excludesAligned.focus.capability?.slug, 'capabilities/ticket-labels');
+  });
+
+  it('uses recorded Korean display aliases without guessing ambiguous ownership or negation', () => {
+    const payment = {
+      slug: 'capabilities/payment-policy',
+      frontmatter: {
+        kind: 'capability',
+        title: 'Payment Policy',
+        display_en: 'Payment Authorization',
+        display_ko: '결제 승인',
+      },
+      body: '## Definition\n\nAuthorize a payment request.\n',
+    };
+    const shipment = {
+      slug: 'capabilities/shipment-policy',
+      frontmatter: { kind: 'capability', title: 'Shipment Policy', display_ko: '배송 변경' },
+      body: '## Definition\n\nChange shipment dispatch details.\n',
+    };
+    const korean = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], payment, shipment],
+      task: '결제 승인을 변경해 주세요.',
+    });
+    assert.equal(korean.focus.capability?.slug, 'capabilities/payment-policy');
+    const english = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], payment, shipment],
+      task: 'Change payment authorization policy.',
+    });
+    assert.equal(english.focus.capability?.slug, 'capabilities/payment-policy');
+
+    const sameAlias = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], payment, { ...shipment, frontmatter: { ...shipment.frontmatter, display_ko: '결제 승인' } }],
+      task: '결제 승인을 변경해 주세요.',
+    });
+    assert.equal(sameAlias.focus.status, 'not_recorded');
+    assert.equal(sameAlias.focus.refusal.reason, 'ambiguous');
+    assert.deepEqual(sameAlias.focus.refusal.candidates.map((row) => row.slug), [
+      'capabilities/payment-policy',
+      'capabilities/shipment-policy',
+    ]);
+
+    const separateNegative = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], payment, shipment],
+      task: '결제 승인을 변경해 주세요; 배송 변경은 범위 밖입니다.',
+    });
+    assert.equal(separateNegative.focus.capability?.slug, 'capabilities/payment-policy');
+
+    const negativeOnly = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], payment],
+      task: '결제 승인은 범위 밖입니다.',
+    });
+    assert.equal(negativeOnly.focus.status, 'not_recorded');
+    assert.equal(negativeOnly.focus.refusal.reason, 'no_match');
+
+    const repeatedNegative = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], payment],
+      task: '결제 승인을 변경해 주세요; 결제 승인은 범위 밖입니다.',
+    });
+    assert.equal(repeatedNegative.focus.status, 'not_recorded');
+    assert.equal(repeatedNegative.focus.refusal.reason, 'boundary_conflict');
+  });
+
+  it('keeps English child ranking unchanged when display_en repeats the title', () => {
+    const capability = {
+      slug: 'capabilities/cache-records',
+      frontmatter: {
+        kind: 'capability',
+        title: 'Cache Records',
+        elements: ['elements/cache-a', 'elements/cache-b'],
+      },
+      body: '## Definition\n\nCache records for later reads.\n',
+    };
+    const children = [
+      {
+        slug: 'elements/cache-a',
+        frontmatter: { kind: 'element', title: 'Cache Record Reader', path: 'src/a.ts' },
+        body: '## Definition\n\nRead cached records.\n',
+      },
+      {
+        slug: 'elements/cache-b',
+        frontmatter: { kind: 'element', title: 'Cache Record Reader', path: 'src/b.ts' },
+        body: '## Definition\n\nRead cached records.\n',
+      },
+    ];
+    const input = { brief, artifact, task: 'Change cache record reader behavior.' };
+    const withoutDuplicate = buildCompactAgentBrief({
+      ...input,
+      docs: [docs[0], capability, ...children],
+    });
+    const withDuplicate = buildCompactAgentBrief({
+      ...input,
+      docs: [
+        docs[0], capability, children[0],
+        { ...children[1], frontmatter: { ...children[1].frontmatter, display_en: 'Cache Record Reader' } },
+      ],
+    });
+    assert.deepEqual(withDuplicate, withoutDuplicate);
+
+    const withDistinctAlias = buildCompactAgentBrief({
+      ...input,
+      task: 'Change cache record archive lookup behavior.',
+      docs: [
+        docs[0], capability,
+        { ...children[0], frontmatter: { ...children[0].frontmatter, display_en: 'Archive Lookup' } },
+        children[1],
+      ],
+    });
+    assert.equal(withDistinctAlias.focus.evidenceAnchors[0]?.slug, 'elements/cache-a');
   });
 
   it('reads a titled claim over a long unstructured body and legacy Inclusions bullets', () => {
@@ -751,6 +979,40 @@ DER parsing and unrelated encodings.
     });
     assert.equal(result.focus.status, 'not_recorded');
     assert.equal(result.focus.capability, null);
+    assert.equal(result.focus.refusal.reason, 'ambiguous');
+    assert.deepEqual(result.focus.refusal.candidates.map((row) => row.slug), [
+      'capabilities/cache-a',
+      'capabilities/cache-b',
+    ]);
+
+    const reordered = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [tiedDocs[0], tiedDocs[2], tiedDocs[1]],
+      task: 'Change cache records.',
+    });
+    assert.deepEqual(reordered.focus.refusal, result.focus.refusal);
+
+    const fourWay = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [
+        tiedDocs[0],
+        ...['d', 'b', 'a', 'c'].map((suffix) => ({
+          ...tiedDocs[1],
+          slug: `capabilities/cache-${suffix}`,
+          frontmatter: { ...tiedDocs[1].frontmatter, title: `Cache ${suffix.toUpperCase()}` },
+        })),
+      ],
+      task: 'Change cache records.',
+    });
+    assert.deepEqual(fourWay.focus.refusal.candidates.map((row) => row.slug), [
+      'capabilities/cache-a',
+      'capabilities/cache-b',
+      'capabilities/cache-c',
+    ]);
+    assert.equal(fourWay.focus.refusal.total, 4);
+    assert.equal(fourWay.focus.refusal.omitted, 1);
   });
 
   it('returns the matched fourth child instead of unrelated first elements', () => {

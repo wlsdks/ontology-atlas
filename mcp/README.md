@@ -591,9 +591,25 @@ element/path anchors, explicit impact/verification unknowns, one bounded
 full-body read, and an exact `detail:"full"` follow-up. Desired work must be
 supported by Definition or Includes; explicit non-goals may align with Excludes.
 A desired/negative boundary conflict, an unsupported claim, or a tied top claim
-returns no capability. Definition prose corroborates but never selects on its
+returns no capability. A compact refusal reports the selector-level reason
+`no_match`, `boundary_conflict`, or `ambiguous`; conflict and ambiguity include
+at most three deterministically ordered, explicitly unselected capability
+candidates plus total/omitted counts and an existing `get_concepts({body:"full"})`
+follow-up. These reasons describe bounded selector evidence: `no_match` does not
+prove that behavior or product scope is absent, and a score tie does not prove
+semantic equivalence. An unrelated term found only in another capability's
+Excludes does not become a boundary conflict. When separate positive and
+non-goal clauses repeat at least two terms backed by the same capability's name
+or Includes claim, the selector refuses that clause-level lexical conflict; one
+shared broad noun does not suffice, and the result does not certify a semantic
+contradiction. Definition prose corroborates but never selects on its
 own: at least one desired word must also reach the capability's own title, slug,
-path, or `Includes`, and one shared word is never enough. It does not persist or echo raw task text, treat this
+path, explicit `display_en`/`display_ko` alias, or `Includes`, and one shared word
+is never enough. Recorded display aliases participate as identity claims; they
+do not translate task text or prove acceptance. Korean matching is limited to
+Unicode words, common attached particles, and explicit negative markers such as
+the Korean phrases for out of scope, exclusion, and do not change. Unsupported or same-alias cases remain
+`no_match` or `ambiguous`; this is not general Korean semantic parsing. It does not persist or echo raw task text, treat this
 claim compatibility as behavior proof, inspect raw source generally, or write
 the vault. An element may record human-reviewable
 Evidence coordinates as `Primary implementation`, `Supporting implementation`,
