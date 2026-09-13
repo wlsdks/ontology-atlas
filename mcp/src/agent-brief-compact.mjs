@@ -641,6 +641,180 @@ function uniqueBoundedStrings(values, limit = 3) {
   return rows;
 }
 
+const QUALIFIER_SECTIONS = [
+  ['Definition', 'definition'],
+  ['Includes', 'condition'],
+  ['Excludes', 'exception'],
+  ['Uncertainty', 'uncertainty'],
+];
+
+function completeMarkdownUnits(doc, section, role) {
+  const source = markdownSection(doc?.body, section);
+  if (!source) return [];
+  const lines = source.split('\n');
+  const hasTopLevelBullets = lines.some((line) => /^[-*]\s+\S/u.test(line));
+  const texts = [];
+  if (hasTopLevelBullets) {
+    let withinBullet = false;
+    const mixedTopLevelProse = lines.some((line) => {
+      if (/^[-*]\s+\S/u.test(line)) {
+        withinBullet = true;
+        return false;
+      }
+      if (!line.trim() || (withinBullet && /^\s+\S/u.test(line))) return false;
+      return true;
+    });
+    if (mixedTopLevelProse) {
+      // Free-standing prose may govern a preceding or following list. Keep the
+      // whole section verbatim instead of guessing which child owns its scope.
+      texts.push(source.trim());
+    } else {
+      let current = [];
+      for (const line of lines) {
+        if (/^[-*]\s+\S/u.test(line)) {
+          if (current.length > 0) texts.push(current.join('\n').trim());
+          current = [line];
+        } else if (current.length > 0) {
+          current.push(line);
+        }
+      }
+      if (current.length > 0) texts.push(current.join('\n').trim());
+    }
+  } else {
+    for (const paragraph of source.split(/\n\s*\n/u).map((text) => text.trim()).filter(Boolean)) {
+      texts.push(...[...new Intl.Segmenter(undefined, { granularity: 'sentence' }).segment(paragraph)]
+        .map((row) => row.segment.trim())
+        .filter(Boolean));
+    }
+  }
+  return texts.map((text) => ({
+    slug: doc.slug,
+    section,
+    role,
+    text,
+    locator: { slug: doc.slug, section, body: 'full' },
+  }));
+}
+
+function compactRecordedQualifiers(capabilityDoc, anchorDocs, intent) {
+  if (!capabilityDoc) return null;
+  const docs = [capabilityDoc, ...anchorDocs];
+  const eligible = docs.flatMap((doc) => QUALIFIER_SECTIONS.flatMap(([section, role]) => (
+    completeMarkdownUnits(doc, section, role)
+  )));
+  const unitTokens = (unit) => {
+    const tokens = new Set(lexicalTokens(unit.text));
+    for (const left of intent.allTerms) {
+      for (const right of intent.allTerms) {
+        if (left !== right && tokens.has(`${left}${right}`)) {
+          tokens.add(left);
+          tokens.add(right);
+        }
+      }
+    }
+    return tokens;
+  };
+  const score = (unit) => {
+    const tokens = unitTokens(unit);
+    return intent.allTerms.filter((term) => tokens.has(term)).length;
+  };
+  const ordered = (units) => [...units].sort((left, right) => (
+    score(right) - score(left)
+    || left.slug.localeCompare(right.slug)
+    || left.section.localeCompare(right.section)
+    || left.text.localeCompare(right.text)
+  ));
+  const selected = [];
+  const add = (unit) => {
+    if (unit && !selected.some((row) => (
+      row.slug === unit.slug && row.section === unit.section && row.text === unit.text
+    ))) selected.push(unit);
+  };
+  const capabilityConditionPool = eligible.filter((unit) => (
+    unit.slug === capabilityDoc.slug && unit.role === 'condition'
+  ));
+  const capabilityIdentity = new Set(lexicalTokens([
+    capabilityDoc.frontmatter?.title || capabilityDoc.frontmatter?.name || '',
+    capabilityDoc.frontmatter?.display_en || '',
+    capabilityDoc.frontmatter?.display_ko || '',
+    capabilityDoc.slug,
+    capabilityDoc.frontmatter?.path || '',
+  ].join(' ')));
+  const distinguishingTerms = intent.allTerms.filter((term) => !capabilityIdentity.has(term));
+  const conditionTerms = distinguishingTerms.length > 0 ? distinguishingTerms : intent.allTerms;
+  const taskTermFrequency = new Map(conditionTerms.map((term) => [
+    term,
+    capabilityConditionPool.filter((unit) => unitTokens(unit).has(term)).length,
+  ]));
+  const capabilityConditions = [...capabilityConditionPool].sort((left, right) => {
+    const rarityScore = (unit) => {
+      const tokens = unitTokens(unit);
+      return conditionTerms.reduce((total, term) => (
+        tokens.has(term) ? total + (1 / Math.max(1, taskTermFrequency.get(term))) : total
+      ), 0);
+    };
+    return rarityScore(right) - rarityScore(left)
+      || score(right) - score(left)
+      || left.text.localeCompare(right.text);
+  }).slice(0, 1);
+  for (const unit of capabilityConditions) add(unit);
+  add(ordered(eligible.filter((unit) => (
+    unit.slug === capabilityDoc.slug && unit.role === 'exception'
+  )))[0]);
+  const uncertaintyRiskTerms = new Set([
+    'authorization', 'default', 'delivery', 'retry', 'runtime', 'validation',
+    'unverified', 'unknown',
+  ]);
+  const capabilityUncertainty = eligible
+    .filter((unit) => unit.slug === capabilityDoc.slug && unit.role === 'uncertainty')
+    .sort((left, right) => {
+      const riskScore = (unit) => [...unitTokens(unit)]
+        .filter((term) => uncertaintyRiskTerms.has(term)).length;
+      return riskScore(right) - riskScore(left)
+        || score(right) - score(left)
+        || left.text.localeCompare(right.text);
+    });
+  add(capabilityUncertainty[0] ?? ordered(eligible.filter((unit) => unit.role === 'uncertainty'))[0]);
+  const primaryAnchor = anchorDocs[0]?.slug;
+  const capabilityConditionTerms = new Set(capabilityConditions.flatMap((unit) => [...unitTokens(unit)]));
+  const anchorConditions = eligible.filter((row) => (
+    row.slug === primaryAnchor && row.role === 'condition'
+  )).sort((left, right) => {
+    const scopeTerms = new Set(['independent', 'independently', 'only', 'remain', 'separate']);
+    const scopeScore = (unit) => [...unitTokens(unit)]
+      .filter((term) => scopeTerms.has(term)).length;
+    const overlap = (unit) => [...unitTokens(unit)]
+      .filter((term) => capabilityConditionTerms.has(term)).length;
+    return scopeScore(right) - scopeScore(left)
+      || overlap(left) - overlap(right)
+      || score(right) - score(left)
+      || left.text.localeCompare(right.text);
+  });
+  add(anchorConditions[0]);
+  for (const unit of ordered(eligible)) {
+    if (selected.length >= 4) break;
+    add(unit);
+  }
+  const units = selected.slice(0, 4);
+  const omitted = Math.max(0, eligible.length - units.length);
+  return {
+    claimState: 'recorded_claims',
+    acceptance: 'not_asserted',
+    coverage: {
+      total: eligible.length,
+      returned: units.length,
+      omitted,
+      complete: omitted === 0,
+      status: omitted === 0 ? 'complete' : 'incomplete_full_body_required',
+    },
+    units,
+    fullBodyRead: {
+      tool: 'get_concepts',
+      arguments: { slugs: docs.map((doc) => doc.slug), body: 'full' },
+    },
+  };
+}
+
 function sourceLiveSuffix(result) {
   const live = result.currentness.source.live;
   if (!live) return '';
@@ -653,6 +827,15 @@ function buildCompactHandoffPrompt(result) {
   const anchors = result.focus.evidenceAnchors;
   const navigation = result.focus.taskNavigation;
   const nextRead = result.nextReads[0];
+  const qualifierLines = result.focus.qualifiers
+    ? [
+        `Recorded qualifiers: ${result.focus.qualifiers.coverage.returned}/${result.focus.qualifiers.coverage.total}; ${result.focus.qualifiers.coverage.omitted} omitted; ${result.focus.qualifiers.coverage.status}.`,
+        ...result.focus.qualifiers.units.flatMap((row) => [
+          `[recorded_claim ${row.slug} ${row.section}/${row.role}]`,
+          row.text,
+        ]),
+      ]
+    : [];
   const coordinate = (row) => row
     ? JSON.stringify(`${row.path}#${row.symbol}:${row.line}${row.endLine === row.line ? '' : `-${row.endLine}`}`)
     : 'unknown';
@@ -679,6 +862,7 @@ function buildCompactHandoffPrompt(result) {
       `Meaning: ${result.currentness.meaning.status}`,
       `Validation: ${result.validation.status}`,
       `Capability: ${capability ? `${capability.slug} (selection, not proof)` : 'not recorded'}`,
+      ...qualifierLines,
       `Impact: ${result.focus.impact.status}/${result.focus.impact.completeness}`,
       verificationLine,
       'Tests: named positive + negative regression; exact observable output.',
@@ -697,6 +881,7 @@ function buildCompactHandoffPrompt(result) {
     ...(result.focus.refusal
       ? [`Task refusal: ${result.focus.refusal.reason}; ${result.focus.refusal.total} unselected candidate(s), ${result.focus.refusal.omitted} omitted; selector evidence only.`]
       : []),
+    ...qualifierLines,
     `Known evidence: ${anchors.length > 0 ? anchors.map((row) => `${row.slug}${row.path ? ` at ${row.path}` : ''}`).join(', ') : 'none recorded'}`,
     `Impact: ${result.focus.impact.status}/${result.focus.impact.completeness}`,
     `Unknown: ${result.focus.unknowns[0] ?? 'no additional bounded unknown was recorded'}`,
@@ -729,6 +914,7 @@ export function buildCompactAgentBrief({
   const selected = selection.selected;
   const capabilityDoc = selected?.doc ?? null;
   const anchorDocs = selected?.matchedChildren.map((row) => row.doc).slice(0, 3) ?? [];
+  const qualifiers = compactRecordedQualifiers(capabilityDoc, anchorDocs, intent);
   let evidenceAnchors = taskEvidenceAnchors(selected, brief);
   const impact = compactImpact(artifact, capabilityDoc?.slug);
   let effectiveProjectSource = brief.projectSource;
@@ -874,6 +1060,7 @@ export function buildCompactAgentBrief({
           }
         : null,
       ...(selection.refusal ? { refusal: selection.refusal } : {}),
+      ...(qualifiers ? { qualifiers } : {}),
       evidenceAnchors,
       startingPointStatus: evidenceAnchors.some((row) => row.path) ? 'partial' : 'unknown',
       impact,
@@ -912,10 +1099,37 @@ export function buildCompactAgentBrief({
       reason: 'Read complete diagnostics only when compact is insufficient.',
     },
   };
-  const result = { ...compact, handoffPrompt: buildCompactHandoffPrompt(compact) };
+  const projectWithQualifierCount = (count) => {
+    if (!compact.focus.qualifiers) {
+      return { ...compact, handoffPrompt: buildCompactHandoffPrompt(compact) };
+    }
+    const original = compact.focus.qualifiers;
+    const returned = Math.min(count, original.units.length);
+    const omitted = Math.max(0, original.coverage.total - returned);
+    const qualifiersForBudget = {
+      ...original,
+      coverage: {
+        ...original.coverage,
+        returned,
+        omitted,
+        complete: omitted === 0,
+        status: omitted === 0 ? 'complete' : 'incomplete_full_body_required',
+      },
+      units: original.units.slice(0, returned),
+    };
+    const candidate = { ...compact, focus: { ...compact.focus, qualifiers: qualifiersForBudget } };
+    return { ...candidate, handoffPrompt: buildCompactHandoffPrompt(candidate) };
+  };
+  let qualifierCount = compact.focus.qualifiers?.units.length ?? 0;
+  let result = projectWithQualifierCount(qualifierCount);
   // Measure the complete structured payload as serialized for transport.
   // Presentation indentation is not sent; the separate wire gate includes wrappers.
-  const bytes = Buffer.byteLength(JSON.stringify(result), 'utf8');
+  let bytes = Buffer.byteLength(JSON.stringify(result), 'utf8');
+  while (bytes > AGENT_BRIEF_COMPACT_MAX_BYTES && qualifierCount > 0) {
+    qualifierCount -= 1;
+    result = projectWithQualifierCount(qualifierCount);
+    bytes = Buffer.byteLength(JSON.stringify(result), 'utf8');
+  }
   if (bytes > AGENT_BRIEF_COMPACT_MAX_BYTES) {
     const largestFields = Object.entries(result)
       .map(([key, value]) => [key, Buffer.byteLength(JSON.stringify(value), 'utf8')])

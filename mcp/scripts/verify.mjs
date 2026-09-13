@@ -646,7 +646,7 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
   if (schema?.type !== 'object') {
     return `${toolName} outputSchema postWriteMaintenance drift`;
   }
-  const compactActionRequired = ['id', 'phase', 'kind', 'severity', 'score', 'executable', 'reason', 'proposedAction'];
+  const compactActionRequired = ['id', 'phase', 'kind', 'severity', 'score', 'executable', 'reason'];
   const compactProposedActionTools = ['add_concept', 'add_relation', 'patch_concept'];
   const proposedArgsSchemas = schema.properties?.actions?.items?.properties?.proposedAction?.properties?.args?.oneOf;
   const postWriteRequired = [
@@ -753,7 +753,10 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
     schema.properties.actions.items?.properties?.nodes?.items?.additionalProperties !== false ||
     schema.properties.actions.items?.properties?.nodes?.items?.properties?.slug?.type !== 'string' ||
     schema.properties.actions.items?.properties?.nodes?.additionalProperties?.additionalProperties !== false ||
-    schema.properties.actions.items?.properties?.nodes?.additionalProperties?.properties?.slug?.type !== 'string'
+    schema.properties.actions.items?.properties?.nodes?.additionalProperties?.properties?.slug?.type !== 'string' ||
+    schema.properties.actions.items?.allOf?.[0]?.if?.properties?.executable?.const !== true ||
+    !sameArray(schema.properties.actions.items?.allOf?.[0]?.then?.required, ['proposedAction']) ||
+    schema.properties.actions.items?.allOf?.[0]?.then?.properties?.proposedAction?.type !== 'object'
   ) {
     return `${toolName} outputSchema postWriteMaintenance actions drift`;
   }
@@ -770,6 +773,9 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
       actionSchema.properties?.proposedAction?.additionalProperties !== false ||
       !sameArray(actionSchema.properties?.proposedAction?.properties?.tool?.enum, compactProposedActionTools) ||
       actionSchema.properties?.proposedAction?.properties?.args?.oneOf?.length !== 3
+      || actionSchema.allOf?.[0]?.if?.properties?.executable?.const !== true
+      || !sameArray(actionSchema.allOf?.[0]?.then?.required, ['proposedAction'])
+      || actionSchema.allOf?.[0]?.then?.properties?.proposedAction?.type !== 'object'
     ) {
       return `${toolName} outputSchema postWriteMaintenance ${key} drift`;
     }

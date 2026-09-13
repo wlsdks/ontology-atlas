@@ -1343,7 +1343,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       );
       assert.deepEqual(
         postWriteSchema?.properties?.actions?.items?.required,
-        ["id", "phase", "kind", "severity", "score", "executable", "reason", "proposedAction"],
+        ["id", "phase", "kind", "severity", "score", "executable", "reason"],
         `${toolName} exposes compact action row schema`,
       );
       assert.equal(postWriteSchema?.additionalProperties, false, `${toolName} closes postWriteMaintenance schema`);
@@ -1423,7 +1423,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       );
       assert.deepEqual(
         postWriteSchema?.properties?.nextExecutableAction?.required,
-        ["id", "phase", "kind", "severity", "score", "executable", "reason", "proposedAction"],
+        ["id", "phase", "kind", "severity", "score", "executable", "reason"],
         `${toolName} exposes compact next executable action schema`,
       );
       assert.deepEqual(
@@ -1448,7 +1448,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       );
       assert.deepEqual(
         postWriteSchema?.properties?.nextReviewAction?.required,
-        ["id", "phase", "kind", "severity", "score", "executable", "reason", "proposedAction"],
+        ["id", "phase", "kind", "severity", "score", "executable", "reason"],
         `${toolName} exposes compact next review action schema`,
       );
       assert.deepEqual(
