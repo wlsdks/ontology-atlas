@@ -9,6 +9,11 @@ import {
 } from '../mcp/src/meaning-evaluation.mjs';
 
 const corpusRoot = join(process.cwd(), 'tests/fixtures/meaning-corpus');
+const RELAXED_MINIMUM_COVERAGE = Object.freeze([
+  'definitionCoverage',
+  'citationRecall',
+  'competencyCoverage',
+]);
 
 export function evaluateMeaningCorpus(rootPath = corpusRoot) {
   const rows = readdirSync(rootPath, { withFileTypes: true })
@@ -59,7 +64,29 @@ export function evaluateMeaningCorpus(rootPath = corpusRoot) {
     oracleContractsPassed: rows.filter((row) => row.oracleContract.passed).length,
     totals,
   };
-  return { summary, rows };
+  const candidateThresholds = sharedThresholds(rows, 'candidateCoverage');
+  const oracleThresholds = sharedThresholds(rows, 'oracleContract');
+  const measurementScope = {
+    candidateDiscovery: {
+      status: 'measured',
+      effectiveThresholds: candidateThresholds,
+      relaxedMinimumCoverage: RELAXED_MINIMUM_COVERAGE.filter(
+        (dimension) => candidateThresholds[dimension] === 0,
+      ),
+      strictMaximums: {
+        maximumForbiddenLeakage: candidateThresholds.maximumForbiddenLeakage,
+      },
+    },
+    goldenOracleConsistency: {
+      status: 'measured',
+      effectiveThresholds: oracleThresholds,
+    },
+    independentConstruction: {
+      status: 'not_measured',
+      unmeasuredDimensions: [...RELAXED_MINIMUM_COVERAGE],
+    },
+  };
+  return { summary, measurementScope, rows };
 }
 
 export function passesMeaningCorpus(result) {
@@ -92,6 +119,7 @@ function run() {
     console.log(
       `  aggregate — precision ${format(summary.candidatePrecision)}, recall ${format(summary.candidateRecall)}, oracle ${summary.oracleContractsPassed}/${summary.corpusSize}`,
     );
+    printMeasurementScope(result.measurementScope);
   }
 
   if (!passesMeaningCorpus(result)) {
@@ -105,6 +133,39 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
 
 function ratio(numerator, denominator) {
   return denominator === 0 ? 1 : Number((numerator / denominator).toFixed(4));
+}
+
+function sharedThresholds(rows, resultKey) {
+  const first = rows[0][resultKey].thresholds;
+  if (rows.some((row) => JSON.stringify(row[resultKey].thresholds) !== JSON.stringify(first))) {
+    throw new Error(`${resultKey} thresholds differ across the meaning corpus`);
+  }
+  return { ...first };
+}
+
+function printMeasurementScope(scope) {
+  console.log('  measurement scope');
+  console.log(`    candidate discovery — ${scope.candidateDiscovery.status}`);
+  console.log(`      effective gates — ${formatThresholds(scope.candidateDiscovery.effectiveThresholds)}`);
+  console.log('      relaxed minimum coverage');
+  for (const dimension of scope.candidateDiscovery.relaxedMinimumCoverage) {
+    console.log(`        ${dimension} >= ${scope.candidateDiscovery.effectiveThresholds[dimension]}`);
+  }
+  for (const [dimension, threshold] of Object.entries(scope.candidateDiscovery.strictMaximums)) {
+    console.log(`      strict maximum — ${dimension} <= ${threshold}`);
+  }
+  console.log(`    golden oracle consistency — ${scope.goldenOracleConsistency.status}`);
+  console.log(`      effective gates — ${formatThresholds(scope.goldenOracleConsistency.effectiveThresholds)}`);
+  console.log(`    independent construction — ${scope.independentConstruction.status.replace('_', ' ')}`);
+  console.log(`      unmeasured dimensions — ${scope.independentConstruction.unmeasuredDimensions.join(', ')}`);
+}
+
+function formatThresholds(thresholds) {
+  return Object.entries(thresholds)
+    .map(([dimension, threshold]) =>
+      `${dimension} ${dimension.startsWith('maximum') ? '<=' : '>='} ${threshold}`,
+    )
+    .join('; ');
 }
 
 function format(value) {
