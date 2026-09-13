@@ -47,6 +47,26 @@ test('the fixture exercises every required audience and independent quality axis
   assert.ok(fixture.witnesses.length > 0);
 });
 
+test('purpose-authority transport schema matches the existing nonempty runtime contract', () => {
+  const properties = CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA.properties.purposeAuthority.properties;
+  for (const field of ['decisions', 'nonGoals', 'sourceRefs']) {
+    assert.equal(properties[field].minItems, 1, `${field} must be nonempty in the public schema`);
+  }
+
+  const valid = clone();
+  assert.equal(evaluateConstructionQualification(valid).findings.some(
+    ({ code }) => code === 'invalid-purpose-authority'
+  ), false);
+
+  for (const field of ['decisions', 'nonGoals', 'sourceRefs']) {
+    const empty = clone();
+    empty.purposeAuthority[field] = [];
+    assert.ok(evaluateConstructionQualification(empty).findings.some(
+      ({ code }) => code === 'invalid-purpose-authority'
+    ), `${field} remains rejected by the unchanged runtime validator`);
+  }
+});
+
 test('a complete independently evaluated packet qualifies without an aggregate score', () => {
   const result = evaluateConstructionQualification(fixture);
 

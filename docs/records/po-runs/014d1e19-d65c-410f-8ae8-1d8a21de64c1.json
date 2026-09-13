@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-13",
+  "decision": "Qualify the corrected source-backed candidate before exact research-vault acceptance",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "handoff",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-13",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "014d1e19-d65c-410f-8ae8-1d8a21de64c1",
+  "recordedAt": "2026-09-13T13:56:25.179Z"
+}

@@ -658,6 +658,9 @@ describe('qualification handoff happy path', () => {
     );
     assert.equal(hiddenSchemas.qualificationCore.properties.purposeAuthority.properties.owners.minItems, 1);
     assert.equal(hiddenSchemas.qualificationCore.properties.purposeAuthority.properties.owners.maxItems, 1);
+    for (const field of ['decisions', 'nonGoals', 'sourceRefs']) {
+      assert.equal(hiddenSchemas.qualificationCore.properties.purposeAuthority.properties[field].minItems, 1);
+    }
     assert.equal(hiddenSchemas.access.properties.contract.const, 'qualificationHandoffAccess:v1');
     assert.equal(hiddenSchemas.access.properties.role.const, 'source_hidden_evaluator');
     assert.equal(hiddenSchemas.access.properties.boundaries.properties.hiddenArtifactsAccessed.const, false);
@@ -695,6 +698,8 @@ describe('qualification handoff happy path', () => {
     longQualificationId.qualificationId = 'q'.repeat(301);
     assert.ok(validateCore(longQualificationId).length > 0);
     assert.match(HANDOFF_SCHEMA.commands.audit.claimResults, /deduplicated sourceFragmentCatalog/);
+    assert.match(HANDOFF_SCHEMA.commands.audit.quantifierClassifications, /exact sealed row/);
+    assert.match(HANDOFF_SCHEMA.commands.audit.quantifierClassifications, /equal-in-meaning rewrite is still seal drift/);
     const auditSchemas = HANDOFF_SCHEMA.commands.audit.jsonSchemas;
     const auditCatalog = catalogAuditRows(manifestFor(reviewPlan()));
     assert.deepEqual(compileSchema(auditSchemas.access)(
@@ -1890,6 +1895,13 @@ describe('hidden and audit RED probes', () => {
     const sourceMismatch = clone(base);
     sourceMismatch.sourceDigest = digestJson({ source: 'different' });
     assert.throws(() => buildAuditFragment(sourceMismatch), /source digest mismatches/);
+    const rationaleDrift = clone(base);
+    rationaleDrift.quantifierClassifications[0].rationale = 'Equivalent wording is still a different sealed row.';
+    assert.throws(() => buildAuditFragment(rationaleDrift), /quantifier classifications drifted/);
+    const sourceRefOrderDrift = clone(base);
+    sourceRefOrderDrift.seal.quantifiers.classifications[0].sourceRefs = ['candidate:reviewPlan', 'source:extra'];
+    sourceRefOrderDrift.quantifierClassifications[0].sourceRefs = ['source:extra', 'candidate:reviewPlan'];
+    assert.throws(() => buildAuditFragment(sourceRefOrderDrift), /quantifier classifications drifted/);
   });
 
   test('audit records an explicit source mismatch as a failed verdict', () => {

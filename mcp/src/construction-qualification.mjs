@@ -97,9 +97,9 @@ export const CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA = Object.freeze({
       type: 'object',
       properties: {
         outcome: SCHEMA_STRING,
-        decisions: SCHEMA_STRING_ARRAY,
+        decisions: { ...SCHEMA_STRING_ARRAY, minItems: 1 },
         scope: SCHEMA_STRING,
-        nonGoals: SCHEMA_STRING_ARRAY,
+        nonGoals: { ...SCHEMA_STRING_ARRAY, minItems: 1 },
         owners: {
           type: 'array',
           minItems: 1,
@@ -114,7 +114,7 @@ export const CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA = Object.freeze({
             additionalProperties: false,
           },
         },
-        sourceRefs: SCHEMA_STRING_ARRAY,
+        sourceRefs: { ...SCHEMA_STRING_ARRAY, minItems: 1 },
       },
       required: ['outcome', 'decisions', 'scope', 'nonGoals', 'owners', 'sourceRefs'],
       additionalProperties: false,

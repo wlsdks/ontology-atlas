@@ -2351,6 +2351,9 @@ not a potentially truncated display. It publishes exact hidden and audit input
 schemas; coverage refs are derived before material claims, payload witness
 digests are derived during seal without mutating caller input, and recorded
 analyzer responses pass directly without hand-authored wrappers.
+Purpose-authority arrays advertise the existing nonempty runtime requirement.
+Auditors accept or reject frozen quantifier classifications; accepted rows retain
+their exact rationale and source-reference order instead of being rewritten.
 The helper requires one human-owned purpose/CQ set whose approval predates the
 source-hidden lane, keeps that owner distinct from all construction actors, and
 binds the full question projection into the post-join acceptance request. The

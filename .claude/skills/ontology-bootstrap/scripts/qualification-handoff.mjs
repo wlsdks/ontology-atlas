@@ -558,6 +558,7 @@ export const HANDOFF_SCHEMA = Object.freeze({
       compactInput: ['handoffDir', 'access', 'claimResults', 'sourceFragmentCatalog?', 'quantifierClassifications', 'sourceDigest'],
       claimResults: 'Each citation uses either legacy inline sourceFragments or sourceFragmentRefs into one deduplicated sourceFragmentCatalog. Catalog mode expands to the exact legacy output shape and rejects mixed, duplicate, foreign, or unused evidence.',
       sourceFragmentDigest: 'The source-aware auditor supplies a sha256 binding for each exact current source fragment; the helper validates shape and receipt binding but does not select or interpret source evidence.',
+      quantifierClassifications: 'The source-aware auditor independently accepts or rejects each sealed quantifier classification. If accepted, return the exact sealed row, including rationale, sourceRefs, and their order. If unsupported, stop and reject/reseal; an equal-in-meaning rewrite is still seal drift.',
       runtimeOnlyChecks: [
         'access timestamps are valid and endedAt is not before startedAt',
         'source-aware auditor identity differs from the sealed builder identity',

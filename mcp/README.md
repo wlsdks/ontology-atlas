@@ -1118,6 +1118,14 @@ qualification and exact human acceptance still apply; unsupported assignments
 stay outside the proposal. These are investigation instructions, not a new
 admission rule or a guarantee of construction quality.
 
+The qualification schema advertises the same nonempty purpose-authority
+`decisions`, `nonGoals`, and `sourceRefs` arrays required by runtime validation.
+Bound ontology-qualification non-goals to the stated review scope; they must not
+be invented as upstream product exclusions. In the source-checkout handoff
+helper, auditors independently accept or reject sealed quantifier classifications.
+Accepted rows retain the exact rationale, source-reference order and values;
+rewriting the reasoning requires rejection and resealing.
+
 ## Interop — export to a standard graph format
 
 The vault is markdown, but the graph it encodes is portable. `ontology-atlas

@@ -36,3 +36,5 @@ The qualification handoff helper is the private source-checkout transport that v
 ## Boundary
 
 It invokes no MCP tool, grants no identity or permission, authors no meaning judgment, and writes no vault content. Missing claim coverage, mandatory-axis evidence, or reference-namespace validity still fails closed; the added contract guidance prevents a fresh evaluator from discovering those requirements only after a rejected submission.
+
+The emitted purpose-authority schema requires nonempty decisions, non-goals, and source references, matching the existing runtime contract. The source-aware auditor accepts or rejects sealed quantifier classifications independently; accepted rows retain their exact rationale, source-reference order, and values. A rewritten or unsupported classification requires rejection and resealing rather than silent normalization.

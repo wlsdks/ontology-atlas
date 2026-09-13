@@ -40,7 +40,7 @@ need their own scoped PO/design/evidence proof before implementation.
 | V1.2 | done(42cf788d9) | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
 | V1.3 | hold(witnessed document/config gap) | Scoped document/config evidence retaining current/planned/negated/conflicting context | Activate only witnessed gaps; follow applicable V1.2 decisions |
 | V1.4 | done(bounded hypothesis-transfer probe) | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | Reviewable source-inferred responsibility/capability; corrected candidate passed independent bounded source review and candidate-only reading |
-| V1.5 | ready(formal qualification) | Independent candidate and persisted handoff, full-answer source audit, matched prompt/access comparisons | Preserve V1.4 corrections; exact meaning/gap/write approval, complete qualification and holdout remain pending |
+| V1.5 | awaiting_human_acceptance | Independent candidate and persisted handoff, full-answer source audit, matched prompt/access comparisons | Pre-acceptance join complete; twelve explicit gaps. Exact acceptance, persistence/readback, persisted handoff and holdout remain pending |
 | V2.1 | hold(reviewed starting vault) | Task/non-goal resolution with supported selection, alternatives or abstention | A reviewed starting vault may isolate reuse; disclose construction cost |
 | V2.2 | blocked(V2.1) | Compact action context preserving conditions, exceptions, currentness and unknowns | Same claims survive budgets and full-body follow-ups |
 | V2.3 | blocked(V2.2) | Actual host-to-MCP task entry and honest unavailable-context fallback | Optional UI links wait for V3.1; initial MCP proof does not |
@@ -227,6 +227,41 @@ owns complete qualification, candidate transport/regression probes, exact human
 plan/gap acceptance, persistence/readback, persisted-only handoff and a holdout.
 One corrected example and static tests do not prove general construction
 quality, actual human comprehension, runtime correctness or repeated use.
+
+**V1.5 pre-acceptance evidence (2026-09-14):** the current five-concept,
+five-relation candidate is sealed with ninety claims. Independent source-hidden
+and source-aware lanes completed with measured overlap; ninety source claims
+verified and no citation mismatch remains. The six answers remain partial.
+The canonical evaluator therefore retains functional sufficiency as `unknown`,
+while the other dimensions pass for the bounded task. The join is awaiting
+human acceptance with twelve explicit gaps; it is not an executable write plan.
+
+The trial exposed a public-schema/runtime mismatch for empty purpose-authority
+arrays. Three schema minima now match existing runtime validation; separate RED
+probes restore each defect and GREEN verifies the fix. The audit contract now
+states that accepted sealed quantifier rows preserve rationale/reference order.
+Existing authority, confidence and equality gates are unchanged. Four weak
+inspection-history assertions were narrowed to what the cited evidence leaves
+unverified; generation-time status is distinguished from later acceptance.
+All first failed packets and setup cost remain recorded.
+
+Matched historical/current access and old/current guidance runs are retained as
+four separate arms, including their first failures. They do not establish a
+general effect size or independently qualify every generated candidate. Missing,
+foreign and truncated candidate mutations reject; post-seal hidden/audit/join
+probes reject 12/12, 8/8 and 14/14 targeted mutations after valid baselines.
+Initial harness locator mistakes are classified separately. No accept or release
+was executed, and the research vault remains empty. A separately licensed public
+holdout was selected; construction and evaluation of it remain pending.
+
+Exact review and source artifacts:
+`/Users/jinan/scratch/atlas-v1-2026-09-13/v1-5/REVIEW-ACCEPTANCE.md`,
+`REVIEW.md`, `joined/`, `sealed-review-3/`, `probes/`, and
+`access-comparison/final4arm-receipt.json`. The review document includes every
+candidate body, relation, gap and question projection. It is an acceptance
+request, not a record of consent. After actual owner acceptance, revalidate the
+same source/proposal, release only matching rows, then perform full-body readback,
+persisted-only handoff and the holdout. V1.5 remains open until those results exist.
 
 **V3 direction selected by the owner:** integrate task review into the existing
 side workbench and its small-screen sheet. Preserve selection across qualified
