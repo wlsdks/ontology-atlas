@@ -653,17 +653,21 @@ describe('DownloadPage', () => {
   });
 
   /**
-   * The headline is **the owner's sentence verbatim** — a fixed point of the remake. The lead is
-   * the outcome: human review before accepting agent work, rather than agent-authored memory.
+   * The message catalogue owns public wording. This test protects the rendering boundary: both
+   * configured headline lines form the heading, and the configured lead reaches body copy.
    */
-  it('keeps the owner-verbatim headline and gives it a human review outcome', () => {
+  it('renders the catalogue headline and lead in their semantic slots', () => {
     renderDownloadPage();
 
     const heading = screen.getByRole('heading', { level: 1 });
-    expect(heading).toHaveTextContent('Agents write the code.');
-    expect(heading).toHaveTextContent('People accumulate the cognitive debt.');
-    expect(screen.getByText(/reviewable map of what the code means/i)).toBeInTheDocument();
-    expect(screen.getByText(/before accepting the work/i)).toBeInTheDocument();
+    const { heroTitleLine1, heroTitleLine2, heroLead } = enMessages.download;
+
+    expect(heading).toHaveAccessibleName(`${heroTitleLine1} ${heroTitleLine2}`);
+    expect(heading).toHaveTextContent(heroTitleLine1);
+    expect(heading).toHaveTextContent(heroTitleLine2);
+
+    const lead = screen.getByText(heroLead);
+    expect(lead.tagName).toBe('P');
   });
 
   /**

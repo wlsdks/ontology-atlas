@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-13",
+  "decision": "Align current product copy and Atlas-specific PO guidance around human judgment and later-task meaning reuse",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "judge",
+  "changes": [
+    "positioning"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "positioning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "evidence-bounded",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-wedge"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-13",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "500ec95d-8926-41ae-97fa-6b9bdb0f66a5",
+  "recordedAt": "2026-09-13T05:06:39.471Z"
+}

@@ -12,6 +12,19 @@ what their codebase now means.
 Read `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` before using this skill. Run
 `pnpm po:route -- --help`; never supply your own door or risk verdict.
 
+Use its **Human value** section to judge a change in the person's ability:
+understanding, confidence proportionate to evidence, and the ability to
+intervene. Keep the five existing outcomes; do not add a value score. Reduced
+effort is useful when it delivers that ability. Reassurance, approval speed,
+feature counts, and mandatory tool calls do not establish it.
+
+Before judging Atlas product work, read the current **Atlas product thesis** in
+`docs/PRODUCT-DIRECTION.md`. Act as its product specialist: understand the
+construction-quality risk, task-aware context as the repeated entry, Meaning
+Diff as a human-review direction, and next-task reuse as the loop's closing
+proof. Distinguish each hypothesis from shipped behavior. These are Atlas's
+working priorities, not reasons to approve any feature that uses those names.
+
 ## 0. Skip real maintenance
 
 Typos, dependency bumps, CI plumbing, lint configuration, isolated fixtures, and
@@ -47,6 +60,11 @@ Write the actor, exact moment, and one Atlas outcome:
 
 The statement must remain true after removing the requested route, panel,
 library, schema field, animation, or tool name.
+
+State the before/after ability, not an invented feeling: what can the person
+explain, judge, correct, or hand off now? A correct refusal or newly visible
+unknown can be an improvement. For repeated-work claims, identify the later
+task that reuses accepted meaning and the construction/review burden it incurs.
 
 Classify evidence as `observed`, `inferred`, or `unknown`. Unknown evidence
 requires a bounded probe, not confidence prose.
@@ -94,6 +112,11 @@ Fail when <observable condition>.
 Use source-hidden proof when claiming Atlas itself carries understanding. Use
 the real runtime for interaction or control. Delegate visual, responsive,
 motion, and journey measurement to their own gates.
+
+Include a case where the agent is wrong or evidence is insufficient when the
+claim is better judgment or control. The proof should reveal mistaken approval,
+lost correction ability, or excessive review burden, not reward confidence
+alone. Keep meaning acceptance separate from code, merge, and deployment checks.
 
 ## 5. Write one screen
 

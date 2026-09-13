@@ -1,6 +1,81 @@
-# PRODUCT DIRECTION — Ontology workbench (humans + AI agents co-author)
+# PRODUCT DIRECTION — Codebase meaning for agent work and human judgment
 
-> **[v11 Codebase-centered identity, 2026-08-25] — Ontology Atlas is a
+> **[v12 Human value and repeated work, 2026-09-13]** Atlas helps people keep
+> understanding and judging their system as AI agents change its code. It remains
+> a local-first codebase ontology workbench: one reviewable Markdown meaning
+> layer shared by people and agents. The product is successful when that meaning
+> improves a real decision and survives into the next task, not when the graph
+> is full or the owner feels reassured without evidence.
+
+## The Atlas product thesis
+
+This is the working product model for Atlas contributors and its PO specialists.
+Evaluate proposed work against it, and challenge it when evidence contradicts
+it. It is not a universal framework for unrelated products or proof that these
+outcomes are already achieved.
+
+**The person and moment.** A developer or system owner delegates a change, then
+needs to know what the agent understood, what changed, what remains uncertain,
+and whether to intervene. They should not have to reconstruct the whole system
+from a file list or accept the producing agent's summary as independent proof.
+
+**The value.** Understanding means explaining the relevant capabilities, rules,
+and boundaries. Confidence means distinguishing supported conclusions from
+unknowns; finding a reason to withhold confidence is a useful outcome. Control
+means being able to inspect evidence, challenge, correct, reject, or defer a
+proposed meaning. Convenience reduces the effort needed to do these things; it
+does not replace them. Neither a graph nor an approval button guarantees code
+safety.
+
+**The repeated entry.** Task-aware agent context is the strongest workflow
+hypothesis: give the coding agent the reviewed meaning relevant to the current
+task, its implementation anchors, constraints, evidence, and unknowns. The
+person need not open Atlas for every task. A configured MCP connection is an
+interface, not a guarantee that every host calls it or respects its guidance.
+
+**The human workbench.** Map, Architecture, Docs, Library, Insights, and Git
+History help people inspect the meaning and evidence behind a question or
+change. Task-bound Meaning Diff is a development direction for comparing
+observed code changes, proposed meaning, and accepted meaning. Existing write
+review and graph views are foundations; a complete automatic agent-change
+review or verified runtime blast radius is not a current product promise.
+Exploration and learning remain valid uses, but everyday app opens are not the
+definition of repeat value.
+
+**The loop to prove.** Relevant meaning before work → source inspection and code
+change → evidence and meaning review → human acceptance where meaning changes
+→ reuse in the next independent task. A changed-file list alone cannot prove a
+semantic change or its absence. Meaning acceptance, code verification, merge,
+and deployment remain separate decisions. Do not generate a proposal merely to
+make every task look like learning.
+
+**The hardest capability.** Recovering useful meaning from unfamiliar work
+repositories is the central risk. README headings, folders, imports, and graph
+health are evidence, not business understanding. Source-first investigation of
+rules, state transitions, effects, and exceptions is a development priority;
+the current constrained construction workflow must be evaluated and improved
+before claiming that ability. Transactional backend work is a useful trial
+target, not a backend-only product boundary or a claim of support for every
+enterprise language. Frontend and external-system responsibilities remain
+relevant when they own the behavior in question.
+
+**The distinction to earn.** Git preserves implementation changes, source tools
+locate structure, and coding agents can explain their work. Atlas must earn its
+place through accumulated, human-reviewable meaning whose conditions, evidence,
+uncertainty, and correction history can be reused across tasks and agents.
+Meaning acquisition, later-task usefulness, review burden, and retention are
+separate measurements. Public copy states current mechanisms and their limits;
+development priorities do not become shipped guarantees.
+
+Execution priority and status belong in [BACKLOG.md](BACKLOG.md); the
+[detailed V1–V4 plan](MEANING-WORKFLOW-PLAN.md) specifies each implementation
+and verification commitment. The
+[PO operating system](PRODUCT-OWNER-OPERATING-SYSTEM.md) turns this product model
+into a bounded recovery proof using the existing five outcomes. The historical
+direction below supplies the retained category and context; v12 governs the
+current value emphasis and workflow priorities where wording differs.
+
+> **[v11 Retained codebase category, 2026-08-25] — Ontology Atlas is a
 > codebase ontology workbench.** Its plain-language promise is: *understand what
 > your codebase builds, why it is structured that way, and what a change will
 > affect.* It is neither a general-purpose ontology editor nor a structural code
@@ -195,11 +270,12 @@ init -> bootstrap -> agent answers better through MCP -> agent proposes sync
 -> developer reviews diff -> next task benefits
 ```
 
-Target: first visible value in a fresh repo within 10 minutes.
+The earlier ten-minute first-value target is a historical research goal. Current
+priority is verified useful meaning and a later-task decision, with construction
+and review cost reported separately. A fast empty model is not first value.
 
-Failure mode: if the user feels they must "write an ontology" before seeing
-value, the product becomes a niche ontology tool instead of an AI-agent memory
-layer.
+Failure mode: ontology authoring and upkeep consume effort without helping the
+person or agent understand, judge, correct, or reuse meaning in actual work.
 
 ---
 
@@ -704,6 +780,10 @@ What changed:
 ## 8. Current completion bar
 
 The direction is no longer waiting on a phase pick. The active bar is evidence:
+
+The checks below establish runtime availability. They are necessary but do not
+close the v12 product thesis: unfamiliar-codebase meaning quality, correct human
+judgment, and reuse across real tasks need their own evidence under BACKLOG V1–V4.
 
 - Installed macOS app launches and route-smokes the ontology workbench surfaces.
 - Topology + INDEX is the read/inspect surface, contextual map writing is the

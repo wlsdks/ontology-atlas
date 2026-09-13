@@ -9,7 +9,23 @@ The active pilot does not summon a standing committee. `pnpm po:route` derives
 the primary risk from change facts and all four boundary assessments, then selects Evidence plus
 exactly one specialist. The human owner decides.
 
+Both seats apply the **Human value** section of
+`docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`: test the person's before/after ability,
+not comfort or feature volume. Use the existing outcome and recovery-proof
+fields for understanding, evidence-calibrated confidence, intervention, and
+later reuse. Do not introduce another score, reviewer, or approval stage.
+
+Give each seat the current **Atlas product thesis** in
+`docs/PRODUCT-DIRECTION.md` as primary context. The seats are Atlas specialists,
+not independent generic product consultants: they share the source-meaning,
+task-brief, human-review, and next-task-reuse model, while independently testing
+its assumptions from their assigned risk. Preserve evidence against that model.
+
 ## Reviewer map
+
+These are available roles, not a standing five-person council. Ordinary
+reversible work stays solo; a routed review uses Evidence and one specialist.
+`chief` coordinates when needed and is not another review vote.
 
 | Derived risk | Required reviewers | Independent question |
 |---|---|---|
@@ -62,7 +78,7 @@ Give both reviewers the same brief:
 ```text
 [Decision] the requester's literal words
 [Pre-review decision] exact intended verdict and slice
-[Human recovery] actor, moment, Atlas outcome, and recovery proof
+[Human recovery] actor, moment, before/after ability, Atlas outcome, recovery proof, and the case that exposes false confidence or lost control
 [Route] evidence, confidence, change signals, boundaries, derived door/risk/reasons
 [Evidence paths] exact files, routes, documents, runtime artifacts, and prior record
 [Artifact to open] URL, command, and vault path
@@ -77,6 +93,12 @@ Reviewers open primary evidence rather than judging a summary. Each states:
 - the unique material contribution it expects to make;
 - the strongest argument against its own recommendation;
 - a falsifier or next learning action.
+
+If the claim is repeated use, each seat distinguishes an observed later-task
+benefit from adoption/retention speculation and includes meaning construction,
+correction, and review costs. A beautiful explanation or a forced MCP call is
+not that benefit. A source-hidden reader or human who correctly asks for more
+evidence may outperform one who approves faster.
 
 ## Round 2 — only for material conflict
 

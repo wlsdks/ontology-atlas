@@ -6,8 +6,9 @@ run or review. These read-only flags use the archive inside the vault; the
 existing legacy `analysis` writer beside the vault is unchanged. See
 [analysis records](../docs/ANALYSIS-RECORDS.md) for cursor pagination and limits.
 
-> **Repo-native memory layer CLI** — scaffold, validate, compile, query, and
-> maintain the markdown ontology vault your AI coding agent reads through MCP.
+> **Codebase ontology CLI** — scaffold, validate, compile, query, and maintain
+> the shared Markdown meaning that people inspect and coding agents use for
+> task context. Recorded evidence and unknowns remain available beside the code.
 
 ```bash
 node cli/src/index.mjs init my-vault
@@ -15,8 +16,10 @@ cd my-vault
 $EDITOR project.md
 ```
 
-That's it. You now have a frontmatter-based memory vault that humans and AI
-agents (Claude Code, Cursor, Codex, etc.) can read and write together.
+This creates a starter vault people and agents can read and write together.
+It has not yet established the business meaning of your repository. Build and
+review that meaning before relying on it for a task; source paths, validation,
+and graph traversal do not certify code safety.
 
 Requires Node 24+ (Active LTS as of 2026-07). The CLI spawns the MCP server in
 `mcp/`, which uses the same Node floor.

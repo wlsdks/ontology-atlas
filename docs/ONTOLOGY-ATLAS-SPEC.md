@@ -490,10 +490,10 @@ vocabulary for concept schemes. Atlas may export or map a bounded graph shape,
 but its Markdown vault is not an RDF serialization and its validator/query
 engine is not an OWL reasoner, SKOS implementation, or SHACL processor.
 
-As of this specification update, RDF 1.1 and SHACL 1.0 remain the published W3C
+As checked on 13 September 2026, RDF 1.1 and SHACL 1.0 remain the published W3C
 Recommendations used for those comparisons. RDF 1.2 was a Candidate
 Recommendation Snapshot on 7 April 2026 and SHACL 1.2 Core a Working Draft on
-3 August 2026; neither work-in-progress document creates Atlas conformance.
+28 August 2026; neither work-in-progress document creates Atlas conformance.
 [RDF 1.1](https://www.w3.org/TR/rdf11-concepts/) ·
 [RDF 1.2 status](https://www.w3.org/TR/rdf12-concepts/) ·
 [OWL 2 Overview](https://www.w3.org/TR/owl2-overview/) ·

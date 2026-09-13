@@ -6,9 +6,16 @@ and `query_ontology({operation:"analysis_record", recordId:"<UUID>"})`. They
 retain exact answers and captured evidence, remain outside the ontology graph,
 and never grant approval. [Analysis record contract](../docs/ANALYSIS-RECORDS.md).
 
-> The MCP server for a repo-native AI-agent memory layer. It lets Claude Code,
-> Cursor, Codex, and other MCP clients read, query, and maintain the markdown
-> ontology vault stored beside the code.
+> The agent interface to Ontology Atlas's shared codebase meaning. Claude Code,
+> Cursor, Codex, and other MCP clients read, query, and maintain a Markdown
+> ontology vault beside the code, while people inspect the same meaning and
+> evidence through files, Git diffs, and the workbench.
+
+For a known task, compact `agent_brief` supplies recorded context, implementation
+anchors, currentness, and unknowns before the agent inspects source. Declared
+dependencies do not establish complete runtime impact. Host permissions and
+review behavior vary; an MCP connection is not a guarantee that every write is
+human-approved. [Product purpose and limits](../README.md#use-it-in-the-next-task).
 
 The vault is still plain markdown. The graph-database-like behavior comes from
 `compile_ontology` and `query_ontology`, which build and query a deterministic
