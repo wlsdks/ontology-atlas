@@ -9,6 +9,15 @@
 This is a living document. When we make a design or feature decision, we should be able to point
 at *which* of these it descends from — or argue explicitly why we diverge.
 
+The current [Atlas product thesis](PRODUCT-DIRECTION.md#the-atlas-product-thesis)
+applies these foundations to a specific human outcome: keep understanding,
+evidence-calibrated confidence, and the ability to intervene as agents change
+code. A pleasing explanation or a valid graph does not establish that outcome.
+Construction quality, decision quality, later-task reuse, and product demand
+remain separate questions. The [PO operating system](PRODUCT-OWNER-OPERATING-SYSTEM.md)
+uses the existing five outcomes to test them; it does not turn feelings of
+control into a safety certificate.
+
 ---
 
 ## 1. What an ontology actually is
@@ -37,7 +46,8 @@ The word is older than software (Aristotle's *categories of being*), but our usa
   define classes + a hierarchy, define properties (slots) + constraints (facets), then instances —
   and crucially, *"ontology development is iterative, there is no single correct ontology, and the
   right design depends on the intended application and anticipated extensions."*
-  → This is our **grow-the-vault-each-session, agent-maintained, no-one-true-model** stance, verbatim.
+  → Atlas applies iterative, reviewable maintenance: revise meaning when the
+  evidence or requirement changes, without forcing graph growth in every session.
 
 ### The formality spectrum — and where we deliberately sit
 
@@ -140,9 +150,10 @@ same [meta-model contract](ONTOLOGY-ATLAS-SPEC.md#22-direct-is_a--broader-test).
 
 ## 2. Agent memory & LLM × knowledge-graph (the live field, 2023–2026)
 
-Our wedge — *"the AI agent forgets the codebase every session; this is git-native ontology memory it
-maintains and queries"* — sits inside an active, recognized research lineage. We are **not** inventing
-the category; we are taking a specific, opinionated position in it.
+Agent continuity has a useful research lineage. The current Atlas product thesis
+uses it as one mechanism for shared codebase meaning, human judgment, and later
+task reuse, rather than defining Atlas as a generic agent-memory category. The
+research comparisons below do not establish Atlas's product outcomes.
 
 **The "LLM forgets; give it external memory" premise:**
 

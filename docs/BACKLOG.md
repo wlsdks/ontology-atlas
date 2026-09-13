@@ -13,6 +13,35 @@
 
 ## Active Execution Track — Trust Contract → Meaning Contract (2026-08-09)
 
+### Current priority — useful meaning across real tasks (2026-09-13)
+
+The [Atlas product thesis](PRODUCT-DIRECTION.md#the-atlas-product-thesis) sets
+the current value and sequence. Retain completed evidence below; historical
+scores, green contracts, and node counts do not prove general construction
+quality, correct human judgment, or repeat use.
+
+| Order | ID | Status | Recovery to prove |
+|---:|---|---|---|
+| 1 | V1 | ready | On an unfamiliar work repository, recover source-backed rules, state/effects, responsibilities, and counter-boundaries even when documents and names are weak; keep unsupported meaning explicit. |
+| 2 | V2 | ready | Use task-aware `agent_brief` in a real change, preserving reviewed conditions, currentness, relevant code, and unknown impact; compare against the same source tools without Atlas. |
+| 3 | V3 | ready | Connect one task's baseline, actual code change, proposed meaning, and verification scope so a person can catch an incorrect interpretation or defer it; existing write review is the starting point, not a claim of complete Meaning Diff. |
+| 4 | V4 | ready | A fresh agent in a later related task uses the previous accepted meaning without the prior conversation; measure boundary fidelity, owner re-explanation, false warnings, and review/maintenance burden. |
+
+V1 and the reuse value in V2/V4 are separate risks: a manually reviewed starting
+vault can test reuse, but its creation method and cost must remain visible and
+cannot count as autonomous construction. Backend transaction/policy workflows
+are a useful first trial target; language and external-system coverage must be
+declared. A correctly exposed unknown may improve judgment even if confidence
+falls. Do not reward forced MCP calls, faster approvals, or daily app opens as
+retention proof. Meaning acceptance, code correctness, merge, and deployment
+remain distinct.
+
+These priorities supersede conflicting older forward-looking order in this
+track, without reopening completed items automatically or creating a second
+status ledger. Implement one bounded slice and its negative cases at a time.
+The current positioning/PO-specialization update changes guidance and copy;
+none of V1–V4 is marked complete by that update.
+
 This track is created by contrasting the `gpt-5.6-sol` MCP/ontology audit results from the isolated
 2026-08-09 installed app Codex Computer Use audit against the current HEAD.
 **Only this section manages state.** Do not duplicate the same checklist in `docs/plans/`.
