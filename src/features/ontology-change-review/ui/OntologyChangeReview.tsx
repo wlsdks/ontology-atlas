@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -51,7 +51,7 @@ function isLongValue(text: string): boolean {
  * reach. Shared by a field value and by one sentence of a sentence map, so a long reason folds the
  * same way a long body does rather than growing the card until the buttons leave the frame.
  */
-function FoldedText({ id, text, tone }: { id: string; text: string; tone: 'value' | 'sentence' }) {
+function FoldedText({ id, text, tone, onExpandedChange }: { id: string; text: string; tone: 'value' | 'sentence'; onExpandedChange?: (expanded: boolean) => void }) {
   const t = useTranslations('ontologyChangeReview');
   const [open, setOpen] = useState(false);
   const long = isLongValue(text);
@@ -83,7 +83,11 @@ function FoldedText({ id, text, tone }: { id: string; text: string; tone: 'value
           aria-expanded={open}
           aria-controls={id}
           data-testid="ontology-change-review-field-toggle"
-          onClick={() => setOpen((value) => !value)}
+          onClick={() => setOpen((value) => {
+            const next = !value;
+            onExpandedChange?.(next);
+            return next;
+          })}
           className={controlClass({
             shape: 'card',
             size: 'sm',
@@ -142,9 +146,11 @@ function FieldName({ fieldKey, testId }: { fieldKey: string; testId: string }) {
 function SentenceRow({
   id,
   entry,
+  onExpandedChange,
 }: {
   id: string;
   entry: { target: string; text: string; before?: string };
+  onExpandedChange?: (expanded: boolean) => void;
 }) {
   const t = useTranslations('ontologyChangeReview');
   return (
@@ -162,7 +168,7 @@ function SentenceRow({
         </p>
       )}
       <div className="min-w-0">
-        <FoldedText id={id} text={entry.text} tone="sentence" />
+        <FoldedText id={id} text={entry.text} tone="sentence" onExpandedChange={onExpandedChange} />
       </div>
     </li>
   );
@@ -171,13 +177,42 @@ function SentenceRow({
 function ChangeDetails({
   item,
   operation,
+  onFullScopeAvailableChange,
+  valueBasis,
 }: {
   item: OntologyChangeItem;
   operation: OntologyChangeSet['operation'];
+  onFullScopeAvailableChange?: (available: boolean) => void;
+  valueBasis: 'after-only' | 'request-raw';
 }) {
   const t = useTranslations('ontologyChangeReview');
-  const visibleFields = item.fields.slice(0, 8);
+  const [showAllFields, setShowAllFields] = useState(false);
+  const [expandedLongValues, setExpandedLongValues] = useState<Set<string>>(() => new Set());
+  const fieldListId = `ontology-change-fields-${item.key.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  const visibleFields = showAllFields ? item.fields : item.fields.slice(0, 8);
   const hiddenCount = Math.max(0, item.fields.length - visibleFields.length);
+  const hasFieldOverflow = item.fields.length > 8;
+  const longValueIds = item.fields.flatMap((field) => {
+    const sentences = sentenceMapChange(field.after, field.before);
+    if (sentences) return sentences.flatMap((entry) => {
+      const id = `ontology-change-review-sentence-${item.key}-${field.key}-${entry.target}`;
+      return isLongValue(entry.text) ? [id] : [];
+    });
+    const id = `ontology-change-review-value-${item.key}-${field.key}`;
+    return isLongValue(formatValue(field.after)) ? [id] : [];
+  });
+  const fullScopeAvailable = (!hasFieldOverflow || showAllFields)
+    && longValueIds.every((id) => expandedLongValues.has(id));
+  useEffect(() => {
+    onFullScopeAvailableChange?.(fullScopeAvailable);
+  }, [fullScopeAvailable, onFullScopeAvailableChange]);
+  const trackExpanded = (id: string, expanded: boolean) => {
+    setExpandedLongValues((current) => {
+      const next = new Set(current);
+      if (expanded) next.add(id); else next.delete(id);
+      return next;
+    });
+  };
   /*
    * ⚠️ **Never draw a before-value the request did not carry.** `OntologyChangeField.before` is
    * populated only by an editor that already holds the document on disk; an ACP request carries the
@@ -228,7 +263,7 @@ function ChangeDetails({
       ) : null}
 
       {visibleFields.length > 0 ? (
-        <dl className="grid gap-2 text-label">
+        <dl id={fieldListId} className="grid gap-2 text-label">
           {visibleFields.map((field) => {
             const sentences = sentenceMapChange(field.after, field.before);
             if (sentences) {
@@ -247,6 +282,7 @@ function ChangeDetails({
                           key={entry.target}
                           id={`ontology-change-review-sentence-${item.key}-${field.key}-${entry.target}`}
                           entry={entry}
+                          onExpandedChange={(expanded) => trackExpanded(`ontology-change-review-sentence-${item.key}-${field.key}-${entry.target}`, expanded)}
                         />
                       ))}
                     </ul>
@@ -290,17 +326,47 @@ function ChangeDetails({
                     id={`ontology-change-review-value-${item.key}-${field.key}`}
                     text={afterText}
                     tone="value"
+                    onExpandedChange={(expanded) => trackExpanded(`ontology-change-review-value-${item.key}-${field.key}`, expanded)}
                   />
                 </dd>
               </div>
             );
           })}
-          {hiddenCount > 0 ? (
-            <div className="text-caption text-[color:var(--color-text-quaternary)]">
-              {t('moreFields', { count: hiddenCount })}
-            </div>
-          ) : null}
         </dl>
+      ) : null}
+
+      {hasFieldOverflow ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--color-divider)] pt-2">
+          <p
+            data-testid="ontology-change-review-field-coverage"
+            data-visible={visibleFields.length}
+            data-total={item.fields.length}
+            data-hidden={hiddenCount}
+            className="text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+          >
+            {t('fieldCoverage', {
+              visible: visibleFields.length,
+              total: item.fields.length,
+              hidden: hiddenCount,
+            })}
+          </p>
+          <button
+            type="button"
+            aria-expanded={showAllFields}
+            aria-controls={fieldListId}
+            data-testid="ontology-change-review-fields-toggle"
+            onClick={() => setShowAllFields((value) => !value)}
+            className={controlClass({
+              shape: 'card',
+              size: 'sm',
+              tone: 'muted',
+              hoverBorder: 'strong',
+              hoverInk: 'secondary',
+            })}
+          >
+            {t(showAllFields ? 'showFewerFields' : 'showAllFields', { count: item.fields.length })}
+          </button>
+        </div>
       ) : null}
 
       {visibleFields.length > 0 && !carriesBefore ? (
@@ -309,7 +375,7 @@ function ChangeDetails({
           data-note={operation === 'create' ? 'new' : 'after-only'}
           className="break-keep text-caption leading-caption text-[color:var(--color-text-quaternary)]"
         >
-          {t(operation === 'create' ? 'allValuesNew' : 'afterValuesOnly')}
+          {t(operation === 'create' ? 'allValuesNew' : valueBasis === 'request-raw' ? 'requestValuesRaw' : 'afterValuesOnly')}
         </p>
       ) : null}
     </>
@@ -322,12 +388,14 @@ function ChangeItemRow({
   active,
   operation,
   onSelect,
+  valueBasis,
 }: {
   item: OntologyChangeItem;
   index: number;
   active: boolean;
   operation: OntologyChangeSet['operation'];
   onSelect: () => void;
+  valueBasis: 'after-only' | 'request-raw';
 }) {
   const t = useTranslations('ontologyChangeReview');
   const bodyId = `ontology-change-item-${index}`;
@@ -381,7 +449,7 @@ function ChangeItemRow({
             */
             className="ai-row-disclosure-body grid gap-2 pb-2.5 pl-7 pr-1 pt-1.5"
           >
-            <ChangeDetails item={item} operation={operation} />
+            <ChangeDetails key={item.key} item={item} operation={operation} valueBasis={valueBasis} />
           </div>
         ) : null}
       </div>
@@ -394,11 +462,15 @@ export function OntologyChangeReview({
   activeItemIndex,
   onActiveItemChange,
   testId = 'acp-ontology-change-review',
+  onFullScopeAvailableChange,
+  valueBasis = 'after-only',
 }: {
   changeSet: OntologyChangeSet;
   activeItemIndex?: number;
   onActiveItemChange?: (index: number) => void;
   testId?: string;
+  onFullScopeAvailableChange?: (available: boolean) => void;
+  valueBasis?: 'after-only' | 'request-raw';
 }) {
   const t = useTranslations('ontologyChangeReview');
   const [localActiveIndex, setLocalActiveIndex] = useState(0);
@@ -472,6 +544,7 @@ export function OntologyChangeReview({
                 active={index === activeIndex}
                 operation={changeSet.operation}
                 onSelect={() => choose(index)}
+                valueBasis={valueBasis}
               />
             ))}
           </ol>
@@ -484,7 +557,7 @@ export function OntologyChangeReview({
               'border-t border-[color:var(--color-divider)] pt-2',
           )}
         >
-          <ChangeDetails item={activeItem} operation={changeSet.operation} />
+          <ChangeDetails key={activeItem.key} item={activeItem} operation={changeSet.operation} onFullScopeAvailableChange={onFullScopeAvailableChange} valueBasis={valueBasis} />
         </div>
       ) : null}
     </div>

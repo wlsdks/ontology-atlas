@@ -291,6 +291,12 @@ Codex ACP, and compare before saving a new revision. Earlier answers remain
 available. Local Compile has its own read and approval path. See
 [retained answers](docs/RETAINED-ANSWERS.md).
 
+The source workbench also offers task-bound ontology review: summary, comparison
+and full request details, with separate meaning acceptance and write permission.
+You can request a correction without losing a draft or defer a live request and
+resume it. Missing or changed comparison evidence stays explicit.
+[Supported scope and limits](docs/TASK-MEANING-REVIEW.md).
+
 ### 5. Plan against reviewed architecture
 
 ![The current Architecture screen in the installed macOS app, comparing the seven reviewed roles of this repository, numbered from Routes down to Shared foundation with what each role is in two lines, against the imports observed in code beside each one, a check in the Delta column where they agree, every stroke stating its rule as a sentence and the measured crossing with its import count, and the reviewed structure and inspection receipt named above with Re-inspect source and Roles and rules](docs/assets/readme/architecture-flow.png)

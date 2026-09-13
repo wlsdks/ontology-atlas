@@ -96,6 +96,7 @@ const VaultAgentPanel = dynamic(
 );
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useRetainedDatasheetModel } from "../model/use-retained-datasheet-model";
+import { useTaskReviewBaseline } from "../model/use-task-review-baseline";
 import { useIndexSelectionOverride } from "../model/use-index-selection-override";
 import {
   buildSpotlightFitSignature,
@@ -4349,6 +4350,13 @@ function HomePageImpl() {
       sourceFingerprint: null, profileHash: null, parentRunId: analysisParentRunId, parentRequestText: analysisParentRequestText,
     };
   }, [ontologyInsight, vault.handle, vault.manifest, vault.status, vault.fileHandles, analysisParentRunId, analysisParentRequestText]);
+  const captureTaskBaseline = useTaskReviewBaseline({
+    handle: vault.handle,
+    vaultRoot: gitVaultPath,
+    fileHandles: vault.fileHandles,
+    nodes: ontologyInsight?.nodes ?? [],
+    projectSlug: meaningAnalysisContext.scope.projectSlug,
+  });
   const analysisCapture = useAnalysisCapture(meaningAnalysisContext);
   const meaningRelations = useMemo(() => {
     if (!ontologyInsight || (!meaningWorkbenchOpen && !acpDockFrameOpen)) return [];
@@ -6816,6 +6824,7 @@ function HomePageImpl() {
             onMapIntent={handleAcpMapIntent}
             onOntologyRelationPreviewChange={setAcpRelationPreview}
             onWorkReceipt={handleAcpWorkReceipt}
+            captureTaskBaseline={captureTaskBaseline}
             /*
              * ⚠️ **One close, and it belongs to the workbench** (2026-09-06). The panel drew its
              * own X beside the workbench's, so the dock had two identical buttons a few pixels

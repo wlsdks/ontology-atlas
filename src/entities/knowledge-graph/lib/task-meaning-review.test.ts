@@ -123,7 +123,7 @@ describe('task meaning review model', () => {
   });
 
   it('binds full raw guards and originating task identity', async () => {
-    const rawInput = { slug: 'capabilities/refund', frontmatter: { title: 'Refund' }, confirm: true, expected_mtime: 100 };
+    const rawInput = { slug: 'capabilities/refund', newSlug: 'capabilities/refund-policy', confirm: true, expected_mtime: 100 };
     const basis = { sourceRevision: 'source:a', meaningRevision: 'meaning:a', contentDigest };
     const base = await buildProposalBinding({ identity, request, ...basis, rawInput });
     const guardChanged = await buildProposalBinding({ identity, request, ...basis, rawInput: { ...rawInput, confirm: false } });

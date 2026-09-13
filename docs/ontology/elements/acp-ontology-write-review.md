@@ -30,3 +30,22 @@ The ACP permission boundary that lets Atlas read tools continue automatically bu
 - Rendering the review card body itself (elements/ontology-change-review formats the typed diff shown on the card).
 - Writing the approved change to vault frontmatter (the MCP write tools and CLI own the actual mutation).
 - Deciding which relation types or values are valid (mcp/src/schema.mjs owns that).
+
+## Task meaning review
+
+- The originating user task remains visible across Summary, Compare and full Details. Every requested field and batch item can be inspected; selected-item coverage never certifies the batch. Complete recorded conditions, exceptions, unknowns and relation rationales remain in the review.
+- A bounded two-pass pre-prompt capture supplies fresh ontology bytes and a connected source observation. The single-patch controller requires complete matching vault/scope/target evidence and a same-turn MCP connection result. Missing bases, source rebinding, or changed source without an attributed task-owned diff cannot produce trusted meaning acceptance.
+- Explicit meaning acceptance rechecks the exact request and basis and never resolves the execution permission. Code verification, merge and deployment remain separately unknown without their own evidence. Known wrong-vault execution is blocked even when comparison evidence is absent.
+- Request correction rejects the old request and prepares editable task context while preserving an existing draft; it never automatically sends. Deferral keeps a live request unresolved with a resume action. Cancelling refuses the pending write. These actions do not roll back code.
+
+### Implementation evidence
+
+- Capture: `src/features/acp-session/model/task-baseline.ts` and `src/views/home/model/use-task-review-baseline.ts`.
+- Comparison and acceptance: `src/widgets/acp-chat-panel/model/use-task-meaning-review.ts`.
+- Interaction: `src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx` and `src/widgets/acp-chat-panel/ui/AcpPermissionCard.tsx`.
+- Regression proof: the corresponding capture, controller and ChatPanel tests, including provider replacement, contradictory connection evidence, correction and defer/cancel.
+
+### Uncertainty
+
+- Two bounded reads are not an atomic filesystem snapshot. Native integer millisecond times are only coarsely compatible with a fractional MCP write guard.
+- The current controller does not establish exact task-owned code diffs, trusted batch semantic acceptance, durable decisions, human decision-quality improvement or repeated-use benefit.

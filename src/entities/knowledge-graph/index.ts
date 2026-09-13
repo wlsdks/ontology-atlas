@@ -44,8 +44,10 @@ export {
   type OntologyChangeSet,
 } from "./lib/ontology-change-set";
 export {
+  buildMeaningDiff,
   buildProposalBinding,
   type ComparisonBasis,
+  type MeaningDiffItem,
   type TaskReviewIdentity,
   type TaskReviewRequest,
   type TrustedBeforeSnapshot,

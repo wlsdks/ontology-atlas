@@ -427,6 +427,15 @@ had become false).
   with `?`; no report or review automatically edits meaning. Architecture and
   Analysis use the same archive and keep their ACP conversation mounted across
   context sections. [Record contract and limits](ANALYSIS-RECORDS.md).
+- **Task meaning review in the source workbench** — Summary, comparison and full
+  details retain the originating task, complete qualifiers and visible omitted
+  coverage. Every requested field and batch item can be inspected. Trusted
+  semantic acceptance currently supports one unchanged-source `patch_concept`
+  with fresh complete bases and a matching MCP vault; it remains separate from
+  write permission, code checks, merge and deployment. Correction refuses the
+  old request and preserves the composer's draft; live deferral can be resumed
+  without answering the permission. Human decision-quality and repeat-use
+  benefits remain unmeasured. [Contract and limits](TASK-MEANING-REVIEW.md).
 - **Guarded ACP runtime eligibility** — The app offers Claude Agent and Codex for in-app ACP chat only behind an app-owned gate. Codex runs through the newest upstream `@agentclientprotocol/codex-acp` adapter (1.10.0 as of 2026-09-07) with an isolated `on-request` approval policy and a forced `read-only` mode; since 1.8.0 that mode is a workspace-write sandbox, so a direct write inside the vault may land without a card and the vault's Git history is the undo (owner direction, 2026-09-07), while every injected or self-registered Atlas MCP write pauses at the server-owned typed review card for `reject_once` or `allow_once`. One-time approval never carries into the next write. Queued requests preserve their original task, session, vault, arguments and one-time options; requests with missing or mismatched ontology-write origins are refused. This remains execution permission, not a semantic acceptance or code-verification receipt.
 - Clicking the **「Agent」** button in the top toolbar opens a tall vertical panel on the right side of the map. When the panel opens, the map and node info areas shift together to adjust their width. This feature is exclusive to the desktop app — browsers lack a secure place to store API keys and a valid path for requests, so the button is not rendered at all if it would do nothing.
 - The outer dock continues to yield space to the map width, but the actual conversation surface stands as a panel with 12px spacing on the top, bottom, and right sides. Its borders, radius, and shadows share existing panel tokens used by INDEX and node details, with ACP and API-key conversations sharing the same form. The top and vertical map controls on the left side of the panel are attached 12px from each side of the seam, totaling a 24px gap, moving in sync with the dock's timing and curvature.

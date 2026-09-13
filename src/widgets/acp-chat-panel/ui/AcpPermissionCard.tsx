@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Eye, GitCompareArrows, ShieldAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -15,10 +15,71 @@ import {
   type OntologyChangeSet,
 } from '@/entities/knowledge-graph';
 
-import { Button } from '@/shared/ui';
+import { Button, Checkbox } from '@/shared/ui';
+import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { PendingPermission } from '@/features/acp-session';
+import type { TaskMeaningReviewController } from '../model/use-task-meaning-review';
+
+function formatReviewValue(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value === undefined) return '';
+  try { return JSON.stringify(value); } catch { return String(value); }
+}
+
+const MEANING_SECTIONS = new Set(['Definition', 'Includes', 'Excludes', 'Uncertainty']);
+const MEANING_SUMMARY_LIMIT = 5;
+
+function proposedMeaningUnits(item: OntologyChangeSet['items'][number] | null) {
+  if (!item) return [];
+  const relationUnits = item.relation ? [{
+    id: `relation:${item.relation.from}:${item.relation.type}:${item.relation.to}`,
+    label: `${item.relation.from} → ${item.relation.type} → ${item.relation.to}`,
+    text: item.relation.why ?? '',
+    displayText: item.relation.why ?? '',
+  }].filter((unit) => unit.text.length > 0) : [];
+  const bodyUnits = item.fields.flatMap((field) => {
+    if (field.key === 'body' && typeof field.after === 'string') {
+      const lines = field.after.split('\n');
+      const units: Array<{ id: string; label: string; text: string; displayText: string }> = [];
+      let open: { heading: string; start: number } | null = null;
+      let fence: '`' | '~' | null = null;
+      const close = (end: number) => {
+        if (!open || !MEANING_SECTIONS.has(open.heading)) return;
+        const text = lines.slice(open.start, end).join('\n').trim();
+        const displayText = lines.slice(open.start + 1, end).join('\n').trim();
+        if (text && displayText) units.push({ id: `body:${open.heading}`, label: open.heading, text, displayText });
+      };
+      for (let index = 0; index < lines.length; index += 1) {
+        const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(lines[index]);
+        if (fenceMatch) {
+          const marker = fenceMatch[1][0] as '`' | '~';
+          if (fence === null) fence = marker;
+          else if (fence === marker) fence = null;
+          continue;
+        }
+        if (fence !== null) continue;
+        const heading = /^##\s+(.+?)\s*$/.exec(lines[index]);
+        if (!heading) continue;
+        close(index);
+        open = { heading: heading[1], start: index };
+      }
+      close(lines.length);
+      return units;
+    }
+    return [];
+  });
+  const relationNoteUnits = item.fields.flatMap((field) => {
+    if (field.key === 'relation_notes' && field.after && typeof field.after === 'object' && !Array.isArray(field.after)) {
+      return Object.entries(field.after as Record<string, unknown>).flatMap(([target, value]) => (
+        typeof value === 'string' ? [{ id: `relation_notes:${target}`, label: `relation_notes · ${target}`, text: value, displayText: value }] : []
+      ));
+    }
+    return [];
+  });
+  return [...relationUnits, ...bodyUnits, ...relationNoteUnits];
+}
 
 /**
  * The 「May I do this?」 card — it appears whenever policy requires an explicit
@@ -50,6 +111,9 @@ export function AcpPermissionCard({
   onActiveItemChange,
   vaultPath,
   writeVerdict = null,
+  taskReview,
+  onRequestCorrection,
+  onDefer,
 }: {
   pending: PendingPermission;
   /**
@@ -58,6 +122,9 @@ export function AcpPermissionCard({
    * wiki page or its text cannot be known; then nothing is drawn, rather than a guess.
    */
   writeVerdict?: { ok: boolean; problems: ReadonlyArray<{ code: string; message: string; line?: number }> } | null;
+  taskReview?: TaskMeaningReviewController;
+  onRequestCorrection?: () => void;
+  onDefer?: () => void;
   /** The open vault, so the card can tell the person's own project from somewhere else entirely. */
   vaultPath?: string | null;
   /** The computed value comes along so the panel and the map read the same typed change. */
@@ -68,6 +135,28 @@ export function AcpPermissionCard({
   const t = useTranslations('acpChat.permission');
   const tChange = useTranslations('ontologyChangeReview');
   const { request, resolve } = pending;
+  const reviewStateKey = `${typeof request.requestId}:${String(request.requestId)}:${request.toolCallId ?? ''}`;
+  const [reviewState, setReviewState] = useState<{
+    key: string;
+    depth: 'summary' | 'compare' | 'details';
+    acknowledgeFullScope: boolean;
+  }>({ key: reviewStateKey, depth: 'summary', acknowledgeFullScope: false });
+  const reviewDepth = reviewState.key === reviewStateKey ? reviewState.depth : 'summary';
+  const acknowledgeFullScope = reviewState.key === reviewStateKey
+    ? reviewState.acknowledgeFullScope
+    : false;
+  const setReviewDepth = (depth: 'summary' | 'compare' | 'details') => {
+    setReviewState({ key: reviewStateKey, depth, acknowledgeFullScope: false });
+  };
+  const [acceptingMeaning, setAcceptingMeaning] = useState(false);
+  const [detailsAvailability, setDetailsAvailability] = useState({ key: reviewStateKey, available: false });
+  const fullDetailsAvailable = detailsAvailability.key === reviewStateKey && detailsAvailability.available;
+  const handleFullScopeAvailable = useCallback((available: boolean) => {
+    setDetailsAvailability({ key: reviewStateKey, available });
+  }, [reviewStateKey]);
+  const taskOrigin = pending.origin?.turn && pending.origin.task
+    ? { ...pending.origin.turn, ...pending.origin.task, sessionGeneration: pending.origin.sessionGeneration }
+    : null;
   const ontologyWrite = request.reviewKind === 'ontology-write' && Boolean(request.toolName);
   const changeSet = providedChangeSet === undefined
     ? ontologyWrite
@@ -134,6 +223,16 @@ export function AcpPermissionCard({
   const allowOnce = request.options.find((o) => o.kind === 'allow_once');
   const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
   const allowAlways = request.options.find((o) => o.kind === 'allow_always');
+  const activeReviewItem = changeSet?.items[activeItemIndex ?? 0] ?? changeSet?.items[0] ?? null;
+  const meaningUnits = proposedMeaningUnits(activeReviewItem);
+  const visibleMeaningUnits = meaningUnits.slice(0, MEANING_SUMMARY_LIMIT);
+  const omittedMeaningUnits = Math.max(0, meaningUnits.length - visibleMeaningUnits.length);
+  const proposalGuards = ['confirm', 'expected_mtime', 'expected_into_mtime']
+    .filter((key) => request.rawInput[key] !== undefined)
+    .map((key) => ({ key, value: request.rawInput[key] }));
+  const meaningAuthority = taskReview?.status === 'ready'
+    ? taskReview.meaningStatus === 'accepted' ? 'accepted' : 'pending'
+    : 'unknown';
 
   /**
    * **Bring focus here** (caught in the 2026-08-16 review).
@@ -258,7 +357,7 @@ export function AcpPermissionCard({
           >
             {t(
               ontologyWrite
-                ? 'ontologyWriteBody'
+                ? taskReview?.executionBlocked ? 'taskReview.rootMismatchBody' : 'ontologyWriteBody'
                 : serverConsent
                   ? 'consentBody'
                   : locality === 'inside-folder'
@@ -280,12 +379,187 @@ export function AcpPermissionCard({
 
         When it is unknown, it says so. Guessing 「read」 errs on the most dangerous side.
       */}
-      {changeSet ? (
-        <OntologyChangeReview
-          changeSet={changeSet}
-          activeItemIndex={activeItemIndex}
-          onActiveItemChange={onActiveItemChange}
-        />
+      {changeSet && taskOrigin ? (
+        <section data-testid="task-review" className="grid gap-3">
+          <div className="grid gap-1.5 border-t border-[color:var(--color-divider)] pt-3">
+            <p className="text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-quaternary)]">
+              {t('taskReview.eyebrow')}
+            </p>
+            <p data-testid="task-review-outcome" className="break-words text-body leading-prose text-[color:var(--color-text-primary)]">
+              {taskOrigin.outcome}
+            </p>
+            <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+              {t('taskReview.nonGoalsUnstructured')}
+            </p>
+          </div>
+
+          <SegmentedControl
+            ariaLabel={t('taskReview.depthLabel')}
+            value={reviewDepth}
+            onChange={setReviewDepth}
+            fill
+            size="md"
+            testId="task-review-depth"
+            options={([
+              ['summary', 'taskReview.summary'],
+              ['compare', 'taskReview.compare'],
+              ['details', 'taskReview.details'],
+            ] as const).map(([value, key]) => ({ value, label: t(key), testId: `task-review-depth-${value}` }))}
+          />
+
+          {reviewDepth === 'summary' ? (
+          <div data-testid="task-review-summary" className="grid gap-2">
+              <p className="text-label leading-label text-[color:var(--color-text-secondary)]">
+                {activeReviewItem?.relation
+                  ? t('taskReview.relationScope', {
+                      from: activeReviewItem.relation.from,
+                      type: activeReviewItem.relation.type,
+                      to: activeReviewItem.relation.to,
+                      selected: (activeItemIndex ?? 0) + 1,
+                      items: changeSet.itemCount,
+                    })
+                  : t('taskReview.scope', {
+                      operation: tChange(`operation.${changeSet.operation}`),
+                      target: activeReviewItem?.target ?? t('unknownTarget'),
+                      selected: (activeItemIndex ?? 0) + 1,
+                      items: changeSet.itemCount,
+                      fields: activeReviewItem?.fields.length ?? 0,
+                    })}
+              </p>
+              {changeSet.itemCount > 1 ? (
+                <p data-testid="task-review-batch-remaining" className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                  {t('taskReview.batchRemaining', { count: changeSet.itemCount - 1 })}
+                </p>
+              ) : null}
+              {visibleMeaningUnits.length > 0 ? (
+                <div className="grid gap-1.5">
+                  {visibleMeaningUnits.map((unit) => (
+                    <div key={unit.id} className="grid gap-0.5">
+                      <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">{unit.label}</span>
+                      <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
+                        {unit.displayText}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              <p data-testid="task-review-coverage" className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                {t('taskReview.incomplete', { inspected: visibleMeaningUnits.length, total: meaningUnits.length, omitted: omittedMeaningUnits })}
+              </p>
+            </div>
+          ) : reviewDepth === 'compare' && taskReview?.status === 'ready' ? (
+            <div data-testid="task-review-compare" className="grid gap-2">
+              <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                {t('taskReview.comparisonCoverage', {
+                  inspected: taskReview.coverage.inspected,
+                  total: taskReview.coverage.total,
+                  omitted: taskReview.coverage.omitted,
+                })}
+              </p>
+              {taskReview.items.map((item) => (
+                <div key={item.id} className="grid gap-1 border-t border-[color:var(--color-divider)] pt-2 first:border-t-0 first:pt-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">{item.field}</span>
+                    <span className="text-caption text-[color:var(--color-text-quaternary)]">{t(`taskReview.delta.${item.kind}`)}</span>
+                  </div>
+                  <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-secondary)]">
+                    <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.before')}</span>
+                    {item.before.present ? formatReviewValue(item.before.value) : t('taskReview.absent')}
+                  </p>
+                  <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
+                    <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.after')}</span>
+                    {item.after.present ? formatReviewValue(item.after.value) : t('taskReview.absent')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : reviewDepth === 'compare' ? (
+            <div data-testid="task-review-compare" className="grid gap-2">
+              <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                {t('taskReview.beforeUnavailable')}
+              </p>
+              {taskReview?.status === 'unavailable' && taskReview.reasons.length > 0 ? (
+                <ul className="grid gap-1 text-caption leading-caption text-[color:var(--color-text-tertiary)]">
+                  {taskReview.reasons.map((reason) => <li key={reason}>{t(`taskReview.reason.${reason}`)}</li>)}
+                </ul>
+              ) : null}
+              {visibleMeaningUnits.map((unit) => (
+                <div key={unit.id} className="grid gap-1 border-t border-[color:var(--color-divider)] pt-2 first:border-t-0 first:pt-0">
+                  <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">{unit.label}</span>
+                  <p className="text-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.beforeUnknown')}</p>
+                  <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
+                    <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.after')}</span>
+                    {unit.displayText}
+                  </p>
+                </div>
+              ))}
+              <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                {t('taskReview.incomplete', { inspected: visibleMeaningUnits.length, total: meaningUnits.length, omitted: omittedMeaningUnits })}
+              </p>
+            </div>
+          ) : (
+            <div data-testid="task-review-details" className="grid gap-3">
+              <OntologyChangeReview
+                changeSet={changeSet}
+                activeItemIndex={activeItemIndex}
+                onActiveItemChange={onActiveItemChange}
+                onFullScopeAvailableChange={handleFullScopeAvailable}
+                valueBasis={taskReview?.status === 'ready' ? 'request-raw' : 'after-only'}
+              />
+              {taskReview?.status === 'ready' ? (
+                <div className="grid gap-2 border-t border-[color:var(--color-divider)] pt-2">
+                  <Checkbox
+                    label={t('taskReview.acknowledgeFullScope', { count: changeSet.itemCount })}
+                    checked={acknowledgeFullScope}
+                    disabled={!taskReview.coverage.complete || !fullDetailsAvailable || taskReview.executionBlocked}
+                    onChange={(event) => setReviewState({
+                      key: reviewStateKey,
+                      depth: 'details',
+                      acknowledgeFullScope: event.target.checked,
+                    })}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    data-testid="task-review-accept-meaning"
+                    disabled={!acknowledgeFullScope || !fullDetailsAvailable || acceptingMeaning || taskReview.meaningStatus === 'accepted' || taskReview.executionBlocked}
+                    onClick={async () => {
+                      setAcceptingMeaning(true);
+                      try { await taskReview.markMeaningAccepted({ acknowledgeFullScope: true }); }
+                      finally { setAcceptingMeaning(false); }
+                    }}
+                  >
+                    {t(taskReview.meaningStatus === 'accepted' ? 'taskReview.meaningAccepted' : acceptingMeaning ? 'taskReview.checkingBasis' : 'taskReview.acceptMeaning')}
+                  </Button>
+                </div>
+              ) : null}
+              <details className="border-t border-[color:var(--color-divider)] pt-2 text-caption text-[color:var(--color-text-quaternary)]">
+                <summary>{t('taskReview.provenance')}</summary>
+                <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-1 font-mono">
+                  <dt>{t('taskReview.requestId')}</dt><dd data-request-id-type={typeof request.requestId}>{String(request.requestId ?? t('taskReview.unknown'))}</dd>
+                  <dt>{t('taskReview.userEvent')}</dt><dd>{taskOrigin.userEventId}</dd>
+                  <dt>{t('taskReview.toolCall')}</dt><dd>{request.toolCallId ?? t('taskReview.unknown')}</dd>
+                  <dt>{t('taskReview.generation')}</dt><dd>{taskOrigin.sessionGeneration}</dd>
+                  {taskReview ? <><dt>{t('taskReview.guardStatus')}</dt><dd>{t(`taskReview.guard.${taskReview.guardStatus}`)}</dd></> : null}
+                  {proposalGuards.map((guard) => (
+                    <Fragment key={guard.key}><dt>{guard.key}</dt><dd>{formatReviewValue(guard.value)}</dd></Fragment>
+                  ))}
+                </dl>
+              </details>
+            </div>
+          )}
+
+          {taskReview?.executionBlocked ? (
+            <p data-testid="task-review-root-mismatch" className="break-words rounded-chip border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2.5 py-2 text-label leading-prose text-[color:var(--color-danger-text)]">
+              {t('taskReview.rootMismatch', {
+                actual: taskReview.actualReportedRoot ?? t('taskReview.unknown'),
+                expected: vaultPath ?? t('taskReview.unknown'),
+              })}
+            </p>
+          ) : null}
+        </section>
+      ) : changeSet ? (
+        <OntologyChangeReview changeSet={changeSet} activeItemIndex={activeItemIndex} onActiveItemChange={onActiveItemChange} />
       ) : askedSentence ? (
         /*
          * ⚠️ **Never say "unknown" twice** (owner's screen, 2026-08-24). The card used to print
@@ -374,6 +648,40 @@ export function AcpPermissionCard({
       ) : null}
       </div>
 
+      {changeSet && taskOrigin ? (
+        <div data-testid="task-review-authority" className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-1 border-t border-[color:var(--color-divider)] pt-2">
+            {(['meaning', 'code', 'merge', 'deployment'] as const).map((authority) => (
+            <div key={authority} data-testid={`task-review-authority-${authority}`} className="flex items-center justify-between gap-2 text-caption">
+              <span className="text-[color:var(--color-text-tertiary)]">{t(`taskReview.authority.${authority}`)}</span>
+              <span className="text-[color:var(--color-text-quaternary)]">
+                {t(`taskReview.authority.${authority === 'meaning' ? meaningAuthority : 'unknown'}`)}
+              </span>
+            </div>
+          ))}
+          <p className="col-span-2 text-caption leading-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.permissionSeparate')}</p>
+        </div>
+      ) : null}
+
+      {changeSet && taskOrigin && (onRequestCorrection || onDefer) ? (
+        <div className="grid shrink-0 gap-1.5 border-t border-[color:var(--color-divider)] pt-2">
+          <div className="flex flex-wrap gap-2">
+            {onRequestCorrection ? (
+              <Button variant="outline" size="sm" data-testid="task-review-correct" onClick={onRequestCorrection}>
+                {t('taskReview.correct')}
+              </Button>
+            ) : null}
+            {onDefer ? (
+              <Button variant="ghost" size="sm" data-testid="task-review-defer" onClick={onDefer}>
+                {t('taskReview.defer')}
+              </Button>
+            ) : null}
+          </div>
+          <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+            {t('taskReview.interventionHint')}
+          </p>
+        </div>
+      ) : null}
+
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
         <Button
           ref={rejectRef}
@@ -386,7 +694,7 @@ export function AcpPermissionCard({
         <Button
           variant="primary"
           data-testid="acp-permission-allow"
-          disabled={!allowOnce}
+          disabled={!allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked}
           onClick={() => resolve(allowOnce?.optionId ?? null)}
         >
           {t('allowOnce')}

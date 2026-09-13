@@ -109,6 +109,7 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
 }));
 
 import { snapshotPermissionRequest, useAcpSession } from './use-acp-session';
+import { unavailableTaskBaseline } from './task-baseline';
 
 describe('queued permission identity', () => {
   it('snapshots and freezes each request raw guards and options independently', () => {
@@ -223,6 +224,114 @@ describe('analysis turn capture', () => {
     expect(done).toHaveBeenCalledTimes(1);
     expect(done.mock.calls[0][0]).toMatchObject({ outcome: 'cancelled', stopReason: 'session_closed' });
     expect(result.current.status).toBe('idle');
+  });
+});
+
+describe('pre-prompt task baseline', () => {
+  const baseline = () => unavailableTaskBaseline(
+    '2026-09-14T00:00:00.000Z', '/vault', ['capabilities/refund'], ['document_missing'],
+  );
+
+  it('establishes the turn and waits for typed capture before launching the prompt', async () => {
+    let release!: () => void;
+    const capture = vi.fn(() => new Promise<ReturnType<typeof baseline>>((resolve) => { release = () => resolve(baseline()); }));
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', captureTaskBaseline: capture }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.release).not.toBeNull());
+    await act(async () => { bridge.release?.(); await starting; });
+
+    let sent!: Promise<void>;
+    act(() => { sent = result.current.send('Review refund meaning.'); });
+    await waitFor(() => expect(capture).toHaveBeenCalledTimes(1));
+    expect(result.current.status).toBe('thinking');
+    expect(result.current.events).toEqual([expect.objectContaining({ kind: 'user', text: 'Review refund meaning.' })]);
+    expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(false);
+    await act(async () => { release(); await sent; });
+    expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(true);
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('finishes a cancellation during capture without launching a prompt', async () => {
+    let release!: () => void;
+    const capture = () => new Promise<ReturnType<typeof baseline>>((resolve) => { release = () => resolve(baseline()); });
+    const done = vi.fn();
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', captureTaskBaseline: capture, onTurnStarted: () => done }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.release).not.toBeNull());
+    await act(async () => { bridge.release?.(); await starting; });
+    let sent!: Promise<void>;
+    act(() => { sent = result.current.send('Do not prompt after cancel.'); });
+    await waitFor(() => expect(result.current.status).toBe('thinking'));
+    act(() => result.current.cancel());
+    await act(async () => { release(); await sent; });
+    expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(false);
+    expect(done).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'cancelled', stopReason: 'capture_cancelled' }));
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('discards capture completion after the session generation is stopped', async () => {
+    let release!: () => void;
+    const capture = () => new Promise<ReturnType<typeof baseline>>((resolve) => { release = () => resolve(baseline()); });
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', captureTaskBaseline: capture }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.release).not.toBeNull());
+    await act(async () => { bridge.release?.(); await starting; });
+    let sent!: Promise<void>;
+    act(() => { sent = result.current.send('Do not prompt after stop.'); });
+    await waitFor(() => expect(result.current.status).toBe('thinking'));
+    await act(async () => { await result.current.stop(); release(); await sent; });
+    expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(false);
+  });
+
+  it.each(['context_changed', 'membership_changed'] as const)(
+    'cancels a %s baseline instead of prompting, including same-path handle replacement',
+    async (reason) => {
+      const done = vi.fn();
+      const capture = async () => unavailableTaskBaseline(
+        '2026-09-14T00:00:00.000Z', '/vault', ['capabilities/refund'], [reason],
+      );
+      const { result } = renderHook(() => useAcpSession({
+        runtimeId: 'claude-acp', vaultRoot: '/vault', captureTaskBaseline: capture,
+        onTurnStarted: () => done,
+      }));
+      const starting = result.current.start();
+      await waitFor(() => expect(bridge.release).not.toBeNull());
+      await act(async () => { bridge.release?.(); await starting; await result.current.send('Unsafe stale scope.'); });
+      expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(false);
+      expect(done).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'cancelled', stopReason: 'capture_context_changed' }));
+      await act(async () => { await result.current.stop(); });
+    },
+  );
+
+  it('cancels when runtime or vault props change while capture is pending', async () => {
+    let release!: () => void;
+    const capture = () => new Promise<ReturnType<typeof baseline>>((resolve) => { release = () => resolve(baseline()); });
+    const done = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ runtimeId, vaultRoot }) => useAcpSession({ runtimeId, vaultRoot, captureTaskBaseline: capture, onTurnStarted: () => done }),
+      { initialProps: { runtimeId: 'claude-acp', vaultRoot: '/same-path' } },
+    );
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.release).not.toBeNull());
+    await act(async () => { bridge.release?.(); await starting; });
+    let sent!: Promise<void>;
+    act(() => { sent = result.current.send('Scope changes while capturing.'); });
+    await waitFor(() => expect(result.current.status).toBe('thinking'));
+    rerender({ runtimeId: 'codex-acp', vaultRoot: '/replacement-vault' });
+    await act(async () => { release(); await sent; });
+    expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(false);
+    expect(done).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'cancelled', stopReason: 'capture_context_changed' }));
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('continues with an explicit unavailable baseline when capture itself rejects', async () => {
+    const capture = async () => { throw new Error('read bridge failed'); };
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', captureTaskBaseline: capture }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.release).not.toBeNull());
+    await act(async () => { bridge.release?.(); await starting; await result.current.send('Continue with unknown basis.'); });
+    expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(true);
+    await act(async () => { await result.current.stop(); });
   });
 });
 
@@ -790,6 +899,7 @@ describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다
       sessionGeneration: 0,
       turn: { sessionId: 's-1', vaultRoot: '/vault', userEventId: user?.id, text: 'Change refund eligibility; keep capture unchanged.' },
       task: { outcome: 'Change refund eligibility; keep capture unchanged.', nonGoals: null, structure: 'unstructured' },
+      taskBaseline: null,
     });
     await act(async () => { result.current.pending?.resolve('reject'); await result.current.stop(); });
   });
@@ -842,7 +952,7 @@ describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다
     expect(result.current.pending?.request.filePath).toBe('/outside/a.md');
     expect(result.current.pending?.request.requestId).toBe(101);
     expect(result.current.pending?.request.sessionId).toBe('s-1');
-    expect(result.current.pending?.origin).toEqual({ sessionGeneration: 0, turn: null, task: null });
+    expect(result.current.pending?.origin).toEqual({ sessionGeneration: 0, turn: null, task: null, taskBaseline: null });
     await act(async () => {
       result.current.pending?.resolve('allow');
     });

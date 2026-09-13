@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { OntologyChangeItem, OntologyChangeSet } from '@/entities/knowledge-graph';
@@ -239,5 +239,92 @@ describe('before and after are drawn only from what the change set carries', () 
     expect(screen.getByTestId('ontology-change-review-field-value')).not.toHaveAttribute(
       'data-has-before',
     );
+  });
+});
+
+describe('complete selected-item field inspection', () => {
+  const fields = (prefix: string) => Array.from({ length: 10 }, (_, index) => ({
+    key: `${prefix}_field_${index + 1}`,
+    after: `${prefix} value ${index + 1}`,
+  }));
+
+  it('reveals every field through a labelled native button and reports honest coverage', () => {
+    renderReview({
+      key: 'patch_concept:0:capabilities/task-review',
+      target: 'capabilities/task-review',
+      exact: true,
+      relation: null,
+      fields: fields('first'),
+    });
+
+    expect(screen.getAllByTestId('ontology-change-review-field-row')).toHaveLength(8);
+    expect(screen.queryByText('first value 10')).not.toBeInTheDocument();
+    const coverage = screen.getByTestId('ontology-change-review-field-coverage');
+    expect(coverage).toHaveAttribute('data-visible', '8');
+    expect(coverage).toHaveAttribute('data-total', '10');
+    expect(coverage).toHaveAttribute('data-hidden', '2');
+    const toggle = screen.getByTestId('ontology-change-review-fields-toggle');
+    expect(toggle.tagName).toBe('BUTTON');
+    expect(toggle).toHaveAttribute('type', 'button');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveAttribute('aria-controls', expect.stringContaining('ontology-change-fields-'));
+
+    toggle.focus();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getAllByTestId('ontology-change-review-field-row')).toHaveLength(10);
+    expect(screen.getByText('first value 10')).toBeVisible();
+    expect(coverage).toHaveAttribute('data-visible', '10');
+    expect(coverage).toHaveAttribute('data-hidden', '0');
+  });
+
+  it('preserves controlled batch selection and resets disclosure for each selected item', async () => {
+    const items: OntologyChangeItem[] = ['first', 'second'].map((prefix, index) => ({
+      key: `patch_concept:${index}:capabilities/${prefix}`,
+      target: `capabilities/${prefix}`,
+      exact: true,
+      relation: null,
+      fields: fields(prefix),
+    }));
+    const changeSet: OntologyChangeSet = {
+      toolName: 'patch_concepts', operation: 'update', target: items[0].target,
+      exact: true, destructive: false, relation: null, fields: items[0].fields,
+      itemCount: items.length, items,
+    };
+    const onActiveItemChange = vi.fn();
+    const view = render(<OntologyChangeReview changeSet={changeSet} activeItemIndex={0} onActiveItemChange={onActiveItemChange} />);
+    fireEvent.click(screen.getByTestId('ontology-change-review-fields-toggle'));
+    expect(screen.getByText('first value 10')).toBeVisible();
+
+    fireEvent.click(screen.getByTestId('acp-ontology-change-item-1'));
+    expect(onActiveItemChange).toHaveBeenCalledWith(1);
+    view.rerender(<OntologyChangeReview changeSet={changeSet} activeItemIndex={1} onActiveItemChange={onActiveItemChange} />);
+    await waitFor(() => expect(screen.queryByText('first value 10')).not.toBeInTheDocument());
+    expect(screen.queryByText('second value 10')).not.toBeInTheDocument();
+    expect(screen.getByTestId('ontology-change-review-field-coverage')).toHaveAttribute('data-hidden', '2');
+
+    fireEvent.click(screen.getByTestId('acp-ontology-change-item-0'));
+    view.rerender(<OntologyChangeReview changeSet={changeSet} activeItemIndex={0} onActiveItemChange={onActiveItemChange} />);
+    await waitFor(() => expect(screen.queryByText('second value 10')).not.toBeInTheDocument());
+    expect(screen.queryByText('first value 10')).not.toBeInTheDocument();
+  });
+
+  it('reports full scope only after hidden fields and folded long values are available', async () => {
+    const onFullScopeAvailableChange = vi.fn();
+    const item: OntologyChangeItem = {
+      key: 'patch_concept:0:capabilities/full-scope', target: 'capabilities/full-scope',
+      exact: true, relation: null,
+      fields: [...fields('scope').slice(0, 9), { key: 'body', after: Array.from({ length: 12 }, (_, index) => `Complete rule ${index + 1}.`).join('\n') }],
+    };
+    const changeSet: OntologyChangeSet = {
+      toolName: 'patch_concept', operation: 'update', target: item.target, exact: true,
+      destructive: false, relation: null, fields: item.fields, itemCount: 1, items: [item],
+    };
+    render(<OntologyChangeReview changeSet={changeSet} onFullScopeAvailableChange={onFullScopeAvailableChange} />);
+    await waitFor(() => expect(onFullScopeAvailableChange).toHaveBeenLastCalledWith(false));
+    fireEvent.click(screen.getByTestId('ontology-change-review-fields-toggle'));
+    expect(onFullScopeAvailableChange).toHaveBeenLastCalledWith(false);
+    fireEvent.click(screen.getByTestId('ontology-change-review-field-toggle'));
+    await waitFor(() => expect(onFullScopeAvailableChange).toHaveBeenLastCalledWith(true));
   });
 });

@@ -12,13 +12,14 @@ const pending: PendingPermission = {
     requestId: 0, sessionId: 'session:1',
     title: 'patch_concept', toolCallId: 'tool:1', toolName: 'mcp__atlas__patch_concept',
     toolKind: 'other', filePath: null, reviewKind: 'ontology-write',
-    rawInput: { slug: 'capabilities/refund', expected_mtime: 100, confirm: true, frontmatter: { condition: 'Refund after capture.' }, before: 'model claim ignored' },
+    rawInput: { slug: 'capabilities/refund', expected_mtime: 100, frontmatter: { title: 'Refund policy' }, body: '## Includes\n\n- Refund after capture.\n' },
     options: [{ optionId: 'reject', kind: 'reject_once', name: 'Reject' }, { optionId: 'allow', kind: 'allow_once', name: 'Allow' }],
   },
   origin: {
     sessionGeneration: 4,
     turn: { sessionId: turn.sessionId, vaultRoot: turn.vaultRoot, userEventId: turn.userEventId, text: turn.text },
     task: { outcome: turn.text, nonGoals: null, structure: 'unstructured' },
+    taskBaseline: null,
   },
   resolve: vi.fn(),
 };
@@ -76,14 +77,14 @@ describe('task review host adapter', () => {
     mutable.expectedBefore.contentDigest = digest('c');
     mutable.trustedBefore.fields.condition.value = 'Mutated before';
     mutable.currentBasis.sourceRevision = 'source:mutated';
-    mutable.pending.request.rawInput.confirm = false;
+    mutable.pending.request.rawInput.expected_mtime = 999;
     const result = await pendingResult;
     if (result.status !== 'prepared_unverified') throw new Error('expected prepared adapter result');
     expect(result.request).toEqual({ outcome: 'Original outcome', nonGoals: ['Original non-goal'] });
     expect(result.expectedBefore.contentDigest).toBe(digest('a'));
     expect(result.trustedBefore.fields.condition.value).toBe('Refund after settlement.');
     expect(result.proposal.sourceRevision).toBe('source:after-task');
-    expect(result.proposal.rawInput.confirm).toBe(true);
+    expect(result.proposal.rawInput.expected_mtime).toBe(100);
     expect(Object.isFrozen(result.expectedBefore)).toBe(true);
     expect(Object.isFrozen(result.trustedBefore.fields)).toBe(true);
   });
