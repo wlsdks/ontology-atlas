@@ -39,7 +39,7 @@ need their own scoped PO/design/evidence proof before implementation.
 | V1.1 | done(8ea129383) | Frozen unfamiliar backend task, six owner-approved questions, source reference, license/scope manifest | Preserve the original question approval; independently verify task-specific reference |
 | V1.2 | done(42cf788d9) | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
 | V1.3 | hold(witnessed document/config gap) | Scoped document/config evidence retaining current/planned/negated/conflicting context | Activate only witnessed gaps; follow applicable V1.2 decisions |
-| V1.4 | in_progress(guidance; first candidate rejected) | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | Investigative gain measured; valid domain assignment and reviewable candidate remain open |
+| V1.4 | in_progress(meaning transfer gap) | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | A minimal project candidate is reviewable; investigated behavior still does not reach domain/capability meaning |
 | V1.5 | blocked(V1.4) | Independent candidate and persisted handoff, full-answer source audit, matched prompt/access comparisons | Exact meaning/gap/write approval; frozen run and holdout |
 | V2.1 | hold(reviewed starting vault) | Task/non-goal resolution with supported selection, alternatives or abstention | A reviewed starting vault may isolate reuse; disclose construction cost |
 | V2.2 | blocked(V2.1) | Compact action context preserving conditions, exceptions, currentness and unknowns | Same claims survive budgets and full-body follow-ups |
@@ -148,20 +148,42 @@ The new run retained two failures: an oversized line request and a final proposa
 whose elements lacked required domain assignments. No `reviewPlan` was returned;
 neither run wrote ontology content. The final guide now explicitly keeps
 unassigned elements and their relations outside the typed proposal. That narrow
-clarification is schema-reviewed; a fresh behavioral replay remains pending.
+clarification was schema-reviewed before the follow-up run recorded below.
 The run prompt also omitted the already registered human-owner provenance, so
 the builder's missing-owner statement is a setup limitation, not an ownership
-finding. Preserve the first results rather than crediting the clarification with
-an unperformed rerun.
+finding. Preserve these first results separately from the follow-up.
 
 Primary evidence: `/Users/jinan/scratch/atlas-v1-2026-09-13/v1-4/REVIEW.md`,
 `OPEN-SOURCE-SCOPE.md`, `transcript-audit.json`, frozen old/tested/final guidance,
-and both `runs/` transcripts. Next: replay with the approved owner provenance,
-keep unsupported domain-dependent rows external, repair claim-specific witness
-mapping, and obtain a valid bounded candidate before V1.5. V1.4 remains open;
-read access and more detailed prose do not establish successful ontology
-construction. Existing schema, qualification and human acceptance gates remain
-unchanged.
+and both initial `runs/` transcripts. Existing schema, qualification and human
+acceptance gates remain unchanged.
+
+**V1.4 follow-up evidence (2026-09-13, after guidance PR #1611):** a third fresh
+read-only run used the final element-assignment clarification and the original
+approved question-owner record. The source, requested model and budgets stayed
+fixed; because both guidance and owner context changed, this is a repair probe,
+not another matched prompt-only comparison. Thirteen MCP calls returned nineteen
+source ranges whose bytes/hashes were rechecked. The minimal proposal contains
+one project, zero domains/capabilities/elements/relations, and five competency
+gaps. Its lifecycle is `reviewable`, with `canWrite:false` and no `writePlan`.
+
+The source-body observations were explicitly kept outside that package-only
+proposal; dropping `sourceReads` for this narrow submission did not relabel code
+claims as package evidence. No ontology was written. This fixes the invalid
+unassigned-element submission but leaves the central failure: conditions and
+effects recovered in a separate report are not yet reusable domain/capability
+meaning in Atlas. V1.4 therefore remains open and V1.5 remains dependent on that
+meaning work, rather than repeating a qualification of an almost empty sample.
+
+The first source request again exceeded 200 lines. The tool schema already
+publishes that maximum; no missing runtime limit was discovered. Next work must
+make the builder honor advertised limits, preserve claim-specific evidence, and
+test supported tentative responsibility hypotheses with explicit counter-bounds
+under the existing authority and acceptance gates. Do not invent a domain merely
+to make submission pass. The later ontology-only handoff must measure whether
+the investigated rules and exceptions actually survive into the proposal.
+Exact inputs, calls, final answer, review plan and limits are retained in
+`v1-4/runs/final-guidance/` and `v1-4/FOLLOWUP.md` outside the repository.
 
 **V3 direction selected by the owner:** integrate task review into the existing
 side workbench and its small-screen sheet. Preserve selection across qualified
