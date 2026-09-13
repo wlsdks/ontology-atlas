@@ -7,6 +7,7 @@ import type {
 } from "../lib/full-detail-reach";
 import { controlClass } from "@/shared/ui/control-class";
 import { HiddenCountLine } from "@/shared/ui/hidden-count-line";
+import { SegmentedControl } from "@/shared/ui/segmented-control";
 import { Link } from "@/i18n/navigation";
 
 /**
@@ -22,6 +23,16 @@ export interface FullDetailA1ReachLabels {
   leadIn: string;
   stepUnit: string;
   afterSteps: string;
+  /**
+   * The name of the depth control for assistive tech, and the reason it now has one.
+   *
+   * ⚠️ The three numbers were `text-label` chips with a **transparent border** until one
+   * was selected, set inline in a body-lg sentence: they read as part of the prose, and the
+   * owner reported that they were too small and that he had not realised they could be
+   * pressed at all (2026-09-14). They are also a genuine exclusive choice, so they are a
+   * radiogroup, and a radiogroup needs a name.
+   */
+  stepsAria: string;
   ofTotal: (count: number, total: number) => string;
   mostlyNone: string;
   mostlyOne: (a: string, aCount: number) => string;
@@ -81,32 +92,31 @@ export function FullDetailA1ReachPanel({
     <section data-fulldetail-reach className={className}>
       <p className="max-w-[var(--measure-doc-column)] text-body-lg leading-prose tracking-[var(--tracking-title)] text-[color:var(--map-panel-text-secondary)]">
         {labels.leadIn}{" "}
-        <span
-          data-fulldetail-reach-steps
-          className="mx-1 inline-flex items-baseline gap-1.5 align-baseline font-mono text-label text-[color:var(--map-panel-text-quaternary)]"
-        >
-          {STEPS.map((candidate) => (
-            <button
-              key={candidate}
-              type="button"
-              data-fulldetail-reach-step={candidate}
-              data-active={candidate === step ? "true" : "false"}
-              onClick={() => onChangeStep(candidate)}
-              className={controlClass({
-                shape: "chip",
-                size: "xs",
-                className: [
-                  // 4px is no longer an off-ramp exception — registered as `--radius-micro` (2026-08-03).
-                  "px-1 py-0.5",
-                  candidate === step
-                    ? "border-[color:var(--map-indigo-border)] text-[color:var(--map-indigo-bright)]"
-                    : "border-transparent hover:border-[color:var(--map-panel-text-quaternary)]",
-                ].join(" "),
-              })}
-            >
-              {candidate}
-            </button>
-          ))}
+        {/*
+          ⚠️ **A control set in prose still has to look like a control.** These three were
+          `text-label` chips whose border was transparent until one was selected, so at rest
+          the set was three grey numerals inside a sentence and nothing said they could be
+          pressed (owner, 2026-09-14). `SegmentedControl` is what this actually is — an
+          exclusive single choice — and its `well` container draws the box at rest, which is
+          the whole affordance. It is `inline-flex`, so it still sits in the line.
+
+          It also removes one of this repository's hand-rolled radiogroups: the primitive's
+          own ledger counted 18 of them with **0** roving-tabindex implementations, and this
+          was one. Arrow keys move between the steps now, and the segment shape carries the
+          coarse-pointer touch floor rather than a 16px press target.
+        */}
+        <span data-fulldetail-reach-steps className="mx-1.5 align-middle">
+          <SegmentedControl<FullDetailReachDepth>
+            ariaLabel={labels.stepsAria}
+            value={step}
+            options={STEPS.map((candidate) => ({
+              value: candidate,
+              label: String(candidate),
+              testId: `fulldetail-reach-step-${candidate}`,
+            }))}
+            onChange={onChangeStep}
+            size="md"
+          />
         </span>{" "}
         {labels.stepUnit} {labels.afterSteps}{" "}
         <span className="font-mono text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">

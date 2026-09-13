@@ -75,6 +75,43 @@ export function parseInsightsReturnMarker(
   return match ? match[1] : null;
 }
 
+const TOPOLOGY_RETURN_MARKER_PATTERN = /^topology:(.+)$/;
+
+/**
+ * Serializes the `via=topology:<nodeId>` marker.
+ *
+ * ⚠️ **It exists because leaving the map used to be one-way.** Full detail's "Open
+ * document" sent the reader to `/docs/`, whose crumb goes to a bare `/topology` with
+ * nothing selected, so the node they had open was simply gone (owner, 2026-09-14:
+ * from here there is no way back). With the marker the crumb
+ * returns to that node, selected, which is where the reader stood one step earlier.
+ *
+ * The return is the **selected node**, not the full-detail overlay, and that is a
+ * statement of what can be addressed rather than a preference: `fullDetailSlug` is
+ * component state with no place in the URL, so no address can reopen it. Giving it one
+ * is a route-state change with its own decision; this repairs the dead end with the
+ * address that already exists.
+ */
+export function buildTopologyReturnMarker(nodeId: string): string {
+  return `topology:${translateOntologyDeeplinkToTopologyParam(nodeId)}`;
+}
+
+/** Raw `via` value → the map node to come back to, or null when it is not that grammar. */
+export function parseTopologyReturnMarker(
+  raw: string | null | undefined,
+): string | null {
+  if (!raw) return null;
+  const match = TOPOLOGY_RETURN_MARKER_PATTERN.exec(raw);
+  return match ? match[1] : null;
+}
+
+/** Where the return crumb goes — the map with the node the reader left from selected. */
+export function buildTopologyReturnHref(nodeId: string): string {
+  return `/topology/?p=${encodeURIComponent(
+    translateOntologyDeeplinkToTopologyParam(nodeId),
+  )}`;
+}
+
 /** Where the return chip goes — the insights tab and review row the user came from. */
 export function buildOntologyInsightsReturnHref(
   tab: string,

@@ -180,6 +180,7 @@ import { buildDocsVaultHref, buildNewNodeDoc, daysBehind } from "@/entities/docs
 import {
   buildOntologyChangeSet,
   buildTopologyMeaningEditorNodeHref,
+  buildTopologyReturnMarker,
   buildChatNodeIndex,
   buildTopologyMeaningEditorEdgeHref,
   buildOntologyInsightsReturnHref,
@@ -2894,9 +2895,16 @@ function HomePageImpl() {
     return {
       nodeId: node.id,
       slug,
-      documentHref: ownSlug ? buildDocsVaultHref({ slug: ownSlug }) : null,
+      // Same return marker as the datasheet model: a document opened from the map keeps a
+      // crumb back to the node it was opened from.
+      documentHref: ownSlug
+        ? buildDocsVaultHref({ slug: ownSlug, via: buildTopologyReturnMarker(node.id) })
+        : null,
       mentionDocumentHref: mentionedInSlug
-        ? buildDocsVaultHref({ slug: mentionedInSlug })
+        ? buildDocsVaultHref({
+            slug: mentionedInSlug,
+            via: buildTopologyReturnMarker(node.id),
+          })
         : null,
       // Editor deep links always use the canonical `<kind>:<slug>` graph node id.
       meaningEditHref: buildTopologyMeaningEditorNodeHref(node.id),

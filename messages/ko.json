@@ -2994,6 +2994,7 @@
       "leadIn": "이 노드에서",
       "stepUnit": "단계",
       "afterSteps": "안에 닿는 개념",
+      "stepsAria": "이 노드에서 떨어진 단계",
       "ofTotal": "{count} / {total}",
       "mostlyNone": "도달하는 개념이 없습니다.",
       "mostlyOne": "대부분 {a}({aCount})에 있다.",

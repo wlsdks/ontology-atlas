@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { Check, PencilLine, X } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { cn } from "@/shared/lib/cn";
+import { MARKDOWN_PROSE_CLASS } from "@/shared/ui/markdown-prose";
 import { fieldClass } from '@/shared/ui/control-class';
 import { controlClass } from '@/shared/ui/control-class';
 
@@ -79,15 +83,29 @@ export function NodeExplanationEdit({
             <PencilLine size={ICON_SIZE.sm} aria-hidden />
           </button>
         </div>
-        <p
-          className={
-            value
-              ? "mt-2 [overflow-wrap:anywhere] whitespace-pre-wrap text-body leading-body text-[color:var(--color-text-secondary)]"
-              : "mt-2 text-body italic leading-body text-[color:var(--color-text-quaternary)]"
-          }
-        >
-          {value || labels.empty}
-        </p>
+        {/*
+          ⚠️ **Rendered, not transcribed.** This read state printed the raw source in a
+          `whitespace-pre-wrap` paragraph, so a body that is ordinary Markdown — and every
+          body the construction rules write is, with `## Definition`, `## Evidence` and
+          bulleted scope lists — reached the reader as literal `##`, `-` and backticks
+          (owner, 2026-09-14, on the installed app: the words were right and the screen was
+          not). The textarea below still edits the source, which is the half that stays raw.
+        */}
+        {value ? (
+          <div
+            data-testid="node-explanation-rendered"
+            className={cn(
+              "mt-2 [overflow-wrap:anywhere] text-body leading-body text-[color:var(--color-text-secondary)]",
+              MARKDOWN_PROSE_CLASS,
+            )}
+          >
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+          </div>
+        ) : (
+          <p className="mt-2 text-body italic leading-body text-[color:var(--color-text-quaternary)]">
+            {labels.empty}
+          </p>
+        )}
       </div>
     );
   }

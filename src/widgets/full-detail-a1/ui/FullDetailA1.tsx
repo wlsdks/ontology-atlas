@@ -6,6 +6,9 @@ import { Check, Clipboard, Link2, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { cn } from "@/shared/lib/cn";
+import { MARKDOWN_PROSE_CLASS } from "@/shared/ui/markdown-prose";
 import {
   buildOntologyNodeHref,
   buildTopologyMeaningEditorNodeHref,
@@ -496,6 +499,7 @@ export function FullDetailA1({
           leadIn: t("reach.leadIn"),
           stepUnit: t("reach.stepUnit"),
           afterSteps: t("reach.afterSteps"),
+          stepsAria: t("reach.stepsAria"),
           ofTotal: (count, total) => t("reach.ofTotal", { count, total }),
           mostlyNone: t("reach.mostlyNone"),
           mostlyOne: (a, aCount) => t("reach.mostlyOne", { a, aCount }),
@@ -526,9 +530,22 @@ export function FullDetailA1({
         >
           {t("handoff.copy")}
         </button>
+        {/*
+          ⚠️ **Both of these leave this surface, and neither used to admit it.** This card is
+          a `fixed inset-0` opaque overlay, so a link that opens something *on the map*
+          opened it underneath and the reader saw nothing happen; and a link that leaves for
+          the document left the node behind with no way back (owner, 2026-09-14: opening the
+          document gave no way to return, and pressing edit-relations showed nothing).
+
+          So every link here closes the card first. The destination is then the thing the
+          reader actually asked for: the relation editor on a visible map, or the document
+          with a crumb that returns to this node selected.
+        */}
         {documentHref ? (
           <Link
             href={documentHref}
+            onClick={onClose}
+            data-testid="full-detail-a1-open-document"
             className={controlClass({
               shape: "link",
               size: "lg",
@@ -542,6 +559,7 @@ export function FullDetailA1({
         ) : mentionDocumentHref ? (
           <Link
             href={mentionDocumentHref}
+            onClick={onClose}
             title={t("handoff.openMentionDocumentTip")}
             data-testid="full-detail-a1-open-mention-document"
             className={controlClass({
@@ -557,6 +575,7 @@ export function FullDetailA1({
         ) : null}
         <Link
           href={buildTopologyMeaningEditorNodeHref(node.id)}
+          onClick={onClose}
           data-testid="full-detail-a1-open-studio"
           className={controlClass({
             shape: "link",
@@ -582,9 +601,22 @@ export function FullDetailA1({
             <h2 className="mb-2 text-body font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)]">
               {t("body.title")}
             </h2>
+            {/*
+              ⚠️ **`prose prose-invert` was a dead class here.** `@tailwindcss/typography`
+              is not installed in this project, so those two names emitted nothing: the
+              Markdown parsed into real `h2` and `ul` elements and Preflight then flattened
+              every one of them into body-sized text with no bullets. A dead class reads
+              exactly like a live one in a diff, which is why the shared constant now owns
+              this and both body surfaces name it (2026-09-14).
+            */}
             {bodyMarkdown && bodyMarkdown.trim().length > 0 ? (
-              <div className="prose prose-invert max-w-none text-body-lg leading-prose text-[color:var(--map-panel-text-secondary)]">
-                <ReactMarkdown>{bodyMarkdown}</ReactMarkdown>
+              <div
+                className={cn(
+                  "max-w-none text-body-lg leading-prose text-[color:var(--map-panel-text-secondary)]",
+                  MARKDOWN_PROSE_CLASS,
+                )}
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{bodyMarkdown}</ReactMarkdown>
               </div>
             ) : (
               <p className="text-body text-[color:var(--map-panel-text-tertiary)]">

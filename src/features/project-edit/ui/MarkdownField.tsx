@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { controlClass, fieldClass } from '@/shared/ui/control-class';
+import { MARKDOWN_PROSE_CLASS } from '@/shared/ui/markdown-prose';
 
 interface Props {
   id?: string;
@@ -54,17 +55,10 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
         <div
           className={cn(
             'min-h-[160px] rounded-chip px-2 py-1.5 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]',
-            // Basic markdown styling.
-            '[&>h1]:mt-3 [&>h1]:mb-2 [&>h1]:text-display [&>h1]:font-[var(--font-weight-signature)] [&>h1]:text-[color:var(--color-text-primary)]',
-            '[&>h2]:mt-3 [&>h2]:mb-1.5 [&>h2]:text-title [&>h2]:font-[var(--font-weight-signature)] [&>h2]:text-[color:var(--color-text-primary)]',
-            '[&>h3]:mt-2 [&>h3]:mb-1 [&>h3]:text-body-lg [&>h3]:font-[var(--font-weight-signature)] [&>h3]:text-[color:var(--color-text-primary)]',
-            '[&>p]:my-1.5',
-            '[&>ul]:my-1.5 [&>ul]:list-disc [&>ul]:pl-5',
-            '[&>ol]:my-1.5 [&>ol]:list-decimal [&>ol]:pl-5',
-            '[&_code]:rounded-micro [&_code]:bg-[color:var(--color-elevated)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body',
-            '[&>pre]:rounded-chip [&>pre]:bg-[color:var(--color-elevated)] [&>pre]:p-3 [&>pre]:my-2 [&>pre]:font-mono [&>pre]:text-body [&>pre>code]:bg-transparent [&>pre>code]:px-0',
-            '[&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline',
-            '[&>blockquote]:border-l-2 [&>blockquote]:border-[color:var(--color-border-strong)] [&>blockquote]:pl-3 [&>blockquote]:text-[color:var(--color-text-tertiary)]',
+            // The element styling this preview grew is now `shared/ui/markdown-prose`,
+            // so a node body and a project description read the same way. This call site
+            // keeps only its own container: minimum height, padding, base ink.
+            MARKDOWN_PROSE_CLASS,
           )}
         >
           {value.trim() ? (

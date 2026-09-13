@@ -2994,6 +2994,7 @@
       "leadIn": "From this node,",
       "stepUnit": "step",
       "afterSteps": "away it reaches",
+      "stepsAria": "Steps away from this node",
       "ofTotal": "{count} / {total}",
       "mostlyNone": "It doesn't reach any other concepts.",
       "mostlyOne": "mostly in {a} ({aCount}).",

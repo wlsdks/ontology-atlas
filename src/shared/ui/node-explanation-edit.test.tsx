@@ -20,6 +20,31 @@ describe("NodeExplanationEdit", () => {
     expect(screen.queryByTestId("node-explanation-input")).not.toBeInTheDocument();
   });
 
+  it("읽기 모드는 markdown 을 그려서 보여준다 — 작대기·별표가 글자로 새지 않는다", () => {
+    /*
+     * ⚠️ This read state printed the raw source. A node body is Markdown written by the
+     * construction rules, so `## Definition`, `- Included:` and backticks reached the
+     * reader as literal characters (owner, 2026-09-14, on the installed app).
+     *
+     * So what is measured is **which elements came out**, not whether a substring is
+     * present: a test that only checks the text passes while the source is transcribed.
+     */
+    render(
+      <NodeExplanationEdit
+        value={"## Definition\n\nsurfaces that let agents read\n\n- Included: `mcp/`\n- Excluded: the schema\n"}
+        onSave={() => {}}
+        labels={labels}
+      />,
+    );
+    const read = screen.getByTestId("node-explanation-rendered");
+    expect(read.querySelector("h2")).toHaveTextContent("Definition");
+    expect(read.querySelectorAll("li")).toHaveLength(2);
+    expect(read.querySelector("code")).toHaveTextContent("mcp/");
+    // The source markers do not survive onto the screen.
+    expect(read.textContent).not.toContain("##");
+    expect(read.textContent).not.toContain("`");
+  });
+
   it("빈 본문 → empty 라벨", () => {
     render(<NodeExplanationEdit value="" onSave={() => {}} labels={labels} />);
     expect(screen.getByTestId("node-explanation-read")).toHaveTextContent("설명 없음");
