@@ -260,6 +260,43 @@ codex mcp add ontology-atlas --env OATLAS_VAULT=/absolute/path/to/vault -- node 
 
 If `OATLAS_VAULT` is not set, the current working directory is used as the vault root.
 
+### Optional task context in Codex CLI
+
+Register Atlas for the repository using `agent-setup` above, then enable a
+repository-local task policy once in the host's instructions. Include the
+expected absolute source and vault roots. A suitable policy is:
+
+> For meaningful code-change tasks, verify Atlas's registered source and vault
+> roots, request one compact brief for the actual task, follow its prescribed
+> full-body reads, then inspect source. Skip Atlas for small unrelated work.
+> Do not repeat the same task query. If context is unavailable, points at the
+> wrong roots, or is stale, disclose that before bounded source fallback.
+> Recorded meaning does not prove runtime behavior or authorize writes.
+
+The read path is `connection_info`, then
+`query_ontology({operation:"agent_brief", detail:"compact", task:"<actual task>"})`
+with an explicit `project` in multi-project vaults. Use the returned selectors
+for any `get_concepts({body:"full"})` recovery. Keep no-match, omitted qualifiers,
+currentness and verification unknowns visible; source inspection still owns
+implementation verification. No global hook or default telemetry is needed.
+Removing the optional task policy stops this requested routing.
+
+The measured boundary is fresh Codex CLI sessions with source MCP, one explicit
+policy delivery per session, and read-only source access. Five frozen cases
+covered meaningful work, unrelated metadata, wrong vault, unavailable MCP and
+stale source. Meaningful and stale cases each used one compact query and its
+full-body follow-up; unrelated work used no Atlas calls. Wrong-root and
+unavailable cases disclosed the problem before source fallback. Source and vault
+files remained unchanged. This proves the observed model-to-tool entry, not
+automatic discovery of a repository instruction file or compliance by every
+model/session. Registration alone is insufficient evidence.
+
+When server startup failed, this host exposed generic MCP discovery without an
+Atlas-specific failure event; the agent disclosed unavailability. Installed-app
+behavior, other hosts, inline visualization, coding benefit and voluntary reuse
+remain outside this proof. Precise human-review links depend on task-bound UI
+support; this MCP-only path does not invent a generic review link.
+
 ### Other MCP clients (generic stdio registration)
 
 Claude Code, Cursor, and Codex are the only clients `init`/`agent-setup` write
