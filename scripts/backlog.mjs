@@ -90,9 +90,9 @@ export function checkImmutableRecords(root = process.cwd(), base = 'origin/main'
   // A branch may revise its own unmerged records. Published records may only be
   // superseded by new files. The branch-base diff also catches remote rewrites.
   const mergeBase = execFileSync('git', ['merge-base', base, 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
-  const entries = execFileSync('git', ['diff', '--name-status', '--no-renames', mergeBase, '--', RECORD_DIR], { cwd: root, encoding: 'utf8' }).trim().split('\n').filter(Boolean);
+  const entries = execFileSync('git', ['diff', '--name-status', '--no-renames', mergeBase, '--', RECORD_DIR, 'docs/BACKLOG-SNAPSHOT-*.md'], { cwd: root, encoding: 'utf8' }).trim().split('\n').filter(Boolean);
   const changed = entries.filter((line) => !line.startsWith('A\t'));
-  if (changed.length) fail(`published records are immutable; append a new record instead:\n${changed.join('\n')}`);
+  if (changed.length) fail(`published records and snapshots are immutable; append a new record instead:\n${changed.join('\n')}`);
 }
 
 export function main(argv, root = process.cwd()) {

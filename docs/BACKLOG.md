@@ -72,6 +72,12 @@ qualifiers. It is historical evidence, not a second live status source. Its
 former single-file update and single-global-worker rules are superseded here;
 parallel work still respects task dependencies, ownership, and file boundaries.
 
+For a branch started before this migration, merge current main before recording
+more work. Preserve pending central-backlog edits outside the repository, read
+the current task heads, and append those observations as new UUID records.
+Do not resolve a migration conflict by restoring the whole old central ledger
+or rewriting the historical snapshot.
+
 ## CI while another task is landing
 
 `pnpm pr:land NUMBER --parallel-ci` may start this draft's CI while another PR

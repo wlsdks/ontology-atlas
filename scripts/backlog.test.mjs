@@ -25,7 +25,10 @@ test('different executions create unique files and preserve all evidence',()=>fi
 test('divergent worktrees merge records without a Git conflict and expose competing heads',()=>fixture((root)=>{
  const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
  git('init','-b','main');git('config','user.name','Fixture');git('config','user.email','fixture@example.invalid');
- const baseRecord=add(root,'A');git('add','.');git('commit','-m','baseline');const base=git('rev-parse','HEAD');
+ const baseRecord=add(root,'A');
+ const snapshot=join(root,'docs/BACKLOG-SNAPSHOT-fixture.md');
+ writeFileSync(snapshot,'Historical evidence.\n');
+ git('add','.');git('commit','-m','baseline');const base=git('rev-parse','HEAD');
  git('switch','-c','left');const left=add(root,'A',[baseRecord.id],'done(left-evidence)');git('add','.');git('commit','-m','left');
  git('switch','-c','right',base);const right=add(root,'A',[baseRecord.id],'blocked(right-evidence)');git('add','.');git('commit','-m','right');
  git('merge','--no-edit','left');
@@ -35,6 +38,9 @@ test('divergent worktrees merge records without a Git conflict and expose compet
  add(root,'A',[right.id,left.id],'hold(owner-reconciliation)');assert.equal(readBacklog(root).tasks[0].state,'current');
  checkImmutableRecords(root,'main');
  writeFileSync(join(root,baseRecord.file),readFileSync(join(root,baseRecord.file),'utf8')+'Edited history.\n');
+ assert.throws(()=>checkImmutableRecords(root,'main'),/immutable/);
+ git('restore',baseRecord.file);
+ writeFileSync(snapshot,'Rewritten history.\n');
  assert.throws(()=>checkImmutableRecords(root,'main'),/immutable/);
 }));
 
