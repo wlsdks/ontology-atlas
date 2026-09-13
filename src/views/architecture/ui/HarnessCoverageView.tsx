@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import {
+  AGENT_TOOL_LABELS,
   buildCoverageMatrix,
+  type AgentTool,
   type CoverageAreaInput,
   type CoverageAreaRow,
   type CoverageColumn,
@@ -14,7 +16,12 @@ import {
 } from '@/entities/agent-files';
 import { ChevronRight } from 'lucide-react';
 
-import { Disclosure, EmptyState } from '@/shared/ui';
+import { Disclosure, EmptyState, InfoHint } from '@/shared/ui';
+import {
+  CensusBigNumber,
+  CensusSubStat,
+  CensusTile,
+} from '@/shared/ui/census-tile';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
@@ -29,42 +36,78 @@ import { cn } from '@/shared/lib/cn';
  * a grade, a maturity level or a percentage. It renders a census beside a purpose, and leaves the
  * judgement where it belongs.
  *
- * **The vault's purpose sentence is the row, not decoration.** The first build put the recorded
- * path count on the row's second line and left the purpose out, and the owner read the result
- * correctly: a file-name table, which is the thing every competitor already ships. A row whose
- * Watched column is empty has to be able to say *this area does X and nothing watches it*; without
- * the sentence it can only say *a file is absent*. So the sentence takes the second line and the
- * count shrinks to a figure beside it.
+ * **The vault's purpose sentence is the row, not decoration.** A row whose Watched column is empty
+ * has to be able to say *this area does X and nothing watches it*; without the sentence it can only
+ * say *a file is absent*. So the sentence takes the second line and the count shrinks to a figure
+ * beside it.
  *
- * **The cell is a state, not a list.** Three of four columns were undifferentiated monospace runs
- * — a rule, a nested guide and a hook at one weight, one size, one colour — and nothing was
- * comparable down a column without reading every token. A cell now carries a count and a mark, the
- * names open in a compact popover beside the cell (never a full-screen or full-bleed detail:
- * `forbidden.md` owns that), and inside that popover the declarations are grouped by what kind of
- * file they are, which is the distinction the flat run destroyed.
+ * ---
  *
- * **The gap wins its row.** Five of this repository's eight areas have no check naming them, and in
- * the first build that finding was the quietest thing on screen. An empty cell now takes the amber
- * signal this surface already uses for an unresolved state, as a filled mark rather than as text,
- * so "five of eight" is a shape down the column before anyone reads a word.
+ * ## Round two: what every mark on this screen encodes
+ *
+ * The owner read the first build and said the decisive thing: *"there should be some concept to
+ * it? Shown just like this I cannot even tell what it is trying to say, or why it exists."* So
+ * every mark below is written down as one sentence, and anything that could not earn one was
+ * deleted rather than restyled.
+ *
+ * | Mark | What it encodes |
+ * |---|---|
+ * | the square in a cell | whether **anything** in this repository names this area for this question — filled when something is in it, drawn and empty when nothing is |
+ * | the number beside it | how many declarations, as a number |
+ * | the card's large numeral | how many areas have an **empty** square in that column — the count of amber outlines below it |
+ * | amber | one state only: nothing is here |
+ *
+ * **The bar died on its own numbers.** It drew `count ÷ (largest count in its own column)`, floored
+ * at 18%, on a 24px track. Measured against this checkout on 2026-09-13 (Told 7·1·5·4·4·3·4·3,
+ * Gated 2·2·0·2·0·0·0·0, Watched 12·2·0·2·0·0·0·0): a Gated **2** drew 24.0px and the Watched **2**
+ * beside it drew 4.3px — the same fact, the same row, a 5.6× difference in mark. A Gated 2 and a
+ * Watched 12 both drew a full 24px. Told 4 and Told 5 stood 3.4px apart. The denominator was a
+ * per-column maximum nobody could see, so the most scannable position in every cell carried a mark
+ * that could not be decoded, and it was `aria-hidden` besides. This repository had already written
+ * the rule one screen over — `InsightsCensusStrip.WeeklyBars`: *"giving zero the same minimum
+ * height as one update would draw a quiet week and a busy week the same size, which is the one
+ * thing a 12-bar strip must never do."* The 18% floor did exactly that to 1, 2 and 3.
+ *
+ * At 0–12 across eight rows, length buys nothing a number does not already give exactly, and the
+ * distinction that carries this screen is binary: something, or nothing. So the mark is binary and
+ * the number carries magnitude as a number.
+ *
+ * **The denominator became an object.** If a reader is to judge a column they need to see what it
+ * is out of. The card above each column prints it — `5 / 8`, *domains no check names* — and that
+ * large numeral is literally the count of empty squares in the column beneath it, so the claim can
+ * be verified by counting rather than trusted. There is no separate headline sentence any more: it
+ * could only ever speak for Watched, and one screen does not count the same thing two ways.
+ *
+ * **The grammar is the product's own.** The owner pointed at `/ontology/insights` — a label, one
+ * large number, its parts beneath — and said it was at least legible *while saying he did not want
+ * it copied*. The lesson, not the layout: that shape moved to `shared/ui/census-tile` and both
+ * screens now use it, so this view did not grow a second, weaker way of saying "here is a count and
+ * what it is made of". The 40px signature numeral stays the insights board's; these cards take the
+ * ramp's display step.
+ *
+ * **Nine names were printed twice, and that was a lost distinction, not a duplicate bug.**
+ * `block-generated-edit`, `block-manual-landing`, `block-npm-publish`, `block-unsafe-git`,
+ * `fast-sensor`, `inject-ontology-summary`, `record-usage`, `remind-verify-on-stop` and
+ * `stamp-verification` exist in **both** `.claude/hooks/` and `.codex/hooks/` as real mirrored
+ * files. `ScopeDeclaration.label` is the bare script name for both, so a list keyed by it printed
+ * each name twice and read as a rendering fault. Each name now appears once with the tools that
+ * read it — the same fact the guides table's "Read by" column already carries — and the mirror
+ * relationship becomes visible instead of looking broken.
  *
  * Two shapes keep the reading honest:
  *
  * 1. **An always-loaded rule is not eight findings.** `forbidden`, `git` and `local-first` declare
- *    no path and reach everything; so do `lint`, `test` and every unfiltered CI workflow. They sit
- *    in a strip of their own, deliberately outside the row rhythm — the first build made them the
- *    first row of the table, where the heaviest and least actionable line won the eye. The reader
- *    still needs both halves: nothing names this area, *and* these lanes run over everything.
+ *    no path and reach everything; so do `lint`, `test` and every unfiltered CI workflow. They are
+ *    counted on the card of the column they belong to and open beneath it, rather than being
+ *    printed in all eight rows. The reader needs both halves: nothing names this area, *and* these
+ *    lanes run over everything.
  * 2. **Every entry carries the text that put it there**, so an attribution is checkable rather than
- *    trusted — the same contract the guides table's per-tool citation already keeps. A wired gate
- *    says its script exists, never that it ran.
+ *    trusted. A wired gate says its script exists, never that it ran.
  *
- * ⚠️ **An honesty rule is structure, not a paragraph.** The first build discharged every caveat as
- * prose, and the most carefully reasoned parts of the screen became the heaviest to read — three
- * counting rules stacked at body size above a heading, reading as the previous section's leftovers.
- * A marker with a hint, a disclosure, a count beside its denominator: each carries the same claim
- * and costs a reader nothing until they ask for it. Only the sentence a first-time reader must see
- * to avoid being misled stays in the flow; everything else moved behind `coverageProvenance`.
+ * ⚠️ **An honesty rule is structure, not a paragraph.** A marker with a hint, a disclosure, a count
+ * beside its denominator: each carries the same claim and costs a reader nothing until they ask for
+ * it. Only the sentence a first-time reader must see to avoid being misled stays in the flow;
+ * everything else lives behind `coverageProvenance`.
  */
 
 type TranslateFn = ReturnType<typeof useTranslations<'harness'>>;
@@ -89,6 +132,13 @@ const COLUMN_EMPTY: Readonly<Record<CoverageColumn, string>> = {
   watched: 'coverageEmptyWatched',
 };
 
+/** The noun phrase the card's large numeral is counting — "domains no check names". */
+const COLUMN_GAP_NOUN: Readonly<Record<CoverageColumn, string>> = {
+  told: 'coverageGapTold',
+  gated: 'coverageGapGated',
+  watched: 'coverageGapWatched',
+};
+
 /** What kind of file a declaration is. The flat monospace run could not say this; the popover does. */
 const ORIGIN_LABEL: Readonly<Record<ScopeDeclaration['origin'], string>> = {
   'nested-agents': 'coverageKindNested',
@@ -108,9 +158,47 @@ const ORIGIN_ORDER: ReadonlyArray<ScopeDeclaration['origin']> = [
   'workflow',
 ];
 
-function groupByOrigin(
+/**
+ * One name, and every file in this repository that carries it.
+ *
+ * The group is keyed by origin **and** label, never by label alone: `.githooks/fast-sensor` and
+ * `.claude/hooks/fast-sensor.sh` would share a name and are not the same kind of thing, while
+ * `.claude/hooks/fast-sensor.sh` and `.codex/hooks/fast-sensor.sh` are one guard mirrored for two
+ * tools. The count of `entries` is what makes the group's arithmetic checkable against the cell's
+ * own declaration count, which stays a count of files.
+ */
+interface MirrorGroup {
+  key: string;
+  label: string;
+  origin: ScopeDeclaration['origin'];
+  entries: ScopeDeclaration[];
+  tools: readonly AgentTool[];
+}
+
+export function groupMirroredDeclarations(
   entries: readonly ScopeDeclaration[],
-): Array<[ScopeDeclaration['origin'], ScopeDeclaration[]]> {
+): MirrorGroup[] {
+  const grouped = new Map<string, MirrorGroup>();
+  for (const entry of entries) {
+    const key = `${entry.origin}:${entry.label}`;
+    const group = grouped.get(key);
+    if (group) {
+      group.entries.push(entry);
+      group.tools = [...new Set([...group.tools, ...entry.tools])];
+      continue;
+    }
+    grouped.set(key, {
+      key,
+      label: entry.label,
+      origin: entry.origin,
+      entries: [entry],
+      tools: [...new Set(entry.tools)],
+    });
+  }
+  return [...grouped.values()];
+}
+
+function groupByOrigin(entries: readonly ScopeDeclaration[]): Array<[ScopeDeclaration['origin'], MirrorGroup[]]> {
   const grouped = new Map<ScopeDeclaration['origin'], ScopeDeclaration[]>();
   for (const entry of entries) {
     const list = grouped.get(entry.origin) ?? [];
@@ -119,68 +207,45 @@ function groupByOrigin(
   }
   return ORIGIN_ORDER.filter((origin) => grouped.has(origin)).map((origin) => [
     origin,
-    grouped.get(origin)!,
+    groupMirroredDeclarations(grouped.get(origin)!),
   ]);
 }
 
 /**
- * The mark inside a cell: a count when something names this area, an amber slab when nothing does.
+ * **A square that is a container: filled when something is in it, drawn and empty when nothing is.**
  *
- * The slab is deliberately the loudest thing in the table. It is the one statement a file-only
- * scanner cannot make, and it was previously set at body size in the fourth column where a row with
- * a gap carried exactly as much weight as a row without one.
- */
-/**
- * **A mark that carries the count, or no mark at all.**
- *
- * The first build put a fixed 20×24 rounded rectangle before every count — amber when the cell was
- * empty, grey otherwise. The owner read it correctly: *what does this block mean?* It meant nothing.
- * Its colour repeated the word beside it, its size did not move with the number, and it was
- * `aria-hidden`, so it occupied the most scannable position in the cell and encoded no fact.
- * `design.md` and the infoviz seat both hold that every mark maps to a typed fact.
- *
- * So the mark is now a bar whose length **is** the count, against the largest count in its own
- * column — length for quantity, which is the encoding a reader compares most accurately. A column
- * can be read as a shape before any number in it is read, which is what the matrix is for. An empty
- * cell keeps the amber, and the amber is now the *absence* of a bar inside a drawn track rather
- * than a filled block: the one cell with nothing to measure is the one cell whose track is empty.
+ * That is the whole encoding, and it is the only thing this mark claims. The state also reaches the
+ * reader through the hue and through the word beside it, so no one channel carries it alone — and
+ * the outline, not the fill, is what an empty cell looks like, which is the one shape a reader does
+ * not have to be taught.
  *
  * It stays `aria-hidden` because the button that wraps it already carries the fact in words —
  * `coverageOpenNames` reads "{column} for {domain}: N declarations" or "nothing names this domain".
- * A second announcement of the same number would be noise, not access.
  */
-function CellMark({ count, max, t }: { count: number; max: number; t: TranslateFn }) {
+function CellMark({ count, t }: { count: number; t: TranslateFn }) {
   /*
    * `shrink-0` and `whitespace-nowrap` are load-bearing, not tidiness. At 390 the cell's content box
    * is 39px: an empty span's automatic minimum size is 0, so the flex row ate the mark first —
    * measured 18.3px against its neighbour's 24 — and the gap mark came out *narrower* than the
    * non-gap mark, in the one column it exists to shout in. Korean broke its two-syllable word across
    * two lines at the same width; English overran the cell by 11.5px and stole the next column's hit
-   * area, so a press on the left edge of Watched opened Gated (design-responsive, 2026-09-13). Below
-   * `sm` the word steps aside and the mark carries the state alone; the cell's `aria-label` already
-   * says it in words.
+   * area, so a press on the left edge of Watched opened Gated (design-responsive, 2026-09-13).
+   * Below `sm` the word steps aside and the mark carries the state alone; the cell's `aria-label`
+   * already says it in words.
    */
   const empty = count === 0;
-  /* A floor of one step, so a count of 1 is a mark rather than a hairline nobody can see. */
-  const filled = empty ? 0 : Math.max(0.18, count / Math.max(max, 1));
   return (
     <span className="flex items-center gap-2">
       <span
         aria-hidden
+        data-harness-mark={empty ? 'empty' : 'filled'}
         className={cn(
-          'h-5 w-6 shrink-0 overflow-hidden rounded-micro border',
+          'h-5 w-5 shrink-0 rounded-micro border',
           empty
-            ? 'border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)]'
-            : 'border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]',
+            ? 'border-[color:var(--color-amber-source-a90)]'
+            : 'border-[color:var(--color-indigo-a60)] bg-[color:var(--color-indigo-a60)]',
         )}
-      >
-        {empty ? null : (
-          <span
-            className="block h-full rounded-micro bg-[color:var(--color-indigo-a60)]"
-            style={{ width: `${Math.round(filled * 100)}%` }}
-          />
-        )}
-      </span>
+      />
       {empty ? (
         <span className="hidden whitespace-nowrap text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-a90)] sm:inline">
           {t('coverageNone')}
@@ -192,30 +257,52 @@ function CellMark({ count, max, t }: { count: number; max: number; t: TranslateF
   );
 }
 
+/** The tools that read a file, as words. Silent for a Git hook or a CI job, which belong to none. */
+function ToolAttribution({ tools }: { tools: readonly AgentTool[] }) {
+  if (tools.length === 0) return null;
+  return (
+    <span className="text-caption text-[color:var(--color-text-tertiary)]">
+      {tools.map((tool) => AGENT_TOOL_LABELS[tool] ?? tool).join(' · ')}
+    </span>
+  );
+}
+
 function DeclarationList({ entries, t }: { entries: readonly ScopeDeclaration[]; t: TranslateFn }) {
   return (
     <div className="flex flex-col gap-3">
-      {groupByOrigin(entries).map(([origin, group]) => (
+      {groupByOrigin(entries).map(([origin, groups]) => (
         <div key={origin} className="flex flex-col gap-1">
           <p className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
             {t(ORIGIN_LABEL[origin])}
           </p>
           <ul className="flex flex-col gap-1.5">
-            {group.map((entry) => (
-              <li key={`${entry.id}:${entry.column}`} className="flex flex-col gap-0.5">
-                <span className="break-all font-mono text-caption text-[color:var(--color-text-primary)]">
-                  {entry.id}
+            {groups.map((group) => (
+              /*
+                One row per name, however many files carry it. The first build emitted one row per
+                file, so nine mirrored hook scripts printed nine names twice — and the repetition,
+                not the mirroring, was what a reader saw.
+              */
+              <li key={group.key} className="flex flex-col gap-0.5">
+                <span className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="break-all font-mono text-caption text-[color:var(--color-text-primary)]">
+                    {group.label}
+                  </span>
+                  <ToolAttribution tools={group.tools} />
                 </span>
-                {entry.declaration ? (
-                  <span className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">
-                    {t('coverageDeclaredAs', { declaration: entry.declaration })}
+                {group.entries.map((entry) => (
+                  <span key={entry.id} className="flex flex-col">
+                    {entry.declaration ? (
+                      <span className="break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                        {t('coverageDeclaredAs', { declaration: entry.declaration })}
+                      </span>
+                    ) : null}
+                    {entry.namedBy ? (
+                      <span className="break-all font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                        {t('coverageNamedBy', { config: entry.namedBy })}
+                      </span>
+                    ) : null}
                   </span>
-                ) : null}
-                {entry.namedBy ? (
-                  <span className="break-all font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                    {t('coverageNamedBy', { config: entry.namedBy })}
-                  </span>
-                ) : null}
+                ))}
               </li>
             ))}
           </ul>
@@ -231,8 +318,7 @@ function DeclarationList({ entries, t }: { entries: readonly ScopeDeclaration[];
  * Below `lg` it is an ordinary block under the cell rather than a floating box: the table is inside
  * a horizontal scroller at that width, and a popover positioned inside a scroll container is
  * clipped by it. One element, two positions, no second implementation.
- */
-/**
+ *
  * Where the popover is anchored at `lg` and above, as a fraction of the table's own column widths
  * (46 / 18 / 18 / 18). Written as classes rather than measured at runtime: the columns are declared
  * in a `colgroup`, so the anchor is a layout fact and not something to read back from the DOM.
@@ -358,9 +444,15 @@ function CellDetail({
  * A document nothing names will not be opened, however carefully it was written — which is what a
  * team experiences as "the agent ignores our documentation" while every file on disk looks correct.
  *
- * The folders are printed beside the third count because some of those documents *should* be
- * unreferenced. A sample vault, an archive, a benchmark corpus and an agent brief addressed by name
- * rather than by path all land there for different and mostly fine reasons. Filtering them out
+ * ⚠️ **The three counts were good bones under a wall.** Each number carried a sentence explaining
+ * its bucket at body size directly beneath it, so the most important figure on the block was also
+ * the one followed by the most text on the block, three times over. The sentences are unchanged and
+ * they now sit behind the eyebrow's hint, which is the move the provenance disclosure already made
+ * for this screen's counting rules: the claim costs a reader nothing until they ask for it.
+ *
+ * The folders behind the third count stay one press away, because some of those documents *should*
+ * be unreferenced. A sample vault, an archive, a benchmark corpus and an agent brief addressed by
+ * name rather than by path all land there for different and mostly fine reasons. Filtering them out
  * would make this block agree with itself; naming where they are lets the reader disagree with it.
  */
 function DocumentReachBlock({
@@ -373,13 +465,8 @@ function DocumentReachBlock({
   t: TranslateFn;
 }) {
   const [openBreakdown, setOpenBreakdown] = useState(false);
-  const rows = [
-    { key: 'guides', count: reach.guides, label: t('reachGuides'), note: t('reachGuidesBody') },
-    { key: 'named', count: reach.named, label: t('reachNamed'), note: t('reachNamedBody') },
-    { key: 'unnamed', count: reach.unnamed, label: t('reachUnnamed'), note: t('reachUnnamedBody') },
-  ] as const;
   return (
-    <section data-testid="harness-reach" className="flex flex-col gap-2">
+    <section data-testid="harness-reach" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
           {t('reachTitle')}
@@ -388,86 +475,82 @@ function DocumentReachBlock({
           {t('reachTotal', { total: reach.total, excluded: reach.excluded.length })}
         </p>
       </div>
-      <ul className="flex flex-col">
-        {rows.map((row) => (
-          <li
-            key={row.key}
-            data-harness-reach-row={row.key}
-            className="border-t border-[color:var(--color-border-soft)] py-2"
-          >
-            {/*
-              Number, label, note — three sizes, one rhythm. The first build ran the explanation
-              inline at the label's own size, so a row read as one long sentence rather than as a
-              measurement with a name.
-            */}
-            <div className="flex items-baseline gap-3">
-              <span
-                className={cn(
-                  'w-16 shrink-0 text-title tabular-nums',
-                  row.key === 'unnamed'
-                    ? 'text-[color:var(--color-amber-source-a90)]'
-                    : 'text-[color:var(--color-text-primary)]',
-                )}
-              >
-                {row.count}
+      <div className="grid gap-[var(--card-gap)] sm:grid-cols-3">
+        <CensusTile
+          testId="harness-reach-tile"
+          rowKey="guides"
+          label={t('reachGuides')}
+          labelSuffix={<InfoHint label={t('reachGuides')}>{t('reachGuidesBody')}</InfoHint>}
+        >
+          <CensusBigNumber scale="section" value={reach.guides} testId="harness-reach-number" />
+          {reach.mirroredGuides > 0 ? (
+            <CensusSubStat label={t('reachMirroredLabel')} value={reach.mirroredGuides} />
+          ) : null}
+        </CensusTile>
+
+        <CensusTile
+          testId="harness-reach-tile"
+          rowKey="named"
+          label={t('reachNamed')}
+          labelSuffix={<InfoHint label={t('reachNamed')}>{t('reachNamedBody')}</InfoHint>}
+        >
+          <CensusBigNumber scale="section" value={reach.named} testId="harness-reach-number" />
+          {reach.hops > 1 ? (
+            <CensusSubStat label={t('reachNamedDirectLabel')} value={reach.namedDirect} />
+          ) : null}
+        </CensusTile>
+
+        <CensusTile
+          testId="harness-reach-tile"
+          rowKey="unnamed"
+          label={t('reachUnnamed')}
+          labelSuffix={<InfoHint label={t('reachUnnamed')}>{t('reachUnnamedBody')}</InfoHint>}
+        >
+          {/* Amber, because this number's subject is an absence — the same one state amber
+              carries in every cell of the matrix above. */}
+          <CensusBigNumber
+            scale="section"
+            tone={reach.unnamed > 0 ? 'warning' : 'numeral'}
+            value={reach.unnamed}
+            testId="harness-reach-number"
+          />
+          {reach.unnamedByFolder.length > 0 ? (
+            <button
+              type="button"
+              data-testid="harness-reach-breakdown-toggle"
+              onClick={() => setOpenBreakdown((open) => !open)}
+              aria-expanded={openBreakdown}
+              className={controlClass({
+                shape: 'link',
+                size: 'sm',
+                tone: 'muted',
+                hoverInk: 'strong',
+                className: 'self-start touch-hit-expand',
+              })}
+            >
+              {t('reachBreakdownOpen')}
+            </button>
+          ) : null}
+        </CensusTile>
+      </div>
+      {openBreakdown && reach.unnamedByFolder.length > 0 ? (
+        <ul
+          data-testid="harness-reach-breakdown"
+          className="grid gap-x-6 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {reach.unnamedByFolder.map((folder) => (
+            <li
+              key={folder.folder}
+              className="flex items-baseline justify-between gap-2 font-mono text-caption tabular-nums text-[color:var(--color-text-tertiary)]"
+            >
+              <span className="truncate">{folder.folder}</span>
+              <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
+                {folder.count}
               </span>
-              <span className="min-w-0 flex-1 text-body text-[color:var(--color-text-primary)]">
-                {row.label}
-                {row.key === 'guides' && reach.mirroredGuides > 0 ? (
-                  <span className="ml-2 text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                    {t('reachMirrored', { count: reach.mirroredGuides })}
-                  </span>
-                ) : null}
-                {row.key === 'named' && reach.hops > 1 ? (
-                  <span className="ml-2 text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                    {t('reachNamedDirect', { count: reach.namedDirect, hops: reach.hops - 1 })}
-                  </span>
-                ) : null}
-              </span>
-              {row.key === 'unnamed' && reach.unnamedByFolder.length > 0 ? (
-                /* The breakdown opens on a press. Permanently spilled, it made the most important
-                   number on the screen the one followed by the most text on the screen. */
-                <button
-                  type="button"
-                  data-testid="harness-reach-breakdown-toggle"
-                  onClick={() => setOpenBreakdown((open) => !open)}
-                  aria-expanded={openBreakdown}
-                  className={controlClass({
-                    shape: 'link',
-                    size: 'sm',
-                    tone: 'muted',
-                    hoverInk: 'strong',
-                    className: 'shrink-0 touch-hit-expand',
-                  })}
-                >
-                  {t('reachBreakdownOpen')}
-                </button>
-              ) : null}
-            </div>
-            <p className="ml-[4.75rem] text-caption text-[color:var(--color-text-quaternary)]">
-              {row.note}
-            </p>
-            {row.key === 'unnamed' && openBreakdown ? (
-              <ul
-                data-testid="harness-reach-breakdown"
-                className="ml-[4.75rem] mt-2 grid gap-x-6 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3"
-              >
-                {reach.unnamedByFolder.map((folder) => (
-                  <li
-                    key={folder.folder}
-                    className="flex items-baseline justify-between gap-2 font-mono text-caption tabular-nums text-[color:var(--color-text-tertiary)]"
-                  >
-                    <span className="truncate">{folder.folder}</span>
-                    <span className="shrink-0 text-[color:var(--color-text-quaternary)]">
-                      {folder.count}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {reach.truncated ? (
         <p className="text-caption text-[color:var(--color-amber-source-a90)]">
           {t('reachTruncated')}
@@ -499,6 +582,7 @@ export function HarnessCoverageView({
     [report.coverage, areas, report.testFiles],
   );
   const [openCell, setOpenCell] = useState<string | null>(null);
+  const [openEverywhere, setOpenEverywhere] = useState<CoverageColumn | null>(null);
   /*
    * The detail lives in a different `<tr>` from the cell that opened it, so closing it unmounts the
    * focused element and focus falls to `<body>` — the next Tab restarts at the top of the document,
@@ -540,14 +624,6 @@ export function HarnessCoverageView({
     );
   }
 
-  /* The denominator a bar is drawn against: the largest count in its own column. Comparing across
-     columns would say Told and Watched are the same kind of quantity, which they are not. */
-  const columnMax: Record<CoverageColumn, number> = {
-    told: Math.max(1, ...matrix.areas.map((area) => area.told.length)),
-    gated: Math.max(1, ...matrix.areas.map((area) => area.gated.length)),
-    watched: Math.max(1, ...matrix.areas.map((area) => area.watched.length)),
-  };
-
   const outsideFolders = [
     ...new Set(
       matrix.outsideAreas.flatMap((entry) =>
@@ -556,17 +632,120 @@ export function HarnessCoverageView({
     ),
   ].sort();
 
+  /*
+   * The card's large numeral, per column: how many areas have an **empty** square below it. Not a
+   * derived statistic — it is the count of the amber outlines in the column, so a reader who
+   * doubts the card can settle it by counting rather than by trusting.
+   */
+  const gapCount: Record<CoverageColumn, number> = {
+    told: matrix.areas.filter((area) => area.told.length === 0).length,
+    gated: matrix.areas.filter((area) => area.gated.length === 0).length,
+    watched: matrix.areas.filter((area) => area.watched.length === 0).length,
+  };
+
   return (
     <section data-testid="harness-coverage" className="flex flex-col gap-5">
-      <p
-        data-testid="harness-coverage-headline"
-        className="max-w-prose break-keep text-title font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-primary)]"
+      {/*
+        The three questions, each with the count of areas it has no answer for, over a denominator
+        the reader can see. This replaced a single headline sentence that could only ever speak for
+        the Watched column; three cards say it for three columns in the grammar the insights board
+        already uses, and no number on this screen is now counted two ways.
+      */}
+      <div
+        data-testid="harness-coverage-columns"
+        className="grid gap-[var(--card-gap)] sm:grid-cols-3"
       >
-        {t('coverageHeadline', {
-          unwatched: matrix.unwatchedAreas.length,
-          areas: matrix.areas.length,
+        {COLUMNS.map((column) => {
+          const everywhere = groupMirroredDeclarations(matrix.everywhere[column]);
+          const gaps = gapCount[column];
+          return (
+            <CensusTile
+              key={column}
+              testId="harness-coverage-column-card"
+              rowKey={column}
+              label={t(COLUMN_HEAD[column])}
+              labelSuffix={
+                <InfoHint label={t(COLUMN_HEAD[column])}>{t(COLUMN_HINT[column])}</InfoHint>
+              }
+            >
+              <div data-harness-column-gap={gaps}>
+                <CensusBigNumber
+                  scale="section"
+                  /* Amber only while there is something to report. A column with no gap is not a
+                     warning, and colouring a zero would make the one state amber carries mean two
+                     things. */
+                  tone={gaps > 0 ? 'warning' : 'numeral'}
+                  value={gaps}
+                  unit={t('coverageOfAreas', { areas: matrix.areas.length })}
+                  testId="harness-coverage-column-number"
+                />
+              </div>
+              <p className="text-label text-[color:var(--color-text-tertiary)]">
+                {t(COLUMN_GAP_NOUN[column])}
+              </p>
+              {everywhere.length > 0 ? (
+                /*
+                  The always-loaded set, counted on the card of the column it belongs to. As a
+                  separate section below the table it was three flat runs of monospace names — the
+                  disease that had just been removed from the table itself — and it sat furthest
+                  from the empty cells it exists to qualify.
+                */
+                <button
+                  type="button"
+                  data-testid="harness-everywhere-toggle"
+                  data-harness-everywhere={column}
+                  aria-expanded={openEverywhere === column}
+                  onClick={() =>
+                    setOpenEverywhere((current) => (current === column ? null : column))
+                  }
+                  className={controlClass({
+                    shape: 'link',
+                    size: 'sm',
+                    tone: 'muted',
+                    hoverInk: 'strong',
+                    className: 'self-start touch-hit-expand',
+                  })}
+                >
+                  <CensusSubStat label={t('coverageEverywhereStat')} value={everywhere.length} />
+                </button>
+              ) : null}
+            </CensusTile>
+          );
         })}
-      </p>
+      </div>
+
+      {openEverywhere ? (
+        <section
+          data-testid="harness-coverage-everywhere"
+          className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)]"
+        >
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+              {t('coverageEverywhereTitle')} ·{' '}
+              <span className="normal-case">{t(COLUMN_HEAD[openEverywhere])}</span>
+            </h2>
+            <button
+              type="button"
+              onClick={() => setOpenEverywhere(null)}
+              className={controlClass({
+                shape: 'link',
+                size: 'sm',
+                tone: 'muted',
+                hoverInk: 'strong',
+                className: 'shrink-0 touch-hit-expand',
+              })}
+            >
+              {t('coverageCloseNames')}
+            </button>
+          </div>
+          <p className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
+            {t('coverageEverywhereBody', { areas: matrix.areas.length })}
+          </p>
+          <div className="mt-3">
+            <DeclarationList entries={matrix.everywhere[openEverywhere]} t={t} />
+          </div>
+        </section>
+      ) : null}
 
       {/* No horizontal scroller. The cells carry a mark and a count rather than a list of names,
           so the table fits at 390 — and a popover positioned inside a scroll container is clipped
@@ -598,8 +777,8 @@ export function HarnessCoverageView({
                     own `text-transform`. An `aria-label` repaired that, and then the measurement
                     said the button should not be here at all: three 44px coarse-pointer hit areas
                     inside three 63px columns overlapped their neighbours by 15px and 22px, and the
-                    third icon left the 390 viewport entirely. The detail already prints the same
-                    hint at its foot, so the head was a duplicate with a cost (design-lead and
+                    third icon left the 390 viewport entirely. The hint now lives on the column's
+                    card above, where one 44px target sits in a 200px-wide tile (design-lead and
                     design-responsive, 2026-09-13).
                   */
                   className="px-3 pb-2 text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]"
@@ -688,11 +867,7 @@ export function HarnessCoverageView({
                             className: 'h-full items-start px-3 py-3',
                           })}
                         >
-                          <CellMark
-                            count={entries.length}
-                            max={columnMax[column]}
-                            t={t}
-                          />
+                          <CellMark count={entries.length} t={t} />
                           <ChevronRight
                             size={ICON_SIZE.sm}
                             aria-hidden
@@ -716,7 +891,7 @@ export function HarnessCoverageView({
                         area={area}
                         column={openColumn}
                         t={t}
-                        onClose={() => setOpenCell(null)}
+                        onClose={closeCell}
                       />
                     </td>
                   </tr>
@@ -726,43 +901,6 @@ export function HarnessCoverageView({
           </tbody>
         </table>
       </div>
-
-      {/*
-        Outside the row rhythm on purpose. This is the always-loaded set — it reaches everything, it
-        carries the largest list on the screen, and as the table's first row it was the heaviest and
-        least actionable line winning the eye. It still has to be here: an empty cell above only
-        reads correctly next to it.
-      */}
-      <section
-        data-testid="harness-coverage-everywhere"
-        className="border-t border-[color:var(--color-border-soft)] pt-3"
-      >
-        <h2 className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
-          {t('coverageEverywhereTitle')}
-        </h2>
-        <p className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
-          {t('coverageEverywhereBody', { areas: matrix.areas.length })}
-        </p>
-        <dl className="mt-3 grid gap-3 sm:grid-cols-3">
-          {COLUMNS.map((column) => (
-            <div key={column} className="min-w-0">
-              <dt className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
-                {t(COLUMN_HEAD[column])}
-              </dt>
-              <dd className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
-                {matrix.everywhere[column].map((entry) => (
-                  <span
-                    key={entry.id}
-                    className="font-mono text-caption text-[color:var(--color-text-tertiary)]"
-                  >
-                    {entry.label}
-                  </span>
-                ))}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </section>
 
       <DocumentReachBlock reach={report.documentReach} sourceRoot={sourceRoot} t={t} />
 

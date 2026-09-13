@@ -1,5 +1,9 @@
-import type { ReactNode } from "react";
-import { useCountUp } from "@/shared/lib/use-count-up";
+import {
+  CensusBigNumber,
+  CensusSubStat,
+  CensusSubStrip,
+  CensusTile,
+} from "@/shared/ui/census-tile";
 import { HiddenCountLine } from "@/shared/ui/hidden-count-line";
 import { controlClass } from "@/shared/ui/control-class";
 import type { CensusHealthSummary } from "../../lib/census-health";
@@ -134,18 +138,18 @@ export function InsightsCensusStrip({
       // whatever its copy length (dimensional regularity).
       className="grid grid-cols-2 gap-[var(--card-gap)] @min-[1200px]/insights:grid-cols-4"
     >
-      <CensusTile label={labels.concepts}>
-        <BigNum value={totalNodes} />
+      <CensusTile testId="insights-census-tile" label={labels.concepts}>
+        <CensusBigNumber testId="insights-bignum" value={totalNodes} />
         <div className="mt-auto flex flex-col gap-1.5">
-          <SubStrip items={kindsSummary} />
-          <SubStat label={labels.membershipLabel} value={`${health.domainMembershipPct}%`} />
+          <CensusSubStrip items={kindsSummary} />
+          <CensusSubStat label={labels.membershipLabel} value={`${health.domainMembershipPct}%`} />
         </div>
       </CensusTile>
 
-      <CensusTile label={labels.relations}>
-        <BigNum value={totalEdges} />
+      <CensusTile testId="insights-census-tile" label={labels.relations}>
+        <CensusBigNumber testId="insights-bignum" value={totalEdges} />
         <div className="mt-auto flex flex-col gap-1.5">
-          <SubStrip items={relationsSummary} />
+          <CensusSubStrip items={relationsSummary} />
           <HiddenCountLine
             data-testid="insights-relations-hidden"
             total={relationsTotal}
@@ -170,7 +174,7 @@ export function InsightsCensusStrip({
 
       {/* The health tile's value is the verdict **in words**. A number here would be the third
           place counting the same work; the words are the fact the number never carried. */}
-      <CensusTile label={labels.health}>
+      <CensusTile testId="insights-census-tile" label={labels.health}>
         <p
           data-testid="insights-verdict-word"
           className="text-display font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
@@ -182,18 +186,18 @@ export function InsightsCensusStrip({
             data-testid="insights-verdict-split"
             className="flex flex-wrap items-center gap-3.5 text-label text-[color:var(--color-text-tertiary)]"
           >
-            <SubStat label={labels.statusBlocking} value={verdict.blocking} />
-            <SubStat label={labels.statusAdvisory} value={verdict.advisory} />
+            <CensusSubStat label={labels.statusBlocking} value={verdict.blocking} />
+            <CensusSubStat label={labels.statusAdvisory} value={verdict.advisory} />
           </div>
           <div className="flex flex-wrap items-center gap-3.5 text-label text-[color:var(--color-text-tertiary)]">
-            <SubStat label={labels.orphan} value={health.orphanCount} />
-            <SubStat label={labels.islands} value={islandCount} />
-            <SubStat label={labels.cycle} value={health.cycleCount} />
+            <CensusSubStat label={labels.orphan} value={health.orphanCount} />
+            <CensusSubStat label={labels.islands} value={islandCount} />
+            <CensusSubStat label={labels.cycle} value={health.cycleCount} />
           </div>
         </div>
       </CensusTile>
 
-      <CensusTile label={labels.recentTitle}>
+      <CensusTile testId="insights-census-tile" label={labels.recentTitle}>
         <WeeklyBars
           weeklyTotals={weeklyTotals}
           ariaLabel={labels.recentBarsAria(
@@ -205,60 +209,12 @@ export function InsightsCensusStrip({
           <span className="text-label text-[color:var(--color-text-tertiary)]">
             {labels.recentThisWeek(thisWeek)}
           </span>
-          <SubStat label={labels.evidenceLinked} value={`${health.evidenceLinkedPct}%`} />
+          <CensusSubStat label={labels.evidenceLinked} value={`${health.evidenceLinkedPct}%`} />
         </div>
       </CensusTile>
     </div>
   );
 }
-
-function CensusTile({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div
-      data-testid="insights-census-tile"
-      className="flex min-w-0 flex-col gap-2.5 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
-    >
-      {/* The tile name is an eyebrow, and a Korean eyebrow carries no tracking — spaced Hangul
-          reads as a stutter, not as emphasis. */}
-      <div className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-        {label}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function BigNum({ value, unit, suffix }: { value: number | string; unit?: string; suffix?: string }) {
-  // #3 — the census signature numbers count up once on mount. tabular-nums keeps
-  // the width stable as digits change; reduced-motion snaps to the final value.
-  const isNumeric = typeof value === "number";
-  const counted = useCountUp(isNumeric ? value : 0);
-  const display = isNumeric ? counted : value;
-  return (
-    <div
-      // eslint-disable-next-line no-restricted-syntax -- the census signature's large numeral (40px) deliberately exceeds the top of the type ramp (hero 30px) as a display exception.
-      className="font-mono text-[40px] font-[var(--font-weight-strong)] leading-display-tight tabular-nums tracking-[var(--tracking-label)] text-[color:var(--map-numeral-face)]"
-      style={{ textShadow: "0 2px 0 var(--map-numeral-shadow)" }}
-      data-testid="insights-bignum"
-    >
-      <span aria-hidden="true" data-insights-animated-value>
-        {display}
-        {suffix ?? ""}
-        {unit ? (
-          <span className="ml-1.5 text-body tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]" style={{ textShadow: "none" }}>
-            {unit}
-          </span>
-        ) : null}
-      </span>
-      <span className="sr-only" data-insights-exact-value>
-        {value}
-        {suffix ?? ""}
-        {unit ? ` ${unit}` : ""}
-      </span>
-    </div>
-  );
-}
-
 /**
  * The 12-week update series as hairline bars.
  *
@@ -299,32 +255,6 @@ function WeeklyBars({ weeklyTotals, ariaLabel }: { weeklyTotals: number[]; ariaL
                   : "var(--color-overlay-3)",
           }}
         />
-      ))}
-    </div>
-  );
-}
-
-function SubStat({ label, value }: { label: string; value: number | string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-label text-[color:var(--color-text-tertiary)]">
-      {label}
-      <span className="font-mono text-label tabular-nums text-[color:var(--map-numeral-face)]">
-        {value}
-      </span>
-    </span>
-  );
-}
-
-function SubStrip({ items }: { items: Array<{ key: string; label: string; count: number }> }) {
-  return (
-    <div className="flex flex-wrap items-center gap-3.5 text-label text-[color:var(--color-text-tertiary)]">
-      {items.map((item) => (
-        <span key={item.key} className="inline-flex items-center gap-1.5">
-          {item.label}
-          <span className="font-mono text-label tabular-nums text-[color:var(--map-numeral-face)]">
-            {item.count}
-          </span>
-        </span>
       ))}
     </div>
   );

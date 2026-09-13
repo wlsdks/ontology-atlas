@@ -26,6 +26,8 @@
  * times.
  */
 
+import type { AgentTool } from './agent-files';
+
 /** The three questions the matrix asks of every area. */
 export type CoverageColumn = 'told' | 'gated' | 'watched';
 
@@ -64,6 +66,17 @@ export interface ScopeDeclaration {
   scopes: readonly string[];
   /** For a hook: the config file that names the script. */
   namedBy?: string;
+  /**
+   * Which agent tools read this file, from the same rule table the guides table cites.
+   *
+   * Nine of this repository's hook scripts exist in **both** `.claude/hooks/` and `.codex/hooks/`
+   * as real mirrored files, and `label` is the bare script name for both. A list keyed by `label`
+   * therefore printed each of those names twice, which reads as a rendering fault rather than as
+   * the fact it is. The tool is the distinction the bare name threw away. Empty for a file no agent
+   * tool reads — a Git hook, a `package.json` script, a CI workflow — which is an absence of
+   * agent-tool ownership rather than a missing lookup.
+   */
+  tools: readonly AgentTool[];
 }
 
 /**

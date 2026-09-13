@@ -53,6 +53,16 @@ vi.mock('next/navigation', async (importOriginal) => ({
 
 const { HarnessPage } = await import('./HarnessPage');
 
+/**
+ * Walk past the threshold that holds the wait screen back. The panel exists for a read that is
+ * genuinely slow; every test that wants to see it has to make the read genuinely slow.
+ */
+function waitPastProgressThreshold() {
+  act(() => {
+    vi.advanceTimersByTime(1000);
+  });
+}
+
 function mount() {
   return render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -96,6 +106,9 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
 beforeEach(() => {
   state.mode = 'local';
   state.report = null;
+  /* Real timers by default; only the wait-screen tests fake them, and they must not leak into the
+     count-up animation the arrival runs. */
+  vi.useRealTimers();
   window.history.replaceState(null, '', '/ko/architecture/');
 });
 
@@ -212,7 +225,9 @@ describe('the segmented control', () => {
       sourceRoot: '/repo',
       progress: { stage: 'citations', done: 40, total: 401 },
     };
+    vi.useFakeTimers();
     mount();
+    waitPastProgressThreshold();
     const panel = screen.getByTestId('harness-scan-progress');
     expect(panel).toHaveTextContent('문서 사이의 인용');
     /* `done` is what finished, not what started: counting the running unit put the last pass at its
@@ -228,6 +243,35 @@ describe('the segmented control', () => {
     );
   });
 
+  it('shows no wait screen at all for a read that finishes inside the threshold', () => {
+    /*
+     * ⚠️ **The fix for "the loading screen is too fast to see" is not to slow the read down.** The
+     * read is 0.6s on this repository because the previous slice made it fast, and animating a wait
+     * that is not happening would be dishonest. So the panel is held back for a second: a fast read
+     * flashes nothing, and the result simply arrives.
+     *
+     * This assertion is the whole gate. Without it the threshold could be set to zero and every
+     * other test on this panel would still pass.
+     */
+    vi.useFakeTimers();
+    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+    state.report = {
+      status: 'loading',
+      sourceRoot: '/repo',
+      progress: { stage: 'roots', done: 2, total: 7 },
+    };
+    mount();
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(screen.queryByTestId('harness-scan-progress')).toBeNull();
+    /* …and it is held back, not suppressed: the same read past the threshold still gets it. */
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(screen.getByTestId('harness-scan-progress')).toBeInTheDocument();
+  });
+
   it('never invents a denominator for a pass whose length it cannot know', () => {
     window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
     state.report = {
@@ -235,7 +279,9 @@ describe('the segmented control', () => {
       sourceRoot: '/repo',
       progress: { stage: 'documents', done: 0, total: null },
     };
+    vi.useFakeTimers();
     mount();
+    waitPastProgressThreshold();
     const panel = screen.getByTestId('harness-scan-progress');
     expect(panel).toHaveTextContent('세는 중');
     expect(panel.querySelector('.harness-scan-sweep')).not.toBeNull();

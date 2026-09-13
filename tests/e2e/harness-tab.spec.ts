@@ -85,13 +85,35 @@ test.describe("하네스 탭", () => {
     const matrix = page.getByTestId("harness-coverage");
     await expect(matrix).toBeVisible({ timeout: 30_000 });
 
-    // The headline counts the areas no check names, and never a score.
-    await expect(page.getByTestId("harness-coverage-headline")).toContainText("검사도 이름을 부르지 않습니다");
+    // Each column gets a card: the count of areas it has no answer for, over a denominator the
+    // reader can see. This replaced a headline sentence that could only ever speak for Watched.
+    const watchedCard = page.locator('[data-testid="harness-coverage-column-card"][data-census-row="watched"]');
+    await expect(watchedCard).toContainText("어떤 검사도 부르지 않는 도메인");
 
-    // The universal row stands once, above the areas, instead of repeating down every column.
+    // ⚠️ The card's number is not a derived statistic — it is the count of empty marks in the
+    // column below it, so a reader can settle it by counting. If the two ever disagree the screen
+    // is worse than the undecodable bar this replaced, so the agreement is the assertion.
+    const declaredGap = await watchedCard.locator("[data-harness-column-gap]").getAttribute("data-harness-column-gap");
+    const emptyMarks = await page.locator('[data-harness-cell="watched"][data-harness-cell-empty="true"]').count();
+    expect(Number(declaredGap)).toBe(emptyMarks);
+
+    // The always-loaded lanes are counted on the card of the column they qualify and open beneath
+    // it. As a separate section below the table they were three flat runs of monospace names — the
+    // disease that had just been removed from the table — furthest from the cells they explain.
+    await expect(page.getByTestId("harness-coverage-everywhere")).toHaveCount(0);
+    await watchedCard.getByTestId("harness-everywhere-toggle").click();
     const everywhere = page.getByTestId("harness-coverage-everywhere");
-    await expect(everywhere).toContainText("forbidden");
     await expect(everywhere).toContainText("lint");
+
+    // ⚠️ Nine of this repository's hook names exist in both .claude/hooks/ and .codex/hooks/ as
+    // real mirrored files, and the first build printed the bare name twice — which reads as a
+    // rendering fault rather than as the mirror it is. Each name appears once now, and the tools
+    // that read it carry the distinction the repetition destroyed.
+    const toldCard = page.locator('[data-testid="harness-coverage-column-card"][data-census-row="told"]');
+    await toldCard.getByTestId("harness-everywhere-toggle").click();
+    const told = page.getByTestId("harness-coverage-everywhere");
+    await expect(told).toContainText("forbidden");
+    expect((await told.textContent())!.match(/forbidden/g)!).toHaveLength(1);
 
     // Every row carries the vault's purpose sentence, which is the whole reason the rows are areas
     // rather than folders: without it an empty cell can only say "a file is absent".
@@ -136,12 +158,12 @@ test.describe("하네스 탭", () => {
     await page.goto("/ko/architecture/?view=coverage");
     const reach = page.getByTestId("harness-reach");
     await expect(reach).toBeVisible({ timeout: 30_000 });
-    await expect(reach.locator('[data-harness-reach-row="guides"]')).toContainText("지침");
-    await expect(reach.locator('[data-harness-reach-row="named"]')).toContainText("1");
+    await expect(reach.locator('[data-census-row="guides"]')).toContainText("지침");
+    await expect(reach.locator('[data-census-row="named"]')).toContainText("1");
     /* Three: the fixture's unnamed document, plus both agent briefs. A brief is addressed by name
        rather than by path, so it lands here for a reason that is fine — which is exactly why the
        folders are printed beside the count instead of the rows being filtered. */
-    await expect(reach.locator('[data-harness-reach-row="unnamed"]')).toContainText("3");
+    await expect(reach.locator('[data-census-row="unnamed"]')).toContainText("3");
 
     // The breakdown of where the unnamed documents are opens on a press. Spilled permanently, the
     // most important number on the screen was the one followed by the most text on the screen.

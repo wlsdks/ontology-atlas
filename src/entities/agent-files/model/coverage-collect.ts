@@ -7,6 +7,7 @@ import {
   workflowPathFilters,
   type ScopeDeclaration,
 } from './coverage-scopes';
+import { agentToolsForPath } from './agent-files';
 import type { HookConfigFacts } from './hook-wiring';
 
 /**
@@ -77,6 +78,7 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
       declaration: `${directory}/`,
       declaresPath: true,
       scopes: [directory],
+      tools: agentToolsForPath(path),
     });
   }
   for (const [path, text] of input.contents) {
@@ -90,6 +92,7 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
       declaration: globs.length > 0 ? `paths: ${globs.join(' · ')}` : '',
       declaresPath: globs.length > 0,
       scopes: globs.map(literalPrefix).filter(Boolean),
+      tools: agentToolsForPath(path),
     });
   }
 
@@ -111,6 +114,7 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
         declaresPath: scopes.length > 0,
         scopes,
         namedBy: group.configPath,
+        tools: agentToolsForPath(hook.ref.path),
       });
     }
   }
@@ -124,6 +128,7 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
       declaration: scopes.join(' · '),
       declaresPath: scopes.length > 0,
       scopes,
+      tools: [],
     });
   }
 
@@ -138,6 +143,7 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
       declaration: command,
       declaresPath: scopes.length > 0,
       scopes,
+      tools: [],
     });
   }
   for (const [path, text] of input.workflows) {
@@ -150,6 +156,7 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
       declaration: filters.length > 0 ? `paths: ${filters.join(' · ')}` : '',
       declaresPath: filters.length > 0,
       scopes: filters.map(literalPrefix).filter(Boolean),
+      tools: [],
     });
   }
 
