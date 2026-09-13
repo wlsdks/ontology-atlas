@@ -28,6 +28,7 @@ import {
   getLocalFsHandle,
   listRecentLocalFsHandles,
   putLocalFsHandle,
+  recordLocalFsHandleContents,
   touchLocalFsHandle,
 } from './store';
 import type { LocalFsHandleRecord } from '../model/types';
@@ -275,5 +276,40 @@ describe('local-fs-handle store', () => {
     expect(restored?.handle.name).toBe('desktop');
     expect(recent.map((record) => record.name)).toEqual(['Desktop Vault']);
     expect(recent[0].handle.name).toBe('desktop');
+  });
+});
+
+describe('recordLocalFsHandleContents', () => {
+  it('writes the counts onto the current record and its recent entry', async () => {
+      await putLocalFsHandle({
+        id: CURRENT_LOCAL_FS_HANDLE_ID,
+        handle: fakeHandle('atlas'),
+        name: 'atlas',
+        createdAt: 1,
+        lastAccessedAt: 1,
+      });
+
+      await recordLocalFsHandleContents({ docCount: 232, conceptCount: 41 });
+
+      // Both copies, because the chooser reads the recent list while the settings row reads
+      // the `current` record. Writing one would let two surfaces disagree about one folder.
+      const current = await getLocalFsHandle();
+      expect(current?.docCount).toBe(232);
+      expect(current?.conceptCount).toBe(41);
+      expect(current?.countedAt).toBeTypeOf('number');
+
+    const recent = await listRecentLocalFsHandles();
+    expect(recent[0].docCount).toBe(232);
+    expect(recent[0].conceptCount).toBe(41);
+  });
+
+  it('does nothing when there is no such record', async () => {
+      // The same contract as `touchLocalFsHandle`: a count for a folder that is not stored
+      // has nothing to attach to, and inventing a record for it would put a folder in the
+      // chooser that nobody opened.
+      await recordLocalFsHandleContents({ docCount: 5, conceptCount: 2 });
+
+    expect(await getLocalFsHandle()).toBeUndefined();
+    expect(await listRecentLocalFsHandles()).toEqual([]);
   });
 });

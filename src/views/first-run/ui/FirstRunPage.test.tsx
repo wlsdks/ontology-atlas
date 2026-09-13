@@ -8,7 +8,16 @@ interface MockVault {
   errorMessage: string | null;
   open: ReturnType<typeof vi.fn>;
   openRecent: ReturnType<typeof vi.fn>;
+  forgetRecent: ReturnType<typeof vi.fn>;
   scaffoldOntology: ReturnType<typeof vi.fn>;
+  /**
+   * The launch chooser's inputs (2026-09-13). This screen is also the installed app's
+   * launch chooser, so it reads the known-folder list; an empty list renders nothing and
+   * keeps every case below measuring the first-run screen it was written for.
+   */
+  recentVaults: unknown[];
+  awaitingVaultChoice: boolean;
+  storedVaultRecord: unknown | null;
 }
 
 const mocks = vi.hoisted(() => ({
@@ -66,7 +75,11 @@ function makeVault(): MockVault {
     errorMessage: null,
     open: vi.fn(async () => undefined),
     openRecent: vi.fn(async () => undefined),
+    forgetRecent: vi.fn(async () => undefined),
     scaffoldOntology: vi.fn(async () => ({ created: 8, skipped: 0 })),
+    recentVaults: [],
+    awaitingVaultChoice: false,
+    storedVaultRecord: null,
   };
   return vault;
 }
@@ -221,6 +234,76 @@ describe('FirstRunPage', () => {
         '/Users/me/Documents/Ontology Atlas',
         'my-ontology-2',
       );
+    });
+  });
+
+  /**
+   * **This screen is the installed app's launch chooser too.**
+   *
+   * `AppShell` sends every workbench route to `/` while the installed app has no vault
+   * loaded, and `RootEntryPage` renders this screen there - so when the cold restore stops
+   * to ask which folder, this is where the person lands. A chooser that existed only on
+   * `/docs` would have been invisible on the owner's launch, and on a wiki-only vault
+   * `/docs` is not even a destination.
+   */
+  describe('as the launch chooser', () => {
+    function folder(name: string) {
+      return {
+        id: 'current',
+        handle: { kind: 'directory', name },
+        desktopRootPath: `/Users/me/vaults/${name}`,
+        name,
+        createdAt: 1,
+        lastAccessedAt: Date.now() - 60 * 60 * 1000,
+        docCount: 41,
+        conceptCount: 7,
+        countedAt: Date.now() - 60 * 60 * 1000,
+      };
+    }
+
+    it('lists the known folders with what each holds and when it was last open', () => {
+      mocks.vault.recentVaults = [folder('atlas'), folder('atlas-old')];
+      mocks.vault.awaitingVaultChoice = true;
+      mocks.vault.storedVaultRecord = mocks.vault.recentVaults[0];
+
+      render(<FirstRunPage />);
+
+      expect(screen.getByTestId('recent-vault-list')).toBeTruthy();
+      expect(screen.getAllByTestId('recent-vault-row')).toHaveLength(2);
+      /*
+       * The *rendered wording* of the facts line is asserted in a real browser against the
+       * real catalogue (`tests/e2e/vault-launch-chooser.spec.ts` matches "3 documents" and
+       * "2 concepts"), because this file renders without an i18n provider and would only be
+       * measuring message keys. What this case owns is the structure the wording hangs on:
+       * a row per known folder, and exactly one of them marked.
+       */
+      // Exactly one row is marked as the folder the last session had open.
+      expect(
+        document.querySelectorAll('[data-testid="recent-vault-row"][data-current="true"]'),
+      ).toHaveLength(1);
+    });
+
+    it('opens the folder the person picks through the existing recent-open flow', async () => {
+      const picked = folder('atlas-old');
+      mocks.vault.recentVaults = [folder('atlas'), picked];
+      mocks.vault.awaitingVaultChoice = true;
+      mocks.vault.storedVaultRecord = mocks.vault.recentVaults[0];
+
+      render(<FirstRunPage />);
+      fireEvent.click(screen.getAllByTestId('recent-vault-open')[1]);
+
+      await waitFor(() => expect(mocks.vault.openRecent).toHaveBeenCalledTimes(1));
+      expect(mocks.vault.openRecent.mock.calls[0][0].name).toBe('atlas-old');
+    });
+
+    it('shows no folder list on a genuine first run', () => {
+      // The screen this file was written for is unchanged: an empty list renders nothing,
+      // so a first-time person is not shown an empty "folders Atlas knows" heading.
+      mocks.vault.recentVaults = [];
+
+      render(<FirstRunPage />);
+
+      expect(screen.queryByTestId('recent-vault-list')).toBeNull();
     });
   });
 });

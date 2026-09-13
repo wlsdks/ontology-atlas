@@ -77,8 +77,14 @@ const ROOT = process.cwd();
  * 304 → 303 (2026-09-05): the web connect panel's tool row stopped being a hand-built
  * `role="tablist"` and became `SegmentedControl` — its hand-written `hover:text-*` went with the
  * chips. Genuine adoption: the axis (`hoverInk`) now supplies that ink from the primitive.
+ *
+ * 303 → 302 (2026-09-13): the folder chooser's recent rows moved out of
+ * `DesktopVaultWelcome` into one shared `RecentVaultList`, and the two rows that replaced
+ * them (the chooser's and the rail switcher's) take the neutral lift from
+ * `hoverSurface: 'lift'` instead of writing it. Three hand declarations became none:
+ * genuine adoption, and one fewer place for the lift to drift.
  */
-const CEILING = 303;
+const CEILING = 302;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

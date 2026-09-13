@@ -144,6 +144,32 @@ export async function touchLocalFsHandle(
   await rememberRecentLocalFsHandle(next);
 }
 
+/**
+ * Records what a folder held, on the record for `id` **and** on its recent-list entry.
+ *
+ * Called by the one code path that has already walked the folder, so the numbers cost
+ * nothing extra. Both copies are written because the chooser reads the recent list while
+ * the settings row reads the `current` record; writing one would let them disagree about
+ * the same folder.
+ *
+ * A no-op when the record does not exist — the same contract as `touchLocalFsHandle`.
+ */
+export async function recordLocalFsHandleContents(
+  contents: { docCount: number; conceptCount: number },
+  id: string = CURRENT_LOCAL_FS_HANDLE_ID,
+): Promise<void> {
+  const existing = await idbGet<LocalFsHandleRecord>(recordKey(id));
+  if (!existing) return;
+  const next: LocalFsHandleRecord = {
+    ...existing,
+    docCount: contents.docCount,
+    conceptCount: contents.conceptCount,
+    countedAt: Date.now(),
+  };
+  await idbSet(recordKey(id), next);
+  await rememberRecentLocalFsHandle(next);
+}
+
 /** Recently opened vaults. On Tauri desktop the handle shim is rebuilt from the stored path. */
 export async function listRecentLocalFsHandles(): Promise<LocalFsHandleRecord[]> {
   const records = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];

@@ -592,6 +592,15 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 > `/knowledge/*`. Removed in Round 10: `/login`, `/signup`, `/account`,
 > `/reset-password`, `/settings/*`.
 
+**Above the destinations the rail carries exactly one thing: the open folder's
+identity** (`src/features/vault-switch`, 2026-09-13). It is the only persistent
+place in the app that says which folder the data comes from — the shell has no
+header, and a wiki-only vault has no `/docs`, which was the one surface that named
+the folder — and pressing it opens the known folders plus a picker. The same list
+is the launch chooser: when two or more folders are known the cold restore stops
+rather than guess, leaving the folder screen to own the launch. Decision:
+`docs/DECISIONS.md`, "The folder count decides the launch".
+
 **One piece of code decides which nav item is active; each screen size shows a
 different list of buttons.** The desktop rail shows nine destinations: Map,
 Architecture, Docs, Library, Insights, Projects, Agents, MCP, and Git. The mobile bottom

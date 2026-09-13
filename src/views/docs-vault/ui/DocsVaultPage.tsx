@@ -140,6 +140,7 @@ function splitVaultSlugPath(slug: string): { dir: string; name: string } {
 // not collide with another domain's view; aliased short inside this file.
 import { DocMetaBar } from "./parts/DocMetaBar";
 import { DesktopVaultWelcome } from "./parts/DesktopVaultWelcome";
+import { recentVaultRowKey } from "@/features/vault-switch";
 import {
   DocFrontmatterBlock,
   type DocFrontmatterPatch,
@@ -508,7 +509,14 @@ function DocsVaultContent() {
     if (landingSourceResolved) return;
     if (!sourcePreferenceHydrated || !localVaultRestoreAttempted) return;
     setLandingSourceResolved(true);
-    if (shouldPreferLocalOnLanding(localVaultStatus, source, querySource)) {
+    if (
+      shouldPreferLocalOnLanding(
+        localVaultStatus,
+        source,
+        querySource,
+        localVault.awaitingVaultChoice,
+      )
+    ) {
       setSource('local');
     }
   }, [
@@ -516,6 +524,7 @@ function DocsVaultContent() {
     sourcePreferenceHydrated,
     localVaultRestoreAttempted,
     localVaultStatus,
+    localVault.awaitingVaultChoice,
     querySource,
     source,
   ]);
@@ -2426,6 +2435,23 @@ function DocsVaultContent() {
           // better than explaining what does not.
           onOpenDogfoodPath={isDesktopRuntime ? handleOpenDogfoodVault : undefined}
           onOpenRecent={(record) => void localVault.openRecent(record)}
+          onForgetRecent={(record) => void localVault.forgetRecent(record)}
+          currentVaultKey={
+            localVault.storedVaultRecord
+              ? recentVaultRowKey(localVault.storedVaultRecord)
+              : null
+          }
+          /*
+           * The launch deliberately stopped here. The screen then asks which folder rather
+           * than teaching what one is - see `DesktopVaultWelcome`'s `choosing` prop.
+           */
+          choosing={localVault.awaitingVaultChoice}
+          /*
+           * Only the installed app could have reopened the folder by itself; a browser needs
+           * the permission gesture regardless. The chooser says which of the two it is
+           * instead of presenting one behaviour as if it were both.
+           */
+          canResumeWithoutGesture={isDesktopRuntime}
           showDogfoodHint={showDogfoodHint}
           t={t}
         />

@@ -42,7 +42,18 @@ import { describe, expect, it } from 'vitest';
  * absent, which is the surface check this ratchet asks for, and in the installed app they are never
  * reached. Gate: `HarnessPage.test.tsx`, "names what a browser cannot reach".
  */
-const SURFACE_NAMED_CEILING = 20;
+/*
+ * 20 → 23 (2026-09-13): the folder chooser and its rows, all three behind a runtime check.
+ * `docsVault.desktopWelcome.chooseBodyWeb` renders only when the runtime cannot resume a
+ * folder on its own, and `vaultSwitch.state.needsPermission` / `vaultSwitch.state.blocked`
+ * come from `queryPermission`, which only a browser session consults - the installed app
+ * probes the stored path instead. Naming the browser is the point in all three: the brief
+ * requires the difference between a runtime that can reopen a folder and one that needs a
+ * click to be stated rather than hidden (`AGENTS.md`, honest degradation), and "this step is
+ * the browser's, not a choice Atlas added" is not a fact that survives being reworded into
+ * the passive.
+ */
+const SURFACE_NAMED_CEILING = 23;
 
 const NAMES_A_SURFACE = /브라우저|browser/i;
 

@@ -36,7 +36,17 @@ panels. These values are fixed; divergence is a defect, not taste.
 - Chrome pills and tiles are **36px** through `--chrome-tile-size`; chrome labels
   use **`text-label` (11px)**.
 - Rail icons are one **20px** step through `--app-nav-rail-icon-size`. The rail
-  starts with destinations and carries no separate brand mark or wordmark.
+  carries **no brand mark or wordmark**. Above the destinations it carries exactly
+  one thing, the open folder's identity and the way to another
+  (`features/vault-switch`), because the shell has no header and a folder name that
+  depended on the destination would be missing from a wiki-only vault, which has no
+  `/docs`. Nothing else is admitted there: the seat is for state the whole product
+  is about, not for a second navigation tier. The licence is the rail's alone:
+  below `lg` the rail is hidden, so **no chrome names the folder there** and the
+  launch chooser and settings are the only places — a known gap, and giving
+  `BottomTabBar` a folder seat is a separate decision rather than an extension of
+  this one. Decision: `docs/DECISIONS.md`, "The folder
+  count decides the launch, and the rail names the folder".
 - Do not scale at widths of 1920px or above. At 2400px and above, 1.1× is allowed;
   fractional text scaling below that blurs rasterization.
 - Body type is self-hosted **Pretendard Variable**. Inter was removed after its

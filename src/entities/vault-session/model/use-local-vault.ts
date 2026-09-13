@@ -2,7 +2,7 @@
 
 import { type AgentClientId, filesForClient } from '../lib/agent-clients';
 import { WIKI_PAGE_TEMPLATE } from '@/shared/lib/wiki-page-schema';
-import type { VaultShape } from '@/shared/lib/vault-shape';
+import { countVaultContents, type VaultShape } from '@/shared/lib/vault-shape';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity-log';
 import {
@@ -31,6 +31,7 @@ import {
   getLocalFsHandle,
   listRecentLocalFsHandles,
   putLocalFsHandle,
+  recordLocalFsHandleContents,
   touchLocalFsHandle,
   verifyHandlePermission,
 } from '@/entities/local-fs-handle';
@@ -736,6 +737,29 @@ export function useLocalVaultInternal() {
   const [state, setState] = useState<State>(() => emptyState('idle'));
   const [restoreAttempted, setRestoreAttempted] = useState(false);
   /**
+   * **The launch stopped at the chooser on purpose**, because two or more folders are known
+   * and the app will not guess between them. Distinct from every other idle state: nothing
+   * failed, nothing is missing, and the stored `current` record is still there to go back to.
+   *
+   * Consumers need it because 'idle' alone cannot carry this fact. The docs surface decides
+   * which source to land on by asking whether a local vault loaded (`shouldPreferLocalOnLanding`),
+   * and a deferred launch has not loaded one — so without this flag the person who is meant
+   * to be choosing a folder lands on the sample instead.
+   */
+  const [awaitingVaultChoice, setAwaitingVaultChoice] = useState(false);
+  /**
+   * The stored `current` record as read at boot - **which folder the last session had
+   * open**, whether or not it was then loaded.
+   *
+   * The chooser needs it to mark one row "last open", and that has to be a stored fact
+   * rather than an inference. Taking the top of the recent list instead would be right only
+   * for as long as "most recently accessed" and "was open last" agree, and they stop
+   * agreeing the moment a `touch` or a failed open reorders the list.
+   */
+  const [storedVaultRecord, setStoredVaultRecord] = useState<LocalFsHandleRecord | null>(
+    null,
+  );
+  /**
    * Set when "open a folder" opened the map **inside** the folder that was picked.
    *
    * ⚠️ Exists so the screen can say so. Quietly opening a different folder from the one a person
@@ -780,6 +804,10 @@ export function useLocalVaultInternal() {
   );
 
   const load = useCallback(async (handle: FileSystemDirectoryHandle) => {
+    // Any folder actually being opened ends the choosing state, whichever door it came
+    // through — the chooser row, the picker, or a restore. Clearing it here rather than in
+    // each caller is why a new door cannot forget to.
+    setAwaitingVaultChoice(false);
     setState((s) => ({
       ...s,
       status: 'loading',
@@ -830,6 +858,33 @@ export function useLocalVaultInternal() {
         lastLoadedAt: Date.now(),
         manifestHandle: handle,
       });
+      /*
+       * The chooser's row facts are written here, by the one path that has already paid for
+       * the walk. A folder the person is *offered* cannot be counted at the moment of
+       * offering — on the web reading it needs the permission gesture they have not made
+       * yet, and on the desktop five rows would mean five vault reads — so the count is
+       * taken when the folder is open and the row states its age.
+       *
+       * ⚠️ **Its own try/catch, not the load's.** This runs after the vault is already
+       * `loaded`, so a failure here reaching the outer catch would take a successfully
+       * opened folder and report it as broken — trading the whole screen for a cache write.
+       * A `.catch()` alone is not enough either: a synchronous throw (an absent export under
+       * a partial module mock, which is exactly how the existing tests stub this module)
+       * never becomes a rejected promise. The row is built to say it has no counts, and
+       * that is the correct outcome of every failure here.
+       */
+      try {
+        /*
+         * Awaited, though the screen is already painted. Left as fire-and-forget the write
+         * raced a navigation and lost: the folder opened most recently showed "Not counted
+         * yet" beside a sibling that had its numbers, which reads as a broken row rather
+         * than an honest unknown (inspection, 2026-09-13). Awaiting after `setState` costs
+         * the render nothing - the vault is already `loaded` by this line.
+         */
+        await recordLocalFsHandleContents(countVaultContents(manifest.docs));
+      } catch {
+        /* The counts stay absent; the row says so. */
+      }
     } catch (err) {
       lastBuildRef.current = null;
       // `toErrorMessage` preserves the cause string. Tauri commands return `Err(String)`, so
@@ -1491,13 +1546,56 @@ export function useLocalVaultInternal() {
        * first-run screen already turns into a sentence with somewhere to go.
        */
       const record = await getLocalFsHandle();
-      await refreshRecentVaults();
+      /*
+       * Read the list here rather than through `refreshRecentVaults`, because the decision
+       * below needs the value and not just the state update.
+       */
+      const recent = await listRecentLocalFsHandles();
+      if (!cancelled) {
+        setRecentVaults(recent);
+        setStoredVaultRecord(record ?? null);
+      }
       if (!record) {
         return;
       }
       if (cancelled) return;
+      /*
+       * ⚠️ **Two or more known folders means the app stops guessing and asks.**
+       *
+       * Owner, on relaunching the installed app (2026-09-13): once you have set the app up,
+       * relaunching always drops you in the same place, and that is the problem — it would
+       * be different if the choice came first every time and you picked your way in, the
+       * way you pick a game character.
+       *
+       * The count decides, and **nothing else does**. There is deliberately no preference
+       * for "show the chooser on launch": a setting is one more control nobody finds, and
+       * being unable to find the control is the defect being fixed here, not a detail of
+       * it. The release valve is the list itself — forgetting a folder on the chooser drops
+       * the count back to one and the next launch resumes directly. The person changes the
+       * behaviour by changing the list, in the same place they are already looking.
+       *
+       * One folder is not asked about: a chooser there is a toll on every launch for a
+       * screen with one button.
+       *
+       * Returning early leaves `status` at 'idle' with the stored record **untouched** —
+       * `shouldShowDesktopVaultWelcome` already renders the folder screen in that state, so
+       * the chooser this reveals is the one that was always built. `close()` is the wrong
+       * tool here: it deletes the `current` record, which would throw away the answer to
+       * "which folder was I in last".
+       */
+      if (recent.length >= 2) {
+        setAwaitingVaultChoice(true);
+        return;
+      }
       const storedHandle = record.handle;
-      void touchLocalFsHandle();
+      /*
+       * Awaited, not fired and forgotten. Both this and `recordLocalFsHandleContents` do a
+       * read-modify-write on the single recent-list key (`store.ts`, `RECENT_KEY`), so left
+       * concurrent they can interleave and drop an entry - and the launch rule is decided by
+       * how many entries that list holds, so a lost one silently un-arms the chooser
+       * (workbench seat, 2026-09-13).
+       */
+      await touchLocalFsHandle();
       const permission = await verifyRead(storedHandle, false);
       if (cancelled) return;
       if (permission === 'granted') {
@@ -1787,6 +1885,8 @@ export function useLocalVaultInternal() {
     agentActivityLog: state.agentActivityLog,
     acpWorkReceipts: state.acpWorkReceipts,
     recentVaults,
+    awaitingVaultChoice,
+    storedVaultRecord,
     fileHandles: state.fileHandles,
     imageHandles: state.imageHandles,
     sourceHandles: state.sourceHandles,

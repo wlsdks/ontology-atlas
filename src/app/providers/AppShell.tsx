@@ -27,6 +27,7 @@ import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { isGatewaySurface, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor";
+import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { AgentMascotPresence } from "@/features/agent-activity";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { useHydrated } from "@/shared/lib/use-hydrated";
@@ -420,6 +421,14 @@ function AppNavRailSlot() {
 
   return (
     <AppNavRail
+      /*
+       * Registered by the shell rather than by each page, for the reason the tile exists:
+       * the folder's name must not depend on which destination is open. A page-level
+       * registration would leave it missing from exactly the destinations a wiki-only
+       * vault has (`library`, `agents`, `mcp`, `git`), which is the state the report came
+       * from.
+       */
+      vaultSlot={<VaultSwitchRailTile />}
       settingsSlot={utilityTier}
       hidden={hidden || gateway || desktopWithoutVault}
       contextHrefs={contextHrefs}
