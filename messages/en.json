@@ -395,7 +395,8 @@
     "loadingStageCoverage": "Declared path scopes",
     "loadingCounted": "{done} of {total}",
     "loadingCounting": "counting",
-    "loadingAria": "Reading this repository: {stage}"
+    "loadingAria": "Reading this repository: {stage}",
+    "loadingStageCitationHops": "Following the citations"
   },
   "architecture": {
     "eyebrow": "CODE ARCHITECTURE",

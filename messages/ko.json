@@ -395,7 +395,8 @@
     "loadingStageCoverage": "선언된 경로 범위",
     "loadingCounted": "{total}개 중 {done}개",
     "loadingCounting": "세는 중",
-    "loadingAria": "이 저장소를 읽는 중: {stage}"
+    "loadingAria": "이 저장소를 읽는 중: {stage}",
+    "loadingStageCitationHops": "인용을 따라가는 중"
   },
   "architecture": {
     "eyebrow": "코드 아키텍처",

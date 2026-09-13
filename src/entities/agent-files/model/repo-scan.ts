@@ -318,6 +318,7 @@ export interface HarnessScanProgress {
     | 'hooks'
     | 'documents'
     | 'citations'
+    | 'citation-hops'
     | 'coverage';
   /** Units finished in this pass. */
   done: number;
@@ -527,11 +528,16 @@ export async function scanHarness(
     const file = await port.readText(path);
     reachContents.set(path, file?.text ?? '');
   }
-  const documentReach = buildDocumentReach({
+  const documentReach = await buildDocumentReach({
     markdownPaths: uniqueMarkdown,
     contents: reachContents,
     excluded: excludedFolders,
     truncated,
+    onHop: async (hop) => {
+      report({ stage: 'citation-hops', done: hop, total: null });
+      /* Hand the main thread back so the frame this report asks for can actually paint. */
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    },
   });
 
   const scriptNames = [...scripts.keys()];

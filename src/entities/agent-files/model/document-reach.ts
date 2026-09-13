@@ -86,15 +86,33 @@ function isGuideDocument(path: string): boolean {
 }
 
 /**
- * Whether `path` is written inside `text` as a path rather than as the tail of a longer one.
+ * Every Markdown path written in `text`, read once.
  *
- * The boundary matters more than it looks: without it, a guide citing `cli/README.md` would also
- * mark the root `README.md` as reached, and the whole count would drift upward in the flattering
- * direction.
+ * ⚠️ **One pass over the text, not one pass per candidate.** The first build asked `citesPath` for
+ * each of ~450 candidate documents against a frontier that is the concatenation of every document
+ * reached so far — megabytes of text, 450 compiled regexes, four hops. Recorded in the installed
+ * app on 2026-09-13: after the last progress report the panel held **one frozen frame for 2.6
+ * seconds** while this ran on the main thread, which is precisely the "has it stalled?" reading the
+ * whole waiting screen exists to prevent. Scanning the text for path tokens once and intersecting
+ * with the candidates is the same answer in one pass.
+ *
+ * The boundary is in the token shape and matters more than it looks: a guide citing
+ * `cli/README.md` must not also mark the root `README.md` as reached, or the count drifts upward in
+ * the flattering direction.
  */
+const MARKDOWN_PATH_TOKEN = /(?:^|[^\w./-])([A-Za-z0-9_][A-Za-z0-9_./-]*\.mdc?)(?![\w])/g;
+
+export function citedPaths(text: string): Set<string> {
+  const out = new Set<string>();
+  MARKDOWN_PATH_TOKEN.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = MARKDOWN_PATH_TOKEN.exec(String(text ?? ''))) !== null) out.add(match[1]);
+  return out;
+}
+
+/** Whether `path` is written inside `text` as a path rather than as the tail of a longer one. */
 export function citesPath(text: string, path: string): boolean {
-  const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`(^|[^\\w./-])${escaped}`).test(text);
+  return citedPaths(text).has(path);
 }
 
 export interface DocumentReachInput {
@@ -104,6 +122,14 @@ export interface DocumentReachInput {
   contents: ReadonlyMap<string, string>;
   excluded: readonly string[];
   truncated: boolean;
+  /**
+   * Called before each hop, with a chance to hand the main thread back.
+   *
+   * The walk is the last thing the read does and it runs between the final progress report and the
+   * result, so without this the screen holds one frozen frame for the whole of it — the reading the
+   * waiting state exists to prevent. Awaited, so a caller can yield.
+   */
+  onHop?: (hop: number) => Promise<void> | void;
 }
 
 /**
@@ -122,22 +148,29 @@ export interface DocumentReachInput {
  * and what is reachable by following citations. Neither is a guess about how far an agent will
  * follow a link — both are counts of links that exist.
  */
-export function buildDocumentReach({
+export async function buildDocumentReach({
   markdownPaths,
   contents,
   excluded,
   truncated,
-}: DocumentReachInput): DocumentReach {
+  onHop,
+}: DocumentReachInput): Promise<DocumentReach> {
   const guides = markdownPaths.filter(isGuideDocument);
   const rest = markdownPaths.filter((path) => !isGuideDocument(path));
 
+  const remaining = new Set(rest);
   const reached = new Set<string>();
   let frontier = guides.map((path) => contents.get(path) ?? '').join('\n');
   let namedDirect = 0;
   let hops = 0;
   while (frontier) {
     hops += 1;
-    const found = rest.filter((path) => !reached.has(path) && citesPath(frontier, path));
+    await onHop?.(hops);
+    const cited = citedPaths(frontier);
+    const found: string[] = [];
+    for (const path of cited) {
+      if (remaining.delete(path)) found.push(path);
+    }
     if (hops === 1) namedDirect = found.length;
     if (found.length === 0) break;
     for (const path of found) reached.add(path);

@@ -42,6 +42,7 @@ const STAGE_LABEL: Readonly<Record<HarnessScanProgress['stage'], string>> = {
   hooks: 'loadingStageHooks',
   documents: 'loadingStageDocuments',
   citations: 'loadingStageCitations',
+  'citation-hops': 'loadingStageCitationHops',
   coverage: 'loadingStageCoverage',
 };
 
@@ -54,6 +55,7 @@ const STAGE_ORDER: ReadonlyArray<HarnessScanProgress['stage']> = [
   'coverage',
   'documents',
   'citations',
+  'citation-hops',
 ];
 
 export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanProgress | null }) {
