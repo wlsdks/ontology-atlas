@@ -249,7 +249,7 @@ export function DownloadPage() {
                   states that no affiliation is claimed. Marks themselves follow the
                   stricter rule in docs/FEATURES.md — a service's own glyph only where
                   its published brand guideline was read and permits it. */}
-              <p className="mt-3 max-w-[var(--measure-doc-column)] text-[color:var(--color-text-quaternary)]">
+              <p className="mt-3 max-w-[var(--measure-doc-column)] break-keep text-[color:var(--color-text-quaternary)]">
                 {tFooter('trademarks')}
               </p>
             </footer>
