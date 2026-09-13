@@ -35,8 +35,8 @@ need their own scoped PO/design/evidence proof before implementation.
 
 | ID | Status | Concrete deliverable | Prerequisite / evidence |
 |---|---|---|---|
-| V1.0 | ready | Typed and readable measurement scope; discovery/oracle pass remains distinct from unmeasured construction | First slice; preserve existing thresholds and per-fixture/empty failure behavior |
-| V1.1 | blocked(V1.0) | Frozen unfamiliar backend task, six owner-approved questions, source reference, license/scope manifest | Preserve the original question approval; independently verify task-specific reference |
+| V1.0 | done(ffcdce35a) | Typed and readable measurement scope; discovery/oracle pass remains distinct from unmeasured construction | First slice; preserve existing thresholds and per-fixture/empty failure behavior |
+| V1.1 | ready | Frozen unfamiliar backend task, six owner-approved questions, source reference, license/scope manifest | Preserve the original question approval; independently verify task-specific reference |
 | V1.2 | blocked(V1.1) | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
 | V1.3 | blocked(V1.1) | Scoped document/config evidence retaining current/planned/negated/conflicting context | Activate only witnessed gaps; follow applicable V1.2 decisions |
 | V1.4 | blocked(V1.2) | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | V1.2 and V1.3 where the task needs them |
@@ -63,6 +63,18 @@ benefit/failure rules. This establishes plan coverage, not implemented UX or
 proven product benefit. Planning/review remain Astra; code implementation is Sol
 low. The prior research-only saved sample and its complete-answer result of 0/6
 remain unchanged.
+
+**V1.0 evidence (2026-09-13):** implementation `ffcdce35a`, following plan
+registration `4aaa70b92`; Sol low implementation and Astra review. Node 24 sibling
+regressions pass 4/4, including all-green discovery with unmeasured construction,
+separate candidate/oracle fixture failures, empty corpus and actual JSON/text
+output. All nine implementation recommendations from `checks:changed -- --run`
+passed. Before/after JSON comparison preserves the complete existing summary and
+every fixture diagnostic. Primary outputs and logs remain outside the repository
+at `/Users/jinan/scratch/atlas-delivery-2026-09-13/` (`v1-0-before.json`,
+`v1-0-after.json`, `v1-0-after.txt`, `v1-0-checks.log`). This closes the reporting
+contract only; independent construction quality, actual human comprehension,
+V3 UX and repeated-use benefit remain unproven. V1.1 is the next ready slice.
 
 V1 and the reuse value in V2/V4 are separate risks: a manually reviewed starting
 vault can test reuse, but its creation method and cost must remain visible and
