@@ -215,7 +215,9 @@ describe('the segmented control', () => {
     mount();
     const panel = screen.getByTestId('harness-scan-progress');
     expect(panel).toHaveTextContent('문서 사이의 인용');
-    expect(panel).toHaveTextContent('401개 중 41개');
+    /* `done` is what finished, not what started: counting the running unit put the last pass at its
+       own total while it was still working. */
+    expect(panel).toHaveTextContent('401개 중 40개');
     expect(panel.querySelector('[data-harness-stage="citations"]')).toHaveAttribute(
       'data-harness-stage-state',
       'running',
