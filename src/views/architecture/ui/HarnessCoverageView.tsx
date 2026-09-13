@@ -13,6 +13,7 @@ import {
   type ScopeDeclaration,
 } from '@/entities/agent-files';
 import { Disclosure, EmptyState, InfoHint } from '@/shared/ui';
+import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
 
 /**
@@ -191,27 +192,39 @@ function DeclarationList({ entries, t }: { entries: readonly ScopeDeclaration[];
  * a horizontal scroller at that width, and a popover positioned inside a scroll container is
  * clipped by it. One element, two positions, no second implementation.
  */
+/**
+ * Where the popover is anchored at `lg` and above, as a fraction of the table's own column widths
+ * (46 / 18 / 18 / 18). Written as classes rather than measured at runtime: the columns are declared
+ * in a `colgroup`, so the anchor is a layout fact and not something to read back from the DOM.
+ */
+const DETAIL_ANCHOR: Readonly<Record<CoverageColumn, string>> = {
+  told: 'lg:left-[46%]',
+  gated: 'lg:left-[64%]',
+  watched: 'lg:right-0',
+};
+
 function CellDetail({
   area,
   column,
   t,
   onClose,
-  alignEnd,
 }: {
   area: CoverageAreaRow;
   column: CoverageColumn;
   t: TranslateFn;
   onClose: () => void;
-  alignEnd: boolean;
 }) {
   const entries = area[column];
   return (
     <div
       data-testid="harness-coverage-detail"
       className={cn(
-        'relative z-30 mt-2 w-full rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)] shadow-[var(--shadow-elevation-2)]',
-        'lg:absolute lg:top-full lg:mt-1 lg:w-[22rem]',
-        alignEnd ? 'lg:right-3' : 'lg:left-3',
+        'relative z-30 w-full rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)] shadow-[var(--shadow-elevation-2)]',
+        /* Below `lg` the cells are narrow marks and this is an ordinary block in a full-width row
+           under them, because a 63px-wide popover is not a popover. At `lg` it lifts out of the
+           flow and anchors under the column that was pressed. One element, two positions. */
+        'lg:absolute lg:top-0 lg:w-[22rem]',
+        DETAIL_ANCHOR[column],
       )}
     >
       <div className="flex items-baseline justify-between gap-3">
@@ -221,7 +234,7 @@ function CellDetail({
         <button
           type="button"
           onClick={onClose}
-          className="text-caption text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({ shape: 'link', size: 'sm', tone: 'muted', hoverInk: 'strong' })}
         >
           {t('coverageCloseNames')}
         </button>
@@ -333,7 +346,13 @@ function DocumentReachBlock({
                   data-testid="harness-reach-breakdown-toggle"
                   onClick={() => setOpenBreakdown((open) => !open)}
                   aria-expanded={openBreakdown}
-                  className="shrink-0 text-caption text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+                  className={controlClass({
+                    shape: 'link',
+                    size: 'sm',
+                    tone: 'muted',
+                    hoverInk: 'strong',
+                    className: 'shrink-0',
+                  })}
                 >
                   {t('reachBreakdownOpen')}
                 </button>
@@ -433,8 +452,11 @@ export function HarnessCoverageView({
         })}
       </p>
 
-      <div className="overflow-x-auto lg:overflow-x-visible">
-        <table className="w-full min-w-[720px] table-fixed border-collapse text-left">
+      {/* No horizontal scroller. The cells carry a mark and a count rather than a list of names,
+          so the table fits at 390 — and a popover positioned inside a scroll container is clipped
+          by it, which is how the first build put a 130px-wide detail off the right edge. */}
+      <div>
+        <table className="w-full table-fixed border-collapse text-left">
           <caption className="sr-only">{t('coverageTableCaption')}</caption>
           <colgroup>
             <col className="w-[46%]" />
@@ -472,9 +494,9 @@ export function HarnessCoverageView({
             </tr>
           </thead>
           <tbody>
-            {matrix.areas.map((area) => {
+            {matrix.areas.flatMap((area) => {
               const openColumn = COLUMNS.find((column) => openCell === `${area.slug}:${column}`);
-              return (
+              return [
                 <tr
                   key={area.slug}
                   data-harness-area={area.slug}
@@ -490,18 +512,23 @@ export function HarnessCoverageView({
                     <span className="block truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                       {area.title}
                     </span>
-                    <span className="mt-1 line-clamp-2 block text-caption text-[color:var(--color-text-tertiary)]">
+                    {/* Two lines, reserved. `line-clamp-2` caps the tall case and says nothing
+                        about the short one, so at 768 and 390 a one-line purpose made its row 81px
+                        beside a two-line neighbour's 95px — the content-decided height
+                        `forbidden.md` rules out. The reserve is em-relative, so it follows the type
+                        ramp instead of pinning a pixel. */}
+                    <span className="mt-1 line-clamp-2 block min-h-[2.9em] text-caption text-[color:var(--color-text-tertiary)]">
                       {area.purpose}
                     </span>
                     <span className="mt-1 block text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
                       {t('coveragePathCount', { count: area.capabilities.length })}
                     </span>
                   </th>
-                  {COLUMNS.map((column, index) => {
+                  {COLUMNS.map((column) => {
                     const entries = area[column];
                     const key = `${area.slug}:${column}`;
                     return (
-                      <td key={column} className="relative p-0 align-top">
+                      <td key={column} className="p-0 align-top">
                         <button
                           type="button"
                           onClick={() => setOpenCell((current) => (current === key ? null : key))}
@@ -513,28 +540,38 @@ export function HarnessCoverageView({
                           })}
                           data-harness-cell={column}
                           data-harness-cell-empty={String(entries.length === 0)}
-                          className={cn(
-                            'flex h-full w-full items-start px-3 py-3 text-left',
-                            'hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[color:var(--color-focus-ring)]',
-                            openCell === key && 'bg-[color:var(--color-overlay-2)]',
-                          )}
+                          className={controlClass({
+                            shape: 'row',
+                            size: 'md',
+                            hoverSurface: 'lift',
+                            className: cn(
+                              'h-full items-start px-3 py-3',
+                              openCell === key && 'bg-[color:var(--color-overlay-2)]',
+                            ),
+                          })}
                         >
                           <CellMark count={entries.length} t={t} />
                         </button>
-                        {openColumn === column ? (
-                          <CellDetail
-                            area={area}
-                            column={column}
-                            t={t}
-                            onClose={() => setOpenCell(null)}
-                            alignEnd={index === COLUMNS.length - 1}
-                          />
-                        ) : null}
                       </td>
                     );
                   })}
-                </tr>
-              );
+                </tr>,
+                openColumn ? (
+                  /* Its own row, so the anchored popover has a full-width containing block and the
+                     narrow-width fallback has somewhere to stand. `p-0` collapses the row to
+                     nothing at `lg`, where the only child has left the flow. */
+                  <tr key={`${area.slug}-detail`}>
+                    <td colSpan={4} className="relative p-0">
+                      <CellDetail
+                        area={area}
+                        column={openColumn}
+                        t={t}
+                        onClose={() => setOpenCell(null)}
+                      />
+                    </td>
+                  </tr>
+                ) : null,
+              ];
             })}
           </tbody>
         </table>

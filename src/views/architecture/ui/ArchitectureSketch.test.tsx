@@ -47,6 +47,8 @@ function draw(
       contractTrackLabel="Contract"
       observationTrackLabel="Observation"
       deltaTrackLabel="Delta"
+      deltaColumnNote="Nothing compared yet"
+      deltaColumnHint="Each mark says what that role's own outgoing imports did."
       observationMissingLabel="Not inspected"
       selected={selected}
       roleInspectorOpen={false}
@@ -184,14 +186,23 @@ describe('the evidence split plane', () => {
        * spare width up to `PAIRED_CONTRACT_W_MAX`, and whatever the two lanes still do not need is
        * split evenly, so the width is the canvas and the band sits on its centre line.
        *
-       * 1200 = 56 padding + 424 contract + 72 gutter + 240 observation + 204 on each side. 424 is
-       * 280 plus the 144 this canvas has beyond the ladder's minimum, the contract lane's 48px
-       * floor and the observation lane's 360px cap.
+       * 1200 = 56 padding + 560 contract + 160 gutter + 240 observation + 92 on each side.
+       *
+       * ⚠️ **Re-derived 2026-09-13** after two reserves were measured as fictions. The contract
+       * face used to stop at 424 and the gutter at 72, because the spare width was computed after
+       * subtracting the observation lane's 360px skip-arc cap — ground this profile, and every
+       * profile the dogfood vault ships, never uses, since none of them declares a skip on the
+       * traffic side. With the reserve made conditional the face reaches its own `560` cap and the
+       * gutter its `160`, which is what stops the observation lane's sentence being cut at 146px of
+       * room. The side lanes fall from 204 to 92 each: the drawing is still centred, on less empty
+       * ground.
        */
       expect(graph).toHaveAttribute('width', '1200');
       /* 8 + 20 + 7×72 + 6×24 + 8, plus the 8px head room the top plane's lit edge needs to stop
-         reading as a rule under the lane headings and the 3px ledge under the last role. */
-      expect(graph).toHaveAttribute('height', '695');
+         reading as a rule under the lane headings, the 3px ledge under the last role, and — since
+         2026-09-13 — one `--leading-label` line above the first face for the column note, which
+         used to be drawn on top of it. */
+      expect(graph).toHaveAttribute('height', '711');
       expect(screen.getByTestId('architecture-paired-lane-headings')).toHaveTextContent(
         'ContractDeltaObservation',
       );
@@ -201,7 +212,7 @@ describe('the evidence split plane', () => {
       expect(screen.getByTestId('architecture-delta-marker-widgets')).toHaveTextContent('○');
       expect(screen.getByTestId('architecture-graph-box-widgets')).toHaveAttribute(
         'data-box-width',
-        '424',
+        '560',
       );
       /* The whole point of the wider face: the sentence finishes. An ellipsis anywhere in the
          contract lane means the face went back to being narrower than its own copy. */
@@ -209,6 +220,45 @@ describe('the evidence split plane', () => {
         .map((node) => node.textContent ?? '');
       expect(sentences.length).toBeGreaterThan(0);
       expect(sentences.filter((line) => line.trimEnd().endsWith('…'))).toEqual([]);
+      /*
+       * ⚠️ **Every layer plane ends on one line.** The stack used to be one fixed-width
+       * parallelogram translated left by a `PLANE_STEP` per rank, so both of its vertical edges
+       * stepped together: measured on the built export at 1512 (2026-09-13) the seven left edges
+       * ran 324→240 and the seven right edges ran 1336→1252, an 84px staircase on the side the
+       * stack does not recede from. Depth is the leftward stagger, the lean of the lit top face and
+       * the rank numeral; a ragged right edge was never carrying any of it, and the owner read the
+       * result as a drawing that failed to line up.
+       */
+      const planeEdges = [...container.querySelectorAll('[data-testid^="architecture-layer-plane-"]')]
+        .map((plane) => {
+          const d = plane.querySelector('path')!.getAttribute('d') ?? '';
+          const [, bottomLeft, , bottomRight] = /M ([\d.]+) ([\d.]+) H ([\d.]+)/.exec(d)!;
+          return { left: Number(bottomLeft), right: Number(bottomRight) };
+        });
+      expect(planeEdges.length).toBe(7);
+      expect(new Set(planeEdges.map((edge) => edge.right)).size).toBe(1);
+      /* The stagger itself is untouched: one `PLANE_STEP` of depth per rank, still going left. */
+      const lefts = planeEdges.map((edge) => edge.left);
+      expect(new Set(lefts).size).toBe(7);
+      expect(Math.max(...lefts) - Math.min(...lefts)).toBe(6 * 14);
+
+      /*
+       * ⚠️ **The chrome row does not sit on the first face.** Measured on the built export at 1512
+       * in both locales (2026-09-13): the lane heading's box ended at 201 and the column note began
+       * at 202 — 1px — and the note's box ended at 215 against a face top of 212, so the note was
+       * drawn **over** the dashed face by 3px. Three formulas owned that rhythm; one does now, and
+       * it is the `--leading-label` line box rather than a gap chosen by eye, which is what keeps
+       * it right in Korean as well as English.
+       */
+      const laneHeading = container.querySelector('[data-testid="architecture-paired-lane-headings"] text')!;
+      const columnNote = screen.getByTestId('architecture-observation-column-note');
+      const firstFace = container.querySelector('[data-testid^="architecture-observation-box-"]')!;
+      const headingY = Number(laneHeading.getAttribute('y'));
+      const noteY = Number(columnNote.getAttribute('y'));
+      const faceY = Number(firstFace.getAttribute('y'));
+      expect(noteY - headingY).toBe(16);
+      expect(faceY).toBeGreaterThan(noteY);
+
       /* And the observation column states "not inspected yet" once rather than seven times. */
       expect(screen.getByTestId('architecture-observation-column-note')).toBeInTheDocument();
       expect(
@@ -328,7 +378,7 @@ describe('the evidence split plane', () => {
       expect(graph).toHaveAttribute('data-ladder-density', 'tight');
       /* 4 + 20 + 7x58 + 6x22 + 4: one summary line per role, and the gap the sentence needs,
          plus the layer stack's 8px head room and its 3px bottom ledge. */
-      expect(graph).toHaveAttribute('height', '577');
+      expect(graph).toHaveAttribute('height', '593');
       const boxes = screen.getAllByTestId(/^architecture-graph-box-/);
       expect(boxes).toHaveLength(7);
       expect(boxes.every((box) => box.getAttribute('data-box-height') === '58')).toBe(true);

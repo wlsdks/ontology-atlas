@@ -16,7 +16,7 @@ The Harness tab's spine: the areas this ontology records for a repository, cross
 
 ## Definition
 
-A read-only matrix whose rows are the vault's domains and whose columns are Told, Gated and Watched. A file appears in an area only when a path **it declares** reaches a path the ontology records for that area — a nested `AGENTS.md`'s own folder, a `.claude` rule's frontmatter `paths:`, a hook script's anchored lane filter, a check command's file arguments, a workflow's trigger `paths:`. An agent file's own location is never used as a signal: agent files sit at the repository root and say which tool reads them, not which code they govern.
+A read-only matrix whose rows are the vault's domains and whose columns are Told, Gated and Watched. A file appears in a domain only when a path **it declares** reaches a path the ontology records for that domain: a nested `AGENTS.md`'s own folder, a `.claude` rule's frontmatter `paths:`, a hook script's anchored lane filter, a check command's file arguments, or a workflow's trigger `paths:`. An agent file's own location is never used as a signal: agent files sit at the repository root and say which tool reads them, not which code they govern.
 
 Beside the matrix, every authored Markdown file is split by whether a guide sends an agent to it: a guide, a document a guide names by path, or a document nothing names. Measured by citation, never by glob.
 
@@ -28,7 +28,7 @@ Beside the matrix, every authored Markdown file is split by whether a guide send
 
 ## Excludes
 
-- Any score, grade, maturity level or percentage. What a part of a repository is *for* comes from a reviewed vault, and a number would assert a judgement the files cannot support.
+- Any score, grade, maturity level or percentage. What a part of a repository is *for* comes from a reviewed ontology, and a number would assert a judgement the files cannot support.
 - Writing. Adding what the matrix reports missing is a separate slice and needs the directional-preview-and-approval pattern relation writing already uses.
 - Any claim that a gate ran or a check ever caught something. A wired hook says its script exists.
 

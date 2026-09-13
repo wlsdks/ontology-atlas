@@ -10,7 +10,7 @@ test('핵심 행동만 남고 에이전트 작업 버튼은 하단 탭에 가리
   await seedFirstRunSeen(page);
   await useDogfoodSample(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/ko/architecture/?guides=off');
+  await page.goto('/ko/architecture/?view=structure&guides=off');
 
   await expect(page.getByText('Atlas Web Workbench').first()).toBeVisible();
   await expect(page.getByTestId('architecture-graph-run')).toHaveCount(0);
@@ -61,7 +61,7 @@ test('the agent task chooser offers a re-check and an improvement search beside 
     });
   });
   await page.setViewportSize({ width: 1512, height: 945 });
-  await page.goto('/ko/architecture/?guides=off');
+  await page.goto('/ko/architecture/?view=structure&guides=off');
   await expect(page.getByTestId('architecture-graph')).toBeVisible();
 
   const trigger = page.getByTestId('architecture-agent-task-menu');
@@ -102,7 +102,7 @@ test('the agent task chooser offers a re-check and an improvement search beside 
 });
 
 test('obsolete workflow-stage links do not resurrect the removed prose panels', async ({ page }) => {
-  await page.goto('/ko/architecture/?stage=plan');
+  await page.goto('/ko/architecture/?view=structure&stage=plan');
   await expect(page.getByTestId('architecture-graph')).toBeVisible();
   await expect(page.getByRole('radio')).toHaveCount(0);
   await expect(page.locator('[data-architecture-stage]')).toHaveCount(0);
@@ -116,7 +116,7 @@ test('obsolete workflow-stage links do not resurrect the removed prose panels', 
 
 test('keyboard opens, closes, restores focus, and reopens the selected role', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 945 });
-  await page.goto('/ko/architecture/?guides=off');
+  await page.goto('/ko/architecture/?view=structure&guides=off');
 
   const evidence = page.getByTestId('architecture-evidence-rail');
   await evidence.focus();
@@ -167,7 +167,7 @@ test('keyboard opens, closes, restores focus, and reopens the selected role', as
 
 test('a real viewport resize may reflow the chain without losing the selected role', async ({ page }) => {
   await page.setViewportSize({ width: 834, height: 1112 });
-  await page.goto('/ko/architecture/?guides=off');
+  await page.goto('/ko/architecture/?view=structure&guides=off');
   const graph = page.getByTestId('architecture-graph');
   await expect(graph).toHaveAttribute('data-architecture-axis', 'down');
 
@@ -198,7 +198,7 @@ test('320px and a 200%-equivalent viewport keep controls and evidence inside the
 }) => {
   for (const width of [320, 384]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto('/ko/architecture/?guides=off');
+    await page.goto('/ko/architecture/?view=structure&guides=off');
     await expect(page.getByTestId('architecture-graph')).toBeVisible();
     const before = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -249,7 +249,7 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
   /* A window that holds the whole chain: below this the canvas pans, and panning to a box is a
      different subject than the address this test is about (2026-08-30). */
   await page.setViewportSize({ width: 1512, height: 945 });
-  await page.goto('/ko/architecture/');
+  await page.goto('/ko/architecture/?view=structure');
 
   await page.getByTestId('architecture-graph-box-application').click();
   expect(new URL(page.url()).searchParams.get('role')).toBe('application');
@@ -283,7 +283,7 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
    * default now (2026-08-30): a bare address is a canvas with no panel at all, a bad role opens
    * the panel and is refused in it, a real role opens the panel and is answered in it.
    */
-  await page.goto('/ko/architecture/');
+  await page.goto('/ko/architecture/?view=structure');
   await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
     'data-architecture-inspector',
     'none',
@@ -333,7 +333,7 @@ test('a chain is never cut in silence — it turns, or it says what is hidden', 
     [390, 844],
   ] as const;
 
-  await page.goto('/ko/architecture/');
+  await page.goto('/ko/architecture/?view=structure');
   // Vault-backed routes prerender the neutral identity boundary now. Wait for hydration to replace
   // that boundary before measuring the canvas; querying the layout during the fallback measures no
   // product at all and used to throw on a null scroller.
@@ -442,7 +442,7 @@ test('a chain is never cut in silence — it turns, or it says what is hidden', 
  */
 test('a role sentence stays inside the drawn box, including a stadium cap', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 945 });
-  await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await page.goto('/en/architecture/?view=structure&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
   await expect(page.getByTestId('architecture-graph')).toBeVisible({ timeout: 60_000 });
   await page.evaluate(() => document.fonts.ready);
 
@@ -490,7 +490,7 @@ test('a role sentence stays inside the drawn box, including a stadium cap', asyn
  */
 test('every drawn stroke says its sentence, and no sentence touches anything', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 945 });
-  await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await page.goto('/en/architecture/?view=structure&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
   await expect(page.getByTestId('architecture-graph')).toBeVisible({ timeout: 60_000 });
   await page.evaluate(() => document.fonts.ready);
 
@@ -526,7 +526,7 @@ test('the ladder tightens its rows rather than hiding the seventh role at 1280x8
   await seedFirstRunSeen(page);
   await useDogfoodSample(page);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/ko/architecture/?guides=off', { waitUntil: 'domcontentloaded' });
+  await page.goto('/ko/architecture/?view=structure&guides=off', { waitUntil: 'domcontentloaded' });
   const graph = page.getByTestId('architecture-graph');
   await expect(graph).toBeVisible({ timeout: 60_000 });
   await page.evaluate(() => document.fonts.ready);
@@ -561,3 +561,77 @@ test('the ladder tightens its rows rather than hiding the seventh role at 1280x8
   });
   expect(outside, outside.join('\n')).toEqual([]);
 });
+
+for (const locale of ['ko', 'en'] as const) {
+  /* One test per locale rather than a loop inside one: Korean runs taller than English at the same
+     size, so a failure has to name which build it is, and a `use`-prefixed fixture helper may not
+     be called in a loop body (`react-hooks/rules-of-hooks` reads it as a React hook). */
+  test(`${locale}: 구조 사다리는 카드 폭을 쓰고, 층 판은 한 선에서 끝나며, 열 머리글이 면 위에 앉지 않는다`, async ({ page }) => {
+  /*
+   * Three defects the owner measured on the installed app at 1512×901 (2026-09-13), all three
+   * expressible as rects, so they are asserted here rather than judged by eye:
+   *
+   * 1. **The layer planes ended ragged.** Seven right edges across 84px (1336→1252) on the side the
+   *    stack does not recede from. Depth is the leftward stagger, the lit top face's lean and the
+   *    rank numeral; the right edge was carrying none of it.
+   * 2. **The drawing left the card empty.** The band was 872 of 1448px because the observation
+   *    lane's 360px skip-arc cap was reserved on a profile that declares no skip, while the
+   *    sentence lane it starved was cutting its sentences at 146px of room.
+   * 3. **The column note was drawn on the first face.** Heading box ending at 201 against a note
+   *    starting at 202, and the note ending at 215 over a face starting at 212.
+   *
+   * Both locales, because Korean runs taller than English at the same size and a gap tuned on one
+   * build is the defect rather than the fix.
+   */
+    await page.setViewportSize({ width: 1512, height: 901 });
+    await seedFirstRunSeen(page);
+    await useDogfoodSample(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(`/${locale}/architecture/?view=structure&guides=off`);
+    await expect(page.getByTestId('architecture-graph-box-views')).toBeVisible({ timeout: 30_000 });
+    /* The sketch sizes itself from its container, so a rect read before that settles reports the
+       SVG's pre-layout scale — measured at 0.245 of the final one. */
+    await page.waitForFunction(() => {
+      const w = document.querySelector('[data-testid^="architecture-layer-plane-"]')?.getBoundingClientRect().width ?? 0;
+      const prev = (window as unknown as { __planeW?: number }).__planeW;
+      (window as unknown as { __planeW?: number }).__planeW = w;
+      return w > 400 && prev === w;
+    }, undefined, { timeout: 20_000, polling: 120 });
+
+    const measured = await page.evaluate(() => {
+      const round = (n: number) => Math.round(n * 10) / 10;
+      const card = document.querySelector('[data-testid="architecture-flow-panel"]')!.getBoundingClientRect();
+      const planes = [...document.querySelectorAll('[data-testid^="architecture-layer-plane-"]')].map(
+        (plane) => plane.getBoundingClientRect(),
+      );
+      const boxes = [...document.querySelectorAll('[data-graph-box]')].map((box) => box.getBoundingClientRect());
+      const headings = [...document.querySelectorAll('[data-testid="architecture-paired-lane-headings"] text')];
+      const note = document.querySelector('[data-testid="architecture-observation-column-note"]')!;
+      const face = document.querySelector('[data-testid^="architecture-observation-box-"]')!;
+      const noteRect = note.getBoundingClientRect();
+      const headingBottom = Math.max(
+        ...headings.filter((h) => h !== note).map((h) => h.getBoundingClientRect().bottom),
+      );
+      const left = Math.min(...boxes.map((b) => b.left));
+      const right = Math.max(...boxes.map((b) => b.right));
+      return {
+        planeRightEdges: [...new Set(planes.map((p) => round(p.right)))],
+        planeLeftEdges: [...new Set(planes.map((p) => round(p.left)))],
+        bandRatio: (right - left) / card.width,
+        offCentre: round((left + right) / 2 - (card.left + card.right) / 2),
+        headingToNote: round(noteRect.top - headingBottom),
+        noteToFace: round(face.getBoundingClientRect().top - noteRect.bottom),
+      };
+    });
+
+    // One end line for the whole stack; the stagger that carries depth stays on the other side.
+    expect(measured.planeRightEdges, `${locale}: layer planes end ragged`).toHaveLength(1);
+    expect(measured.planeLeftEdges.length, `${locale}: the depth stagger is gone`).toBe(7);
+    // The band was 0.60 of the card before the reserve was made conditional.
+    expect(measured.bandRatio, `${locale}: the drawing gave the card back`).toBeGreaterThan(0.65);
+    expect(Math.abs(measured.offCentre), `${locale}: the drawing slid off centre`).toBeLessThanOrEqual(8);
+    // Nothing in the chrome row may touch, let alone overlap, what is under it.
+    expect(measured.headingToNote, `${locale}: the column note touches its heading`).toBeGreaterThan(0);
+    expect(measured.noteToFace, `${locale}: the column note is drawn on the first face`).toBeGreaterThan(0);
+  });
+}

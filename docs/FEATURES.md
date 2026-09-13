@@ -599,23 +599,23 @@ fact instead of a green, since `/hooks` trust lives in no file. Measured on this
 
 **Coverage (`harness.views.coverage`)** — the tab's spine and its default view
 (2026-09-13, `docs/records/decisions/2026-09-13-harness-spine-is-a-coverage-matrix-b9dba267-d755-4ad5-b854-6f930c7e5922.md`).
-Rows are the areas the ontology records for this repository; columns are **Told**, **Gated** and
-**Watched**. A file appears in an area when a path **it declares** reaches a path the ontology
-records for that area — a nested `AGENTS.md`'s own folder, a `.claude` rule's frontmatter `paths:`,
+Rows are the domains the ontology records for this repository; columns are **Told**, **Gated** and
+**Watched**. A file appears in a domain when a path **it declares** reaches a path the ontology
+records for that domain — a nested `AGENTS.md`'s own folder, a `.claude` rule's frontmatter `paths:`,
 a hook script's anchored lane filter, a check command's file arguments, a workflow's trigger
 `paths:` — and never because of where the agent file itself lives: all 122 of this repository's sit
 at the root and say nothing about which code they govern. A scope is kept only if it resolves on
 disk, and every entry carries the declaration it came from, so an attribution can be checked rather
 than trusted.
 
-Anything declaring no path reaches every area and stands in **one row above the matrix**, not
-repeated down eight: `forbidden`, `git` and `local-first`, twenty hook and Git-hook scripts, and
+Anything declaring no path reaches every domain and stands in **its own strip beside the matrix**,
+not repeated down eight rows: `forbidden`, `git` and `local-first`, twenty hook and Git-hook scripts, and
 `lint`, `test`, `test:run` and the six CI workflows with no trigger filter. That row is what makes
-the empty cells readable — "no check **names** this area" is what the files support, while "nothing
+the empty cells readable — "no check **names** this domain" is what the files support, while "nothing
 runs over it" is not.
 
-**An empty cell is the product.** It is written as a sentence, and opening it shows the ontology's
-own record of what the area is for beside the paths nothing reaches — the sentence a file-only
+**An empty cell is the product.** It is a mark that reads down the column at a glance, and opening it shows the ontology's
+own record of what the domain is for beside the paths nothing reaches — the sentence a file-only
 scanner cannot write, because it does not know what a part of a repository is *for*. **No score, no
 grade, no maturity level and no percentage is rendered anywhere**: that is what every comparable
 tool ships, and a number asserts a judgement files cannot support. A repository with agent files and

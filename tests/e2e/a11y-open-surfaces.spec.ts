@@ -197,14 +197,15 @@ const OPENERS: readonly Opener[] = [
   },
   {
     name: "Architecture analysis history",
-    route: "/ko/architecture/",
+    // The blueprint is a view of the Harness destination, not its default (2026-09-13).
+    route: "/ko/architecture/?view=structure",
     trigger: "architecture-review-open",
     surface: '[data-testid="analysis-workbench"]',
     dogfood: true,
   },
   {
     name: "아키텍처 근거 흐름",
-    route: "/ko/architecture/",
+    route: "/ko/architecture/?view=structure",
     trigger: "architecture-evidence-rail",
     surface: '[data-testid="architecture-evidence-dock"]',
     dogfood: true,

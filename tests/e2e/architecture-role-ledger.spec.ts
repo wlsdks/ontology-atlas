@@ -134,7 +134,7 @@ test('a measured profile separates each role contract and receipt, whole chain o
   await openSeededVault(page);
 
   for (const locale of ['en', 'ko']) {
-    await page.goto(`/${locale}/architecture/?e2e=1&guides=off`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`/${locale}/architecture/?view=structure&e2e=1&guides=off`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByTestId('architecture-flow-panel')).toBeVisible({ timeout: 60_000 });
     const ledgers = page.locator('[data-testid^="architecture-role-ledger-"]');
     await expect(ledgers).toHaveCount(7, { timeout: 30_000 });

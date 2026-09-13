@@ -141,7 +141,10 @@ test.describe("하네스 탭", () => {
     await expect(reach).toBeVisible({ timeout: 30_000 });
     await expect(reach.locator('[data-harness-reach-row="guides"]')).toContainText("지침");
     await expect(reach.locator('[data-harness-reach-row="named"]')).toContainText("1");
-    await expect(reach.locator('[data-harness-reach-row="unnamed"]')).toContainText("1");
+    /* Three: `docs/forgotten.md`, plus both agent briefs. A brief is addressed by name rather than
+       by path, so it lands here for a reason that is fine — which is exactly why the folders are
+       printed beside the count instead of the rows being filtered. */
+    await expect(reach.locator('[data-harness-reach-row="unnamed"]')).toContainText("3");
 
     // The breakdown of where the unnamed documents are opens on a press. Spilled permanently, the
     // most important number on the screen was the one followed by the most text on the screen.

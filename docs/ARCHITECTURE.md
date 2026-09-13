@@ -141,8 +141,8 @@ unruled edges, and empty roles prevent a false green result. The
 `/architecture?view=structure` Living Blueprint
 renders the declared model and copies the typed pre/post agent plan, while source
 analysis remains in MCP/CLI rather than being duplicated into Markdown. The default
-`?view=coverage` crosses the ontology's own areas with the path scopes this repository's guides,
-gates and checks declare, so an area nothing names is stated rather than inferred. Beside them
+`?view=coverage` crosses the ontology's own domains with the path scopes this repository's guides,
+gates and checks declare, so a domain nothing names is stated rather than inferred. Beside them
 `?view=guides` reads the same repository's **agent harness** — the guide files, which tool
 reads which, size against a documented cap, declared mirror-pair drift, and hook wiring — from
 files only, through the installed app's bridge (`entities/agent-files`); the browser cannot see a
@@ -492,12 +492,12 @@ until a local manifest exists.
                            tests/contract/map-destination-route.contract.test.ts)
 /architecture              the Harness destination (relabelled from Architecture since
                            2026-09-13; route unchanged). Three views on ?view=:
-                           coverage (the default) — the ontology's areas crossed with the
+                           coverage (the default) — the ontology's domains crossed with the
                            path scopes the repository's guides, gates and checks declare,
-                           where an empty cell is written as a sentence beside the area's
-                           recorded purpose, anything declaring no path stands once above
-                           the matrix, and no score, grade or percentage is rendered; beside
-                           it, authored Markdown split by whether a guide names it;
+                           where an empty cell is a mark beside the domain's recorded
+                           purpose, anything declaring no path stands once outside the row
+                           rhythm, and no score, grade or percentage is rendered; beside it,
+                           authored Markdown split by whether a guide names it;
                            guides — the agent guide files this repository carries, which
                            tool reads each (a static table citing its source per row), size
                            against the Codex 32 KiB merged cap, declared mirror-pair byte
