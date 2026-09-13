@@ -2,6 +2,7 @@
 uid: 465b06f3-67fa-4e94-97c9-593a9a45cc23
 slug: domains/onboarding-and-shell
 kind: domain
+description: The first five minutes from a shared link through the installed app to a working connection, and the navigation shell that stays around it afterwards.
 title: "Onboarding, Distribution & App Shell"
 display_ko: 온보딩·배포·앱 셸
 display_en: "Onboarding, Distribution & App Shell"

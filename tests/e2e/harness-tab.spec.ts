@@ -45,13 +45,13 @@ test.describe("하네스 탭", () => {
   test("기본 보기는 청사진이고, 세그먼트가 보기를 주소에 적는다", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/");
-    await expect(page.getByTestId("architecture-flow-panel")).toBeVisible();
+    await expect(page.getByTestId("architecture-flow-panel")).toBeVisible({ timeout: 30_000 });
 
     await page.locator("#harness-tab-guides").click();
     await expect(page).toHaveURL(/\?view=guides$/);
-    await page.locator("#harness-tab-sensors").click();
-    await expect(page).toHaveURL(/\?view=sensors$/);
-    await expect(page.getByTestId("harness-sensors-placeholder")).toBeVisible();
+    await page.locator("#harness-tab-coverage").click();
+    await expect(page).toHaveURL(/\?view=coverage$/);
+    await expect(page.getByTestId("harness-coverage")).toBeVisible();
 
     /*
      * The address is rewritten in place, not pushed — switching view inside one destination is not
@@ -60,8 +60,109 @@ test.describe("하네스 탭", () => {
      * refresh and a shared link landing on the same view.
      */
     await page.reload();
-    await expect(page.getByTestId("harness-sensors-placeholder")).toBeVisible();
-    await expect(page).toHaveURL(/\?view=sensors$/);
+    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(/\?view=coverage$/);
+  });
+
+  test("은퇴한 sensors 주소는 그 질문에 답하는 보기로 간다", async ({ page }) => {
+    /*
+     * The sensors view named this exact question — which checks cover each domain's paths, and
+     * where nobody is watching — and said it was not built. It is built now, so that address opens
+     * the answer. The plain address and the shell-wide `?focus=main` that every left-rail link
+     * carries both open the blueprint, which is what they have always meant.
+     */
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=sensors");
+    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
+
+    await page.goto("/ko/architecture/?focus=main");
+    await expect(page.getByTestId("architecture-flow-panel")).toBeVisible({ timeout: 30_000 });
+  });
+
+  test("커버리지 표가 영역마다 말해둔 것·막는 것·지켜보는 것을 말하고, 빈 칸은 문장으로 말한다", async ({ page }) => {
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=coverage");
+    const matrix = page.getByTestId("harness-coverage");
+    await expect(matrix).toBeVisible({ timeout: 30_000 });
+
+    // The headline counts the areas no check names, and never a score.
+    await expect(page.getByTestId("harness-coverage-headline")).toContainText("검사도 이름을 부르지 않습니다");
+
+    // The universal row stands once, above the areas, instead of repeating down every column.
+    const everywhere = page.getByTestId("harness-coverage-everywhere");
+    await expect(everywhere).toContainText("forbidden");
+    await expect(everywhere).toContainText("lint");
+
+    // Every row carries the vault's purpose sentence, which is the whole reason the rows are areas
+    // rather than folders: without it an empty cell can only say "a file is absent".
+    const front = page.locator('[data-harness-area="domains/shop-front"]');
+    const api = page.locator('[data-harness-area="domains/shop-api"]');
+    await expect(front).toContainText("What a shopper touches");
+    await expect(api).toContainText("The order service every storefront screen reads");
+
+    // The shop front is watched by a check that names its path; the API is watched by nothing, and
+    // the gap is a mark rather than a sentence so it can be compared down the column at a glance.
+    await expect(front.locator('[data-harness-cell="watched"]')).toHaveAttribute(
+      "data-harness-cell-empty",
+      "false",
+    );
+    await expect(api.locator('[data-harness-cell="watched"]')).toHaveAttribute(
+      "data-harness-cell-empty",
+      "true",
+    );
+
+    // The names are one press away, beside the cell — never a full-screen detail.
+    await front.locator('[data-harness-cell="watched"]').click();
+    await expect(page.getByTestId("harness-coverage-detail")).toContainText("test:cart");
+
+    // The empty cell opens the vault's own record of what the area is for — the sentence a
+    // file-only scanner cannot write — beside the paths nothing names.
+    await api.locator('[data-harness-cell="watched"]').click();
+    const detail = page.getByTestId("harness-coverage-detail");
+    await expect(detail).toContainText("The order service every storefront screen reads");
+    await expect(detail).toContainText("api/orders");
+
+    // No score, no grade, no percentage: the thing every competitor ships and this may not.
+    expect(await matrix.textContent()).not.toMatch(/%|점수|등급|성숙도/);
+  });
+
+  test("문서가 지침인지, 지침이 이름을 댄 것인지, 아무도 안 부르는 것인지 셋으로 나뉜다", async ({ page }) => {
+    /*
+     * The harness's most common silent failure: a document that exists and no guide points at. The
+     * fixture source tree carries one of each under its own `docs/` folder — one that the fixture's
+     * AGENTS.md names by path, and one that nothing names.
+     */
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=coverage");
+    const reach = page.getByTestId("harness-reach");
+    await expect(reach).toBeVisible({ timeout: 30_000 });
+    await expect(reach.locator('[data-harness-reach-row="guides"]')).toContainText("지침");
+    await expect(reach.locator('[data-harness-reach-row="named"]')).toContainText("1");
+    /* Three: the fixture's unnamed document, plus both agent briefs. A brief is addressed by name
+       rather than by path, so it lands here for a reason that is fine — which is exactly why the
+       folders are printed beside the count instead of the rows being filtered. */
+    await expect(reach.locator('[data-harness-reach-row="unnamed"]')).toContainText("3");
+
+    // The breakdown of where the unnamed documents are opens on a press. Spilled permanently, the
+    // most important number on the screen was the one followed by the most text on the screen.
+    await expect(page.getByTestId("harness-reach-breakdown")).toHaveCount(0);
+    await page.getByTestId("harness-reach-breakdown-toggle").click();
+    await expect(page.getByTestId("harness-reach-breakdown")).toContainText("docs");
+  });
+
+  test("세는 방법은 문장이 아니라 접힌 자리에 있다", async ({ page }) => {
+    /*
+     * Every honesty rule this page depends on used to stand at body size in the reading flow, where
+     * the most carefully reasoned part of the screen was the heaviest to read. The claim is
+     * unchanged; it costs nothing until a reader asks for it.
+     */
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=coverage");
+    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
+    const rule = page.getByText("어떤 파일이 선언한 경로가", { exact: false });
+    await expect(rule).toBeHidden();
+    await page.getByTestId("harness-coverage-provenance").click();
+    await expect(rule).toBeVisible();
   });
 
   test("지침 표가 도구별로 어느 파일을 읽는지 보여준다", async ({ page }) => {
@@ -114,18 +215,16 @@ test.describe("하네스 탭", () => {
     );
   });
 
-  test("문장은 잰 숫자 둘만 말하고, 아무도 안 지키는 곳은 따로 미룬다", async ({ page }) => {
+  test("문장은 잰 숫자 둘만 말한다", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/?view=guides");
     const sentence = page.getByTestId("harness-sentence");
     await expect(sentence).toBeVisible({ timeout: 30_000 });
     await expect(sentence).toContainText("문서");
     await expect(sentence).toContainText("검사");
-    // The counted sentence never claims a number of unguarded domains.
-    await expect(sentence.locator("p").first()).not.toContainText("도메인");
-    await expect(page.getByTestId("harness-sentence-deferred")).toContainText(
-      "아직 재지 않았습니다",
-    );
+    /* The two numbers here are file counts. The coverage claim has its own denominator and its own
+       kind of statement, so it is not folded in beside them. */
+    await expect(sentence.locator("p").first()).not.toContainText("영역");
   });
 
   test("구조 보기는 카드 폭을 쓰고, 일곱 문장이 끝까지 나온다", async ({ page }) => {
@@ -136,7 +235,7 @@ test.describe("하네스 탭", () => {
      * card stood empty. The owner's standing priority is a finished sentence over box symmetry.
      */
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/");
+    await page.goto("/ko/architecture/?view=structure");
     await expect(page.getByTestId("architecture-graph-box-views")).toBeVisible({ timeout: 30_000 });
 
     const measured = await page.evaluate(() => {
@@ -177,7 +276,7 @@ test.describe("하네스 탭", () => {
     await page.setViewportSize({ width: 1512, height: 949 });
     await installProfilelessHarnessRuntime(page);
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/");
+    await page.goto("/ko/architecture/?view=structure");
     await expect(page.getByRole("tablist")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("tab")).toHaveCount(3);
     // And the tab the open panel names actually exists, so `aria-labelledby` does not dangle.

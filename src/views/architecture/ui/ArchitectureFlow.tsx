@@ -46,6 +46,8 @@ export function ArchitectureFlow({
   contractTrackLabel,
   observationTrackLabel,
   deltaTrackLabel,
+  deltaColumnNote,
+  deltaColumnHint,
   observationMissingLabel,
   violatedPairs,
   selected,
@@ -91,6 +93,8 @@ export function ArchitectureFlow({
   contractTrackLabel: string;
   observationTrackLabel: string;
   deltaTrackLabel: string;
+  deltaColumnNote: string;
+  deltaColumnHint: string;
   observationMissingLabel: string;
   /** The chosen role, owned by the page so the canvas and the detail can sit in different rows. */
   selected: string | null;
@@ -161,6 +165,8 @@ export function ArchitectureFlow({
           contractTrackLabel={contractTrackLabel}
           observationTrackLabel={observationTrackLabel}
           deltaTrackLabel={deltaTrackLabel}
+          deltaColumnNote={deltaColumnNote}
+          deltaColumnHint={deltaColumnHint}
           observationMissingLabel={observationMissingLabel}
           moduleCountLabel={moduleCountLabel}
           conceptCountLabel={conceptCountLabel}

@@ -754,7 +754,14 @@ export function ArchitectureWorkbench({
           */}
           <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 md:flex-nowrap">
               {embedded ? (
-                <>
+                /*
+                  The profile's name and the door to its own history are one thing — what this
+                  drawing is, and where its record lives — so they stand in one group rather than
+                  as two more siblings in a row of six. The name is a label, not a control, and
+                  keeping it inside the group is what stops the row reading as loose pieces
+                  (owner, 2026-09-13).
+                */
+                <div className="flex min-w-0 shrink items-center gap-2">
                   <h2 className="min-w-0 shrink truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                     {selected.title}
                   </h2>
@@ -770,7 +777,7 @@ export function ArchitectureWorkbench({
                       {tReview('history')}
                     </Chip>
                   ) : null}
-                </>
+                </div>
               ) : null}
               <ArchitectureEvidenceRail
                 ariaLabel={evidenceOpen ? t('evidenceClose') : t('evidenceOpen')}
@@ -814,8 +821,19 @@ export function ArchitectureWorkbench({
                   event.preventDefault();
                 }}
               >
+                {/*
+                  ⚠️ **The row's one primary** (owner, 2026-09-13, translated: *"this part's
+                  design is awkward too"*).
+                  Six controls stood in this row as outlines of equal weight — the workbench name,
+                  the findings door, the evidence rail, its status caret, this split button and the
+                  rules toggle — so nothing said which one moved the screen forward. This is that
+                  one: the Delta and Observation columns are empty until a source is inspected, and
+                  every other control in the row opens something beside the drawing rather than
+                  changing what the drawing can say. Its caret keeps the outline it always had, so
+                  the pair still reads as one split control rather than two primaries.
+                */}
                 <Button
-                  variant="outline"
+                  variant="primary"
                   size="lg"
                   className="atlas-touch-floor rounded-r-none"
                   disabled={agentRoute === 'checking' || copyState === 'pending'}
@@ -984,6 +1002,8 @@ export function ArchitectureWorkbench({
                 contractTrackLabel={t('contractTrackLabel')}
                 observationTrackLabel={t('observationTrackLabel')}
                 deltaTrackLabel={t('deltaLabel')}
+                deltaColumnNote={t('deltaColumnNote')}
+                deltaColumnHint={t('deltaColumnHint')}
                 observationMissingLabel={t('observationMissingShort')}
                 selected={selectedRole}
                 roleInspectorOpen={inspector === 'role'}

@@ -2,6 +2,7 @@
 uid: c42d7066-a77e-45f5-89bb-e78a4adeb660
 slug: domains/graph-modeling
 kind: domain
+description: Defines the authorable kinds, the relation vocabulary and the non-inference boundaries the frontmatter encodes, compiles them into a deterministic graph, and judges whether that graph still tells the truth.
 title: "Graph Modeling & Ontology Schema"
 display_ko: 그래프 모델과 스키마
 display_en: "Graph Modeling & Ontology Schema"

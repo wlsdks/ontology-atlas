@@ -30,12 +30,21 @@ export {
   type AgentTool,
 } from './model/agent-files';
 export {
+  buildCoverageMatrix,
+  type CoverageAreaInput,
+  type CoverageAreaRow,
+  type CoverageCapability,
+} from './model/coverage-matrix';
+export { type CoverageColumn, type ScopeDeclaration } from './model/coverage-scopes';
+export {
   declaredPairFor,
   isGuideRecord,
   isPairDrift,
   scanHarness,
   type HarnessReport,
   type HarnessScanPort,
+  type HarnessScanProgress,
 } from './model/repo-scan';
+export { citesPath, type DocumentReach } from './model/document-reach';
 export { type HookConfigFacts } from './model/hook-wiring';
 export { guideCitation, CITATIONS_REVIEWED } from './model/guide-citations';

@@ -78,6 +78,64 @@ const VAULT_FILES: Record<string, string> = {
     "# Storefront Web Architecture",
     "",
   ].join("\n"),
+  /*
+   * Two areas with implementation paths, which is what the coverage matrix's rows are made of. They
+   * are deliberately asymmetric: the shop front is told, gated and watched, while the shop's API is
+   * told and gated and no check names it. A fixture where every cell filled could not show the
+   * thing this view exists for.
+   */
+  "domains/shop-front.md": [
+    "---",
+    "uid: 7a2b1c3d-4e5f-4061-8273-9a0b1c2d3e4f",
+    "slug: domains/shop-front",
+    "kind: domain",
+    "title: Shop Front",
+    "capabilities: [capabilities/cart]",
+    "---",
+    "",
+    "## Definition",
+    "What a shopper touches: the cart, the checkout and the receipt they keep.",
+    "",
+  ].join("\n"),
+  "domains/shop-api.md": [
+    "---",
+    "uid: 8b3c2d4e-5f60-4172-9384-ab1c2d3e4f50",
+    "slug: domains/shop-api",
+    "kind: domain",
+    "title: Shop API",
+    "capabilities: [capabilities/orders]",
+    "---",
+    "",
+    "## Definition",
+    "The order service every storefront screen reads and writes through.",
+    "",
+  ].join("\n"),
+  "capabilities/cart.md": [
+    "---",
+    "uid: 9c4d3e5f-6071-4283-a495-bc2d3e4f5061",
+    "slug: capabilities/cart",
+    "kind: capability",
+    "title: Cart",
+    "domain: domains/shop-front",
+    "path: src/features/cart",
+    "---",
+    "",
+    "The basket a shopper fills.",
+    "",
+  ].join("\n"),
+  "capabilities/orders.md": [
+    "---",
+    "uid: ad5e4f60-7182-4394-b5a6-cd3e4f506172",
+    "slug: capabilities/orders",
+    "kind: capability",
+    "title: Orders",
+    "domain: domains/shop-api",
+    "path: api/orders",
+    "---",
+    "",
+    "Placing and reading one order.",
+    "",
+  ].join("\n"),
   ".ontology-atlas/project-sources.json": JSON.stringify({
     contractVersion: 1,
     bindings: [
@@ -100,16 +158,28 @@ const SOURCE_FILES: Record<string, string> = {
     name: "storefront",
     scripts: {
       dev: "next dev",
+      // Names no path: runs over everything, so it belongs in the row above the areas.
       lint: "eslint",
       typecheck: "tsc --noEmit",
       "test:run": "vitest run",
+      // Names one area's path and not the other's — the asymmetry the matrix has to show.
+      "test:cart": "vitest run src/features/cart",
       "agents:check": "node cli/src/index.mjs agent-files",
     },
   }),
-  "AGENTS.md": "# Storefront\n\nCanonical contributor guide.\n",
+  "AGENTS.md": "# Storefront\n\nCanonical contributor guide. Checkout rules live in docs/checkout.md.\n",
   "CLAUDE.md": "# CLAUDE.md\n\n@AGENTS.md\n",
   "src/AGENTS.md": "# src\n\nCodex merges this one root-down. Claude Code never auto-loads it.\n",
+  // No `paths:`, so it is always loaded and reaches every area: the universal row, once.
   ".claude/rules/forbidden.md": "# Forbidden\n",
+  // A path-scoped rule: it reaches the shop front and nothing else.
+  ".claude/rules/cart.md": ['---', 'paths:', '  - "src/features/**"', '---', '', '# Cart rules', ''].join("\n"),
+  "src/features/cart/index.ts": "export const cart = [];\n",
+  "api/orders/index.ts": "export const orders = [];\n",
+  "api/AGENTS.md": "# api\n\nCodex merges this one root-down.\n",
+  // A document a guide names by path, and one nothing names.
+  "docs/checkout.md": "# Checkout\n",
+  "docs/forgotten.md": "# Nobody points at this\n",
   ".claude/skills/po-pass/SKILL.md": SKILL_BODY,
   // One byte apart from its declared twin: the drift the difference door opens.
   ".agents/skills/po-pass/SKILL.md": `${SKILL_BODY}\nDiverged line.\n`,
@@ -118,7 +188,8 @@ const SOURCE_FILES: Record<string, string> = {
   ".claude/hooks/block-unsafe-git.sh": "#!/bin/sh\nexit 0\n",
   ".codex/hooks/block-unsafe-git.sh": "#!/bin/sh\nexit 0\n",
   ".codex/config.toml": 'default_permissions = "hardened"\n',
-  ".githooks/pre-commit": "#!/bin/sh\nexit 0\n",
+  // An anchored lane filter: the gate says which paths it runs for, so it lands in one area.
+  ".githooks/pre-commit": "#!/bin/sh\nprintf '%s' \"$CHANGED\" | grep -qE '^src/' && pnpm lint\nexit 0\n",
   ".claude/settings.json": JSON.stringify({
     hooks: {
       PreToolUse: [
