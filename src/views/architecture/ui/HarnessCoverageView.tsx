@@ -228,8 +228,17 @@ function CellDetail({
   onClose: () => void;
 }) {
   const entries = area[column];
+  /*
+   * Pressing a cell in the last row opened a detail below the fold: the cell showed its selected
+   * ring and its rotated chevron, and the thing it opened was off screen (installed app, 1512×901,
+   * 2026-09-13). `block: 'nearest'` scrolls only when it has to, so pressing a row already in view
+   * does not move the page under the reader's pointer.
+   */
+  const revealDetail = (node: HTMLDivElement | null) =>
+    node?.scrollIntoView({ block: 'nearest' });
   return (
     <div
+      ref={revealDetail}
       data-testid="harness-coverage-detail"
       className={cn(
         'relative z-30 w-full rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)] shadow-[var(--shadow-elevation-2)]',
