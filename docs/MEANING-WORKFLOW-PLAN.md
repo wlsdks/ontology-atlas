@@ -3,7 +3,7 @@
 This is the current detailed execution specification for the
 [Atlas product thesis](PRODUCT-DIRECTION.md#the-atlas-product-thesis).
 [BACKLOG.md](BACKLOG.md#current-priority--useful-meaning-across-real-tasks-2026-09-13)
-is the single status ledger. This plan defines scope, dependencies, artifacts,
+routes to independent UUID task records, the single status source. This plan defines scope, dependencies, artifacts,
 and acceptance; it does not duplicate live status or mark hypotheses as shipped.
 
 ## Outcome and working agreement

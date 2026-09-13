@@ -27,6 +27,11 @@ export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
 ]);
 
 const RULES = [
+  {
+    command: 'pnpm test:backlog && pnpm backlog:check',
+    reason: 'independent backlog records, their writer, or current-state composition changed',
+    matches: [/^scripts\/backlog(?:\.test)?\.mjs$/, /^docs\/records\/backlog\//, /^docs\/BACKLOG(?:-SNAPSHOT-[^/]+)?\.md$/],
+  },
   { command: 'pnpm test:mcp:rpc', reason: 'stdio integration harness lifecycle changed', matches: [/^scripts\/lib\/mcp-test-rpc(?:\.test)?\.mjs$/, /^mcp\/src\/integration\.test\.mjs$/] },
   { command: 'pnpm mcp:catalogue:check', reason: 'captured registry inputs changed', matches: [/^scripts\/data\/mcp-registry-snapshot\.json$/] },
   {

@@ -3,6 +3,8 @@ import { describe, it } from 'node:test';
 
 import {
   CONFLICT_INSTRUCTION,
+  independentBacklogCi,
+  startParallelBacklogCi,
   LEASE_MINUTES,
   LOCK_REF,
   classifyLock,
@@ -785,5 +787,42 @@ describe('the local lanes never receive a deleted path', () => {
       cwd: process.cwd(),
     });
     assert.deepEqual(kept, ['scripts/pr-land.mjs']);
+  });
+});
+
+
+describe('optional parallel backlog CI', () => {
+  const file = (task, id = '12345678-1234-4234-8234-123456789abc') => ({
+    filename: `docs/records/backlog/2026-09-13-${task}-${id}.md`, status: 'added',
+  });
+  const scope = (files) => ({ files, changedFiles: files.length });
+  it('allows only complete additions for different task identities', () => {
+    assert.equal(independentBacklogCi(scope([file('a')]), scope([file('b')])), true);
+    assert.equal(independentBacklogCi(scope([file('a')]), scope([file('a','22345678-1234-4234-8234-123456789abc')])), false);
+    for (const bad of [[], [null], [{ ...file('a'), status: 'modified' }], [{ filename: 'src/shared/model.ts', status: 'added' }], [{ ...file('a'), previous_filename: 'old.md' }], [{ ...file('a'), filename: 'docs/records/backlog/manual.md' }]]) {
+      assert.equal(independentBacklogCi(scope(bad), scope([file('b')])), false);
+    }
+    assert.equal(independentBacklogCi({ files:[file('a')],changedFiles:2 },scope([file('b')])),false);
+  });
+  it('never promotes a draft without opt-in and the independent scope proof', () => {
+    const calls = [];
+    const io = {
+      readPr: () => ({...draftPr(),number:2,changedFiles:1}),
+      readFiles: (number) => [file(number === 1 ? 'a' : 'b')],
+      ready: (number) => calls.push(number),
+    };
+    const pr = {...draftPr(),number:1,changedFiles:1};
+    assert.equal(startParallelBacklogCi({enabled:false,pr,holder:2,io}),false);
+    assert.deepEqual(calls,[]);
+    assert.equal(startParallelBacklogCi({enabled:true,pr,holder:2,io}),true);
+    assert.deepEqual(calls,[1]);
+    assert.equal(startParallelBacklogCi({enabled:true,pr,holder:2,io:{...io,readFiles:()=>[file('a')]}}),false);
+    assert.equal(startParallelBacklogCi({enabled:true,pr,holder:2,io:{...io,readFiles:()=>{throw new Error('incomplete API');}}}),false);
+    assert.deepEqual(calls,[1]);
+    assert.equal(parseArgs(['1','--parallel-ci']).parallelCi,true);
+    assert.throws(() => parseArgs(['1','--ci','--parallel-ci']), /normal landing/);
+    const ready = { ...pr, isDraft: false };
+    assert.equal(decideNext({ pr: ready, lock: myLock, requiredContexts: REQUIRED_CONTEXTS }).action, 'wait-lock');
+    assert.equal(decideNext({ ...holding, pr: ready, behindBy: 1, ciRequested: true, localChecksPassed: true }).action, 'merge-main');
   });
 });

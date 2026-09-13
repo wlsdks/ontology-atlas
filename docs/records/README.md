@@ -51,6 +51,16 @@ its own UUID; later observations add update files referencing that UUID (or a
 legacy numeric run). A policy record requires the same owner authority as the
 former outcome edit. `pnpm po:pilot` reports the composed current state.
 
+## Backlog observations
+
+`docs/BACKLOG.md` is a stable entrypoint. `pnpm backlog` reads current task
+states from `docs/records/backlog/`. Filenames contain the date, task, and a
+fresh UUID. Every observation
+gets a fresh UUID and an explicit worktree label. Status changes append a record
+referencing the current head UUIDs; they never modify another worktree's file.
+Concurrent heads remain visible until an author records an explicit reconciliation.
+See [the backlog guide](../BACKLOG.md) for read, append, and validation commands.
+
 ## Worktrees and old branches
 
 The generated `src/entities/docs-vault/data/` and `public/docs-vault/` trees are

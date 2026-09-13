@@ -71,6 +71,12 @@
  * logged in the line printed before the merge. The escape cannot reach a **required**
  * context, which refuses however it is named.
  *
+ * Opt-in `--parallel-ci` can start CI while waiting when both pull requests
+ * only add UUID backlog records for different task names. This is speculative:
+ * acquiring the lock, merging newer main, and checking the resulting head are
+ * unchanged. Main advancing can therefore require another CI run. Default
+ * landing keeps the one-run policy.
+ *
  * Never call `gh pr merge` or `gh pr update-branch` by hand, and never open a
  * pull request without `--draft`: each of those spends a CI round nobody asked
  * for or merges past the agent already landing.
@@ -481,6 +487,36 @@ export function decideNext({
  * and hands the pure functions above their inputs.
  * ------------------------------------------------------------------ */
 
+// Early CI is speculative feedback, never permission to merge an unverified
+// combined tree. Restrict this opt-in to distinct immutable backlog additions.
+export function independentBacklogCi(left, right) {
+  const scopes = [left, right].map((scope) => {
+    if (!Array.isArray(scope?.files) || !scope.files.length || !Number.isInteger(scope.changedFiles) || scope.files.length !== scope.changedFiles) return null;
+    const tasks = new Set(); const paths = new Set();
+    for (const file of scope.files) {
+      if (!file || typeof file !== 'object') return null;
+      const match = /^docs\/records\/backlog\/\d{4}-\d{2}-\d{2}-([a-z0-9]+(?:-[a-z0-9]+)*)-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.md$/.exec(file.filename ?? '');
+      if (!match || file.status !== 'added' || file.previous_filename || paths.has(file.filename)) return null;
+      tasks.add(match[1]); paths.add(file.filename);
+    }
+    return tasks;
+  });
+  return scopes.every(Boolean) && ![...scopes[0]].some((task) => scopes[1].has(task));
+}
+
+export function startParallelBacklogCi({ enabled, pr, holder, io }) {
+  if (!enabled || !pr?.isDraft || !Number.isInteger(holder) || holder === pr.number || refuseLanding(pr)) return false;
+  try {
+    const active = io.readPr(holder);
+    if (refuseLanding(active)) return false;
+    const left = { files: io.readFiles(pr.number), changedFiles: pr.changedFiles };
+    const right = { files: io.readFiles(holder), changedFiles: active.changedFiles };
+    if (!independentBacklogCi(left, right)) return false;
+    io.ready(pr.number);
+    return true;
+  } catch { return false; } // Incomplete evidence keeps the ordinary queue.
+}
+
 function gh(args, { allowFailure = false } = {}) {
   try {
     // `stdio` is explicit because `execFileSync` lets the child's stderr reach
@@ -536,6 +572,7 @@ const PR_FIELDS = [
   'baseRefName',
   'isCrossRepository',
   'statusCheckRollup',
+  'changedFiles',
 ].join(',');
 
 function readPr(number) {
@@ -820,6 +857,7 @@ export function parseArgs(argv) {
     queue: false,
     release: false,
     ci: false,
+    parallelCi: false,
     // The local lanes run where that branch is checked out. The current
     // directory is the common case: the agent landing a pull request is
     // standing in the worktree that wrote it.
@@ -835,6 +873,7 @@ export function parseArgs(argv) {
     if (arg === '--queue') args.queue = true;
     else if (arg === '--release') args.release = true;
     else if (arg === '--ci') args.ci = true;
+    else if (arg === '--parallel-ci') args.parallelCi = true;
     else if (arg === '--cleanup') {
       args.cleanup = argv[index + 1] ?? null;
       index += 1;
@@ -862,6 +901,7 @@ export function parseArgs(argv) {
     throw new Error('a pull request number is required: pnpm pr:land <number>');
   }
   if (args.ci && args.number === null) throw new Error('pnpm pr:ci needs a pull request number');
+  if (args.parallelCi && (args.ci || args.queue || args.release)) throw new Error('--parallel-ci applies only to normal landing, not --ci, --queue, or --release');
   return args;
 }
 
@@ -944,6 +984,7 @@ export function runPrLand(argv, io = console) {
   let ciRequested = false;
   let localChecksPassed = false;
   let emptyRollupObservations = 0;
+  const parallelAttempts = new Set();
 
   while (Date.now() < deadline) {
     const { payload } = readLockPayload(slug);
@@ -974,6 +1015,23 @@ export function runPrLand(argv, io = console) {
     }
 
     if (step.action === 'wait-lock') {
+      const attempt = `${pr.headRefOid}:${lock.holder?.pr}`;
+      if (args.parallelCi && pr.isDraft && !parallelAttempts.has(attempt)) {
+        parallelAttempts.add(attempt);
+        const started = startParallelBacklogCi({
+          enabled: true, pr, holder: lock.holder?.pr,
+          io: {
+            readPr,
+            readFiles: (id) => ghJson(['api', `repos/${slug}/pulls/${id}/files?per_page=100`, '--paginate', '--slurp'])?.flat(),
+            ready: (id) => gh(['pr', 'ready', String(id)]),
+          },
+        });
+        if (started) {
+          ciRequested = true;
+          log('independent backlog additions: starting CI while queued; final merge and main revalidation remain serialized');
+          pr = readPr(number);
+        } else log('parallel CI scope not proven; keeping the ordinary queue');
+      }
       log(`waiting for the landing ahead: ${describeLock(step.lock)} (retry in ${POLL_SECONDS}s)`);
       sleep(POLL_SECONDS);
       pr = readPr(number);

@@ -28,7 +28,7 @@ meaning to source evidence. Structural health is not accepted meaning.
 
 Infer scope from the request and session. Proceed through authorized local
 implementation, relevant verification, and correction of resulting failures.
-An initial patch is not completion when running or verifying it is in scope.
+Complete running and verification when in scope.
 Reuse decisions and approval while their content and conditions still hold.
 Ask only for a material missing fact or new authority; name the unresolved
 decision and exact rule if one causes a pause. Never claim unperformed proof.
@@ -72,11 +72,13 @@ a permission grant. Do not transplant another harness's model/tool aliases.
 | Meaningful code change in an existing vault | `/ontology-sync`; inspect the delta before proposing or writing meaning |
 | Requested extraction from prose or wiki | `/ontology-extract` or `/ontology-absorb-confluence` with the user's registered third-party MCP |
 | Construction rules or MCP behavior that can change vault quality | `/ontology-field-trial`; wording-only changes preserving evidence/approval/write contracts skip it |
-| Authorized parallel work | `/parallel-brief` before delegation; isolate files, ports, scratch, baselines, and primary evidence |
+| Authorized parallel work | `/parallel-brief` before delegation |
 
-Do not delegate a handful of calls or re-verification. Use separate contexts
-where independent review is required; label a shared-context review honestly.
+Delegate only bounded independent work; disclose shared-context reviews.
 Subagents do not stash, delete worktrees, or run `git add -A`.
+
+Task status: `docs/BACKLOG.md` and `pnpm backlog -- --task=ID`. Append a fresh
+UUID record per worktree observation; do not overwrite published records.
 
 Read one relevant prior decision with `pnpm decisions:find <terms>`. Cite it or
 explicitly overturn it, retaining dissent and a falsifier. `pnpm record:new`
