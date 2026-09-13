@@ -15,9 +15,10 @@ test('classifies canonical Markdown by migration scope', () => {
   assert.equal(classifyMarkdownPath('docs/DECISIONS.md').scope, 'historical');
 });
 
-test('skips generated docs and byte-mirrored agent files', () => {
+test('scans independent harness files and skips only generated docs', () => {
   assert.equal(classifyMarkdownPath('public/docs-vault/guide/cli.md').kind, 'generated');
-  assert.equal(classifyMarkdownPath('.agents/skills/example/SKILL.md').kind, 'mirror');
+  assert.equal(classifyMarkdownPath('.agents/skills/example/SKILL.md').kind, 'canonical');
+  assert.equal(classifyMarkdownPath('.agents/skills/example/SKILL.md').scope, 'operational');
 });
 
 test('allows the intentionally Korean vault template as locale content', () => {
@@ -120,11 +121,10 @@ test('counts a Korean focused-test title quoted in an Evidence coordinate apart 
 test('fails closed when no canonical Markdown is scanned', () => {
   const result = auditMarkdownEntries([
     { path: 'public/docs-vault/README.md', content: '# Generated\n' },
-    { path: '.agents/agents/example.md', content: '# Mirror\n' },
   ]);
 
   assert.equal(result.scannedFiles, 0);
-  assert.equal(result.skippedFiles, 2);
+  assert.equal(result.skippedFiles, 1);
 });
 
 test('ratchets each migration scope in both directions', () => {
@@ -137,7 +137,8 @@ test('ratchets each migration scope in both directions', () => {
       content: '---\ndisplay_ko: 예시\n---\n# Example\n',
     },
     { path: 'cli/templates/vault-ko/README.md', content: '# 한국어 템플릿\n' },
-    { path: '.agents/agents/example.md', content: '# Mirror\n' },
+    { path: '.agents/agents/example.md', content: '# Codex\n' },
+    { path: '.claude/agents/example.md', content: '# Claude\n' },
   ]);
   const exact = Object.fromEntries(
     Object.entries(audit.scopes).map(([scope, value]) => [
@@ -159,4 +160,17 @@ test('ratchets each migration scope in both directions', () => {
   const tooHigh = structuredClone(exact);
   tooHigh.current.unexpectedHangulCodePoints += 1;
   assert.match(evaluateMarkdownLanguageGate(audit, tooHigh).join('\n'), /lower the baseline/);
+});
+
+
+test('counts language violations in each independent harness and detects an idle side', () => {
+  const audit = auditMarkdownEntries([
+    { path: '.agents/skills/example/SKILL.md', content: '한글' },
+    { path: '.claude/skills/example/SKILL.md', content: '한글' },
+  ]);
+  assert.deepEqual(audit.harnessFiles, { codex: 1, claude: 1 });
+  assert.equal(audit.unexpectedFiles, 2);
+  assert.equal(audit.scopes.operational.unexpectedFiles, 2);
+  audit.harnessFiles.codex = 0;
+  assert.match(evaluateMarkdownLanguageGate(audit).join('\n'), /did not scan codex/);
 });

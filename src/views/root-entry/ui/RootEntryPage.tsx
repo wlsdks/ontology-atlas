@@ -43,7 +43,17 @@ export function RootEntryPage() {
 
   if (!clientReady) return <DesktopVaultRedirect />;
   if (vault.manifest) return <HomePage />;
-  if (isDesktopShell()) {
+  /*
+   * **A returning person choosing between their folders is not an arriving visitor.**
+   *
+   * When the launch deliberately stopped to ask which folder (`awaitingVaultChoice`, two or
+   * more known), `FirstRunPage` is the chooser — it carries the known-folder list and swaps
+   * its own words. Without this arm the web branch below sent that person to the gateway,
+   * the download face, on a reload of their own workspace (workbench and interaction seats,
+   * 2026-09-13). It is the same reasoning as the lost-vault notice further down: coming back
+   * is not the same as arriving.
+   */
+  if (isDesktopShell() || vault.awaitingVaultChoice) {
     // Hold a neutral boot frame until the restore has been attempted — if there is a vault to restore,
     // this stops FirstRun from flashing for one frame.
     return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />;

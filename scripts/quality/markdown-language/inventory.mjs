@@ -31,6 +31,7 @@ function canonicalScope(path) {
     || path.startsWith('.claude/rules/')
     || path.startsWith('.claude/skills/')
     || path.startsWith('.claude/agents/')
+    || path.startsWith('.agents/')
   ) {
     return 'operational';
   }
@@ -43,9 +44,6 @@ function canonicalScope(path) {
 export function classifyMarkdownPath(path) {
   if (path.startsWith('public/docs-vault/')) {
     return { kind: 'generated', scope: null };
-  }
-  if (path.startsWith('.agents/')) {
-    return { kind: 'mirror', scope: null };
   }
   if (path.startsWith('cli/templates/vault-ko/')) {
     return { kind: 'locale-template', scope: null };
@@ -70,7 +68,7 @@ export function auditMarkdownEntries(entries) {
     scannedBytes: 0,
     skippedFiles: 0,
     generatedFiles: 0,
-    mirrorFiles: 0,
+    harnessFiles: { codex: 0, claude: 0 },
     localeTemplateFiles: 0,
     allowedLocaleLines: 0,
     quotedEvidenceLines: 0,
@@ -92,17 +90,14 @@ export function auditMarkdownEntries(entries) {
       result.skippedFiles += 1;
       continue;
     }
-    if (classification.kind === 'mirror') {
-      result.mirrorFiles += 1;
-      result.skippedFiles += 1;
-      continue;
-    }
     if (classification.kind === 'locale-template') {
       result.localeTemplateFiles += 1;
       result.skippedFiles += 1;
       continue;
     }
 
+    if (entry.path.startsWith('.agents/')) result.harnessFiles.codex += 1;
+    if (entry.path.startsWith('.claude/')) result.harnessFiles.claude += 1;
     const scope = result.scopes[classification.scope];
     const bytes = Buffer.byteLength(entry.content);
     result.scannedFiles += 1;

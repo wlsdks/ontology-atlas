@@ -1,6 +1,6 @@
 ---
 name: responsive-sweep
-description: Live-verify layout across tablet, laptop, and wide breakpoints by measuring rects, elementFromPoint occlusion, bottom-tab reserve, and screenshots.
+description: Verify affected Atlas viewport bands when responsive proof is requested or selected by design routing.
 ---
 
 # Responsive sweep

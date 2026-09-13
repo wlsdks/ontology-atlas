@@ -50,6 +50,20 @@ import type { NavRailContextHrefs } from "../model/shell-slot-context";
 import { controlClass } from '@/shared/ui/control-class';
 
 export interface AppNavRailProps {
+  /**
+   * The open folder's identity and the way to another one, above the destinations.
+   *
+   * **Why the rail carries it, when the rule below says the rail starts with
+   * destinations** (2026-09-13, recorded): the shell has no shared header, so this rail and
+   * the bottom tab bar are the only chrome that survives a route change - and the folder's
+   * name must not depend on which destination you are on, because a wiki-only vault has no
+   * `/docs` destination and `/docs` was the one surface that named the folder. The rule's
+   * subject is the **brand mark**: do not spend the app's most valuable chrome slot on a
+   * repeated decoration. A vault identity tile is the opposite of decoration, so the
+   * sentence was amended rather than ignored. `AppShell` supplies it; the feature itself
+   * renders nothing unless a folder is open.
+   */
+  vaultSlot?: ReactNode;
   /** The settings trigger (`AppSettingsMenu` rail-tile and the like) — the slot at
    *  the rail's bottom. The persistent shell's `AppShell` supplies the default
    *  trigger, and a page overrides it only by registering its own slot through
@@ -143,6 +157,7 @@ function rememberRailRouteFocus(
  * It is shown from the `lg` breakpoint (≥1024px); below that `BottomTabBar` takes over.
  */
 export function AppNavRail({
+  vaultSlot,
   settingsSlot,
   hidden,
   contextHrefs,
@@ -337,6 +352,13 @@ export function AppNavRail({
         The cap itself is held by a contract
         (`destination-shortcuts.contract.test.ts`).
       */}
+      {/*
+        The vault tile sits **outside** the scrolling destinations pane on purpose. Inside
+        it, the one fact that says where all this data comes from would scroll away as soon
+        as the destination list grew past a short window - and the window floor (1040x720)
+        is exactly where that happens.
+      */}
+      {vaultSlot}
       <nav
         aria-label={t("ariaLabel")}
         className="flex w-full min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain"

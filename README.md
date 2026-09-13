@@ -617,11 +617,17 @@ because outside the lander neither waits for the landing already in flight.
 | Command | What it answers |
 |---|---|
 | `pnpm checks:changed` | Which gates this change actually needs |
+| `pnpm backlog` · `pnpm backlog:check` | Current task records and concurrent-state conflicts; append a UUID record per worktree observation ([guide](docs/BACKLOG.md)) |
+| `pnpm agents:check` | Each harness's instruction integrity; independent Codex and Claude files need not match |
 | `pnpm docs:check` | Docs gates, including `pnpm docs:language`, `pnpm source:language`, `pnpm changelog:check`, `pnpm dev-checks:check` |
 | `pnpm knip` | Dead files, exports and types across every scope |
 | `pnpm decisions:find <terms>` · `pnpm decisions:check` | The decision record to cite or overturn, and whether this change owes one |
 | `pnpm harness:report` · `pnpm harness:outcomes` | What the agent hooks caught, and whether that lane still earns its place |
 | `pnpm pr:land <n>` · `pnpm pr:queue` | Land a pull request, and who is landing right now |
+
+For independent backlog-record additions, opt into earlier CI feedback with
+`pnpm pr:land <n> --parallel-ci`. Final merge and validation of newer main remain
+serialized; see [eligibility and rerun limits](docs/BACKLOG.md#ci-while-another-task-is-landing).
 
 [Development checks](docs/DEVELOPMENT-CHECKS.md) is the full gate reference, one
 entry per area; [map testability](docs/MAP-TESTABILITY.md) owns canvas

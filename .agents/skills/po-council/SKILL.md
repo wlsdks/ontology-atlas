@@ -1,6 +1,6 @@
 ---
 name: po-council
-description: Review a hard-to-reverse Atlas product decision with Evidence plus one risk specialist, testing whether it restores a named human ability.
+description: Review an Atlas product decision when po:route returns review or the owner explicitly requests independent review.
 ---
 
 # Atlas PO review — two critics, one accountable owner
@@ -38,7 +38,7 @@ from the design, responsive, motion, and walkthrough gates; it does not repeat
 them.
 
 Seat briefs live at `../../agents/po-*.md`. Open only the selected files. From
-either mirrored skill tree, the relative path resolves to the matching agent
+either client-specific skill tree, the relative path resolves to the matching agent
 tree. Never create a third copy.
 
 Run the selected pair in separate contexts and give neither the other's

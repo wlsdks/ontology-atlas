@@ -1,6 +1,6 @@
 ---
 name: gate-probe
-description: Prove a gate before trusting it. Inventory violations, plant a defect, verify RED, restore GREEN, prevent idle scans, and confirm automatic wiring.
+description: Verify a new or changed automated gate with deliberate failing and passing cases, a nonempty inventory, and CI wiring.
 ---
 
 # Gate probe

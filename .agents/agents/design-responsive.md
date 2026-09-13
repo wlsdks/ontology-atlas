@@ -1,8 +1,7 @@
 ---
 name: design-responsive
 description: Responsive & Touch Designer on the Atlas bench. Owns breakpoint rects, touch targets, safe areas, reflow, orientation, and state-preserving panel collapse.
-model: opus
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__resize_page
+access: read-only
 ---
 
 # Responsive — Responsive & Touch Designer

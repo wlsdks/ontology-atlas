@@ -5318,5 +5318,45 @@
     "noAgentBodyWeb": "A browser cannot start one. The connection is saved and switched on, so any coding tool you point at this folder can already use it; come back to this screen in the app to have the documents fetched and written here for you.",
     "noAgentBodyRuntime": "None is ready on this computer yet. The connection is saved and switched on, so any coding tool you point at this folder can already use it; set one up and come back to finish here.",
     "noAgentSeeRuntimes": "See your coding tools"
+  },
+  "vaultSwitch": {
+    "railTileAriaLabel": "Open folder: {name}. Choose a different folder",
+    "switcherAriaLabel": "Folder switcher",
+    "openFolderLabel": "OPEN FOLDER",
+    "switchTo": "SWITCH TO",
+    "pickAnotherFolder": "Open a folder Atlas has not seen",
+    "openFolder": "Open {name}",
+    "forget": "Forget",
+    "forgetFolder": "Stop listing {name}",
+    "lastOpenBadge": "LAST OPEN",
+    "contents": "{docs} documents · {concepts} concepts",
+    "contentsUncounted": "Not counted yet",
+    "openedAgo": "opened {when}",
+    "age": {
+      "justNow": "just now",
+      "minutesAgo": "{count}m ago",
+      "hoursAgo": "{count}h ago",
+      "yesterday": "yesterday",
+      "daysAgo": "{count}d ago",
+      "weeksAgo": "{count}w ago",
+      "monthsAgo": "{count}mo ago"
+    },
+    "state": {
+      "missing": "Not at this path any more. It was renamed, moved, or is on a volume that is not mounted.",
+      "blocked": "This browser refused permission for this folder. Open it again through the folder picker.",
+      "needsPermission": "The browser will ask for permission again when you open this.",
+      "unknown": "Could not check whether this folder is reachable."
+    },
+    "choose": {
+      "eyebrow": "WHICH FOLDER",
+      "title": "Choose the folder to work in",
+      "bodyDesktop": "Atlas knows more than one folder on this computer and will not guess between them. Pick one below, or open a folder it has not seen.",
+      "bodyWeb": "A browser cannot reopen a folder on its own: File System Access permission has to come from a click, so this step is the browser's, not a choice Atlas added.",
+      "listTitle": "FOLDERS ATLAS KNOWS",
+      "releaseValve": "Leave one folder in this list and the next launch opens it directly."
+    },
+    "locate": "Find it again",
+    "locateFolder": "Find {name} again through the folder picker",
+    "countedAgo": "counted {when}"
   }
 }

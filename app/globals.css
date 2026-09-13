@@ -3059,6 +3059,28 @@
      * it.
      */
     --dialog-max-h: 44rem;
+    /*
+     * How tall the known-folder list may grow before it scrolls inside itself, rather than
+     * pushing the screen's own actions past the window edge.
+     *
+     * Added 2026-09-13 (workbench seat). `MAX_RECENT_HANDLES` is 5, and five desktop rows —
+     * each carrying a name, a facts line and an absolute path — plus the chooser's header
+     * and its two door cards measure past the app's declared window floor of 1040x720. What
+     * went below the edge was the door out, on the one screen whose whole job is pressing a
+     * door. `22rem` is four rows plus a cut fifth, so the remaining rows are visibly there
+     * rather than silently absent; `44vh` keeps the same relationship on a tall window, and
+     * the pair is read the way `--dialog-max-h` is (a viewport relationship at the call
+     * site, an absolute ceiling here).
+     */
+    --recent-vault-list-max-h: min(44vh, 22rem);
+    /*
+     * The space a known-folder row keeps clear on its right for the action chip laid over
+     * its corner. It is a token because the two numbers have to agree: the chip is promoted
+     * to the 44px touch floor under a coarse pointer, and in Korean it measured 6.3px from
+     * the facts line — clearance that was luck, not design (responsive seat, 2026-09-13).
+     * 5rem = the 44px floor, the 8px inset, and room for the longest of the two labels.
+     */
+    --recent-vault-action-reserve: 5rem;
     /* 44 → 36 (owner's 3rd report on 2026-07-23: "visibly too large" even after removing zoom)
        — Chrome density itself is set to pro-toolbar levels (32–36). Since this is a single token, all previous chrome
        fields/tiles/status chips/floating stacks decrease together. */

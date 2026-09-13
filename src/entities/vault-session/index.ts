@@ -8,7 +8,10 @@ export type {
 } from './model/agent-activity-status';
 export { useAgentServer } from './model/use-agent-server';
 export { useSummaryFreshness } from './model/use-summary-freshness';
-export { deniedFolderName } from './model/classify-vault-access-error';
+export {
+  deniedFolderName,
+  isMissingFolderError,
+} from './model/classify-vault-access-error';
 export { useDataSourceMode } from './model/use-data-source-mode';
 export { useSampleSource } from './model/use-sample-source';
 export { useStaticVaultSource } from './model/use-static-vault-source';

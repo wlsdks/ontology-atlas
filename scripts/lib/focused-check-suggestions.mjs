@@ -27,6 +27,11 @@ export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
 ]);
 
 const RULES = [
+  {
+    command: 'pnpm test:backlog && pnpm backlog:check',
+    reason: 'independent backlog records, their writer, or current-state composition changed',
+    matches: [/^scripts\/backlog(?:\.test)?\.mjs$/, /^docs\/records\/backlog\//, /^docs\/BACKLOG(?:-SNAPSHOT-[^/]+)?\.md$/],
+  },
   { command: 'pnpm test:mcp:rpc', reason: 'stdio integration harness lifecycle changed', matches: [/^scripts\/lib\/mcp-test-rpc(?:\.test)?\.mjs$/, /^mcp\/src\/integration\.test\.mjs$/] },
   { command: 'pnpm mcp:catalogue:check', reason: 'captured registry inputs changed', matches: [/^scripts\/data\/mcp-registry-snapshot\.json$/] },
   {
@@ -547,7 +552,7 @@ const RULES = [
   },
   {
     command: 'pnpm agents:check',
-    reason: 'agent-file surface changed: mirror parity, pointers, MCP grants, and the Codex cap move together',
+    reason: 'agent instructions changed: per-harness integrity, references, MCP grants, and the Codex cap',
     /*
      * CI has run this since it existed, but nothing recommended it locally, so
      * the answer to "did I break the mirror" cost an eight-minute CI round
@@ -560,7 +565,7 @@ const RULES = [
       /^[^/]+\/AGENTS\.md$/,
       /^\.claude\/(?:agents|skills|hooks|rules)\/.+/,
       /^\.claude\/settings\.json$/,
-      /^\.agents\/(?:agents|skills)\/.+/,
+      /^\.agents\/.+/,
       /^\.codex\/.+/,
       /^\.mcp\.json$/,
       /^cli\/src\/lib\/agent-files\.mjs$/,

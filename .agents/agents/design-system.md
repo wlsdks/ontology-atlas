@@ -1,8 +1,7 @@
 ---
 name: design-system
 description: Design Systems Engineer on the Atlas bench. Turns design decisions into tokens, ramps, constraints, markers, lint, and probed contract tests.
-model: fable
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
+access: read-only
 ---
 
 # Design System — Design Systems Engineer

@@ -1,6 +1,6 @@
 ---
 name: parallel-brief
-description: Write a subagent brief that isolates ports, files, worktrees, scratch output, baselines, and primary evidence before parallel work begins.
+description: Prepare isolation and evidence boundaries before authorized parallel agent work.
 ---
 
 # Parallel brief

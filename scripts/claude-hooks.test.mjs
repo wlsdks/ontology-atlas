@@ -572,7 +572,7 @@ describe('commit-msg language gate', () => {
 });
 
 // The PostToolUse drift reporter. Its whole value is being right about two
-// things at once: loud when a mirrored tree has been half-edited, and silent
+// things at once: loud for instruction integrity defects, and silent
 // otherwise. A hook that speaks on every edit spends context to say nothing and
 // gets ignored exactly when it matters, so the quiet cases are asserted as hard
 // as the loud one.
@@ -611,22 +611,32 @@ describe('report-agent-file-drift PostToolUse hook', () => {
     assert.equal(stdout, '', 'a clean surface must cost no context');
   });
 
-  it('reports through additionalContext when one side of a mirror is edited', async () => {
-    const mirrored = '.claude/skills/po-pass/SKILL.md';
-    const original = await readFile(mirrored, 'utf8');
+  it('stays silent when only client-specific instruction content differs', async () => {
+    const path = '.agents/skills/po-pass/SKILL.md';
+    const original = await readFile(path, 'utf8');
     try {
-      await writeFile(mirrored, `${original}\n<!-- half of a mirrored pair -->\n`, 'utf8');
-      const { status, stdout } = fire(join(root, mirrored));
+      await writeFile(path, `${original}\nClient-specific instruction.\n`, 'utf8');
+      const { status, stdout } = fire(join(root, path));
+      assert.equal(status, 0);
+      assert.equal(stdout, '');
+    } finally { await writeFile(path, original, 'utf8'); }
+  });
+
+  it('reports an integrity failure independently of copy differences', async () => {
+    const path = '.agents/skills/po-pass/SKILL.md';
+    const original = await readFile(path, 'utf8');
+    try {
+      await writeFile(path, `${original}\n@missing-instruction-probe.md\n`, 'utf8');
+      const { status, stdout } = fire(join(root, path));
       assert.equal(status, 0);
       const parsed = JSON.parse(stdout);
       assert.equal(parsed.hookSpecificOutput.hookEventName, 'PostToolUse');
       const context = parsed.hookSpecificOutput.additionalContext;
-      assert.match(context, /skill-copy/);
-      assert.match(context, /po-pass\/SKILL\.md/);
+      assert.match(context, /at-refs/);
+      assert.match(context, /missing-instruction-probe/);
       assert.match(context, /pnpm agents:check/);
-    } finally {
-      await writeFile(mirrored, original, 'utf8');
-    }
+      assert.doesNotMatch(context, /\[skill-copy\]|\[agent-copy\]/);
+    } finally { await writeFile(path, original, 'utf8'); }
   });
 
   it('survives a payload with no file path at all', () => {

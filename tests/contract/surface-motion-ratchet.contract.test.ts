@@ -251,7 +251,22 @@ const BASELINE_HARD_CUTS = 0;
  * is not an `OPENERS` entry. `HarnessPage.test.tsx` owns its open path: nothing at 600ms, the panel
  * at 1000ms, which is also the gate on the threshold itself.
  */
-const BASELINE_APPEARING_SURFACES = 43;
+/*
+ * 43 → 44 (2026-09-13): the rail's folder switcher (`features/vault-switch`, the popover the
+ * open folder's name opens). `Surface` with `transientSurface("anchored")` and
+ * `origin="top left"` aimed at the tile, so it is born where the press landed and hard cuts
+ * stay at zero. It renders only while a local vault is loaded, which is why the static sweep
+ * on `a11y-open-surfaces.spec.ts` cannot reach it - that sweep runs on the sample source,
+ * where the tile does not exist - so it is not an `OPENERS` entry. Its open path is measured
+ * in a real browser instead: `vault-launch-chooser.spec.ts` opens a seeded folder through
+ * the stubbed picker, presses the tile, and asserts the popover stands and that the folder
+ * beside it can be switched to. Dismissal is the same outside-press and Escape contract the
+ * docs header's vault chip already uses (`shared/lib/use-dismissible-menu`, promoted from
+ * that view for this second consumer); like that chip it does **not** restore focus to the
+ * trigger, which is pre-existing behaviour of the shared hook rather than something this
+ * surface introduced.
+ */
+const BASELINE_APPEARING_SURFACES = 44;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

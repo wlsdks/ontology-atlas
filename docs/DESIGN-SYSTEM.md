@@ -348,8 +348,13 @@ The data side is currently specifying **bridge nodes** (first-class representati
 > `assets/brand/mascot/`. Runtime: `src/shared/ui/brand-mark.tsx`.
 
 The pixel mascot is the one shipping identity across OS, web, README, Open
-Graph, loading, and evidence-bound workbench presence. The app rail deliberately
-starts with destinations and repeats no mark. The mascot does **not** replace
+Graph, loading, and evidence-bound workbench presence. The app rail repeats no
+mark: from `lg` up, above its destinations, it carries only the open folder's
+identity (2026-09-13), which is state rather than branding, and the reason the
+rule was amended rather than waived is that the alternative seats do not exist —
+the shell has no header, and `/docs`, the one surface that named the folder, is
+absent from a wiki-only vault. Below `lg` that seat is hidden with the rail, so
+no chrome names the folder there. The mascot does **not** replace
 project hexagons: those remain topology kind marks carrying typed data.
 
 **Three separately authored grids**:
@@ -3223,6 +3228,22 @@ The value is not preference but **the exact derived value from the root face**; 
   token. Added 2026-09-05 by the design council after the connectors add dialog was measured as
   the only untokenized height clamp in the codebase — the same shape as the eight hardcoded widths
   the scale above replaced.
+
+### Known-folder list (2026-09-13)
+
+```
+--recent-vault-list-max-h: min(44vh, 22rem);  /* Four rows plus a cut fifth before the list scrolls */
+--recent-vault-action-reserve: 5rem;          /* Row space kept clear for the chip over its corner */
+```
+
+- The launch chooser's folder list (`src/features/vault-switch/ui/RecentVaultList.tsx`) is
+  read the same way `--dialog-max-h` is: the viewport relationship stays at the call site,
+  the ceiling is the token. `MAX_RECENT_HANDLES` is 5, and five rows plus the chooser's
+  header and door cards measured past the app's declared 1040×720 window floor — what went
+  below the edge was the door out.
+- `--recent-vault-action-reserve` exists so two numbers cannot drift apart: the row's right
+  reserve and the `44px` touch floor the forget/locate chips are promoted to. In Korean the
+  clearance measured 6.3px from the facts line before the reserve was bound to the floor.
 
 ### Consumption Norms (Hard)
 

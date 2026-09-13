@@ -1,208 +1,164 @@
 # AGENTS.md — ontology-atlas
 
-> Canonical contributor guide for people and AI agents. Read it before changing
-> the repository; use the linked authority for detail rather than duplicating it.
+Canonical repository contract. Read the authority for the current task; do not
+load every linked document before an edit.
 
-## Product and non-negotiable architecture
+## Product and architecture
 
-Ontology Atlas is a local-first codebase ontology for understanding what code
-builds, why it is structured that way, and what changes affect, across product
-meaning and implementation evidence. Vault Markdown frontmatter is the graph;
-Git is the source of truth, and people judge meaning through files and
-diffs. Agents use the same vault through MCP/CLI. The macOS app carries its MCP
-server; source checkouts run it directly. There is no npm package.
+Ontology Atlas is a local-first codebase ontology: what code builds, why it is
+structured that way, and what changes affect. People and agents maintain the
+same Markdown frontmatter graph; Git is truth. Atlas adds reviewed product
+meaning to source evidence. Structural health is not accepted meaning.
 
-Atlas complements CodeGraph, grep, AST indexes, language servers, and source
-search. Those tools answer structural questions; Atlas provides the durable
-meaning layer: task starting point, domain/capability context, evidence, impact
-boundary, and verification path.
+- `docs/ONTOLOGY-ATLAS-SPEC.md` §2/§5 is the sole public meta-model. Surfaces must
+  offer typed agent facts and evidence a human can judge and correct.
+- No backend, login, auth, seed data, API routes, or server actions.
+  `output: 'export'` is intentional. The macOS app carries MCP; `mcp/` and `cli/`
+  also run from source. There is no npm package.
+- `src/` follows app → views → widgets → features → entities → shared.
+  Root `app/` is thin Next routing; ESLint enforces import direction.
+- The renderer is custom canvas-2D `ontology-map`; Graphology supplies
+  ForceAtlas2 only. Another renderer needs a decision.
+- State is React/URL/in-memory; IndexedDB stores only the vault handle.
+  App and web share parser/data contracts, not identical screens.
+- Versions/framework facts come from `package.json`, `next.config.ts`, and
+  `app/layout.tsx`.
 
-The public meta-model belongs only in `docs/ONTOLOGY-ATLAS-SPEC.md` §2/§5.
-Do not create competing kind or relation glossaries. The product is
-agent-native and human-sovereign: every surface must be consumable as typed
-facts by an agent and readable and judgeable by a human.
+## Working and finishing
 
-The app is the vault's home and the web is a gateway or second-best workbench.
-They share one folder, parser contract, and vault-local records; they do not
-promise identical screens. Keep degradation honest.
+Infer scope from the request and session. Proceed through authorized local
+implementation, relevant verification, and correction of resulting failures.
+Complete running and verification when in scope.
+Reuse decisions and approval while their content and conditions still hold.
+Ask only for a material missing fact or new authority; name the unresolved
+decision and exact rule if one causes a pause. Never claim unperformed proof.
 
-> **One codebase ontology, maintained by people and AI agents.**
+Check `git status`; preserve unrelated changes and active processes. Use native
+search and targeted reads. Existing `.codegraph/` may help with cross-file
+calls, dynamic dispatch, or impact; `.claude/rules/codegraph.md` owns its use.
+Empty or stale results are not absence. Do not create an index to start a task.
 
-No backend, login, auth provider, environment setup, seed data, API routes, or
-server actions belong here. `output: 'export'` is intentional.
+Install only missing/stale dependencies: `pnpm install` at the root and
+`pnpm --dir mcp install --frozen-lockfile` for the source MCP. Root installation
+does not update `mcp/node_modules`; recheck it after its manifest changes.
+Use `pnpm dev` when the task needs a running web app.
 
-## Start here
+Run `pnpm checks:changed -- --run` and complete every recommendation. Stop after
+success unless a new edit, failure, or named unresolved risk requires more.
+`.claude/rules/testing.md` owns escalation; do not run broad suites by habit or
+write tests that merely pin prose. Explain what changed, the evidence, and any
+remaining limits.
 
-```bash
-pnpm install && pnpm dev
-pnpm --dir mcp install
-pnpm checks:changed
-```
+## Choose the relevant workflow
 
-Re-run `pnpm --dir mcp install` after a pull changes `mcp/package.json`;
-root installation does not update `mcp/node_modules`.
-Start verification with `pnpm checks:changed`; `-- --run` runs every
-recommendation and stops at the first failure. Do not hand-pick its list.
+Use `.agents/skills/` for Codex and `.claude/skills/` for Claude. Their instructions,
+resources, models, and inventories are independent. Do not synchronize them or
+require byte identity; each must satisfy shared product/authorization contracts.
 
-Read versions from `package.json`. The graph renderer is the custom
-canvas-2D `ontology-map` engine; Graphology supplies ForceAtlas2 only.
-Do not reintroduce xyflow, Sigma, or another renderer without a decision.
-State is React/URL/in-memory with IndexedDB only for the vault handle.
+Codex `.agents/agents/` files are task briefs, not native registrations. Inherit
+the caller's model/effort and available tools. `access` is a task boundary, not
+a permission grant. Do not transplant another harness's model/tool aliases.
 
-## Structure and routes
+| Task | Entry and required scope |
+|---|---|
+| Mechanical maintenance | Technical checks; `/po-pass` skips product review |
+| Product, UX, graph, MCP, CLI, workflow, or macOS change | `/po-pass`; `pnpm po:route` derives door/risk from facts; `/po-council` only for the returned review or an owner request |
+| UI, interaction, topology, responsive, motion, or macOS workbench | Design gate after the PO pass: `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` and `pnpm design:route`; `/design-build` implements the selected shape |
+| New structural design choice | `/design-directions` only when routed and no valid owner selection exists; `/design-council` only for routed structural commitments |
+| Rendered proof | `/design-audit`, `/responsive-sweep`, `/motion-verify`, `/map-perf`, and `/user-walkthrough` only at the requested or routed scope |
+| Design-system enforcement | `/design-system-audit`; new or changed gates also use `/gate-probe` |
+| Any automated gate change | `/gate-probe`: inventory, deliberate RED, restoration to GREEN, nonempty scope, automatic wiring |
+| Initial ontology or explicit rebuild | `/ontology-bootstrap`; general code analysis alone does not request construction |
+| Meaningful code change in an existing vault | `/ontology-sync`; inspect the delta before proposing or writing meaning |
+| Requested extraction from prose or wiki | `/ontology-extract` or `/ontology-absorb-confluence` with the user's registered third-party MCP |
+| Construction rules or MCP behavior that can change vault quality | `/ontology-field-trial`; wording-only changes preserving evidence/approval/write contracts skip it |
+| Authorized parallel work | `/parallel-brief` before delegation |
 
-`src/` uses Feature-Sliced Design:
-`app → views → widgets → features → entities → shared`; ESLint enforces that
-direction. Root `app/` is thin Next routing. `mcp/` and `cli/` are source
-checkout surfaces, never npm packages. `docs/ontology/` is the dogfood vault.
-`tests/contract/` prevents parser and cross-package drift.
+Delegate only bounded independent work; disclose shared-context reviews.
+Subagents do not stash, delete worktrees, or run `git add -A`.
 
-All routes are locale-prefixed; use `@/i18n/navigation` for in-app links.
-`/` is selected by caller: a web visitor without a vault sees the gateway,
-while a vault-bearing web user and the installed app see the map/first-run
-surface; a wiki without nodes opens `/library`. The installed app must not
-offer its own download. `/topology` is the map address and supports contextual
-relation writing with directional preview and change review; ACP writes wait
-for `allow_once` or `reject_once`. `/ontology`, `/ontology/edit` and `/ontology/studio` are legacy
-redirects; `/ontology/insights` is live.
+Task status: `docs/BACKLOG.md` and `pnpm backlog -- --task=ID`. Append a fresh
+UUID record per worktree observation; do not overwrite published records.
 
-Route additions/removals require a same-change decision fragment
-(`pnpm record:new`, enforced by `pnpm decisions:check`). Keep retired namespaces
-retired: `/login`, `/signup`, `/account`, `/reset-password`,
-`/settings/*`, `/admin/*`, `/review/*`, `/diagnostics/*`,
-`/knowledge/*`, and `/skills`. See `.claude/rules/forbidden.md`.
+Read one relevant prior decision with `pnpm decisions:find <terms>`. Cite it or
+explicitly overturn it, retaining dissent and a falsifier. `pnpm record:new`
+creates immutable fragments; routine solo work does not need a decision fragment.
+Eligible product runs use `pnpm po:record`; `pnpm po:pilot -- --check` owns sunset.
 
-## Operating gates and skills
+## Rendered work and source authorities
 
-Policies live in `.claude/rules/` and each skill owns its exact protocol. Use
-the matching source, never memory or this summary — what follows is routing
-only: when to open a gate, not how it runs.
+Every rendered route uses Computer Use while building: baseline; one coherent
+slice; fresh accessibility tree and screenshot in the actual browser/WebView/app;
+correction; repeat. DOM geometry complements the capture. Motion requires the
+real macOS recording in `/motion-verify`; static frames cannot approve it.
 
-- **PO gate** — Before product, UX, graph, MCP, CLI, workflow, or macOS work,
-  `/po-pass` names one lost Atlas ability and gives change/boundary facts to
-  `pnpm po:route` derives door/risk. Record with `pnpm po:record`;
-  `pnpm po:pilot -- --check` owns the sunset.
-- **Product design gate** — `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`, after
-  the PO pass, for UI, interaction, topology, responsive, motion, and macOS
-  workbench work. Run `pnpm design:route`; it selects `/design-directions`,
-  `/design-audit`, `/design-system-audit`, council, and exact proof.
-  `/design-build` writes the shape. New rules need lint, inventory, and
-  `/gate-probe`; values live only in `docs/DESIGN-SYSTEM.md`.
-- **Rendered evidence** — every rendered route uses Computer Use while building:
-  baseline; one coherent slice; fresh screenshot and accessibility tree in the
-  actual browser/WebView/app; correction; repeat. Never invent the whole screen
-  and inspect only at the end. DOM geometry complements, never replaces, the
-  actual-window capture. Motion also requires a real macOS recording through
-  `/motion-verify`; static frames cannot approve it. Repository-declared
-  geometry tooling stays mirrored; `pnpm agents:check` enforces parity.
-- **Councils** — `/po-council` pairs Evidence with the derived-risk specialist
-  and tests recovery proof; `chief` rebuts only material conflict.
-  `/design-council` runs only for routed structural commitments, with selected
-  seats and `design-guardian` deciding. Cross-critique needs material conflict.
-- **Decisions** — `pnpm decisions:find <terms>` searches history and fragments.
-  Cite or explicitly overturn prior decisions, retaining dissent and a falsifier.
-  Add with `pnpm record:new`; never edit frozen history.
-- **Gate probe** — `/gate-probe` whenever a gate changes. A permanently green
-  gate is not evidence.
-- **Journey and motion** — `/user-walkthrough` names observable UX patterns,
-  never invented user feelings. `/responsive-sweep`, `/motion-verify`, and
-  `/map-perf` run at the scope returned by `design:route`.
-- **Ontology and parallel work** — `/ontology-bootstrap` for a starter vault,
-  `/ontology-sync` after a meaningful code change, `/ontology-extract` for
-  prose, `/ontology-absorb-confluence` for a wiki page the user's own
-  third-party MCP can read, `/ontology-field-trial` when construction rules or
-  the MCP read/write contract could change vault quality, `/parallel-brief`
-  before parallel work.
+Read the named authority only for its subject:
 
-The design system rests on neutrals and indigo, with effects and further hues allowed on tokens since 2026-09-08; consult
-`.claude/rules/design.md`, `docs/DESIGN-SYSTEM.md`, and
-`.claude/rules/design-gates.md` when applicable. Follow
-`.claude/rules/architecture.md`, `testing.md`, `local-first.md`,
-`surfaces.md`, `forbidden.md`, and `documentation.md` for their domains.
-Documentation checks only machine-derived facts: generate and diff, check
-references, or derive from code; never pin human prose.
+| Subject | Authority |
+|---|---|
+| Product and inventory | `docs/PRODUCT-DIRECTION.md`, `docs/FEATURES.md` |
+| Architecture/routes | `docs/ARCHITECTURE.md`, `.claude/rules/architecture.md` |
+| UI values | `docs/DESIGN-SYSTEM.md`, `.claude/rules/design.md` |
+| Gates | `.claude/rules/design-gates.md` |
+| Storage/surface boundaries | `.claude/rules/local-first.md`, `.claude/rules/surfaces.md`, `.claude/rules/forbidden.md` |
+| Tests, docs, Git | `.claude/rules/testing.md`, `.claude/rules/documentation.md`, `.claude/rules/git.md` |
 
-## Verification, documentation, and Git
-
-Run `pnpm checks:changed -- --run`; complete every recommendation. Finish
-after they pass unless a new edit, failure, or named unresolved risk requires
-more. Use `.claude/rules/testing.md` for escalation; never broaden or repeat
-checks by habit.
-`pnpm docs-vault:build` materializes ignored `src/entities/docs-vault/data/` and
-`public/docs-vault/` on install, checkout, merge and build. Never edit or stage them.
-
-When documentation changes, keep the owner current: public behavior in
-`README.md` and `docs/FEATURES.md`; architecture/routes in
-`docs/ARCHITECTURE.md`; MCP/CLI contracts in their READMEs. Decision, change,
-release and pilot records follow `docs/records/README.md`: immutable fragments,
-frozen history, composed readers. Authored prose is English; `display_ko` and
-`cli/templates/vault-ko/**` are localized data. Current docs links must resolve.
-
-Land with `pnpm pr:land <number>`; open pull requests as drafts. The lander
-locks, merges `main` in, checks locally, then fires the one CI run.
-
-Use an English conventional prefix and subject for commits. Never use
-`--no-verify`, force-push `main`, `git reset --hard`, or `git push --force`
-without explicit user authority. Never run a publish command unless the user
-explicitly asks; first run `npm pack --dry-run`. Hooks own irreversible
-blocks, not prose.
-
-## Context, delegation, and CodeGraph
-
-Use the smallest sufficient context: a focused vault query, CodeGraph, or a
-targeted read over broad dumps. Preserve unrelated dirty work and user-local
-state. Do not delegate a handful of tool calls or delegate re-verification.
-When delegation is justified, the brief must state: isolated port; read-only
-files; no stash/worktree deletion/`git add -A`; scratch outside the repo;
-baselines; and primary sources.
-
-Default to native search and targeted reads. With `.codegraph/`, optionally use
-CodeGraph for cross-file calls, dynamic dispatch, or change impact. Follow
-`.claude/rules/codegraph.md`; code directories point there. Compiler results
-and required tests govern absence and safety.
+Routes are locale-prefixed; use `@/i18n/navigation`. `/` chooses gateway or
+vault-bearing map/first-run; a wiki without nodes opens `/library`. The app must
+not offer its own download. `/topology` owns map/relation review; ACP writes wait
+for `allow_once` or `reject_once`. Route additions/removals require a decision
+fragment. `/ontology`, `/ontology/edit`, and `/ontology/studio` are redirects;
+`/ontology/insights` is live. Check the forbidden rule before reviving a retired
+namespace.
 
 ## Source authority and ontology loop
 
-For framework/build/routing facts, code wins: `package.json`,
-`next.config.ts`, and `app/layout.tsx`. Product direction, feature inventory,
-architecture, design system, and foundations live in their named documents.
+Before unfamiliar meaningful work, read `list_kinds`, narrow `list_concepts`,
+and `get_concept`; use `find_backlinks` before renames and `find_path` for an
+existing relation. Avoid full-vault dumps.
 
-Read the vault before unfamiliar meaningful work: use `list_kinds`, narrow
-`list_concepts`, `get_concept`, `find_backlinks` before renames, and
-`find_path` for an existing relation. Do not dump the full vault without need.
+`mcp/src/schema.mjs` owns schema. UID is immutable and writer-minted; slug may
+change. Capability `path` is one implementation entrypoint; `elements` holds
+slugs. Canonical names use `title`; localization uses `display_<locale>`.
+Project containment is implicit; do not add `project:`.
 
-For a meaningful code change, invoke `/ontology-sync`. Only confirmed
-candidates land: create with `add_concept`, connect with `add_relation`,
-rename through dry-run then `confirm: true`, merge through the same pattern,
-and patch with `expected_mtime`. After validation and complete compile,
-`finalize_project_meaning` judges `agent_brief.meaningAssessment`, not write
-success. Skip this loop for typos, comments, isolated style nudges, lint
-configuration, and test fixtures without meaning changes.
+After meaningful code changes, `/ontology-sync` lands only confirmed candidates
+via `add_concept`/`add_relation`. Rename/merge need reviewed dry-run then
+`confirm: true`; patches need `expected_mtime`. A code rename does not authorize
+a vault rename. Validate and compile, then `finalize_project_meaning` judges
+`agent_brief.meaningAssessment`; write success is not meaning acceptance.
+Typos, comments, isolated style, lint, and fixtures without meaning changes skip.
 
-The shared schema is `mcp/src/schema.mjs`. Every authorable node has a
-writer-minted immutable UUIDv4 `uid`; the slug is readable/mutable and rename
-preserves it. A capability's `path` is one canonical repo-relative
-implementation entrypoint; `elements` contains element slugs, never raw
-paths. Put localized names in `display_<locale>`; `title` is the canonical
-search name. Project containment is implicit; do not add `project:`.
+## Documentation, landing, and instruction integrity
 
-## Agent-file contract
+Keep the owner document current: public behavior in `README.md` and
+`docs/FEATURES.md`; architecture/routes in `docs/ARCHITECTURE.md`; MCP/CLI
+contracts in their READMEs. Authored prose is English; `display_ko` and
+`cli/templates/vault-ko/**` are localized data. Current links must resolve.
+`docs/records/README.md` owns decision/change/release/pilot fragments. Never edit
+frozen history. Check machine-derived facts and references, not exact sentences.
 
-`AGENTS.md` is canonical. `CLAUDE.md` imports it and contains only
-Claude-specific visibility and loading information. Keep this file below the
-32 KiB Codex cap; `pnpm agents:check` verifies the cap, the import bridge,
-references, mirrored skills/agents, and English in every agent-read file.
-That subject set covers `.claude/hooks/`, `.claude/settings.json` and
-`.codex/`: a guard's refusal text is all a blocked agent gets to read.
-`.claude/skills/<name>/` and `.agents/skills/<name>/`, plus the matching agent
-briefs, must be byte identical. Each directory a `.claude/rules/` glob reaches
-also carries a nested `AGENTS.md` naming those rules, because Codex merges
-`AGENTS.md` root-down along the working path and never auto-loads `.claude/`.
-They stay pointers: the cap check measures root plus the largest nested file,
-since Codex truncates the merge in silence. Do not name a tool inside a shared
-skill body; branch on capability. `.claude/settings.json` owns Claude hooks and
-`.codex/hooks.json` owns their Codex mirror; Codex skips a new or changed
-entry there until a person trusts it in `/hooks`.
+`pnpm docs-vault:build` materializes ignored `src/entities/docs-vault/data/` and
+`public/docs-vault/` on install, checkout, merge, and build. Never edit or stage
+those generated files.
+
+Use English conventional commit subjects. Open pull requests as drafts and land
+with `pnpm pr:land <number>`, which locks, merges main, checks locally, and fires
+the one CI run. Never use `--no-verify`, force-push main, `git reset --hard`, or
+`git push --force` without explicit user authority. Publishing needs an explicit
+request and `npm pack --dry-run` first. Hooks own irreversible blocks.
+
+`AGENTS.md` is canonical; `CLAUDE.md` imports it and owns Claude loading details.
+Keep root plus the largest nested instruction file below 32 KiB. Nested
+`AGENTS.md` files point to the rules relevant to their paths; Codex does not
+auto-load `.claude/rules/`. `pnpm agents:check` checks each harness's inventory,
+identity, references, language, MCP grants, bridge, and Codex size cap. The public
+`agent-files` readout still reports literal copy differences; that is information,
+not a requirement to synchronize independent harnesses.
+
+`.claude/settings.json` owns Claude hooks and `.codex/hooks.json` owns Codex
+hooks. Codex skips a new or changed entry until a person trusts it in `/hooks`.
+Do not change Claude files while optimizing Codex instructions.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

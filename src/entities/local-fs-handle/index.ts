@@ -6,6 +6,7 @@ export {
   getLocalFsHandle,
   listRecentLocalFsHandles,
   putLocalFsHandle,
+  recordLocalFsHandleContents,
   touchLocalFsHandle,
 } from './api/store';
 export { verifyHandlePermission } from './api/permission';

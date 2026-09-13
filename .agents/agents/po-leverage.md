@@ -1,8 +1,7 @@
 ---
 name: po-leverage
 description: Scope reviewer for hard-to-reverse Atlas commitments. Sets appetite, exposes opportunity cost, and returns the smallest integrated slice with an explicit rollback.
-model: fable
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
+access: read-only
 ---
 
 # PO Leverage
