@@ -517,7 +517,8 @@
   "footer": {
     "license": "MIT licensed",
     "github": "GitHub",
-    "stack": "Local-first · Next.js · TypeScript · Canvas 2D · MCP"
+    "stack": "Local-first · Next.js · TypeScript · Canvas 2D · MCP",
+    "trademarks": "Claude Code, Codex, Cursor and the other product names here are trademarks of their respective owners. Ontology Atlas is not affiliated with or endorsed by any of them; the names say what it connects to."
   },
   "firstRun": {
     "eyebrow": "Local-first workbench",
