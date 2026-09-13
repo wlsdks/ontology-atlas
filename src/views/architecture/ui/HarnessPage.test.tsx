@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -73,6 +73,11 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
       summary: { files: 0, byTool: {}, byKind: {}, driftCount: 0, checkStatuses: {} },
     } as unknown as HarnessReport['analysis'],
     hookGroups: [],
+    coverage: [],
+    documentReach: {
+      total: 0, guides: 0, mirroredGuides: 0, named: 0, unnamed: 0,
+      unnamedByFolder: [], excluded: [], truncated: false,
+    },
     times: [],
     contents: new Map(),
     checks: { wiredHooks: 20, gitHooks: 3, scripts: new Array(57).fill('x'), total: 80 },
@@ -103,15 +108,34 @@ describe('the destination identity', () => {
   });
 
   it('drops the explainer in the blueprint, where 20px is a third of a layer row', () => {
+    window.history.replaceState(null, '', '/ko/architecture/?view=structure');
     mount();
     expect(
       screen.queryByText('에이전트가 이 저장소에서 어떻게 일하도록 되어 있는지'),
     ).toBeNull();
   });
 
-  it('opens on the blueprint, where every link written before the rename points', () => {
+  it('opens on the coverage matrix, which is what this destination is for', () => {
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+    mount();
+    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
+  });
+
+  it('keeps a ?role= deep link on the ladder, and lets a rail click through', () => {
+    /*
+     * `?role=` is the ladder's own deep link. `?focus=main` is the app shell's skip-to-content
+     * anchor and every left-rail link carries it — measured in the installed app, where keying the
+     * carve-out on `focus` made one rail click open the ladder and left the new default unreachable.
+     */
+    window.history.replaceState(null, '', '/ko/architecture/?role=views');
     mount();
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+
+    cleanup();
+    window.history.replaceState(null, '', '/ko/architecture/?focus=main');
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+    mount();
+    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
   });
 
   it('keeps one tab set above the panel, never inside it', () => {
@@ -122,6 +146,7 @@ describe('the destination identity', () => {
      * canvas and then lost the tabs entirely on a repository with no architecture profile, where
      * that view returns its empty state early. One instance, in the shell, above every panel.
      */
+    window.history.replaceState(null, '', '/ko/architecture/?view=structure');
     mount();
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-embedded', 'true');
     expect(screen.getAllByRole('tablist')).toHaveLength(1);
@@ -134,37 +159,48 @@ describe('the destination identity', () => {
 
 describe('the segmented control', () => {
   it('moves between the three views and writes the view into the address', () => {
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    act(() => {
-      fireEvent.click(document.querySelector('#harness-tab-sensors')!);
-    });
-    expect(screen.getByTestId('harness-sensors-placeholder')).toBeInTheDocument();
-    expect(window.location.search).toBe('?view=sensors');
-
     act(() => {
       fireEvent.click(document.querySelector('#harness-tab-structure')!);
     });
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+    expect(window.location.search).toBe('?view=structure');
+
+    act(() => {
+      fireEvent.click(document.querySelector('#harness-tab-coverage')!);
+    });
+    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
     // The default view leaves the plain address a person copies.
     expect(window.location.search).toBe('');
   });
 
   it('follows the address when history moves under it', () => {
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
     act(() => {
-      window.history.replaceState(null, '', '/ko/architecture/?view=sensors');
+      window.history.replaceState(null, '', '/ko/architecture/?view=structure');
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
     // The address saying one view while the screen draws another is exactly what putting the
     // view in the URL was for.
-    expect(screen.getByTestId('harness-sensors-placeholder')).toBeInTheDocument();
+    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
   });
 
   it('opens the view the address names', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=sensors');
+    window.history.replaceState(null, '', '/ko/architecture/?view=structure');
     mount();
-    expect(screen.getByTestId('harness-sensors-placeholder')).toBeInTheDocument();
+    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+  });
+
+  it('sends the retired sensors address to the view that answers it', () => {
+    /* The sensors view named this exact question and said it was not built. It is built now, so the
+       old link lands on the answer rather than on the default by accident. */
+    window.history.replaceState(null, '', '/ko/architecture/?view=sensors');
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+    mount();
+    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
   });
 });
 
@@ -182,20 +218,17 @@ describe('the sentence', () => {
     expect(sentence).toHaveTextContent('스크립트 57개');
   });
 
-  it('keeps the unguarded-domain question out of the counted sentence', () => {
+  it('keeps the coverage claim out of the counted sentence', () => {
     window.history.replaceState(null, '', '/ko/architecture/?view=guides');
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     /*
-     * A deferral inside a sentence whose other slots are numbers asserts that unguarded domains
-     * exist and are merely uncounted. No static read of a repository can claim that, so the
-     * deferral stands on its own line, as a question.
+     * The two numbers in this sentence are file counts. The coverage claim is a different kind of
+     * statement with its own denominator, and folding it into a sentence whose other slots are
+     * counts would read as a third count of the same kind.
      */
     const counted = within(screen.getByTestId('harness-sentence')).getByText(/문서 93개/);
-    expect(counted.textContent).not.toMatch(/도메인/);
-    expect(screen.getByTestId('harness-sentence-deferred')).toHaveTextContent(
-      '아직 재지 않았습니다',
-    );
+    expect(counted.textContent).not.toMatch(/영역/);
   });
 });
 
@@ -216,22 +249,29 @@ describe('honest degradation', () => {
   });
 });
 
-describe('the sensors view', () => {
-  it('says it is not built and shows no numbers at all', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=sensors');
+describe('the coverage matrix', () => {
+  it('says what it cannot show when the ontology records no area, and still answers the half that needs none', () => {
+    /*
+     * A repository with agent files and no ontology. The grid would otherwise print three column
+     * headers over nothing, which reads as a broken screen rather than as the true statement — and
+     * the document census needs no ontology at all, so it still runs.
+     */
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    const panel = screen.getByTestId('harness-sensors-placeholder');
-    expect(panel).toHaveTextContent('아직 만들지 않았습니다');
-    // No fabricated rows, counts or sample domains: a plausible table would read as coverage.
-    expect(panel.querySelectorAll('table, li')).toHaveLength(0);
-    expect(panel.textContent).not.toMatch(/\d/);
+    expect(screen.getByText('이 저장소에는 에이전트 파일은 있고 온톨로지는 아직 없습니다')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.getByTestId('harness-reach')).toBeInTheDocument();
   });
 
-  it('carries the ambiguity a finished sensors view would also have to carry', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=sensors');
+  it('never renders a score, a grade or a percentage', () => {
+    /*
+     * The thing every competitor ships and this screen may not. A number here would assert a
+     * judgement the files cannot support, which is exactly how a scanner rated an official
+     * reference repository the same as an abandoned toy.
+     */
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(
-      screen.getByText(/잡은 적이 없으면 안전한지 눈먼 건지는 알 수 없습니다/),
-    ).toBeInTheDocument();
+    const text = screen.getByTestId('harness-coverage').textContent ?? '';
+    expect(text).not.toMatch(/%|\bA\+|\b[0-9]+\s*\/\s*10\b|점수|등급|성숙도/);
   });
 });

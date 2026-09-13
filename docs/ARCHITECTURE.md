@@ -26,8 +26,8 @@ tags: [architecture, infra, overview]
 │ │                          less web visitor, map for   │
 │ │                          the app and vault users     │
 │ ├─ /topology               map + contextual write     │
-│ ├─ /architecture           harness: guides · structure│
-│ │                          · sensors (?view=)          │
+│ ├─ /architecture           harness: coverage · guides │
+│ │                          · structure (?view=)        │
 │ ├─ /docs                   vault picker + editor       │
 │ ├─ /library                gathered sources + wiki     │
 │ ├─ /ontology               thin redirect → /topology   │
@@ -140,7 +140,9 @@ unsupported languages, incomplete scans, unknown usages, unmapped edges,
 unruled edges, and empty roles prevent a false green result. The
 `/architecture?view=structure` Living Blueprint
 renders the declared model and copies the typed pre/post agent plan, while source
-analysis remains in MCP/CLI rather than being duplicated into Markdown. Beside it
+analysis remains in MCP/CLI rather than being duplicated into Markdown. The default
+`?view=coverage` crosses the ontology's own areas with the path scopes this repository's guides,
+gates and checks declare, so an area nothing names is stated rather than inferred. Beside them
 `?view=guides` reads the same repository's **agent harness** — the guide files, which tool
 reads which, size against a documented cap, declared mirror-pair drift, and hook wiring — from
 files only, through the installed app's bridge (`entities/agent-files`); the browser cannot see a
@@ -490,14 +492,21 @@ until a local manifest exists.
                            tests/contract/map-destination-route.contract.test.ts)
 /architecture              the Harness destination (relabelled from Architecture since
                            2026-09-13; route unchanged). Three views on ?view=:
+                           coverage (the default) — the ontology's areas crossed with the
+                           path scopes the repository's guides, gates and checks declare,
+                           where an empty cell is written as a sentence beside the area's
+                           recorded purpose, anything declaring no path stands once above
+                           the matrix, and no score, grade or percentage is rendered; beside
+                           it, authored Markdown split by whether a guide names it;
                            guides — the agent guide files this repository carries, which
                            tool reads each (a static table citing its source per row), size
                            against the Codex 32 KiB merged cap, declared mirror-pair byte
-                           status with a diff door, and hook wiring; structure (the default,
-                           where every link written before the rename lands) — reviewed
+                           status with a diff door, and hook wiring; structure — reviewed
                            architecture profiles, the stable role blueprint, and the typed
-                           MCP/CLI planning + verification handoff; sensors — declared not
-                           built. Never an ontology map
+                           MCP/CLI planning + verification handoff, where every ?role= deep
+                           link still lands. ?view=sensors, the view that named the coverage
+                           question and said it was not built, opens the matrix that answers
+                           it. Never an ontology map
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench

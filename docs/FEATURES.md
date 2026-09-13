@@ -558,14 +558,19 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 
 **The map has weight, a press, and light** (2026-09-08, after the expression bans were lifted). A node's mass is its number of relations: let go of a hub after a drag and it carries the hand's speed a step past the drop point, overshoots once and takes longer to sit, while a leaf snaps home; its neighbours spring back on their own mass. Hovering a node swells it on an underdamped step, so a hover reads as a press that gives. Selecting a node lays an indigo ground halo under its neighbourhood, sized by its farthest neighbour, blooms the node and glows its relation lines, all on the focus ramp, so the light arrives with the dive and leaves with the deselect. Nothing at rest glows or moves, the idle canvas still draws zero frames, and under `prefers-reduced-motion` every end state lands with no ring. Measured on the sample vault at 1512: a dragged domain carried 14 px past its drop and settled by 300 ms; a hovered domain went 28.1 px to 34.7 and sat at 34.2. The pieces are pure modules under `src/widgets/ontology-map/expressive/` (`mass-spring`, `release-offsets`, `ego-light`) with a README naming their tokens and how to remove them.
 
-### `/architecture` — Harness: guides, structure, sensors
+### `/architecture` — Harness: coverage, guides, structure
 
 **The tab is Harness (`harness.title`) and it answers "how are agents set up to work in this repository"**
 (2026-09-13, `docs/records/decisions/2026-09-13-architecture-tab-becomes-harness-3a63ada4-031c-41af-8b9d-6d6f7f2a5138.md`). The route is unchanged, the label moved: the destination
 already held one half of the answer (the reviewed structure) and nothing at all of the other
 (what the agents were told, and what catches them). Under the title one line says what the tab
 is for, and a segmented control picks one of three views on `?view=`; the default is
-`structure`, where every link, bookmark and `?focus=` deep link written before the rename lands.
+`coverage`. Two older addresses keep their meaning: `?view=sensors` — the view that named exactly
+this question and said it was not built — opens the matrix that answers it, and a `?role=` link
+with no `?view=` opens the structure ladder, the only view that can show a role. The shell-wide
+`?focus=main` skip anchor every left-rail link carries is deliberately not a deep link: keying the
+carve-out on it made one rail click open the ladder and left the default unreachable from the rail
+(measured in the installed app, 2026-09-13).
 
 **One sentence at the top, computed from files only**: how many guide documents this repository
 speaks to agents through, and how many checks it has in place. Both numbers print their working
@@ -592,9 +597,41 @@ fact instead of a green, since `/hooks` trust lives in no file. Measured on this
 98 guide documents in 9 groups, 85 checks (20 + 6 + 59), `AGENTS.md` 12,142 B merging to
 13,090 of 32,768, both declared pairs matching, 20 of 20 hook scripts wired.
 
-**Sensors (`harness.views.sensors`)** — declared not built. It names what it will hold and says it is empty, with no
-rows and no numbers: a plausible-looking table would launder the field's own open problem, that a
-check which never fires cannot be told apart from code nobody is watching.
+**Coverage (`harness.views.coverage`)** — the tab's spine and its default view
+(2026-09-13, `docs/records/decisions/2026-09-13-harness-spine-is-a-coverage-matrix-b9dba267-d755-4ad5-b854-6f930c7e5922.md`).
+Rows are the areas the ontology records for this repository; columns are **Told**, **Gated** and
+**Watched**. A file appears in an area when a path **it declares** reaches a path the ontology
+records for that area — a nested `AGENTS.md`'s own folder, a `.claude` rule's frontmatter `paths:`,
+a hook script's anchored lane filter, a check command's file arguments, a workflow's trigger
+`paths:` — and never because of where the agent file itself lives: all 122 of this repository's sit
+at the root and say nothing about which code they govern. A scope is kept only if it resolves on
+disk, and every entry carries the declaration it came from, so an attribution can be checked rather
+than trusted.
+
+Anything declaring no path reaches every area and stands in **one row above the matrix**, not
+repeated down eight: `forbidden`, `git` and `local-first`, twenty hook and Git-hook scripts, and
+`lint`, `test`, `test:run` and the six CI workflows with no trigger filter. That row is what makes
+the empty cells readable — "no check **names** this area" is what the files support, while "nothing
+runs over it" is not.
+
+**An empty cell is the product.** It is written as a sentence, and opening it shows the ontology's
+own record of what the area is for beside the paths nothing reaches — the sentence a file-only
+scanner cannot write, because it does not know what a part of a repository is *for*. **No score, no
+grade, no maturity level and no percentage is rendered anywhere**: that is what every comparable
+tool ships, and a number asserts a judgement files cannot support. A repository with agent files and
+no ontology gets a stated empty state rather than a blank grid, and still gets the half of the
+screen that needs no ontology.
+
+**What an agent can reach** — beside the matrix, every authored Markdown file falls into exactly one
+of three states: a **guide** (read without being asked), a document **a guide names** by path
+(reached when needed), or a document **nothing names** (present, and the agent will not open it).
+Measured by citation and never by glob: a rule's `paths:` says when to load that rule, not which
+documents to read, and reading it the other way makes `documentation.md`'s `docs/**` mark every
+document reached. Excluded and named on screen are the ontology folder and the folders the
+repository's own `.gitignore` marks as generated; nothing else is filtered, because a sample vault,
+an archive and a brief addressed by name rather than by path all belong in the third row for
+different and mostly fine reasons, and which of those should be unreferenced is the reader's
+judgement. A document naming a design file is a reference, never proof the agent saw the design.
 
 The whole reading goes through the installed app's bridge (`entities/agent-files`, the same
 classifier the docs sidebar and `ontology-atlas agent-files` use — one store, not a second). A
