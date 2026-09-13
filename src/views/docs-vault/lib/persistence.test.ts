@@ -142,6 +142,29 @@ describe("shouldPreferLocalOnLanding (C5)", () => {
     expect(shouldPreferLocalOnLanding("error", "server")).toBe(false);
     expect(shouldPreferLocalOnLanding("unsupported", "server")).toBe(false);
   });
+
+  it("prefers local when the launch stopped for the person to choose a folder", () => {
+    // A deferred launch has loaded no manifest **by design**, so the 'loaded' arm cannot
+    // see it. The folder screen is reached through the local source and nothing else would
+    // select it, so without this arm the person who is meant to be picking a folder lands
+    // on the sample instead.
+    expect(shouldPreferLocalOnLanding("idle", "server", null, true)).toBe(true);
+  });
+
+  it("still respects an explicit Sample deep link while choosing", () => {
+    // Choosing a folder does not outrank the person having asked for the sample by URL.
+    expect(shouldPreferLocalOnLanding("idle", "server", "server", true)).toBe(false);
+  });
+
+  it("does not re-flip while choosing if the source is already local", () => {
+    expect(shouldPreferLocalOnLanding("idle", "local", null, true)).toBe(false);
+  });
+
+  it("leaves the idle verdict unchanged when nothing is being chosen", () => {
+    // The flag is the whole difference between "no folder is open" and "no folder is open
+    // on purpose"; an idle vault with no pending choice must still not force local.
+    expect(shouldPreferLocalOnLanding("idle", "server", null, false)).toBe(false);
+  });
 });
 
 describe("doc list collapse storage", () => {

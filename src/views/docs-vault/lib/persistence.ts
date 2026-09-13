@@ -80,21 +80,30 @@ export function readStoredSource(): DocsVaultSource {
 }
 
 /**
- * Should landing on the docs surface auto-prefer the local source? True only when a local
- * vault is actually loaded AND the current source is not already local.
+ * Should landing on the docs surface auto-prefer the local source? True when a local
+ * vault is actually loaded, or when the launch deliberately stopped to let the person
+ * choose between known folders — and the current source is not already local.
  * Guards the one trust bug: a live vault must never be silently replaced by the
  * Sample (`server`) source just because that was the last stored preference.
  * Callers apply this ONCE per mount (a ref) so a later deliberate switch to
  * Sample is respected — this only covers the initial landing.
+ *
+ * `awaitingVaultChoice` is the second arm, added with the launch chooser (2026-09-13).
+ * A deferred launch has loaded no manifest by design, so the `'loaded'` test alone sent
+ * somebody who was meant to be picking a folder to the sample instead — the folder
+ * screen is reached through the local source, and nothing else would have selected it.
+ * It is a separate arm rather than a widened status test because the two facts differ:
+ * one says a folder is open, the other says none is open **on purpose**.
  */
 export function shouldPreferLocalOnLanding(
   localVaultStatus: string,
   currentSource: DocsVaultSource,
   explicitSource: DocsVaultSource | null = null,
+  awaitingVaultChoice = false,
 ): boolean {
   return (
     explicitSource !== "server" &&
-    localVaultStatus === "loaded" &&
+    (localVaultStatus === "loaded" || awaitingVaultChoice) &&
     currentSource !== "local"
   );
 }

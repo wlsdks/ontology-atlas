@@ -258,7 +258,10 @@ async function verifyExecutableLaunch({
   if (requireWebviewContent) {
     const validationOptions = {
       expectedPath: requireWebviewRoute,
-      expectedFixtureVault: webviewFixtureVaultPath,
+      // The app reports the folder it actually opened, which is the first of the `::` list.
+      expectedFixtureVault: webviewFixtureVaultPath
+        ? (webviewFixtureVaultPath.split("::").map((v) => v.trim()).filter(Boolean)[0] ?? null)
+        : webviewFixtureVaultPath,
       minWebviewSize,
       maxWebviewSize,
       requireAiSettings: verifyAiSettings,
@@ -510,14 +513,22 @@ async function main() {
     fail("--webview-fixture-vault is only supported for direct executable launch; omit --open-app.");
   }
   if (webviewFixtureVaultPath) {
-    let fixtureStat = null;
-    try {
-      fixtureStat = fs.statSync(webviewFixtureVaultPath);
-    } catch {
-      fail(`--webview-fixture-vault does not exist: ${webviewFixtureVaultPath}`);
-    }
-    if (!fixtureStat?.isDirectory()) {
-      fail(`--webview-fixture-vault must point at a directory: ${webviewFixtureVaultPath}`);
+    /*
+     * Several folders may be named, separated by `::`. The first is the one the session
+     * opens; all of them are planted in the recent list, because the launch chooser is
+     * armed by how many folders that list holds and the verifier's WebView runs on a
+     * non-persistent store, so the list cannot be grown by launching twice.
+     */
+    for (const part of webviewFixtureVaultPath.split("::").map((v) => v.trim()).filter(Boolean)) {
+      let fixtureStat = null;
+      try {
+        fixtureStat = fs.statSync(part);
+      } catch {
+        fail(`--webview-fixture-vault does not exist: ${part}`);
+      }
+      if (!fixtureStat?.isDirectory()) {
+        fail(`--webview-fixture-vault must point at a directory: ${part}`);
+      }
     }
   }
   if (requireWebviewReducedMotion && openApp) {

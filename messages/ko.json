@@ -5318,5 +5318,45 @@
     "noAgentBodyWeb": "브라우저는 그 도구를 띄우지 못해요. 연결은 저장되었고 켜져 있으니, 이 폴더를 가리키는 코딩 도구라면 이미 쓸 수 있습니다. 문서를 받아서 여기에 적어 주는 것까지 하려면 앱에서 이 화면으로 다시 오세요.",
     "noAgentBodyRuntime": "이 컴퓨터에는 아직 준비된 도구가 없어요. 연결은 저장되었고 켜져 있으니, 이 폴더를 가리키는 코딩 도구라면 이미 쓸 수 있습니다. 하나 설정하고 여기로 돌아와서 마저 하세요.",
     "noAgentSeeRuntimes": "코딩 도구 보기"
+  },
+  "vaultSwitch": {
+    "railTileAriaLabel": "열린 폴더: {name}. 다른 폴더 고르기",
+    "switcherAriaLabel": "폴더 바꾸기",
+    "openFolderLabel": "열린 폴더",
+    "switchTo": "바꿀 폴더",
+    "pickAnotherFolder": "Atlas가 모르는 폴더 열기",
+    "openFolder": "{name} 열기",
+    "forget": "목록에서 빼기",
+    "forgetFolder": "{name}을 목록에서 빼기",
+    "lastOpenBadge": "마지막 사용",
+    "contents": "문서 {docs}개 · 개념 {concepts}개",
+    "contentsUncounted": "아직 세지 않았음",
+    "openedAgo": "{when} 열림",
+    "age": {
+      "justNow": "방금",
+      "minutesAgo": "{count}분 전",
+      "hoursAgo": "{count}시간 전",
+      "yesterday": "어제",
+      "daysAgo": "{count}일 전",
+      "weeksAgo": "{count}주 전",
+      "monthsAgo": "{count}개월 전"
+    },
+    "state": {
+      "missing": "이 경로에 더 이상 없습니다. 이름이 바뀌거나 이동되었거나, 마운트되지 않은 볼륨에 있습니다.",
+      "blocked": "이 브라우저가 이 폴더의 권한을 거부했습니다. 폴더 선택 창으로 다시 여십시오.",
+      "needsPermission": "열면 브라우저가 권한을 다시 물어봅니다.",
+      "unknown": "이 폴더에 닿는지 확인하지 못했습니다."
+    },
+    "choose": {
+      "eyebrow": "어느 폴더",
+      "title": "작업할 폴더를 고르세요",
+      "bodyDesktop": "이 컴퓨터에서 Atlas가 아는 폴더가 둘 이상이라 임의로 고르지 않습니다. 아래에서 하나를 고르거나, 아직 열어본 적 없는 폴더를 여십시오.",
+      "bodyWeb": "브라우저는 폴더를 스스로 다시 열 수 없습니다. File System Access 권한은 클릭에서만 나오기 때문에, 이 단계는 Atlas가 더한 것이 아니라 브라우저가 요구하는 것입니다.",
+      "listTitle": "ATLAS가 아는 폴더",
+      "releaseValve": "이 목록을 하나로 줄이면 다음 실행부터 그 폴더로 바로 들어갑니다."
+    },
+    "locate": "다시 찾기",
+    "locateFolder": "폴더 선택 창으로 {name}을 다시 찾기",
+    "countedAgo": "{when} 셈"
   }
 }

@@ -7,6 +7,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import { useJustStartVault, useVaultCreateFlow } from "@/features/docs-vault-local";
+import { RecentVaultList, recentVaultRowKey } from "@/features/vault-switch";
 import { useFailureSentence } from '@/shared/lib/use-failure-sentence';
 import type { FailureCopy } from '@/shared/lib/use-failure-sentence';
 import { deniedFolderName } from "@/entities/vault-session";
@@ -46,6 +47,8 @@ import { Chip } from '@/shared/ui/controls';
  */
 export function FirstRunPage() {
   const t = useTranslations("firstRun");
+  // The chooser's words are shared with the `/docs` chooser; see `choosingFolder` below.
+  const tSwitch = useTranslations("vaultSwitch");
   const toast = useToast();
   const vault = useLocalVault();
   const failureSentence = useFailureSentence();
@@ -157,6 +160,25 @@ export function FirstRunPage() {
                   failureSentence(vault.errorMessage, t("errorFallback"))
           : null;
 
+  /*
+   * **This is also the launch chooser, and on the installed app it is the only one.**
+   *
+   * `AppShell` sends every workbench route to `/` while the installed app has no vault, and
+   * `RootEntryPage` renders this screen there - so when the cold restore stops to ask which
+   * folder (`awaitingVaultChoice`), this is the screen the person actually lands on. The
+   * chooser in `DesktopVaultWelcome` covers the `/docs` ingress, which a wiki-only vault does
+   * not even have as a destination. Leaving the list out of here would have made the whole
+   * launch rule invisible on the surface the report came from.
+   *
+   * The header's words change with it: titling a returning person's screen "first run" and
+   * telling them what a vault is answers a question they did not ask.
+   */
+  const choosingFolder = vault.awaitingVaultChoice;
+  const knownFolders = vault.recentVaults;
+  const storedFolderKey = vault.storedVaultRecord
+    ? recentVaultRowKey(vault.storedVaultRecord)
+    : null;
+
   const cardBase = controlClass({
     shape: "row",
     className:
@@ -164,14 +186,26 @@ export function FirstRunPage() {
   });
   const iconChip =
     "flex h-8 w-8 items-center justify-center rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)]";
+  /** The door cards' glyph ink: indigo only while a door is what the screen is asking about. */
+  const doorGlyph = choosingFolder
+    ? "text-[color:var(--color-text-tertiary)]"
+    : "text-[color:var(--color-indigo-accent)]";
 
   return (
     <main
       id="main"
       tabIndex={-1}
-      className="flex min-h-full items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10"
+      /*
+       * `my-auto` on the section rather than `items-center` here, and the main owns the
+       * scroll — the same contract its twin `DesktopVaultWelcome` already used, and for the
+       * reason written there: with fixed centring, content taller than the viewport clips at
+       * the top out of reach. Measured at the app's 1040x720 window floor with five known
+       * folders, the "create a new folder" card sat 60px below the fold (responsive seat,
+       * 2026-09-13).
+       */
+      className="flex min-h-0 flex-1 justify-center overflow-auto bg-[color:var(--color-canvas)] px-6 py-10"
     >
-      <section className="grid w-full max-w-[var(--dialog-w-sm)] gap-6">
+      <section className="my-auto grid h-fit w-full max-w-[var(--dialog-w-sm)] gap-6">
         <header className="grid justify-items-center gap-3 text-center">
           <div className="inline-flex items-center gap-3">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
@@ -183,13 +217,17 @@ export function FirstRunPage() {
           </div>
           <div className="grid gap-1.5">
             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
-              {t("eyebrow")}
+              {choosingFolder ? tSwitch("choose.eyebrow") : t("eyebrow")}
             </p>
             <h1 className="break-keep text-display font-[var(--font-weight-signature)] leading-display text-[color:var(--color-text-primary)]">
-              {t("title")}
+              {choosingFolder ? tSwitch("choose.title") : t("title")}
             </h1>
             <p className="mx-auto max-w-[360px] break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-              {t("subtitle")}
+              {choosingFolder
+                ? isTauriVaultRuntime()
+                  ? tSwitch("choose.bodyDesktop")
+                  : tSwitch("choose.bodyWeb")
+                : t("subtitle")}
             </p>
           </div>
         </header>
@@ -245,6 +283,46 @@ export function FirstRunPage() {
             </Chip>
           </div>
         ) : (
+          <>
+            {/*
+              Known folders lead, because when this screen is the launch chooser they are the
+              answer and the create/just-start cards are not. On a genuine first run the list
+              is empty and renders nothing, so that screen is unchanged. It sits in this
+              branch only: while the new-vault shape question is open, other folders are noise.
+            */}
+            {/*
+              The region is named by its own visible caption (`aria-labelledby`) rather than
+              by a copy of it, so a screen reader does not announce the same words twice.
+            */}
+            {knownFolders.length > 0 ? (
+              <section className="grid gap-2" aria-labelledby="known-folders-heading">
+                <p
+                  id="known-folders-heading"
+                  className="px-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]"
+                >
+                  {tSwitch("choose.listTitle")}
+                </p>
+                <RecentVaultList
+                  records={knownFolders}
+                  currentKey={storedFolderKey}
+                  busy={busy}
+                  emphasis={choosingFolder}
+                  onOpen={(record) => void vault.openRecent(record)}
+                  onForget={(record) => void vault.forgetRecent(record)}
+                  onLocate={() => void handleOpen()}
+                />
+                {/*
+                  The release valve belongs under the list it acts on, not buried as the third
+                  clause of the intro paragraph (design-lead seat, 2026-09-13).
+                */}
+                {choosingFolder ? (
+                  <p className="px-1 text-caption leading-body text-[color:var(--color-text-quaternary)]">
+                    {tSwitch("choose.releaseValve")}
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
+
         <div className="grid gap-2" aria-busy={busy}>
           {showJustStart ? (
             <button
@@ -252,9 +330,27 @@ export function FirstRunPage() {
               onClick={() => setChoosingFor("just-start")}
               disabled={busy}
               data-testid="first-run-just-start"
-              className={`${cardBase} border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]`}
+              /*
+               * The accent belongs to whatever answers the screen's question. While this is
+               * the launch chooser the answer is the folder list above, and "just start"
+               * creates a *third* folder - the last thing a person choosing between two of
+               * theirs is asking for.
+               */
+              className={`${cardBase} ${
+                choosingFolder
+                  ? "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]"
+                  : "border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]"
+              }`}
             >
-              <span className={`${iconChip} text-[color:var(--color-indigo-accent)]`}>
+              {/*
+                The accent has more than one channel, and they have to move together. With
+                only the border gated, this card's glyph stayed at full-chroma
+                `--color-indigo-accent` while its border said `border-soft` - and chroma
+                outranks a 1px 32%-alpha line. Measured on the rendered chooser: the door's
+                glyph scored s·v = 0.561 against the folder list's 0.153, so the demoted card
+                was still the brightest ink in the action region (guardian, 2026-09-13).
+              */}
+              <span className={`${iconChip} ${doorGlyph}`}>
                 <Zap size={ICON_SIZE.md} aria-hidden />
               </span>
               <span className="min-w-0">
@@ -278,17 +374,13 @@ export function FirstRunPage() {
             disabled={busy}
             data-testid="first-run-open"
             className={`${cardBase} ${
-              showJustStart
+              showJustStart || choosingFolder
                 ? "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]"
                 : "border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]"
             }`}
           >
             <span
-              className={`${iconChip} ${
-                showJustStart
-                  ? "text-[color:var(--color-text-tertiary)]"
-                  : "text-[color:var(--color-indigo-accent)]"
-              }`}
+              className={`${iconChip} ${showJustStart ? "text-[color:var(--color-text-tertiary)]" : doorGlyph}`}
             >
               <FolderOpen size={ICON_SIZE.md} aria-hidden />
             </span>
@@ -324,7 +416,8 @@ export function FirstRunPage() {
             </span>
           </button>
 
-        </div>
+            </div>
+          </>
         )}
 
         {failure ? (

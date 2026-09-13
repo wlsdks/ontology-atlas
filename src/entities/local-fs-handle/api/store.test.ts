@@ -28,6 +28,7 @@ import {
   getLocalFsHandle,
   listRecentLocalFsHandles,
   putLocalFsHandle,
+  recordLocalFsHandleContents,
   touchLocalFsHandle,
 } from './store';
 import type { LocalFsHandleRecord } from '../model/types';
@@ -276,4 +277,82 @@ describe('local-fs-handle store', () => {
     expect(recent.map((record) => record.name)).toEqual(['Desktop Vault']);
     expect(recent[0].handle.name).toBe('desktop');
   });
+});
+
+describe('recordLocalFsHandleContents', () => {
+  it('writes the counts onto the current record and its recent entry', async () => {
+      await putLocalFsHandle({
+        id: CURRENT_LOCAL_FS_HANDLE_ID,
+        handle: fakeHandle('atlas'),
+        name: 'atlas',
+        createdAt: 1,
+        lastAccessedAt: 1,
+      });
+
+      await recordLocalFsHandleContents({ docCount: 232, conceptCount: 41 });
+
+      // Both copies, because the chooser reads the recent list while the settings row reads
+      // the `current` record. Writing one would let two surfaces disagree about one folder.
+      const current = await getLocalFsHandle();
+      expect(current?.docCount).toBe(232);
+      expect(current?.conceptCount).toBe(41);
+      expect(current?.countedAt).toBeTypeOf('number');
+
+    const recent = await listRecentLocalFsHandles();
+    expect(recent[0].docCount).toBe(232);
+    expect(recent[0].conceptCount).toBe(41);
+  });
+
+  it('does nothing when there is no such record', async () => {
+      // The same contract as `touchLocalFsHandle`: a count for a folder that is not stored
+      // has nothing to attach to, and inventing a record for it would put a folder in the
+      // chooser that nobody opened.
+      await recordLocalFsHandleContents({ docCount: 5, conceptCount: 2 });
+
+    expect(await getLocalFsHandle()).toBeUndefined();
+    expect(await listRecentLocalFsHandles()).toEqual([]);
+  });
+});
+
+describe('the recent list survives concurrent writers', () => {
+  /*
+   * **The launch rule is decided by how many folders this list holds**, so a dropped entry
+   * silently turns the chooser off and the app resumes a folder it should have asked about.
+   *
+   * A vault load fires `touchLocalFsHandle` and then, once the walk finishes,
+   * `recordLocalFsHandleContents`; both read this one key, modify it and write it back, and
+   * neither is awaited by its caller - awaiting them broke a rename and a map deeplink, once
+   * each, on 2026-09-13. So the store serialises the writes itself, and this is the case that
+   * says so.
+   */
+  it('keeps both folders when two writes are started without awaiting the first', async () => {
+    // Start both without awaiting, which is exactly how the vault-load path calls them.
+    const first = putLocalFsHandle({
+      id: 'a',
+      handle: fakeHandle('atlas'),
+      name: 'atlas',
+      createdAt: 1,
+      lastAccessedAt: 1,
+    });
+    const second = putLocalFsHandle({
+      id: 'b',
+      handle: fakeHandle('atlas-old'),
+      name: 'atlas-old',
+      createdAt: 2,
+      lastAccessedAt: 2,
+    });
+    await Promise.all([first, second]);
+
+    const recent = await listRecentLocalFsHandles();
+    expect(recent.map((r) => r.name).sort()).toEqual(['atlas', 'atlas-old']);
+    // And two is what arms the chooser, which is the whole reason this matters.
+    expect(recent).toHaveLength(2);
+  });
+
+  /*
+   * There is deliberately no second case for "a forget racing a vault load". One was
+   * written and removed: the in-memory `idb-kv` mock settles too synchronously to
+   * interleave, so it passed with the queue disabled and guarded nothing. The case above
+   * is the probe - it fails when `queueRecentListWrite` stops queueing.
+   */
 });

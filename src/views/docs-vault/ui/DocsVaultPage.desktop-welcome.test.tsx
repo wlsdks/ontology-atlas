@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import enMessages from "../../../../messages/en.json";
 import { DesktopVaultWelcome } from "./parts/DesktopVaultWelcome";
 import { DOGFOOD_VAULT_PATH } from "../lib/dogfood-vault-path";
 
@@ -73,7 +75,14 @@ const t = ((key: string, values?: Record<string, string | number>) => {
 function renderWelcome(showDogfoodHint: boolean) {
   const onOpen = vi.fn();
   const onOpenDogfoodPath = vi.fn();
+  /*
+   * A real provider, not only the injected `t`. This screen is also the launch chooser, and
+   * the chooser's own words live in the shared `vaultSwitch` namespace so the `/docs` seat
+   * and the installed app's launch screen cannot drift apart - so the component reads that
+   * namespace itself and needs the catalogue mounted (2026-09-13).
+   */
   return render(
+    <NextIntlClientProvider locale="en" messages={enMessages}>
     <DesktopVaultWelcome
       status="idle"
       recentVaults={[]}
@@ -82,7 +91,8 @@ function renderWelcome(showDogfoodHint: boolean) {
       onOpenRecent={vi.fn()}
       showDogfoodHint={showDogfoodHint}
       t={t}
-    />,
+    />
+  </NextIntlClientProvider>,
   );
 }
 
@@ -165,6 +175,7 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
     const onOpen = vi.fn();
     const onOpenDogfoodPath = vi.fn();
     render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
       <DesktopVaultWelcome
         status="idle"
         recentVaults={[]}
@@ -173,7 +184,8 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
         onOpenRecent={vi.fn()}
         showDogfoodHint
         t={t}
-      />,
+      />
+    </NextIntlClientProvider>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: /docs\/ontology 선택/ }));
@@ -186,6 +198,7 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
     const onOpen = vi.fn();
     const onOpenDogfoodPath = vi.fn();
     render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
       <DesktopVaultWelcome
         status="idle"
         recentVaults={[]}
@@ -194,7 +207,8 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
         onOpenRecent={vi.fn()}
         showDogfoodHint={false}
         t={t}
-      />,
+      />
+    </NextIntlClientProvider>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: /이 repo 온톨로지 열기/ }));

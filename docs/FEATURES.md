@@ -83,6 +83,9 @@ work here, and where it can.
 | Open your own markdown folder | ✅ File System Access API | ✅ absolute path | Firefox and non-FSA browsers degrade to a notice + download link |
 | Read / edit / create nodes in that folder | ✅ | ✅ | same parser, same schema, same files |
 | Remember the folder between visits | ❌ pick it again | ✅ | web keeps an FSA handle in its own IndexedDB; a convenience cache, not the source of truth |
+| Resume a single folder on launch | ❌ the browser needs a click for permission, and the chooser says so | ✅ opens it directly | File System Access permission has to come from a gesture, so the web presses something either way |
+| Choose between known folders on launch | ✅ | ✅ | two or more known folders and the app asks rather than guessing; one folder is never asked about, and forgetting a folder returns the launch to opening directly |
+| See which folder is open, and leave it | ✅ | ✅ | the folder's name sits at the top of the rail on every destination and opens the switcher; each row carries the folder's contents, its last opening, and whether it opens now |
 | Work offline | ❌ | ✅ | |
 | Git history and snapshots | ❌ degraded card + `ontology-atlas snapshot` | ✅ | a browser has no right to run git on your machine |
 | API keys / in-app **agent** chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |

@@ -84,6 +84,22 @@ const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: stri
     3,
     "지도 컴포저 — --z-map-scrim(25) 층·지도 좌표계 내부에 산다. body 포털(--z-dialog 60)로 올리면 지도 위 다른 크롬과의 층 계약이 깨진다.",
   ],
+  [
+    "src/features/vault-switch/ui/VaultSwitchRailTile.tsx",
+    1,
+    "The rail's folder switcher is a **non-modal anchored popover**, and it already " +
+      "portals itself to document.body — so the thing this ratchet exists to prevent " +
+      "(a hand-assembled surface trapped in its trigger's stacking context) is not what " +
+      "it is. What it cannot take is the primitive's modality: `Dialog` owns a scrim, a " +
+      "focus trap and a scroll lock, and `shared/ui/transient-surface.ts` gives the " +
+      "`anchored` kind the opposite contract — it stands beside what opened it and leaves " +
+      "the background alive and pressable. A scrim over the map would also be a second " +
+      "answer to 'is the page still usable', which the single-transient rule forbids. It " +
+      "keeps `role=\"dialog\"` because the APG names a non-modal popover with rich " +
+      "content a dialog, and `role=\"menu\"` was rejected by the interaction and " +
+      "workbench seats for having no menu items (2026-09-13). Focus in and focus back to " +
+      "the trigger are implemented at the call site via `Surface`'s ref and `onExited`.",
+  ],
 ];
 
 /**
