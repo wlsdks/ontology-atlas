@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-14",
+  "decision": "Preserve complete recorded qualifiers in task compact handoffs (V2.2)",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "handoff",
+  "changes": [
+    "public-contract"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "affected",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-14",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "fdf6c2f4-3834-4182-86d2-0bc20ed23ebc",
+  "recordedAt": "2026-09-13T16:42:03.741Z"
+}

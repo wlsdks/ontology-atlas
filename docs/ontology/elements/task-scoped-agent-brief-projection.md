@@ -31,6 +31,7 @@ Task-scoped agent brief projection is the read-side implementation that turns on
 
 - Project-scoped counts, hubs, entrypoints, and final readiness wording.
 - A compact v2 opt-in response with a 12,000-byte UTF-8 JSON ceiling.
+- Complete recorded qualifier units from the selected capability and relevant anchors, retaining source section, role, and full-body locators in structured and text handoffs. Mixed prose/list scope stays together; explicit total/omitted coverage requires the complete bodies before action when the projection is incomplete. No unit is cut to fit the serialized budget, and source currentness, acceptance, and executed verification remain separate.
 - Claim-compatible selection of one broad persisted capability from Definition, Includes, and Excludes, with boundary conflicts, unsupported claims, and ties refused.
 - Selector-level abstention reasons for missing support, clause-level boundary overlap, and tied candidates; at most three deterministic unselected candidates retain total/omitted counts and exact full-body next reads. These diagnostics do not prove product absence, semantic contradiction, equivalence, or acceptance.
 - Recorded `display_en` and `display_ko` identity aliases and explicitly delimited English/Korean non-goals, with no translation or general natural-language interpretation. Repeated positive and negative named claims remain unselected; shared words alone do not establish a conflict.

@@ -275,6 +275,226 @@ DER parsing and unrelated encodings.
     assert.ok(Buffer.byteLength(JSON.stringify(result), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
   });
 
+  it('projects complete recorded qualifier units with cross-anchor scope and full-body recovery', () => {
+    const qualifierDocs = [
+      docs[0],
+      {
+        slug: 'capabilities/update-ticket',
+        frontmatter: {
+          kind: 'capability',
+          title: 'Update Existing Ticket',
+          elements: ['elements/ticket-policy'],
+        },
+        body: [
+          '## Definition',
+          '',
+          'Update an existing ticket and attempt notifications.',
+          '',
+          '## Includes',
+          '',
+          '- PRIVATE_FOLLOWUP_NO_EMAIL together with a false public value returns before notification role calls. The submitter role runs only for configured changes or a public comment.',
+          '- The updater writes ticket status and follow-up history for an existing ticket update.',
+          '',
+          '## Excludes',
+          '',
+          '- A no-change request does not create a follow-up.',
+          '',
+          '## Uncertainty',
+          '',
+          'Transport delivery and retry outcomes remain unknown.',
+        ].join('\n'),
+      },
+      {
+        slug: 'elements/ticket-policy',
+        frontmatter: { kind: 'element', title: 'Ticket Notification Policy', path: 'src/ticket.ts' },
+        body: [
+          '## Definition',
+          '',
+          'Apply ticket mutation and notification policy.',
+          '',
+          '## Includes',
+          '',
+          '- The email-policy early return affects notification calls only.',
+          '  - History save and completion emission continue independently.',
+          '- The private-setting notification condition repeats the configured submitter branch.',
+        ].join('\n'),
+      },
+    ];
+    const result = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: qualifierDocs,
+      task: 'Change ticket update notification policy.',
+    });
+    assert.equal(result.focus.qualifiers.claimState, 'recorded_claims');
+    assert.equal(result.focus.qualifiers.acceptance, 'not_asserted');
+    assert.equal(result.focus.qualifiers.coverage.total, 8);
+    assert.equal(result.focus.qualifiers.coverage.returned, 4);
+    assert.equal(result.focus.qualifiers.coverage.omitted, 4);
+    assert.equal(result.focus.qualifiers.coverage.complete, false);
+    assert.deepEqual(result.focus.qualifiers.fullBodyRead, {
+      tool: 'get_concepts',
+      arguments: {
+        slugs: ['capabilities/update-ticket', 'elements/ticket-policy'],
+        body: 'full',
+      },
+    });
+    const rows = result.focus.qualifiers.units;
+    assert.ok(rows.some((row) => row.text === '- PRIVATE_FOLLOWUP_NO_EMAIL together with a false public value returns before notification role calls. The submitter role runs only for configured changes or a public comment.'));
+    assert.ok(rows.some((row) => row.role === 'exception' && row.text === '- A no-change request does not create a follow-up.'));
+    assert.ok(rows.some((row) => row.role === 'uncertainty' && row.text === 'Transport delivery and retry outcomes remain unknown.'));
+    assert.ok(
+      rows.some((row) => row.text === '- The email-policy early return affects notification calls only.\n  - History save and completion emission continue independently.'),
+      JSON.stringify(rows),
+    );
+    for (const row of rows) {
+      assert.deepEqual(row.locator, { slug: row.slug, section: row.section, body: 'full' });
+      assert.equal(row.text.endsWith('…'), false);
+    }
+    assert.match(result.handoffPrompt, /PRIVATE_FOLLOWUP_NO_EMAIL together with a false public value/);
+    assert.match(result.handoffPrompt, /History save and completion emission continue independently/);
+    assert.match(result.handoffPrompt, /Transport delivery and retry outcomes remain unknown/);
+    assert.equal(result.focus.verification.status, 'unknown');
+    assert.equal(result.focus.taskNavigation.status, 'unknown');
+
+    const reorderedCapability = {
+      ...qualifierDocs[1],
+      body: qualifierDocs[1].body.replace(
+        '- PRIVATE_FOLLOWUP_NO_EMAIL together with a false public value returns before notification role calls. The submitter role runs only for configured changes or a public comment.\n- The updater writes ticket status and follow-up history for an existing ticket update.',
+        '- The updater writes ticket status and follow-up history for an existing ticket update.\n- PRIVATE_FOLLOWUP_NO_EMAIL together with a false public value returns before notification role calls. The submitter role runs only for configured changes or a public comment.',
+      ),
+    };
+    assert.notEqual(reorderedCapability.body, qualifierDocs[1].body);
+    const reorderedAnchor = {
+      ...qualifierDocs[2],
+      body: qualifierDocs[2].body.replace(
+        '- The email-policy early return affects notification calls only.\n  - History save and completion emission continue independently.\n- The private-setting notification condition repeats the configured submitter branch.',
+        '- The private-setting notification condition repeats the configured submitter branch.\n- The email-policy early return affects notification calls only.\n  - History save and completion emission continue independently.',
+      ),
+    };
+    assert.notEqual(reorderedAnchor.body, qualifierDocs[2].body);
+    const reordered = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [qualifierDocs[0], reorderedCapability, reorderedAnchor],
+      task: 'Change ticket update notification policy.',
+    });
+    assert.deepEqual(reordered.focus.qualifiers, result.focus.qualifiers);
+
+    const staleBrief = structuredClone(brief);
+    staleBrief.projectSource.status = 'review_required';
+    staleBrief.projectSource.currentness = 'stale';
+    const stale = buildCompactAgentBrief({
+      brief: staleBrief,
+      artifact,
+      docs: qualifierDocs,
+      task: 'Change ticket update notification policy.',
+    });
+    assert.deepEqual(stale.focus.qualifiers, result.focus.qualifiers);
+    assert.equal(stale.currentness.source.currentness, 'stale');
+    assert.equal(stale.focus.verification.status, 'unknown');
+  });
+
+  it('keeps complete multibyte qualifier units or fails the whole compact budget', () => {
+    const completeSentence = `- Preserve the complete condition ${'🔒'.repeat(160)} without clipping.`;
+    const result = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], {
+        slug: 'capabilities/secure-output',
+        frontmatter: { kind: 'capability', title: 'Secure Output' },
+        body: `## Definition\n\nSecure encoded output.\n\n## Includes\n\n${completeSentence}\n\n## Uncertainty\n\nRuntime delivery remains unknown.\n`,
+      }],
+      task: 'Change secure output condition.',
+    });
+    assert.ok(result.focus.qualifiers.units.some((row) => row.text === completeSentence));
+    assert.equal(result.focus.qualifiers.units.some((row) => row.text.endsWith('…')), false);
+    assert.ok(Buffer.byteLength(JSON.stringify(result), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
+
+    const oversizedSentence = `- Preserve the complete condition ${'🔒'.repeat(2_000)} without clipping.`;
+    const oversized = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], {
+        slug: 'capabilities/secure-output',
+        frontmatter: { kind: 'capability', title: 'Secure Output' },
+        body: `## Definition\n\nSecure encoded output.\n\n## Includes\n\n${oversizedSentence}\n\n## Uncertainty\n\nRuntime delivery remains unknown.\n`,
+      }],
+      task: 'Change secure output condition.',
+    });
+    assert.equal(oversized.focus.qualifiers.coverage.complete, false);
+    assert.equal(oversized.focus.qualifiers.coverage.status, 'incomplete_full_body_required');
+    assert.ok(oversized.focus.qualifiers.coverage.omitted > 0);
+    assert.equal(oversized.focus.qualifiers.units.some((row) => row.text.includes('🔒')), false);
+    assert.equal(oversized.focus.qualifiers.fullBodyRead.arguments.body, 'full');
+    assert.ok(Buffer.byteLength(JSON.stringify(oversized), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
+  });
+
+  it('keeps list-leading parent scope and renders recorded section roles in the handoff', () => {
+    const scopedBody = [
+      '## Definition',
+      '',
+      'Deliver a report.',
+      '',
+      '## Includes',
+      '',
+      'Only after supervisor approval:',
+      '',
+      '- Send report to the requester.',
+      '- Archive the report receipt.',
+      '',
+      '## Excludes',
+      '',
+      '- Automatic release.',
+      '',
+      '## Uncertainty',
+      '',
+      'External delivery remains unknown.',
+    ].join('\n');
+    const result = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], {
+        slug: 'capabilities/report-delivery',
+        frontmatter: { kind: 'capability', title: 'Report Delivery' },
+        body: scopedBody,
+      }],
+      task: 'Send report delivery after approval.',
+    });
+    const includes = result.focus.qualifiers.units.find((row) => row.section === 'Includes');
+    assert.equal(includes?.text, 'Only after supervisor approval:\n\n- Send report to the requester.\n- Archive the report receipt.');
+    assert.equal(result.focus.qualifiers.coverage.total, 4);
+    assert.equal(result.focus.qualifiers.coverage.complete, true);
+    assert.match(result.handoffPrompt, /recorded_claim capabilities\/report-delivery Includes\/condition/);
+    assert.match(result.handoffPrompt, /recorded_claim capabilities\/report-delivery Excludes\/exception/);
+    assert.match(result.handoffPrompt, /\[recorded_claim capabilities\/report-delivery Excludes\/exception\]\n- Automatic release\./);
+  });
+
+  it('keeps trailing and interstitial prose with every top-level list it may scope', () => {
+    const cases = [
+      '- Send report under delivery policy.\n- Archive receipt.\n\nBoth actions require supervisor approval.',
+      '- Archive receipt.\n\nOnly after supervisor approval:\n\n- Send report under delivery policy.',
+    ];
+    for (const includes of cases) {
+      const body = `## Definition\n\nReport delivery policy.\n\n## Includes\n\n${includes}\n\n## Excludes\n\n- Automatic release.\n\n## Uncertainty\n\nExternal delivery remains unknown.\n`;
+      const result = buildCompactAgentBrief({
+        brief,
+        artifact,
+        docs: [docs[0], {
+          slug: 'capabilities/report-delivery',
+          frontmatter: { kind: 'capability', title: 'Report Delivery' },
+          body,
+        }],
+        task: 'Send report delivery after approval.',
+      });
+      const unit = result.focus.qualifiers.units.find((row) => row.section === 'Includes');
+      assert.equal(unit?.text, includes);
+      assert.equal(result.focus.qualifiers.coverage.total, 4);
+      assert.equal(result.focus.qualifiers.coverage.complete, true);
+      assert.match(result.handoffPrompt, new RegExp(`\\[recorded_claim capabilities/report-delivery Includes/condition\\]\\n${includes.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    }
+  });
+
   it('returns no capability when the bounded vault records no task match', () => {
     const result = buildCompactAgentBrief({
       brief,

@@ -611,7 +611,25 @@ Unicode words, common attached particles, and explicit negative markers such as
 the Korean phrases for out of scope, exclusion, and do not change. Unsupported or same-alias cases remain
 `no_match` or `ambiguous`; this is not general Korean semantic parsing. It does not persist or echo raw task text, treat this
 claim compatibility as behavior proof, inspect raw source generally, or write
-the vault. An element may record human-reviewable
+the vault. A selected compact focus also carries at most four complete
+Definition/Includes/Excludes/Uncertainty units from the capability and its
+relevant anchors as `recorded_claims`, never acceptance or verified behavior.
+Rows preserve their verbatim sentence or top-level bullet group, section role,
+node locator and exact full-body read. Any free-standing prose mixed with a
+top-level list keeps the whole section together, whether that prose precedes,
+separates or follows bullets; the projector never guesses which child it scopes.
+Pure lists may remain separate units with indented child context. Coverage counts every eligible unit;
+omissions make the projection explicitly incomplete and require that full-body
+read. The handoff prompt labels every unit with its recorded-claim slug,
+section and role before repeating the exact text without clipping it. Task
+relevance selects the capability condition, a capability exception and
+non-overlapping uncertainty are reserved, and a complementary anchor condition
+preserves distributed scope. If these complete units exceed the 12,000-byte
+compact budget, it removes whole lower-priority units, increases the honest
+omitted count and keeps the exact full-body recovery; it never clips a retained
+condition. If the response still cannot fit after all qualifier units are
+omitted, the operation fails instead of downgrading currentness, meaning repair
+or unknowns. An element may record human-reviewable
 Evidence coordinates as `Primary implementation`, `Supporting implementation`,
 and `Focused test` bullets. With a current bound source, `taskNavigation:v1`
 checks only those named files, requires each symbol/test to resolve uniquely,

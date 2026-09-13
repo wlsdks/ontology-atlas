@@ -1745,7 +1745,16 @@ const COMPACT_MAINTENANCE_ACTION_OUTPUT_SCHEMA = Object.freeze({
       additionalProperties: COMPACT_MAINTENANCE_NODE_OUTPUT_SCHEMA,
     },
   },
-  required: ['id', 'phase', 'kind', 'severity', 'score', 'executable', 'reason', 'proposedAction'],
+  required: ['id', 'phase', 'kind', 'severity', 'score', 'executable', 'reason'],
+  allOf: [{
+    if: { properties: { executable: { const: true } }, required: ['executable'] },
+    then: {
+      required: ['proposedAction'],
+      properties: {
+        proposedAction: { ...COMPACT_MAINTENANCE_PROPOSED_ACTION_OUTPUT_SCHEMA, type: 'object' },
+      },
+    },
+  }],
   additionalProperties: false,
 });
 const NULLABLE_COMPACT_MAINTENANCE_ACTION_OUTPUT_SCHEMA = Object.freeze({

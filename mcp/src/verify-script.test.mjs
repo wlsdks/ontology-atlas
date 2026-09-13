@@ -810,8 +810,12 @@ describe('verify.mjs first-contact gates', () => {
     };
     const compactActionSchema = {
       type: 'object',
-      required: ['id', 'phase', 'kind', 'severity', 'score', 'executable', 'reason', 'proposedAction'],
+      required: ['id', 'phase', 'kind', 'severity', 'score', 'executable', 'reason'],
       properties: compactActionProperties,
+      allOf: [{
+        if: { properties: { executable: { const: true } }, required: ['executable'] },
+        then: { required: ['proposedAction'], properties: { proposedAction: { ...compactProposedActionSchema, type: 'object' } } },
+      }],
       additionalProperties: false,
     };
     const postWriteMaintenanceSchema = {
