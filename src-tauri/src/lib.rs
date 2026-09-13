@@ -520,14 +520,49 @@ fn build_webview_verify_route_reset_script(route: &str) -> String {
     )
 }
 
+/// Builds the JS that plants a fixture vault in the verifier's own key-value store.
+///
+/// `ONTOLOGY_ATLAS_VERIFY_VAULT` may name **several** folders, separated by `::`. The
+/// first is the one the session opens (`…fs-handle:current`); every one of them is also
+/// written to the recent list (`…fs-handle:recent`).
+///
+/// ⚠️ **Why the recent list has to be planted rather than accumulated.** The launch
+/// chooser is armed by how many folders that list holds, and the verifier's WebView runs
+/// on a `nonPersistent` data store (see `isolate_verify_webview_storage`) precisely so it
+/// can never inherit or delete the person's real vault handle. So the list starts empty on
+/// every launch and cannot be grown by launching twice — which left the chooser
+/// unreachable by any desktop check, and a surface no check can reach has no gate at all
+/// (2026-09-13).
 fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
+    let mut roots = root_path
+        .split("::")
+        .map(str::trim)
+        .filter(|part| !part.is_empty());
+    let primary = roots.next().unwrap_or(root_path);
+    let extra: Vec<&str> = roots.collect();
+    let recent_literals = std::iter::once(primary)
+        .chain(extra.iter().copied())
+        .map(|path| {
+            let name = Path::new(path)
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("ontology");
+            format!(
+                "{{ id: \"current\", handle: {{ name: {} }}, name: {}, desktopRootPath: {}, createdAt: now, lastAccessedAt: now }}",
+                js_string_literal(name),
+                js_string_literal(name),
+                js_string_literal(path),
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
     let fixture_name = js_string_literal(
-        Path::new(root_path)
+        Path::new(primary)
             .file_name()
             .and_then(|name| name.to_str())
             .unwrap_or("ontology"),
     );
-    let root_path = js_string_literal(root_path);
+    let root_path = js_string_literal(primary);
     format!(
         r#"(() => {{
   const rootPath = {root_path};
@@ -554,6 +589,10 @@ fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
       createdAt: now,
       lastAccessedAt: now
     }}, "docs-vault:fs-handle:current");
+    // The recent list decides the launch path, so it is planted too; see the note on this
+    // function. Counts are deliberately absent, so rows say "not counted yet" rather than
+    // claiming numbers the harness never read from disk.
+    transaction.objectStore("kv").put([{recent_literals}], "docs-vault:fs-handle:recent");
     transaction.oncomplete = () => {{
       db.close();
       window.localStorage.setItem("ontology-atlas:verify-fixture-vault", rootPath);
@@ -2568,7 +2607,11 @@ fn create_text_exclusively_with(
             ".oatlas-create-{}-{nonce:x}-{sequence:x}.tmp",
             std::process::id()
         ));
-        match fs::OpenOptions::new().write(true).create_new(true).open(&temporary) {
+        match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temporary)
+        {
             Ok(file) => {
                 created = Some((temporary, file));
                 break;
@@ -4296,6 +4339,32 @@ mod tests {
         assert!(script.contains("window.localStorage.setItem(\"guided-tour:v1\", \"skipped\")"));
         assert!(script.contains("location.reload()"));
         assert!(!script.contains("indexedDB.deleteDatabase"));
+        // A single folder still plants a one-entry recent list, so the launch resumes it
+        // rather than asking: the count is what decides, and one is not a question.
+        assert!(script.contains("\"docs-vault:fs-handle:recent\""));
+    }
+
+    /// The launch chooser is armed by how many folders the recent list holds, and the
+    /// verifier's WebView runs on a non-persistent store, so that list cannot be grown by
+    /// launching twice. Naming several folders is therefore the only way a desktop check can
+    /// reach the chooser at all.
+    #[test]
+    fn webview_verify_vault_bootstrap_plants_every_named_folder_in_the_recent_list() {
+        let script = build_webview_verify_vault_bootstrap_script(
+            "/tmp/Atlas Fixture/atlas-map::/tmp/Atlas Fixture/atlas-wiki",
+        );
+
+        // The first folder is the one the session opens.
+        assert!(script.contains("const rootPath = \"/tmp/Atlas Fixture/atlas-map\""));
+        assert!(script.contains("const fixtureName = \"atlas-map\""));
+        // Both reach the recent list, which is what makes the count two.
+        assert!(script.contains("\"docs-vault:fs-handle:recent\""));
+        assert!(script.contains("desktopRootPath: \"/tmp/Atlas Fixture/atlas-map\""));
+        assert!(script.contains("desktopRootPath: \"/tmp/Atlas Fixture/atlas-wiki\""));
+        // No counts are planted: the harness never read those folders, and a row that
+        // printed numbers it did not measure would be the dishonesty the row type forbids.
+        assert!(!script.contains("docCount"));
+        assert!(!script.contains("conceptCount"));
     }
 
     #[test]
@@ -4682,7 +4751,10 @@ mod tests {
 
 #[cfg(test)]
 mod create_only_tests {
-    use super::{create_text_exclusively, create_text_exclusively_with, create_vault_text_file_after_validation};
+    use super::{
+        create_text_exclusively, create_text_exclusively_with,
+        create_vault_text_file_after_validation,
+    };
     use std::fs;
     use std::path::PathBuf;
 
@@ -4692,7 +4764,10 @@ mod create_only_tests {
         let root = std::env::temp_dir().join(format!(
             "oatlas-create-only-{}-{}-{sequence}",
             std::process::id(),
-            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
         ));
         fs::create_dir_all(root.join("vault/wiki/answers")).unwrap();
         root
@@ -4703,12 +4778,20 @@ mod create_only_tests {
         let base = fixture();
         let vault = base.join("vault");
         let target = vault.join("wiki/answers/answer.md");
-        let create = |text: &str| create_vault_text_file_after_validation(
-            vault.to_string_lossy().into_owned(), "wiki/answers/answer.md".into(), text.into(), || {}
-        );
+        let create = |text: &str| {
+            create_vault_text_file_after_validation(
+                vault.to_string_lossy().into_owned(),
+                "wiki/answers/answer.md".into(),
+                text.into(),
+                || {},
+            )
+        };
         assert!(create("first answer — complete").unwrap());
         assert!(!create("replacement must not land").unwrap());
-        assert_eq!(fs::read_to_string(&target).unwrap(), "first answer — complete");
+        assert_eq!(
+            fs::read_to_string(&target).unwrap(),
+            "first answer — complete"
+        );
         assert_eq!(fs::read_dir(target.parent().unwrap()).unwrap().count(), 1);
         fs::remove_dir_all(base).unwrap();
     }
@@ -4719,9 +4802,12 @@ mod create_only_tests {
         let vault = base.join("vault");
         let target = vault.join("wiki/answers/answer.md");
         let created = create_vault_text_file_after_validation(
-            vault.to_string_lossy().into_owned(), "wiki/answers/answer.md".into(), "late writer".into(),
-            || fs::write(&target, "racing writer").unwrap()
-        ).unwrap();
+            vault.to_string_lossy().into_owned(),
+            "wiki/answers/answer.md".into(),
+            "late writer".into(),
+            || fs::write(&target, "racing writer").unwrap(),
+        )
+        .unwrap();
         assert!(!created);
         assert_eq!(fs::read_to_string(&target).unwrap(), "racing writer");
         assert_eq!(fs::read_dir(target.parent().unwrap()).unwrap().count(), 1);
@@ -4733,14 +4819,29 @@ mod create_only_tests {
         let base = fixture();
         let vault = base.join("vault");
         let barrier = std::sync::Arc::new(std::sync::Barrier::new(2));
-        let threads: Vec<_> = ["answer A", "answer B"].into_iter().map(|text| {
-            let root = vault.to_string_lossy().into_owned();
-            let barrier = barrier.clone();
-            std::thread::spawn(move || create_vault_text_file_after_validation(
-                root, "wiki/answers/answer.md".into(), text.into(), || { barrier.wait(); }
-            ).unwrap())
-        }).collect();
-        let winners = threads.into_iter().map(|thread| thread.join().unwrap()).filter(|created| *created).count();
+        let threads: Vec<_> = ["answer A", "answer B"]
+            .into_iter()
+            .map(|text| {
+                let root = vault.to_string_lossy().into_owned();
+                let barrier = barrier.clone();
+                std::thread::spawn(move || {
+                    create_vault_text_file_after_validation(
+                        root,
+                        "wiki/answers/answer.md".into(),
+                        text.into(),
+                        || {
+                            barrier.wait();
+                        },
+                    )
+                    .unwrap()
+                })
+            })
+            .collect();
+        let winners = threads
+            .into_iter()
+            .map(|thread| thread.join().unwrap())
+            .filter(|created| *created)
+            .count();
         assert_eq!(winners, 1);
         let text = fs::read_to_string(vault.join("wiki/answers/answer.md")).unwrap();
         assert!(text == "answer A" || text == "answer B");
@@ -4759,19 +4860,39 @@ mod create_only_tests {
         fs::write(outside.join("answer.md"), "outside original").unwrap();
         symlink(outside.join("answer.md"), vault.join("linked.md")).unwrap();
         assert!(create_vault_text_file_after_validation(
-            vault.to_string_lossy().into_owned(), "linked.md".into(), "must not land".into(), || {}
-        ).is_err());
+            vault.to_string_lossy().into_owned(),
+            "linked.md".into(),
+            "must not land".into(),
+            || {}
+        )
+        .is_err());
         assert!(create_vault_text_file_after_validation(
-            vault.to_string_lossy().into_owned(), "../outside/answer.md".into(), "must not land".into(), || {}
-        ).is_err());
+            vault.to_string_lossy().into_owned(),
+            "../outside/answer.md".into(),
+            "must not land".into(),
+            || {}
+        )
+        .is_err());
         let parent = vault.join("wiki/answers");
         let parked = vault.join("wiki/parked");
         assert!(create_vault_text_file_after_validation(
-            vault.to_string_lossy().into_owned(), "wiki/answers/answer.md".into(), "inside complete".into(),
-            || { fs::rename(&parent, &parked).unwrap(); symlink(&outside, &parent).unwrap(); }
-        ).unwrap());
-        assert_eq!(fs::read_to_string(outside.join("answer.md")).unwrap(), "outside original");
-        assert_eq!(fs::read_to_string(parked.join("answer.md")).unwrap(), "inside complete");
+            vault.to_string_lossy().into_owned(),
+            "wiki/answers/answer.md".into(),
+            "inside complete".into(),
+            || {
+                fs::rename(&parent, &parked).unwrap();
+                symlink(&outside, &parent).unwrap();
+            }
+        )
+        .unwrap());
+        assert_eq!(
+            fs::read_to_string(outside.join("answer.md")).unwrap(),
+            "outside original"
+        );
+        assert_eq!(
+            fs::read_to_string(parked.join("answer.md")).unwrap(),
+            "inside complete"
+        );
         assert_eq!(fs::read_dir(&parked).unwrap().count(), 1);
         fs::remove_dir_all(base).unwrap();
     }
@@ -4784,9 +4905,15 @@ mod create_only_tests {
         assert!(create_text_exclusively(&target, "original").unwrap());
         assert!(!create_text_exclusively(&target, "replacement").unwrap());
         let missing = parent.join("unsupported.md");
-        assert!(create_text_exclusively_with(&missing, "never published", |_, _| {
-            Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "exclusive publication unavailable"))
-        }).is_err());
+        assert!(
+            create_text_exclusively_with(&missing, "never published", |_, _| {
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::Unsupported,
+                    "exclusive publication unavailable",
+                ))
+            })
+            .is_err()
+        );
         assert!(!missing.exists());
         assert_eq!(fs::read_to_string(&target).unwrap(), "original");
         assert_eq!(fs::read_dir(parent).unwrap().count(), 1);
