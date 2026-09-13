@@ -79,6 +79,47 @@ test.describe("하네스 탭", () => {
     await expect(page.getByTestId("architecture-flow-panel")).toBeVisible({ timeout: 30_000 });
   });
 
+  test("설명 말풍선은 그 아래 본문에 덮이지 않는다", async ({ page }) => {
+    /*
+     * ⚠️ **A panel that is on screen is not yet a panel that can be read.** The lead sentence's
+     * `InfoHint` hangs out of `harness-sentence`, and the results block is the *next sibling*, so
+     * every mark it draws — the guides heading, the file table, the matrix — painted on top of the
+     * open panel and the two texts read as one smear (owner, 2026-09-14, installed app). The
+     * panel's own `z-30` could never fix it: it orders the panel inside its own element, never
+     * against the element that follows it.
+     *
+     * The geometry gate at 390 could not see this: a panel fully inside the window is exactly what
+     * an occluded panel also is. So this measures **what a person's eye lands on** —
+     * `elementFromPoint` over the panel's own text — which is the only question a tooltip has.
+     */
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=guides");
+    await expect(page.getByTestId("harness-guides")).toBeVisible({ timeout: 30_000 });
+
+    const hint = page.getByRole("button", { name: "검사를 세는 방법" });
+    await hint.focus();
+    const panelId = (await hint.getAttribute("aria-describedby"))!;
+    const panel = page.locator(`#${panelId.replace(/:/g, "\\:")}`);
+    await expect(panel).toBeVisible();
+
+    /* Nine probes down the panel's own column, because the overlap was partial: the first lines
+       cleared the heading and the ones below did not. One point in the middle is a coin toss. */
+    const covered = await page.evaluate((id) => {
+      const el = document.getElementById(id)!;
+      const box = el.getBoundingClientRect();
+      const hits: string[] = [];
+      for (let i = 1; i <= 9; i += 1) {
+        const y = box.top + (box.height * i) / 10;
+        const at = document.elementFromPoint(box.left + box.width / 2, y);
+        if (!at || !el.contains(at)) {
+          hits.push(`${i}/10 → ${at ? `${at.tagName}.${at.className}`.slice(0, 60) : "null"}`);
+        }
+      }
+      return hits;
+    }, panelId);
+    expect(covered, `설명 말풍선이 아래 본문에 덮였다: ${covered.join(" | ")}`).toEqual([]);
+  });
+
   test("커버리지 표가 영역마다 말해둔 것·막는 것·지켜보는 것을 말하고, 빈 칸은 문장으로 말한다", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/?view=coverage");
