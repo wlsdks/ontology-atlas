@@ -720,3 +720,10 @@ Long-form docs:
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md) — static export → static hosting
 - [`CHANGELOG.md`](./CHANGELOG.md) — chronological user-visible changes
 - [`docs/archive/`](./archive/) — historical analysis docs (earlier cloud-mode designs, retired surfaces)
+
+### Internal meaning transition evidence
+
+The pure shared [transition evidence codec](MEANING-TRANSITION-EVIDENCE.md)
+checks an immutable candidate's supplied decision, revision and per-row facts.
+It has no storage, controller, ontology-writer or Git integration; existing
+analysis records and ACP execution receipts retain their original authority.
