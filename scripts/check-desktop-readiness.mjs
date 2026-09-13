@@ -954,14 +954,22 @@ if (
  */
 if (
   rootEntryPage.includes("if (vault.manifest) return <HomePage />") &&
-  rootEntryPage.includes("if (isDesktopShell())") &&
+  rootEntryPage.includes("isDesktopShell()") &&
   rootEntryPage.includes("return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />") &&
+  // Since 2026-09-13 the first-run branch is also reached when the launch deliberately
+  // stopped for the person to choose between known folders, on the web as well as the
+  // desktop — `FirstRunPage` is the launch chooser, and without this arm a returning web
+  // visitor reloading their own workspace landed on the download gateway. So the guard on
+  // that branch is no longer the bare `if (isDesktopShell())` this line used to match
+  // literally; what is checked is that the runtime test is still there and that the
+  // choosing state reaches the same screen.
+  rootEntryPage.includes("vault.awaitingVaultChoice") &&
   // Since 2026-09-01 the hosted branch may wrap the gateway with a lost-vault notice
   // (a failed restore says so instead of landing silently), so the fact checked here is
   // that the empty hosted session still renders the gateway, not the exact return shape.
   rootEntryPage.includes("<GatewayLandingPage />")
 ) {
-  pass("root entry derives the loaded-vault map, desktop first run, and hosted gateway from runtime state");
+  pass("root entry derives the loaded-vault map, desktop first run, the launch chooser, and hosted gateway from runtime state");
 } else {
   fail(
     "src/views/root-entry/ui/RootEntryPage.tsx must route a loaded vault to HomePage, an empty desktop shell to FirstRunPage, and an empty hosted web session to GatewayLandingPage",
