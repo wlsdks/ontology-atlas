@@ -875,13 +875,29 @@ export function useLocalVaultInternal() {
        */
       try {
         /*
-         * Awaited, though the screen is already painted. Left as fire-and-forget the write
-         * raced a navigation and lost: the folder opened most recently showed "Not counted
-         * yet" beside a sibling that had its numbers, which reads as a broken row rather
-         * than an honest unknown (inspection, 2026-09-13). Awaiting after `setState` costs
-         * the render nothing - the vault is already `loaded` by this line.
+         * ⚠️ **Never awaited. `load()` resolving means "the manifest is live", and nothing
+         * else may be added to that promise.**
+         *
+         * It was awaited here for one revision, to stop a navigation racing the write, and
+         * that broke renaming a document for every person: `handleRenameCurrent` awaits
+         * `renameDoc` — which calls this `load` — and only then records the slugs it touched
+         * in `appTouchedSlugsRef`, the guard that keeps the missing-document verdict quiet
+         * for the app's own action. Awaiting an IndexedDB round trip *after* `setState` has
+         * published the new manifest opened a window where React had already committed the
+         * rename (so the old slug was gone from `docsBySlug`) while the guard was still
+         * empty — so the address's old name was judged missing and the screen said it could
+         * not find that document in this folder, half a second after a rename that had
+         * succeeded. The banner named the **old** slug while its own fallback link already
+         * pointed at the **new** one, which is what settles the diagnosis. Caught by
+         * `tests/e2e/docs-rename-address.spec.ts`, which exists for exactly that false
+         * warning (CI shard chromium 2/3, 2026-09-13).
+         *
+         * The cost of not awaiting is that leaving the folder within the write window loses
+         * the counts, and the row then says "not counted yet" — an honest unknown, and one
+         * `countedAgo` labels. Telling somebody their document is lost when it is not is a
+         * different order of wrong.
          */
-        await recordLocalFsHandleContents(countVaultContents(manifest.docs));
+        void recordLocalFsHandleContents(countVaultContents(manifest.docs)).catch(() => {});
       } catch {
         /* The counts stay absent; the row says so. */
       }
@@ -1594,6 +1610,13 @@ export function useLocalVaultInternal() {
        * concurrent they can interleave and drop an entry - and the launch rule is decided by
        * how many entries that list holds, so a lost one silently un-arms the chooser
        * (workbench seat, 2026-09-13).
+       *
+       * ⚠️ **Do not make the counts write symmetrical with this one.** Awaiting is safe *here*
+       * because this runs before `load` and no caller's own state migration is waiting on it.
+       * The counts write sits inside `load`, after the manifest is published, where an await
+       * holds open the promise a rename uses to know it may silence the missing-document
+       * verdict - see the note at that line. The two are ordered rather than concurrent
+       * precisely because this one finishes before `load` begins.
        */
       await touchLocalFsHandle();
       const permission = await verifyRead(storedHandle, false);

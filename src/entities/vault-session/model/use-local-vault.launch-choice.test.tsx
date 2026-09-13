@@ -196,6 +196,44 @@ describe('useLocalVaultInternal launch path', () => {
     expect(hook.result.current.status).toBe('idle');
   });
 
+  it('does not make a load wait for the count to be written', async () => {
+    /*
+     * **`load()` resolving means "the manifest is live", and nothing may be added to that
+     * promise.** `handleRenameCurrent` awaits `renameDoc` (which loads) and only then records
+     * the slugs it touched in the guard that keeps the missing-document verdict quiet for the
+     * app's own action. An awaited cache write after `setState` let React commit the rename
+     * while that guard was still empty, so the screen told the person the document they had
+     * just renamed could not be found (`tests/e2e/docs-rename-address.spec.ts`, CI 2026-09-13).
+     *
+     * `restoreAttempted` is the observable: the restore awaits `load` and only then settles
+     * that flag in its `finally`. So a `load` held open by the cache write leaves the flag
+     * false - and the whole app waits on that flag, which is the same stall in a different
+     * costume. The write here never settles, which is the shape of an IndexedDB round trip
+     * cut off by a navigation.
+     */
+    const only = record('atlas');
+    store.getLocalFsHandle.mockResolvedValue(only);
+    store.listRecentLocalFsHandles.mockResolvedValue([only]);
+    let settleWrite = () => {};
+    store.recordLocalFsHandleContents.mockReturnValue(
+      new Promise<void>((resolve) => {
+        settleWrite = () => resolve();
+      }),
+    );
+
+    const hook = renderHook(() => useLocalVaultInternal());
+
+    // The manifest goes live regardless - that half was never in doubt.
+    await waitFor(() => expect(hook.result.current.status).toBe('loaded'));
+    expect(store.recordLocalFsHandleContents).toHaveBeenCalled();
+    // And the load it belongs to finished, so every caller awaiting it can proceed.
+    await waitFor(
+      () => expect(hook.result.current.restoreAttempted).toBe(true),
+      { timeout: 2000 },
+    );
+    settleWrite();
+  });
+
   it('records what the folder held once it is actually read', async () => {
     const only = record('atlas');
     store.getLocalFsHandle.mockResolvedValue(only);
