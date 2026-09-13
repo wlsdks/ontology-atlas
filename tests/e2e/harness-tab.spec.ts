@@ -132,8 +132,8 @@ test.describe("하네스 탭", () => {
   test("문서가 지침인지, 지침이 이름을 댄 것인지, 아무도 안 부르는 것인지 셋으로 나뉜다", async ({ page }) => {
     /*
      * The harness's most common silent failure: a document that exists and no guide points at. The
-     * fixture has one of each — `docs/checkout.md`, which AGENTS.md names, and `docs/forgotten.md`,
-     * which nothing does.
+     * fixture source tree carries one of each under its own `docs/` folder — one that the fixture's
+     * AGENTS.md names by path, and one that nothing names.
      */
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/");
@@ -141,9 +141,9 @@ test.describe("하네스 탭", () => {
     await expect(reach).toBeVisible({ timeout: 30_000 });
     await expect(reach.locator('[data-harness-reach-row="guides"]')).toContainText("지침");
     await expect(reach.locator('[data-harness-reach-row="named"]')).toContainText("1");
-    /* Three: `docs/forgotten.md`, plus both agent briefs. A brief is addressed by name rather than
-       by path, so it lands here for a reason that is fine — which is exactly why the folders are
-       printed beside the count instead of the rows being filtered. */
+    /* Three: the fixture's unnamed document, plus both agent briefs. A brief is addressed by name
+       rather than by path, so it lands here for a reason that is fine — which is exactly why the
+       folders are printed beside the count instead of the rows being filtered. */
     await expect(reach.locator('[data-harness-reach-row="unnamed"]')).toContainText("3");
 
     // The breakdown of where the unnamed documents are opens on a press. Spilled permanently, the
