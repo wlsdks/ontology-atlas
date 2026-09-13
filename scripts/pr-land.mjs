@@ -81,7 +81,7 @@ import { execFileSync } from 'node:child_process';
 import { hostname } from 'node:os';
 
 import { formatFocusedCheckSuggestions, suggestFocusedChecks } from './lib/focused-check-suggestions.mjs';
-import { runFocusedChecks } from './suggest-focused-checks.mjs';
+import { existingPaths, runFocusedChecks } from './suggest-focused-checks.mjs';
 
 export const LOCK_REF = 'refs/atlas/landing-lock';
 
@@ -752,7 +752,16 @@ function runLocalChecks({ worktree, pr, io }) {
   }
 
   const changed = git(['-C', worktree, 'diff', '--name-only', 'origin/main...HEAD'], { allowFailure: true }) ?? '';
-  const paths = changed.split('\n').filter(Boolean);
+  /*
+   * A path this branch DELETED is still in `git diff --name-only`, and handing it to a
+   * file-reading tool is a malfunction, not a finding — `eslint <deleted file>` dies on
+   * "Please check for typing mistakes in the pattern" and takes the whole landing with it.
+   * `checks:changed` has filtered these since 2026-08-21 and says so in a comment; this
+   * caller was reading the same git output and skipping that filter, so the trap the
+   * repository had already written down was live again on the one path that blocks a
+   * landing. Measured 2026-09-13 on #1604, which deletes one component.
+   */
+  const paths = existingPaths(changed.split('\n').filter(Boolean), { cwd: worktree });
   if (paths.length === 0) {
     log('local checks: this branch changes nothing against main');
     return { ok: true };
