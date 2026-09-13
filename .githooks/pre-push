@@ -131,7 +131,11 @@ touched "$TS" "$APP" && lane typecheck 'pnpm exec tsc --noEmit'
 if touched '^eslint\.config\.mjs$'; then
   lane lint 'pnpm lint'
 elif touched "$APP"; then
-  LINT_FILES=$(printf '%s\n' "$CHANGED" | grep -E '^(src|app)/.*\.(ts|tsx|mjs|js)$' || true)
+  # A deleted file is still a changed file, and ESLint refuses the whole run when one of its
+  # arguments does not exist ("No files matching the pattern ... were found") — so deleting one
+  # source file turned this lane red for reasons that had nothing to do with the code being
+  # pushed. Keep only what is still on disk.
+  LINT_FILES=$(printf '%s\n' "$CHANGED" | grep -E '^(src|app)/.*\.(ts|tsx|mjs|js)$' | while read -r f; do [ -f "$f" ] && printf '%s\n' "$f"; done || true)
   if [ -n "$LINT_FILES" ]; then
     lane lint "pnpm exec eslint --max-warnings=0 $(printf '%s' "$LINT_FILES" | tr '\n' ' ')"
   fi

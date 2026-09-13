@@ -2,6 +2,7 @@
 uid: 0f1364a5-7d0f-4fa5-b913-454d47b33cca
 slug: domains/agent-integration
 kind: domain
+description: Surfaces that let AI coding agents and developers read and write the same ontology folder a person reads: the MCP server, the terminal CLI, the in-app connect flow, and the ACP layer that launches an agent already installed on the machine.
 title: AI Agent Integration
 display_ko: AI 에이전트 연동
 display_en: AI Agent Integration

@@ -2,6 +2,7 @@
 uid: 27e7b72d-dfec-405d-b236-3139b59cd68a
 slug: domains/design-system
 kind: domain
+description: Pre-defines the values and components a person or an agent may choose when building a screen, and fails automatically when a screen deviates from them.
 title: "Design System & Enforcement"
 display_ko: 디자인 시스템 지키기
 display_en: "Design System & Enforcement"

@@ -2,13 +2,14 @@
 uid: f088ee9c-cde9-4119-8955-4bb91e452538
 slug: domains/codebase-architecture
 kind: domain
+description: Declares the reviewed implementation roles and dependency rules a codebase intends, then compares the imports observed in source against that intent.
 title: Codebase Architecture
 display_en: Codebase Architecture
 display_ko: 코드베이스 아키텍처
 capabilities: [capabilities/architecture-guided-development]
 created_by: "agent:unknown"
-elements: [elements/architecture-profile-contract, elements/architecture-workbench]
-relation_notes: { capabilities/architecture-guided-development: "Comparing reviewed architecture intent against a revision-stamped source observation, then deciding what should change and verifying it against the same contract, is what this responsibility area exists to do.", elements/architecture-profile-contract: "The parser and conformance evaluator turn a reviewed profile and observed imports into typed facts, keeping violations and unknowns apart rather than letting missing evidence read as compliance.", elements/architecture-workbench: The /architecture canvas is where a person reads each reviewed role beside what the source actually does and sees the delta between them named. }
+elements: [elements/architecture-profile-contract, elements/architecture-workbench, elements/harness-coverage-matrix]
+relation_notes: { capabilities/architecture-guided-development: "Comparing reviewed architecture intent against a revision-stamped source observation, then deciding what should change and verifying it against the same contract, is what this responsibility area exists to do.", elements/architecture-profile-contract: "The parser and conformance evaluator turn a reviewed profile and observed imports into typed facts, keeping violations and unknowns apart rather than letting missing evidence read as compliance.", elements/architecture-workbench: The /architecture canvas is where a person reads each reviewed role beside what the source actually does and sees the delta between them named., elements/harness-coverage-matrix: "Codebase architecture owns the matrix because its rows are this ontology's own areas crossed with the path scopes a repository's guides, gates and checks declare: a statement about the repository's structure, not about the agent boundary." }
 ---
 
 ## Definition

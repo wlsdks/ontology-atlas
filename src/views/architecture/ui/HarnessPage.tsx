@@ -19,13 +19,22 @@ import {
   parseHarnessView,
   type HarnessView,
 } from '../lib/harness-view-state';
+import { deriveCoverageAreas } from '../model/coverage-areas';
 import { useHarnessReport } from '../model/use-harness-report';
 import { ArchitecturePage } from './ArchitecturePage';
+import { HarnessCoverageView } from './HarnessCoverageView';
 import { HarnessGuidesView } from './HarnessGuidesView';
-import { HarnessSensorsPlaceholder } from './HarnessSensorsPlaceholder';
+import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
 
 /**
- * **The Harness destination: three views, and one sentence that only says what it measured.**
+ * **The Harness destination: one spine, and two views that detail it.**
+ *
+ * The spine is the **coverage matrix** — this repository's own domains on the rows, and what tells,
+ * gates and watches each one on the columns. That is the view this destination is *for*, and it is
+ * one press away at `?view=coverage`; the view a person walks into is the reviewed layer ladder
+ * (owner, 2026-09-13), which also keeps the plain `/architecture/` address meaning exactly what
+ * every link written before this slice meant. `?view=sensors` — the view that named the coverage
+ * question and said it was not built — resolves to the matrix (`harness-view-state.ts`).
  *
  * ⚠️ **One chrome row, and the name shares it with the tabs.** Three measurements decided this
  * shape, in order:
@@ -41,37 +50,46 @@ import { HarnessSensorsPlaceholder } from './HarnessSensorsPlaceholder';
  * 3. So the tab set is **one instance, in the shell, above every panel**, and it shares its row
  *    with the `h1` — which is what the design-lead and design-responsive seats independently
  *    prescribed (`PAGE_HEADER_ROW`'s own grammar: the title's `y` never depends on what sits
- *    beside it). The row costs the canvas far less than a stacked header, and the blueprint gives
- *    back the eyebrow and description it no longer needs to repeat.
- *
- * Everything that is the guides view's own data — the counted sentence and its parts — opens that
- * view's scrolling column rather than sitting in the fixed row: it is the view's content, and a
- * `shrink-0` band holding it is height the canvas cannot spare (design-responsive).
- *
- * The route is still `/architecture`. Only the label and what stands beside the blueprint changed,
- * so every existing link, bookmark and `?focus=` deep link lands exactly where it always did; the
- * blueprint is the default view for the same reason.
+ *    beside it).
  *
  * **The sentence is the screen's thesis and its main risk.** Two numbers are computed from files —
  * guide documents found, checks declared — and both print their working: the check count shows its
  * three parts, and a caption states the counting rule, because a bare number invites the reader to
- * hear "N things are protecting you" when what was measured is "N things are declared". The third
- * clause of the sketched sentence, "N domains nobody guards", is **not** in the sentence. Leaving a
- * deferral inside a sentence whose other slots are numbers asserts that unguarded domains exist and
- * are merely uncounted, which no static read of a repository can claim. It sits on its own line, as
- * a question, and the sensors view it points at says plainly that it is not built (Evidence seat,
- * 2026-09-13).
+ * hear "N things are protecting you" when what was measured is "N things are declared".
+ *
+ * The third clause the first sketch wanted — "N domains nobody guards" — used to sit below the
+ * sentence as a deferral, because asserting it needed a measurement that did not exist. It exists
+ * now and it is not that sentence: the matrix says **no check names N of the areas**, which is what
+ * the files support, while the row above every area names the lanes that run over all of them. The
+ * stronger claim, that nothing watches them, would still be unreadable from a repository.
  */
 
-const EMPTY_DOCS: Array<{ slug: string; frontmatter: Record<string, unknown> }> = [];
+const EMPTY_DOCS: Array<{
+  slug: string;
+  title: string;
+  description?: string;
+  excerpt: string;
+  frontmatter: Record<string, unknown>;
+}> = [];
 
 function HarnessPageInner() {
   const t = useTranslations('harness');
   const locale = useLocale();
   const searchParams = useSearchParams();
-  const [view, setViewState] = useState<HarnessView>(() =>
-    parseHarnessView(searchParams.get('view')),
-  );
+  /*
+   * ⚠️ **The address is read on every render, not captured once.** `useSearchParams()` returns an
+   * empty set during the prerender pass of a static export and fills in after hydration, so a
+   * `useState` initializer keeps the empty one — the view the URL named was simply lost. The old
+   * default hid this: the empty read and `?view=structure` happened to agree. The moment the
+   * default moved, `/ko/architecture/?view=structure` started opening the matrix, and the a11y
+   * sweep caught it by pressing a trigger that only the ladder has (measured 2026-09-13).
+   *
+   * A press still wins over the address until the next history move, because `setView` rewrites the
+   * URL with `replaceState`, which `useSearchParams` does not observe.
+   */
+  const [viewOverride, setViewOverride] = useState<HarnessView | null>(null);
+  const addressView = parseHarnessView(searchParams.get('view'));
+  const view = viewOverride ?? addressView;
   const [reloadNonce, setReloadNonce] = useState(0);
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
@@ -80,6 +98,12 @@ function HarnessPageInner() {
     () => (mode === 'static' ? staticManifest.docs : (localVault.manifest?.docs ?? EMPTY_DOCS)),
     [localVault.manifest, mode, staticManifest.docs],
   );
+  /*
+   * The matrix's rows. Derived here rather than inside the view so the scan can be told which
+   * implementation paths exist before it resolves a scope against the disk — the probe is the only
+   * part of the read that costs a round trip per candidate, and it is pointless without them.
+   */
+  const coverage = useMemo(() => deriveCoverageAreas(docs, locale), [docs, locale]);
   const projectSlugs = useMemo(
     () =>
       docs
@@ -90,7 +114,7 @@ function HarnessPageInner() {
   );
 
   const setView = useCallback((next: HarnessView) => {
-    setViewState(next);
+    setViewOverride(next);
     /*
      * `history.replaceState`, not a router push: switching view inside one destination is not a new
      * place a person navigated to, and pushing would make Back walk the segmented control instead of
@@ -102,7 +126,7 @@ function HarnessPageInner() {
     window.history.replaceState(
       window.history.state,
       '',
-      buildHarnessViewHref(next, url.pathname) + url.hash,
+      buildHarnessViewHref(next, url.pathname, url.search) + url.hash,
     );
   }, []);
 
@@ -110,7 +134,8 @@ function HarnessPageInner() {
     /* Back and forward must move the view too; the address and the screen disagreeing is exactly
        what putting the view in the URL was meant to prevent. */
     const onPopState = () => {
-      setViewState(parseHarnessView(new URL(window.location.href).searchParams.get('view')));
+      const params = new URL(window.location.href).searchParams;
+      setViewOverride(parseHarnessView(params.get('view')));
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -119,7 +144,8 @@ function HarnessPageInner() {
   const reportState = useHarnessReport(
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     projectSlugs,
-    view === 'guides',
+    view !== 'structure',
+    coverage.capabilityPaths,
     reloadNonce,
   );
   const report = reportState.status === 'ready' ? reportState.report : null;
@@ -142,7 +168,15 @@ function HarnessPageInner() {
 
   const sentence = report ? (
     <div className="mb-4" data-testid="harness-sentence">
-      <div className="flex max-w-prose flex-wrap items-center gap-x-1 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+      {/*
+        ⚠️ **Demoted, so the finding can win.** This sentence and the coverage headline shared one
+        token — `text-title` · emphasis · primary — 58px apart, and measured as ink-by-contrast the
+        census was 2.5× the finding's mass: a reader met "N checks in place" before "no check names
+        N domains" and read the reassuring one first. It is context, not the thesis, so it takes the
+        subtitle step and leaves exactly one `text-title` line on the screen (design-lead,
+        2026-09-13).
+      */}
+      <div className="flex max-w-prose flex-wrap items-center gap-x-1 break-keep text-body-lg text-[color:var(--color-text-secondary)]">
         <span className="tabular-nums">
           {t('sentence', {
             documents: report.guideDocumentCount,
@@ -157,13 +191,6 @@ function HarnessPageInner() {
           gitHooks: report.checks.gitHooks,
           scripts: report.checks.scripts.length,
         })}
-      </p>
-      {/* Deliberately its own line and its own grammar — see this file's header. */}
-      <p
-        className="mt-1 max-w-prose text-body text-[color:var(--color-text-quaternary)]"
-        data-testid="harness-sentence-deferred"
-      >
-        {t('sentenceDeferred')}
       </p>
     </div>
   ) : null;
@@ -191,29 +218,56 @@ function HarnessPageInner() {
           harnessPanelLabelledBy="harness-tab-structure"
         />
       ) : (
+        /*
+          ⚠️ **The panel is the `main` landmark, and it has to be.** The blueprint branch gets one
+          from `ArchitectureWorkbench`; this branch did not, so the moment the default view stopped
+          being the blueprint the route rendered with no `main` at all — the skip link pointed at
+          `#main` and landed nowhere, and every shared sweep that waits for the landmark
+          (`waitForDocumentPaint`, the scroll-end gate, the a11y ratchet) timed out on a screen that
+          looked perfectly fine. `role="tabpanel"` overrides the implicit landmark role, so the two
+          cannot be the same element: the landmark is outside, the tabpanel inside it.
+        */
+        <main
+          id="main"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        >
         <div
           role="tabpanel"
           id={`harness-tabpanel-${view}`}
           aria-labelledby={`harness-tab-${view}`}
           tabIndex={-1}
-          className="min-h-0 flex-1 overflow-y-auto px-5 pb-[var(--topology-mobile-bottom-tab-reserve)] md:px-10 lg:pb-[var(--page-bottom-breath)]"
+          /* The tab-bar reserve alone left 5px of clearance with the provenance disclosure closed
+             and −1px with it open. Reserve plus breath is the calc `globals.css` already uses for
+             the download band below `lg` (design-responsive, 2026-09-13). */
+          className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] md:px-10 lg:pb-[var(--page-bottom-breath)]"
         >
           <div className="mx-auto w-full max-w-[var(--page-max)]">
             <p className="mb-4 max-w-prose text-body-lg text-[color:var(--color-text-tertiary)]">
               {t('explainer')}
             </p>
-            {view === 'guides' ? sentence : null}
-            {view === 'sensors' ? (
-              <HarnessSensorsPlaceholder />
-            ) : reportState.status === 'ready' ? (
-              <>
-                <HarnessGuidesView report={reportState.report} locale={locale} />
-                <p className="mt-6 font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                  {t('sourceRoot', { path: reportState.sourceRoot })}
-                </p>
-              </>
+            {sentence}
+            {reportState.status === 'ready' ? (
+              <div className="architecture-result-arrive">
+                {view === 'coverage' ? (
+                  <HarnessCoverageView
+                    report={reportState.report}
+                    areas={coverage.areas}
+                    pathlessCapabilities={coverage.pathlessCapabilities}
+                    sourceRoot={reportState.sourceRoot}
+                  />
+                ) : (
+                  <>
+                    <HarnessGuidesView report={reportState.report} locale={locale} />
+                    {/* The coverage view prints the read path inside its own closing line; the
+                        guides view has no such line, so it keeps this one. */}
+                    <p className="mt-6 font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                      {t('sourceRoot', { path: reportState.sourceRoot })}
+                    </p>
+                  </>
+                )}
+              </div>
             ) : reportState.status === 'loading' ? (
-              <p className="text-body text-[color:var(--color-text-tertiary)]">{t('loading')}</p>
+              <HarnessScanProgressPanel progress={reportState.progress} />
             ) : reportState.status === 'no-source' ? (
               <EmptyState title={t('noSource')} description={t('noSourceBody')} />
             ) : reportState.status === 'failed' ? (
@@ -234,6 +288,7 @@ function HarnessPageInner() {
             )}
           </div>
         </div>
+        </main>
       )}
     </div>
   );

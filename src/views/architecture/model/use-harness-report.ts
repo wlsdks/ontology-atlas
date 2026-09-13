@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
-import { scanHarness, type HarnessReport, type HarnessScanPort } from '@/entities/agent-files';
+import {
+  scanHarness,
+  type HarnessReport,
+  type HarnessScanPort,
+  type HarnessScanProgress,
+} from '@/entities/agent-files';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
 import {
   getTauriVaultRootPath,
@@ -29,7 +34,7 @@ import {
 export type HarnessReportState =
   | { status: 'unsupported' }
   | { status: 'no-source' }
-  | { status: 'loading'; sourceRoot: string }
+  | { status: 'loading'; sourceRoot: string; progress: HarnessScanProgress | null }
   | { status: 'ready'; sourceRoot: string; report: HarnessReport }
   | { status: 'failed'; sourceRoot: string; message: string };
 
@@ -81,11 +86,17 @@ export function useHarnessReport(
   handle: FileSystemDirectoryHandle | null,
   projectSlugs: readonly string[],
   enabled: boolean,
+  /**
+   * Implementation paths the ontology records. The scan probes a declared scope against the disk
+   * only when it reaches one of these, so an empty list means the coverage pass costs nothing.
+   */
+  capabilityPaths: readonly string[],
   /** Bumped by the failed state's retry, so a transient bridge error is not a dead end. */
   reloadNonce = 0,
 ): HarnessReportState {
   const [state, setState] = useState<HarnessReportState>({ status: 'unsupported' });
   const slugKey = projectSlugs.join('\0');
+  const capabilityKey = capabilityPaths.join('\0');
   /*
    * The gate is computed in render, not written from the effect. When it closes the return value is
    * demoted rather than the state being cleared — the same shape `useAgentFilesModel` uses, and the
@@ -103,9 +114,31 @@ export function useHarnessReport(
         setState({ status: 'no-source' });
         return;
       }
-      setState({ status: 'loading', sourceRoot });
+      setState({ status: 'loading', sourceRoot, progress: null });
       try {
-        const report = await scanHarness(bridgePort(sourceRoot));
+        /*
+         * The ontology folder is excluded from the document census when it lives inside the
+         * checkout, as Atlas's own does: those files are the graph an agent reads over MCP, not
+         * documentation somebody forgot to link, and counting them would put hundreds of nodes in
+         * the "nothing names this" row and drown the documents that belong there.
+         */
+        const vaultRoot = getTauriVaultRootPath(handle);
+        const excludedFolders =
+          vaultRoot && vaultRoot.startsWith(`${sourceRoot}/`)
+            ? [vaultRoot.slice(sourceRoot.length + 1)]
+            : [];
+        const report = await scanHarness(bridgePort(sourceRoot), {
+          capabilityPaths: capabilityKey ? capabilityKey.split('\0') : [],
+          excludedFolders,
+          /*
+           * Straight through to state. The scan awaits a bridge call between every report, so each
+           * one lands on its own task and React paints it — no throttling is needed, and adding one
+           * would make the screen claim a pass had lasted longer than it did.
+           */
+          onProgress: (progress) => {
+            if (!cancelled) setState({ status: 'loading', sourceRoot, progress });
+          },
+        });
         if (!cancelled) setState({ status: 'ready', sourceRoot, report });
       } catch (error) {
         if (!cancelled) {
@@ -120,7 +153,7 @@ export function useHarnessReport(
     return () => {
       cancelled = true;
     };
-  }, [supported, handle, slugKey, reloadNonce]);
+  }, [supported, handle, slugKey, capabilityKey, reloadNonce]);
 
   return supported ? state : { status: 'unsupported' };
 }

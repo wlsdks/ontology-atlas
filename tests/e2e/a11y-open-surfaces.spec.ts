@@ -197,14 +197,15 @@ const OPENERS: readonly Opener[] = [
   },
   {
     name: "Architecture analysis history",
-    route: "/ko/architecture/",
+    // The blueprint is a view of the Harness destination, not its default (2026-09-13).
+    route: "/ko/architecture/?view=structure",
     trigger: "architecture-review-open",
     surface: '[data-testid="analysis-workbench"]',
     dogfood: true,
   },
   {
     name: "아키텍처 근거 흐름",
-    route: "/ko/architecture/",
+    route: "/ko/architecture/?view=structure",
     trigger: "architecture-evidence-rail",
     surface: '[data-testid="architecture-evidence-dock"]',
     dogfood: true,
@@ -236,7 +237,12 @@ async function openAndAudit(page: Page, o: Opener) {
       window.localStorage.setItem("demo:sample-source:v1", "dogfood");
     });
   }
-  await page.goto(`${o.route}?guides=off`, { waitUntil: "domcontentloaded" });
+  /* A route may already carry a query — `/ko/architecture/` needs `?view=structure` now that the
+     blueprint is a view rather than the destination's default — so the separator is chosen rather
+     than assumed. Appending a second `?` made `view=structure?guides=off`, which parses as no view
+     at all and opened the coverage matrix instead (measured 2026-09-13). */
+  const separator = o.route.includes("?") ? "&" : "?";
+  await page.goto(`${o.route}${separator}guides=off`, { waitUntil: "domcontentloaded" });
   // The map's screen is only settled once the physics simulation converges.
   await page.waitForTimeout(2500);
 

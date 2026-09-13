@@ -50,6 +50,8 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "agent-pending-dot": "끝없이 도는 맥박 — 감속의 뜻이 바로 이걸 멈추는 것이다. 상태는 옆의 글자가 말한다.",
   "architecture-observation-scan":
     "Infinite progress travel shown only during a real ACP turn. Reduced motion stops the line while the adjacent planning/editing/verifying/review-wait text preserves the current state.",
+  "harness-scan-sweep":
+    "Infinite travel shown only while a scan pass whose length is unknown is running. Reduced motion stops it and the bar rests left-anchored at a third of the track, claiming no scale; the stage name, its running count and the seven-stage route list all keep changing from state and carry the same fact.",
   "overlay-spring-surface":
     "소비처가 감속일 때 `.overlay-fade-only` 로 **클래스를 갈아 끼운다**(GlobalSearch 실측). CSS carve-out 이 아니라 다른 경로로 이미 덮여 있다.",
   // Gateway landing (2026-08-18 remake). An endless caret blink is the same family

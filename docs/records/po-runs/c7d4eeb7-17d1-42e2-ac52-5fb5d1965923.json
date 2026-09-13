@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-13",
+  "decision": "The Harness tab's spine is a coverage matrix of the repository's own domains, and it renders no score",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "judge",
+  "changes": [
+    "surface-inventory"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "affected"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "evidence-bounded",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending",
+    "date": "2026-09-13"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "c7d4eeb7-17d1-42e2-ac52-5fb5d1965923",
+  "recordedAt": "2026-09-13T05:42:27.898Z"
+}

@@ -129,6 +129,22 @@ const PAIRED_OBSERVATION_W = 240;
  */
 const PAIRED_CONTRACT_W_MAX = 560;
 /*
+ * ⚠️ **The gutter carries the observation lane's sentence, and at 72px it was cutting it**
+ * (measured 2026-09-13, built export at 1512). The traffic sentence is seated in the connector
+ * gap with `observationBoxW / 2 + PAIRED_GUTTER_W - GAP_BETWEEN_LANE_SENTENCES` of room, which at
+ * the fixed 72 is 168px, and `placeEdgeSentences` then spends 10 on the arc gap and 12 on side
+ * padding: **146px**. "Routes → Application shell: 1 import" estimates at 174px, so every
+ * observation sentence on the installed app ended in an ellipsis while 226px of card stood empty
+ * on each side of the drawing.
+ *
+ * 160 is derived the same way the contract cap is: the longest observation sentence in the
+ * dogfood profile, "Entities → Shared foundation: 0 imports", estimates at 179px, and a 160px
+ * gutter leaves 120 + 160 - 24 - 10 - 12 = **234px** — that sentence plus 55px of headroom for a
+ * profile whose role names run longer. Past that the sentence still ellipsizes, which is the
+ * behaviour that was always there.
+ */
+const PAIRED_GUTTER_W_MAX = 160;
+/*
  * ⚠️ **The connector gap carries a sentence now.** The adjacent rule's sentence sits beside the
  * arrow it describes (measured 2026-09-03: the left-lane sentence ended 160px from its arrow and
  * read as a floating caption). A 12px caption line with 4px of air on each side needs 20px; four
@@ -189,6 +205,12 @@ const NARROW_LADDER_EDGE = 16;
  * one continuous line and the stack reads as a solid rather than as separate bands.
  */
 const PLANE_STEP = 14;
+/**
+ * The `--leading-label` pair: `text-label` is 11px type on a 16px line, and the two labels in the
+ * chrome row above the ladder are both that step. Their spacing is this line box, never a gap
+ * chosen by eye — see `ladderPadY` below for what measuring by eye cost.
+ */
+const LANE_LABEL_LINE = 16;
 /** How much plane stays visible beyond the outermost face, so a role sits *on* its layer. */
 const PLANE_EDGE = 16;
 /*
@@ -378,6 +400,8 @@ export function ArchitectureSketch({
   contractTrackLabel,
   observationTrackLabel,
   deltaTrackLabel,
+  deltaColumnNote,
+  deltaColumnHint,
   observationMissingLabel,
   hiddenRightLabel,
   hiddenLeftLabel,
@@ -430,6 +454,10 @@ export function ArchitectureSketch({
   contractTrackLabel: string;
   observationTrackLabel: string;
   deltaTrackLabel: string;
+  /** What the delta column has to say when nothing has been compared yet. One line, per column. */
+  deltaColumnNote: string;
+  /** The limit of what a delta mark asserts. A marker's text, never body prose. */
+  deltaColumnHint: string;
   observationMissingLabel: string;
   /** "N more to the right" — the count is derived, so the screen never guesses. */
   hiddenRightLabel: (count: number) => string;
@@ -558,18 +586,40 @@ export function ArchitectureSketch({
   const usesTightLadder = usesPairedDown && ladderDensity === 'tight';
   const splitsEvidence = (axis === 'across' && axisWidth > 0) || usesPairedDown;
   /*
-   * The face grows only into ground neither lane wants: the contract lane's minimum and the
-   * observation lane's cap are taken out first, so a canvas that was already tight for the arcs
-   * draws exactly what it drew before.
+   * ⚠️ **Ground is reserved for arcs the profile declares, not for arcs it might have had.** The
+   * trail lane's 360px cap was subtracted unconditionally, so a profile with no skip on the
+   * observation side — every one the dogfood vault ships — held 360px empty beside a sentence lane
+   * that was cutting its sentences at 146px (measured 2026-09-13). The lead side already made this
+   * distinction with `contractNeedsLane`; the trailing side now makes the same one, from the same
+   * fact: a skip is an edge spanning more than one column, and an edge that does not exist needs no
+   * room. A profile that does declare one reserves exactly what it did before.
    */
+  const observationNeedsLane = graph.edges.some(
+    (edge) => edge.kind === 'traffic' && edge.columnSpan > 1,
+  );
   const pairedGroundSpare =
     usesPairedDown && boxWidth > 0
-      ? Math.max(0, boxWidth - PAIRED_FIXED_W - PAIRED_SIDE_ROOM_MIN - PAIRED_TRAIL_ROOM_MAX)
+      ? Math.max(
+          0,
+          boxWidth -
+            PAIRED_FIXED_W -
+            PAIRED_SIDE_ROOM_MIN -
+            (observationNeedsLane ? PAIRED_TRAIL_ROOM_MAX : PAIRED_SIDE_ROOM_MIN),
+        )
       : 0;
   const pairedContractW = Math.min(PAIRED_CONTRACT_W_MAX, PAIRED_CONTRACT_W + pairedGroundSpare);
+  /*
+   * The face takes its share first, then the gutter takes what the face could not use. Both are
+   * capped, so a canvas already tight for the arcs draws exactly what it drew before, and a wide
+   * one spends its ground on the two lanes that have a measured need rather than on empty margins.
+   */
+  const pairedGutterW = Math.min(
+    PAIRED_GUTTER_W_MAX,
+    PAIRED_GUTTER_W + Math.max(0, pairedGroundSpare - (pairedContractW - PAIRED_CONTRACT_W)),
+  );
   /** The ladder's own width at this canvas: padding, the grown face, the gutter, the observation. */
   const pairedFixedW =
-    PAD_X * 2 + pairedContractW + PAIRED_GUTTER_W + PAIRED_OBSERVATION_W;
+    PAD_X * 2 + pairedContractW + pairedGutterW + PAIRED_OBSERVATION_W;
   const contractBoxW = usesPairedDown ? pairedContractW : boxW;
   const observationBoxW = usesPairedDown ? PAIRED_OBSERVATION_W : boxW;
   const rowGap = usesPairedDown
@@ -583,7 +633,7 @@ export function ArchitectureSketch({
         : hasLedger
           ? ROW_GAP_LEDGER
           : ROW_GAP_PLAIN;
-  const padY = usesPairedDown
+  const ladderPadY = usesPairedDown
     ? usesTightLadder
       ? PAIRED_PAD_Y_TIGHT
       : PAIRED_PAD_Y
@@ -592,6 +642,26 @@ export function ArchitectureSketch({
       : hasLedger
         ? PAD_Y_LEDGER
         : PAD_Y;
+  /*
+   * ⚠️ **One owner for the chrome row's vertical rhythm** (owner, 2026-09-13, translated: *"the
+   * type is overlapping the box, isn't it? design should not have this kind of issue"*). The lane
+   * headings sat at `padY + 14`, the
+   * column note at `padY + 28`, and the first observation face was placed from `padY` by a third
+   * formula. Measured on the built export at 1512, in **both** locales: heading baseline bottom
+   * 201, note top 202 — a 1px gap — and note bottom 215 against a face top of 212, so the note
+   * **overlapped the dashed face by 3px**. Three spacing sources, none of them agreeing.
+   *
+   * The rhythm now comes from one place and from the ramp rather than from a nudge: the note sits
+   * one `--leading-label` line below the heading (11px type on its 16px pair, which is what the
+   * two labels are), and the ladder's own top padding grows by exactly that line when the note is
+   * drawn. Deriving it from the line box rather than from a measured gap is what keeps it correct
+   * in Korean, which runs taller than English at the same size — a gap tuned on one build is the
+   * defect, not the fix.
+   */
+  const laneHeadingY = ladderPadY + 14;
+  const laneNoteY = laneHeadingY + LANE_LABEL_LINE;
+  const laneBandRoom = usesPairedDown && !hasLedger ? LANE_LABEL_LINE : 0;
+  const padY = ladderPadY + laneBandRoom;
   const boxH = usesRoomyBoxes
     ? BOX_H_ROOMY
     : usesPairedDown
@@ -630,7 +700,7 @@ export function ArchitectureSketch({
   const observationOffset = axis === 'across' && splitsEvidence
     ? boxH + OBSERVATION_LANE_GAP
     : usesPairedDown
-      ? contractBoxW + PAIRED_GUTTER_W
+      ? contractBoxW + pairedGutterW
       : 0;
 
   /*
@@ -652,6 +722,17 @@ export function ArchitectureSketch({
   const planeRoom = usesLayerPlanes
     ? Math.ceil(PLANE_EDGE + planeDrift + planeLean)
     : 0;
+  /**
+   * What the planes need on the **trailing** side, which since 2026-09-13 is no longer what they
+   * need on the leading side.
+   *
+   * The stagger runs left: every plane now ends on one line and only its left edge steps back by
+   * rank. So the trailing side owes the common right edge its `PLANE_EDGE` and the top face's
+   * lean, and nothing for the drift — reserving the full `planeRoom` there held 84px for a
+   * staircase that is no longer drawn, and pushed the whole ladder 40px past its own canvas once
+   * the gutter took its room (`ArchitectureSketch.test.tsx`, the 1200px paired ladder).
+   */
+  const planeTrailRoom = usesLayerPlanes ? Math.ceil(PLANE_EDGE + planeLean) : 0;
   const planeHeadRoom = usesLayerPlanes ? PLANE_HEAD_ROOM : 0;
 
   /*
@@ -721,7 +802,7 @@ export function ArchitectureSketch({
    * Each lane keeps its floor, so the arcs never lose room they were using.
    */
   const pairedCentredLane = usesPairedDown && boxWidth > 0
-    ? Math.max(0, boxWidth - 2 * PAD_X - pairedContractW - PAIRED_GUTTER_W - PAIRED_OBSERVATION_W) / 2
+    ? Math.max(0, boxWidth - 2 * PAD_X - pairedContractW - pairedGutterW - PAIRED_OBSERVATION_W) / 2
     : 0;
   const pairedLeadRoom = Math.max(
     planeRoom,
@@ -731,7 +812,7 @@ export function ArchitectureSketch({
       : PAIRED_SIDE_ROOM_MIN,
   );
   const pairedTrailRoom = Math.max(
-    planeRoom,
+    planeTrailRoom,
     PAIRED_SIDE_ROOM_MIN,
     Math.min(Math.max(PAIRED_TRAIL_ROOM_MAX, pairedCentredLane), pairedSlack - pairedLeadRoom),
   );
@@ -806,7 +887,7 @@ export function ArchitectureSketch({
         (at) =>
           at.x +
           (usesPairedDown
-            ? contractBoxW + PAIRED_GUTTER_W + observationBoxW
+            ? contractBoxW + pairedGutterW + observationBoxW
             : contractBoxW),
       ),
     }),
@@ -817,6 +898,7 @@ export function ArchitectureSketch({
       observationBoxH,
       observationBoxW,
       observedPlaced,
+      pairedGutterW,
       placed,
       splitsEvidence,
       usesPairedDown,
@@ -928,7 +1010,7 @@ export function ArchitectureSketch({
     const right =
       (at.x +
         (usesPairedDown
-          ? contractBoxW + PAIRED_GUTTER_W + observationBoxW
+          ? contractBoxW + pairedGutterW + observationBoxW
           : contractBoxW)) *
         scale +
       ROOM;
@@ -949,7 +1031,7 @@ export function ArchitectureSketch({
       element.scrollLeft += dx;
       element.scrollTop += dy;
     }
-  }, [boxH, boxWidth, contractBoxW, observationBoxW, placed, selected, usesPairedDown]);
+  }, [boxH, boxWidth, contractBoxW, observationBoxW, pairedGutterW, placed, selected, usesPairedDown]);
 
   const attachScroller = useCallback(
     (element: HTMLDivElement | null) => {
@@ -1113,8 +1195,8 @@ export function ArchitectureSketch({
         connectorRoom: usesNarrowLadder
           ? contractBoxW / 2 + NARROW_LADDER_EDGE + PAD_X
           : lane === placed
-            ? contractBoxW / 2 + PAIRED_GUTTER_W + observationBoxW / 2 - GAP_BETWEEN_LANE_SENTENCES
-            : observationBoxW / 2 + PAIRED_GUTTER_W - GAP_BETWEEN_LANE_SENTENCES,
+            ? contractBoxW / 2 + pairedGutterW + observationBoxW / 2 - GAP_BETWEEN_LANE_SENTENCES
+            : observationBoxW / 2 + pairedGutterW - GAP_BETWEEN_LANE_SENTENCES,
         sentenceOf: edgeSentence,
         focus,
       });
@@ -1153,6 +1235,7 @@ export function ArchitectureSketch({
     observationBoxH,
     observationBoxW,
     observedPlaced,
+    pairedGutterW,
     placed,
     rowGap,
     skipLane,
@@ -1190,7 +1273,9 @@ export function ArchitectureSketch({
   const alongExtent =
     axis === 'across'
       ? PAD_X * 2 + ranks * boxW + (ranks - 1) * colGap
-      : padY * 2 + ranks * boxH + (ranks - 1) * rowGap +
+      /* `padY + ladderPadY`, not `padY * 2`: the chrome row's extra line belongs above the first
+         face and nowhere else, and doubling it would buy 16px of ground under the last one. */
+      : padY + ladderPadY + ranks * boxH + (ranks - 1) * rowGap +
         (usesPairedDown ? PAIRED_HEADER_H : 0) +
         /* The head room the top plane's lit edge needs, and the ledge the bottom plane keeps
            under the last role. Zero on every layout that draws no planes. */
@@ -1201,7 +1286,7 @@ export function ArchitectureSketch({
       : PAD_X * 2 +
         lanes * contractBoxW +
         (lanes - 1) * colGap +
-        (usesPairedDown ? PAIRED_GUTTER_W + observationBoxW : 0) +
+        (usesPairedDown ? pairedGutterW + observationBoxW : 0) +
         (usesPairedDown ? 0 : skipRoom) +
         layoutLeadRoom +
         layoutTrailRoom;
@@ -1430,7 +1515,7 @@ export function ArchitectureSketch({
           >
             <text
               x={PAD_X + layoutLeadRoom + contractBoxW / 2}
-              y={padY + 14}
+              y={laneHeadingY}
               textAnchor="middle"
               className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
             >
@@ -1442,8 +1527,8 @@ export function ArchitectureSketch({
                 label on a screen whose winner is the climbing arc (design council,
                 2026-09-08). State colour belongs to the markers, which carry it. */}
             <text
-              x={PAD_X + layoutLeadRoom + contractBoxW + PAIRED_GUTTER_W / 2}
-              y={padY + 14}
+              x={PAD_X + layoutLeadRoom + contractBoxW + pairedGutterW / 2}
+              y={laneHeadingY}
               textAnchor="middle"
               className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
             >
@@ -1454,10 +1539,10 @@ export function ArchitectureSketch({
                 PAD_X +
                 layoutLeadRoom +
                 contractBoxW +
-                PAIRED_GUTTER_W +
+                pairedGutterW +
                 observationBoxW / 2
               }
-              y={padY + 14}
+              y={laneHeadingY}
               textAnchor="middle"
               className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
             >
@@ -1478,15 +1563,35 @@ export function ArchitectureSketch({
                   PAD_X +
                   layoutLeadRoom +
                   contractBoxW +
-                  PAIRED_GUTTER_W +
+                  pairedGutterW +
                   observationBoxW / 2
                 }
-                y={padY + 28}
+                y={laneNoteY}
                 textAnchor="middle"
                 data-testid="architecture-observation-column-note"
                 className="fill-[color:var(--color-text-quaternary)] text-label"
               >
                 {observationMissingLabel}
+              </text>
+            ) : null}
+            {/*
+              The delta column's own one-per-column line. Until this slice the column was a heading
+              over seven identical tick marks and nothing else: a reader met the loudest pass mark a
+              screen has with no sentence saying what it was about. The fact is the column's, not
+              each role's — every mark is the same — so it goes in the same slot the observation
+              note occupies, and the limit of what a mark asserts rides a marker rather than a
+              paragraph, the way the rest of this surface now carries its caveats.
+            */}
+            {!hasLedger ? (
+              <text
+                x={PAD_X + layoutLeadRoom + contractBoxW + pairedGutterW / 2}
+                y={laneNoteY}
+                textAnchor="middle"
+                data-testid="architecture-delta-column-note"
+                className="fill-[color:var(--color-text-quaternary)] text-label"
+              >
+                <title>{deltaColumnHint}</title>
+                {deltaColumnNote}
               </text>
             ) : null}
           </g>
@@ -1520,14 +1625,32 @@ export function ArchitectureSketch({
               if (!at) return null;
               const depth =
                 ranks === 1 ? 1 : (ranks - 1 - box.column) / (ranks - 1);
-              const x = PAD_X + layoutLeadRoom - planeRoom + (ranks - 1 - box.column) * PLANE_STEP;
+              /*
+                ⚠️ **The stagger is the depth; the ragged right edge was not.** Every plane was the
+                same fixed-width parallelogram translated left by one `PLANE_STEP` per rank, so both
+                of its vertical edges stepped together: seven left edges across 84px **and seven
+                right edges across the same 84px** (measured 2026-09-13, built export at 1512:
+                lefts 324/310/296/282/268/254/240, rights 1336/1322/1308/1294/1280/1266/1252). A
+                staircase on the side the stack recedes from reads as depth; the same staircase on
+                the side it does not reads as a drawing that failed to line up, which is what the
+                owner measured on the installed app.
+
+                So the stagger is absorbed into the width instead of translating the shape: the
+                left edge still steps one `PLANE_STEP` per rank and every plane now **ends on one
+                line**. Depth keeps its three carriers — the stagger, the lean of the top face, and
+                the rank numeral — and loses only the raggedness (2026-09-08 council decision
+                preserved; `ArchitectureSketch.test.tsx`, "every layer plane ends on one line").
+              */
+              const stagger = (ranks - 1 - box.column) * PLANE_STEP;
+              const x = PAD_X + layoutLeadRoom - planeRoom + stagger;
               const planeW =
                 contractBoxW +
-                PAIRED_GUTTER_W +
+                pairedGutterW +
                 observationBoxW +
                 planeRoom * 2 -
                 planeDrift -
-                planeLean;
+                planeLean -
+                stagger;
               const top = at.y - PLANE_INSET_Y;
               const bottom = at.y + boxH + PLANE_INSET_Y;
               return (
@@ -1896,7 +2019,7 @@ export function ArchitectureSketch({
                 y={at.y}
                 width={
                   usesPairedDown
-                    ? contractBoxW + PAIRED_GUTTER_W + observationBoxW
+                    ? contractBoxW + pairedGutterW + observationBoxW
                     : contractBoxW
                 }
                 height={
@@ -2086,7 +2209,7 @@ export function ArchitectureSketch({
                   />
                   {usesPairedDown ? (
                     <text
-                      x={at.x + contractBoxW + PAIRED_GUTTER_W / 2}
+                      x={at.x + contractBoxW + pairedGutterW / 2}
                       y={at.y + boxH / 2 + 4}
                       textAnchor="middle"
                       className={cn(
