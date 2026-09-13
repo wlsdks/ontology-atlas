@@ -540,7 +540,7 @@ fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
         .filter(|part| !part.is_empty());
     let primary = roots.next().unwrap_or(root_path);
     let extra: Vec<&str> = roots.collect();
-    let recent_literals = std::iter::once(primary)
+    let recent_rows = std::iter::once(primary)
         .chain(extra.iter().copied())
         .map(|path| {
             let name = Path::new(path)
@@ -592,7 +592,7 @@ fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
     // The recent list decides the launch path, so it is planted too; see the note on this
     // function. Counts are deliberately absent, so rows say "not counted yet" rather than
     // claiming numbers the harness never read from disk.
-    transaction.objectStore("kv").put([{recent_literals}], "docs-vault:fs-handle:recent");
+    transaction.objectStore("kv").put([{recent_rows}], "docs-vault:fs-handle:recent");
     transaction.oncomplete = () => {{
       db.close();
       window.localStorage.setItem("ontology-atlas:verify-fixture-vault", rootPath);
