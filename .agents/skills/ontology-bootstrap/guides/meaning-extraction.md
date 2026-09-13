@@ -127,6 +127,19 @@ replays that range, pass `expectedSha256` so the analyzer re-reads the same file
 before review. `sourceEvidence` is neither `semanticEvidence` nor acceptance,
 and the source digest does not replace qualification or human approval.
 
+Treat proposal construction as a stateless replay, not a continuation of an
+earlier source read. Each `sourceReads` selector has `maxLines <= 200`; count
+rejected calls when the trial's frozen allowance counts attempts.
+The proposal call and every repair call must replay
+the exact successful source ranges they cite with their `expectedSha256`
+hashes. Every competency answer whose status is `partial` or `visible-gap`
+must also carry an explicit nonblank `gap`; gap prose elsewhere is not that
+typed field. In a measured 24-total/5-source-call run allowing one repair, reserve two source calls:
+one for the initial proposal and one for a repair, instead of spending all five
+on exploration. If the remaining read allowance cannot support that replay, keep
+fewer claims with complete evidence and explicit gaps. Do not widen the source
+scope, omit citations, or treat an absent witness as acceptable to fill slots.
+
 Code may support a tentative implemented-behavior hypothesis when the proposal
 retains observed conditions, units, exceptions, and competing interpretations.
 It does not establish owner intent, domain authority, full impact, runtime
