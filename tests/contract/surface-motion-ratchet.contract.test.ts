@@ -240,8 +240,13 @@ const BASELINE_HARD_CUTS = 0;
  * 42 → 43 (2026-09-13): the Harness tab's scan panel. It used to render for the whole read; it now
  * appears only once the read has passed a one-second threshold, so a 0.6s read shows no wait screen
  * at all and a five-thousand-document one still gets its stages. That made it a conditionally
- * appearing surface for the first time, and it is born as `Surface` with the `overlay` grammar, so
- * hard cuts stay at zero. It needs the desktop bridge — almost the whole harness lives in dot
+ * appearing surface for the first time, and it is born as `Surface` with the `overlay` grammar. Its
+ * **entrance** is real and measured (180ms of opacity, `map-overlay-in`); its **exit** is
+ * unreachable from that call site, because the status ternary around it unmounts the branch in the
+ * commit the read finishes. The census classifies the site as a swap — both alternates draw — so
+ * hard cuts stay at zero on the strength of the entrance, and the sentence says so rather than
+ * implying a crossfade nobody can observe (design-motion, 2026-09-13). It needs the desktop bridge
+ * — almost the whole harness lives in dot
  * directories a browser's folder permission cannot see — so the static sweep cannot open it and it
  * is not an `OPENERS` entry. `HarnessPage.test.tsx` owns its open path: nothing at 600ms, the panel
  * at 1000ms, which is also the gate on the threshold itself.

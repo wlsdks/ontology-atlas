@@ -272,6 +272,38 @@ describe('the segmented control', () => {
     expect(screen.getByTestId('harness-scan-progress')).toBeInTheDocument();
   });
 
+  it('swaps the panel for the result in one commit when a read lands just past the threshold', () => {
+    /*
+     * The accepted residue of a threshold with no minimum display: a read finishing at ~1.05s shows
+     * a panel that never completes its 180ms entrance and is then removed. That trade is deliberate
+     * — holding the panel after the answer exists would delay the answer to display an animation —
+     * and it is written down here so a future reader cannot mistake the flash for a regression, or
+     * a regression for the flash (design-interaction, 2026-09-13).
+     */
+    vi.useFakeTimers();
+    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+    state.report = {
+      status: 'loading',
+      sourceRoot: '/repo',
+      progress: { stage: 'documents', done: 0, total: null },
+    };
+    const view = mount();
+    waitPastProgressThreshold();
+    expect(screen.getByTestId('harness-scan-progress')).toBeInTheDocument();
+
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+    act(() => {
+      view.rerender(
+        <NextIntlClientProvider locale="ko" messages={koMessages}>
+          <HarnessPage />
+        </NextIntlClientProvider>,
+      );
+    });
+    /* One commit: the wait is gone and the answer is there. No frame shows both. */
+    expect(screen.queryByTestId('harness-scan-progress')).toBeNull();
+    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
+  });
+
   it('never invents a denominator for a pass whose length it cannot know', () => {
     window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
     state.report = {

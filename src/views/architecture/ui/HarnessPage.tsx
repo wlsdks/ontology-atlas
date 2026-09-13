@@ -213,7 +213,7 @@ function HarnessPageInner() {
   );
 
   const sentence = report ? (
-    <div data-testid="harness-sentence">
+    <div data-testid="harness-sentence" className="architecture-result-arrive">
       {/*
         ⚠️ **Demoted, so the finding can win.** This sentence and the coverage headline shared one
         token — `text-title` · emphasis · primary — 58px apart, and measured as ink-by-contrast the
@@ -229,7 +229,11 @@ function HarnessPageInner() {
             checks: report.checks.total,
           })}
         </span>
-        <InfoHint label={t('checksBreakdownLabel')}>{t('checksHint')}</InfoHint>
+        {/* `left`: this hint sits at the start of the lead paragraph, so a right-anchored panel
+            ran 84.9% off the left edge at 390 (design-responsive, 2026-09-13). */}
+        <InfoHint align="left" label={t('checksBreakdownLabel')}>
+          {t('checksHint')}
+        </InfoHint>
       </div>
       <p className="mt-1 text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
         {t('checksBreakdown', {
@@ -304,7 +308,11 @@ function HarnessPageInner() {
           /* The tab-bar reserve alone left 5px of clearance with the provenance disclosure closed
              and −1px with it open. Reserve plus breath is the calc `globals.css` already uses for
              the download band below `lg` (design-responsive, 2026-09-13). */
-          className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] md:px-10 lg:pb-[var(--page-bottom-breath)]"
+          /* `pt-4`, because the header row now ends in a rule rather than in padding: without it the
+             explainer's first line sat at y 85.4 against a rail whose own y was 85.4 (measured
+             1512×901, 2026-09-13) — the cramping the owner reported, reintroduced by the fix for
+             it. */
+          className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] pt-4 md:px-10 lg:pb-[var(--page-bottom-breath)]"
         >
           <div className="mx-auto w-full max-w-[var(--page-max)]">
             {/*
@@ -350,11 +358,21 @@ function HarnessPageInner() {
                 that did not make anybody wait.
 
                 Born as a `Surface`, because a panel that appears one second into a read is a state
-                change and not a repaint — it says *this one is taking a while*, and a surface that
-                appears has to carry its own way in and out (`surface-motion-ratchet`). `overlay`
-                rather than `chrome`: it fills the content column, and `globals.css` records why a
-                large surface moves on nothing but brightness — one that travels reads as the screen
-                itself shaking.
+                change and not a repaint — it says *this one is taking a while* — so it gets a real
+                entrance: 180ms of opacity on `map-overlay-in`, measured.
+
+                ⚠️ **It gets no exit, and that is deliberate rather than an oversight.** The status
+                ternary around it unmounts the whole branch in the same commit the read finishes, so
+                `map-overlay-out` can never play from this call site; `Surface` is here for the
+                entrance and for the exit window this slot would need if it ever gained an
+                open→closed path of its own. Crossfading a 288px panel against a ~900px matrix in
+                one flow slot would buy a height bounce `useSwapHeight` would then have to wrap, for
+                a frame nobody is watching (design-motion, 2026-09-13).
+
+                `overlay` rather than `chrome`: the panel is 1368×≥288 at 1512, about 29% of the
+                viewport, and under `chrome` the `scale(0.98)` would move each vertical edge 13.7px
+                — `globals.css` records why a large surface moves on nothing but brightness, since
+                one that travels reads as the screen itself shaking.
               */
               <Surface
                 open={waitedPastThreshold}

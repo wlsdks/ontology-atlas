@@ -132,6 +132,24 @@ const COLUMN_EMPTY: Readonly<Record<CoverageColumn, string>> = {
   watched: 'coverageEmptyWatched',
 };
 
+/**
+ * Which edge each column card's hint panel hangs from. The cards are three-up at every width, so
+ * at 390 the first card's button sits 90px from the left edge and a right-anchored 288px panel ran
+ * 68.6% off screen (design-responsive, 2026-09-13). Written as a map in the idiom `DETAIL_ANCHOR`
+ * already uses in this file: the card's position in a three-track grid is a layout fact, not
+ * something to read back from the DOM.
+ *
+ * Sound because the button's x here does not depend on a translated string: the grid is 3-up at
+ * every width, and at 390 the 103px card's eyebrow wraps the 24px button onto its own line, so it
+ * sits at the card's content-left. The reach strip cannot use this map for exactly that reason —
+ * see `DocumentReachBlock`.
+ */
+const HINT_ANCHOR: Readonly<Record<CoverageColumn, 'left' | 'center' | 'right'>> = {
+  told: 'left',
+  gated: 'center',
+  watched: 'right',
+};
+
 /** The noun phrase the card's large numeral is counting — "domains no check names". */
 const COLUMN_GAP_NOUN: Readonly<Record<CoverageColumn, string>> = {
   told: 'coverageGapTold',
@@ -243,13 +261,31 @@ function CellMark({ count, t }: { count: number; t: TranslateFn }) {
           'h-5 w-5 shrink-0 rounded-micro border',
           empty
             ? 'border-[color:var(--color-amber-source-a90)]'
-            : 'border-[color:var(--color-indigo-a60)] bg-[color:var(--color-indigo-a60)]',
+            : /* A definite edge in the mark's own hue: the `a60` border composited over an `a60`
+                 fill left the filled square's only ≥3:1 surface a 1px ring at 3.26:1, against the
+                 empty square's 9.08:1. `--color-indigo-brand` takes that ring to 4.24:1 and leaves
+                 the state pair untouched at 4.11:1, because the dominant area of each mark does not
+                 change (design-infoviz, 2026-09-13). */
+              'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a60)]',
         )}
       />
       {empty ? (
-        <span className="hidden whitespace-nowrap text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-a90)] sm:inline">
-          {t('coverageNone')}
-        </span>
+        /*
+         * ⚠️ **The slot is never blank.** Below `sm` the word steps aside — measured, it overran
+         * the 39px cell by 11.5px in English and broke mid-word in Korean — but leaving the slot
+         * *empty* beside sibling cells that all carry a digit is the table convention for "no
+         * data", and the fact here is "data known, value zero". So the narrow width prints the
+         * zero, which cannot wrap, and `sm` and above keep the direct label
+         * (design-infoviz, 2026-09-13).
+         */
+        <>
+          <span className="whitespace-nowrap text-body font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-amber-source-a90)] sm:hidden">
+            {count}
+          </span>
+          <span className="hidden whitespace-nowrap text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-a90)] sm:inline">
+            {t('coverageNone')}
+          </span>
+        </>
       ) : (
         <span className="text-body tabular-nums text-[color:var(--color-text-primary)]">{count}</span>
       )}
@@ -332,11 +368,14 @@ const DETAIL_ANCHOR: Readonly<Record<CoverageColumn, string>> = {
 function CellDetail({
   area,
   column,
+  revealKey,
   t,
   onClose,
 }: {
   area: CoverageAreaRow;
   column: CoverageColumn;
+  /** Changes whenever something above this detail could have moved it off screen. */
+  revealKey: string;
   t: TranslateFn;
   onClose: () => void;
 }) {
@@ -346,12 +385,20 @@ function CellDetail({
    * ring and its rotated chevron, and the thing it opened was off screen (installed app, 1512×901,
    * 2026-09-13). `block: 'nearest'` scrolls only when it has to, so pressing a row already in view
    * does not move the page under the reader's pointer.
+   *
+   * ⚠️ **An effect keyed on `revealKey`, not a ref callback.** As a ref callback this ran once, at
+   * mount — and opening the always-loaded band inserts **142px** above the table (measured 1512×901,
+   * the header row moving from y 371 to y 513), which pushed an already-open detail down by that
+   * much with nothing scrolling it back (design-interaction, 2026-09-13).
    */
-  const revealDetail = (node: HTMLDivElement | null) =>
-    node?.scrollIntoView({ block: 'nearest' });
+  const detailRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    detailRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [revealKey]);
   return (
     <div
-      ref={revealDetail}
+      ref={detailRef}
+      data-harness-detail-reveal={revealKey}
       data-testid="harness-coverage-detail"
       className={cn(
         'relative z-30 w-full rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)] shadow-[var(--shadow-elevation-2)]',
@@ -438,17 +485,42 @@ function CellDetail({
 }
 
 /**
+ * The three states one authored document can be in, in the order the strip prints them.
+ *
+ * One list, because the heading's hint defines the three terms and the strip labels them: if those
+ * two ever say different words the hint stops being a legend and becomes a second vocabulary.
+ * `HarnessCoverageView.test.tsx` asserts the definition list's terms are the strip's labels.
+ */
+const REACH_BUCKETS = [
+  { key: 'guides', label: 'reachGuides', body: 'reachGuidesBody' },
+  { key: 'named', label: 'reachNamed', body: 'reachNamedBody' },
+  { key: 'unnamed', label: 'reachUnnamed', body: 'reachUnnamedBody' },
+] as const;
+
+/**
  * **Three states one authored document can be in, and the one that is a silent failure.**
  *
  * A guide is read without being asked. A document a guide names by path is read when it is needed.
  * A document nothing names will not be opened, however carefully it was written — which is what a
  * team experiences as "the agent ignores our documentation" while every file on disk looks correct.
  *
- * ⚠️ **The three counts were good bones under a wall.** Each number carried a sentence explaining
- * its bucket at body size directly beneath it, so the most important figure on the block was also
- * the one followed by the most text on the block, three times over. The sentences are unchanged and
- * they now sit behind the eyebrow's hint, which is the move the provenance disclosure already made
- * for this screen's counting rules: the claim costs a reader nothing until they ask for it.
+ * ⚠️ **The three counts are the bones; the card around them was the overclaim.** They keep the
+ * ramp's display step, because they are this block's answer and a reader has to take them in at a
+ * glance — shrinking them to 11px would also print them smaller than the per-cell declaration
+ * counts in the table above. What they give up is the card. Measured at 1512×901 on 2026-09-13
+ * this strip filled 3 × 442.7 × 130 = 172,653px² of `--color-panel` against the column strip's
+ * 207,183px²: 83% of the screen's subject, in the same surface, the same border and the same
+ * numeral, for a different population — documents, not domains. Surface is the channel that says
+ * which of two readings a screen is about. Dropping `--card-pad` with it puts these labels back on
+ * the block's own left edge; the eyebrows sat at x 120 against their own `h2` at x 104.
+ *
+ * **One hint for three states, on the heading, because the three states are one definition.** Read
+ * unasked, reached when needed, never opened: each only means anything against the other two, and
+ * three per-tile hints made each button's x the sum of a translated label's advance widths. At 390
+ * the third tile's panel landed at x **−89.97** and the second cleared the window by under a pixel
+ * (`harness-tab.spec.ts`, 2026-09-13). The heading carries one control, its definition list names
+ * the strip's own three labels, and the gate measures the panel's clearance rather than trusting
+ * this comment.
  *
  * The folders behind the third count stay one press away, because some of those documents *should*
  * be unreferenced. A sample vault, an archive, a benchmark corpus and an agent brief addressed by
@@ -468,19 +540,48 @@ function DocumentReachBlock({
   return (
     <section data-testid="harness-reach" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-          {t('reachTitle')}
-        </h2>
+        {/* The heading and its hint are one group, so `justify-between` cannot send the button to
+            the far side of the row away from the words it belongs to. */}
+        <div className="flex min-w-0 items-center gap-1.5">
+          <h2 className="min-w-0 break-keep text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+            {t('reachTitle')}
+          </h2>
+          {/*
+            `center` is an anchor a measurement chose, not a preference: this button follows a
+            translated heading, so its distance from the window's left edge is a string width, and
+            centre is the only one of the three anchors that clears both edges at 390 in both
+            locales. `InfoHint`'s own doc-block states when a static anchor is sound at all.
+          */}
+          <InfoHint
+            align="center"
+            label={t('reachTitle')}
+            panelClassName="text-body text-[color:var(--color-text-secondary)]"
+          >
+            <dl className="flex flex-col gap-2 break-keep">
+              {REACH_BUCKETS.map((bucket) => (
+                <div key={bucket.key}>
+                  <dt className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                    {t(bucket.label)}
+                  </dt>
+                  <dd>{t(bucket.body)}</dd>
+                </div>
+              ))}
+            </dl>
+          </InfoHint>
+        </div>
         <p className="text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
           {t('reachTotal', { total: reach.total, excluded: reach.excluded.length })}
         </p>
       </div>
+      {/* `surface="bare"`: the census grammar with no card, because the screen's subject is the
+          strip above the matrix and two identical strips cannot both be it. The internal rhythm
+          stays `CensusTile`'s, so exactly one channel carries the demotion. */}
       <div className="grid gap-[var(--card-gap)] sm:grid-cols-3">
         <CensusTile
+          surface="bare"
           testId="harness-reach-tile"
           rowKey="guides"
           label={t('reachGuides')}
-          labelSuffix={<InfoHint label={t('reachGuides')}>{t('reachGuidesBody')}</InfoHint>}
         >
           <CensusBigNumber scale="section" value={reach.guides} testId="harness-reach-number" />
           {reach.mirroredGuides > 0 ? (
@@ -489,10 +590,10 @@ function DocumentReachBlock({
         </CensusTile>
 
         <CensusTile
+          surface="bare"
           testId="harness-reach-tile"
           rowKey="named"
           label={t('reachNamed')}
-          labelSuffix={<InfoHint label={t('reachNamed')}>{t('reachNamedBody')}</InfoHint>}
         >
           <CensusBigNumber scale="section" value={reach.named} testId="harness-reach-number" />
           {reach.hops > 1 ? (
@@ -501,13 +602,16 @@ function DocumentReachBlock({
         </CensusTile>
 
         <CensusTile
+          surface="bare"
           testId="harness-reach-tile"
           rowKey="unnamed"
           label={t('reachUnnamed')}
-          labelSuffix={<InfoHint label={t('reachUnnamed')}>{t('reachUnnamedBody')}</InfoHint>}
         >
-          {/* Amber, because this number's subject is an absence — the same one state amber
-              carries in every cell of the matrix above. */}
+          {/* Amber, because this number's subject is an absence — the same one state amber carries
+              in every cell of the matrix above. On canvas rather than on panel it reads at 9.08:1
+              instead of 8.64:1, and `--map-numeral-shadow` (#08080a) all but cancels against
+              `--color-canvas` (#08090a), so the engraved relief stays a property of the strip that
+              sits in a card. */}
           <CensusBigNumber
             scale="section"
             tone={reach.unnamed > 0 ? 'warning' : 'numeral'}
@@ -552,7 +656,16 @@ function DocumentReachBlock({
         </ul>
       ) : null}
       {reach.truncated ? (
-        <p className="text-caption text-[color:var(--color-amber-source-a90)]">
+        /*
+         * ⚠️ **Not amber.** Amber on this screen carries exactly one state — *nothing is here* —
+         * and a truncated walk is measurement incompleteness, not absence. Painting it amber
+         * committed, three hundred lines below, the error the column card's own comment forbids:
+         * making the one state amber carries mean two things, in the same visual field as the
+         * amber count beside it. `--color-text-secondary` reads at 13.64:1 over canvas, better
+         * than the amber it replaces, and the sentence already says "a floor" in words
+         * (design-infoviz, 2026-09-13).
+         */
+        <p className="text-caption text-[color:var(--color-text-secondary)]">
           {t('reachTruncated')}
         </p>
       ) : null}
@@ -597,14 +710,30 @@ export function HarnessCoverageView({
       return null;
     });
   }, []);
+  /*
+   * The band's dismissal copies the cell's, for the same reason: its close button lives in a
+   * different subtree from the toggle that opened it, so closing it dropped focus to `<body>` and
+   * the next Tab restarted at the top of the document (design-interaction, 2026-09-13).
+   */
+  const everywhereRefs = useRef(new Map<CoverageColumn, HTMLButtonElement>());
+  const closeEverywhere = useCallback(() => {
+    setOpenEverywhere((current) => {
+      if (current) everywhereRefs.current.get(current)?.focus();
+      return null;
+    });
+  }, []);
   useEffect(() => {
-    if (!openCell) return;
+    if (!openCell && !openEverywhere) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeCell();
+      if (event.key !== 'Escape') return;
+      /* Innermost first: the pointed surface, then the contextual band. Two opened things take two
+         presses, which is the honest mapping — the band is not a modal over the detail. */
+      if (openCell) closeCell();
+      else closeEverywhere();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [openCell, closeCell]);
+  }, [openCell, openEverywhere, closeCell, closeEverywhere]);
 
   if (matrix.areas.length === 0) {
     /*
@@ -653,7 +782,29 @@ export function HarnessCoverageView({
       */}
       <div
         data-testid="harness-coverage-columns"
-        className="grid gap-[var(--card-gap)] sm:grid-cols-3"
+        /*
+         * Three columns at **every** width, and in the table's order — but not on the table's
+         * tracks, and this comment used to claim otherwise. Measured at 1512×901 on 2026-09-13,
+         * each card's left edge stands 629.3 / 412.8 / 196.3px from the left edge of the column it
+         * names (cards at x 104 / 566.7 / 1029.4, cells at 733.3 / 979.5 / 1225.7). So the cards
+         * carry the *question and its total*, the `<th>` row 154px below carries the *position*,
+         * and the two repeat three strings on purpose: a card says "no check names 5 of 8 domains",
+         * a head says "this column is Gated".
+         *
+         * 3-up is decided by the matrix, not by the table's geometry. Stacked one-per-row at 390
+         * they pushed the matrix's first row to y 692 inside a 700px-tall scroller (measured
+         * 2026-09-13), so a phone reader met three cards and had no way to know a matrix existed
+         * below them; 3-up puts it at 428.5 (ko) / 382.5 (en) in an 844-tall window. The insights
+         * census strip already goes 2-up rather than 1-up for the same reason; this goes 3-up
+         * because three is the number of questions.
+         *
+         * Rejected, with its arithmetic, so it is not re-proposed: putting the cards on
+         * `lg:grid-cols-[46fr_18fr_18fr_18fr]` with `gap-[var(--card-gap)]`. The table has no
+         * gaps and the grid has three, so track 2 starts at 0.46W − 0.38 × 20px — a constant
+         * 7.6px miss at every width, 3.6px between eyebrow and `<th>` text. Near-alignment that
+         * claims alignment is the defect it was meant to fix.
+         */
+        className="grid grid-cols-3 gap-[var(--card-gap)]"
       >
         {COLUMNS.map((column) => {
           const everywhere = groupMirroredDeclarations(matrix.everywhere[column]);
@@ -665,7 +816,9 @@ export function HarnessCoverageView({
               rowKey={column}
               label={t(COLUMN_HEAD[column])}
               labelSuffix={
-                <InfoHint label={t(COLUMN_HEAD[column])}>{t(COLUMN_HINT[column])}</InfoHint>
+                <InfoHint align={HINT_ANCHOR[column]} label={t(COLUMN_HEAD[column])}>
+                  {t(COLUMN_HINT[column])}
+                </InfoHint>
               }
             >
               <div data-harness-column-gap={gaps}>
@@ -680,7 +833,7 @@ export function HarnessCoverageView({
                   testId="harness-coverage-column-number"
                 />
               </div>
-              <p className="text-label text-[color:var(--color-text-tertiary)]">
+              <p className="break-keep text-label text-[color:var(--color-text-tertiary)]">
                 {t(COLUMN_GAP_NOUN[column])}
               </p>
               {everywhere.length > 0 ? (
@@ -694,7 +847,13 @@ export function HarnessCoverageView({
                   type="button"
                   data-testid="harness-everywhere-toggle"
                   data-harness-everywhere={column}
+                  data-harness-everywhere-open={String(openEverywhere === column)}
                   aria-expanded={openEverywhere === column}
+                  aria-controls="harness-coverage-everywhere"
+                  ref={(node) => {
+                    if (node) everywhereRefs.current.set(column, node);
+                    else everywhereRefs.current.delete(column);
+                  }}
                   onClick={() =>
                     setOpenEverywhere((current) => (current === column ? null : column))
                   }
@@ -703,9 +862,31 @@ export function HarnessCoverageView({
                     size: 'sm',
                     tone: 'muted',
                     hoverInk: 'strong',
-                    className: 'self-start touch-hit-expand',
+                    active: openEverywhere === column,
+                    /* `max-w-full`, so the row inside it wraps rather than escaping the card at
+                       200% text zoom (measured 2026-09-13). */
+                    className: 'max-w-full self-start touch-hit-expand',
                   })}
                 >
+                  {/*
+                    ⚠️ **The open state has to ride geometry here, not ink.** For `shape: 'link'`
+                    `controlClass` offers exactly one state channel — text colour — and this
+                    button's only child is a `CensusSubStat` whose root span sets
+                    `--color-text-tertiary` explicitly. An explicit child colour beats an inherited
+                    one, so both the hover ink and the active ink landed on a button with no text of
+                    its own and painted nothing: all three toggles rendered identically whether the
+                    band was open or shut (design-interaction, 2026-09-13). The chevron leads rather
+                    than trails, so it reads as a fold marker and not as the decorative trailing
+                    arrow `forbidden.md` rules out.
+                  */}
+                  <ChevronRight
+                    size={ICON_SIZE.sm}
+                    aria-hidden
+                    className={cn(
+                      'shrink-0 text-[color:var(--color-text-quaternary)] transition-transform',
+                      openEverywhere === column && 'rotate-90',
+                    )}
+                  />
                   <CensusSubStat label={t('coverageEverywhereStat')} value={everywhere.length} />
                 </button>
               ) : null}
@@ -716,6 +897,7 @@ export function HarnessCoverageView({
 
       {openEverywhere ? (
         <section
+          id="harness-coverage-everywhere"
           data-testid="harness-coverage-everywhere"
           className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)]"
         >
@@ -726,7 +908,7 @@ export function HarnessCoverageView({
             </h2>
             <button
               type="button"
-              onClick={() => setOpenEverywhere(null)}
+              onClick={closeEverywhere}
               className={controlClass({
                 shape: 'link',
                 size: 'sm',
@@ -890,6 +1072,7 @@ export function HarnessCoverageView({
                       <CellDetail
                         area={area}
                         column={openColumn}
+                        revealKey={`${area.slug}:${openColumn}:${openEverywhere ?? ''}`}
                         t={t}
                         onClose={closeCell}
                       />

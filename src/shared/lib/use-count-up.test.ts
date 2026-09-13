@@ -74,6 +74,26 @@ describe("useCountUp — insights count-up (#3)", () => {
   });
 
   /**
+   * ⚠️ **A number with nothing to count renders itself, not a zero.**
+   *
+   * `easeOutCubic` crosses the first rounding boundary at p = 0.2063, so counting 0 → 1 over the
+   * 400ms default shows `0` for **82.5ms** — long enough to be read as the answer. The Harness
+   * coverage cards paint that numeral in the amber this product reserves for *nothing is here*, so
+   * the intro spent 82.5ms asserting "nothing" over a value that means the opposite, on the screen
+   * whose whole repair was deleting marks that said nothing (design-motion, 2026-09-13).
+   *
+   * The floor is 3, so the two cases below reading (37ms and 23.8ms) go with it. Without this
+   * assertion the floor could be set to 0 and every other test in this file would still pass.
+   */
+  it("a target too small to count renders its own value on the first frame", () => {
+    mockReducedMotion(false);
+    expect(renderHook(() => useCountUp(1)).result.current).toBe(1);
+    expect(renderHook(() => useCountUp(2)).result.current).toBe(2);
+    /* The floor itself still counts, so the gate is a floor and not a blanket exemption. */
+    expect(renderHook(() => useCountUp(3)).result.current).toBe(0);
+  });
+
+  /**
    * **A target changing mid-intro must land on the new target** (regression measured
    * 2026-08-12).
    *

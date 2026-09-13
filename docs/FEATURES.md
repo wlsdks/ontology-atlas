@@ -636,7 +636,10 @@ tool ships, and a number asserts a judgement files cannot support. A repository 
 no ontology gets a stated empty state rather than a blank grid, and still gets the half of the
 screen that needs no ontology.
 
-**What an agent can reach** — beside the matrix, every authored Markdown file falls into exactly one
+**What an agent can reach** — beneath the matrix, in the same census grammar with **no card**: the
+three counts keep the display step because they are this block's answer, and they give up the
+surface, because two identical strips cannot both be the screen's subject and the numeral cannot
+say which is (2026-09-13). Every authored Markdown file falls into exactly one
 of three states: a **guide** (read without being asked), a document **a guide names** by path
 (reached when needed), or a document **nothing names** (present, and the agent will not open it).
 Measured by citation and never by glob: a rule's `paths:` says when to load that rule, not which
