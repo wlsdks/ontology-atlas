@@ -313,3 +313,46 @@ describe('recordLocalFsHandleContents', () => {
     expect(await listRecentLocalFsHandles()).toEqual([]);
   });
 });
+
+describe('the recent list survives concurrent writers', () => {
+  /*
+   * **The launch rule is decided by how many folders this list holds**, so a dropped entry
+   * silently turns the chooser off and the app resumes a folder it should have asked about.
+   *
+   * A vault load fires `touchLocalFsHandle` and then, once the walk finishes,
+   * `recordLocalFsHandleContents`; both read this one key, modify it and write it back, and
+   * neither is awaited by its caller - awaiting them broke a rename and a map deeplink, once
+   * each, on 2026-09-13. So the store serialises the writes itself, and this is the case that
+   * says so.
+   */
+  it('keeps both folders when two writes are started without awaiting the first', async () => {
+    // Start both without awaiting, which is exactly how the vault-load path calls them.
+    const first = putLocalFsHandle({
+      id: 'a',
+      handle: fakeHandle('atlas'),
+      name: 'atlas',
+      createdAt: 1,
+      lastAccessedAt: 1,
+    });
+    const second = putLocalFsHandle({
+      id: 'b',
+      handle: fakeHandle('atlas-old'),
+      name: 'atlas-old',
+      createdAt: 2,
+      lastAccessedAt: 2,
+    });
+    await Promise.all([first, second]);
+
+    const recent = await listRecentLocalFsHandles();
+    expect(recent.map((r) => r.name).sort()).toEqual(['atlas', 'atlas-old']);
+    // And two is what arms the chooser, which is the whole reason this matters.
+    expect(recent).toHaveLength(2);
+  });
+
+  /*
+   * There is deliberately no second case for "a forget racing a vault load". One was
+   * written and removed: the in-memory `idb-kv` mock settles too synchronously to
+   * interleave, so it passed with the queue disabled and guarded nothing. The case above
+   * is the probe - it fails when `queueRecentListWrite` stops queueing.
+   */
+});

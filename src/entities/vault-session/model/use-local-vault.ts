@@ -1605,20 +1605,22 @@ export function useLocalVaultInternal() {
       }
       const storedHandle = record.handle;
       /*
-       * Awaited, not fired and forgotten. Both this and `recordLocalFsHandleContents` do a
-       * read-modify-write on the single recent-list key (`store.ts`, `RECENT_KEY`), so left
-       * concurrent they can interleave and drop an entry - and the launch rule is decided by
-       * how many entries that list holds, so a lost one silently un-arms the chooser
-       * (workbench seat, 2026-09-13).
+       * ⚠️ **Not awaited, and the reason is measured.** This and
+       * `recordLocalFsHandleContents` both read-modify-write the single recent-list key, and
+       * the launch rule is decided by how many entries that list holds - so a dropped entry
+       * silently turns the chooser off. Awaiting here was the first attempt at that, and it
+       * cost more than it bought: the extra await point pushed the vault's arrival past the
+       * map's consumption of a `?edit=` deeplink, so the relation contextual editor never
+       * opened at all and `tests/e2e/a11y-vault-backed.spec.ts` reported the state as
+       * **unmeasured** (CI shard chromium 1/3, 2026-09-13; bisected by reverting this one
+       * line, which took the spec from red to 44.9s green, matching main).
        *
-       * ⚠️ **Do not make the counts write symmetrical with this one.** Awaiting is safe *here*
-       * because this runs before `load` and no caller's own state migration is waiting on it.
-       * The counts write sits inside `load`, after the manifest is published, where an await
-       * holds open the promise a rename uses to know it may silence the missing-document
-       * verdict - see the note at that line. The two are ordered rather than concurrent
-       * precisely because this one finishes before `load` begins.
+       * The interleave is fixed where it belongs instead: `store.ts` runs every recent-list
+       * write through one queue, so no caller has to wait for a cache write to keep the list
+       * intact. Second time in one day that adding an await to this file broke code whose
+       * timing depended on it - the other being the rename verdict inside `load`.
        */
-      await touchLocalFsHandle();
+      void touchLocalFsHandle();
       const permission = await verifyRead(storedHandle, false);
       if (cancelled) return;
       if (permission === 'granted') {

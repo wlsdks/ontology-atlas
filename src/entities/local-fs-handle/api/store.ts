@@ -64,17 +64,52 @@ function toStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord {
   return record;
 }
 
+/**
+ * Every write to the recent list runs one at a time.
+ *
+ * ⚠️ **The list is read, modified and written back, and more than one caller does it.**
+ * A vault load fires `touchLocalFsHandle` and, once the walk finishes,
+ * `recordLocalFsHandleContents`; both land on this single key. Interleaved, the second
+ * read can start before the first write commits, and the folder the first one added is
+ * dropped. That is not a cosmetic loss: **the launch rule is decided by how many entries
+ * this list holds**, so losing one silently turns the chooser off and the app resumes a
+ * folder it should have asked about (workbench seat, 2026-09-13).
+ *
+ * The serialisation lives here rather than at the call sites on purpose. Awaiting these
+ * writes from the callers was tried and reverted twice in one day, because both call sites
+ * sit in paths whose timing other code depends on: awaiting inside `load` held open the
+ * promise a rename needs before it can silence the missing-document verdict, and awaiting
+ * in the cold restore pushed the vault past the map's consumption of a `?edit=` deeplink,
+ * so a contextual editor never opened at all (`tests/e2e/docs-rename-address.spec.ts` and
+ * `tests/e2e/a11y-vault-backed.spec.ts`). A queue owned by the store fixes the hazard
+ * without asking any caller to wait, which is what a cache write should cost.
+ */
+let recentListWrites: Promise<unknown> = Promise.resolve();
+
+function queueRecentListWrite<T>(operation: () => Promise<T>): Promise<T> {
+  // `then(op, op)` so a rejected predecessor does not cancel the next write.
+  const run = recentListWrites.then(operation, operation);
+  // The chain itself must never hold a rejection, or every later write inherits it.
+  recentListWrites = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
+
 async function rememberRecentLocalFsHandle(record: LocalFsHandleRecord): Promise<void> {
   const storedRecord = toStoredRecord(record);
   const identity = recordIdentity(storedRecord);
-  const existing = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
-  const next = [
-    storedRecord,
-    ...existing.filter((item) => recordIdentity(item) !== identity),
-  ]
-    .sort((a, b) => b.lastAccessedAt - a.lastAccessedAt)
-    .slice(0, MAX_RECENT_HANDLES);
-  await idbSet(RECENT_KEY, next);
+  return queueRecentListWrite(async () => {
+    const existing = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
+    const next = [
+      storedRecord,
+      ...existing.filter((item) => recordIdentity(item) !== identity),
+    ]
+      .sort((a, b) => b.lastAccessedAt - a.lastAccessedAt)
+      .slice(0, MAX_RECENT_HANDLES);
+    await idbSet(RECENT_KEY, next);
+  });
 }
 
 /**
@@ -126,11 +161,15 @@ export async function forgetRecentLocalFsHandle(
   record: LocalFsHandleRecord,
 ): Promise<void> {
   const identity = recordIdentity(toStoredRecord(record));
-  const existing = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
-  await idbSet(
-    RECENT_KEY,
-    existing.filter((item) => recordIdentity(item) !== identity),
-  );
+  // Queued with the others: this reads and writes the same key, so a forget racing a
+  // vault load could otherwise resurrect the folder it just removed.
+  return queueRecentListWrite(async () => {
+    const existing = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
+    await idbSet(
+      RECENT_KEY,
+      existing.filter((item) => recordIdentity(item) !== identity),
+    );
+  });
 }
 
 /** Updates the last-accessed time only. A no-op when the record does not exist. */
