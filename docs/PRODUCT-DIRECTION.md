@@ -67,7 +67,9 @@ Meaning acquisition, later-task usefulness, review burden, and retention are
 separate measurements. Public copy states current mechanisms and their limits;
 development priorities do not become shipped guarantees.
 
-Execution priority belongs in [BACKLOG.md](BACKLOG.md). The
+Execution priority and status belong in [BACKLOG.md](BACKLOG.md); the
+[detailed V1–V4 plan](MEANING-WORKFLOW-PLAN.md) specifies each implementation
+and verification commitment. The
 [PO operating system](PRODUCT-OWNER-OPERATING-SYSTEM.md) turns this product model
 into a bounded recovery proof using the existing five outcomes. The historical
 direction below supplies the retained category and context; v12 governs the

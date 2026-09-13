@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-13",
+  "decision": "Register the V1-V4 execution specification and expose the fixed corpus measurement scope (V1.0)",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "judge",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-13",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "0b6a7e7d-0da8-465d-b555-3af93ca8c42c",
+  "recordedAt": "2026-09-13T07:49:25.957Z"
+}

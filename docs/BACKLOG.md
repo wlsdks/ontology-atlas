@@ -20,12 +20,49 @@ the current value and sequence. Retain completed evidence below; historical
 scores, green contracts, and node counts do not prove general construction
 quality, correct human judgment, or repeat use.
 
-| Order | ID | Status | Recovery to prove |
+| Order | ID | Work items | Recovery to prove |
 |---:|---|---|---|
-| 1 | V1 | ready | On an unfamiliar work repository, recover source-backed rules, state/effects, responsibilities, and counter-boundaries even when documents and names are weak; keep unsupported meaning explicit. |
-| 2 | V2 | ready | Use task-aware `agent_brief` in a real change, preserving reviewed conditions, currentness, relevant code, and unknown impact; compare against the same source tools without Atlas. |
-| 3 | V3 | ready | Connect one task's baseline, actual code change, proposed meaning, and verification scope so a person can catch an incorrect interpretation or defer it; existing write review is the starting point, not a claim of complete Meaning Diff. |
-| 4 | V4 | ready | A fresh agent in a later related task uses the previous accepted meaning without the prior conversation; measure boundary fidelity, owner re-explanation, false warnings, and review/maintenance burden. |
+| 1 | V1 | V1.0–V1.5 | On an unfamiliar work repository, recover source-backed rules, state/effects, responsibilities, and counter-boundaries even when documents and names are weak; keep unsupported meaning explicit. |
+| 2 | V2 | V2.1–V2.4 | Use task-aware `agent_brief` in a real change, preserving reviewed conditions, currentness, relevant code, and unknown impact; compare against the same source tools without Atlas. |
+| 3 | V3 | V3.1–V3.6 | Connect one task's baseline, actual code change, proposed meaning, and verification scope so a person can catch an incorrect interpretation or defer it; existing write review is the starting point, not a claim of complete Meaning Diff. |
+| 4 | V4 | V4.1–V4.3 | A fresh agent in a later related task uses the previous accepted meaning without the prior conversation; measure boundary fidelity, owner re-explanation, false warnings, and review/maintenance burden. |
+
+The [detailed execution specification](MEANING-WORKFLOW-PLAN.md) defines each
+item's inputs, deliverable, acceptance, negative cases, dependencies and owner
+seams. This table alone owns live status. Numeric IDs group requirements;
+dependencies decide implementation order (V3.3 precedes V3.2). Future items
+need their own scoped PO/design/evidence proof before implementation.
+
+| ID | Status | Concrete deliverable | Prerequisite / evidence |
+|---|---|---|---|
+| V1.0 | ready | Typed and readable measurement scope; discovery/oracle pass remains distinct from unmeasured construction | First slice; preserve existing thresholds and per-fixture/empty failure behavior |
+| V1.1 | blocked(V1.0) | Frozen unfamiliar backend task, six owner-approved questions, source reference, license/scope manifest | Preserve the original question approval; independently verify task-specific reference |
+| V1.2 | blocked(V1.1) | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
+| V1.3 | blocked(V1.1) | Scoped document/config evidence retaining current/planned/negated/conflicting context | Activate only witnessed gaps; follow applicable V1.2 decisions |
+| V1.4 | blocked(V1.2) | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | V1.2 and V1.3 where the task needs them |
+| V1.5 | blocked(V1.4) | Independent candidate and persisted handoff, full-answer source audit, matched prompt/access comparisons | Exact meaning/gap/write approval; frozen run and holdout |
+| V2.1 | blocked(V1.1) | Task/non-goal resolution with supported selection, alternatives or abstention | A reviewed starting vault may isolate reuse; disclose construction cost |
+| V2.2 | blocked(V2.1) | Compact action context preserving conditions, exceptions, currentness and unknowns | Same claims survive budgets and full-body follow-ups |
+| V2.3 | blocked(V2.2) | Actual host-to-MCP task entry and honest unavailable-context fallback | Optional UI links wait for V3.1; initial MCP proof does not |
+| V2.4 | blocked(V2.3) | Atlas-on/off real coding outcomes with equivalent source tools and independent review | V1.5 additionally required for construction claims |
+| V3.1 | blocked(V2.2) | Current-task decision entry with exact baseline, relevant diff and coverage | V2.1/V2.2 plus sufficient evidence or a disclosed reviewed fixture |
+| V3.2 | blocked(V3.3) | Summary, small comparison and detailed review preserving qualifiers, selection and scope | V3.1/V3.3; acceptance actions also use V3.4 |
+| V3.3 | blocked(V3.1) | Meaning Diff retaining conditions, exceptions, units, unknown and uncomparable states | V1.4 evidence/meaning and V3.1 comparison basis |
+| V3.4 | blocked(V3.3) | Distinct meaning acceptance, code verification, merge and deployment states/actions | V3.1/V3.3 and exact proposal/write concurrency guards |
+| V3.5 | blocked(V3.2) | Measured first-review orientation and checked-scope understanding, including a11y/EN/KO | V3.2–V3.4; five seconds is an orientation target, never an approval deadline |
+| V3.6 | blocked(V3.5) | Real reviewer error discovery, correction and deferral against fixed wrong/incomplete cases | V3.1–V3.5; freeze decision rules before collecting results |
+| V4.1 | blocked(V3.4) | Traceable accepted code/meaning transition in ordinary Git with distinct authorities | V3.3/V3.4; no forced meaning update for every task |
+| V4.2 | blocked(V4.1) | A → B → C reuse by a fresh agent without prior conversation or future-answer leakage | V2.4/V4.1 plus unrelated-task and meaning-preserving-refactor controls |
+| V4.3 | blocked(V4.2) | Voluntary repeated use and decision outcomes including acquisition/review/maintenance cost | Consented actual work; MCP calls and app opens alone do not prove value |
+
+**Registration evidence:** the owner requested these six UI/UX commitments
+separately; Astra independently reviewed all 19 plan items against the current
+product thesis and existing corpus implementation. The review corrected
+prompt/access attribution, optional UI-link dependencies and predeclared
+benefit/failure rules. This establishes plan coverage, not implemented UX or
+proven product benefit. Planning/review remain Astra; code implementation is Sol
+low. The prior research-only saved sample and its complete-answer result of 0/6
+remain unchanged.
 
 V1 and the reuse value in V2/V4 are separate risks: a manually reviewed starting
 vault can test reuse, but its creation method and cost must remain visible and
