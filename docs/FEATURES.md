@@ -559,7 +559,48 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 
 **The map has weight, a press, and light** (2026-09-08, after the expression bans were lifted). A node's mass is its number of relations: let go of a hub after a drag and it carries the hand's speed a step past the drop point, overshoots once and takes longer to sit, while a leaf snaps home; its neighbours spring back on their own mass. Hovering a node swells it on an underdamped step, so a hover reads as a press that gives. Selecting a node lays an indigo ground halo under its neighbourhood, sized by its farthest neighbour, blooms the node and glows its relation lines, all on the focus ramp, so the light arrives with the dive and leaves with the deselect. Nothing at rest glows or moves, the idle canvas still draws zero frames, and under `prefers-reduced-motion` every end state lands with no ring. Measured on the sample vault at 1512: a dragged domain carried 14 px past its drop and settled by 300 ms; a hovered domain went 28.1 px to 34.7 and sat at 34.2. The pieces are pure modules under `src/widgets/ontology-map/expressive/` (`mass-spring`, `release-offsets`, `ego-light`) with a README naming their tokens and how to remove them.
 
-### `/architecture` — Living Blueprint for implementation boundaries
+### `/architecture` — Harness: guides, structure, sensors
+
+**The tab is Harness (`harness.title`) and it answers "how are agents set up to work in this repository"**
+(2026-09-13, `docs/records/decisions/2026-09-13-architecture-tab-becomes-harness-3a63ada4-031c-41af-8b9d-6d6f7f2a5138.md`). The route is unchanged, the label moved: the destination
+already held one half of the answer (the reviewed structure) and nothing at all of the other
+(what the agents were told, and what catches them). Under the title one line says what the tab
+is for, and a segmented control picks one of three views on `?view=`; the default is
+`structure`, where every link, bookmark and `?focus=` deep link written before the rename lands.
+
+**One sentence at the top, computed from files only**: how many guide documents this repository
+speaks to agents through, and how many checks it has in place. Both numbers print their working
+— the check number shows its three parts (hook scripts wired · files under `.githooks/` ·
+`package.json` lint/typecheck/test scripts) and a caption states the counting rule — because a
+bare count invites a reader to hear "N things are protecting you" where what was measured is "N
+things are declared". The unguarded-domain question is **not** in that sentence: a deferral
+sitting inside a sentence whose other slots are numbers asserts that unguarded domains exist and
+are merely uncounted, which no static read of a repository can claim. It stands on its own line
+and points at the sensors view.
+
+**Guides (`harness.views.guides`)** — one row per guide file or directory found, with: which tools read it, each
+claim carrying the document it came from and the date a person last opened it (a claim we cannot
+cite says so (`harness.toolsUncited`) rather than rendering like the sourced rows); size against a
+documented cap, where the Codex bar measures the **merged** root + worst-nested `AGENTS.md`,
+because that is what Codex truncates and a per-file bar reads green while the merge is already
+being cut; byte status for the pairs the repository itself declares identical, with a difference
+door (`harness.driftOpen`) that opens both complete files side by side under the row; and the file's modification time
+on this disk, labelled as that rather than as a commit date. Below the table the hook configs are
+listed by script: wired (`harness.hookWired`) means the script the config names exists on disk, never that it runs
+— a script the config names and the disk does not have is called out, because that failure
+produces no error at all, and the Codex group carries its approval requirement (`harness.hookApprovalGate`) as a standing
+fact instead of a green, since `/hooks` trust lives in no file. Measured on this repository:
+98 guide documents in 9 groups, 85 checks (20 + 6 + 59), `AGENTS.md` 12,142 B merging to
+13,090 of 32,768, both declared pairs matching, 20 of 20 hook scripts wired.
+
+**Sensors (`harness.views.sensors`)** — declared not built. It names what it will hold and says it is empty, with no
+rows and no numbers: a plausible-looking table would launder the field's own open problem, that a
+check which never fires cannot be told apart from code nobody is watching.
+
+The whole reading goes through the installed app's bridge (`entities/agent-files`, the same
+classifier the docs sidebar and `ontology-atlas agent-files` use — one store, not a second). A
+browser's folder permission cannot see a dot entry at all, so on the web the view names what it
+cannot reach instead of drawing a shorter list and calling it the inventory.
 
 - Architecture is separate from the Ontology Map and from the public five-kind
   ontology schema. A non-kind `architecture-profile/v1` Markdown document keeps
@@ -570,8 +611,20 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   summaries; Atlas does not infer Clean, Hexagonal, MVP, or Feature-Sliced Design
   from folder names. The visible Understand → Plan → Verify stages were removed
   on 2026-09-03; the canvas compares reviewed intent with observation directly.
+- **The ladder's contract face grows into the card's spare width, and the drawing is
+  centred** (2026-09-13, inspection 122 S8). The three faces used to hold 280/72/240 whatever
+  the card's width: measured at 1512×949 in the installed-app window the drawn band was **592px
+  inside a 1448px card (41 %), sitting 124px left of its centre, with all seven role sentences
+  ending in an ellipsis** while 856px of the card stood empty; the tight ladder buys its height
+  by dropping the sentence's second line, and one 280px line cannot hold a Korean sentence. The
+  contract face now takes the ground neither lane wants, up to 560px (derived: the longest
+  dogfood sentence estimates at 472px and `captionLineRoom` spends 24 on padding), and whatever
+  the lanes still do not need is split evenly. Re-measured at the same size: band **872px of
+  1448 (60 %)**, centred to the pixel, **0 of 7 sentences cut**, height unchanged. The
+  observation column also states "not inspected yet" once under its heading instead of once per
+  role, the way the across-axis lane headings already did.
 - **The comparison ladder is chosen by height** (2026-09-03). Whenever the seven
-  280px reviewed / 72px delta / 240px observation rows fit the canvas at rest, the
+  reviewed / 72px delta / 240px observation rows fit the canvas at rest, the
   chain runs down as that ladder — at 1512×945 and at 1920×1080 alike — and each
   rule sentence sits beside the arrow it describes, in the 24px gap between the
   two faces it joins. A canvas too short for the rows, or a profile with parallel
@@ -2349,7 +2402,7 @@ their viewport. `OperationsNav` and `OntologySubNav` are retired (deleted, not
 just unmounted).
 
 ### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
-- 9 destinations: Map (`/`, `/topology`) · Architecture (`/architecture`) ·
+- 9 destinations: Map (`/`, `/topology`) · Harness (`/architecture`) ·
   Docs (`/docs`) · Library (`/library`) · Insights (`/ontology/insights`) ·
   Projects (`/projects` or `/project/*`) · Agents (`/agents`) · MCP (`/mcp`) ·
   Git (`/git`). Workshop remains the map's contextual relation-writing surface.

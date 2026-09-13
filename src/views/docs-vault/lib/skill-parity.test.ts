@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { analyzeAgentFiles } from './agent-files';
+import { analyzeAgentFiles } from '@/entities/agent-files';
 import { buildSkillParityModel } from './skill-parity';
 
 /**

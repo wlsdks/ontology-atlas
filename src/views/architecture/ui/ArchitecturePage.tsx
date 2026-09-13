@@ -109,7 +109,20 @@ async function verifiedAtlasCliEntry(candidateRoots: readonly string[]): Promise
   return null;
 }
 
-export function ArchitecturePage() {
+/**
+ * `embedded` — the Harness shell above already owns the destination's eyebrow, `h1` and explainer,
+ * so the blueprint drops its own and keeps everything else. Two `h1`s on one screen is not a style
+ * question: it is two answers to "what is this page", and a screen reader reads both.
+ */
+export function ArchitecturePage({
+  embedded = false,
+  harnessPanelId,
+  harnessPanelLabelledBy,
+}: {
+  embedded?: boolean;
+  harnessPanelId?: string;
+  harnessPanelLabelledBy?: string;
+} = {}) {
   const tReview = useTranslations('analysisWorkbench');
   const locale = useLocale();
   const router = useRouter();
@@ -372,8 +385,15 @@ export function ArchitecturePage() {
 
   return (
     <VaultSourceHydrationBoundary>
-      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+      <div
+        className="relative flex min-h-0 flex-1 overflow-hidden"
+        role={harnessPanelId ? 'tabpanel' : undefined}
+        id={harnessPanelId}
+        aria-labelledby={harnessPanelLabelledBy}
+        tabIndex={harnessPanelId ? -1 : undefined}
+      >
         <ArchitectureWorkbench
+          embedded={embedded}
           profiles={profiles}
           profileProblems={profileProblems}
           handoffContexts={handoffContexts}

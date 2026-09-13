@@ -111,6 +111,24 @@ const PAIRED_CONTRACT_W = 280;
 const PAIRED_GUTTER_W = 72;
 const PAIRED_OBSERVATION_W = 240;
 /*
+ * ⚠️ **The contract face grows into ground the card was already wasting** (inspection 122, S8,
+ * 2026-09-13). Measured at 1512×949 in the installed-app window: the three faces held their
+ * 280/72/240 whatever the card's width, so the drawn band was **592px inside a 1448px card — 41%
+ * of it — and every one of the seven role sentences ended in an ellipsis** while 856px of the card
+ * stood empty. The tight ladder is what cut them: it buys its height by dropping the sentence's
+ * second line, and one 280px line cannot hold a Korean sentence. Widening the face is the version
+ * of that trade that costs nothing, because the height stays the same and the pixels were already
+ * there.
+ *
+ * 560 is derived, not chosen: the longest sentence in the dogfood profile estimates at 472px
+ * (`estimateCaptionWidth`, 8px per Korean glyph), and `captionLineRoom` spends 24 on side padding,
+ * so 560 leaves 536 of room — the longest sentence plus 64px of headroom for a profile whose
+ * sentences run longer. Anything past that still wraps to the roomy ladder's second line, which is
+ * the behaviour that was always there. The owner's standing priority is a finished sentence over
+ * box symmetry.
+ */
+const PAIRED_CONTRACT_W_MAX = 560;
+/*
  * ⚠️ **The connector gap carries a sentence now.** The adjacent rule's sentence sits beside the
  * arrow it describes (measured 2026-09-03: the left-lane sentence ended 160px from its arrow and
  * read as a floating caption). A 12px caption line with 4px of air on each side needs 20px; four
@@ -539,7 +557,20 @@ export function ArchitectureSketch({
       : 'roomy';
   const usesTightLadder = usesPairedDown && ladderDensity === 'tight';
   const splitsEvidence = (axis === 'across' && axisWidth > 0) || usesPairedDown;
-  const contractBoxW = usesPairedDown ? PAIRED_CONTRACT_W : boxW;
+  /*
+   * The face grows only into ground neither lane wants: the contract lane's minimum and the
+   * observation lane's cap are taken out first, so a canvas that was already tight for the arcs
+   * draws exactly what it drew before.
+   */
+  const pairedGroundSpare =
+    usesPairedDown && boxWidth > 0
+      ? Math.max(0, boxWidth - PAIRED_FIXED_W - PAIRED_SIDE_ROOM_MIN - PAIRED_TRAIL_ROOM_MAX)
+      : 0;
+  const pairedContractW = Math.min(PAIRED_CONTRACT_W_MAX, PAIRED_CONTRACT_W + pairedGroundSpare);
+  /** The ladder's own width at this canvas: padding, the grown face, the gutter, the observation. */
+  const pairedFixedW =
+    PAD_X * 2 + pairedContractW + PAIRED_GUTTER_W + PAIRED_OBSERVATION_W;
+  const contractBoxW = usesPairedDown ? pairedContractW : boxW;
   const observationBoxW = usesPairedDown ? PAIRED_OBSERVATION_W : boxW;
   const rowGap = usesPairedDown
     ? usesTightLadder
@@ -672,7 +703,7 @@ export function ArchitectureSketch({
   const contractNeedsLane = graph.edges.some(
     (edge) => edge.kind === 'permitted' && edge.columnSpan > 1,
   );
-  const pairedSlack = usesPairedDown && boxWidth > 0 ? Math.max(0, boxWidth - PAIRED_FIXED_W) : PAIRED_SIDE_ROOM * 2;
+  const pairedSlack = usesPairedDown && boxWidth > 0 ? Math.max(0, boxWidth - pairedFixedW) : PAIRED_SIDE_ROOM * 2;
   /*
    * ⚠️ **The stack takes its room from the sentence lane's cap, not from the canvas.** The plane
    * floor is applied to the *lead* room first and the trail room is measured against what is
@@ -681,8 +712,20 @@ export function ArchitectureSketch({
    * Only a canvas already too narrow for the ladder grows, and there the scroller and the
    * hidden-role count stay the honest answer they already were.
    */
+  /*
+   * ⚠️ **The drawing is centred in its card** (inspection 122, S8). Asymmetric lanes — the
+   * contract side at its 48px minimum, the observation side at its 360px cap — put the band 124px
+   * left of the card's centre at 1512, which reads as a drawing that slid rather than as a lane
+   * that earned its room. Once the face has taken the spare width, whatever the two lanes still do
+   * not need is split evenly, so the leftover ground sits on both sides instead of all on one.
+   * Each lane keeps its floor, so the arcs never lose room they were using.
+   */
+  const pairedCentredLane = usesPairedDown && boxWidth > 0
+    ? Math.max(0, boxWidth - 2 * PAD_X - pairedContractW - PAIRED_GUTTER_W - PAIRED_OBSERVATION_W) / 2
+    : 0;
   const pairedLeadRoom = Math.max(
     planeRoom,
+    pairedCentredLane,
     contractNeedsLane
       ? Math.max(PAIRED_SIDE_ROOM_MIN, Math.min(PAIRED_SIDE_ROOM, pairedSlack / 2))
       : PAIRED_SIDE_ROOM_MIN,
@@ -690,7 +733,7 @@ export function ArchitectureSketch({
   const pairedTrailRoom = Math.max(
     planeRoom,
     PAIRED_SIDE_ROOM_MIN,
-    Math.min(PAIRED_TRAIL_ROOM_MAX, pairedSlack - pairedLeadRoom),
+    Math.min(Math.max(PAIRED_TRAIL_ROOM_MAX, pairedCentredLane), pairedSlack - pairedLeadRoom),
   );
   const layoutLeadRoom = usesPairedDown ? pairedLeadRoom : usesNarrowLadder ? 0 : leadRoom;
   const layoutTrailRoom = usesPairedDown ? pairedTrailRoom : usesNarrowLadder ? 0 : trailRoom;
@@ -1420,6 +1463,32 @@ export function ArchitectureSketch({
             >
               {observationTrackLabel}
             </text>
+            {/*
+              ⚠️ **One "not inspected yet" for the column, not one per role** (inspection 122, S8,
+              2026-09-13). With no receipt anywhere, all seven observation faces printed the same
+              four words under a heading that already said the source needed checking — the same
+              fact eight times, and the only thing in the column. It follows the reasoning the
+              across-axis headings above already carry: one heading per row, not one per face.
+              A profile where *some* roles have a receipt keeps the per-face label, because there
+              the absence is about that role rather than about the whole column.
+            */}
+            {!hasLedger ? (
+              <text
+                x={
+                  PAD_X +
+                  layoutLeadRoom +
+                  contractBoxW +
+                  PAIRED_GUTTER_W +
+                  observationBoxW / 2
+                }
+                y={padY + 28}
+                textAnchor="middle"
+                data-testid="architecture-observation-column-note"
+                className="fill-[color:var(--color-text-quaternary)] text-label"
+              >
+                {observationMissingLabel}
+              </text>
+            ) : null}
           </g>
         ) : null}
 
@@ -2165,7 +2234,10 @@ export function ArchitectureSketch({
                     {ledger
                       ? ledgerImportsLabel(ledger.importsOut)
                       : usesPairedDown
-                        ? observationMissingLabel
+                        ? /* The column heading states it once when no role has a receipt. */
+                          hasLedger
+                          ? observationMissingLabel
+                          : ''
                         : `○ ${observationMissingLabel}`}
                   </text>
                 </g>

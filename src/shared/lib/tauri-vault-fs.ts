@@ -517,6 +517,22 @@ export async function readTauriVaultText(
   return file.text;
 }
 
+/**
+ * Reads a text file *with* its modification time. `readTauriVaultText` drops the timestamp, which
+ * is right for a caller that only wants content; the Harness screen needs to say when a guide last
+ * changed on this disk, and re-reading the file to get it would be a second bridge round trip.
+ * Returns `null` when the bridge is absent.
+ */
+export async function readTauriVaultTextFile(
+  rootPath: string,
+  relativePath: string,
+): Promise<{ text: string; lastModified: number } | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  const file = await invoke<TauriTextFile>('read_vault_text_file', { rootPath, relativePath });
+  return { text: file.text, lastModified: file.lastModified };
+}
+
 /** Lists only the names of directories directly under `rootPath`, excluding files. */
 export async function listTauriDirectoryNames(rootPath: string): Promise<string[]> {
   const invoke = getInvoke();

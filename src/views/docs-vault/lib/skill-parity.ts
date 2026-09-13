@@ -1,4 +1,4 @@
-import type { AgentFilesAnalysis } from './agent-files';
+import type { AgentFilesAnalysis } from '@/entities/agent-files';
 
 /**
  * «Do my skill copies agree with each other» — one row per skill.

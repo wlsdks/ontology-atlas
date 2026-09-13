@@ -1,6 +1,6 @@
 import { listTauriVaultEntries, readTauriVaultText } from '@/shared/lib/tauri-vault-fs';
 
-import type { AgentFileEntry } from './agent-files';
+import type { AgentFileEntry } from '@/entities/agent-files';
 
 /**
  * Reads both skill trees **by absolute path** — desktop only.

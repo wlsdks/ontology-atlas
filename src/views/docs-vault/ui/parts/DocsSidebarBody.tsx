@@ -25,7 +25,7 @@ import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { selectRecentVaultDocs } from "@/entities/knowledge-graph";
 import type { ReviewQueueRow } from "@/entities/docs-vault";
 import { ReviewQueueSection } from "./ReviewQueueSection";
-import { AGENT_TOOL_LABELS, type AgentFilesUiModel } from "../../lib/agent-files";
+import { AGENT_TOOL_LABELS, type AgentFilesUiModel } from "@/entities/agent-files";
 import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
 import { useAdvancedMenu } from "../../lib/use-advanced-menu";
 import {
