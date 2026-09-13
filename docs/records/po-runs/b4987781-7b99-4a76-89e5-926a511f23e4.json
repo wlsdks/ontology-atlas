@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-13",
+  "decision": "Preserve supported source-inferred responsibility hypotheses in reviewable meaning candidates",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "handoff",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-13",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "b4987781-7b99-4a76-89e5-926a511f23e4",
+  "recordedAt": "2026-09-13T11:49:25.623Z"
+}

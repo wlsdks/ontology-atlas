@@ -39,8 +39,8 @@ need their own scoped PO/design/evidence proof before implementation.
 | V1.1 | done(8ea129383) | Frozen unfamiliar backend task, six owner-approved questions, source reference, license/scope manifest | Preserve the original question approval; independently verify task-specific reference |
 | V1.2 | done(42cf788d9) | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
 | V1.3 | hold(witnessed document/config gap) | Scoped document/config evidence retaining current/planned/negated/conflicting context | Activate only witnessed gaps; follow applicable V1.2 decisions |
-| V1.4 | ready | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | V1.2 and V1.3 where the task needs them |
-| V1.5 | blocked(V1.4) | Independent candidate and persisted handoff, full-answer source audit, matched prompt/access comparisons | Exact meaning/gap/write approval; frozen run and holdout |
+| V1.4 | done(bounded hypothesis-transfer probe) | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | Reviewable source-inferred responsibility/capability; corrected candidate passed independent bounded source review and candidate-only reading |
+| V1.5 | ready(formal qualification) | Independent candidate and persisted handoff, full-answer source audit, matched prompt/access comparisons | Preserve V1.4 corrections; exact meaning/gap/write approval, complete qualification and holdout remain pending |
 | V2.1 | hold(reviewed starting vault) | Task/non-goal resolution with supported selection, alternatives or abstention | A reviewed starting vault may isolate reuse; disclose construction cost |
 | V2.2 | blocked(V2.1) | Compact action context preserving conditions, exceptions, currentness and unknowns | Same claims survive budgets and full-body follow-ups |
 | V2.3 | blocked(V2.2) | Actual host-to-MCP task entry and honest unavailable-context fallback | Optional UI links wait for V3.1; initial MCP proof does not |
@@ -128,6 +128,105 @@ boundaries. Validation and compilation have no issues; remeasurement of the
 existing binding and normal finalization succeeded on the committed source.
 The four pre-existing summary-freshness review notices remain. Full external
 construction/persistence qualification and human meaning acceptance remain V1.5.
+
+**V1.4 first-pass evidence (2026-09-13):** Sol low updated the mirrored bootstrap
+guidance to investigate task triggers, predicates, state/effects, failures and
+verification through the existing bounded source reader. Astra reviewed its
+authority limits and compared two fresh read-only runs on the same public
+open-source input with standalone explanatory documents excluded. Both input
+conditions retain source comments, tests, configuration and license notices;
+this is not a private-repository trial.
+
+With the same requested model, task, source access and call budget, old guidance
+stopped after three MCP calls and no source reads. New guidance made eleven MCP
+calls, returning thirteen source ranges, and explained conditional notification
+rules, history/signal scope and a documentation/code conflict. The exact returned
+bytes and hashes were rechecked. This is one source-aware construction probe,
+not a complete six-question qualification or a prompt/access causal estimate.
+
+The new run retained two failures: an oversized line request and a final proposal
+whose elements lacked required domain assignments. No `reviewPlan` was returned;
+neither run wrote ontology content. The final guide now explicitly keeps
+unassigned elements and their relations outside the typed proposal. That narrow
+clarification was schema-reviewed before the follow-up run recorded below.
+The run prompt also omitted the already registered human-owner provenance, so
+the builder's missing-owner statement is a setup limitation, not an ownership
+finding. Preserve these first results separately from the follow-up.
+
+Primary evidence: `/Users/jinan/scratch/atlas-v1-2026-09-13/v1-4/REVIEW.md`,
+`OPEN-SOURCE-SCOPE.md`, `transcript-audit.json`, frozen old/tested/final guidance,
+and both initial `runs/` transcripts. Existing schema, qualification and human
+acceptance gates remain unchanged.
+
+**V1.4 follow-up evidence (2026-09-13, after guidance PR #1611):** a third fresh
+read-only run used the final element-assignment clarification and the original
+approved question-owner record. The source, requested model and budgets stayed
+fixed; because both guidance and owner context changed, this is a repair probe,
+not another matched prompt-only comparison. Thirteen MCP calls returned nineteen
+source ranges whose bytes/hashes were rechecked. The minimal proposal contains
+one project, zero domains/capabilities/elements/relations, and five competency
+gaps. Its lifecycle is `reviewable`, with `canWrite:false` and no `writePlan`.
+
+The source-body observations were explicitly kept outside that package-only
+proposal; dropping `sourceReads` for this narrow submission did not relabel code
+claims as package evidence. No ontology was written. This fixes the invalid
+unassigned-element submission but leaves the central failure: conditions and
+effects recovered in a separate report are not yet reusable domain/capability
+meaning in Atlas. V1.4 therefore remains open and V1.5 remains dependent on that
+meaning work, rather than repeating a qualification of an almost empty sample.
+
+The first source request again exceeded 200 lines. The tool schema already
+publishes that maximum; no missing runtime limit was discovered. Next work must
+make the builder honor advertised limits, preserve claim-specific evidence, and
+test supported tentative responsibility hypotheses with explicit counter-bounds
+under the existing authority and acceptance gates. Do not invent a domain merely
+to make submission pass. The later ontology-only handoff must measure whether
+the investigated rules and exceptions actually survive into the proposal.
+Exact inputs, calls, final answer, review plan and limits are retained in
+`v1-4/runs/final-guidance/` and `v1-4/FOLLOWUP.md` outside the repository.
+
+**V1.4 hypothesis-transfer evidence (2026-09-13):** the existing validator already
+allows supported tentative responsibility hypotheses below its authority
+threshold; this slice changes guidance, not schema, confidence thresholds or
+write permission. Sol low implemented the mirrored instructions; Astra planned
+the probe and reviewed the result. A fresh builder used the same public licensed
+source, approved questions/owner, requested model and call budgets as the retained
+control. It made twelve MCP calls, including four source-read calls, with no
+request errors. All eighteen returned ranges were byte/hash checked. It proposed
+one project, one tentative domain, one capability, two implementation elements
+and five relations; the reviewed candidate carries conditions and unknowns in
+its actual bodies rather than only in the builder's report.
+
+The first source-hidden reader reproduced useful responsibility, behavior and
+navigation detail, but also reproduced source-interpretation errors. Astra's
+source review required corrections to a library role and an unchanged-state
+predicate, and clarified enclosing guards and reviewer/acceptance provenance.
+Those first errors remain recorded. The coordinator revised the candidate with
+the same source selectors/hashes; a separately identified Astra reviewer checked
+every concept's material body fields, all relations and competency claims,
+finding no material unsupported assertion in that bounded revision. A fresh
+source-hidden reader then preserved the corrected state predicate, library role,
+tentative domain split, conditional notifications and incomplete impact. This
+demonstrates a reviewed candidate transfer, not an error-free autonomous build.
+
+Source hiding used OS-denied source/reference/repository/memory paths and
+disabled shell, web, apps and MCP in the reader processes. Named denial probes
+passed; earlier reader outputs were excluded. The exact corrected plan remains
+`reviewable`, `canWrite:false`, with five partial competency answers and no
+`writePlan` or ontology writes. The six human questions are a separate readout;
+all remain partial, not a six-answer completeness claim. Final guidance includes
+the review's general cautions; it has not received another unassisted first-pass
+run. The measured initial prompt and all revised candidate/evaluator artifacts
+remain separate.
+
+Primary evidence: `/Users/jinan/scratch/atlas-v1-2026-09-13/v1-4-hypotheses/`
+(`PROTOCOL.md`, `REVIEW.md`, `transcript-audit.json`, `candidate/`,
+`candidate-revised/`, `independent-audit/`) and the existing reader-proof root's
+`outputs/hypothesis-*` runs. This closes the bounded V1.4 deliverable. V1.5 still
+owns complete qualification, candidate transport/regression probes, exact human
+plan/gap acceptance, persistence/readback, persisted-only handoff and a holdout.
+One corrected example and static tests do not prove general construction
+quality, actual human comprehension, runtime correctness or repeated use.
 
 **V3 direction selected by the owner:** integrate task review into the existing
 side workbench and its small-screen sheet. Preserve selection across qualified

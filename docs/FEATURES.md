@@ -2332,7 +2332,19 @@ sealed once and handed to isolated source-hidden and source-aware review lanes
 in parallel. The lanes do not share source or answers, any manifest mutation
 blocks their join, and human acceptance remains after that join; this is an
 agent orchestration receipt rather than a new server permission or schema.
-In source checkouts, the mirrored bootstrap skill provides a deterministic
+In source checkouts, the mirrored bootstrap guidance investigates bounded source
+predicates, state changes, attempted effects, failure paths and verification
+before declaring meaning unavailable from a structural index. Exact range
+citations remain partial evidence; code does not establish historical owner
+intent or authorize accepted meaning or a write. Role-diverse behavioral
+evidence can support a tentative responsibility or capability hypothesis under
+the existing authority thresholds, with sourced counter-boundaries and explicit
+uncertainty. Its conditions and effects belong in the candidate body so they
+can be independently reviewed. Unsupported assignments remain in the external
+construction report; a lower confidence score never substitutes for evidence. The
+[source-first workflow](../.agents/skills/ontology-bootstrap/guides/meaning-extraction.md#source-first-hypothesis-workflow)
+is an investigation method, not a measured general reconstruction guarantee.
+The mirrored bootstrap skill also provides a deterministic
 scratch helper for those receipt stages. Agents still decide every meaning,
 answer, evidence mapping, and citation verdict; the helper only removes repeated
 JSON/digest/witness projection and emits non-executing writer-call data after an
