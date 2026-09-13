@@ -287,6 +287,7 @@ function assertPostWriteMaintenanceSummaryShape(summary, label) {
     "externalElementRefsIgnored",
     "unassignedNodes",
     "emptyDomains",
+    "capabilitiesWithoutEvidence",
   ]) {
     assert.equal(typeof summary[key], "number", `${label} summary exposes ${key}`);
     assert.ok(Number.isFinite(summary[key]), `${label} summary ${key} is finite`);
@@ -475,7 +476,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(listConcepts?.outputSchema?.properties?.vaultWarnings?.additionalProperties, false);
     const getConceptTool = findTool("get_concept");
     assert.equal(getConceptTool?.outputSchema?.type, "object");
-    assert.deepEqual(getConceptTool?.outputSchema?.required, ["uid", "slug", "frontmatter", "bodyInfo", "neighbors", "outgoingEdges", "mtime"]);
+    assert.deepEqual(getConceptTool?.outputSchema?.required, ["uid", "slug", "isNode", "frontmatter", "bodyInfo", "neighbors", "outgoingEdges", "review", "mtime"]);
     assert.equal(getConceptTool?.inputSchema?.properties?.uid?.pattern, "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
     assert.equal(getConceptTool?.inputSchema?.oneOf, undefined, "Claude-compatible input avoids top-level oneOf");
     assert.match(getConceptTool?.description ?? "", /exactly one selector/i);
@@ -483,6 +484,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(getConceptTool?.outputSchema?.properties?.bodyInfo?.required, ["mode", "totalChars", "returnedChars", "truncated"]);
     assert.equal(getConceptTool?.outputSchema?.additionalProperties, false);
     assert.equal(getConceptTool?.outputSchema?.properties?.frontmatter?.type, "object");
+    assert.equal(getConceptTool?.outputSchema?.properties?.isNode?.type, "boolean");
+    assert.deepEqual(getConceptTool?.outputSchema?.properties?.review?.required, ["state", "currentness"]);
     assert.deepEqual(getConceptTool?.outputSchema?.properties?.neighbors?.required, ["domains", "domain", "capabilities", "elements", "dependencies", "relates", "contains", "describes"]);
     assert.equal(getConceptTool?.outputSchema?.properties?.neighbors?.additionalProperties, false);
     assert.equal(getConceptTool?.outputSchema?.properties?.outgoingEdges?.items?.properties?.via?.type, "string");
@@ -496,6 +499,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(getConceptsTool?.outputSchema?.additionalProperties, false);
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.type, "array");
     assert.deepEqual(getConceptsTool?.outputSchema?.properties?.concepts?.items?.required, ["ok"]);
+    assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.isNode?.type, "boolean");
+    assert.deepEqual(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.review?.required, ["state", "currentness"]);
     assert.equal(getConceptsTool?.inputSchema?.oneOf, undefined, "Claude-compatible batch input avoids top-level oneOf");
     assert.match(getConceptsTool?.description ?? "", /exactly one selector array/i);
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.additionalProperties, false);
@@ -618,6 +623,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       "resolvedEdgeCount",
       "externalEdgeCount",
       "unresolvedEdgeCount",
+      "referencedOnlyCount",
       "aliasCount",
       "ambiguousAliasCount",
       "issueCount",
@@ -1026,13 +1032,17 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       "list_kinds description documents census workflow",
     );
     assert.equal(listKinds?.outputSchema?.type, "object");
-    assert.deepEqual(listKinds?.outputSchema?.required, ["total", "byKind"]);
+    assert.deepEqual(listKinds?.outputSchema?.required, ["total", "byKind", "referencedOnlyTotal", "conceptsIncludingReferenced"]);
     assert.equal(listKinds?.outputSchema?.additionalProperties, false);
     assert.equal(listKinds?.outputSchema?.properties?.total?.type, "integer");
     assert.equal(listKinds?.outputSchema?.properties?.total?.minimum, 0);
     assert.equal(listKinds?.outputSchema?.properties?.byKind?.type, "object");
     assert.equal(listKinds?.outputSchema?.properties?.byKind?.additionalProperties?.type, "integer");
     assert.equal(listKinds?.outputSchema?.properties?.byKind?.additionalProperties?.minimum, 0);
+    assert.equal(listKinds?.outputSchema?.properties?.referencedOnlyTotal?.type, "integer");
+    assert.equal(listKinds?.outputSchema?.properties?.referencedOnlyTotal?.minimum, 0);
+    assert.equal(listKinds?.outputSchema?.properties?.conceptsIncludingReferenced?.type, "integer");
+    assert.equal(listKinds?.outputSchema?.properties?.conceptsIncludingReferenced?.minimum, 0);
     const validateVault = findTool("validate_vault");
     assert.match(
       validateVault?.description ?? "",
@@ -1040,7 +1050,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       "validate_vault description documents first-contact health workflow",
     );
     assert.equal(validateVault?.outputSchema?.type, "object");
-    assert.deepEqual(validateVault?.outputSchema?.required, ["scanned", "problems", "summary", "pathDrift"]);
+    assert.deepEqual(validateVault?.outputSchema?.required, ["scanned", "problems", "summary", "summaryFreshness", "pathDrift"]);
     assert.equal(validateVault?.outputSchema?.additionalProperties, false);
     assert.equal(validateVault?.outputSchema?.properties?.scanned?.type, "integer");
     assert.equal(validateVault?.outputSchema?.properties?.problems?.type, "array");
@@ -1312,6 +1322,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
           "externalElementRefsIgnored",
           "unassignedNodes",
           "emptyDomains",
+          "capabilitiesWithoutEvidence",
         ],
         `${toolName} exposes full compact summary schema`,
       );

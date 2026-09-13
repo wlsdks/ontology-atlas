@@ -47,6 +47,7 @@ import {
   BUSINESS_EVIDENCE_ROW_SCHEMA,
   CAPTURED_DOC_OUTPUT_SCHEMA,
   CONCEPT_NEIGHBORS_OUTPUT_SCHEMA,
+  CONCEPT_REVIEW_OUTPUT_SCHEMA,
   DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
   DESTRUCTIVE_PREVIEW_REQUIRED,
   EDGE_RATIONALE_OUTPUT_SCHEMA,
@@ -344,6 +345,7 @@ const TOOLS = [
           description: 'Permanent immutable node identity.',
         },
         slug: NON_BLANK_STRING_SCHEMA,
+        isNode: { type: 'boolean' },
         frontmatter: {
           type: 'object',
           description: 'Resolved markdown frontmatter.',
@@ -369,6 +371,7 @@ const TOOLS = [
           type: 'array',
           items: OUTGOING_EDGE_OUTPUT_SCHEMA,
         },
+        review: CONCEPT_REVIEW_OUTPUT_SCHEMA,
         mtime: {
           type: 'number',
           minimum: 0,
@@ -380,7 +383,7 @@ const TOOLS = [
       },
       // `excerpt` is no longer required: with `body: "full"` the body arrives in
       // `body` and no excerpt is sent at all (never ship the same text twice).
-      required: ['uid', 'slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'],
+      required: ['uid', 'slug', 'isNode', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'review', 'mtime'],
       additionalProperties: false,
     },
   },
@@ -435,6 +438,7 @@ const TOOLS = [
                 description:
                   'Canonical slug for successful rows; the original input value for invalid partial rows.',
               },
+              isNode: { type: 'boolean' },
               frontmatter: {
                 type: 'object',
                 description: 'Resolved markdown frontmatter for successful rows.',
@@ -457,6 +461,7 @@ const TOOLS = [
                 type: 'array',
                 items: OUTGOING_EDGE_OUTPUT_SCHEMA,
               },
+              review: CONCEPT_REVIEW_OUTPUT_SCHEMA,
               mtime: {
                 type: 'number',
                 minimum: 0,
@@ -1366,8 +1371,18 @@ const TOOLS = [
           },
           description: 'Node counts keyed by frontmatter kind.',
         },
+        referencedOnlyTotal: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Number of slugs referenced by graph relations without a corresponding node document.',
+        },
+        conceptsIncludingReferenced: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Documented nodes plus referenced-only slugs, matching the graph-visible concept census.',
+        },
       },
-      required: ['total', 'byKind'],
+      required: ['total', 'byKind', 'referencedOnlyTotal', 'conceptsIncludingReferenced'],
       additionalProperties: false,
     },
   },
@@ -1544,6 +1559,7 @@ const TOOLS = [
         resolvedEdgeCount: { type: 'integer', minimum: 0 },
         externalEdgeCount: { type: 'integer', minimum: 0 },
         unresolvedEdgeCount: { type: 'integer', minimum: 0 },
+        referencedOnlyCount: { type: 'integer', minimum: 0 },
         aliasCount: { type: 'integer', minimum: 0 },
         ambiguousAliasCount: { type: 'integer', minimum: 0 },
         issueCount: { type: 'integer', minimum: 0 },
@@ -1591,6 +1607,7 @@ const TOOLS = [
               ref: NON_BLANK_STRING_SCHEMA,
               resolved: { type: 'boolean' },
               external: { type: 'boolean' },
+              rationale: EDGE_RATIONALE_OUTPUT_SCHEMA,
             },
             required: ['id', 'from', 'to', 'via', 'ref', 'resolved', 'external'],
             additionalProperties: false,
@@ -1736,6 +1753,7 @@ const TOOLS = [
         'resolvedEdgeCount',
         'externalEdgeCount',
         'unresolvedEdgeCount',
+        'referencedOnlyCount',
         'aliasCount',
         'ambiguousAliasCount',
         'issueCount',
@@ -2148,6 +2166,35 @@ const TOOLS = [
           required: ['problemFiles', 'errorFiles', 'warningFiles', 'byCode'],
           additionalProperties: false,
         },
+        summaryFreshness: {
+          type: 'object',
+          properties: {
+            checked: { type: 'boolean' },
+            summaryNodes: { type: 'integer', minimum: 0 },
+            stale: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  slug: NON_BLANK_STRING_SCHEMA,
+                  kind: { type: 'string', enum: ['project', 'domain'] },
+                  childCount: { type: 'integer', minimum: 0 },
+                  reasonCode: { type: 'string' },
+                  bodyChangedAt: { type: 'string', format: 'date-time' },
+                  membershipChangedAt: { type: 'string', format: 'date-time' },
+                  behindByMs: { type: 'number', minimum: 0 },
+                  score: { type: 'number', minimum: 0, maximum: 1 },
+                  hint: NON_BLANK_STRING_SCHEMA,
+                },
+                required: ['slug', 'kind', 'childCount', 'score', 'hint'],
+                additionalProperties: false,
+              },
+            },
+            hint: { type: 'string' },
+          },
+          required: ['checked', 'summaryNodes', 'stale', 'hint'],
+          additionalProperties: false,
+        },
         pathDrift: {
           type: 'object',
           description:
@@ -2186,7 +2233,7 @@ const TOOLS = [
           additionalProperties: false,
         },
       },
-      required: ['scanned', 'problems', 'summary', 'pathDrift'],
+      required: ['scanned', 'problems', 'summary', 'summaryFreshness', 'pathDrift'],
       additionalProperties: false,
     },
   },

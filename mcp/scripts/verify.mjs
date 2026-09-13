@@ -683,6 +683,7 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
     'externalElementRefsIgnored',
     'unassignedNodes',
     'emptyDomains',
+    'capabilitiesWithoutEvidence',
   ];
   if (
     summarySchema?.type !== 'object' ||
@@ -1065,7 +1066,7 @@ export function toolsListSchemaFailure(tools) {
   if (getConceptTool.outputSchema?.type !== 'object') {
     return 'get_concept outputSchema root drift';
   }
-  if (!sameArray(getConceptTool.outputSchema?.required, ['uid', 'slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'])) {
+  if (!sameArray(getConceptTool.outputSchema?.required, ['uid', 'slug', 'isNode', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'review', 'mtime'])) {
     return 'get_concept outputSchema required drift';
   }
   if (getConceptTool.inputSchema?.required !== undefined || !/exactly one selector/i.test(getConceptTool.description || '')) {
@@ -1104,6 +1105,9 @@ export function toolsListSchemaFailure(tools) {
   if (outputPropertyAt(getConceptTool, ['properties', 'frontmatter'])?.type !== 'object') {
     return 'get_concept outputSchema frontmatter drift';
   }
+  if (outputPropertyAt(getConceptTool, ['properties', 'isNode'])?.type !== 'boolean') return 'get_concept outputSchema isNode drift';
+  const conceptReviewSchema = outputPropertyAt(getConceptTool, ['properties', 'review']);
+  if (conceptReviewSchema?.type !== 'object' || !sameArray(conceptReviewSchema.required, ['state', 'currentness']) || conceptReviewSchema.additionalProperties !== false) return 'get_concept outputSchema review drift';
   const getConceptNeighborsSchema = outputPropertyAt(getConceptTool, ['properties', 'neighbors']);
   const getConceptNeighborsFailure = conceptNeighborsSchemaFailure(getConceptNeighborsSchema, 'get_concept');
   if (getConceptNeighborsFailure) return getConceptNeighborsFailure;
@@ -1178,6 +1182,7 @@ export function toolsListSchemaFailure(tools) {
   if (getConceptsItemsSchema.properties?.ok?.type !== 'boolean') {
     return 'get_concepts outputSchema row ok drift';
   }
+  if (getConceptsItemsSchema.properties?.isNode?.type !== 'boolean' || getConceptsItemsSchema.properties?.review?.type !== 'object') return 'get_concepts outputSchema row concept metadata drift';
   if (getConceptsItemsSchema.properties?.slug?.type !== 'string') {
     return 'get_concepts outputSchema row slug drift';
   }
@@ -1636,6 +1641,7 @@ export function toolsListSchemaFailure(tools) {
     'resolvedEdgeCount',
     'externalEdgeCount',
     'unresolvedEdgeCount',
+    'referencedOnlyCount',
     'aliasCount',
     'ambiguousAliasCount',
     'issueCount',
@@ -2433,7 +2439,7 @@ export function toolsListSchemaFailure(tools) {
   if (listKindsTool.outputSchema?.type !== 'object') {
     return 'list_kinds outputSchema root drift';
   }
-  if (!sameArray(listKindsTool.outputSchema?.required, ['total', 'byKind'])) {
+  if (!sameArray(listKindsTool.outputSchema?.required, ['total', 'byKind', 'referencedOnlyTotal', 'conceptsIncludingReferenced'])) {
     return 'list_kinds outputSchema required drift';
   }
   if (listKindsTool.outputSchema?.additionalProperties !== false) {
@@ -2446,6 +2452,10 @@ export function toolsListSchemaFailure(tools) {
   const byKindSchema = outputPropertyAt(listKindsTool, ['properties', 'byKind']);
   if (byKindSchema?.type !== 'object' || byKindSchema.additionalProperties?.type !== 'integer' || byKindSchema.additionalProperties?.minimum !== 0) {
     return 'list_kinds outputSchema byKind drift';
+  }
+  for (const field of ['referencedOnlyTotal', 'conceptsIncludingReferenced']) {
+    const schema = outputPropertyAt(listKindsTool, ['properties', field]);
+    if (schema?.type !== 'integer' || schema.minimum !== 0) return `list_kinds outputSchema ${field} drift`;
   }
 
   const validateTool = tools.find((tool) => tool?.name === 'validate_vault');
@@ -2462,7 +2472,7 @@ export function toolsListSchemaFailure(tools) {
   if (validateTool.outputSchema?.type !== 'object') {
     return 'validate_vault outputSchema root drift';
   }
-  if (!sameArray(validateTool.outputSchema?.required, ['scanned', 'problems', 'summary', 'pathDrift'])) {
+  if (!sameArray(validateTool.outputSchema?.required, ['scanned', 'problems', 'summary', 'summaryFreshness', 'pathDrift'])) {
     return 'validate_vault outputSchema required drift';
   }
   if (validateTool.outputSchema?.additionalProperties !== false) {
@@ -3948,6 +3958,7 @@ function maintenanceSummaryFailure(summary, label) {
     'externalElementRefsIgnored',
     'unassignedNodes',
     'emptyDomains',
+    'capabilitiesWithoutEvidence',
   ]) {
     if (!Number.isInteger(summary[key]) || summary[key] < 0) {
       return `${label} summary missing non-negative integer ${key}`;

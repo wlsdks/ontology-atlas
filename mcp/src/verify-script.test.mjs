@@ -600,6 +600,7 @@ describe('verify.mjs first-contact gates', () => {
       'externalElementRefsIgnored',
       'unassignedNodes',
       'emptyDomains',
+      'capabilitiesWithoutEvidence',
     ];
     const compactNodeSchema = {
       type: 'object',
@@ -645,6 +646,17 @@ describe('verify.mjs first-contact gates', () => {
         },
         additionalProperties: false,
       },
+    };
+    const conceptReviewSchema = {
+      type: 'object',
+      required: ['state', 'currentness'],
+      properties: {
+        state: { type: ['string', 'null'], enum: ['human_decides', 'confirmed', null] },
+        note: { type: 'string' }, reviewedBy: { type: 'string' }, reviewedAt: { type: 'string' },
+        currentness: { type: 'string', enum: ['not-confirmed', 'unknown', 'current', 'changed-since-review'] },
+        agentGuidance: { type: 'string' },
+      },
+      additionalProperties: false,
     };
     const vaultWarningsSchema = {
       type: 'array',
@@ -1051,6 +1063,7 @@ describe('verify.mjs first-contact gates', () => {
                 properties: {
                   uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
+                  isNode: { type: 'boolean' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
                   mtime: { type: 'number', minimum: 0 },
@@ -1106,10 +1119,12 @@ describe('verify.mjs first-contact gates', () => {
                   ok: { type: 'boolean' },
                   uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
+                  isNode: { type: 'boolean' },
                   frontmatter: { type: 'object' },
                   excerpt: { type: 'string' },
                   neighbors: conceptNeighborsSchema,
                   outgoingEdges: outgoingEdgesSchema,
+                  review: conceptReviewSchema,
                   mtime: { type: 'number', minimum: 0 },
                   warnings: vaultWarningsSchema,
                 },
@@ -1596,13 +1611,15 @@ describe('verify.mjs first-contact gates', () => {
         inputSchema: { additionalProperties: false, properties: {} },
         outputSchema: {
           type: 'object',
-          required: ['total', 'byKind'],
+          required: ['total', 'byKind', 'referencedOnlyTotal', 'conceptsIncludingReferenced'],
           properties: {
             total: { type: 'integer', minimum: 0 },
             byKind: {
               type: 'object',
               additionalProperties: { type: 'integer', minimum: 0 },
             },
+            referencedOnlyTotal: { type: 'integer', minimum: 0 },
+            conceptsIncludingReferenced: { type: 'integer', minimum: 0 },
           },
           additionalProperties: false,
         },
@@ -1691,6 +1708,7 @@ describe('verify.mjs first-contact gates', () => {
             'resolvedEdgeCount',
             'externalEdgeCount',
             'unresolvedEdgeCount',
+            'referencedOnlyCount',
             'aliasCount',
             'ambiguousAliasCount',
             'issueCount',
@@ -1707,6 +1725,7 @@ describe('verify.mjs first-contact gates', () => {
             resolvedEdgeCount: { type: 'integer', minimum: 0 },
             externalEdgeCount: { type: 'integer', minimum: 0 },
             unresolvedEdgeCount: { type: 'integer', minimum: 0 },
+            referencedOnlyCount: { type: 'integer', minimum: 0 },
             aliasCount: { type: 'integer', minimum: 0 },
             ambiguousAliasCount: { type: 'integer', minimum: 0 },
             issueCount: { type: 'integer', minimum: 0 },
@@ -2461,7 +2480,7 @@ describe('verify.mjs first-contact gates', () => {
         inputSchema: { additionalProperties: false, properties: {} },
         outputSchema: {
           type: 'object',
-          required: ['scanned', 'problems', 'summary', 'pathDrift'],
+          required: ['scanned', 'problems', 'summary', 'summaryFreshness', 'pathDrift'],
           properties: {
             scanned: { type: 'integer', minimum: 0 },
             pathDrift: { type: 'object', additionalProperties: false },
@@ -2513,6 +2532,24 @@ describe('verify.mjs first-contact gates', () => {
               },
               additionalProperties: false,
             },
+            summaryFreshness: {
+              type: 'object',
+              required: ['checked', 'summaryNodes', 'stale', 'hint'],
+              properties: {
+                checked: { type: 'boolean' }, summaryNodes: { type: 'integer', minimum: 0 },
+                stale: { type: 'array', items: {
+                  type: 'object',
+                  required: ['slug', 'kind', 'childCount', 'score', 'hint'],
+                  properties: {
+                    slug: { type: 'string' }, kind: { type: 'string' }, childCount: { type: 'integer', minimum: 0 },
+                    reasonCode: { type: 'string' }, bodyChangedAt: { type: 'string' }, membershipChangedAt: { type: 'string' },
+                    behindByMs: { type: 'number', minimum: 0 }, score: { type: 'number', minimum: 0, maximum: 1 }, hint: { type: 'string' },
+                  },
+                  additionalProperties: false,
+                } }, hint: { type: 'string' },
+              },
+              additionalProperties: false,
+            },
           },
           additionalProperties: false,
         },
@@ -2534,10 +2571,11 @@ describe('verify.mjs first-contact gates', () => {
         },
         outputSchema: {
           type: 'object',
-          required: ['uid', 'slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'],
+          required: ['uid', 'slug', 'isNode', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'review', 'mtime'],
           properties: {
             uid: { type: 'string', pattern: NODE_UID_PATTERN },
             slug: { type: 'string' },
+            isNode: { type: 'boolean' },
             frontmatter: { type: 'object' },
             excerpt: { type: 'string' },
             body: { type: 'string' },
@@ -2554,6 +2592,7 @@ describe('verify.mjs first-contact gates', () => {
             },
             neighbors: conceptNeighborsSchema,
             outgoingEdges: outgoingEdgesSchema,
+            review: conceptReviewSchema,
             mtime: { type: 'number', minimum: 0 },
             warnings: vaultWarningsSchema,
           },
@@ -3252,6 +3291,23 @@ describe('verify.mjs first-contact gates', () => {
           : tool
       ))),
       'list_kinds outputSchema byKind drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(tools.map((tool) => (
+        tool.name === 'list_kinds'
+          ? {
+            ...tool,
+            outputSchema: {
+              ...tool.outputSchema,
+              properties: {
+                ...tool.outputSchema.properties,
+                referencedOnlyTotal: { type: 'number', minimum: 0 },
+              },
+            },
+          }
+          : tool
+      ))),
+      'list_kinds outputSchema referencedOnlyTotal drift',
     );
     assert.equal(
       toolsListSchemaFailure(tools.map((tool) => (
@@ -7764,6 +7820,7 @@ describe('verify.mjs first-contact gates', () => {
       externalElementRefsIgnored: 0,
       unassignedNodes: 1,
       emptyDomains: 0,
+      capabilitiesWithoutEvidence: 0,
     };
     const clean = {
       operation: 'maintenance_plan',
@@ -7858,6 +7915,7 @@ describe('verify.mjs first-contact gates', () => {
       externalElementRefsIgnored: 0,
       unassignedNodes: 1,
       emptyDomains: 0,
+      capabilitiesWithoutEvidence: 0,
     };
     const clean = {
       operation: 'maintenance_plan',
@@ -8043,6 +8101,7 @@ describe('verify.mjs first-contact gates', () => {
       externalElementRefsIgnored: 0,
       unassignedNodes: 1,
       emptyDomains: 0,
+      capabilitiesWithoutEvidence: 0,
     };
     const summary = { ...previousSummary, remainingActions: 2 };
     const previousPage = {

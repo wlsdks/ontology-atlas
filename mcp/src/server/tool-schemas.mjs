@@ -1777,6 +1777,7 @@ const POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA = Object.freeze({
         externalElementRefsIgnored: { type: 'integer', minimum: 0 },
         unassignedNodes: { type: 'integer', minimum: 0 },
         emptyDomains: { type: 'integer', minimum: 0 },
+        capabilitiesWithoutEvidence: { type: 'integer', minimum: 0 },
       },
       required: [
         'totalActions',
@@ -1793,6 +1794,7 @@ const POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA = Object.freeze({
         'externalElementRefsIgnored',
         'unassignedNodes',
         'emptyDomains',
+        'capabilitiesWithoutEvidence',
       ],
       additionalProperties: false,
     },
@@ -1849,6 +1851,20 @@ const POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA = Object.freeze({
     'nextReviewAction',
     'actions',
   ],
+  additionalProperties: false,
+});
+
+const CONCEPT_REVIEW_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    state: {},
+    note: {},
+    reviewedBy: {},
+    reviewedAt: {},
+    currentness: { type: 'string', enum: ['not-confirmed', 'unknown', 'current', 'changed-since-review'] },
+    agentGuidance: NON_BLANK_STRING_SCHEMA,
+  },
+  required: ['state', 'currentness'],
   additionalProperties: false,
 });
 
@@ -2203,6 +2219,7 @@ export {
   EDGE_TARGET_KIND_DESCRIPTION,
   POST_WRITE_MAINTENANCE_GUIDANCE,
   POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
+  CONCEPT_REVIEW_OUTPUT_SCHEMA,
   MEANING_ASSESSMENT_OUTPUT_SCHEMA,
   nonBlankStringSchema,
   paginationOutputSchema,
