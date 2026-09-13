@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-13",
+  "decision": "Investigate bounded source behavior before declaring missing business meaning (V1.4)",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "explain",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-13",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "184dc395-489a-4560-844e-60fd411dd23c",
+  "recordedAt": "2026-09-13T11:18:46.478Z"
+}
