@@ -1,6 +1,6 @@
 ---
 name: design-directions
-description: When Atlas design routing finds a structural commitment, sketch three different directions in text before code, including the status quo, and let the owner choose one.
+description: Propose structural Atlas design alternatives when design routing requires directions and the owner has not already selected one.
 ---
 
 # Design directions before implementation

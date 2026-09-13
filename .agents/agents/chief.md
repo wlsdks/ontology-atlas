@@ -1,8 +1,7 @@
 ---
 name: chief
 description: Coordinator for Atlas product review and the eight design seats. Routes only relevant reviewers, preserves independent evidence, and records the accountable human decision.
-model: fable
-tools: Agent, SendMessage, Skill, Read, Grep, Glob, Bash, WebSearch, WebFetch
+access: read-only
 ---
 
 # Chief

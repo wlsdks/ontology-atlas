@@ -1,8 +1,7 @@
 ---
 name: po-wedge
 description: Positioning reviewer for Atlas category, first-contact claims, and one-shot reputation. Tests whether the claim is distinctive, earned, and specific to durable reviewed meaning.
-model: fable
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
+access: read-only
 ---
 
 # PO Wedge

@@ -1,6 +1,6 @@
 ---
 name: user-walkthrough
-description: Walk one complete journey against the running build with a declared knowledge state, name observable UX failure patterns, and refuse to invent whether a person would want the product.
+description: Walk a complete Atlas journey when requested or routed, using observed behavior and a declared knowledge state.
 ---
 
 # User walkthrough

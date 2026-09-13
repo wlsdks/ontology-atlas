@@ -1,6 +1,6 @@
 ---
 name: design-council
-description: Review only the Atlas structural commitments selected by design routing, using relevant seats, built evidence, optional conflict rebuttal, and one accountable guardian.
+description: Review a built Atlas design when design routing requires council review; use only its selected seats.
 ---
 
 # Design Council — selected seats, one accountable applier
@@ -31,7 +31,7 @@ routes derive at least two contrasting seats. `design-guardian` is not a seat.
 It is the accountable decider and applier.
 
 Seat briefs live at `../../agents/design-*.md`. The path resolves inside each
-mirrored tool tree. Open the selected briefs explicitly and never create a third
+client-specific tool tree. Open the selected briefs explicitly and never create a third
 copy.
 
 ## Required evidence

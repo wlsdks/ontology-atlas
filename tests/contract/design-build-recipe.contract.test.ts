@@ -20,15 +20,8 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8');
-const SKILL = '.claude/skills/design-build/SKILL.md';
-const MIRROR = '.agents/skills/design-build/SKILL.md';
-
-describe('design-build 레시피 — 참조 무결성', () => {
-  const recipe = read(SKILL);
-
-  it('두 벌이 바이트 동일하다 — Codex 는 `.claude` 를 못 읽는다', () => {
-    expect(read(MIRROR)).toBe(recipe);
-  });
+describe.each(['.claude', '.agents'])('design-build references in %s', (tree) => {
+  const recipe = read(`${tree}/skills/design-build/SKILL.md`);
 
   /** What the recipe tells you to use. One missing entry makes the recipe a lie. */
   const PRESCRIBED_PRIMITIVES: Array<[name: string, file: string]> = [
@@ -52,11 +45,11 @@ describe('design-build 레시피 — 참조 무결성', () => {
   const PRESCRIBED_INSTRUMENTS = [
     'scripts/measure-graph-readability.mjs',
     'scripts/measure-contrast.mjs',
-    '.claude/skills/design-audit/SKILL.md',
-    '.claude/skills/motion-verify/SKILL.md',
-    '.claude/skills/responsive-sweep/SKILL.md',
-    '.claude/skills/design-directions/SKILL.md',
-    '.claude/skills/gate-probe/SKILL.md',
+    `${tree}/skills/design-audit/SKILL.md`,
+    `${tree}/skills/motion-verify/SKILL.md`,
+    `${tree}/skills/responsive-sweep/SKILL.md`,
+    `${tree}/skills/design-directions/SKILL.md`,
+    `${tree}/skills/gate-probe/SKILL.md`,
   ];
 
   it.each(PRESCRIBED_INSTRUMENTS)('%s 가 실재한다', (path) => {

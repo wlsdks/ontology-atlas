@@ -251,7 +251,7 @@ describe("`.claude/rules` path scoping contract", () => {
    * this ratchets in one direction only: a commit that saves bytes must record
    * the saving, which is what makes the saving permanent.
    */
-  const RESIDENT_CONTEXT_BYTES = 27_144;
+  const RESIDENT_CONTEXT_BYTES = 25_512;
 
   /*
    * Raised by 209 bytes on 2026-09-12, using the mechanism this gate's own message

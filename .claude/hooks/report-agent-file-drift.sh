@@ -2,30 +2,10 @@
 # PostToolUse hook — after an edit inside the agent-file surface, run the
 # repository's own drift checks and hand the result straight back to the agent.
 #
-# Why this exists. `.claude/skills` and `.agents/skills` must stay byte
-# identical, and so must the two agent-brief trees. Nothing enforces that at the
-# moment of the edit. History shows the predictable result: commits that touch
-# one tree and not its twin, including one whose own subject line is "mirror
-# sync" — a commit whose entire purpose was repairing drift that had already
-# landed. The hook table in `scripts/claude-hooks.test.mjs` records the same
-# lesson from the other side: it sat red from 2026-07-31 to 2026-08-17 because
-# nobody ran the check, and a check nobody runs equals no check.
-#
-# `agents:check` costs 50 ms, so there is no reason for the answer to wait for a
-# commit, a push, or CI. This moves it to the keystroke.
-#
-# PostToolUse cannot block, and should not: the edit already happened and the
-# other half of a mirrored pair is a normal next step, not a violation. So this
-# reports rather than refuses, through `hookSpecificOutput.additionalContext`,
-# which is the channel Claude reads. Ordinary stdout would not reach the model.
-#
-# It stays silent when the surface is clean. A hook that speaks on every edit
-# spends context to say nothing, and gets ignored exactly when it matters.
-#
-# Not mirrored into `.codex/hooks.json`. Codex's PostToolUse support for edit
-# tools is not something this repository can verify from here, and wiring an
-# unverifiable copy would add precisely the dead gate this hook exists to catch.
-# Mirror it once someone measures Codex firing it.
+# Codex and Claude own independent instructions and resources. Copy differences
+# are expected; report only integrity findings such as missing references,
+# undeclared grants, language violations, or size limits. PostToolUse reports
+# through additionalContext and never blocks an edit.
 
 set -e
 
@@ -86,7 +66,10 @@ try {
   }
 }
 
-const findings = Array.isArray(report?.drift) ? report.drift : [];
+const findings = (Array.isArray(report?.drift) ? report.drift : []).filter((f) =>
+  !(["skill-copy", "agent-copy"].includes(f.check)
+    && [f.check + "-diverged", f.check + "-file-missing"].includes(f.code)),
+);
 if (findings.length === 0) process.exit(0);
 
 const lines = findings.slice(0, 12).map((f) => `  - [${f.check}] ${f.path}: ${f.message}`);
@@ -98,8 +81,8 @@ process.stdout.write(
     `The agent-file surface has ${findings.length} drift finding(s) after this edit:`,
     ...lines,
     "",
-    "Run `pnpm agents:check` for the full report. A mirrored tree is byte-identical",
-    "by contract, so an edit to one side is only half the change.",
+    "Run `pnpm agents:check` for integrity details. Codex and Claude files are independent;",
+    "do not synchronize them merely because their content or resources differ.",
   ].join("\n"),
 );
 ' <<<"$INPUT" 2>/dev/null || true

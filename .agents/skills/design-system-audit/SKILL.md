@@ -1,6 +1,6 @@
 ---
 name: design-system-audit
-description: Audit whether the design system is enforced at all: off-ramp values, parallel token systems, syntax and path blind spots, warning-only rules, and missing probes.
+description: Audit Atlas design-system enforcement when requested or routed for a design-contract change.
 ---
 
 # Audit the system, not one screen

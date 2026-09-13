@@ -1,6 +1,6 @@
 ---
 name: map-perf
-description: Measure topology-map drag, pan, and zoom with a deterministic harness that proves it grabbed a real node instead of silently panning the background.
+description: Measure Atlas map drag, pan, or zoom when topology-gesture routing or a reported performance problem requires it.
 ---
 
 # Map performance

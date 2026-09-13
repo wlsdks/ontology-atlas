@@ -1,8 +1,7 @@
 ---
 name: po-steward
 description: Atlas meaning and sovereignty reviewer. Protects durable evidence-bound meaning, local-first truth, human approval, and next-agent handoff when those boundaries change.
-model: opus
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__ontology-atlas__get_concept, mcp__ontology-atlas__list_concepts, mcp__ontology-atlas__find_backlinks, mcp__ontology-atlas__find_path, mcp__ontology-atlas__validate_vault, mcp__ontology-atlas__connection_info
+access: read-only
 ---
 
 # PO Steward

@@ -1,8 +1,7 @@
 ---
 name: design-motion
 description: Motion / Action Designer on the Atlas bench. Combines physical feel, interruption continuity, distance-aware timing, frame measurement, and reduced-motion equivalents.
-model: opus
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace
+access: read-only
 ---
 
 # Motion — Motion / Action Designer

@@ -1,8 +1,7 @@
 ---
 name: design-workbench
 description: macOS Workbench Designer on the Atlas bench. Owns installed-app proof, the 14-inch first viewport, wide-screen density, scroll-end clearance, and window lifecycle.
-model: opus
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__evaluate_script
+access: read-only
 ---
 
 # Workbench — macOS Workbench Designer

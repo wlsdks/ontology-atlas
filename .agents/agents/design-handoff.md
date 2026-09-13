@@ -1,8 +1,7 @@
 ---
 name: design-handoff
 description: Agent Handoff Designer on the Atlas bench. Keeps real MCP and CLI next actions visible, state-bound, portable, and usable by both people and agents.
-model: opus
-tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__ontology-atlas__connection_info, mcp__ontology-atlas__get_concept, mcp__ontology-atlas__find_neighbors, mcp__ontology-atlas__query_ontology
+access: read-only
 ---
 
 # Handoff — Agent Handoff Designer
