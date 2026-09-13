@@ -102,7 +102,7 @@ function isGuideDocument(path: string): boolean {
  */
 const MARKDOWN_PATH_TOKEN = /(?:^|[^\w./-])([A-Za-z0-9_][A-Za-z0-9_./-]*\.mdc?)(?![\w])/g;
 
-export function citedPaths(text: string): Set<string> {
+function citedPaths(text: string): Set<string> {
   const out = new Set<string>();
   MARKDOWN_PATH_TOKEN.lastIndex = 0;
   let match: RegExpExecArray | null;
