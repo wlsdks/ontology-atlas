@@ -325,13 +325,17 @@ jobs:
     name: Windows install canary
     if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.event.pull_request.draft == false }}
     runs-on: windows-2022
-    # budget: 100s
-    # 120 s is GitHub's whole-minute granularity, and 100 s <= 120 s <= 150 s keeps the
-    # 1.5x ceiling `workflow-budgets.contract.test.ts` enforces. The 100 s budget is
-    # derived, not yet measured: the release workflow's own Windows job spent 57 s on the
-    # identical checkout, Node, Corepack and install steps (its install failed inside
-    # `prepare`, so that excludes the ledger composition this job adds). Replaced with
-    # this job's own p95 once it has runs of its own.
+    # budget: 60s
+    # Measured, replacing the 100 s that was derived before this job had run. Its three
+    # successful runs on `main` took 47 s, 48 s and 50 s; `pnpm install --frozen-lockfile`
+    # is 17 s of that. Three samples is not a p95 and is not called one — 60 s is the
+    # observed 50 s maximum plus room for a slower runner, and the next few runs should
+    # tighten or widen it. The earlier 100 s was wrong in a specific way worth keeping:
+    # it assumed a 22 s checkout from the release workflow's Windows job, and this job's
+    # checkout is 8 s, because that job checks out submodules and build inputs this one
+    # does not need. A derived budget inherits the shape of whatever it was derived from.
+    # `timeout-minutes` stays 2: GitHub's granularity is whole minutes, and
+    # `workflow-budgets.contract.test.ts` allows up to max(1.5x budget, 120 s).
     timeout-minutes: 2
     steps:
       - name: Checkout
