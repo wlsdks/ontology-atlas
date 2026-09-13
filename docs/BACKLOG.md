@@ -37,9 +37,9 @@ need their own scoped PO/design/evidence proof before implementation.
 |---|---|---|---|
 | V1.0 | done(ffcdce35a) | Typed and readable measurement scope; discovery/oracle pass remains distinct from unmeasured construction | First slice; preserve existing thresholds and per-fixture/empty failure behavior |
 | V1.1 | done(8ea129383) | Frozen unfamiliar backend task, six owner-approved questions, source reference, license/scope manifest | Preserve the original question approval; independently verify task-specific reference |
-| V1.2 | in_progress | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
+| V1.2 | done(42cf788d9) | Bounded predicate/state/effect evidence reads for a measured missing read | Existing-tool versus new-tool decision from observed gap |
 | V1.3 | hold(witnessed document/config gap) | Scoped document/config evidence retaining current/planned/negated/conflicting context | Activate only witnessed gaps; follow applicable V1.2 decisions |
-| V1.4 | blocked(V1.2) | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | V1.2 and V1.3 where the task needs them |
+| V1.4 | ready | Source-first business hypotheses with definitions, counter-boundaries, qualifiers and evidence | V1.2 and V1.3 where the task needs them |
 | V1.5 | blocked(V1.4) | Independent candidate and persisted handoff, full-answer source audit, matched prompt/access comparisons | Exact meaning/gap/write approval; frozen run and holdout |
 | V2.1 | hold(reviewed starting vault) | Task/non-goal resolution with supported selection, alternatives or abstention | A reviewed starting vault may isolate reuse; disclose construction cost |
 | V2.2 | blocked(V2.1) | Compact action context preserving conditions, exceptions, currentness and unknowns | Same claims survive budgets and full-body follow-ups |
@@ -104,6 +104,37 @@ source-access gap in V1.2, not an assumed new reader or parser. All seven
 registration recommendations from `checks:changed -- --run` passed. V1.3
 waits for a witnessed document/config gap; V2.1 still needs a reviewed starting
 vault, so finishing this registration does not silently unlock either claim.
+
+**V1.2 evidence (2026-09-13, `42cf788d9`):** optional bounded implementation
+reads now run through the existing analyzer with explicit byte/range limits,
+source-hash replay, path/descriptor guards and an opt-in subject digest. Range
+Evidence survives storage and source-role lookup; its exact provenance remains
+unresolved in shared assessment, so it cannot silently become an answered CQ.
+The same slice repairs the demonstrated multiline-parameter navigation span.
+All 32 final `checks:changed -- --run` recommendations passed. Sol low implemented;
+Astra reviewed source access, custody, persistence and actual output behavior.
+
+Both frozen documentation conditions returned identical selected source packets
+(15,328 text bytes; 19,353 serialized packet bytes). A fresh packet-only reader
+explained the scoped email guard and independent possible webhook attempts from
+complete selected evidence; a separate guard-only reader withheld the webhook
+conclusion. These are two bounded q3/q5 probes, not a full ontology or general
+construction score. Original failures, gate mutants, source/parser parity and
+answers remain under the V1.1 scratch root's `v1-2/` and the separate
+`/Users/jinan/scratch/atlas-reader-proof-2026-09-13/` directory.
+
+Dogfood adds one confirmed implementation element and updates source/MCP/evaluator
+boundaries. Validation and compilation have no issues; remeasurement of the
+existing binding and normal finalization succeeded on the committed source.
+The four pre-existing summary-freshness review notices remain. Full external
+construction/persistence qualification and human meaning acceptance remain V1.5.
+
+**V3 direction selected by the owner:** integrate task review into the existing
+side workbench and its small-screen sheet. Preserve selection across qualified
+summary, local comparison and full evidence; the map is optional context.
+Meaning acceptance, code verification, merge and deployment remain independent.
+The exact selection and rejected alternatives are preserved in the external
+`v3-planning/owner-selection.json` and `DIRECTIONS.md`; implementation is pending.
 
 V1 and the reuse value in V2/V4 are separate risks: a manually reviewed starting
 vault can test reuse, but its creation method and cost must remain visible and
