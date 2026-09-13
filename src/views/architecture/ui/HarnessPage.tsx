@@ -212,8 +212,16 @@ function HarnessPageInner() {
     />
   );
 
+  /*
+   * ⚠️ **`relative z-10` on the wrapper is what keeps this block's hint panel readable.** The
+   * results block below is a later sibling, so without an explicit z-index every mark it draws —
+   * the "Guides: what the agents were told" heading, the file table, the matrix — paints over the
+   * `InfoHint` panel that hangs out of this block, and the two texts read as one smear (owner,
+   * 2026-09-14, on the installed app). The panel's own `z-30` cannot fix that: it orders the panel
+   * against its siblings inside this element, never against the element that follows it.
+   */
   const sentence = report ? (
-    <div data-testid="harness-sentence" className="architecture-result-arrive">
+    <div data-testid="harness-sentence" className="architecture-result-arrive relative z-10">
       {/*
         ⚠️ **Demoted, so the finding can win.** This sentence and the coverage headline shared one
         token — `text-title` · emphasis · primary — 58px apart, and measured as ink-by-contrast the
