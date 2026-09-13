@@ -85,13 +85,35 @@ test.describe("하네스 탭", () => {
     const matrix = page.getByTestId("harness-coverage");
     await expect(matrix).toBeVisible({ timeout: 30_000 });
 
-    // The headline counts the areas no check names, and never a score.
-    await expect(page.getByTestId("harness-coverage-headline")).toContainText("검사도 이름을 부르지 않습니다");
+    // Each column gets a card: the count of areas it has no answer for, over a denominator the
+    // reader can see. This replaced a headline sentence that could only ever speak for Watched.
+    const watchedCard = page.locator('[data-testid="harness-coverage-column-card"][data-census-row="watched"]');
+    await expect(watchedCard).toContainText("어떤 검사도 부르지 않는 도메인");
 
-    // The universal row stands once, above the areas, instead of repeating down every column.
+    // ⚠️ The card's number is not a derived statistic — it is the count of empty marks in the
+    // column below it, so a reader can settle it by counting. If the two ever disagree the screen
+    // is worse than the undecodable bar this replaced, so the agreement is the assertion.
+    const declaredGap = await watchedCard.locator("[data-harness-column-gap]").getAttribute("data-harness-column-gap");
+    const emptyMarks = await page.locator('[data-harness-cell="watched"][data-harness-cell-empty="true"]').count();
+    expect(Number(declaredGap)).toBe(emptyMarks);
+
+    // The always-loaded lanes are counted on the card of the column they qualify and open beneath
+    // it. As a separate section below the table they were three flat runs of monospace names — the
+    // disease that had just been removed from the table — furthest from the cells they explain.
+    await expect(page.getByTestId("harness-coverage-everywhere")).toHaveCount(0);
+    await watchedCard.getByTestId("harness-everywhere-toggle").click();
     const everywhere = page.getByTestId("harness-coverage-everywhere");
-    await expect(everywhere).toContainText("forbidden");
     await expect(everywhere).toContainText("lint");
+
+    // ⚠️ Nine of this repository's hook names exist in both .claude/hooks/ and .codex/hooks/ as
+    // real mirrored files, and the first build printed the bare name twice — which reads as a
+    // rendering fault rather than as the mirror it is. Each name appears once now, and the tools
+    // that read it carry the distinction the repetition destroyed.
+    const toldCard = page.locator('[data-testid="harness-coverage-column-card"][data-census-row="told"]');
+    await toldCard.getByTestId("harness-everywhere-toggle").click();
+    const told = page.getByTestId("harness-coverage-everywhere");
+    await expect(told).toContainText("forbidden");
+    expect((await told.textContent())!.match(/forbidden/g)!).toHaveLength(1);
 
     // Every row carries the vault's purpose sentence, which is the whole reason the rows are areas
     // rather than folders: without it an empty cell can only say "a file is absent".
@@ -126,6 +148,146 @@ test.describe("하네스 탭", () => {
     expect(await matrix.textContent()).not.toMatch(/%|점수|등급|성숙도/);
   });
 
+  test("390 에서도 설명 말풍선이 화면 안에 있고, 빈 칸이 비어 보이지 않고, 마지막 잉크가 하단 탭에 가리지 않는다", async ({ page }) => {
+    /*
+     * ⚠️ **This is the width where the round-two shape can break, and nothing measured it.**
+     * `scroll-end-gap.spec.ts`'s folder-open pass runs at two ≥lg viewports and stubs the browser
+     * picker, so on this route it would measure the "a browser cannot read this" card rather than
+     * the matrix — a gate with the wrong subject. The runtime lives here, so the measurement does
+     * too (design-responsive, 2026-09-13).
+     *
+     * Three things, each a real defect that was found by measuring rather than by looking:
+     *
+     * 1. The column definitions live in an `InfoHint` on each card, and the reach block's three
+     *    states in one on its heading. Those panels are 288px wide and hang from a 24px button, so
+     *    at 390 the lead's ran **84.9%** off the left edge and the first card's **68.6%**, and a
+     *    per-tile version in the reach strip landed at x **−89.97** while its neighbour cleared the
+     *    window by under a pixel. So this measures *clearance*, not survival: a panel that fits by
+     *    0.6px is a coincidence one translation away from a defect nobody re-measures.
+     * 2. Below `sm` the "None" word steps aside, because in English it overran the 39px cell by
+     *    11.5px and stole the next column's press. Leaving the slot **empty** there is the table
+     *    convention for "no data" beside siblings that all carry a digit.
+     * 3. The bottom tab bar is fixed at this width, and the reserve was measured once with the
+     *    provenance disclosure open and once shut because it came to −1px in one of those states.
+     */
+    await mountHarnessVault(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/ko/architecture/?view=coverage");
+    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
+
+    // ① Every hint panel clears both window edges by a real margin — not by a rounding error.
+    //    8px is the panel's own `mt-2` offset from its trigger: nothing on this screen sits closer
+    //    to the window edge than a floating surface sits to the thing that opened it.
+    const HINT_EDGE_CLEARANCE = 8;
+    const hints = page.locator("[aria-describedby]");
+    const hintCount = await hints.count();
+    /* Five at this width: the lead sentence, the three column cards, the reach heading. A smaller
+       number means a subject vanished and the measurement lost it, which is not a pass. */
+    expect(hintCount, "설명 버튼이 모자란다 — 측정 실패이지 통과가 아니다").toBeGreaterThanOrEqual(5);
+    const boxes: string[] = [];
+    for (let i = 0; i < hintCount; i += 1) {
+      const hint = hints.nth(i);
+      await hint.scrollIntoViewIfNeeded();
+      await hint.focus();
+      const panel = page.locator(`#${(await hint.getAttribute("aria-describedby"))!.replace(/:/g, "\\:")}`);
+      const box = (await panel.boundingBox())!;
+      boxes.push(`${i}: x=${box.x.toFixed(1)} right=${(box.x + box.width).toFixed(1)}`);
+      expect(box.x, `${i}번 설명 말풍선이 왼쪽 창가에 너무 붙었다 [${boxes.join(" | ")}]`).toBeGreaterThanOrEqual(
+        HINT_EDGE_CLEARANCE,
+      );
+      expect(
+        box.x + box.width,
+        `${i}번 설명 말풍선이 오른쪽 창가에 너무 붙었다 [${boxes.join(" | ")}]`,
+      ).toBeLessThanOrEqual(390 - HINT_EDGE_CLEARANCE);
+    }
+    console.log("hint panels at 390:", boxes.join(" | "));
+
+    // ② An empty cell prints its zero where the word cannot fit.
+    const emptyCell = page.locator('[data-harness-cell][data-harness-cell-empty="true"]').first();
+    await expect(emptyCell).toHaveText(/\d/);
+
+    // ③ The page never scrolls sideways, and the last ink clears the fixed bottom tabs.
+    async function clearanceBelowLastInk() {
+      return page.evaluate(async () => {
+      const scroller = document.querySelector('[role="tabpanel"]') as HTMLElement;
+      scroller.scrollTo({ top: scroller.scrollHeight });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const tabs = document.querySelector('[data-tabbar="primary"]');
+      const tabsTop = tabs ? tabs.getBoundingClientRect().top : window.innerHeight;
+      let lowest = 0;
+      let lowestWhat = "";
+      for (const el of scroller.querySelectorAll("*")) {
+        if (!el.textContent?.trim()) continue;
+        /*
+         * ⚠️ A closed `<details>` keeps its children's boxes in Chromium — the subtree is skipped
+         * with `content-visibility`, not `display: none` — so measuring every descendant reported
+         * the collapsed provenance rules as the page's last ink, 18.4px "below" the fold. Only ink
+         * a reader can actually see counts.
+         */
+        const fold = el.closest("details");
+        if (fold && !fold.open && el.closest("summary") === null) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) continue;
+        if (r.bottom > lowest) {
+          lowest = r.bottom;
+          lowestWhat = `${el.tagName}.${el.className.toString().slice(0, 60)}|${el.textContent.trim().slice(0, 30)}`;
+        }
+      }
+      return {
+        sideways: document.documentElement.scrollWidth - window.innerWidth,
+        gap: +(tabsTop - lowest).toFixed(1),
+        tabsFound: !!tabs,
+        tabsTop: +tabsTop.toFixed(1),
+        lowest: +lowest.toFixed(1),
+        lowestWhat: lowestWhat,
+        scrollTop: scroller.scrollTop,
+        maxScroll: scroller.scrollHeight - scroller.clientHeight,
+      };
+      });
+    }
+
+    /* Both fold states, because the reserve was written after it measured 5px closed and −1px open
+       on this very screen — one state passing is not the reserve working. */
+    const closed = await clearanceBelowLastInk();
+    expect(closed.sideways, "가로 스크롤이 생겼다").toBeLessThanOrEqual(0);
+    expect(closed.tabsFound, "하단 탭을 못 찾았다 — 계측 실패이지 통과가 아니다").toBe(true);
+    expect(
+      closed.gap,
+      `접힌 상태에서 마지막 잉크가 하단 탭에 붙었다 (${closed.lowestWhat})`,
+    ).toBeGreaterThan(0);
+
+    await page.getByTestId("harness-coverage-provenance").click();
+    const open = await clearanceBelowLastInk();
+    expect(open.sideways, "펼친 뒤 가로 스크롤이 생겼다").toBeLessThanOrEqual(0);
+    expect(
+      open.gap,
+      `펼친 상태에서 마지막 잉크가 하단 탭에 붙었다 (${open.lowestWhat})`,
+    ).toBeGreaterThan(0);
+
+    /*
+     * ④ The same five panels at 768, where the column cards are 216px and the reach strip is
+     *    3-up: the left / centre / right anchors are load bearing there, and a wrong one shows up
+     *    as a negative x rather than as a near miss.
+     */
+    await page.setViewportSize({ width: 768, height: 900 });
+    await page.goto("/ko/architecture/?view=coverage");
+    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
+    const wide = page.locator("[aria-describedby]");
+    const wideCount = await wide.count();
+    expect(wideCount, "768 에서 설명 버튼이 모자란다").toBeGreaterThanOrEqual(5);
+    for (let i = 0; i < wideCount; i += 1) {
+      const hint = wide.nth(i);
+      await hint.scrollIntoViewIfNeeded();
+      await hint.focus();
+      const panel = page.locator(`#${(await hint.getAttribute("aria-describedby"))!.replace(/:/g, "\\:")}`);
+      const box = (await panel.boundingBox())!;
+      expect(box.x, `768: ${i}번 설명 말풍선이 왼쪽으로 나갔다`).toBeGreaterThanOrEqual(HINT_EDGE_CLEARANCE);
+      expect(box.x + box.width, `768: ${i}번 설명 말풍선이 오른쪽으로 나갔다`).toBeLessThanOrEqual(
+        768 - HINT_EDGE_CLEARANCE,
+      );
+    }
+  });
+
   test("문서가 지침인지, 지침이 이름을 댄 것인지, 아무도 안 부르는 것인지 셋으로 나뉜다", async ({ page }) => {
     /*
      * The harness's most common silent failure: a document that exists and no guide points at. The
@@ -136,12 +298,12 @@ test.describe("하네스 탭", () => {
     await page.goto("/ko/architecture/?view=coverage");
     const reach = page.getByTestId("harness-reach");
     await expect(reach).toBeVisible({ timeout: 30_000 });
-    await expect(reach.locator('[data-harness-reach-row="guides"]')).toContainText("지침");
-    await expect(reach.locator('[data-harness-reach-row="named"]')).toContainText("1");
+    await expect(reach.locator('[data-census-row="guides"]')).toContainText("지침");
+    await expect(reach.locator('[data-census-row="named"]')).toContainText("1");
     /* Three: the fixture's unnamed document, plus both agent briefs. A brief is addressed by name
        rather than by path, so it lands here for a reason that is fine — which is exactly why the
        folders are printed beside the count instead of the rows being filtered. */
-    await expect(reach.locator('[data-harness-reach-row="unnamed"]')).toContainText("3");
+    await expect(reach.locator('[data-census-row="unnamed"]')).toContainText("3");
 
     // The breakdown of where the unnamed documents are opens on a press. Spilled permanently, the
     // most important number on the screen was the one followed by the most text on the screen.

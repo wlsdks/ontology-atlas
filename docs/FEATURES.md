@@ -609,11 +609,24 @@ at the root and say nothing about which code they govern. A scope is kept only i
 disk, and every entry carries the declaration it came from, so an attribution can be checked rather
 than trusted.
 
-Anything declaring no path reaches every domain and stands in **its own strip beside the matrix**,
-not repeated down eight rows: `forbidden`, `git` and `local-first`, twenty hook and Git-hook scripts, and
-`lint`, `test`, `test:run` and the six CI workflows with no trigger filter. That row is what makes
-the empty cells readable — "no check **names** this domain" is what the files support, while "nothing
-runs over it" is not.
+**Every mark says one thing** (2026-09-13). The square in a cell is a container: **filled** when
+something names that domain for that question, **drawn and empty** when nothing does — two states,
+separated by fill as well as by hue, and nothing else. The number beside it carries how many, as a
+number. Above each column stands a card with **one large number: how many domains that column has
+no answer for**, over a denominator printed beside it — and that number is literally the count of
+empty squares below it, so a reader can settle the claim by counting rather than by trusting. The
+card uses the same census grammar as `/ontology/insights` (`shared/ui/census-tile`), reused rather
+than re-invented. No length encoding survives: with counts of 0–12 across eight rows, a bar drawn
+against an invisible per-column maximum made a Gated `2` and a Watched `12` the same mark.
+
+Anything declaring no path reaches every domain and is **counted on the card of the column it
+qualifies**, opening beneath it rather than repeated down eight rows: `forbidden`, `git` and
+`local-first`, twenty hook and Git-hook scripts, and `lint`, `test`, `test:run` and the six CI
+workflows with no trigger filter. That count is what makes the empty cells readable — "no check
+**names** this domain" is what the files support, while "nothing runs over it" is not. A guard
+mirrored across `.claude/hooks/` and `.codex/hooks/` — nine of this repository's are — appears
+**once**, with the tools that read it, because the repetition destroyed exactly the distinction the
+two files carry.
 
 **An empty cell is the product.** It is a mark that reads down the column at a glance, and opening it shows the ontology's
 own record of what the domain is for beside the paths nothing reaches — the sentence a file-only
@@ -623,7 +636,10 @@ tool ships, and a number asserts a judgement files cannot support. A repository 
 no ontology gets a stated empty state rather than a blank grid, and still gets the half of the
 screen that needs no ontology.
 
-**What an agent can reach** — beside the matrix, every authored Markdown file falls into exactly one
+**What an agent can reach** — beneath the matrix, in the same census grammar with **no card**: the
+three counts keep the display step because they are this block's answer, and they give up the
+surface, because two identical strips cannot both be the screen's subject and the numeral cannot
+say which is (2026-09-13). Every authored Markdown file falls into exactly one
 of three states: a **guide** (read without being asked), a document **a guide names** by path
 (reached when needed), or a document **nothing names** (present, and the agent will not open it).
 Measured by citation and never by glob: a rule's `paths:` says when to load that rule, not which
@@ -633,6 +649,13 @@ repository's own `.gitignore` marks as generated; nothing else is filtered, beca
 an archive and a brief addressed by name rather than by path all belong in the third row for
 different and mostly fine reasons, and which of those should be unreferenced is the reader's
 judgement. A document naming a design file is a reference, never proof the agent saw the design.
+
+**The wait screen is held back, never the read.** The scan reports each pass it runs and fills a
+bar only where the denominator was known before the pass started — but it appears only once a read
+has taken longer than a second, so a read that finishes in 0.6s shows no wait screen at all and one
+over five thousand documents still gets its stages. The read was never slowed to display it. What
+happens on every visit regardless of speed is the **arrival**: the result rises into place and the
+six numerals count up from zero.
 
 The whole reading goes through the installed app's bridge (`entities/agent-files`, the same
 classifier the docs sidebar and `ontology-atlas agent-files` use — one store, not a second). A

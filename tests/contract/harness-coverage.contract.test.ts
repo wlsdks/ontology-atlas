@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { buildCoverageMatrix, scanHarness, type HarnessScanPort } from "@/entities/agent-files";
+import { groupMirroredDeclarations } from "@/views/architecture/ui/HarnessCoverageView";
 import { deriveCoverageAreas, type CoverageVaultDoc } from "@/views/architecture/model/coverage-areas";
 import { buildExcerpt, parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 
@@ -126,6 +127,47 @@ describe("the coverage matrix over this repository", () => {
     }
     /* Every area carries a purpose, because the purpose is what makes an empty cell readable. */
     for (const area of matrix.areas) expect(area.purpose.length).toBeGreaterThan(0);
+  });
+
+  it("prints a mirrored guard once, with both tools, instead of its bare name twice", async () => {
+    /*
+     * ⚠️ **A repeated name was a lost distinction, not a duplicate bug.** Nine hook scripts in this
+     * repository exist in **both** `.claude/hooks/` and `.codex/hooks/` as real, separately
+     * maintained files — `AGENTS.md` requires the Codex side to be an adapted `apply_patch` mirror
+     * rather than a copy. `ScopeDeclaration.label` is the bare script name for both, so the first
+     * build's list printed each of those names twice and the owner read it, correctly, as a
+     * rendering fault.
+     *
+     * What this asserts is the shape of the repair rather than the number nine, which moves with
+     * every hook added: every mirrored pair collapses to **one** row, that row names **more than
+     * one** tool, and the files behind it are still both there so the cell's declaration count
+     * stays a count of files. A repair that deduplicated by dropping a file would pass the first
+     * clause and fail the third.
+     */
+    /* The real capability paths, because a candidate that touches none of them is dropped before
+       the disk is consulted — with an empty list the scan has no hooks to mirror. */
+    const { capabilityPaths } = deriveCoverageAreas(await vaultDocs());
+    const report = await scanHarness(fsPort(), { capabilityPaths });
+    const hooks = report.coverage.filter((entry) => entry.origin === "hook");
+    expect(hooks.length).toBeGreaterThan(0);
+
+    const groups = groupMirroredDeclarations(hooks);
+    /* One row per name, and the rows are distinct. */
+    expect(new Set(groups.map((group) => group.label)).size).toBe(groups.length);
+    /* Nothing was thrown away: the files still add up. */
+    expect(groups.reduce((sum, group) => sum + group.entries.length, 0)).toBe(hooks.length);
+
+    const mirrored = groups.filter((group) => group.entries.length > 1);
+    expect(
+      mirrored.length,
+      "this repository mirrors hook scripts across .claude/hooks and .codex/hooks; if that stopped being true, this gate has no subject and must be re-aimed rather than deleted",
+    ).toBeGreaterThan(0);
+    for (const group of mirrored) {
+      /* The tool is the fact the bare name destroyed, so a mirrored row must carry both. */
+      expect(group.tools.length, `${group.label} names only ${group.tools.join(", ")}`).toBeGreaterThan(1);
+      /* And they really are separate files, not one file counted twice. */
+      expect(new Set(group.entries.map((entry) => entry.id)).size).toBe(group.entries.length);
+    }
   });
 
   it("splits authored Markdown by whether a guide sends an agent to it", async () => {

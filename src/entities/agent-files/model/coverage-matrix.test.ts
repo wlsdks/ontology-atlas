@@ -11,6 +11,7 @@ function declaration(overrides: Partial<ScopeDeclaration> & Pick<ScopeDeclaratio
     declaration: '',
     declaresPath: true,
     scopes: [],
+    tools: [],
     ...overrides,
   };
 }

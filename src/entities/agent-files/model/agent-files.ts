@@ -200,6 +200,20 @@ export interface AgentFilesAnalysis {
   };
 }
 
+/**
+ * Which agent tools read the file at this path, from the same rule table the guides table cites.
+ *
+ * The Harness coverage view needs this for one reason the classifier never had to serve: nine hook
+ * names exist in **both** `.claude/hooks/` and `.codex/hooks/` as real mirrored files, so a list
+ * keyed by the bare script name printed each of them twice and read as a rendering fault. The names
+ * are not duplicated — the *tool* is the distinction the bare name threw away, and it is already
+ * recorded here. A path that is not an agent file at all (`.githooks/pre-push`, a `package.json`
+ * script, a CI workflow) belongs to no agent tool and returns nothing rather than a guess.
+ */
+export function agentToolsForPath(path: string): readonly AgentTool[] {
+  return classifyAgentFilePath(path)?.tools ?? [];
+}
+
 function classifyAgentFilePath(
   path: string,
 ): { ruleId: string; kind: AgentFileKind; tools: AgentTool[] } | null {
