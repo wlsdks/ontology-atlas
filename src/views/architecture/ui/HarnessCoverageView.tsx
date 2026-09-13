@@ -135,7 +135,7 @@ function CellMark({ count, t }: { count: number; t: TranslateFn }) {
    * `shrink-0` and `whitespace-nowrap` are load-bearing, not tidiness. At 390 the cell's content box
    * is 39px: an empty span's automatic minimum size is 0, so the flex row ate the slab first —
    * measured 18.3px against its neighbour's 24 — and the gap mark came out *narrower* than the
-   * non-gap mark, in the one column it exists to shout in. Korean broke 「없음」 across two lines at
+   * non-gap mark, in the one column it exists to shout in. Korean broke its two-syllable word across two lines at
    * the same width; English overran the cell by 11.5px and stole the next column's hit area, so a
    * press on the left edge of Watched opened Gated (design-responsive, 2026-09-13). Below `sm` the
    * word steps aside and the slab carries the state alone; the cell's `aria-label` already says it
