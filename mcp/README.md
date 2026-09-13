@@ -1110,9 +1110,13 @@ gates remain in force. The source-checkout
 [bootstrap guide](../.agents/skills/ontology-bootstrap/guides/meaning-extraction.md#source-first-hypothesis-workflow)
 uses this capability to investigate task triggers, predicates, state/effects,
 failure paths and verification before declaring a semantic evidence gap. It
-keeps implemented-behavior hypotheses separate from owner intent and leaves
-unassigned findings outside the ontology proposal. These are investigation
-instructions; construction quality requires separate field-trial evidence.
+keeps implemented-behavior hypotheses separate from historical owner intent.
+Role-diverse behavior evidence may support tentative responsibility/capability
+candidates with sourced counter-boundaries, explicit uncertainty and conditions
+preserved in their bodies. Existing authority thresholds, independent
+qualification and exact human acceptance still apply; unsupported assignments
+stay outside the proposal. These are investigation instructions, not a new
+admission rule or a guarantee of construction quality.
 
 ## Interop — export to a standard graph format
 
