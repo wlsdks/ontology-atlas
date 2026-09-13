@@ -17,6 +17,25 @@ its own `LICENSE` inside the artifact beside Atlas's, and carry no native binari
 A new distributed artifact belongs in this sentence: a notice that under-lists is a
 compliance failure.
 
+## Trademarks
+
+Product names that appear in Atlas — Claude Code, Codex, Cursor, Antigravity,
+Copilot, GitHub and others — are trademarks of their respective owners. Atlas is
+not affiliated with, sponsored by, or endorsed by any of them. It names them only
+to say what it interoperates with, which is the accurate way to describe an
+integration and the only reason they appear.
+
+Names are one thing and marks are another. A service's own glyph appears only
+where that service's published brand guideline was read and permits monochrome
+use to show an integration; every other row falls back to a generic connector
+glyph. `docs/FEATURES.md` owns that rule and names which services have been
+checked. The ACP runtime icons under `public/acp-icons/` are the 16x16 monochrome
+SVGs the ACP registry itself publishes for this purpose, fetched at build time by
+`pnpm acp:registry`, so no brand colour enters the application.
+
+CC0 on an icon set waives copyright, not trademark. Do not read a permissive
+icon licence as permission to wear a mark.
+
 The two inventories at the end are read from the **build graphs** that produce those
 artifacts, so they are supersets of what is actually shipped: a proc-macro crate such
 as `syn`, or a build-only tool such as `typescript`, is listed without being
