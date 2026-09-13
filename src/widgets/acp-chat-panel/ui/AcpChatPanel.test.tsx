@@ -144,6 +144,14 @@ function answerFor(id: number) {
   return (answer?.result as { outcome?: { outcome?: string; optionId?: string } })?.outcome;
 }
 
+async function startUserTurn(text: string) {
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: text } });
+  fireEvent.click(screen.getByTestId('acp-chat-send'));
+  await waitFor(() =>
+    expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'thinking'),
+  );
+}
+
 /** The work detail is collapsed by default. Checks that measure a tool row expand it explicitly first. */
 afterEach(() => {
   cleanup();
@@ -962,6 +970,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await bootSession({
       onOntologyRelationPreviewChange: (preview) => previews.push(preview),
     });
+    await startUserTurn('관계 변경을 검토해줘');
     emit(
       mcpPermissionRequest('mcp__atlas-vault__add_relation', 91, {
         from: 'capabilities/contextual-editing',
@@ -1054,6 +1063,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
   it('거절한 변경은 실행 안 함 영수증으로 즉시 닫는다', async () => {
     const receipts: AcpWorkReceipt[] = [];
     await bootSession({ onWorkReceipt: (receipt) => receipts.push(receipt) });
+    await startUserTurn('새 개념 제안을 검토해줘');
     emit(mcpPermissionRequest('mcp__atlas-vault__add_concept', 97, {
       slug: 'capabilities/not-created',
       kind: 'capability',
@@ -1075,6 +1085,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await bootSession({
       onOntologyRelationPreviewChange: (preview) => previews.push(preview),
     });
+    await startUserTurn('여러 관계 제안을 검토해줘');
     emit(
       mcpPermissionRequest('mcp__atlas-vault__add_relations', 90, {
         relations: [
@@ -1114,6 +1125,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
 
   it('우리 볼트의 쓰기 도구는 경로가 없어도 변경안을 보여 주고 답을 기다린다', async () => {
     await bootSession();
+    await startUserTurn('새 개념을 추가해줘');
     emit(
       mcpPermissionRequest('mcp__atlas-vault__add_concept', 83, {
         slug: 'capabilities/contextual-editing',
@@ -1141,6 +1153,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
      */
     bridge.verdict = 'ask';
     await bootSession();
+    await startUserTurn('외부 문서를 흡수해줘');
     emit({
       jsonrpc: '2.0',
       id: 81,
