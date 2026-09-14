@@ -57,14 +57,11 @@ describe("지도 검사 훅 (window.__atlasMap)", () => {
   });
 
   it("엣지는 컨트롤 포인트까지 낸다 — 현선을 재면 화면에 없는 교차를 센다", () => {
-    // The draw path is `quadraticCurveTo`. Exposing only the endpoints makes the
-    // readability instrument measure its own approximation rather than the map, and
-    // that error is silent (a number still comes out). Since the 3D view
-    // (2026-08-18) the control point also takes the same endpoint-offset average as
-    // draw (`projectEdgePoints`) — with 3D off the offset is 0 and behaviour is
-    // unchanged.
-    expect(source).toContain("controlX: toScreenX(e.controlX + (offA.dx + offB.dx) / 2)");
-    expect(source).toContain("controlY: toScreenY(e.controlY + (offA.dy + offB.dy) / 2)");
+    // Keep the public coordinate fields. Accuracy is checked against actual
+    // canvas stroke commands in map-3d-edge-picking.spec.ts; pinning the old
+    // endpoint-offset formula here had preserved a different curve than paint.
+    expect(source).toMatch(/controlX:\s*toScreenX\(/);
+    expect(source).toMatch(/controlY:\s*toScreenY\(/);
   });
 
   it("노드는 화면 반지름을 낸다 — 겹침은 반지름 없이 셀 수 없다", () => {

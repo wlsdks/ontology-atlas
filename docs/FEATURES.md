@@ -345,8 +345,8 @@ had become false).
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
 - **Three 3D arrangements, chosen in one picker** — the `3D` chip in the top tool
-  lane opens a four-row list: **Flat** (the ordinary 2D map, default), **Cone**,
-  **Strata**, and **Cloud**. Cone and Strata both draw containment and answer
+  lane opens five views: **Flat** (the ordinary 2D map, default), **Galaxy**,
+  **Cone**, **Strata**, and **Neural**. Cone and Strata both draw containment and answer
   different questions with it: Cone makes a parent the apex of its own cone, so a
   subtree is a bump you can point at and rotate to the front; **Strata** (2026-09-06)
   lays the four kinds out as stacked planes — project on top, then domain,
@@ -366,7 +366,7 @@ had become false).
   a node keeps its parent's bearing, which makes every containment drop short,
   near-vertical and unable to cross a sibling's; a node whose parent is not in the
   map falls to the outer rim of its own plane, where "nothing above holds this"
-  is a position rather than a missing line. Cloud drops containment altogether and
+  is a position rather than a missing line. Neural uses all real relations instead of containment coordinates and
   lets relations decide all three coordinates. Switching between any two runs the
   same continuous morph — nodes travel, they do not cut — and the choice is
   remembered. Measured on the sample vault (2026-09-06): Strata leaves 2
@@ -374,6 +374,15 @@ had become false).
   same-tier. Geometry: `buildStrataTargets` and `layoutConeTree` in
   `src/widgets/ontology-map/model/dome-view.ts`; gates:
   `tests/e2e/map-3d-strata-drawing.spec.ts` and `map-3d-cone-drawing.spec.ts`.
+- **Neural composition and readable 3D connections** — Neural uses deterministic
+  relation communities as a layout aid, with tighter local groups, lit cell bodies,
+  and shallow connection arcs. Group proximity is inferred layout, not a new domain
+  or an accepted relation. Cone and Strata keep containment straight; other 3D
+  relations have bounded curves whose paint, pointer hit test, and measurement
+  share the same live endpoints. Reciprocal facts take opposite arcs. Labels are
+  larger in 3D; after closing the detail panel, Fit Map remains available to
+  leave retained selection and return to the whole map. Relation types, depth occlusion, ink floors,
+  keyboard navigation, and reduced-motion behavior remain part of the contract.
 - **A click lands on the concept you are pointing at, in every 3D arrangement**
   (2026-09-06) — the pointer answers with whatever the frame painted under the
   cursor, and the small pressable ring around a dot no longer competes with a

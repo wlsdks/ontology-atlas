@@ -5840,12 +5840,15 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                   and every geometry probe read it as a panel covering the map (map-keyboard-walk). */}
               <div className="chrome-rail contents" data-testid="topology-utility-rail">
               {createNodeOpen ||
-              selectedRelationActive ||
               topologyBlockingOverlayActive ||
-              selectedNodeFocusActive ? null : (
+              selectedRelationActive ||
+              (selectedNodeFocusActive && (!view3d || !nodePopoverDismissed)) ? null : (
                 <TopologyFitControl
                   density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
-                  onFitView={() => setFitViewToken((t) => t + 1)}
+                  onFitView={() => {
+                    if (view3d) handleClose();
+                    setFitViewToken((t) => t + 1);
+                  }}
                 />
               )}
               {/* Guided tour entry point: the sibling directly above the "?" tile, same

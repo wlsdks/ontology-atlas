@@ -33,6 +33,22 @@ export interface LabelBBox {
   maxY: number;
 }
 
+/** Keep fading labels only where they cannot cover a currently placed name. */
+export function filterFadingLabelCollisions<T>(
+  entries: readonly T[],
+  isPlaced: (entry: T) => boolean,
+  boxFor: (entry: T) => LabelBBox | undefined,
+): T[] {
+  const occupied = entries.filter(isPlaced).map(boxFor).filter((box): box is LabelBBox => box !== undefined);
+  return entries.filter(entry => {
+    if (isPlaced(entry)) return true;
+    const box = boxFor(entry);
+    if (!box || occupied.some(other => bboxesOverlap(box, other))) return false;
+    occupied.push(box);
+    return true;
+  });
+}
+
 /** Inclusive point-in-rect test for a label's anchor. */
 export function isWithinSafeRect(x: number, y: number, rect: SafeRect): boolean {
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;

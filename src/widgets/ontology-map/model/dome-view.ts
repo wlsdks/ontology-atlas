@@ -1,3 +1,5 @@
+import { findCouplingGroups } from './coupling-groups';
+
 /**
  * 3D view — an opt-in mode with two truthful arrangements: the **Dome** lays
  * ownership onto concentric kind rings; the **Cloud** lets relations place nodes
@@ -1502,7 +1504,10 @@ export const CLOUD_ITERATIONS = 260;
 /** Strength of the all-pairs repulsion. Inverse-square in distance (Coulomb-like). */
 const CLOUD_REPULSION = 16000;
 /** Strength of the pull along a relation — a Hooke spring. */
-const CLOUD_SPRING = 0.008;
+const CLOUD_SPRING = 0.02;
+/** Local adjacency groups cohere while cross-group repulsion preserves breathing room. */
+const CLOUD_COHESION = 0.07;
+const CLOUD_LOCAL_REPULSION = 0.25;
 /** Rest length of one relation (dome units). */
 const CLOUD_REST_LENGTH = 92;
 
@@ -1528,26 +1533,10 @@ const CLOUD_COLLIDE_RADIUS_SCALE = 2.4;
 const CLOUD_COLLIDE_RELAX = 0.5;
 
 /**
- * **The cloud uses deeper fog and smaller dots.**
- *
- * No amount of raising the force constants relieves on-screen density, and the
- * reason is geometric: the radius is normalised after layout, so **scaling
- * everything up shrinks it back**, leaving only shape uniformity. Packing 125 nodes
- * into a ball always overlaps front and back at the centre of the projection — not
- * a force problem but the problem of pressing a volume into a plane.
- *
- * What screens in this family actually prescribe is **render**, not layout: deep
- * fog, dots smaller than you would expect, very thin lines. Pushing the back half
- * into the atmosphere **halves the density the eye takes in.** The dome, having
- * layers as structure, never needed this much.
- *
- * The implementation adds no new path — it only re-scores the two terms
- * `updateDomeFrame` already writes into the frame map (`u` depth, `s` radius
- * multiplier), for the cloud alone. Draw, hit-test and instrumentation all read
- * those two terms already, so the wiring is zero.
+ * Cloud keeps the shared, readable kind radii. Depth fog and perspective convey
+ * front/back position; adjacency-derived cohesion separates local groups.
  */
 const CLOUD_DEPTH_GAMMA = 0.62;
-const CLOUD_NODE_SCALE = 0.78;
 /** A very weak pull back to the origin — keeps the cloud from inflating without bound. */
 const CLOUD_CENTERING = 0.0016;
 /** Farthest a node may move in one iteration — runaway guard. */
@@ -1618,6 +1607,14 @@ function createCouplingCloudRelaxer(
     const kind = kindOf.get(ids[i]) ?? "element";
     collideR[i] = DOME_NODE_R[kind] * 2.1 * CLOUD_COLLIDE_RADIUS_SCALE;
   }
+
+  const groups = findCouplingGroups(ids, edges);
+  const groupCount = groups.reduce((largest, group) => Math.max(largest, group), -1) + 1;
+  const groupSize = new Uint32Array(groupCount);
+  const groupX = new Float64Array(groupCount);
+  const groupY = new Float64Array(groupCount);
+  const groupZ = new Float64Array(groupCount);
+  for (const group of groups) groupSize[group] += 1;
 
   const fx = new Float64Array(n);
   const fy = new Float64Array(n);
@@ -1695,7 +1692,8 @@ function createCouplingCloudRelaxer(
         const d = Math.sqrt(d2);
 
         // Repulsion — inverse-square (Coulomb-like).
-        const inv = CLOUD_REPULSION / d2 / d;
+        const affinity = groups[i] === groups[j] ? CLOUD_LOCAL_REPULSION : 1;
+        const inv = CLOUD_REPULSION * affinity / d2 / d;
         const ux = dx * inv;
         const uy = dy * inv;
         const uz = dz * inv;
@@ -1743,6 +1741,21 @@ function createCouplingCloudRelaxer(
       fx[b] -= ux;
       fy[b] -= uy;
       fz[b] -= uz;
+    }
+
+    // Cohesion is an inferred layout aid, not a new graph edge. Compute each
+    // neighbourhood's current centre once; singleton groups exert no pull.
+    groupX.fill(0); groupY.fill(0); groupZ.fill(0);
+    for (let i = 0; i < n; i += 1) {
+      const group = groups[i];
+      groupX[group] += px[i]; groupY[group] += py[i]; groupZ[group] += pz[i];
+    }
+    for (let i = 0; i < n; i += 1) {
+      const group = groups[i];
+      const size = groupSize[group];
+      fx[i] += (groupX[group] / size - px[i]) * CLOUD_COHESION;
+      fy[i] += (groupY[group] / size - py[i]) * CLOUD_COHESION;
+      fz[i] += (groupZ[group] / size - pz[i]) * CLOUD_COHESION;
     }
 
     // ④ Pull back to the origin, then apply cooling.
@@ -1932,137 +1945,6 @@ export function buildDomeModel(
 }
 
 /**
- * **Shell radius** at height y — the **convex** surface passing through the four
- * rings.
- *
- * **Why not interpolate linearly between the rings** (the first attempt, reverted on
- * measurement 2026-08-18). The first version linearly interpolated the four (y, r)
- * samples. That makes `domeEdgeControl`'s bow **exactly zero** — the midpoint of a
- * chord running from the apex down to a ring already lies on that linear
- * interpolation. On a linear shell a radial relation line does not *follow* the
- * shell, it **is** the shell. The screen stayed a tent.
- *
- * So the shell becomes a sphere's profile: 0 at the apex height, the bottom radius
- * at the bottom ring's height, and `√(1−t²)` **bulging outwards** in between. The
- * four rings sit inside that surface (measured: domain 148 vs surface 162,
- * capability 192 vs 210) — the rings are where data sits and the surface is the skin
- * relation lines ride over, so it is right that they do not coincide.
- *
- * Values are derived from the plane table (zero constants re-entered): apex height,
- * plus the bottom ring's height and radius.
- */
-export function domeShellRadiusAtY(y: number): number {
-  const top = DOME_PLANE.project.y;
-  const bottom = DOME_PLANE.element.y;
-  const rMax = DOME_PLANE.element.r;
-  const span = top - bottom;
-  if (span <= 1e-6) return rMax;
-  const t = (y - bottom) / span; // 0 at the bottom … 1 at the apex
-  const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
-  return rMax * Math.sqrt(Math.max(0, 1 - c * c));
-}
-
-/**
- * How far a relation line **bows along its meridian** — 0 is a straight chord, 1
- * puts the curve's midpoint exactly on the shell.
- *
- * **Why it must bow — this is what separates a "tent" from a "dome".** In the first
- * implementation every relation line was a **chord**. Lines from the apex down to
- * the rings cut **through** the inside of the dome, leaving spokes radiating from
- * the apex, and that silhouette is a **tent (a cone)**, not a dome. Worse, every
- * spoke passes through one point, so the centre is densest — the least readable
- * place on screen was exactly the most important one (project, domain).
- *
- * Pushing the midpoint out to the shell makes a line between the same two points
- * travel **over the skin**. Three things improve at once: ① the silhouette becomes
- * spherical ② the centre clears, so the spine reads ③ meridians from different
- * parents separate into their own bearings, reducing crossings.
- *
- * Why 0.9 and not 1: pinned to the shell, the outermost meridian coincides with the
- * silhouette's outline and reads as "someone drew a border". Keep it a hair inside.
- *
- * The equivalent concept in 3D libraries is `linkCurvature`
- * (vasturiano/3d-force-graph) — technique only, no code ported (this repo has torn
- * out a graph render dependency twice; ledger 2026-08-18 (76), rejection ③).
- */
-export const DOME_EDGE_BOW = 0.9;
-
-/**
- * Control point (dome coordinates) for the relation line between two nodes — see
- * `DOME_EDGE_BOW`. Returns null if either coordinate is missing (the caller then
- * uses the 2D control point as-is).
- *
- * **A control point is not a point the curve passes through — push it twice as
- * far.** A quadratic Bézier passes through `(A + 2C + B)/4` at t=0.5, i.e. the
- * curve's midpoint is **halfway between** the chord midpoint and the control point.
- * To send the curve out to the shell, the control point has to be pushed **twice**
- * that far. Drop this one line and the bow is always half of what was intended, and
- * half reads as "is that bowed or not".
- */
-export function domeEdgeControl(
-  model: DomeModel,
-  sourceId: string,
-  targetId: string,
-  /**
-   * The edge's kind. In the cone tree a **containment** edge is a cone's own
-   * edge (apex to base) and draws straight; only a `depends` relation bows over
-   * the shell so it does not cut through the cones. Omitted, the edge bows.
-   */
-  kind: "contains" | "depends" = "depends",
-): DomeCoord | null {
-  // A coupling cloud has no shell — with no skin to bow over, lines go straight
-  // (the caller takes null and falls back to the 2D control point).
-  if (model.arrangement === "coupling") return null;
-  const a = model.coords.get(sourceId);
-  const b = model.coords.get(targetId);
-  if (kind === "contains") {
-    /*
-     * **Strata's containment drop is drawn straight, on purpose.**
-     *
-     * On the cone a containment edge is the cone's own edge and taking the 2D
-     * control point (`null`) is right, because that control already runs along the
-     * ownership spine. In Strata the drop is a near-vertical line between two
-     * planes, and the 2D control bows it sideways: a vertical line with a bulge in
-     * it reads as a mistake in the drawing rather than as a relation, and it is
-     * the one edge in this arrangement whose whole job is to say "this sits under
-     * that". So the control point becomes **the chord's own midpoint in dome
-     * space**, which a quadratic Bézier passes through exactly — a straight
-     * segment between the two nodes, at any pose.
-     */
-    if (model.arrangement !== "strata" || !a || !b) return null;
-    return { px: (a.px + b.px) / 2, py: (a.py + b.py) / 2, pz: (a.pz + b.pz) / 2 };
-  }
-  if (!a || !b) return null;
-  const mx = (a.px + b.px) / 2;
-  const my = (a.py + b.py) / 2;
-  const mz = (a.pz + b.pz) / 2;
-  const chordR = Math.hypot(mx, mz);
-  const shellR = domeShellRadiusAtY(my);
-  // Already outside the shell (a node dragged out, a diametrically opposed pair) —
-  // do not push further. Pulling it inward would bow that one line the other way and
-  // read as "why is that one like that".
-  const target = Math.max(chordR, shellR * DOME_EDGE_BOW);
-  const controlR = chordR + (target - chordR) * 2;
-  if (chordR < 1e-6) {
-    /*
-     * The midpoint is on the axis — either two diametrically opposed nodes, or a
-     * point directly below the apex. There is no direction to push in, so push along
-     * the **sum of the two endpoints' bearings**. That way a line between opposed
-     * nodes also goes around the axis rather than through it. If even that sum is 0
-     * (perfect antipodes) it does not bow — the data does not say which way to go,
-     * and picking arbitrarily makes the direction snap during rotation.
-     */
-    const sx = a.px + b.px;
-    const sz = a.pz + b.pz;
-    const n = Math.hypot(sx, sz);
-    if (n < 1e-6) return { px: mx, py: my, pz: mz };
-    return { px: (sx / n) * controlR, py: my, pz: (sz / n) * controlR };
-  }
-  const k = controlR / chordR;
-  return { px: mx * k, py: my, pz: mz * k };
-}
-
-/**
  * **The dome's "grip" — where dragging rotates and where it pans.**
  *
  * In 3D, dragging empty space was **all orbit rotation** from the start, which left
@@ -2121,34 +2003,6 @@ export interface DomeProjection {
   s: number;
   /** Camera-space depth z2 — input to the per-frame fog normalisation (`updateDomeFrame`). */
   z: number;
-}
-
-/**
- * A relation line's control point in **world 2D** — `domeEdgeControl` plus the
- * current pose projection. It uses `runtime.yaw`, without tier torsion: a control
- * point shapes the curve, it is not an object belonging to a tier, and mixing
- * torsion in makes the curve wobble to a different beat than its endpoints during a
- * drag.
- */
-export function domeEdgeControlWorld(
-  runtime: DomeRuntime,
-  sourceId: string,
-  targetId: string,
-  kind: "contains" | "depends" = "depends",
-): { wx: number; wy: number } | null {
-  const coord = domeEdgeControl(runtime.model, sourceId, targetId, kind);
-  if (coord === null) return null;
-  // Use the trig computed once per frame (see the `drawCosYaw` doc-block) — redoing
-  // cos/sin per edge exceeds a thousand calls per frame in this vault alone.
-  const p = projectWithTrig(
-    runtime.model,
-    coord,
-    runtime.drawCosYaw,
-    runtime.drawSinYaw,
-    runtime.drawCosPitch,
-    runtime.drawSinPitch,
-  );
-  return { wx: p.wx, wy: p.wy };
 }
 
 /** Project one dome coordinate to world 2D at yaw/pitch — a port of the hero's `project()`. */
@@ -2477,9 +2331,7 @@ export function updateDomeFrame(
        * IS the cap now, and it cannot grow with zoom or vault size.
        */
       const domeR = (DOME_NODE_PX[node.kind] * p.s) / (cameraScale > 0 ? cameraScale : 1);
-      let target = baseR > 0 ? domeR / baseR : 1;
-      // The cloud needs smaller dots for density to read (doc-block above).
-      if (model.arrangement === "coupling") target *= CLOUD_NODE_SCALE;
+      const target = baseR > 0 ? domeR / baseR : 1;
       s = 1 + (target - 1) * r;
     }
     if (p !== null) {

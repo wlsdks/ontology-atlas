@@ -73,6 +73,7 @@ import {
   CLUSTER_CHIP_LABEL_PRIORITY,
   ellipsizeToWidth,
   greedyPlaceLabels,
+  filterFadingLabelCollisions,
   overlapsForeignReserved,
   NODE_DISC_LABEL_PRIORITY,
   clampAnchorIntoSafeRect,
@@ -109,6 +110,7 @@ const NODE_CULL_SLACK = 3;
 import { isSpineNode, radiusForKind, type TopologyWorld, type WorldEdge, type WorldNode } from "./topology-world";
 import { pressResponse } from "../expressive/mass-spring";
 import { beginEdgeGlow, drawNodeBloom, endEdgeGlow } from "../expressive/ego-light";
+import { drawNeuralBloom } from "../expressive/neural-bloom";
 
 /**
  * Dashed aura ring that tells an expanded parent apart from a collapsed one. The
@@ -263,6 +265,8 @@ const edgeAlphaReused: number[] = [];
  * lens-active frames, and those never hit the cache.
  */
 const nodeVisualCache: (NodeVisual | undefined)[] = new Array(16);
+/** Resting nodes share NodeVisual objects; tint each palette once, not once per node. */
+const neuralPaletteCache = new WeakMap<NodeVisual, { ramp: number; ink: string; fill: string; stroke: string }>();
 let nodeVisualCacheTokens: OntologyMapTokens | null = null;
 let nodeVisualCacheReducedMotion: boolean | null = null;
 const KIND_CACHE_INDEX: Record<WorldNode["kind"], number> = { project: 0, domain: 1, capability: 2, element: 3 };
@@ -655,6 +659,8 @@ export interface FrameDrawParams {
    * cutting — the same shape every other lens on this canvas uses. The loop owns the clock.
    */
   galaxyRamp?: number;
+  /** Coupling view material: lit cell bodies and softly tapered connections. */
+  neuralRamp?: number;
   /** Semantic-zoom axis (`cameraScale / overviewEntryScale`) — drives tier visibility only. */
   zoomRatio: number;
   now: number;
@@ -1018,12 +1024,11 @@ export interface FrameDrawParams {
    */
   domeTierRaisedKind?: DomeViewKind | null;
   /**
-   * 3D — the **meridian control point** for one edge (world 2D). Why an edge must
-   * bow rather than run straight: the `DOME_EDGE_BOW` doc-block in
-   * `model/dome-view.ts`. Returning null leaves that edge on its 2D control point.
+   * 3D — the live projected control point, shared with picking and measurement.
+   * Returning null leaves that edge on its planar assembly starting point.
    */
   domeControlFor?:
-    | ((sourceId: string, targetId: string, kind: "contains" | "depends") => { wx: number; wy: number } | null)
+    | ((edge: WorldEdge) => { x: number; y: number } | null)
     | null;
   /**
    * Strength 0..1 of the trail lens — an on/off exponential ramp stepped by the loop.
@@ -1044,6 +1049,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     camera,
     farT,
     galaxyRamp: galaxyRampProp = 0,
+    neuralRamp: neuralRampProp = 0,
     zoomRatio,
     now,
     viewportWidth,
@@ -1213,6 +1219,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
 
   // 3D view — at ramp 0 the loop passes null, so this frame takes the 2D path.
   const domeOn = domeFrame !== null && domeFrame !== undefined && domeFrame.size > 0;
+  const neural = domeOn ? Math.min(1, Math.max(0, neuralRampProp)) : 0;
 
   /*
    * **How much of the sky is out.** One number for the whole frame, because the galaxy is an
@@ -1259,7 +1266,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // the graph when zoomed out.
   const footprintScale = footprintScaleFor(camera.scale.value);
   // Label zoom factor — computed once per frame, shared by every label.
-  const labelScale = labelZoomScale(camera.scale.value);
+  const labelScale = Math.max(labelZoomScale(camera.scale.value), domeOn ? 1 + Math.min(1, domeRamp) * 0.3 : 1);
 
   // Only the constellation background drifts on a **far layer**. Council
   // 2026-07-28, owner: "make it look inertial, like space" (it should carry inertia, like
@@ -1358,17 +1365,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
    * re-lookup; the pulse resolver omits them and looks them up itself.
    */
   const projectEdgePoints = (
-    edge: {
-      sourceId: string;
-      targetId: string;
-      kind: "contains" | "depends";
-      ax: number;
-      ay: number;
-      bx: number;
-      by: number;
-      controlX: number;
-      controlY: number;
-    },
+    edge: WorldEdge,
     knownOffA?: DomeNodeFrame,
     knownOffB?: DomeNodeFrame,
   ): { a: { x: number; y: number }; b: { x: number; y: number }; control: { x: number; y: number } } => {
@@ -1384,22 +1381,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
     const offA = knownOffA ?? domeFrameFor(edge.sourceId);
     const offB = knownOffB ?? domeFrameFor(edge.targetId);
-    /*
-     * On the dome the control point is the **meridian** control point, not the
-     * average of the two endpoint offsets (`DOME_EDGE_BOW` in
-     * `model/dome-view.ts`). The average is a chord, so the line cuts through the
-     * inside of the dome and the silhouette reads as a tent, not a dome.
-     *
-     * The assembly ramp (`aMin`) crosses from the 2D control point to the meridian
-     * one: over the 700ms of switching 3D on the curvature must stay continuous,
-     * or the line visibly snaps into its bow.
-     */
+    // The shared projection resolves the live frame once for drawing, picking,
+    // and graph measurements; the planar curve remains the assembly starting point.
     const flatControlX = edge.controlX + (offA.dx + offB.dx) / 2;
     const flatControlY = edge.controlY + (offA.dy + offB.dy) / 2;
-    const meridian = domeControlFor === null ? null : domeControlFor(edge.sourceId, edge.targetId, edge.kind);
-    const aMin = Math.min(offA.a, offB.a);
-    const controlX = meridian === null ? flatControlX : flatControlX + (meridian.wx - flatControlX) * aMin;
-    const controlY = meridian === null ? flatControlY : flatControlY + (meridian.wy - flatControlY) * aMin;
+    const curve = domeControlFor === null ? null : domeControlFor(edge);
+    const controlX = curve?.x ?? flatControlX;
+    const controlY = curve?.y ?? flatControlY;
     out.a.x = (edge.ax + offA.dx - camX) * camScale + halfW;
     out.a.y = (edge.ay + offA.dy - camY) * camScale + halfH;
     out.b.x = (edge.bx + offB.dx - camX) * camScale + halfW;
@@ -1416,7 +1404,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // Ego light (2026-09-08): the glow under the focused node's lines and the bloom under the
   // node ride the centre's focus ramp, so they arrive with the dive and leave with the fade.
   const egoGlowRamp =
-    !domeOn && colorFocusedNodeId !== null ? Math.min(1, Math.max(0, focusRampById.get(colorFocusedNodeId) ?? 0)) : 0;
+    (!domeOn || neural > 0.001) && colorFocusedNodeId !== null ? Math.min(1, Math.max(0, focusRampById.get(colorFocusedNodeId) ?? 0)) : 0;
   const neighborsOfFocusedRaw = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
   /*
    * Dome ancestry (2026-08-23, `docs/DECISIONS.md` (107)). In the dome, height IS the containment
@@ -1479,9 +1467,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   }
   // perf 2026-08-19 — one token argument object per frame; it is frame-invariant.
   const traceTokensFrame = {
-    edgeContains: tokens.edgeContains,
-    edgeContainsL0: tokens.edgeContainsL0,
-    edgeContainsL2: tokens.edgeContainsL2,
+    edgeContains: lerpColorHex(tokens.edgeContains, tokens.indigo, neural * 0.12),
+    edgeContainsL0: lerpColorHex(tokens.edgeContainsL0, tokens.indigoBright, neural * 0.12),
+    edgeContainsL2: lerpColorHex(tokens.edgeContainsL2, tokens.indigo, neural * 0.12),
     edgeDepends: tokens.edgeDepends,
     edgeDim: tokens.edgeDim,
     indigo: tokens.indigo,
@@ -2456,7 +2444,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     if (domeOn) {
       effRadius *= nodeDome.s;
       if (!isHoveredNode && !previewEndpoint && !isTrailKept(node.id) && egoState === "normal") {
-        const domeFog = 1 + (domeFogAlpha(nodeDome.u) - 1) * nodeDome.a;
+        // Neural depth keeps a visible cell body rather than leaving a bright
+        // rim around an almost-black centre. Perspective and shading retain depth.
+        const fog = Math.max(domeFogAlpha(nodeDome.u), neural * DOME_RIM_FOG_FLOOR);
+        const domeFog = 1 + (fog - 1) * nodeDome.a;
         realmClarityAlpha *= domeFog;
         domeDetail = 1 + (domeDetailFactor(nodeDome.u) - 1) * nodeDome.a;
         domeRimAlphaScale = domeFog > 1e-4 ? Math.max(1, DOME_RIM_FOG_FLOOR / domeFog) : 1;
@@ -2527,11 +2518,24 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       sheenTopCacheTint = tokens.nodeSheenTint;
       sheenTopCacheBlend = tokens.nodeSheenBlend;
     }
-    let sheenTop = sheenTopCache.get(visual.fill);
+    let bodyFill = visual.fill;
+    let bodyStroke = visual.stroke;
+    if (neural > 0.001 && colorEgoState !== "dim") {
+      const ink = node.kind === "project" ? tokens.amberHub : tokens.indigoBright;
+      let palette = neuralPaletteCache.get(visual);
+      if (!palette || palette.ramp !== neural || palette.ink !== ink) {
+        const fill = lerpColorHex(visual.fill, ink, neural * 0.85);
+        palette = { ramp: neural, ink, fill, stroke: lerpColorHex(visual.stroke, fill, neural * 0.85) };
+        neuralPaletteCache.set(visual, palette);
+      }
+      bodyFill = palette.fill;
+      if (colorEgoState === "normal") bodyStroke = palette.stroke;
+    }
+    let sheenTop = sheenTopCache.get(bodyFill);
     if (sheenTop === undefined) {
-      sheenTop = lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
+      sheenTop = lerpColorHex(bodyFill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
       if (sheenTopCache.size > 256) sheenTopCache.clear();
-      sheenTopCache.set(visual.fill, sheenTop);
+      sheenTopCache.set(bodyFill, sheenTop);
     }
     // Far-side detail ramp — converges the metallic sheen gradient toward the flat
     // fill continuously with depth. At detail 0, `sheenTop === fill` (the same
@@ -2599,6 +2603,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             : 0;
       drawNodeBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, bloomRamp, tokens);
     }
+    if (neural > 0.001 && colorEgoState !== "dim") {
+      // Each glow hugs a real cell body. No region or inferred edge is painted.
+      const strength = attended ? 1 : node.kind === "element" ? 0.35 : 0.6;
+      drawNeuralBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, neural, strength, tokens, canvasDpr,
+        node.kind === "project" ? { core: tokens.amberHub, halo: tokens.amberHub } : undefined);
+    }
     // perf 2026-08-19 — one token argument per frame (`nodeShapeTokensFrame`). The
     // state literals stay spelled out because the review-ring-authorship contract
     // gate pins that wiring.
@@ -2630,8 +2640,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         // instant `focusedNodeId` goes null. Equals live `egoState` while a
         // selection is active.
         egoState: colorEgoState,
-        fill: visual.fill,
-        stroke: visual.stroke,
+        fill: bodyFill,
+        stroke: bodyStroke,
         lineWidth: visual.lineWidth,
         dash: visual.dash,
         hub: node.isHub,
@@ -3500,7 +3510,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // from the ramp, so they rise from 0 again next time. Without `labelPresentById`
   // (the existing test path) only placed labels draw, at alpha 1.
   const presenceById = labelPresentById;
-  const drawList: { payload: LabelPayload; presenceAlpha: number }[] = [];
+  let drawList: { payload: LabelPayload; presenceAlpha: number }[] = [];
   if (presenceById) {
     const dtSec = lastLabelRampNow === 0 ? 0 : Math.min((now - lastLabelRampNow) / 1000, 0.05);
     lastLabelRampNow = now;
@@ -3520,6 +3530,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     for (const id of [...presenceById.keys()]) if (!onScreenIds.has(id)) presenceById.delete(id);
   } else {
     for (const c of placedResult) drawList.push({ payload: c.payload, presenceAlpha: 1 });
+  }
+  if (domeOn) {
+    // A departing label may fade in empty space, but cannot keep painting over
+    // a placed label during a 3D fit/morph. Legibility wins at the collision.
+    drawList = filterFadingLabelCollisions(drawList,
+      entry => placedIds.has(entry.payload.nodeId), entry => labelBboxById.get(entry.payload.nodeId));
   }
   prevPlacedLabelIds = placedIds;
 

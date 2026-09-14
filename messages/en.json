@@ -1204,7 +1204,7 @@
         "galaxy": "Galaxy",
         "ownership": "Cone",
         "strata": "Strata",
-        "coupling": "Cloud"
+        "coupling": "Neural"
       },
       "view3dChoiceHint": {
         "flat": "the ordinary 2D map",

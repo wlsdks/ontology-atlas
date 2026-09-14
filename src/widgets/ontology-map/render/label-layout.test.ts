@@ -8,6 +8,7 @@ import {
   overlapsForeignReserved,
   ellipsizeToWidth,
   greedyPlaceLabels,
+  filterFadingLabelCollisions,
   isSafeRectProtectedLabel,
   isWithinSafeRect,
   resolveLabelPriority,
@@ -15,6 +16,19 @@ import {
 } from "./label-layout";
 
 const RECT = { left: 344, right: 880, top: 96, bottom: 704 };
+
+describe('fading labels during camera travel', () => {
+  it('keeps the placed name readable and preserves noncolliding fades', () => {
+    const entries = [
+      { id: 'departing', placed: false, box: { minX: 5, minY: 0, maxX: 30, maxY: 10 } },
+      { id: 'current', placed: true, box: { minX: 0, minY: 0, maxX: 20, maxY: 10 } },
+      { id: 'quiet-fade', placed: false, box: { minX: 40, minY: 0, maxX: 60, maxY: 10 } },
+      { id: 'second-fade', placed: false, box: { minX: 45, minY: 0, maxX: 65, maxY: 10 } },
+    ];
+    expect(filterFadingLabelCollisions(entries, entry => entry.placed, entry => entry.box).map(entry => entry.id))
+      .toEqual(['current', 'quiet-fade']);
+  });
+});
 
 describe("isWithinSafeRect", () => {
   it("keeps an anchor inside the visible area", () => {
