@@ -88,6 +88,7 @@ import { groupEvents } from './group-events';
 import { splitAppRequest } from './request-parts';
 import { isVaultTool, toolLabel } from './tool-label';
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
+import { useMeaningTransitionCapture } from '../model/use-meaning-transition-capture';
 
 /**
  * Markdown inside the conversation — one set of values tuned to **chat density**.
@@ -308,6 +309,7 @@ export function AcpChatPanel({
   onWorkReceipt,
   onTurnStarted,
   captureTaskBaseline,
+  meaningTransitionContext,
 }: {
   runtimeId: string;
   runtimeLabel: string;
@@ -459,9 +461,16 @@ export function AcpChatPanel({
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
   onTurnStarted?: (start: AcpTurnStart) => ((completion: AcpTurnCompletion) => void | Promise<void>) | null;
   captureTaskBaseline?: (turn: AcpTurnStart) => Promise<TaskBaselineCaptureResult>;
+  meaningTransitionContext?: { handle: FileSystemDirectoryHandle; fileHandles: ReadonlyMap<string, FileSystemFileHandle>; writable: boolean };
 }) {
   const t = useTranslations('acpChat');
   const reducedMotion = usePrefersReducedMotion();
+  const meaningTransitions = useMeaningTransitionCapture({ context: meaningTransitionContext, vaultRoot, runtimeId });
+  const recordMeaningReceipt = meaningTransitions.recordReceipt;
+  const captureWorkReceipt = useCallback((receipt: AcpWorkReceipt) => {
+    recordMeaningReceipt(receipt);
+    onWorkReceipt?.(receipt);
+  }, [recordMeaningReceipt, onWorkReceipt]);
   const openingScopeMismatch = openingRequest?.scopeKey !== undefined && openingRequest.scopeKey !== requestScopeKey;
   const observedTerminalToolIdsRef = useRef(new Set<string>());
   const emitTerminalTool = useCallback((event: AcpEvent) => {
@@ -504,7 +513,7 @@ export function AcpChatPanel({
     mcpServers,
     approvalSettleMs: reducedMotion ? 0 : MOTION.settle.duration * 1000,
     resumeLatest,
-    onWorkReceipt,
+    onWorkReceipt: captureWorkReceipt,
     onTurnStarted: captureTurnStart,
     captureTaskBaseline,
     autoDecide,
@@ -515,6 +524,7 @@ export function AcpChatPanel({
     vaultRoot,
     captureTaskBaseline,
     events,
+    onMeaningDecision: meaningTransitions.saveDecision,
   });
   const pendingChangeSet = useMemo(
     () =>
@@ -1792,6 +1802,8 @@ export function AcpChatPanel({
           />
         ) : null}
       </Surface>
+
+      {meaningTransitions.terminalSaveFailed ? <p role="status" className="px-3 text-caption text-[color:var(--color-text-secondary)]">{t('permission.taskReview.terminalSaveFailed')}</p> : null}
 
       {/*
         The composer — **everything fits inside one box** (owner report from the real

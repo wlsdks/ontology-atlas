@@ -6833,6 +6833,7 @@ function HomePageImpl() {
             onOntologyRelationPreviewChange={setAcpRelationPreview}
             onWorkReceipt={handleAcpWorkReceipt}
             captureTaskBaseline={captureTaskBaseline}
+            meaningTransitionContext={vault.handle ? { handle: vault.handle, fileHandles: vault.fileHandles, writable: vault.status === 'loaded' } : undefined}
             /*
              * ⚠️ **One close, and it belongs to the workbench** (2026-09-06). The panel drew its
              * own X beside the workbench's, so the dock had two identical buttons a few pixels

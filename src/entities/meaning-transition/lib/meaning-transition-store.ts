@@ -15,10 +15,18 @@ import {
   type MeaningTransitionCandidate,
   type MeaningTransitionPreparation,
 } from '@/shared/lib/meaning-transition';
+import {
+  assertMeaningTransitionV2Link,
+  meaningTransitionV2DecisionArtifact,
+  parseMeaningTransitionV2,
+  serializeMeaningTransitionV2,
+  verifyMeaningTransitionV2,
+  type MeaningTransitionV2,
+} from '@/shared/lib/meaning-transition-v2';
 
 export interface MeaningTransitionArtifactBytes { digest: `sha256:${string}`; content: string }
 export interface MeaningTransitionArchivePage {
-  records: MeaningTransitionCandidate[];
+  records: Array<MeaningTransitionCandidate | MeaningTransitionV2>;
   problems: Array<{ fileName: string; reason: string }>;
   totalMembers: number;
   scanned: number;
@@ -34,6 +42,10 @@ export function meaningTransitionArtifactRef(digest: string): string {
 }
 
 function meaningTransitionRecordFileName(record: MeaningTransitionCandidate): string {
+  return `${record.createdAt.replaceAll(':', '-').replace('.', '-')}-${record.eventId}.md`;
+}
+
+function v2RecordFileName(record: Pick<MeaningTransitionV2, 'createdAt' | 'eventId'>): string {
   return `${record.createdAt.replaceAll(':', '-').replace('.', '-')}-${record.eventId}.md`;
 }
 
@@ -53,6 +65,16 @@ function requiredArtifacts(record: MeaningTransitionCandidate): Map<string, stri
   return result;
 }
 
+function requiredV2Artifacts(record: MeaningTransitionV2): Map<string, string> {
+  const result = new Map<string, string>();
+  for (const artifact of Object.values(record.proposal.artifacts)) {
+    if (artifact.ref !== meaningTransitionArtifactRef(artifact.contentDigest)) throw new Error('Meaning transition v2 artifact ref is not content-addressed.');
+    result.set(artifact.contentDigest, artifact.ref);
+  }
+  if (result.size !== 3) throw new Error('Meaning transition v2 artifacts must have distinct content digests.');
+  return result;
+}
+
 function assertCurrent(isCurrent: () => boolean): void {
   if (!isCurrent()) throw new Error('Meaning transition vault context changed.');
 }
@@ -62,6 +84,28 @@ async function captureRoot(rootPath: string | null | undefined, isCurrent: () =>
   const identity = await observeMeaningTransitionRoot(rootPath);
   assertCurrent(isCurrent);
   return { rootPath, identity };
+}
+
+async function verifyV2Chain(
+  rootPath: string,
+  identity: MeaningTransitionRootIdentity,
+  latest: MeaningTransitionV2,
+  isCurrent: () => boolean,
+): Promise<void> {
+  let next = latest;
+  const seen = new Set([latest.eventId]);
+  for (let depth = 0; next.phase === 'terminal'; depth += 1) {
+    if (depth >= 100 || !next.previous || seen.has(next.previous.eventId)) throw new Error('Meaning transition v2 chain is cyclic, missing, or over its bound.');
+    const markdown = await readTauriMeaningTransitionRecord(rootPath, identity, v2RecordFileName(next.previous));
+    assertCurrent(isCurrent);
+    const previous = await parseMeaningTransitionV2(markdown);
+    assertCurrent(isCurrent);
+    if (previous.recordDigest !== next.previous.recordDigest) throw new Error('Meaning transition v2 previous record digest changed.');
+    assertMeaningTransitionV2Link(previous, next);
+    seen.add(previous.eventId);
+    next = previous;
+  }
+  if (next.phase !== 'decision') throw new Error('Meaning transition v2 chain has no decision origin.');
 }
 
 /** Archive integrity verifies immutable bytes. It does not authenticate supplied decision or receipt facts. */
@@ -120,6 +164,67 @@ export async function appendMeaningTransition(input: {
   return { status: 'archived', fileName: result.recordFileName, created: result.recordCreated };
 }
 
+/** Appends one explicit V2 decision or terminal snapshot; supplied facts remain unauthenticated. */
+export async function appendMeaningTransitionV2(input: {
+  capturedHandle: FileSystemDirectoryHandle;
+  record: MeaningTransitionV2;
+  artifacts: readonly MeaningTransitionArtifactBytes[];
+  writable: boolean;
+  isCurrent: () => boolean;
+}): Promise<{ status: 'archived'; fileName: string; created: boolean }> {
+  const rootPathAtEntry = getTauriVaultRootPath(input.capturedHandle);
+  const record = structuredClone(input.record);
+  const artifactsAtEntry = input.artifacts.map(({ digest, content }) => ({ digest, content }));
+  const isCurrent = input.isCurrent;
+  if (!input.writable) throw new Error('A writable ontology folder is required.');
+  assertCurrent(isCurrent);
+  const capturedRoot = captureRoot(rootPathAtEntry, isCurrent);
+  void capturedRoot.catch(() => undefined);
+  if (!await verifyMeaningTransitionV2(record)) throw new Error('Meaning transition v2 digest verification failed.');
+  assertCurrent(isCurrent);
+  const markdown = serializeMeaningTransitionV2(record);
+  const required = requiredV2Artifacts(record);
+  const supplied = new Map<string, MeaningTransitionArtifactBytes>(artifactsAtEntry.map((artifact) => [artifact.digest, artifact]));
+  if (supplied.size !== artifactsAtEntry.length || supplied.size !== required.size
+    || [...required.keys()].some((digest) => !supplied.has(digest))) throw new Error('Meaning transition v2 artifacts do not exactly match the record.');
+  for (const artifact of supplied.values()) {
+    if (!DIGEST.test(artifact.digest) || await sha256(artifact.content) !== artifact.digest) throw new Error('Meaning transition v2 artifact digest verification failed.');
+    assertCurrent(isCurrent);
+  }
+  if (record.proposal.rows.length !== 1) throw new Error('Meaning transition v2 live archive currently requires one exact writer row.');
+  const row = record.proposal.rows[0];
+  const before = supplied.get(record.proposal.artifacts.retainedBefore.contentDigest);
+  const preview = supplied.get(record.proposal.artifacts.preview.contentDigest);
+  const decision = supplied.get(record.proposal.artifacts.decision.contentDigest);
+  if (!before || !preview || !decision || await sha256(before.content) !== row.rawGuardDigest
+    || await sha256(preview.content) !== row.expectedPersistedDigest
+    || decision.content !== meaningTransitionV2DecisionArtifact(record)) {
+    throw new Error('Meaning transition v2 artifact roles do not match the sealed before, preview, and decision bytes.');
+  }
+  assertCurrent(isCurrent);
+  const { rootPath, identity } = await capturedRoot;
+  assertCurrent(isCurrent);
+  if (record.phase === 'terminal') {
+    await verifyV2Chain(rootPath, identity, record, isCurrent);
+    assertCurrent(isCurrent);
+  }
+  const fileName = v2RecordFileName(record);
+  const result = await appendTauriMeaningTransitionBundle({ rootPath, expectedRootIdentity: identity, recordFileName: fileName, recordContent: markdown, artifacts: [...supplied.values()] });
+  assertCurrent(isCurrent);
+  if (result.recordFileName !== fileName || result.artifacts.length !== supplied.size) throw new Error('Native meaning transition v2 publication receipt mismatched.');
+  for (const artifact of supplied.values()) {
+    if (await readTauriMeaningTransitionArtifact(rootPath, identity, artifact.digest) !== artifact.content) throw new Error('Archived meaning transition v2 artifact readback mismatched.');
+    assertCurrent(isCurrent);
+  }
+  const reopened = await readTauriMeaningTransitionRecord(rootPath, identity, fileName);
+  assertCurrent(isCurrent);
+  const parsed = await parseMeaningTransitionV2(reopened);
+  assertCurrent(isCurrent);
+  if (!await verifyMeaningTransitionV2(parsed) || reopened !== markdown) throw new Error('Archived meaning transition v2 record readback mismatched.');
+  assertCurrent(isCurrent);
+  return { status: 'archived', fileName: result.recordFileName, created: result.recordCreated };
+}
+
 export async function readMeaningTransitionHistory(input: {
   capturedHandle: FileSystemDirectoryHandle; isCurrent: () => boolean; offset?: number; limit?: number;
 }): Promise<MeaningTransitionArchivePage> {
@@ -130,20 +235,28 @@ export async function readMeaningTransitionHistory(input: {
   const { rootPath, identity } = await captureRoot(rootPathAtEntry, isCurrent);
   const page = await listTauriMeaningTransitionHistory(rootPath, identity, offset, limit);
   assertCurrent(isCurrent);
-  const records: MeaningTransitionCandidate[] = [];
+  const records: Array<MeaningTransitionCandidate | MeaningTransitionV2> = [];
   const problems: MeaningTransitionArchivePage['problems'] = [];
   for (const entry of page.entries) {
     if (entry.kind === 'malformed') { problems.push({ fileName: entry.fileName, reason: entry.problem ?? 'Malformed archive member.' }); continue; }
     try {
       const markdown = await readTauriMeaningTransitionRecord(rootPath, identity, entry.fileName);
       assertCurrent(isCurrent);
-      const record = await parseMeaningTransition(markdown);
+      const record = markdown.includes('schema: "atlas-meaning-transition/v2"')
+        ? await parseMeaningTransitionV2(markdown) : await parseMeaningTransition(markdown);
       assertCurrent(isCurrent);
-      if (meaningTransitionRecordFileName(record) !== entry.fileName) throw new Error('Meaning transition file identity does not match its metadata.');
-      if (!await verifyMeaningTransitionDigest(record)) throw new Error('Meaning transition digest verification failed.');
+      const expectedName = record.schema === 'atlas-meaning-transition/v2' ? v2RecordFileName(record) : meaningTransitionRecordFileName(record);
+      if (expectedName !== entry.fileName) throw new Error('Meaning transition file identity does not match its metadata.');
+      const verified = record.schema === 'atlas-meaning-transition/v2' ? await verifyMeaningTransitionV2(record) : await verifyMeaningTransitionDigest(record);
+      if (!verified) throw new Error('Meaning transition digest verification failed.');
       assertCurrent(isCurrent);
-      for (const digest of requiredArtifacts(record).keys()) {
+      const artifacts = record.schema === 'atlas-meaning-transition/v2' ? requiredV2Artifacts(record) : requiredArtifacts(record);
+      for (const digest of artifacts.keys()) {
         await readTauriMeaningTransitionArtifact(rootPath, identity, digest);
+        assertCurrent(isCurrent);
+      }
+      if (record.schema === 'atlas-meaning-transition/v2' && record.phase === 'terminal') {
+        await verifyV2Chain(rootPath, identity, record, isCurrent);
         assertCurrent(isCurrent);
       }
       records.push(record);

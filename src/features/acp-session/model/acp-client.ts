@@ -242,13 +242,15 @@ export interface AcpPermissionRequest {
   rawInput: Record<string, unknown>;
   /** An ordinary file permission, or an ontology write needing the person's decision about meaning. */
   reviewKind: 'permission' | 'ontology-write';
+  /** Present only for the structured MCP tool-call + structured approval cache chain. */
+  writerCorrelation?: { status: 'verified'; server: string; tool: string; toolCall: 'structured-mcp'; approval: 'structured-mcp' };
   /** The available options — handled only by `kind`. */
   options: Array<{ optionId: string; kind: string; name: string | null }>;
 }
 
 export interface AcpClientHandlers {
   /** Streaming updates — text chunks, tool calls, plans. */
-  onUpdate?: (update: Record<string, unknown>) => void;
+  onUpdate?: (update: Record<string, unknown>, context: { sessionId: string | null }) => void;
   /**
    * The name of the vault MCP server we wired into the session. Only that server's read tools are
    * auto-allowed; its write tools go through the person's change review. Not passing it turns this
@@ -620,7 +622,7 @@ export function createAcpClient(
         const params = asRecord(message.params);
         const update = asRecord(params.update);
         rememberCorrelatedMcpTool(textValue(params.sessionId), update);
-        handlers.onUpdate?.(update);
+        handlers.onUpdate?.(update, { sessionId: textValue(params.sessionId) });
       }
       return;
     }
@@ -933,6 +935,8 @@ export function toPermissionRequest(
     filePath: readPathArg(rawInput),
     rawInput,
     reviewKind: 'permission',
+    ...(correlatedMcpTool ? { writerCorrelation: { status: 'verified' as const, server: correlatedMcpTool.server,
+      tool: correlatedMcpTool.tool, toolCall: 'structured-mcp' as const, approval: 'structured-mcp' as const } } : {}),
     options: rawOptions.flatMap((entry) => {
       const option = asRecord(entry);
       const optionId = typeof option.optionId === 'string' ? option.optionId : null;

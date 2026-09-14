@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 /**
  * **Never start two adapters.**
@@ -868,9 +869,52 @@ describe('도구 입력 refinement — 실제 Claude ACP 순서', () => {
 });
 
 describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다', () => {
+  it.each(['completed', 'failed'] as const)('구조화된 현재-turn writer chain의 %s terminal receipt를 같은 명시 identity로 남긴다', async (terminal) => {
+    bridge.holdPrompt = true;
+    const receipts: AcpWorkReceipt[] = [];
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'codex-acp', vaultRoot: '/vault', mcpServers: [{ name: 'atlas-vault' }], onWorkReceipt: (receipt) => receipts.push(receipt) }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => { bridge.release?.(); await starting; });
+    void result.current.send('Update refund meaning.');
+    await waitFor(() => expect(result.current.events.some((event) => event.kind === 'user')).toBe(true));
+    const user = result.current.events.find((event) => event.kind === 'user');
+    act(() => {
+      bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { sessionId: 's-1', update: {
+        sessionUpdate: 'tool_call', toolCallId: 'writer-1', title: 'mcp__atlas-vault__patch_concept', kind: 'execute', status: 'pending',
+        rawInput: { server: 'atlas-vault', tool: 'patch_concept', arguments: { slug: 'capabilities/refund', expected_mtime: 100 } },
+        _meta: { is_mcp_tool_call: true },
+      } } }));
+      bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: 'permission-1', method: 'session/request_permission', params: {
+        sessionId: 's-1', _meta: { is_mcp_tool_approval: true },
+        options: [{ kind: 'reject_once', name: 'Deny', optionId: 'reject' }, { kind: 'allow_once', name: 'Allow', optionId: 'allow' }],
+        toolCall: { toolCallId: 'writer-1', title: 'patch', kind: 'execute' },
+      } }));
+    });
+    await waitFor(() => expect(result.current.pending).toBeTruthy());
+    await act(async () => { result.current.pending?.resolve('allow'); });
+    expect(receipts[0]).toMatchObject({ result: 'pending', origin: { requestId: 'permission-1', userEventId: user?.id }, writerCorrelation: { terminal: 'pending' } });
+    act(() => bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { sessionId: 'other-session', update: {
+      sessionUpdate: 'tool_call_update', toolCallId: 'writer-1', status: terminal,
+    } } })));
+    expect(receipts).toHaveLength(1);
+    act(() => bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { sessionId: 's-1', update: {
+      sessionUpdate: 'tool_call_update', toolCallId: 'writer-1', status: terminal,
+      rawInput: { server: 'atlas-vault', tool: 'add_concept', arguments: {} }, _meta: { is_mcp_tool_call: true },
+    } } })));
+    expect(receipts).toHaveLength(1);
+    act(() => bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', method: 'session/update', params: { sessionId: 's-1', update: {
+      sessionUpdate: 'tool_call_update', toolCallId: 'writer-1', status: terminal,
+    } } })));
+    await waitFor(() => expect(receipts).toHaveLength(2));
+    expect(receipts[1]).toMatchObject({ result: terminal, origin: receipts[0].origin, writerCorrelation: { terminal } });
+    await act(async () => { await result.current.stop(); });
+  });
+
   it('온톨로지 요청에 실제 turn, generation, JSON-RPC id와 구조화되지 않은 non-goal 상태를 묶는다', async () => {
     bridge.holdPrompt = true;
-    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    const receipts: AcpWorkReceipt[] = [];
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', mcpServers: [{ name: 'atlas-vault' }], onWorkReceipt: (receipt) => receipts.push(receipt) }));
     const starting = result.current.start();
     await waitFor(() => expect(bridge.starts).toBe(1));
     await act(async () => { bridge.release?.(); await starting; });
@@ -882,7 +926,9 @@ describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다
       bridge.listener?.(JSON.stringify({
         jsonrpc: '2.0', method: 'session/update', params: { sessionId: 's-1', update: {
           sessionUpdate: 'tool_call', toolCallId: 'tool-0', title: 'mcp__atlas-vault__patch_concept',
-          kind: 'other', status: 'pending', rawInput: { slug: 'capabilities/refund', expected_mtime: 100 },
+          kind: 'other', status: 'pending',
+          rawInput: { server: 'atlas-vault', tool: 'patch_concept', arguments: { slug: 'capabilities/refund', expected_mtime: 100 } },
+          _meta: { is_mcp_tool_call: true },
         } },
       }));
       bridge.listener?.(JSON.stringify({
@@ -890,7 +936,8 @@ describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다
           sessionId: 's-1', options: [
             { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
             { kind: 'allow_once', name: 'Allow', optionId: 'allow' },
-          ], toolCall: { toolCallId: 'tool-0', title: 'mcp__atlas-vault__patch_concept', kind: 'other', rawInput: { slug: 'capabilities/refund', expected_mtime: 100 } },
+          ], toolCall: { toolCallId: 'tool-0', title: 'mcp__atlas-vault__patch_concept', kind: 'other' },
+          _meta: { is_mcp_tool_approval: true },
         },
       }));
     });
@@ -901,7 +948,14 @@ describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다
       task: { outcome: 'Change refund eligibility; keep capture unchanged.', nonGoals: null, structure: 'unstructured' },
       taskBaseline: null,
     });
-    await act(async () => { result.current.pending?.resolve('reject'); await result.current.stop(); });
+    await act(async () => { result.current.pending?.resolve('reject'); });
+    expect(receipts[0]).toMatchObject({
+      decision: 'rejected', result: 'not-run',
+      origin: { vaultId: '/vault', sessionGeneration: 0, sessionId: 's-1', userEventId: user?.id, requestId: 0, toolCallId: 'tool-0' },
+      writerCorrelation: { status: 'verified', server: 'atlas-vault', tool: 'patch_concept', toolCall: 'structured-mcp', approval: 'structured-mcp', terminal: 'not-observed' },
+    });
+    expect(JSON.stringify(receipts[0])).not.toContain('taskBaseline');
+    await act(async () => { await result.current.stop(); });
   });
 
   it('두 번째 요청이 첫 카드를 덮어쓰지 않고, 두 JSON-RPC id 모두 답장이 나간다', async () => {

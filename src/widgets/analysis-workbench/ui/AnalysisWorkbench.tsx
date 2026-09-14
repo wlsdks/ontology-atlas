@@ -11,6 +11,7 @@ import { cn } from '@/shared/lib/cn';
 import { Checkbox, Chip, Disclosure, IconButton, Select, TabBar, Textarea, useToast } from '@/shared/ui';
 import { RotateCcw, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { MeaningTransitionHistory } from './MeaningTransitionHistory';
 
 /**
  * Hairline between groups (owner, 2026-09-06) — **now only where a label does not already
@@ -313,6 +314,7 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
       <div className={DIVIDED}>{facts ?? <p>{context.mode === 'architecture' ? t('architectureCriteria') : glossary('ontologyDefinition')}</p>}</div>
     </div> : null}
     {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1" aria-busy={busy || readPending}>
+      <MeaningTransitionHistory handle={context.handle} open={open && tab === 'history'} />
       {/* One control row: which version, reread, ask again. The two chips that led the tab
           looked like every other chip below them; the version picker is the row's subject. */}
       {/*

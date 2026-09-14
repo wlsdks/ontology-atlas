@@ -15,7 +15,7 @@ import {
   type OntologyChangeSet,
 } from '@/entities/knowledge-graph';
 
-import { Button, Checkbox } from '@/shared/ui';
+import { Button, Checkbox, Textarea } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -149,6 +149,7 @@ export function AcpPermissionCard({
     setReviewState({ key: reviewStateKey, depth, acknowledgeFullScope: false });
   };
   const [acceptingMeaning, setAcceptingMeaning] = useState(false);
+  const [meaningRationale, setMeaningRationale] = useState({ key: reviewStateKey, value: '' });
   const [detailsAvailability, setDetailsAvailability] = useState({ key: reviewStateKey, available: false });
   const fullDetailsAvailable = detailsAvailability.key === reviewStateKey && detailsAvailability.available;
   const handleFullScopeAvailable = useCallback((available: boolean) => {
@@ -523,6 +524,16 @@ export function AcpPermissionCard({
               />
               {taskReview?.status === 'ready' ? (
                 <div className="grid gap-2 border-t border-[color:var(--color-divider)] pt-2">
+                  {taskReview.canonicalPreview !== undefined ? taskReview.canonicalPreview !== null ? (
+                    <div className="space-y-2">
+                      <p className="text-caption font-[var(--font-weight-emphasis)]">{t('taskReview.canonicalPreview')}</p>
+                      <p className="text-caption text-[color:var(--color-text-secondary)]">{t('taskReview.canonicalPreviewNote')}</p>
+                      <pre className="atlas-scroll-quiet max-h-64 overflow-auto whitespace-pre-wrap break-words text-caption">{taskReview.canonicalPreview}</pre>
+                    </div>
+                  ) : <p role="status" className="text-caption">{t(taskReview.previewUnavailableReason === 'no_semantic_delta' ? 'taskReview.noSemanticDelta' : 'taskReview.previewUnavailable')}</p> : null}
+                  {taskReview.canonicalPreview ? <Textarea label={t('taskReview.rationale')} rows={2}
+                    value={meaningRationale.key === reviewStateKey ? meaningRationale.value : ''}
+                    onChange={(event) => setMeaningRationale({ key: reviewStateKey, value: event.target.value })} /> : null}
                   <Checkbox
                     label={t('taskReview.acknowledgeFullScope', { count: changeSet.itemCount })}
                     checked={acknowledgeFullScope}
@@ -537,15 +548,19 @@ export function AcpPermissionCard({
                     variant="outline"
                     size="sm"
                     data-testid="task-review-accept-meaning"
-                    disabled={!acknowledgeFullScope || !fullDetailsAvailable || acceptingMeaning || taskReview.meaningStatus === 'accepted' || taskReview.executionBlocked}
+                    disabled={!acknowledgeFullScope || !fullDetailsAvailable || acceptingMeaning || taskReview.meaningStatus === 'accepted' || taskReview.executionBlocked || taskReview.canonicalPreview === null}
                     onClick={async () => {
                       setAcceptingMeaning(true);
-                      try { await taskReview.markMeaningAccepted({ acknowledgeFullScope: true }); }
+                      try {
+                        const rationale = meaningRationale.key === reviewStateKey ? meaningRationale.value.trim() : '';
+                        await taskReview.markMeaningAccepted({ acknowledgeFullScope: true, ...(rationale ? { rationale } : {}) });
+                      }
                       finally { setAcceptingMeaning(false); }
                     }}
                   >
                     {t(taskReview.meaningStatus === 'accepted' ? 'taskReview.meaningAccepted' : acceptingMeaning ? 'taskReview.checkingBasis' : 'taskReview.acceptMeaning')}
                   </Button>
+                  {taskReview.decisionSaveStatus ? <p role="status" className="text-caption text-[color:var(--color-text-secondary)]">{t(`taskReview.decisionSave.${taskReview.decisionSaveStatus}`)}</p> : null}
                 </div>
               ) : null}
               <details className="border-t border-[color:var(--color-divider)] pt-2 text-caption text-[color:var(--color-text-quaternary)]">

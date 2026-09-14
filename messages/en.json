@@ -4184,7 +4184,18 @@
           "uncomparable": "Uncomparable"
         },
         "actionScope": "Action scope",
-        "allowScope": "Allow once executes only this write."
+        "allowScope": "Allow once executes only this write.",
+        "canonicalPreview": "Exact Markdown to be written",
+        "canonicalPreviewNote": "The writer reconstructs formatting and comments. Review these complete bytes before accepting meaning.",
+        "previewUnavailable": "Exact writer output is unavailable. Meaning acceptance requires an existing UID and a valid single-document patch.",
+        "decisionSave": {
+          "unsaved": "This decision has not been saved to history.",
+          "saved": "Meaning decision saved. Execution, code checks, merge and deployment remain separate.",
+          "failed": "The meaning decision could not be saved. Check the vault and try again."
+        },
+        "terminalSaveFailed": "The meaning decision is retained, but its latest execution result could not be saved. History may still show it as unverified.",
+        "noSemanticDelta": "This request does not change the parsed meaning. No meaning decision record is needed.",
+        "rationale": "Why accept this interpretation? (optional)"
       },
       "deferredNotice": "This request is still pending in this conversation. It is not saved; closing or cancelling rejects it.",
       "resumeReview": "Resume review",
@@ -4606,7 +4617,75 @@
     "findingsEyebrow": "{count, plural, =0 {Findings} one {# finding} other {# findings}}",
     "relationsEyebrow": "Connections",
     "fillNotes": "{count, plural, one {Write # missing connection reason} other {Write # missing connection reasons}}",
-    "relationNotesPrompt": "Write the missing reason behind each connection in this scope as one sentence in `relation_notes`, using Atlas tools only. For every relation whose rationale is empty: read both documents with get_concepts(body: \"full\"), then propose the note with patch_concept on the SOURCE document (the one whose frontmatter lists the target), passing expected_mtime and keeping every other key; write in the folder's own language. A note says why the claim holds in this codebase, never that A contains or depends on B. Where the documents give no reason, write nothing and list the pair under open questions. A `domain:` back-pointer shares its reason with the parent's containment: write it on the parent document only, never on the child. At most {limit} notes in this turn; end by saying how many remain."
+    "relationNotesPrompt": "Write the missing reason behind each connection in this scope as one sentence in `relation_notes`, using Atlas tools only. For every relation whose rationale is empty: read both documents with get_concepts(body: \"full\"), then propose the note with patch_concept on the SOURCE document (the one whose frontmatter lists the target), passing expected_mtime and keeping every other key; write in the folder's own language. A note says why the claim holds in this codebase, never that A contains or depends on B. Where the documents give no reason, write nothing and list the pair under open questions. A `domain:` back-pointer shares its reason with the parent's containment: write it on the parent document only, never on the child. At most {limit} notes in this turn; end by saying how many remain.",
+    "meaningTransitions": {
+      "title": "Meaning decisions",
+      "boundary": "Immutable review snapshots. Saved bytes do not authenticate a person, approve code, or prove checks, merge, or deployment.",
+      "openFolder": "Open your ontology folder to read meaning decisions.",
+      "unavailable": "Meaning decision history requires the installed app on a supported computer.",
+      "loading": "Loading meaning decisions…",
+      "empty": "No meaning decision snapshots are archived in this folder.",
+      "listLabel": "Meaning decision snapshots",
+      "selected": "Selected decision",
+      "action": "Meaning action",
+      "outcome": "Meaning writer",
+      "reviewEvidence": "Review binding",
+      "decisionId": "Decision ID",
+      "previous": "Previous snapshot",
+      "openPrevious": "Open previous",
+      "previousNotLoaded": "Load older decisions to open it",
+      "rationale": "Recorded rationale",
+      "rationaleMissing": "No rationale recorded.",
+      "acceptedGaps": "Accepted gaps",
+      "remainingQuestions": "Remaining questions",
+      "none": "None recorded.",
+      "correlation": "Writer correlation",
+      "codeChecks": "Code checks",
+      "merge": "Merge",
+      "deployment": "Deployment",
+      "unknown": "Unavailable",
+      "rows": "Writer rows",
+      "git": "Source and vault Git observations",
+      "artifacts": "Retained exact bytes",
+      "loadingArtifacts": "Reading and verifying retained bytes…",
+      "artifactsUnavailable": "Retained bytes are unavailable. Read the error above before using this record.",
+      "artifactMismatch": "A retained artifact no longer matches its recorded digest.",
+      "loadOlder": "Load older decisions",
+      "problems": "{count} unreadable decision records",
+      "legacy": "Legacy V1 record",
+      "legacyDetails": "Legacy V1 record details",
+      "integrityBoundary": "Integrity means these exact bytes reopened successfully. Authority states below remain separate supplied facts.",
+      "phase": {
+        "decision": "Decision snapshot",
+        "terminal": "Writer snapshot"
+      },
+      "actions": {
+        "accept_meaning": "Accepted",
+        "reject_meaning": "Rejected",
+        "defer_meaning": "Deferred",
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "deferred": "Deferred",
+        "unknown": "Unknown"
+      },
+      "outcomes": {
+        "accepted_unverified": "Accepted · writer unverified",
+        "accepted_partial": "Accepted · partial writer evidence",
+        "accepted_complete": "Accepted · exact writer readback matched",
+        "rejected": "Rejected",
+        "deferred": "Deferred",
+        "unknown": "Unknown"
+      },
+      "artifactRoles": {
+        "before": "Before the decision",
+        "preview": "Reviewed preview",
+        "decision": "Decision binding"
+      },
+      "authority": { "observed": "Observed", "unavailable": "Unavailable", "unknown": "Unknown" },
+      "permission": { "pending": "Pending", "allowed": "Allowed", "rejected": "Rejected", "unknown": "Unknown" },
+      "execution": { "completed": "Completed", "failed": "Failed", "not_run": "Not run", "unknown": "Unknown" },
+      "readback": { "matched": "Exact bytes matched", "mismatched": "Bytes differed", "missing": "Missing", "unknown": "Unknown" }
+    }
   },
   "mcp": {
     "title": "MCP",

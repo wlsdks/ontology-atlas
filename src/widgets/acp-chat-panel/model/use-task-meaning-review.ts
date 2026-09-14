@@ -3,6 +3,19 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { parseAtlasToolCall, type AcpEvent, type AcpTurnStart, type PendingPermission, type TaskBaselineCaptureResult } from '@/features/acp-session';
 import { buildMeaningDiff, buildProposalBinding, type MeaningDiffItem } from '@/entities/knowledge-graph';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { previewDocumentPatch } from '@/shared/lib/document-patch.mjs';
+
+export interface TaskMeaningDecision {
+  action: 'accept_meaning';
+  actionAt: string;
+  request: PendingPermission['request'];
+  origin: NonNullable<PendingPermission['origin']>;
+  proposal: Awaited<ReturnType<typeof buildProposalBinding>>;
+  current: Extract<TaskBaselineCaptureResult, { status: 'available' }>;
+  before: string;
+  preview: string;
+  rationale?: string | null;
+}
 
 type TaskMeaningReviewReason =
   | 'unsupported_request' | 'historical_basis_unavailable' | 'source_basis_unavailable'
@@ -24,7 +37,10 @@ export interface TaskMeaningReviewView {
   executionBlocked: boolean;
   actualReportedRoot: string | null;
   guardStatus: 'verified' | 'compatible-coarse' | 'unknown';
-  markMeaningAccepted: (input: { acknowledgeFullScope: boolean }) => Promise<boolean>;
+  canonicalPreview?: string | null;
+  previewUnavailableReason?: 'writer_unknown' | 'no_semantic_delta';
+  decisionSaveStatus?: 'unsaved' | 'saved' | 'failed';
+  markMeaningAccepted: (input: { acknowledgeFullScope: boolean; rationale?: string }) => Promise<boolean>;
 }
 export type TaskMeaningReviewController = TaskMeaningReviewView;
 
@@ -34,6 +50,7 @@ interface Input {
   vaultRoot: string | null;
   captureTaskBaseline?: (turn: AcpTurnStart) => Promise<TaskBaselineCaptureResult>;
   events: readonly AcpEvent[];
+  onMeaningDecision?: (decision: TaskMeaningDecision) => Promise<boolean>;
 }
 
 const EMPTY_COVERAGE = { total: 0, inspected: 0, omitted: 0, complete: false };
@@ -176,6 +193,8 @@ type Prepared = {
   historical: Extract<TaskBaselineCaptureResult, { status: 'available' }>;
   current: Extract<TaskBaselineCaptureResult, { status: 'available' }>;
   guardStatus: 'verified' | 'compatible-coarse';
+  canonicalPreview: string | null;
+  previewUnavailableReason: 'writer_unknown' | 'no_semantic_delta';
 };
 type Preparation = Prepared | { status: 'unavailable'; reasons: TaskMeaningReviewReason[]; executionBlocked?: boolean; actualReportedRoot?: string | null };
 
@@ -232,15 +251,29 @@ async function prepare(input: Input): Promise<Preparation> {
   const diffBase = buildMeaningDiff({ identity, target: raw.slug, expectedBefore: { mtime: before.mtime, contentDigest: before.contentDigest, sourceRevision: historical.sourceBasis.sourceBasisId, meaningRevision: historical.meaningBasis }, snapshot: { trust: 'vault_read', vaultId: historical.vaultId, target: raw.slug, mtime: before.mtime, contentDigest: before.contentDigest, sourceRevision: historical.sourceBasis.sourceBasisId, meaningRevision: historical.meaningBasis, completeRead: true, fields: beforeFields }, claims });
   const fieldByClaim = new Map(claims.map((claim) => [claim.claimId, claim.field]));
   const diff = { ...diffBase, items: diffBase.items.map((item) => ({ ...item, field: fieldByClaim.get(item.claimId) ?? item.claimId })) };
-  return { status: 'ready', reasons: [], proposal, diff, historical, current, guardStatus };
+  let canonicalPreview: string | null = null;
+  let previewUnavailableReason: 'writer_unknown' | 'no_semantic_delta' = 'writer_unknown';
+  try {
+    const preview = previewDocumentPatch({ rawBefore: currentTarget.raw,
+      frontmatterPatch: raw.frontmatter as Record<string, unknown> | undefined,
+      body: raw.body as string | undefined });
+    if (typeof beforeFields.uid?.value === 'string' && beforeFields.uid.value.trim()
+      && preview.status === 'available') {
+      const unchanged = previewDocumentPatch({ rawBefore: currentTarget.raw });
+      if (unchanged.status === 'available' && unchanged.markdown === preview.markdown) previewUnavailableReason = 'no_semantic_delta';
+      else canonicalPreview = preview.markdown;
+    }
+  } catch { /* Malformed or nondeterministic writer output cannot be accepted. */ }
+  return { status: 'ready', reasons: [], proposal, diff, historical, current, guardStatus, canonicalPreview, previewUnavailableReason };
 }
 
 export function useTaskMeaningReview(input: Input): TaskMeaningReviewView {
   const key = requestIdentityKey(input);
-  const providerToken = useMemo(() => Object.freeze({ key, capture: input.captureTaskBaseline }), [key, input.captureTaskBaseline]);
+  const providerToken = useMemo(() => Object.freeze({ key, capture: input.captureTaskBaseline, save: input.onMeaningDecision }), [key, input.captureTaskBaseline, input.onMeaningDecision]);
   const latest = useRef({ input, providerToken });
   useLayoutEffect(() => { latest.current = { input, providerToken }; }, [input, providerToken]);
   const [state, setState] = useState<{ key: string | null; providerToken: object | null; result: Preparation | null; accepted: boolean }>({ key: null, providerToken: null, result: null, accepted: false });
+  const [saved, setSaved] = useState<{ token: object; status: 'saved' | 'failed' } | null>(null);
   useEffect(() => {
     let cancelled = false;
     if (!key) return;
@@ -255,14 +288,29 @@ export function useTaskMeaningReview(input: Input): TaskMeaningReviewView {
     // when the Home capture context (including source binding) changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, providerToken]);
-  const markMeaningAccepted = useCallback(async ({ acknowledgeFullScope }: { acknowledgeFullScope: boolean }) => {
+  const markMeaningAccepted = useCallback(async ({ acknowledgeFullScope, rationale }: { acknowledgeFullScope: boolean; rationale?: string }) => {
+    const actionAt = new Date().toISOString();
     const expectedKey = key;
     const prepared = state.key === key && state.providerToken === providerToken && state.result?.status === 'ready' ? state.result : null;
-    if (!acknowledgeFullScope || !expectedKey || !prepared || latest.current.providerToken !== providerToken) return false;
+    if (!acknowledgeFullScope || !expectedKey || !prepared?.canonicalPreview || latest.current.providerToken !== providerToken) return false;
     const refreshed = await prepare(latest.current.input);
     if (latest.current.providerToken !== providerToken
       || requestIdentityKey(latest.current.input) !== expectedKey
-      || refreshed.status !== 'ready' || refreshed.proposal.digest !== prepared.proposal.digest) return false;
+      || refreshed.status !== 'ready' || refreshed.proposal.digest !== prepared.proposal.digest
+      || refreshed.canonicalPreview !== prepared.canonicalPreview) return false;
+    const live = latest.current.input;
+    if (live.onMeaningDecision) {
+      const before = refreshed.current.documents.find((document) => document.slug === live.pending!.request.rawInput.slug)!;
+      let didSave = false;
+      try {
+        didSave = await live.onMeaningDecision(freeze(structuredClone({ action: 'accept_meaning', actionAt,
+          request: live.pending!.request, origin: live.pending!.origin!, proposal: refreshed.proposal,
+          current: refreshed.current, before: before.raw, preview: refreshed.canonicalPreview!, rationale: rationale?.trim() || null })));
+      } catch { /* A failed archive is visible and never called saved. */ }
+      if (latest.current.providerToken !== providerToken) return false;
+      setSaved({ token: providerToken, status: didSave ? 'saved' : 'failed' });
+      if (!didSave) return false;
+    }
     setState((current) => {
       if (current.key !== expectedKey || current.providerToken !== providerToken) return current;
       return { ...current, accepted: true };
@@ -278,6 +326,6 @@ export function useTaskMeaningReview(input: Input): TaskMeaningReviewView {
     const knownRootMismatch = connection.status === 'mismatch';
     // The callback reads the committed latest-input ref only after the person invokes it.
     // eslint-disable-next-line react-hooks/refs
-    return Object.freeze({ status, requestKey: opaqueRequestKey(key), reasons: result?.reasons ?? [], items: ready?.diff.items ?? [], coverage: ready?.diff.coverage ?? EMPTY_COVERAGE, proposal: ready?.proposal ?? null, historicalBasis: ready ? { meaningBasis: ready.historical.meaningBasis, sourceBasisId: ready.historical.sourceBasis!.sourceBasisId } : null, currentBasis: ready ? { meaningBasis: ready.current.meaningBasis, sourceBasisId: ready.current.sourceBasis!.sourceBasisId } : null, meaningStatus: state.key === key && state.providerToken === providerToken && state.accepted ? 'accepted' : ready ? 'unreviewed' : 'unknown', executionBlocked: knownRootMismatch || (result?.status === 'unavailable' && result.executionBlocked === true), actualReportedRoot: knownRootMismatch ? connection.actualRoot : result?.status === 'unavailable' ? result.actualReportedRoot ?? null : null, guardStatus: ready?.guardStatus ?? 'unknown', markMeaningAccepted });
-  }, [connection.actualRoot, connection.status, key, markMeaningAccepted, providerToken, state]);
+    return Object.freeze({ status, requestKey: opaqueRequestKey(key), reasons: result?.reasons ?? [], items: ready?.diff.items ?? [], coverage: ready?.diff.coverage ?? EMPTY_COVERAGE, proposal: ready?.proposal ?? null, historicalBasis: ready ? { meaningBasis: ready.historical.meaningBasis, sourceBasisId: ready.historical.sourceBasis!.sourceBasisId } : null, currentBasis: ready ? { meaningBasis: ready.current.meaningBasis, sourceBasisId: ready.current.sourceBasis!.sourceBasisId } : null, meaningStatus: state.key === key && state.providerToken === providerToken && state.accepted ? 'accepted' : ready ? 'unreviewed' : 'unknown', executionBlocked: knownRootMismatch || (result?.status === 'unavailable' && result.executionBlocked === true), actualReportedRoot: knownRootMismatch ? connection.actualRoot : result?.status === 'unavailable' ? result.actualReportedRoot ?? null : null, guardStatus: ready?.guardStatus ?? 'unknown', canonicalPreview: ready?.canonicalPreview ?? null, previewUnavailableReason: ready?.previewUnavailableReason ?? 'writer_unknown', decisionSaveStatus: saved?.token === providerToken ? saved.status : 'unsaved', markMeaningAccepted });
+  }, [connection.actualRoot, connection.status, key, markMeaningAccepted, providerToken, saved, state]);
 }

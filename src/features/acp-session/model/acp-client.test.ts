@@ -438,6 +438,10 @@ describe('ACP 클라이언트 — Codex MCP 승인 상관관계', () => {
         expected_mtime: 123,
       },
       reviewKind: 'ontology-write',
+      writerCorrelation: {
+        status: 'verified', server: 'atlas-vault', tool: 'patch_concept',
+        toolCall: 'structured-mcp', approval: 'structured-mcp',
+      },
     });
     expect(outcomeOf(t.sent, 81)).toEqual({ outcome: 'selected', optionId });
   });

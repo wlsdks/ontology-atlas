@@ -23,6 +23,7 @@ import {
 import { join, relative, dirname, resolve, sep } from 'node:path';
 
 import { parseFrontmatter, buildMarkdown } from './parser.mjs';
+import { previewDocumentPatch } from './document-patch.mjs';
 import {
   NODE_ELIGIBILITY_GATE,
   REVIEW_NOTE_KEY,
@@ -1175,9 +1176,10 @@ function commitDoc(
     expectedRaw,
     expectedMtime,
     beforeCommit,
+    serializedMarkdown,
   } = {},
 ) {
-  writeFileAtomically(filePath, buildMarkdown({ frontmatter, body }), {
+  writeFileAtomically(filePath, serializedMarkdown ?? buildMarkdown({ frontmatter, body }), {
     expectedRaw,
     expectedAbsent: created,
     conflictSlug: created ? undefined : slug,
@@ -1424,31 +1426,28 @@ export function updateDoc(rootPath, slug, {
   assertOptionalPlainObject(patch, 'frontmatter');
   const doc = readDoc(rootPath, filePath);
   assertSnapshotMtime(slug, expectedMtime, doc.mtime);
-  const { frontmatter, body: oldBody } = doc;
+  const { frontmatter } = doc;
   assertIdentityPatch(frontmatter, patch);
-  const nextFm = { ...frontmatter };
-  if (patch !== undefined) {
-    for (const [key, value] of Object.entries(patch)) {
-      if (value === null) {
-        delete nextFm[key];
-      } else if (value !== undefined) {
-        nextFm[key] = normalizeFrontmatterValue(key, value);
-      }
-    }
-  }
   if (body !== undefined && typeof body !== 'string') {
     throw new Error('body must be a string.');
   }
-  const nextBody = body === undefined ? oldBody : body;
-  const mintedUid = fillMissingUid(frontmatter, nextFm);
-  assertNodeIdentity(rootPath, slug, nextFm);
-  commitDoc(rootPath, slug, filePath, nextFm, nextBody, {
+  const identityDraft = { ...frontmatter };
+  for (const [key, value] of Object.entries(patch ?? {})) {
+    if (value === null) delete identityDraft[key];
+    else if (value !== undefined) identityDraft[key] = value;
+  }
+  const mintedUid = fillMissingUid(frontmatter, identityDraft);
+  const preview = previewDocumentPatch({ rawBefore: doc.raw, frontmatterPatch: patch, body, ...(mintedUid ? { mintedUid } : {}) });
+  if (preview.status !== 'available') throw new Error('The writer could not resolve the document identity required for this patch.');
+  assertNodeIdentity(rootPath, slug, preview.frontmatter);
+  commitDoc(rootPath, slug, filePath, preview.frontmatter, preview.body, {
     previousFrontmatter: frontmatter,
     expectedRaw: doc.raw,
     expectedMtime: doc.mtime,
     beforeCommit,
+    serializedMarkdown: preview.markdown,
   });
-  return { filePath, frontmatter: nextFm, mintedUid };
+  return { filePath, frontmatter: preview.frontmatter, mintedUid };
 }
 
 /**

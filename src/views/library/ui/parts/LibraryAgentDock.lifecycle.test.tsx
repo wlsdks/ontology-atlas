@@ -166,7 +166,7 @@ describe("pressing X on the Library dock", () => {
     emit({
       jsonrpc: "2.0",
       method: "session/update",
-      params: { update: { sessionUpdate: "agent_message_chunk", content: { text: "Reading the sources" } } },
+      params: { sessionId: "s-1", update: { sessionUpdate: "agent_message_chunk", content: { text: "Reading the sources" } } },
     });
     await screen.findByText("Reading the sources");
     view.close();
@@ -175,7 +175,7 @@ describe("pressing X on the Library dock", () => {
     emit({
       jsonrpc: "2.0",
       method: "session/update",
-      params: { update: { sessionUpdate: "agent_message_chunk", content: { text: " and writing them up." } } },
+      params: { sessionId: "s-1", update: { sessionUpdate: "agent_message_chunk", content: { text: " and writing them up." } } },
     });
     await screen.findByText("Reading the sources and writing them up.");
     expect(bridge.stopped).toEqual([]);
@@ -186,7 +186,7 @@ describe("pressing X on the Library dock", () => {
     emit({
       jsonrpc: "2.0",
       method: "session/update",
-      params: { update: { sessionUpdate: "agent_message_chunk", content: { text: "Four sources are waiting." } } },
+      params: { sessionId: "s-1", update: { sessionUpdate: "agent_message_chunk", content: { text: "Four sources are waiting." } } },
     });
     await screen.findByText("Four sources are waiting.");
     view.close();

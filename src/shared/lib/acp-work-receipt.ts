@@ -12,6 +12,22 @@ const MAX_SNAPSHOTS = 200;
 
 export type AcpWorkDecision = 'allowed' | 'rejected';
 export type AcpWorkResult = 'pending' | 'completed' | 'failed' | 'cancelled' | 'not-run';
+interface AcpWorkReceiptOrigin {
+  vaultId: string;
+  sessionGeneration: number;
+  sessionId: string;
+  userEventId: string;
+  requestId: string | number;
+  toolCallId: string;
+}
+interface AcpWriterCorrelation {
+  status: 'verified';
+  server: string;
+  tool: string;
+  toolCall: 'structured-mcp';
+  approval: 'structured-mcp';
+  terminal: 'not-observed' | 'pending' | 'completed' | 'failed' | 'cancelled';
+}
 
 interface AcpWorkReceiptItem {
   target: string | null;
@@ -34,6 +50,9 @@ export interface AcpWorkReceipt {
   decision: AcpWorkDecision;
   result: AcpWorkResult;
   items: AcpWorkReceiptItem[];
+  /** Absent on legacy rows. Presence means every field must validate; malformed data is not legacy. */
+  origin?: AcpWorkReceiptOrigin;
+  writerCorrelation?: AcpWriterCorrelation;
 }
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -60,6 +79,30 @@ function readItem(value: unknown): AcpWorkReceiptItem | null {
     relation,
     fields,
   };
+}
+
+function nonblank(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function readOrigin(value: unknown): AcpWorkReceiptOrigin | null {
+  const row = record(value);
+  if (!row || !nonblank(row.vaultId) || !Number.isInteger(row.sessionGeneration) || Number(row.sessionGeneration) < 0
+    || !nonblank(row.sessionId) || !nonblank(row.userEventId)
+    || (typeof row.requestId !== 'string' && typeof row.requestId !== 'number')
+    || !Number.isFinite(typeof row.requestId === 'number' ? row.requestId : 0)
+    || !nonblank(row.toolCallId)) return null;
+  return { vaultId: row.vaultId, sessionGeneration: row.sessionGeneration as number, sessionId: row.sessionId,
+    userEventId: row.userEventId, requestId: row.requestId, toolCallId: row.toolCallId };
+}
+
+function readWriterCorrelation(value: unknown): AcpWriterCorrelation | null {
+  const row = record(value);
+  if (!row || row.status !== 'verified' || !nonblank(row.server) || !nonblank(row.tool)
+    || row.toolCall !== 'structured-mcp' || row.approval !== 'structured-mcp'
+    || !['not-observed', 'pending', 'completed', 'failed', 'cancelled'].includes(String(row.terminal))) return null;
+  return { status: 'verified', server: row.server, tool: row.tool, toolCall: 'structured-mcp',
+    approval: 'structured-mcp', terminal: row.terminal as AcpWriterCorrelation['terminal'] };
 }
 
 const DECISIONS = new Set<AcpWorkDecision>(['allowed', 'rejected']);
@@ -92,6 +135,15 @@ function readReceipt(value: unknown): AcpWorkReceipt | null {
   }
   const items = row.items.slice(0, 50).map(readItem);
   if (items.some((item) => item === null)) return null;
+  const origin = row.origin === undefined ? undefined : readOrigin(row.origin);
+  const writerCorrelation = row.writerCorrelation === undefined ? undefined : readWriterCorrelation(row.writerCorrelation);
+  if (origin === null || writerCorrelation === null) return null;
+  if (row.decision === 'rejected' ? row.result !== 'not-run' : row.result === 'not-run') return null;
+  if (writerCorrelation) {
+    if (!origin) return null;
+    const expectedTerminal = row.result === 'not-run' ? 'not-observed' : row.result;
+    if (writerCorrelation.terminal !== expectedTerminal) return null;
+  }
   return {
     v: 1,
     id: row.id,
@@ -103,6 +155,8 @@ function readReceipt(value: unknown): AcpWorkReceipt | null {
     decision: row.decision as AcpWorkDecision,
     result: row.result as AcpWorkResult,
     items: items as AcpWorkReceiptItem[],
+    ...(origin ? { origin } : {}),
+    ...(writerCorrelation ? { writerCorrelation } : {}),
   };
 }
 
@@ -119,7 +173,13 @@ export function parseAcpWorkReceipts(
     if (!line.trim()) continue;
     try {
       const receipt = readReceipt(JSON.parse(line));
-      if (receipt) latest.set(receipt.id, receipt);
+      if (receipt) {
+        const originKey = receipt.origin
+          ? JSON.stringify([receipt.origin.vaultId, receipt.origin.sessionGeneration, receipt.origin.sessionId,
+              receipt.origin.userEventId, typeof receipt.origin.requestId, receipt.origin.requestId, receipt.origin.toolCallId])
+          : 'legacy';
+        latest.set(`${receipt.id}:${originKey}`, receipt);
+      }
     } catch {
       // One interrupted append must not hide the rest of the local history.
     }

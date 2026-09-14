@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { prepareMeaningTransition, serializeMeaningTransition, type MeaningTransitionInput } from '@/shared/lib/meaning-transition';
+import { meaningTransitionV2DecisionArtifact, prepareMeaningTransitionV2, serializeMeaningTransitionV2, type MeaningTransitionV2Input } from '@/shared/lib/meaning-transition-v2';
 
 const native = vi.hoisted(() => ({
   append: vi.fn(), observe: vi.fn(), readArtifact: vi.fn(), readRecord: vi.fn(), list: vi.fn(),
@@ -14,7 +15,7 @@ vi.mock('@/shared/lib/tauri-meaning-transition-archive', () => ({
   listTauriMeaningTransitionHistory: native.list,
 }));
 
-import { appendMeaningTransition, meaningTransitionArtifactRef, readMeaningTransitionHistory } from './meaning-transition-store';
+import { appendMeaningTransition, appendMeaningTransitionV2, meaningTransitionArtifactRef, readMeaningTransitionHistory } from './meaning-transition-store';
 
 const A = `sha256:${'a'.repeat(64)}` as const;
 const identity = { vaultId: '/vault', sessionGeneration: 1, userEventId: 'event', requestId: 1, toolCallId: 'tool' };
@@ -41,6 +42,27 @@ async function fixture() {
   const preparation = await prepareMeaningTransition({ ...input, semanticDelta: 'present' });
   if (preparation.status !== 'candidate') throw new Error('candidate expected');
   return { preparation, artifact: { digest: artifactDigest, content } };
+}
+
+async function v2Fixture() {
+  const bytes = ['retained before', 'canonical preview'];
+  const artifacts = await Promise.all(bytes.map(async (content) => ({ digest: await digest(content), content })));
+  const refs = artifacts.map((item) => ({ ref: meaningTransitionArtifactRef(item.digest), contentDigest: item.digest }));
+  const base: MeaningTransitionV2Input = {
+    eventId: '95f4ba81-41f7-483b-a617-2a4be815be32', createdAt: '2026-09-14T08:00:01.000Z', decisionId: '819f2753-2f91-4e2a-8638-b69051965d3b', phase: 'decision', previous: null,
+    identity, task: { label: 'Review refund meaning', digest: A },
+    proposal: { digest: A, operation: 'patch_concept', rows: [{ rowId: 'row', operation: 'patch', target: doc.path, rawGuardDigest: artifacts[0]!.digest, expectedPersistedDigest: artifacts[1]!.digest }], artifacts: { retainedBefore: refs[0]!, preview: refs[1]!, decision: refs[0]! } },
+    meaningDecision: { decisionId: '819f2753-2f91-4e2a-8638-b69051965d3b', action: 'accept_meaning', actionAt: '2026-09-14T08:00:00.000Z', actor: 'user_action', authentication: 'unverified', rationale: null, acceptedGaps: [] },
+    reviewEvidence: { status: 'unavailable', reason: 'Prototype fixture has no retained review basis.' },
+    acpCorrelation: { status: 'observed', sessionId: 'session', requestId: 1, toolCallId: 'tool', evidence: 'structured_mcp_approval', executionPermission: 'pending' },
+    git: { source: { status: 'unavailable', reason: 'source unavailable' }, vault: { status: 'unavailable', reason: 'vault git unavailable' } },
+    rowEvidence: [{ rowId: 'row', execution: 'not_run', readback: 'unknown', persistedDigest: null, error: null }], receipts: { codeChecks: 'unknown', merge: 'unknown', deployment: 'unknown' }, remainingQuestions: [],
+  };
+  const decisionContent = meaningTransitionV2DecisionArtifact(base);
+  const decisionArtifact = { digest: await digest(decisionContent), content: decisionContent };
+  artifacts.push(decisionArtifact);
+  base.proposal.artifacts.decision = { ref: meaningTransitionArtifactRef(decisionArtifact.digest), contentDigest: decisionArtifact.digest };
+  return { base, artifacts };
 }
 
 beforeEach(() => {
@@ -126,6 +148,48 @@ describe('meaning transition archive store', () => {
     });
     await expect(appendMeaningTransition({ capturedHandle: handle, preparation, artifacts: [artifact], writable: true, isCurrent: () => current }))
       .rejects.toThrow(/context changed/);
+    expect(native.append).not.toHaveBeenCalled();
+  });
+});
+
+describe('meaning transition v2 linked archive', () => {
+  it('archives the immediate decision then requires its exact immutable bytes for terminal append', async () => {
+    const { base, artifacts } = await v2Fixture();
+    const records = new Map<string, string>(); const retained = new Map(artifacts.map((item) => [item.digest, item.content]));
+    native.append.mockImplementation(async (input) => {
+      records.set(input.recordFileName, input.recordContent);
+      return { recordFileName: input.recordFileName, recordCreated: true, artifacts: input.artifacts.map((item: { digest: string }) => ({ digest: item.digest, fileName: `${item.digest.slice(7)}.artifact`, created: true })) };
+    });
+    native.readRecord.mockImplementation(async (_root, _identity, name) => records.get(name));
+    native.readArtifact.mockImplementation(async (_root, _identity, value) => retained.get(value));
+    const decision = (await prepareMeaningTransitionV2(base)).record;
+    await expect(appendMeaningTransitionV2({ capturedHandle: handle, record: decision, artifacts, writable: true, isCurrent: () => true })).resolves.toMatchObject({ status: 'archived' });
+    const terminal = (await prepareMeaningTransitionV2({ ...base,
+      eventId: '05c117c2-17bb-475f-9990-758cf541aa84', createdAt: '2026-09-14T08:01:00.000Z', phase: 'terminal',
+      previous: { eventId: decision.eventId, createdAt: decision.createdAt, recordDigest: decision.recordDigest },
+      acpCorrelation: { ...base.acpCorrelation, executionPermission: 'rejected' } as MeaningTransitionV2Input['acpCorrelation'],
+    })).record;
+    const archived = await appendMeaningTransitionV2({ capturedHandle: handle, record: terminal, artifacts, writable: true, isCurrent: () => true });
+    expect(archived).toMatchObject({ status: 'archived' });
+    expect(terminal.meaningDecision.action).toBe('accept_meaning');
+    expect(terminal.rowEvidence[0].execution).toBe('not_run');
+    native.list.mockResolvedValue({ entries: [{ fileName: archived.fileName, kind: 'record', problem: null }], totalMembers: 1, nextOffset: null });
+    await expect(readMeaningTransitionHistory({ capturedHandle: handle, isCurrent: () => true })).resolves.toMatchObject({ records: [expect.objectContaining({ schema: 'atlas-meaning-transition/v2', eventId: terminal.eventId })], problems: [] });
+  });
+
+  it('rejects a missing or changed previous decision instead of publishing a terminal snapshot', async () => {
+    const { base, artifacts } = await v2Fixture();
+    const decision = (await prepareMeaningTransitionV2(base)).record;
+    const terminal = (await prepareMeaningTransitionV2({ ...base,
+      eventId: '05c117c2-17bb-475f-9990-758cf541aa84', createdAt: '2026-09-14T08:01:00.000Z', phase: 'terminal',
+      previous: { eventId: decision.eventId, createdAt: decision.createdAt, recordDigest: decision.recordDigest },
+      acpCorrelation: { ...base.acpCorrelation, executionPermission: 'allowed' } as MeaningTransitionV2Input['acpCorrelation'],
+    })).record;
+    native.readRecord.mockRejectedValue(new Error('missing previous record'));
+    await expect(appendMeaningTransitionV2({ capturedHandle: handle, record: terminal, artifacts, writable: true, isCurrent: () => true })).rejects.toThrow(/missing previous/);
+    expect(native.append).not.toHaveBeenCalled();
+    native.readRecord.mockResolvedValue(serializeMeaningTransitionV2(decision).replace('Review refund meaning', 'Changed sealed task'));
+    await expect(appendMeaningTransitionV2({ capturedHandle: handle, record: terminal, artifacts, writable: true, isCurrent: () => true })).rejects.toThrow(/digest/);
     expect(native.append).not.toHaveBeenCalled();
   });
 });

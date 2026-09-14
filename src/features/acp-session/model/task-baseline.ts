@@ -140,8 +140,12 @@ export async function captureTaskBaseline(request: TaskBaselineCaptureRequest): 
         if (file.size > TASK_BASELINE_MAX_DOCUMENT_BYTES) return { status: 'failed', reason: 'document_too_large', captured: rows.length, bytes: total };
         total += file.size;
         if (total > TASK_BASELINE_MAX_TOTAL_BYTES) return { status: 'failed', reason: 'total_too_large', captured: rows.length, bytes: total - file.size };
-        const raw = await file.text();
+        const bytes = await file.arrayBuffer();
         if (!request.isCurrent()) return { status: 'failed', reason: 'context_changed', captured: rows.length, bytes: total - file.size };
+        if (bytes.byteLength !== file.size) return { status: 'failed', reason: 'read_failed', captured: rows.length, bytes: total - file.size };
+        // File.text() can discard a BOM and replace malformed UTF-8. Retained writer evidence
+        // must round-trip every original byte; invalid text stays unavailable.
+        const raw = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
         rows.push({ raw, mtime: file.lastModified, size: file.size, digest: await sha256(raw) });
         if (!request.isCurrent()) return { status: 'failed', reason: 'context_changed', captured: rows.length, bytes: total };
       } catch {

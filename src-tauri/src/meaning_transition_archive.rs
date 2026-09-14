@@ -136,22 +136,48 @@ fn header_value(content: &str, key: &str) -> Result<serde_json::Value, String> {
 }
 
 fn referenced_artifact_digests(content: &str) -> Result<std::collections::HashSet<String>, String> {
+    let schema = header_string(content, "schema")?;
     let proposal = header_value(content, "proposal")?;
-    let code = header_value(content, "codeEvidence")?;
     let mut result = std::collections::HashSet::new();
-    let proposal_digest = proposal
-        .pointer("/artifact/contentDigest")
-        .and_then(|value| value.as_str())
-        .ok_or_else(|| "meaning transition proposal artifact digest is missing".to_string())?;
-    validate_digest(proposal_digest)?;
-    result.insert(proposal_digest.to_string());
-    if let Some(diff) = code.get("diffArtifact").filter(|value| !value.is_null()) {
-        let digest = diff
-            .get("contentDigest")
+    if schema == "atlas-meaning-transition/v2" {
+        let artifacts = proposal
+            .get("artifacts")
+            .and_then(|value| value.as_object())
+            .ok_or_else(|| "meaning transition v2 artifacts are missing".to_string())?;
+        if artifacts.len() != 3
+            || !["retainedBefore", "preview", "decision"]
+                .iter()
+                .all(|key| artifacts.contains_key(*key))
+        {
+            return Err("meaning transition v2 requires exact retained before, preview, and decision artifacts".into());
+        }
+        for artifact in artifacts.values() {
+            let digest = artifact
+                .get("contentDigest")
+                .and_then(|value| value.as_str())
+                .ok_or_else(|| "meaning transition v2 artifact digest is missing".to_string())?;
+            validate_digest(digest)?;
+            result.insert(digest.to_string());
+        }
+        if result.len() != 3 {
+            return Err("meaning transition v2 artifacts must use distinct content digests".into());
+        }
+    } else {
+        let code = header_value(content, "codeEvidence")?;
+        let proposal_digest = proposal
+            .pointer("/artifact/contentDigest")
             .and_then(|value| value.as_str())
-            .ok_or_else(|| "meaning transition diff artifact digest is missing".to_string())?;
-        validate_digest(digest)?;
-        result.insert(digest.to_string());
+            .ok_or_else(|| "meaning transition proposal artifact digest is missing".to_string())?;
+        validate_digest(proposal_digest)?;
+        result.insert(proposal_digest.to_string());
+        if let Some(diff) = code.get("diffArtifact").filter(|value| !value.is_null()) {
+            let digest = diff
+                .get("contentDigest")
+                .and_then(|value| value.as_str())
+                .ok_or_else(|| "meaning transition diff artifact digest is missing".to_string())?;
+            validate_digest(digest)?;
+            result.insert(digest.to_string());
+        }
     }
     Ok(result)
 }
@@ -161,7 +187,10 @@ fn validate_record_envelope(name: &str, content: &str) -> Result<(), String> {
     if content.len() > RECORD_LIMIT {
         return Err("meaning transition record exceeds the supported byte budget".into());
     }
-    if header_string(content, "schema")? != "atlas-meaning-transition/v1" {
+    if !matches!(
+        header_string(content, "schema")?.as_str(),
+        "atlas-meaning-transition/v1" | "atlas-meaning-transition/v2"
+    ) {
         return Err("unsupported meaning transition schema".into());
     }
     let id = header_string(content, "event_id")?;
@@ -1032,6 +1061,40 @@ mod tests {
             read_meaning_transition_artifact_text(path.clone(), id.clone(), digest).unwrap(),
             "proposal bytes"
         );
+        assert_eq!(
+            read_meaning_transition_record_text(path, id, name).unwrap(),
+            body
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn v2_envelope_retains_three_exact_artifacts_without_changing_v1() {
+        let (root, name, _, _) = fixture();
+        let id = identity(&root);
+        let path = root.to_string_lossy().into_owned();
+        let artifacts = ["before bytes", "preview bytes", "decision bytes"]
+            .into_iter()
+            .map(|content| MeaningTransitionArtifactInput {
+                digest: format!("sha256:{}", digest_hex(content.as_bytes())),
+                content: content.to_string(),
+            })
+            .collect::<Vec<_>>();
+        let body = format!(
+            "---\nschema: \"atlas-meaning-transition/v2\"\nevent_id: \"95f4ba81-41f7-483b-a617-2a4be815be32\"\ncreated_at: \"2026-09-14T08:00:00.000Z\"\nproposal: {{\"artifacts\":{{\"retainedBefore\":{{\"contentDigest\":\"{}\"}},\"preview\":{{\"contentDigest\":\"{}\"}},\"decision\":{{\"contentDigest\":\"{}\"}}}}}}\n---\n## Remaining questions\n\nNone recorded.\n",
+            artifacts[0].digest, artifacts[1].digest, artifacts[2].digest,
+        );
+        let result = append_meaning_transition_bundle(
+            path.clone(),
+            id.clone(),
+            name.clone(),
+            body.clone(),
+            artifacts,
+        )
+        .unwrap();
+        assert!(result.record_created);
+        assert_eq!(result.artifacts.len(), 3);
         assert_eq!(
             read_meaning_transition_record_text(path, id, name).unwrap(),
             body

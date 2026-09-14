@@ -22,6 +22,7 @@ import {
   vaultRootRejectionReason,
   pickTauriVaultDirectory,
   inspectTauriProjectSource,
+  inspectTauriProjectSourceContinuity,
   tauriVaultPathExists,
 } from './tauri-vault-fs';
 
@@ -126,6 +127,25 @@ describe('tauri vault file-system shim', () => {
         args: { rootPath: '/Users/me/repo/packages/app' },
       },
     ]);
+  });
+
+  it('requests only the fixed continuity scope from a vault slug', async () => {
+    const inspection = {
+      rootPath: '/Users/me/repo', sourceId: 'sha256:source', kind: 'git' as const,
+      revision: 'abc123', fingerprint: 'sha256:continuity', dirty: false, truncated: false,
+      files: ['src/index.ts'], scope: 'meaning-transition-continuity-v1' as const,
+      exclusions: { target: 'docs/ontology/capabilities/refund.md', archivePrefix: 'docs/ontology/.ontology-atlas/meaning-transitions/' },
+    };
+    const calls = installInvoke(({ command }) => {
+      if (command === 'inspect_project_source_continuity') return inspection;
+      throw new Error(`unexpected command: ${command}`);
+    });
+    await expect(inspectTauriProjectSourceContinuity({
+      sourceRoot: '/Users/me/repo', vaultRoot: '/Users/me/repo/docs/ontology', targetSlug: 'capabilities/refund',
+    })).resolves.toEqual(inspection);
+    expect(calls).toEqual([{ command: 'inspect_project_source_continuity', args: {
+      sourceRoot: '/Users/me/repo', vaultRoot: '/Users/me/repo/docs/ontology', targetSlug: 'capabilities/refund',
+    } }]);
   });
 
   it('checks whether a native vault root path exists', async () => {

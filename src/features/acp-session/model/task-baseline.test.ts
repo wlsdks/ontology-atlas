@@ -7,7 +7,8 @@ function handle(reads: Array<{ text: string; mtime: number; size?: number }>): F
     kind: 'file', name: 'node.md', isSameEntry: async () => false,
     getFile: async () => {
       const row = reads[Math.min(index++, reads.length - 1)]!;
-      return { size: row.size ?? new TextEncoder().encode(row.text).length, lastModified: row.mtime, text: async () => row.text } as File;
+      return { size: row.size ?? new TextEncoder().encode(row.text).length, lastModified: row.mtime,
+        arrayBuffer: async () => new TextEncoder().encode(row.text).buffer } as File;
     },
     createWritable: async () => { throw new Error('unused'); },
   };
@@ -19,6 +20,17 @@ const source = {
 };
 
 describe('pre-prompt task baseline capture', () => {
+  it('preserves a UTF-8 BOM and rejects invalid bytes instead of retaining replacement characters', async () => {
+    const raw = '\uFEFF---\ntitle: 한글\n---\n';
+    const available = await captureTaskBaseline({ vaultId: '/vault', slugs: ['node'],
+      fileHandles: new Map([['node', handle([{ text: raw, mtime: 1 }])]]), isCurrent: () => true });
+    expect(available.documents[0]?.raw).toBe(raw);
+    const invalid = { getFile: async () => ({ size: 2, lastModified: 1,
+      arrayBuffer: async () => new Uint8Array([0xc3, 0x28]).buffer }) } as unknown as FileSystemFileHandle;
+    const refused = await captureTaskBaseline({ vaultId: '/vault', slugs: ['node'],
+      fileHandles: new Map([['node', invalid]]), isCurrent: () => true });
+    expect(refused).toMatchObject({ status: 'unavailable', reasons: ['read_failed'], documents: [] });
+  });
   it('returns immutable exact raw documents and tagged stable meaning/source bases', async () => {
     const result = await captureTaskBaseline({
       vaultId: '/vault', slugs: ['capabilities/refund'],

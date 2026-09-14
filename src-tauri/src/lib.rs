@@ -1967,6 +1967,22 @@ struct ProjectSourceInspection {
     files: Vec<String>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProjectSourceContinuityExclusions {
+    target: Option<String>,
+    archive_prefix: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProjectSourceContinuityInspection {
+    #[serde(flatten)]
+    source: ProjectSourceInspection,
+    scope: String,
+    exclusions: ProjectSourceContinuityExclusions,
+}
+
 struct SourceInventory {
     hasher: Sha256,
     files: Vec<String>,
@@ -2206,6 +2222,182 @@ fn inspect_git_source_inventory(root: &Path) -> Result<(String, bool, Vec<String
     }
     let fingerprint = format!("sha256:{:x}", inventory.hasher.finalize());
     Ok((fingerprint, inventory.truncated, inventory.files))
+}
+
+fn continuity_excluded(relative: &str, target: Option<&str>, archive_prefix: Option<&str>) -> bool {
+    target == Some(relative) || archive_prefix.is_some_and(|prefix| relative.starts_with(prefix))
+}
+
+fn git_continuity_observation(
+    repo_root: &Path,
+    target: Option<&str>,
+    archive_prefix: Option<&str>,
+) -> Result<(String, bool, Vec<String>), String> {
+    let listing = run_source_git(
+        repo_root,
+        &[
+            "ls-files",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "-z",
+        ],
+    )?;
+    let mut paths: Vec<String> = listing
+        .split(|byte| *byte == 0)
+        .filter(|path| !path.is_empty())
+        .map(|path| String::from_utf8_lossy(path).replace('\\', "/"))
+        .filter(|path| !continuity_excluded(path, target, archive_prefix))
+        .collect();
+    paths.sort();
+    paths.dedup();
+
+    let status = run_source_git(
+        repo_root,
+        &[
+            "status",
+            "--porcelain=v1",
+            "--no-renames",
+            "-z",
+            "--untracked-files=all",
+        ],
+    )?;
+    let mut visible_status: Vec<Vec<u8>> = status
+        .split(|byte| *byte == 0)
+        .filter(|row| !row.is_empty())
+        .filter(|row| {
+            let relative = if row.len() > 3 {
+                String::from_utf8_lossy(&row[3..]).replace('\\', "/")
+            } else {
+                String::new()
+            };
+            !continuity_excluded(&relative, target, archive_prefix)
+        })
+        .map(|row| row.to_vec())
+        .collect();
+    visible_status.sort();
+
+    let dirty_paths: std::collections::HashSet<String> = visible_status
+        .iter()
+        .filter_map(|row| {
+            (row.len() > 3).then(|| String::from_utf8_lossy(&row[3..]).replace('\\', "/"))
+        })
+        .collect();
+    let mut inventory = SourceInventory {
+        hasher: Sha256::new(),
+        files: Vec::new(),
+        hashed_bytes: 0,
+        truncated: paths.len() > SOURCE_INVENTORY_MAX_FILES,
+    };
+    inventory.hasher.update(b"continuity-v1");
+    inventory.hasher.update([0]);
+    for relative in paths.iter().take(SOURCE_INVENTORY_MAX_FILES) {
+        hash_source_file(
+            &repo_root.join(relative),
+            relative,
+            &mut inventory,
+            dirty_paths.contains(relative),
+        )?;
+    }
+    for row in visible_status {
+        inventory.hasher.update(&row);
+        inventory.hasher.update([0]);
+    }
+    Ok((
+        format!("sha256:{:x}", inventory.hasher.finalize()),
+        inventory.truncated,
+        inventory.files,
+    ))
+}
+
+#[tauri::command(async)]
+fn inspect_project_source_continuity(
+    source_root: String,
+    vault_root: String,
+    target_slug: String,
+) -> Result<ProjectSourceContinuityInspection, String> {
+    let selected_source = canonical_root(&source_root)?;
+    let vault = canonical_root(&vault_root)?;
+    let slug = normalize_relative_path(&target_slug)?;
+    if slug.extension().is_some() || slug.as_os_str().is_empty() {
+        return Err("continuity target must be a vault slug without an extension".into());
+    }
+    let target_path = vault.join(&slug).with_extension("md");
+    let target_metadata = fs::symlink_metadata(&target_path).map_err(|err| err.to_string())?;
+    if !target_metadata.file_type().is_file() || target_metadata.file_type().is_symlink() {
+        return Err("continuity target must be an existing regular vault file".into());
+    }
+    let canonical_target = fs::canonicalize(&target_path).map_err(|err| err.to_string())?;
+    if !canonical_target.starts_with(&vault) {
+        return Err("continuity target must stay inside the selected vault".into());
+    }
+    let repo_root = git::find_repo_root(&selected_source)?
+        .ok_or_else(|| "meaning transition continuity requires a Git source".to_string())?;
+    let relative_target = canonical_target
+        .strip_prefix(&repo_root)
+        .ok()
+        .map(|path| path.to_string_lossy().replace('\\', "/"));
+    let archive = vault.join(".ontology-atlas/meaning-transitions");
+    let relative_archive = archive.strip_prefix(&repo_root).ok().map(|path| {
+        let mut value = path.to_string_lossy().replace('\\', "/");
+        if !value.ends_with('/') {
+            value.push('/');
+        }
+        value
+    });
+    let (fingerprint, truncated, files) = git_continuity_observation(
+        &repo_root,
+        relative_target.as_deref(),
+        relative_archive.as_deref(),
+    )?;
+    if truncated {
+        return Err("meaning transition continuity inventory is truncated".into());
+    }
+    let head = run_source_git(&repo_root, &["rev-parse", "HEAD"])?;
+    let revision = String::from_utf8_lossy(&head).trim().to_string();
+    let status = run_source_git(
+        &repo_root,
+        &[
+            "status",
+            "--porcelain=v1",
+            "--no-renames",
+            "-z",
+            "--untracked-files=all",
+        ],
+    )?;
+    let visible_dirty = status
+        .split(|byte| *byte == 0)
+        .filter(|row| !row.is_empty())
+        .any(|row| {
+            let relative = if row.len() > 3 {
+                String::from_utf8_lossy(&row[3..]).replace('\\', "/")
+            } else {
+                String::new()
+            };
+            !continuity_excluded(
+                &relative,
+                relative_target.as_deref(),
+                relative_archive.as_deref(),
+            )
+        });
+    let canonical = repo_root.to_string_lossy().to_string();
+    Ok(ProjectSourceContinuityInspection {
+        source: ProjectSourceInspection {
+            root_path: canonical.clone(),
+            source_id: source_digest(&[b"git", canonical.as_bytes()]),
+            kind: "git".into(),
+            revision,
+            fingerprint,
+            dirty: Some(visible_dirty),
+            truncated: false,
+            files,
+        },
+        scope: "meaning-transition-continuity-v1".into(),
+        exclusions: ProjectSourceContinuityExclusions {
+            target: relative_target,
+            archive_prefix: relative_archive,
+        },
+    })
 }
 
 #[tauri::command(async)]
@@ -3754,6 +3946,7 @@ pub fn run() {
             acp_permission_verdict,
             pick_vault_directory,
             inspect_project_source,
+            inspect_project_source_continuity,
             list_vault_directory,
             vault_fingerprint,
             read_vault_text_file,
@@ -4588,6 +4781,115 @@ mod tests {
         assert!(!inspection.source_id.contains("example.invalid"));
         assert!(!inspection.fingerprint.contains("example.invalid"));
 
+        fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn meaning_transition_continuity_excludes_only_target_and_archive() {
+        let root = std::env::temp_dir().join(format!(
+            "ontology-atlas-continuity-{}",
+            std::time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let vault = root.join("docs/ontology");
+        fs::create_dir_all(vault.join("capabilities")).unwrap();
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(vault.join("capabilities/refund.md"), "before\n").unwrap();
+        fs::write(root.join("src/index.ts"), "export const value = 1;\n").unwrap();
+        for args in [
+            vec!["init"],
+            vec!["config", "user.email", "atlas@example.invalid"],
+            vec!["config", "user.name", "Atlas Test"],
+            vec!["add", "."],
+            vec!["commit", "-m", "initial"],
+        ] {
+            let output = Command::new("git")
+                .args(args)
+                .current_dir(&root)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        let observe = || {
+            inspect_project_source_continuity(
+                root.to_string_lossy().to_string(),
+                vault.to_string_lossy().to_string(),
+                "capabilities/refund".into(),
+            )
+            .unwrap()
+        };
+        let baseline = observe();
+        assert_eq!(baseline.source.dirty, Some(false));
+        assert_eq!(
+            baseline.exclusions.target.as_deref(),
+            Some("docs/ontology/capabilities/refund.md")
+        );
+
+        fs::write(
+            vault.join("capabilities/refund.md"),
+            "after meaning write\n",
+        )
+        .unwrap();
+        fs::create_dir_all(vault.join(".ontology-atlas/meaning-transitions/artifacts")).unwrap();
+        fs::write(
+            vault.join(".ontology-atlas/meaning-transitions/transition.md"),
+            "record\n",
+        )
+        .unwrap();
+        let meaning_only = observe();
+        assert_eq!(meaning_only.source.fingerprint, baseline.source.fingerprint);
+        assert_eq!(meaning_only.source.dirty, Some(false));
+
+        fs::write(vault.join(".ontology-atlas/project-sources.json"), "{}\n").unwrap();
+        let config_drift = observe();
+        assert_ne!(config_drift.source.fingerprint, baseline.source.fingerprint);
+        assert_eq!(config_drift.source.dirty, Some(true));
+        fs::remove_file(vault.join(".ontology-atlas/project-sources.json")).unwrap();
+
+        fs::write(root.join("src/index.ts"), "export const value = 2;\n").unwrap();
+        assert_ne!(observe().source.fingerprint, baseline.source.fingerprint);
+        fs::remove_dir_all(root).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn meaning_transition_continuity_rejects_traversal_and_symlink_targets() {
+        use std::os::unix::fs::symlink;
+        let root = std::env::temp_dir().join(format!(
+            "ontology-atlas-continuity-link-{}",
+            std::time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let vault = root.join("vault");
+        fs::create_dir_all(vault.join("capabilities")).unwrap();
+        fs::write(root.join("outside.md"), "outside\n").unwrap();
+        symlink(
+            root.join("outside.md"),
+            vault.join("capabilities/refund.md"),
+        )
+        .unwrap();
+        let source = root.to_string_lossy().to_string();
+        let vault_text = vault.to_string_lossy().to_string();
+        assert!(inspect_project_source_continuity(
+            source.clone(),
+            vault_text.clone(),
+            "../outside".into()
+        )
+        .is_err());
+        assert!(inspect_project_source_continuity(
+            source,
+            vault_text,
+            "capabilities/refund".into()
+        )
+        .is_err());
         fs::remove_dir_all(root).ok();
     }
 

@@ -4,7 +4,7 @@ import type { PendingPermission, TaskBaselineCaptureResult } from '@/features/ac
 import { useTaskMeaningReview } from './use-task-meaning-review';
 
 const hash = (value: string) => `sha256:${value.repeat(64)}`;
-const raw = ['---', 'kind: capability', 'title: Refund', 'relation_notes:', '  elements/ledger: Captures settlement', 'description: Before', '---', 'Before body'].join('\n');
+const raw = ['---', 'kind: capability', 'uid: 994ad212-519b-45fd-b66a-66a5a2946134', 'title: Refund', 'relation_notes:', '  elements/ledger: Captures settlement', 'description: Before', '---', 'Before body'].join('\n');
 const events = [
   { kind: 'user' as const, id: 'event', text: 'Change refund meaning' },
   { kind: 'tool' as const, id: 'connection', title: 'mcp__atlas-vault__connection_info', toolKind: 'read', status: 'completed', rawInput: {}, rawOutput: [{ type: 'text', text: JSON.stringify({ vaultRoot: '/vault', repoRoot: '/other/source' }) }] },
@@ -179,4 +179,45 @@ describe('useTaskMeaningReview', () => {
     expect(next).toHaveBeenCalled();
     expect(await staleAccept({ acknowledgeFullScope: true })).toBe(false);
   });
+  it('archives the exact reviewed decision before marking meaning accepted without resolving permission', async () => {
+    const request = pending();
+    let finish!: (saved: boolean) => void;
+    const save = vi.fn((_decision: import('./use-task-meaning-review').TaskMeaningDecision) => new Promise<boolean>((resolve) => { finish = resolve; }));
+    const { result } = renderHook(() => useTaskMeaningReview({ pending: request, runtimeId: 'codex', vaultRoot: '/vault', captureTaskBaseline: stableCapture, events, onMeaningDecision: save }));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    let accepting!: Promise<boolean>;
+    act(() => { accepting = result.current.markMeaningAccepted({ acknowledgeFullScope: true }); });
+    await waitFor(() => expect(save).toHaveBeenCalledOnce());
+    expect(result.current.meaningStatus).toBe('unreviewed');
+    expect(save.mock.calls[0][0]).toMatchObject({ before: raw, preview: result.current.canonicalPreview, action: 'accept_meaning' });
+    expect(Object.isFrozen(save.mock.calls[0][0])).toBe(true);
+    await act(async () => { finish(true); expect(await accepting).toBe(true); });
+    expect(result.current.decisionSaveStatus).toBe('saved');
+    expect(request.resolve).not.toHaveBeenCalled();
+  });
+
+  it('retains a visible failed archive and does not mark the meaning accepted', async () => {
+    const save = vi.fn(async () => { throw new Error('disk full'); });
+    const request = pending();
+    const { result } = renderHook(() => useTaskMeaningReview({ pending: request, runtimeId: 'codex', vaultRoot: '/vault', captureTaskBaseline: stableCapture, events, onMeaningDecision: save }));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    await act(async () => { expect(await result.current.markMeaningAccepted({ acknowledgeFullScope: true })).toBe(false); });
+    expect(result.current.decisionSaveStatus).toBe('failed');
+    expect(result.current.meaningStatus).toBe('unreviewed');
+    expect(request.resolve).not.toHaveBeenCalled();
+  });
+
+  it('allows comparison but refuses acceptance when the writer would mint a UID', async () => {
+    const capture = async () => {
+      const value = structuredClone(baseline());
+      if (value.status === 'available') value.documents = value.documents.map((row) => ({ ...row, raw: row.raw.replace(/uid:.*\n/, '') }));
+      return value;
+    };
+    const request = pending(); request.origin!.taskBaseline = await capture();
+    const { result } = renderHook(() => useTaskMeaningReview({ pending: request, runtimeId: 'codex', vaultRoot: '/vault', captureTaskBaseline: capture, events }));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.canonicalPreview).toBeNull();
+    await act(async () => { expect(await result.current.markMeaningAccepted({ acknowledgeFullScope: true })).toBe(false); });
+  });
+
 });

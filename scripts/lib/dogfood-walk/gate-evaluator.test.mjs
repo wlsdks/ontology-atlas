@@ -456,7 +456,7 @@ describe("evaluateDogfoodGate", () => {
     );
     const postWriteNextExecutableSchemaDrifted = makeDogfoodToolsList();
     postWriteNextExecutableSchemaDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance.properties.nextExecutableAction.required =
-      ["id", "phase", "kind", "severity", "score", "executable", "reason"];
+      ["id"];
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: postWriteNextExecutableSchemaDrifted }),
       ["tools/list: patch_concept outputSchema postWriteMaintenance nextExecutableAction drift"],
