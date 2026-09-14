@@ -886,7 +886,7 @@ export function LibrarySection({
       >
         <h2
           id="library-new-page-title-heading"
-          className="text-heading-sm font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+          className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
         >
           {t("wiki.newPageDialogTitle")}
         </h2>
@@ -916,7 +916,7 @@ export function LibrarySection({
           />
           <section
             aria-label={t("wiki.newPagePreviewTitle")}
-            className="rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-3"
+            className="rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]"
           >
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <h3 className="text-label font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">

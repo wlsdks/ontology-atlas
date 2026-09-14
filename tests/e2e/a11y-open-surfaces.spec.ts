@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { openLibraryWorkScenario } from "./library-work-harness";
+
 /**
  * Accessibility ratchet — **open surfaces**.
  *
@@ -91,6 +93,8 @@ interface Opener {
   };
   /** Built-in sample needed before this route exposes its conditional surface. */
   readonly dogfood?: boolean;
+  /** Protocol-level installed-app work state needed before the receipt history exists. */
+  readonly libraryWorkReceipt?: boolean;
 }
 
 const CONSTRUCTION_PLAN_DIGEST = `sha256:${"a".repeat(64)}`;
@@ -219,6 +223,13 @@ const OPENERS: readonly Opener[] = [
     trigger: "gateway-hero-cta",
     surface: '[data-testid="gateway-hero-mac-menu"]',
   },
+  {
+    name: "Library work receipt history",
+    route: "/en/library/",
+    trigger: "library-work-history-toggle",
+    surface: '[data-testid="library-work-recent"]',
+    libraryWorkReceipt: true,
+  },
 ];
 
 /**
@@ -232,6 +243,11 @@ const BASELINE: Readonly<Record<string, number>> = {
 };
 
 async function openAndAudit(page: Page, o: Opener) {
+  if (o.libraryWorkReceipt) {
+    const harness = await openLibraryWorkScenario(page);
+    await harness.read(page);
+    await expect(page.getByTestId("library-work-current")).toBeVisible();
+  }
   if (o.dogfood) {
     await page.addInitScript(() => {
       window.localStorage.setItem("demo:sample-source:v1", "dogfood");
@@ -241,10 +257,12 @@ async function openAndAudit(page: Page, o: Opener) {
      blueprint is a view rather than the destination's default — so the separator is chosen rather
      than assumed. Appending a second `?` made `view=structure?guides=off`, which parses as no view
      at all and opened the coverage matrix instead (measured 2026-09-13). */
-  const separator = o.route.includes("?") ? "&" : "?";
-  await page.goto(`${o.route}${separator}guides=off`, { waitUntil: "domcontentloaded" });
-  // The map's screen is only settled once the physics simulation converges.
-  await page.waitForTimeout(2500);
+  if (!o.libraryWorkReceipt) {
+    const separator = o.route.includes("?") ? "&" : "?";
+    await page.goto(`${o.route}${separator}guides=off`, { waitUntil: "domcontentloaded" });
+    // The map's screen is only settled once the physics simulation converges.
+    await page.waitForTimeout(2500);
+  }
 
   if (o.fileInput) {
     await page.getByTestId(o.fileInput.testId).setInputFiles({

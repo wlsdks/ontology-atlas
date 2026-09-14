@@ -114,10 +114,11 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
         >
           <button
             ref={historyTriggerRef}
+            id="library-work-history-toggle"
             type="button"
             data-testid="library-work-history-toggle"
             aria-expanded={historyOpen}
-            aria-haspopup="dialog"
+            aria-controls="library-work-recent"
             onClick={() => setHistoryOpen((open) => !open)}
             className={controlClass({
               shape: "link",
@@ -142,8 +143,9 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
             open={historyOpen}
             motion="overlay"
             origin="top right"
-            role="dialog"
-            aria-label={t("recent")}
+            as="section"
+            id="library-work-recent"
+            aria-labelledby="library-work-history-toggle"
             data-testid="library-work-recent"
             {...transientSurface("anchored")}
             className="absolute right-0 top-full z-[var(--z-dialog)] mt-1 flex w-[min(24rem,calc(100vw-2.5rem))] flex-col gap-1 rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-2 shadow-[var(--shadow-elevation-2)]"

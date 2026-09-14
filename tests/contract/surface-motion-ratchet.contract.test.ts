@@ -266,7 +266,14 @@ const BASELINE_HARD_CUTS = 0;
  * trigger, which is pre-existing behaviour of the shared hook rather than something this
  * surface introduced.
  */
-const BASELINE_APPEARING_SURFACES = 44;
+/*
+ * 44 → 45 (2026-09-14): the Library work lane separates its current receipt from a
+ * three-item history region. The history is an anchored `Surface`, opened from the
+ * receipt count and named by that trigger; it owns Escape and returns focus to the
+ * trigger. `a11y-open-surfaces.spec.ts` creates the protocol-level work state, presses
+ * the trigger, requires the region to be visible, and measures its content.
+ */
+const BASELINE_APPEARING_SURFACES = 45;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';
