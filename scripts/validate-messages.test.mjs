@@ -749,11 +749,11 @@ describe('i18n message catalog', () => {
     ].join('\n');
 
     assert.equal(ko.featuresMisc.starterCta.emptyAriaLabel, '온톨로지 시작 시드');
-    assert.equal(ko.featuresMisc.starterCta.proofLocalLabel, '로컬');
-    assert.equal(ko.featuresMisc.starterCta.proofGraphLabel, '서로 맞는지 확인함');
-    assert.equal(ko.featuresMisc.starterCta.proofAgentLabel, 'AI가 확인하는 순서');
-    assert.equal(ko.featuresMisc.starterCta.copyCliLabel, '터미널 근거 복사');
-    assert.equal(ko.featuresMisc.starterCta.copyJsonGateLabel, '자동 점검 명령 복사');
+    assert.equal(ko.featuresMisc.starterCta.proofLocalLabel, '로컬 파일');
+    assert.equal(ko.featuresMisc.starterCta.proofGraphLabel, '연결 검사');
+    assert.equal(ko.featuresMisc.starterCta.proofAgentLabel, '먼저 읽기');
+    assert.equal(ko.featuresMisc.starterCta.copyCliLabel, 'CLI 점검 복사');
+    assert.equal(ko.featuresMisc.starterCta.copyJsonGateLabel, 'JSON 점검 복사');
     assert.doesNotMatch(
       startCopy,
       /ontology\s*가|다음 \d+ 단계|첫 트리|ontology starter|starter|frontmatter|codebase ontology|typed relation|graph proof|agent loop|AI agent|agent 검증|CLI proof|JSON gate|fallback self-check|read-first/,

@@ -3077,7 +3077,7 @@
       "verifyAriaLabel": "시작 시드에 포함된 AI 검증 단계",
       "verifyStepFiles": "Claude Code, Cursor, Codex용 설정 파일을 만듭니다.",
       "verifyStepMcp": "README가 수정 전 validate_vault, workspace_brief, agent_brief 실행을 요구합니다.",
-      "verifyStepCli": "CLI 대체 경로도 같은 자체 점검과 mcp-verify 근거를 제공합니다.",
+      "verifyStepCli": "명령줄(CLI) 대체 경로도 같은 자체 점검과 mcp-verify 근거를 제공합니다.",
       "copyPromptLabel": "검증 프롬프트 복사",
       "copyPromptCopied": "프롬프트 복사됨",
       "copyPromptFailed": "복사 실패",

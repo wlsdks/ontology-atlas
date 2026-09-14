@@ -951,13 +951,10 @@
   --color-success-a06: rgba(50, 185, 125, 0.06);
   --color-success-a07: rgba(50, 185, 125, 0.07);
   --color-success-a055: rgba(50, 185, 125, 0.055);
-  --color-success-a11: rgba(50, 185, 125, 0.11);
   --color-success-a12: rgba(50, 185, 125, 0.12);
   --color-success-a20: rgba(50, 185, 125, 0.2);
-  --color-success-a28: rgba(50, 185, 125, 0.28);
   --color-success-a35: rgba(50, 185, 125, 0.35);
   --color-success-a40: rgba(50, 185, 125, 0.4);
-  --color-success-a42: rgba(50, 185, 125, 0.42);
   --color-success-a45: rgba(50, 185, 125, 0.45);
   /* success text — bright emerald text sibling symmetric to danger-text.
      Converge 151,230,198 / 180,235,205 / 130,230,180 (text usage) to this hue. */
@@ -2732,13 +2729,10 @@
     --color-success-a06: rgba(50, 185, 125, 0.06);
     --color-success-a07: rgba(50, 185, 125, 0.07);
     --color-success-a055: rgba(50, 185, 125, 0.055);
-    --color-success-a11: rgba(50, 185, 125, 0.11);
     --color-success-a12: rgba(50, 185, 125, 0.12);
     --color-success-a20: rgba(50, 185, 125, 0.2);
-    --color-success-a28: rgba(50, 185, 125, 0.28);
     --color-success-a35: rgba(50, 185, 125, 0.35);
     --color-success-a40: rgba(50, 185, 125, 0.4);
-    --color-success-a42: rgba(50, 185, 125, 0.42);
     --color-success-a45: rgba(50, 185, 125, 0.45);
     --color-success-text-a90: rgba(165, 232, 200, 0.9);
     --color-success-text-a92: rgba(165, 232, 200, 0.92);

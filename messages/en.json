@@ -3064,7 +3064,7 @@
       "emptyAriaLabel": "ontology starter seed",
       "emptyEyebrow": "No ontology yet",
       "emptyTitle": "Create an ontology starter",
-      "emptyBodyLine1": "Creates five Markdown starter files—project, domain, capability, element, and README—plus <code>.mcp.json</code> and <code>.codex/config.toml</code>.",
+      "emptyBodyLine1": "Creates five Markdown starter files: project, domain, capability, element, and README. It also creates <code>.mcp.json</code> and <code>.codex/config.toml</code>.",
       "emptyBodyLine2": "Edit each file's info block to match your project; Atlas updates the tree, map, and editor from those files.",
       "definitionLabel": "What an ontology records",
       "definitionBody": "A record in Markdown of what this folder builds, what it depends on, and what a change affects. Projects, domains, capabilities, elements, and their relations make up the ontology.",

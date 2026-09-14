@@ -88,8 +88,12 @@ const ROOT = process.cwd();
  * whose inactive chips wrote their own `hover:border-…`, and they are a `SegmentedControl`
  * now. The hand declaration went with the hand-rolled group, which is the adoption this
  * ratchet exists to bank.
+ *
+ * 301 → 299 (2026-09-14): the ontology starter's JSON-gate action joined its sibling
+ * neutral controls. Its literal success hover border and surface declarations disappeared
+ * with that one-off skin, so the two-declaration improvement is banked here.
  */
-const CEILING = 301;
+const CEILING = 299;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
