@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef } from "react";
 import { BookOpen, Check, ChevronDown, FilePenLine, Pause, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { LibraryWorkActivity, LibraryWorkEvent, LibraryWorkTarget } from "@/features/library";
@@ -46,6 +46,20 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
     ref: historyRef,
     surfaceRef: historySurfaceRef,
   } = useDismissibleMenu();
+  useEffect(() => {
+    if (!historyOpen) return;
+    const handleHistoryEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setHistoryOpen(false);
+      historyTriggerRef.current?.focus();
+    };
+    // WKWebView can leave focus on the reader after a pointer opens this anchored
+    // surface. Capture before the reader's own Escape handler closes the document.
+    document.addEventListener("keydown", handleHistoryEscape, true);
+    return () => document.removeEventListener("keydown", handleHistoryEscape, true);
+  }, [historyOpen, setHistoryOpen]);
   // Nothing to report and no session that could report: the picture keeps the height.
   // A receipt still outlives its conversation, which is the whole point of a receipt, so
   // the lane stands for one that is already there even after the dock is closed.
@@ -104,13 +118,6 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
         <div
           ref={historyRef}
           className="relative flex-none"
-          onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
-            if (event.key !== "Escape" || !historyOpen) return;
-            event.preventDefault();
-            event.stopPropagation();
-            setHistoryOpen(false);
-            historyTriggerRef.current?.focus();
-          }}
         >
           <button
             ref={historyTriggerRef}

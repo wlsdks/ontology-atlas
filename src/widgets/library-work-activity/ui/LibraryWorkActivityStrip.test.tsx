@@ -32,21 +32,28 @@ describe("Library work receipts", () => {
     expect(screen.getByTestId("library-work-activity")).toHaveTextContent("Failed");
   });
 
-  it("owns Escape while history is open, closes it, and returns focus to its trigger", () => {
+  it("owns Escape when focus stays on the reader, closes history, and returns focus to its trigger", () => {
     const underlyingEscape = vi.fn();
     window.addEventListener("keydown", underlyingEscape);
-    render(<NextIntlClientProvider locale="en" messages={messages}>
-      <LibraryWorkActivityStrip onSelect={vi.fn()} activity={{ isActive: false, current: null,
-        recent: [{ id: "w", kind: "write", phase: "complete", target: { kind: "wiki", ref: "wiki/roadmap" }, at: 0 }],
-      }} />
-    </NextIntlClientProvider>);
+    render(
+      <div data-testid="library-reader" tabIndex={-1} onKeyDown={underlyingEscape}>
+        <NextIntlClientProvider locale="en" messages={messages}>
+          <LibraryWorkActivityStrip onSelect={vi.fn()} activity={{ isActive: false, current: null,
+            recent: [{ id: "w", kind: "write", phase: "complete", target: { kind: "wiki", ref: "wiki/roadmap" }, at: 0 }],
+          }} />
+        </NextIntlClientProvider>
+      </div>,
+    );
     const trigger = screen.getByTestId("library-work-history-toggle");
-    trigger.focus();
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
 
-    fireEvent.keyDown(screen.getByTestId("library-work-recent"), { key: "Escape" });
+    const reader = screen.getByTestId("library-reader");
+    reader.focus();
+    expect(reader).toHaveFocus();
+    const propagated = fireEvent.keyDown(reader, { key: "Escape" });
 
+    expect(propagated).toBe(false);
     expect(underlyingEscape).not.toHaveBeenCalled();
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(trigger).toHaveFocus();
