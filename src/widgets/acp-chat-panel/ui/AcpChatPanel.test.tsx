@@ -1015,6 +1015,35 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     expect(bridge.sent.filter((row) => row.method === 'session/prompt')).toHaveLength(promptsBefore);
   });
 
+  it('keeps the rejected proposal immutable and binds a user-sent correction to a distinct request', async () => {
+    await bootSession();
+    await startUserTurn('Keep the refund exception');
+    const original = { slug: 'capabilities/refund', expected_mtime: 100, body: 'Incorrect unconditional refund' };
+    emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 291, original));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Existing draft' } });
+    fireEvent.click(await screen.findByTestId('task-review-correct'));
+    await waitFor(() => expect(answerFor(291)).toEqual({ outcome: 'selected', optionId: 'reject' }));
+    expect(original.body).toBe('Incorrect unconditional refund');
+    expect(screen.queryByTestId('task-review-meaning-accept')).not.toBeInTheDocument();
+
+    act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
+    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    const composer = screen.getByRole('textbox');
+    expect((composer as HTMLTextAreaElement).value).toContain('Existing draft');
+    await startUserTurn('Correct it: refund only after capture.');
+    expect(bridge.sent.filter((row) => row.method === 'session/prompt')).toHaveLength(2);
+
+    emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 292, {
+      slug: 'capabilities/refund', expected_mtime: 100, body: 'Refund only after capture.',
+    }));
+    expect(await screen.findByTestId('acp-permission-allow')).toBeInTheDocument();
+    expect(answerFor(292)).toBeUndefined();
+    expect(answerFor(291)).toEqual({ outcome: 'selected', optionId: 'reject' });
+    fireEvent.click(screen.getByTestId('task-review-depth-details'));
+    expect(screen.getByTestId('acp-ontology-change-review')).toHaveTextContent('Refund only after capture.');
+    expect(screen.queryByTestId('task-review-meaning-accept')).not.toBeInTheDocument();
+  });
+
   it('defers and resumes the same live request without answering it', async () => {
     await bootSession();
     await startUserTurn('Review the refund exception');

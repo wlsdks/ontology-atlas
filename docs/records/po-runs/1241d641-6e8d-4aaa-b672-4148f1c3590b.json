@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-14",
+  "decision": "Review exact task-bound meaning and independent write permission in the existing workbench without promoting missing evidence",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "correct",
+  "changes": [
+    "public-contract"
+  ],
+  "boundaries": {
+    "truth": "affected",
+    "transfer": "unchanged",
+    "agent-write": "affected",
+    "human-correction": "affected"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "evidence-bounded",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending",
+    "date": "2026-09-14"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "1241d641-6e8d-4aaa-b672-4148f1c3590b",
+  "recordedAt": "2026-09-14T01:25:48.514Z"
+}

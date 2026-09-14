@@ -4,6 +4,10 @@ The existing ACP conversation reviews an ontology write in three depths: summary
 comparison and complete request details. The task comes from the originating user
 turn. Unrecorded non-goals remain unknown. Every batch item and every requested
 field can be opened; a selected first item never represents the whole batch.
+The compact task disclosure retains the full request. Initial focus starts at
+the review heading; narrow or short parents use a continuous reading flow.
+Execution uses a neutral action alongside correction and deferral, with complete
+action explanations available in a disclosure. Coarse input keeps 44px targets.
 
 Summary keeps complete recorded Definition, Includes, Excludes and Uncertainty
 sections and relation rationales. Its coverage reports omitted units. Details

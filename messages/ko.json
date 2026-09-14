@@ -4151,9 +4151,9 @@
           "source_binding_changed": "이 작업 중 소스 코드 폴더 연결이 바뀌었습니다.",
           "source_diff_unavailable": "이 작업의 소스 변경 범위를 확인할 수 없습니다. 작업 소유 범위를 추정하지 않습니다."
         },
-        "correct": "수정 요청",
+        "correct": "거절 후 수정",
         "defer": "대기 유지",
-        "interventionHint": "수정 요청은 이 제안을 거절하고 편집할 맥락만 준비하며 자동으로 보내지 않습니다. 대기는 이 대화 안에서만 유지되고 저장되지 않습니다.",
+        "interventionHint": "수정 요청은 이 제안을 거절하고 편집할 맥락만 준비하며 자동으로 보내지 않습니다. 코드를 되돌리지도 않습니다. 대기는 이 대화 안에서만 유지되고 저장되지 않습니다.",
         "provenance": "요청 출처와 쓰기 조건",
         "requestId": "요청",
         "userEvent": "턴",
@@ -4182,7 +4182,9 @@
           "changed": "변경",
           "unchanged": "그대로",
           "uncomparable": "비교할 수 없음"
-        }
+        },
+        "actionScope": "동작 범위",
+        "allowScope": "한 번 허용은 이 쓰기만 실행합니다."
       },
       "deferredNotice": "이 요청은 이 대화에서 계속 대기 중입니다. 저장되지 않으며 대화를 닫거나 취소하면 거절됩니다.",
       "resumeReview": "검토 다시 열기",
@@ -4204,7 +4206,8 @@
       "insideFolderTitle": "이 폴더의 파일을 바꾸려고 해요",
       "insideFolderBody": "경로는 아래에 있어요. 허락하기 전에는 아무 일도 일어나지 않아요.",
       "insideProjectTitle": "내 프로젝트 안의 코드를 보려고 해요",
-      "insideProjectBody": "지도 폴더 밖이지만, 고른 프로젝트 안입니다. 허락하기 전에는 아무 일도 일어나지 않아요."
+      "insideProjectBody": "지도 폴더 밖이지만, 고른 프로젝트 안입니다. 허락하기 전에는 아무 일도 일어나지 않아요.",
+      "ontologyWriteUnverifiedBody": "이 요청은 한 번 허용한 뒤에만 제안된 온톨로지 파일에 씁니다. 허용하기 전에 대상을 확인하세요."
     },
     "close": "대화 닫기",
     "composerPlaceholder": "이 폴더에 대해 물어보거나 시켜요",

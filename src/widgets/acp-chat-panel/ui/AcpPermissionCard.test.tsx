@@ -228,6 +228,12 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
   it('작업과 정확한 제안 범위를 먼저 보이고 의미 검토가 미완료라고 말한다', () => {
     const { view } = taskCard();
     render(view);
+    expect(screen.getByTestId('task-review-outcome-compact')).toHaveTextContent('환불 자격 조건을 바꿔줘');
+    expect(screen.getByTestId('task-review-task').tagName).toBe('DETAILS');
+    expect(document.getElementById('acp-permission-body')).toHaveClass('sr-only');
+    fireEvent.click(screen.getByTestId('task-review-action-scope').querySelector('summary')!);
+    expect(screen.getByTestId('task-review-action-scope')).toHaveTextContent(koMessages.acpChat.permission.ontologyWriteUnverifiedBody);
+    fireEvent.click(screen.getByTestId('task-review-task').querySelector('summary')!);
     expect(screen.getByTestId('task-review-outcome')).toHaveTextContent('환불 자격 조건을 바꿔줘');
     expect(screen.getByText(koMessages.acpChat.permission.taskReview.nonGoalsUnstructured)).toBeVisible();
     expect(screen.getByTestId('task-review-summary')).toHaveTextContent('capabilities/refund');
@@ -240,6 +246,19 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     expect(screen.getByTestId('task-review-coverage')).toHaveTextContent('6개 중 5개');
     expect(screen.getByTestId('task-review-coverage')).toHaveTextContent('생략 1개');
     expect(screen.queryByTestId('acp-ontology-change-review')).not.toBeInTheDocument();
+    expect(screen.getByTestId('acp-permission-allow').className).toContain('atlas-touch-floor');
+    expect(screen.getByTestId('acp-permission-allow').className).not.toContain('bg-[color:var(--color-indigo-accent)]');
+  });
+
+  it('작업 검토는 증거 머리말에서 시작하고 다음 Tab이 작업 공개로 간다', () => {
+    const { view } = taskCard();
+    render(view);
+    expect(document.activeElement).toBe(screen.getByTestId('task-review-heading'));
+    fireEvent.keyDown(document.activeElement!, { key: 'Tab' });
+    const disclosure = screen.getByTestId('task-review-task').querySelector('summary');
+    disclosure?.focus();
+    expect(document.activeElement).toBe(disclosure);
+    expect(document.activeElement).not.toBe(screen.getByTestId('acp-permission-allow'));
   });
 
   it('비교는 신뢰할 이전 값이 없다고 하고 제안값은 그대로 보인다', () => {

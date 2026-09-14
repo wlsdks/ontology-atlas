@@ -246,8 +246,11 @@ export function AcpPermissionCard({
    * on **allow**. What this card opens is an irreversible decision.
    */
   const rejectRef = useRef<HTMLButtonElement | null>(null);
+  const taskReviewHeadingRef = useRef<HTMLParagraphElement | null>(null);
+  const initiallyTaskBound = useRef(Boolean(taskOrigin));
   useEffect(() => {
-    rejectRef.current?.focus();
+    if (initiallyTaskBound.current) taskReviewHeadingRef.current?.focus({ preventScroll: true });
+    else rejectRef.current?.focus();
   }, []);
 
   return (
@@ -285,7 +288,7 @@ export function AcpPermissionCard({
        */
       className={
         ontologyWrite
-          ? 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-[var(--card-pad)]'
+          ? 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-[var(--card-pad)] [@media(max-width:480px)]:overflow-y-auto [@media(max-height:520px)]:overflow-y-auto'
           : locality !== 'elsewhere'
             ? 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]'
             : 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] p-[var(--card-pad)]'
@@ -293,7 +296,7 @@ export function AcpPermissionCard({
     >
       <div
         data-testid="acp-permission-body-scroll"
-        className="atlas-scroll-quiet flex min-h-0 shrink flex-col gap-3 overflow-y-auto"
+        className="atlas-scroll-quiet flex min-h-0 shrink flex-col gap-3 overflow-y-auto [@media(max-width:480px)]:flex-none [@media(max-width:480px)]:overflow-visible [@media(max-height:520px)]:flex-none [@media(max-height:520px)]:overflow-visible"
       >
       <div className="flex items-start gap-2.5">
         {ontologyWrite ? (
@@ -353,11 +356,17 @@ export function AcpPermissionCard({
           </p>
           <p
             id="acp-permission-body"
-            className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-secondary)]"
+            className={changeSet && taskOrigin && !taskReview?.executionBlocked
+              ? 'sr-only'
+              : 'mt-1 break-keep text-label leading-label text-[color:var(--color-text-secondary)]'}
           >
             {t(
               ontologyWrite
-                ? taskReview?.executionBlocked ? 'taskReview.rootMismatchBody' : 'ontologyWriteBody'
+                ? taskReview?.executionBlocked
+                  ? 'taskReview.rootMismatchBody'
+                  : taskReview?.status === 'ready'
+                    ? 'ontologyWriteBody'
+                    : 'ontologyWriteUnverifiedBody'
                 : serverConsent
                   ? 'consentBody'
                   : locality === 'inside-folder'
@@ -380,18 +389,24 @@ export function AcpPermissionCard({
         When it is unknown, it says so. Guessing 「read」 errs on the most dangerous side.
       */}
       {changeSet && taskOrigin ? (
-        <section data-testid="task-review" className="grid gap-3">
-          <div className="grid gap-1.5 border-t border-[color:var(--color-divider)] pt-3">
-            <p className="text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-quaternary)]">
-              {t('taskReview.eyebrow')}
-            </p>
-            <p data-testid="task-review-outcome" className="break-words text-body leading-prose text-[color:var(--color-text-primary)]">
-              {taskOrigin.outcome}
-            </p>
-            <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-              {t('taskReview.nonGoalsUnstructured')}
-            </p>
-          </div>
+        <section data-testid="task-review" className="grid gap-1">
+          <p
+            ref={taskReviewHeadingRef}
+            tabIndex={-1}
+            data-testid="task-review-heading"
+            className="text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-quaternary)] focus-visible:outline-none"
+          >
+            {t('taskReview.eyebrow')}
+          </p>
+          <details data-testid="task-review-task" className="group">
+            <summary className="list-none rounded-chip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]">
+              <span data-testid="task-review-outcome-compact" className="line-clamp-1 break-words text-body leading-prose text-[color:var(--color-text-primary)]">{taskOrigin.outcome}</span>
+            </summary>
+            <div className="mt-2 grid gap-1.5">
+              <p data-testid="task-review-outcome" className="break-words text-body leading-prose text-[color:var(--color-text-primary)]">{taskOrigin.outcome}</p>
+              <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.nonGoalsUnstructured')}</p>
+            </div>
+          </details>
 
           <SegmentedControl
             ariaLabel={t('taskReview.depthLabel')}
@@ -426,15 +441,10 @@ export function AcpPermissionCard({
                       fields: activeReviewItem?.fields.length ?? 0,
                     })}
               </p>
-              {changeSet.itemCount > 1 ? (
-                <p data-testid="task-review-batch-remaining" className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-                  {t('taskReview.batchRemaining', { count: changeSet.itemCount - 1 })}
-                </p>
-              ) : null}
               {visibleMeaningUnits.length > 0 ? (
                 <div className="grid gap-1.5">
-                  {visibleMeaningUnits.map((unit) => (
-                    <div key={unit.id} className="grid gap-0.5">
+                  {visibleMeaningUnits.map((unit, index) => (
+                    <div key={unit.id} data-testid={`task-review-meaning-unit-${index}`} className="grid gap-0.5">
                       <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">{unit.label}</span>
                       <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
                         {unit.displayText}
@@ -446,6 +456,11 @@ export function AcpPermissionCard({
               <p data-testid="task-review-coverage" className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
                 {t('taskReview.incomplete', { inspected: visibleMeaningUnits.length, total: meaningUnits.length, omitted: omittedMeaningUnits })}
               </p>
+              {changeSet.itemCount > 1 ? (
+                <p data-testid="task-review-batch-remaining" className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+                  {t('taskReview.batchRemaining', { count: changeSet.itemCount - 1 })}
+                </p>
+              ) : null}
             </div>
           ) : reviewDepth === 'compare' && taskReview?.status === 'ready' ? (
             <div data-testid="task-review-compare" className="grid gap-2">
@@ -646,6 +661,18 @@ export function AcpPermissionCard({
           )}
         </div>
       ) : null}
+      {changeSet && taskOrigin ? (
+        <details data-testid="task-review-action-scope" className="border-t border-[color:var(--color-divider)] pt-2 text-caption text-[color:var(--color-text-quaternary)]">
+          <summary className="list-none rounded-chip font-[var(--font-weight-emphasis)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]">
+            {t('taskReview.actionScope')}
+          </summary>
+          <div className="mt-1 grid gap-1 leading-caption">
+            <p>{t(taskReview?.status === 'ready' ? 'ontologyWriteBody' : 'ontologyWriteUnverifiedBody')}</p>
+            <p>{t('taskReview.interventionHint')}</p>
+            <p>{t('taskReview.permissionSeparate')}</p>
+          </div>
+        </details>
+      ) : null}
       </div>
 
       {changeSet && taskOrigin ? (
@@ -658,48 +685,33 @@ export function AcpPermissionCard({
               </span>
             </div>
           ))}
-          <p className="col-span-2 text-caption leading-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.permissionSeparate')}</p>
         </div>
       ) : null}
 
-      {changeSet && taskOrigin && (onRequestCorrection || onDefer) ? (
-        <div className="grid shrink-0 gap-1.5 border-t border-[color:var(--color-divider)] pt-2">
-          <div className="flex flex-wrap gap-2">
+      {changeSet && taskOrigin ? (
+        <div className="grid shrink-0 gap-1 border-t border-[color:var(--color-divider)] pt-2">
+          <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.allowScope')}</p>
+          <div className="grid grid-cols-2 gap-2">
             {onRequestCorrection ? (
-              <Button variant="outline" size="sm" data-testid="task-review-correct" onClick={onRequestCorrection}>
+              <Button className="atlas-touch-floor" variant="outline" size="sm" data-testid="task-review-correct" onClick={onRequestCorrection}>
                 {t('taskReview.correct')}
               </Button>
             ) : null}
             {onDefer ? (
-              <Button variant="ghost" size="sm" data-testid="task-review-defer" onClick={onDefer}>
+              <Button className="atlas-touch-floor" variant="ghost" size="sm" data-testid="task-review-defer" onClick={onDefer}>
                 {t('taskReview.defer')}
               </Button>
             ) : null}
+            <Button ref={rejectRef} className="atlas-touch-floor" variant="ghost" size="sm" data-testid="acp-permission-reject" onClick={() => resolve(rejectOnce?.optionId ?? null)}>{t('reject')}</Button>
+            <Button className="atlas-touch-floor" variant="outline" size="sm" data-testid="acp-permission-allow" disabled={!allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked} onClick={() => resolve(allowOnce?.optionId ?? null)}>{t('allowOnce')}</Button>
           </div>
-          <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-            {t('taskReview.interventionHint')}
-          </p>
         </div>
-      ) : null}
-
-      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-        <Button
-          ref={rejectRef}
-          variant="ghost"
-          data-testid="acp-permission-reject"
-          onClick={() => resolve(rejectOnce?.optionId ?? null)}
-        >
-          {t('reject')}
-        </Button>
-        <Button
-          variant="primary"
-          data-testid="acp-permission-allow"
-          disabled={!allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked}
-          onClick={() => resolve(allowOnce?.optionId ?? null)}
-        >
-          {t('allowOnce')}
-        </Button>
-      </div>
+      ) : (
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <Button ref={rejectRef} className="atlas-touch-floor" variant="ghost" data-testid="acp-permission-reject" onClick={() => resolve(rejectOnce?.optionId ?? null)}>{t('reject')}</Button>
+          <Button className="atlas-touch-floor" variant="primary" data-testid="acp-permission-allow" disabled={!allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked} onClick={() => resolve(allowOnce?.optionId ?? null)}>{t('allowOnce')}</Button>
+        </div>
+      )}
 
       {/*
         ⚠️ **One block, and the control looks like one** (owner, 2026-08-25). This used to be two

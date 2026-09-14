@@ -107,12 +107,13 @@ export async function installLibraryWorkHarness(
     filePermission?: boolean;
     runtimeId?: LibraryWorkRuntimeId;
     localResponses?: string[];
+    permissionKind?: 'wiki' | 'ontology-patch';
   } = {},
 ): Promise<LibraryWorkHarness> {
   const scenario = options.scenario ?? "successful-write";
   const runtime = options.runtimeId ? ACP_RUNTIMES[options.runtimeId] : RUNTIME;
   await page.addInitScript(
-    ({ initialFiles, initialScenario, vaultRoot, runtime, architecturePage, permissionFile, permissionText, writeMode, filePermission, mcpBinary, localResponses }) => {
+    ({ initialFiles, initialScenario, vaultRoot, runtime, architecturePage, permissionFile, permissionText, permissionKind, writeMode, filePermission, mcpBinary, localResponses }) => {
       const fixtureWindow = window as unknown as HarnessWindow;
       const record = (value: unknown): JsonRecord | null => typeof value === "object" && value !== null && !Array.isArray(value)
         ? value as JsonRecord
@@ -172,8 +173,16 @@ export async function installLibraryWorkHarness(
         update({ sessionUpdate: "tool_call_update", toolCallId: "read-architecture", status: "completed", rawInput: { file_path: "sources/architecture.docx" }, rawOutput: { text: "Architecture evidence" } });
         phase = "waiting";
         const targetPath = initialScenario === "successful-write" ? `${vaultRoot}/${permissionFile ?? 'wiki/architecture.md'}` : `${vaultRoot}/outside/unknown.md`;
-        const rawInput = { file_path: targetPath, content: permissionText ?? architecturePage };
-        const title = filePermission ? `Write ${targetPath}` : 'mcp__atlas-vault__write_wiki_file';
+        const rawInput = permissionKind === 'ontology-patch'
+          ? {
+              slug: 'capabilities/task-review',
+              expected_mtime: 1_727_000_000_000,
+              body: '## Definition\n\nReview the selected proposal.\n\n## Includes\n\n- Only the exact current request and selected item are under review.\n\n## Excludes\n\n- Allow once does not accept meaning.\n',
+            }
+          : { file_path: targetPath, content: permissionText ?? architecturePage };
+        const title = permissionKind === 'ontology-patch'
+          ? 'mcp__atlas-vault__patch_concept'
+          : filePermission ? `Write ${targetPath}` : 'mcp__atlas-vault__write_wiki_file';
         update({ sessionUpdate: "tool_call", toolCallId: "write-architecture", title, kind: "edit", status: "pending", _meta: { is_mcp_tool_call: !filePermission }, rawInput: filePermission ? rawInput : { server: "atlas-vault", tool: "write_wiki_file", arguments: rawInput } });
         permissionId = 902;
         acp({ jsonrpc: "2.0", id: permissionId, method: "session/request_permission", params: { sessionId, _meta: { is_mcp_tool_approval: !filePermission }, options: [{ kind: "reject_once", optionId: "reject", name: "Reject" }, { kind: "allow_once", optionId: "allow", name: "Allow once" }], toolCall: { toolCallId: "write-architecture", title, kind: "edit", rawInput } } });
@@ -322,7 +331,7 @@ export async function installLibraryWorkHarness(
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
       fixtureWindow.__atlasLibraryWorkHarness = { emitRead, emitWait, emitWrite, finish, answer, mutateSource: write, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
-    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtime, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses },
+    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtime, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses },
   );
   const call = (currentPage: Page, method: "emitRead" | "emitWait" | "emitWrite" | "finish") => currentPage.evaluate((name) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.[name](), method);
   return { snapshot: (currentPage) => currentPage.evaluate(() => {
@@ -346,7 +355,7 @@ export async function installLibraryWorkHarness(
   };
 }
 
-export async function openLibraryWorkScenario(page: Page, options: { scenario?: LibraryWorkScenario } = {}): Promise<LibraryWorkHarness> {
+export async function openLibraryWorkScenario(page: Page, options: { scenario?: LibraryWorkScenario; permissionKind?: 'wiki' | 'ontology-patch' } = {}): Promise<LibraryWorkHarness> {
   await seedFirstRunSeen(page);
   const harness = await installLibraryWorkHarness(page, options);
   await page.goto("/en/docs/");

@@ -4151,9 +4151,9 @@
           "source_binding_changed": "The project's source binding changed during this task.",
           "source_diff_unavailable": "The source change set for this task is unavailable. No task ownership is inferred."
         },
-        "correct": "Request correction",
+        "correct": "Reject and edit",
         "defer": "Keep pending",
-        "interventionHint": "Correction rejects this proposal and prepares editable context; it does not send. Pending stays live only in this conversation and is not saved.",
+        "interventionHint": "Correction rejects this proposal and prepares editable context; it does not send or roll back code. Pending stays live only in this conversation and is not saved.",
         "provenance": "Request provenance and guards",
         "requestId": "request",
         "userEvent": "turn",
@@ -4182,7 +4182,9 @@
           "changed": "Changed",
           "unchanged": "Unchanged",
           "uncomparable": "Uncomparable"
-        }
+        },
+        "actionScope": "Action scope",
+        "allowScope": "Allow once executes only this write."
       },
       "deferredNotice": "This request is still pending in this conversation. It is not saved; closing or cancelling rejects it.",
       "resumeReview": "Resume review",
@@ -4204,7 +4206,8 @@
       "insideFolderTitle": "It wants to change a file in this folder",
       "insideFolderBody": "The path is below. Nothing happens until you allow it.",
       "insideProjectTitle": "It wants to look at code in your project",
-      "insideProjectBody": "That is outside the map folder but inside the project you picked. Nothing happens until you allow it."
+      "insideProjectBody": "That is outside the map folder but inside the project you picked. Nothing happens until you allow it.",
+      "ontologyWriteUnverifiedBody": "This request writes the proposed ontology files only after Allow once. Check the target before allowing."
     },
     "close": "Close conversation",
     "composerPlaceholder": "Ask about this folder, or give it a task",

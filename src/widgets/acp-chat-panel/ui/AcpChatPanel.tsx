@@ -1898,6 +1898,7 @@ export function AcpChatPanel({
             value={draft}
             disabled={!canType}
             style={{
+              minHeight: 'var(--touch-target-min)',
               // Growth is **surface movement** — it rides the app's shared ramp.
               transitionProperty: 'height',
               transitionDuration: 'var(--motion-base)',
@@ -2094,6 +2095,8 @@ export function AcpChatPanel({
               ) : null}
               <Tooltip content={t('newChat')} withProvider={false} side="top">
                 <IconButton
+                  className="atlas-touch-floor"
+                  style={{ minWidth: 'var(--touch-target-min)', minHeight: 'var(--touch-target-min)' }}
                   size="lg"
                   label={t('newChat')}
                   data-testid="acp-chat-new"
