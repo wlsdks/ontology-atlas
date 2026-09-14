@@ -207,10 +207,12 @@ describe('i18n message catalog', () => {
      */
     const railLabels = [
       ko.navRail.map,
-      ko.navRail.docs,
+      ko.navRail.architecture,
+      ko.navRail.library,
       ko.navRail.insights,
       ko.navRail.projects,
       ko.navRail.agents,
+      ko.navRail.mcp,
       ko.navRail.git,
     ];
     for (const label of railLabels) {
@@ -267,8 +269,18 @@ describe('i18n message catalog', () => {
     );
     assert.equal(ko.nav.settingsMenu.groupWorkspace, '작업공간');
     assert.equal(ko.nav.settingsMenu.workspaceFolderLabel, '작업공간 폴더');
-    assert.equal(ko.nav.settingsMenu.vaultTitle, '문서함');
-    assert.equal(ko.nav.settingsMenu.vaultBodyLocal, '문서함을 열어 파일과 개념을 확인해요');
+    assert.ok(
+      ko.nav.settingsMenu.vaultTitle.includes(ko.navRail.docs),
+      '설정 카드가 여는 온톨로지 섹션을 이름으로 말해야 한다',
+    );
+    assert.ok(
+      ko.nav.settingsMenu.vaultBodyLocal.includes(ko.navRail.docs),
+      '설정 카드 설명이 여는 온톨로지 섹션을 말해야 한다',
+    );
+    assert.ok(
+      !ko.nav.settingsMenu.vaultTitle.includes(ko.navRail.library),
+      '온톨로지 섹션 카드가 자료실 목적지 전체를 연다고 말하면 안 된다',
+    );
     assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '열기');
     assert.equal(ko.topology.documentTitle, '지도');
     // The old topologyWidgets.controls shortcut/depth copy (depthHop,
@@ -360,9 +372,20 @@ describe('i18n message catalog', () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
-    assert.equal(en.topology.controls.docsTooltip, 'Quick view of Docs (D)');
-    assert.equal(en.topology.controls.docsAriaLabel, 'Open the Docs quick view (D)');
-    assert.equal(en.topology.controls.docsLabel, 'Docs');
+    assert.ok(
+      en.topology.controls.docsLabel.includes(en.navRail.docs),
+      'the compatible Docs control must name the Ontology section',
+    );
+    assert.ok(
+      en.topology.controls.docsTooltip.includes(en.topology.controls.docsLabel),
+      'the tooltip and visible Docs control must name the same section',
+    );
+    assert.ok(
+      en.topology.controls.docsAriaLabel.includes(en.topology.controls.docsLabel),
+      'the accessible and visible Docs control names must agree',
+    );
+    assert.match(en.topology.controls.docsTooltip, /\(D\)$/);
+    assert.match(en.topology.controls.docsAriaLabel, /\(D\)$/);
     assert.doesNotMatch(
       [
         en.topology.controls.docsTooltip,
@@ -387,12 +410,20 @@ describe('i18n message catalog', () => {
     assert.equal(ko.topology.analysis.overviewBriefMcpQueryPlan, 'MCP 질의 계획');
     assert.equal(ko.topology.analysis.overviewBriefWorkspaceCheck, '작업공간 점검');
     assert.equal(ko.topology.analysis.overviewBriefMcpWorkspaceCheck, 'MCP 작업공간 점검');
-    assert.equal(ko.topology.controls.docsTooltip, '문서함 빠른 보기 (D)');
-    assert.equal(
-      ko.topology.controls.docsAriaLabel,
-      '문서함 빠른 보기 열기 (D)',
+    assert.ok(
+      ko.topology.controls.docsLabel.includes(ko.navRail.docs),
+      '호환 Docs 컨트롤은 온톨로지 섹션을 이름으로 말해야 한다',
     );
-    assert.equal(ko.topology.controls.docsLabel, '문서함');
+    assert.ok(
+      ko.topology.controls.docsTooltip.includes(ko.topology.controls.docsLabel),
+      '툴팁과 화면의 Docs 컨트롤은 같은 섹션을 말해야 한다',
+    );
+    assert.ok(
+      ko.topology.controls.docsAriaLabel.includes(ko.topology.controls.docsLabel),
+      '접근성 이름과 화면의 Docs 컨트롤 이름이 같아야 한다',
+    );
+    assert.match(ko.topology.controls.docsTooltip, /\(D\)$/);
+    assert.match(ko.topology.controls.docsAriaLabel, /\(D\)$/);
     assert.equal(ko.topology.controls.relayoutToast, '지도를 다시 정렬합니다');
     assert.doesNotMatch(
       [
@@ -636,14 +667,28 @@ describe('i18n message catalog', () => {
       en.docsVault.sourceContract.agentCopyGateAriaLabel,
     ].join('\n');
 
-    assert.equal(en.metadata.pages.docs, 'Docs');
-    // `nav.docs`/`nav.tooltipDocs`/`modeBadge.*` retired with `OperationsNav`/
-    // `ModeBadge` (feat/rail-rollout) — `navRail.docs` (shared by AppNavRail +
-    // BottomTabBar) is the one surviving primary-nav label for this surface.
-    assert.equal(en.navRail.docs, 'Docs');
-    // 「Library」 was a second English name for the destination the rail already calls Docs, and
-    // this card navigates to `/docs/`. One destination, one name (2026-09-05).
-    assert.equal(en.nav.settingsMenu.vaultTitle, 'Docs');
+    assert.ok(
+      en.metadata.pages.docs.includes(en.navRail.docs),
+      'document metadata must name the Ontology section',
+    );
+    assert.ok(
+      en.metadata.pages.docs.includes(en.navRail.library),
+      'document metadata must name its Library destination',
+    );
+    // `navRail.library` is the primary destination label. `navRail.docs` now names
+    // the Ontology section reached through compatible `/docs` links and controls.
+    assert.notEqual(en.navRail.docs, en.navRail.library);
+    assert.equal(en.library.title, en.navRail.library);
+    // The settings card keeps the compatible `/docs/` address, so it names the Ontology
+    // section inside Library rather than claiming to be a second Library destination.
+    assert.ok(
+      en.nav.settingsMenu.vaultTitle.includes(en.navRail.docs),
+      'the settings card must name the Ontology section it opens',
+    );
+    assert.ok(
+      !en.nav.settingsMenu.vaultTitle.includes(en.navRail.library),
+      'the Ontology section card must not claim to open the whole Library destination',
+    );
     assert.equal(en.nav.settingsMenu.vaultCtaLocal, 'Open');
     assert.equal(en.nav.settingsMenu.vaultCtaStatic, 'Get started');
     assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local workspace');
