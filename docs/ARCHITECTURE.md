@@ -725,5 +725,15 @@ Long-form docs:
 
 The pure shared [transition evidence codec](MEANING-TRANSITION-EVIDENCE.md)
 checks an immutable candidate's supplied decision, revision and per-row facts.
-It has no storage, controller, ontology-writer or Git integration; existing
-analysis records and ACP execution receipts retain their original authority.
+The installed app can retain a validated candidate and its declared
+content-addressed artifacts under `.ontology-atlas/meaning-transitions/` through
+a bounded, no-follow, exclusive native archive on Unix platforms with stable
+vault identity. Windows currently reports this capability unavailable rather
+than substituting path identity. Artifacts are published and
+read back before the immutable transition record becomes visible; malformed
+history members remain reported. Browser builds expose no archive write fallback.
+Archive integrity proves only that the supplied bytes were retained: it does not
+authenticate a human decision, verify a writer or check, or grant Git, merge,
+deployment, ontology-write, or source-repository authority. Existing analysis
+records and ACP execution receipts retain their original authority, and current
+ontology Markdown remains the editable canonical meaning.

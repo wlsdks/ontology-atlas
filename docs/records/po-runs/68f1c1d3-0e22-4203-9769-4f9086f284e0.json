@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-14",
+  "decision": "Archive transition candidates and retained artifacts immutably without authenticating supplied decisions or changing current meaning",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "handoff",
+  "changes": [
+    "public-contract"
+  ],
+  "boundaries": {
+    "truth": "affected",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "affected"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "evidence-bounded",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending",
+    "date": "2026-09-14"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "68f1c1d3-0e22-4203-9769-4f9086f284e0",
+  "recordedAt": "2026-09-14T00:05:03.586Z"
+}
