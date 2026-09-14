@@ -41,6 +41,8 @@ mod llm;
 /// LLM call audit log — implementation of "do not send if logging fails."
 mod llm_audit;
 mod managed_node;
+/// Immutable task-bound code/meaning transition records and retained review artifacts.
+mod meaning_transition_archive;
 mod secrets;
 
 /// How long a deep link keeps trying to reach the form: 20 attempts, 250 ms apart, so a cold
@@ -3760,6 +3762,11 @@ pub fn run() {
             create_vault_text_file,
             analysis_archive::append_analysis_record,
             analysis_archive::read_analysis_record_text,
+            meaning_transition_archive::observe_meaning_transition_root,
+            meaning_transition_archive::append_meaning_transition_bundle,
+            meaning_transition_archive::read_meaning_transition_record_text,
+            meaning_transition_archive::read_meaning_transition_artifact_text,
+            meaning_transition_archive::list_meaning_transition_history,
             remove_vault_entry,
             ensure_vault_directory,
             vault_path_exists,

@@ -36,8 +36,18 @@ shape, row-manifest consistency and the full record digest before returning a
 frozen candidate. Altering guards, expected bytes or the operation under an old
 decision cannot produce an accepted-complete outcome.
 
-The format has no ontology `kind` and is not a second current ontology. No
-storage namespace, scanner behavior, telemetry, write authority or retention
-policy is established by this module. Storage, recoverable artifact retention,
-trusted controller binding and task/history links require their own integration
-and evidence before V4.1 is complete.
+The format has no ontology `kind` and is not a second current ontology. In the
+installed app, the typed transition store may retain a validated record and its
+exact content-addressed artifacts under the hidden
+`.ontology-atlas/meaning-transitions/` namespace. Native publication on Unix is
+bounded, no-follow, exclusive and bound to stable vault identity. Windows
+currently refuses this capability instead of treating a canonical path as
+directory identity. Every artifact is published and read back before the
+record is published last. History reports malformed members and missing or
+mutated artifacts as problems. Browser builds have no write fallback.
+
+Successful archival proves byte integrity only. It does not authenticate the
+supplied human action, verify referenced checks, grant ontology or Git authority,
+or make the immutable archive canonical current meaning. Trusted controller
+binding, actual decision and writer receipts, task-owned diffs, task/history
+navigation and fresh-successor evidence remain required before V4.1 is complete.
