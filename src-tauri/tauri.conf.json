@@ -14,6 +14,7 @@
       {
         "label": "main",
         "title": "Ontology Atlas",
+        "theme": "Dark",
         "width": 1512,
         "height": 900,
         "minWidth": 1040,
