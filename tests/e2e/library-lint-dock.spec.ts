@@ -187,7 +187,7 @@ async function openFolder(page: Page) {
   await page.getByTestId("library-sources").waitFor({ timeout: 30_000 });
   /*
    * Check the wiki and Compile are the Wiki half's own doors since 2026-09-07: the index
-   * draws one list at a time and the switch decides which. The column opens on Sources —
+   * draws one list at a time and the workspace tab decides which. The column opens on Sources —
    * the first half of the work — so a spec about the wiki's doors presses the switch, the
    * same press a person makes.
    */
@@ -211,7 +211,7 @@ test.describe("Check the wiki opens the agent dock", () => {
     // opens a real page rather than "<the page name>" (installed app, 2026-09-06).
     await expect(page.getByTestId("library-wiki")).not.toContainText("<the page name>");
     await expect(page.getByTestId("library-wiki")).not.toContainText("Wiki log");
-    await expect(page.getByTestId("library-workspace-tabs")).toContainText("Wiki 2");
+    await expect(page.getByTestId("library-workspace-wiki")).toHaveAccessibleName("Wiki, 2");
     // With nothing selected the pane is the graph (2026-09-06, third pass), so no page
     // heading is on screen here; the list above already proves the template is not a row.
     /*
@@ -245,7 +245,7 @@ test.describe("Check the wiki opens the agent dock", () => {
     await expect(page.getByTestId("library-check-report-when")).toContainText("superseded 1");
     await expect(page.getByTestId("library-check-report")).toBeVisible();
     await expect(page.getByTestId("library-reading-pane")).toHaveCount(0);
-    // Back to the index the way a person goes: the switch is untouched by a page that is neither half.
+    // Back to the index the way a person goes: the tab is untouched by a page that is neither half.
     await page.getByTestId("library-workspace-wiki").click();
     // At a phone's width the report (still open: the switch does not close a page) is one
     // column that never scrolls sideways.

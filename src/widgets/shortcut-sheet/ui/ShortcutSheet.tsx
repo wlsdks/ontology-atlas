@@ -270,7 +270,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
   const t = useTranslations("searchWidgets.shortcuts");
   const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
-  const currentSurface = surfaceForPathname(pathname, searchParams.get('tab'));
+  const currentSurface = surfaceForPathname(pathname, searchParams?.get('tab') ?? null);
   // #67 — the contextual tabs. The default is "current screen": rather than pouring
   // out some 40 rows at once, it starts with what can actually be pressed now. The
   // `All` (all) tab keeps the previous list, so this is not hiding shortcuts to avoid

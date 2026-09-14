@@ -666,7 +666,7 @@ test.describe("the Library pane", () => {
    * to overflow 280px at a desktop height. A column that has nothing to scroll cannot fail
    * any of this.
    */
-  test("the index is a switch that draws one list, and no row is cut", async ({ page }) => {
+  test("the active tab draws one list, and no row is cut", async ({ page }) => {
     /*
      * A short window on purpose. Drawing **one** list is exactly what stops this column
      * overflowing at Playwright's default height, and a scroller with nothing to scroll
@@ -692,10 +692,9 @@ test.describe("the Library pane", () => {
     await expect(wiki).toHaveCount(0);
     await expect(page.getByTestId("library-add-files")).toBeVisible();
 
-    // The switch names both lists with their counts, so nothing is lost by drawing one.
-    const segment = page.getByTestId("library-workspace-tabs");
-    await expect(segment).toContainText("Sources 12");
-    await expect(segment).toContainText("Wiki 8");
+    // The tabs name both lists with their counts, so nothing is lost by drawing one.
+    await expect(page.getByTestId("library-workspace-sources")).toHaveAccessibleName("Sources, 12");
+    await expect(page.getByTestId("library-workspace-wiki")).toHaveAccessibleName("Wiki, 8");
     await expect(page.getByTestId("library-workspace-sources")).toHaveAttribute(
       "aria-selected",
       "true",
@@ -713,7 +712,7 @@ test.describe("the Library pane", () => {
     expect(scrollers, "the index still has nested scrollers").toEqual(["library-index-scroll"]);
 
     /*
-     * 3 — the switch does not scroll away with the rows. The sticky head it replaces
+     * 3 — the tabs do not scroll away with the rows. The sticky head they replace
      * existed to answer "which list am I in" from inside the list; a control that leaves
      * the screen answers it worse than the eyebrow did.
      */
@@ -780,7 +779,7 @@ test.describe("the Library pane", () => {
     };
     await measureRows();
 
-    // 5 — the other segment, and the same geometry claims on the list it draws.
+    // 5 — the other tab, and the same geometry claims on the list it draws.
     await page.getByTestId("library-workspace-wiki").click();
     await expect(wiki).toBeVisible();
     await expect(sources).toHaveCount(0);
@@ -908,7 +907,7 @@ test.describe("the Library pane", () => {
     await expect(page.getByTestId("library-index-collapse")).toBeFocused();
 
     /*
-     * 3 — the switch is remembered per machine, and opening a file from the picture moves
+     * 3 — the tab is remembered per machine, and opening a file from the picture moves
      * it to that file's own list. Both are what stop the index naming one thing while the
      * reader shows another.
      */
@@ -924,7 +923,7 @@ test.describe("the Library pane", () => {
     await page.getByTestId("library-wiki-wiki/note-01").click();
     await page.getByTestId("library-reader-back").click();
     await expect(page.getByTestId("library-workspace-wiki")).toHaveAttribute(
-      "aria-checked",
+      "aria-selected",
       "true",
     );
   });
