@@ -378,13 +378,11 @@ the numbers are recomputed from commits each time the tab opens. A folder with n
 commits is told there is no history to show rather than drawn as a row of zeroes,
 because a zero would claim the folder was empty.
 
-### 9. See the shape of the whole project
+### 9. Choose a project by its purpose
 
-![The current Projects screen in the installed macOS app, showing the Online Store project, its derived capability, element, domain, document and relation totals, nine aligned domain composition rows, and routes back to details and the map](docs/assets/readme/projects-coverage.png)
-
-Nothing here is maintained by hand. Frontmatter has no `project:` key — the
-runtime walks the containment graph from each `project` root and derives coverage
-from how the documents link to each other.
+The project index stays compact: each row shows the project name, its explicitly
+authored one-line description, a recent update, and direct routes to details and
+the map. Composition and construction controls remain on the project detail page.
 
 ## What your agent gets
 

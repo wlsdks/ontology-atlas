@@ -1749,30 +1749,22 @@ a navigation destination or a product screen.
 
 ### `/projects` — Project list (rebuilt 2026-07-18)
 
-Rebuilt against RATIO-SYSTEM (1600px shared container). The previous
-search/filter/CSV list UI (full-text search, phase/status chips, paginated
-grid cards) is gone — replaced with an engraved census header and full-width
-project cards; there is currently no in-page filtering.
+The project index uses the shared page frame and compact rows so several project
+documents can be scanned by name and authored purpose. There is currently no
+in-page filtering.
 
 #### Header
-- Crumb row (Home → Projects) + right-aligned engraved census (`concepts · relations`)
-- H1 + census line (`N projects · N domains · N concepts`) + "new project" CTA
+- H1 + project-only count + "New project" CTA
+- The bundled example state is labelled as a loaded sample rather than presented as the user's folder
 
-#### Recent activity strip (when any docs exist)
-- Up to 4 rows of the most recently updated vault docs: kind glyph · slug · one-line "what" summary · domain (or "no domain") · relative time ("today" / "yesterday" / "N days ago")
-
-#### Cards (one full-width `<article>` per project, stacked, sorted by `updatedAt` desc)
-- Hex kind-glyph + name + relative-time-updated dot + description · slug
-- **Fact strip** — 5 engraved facts: domain / capability / element / document / relation counts (single-project vaults without `projectIds` stamping fall back to counting every node as this project's own)
-- **Domain composition rows** (when the project has domains) — domain glyph + title + proportional meter bar (indigo for the largest) + `total (capability N · element N)` summary
-- Footer: "See details" · "View topology" links + right-aligned `updated DATE · path`
-
-#### Dashed "next project" slot (always shown, bottom)
-- Project kind glyph + title + subtitle
-- Two rows: CLI command to add a project + caption, and MCP/agent command to add one + caption — the empty-state affordance is now "ask the CLI or your agent," not a create form
+#### Rows (one `<article>` per project, sorted by `updatedAt` desc)
+- Project name linked to its detail page
+- One-line explicitly authored frontmatter description, with neutral fallback when missing
+- Relative last-updated time
+- Clearly labelled "View details" primary action and "View on map" secondary action
 
 #### Empty state
-- No projects at all → lede text pointing at the same CLI/MCP next-slot row (no separate quick-create panel on this page anymore)
+- No projects at all → guidance to create a project document; the header's "New project" action remains available
 
 ---
 

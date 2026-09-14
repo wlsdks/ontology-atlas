@@ -13,18 +13,18 @@ Project selection/list page.
 
 ## Evidence
 
-- Primary implementation: `src/views/project-selector/lib/project-card-facts.ts#buildProjectCardFacts`
+- Primary implementation: `src/views/project-selector/ui/ProjectSelectorPage.tsx#ProjectSelectorPage`
 - Supporting implementation: `src/views/project-selector/lib/use-vault-docs.ts#useVaultDocs`
-- Focused test: `src/views/project-selector/ui/ProjectSelectorPage.test.tsx#renders a full-width project card with fact strip and domain composition row`
+- Focused test: `src/views/project-selector/ui/ProjectSelectorPage.test.tsx#renders a compact project row without graph metrics or activity`
 - Focused test: `src/views/project-selector/ui/ProjectSelectorPage.test.tsx#links the card footer to the project detail and topology pages`
 
 ## Includes
 
-- The `/projects` page: full-width project cards with fact-strip counts (domain/capability/element/document/relation) and domain composition rows.
-- Building per-project card facts (`buildProjectCardFacts`) and linking each card footer to its detail and topology pages.
+- The `/projects` page: compact rows with a linked name, explicitly authored one-line description, recent update, detail action, and map action.
+- Resolving project documents by their frontmatter slug and preserving neutral fallback copy when a description is missing.
 
 ## Excludes
 
-- The project detail page itself, owned by elements/project-detail.
+- Project composition and construction details, owned by elements/project-detail.
 - Project creation/editing, owned by elements/project-editor.
 - The hub rail's project shortcuts on the map, owned by elements/topology-controls.

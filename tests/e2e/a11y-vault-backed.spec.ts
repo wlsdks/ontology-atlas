@@ -103,8 +103,10 @@ const CONTRAST_BASELINE_FAILING_COMBINATIONS = 0;
  * failed to open or why.
  */
 const EVIDENCE_TIMEOUT = 10_000;
-/** Floor on elements a state must render inside `<main>`. An empty screen is 0; the thinnest real state is 82. */
+/** Floor on elements a state must render inside `<main>`. An empty screen is 0. */
 const MIN_MAIN_ELEMENTS = 40;
+/** The measured compact Projects index has 24 main descendants; semantic checks below guard its content. */
+const MIN_PROJECTS_MAIN_ELEMENTS = 20;
 /** Floor on rules axe applied to content and passed. An empty document is 2; the thinnest state here is 25. */
 const MIN_RULES_PASSED = 15;
 /** Floor on (foreground, background, size) combinations the contrast judge actually measured. Shell only is 3; the thinnest state here is 8. */
@@ -179,6 +181,9 @@ interface VaultState {
    * went empty.
    */
   readonly evidence: string;
+  /** A measured state may set a narrower floor only when these state-specific semantics also prove real content. */
+  readonly minMainElements?: number;
+  readonly verify?: (page: Page) => Promise<void>;
   /** Optional interaction that produces the state. */
   readonly act?: (page: Page) => Promise<void>;
 }
@@ -277,7 +282,15 @@ const STATES: readonly VaultState[] = [
   {
     name: "프로젝트 목록",
     url: "/ko/projects/",
-    evidence: '[data-testid="project-selector-cli-placeholder-hint"]',
+    evidence: '[data-testid="project-selector-card"]',
+    minMainElements: MIN_PROJECTS_MAIN_ELEMENTS,
+    async verify(page) {
+      const card = page.getByTestId("project-selector-card").first();
+      await expect(card.locator("h2 a"), "프로젝트 이름 링크가 없다").toBeVisible();
+      await expect(card.getByRole("link", { name: /상세로 가기$/ }), "상세 진입 링크가 없다").toBeVisible();
+      await expect(card.getByRole("link", { name: "지도에서 보기" }), "지도 진입 링크가 없다").toBeVisible();
+      await expect(page.getByTestId("project-selector-new-cta"), "새 프로젝트 동작이 없다").toBeVisible();
+    },
   },
   {
     name: "문서함",
@@ -350,22 +363,24 @@ test("볼트를 물린 접근성·대비 래칫 — 데이터가 있어야 존�
     // The map's screen is only settled once the physics simulation converges.
     await page.waitForTimeout(2500);
 
-    let opened = true;
+    let openingFailure: string | null = null;
     try {
       if (state.act) await state.act(page);
       await expect(page.locator(state.evidence).first()).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
       await waitForEvidenceMotionToSettle(page, state.evidence);
-    } catch {
-      opened = false;
+      if (state.verify) await state.verify(page);
+    } catch (error) {
+      openingFailure = error instanceof Error ? error.message : String(error);
     }
-    if (!opened) {
-      notRendered.push(`  ${state.name} (${state.url}) — «${state.evidence}» 가 안 보인다`);
+    if (openingFailure) {
+      notRendered.push(`  ${state.name} (${state.url}) — ${openingFailure}`);
       continue;
     }
 
     const mainElements = await page.evaluate(() => document.querySelectorAll("main *").length);
-    if (mainElements < MIN_MAIN_ELEMENTS) {
-      thinBodies.push(`  ${state.name}: <main> 안 요소 ${mainElements}`);
+    const minimumMainElements = state.minMainElements ?? MIN_MAIN_ELEMENTS;
+    if (mainElements < minimumMainElements) {
+      thinBodies.push(`  ${state.name}: <main> 안 요소 ${mainElements} (최소 ${minimumMainElements})`);
     }
 
     await page.addScriptTag({ path: AXE_PATH });
@@ -428,7 +443,7 @@ test("볼트를 물린 접근성·대비 래칫 — 데이터가 있어야 존�
   ).toEqual([]);
   expect(
     thinBodies,
-    `<main> 안에 요소가 ${MIN_MAIN_ELEMENTS}개도 안 그려졌다 — 셸 크롬만 남은 화면을 ` +
+    `<main> 안에 상태별 최소 요소도 안 그려졌다 (기본 ${MIN_MAIN_ELEMENTS}개) — 셸 크롬만 남은 화면을 ` +
       `재고 있다.\n${thinBodies.join("\n")}`,
   ).toEqual([]);
   expect(

@@ -92,8 +92,12 @@ const ROOT = process.cwd();
  * 301 → 299 (2026-09-14): the ontology starter's JSON-gate action joined its sibling
  * neutral controls. Its literal success hover border and surface declarations disappeared
  * with that one-off skin, so the two-declaration improvement is banked here.
+ *
+ * 299 → 295 (2026-09-14): the compact project index removed three card-local hover
+ * declarations with its metric dashboard, then moved the project-name hover ink onto
+ * `controlClass({ hoverInk: "strong" })`. Four hand declarations are now owned by the axis.
  */
-const CEILING = 299;
+const CEILING = 295;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

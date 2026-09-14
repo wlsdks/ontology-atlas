@@ -169,12 +169,8 @@ test.describe("ontology view UI", () => {
     }
   });
 
-  // R+ /projects redesign — the census/activity/card-zone layout
-  // (`docs/prototypes/projects-list-final.html`) dropped the old
-  // WorkspaceOntologyStrip shortcut and per-card "Proof · N" query-pack link.
-  // Ontology navigation is already covered by the bottom tab bar elsewhere —
-  // these two tests guard the *replacement* affordances instead: the
-  // new-project CTA and the card's "View in topology" link.
+  // The compact project index keeps creation and per-project map navigation
+  // directly reachable at mobile widths.
   test("mobile: new-project CTA is tappable and opens the create form", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en/projects/");
@@ -201,8 +197,8 @@ test.describe("ontology view UI", () => {
 
     const topologyLink = page
       .getByTestId("project-selector-card")
-      .filter({ hasText: "ontology-atlas" })
-      .getByRole("link", { name: "View in topology" });
+      .filter({ has: page.getByRole("link", { name: "Ontology Atlas", exact: true }) })
+      .getByRole("link", { name: "View on map" });
     await expect(topologyLink).toBeVisible();
     const linkBox = await topologyLink.boundingBox();
     expect(linkBox).not.toBeNull();

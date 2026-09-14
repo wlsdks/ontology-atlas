@@ -170,34 +170,16 @@ describe("ProjectSelectorPage", () => {
     expect(screen.queryByTestId("projects-back-to-map"), "지도 입구는 레일 하나다").toBeNull();
   });
 
-  it("renders a recent-activity row sourced from real vault doc mtime", () => {
-    renderPage();
-    expect(screen.getByTestId("project-selector-activity-row")).toBeInTheDocument();
-    expect(screen.getByText("capabilities/mcp-server")).toBeInTheDocument();
-    // Since the two-line stack was unified, the subtitle joins the domain and the description on one line
-    // (`RecentNodeRow`). This file's mock node ids happen not to match the (kind:folder/slug) tailSlug
-    // convention, so nodeId matching always fails and `domainTitle` stays at its "—" fallback — the real
-    // matching path is covered by `ProjectSelectorPage.activity-link.test.tsx`.
-    expect(screen.getByText("— · write 도구로 확장")).toBeInTheDocument();
-  });
-
-  it("puts the project cards before the recent-activity feed (Toss P1 — primary content first)", () => {
-    renderPage();
-    const card = screen.getByTestId("project-selector-card");
-    const activityRow = screen.getByTestId("project-selector-activity-row");
-    // DOM order === source order for sibling sections here — compareDocumentPosition
-    // confirms the card is earlier in document order than the activity row.
-    expect(card.compareDocumentPosition(activityRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it("renders a full-width project card with fact strip and domain composition row", () => {
+  it("renders a compact project row without graph metrics or activity", () => {
     renderPage();
     const card = screen.getByTestId("project-selector-card");
     expect(card).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "ontology-atlas" })).toBeInTheDocument();
-    // fact strip: 1 domain / 1 capability / 1 element / 0 documents / 2 relations
-    expect(within(card).getByText("Domains")).toBeInTheDocument();
-    expect(within(card).getByText("Views")).toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "ontology-atlas" })).toHaveAttribute(
+      "href",
+      "/project/fallback/?slug=ontology-atlas",
+    );
+    expect(within(card).queryByText("Domains")).toBeNull();
+    expect(screen.queryByTestId("project-selector-activity-row")).toBeNull();
   });
 
   it("links the card footer to the project detail and topology pages", () => {
@@ -206,16 +188,10 @@ describe("ProjectSelectorPage", () => {
     expect(
       within(card).getByRole("link", { name: "Open ontology-atlas details" }),
     ).toHaveAttribute("href", "/project/fallback/?slug=ontology-atlas");
-    expect(within(card).getByRole("link", { name: "View in topology" })).toHaveAttribute(
+    expect(within(card).getByRole("link", { name: "View on map" })).toHaveAttribute(
       "href",
       expect.stringContaining("ontology-atlas"),
     );
-  });
-
-  it("shows the always-on next-project dashed slot with CLI and agent handoff rows", () => {
-    renderPage();
-    expect(screen.getByText("node $ATLAS/cli/src/index.mjs add --kind project")).toBeInTheDocument();
-    expect(screen.getByText('add_concept(slug, kind: "project", title)')).toBeInTheDocument();
   });
 
   it("points the new-project CTA at /project/new with a returnTo back to /projects/", () => {
@@ -232,8 +208,7 @@ describe("ProjectSelectorPage", () => {
     renderPage();
     const header = screen.getByRole("main").textContent ?? "";
     expect(header).toContain("1 project");
-    expect(header).toContain("1 project·1 domain");
-    expect(header).not.toContain("1 domains");
+    expect(header).not.toContain("domain");
     expect(header).not.toContain("1 CONCEPTS");
     expect(header).not.toContain("1 RELATIONS");
     // The whole-folder count left this screen on 2026-08-09 — the test above holds that ground.

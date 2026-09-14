@@ -111,7 +111,6 @@ export {
   computeEdgeTypeDistribution,
   computeDegreeCentrality,
   countConnectedDocuments,
-  buildMeaningfulOntologyStats,
   formatAgentPostChangeSyncPacket,
   MEANINGFUL_ONTOLOGY_KINDS,
   flattenTree,

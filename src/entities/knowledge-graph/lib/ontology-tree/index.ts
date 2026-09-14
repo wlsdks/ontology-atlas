@@ -44,7 +44,6 @@ export {
 export type { MeaningfulOntologyKind } from "./kind-stats";
 export {
   MEANINGFUL_ONTOLOGY_KINDS,
-  buildMeaningfulOntologyStats,
 } from "./kind-stats";
 export type { AdaptiveRecentChangesResult } from "./recent-changes";
 export {
