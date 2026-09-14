@@ -1196,16 +1196,26 @@ Forcing pages to remember `shrink-0` actually failed: after fixing one screen, t
 2. **Work area height is `min(content, remaining space)`.** Flex child default (`0 1 auto`) + `min-h-0` expresses this. Using `flex-1` creates a 500px empty gap with no one filling it in short lists. Columns scroll inside only when overflowing.
 3. **The 2-column gate is `xl` (1280)** — enabling 2 columns at `lg` (1024) consumes 600px for the evidence column, crushing the list to 430px and truncating concept names. **Truncated lists are not decision material** (just as truncated diffs are not evidence). 1024–1279 stacks vertically.
 
-### Tab strip tokens (`--tabbar-*`, 2026-09-05)
+### Shared document tabs (`TabBar`, `--tabbar-*`, revised 2026-09-14)
 
-One underline tab bar serves `/ontology/insights` and the project detail page
-(`src/shared/ui/tab-bar.tsx`), and the docs destination has its own strip of open
-documents. They answer one question — *which of these am I looking at, and is there more
-of them than fits* — so the width that answers the second half is one token.
+One `TabBar` serves seven panel-navigation surfaces: six document sections (Library
+workspace, Harness, Ontology Insights, MCP, project detail, and Analysis) plus the agent
+inbox's To do / Results / History categories. Other tablists — closable open-file tabs,
+preview/edit modes, and search filters — have different jobs and do not inherit this
+treatment by role alone.
+
+The shared strip answers two questions: *which document section am I looking at, and is
+there more than fits?* Its tabs are compact adjacent click areas on one flat content
+boundary. The selected tab has a neutral elevated surface, a clear top and side boundary,
+rounded chip-step top corners, and an indigo top edge. Inactive labels use secondary ink
+and reveal an overlay-1 surface on hover. Navigation labels use the sans body step; engraved
+counts stay on the smaller mono label step. There is no outer pill or segmented-control
+container: the earlier large segmented treatment grouped the choices but made a separate
+control float inside the header instead of connecting the selected tab to its content.
 
 | Token | Value | What it defines |
 |---|---|---|
-| `--tabbar-underline` | 2px | Active-tab underline thickness. The only state marker: no pill, no fill, no colour badge |
+| `--tabbar-underline` | 2px | Indigo selected-tab top edge; surface and side boundaries also carry selection |
 | `--tabbar-edge-fade` | 22px | Overflow edge-fade mask width. Mask alpha only — no colour, no glow, no motion, so reduced-motion is unaffected |
 
 `--docs-tab-edge-fade` is now an alias of `--tabbar-edge-fade` at the same 22px. It kept
@@ -1225,15 +1235,13 @@ seven tabs):
    every label onto two lines at 390 and the underline stopped sitting under one tab.
 2. The active tab is scrolled into view on mount **and on resize**. Arriving at
    `?tab=<last>` at en/390 left the strip at `scrollLeft` 0 with the selected tab 433px
-   past the right edge — the underline, the only marker of which tab is selected, was not
-   on screen. Resize is the other way it leaves the viewport, and rotating a phone is not a
-   remount.
-3. `items-end` on the tab, because `atlas-touch-floor` grows the box under a coarse
-   pointer and the underline rides its bottom edge. Baseline alignment pinned the label to
-   the top of the 44px tab and left the active underline **26px** below its own word —
-   further than the label is tall, and more than twice the 10px `pb-2.5` it keeps at 28px
-   on a mouse. A marker that far from its label stops reading as that label's marker. Both
-   children are one `text-label` line, so at the mouse height the result is unchanged.
+   past the right edge. Resize is the other way it leaves the viewport, and rotating a
+   phone is not a remount.
+3. A fixed md control height on fine pointers and `atlas-touch-floor` on coarse pointers.
+   The actual tab box grows to 44px without a pseudo-element, so compact neighboring tabs
+   never receive overlapping hit areas. `items-center` keeps the label tied to its selected
+   surface at either height. Label and count use explicit body/label leading pairs and share
+   one center line across sans and monospace glyphs.
 
 ### Caps tracking is a Latin device (owner, 2026-09-06)
 

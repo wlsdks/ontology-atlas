@@ -38,7 +38,7 @@ describe('TabBar', () => {
     expect(screen.getByText('12주')).toBeInTheDocument();
   });
 
-  it('marks the active tab aria-selected and gives it the indigo underline class', () => {
+  it('marks the active tab and exposes one roving tab stop', () => {
     render(<TabBar items={ITEMS} activeKey="relations" onSelect={() => {}} ariaLabel="탭" />);
     const active = screen.getByRole('tab', { name: /관계/ });
     const inactive = screen.getByRole('tab', { name: /개요/ });
@@ -46,10 +46,6 @@ describe('TabBar', () => {
     expect(active).toHaveAttribute('tabindex', '0');
     expect(inactive).toHaveAttribute('aria-selected', 'false');
     expect(inactive).toHaveAttribute('tabindex', '-1');
-    expect(active.className).toContain('color-indigo-accent');
-    expect(inactive.className).toContain('border-transparent');
-    expect(active.className).toContain('focus-visible:ring-inset');
-    expect(active.className).toContain('color-indigo-focus-ring');
   });
 
   it('calls onSelect with the clicked tab key', () => {

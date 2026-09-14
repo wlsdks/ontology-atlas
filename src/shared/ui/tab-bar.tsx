@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
 /**
- * RATIO-SYSTEM §3 (`docs/prototypes/RATIO-SYSTEM.md`) — the ONE tab-bar
- * pattern for the whole app: mono tracking-caps label + engraved count,
- * active = 2px indigo underline, inactive = quaternary text (hover =
- * secondary). No color badges, no pill backgrounds — underline is the only
- * state marker. First consumer: `/ontology/insights`;
- * kept here (not page-local) so later pages needing the same tab pattern
- * reuse this instead of forking a second implementation.
+ * The app's shared panel-navigation tab bar: compact adjacent targets,
+ * standard body labels and engraved mono counts. The active tab rises from
+ * the shared content boundary with a neutral surface, bounded top and sides,
+ * rounded top corners, and a 2px indigo top cue. Inactive tabs use readable
+ * secondary ink and reveal their click surface on hover. The strip itself
+ * remains flat — it is not a segmented-control pill.
  *
  * Presentational only — no router/navigation coupling, so it works whether
  * the caller reflects the active tab in a query string, local state, or
@@ -94,8 +93,7 @@ export function TabBar({
    * deterministically.
    *
    * ⚠️ Without this, arriving at `?tab=<last>` on a narrow screen shows a strip scrolled to
-   * zero with the selected tab — and its underline, the only marker of which tab is
-   * selected — off the right edge.
+   * zero with the selected tab off the right edge.
    *
    * A JS scroll animation cannot be switched off by the reduced-motion base layer (it is a
    * behaviour argument, not a CSS transition), so it is respected here.
@@ -234,13 +232,13 @@ export function TabBar({
               : undefined
       }
       // On narrow phones the labels plus counts exceed the viewport — /ontology/insights
-      // carries seven tabs. Wrapping them would destroy the underline tab bar's identity,
+      // carries seven tabs. Wrapping them would destroy the document strip's identity,
       // so this scrolls horizontally inside itself — the same pattern AppSettingsMenu's
       // tablist uses — and page-level overflow never happens.
       className={
         placement === 'header'
-          ? "flex h-full items-end gap-7 overflow-x-auto"
-          : "flex gap-7 overflow-x-auto border-b border-[color:var(--color-divider)]"
+          ? "flex h-full items-end gap-1 overflow-x-auto"
+          : "flex gap-1 overflow-x-auto border-b border-[color:var(--color-divider)]"
       }
       style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
     >
@@ -278,71 +276,46 @@ export function TabBar({
             onClick={() => activateTab(item.key)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             /*
-             * ⚠️ **The bottom padding lands on the ramp** (measured 2026-08-08).
-             *
-             * It used to be `pb-[11px]` — neither a 4px multiple nor a 2px half-step, just a
-             * value picked by eye on the spot. That made the tab **29px** tall (16 leading +
-             * 11 bottom padding + 2 underline), a height that exists nowhere on the control
-             * ramp. With no `min-h-*`, the height is decided entirely by padding arithmetic,
-             * which is exactly what `docs/DESIGN-SYSTEM.md` warns against: do not call the
-             * sum of padding, leading and border a ramp value.
-             *
-             * Dropping one pixel to `pb-2.5` (10) gives 16 + 10 + 2 = **28**, landing exactly
-             * on `--control-h-sm`. The entire visual change is the underline sitting 1px
-             * closer to the text.
-             */
-            /*
              * ⚠️ `shrink-0 whitespace-nowrap` restores this file's own contract. Without
              * them a flex child in an `overflow-x-auto` row shrinks to fit instead of
              * overflowing, so the strip that was written to scroll silently wrapped each
              * label onto two lines at 390 and the underline no longer sat under one tab.
              *
-             * `atlas-touch-floor` is the finger height. This is a `min-height` marker
-             * rather than an expanded hit area on purpose (`app/globals.css`): the tabs sit
-             * a `gap-7` apart, and phantom hit areas that overlap cause missed touches.
-             *
-             * ⚠️ **`items-end`, because the finger floor grows the box and the underline
-             * rides its bottom edge** (measured 2026-09-05, `/en/ontology/insights/` at
-             * 390 with `pointer: coarse`). With `items-baseline` the label was pinned at
-             * the top of the 44px box and the active underline — the only marker of which
-             * tab is selected — sat **26px** below the label instead of the `pb-2.5` 10px
-             * it sits at on a mouse. A marker further from its label than the label is
-             * tall stops reading as that label's marker. Bottom alignment puts the 16px
-             * of finger height above the words, where nothing has to read it, and both
-             * children are the same `text-label` line, so at the 28px mouse height this
-             * is byte-for-byte the previous baseline result.
+             * `atlas-touch-floor` is the finger height. This is a real `min-height` rather
+             * than an expanded hit area on purpose (`app/globals.css`): adjacent document
+             * tabs must never have overlapping phantom targets. Fine pointers use the md
+             * control height; coarse pointers promote the same box to 44px. `items-center`
+             * keeps the label tied to the selected surface at both heights.
              */
             className={
-              "atlas-touch-floor -mb-px inline-flex shrink-0 items-end gap-2 whitespace-nowrap border-b-[length:var(--tabbar-underline)] px-0.5 pb-2.5 font-mono text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caps-14)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
-              (placement === 'header' ? "h-[calc(100%+1px)] " : "") +
+              "atlas-touch-floor relative -mb-px inline-flex h-[var(--control-h-md)] shrink-0 items-center gap-2 whitespace-nowrap rounded-t-[var(--radius-chip)] border-x border-b border-t-[length:var(--tabbar-underline)] px-3 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
               (active
-                ? "border-[color:var(--color-indigo-accent)] text-[color:var(--color-text-primary)]"
-                : "border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]")
+                ? "border-x-[color:var(--color-border-strong)] border-t-[color:var(--color-indigo-accent)] border-b-[color:var(--color-elevated)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]"
+                : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]")
             }
           >
             {/*
-              ⚠️ **Both halves are real boxes with the same leading, so the underline's
-              distance does not depend on which glyphs a tab happens to hold.**
+              ⚠️ **Both halves are real boxes with explicit leading, so their vertical
+              alignment does not depend on which glyphs a tab happens to hold.**
 
               The label used to be a bare text node — an anonymous flex item taking the
               button's own metrics — beside a count in an explicit `font-mono` span. While
               every tab was mono that was one font and one box height. It stopped being one
               once the caps device stood down for Hangul: the label resolved to the sans
               stack and the count stayed monospace, and the two no longer ended at the same
-              place. Measured at the coarse-pointer width: tabs carrying a count kept the
-              10px the `pb-2.5` promises, while the two label-only tabs measured 12px, so
-              the marker for "which tab is selected" sat further from one word than another.
+              place.
 
-              Naming the leading on both makes the line box the ramp's paired value rather
-              than whatever the resolved font reports.
+              The navigation label uses the normal sans body step; only the engraved count
+              stays compact and monospaced. Centering both explicit line boxes keeps their
+              optical relationship stable across scripts.
             */}
-            <span className="leading-label">{item.label}</span>
+            <span className="text-body leading-body">{item.label}</span>
             {item.count !== undefined ? (
               // The number is already in the button's `aria-label`; leaving it in the
               // accessibility tree as well would read it twice.
               <span
                 aria-hidden
-                className="font-mono text-label leading-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] tabular-nums text-[color:var(--color-text-tertiary)]"
+                className="font-mono text-label leading-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] tabular-nums text-[color:var(--color-text-secondary)]"
               >
                 {item.count}
               </span>
