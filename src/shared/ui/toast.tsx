@@ -32,9 +32,19 @@ interface ToastAction {
   onClick: () => void;
 }
 
+interface ToastMetadata {
+  /** A quieter second line for context such as the affected document title. */
+  description?: string;
+}
+
 interface ToastApi {
-  /** `action` is optional so the ~50 existing `useToast()` call sites are untouched. */
-  show: (message: string, tone?: ToastTone, action?: ToastAction) => void;
+  /** Optional trailing arguments keep the existing `useToast()` call sites untouched. */
+  show: (
+    message: string,
+    tone?: ToastTone,
+    action?: ToastAction,
+    metadata?: ToastMetadata,
+  ) => void;
   /**
    * Clears every toast on screen.
    *
@@ -95,9 +105,8 @@ export function useToastAnchor(anchor: ToastAnchor | null): void {
  * **Unstyled on purpose.** sonner's stock box (rounded pill, its own close chip at
  * the top-left corner, grey icon) read as a foreign widget beside our chrome. The
  * whole box is drawn from this repository's tokens: elevated surface, soft hairline,
- * one 16px status icon in the tone's ink, the message in `text-body`, one quiet
- * indigo action, and a close button that lives at the right end and shows on hover
- * or focus. `app-toast` stays as the motion hook (`app/globals.css`).
+ * one status tile in the tone's ink, the message in `text-body`, one quiet
+ * outlined action, and a close button visible at the right end. `app-toast` stays as the motion hook (`app/globals.css`).
  *
  * **`theme="dark"` is not decoration.** Without it sonner falls back to its light
  * theme; the owner reported white, off-brand toasts on 2026-07-24 for exactly
@@ -185,19 +194,21 @@ export function ToastProvider({
             // get a substitute rather than a hard cut. See the sonner motion
             // block in `app/globals.css`.
             //
-            // `group` lets the close button reveal on hover of the whole box;
-            // `pr-9` reserves its seat so the message never runs under it.
+            // The dismiss control has a reserved seat, including on touch screens.
             toast:
-              'app-toast group relative flex w-full items-center gap-2.5 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] py-2.5 pl-3 pr-9 text-body leading-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-2)]',
-            content: 'flex min-w-0 flex-1 items-center',
-            title: 'min-w-0 flex-1 break-keep',
+              'app-toast group relative flex w-full items-center gap-3 rounded-[var(--radius-panel)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] py-3 pl-3 pr-10 text-body leading-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-2)] [@media(pointer:coarse)]:pr-14',
+            content: 'flex min-w-0 flex-1 flex-col items-start gap-0.5',
+            title:
+              'min-w-0 w-full font-[var(--font-weight-signature)] [overflow-wrap:anywhere] [word-break:keep-all]',
+            description:
+              'min-w-0 w-full text-caption leading-caption text-[color:var(--color-text-tertiary)] [overflow-wrap:anywhere] [word-break:keep-all]',
             // The icon carries the tone; the box itself stays neutral so three
             // toasts in a row read as one family, not three coloured cards.
-            icon: 'flex shrink-0 items-center [&>svg]:block',
-            success: '[&_[data-icon]]:text-[color:var(--color-status-success)]',
-            info: '[&_[data-icon]]:text-[color:var(--color-indigo-text-soft)]',
-            error: '[&_[data-icon]]:text-[color:var(--color-danger-text)]',
-            // Deliberately a quiet ghost, not filled indigo: a toast dismisses
+            icon: 'flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-card)] [&>svg]:block',
+            success: '[&_[data-icon]]:bg-[color:var(--color-success-a12)] [&_[data-icon]]:text-[color:var(--color-status-success)]',
+            info: '[&_[data-icon]]:bg-[color:var(--color-indigo-a16)] [&_[data-icon]]:text-[color:var(--color-indigo-text-soft)]',
+            error: '[&_[data-icon]]:bg-[color:var(--color-danger-a12)] [&_[data-icon]]:text-[color:var(--color-danger-text)]',
+            // A quiet outlined action: a toast dismisses
             // itself, so an action loud enough to pull the eye competes with the
             // real attention winner on screen. The label does the work.
             //
@@ -206,12 +217,12 @@ export function ToastProvider({
             // that tint measures 4.27:1, below AA, while soft measures 8.39:1
             // (2026-08-22).
             actionButton:
-              'ml-1 h-7 shrink-0 rounded-[var(--radius-chip)] px-2.5 text-label leading-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-soft)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:bg-[color:var(--color-indigo-a16)]',
-            // Geometry, ink and the hover reveal of the close button live in
+              'ml-0 h-8 shrink-0 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label leading-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-soft)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:bg-[color:var(--color-indigo-a16)] [@media(pointer:coarse)]:min-h-[var(--touch-target-min)]',
+            // Geometry, ink and hover feedback of the close button live in
             // `app/globals.css` (`.app-toast [data-close-button]`): sonner's runtime
             // stylesheet loads after ours and its dark-theme rule outranks a utility
             // class, so only the box's size and shape are set here.
-            closeButton: 'flex size-6 items-center justify-center rounded-[var(--radius-chip)]',
+            closeButton: 'flex size-7 items-center justify-center rounded-[var(--radius-chip)] [@media(pointer:coarse)]:size-[var(--touch-target-min)]',
           },
         }}
       />
@@ -225,15 +236,26 @@ export function ToastProvider({
  */
 export function useToast(): ToastApi {
   return {
-    show: (message: string, tone: ToastTone = 'success', action?: ToastAction) => {
-      // The id is the message itself: sonner updates a visible toast that carries
-      // the same id instead of stacking a twin under it. Two edits in one agent turn
+    show: (
+      message: string,
+      tone: ToastTone = 'success',
+      action?: ToastAction,
+      metadata?: ToastMetadata,
+    ) => {
+      // Existing calls keep the tone + message id exactly. A description adds the
+      // affected subject to the identity: two documents may share a short outcome
+      // title and must retain separate Undo actions, while a repeat for the same
+      // document should still refresh its visible toast. Two edits in one agent turn
       // used to raise two identical "capability edited" boxes (owner screenshot,
       // 2026-09-06); now the second refreshes the first. Different messages still
       // stack, and a repeat after the first has gone shows again.
+      const id = metadata?.description
+        ? JSON.stringify([tone, message, metadata.description])
+        : `${tone}:${message}`;
       const options = {
-        id: `${tone}:${message}`,
+        id,
         ...(action ? { action: { label: action.label, onClick: action.onClick } } : {}),
+        ...(metadata?.description ? { description: metadata.description } : {}),
       };
       switch (tone) {
         case 'error':

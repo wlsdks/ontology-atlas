@@ -85,6 +85,33 @@ describe('useToast — 후속 동작 계약', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it('설명은 제목·액션과 분리된 보조 정보로 전달된다', () => {
+    const onClick = vi.fn();
+    show('새 문서를 만들었습니다', 'success', { label: '되돌리기', onClick }, {
+      description: '결제 정산 정책.md',
+    });
+
+    expect(sonnerToast.success).toHaveBeenCalledWith('새 문서를 만들었습니다', {
+      id: '["success","새 문서를 만들었습니다","결제 정산 정책.md"]',
+      action: { label: '되돌리기', onClick },
+      description: '결제 정산 정책.md',
+    });
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('같은 결과라도 다른 문서는 따로 쌓고 같은 문서 반복은 갱신한다', () => {
+    const outcome = '새 문서를 만들었습니다';
+    show(outcome, 'success', undefined, { description: '결제 정책.md' });
+    show(outcome, 'success', undefined, { description: '환불 정책.md' });
+    show(outcome, 'success', undefined, { description: '결제 정책.md' });
+
+    const ids = sonnerToast.success.mock.calls.map(([, options]) =>
+      (options as { id: string }).id,
+    );
+    expect(ids[0]).not.toBe(ids[1]);
+    expect(ids[0]).toBe(ids[2]);
+  });
+
   it('액션은 error·info 톤에서도 같은 문법으로 붙는다', () => {
     const onClick = vi.fn();
     show('멎었어요', 'error', { label: '다시', onClick });
