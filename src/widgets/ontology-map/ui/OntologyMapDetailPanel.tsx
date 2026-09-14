@@ -1352,7 +1352,11 @@ export function OntologyMapDetailPanel({
     <Surface
       open={open}
       onExited={onExited}
-      className={["w-[var(--map-panel-width)]", className ?? ""].join(" ")}
+      className={[
+        "w-[var(--map-panel-width)]",
+        open ? "pointer-events-auto" : "pointer-events-none",
+        className ?? "",
+      ].join(" ")}
     >
       <div
         role="group"

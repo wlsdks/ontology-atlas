@@ -6209,7 +6209,7 @@ function HomePageImpl() {
              */
             className="topology-ui-scale pointer-events-none fixed inset-x-3 bottom-[var(--map-panel-bottom-reserve)] z-30 flex justify-center lg:inset-x-auto lg:bottom-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
-            <div className="pointer-events-auto grid">
+            <div className="pointer-events-none grid">
             {panelDatasheetModel ? (
               <OntologyMapDetailPanel
                 key={panelDatasheetModel.slug}

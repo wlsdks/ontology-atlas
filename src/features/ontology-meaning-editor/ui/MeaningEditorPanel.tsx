@@ -209,7 +209,11 @@ export function MeaningEditorPanel({
     <Surface
       open={open}
       onExited={onExited}
-      className={["w-[var(--map-panel-width)]", className ?? ""].join(" ")}
+      className={[
+        "w-[var(--map-panel-width)]",
+        open ? "pointer-events-auto" : "pointer-events-none",
+        className ?? "",
+      ].join(" ")}
     >
       <section
         role="group"

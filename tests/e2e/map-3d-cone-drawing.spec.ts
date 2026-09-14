@@ -321,23 +321,30 @@ async function coneDrawnNodes(page: Page): Promise<ConeDrawnNode[]> {
   );
 }
 
-/** A canvas point with no drawn disc within 40 px — clicking it clears the focus. */
+/** A true ground point: outside every drawn disc's 40 px reserve and every clickable relation. */
 async function coneEmptyPoint(page: Page): Promise<{ x: number; y: number }> {
   return page.evaluate(() => {
     const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
-    const nodes = (
+    const probe = (
       window as unknown as {
-        __atlasMap: { nodes: () => Array<{ x: number; y: number; radius: number; hidden: boolean }> };
+        __atlasMap: {
+          nodes: () => Array<{ x: number; y: number; radius: number; hidden: boolean }>;
+          edgeAt: (x: number, y: number) => unknown | null;
+        };
       }
-    ).__atlasMap
-      .nodes()
-      .filter((n) => !n.hidden);
+    ).__atlasMap;
+    const nodes = probe.nodes().filter((n) => !n.hidden);
     for (let y = 40; y < canvas.height - 40; y += 20) {
       for (let x = 360; x < canvas.width - 60; x += 20) {
-        if (nodes.every((n) => Math.hypot(n.x - x, n.y - y) > n.radius + 40)) return { x, y };
+        if (
+          nodes.every((n) => Math.hypot(n.x - x, n.y - y) > n.radius + 40) &&
+          probe.edgeAt(x, y) === null
+        ) {
+          return { x, y };
+        }
       }
     }
-    return { x: canvas.width - 30, y: canvas.height - 30 };
+    throw new Error("cone fixture has no ground point clear of both nodes and relations");
   });
 }
 
@@ -407,17 +414,35 @@ for (const screen of [SCREENS[0], SCREENS[3]]) {
         const spare = await coneEmptyPoint(page);
         await page.mouse.click(canvas.x + spare.x, canvas.y + spare.y);
         /*
-         * ⚠️ **This click does not deselect, and the sleep it replaced never waited
-         * for one either** (measured 2026-09-13). Inside the dome an empty-ground
-         * press is an orbit grab, not a deselect (`map-3d-grip.spec.ts`), so the
-         * selection survives it — polling for a cleared selection here sat for the
-         * full timeout holding `capability:carrier-integration`. What the click
-         * does do is end the ego dim and the tier reveal, and it does that inside
-         * the pointer handler, so the next drawn frames already carry it.
+         * The next press deliberately lands while the previous inspector's Surface
+         * is still mounted for its exit. The positioner and stacking grid are only
+         * geometry; they must not swallow the map while the painted child is inert.
+         * Waiting for the panel to disappear would skip the regression this gate owns.
          */
-        await waitFrames(page, 3);
+        await page.waitForFunction(() => {
+          const map = (
+            window as unknown as {
+              __atlasMap: {
+                selection: () => { nodeId: string | null };
+                camera: () => { x: number; y: number; scale: number } | null;
+                cameraTarget: () => { x: number; y: number; scale: number };
+              };
+            }
+          ).__atlasMap;
+          const camera = map.camera();
+          const target = map.cameraTarget();
+          const panel = document.querySelector('[data-testid="map-detail-panel"]');
+          return (
+            map.selection().nodeId === null &&
+            panel?.parentElement?.getAttribute("data-surface-state") === "exiting" &&
+            camera !== null &&
+            Math.abs(camera.x - target.x) < 1e-4 &&
+            Math.abs(camera.y - target.y) < 1e-4 &&
+            Math.abs(camera.scale - target.scale) < 1e-4
+          );
+        });
       }
-      await settleConeCamera(page);
+      if (i === 0) await settleConeCamera(page);
       const drawn = await coneDrawnNodes(page);
       const node = drawn.find((n) => n.id === chosen[i].id);
       expect(node, `${chosen[i].id} left the frame`).toBeTruthy();
@@ -428,6 +453,15 @@ for (const screen of [SCREENS[0], SCREENS[3]]) {
             other.id !== node!.id && Math.hypot(other.x - (node!.x + dx), other.y - node!.y) <= other.radius,
         );
       const offset = clear(wanted[i]) ? wanted[i] : 0;
+      if (i > 0) {
+        const receivesPointer = await page.evaluate(
+          ({ x, y }) =>
+            document.elementFromPoint(x, y) ===
+            document.querySelector('[data-testid="ontology-map-canvas"]'),
+          { x: canvas.x + node!.x + offset, y: canvas.y + node!.y },
+        );
+        expect(receivesPointer, `${node!.id}'s drawn centre is blocked while the previous inspector exits`).toBe(true);
+      }
       await page.mouse.click(canvas.x + node!.x + offset, canvas.y + node!.y);
       /*
        * The hit test runs inside the pointer handler, so the selection this click
