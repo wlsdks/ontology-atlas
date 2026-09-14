@@ -42,8 +42,9 @@
  * over a rail band and a pane band: a Library crossing ran the transition for 231 ms
  * with its four `::view-transition` animations occupying the declared 180 ms, and
  * **every frame of it was painted** — rail ink 0.0243-0.0307, never 0. So the
- * crossfade is not engine-gated and no surface opts out of it; a browser without
- * the API still takes the direct path below, as it always has.
+ * crossfade is not engine-gated. Explicit Map entry uses its live preparation
+ * boundary instead of holding a snapshot; other destinations use this helper.
+ * A browser without the API still takes the direct path below.
  *
  * **Why the promise resolves on the pathname, not on `router.push`.** The App
  * Router's push returns before the new tree is committed. The transition must

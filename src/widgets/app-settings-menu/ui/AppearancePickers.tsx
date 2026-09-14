@@ -5,9 +5,7 @@ import { cn } from '@/shared/lib/cn';
 import { useRovingRadioGroup } from '@/shared/lib/use-roving-radio-group';
 import {
   ACCENTS,
-  ACCENT_ATTRIBUTE,
   CANVAS_BACKGROUNDS,
-  DEFAULT_ACCENT,
   GLYPH_SETS,
   useAccent,
   useCanvasBackground,
@@ -283,7 +281,7 @@ export function GlyphSetPicker() {
 function AccentSwatch({ variant }: { variant: Accent }) {
   return (
     <span
-      {...(variant === DEFAULT_ACCENT ? {} : { [ACCENT_ATTRIBUTE]: variant })}
+      data-accent-preview={variant}
       aria-hidden
       className="flex items-center gap-1"
     >

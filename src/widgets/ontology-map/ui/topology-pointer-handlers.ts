@@ -1,3 +1,4 @@
+import { projectDomeEdgeControl } from '../model/dome-edge';
 /**
  * Pointer/wheel event handlers — the click-safe contract
  * (`interaction/pointer-state-machine.ts`) plus camera pan/zoom/flick
@@ -254,6 +255,7 @@ export interface PointerHandlerRefs {
    * source of truth).
    */
   domeRuntimeRef?: Ref<DomeRuntime | null>;
+  neuralRampRef?: Ref<number>;
   /**
    * 3D — whether the empty-space drag in flight is **an orbit rotation** (true) or
    * **a camera pan** (false). `pointerdown` decides once and it does not change until
@@ -399,6 +401,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     realmParallaxRef,
     realmTierKindsRef,
     domeRuntimeRef,
+    neuralRampRef,
     domeGripRef = { current: false },
     tierRevealRef,
     onSelect,
@@ -710,20 +713,20 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       return radiusForKind(node.kind, tokens) * node.magnitudeScale * domeS * scale + HIT_TOUCH_SLACK_PX;
     };
     const candidates: EdgeHitCandidate[] = [];
-    // 3D offsets — the same formula as the draw
-    // (`topology-frame-draw.ts#projectEdgePoints`): each endpoint takes its own end
-    // node's frame offset and the control point takes the average of the two.
+    // The same live projected curve as paint, including assembly and orbit.
+    // Averaging endpoint offsets onto the flat bow misses the visible 3D line.
     const cam = cameraRef.current;
     const ZERO = { dx: 0, dy: 0, s: 1 };
     for (const edge of world.edges) {
       if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId)) continue;
       const offA = domeFrame?.get(edge.sourceId) ?? ZERO;
       const offB = domeFrame?.get(edge.targetId) ?? ZERO;
+      const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, reducedMotionRef.current ? undefined : neuralRampRef?.current);
       candidates.push({
         edge,
         a: worldToScreen(cam, width, height, edge.ax + offA.dx, edge.ay + offA.dy),
         b: worldToScreen(cam, width, height, edge.bx + offB.dx, edge.by + offB.dy),
-        control: worldToScreen(cam, width, height, edge.controlX + (offA.dx + offB.dx) / 2, edge.controlY + (offA.dy + offB.dy) / 2),
+        control: worldToScreen(cam, width, height, control.x, control.y),
         aRadius: bodyRadius(edge.sourceId),
         bRadius: bodyRadius(edge.targetId),
       });

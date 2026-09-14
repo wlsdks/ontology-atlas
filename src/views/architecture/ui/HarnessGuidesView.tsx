@@ -41,8 +41,8 @@ const WARNING_BADGE =
  * Three things this view deliberately does not do, each because a reader would take it as more
  * than it is (Evidence seat, 2026-09-13):
  *
- * 1. **No bare green.** A bare "0 drift" would read as "everything matches"; what is true is that the
- *    declared pairs match and nothing else was compared, so that is what it says.
+ * 1. **No invented conformance.** Counts describe reference comparisons, not matching pairs.
+ *    Tool-specific guidance may differ; those differences do not require synchronization.
  * 2. **No verified hooks.** A hook row says the script exists. The Codex group carries the
  *    approval gate as standing text, because that state lives in no file.
  * 3. **No commit dates.** The change column is a filesystem mtime and says so: a fresh clone
@@ -352,7 +352,7 @@ function DriftList({
           return (
             <li
               key={`${finding.check}:${finding.path}`}
-              className="rounded-card border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a07)] p-[var(--card-pad)]"
+              className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-mono text-body text-[color:var(--color-text-primary)]">
@@ -427,7 +427,7 @@ export function HarnessGuidesView({
   const t = useTranslations('harness');
   const rows = useMemo(() => buildRows(report, t('nestedLabel')), [report, t]);
   const checks = report.analysis.checks;
-  const declaredPairs = [checks.skillCopy, checks.agentCopy].filter(
+  const comparedPairs = [checks.skillCopy, checks.agentCopy].filter(
     (check) => check.status !== 'not-applicable',
   ).length;
 
@@ -499,8 +499,8 @@ export function HarnessGuidesView({
                 </td>
                 <td className="py-2 pr-4">
                   {/*
-                    The pair column answers one question — does this file match the twin the
-                    repository itself declared it identical to — so a row with no declared twin says
+                    The pair column shows the named reference comparison. It does not declare
+                    that independent tool guidance must be identical. A row with no reference says
                     "not applicable" rather than borrowing a finding from another check. The first
                     build printed a drift count beside `.codex/`, which has no pair at all (measured
                     in the browser, 2026-09-13).
@@ -510,7 +510,7 @@ export function HarnessGuidesView({
                       {t('pairNotApplicable')}
                     </span>
                   ) : row.pairDrift.length > 0 ? (
-                    <span className={badgeClass({ shape: 'micro', className: WARNING_BADGE })}>
+                    <span className={badgeClass({ shape: 'micro', className: 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)]' })}>
                       {t('driftTitle', { count: row.pairDrift.length })}
                     </span>
                   ) : (
@@ -534,7 +534,7 @@ export function HarnessGuidesView({
       {/* Never a bare zero: what is true is that the declared pairs match and nothing
           else was compared, and both halves of that are said together. */}
       <p className="text-caption text-[color:var(--color-text-quaternary)]">
-        {t('pairMatched', { count: declaredPairs })} · {t('pairNotMeasured')} ·{' '}
+        {t('pairCompared', { count: comparedPairs })} · {t('pairNotMeasured')} ·{' '}
         {t('reviewedOn', { date: CITATIONS_REVIEWED })}
       </p>
 

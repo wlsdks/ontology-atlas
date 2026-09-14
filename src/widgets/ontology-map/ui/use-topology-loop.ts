@@ -1,5 +1,7 @@
 "use client";
 
+import { projectDomeEdgeControl } from '../model/dome-edge';
+
 /**
  * `OntologyMap`'s engine hook — owns the canvas/rAF/pointer wiring so the
  * component itself stays a thin JSX shell (`docs/ONTOLOGY-MAP-DESIGN.md` §4
@@ -118,7 +120,6 @@ import {
   orbitSnapTauMs,
   DOME_POSE_LAG_SCALE,
   chargeTierLag,
-  domeEdgeControlWorld,
   DOME_PERIOD_MS,
   DOME_PITCH_DEFAULT,
   DOME_POSE_MS,
@@ -166,7 +167,7 @@ import {
 
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import type { OntologyMapProps } from "./OntologyMap";
-import { applyForcePositions, buildTopologyWorld, computeRevealedBounds, recomputeWorldGeometry, type TopologyWorld, radiusForKind } from "./topology-world";
+import { applyForcePositions, buildTopologyWorld, computeRevealedBounds, recomputeWorldGeometry, type TopologyWorld, type WorldEdge, radiusForKind } from "./topology-world";
 import { prepareRevealHome } from "./topology-reveal-home";
 
 /**
@@ -642,6 +643,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * fourth easing for the same kind of change is a fourth thing to keep in agreement.
    */
   const galaxyRampRef = useRef<number>(galaxy ? 1 : 0);
+  const neuralRampRef = useRef<number>(0);
   // Synced in an effect, not during render: the loop reads this ref on its own clock, and
   // writing a ref while rendering is the one way to make those two disagree.
   useEffect(() => {
@@ -2906,9 +2908,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
      * demand it) and tie the draw loop to that identity. Here matches its real
      * lifetime — the function reads only refs.
      */
-    const domeEdgeControlForFrame = (sourceId: string, targetId: string, kind: "contains" | "depends") => {
+    const domeEdgeControlForFrame = (edge: WorldEdge) => {
       const dome = domeRuntimeRef.current;
-      return dome === null ? null : domeEdgeControlWorld(dome, sourceId, targetId, kind);
+      return dome === null ? null : projectDomeEdgeControl(edge, dome.frame, dome.model.arrangement, cameraRef.current.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current);
     };
     /**
      * **`alpha: false` — this map never needs to show what is behind it.**
@@ -3202,7 +3204,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // wake for a frame and draw the new state — same contract as the
           // spotlight ramp settling.
           galaxySettling:
-            Math.abs(galaxyRampRef.current - (galaxyRef.current ? 1 : 0)) > 0.01,
+            Math.abs(galaxyRampRef.current - (galaxyRef.current ? 1 : 0)) > 0.01 ||
+            Math.abs(neuralRampRef.current - (view3dRef.current && mapArrangementRef.current === "coupling" ? 1 : 0)) > 0.01,
           trailLensSettling:
             (trailLensPropRef.current?.current ?? false) !== drawnTrailLensRef.current ||
             Math.abs(
@@ -5262,6 +5265,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
        * brightness crossfade on a settled canvas is not travel — but the ramp below it *is* the
        * trail lens, which does move, so the two are answered separately.
        */
+      const neuralTarget = view3dRef.current && domeRuntimeRef.current?.model.arrangement === "coupling";
+      // Reduced motion keeps geometry at its destination; only the cell material
+      // crossfades. Curve projection separately uses the destination mix above.
+      if (reducedMotionRef.current) {
+        const target = neuralTarget ? 1 : 0;
+        const delta = target - neuralRampRef.current;
+        const stride = dt * 1000 / Math.max(1, tokens.trailReducedFadeMs);
+        neuralRampRef.current = Math.abs(delta) <= stride
+          ? target : neuralRampRef.current + Math.sign(delta) * stride;
+      } else {
+        neuralRampRef.current = stepFocusRamp(neuralRampRef.current, neuralTarget, dt, tokens.focusDimTau);
+      }
       galaxyRampRef.current = reducedMotionRef.current
         ? (galaxyRef.current ? 1 : 0)
         : stepFocusRamp(galaxyRampRef.current, galaxyRef.current, dt, tokens.focusDimTau);
@@ -5318,6 +5333,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         camera,
         farT,
         galaxyRamp: galaxyRampRef.current,
+        neuralRamp: neuralRampRef.current,
         zoomRatio,
         now,
         viewportWidth: width,
@@ -5617,6 +5633,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     realmParallaxRef,
     realmTierKindsRef,
     domeRuntimeRef,
+    neuralRampRef,
     tierRevealRef,
     onSelect,
     onSelectEdge,
@@ -6122,6 +6139,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           .map((e) => {
             const offA = edgeOff(e.sourceId);
             const offB = edgeOff(e.targetId);
+            const control = projectDomeEdgeControl(e, domeFrame, domeRuntimeRef.current?.model.arrangement ?? "ownership", camera.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current);
             return {
             sourceId: e.sourceId,
             targetId: e.targetId,
@@ -6137,8 +6155,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
              * crossings that are not on screen and misses crossings that are —
              * measuring an approximation rather than the map.
              */
-            controlX: toScreenX(e.controlX + (offA.dx + offB.dx) / 2),
-            controlY: toScreenY(e.controlY + (offA.dy + offB.dy) / 2),
+            controlX: toScreenX(control.x),
+            controlY: toScreenY(control.y),
           };
           });
       },

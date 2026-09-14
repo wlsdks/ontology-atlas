@@ -67,6 +67,8 @@ interface Crossing {
   frames: number;
   /** Frames during which at least one `::view-transition` animation was running. */
   transitionFrames: number;
+  /** Frames showing the live map preparation surface. */
+  pendingFrames: number;
   /** Frames on which a point over the rail did not answer with the rail. */
   railMissFrames: number;
   /** What those frames answered instead, so a failure names something. */
@@ -78,11 +80,11 @@ interface Crossing {
 }
 
 /**
- * Samples every animation frame from the click until one full transition has come and gone.
+ * Samples every frame until a route crossfade or the live map preparation has ended.
  *
  * Armed before the click, because the window it measures opens within a frame of it. The
  * sampler stops once a transition has been seen and is over, or at `maxMs` — a run that
- * never saw one fails on `transitionFrames` rather than reporting zero misses as a pass.
+ * never saw activity fails on transition/pending frames rather than a vacuous pass.
  */
 async function sampleCrossing(page: Page, maxMs: number): Promise<void> {
   await page.evaluate(
@@ -90,6 +92,7 @@ async function sampleCrossing(page: Page, maxMs: number): Promise<void> {
       const state: Crossing & { done: boolean } = {
         frames: 0,
         transitionFrames: 0,
+        pendingFrames: 0,
         railMissFrames: 0,
         railMissed: [],
         captured: [],
@@ -116,25 +119,30 @@ async function sampleCrossing(page: Page, maxMs: number): Promise<void> {
           .filter((pseudo) => pseudo.startsWith("::view-transition"));
 
       const started = performance.now();
-      let sawTransition = false;
+      let sawActivity = false;
       const tick = () => {
         state.frames += 1;
         const pseudos = transitionPseudos();
         if (pseudos.length > 0) {
-          sawTransition = true;
+          sawActivity = true;
           state.transitionFrames += 1;
           for (const pseudo of pseudos) {
             if (!state.captured.includes(pseudo)) state.captured.push(pseudo);
           }
-          const hit = document.elementFromPoint(x, y);
-          if (!hit?.closest('[data-testid="app-nav-rail"]')) {
-            state.railMissFrames += 1;
-            const name = hit ? hit.tagName : "null";
-            if (!state.railMissed.includes(name)) state.railMissed.push(name);
-          }
+        }
+        const pending = document.querySelector('[data-testid="map-navigation-wait"]:not([inert])');
+        const pendingBox = pending?.getBoundingClientRect();
+        const waiting = !!pendingBox && pendingBox.width > 0 && pendingBox.height > 0;
+        if (waiting) { state.pendingFrames += 1; sawActivity = true; }
+        // The rail must answer throughout preparation as well as crossfade frames.
+        const hit = document.elementFromPoint(x, y);
+        if ((pseudos.length > 0 || waiting) && !hit?.closest('[data-testid="app-nav-rail"]')) {
+          state.railMissFrames += 1;
+          const name = hit ? hit.tagName : "null";
+          if (!state.railMissed.includes(name)) state.railMissed.push(name);
         }
         if (document.querySelector(neutralPane as string)) state.neutralPaneFrames += 1;
-        const over = sawTransition && pseudos.length === 0;
+        const over = sawActivity && pseudos.length === 0 && !waiting;
         if (!over && performance.now() - started < (maxMs_ as number)) {
           requestAnimationFrame(tick);
         } else {
@@ -181,12 +189,17 @@ test("the rail stays painted and pressable across every rail navigation", async 
     await sampleCrossing(page, MAX_SAMPLE_MS);
     await rail.getByTestId(`app-nav-rail-item-${destination}`).click({ noWaitAfter: true });
     crossings[destination] = await readCrossing(page);
+    await expect(page).toHaveURL(new RegExp(`/${destination === "map" ? "topology" : destination}/`));
+    if (destination === "map") {
+      await expect(page.locator('canvas[data-surface-role="map-canvas"]')).toBeVisible();
+      await expect(page.getByTestId('map-navigation-wait')).toHaveCount(0);
+    }
     await page.waitForTimeout(300);
   }
 
   for (const [destination, crossing] of Object.entries(crossings)) {
     console.log(
-      `[rail] ${destination}: ${crossing.transitionFrames}/${crossing.frames} transition frames · ` +
+      `[rail] ${destination}: ${crossing.transitionFrames}/${crossing.frames} transition frames · ${crossing.pendingFrames} preparation frames · ` +
         `rail unreachable on ${crossing.railMissFrames} (${crossing.railMissed.join(" ") || "none"}) · ` +
         `neutral pane ${crossing.neutralPaneFrames} · captured ${crossing.captured.join(" ")}`,
     );
@@ -194,12 +207,12 @@ test("the rail stays painted and pressable across every rail navigation", async 
 
   for (const [destination, crossing] of Object.entries(crossings)) {
     /*
-     * ★ The idling guard. If no frame carried a running transition, every count below is
+     * ★ The idling guard. If no frame carried a transition or map preparation, every count below is
      * zero for the wrong reason and this gate is blind.
      */
     expect(
-      crossing.transitionFrames,
-      `${destination}: no frame carried a running view transition — nothing was measured`,
+      destination === "map" ? crossing.pendingFrames : crossing.transitionFrames,
+      `${destination}: no frame carried ${destination === "map" ? "map preparation" : "a running view transition"} — nothing was measured`,
     ).toBeGreaterThan(0);
 
     /*
@@ -222,7 +235,7 @@ test("the rail stays painted and pressable across every rail navigation", async 
       crossing.railMissFrames,
       `${destination}: a press aimed at the rail landed on ` +
         `${crossing.railMissed.join("/") || "nothing"} on ${crossing.railMissFrames} of ` +
-        `${crossing.transitionFrames} frames while the crossfade ran — the rail is not on screen`,
+        `${crossing.frames} sampled frames — the rail is not on screen`,
     ).toBe(0);
 
     /*

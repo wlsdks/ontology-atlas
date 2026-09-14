@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 
 import koMessages from "../../../../messages/ko.json";
@@ -73,6 +73,23 @@ beforeEach(() => {
 });
 
 describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", () => {
+  it("빈 생성 폼은 이름에 초점을 두고 자동 주소를 오류로 펼치지 않는다", async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const onSubmit = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <TaxonomyProvider>
+          <ProjectForm mode="create" allProjects={[]} onSubmit={onSubmit} onCancel={() => {}} />
+        </TaxonomyProvider>
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getAllByTestId("project-save-return")[0]);
+    const name = screen.getByLabelText(koMessages.settings.projectForm.fields.name);
+    await waitFor(() => expect(name).toHaveFocus());
+    expect(name).toHaveAttribute("aria-invalid", "true");
+    expect(screen.queryByLabelText(koMessages.settings.projectForm.fields.slug)).toBeNull();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
   it("저장이 실패하면 초점이 오류 배너로 간다", async () => {
     const scrollSpy = vi.fn();
     Element.prototype.scrollIntoView = scrollSpy;

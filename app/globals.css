@@ -5736,6 +5736,7 @@ html[data-gateway-stage] {
  * **cover the same token set** (tokens existing only in one = screen breaking only for that color),
  * and if fill ink maintains AA in both palettes.
  */
+[data-accent-preview="ember"],
 :root[data-accent="ember"] {
   --color-indigo-brand: #c14a24;
   --color-indigo-accent: #f0894e;
@@ -5788,4 +5789,32 @@ html[data-gateway-stage] {
   --color-indigo-pale-a92: rgba(254, 200, 181, 0.92);
   --color-indigo-pale-a94: rgba(254, 200, 181, 0.94);
   --color-indigo-pale-a95: rgba(254, 200, 181, 0.95);
+}
+
+
+/* Decorative waiting geometry carries pending state, never a graph or progress value. */
+.map-wait-scene {
+  background: radial-gradient(ellipse at center, var(--color-indigo-a08), transparent 70%);
+}
+/* The destination can occupy the JS thread. A promoted HTML transform keeps
+   feedback on the compositor; SVG/background-position animation alone froze
+   in the native recording during graph preparation. */
+@media (prefers-reduced-motion: no-preference) {
+  .map-wait-orbit {
+    will-change: transform;
+    animation: map-wait-orbit calc(var(--motion-settle) * 10) linear infinite;
+  }
+}
+@keyframes map-wait-orbit {
+  from { transform: translateZ(0) rotate(0turn); }
+  to { transform: translateZ(0) rotate(1turn); }
+}
+
+/* Swatches keep their own palette even when the surrounding app uses the other
+ * accent. These are the existing Indigo values; the rendered palette test
+ * compares them with the actual root palette in both directions. */
+[data-accent-preview="indigo"] {
+  --color-indigo-brand: #5e6ad2;
+  --color-indigo-accent: #7170ff;
+  --color-indigo-a24: rgba(94, 106, 210, 0.24);
 }

@@ -32,6 +32,7 @@ import {
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { signalNavigationIntent } from "@/shared/lib/navigation-intent";
+import { beginMapNavigation, cancelMapNavigation } from "@/shared/lib/map-navigation-pending";
 import { navigateWithViewTransition } from "@/shared/lib/route-view-transition";
 import {
   buildRouteFocusHref,
@@ -400,12 +401,17 @@ export function AppNavRail({
                   href={buildRouteFocusHref(href)}
                   onClick={(event) => {
                     if (!rememberRailRouteFocus(event, surfacePath)) return;
-                    // A plain left click on a rail destination crossfades to the new
-                    // screen (`shared/lib/route-view-transition.ts`). The anchor keeps
+                    // Ordinary destinations crossfade; Map paints live preparation before
+                    // starting its graph work. The anchor keeps
                     // its href for new tabs, modifier clicks, and the keyboard.
                     event.preventDefault();
                     const target = buildRouteFocusHref(href);
-                    navigateWithViewTransition(() => router.push(target));
+                    if (id === "map" && !isActive) {
+                      beginMapNavigation(() => router.push(target), pathname + window.location.search);
+                    } else {
+                      cancelMapNavigation();
+                      navigateWithViewTransition(() => router.push(target));
+                    }
                   }}
                   /* No `title` — the label is **already visible** right under the icon.
                      A native tooltip covers that label with a grey box drawn by the OS,

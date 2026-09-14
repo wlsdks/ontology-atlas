@@ -76,7 +76,11 @@ index 1111111..2222222 100644
  * Everything is defined inside the init script's own scope: `addInitScript` serializes the
  * function, so a reference to a module-level constant here would be `undefined` in the page.
  */
-export async function installDesktopRailRuntime(page: Page): Promise<void> {
+export async function installDesktopRailRuntime(
+  page: Page,
+  extraFiles: Record<string, string> = {},
+  runtimeResponses?: { fast: unknown[]; probed: unknown[] },
+): Promise<void> {
   await seedFirstRunSeen(page);
   await page.addInitScript(
     (input: {
@@ -86,6 +90,7 @@ export async function installDesktopRailRuntime(page: Page): Promise<void> {
       commits: unknown[];
       pending: unknown[];
       diff: string;
+      runtimeResponses?: { fast: unknown[]; probed: unknown[] };
     }) => {
       const { root, latency, files, commits, pending, diff } = input;
       const mtime = Date.now();
@@ -170,7 +175,12 @@ export async function installDesktopRailRuntime(page: Page): Promise<void> {
           case "plugin:event|unlisten":
             return Promise.resolve(null);
           case "acp_detect_runtimes":
-            return slow([]);
+            return slow(input.runtimeResponses ? (args.probeLogin ? input.runtimeResponses.probed : input.runtimeResponses.fast) : []);
+          case "acp_start":
+            // Destination-opening tests inspect the dock before any agent session
+            // or prompt. An unresolved fixture start cannot reach a provider.
+            if (input.runtimeResponses) return new Promise(() => {});
+            return null;
           case "discover_mcp_connectors":
             return slow({ servers: [], problems: [] });
           case "discover_source_candidates":
@@ -216,10 +226,11 @@ export async function installDesktopRailRuntime(page: Page): Promise<void> {
     {
       root: DESKTOP_VAULT_ROOT,
       latency: NATIVE_LATENCY_MS,
-      files: { ...FIXTURE_VAULT },
+      files: { ...FIXTURE_VAULT, ...extraFiles },
       commits: COMMITS,
       pending: PENDING,
       diff: DIFF,
+      runtimeResponses,
     },
   );
 }

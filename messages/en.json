@@ -301,13 +301,13 @@
     "capMerged": "Codex reads the root AGENTS.md merged with the nested AGENTS.md on the working path, and silently truncates the merge past the cap. The bar measures the merged length.",
     "capMergedValue": "{used} / {cap} (merged)",
     "capOver": "Over the cap",
-    "pairMatched": "{count, plural, one {# declared pair matches} other {# declared pairs match}}",
-    "pairMatchesTwin": "Matches its twin",
-    "pairNotMeasured": "nothing else was measured",
+    "pairCompared": "{count, plural, one {# reference pair compared} other {# reference pairs compared}}",
+    "pairMatchesTwin": "Same content",
+    "pairNotMeasured": "tool-specific differences are not errors",
     "pairNone": "No pair",
     "pairNotApplicable": "Not applicable",
-    "pairHint": "Only pairs this repository itself declares byte-identical are compared. .claude/hooks and .codex/hooks are not a declared pair: Codex delivers an edit as an apply_patch envelope, so those are adapted, not copied.",
-    "driftTitle": "{count, plural, one {# drift} other {# drifts}}",
+    "pairHint": "Compares same-named Codex and Claude guidance for reference. Tool-specific instructions may differ; a content difference is not an error or a requirement to synchronize them.",
+    "driftTitle": "{count, plural, one {# content difference} other {# content differences}}",
     "driftNone": "No declared pair differs",
     "driftOpen": "See the difference",
     "hooksTitle": "What makes it stick",
@@ -575,11 +575,13 @@
     "korean": "한국어"
   },
   "mapEntry": {
+    "takingLonger": "This is taking longer than expected. Return to the previous screen to try again.",
+    "returnToPrevious": "Return to previous screen",
     "headline": "Understand what your codebase builds, why it is structured that way, and what a change will affect.",
     "lede": "Keep product domains, capabilities, implementation evidence, dependencies, and impact in Markdown beside the code, where people and AI agents can maintain the same codebase ontology.",
     "demoNote": "This screen is the live map. It is drawing Ontology Atlas describing itself: domains, capabilities, and elements read straight from the info block at the top of each file.",
     "mapComing": "Loading the map…",
-    "loadingDetail": "Reading this folder's concepts and relations, then fitting them on screen."
+    "loadingDetail": "Arranging concepts and relationships for the map."
   },
   "footer": {
     "license": "MIT licensed",
@@ -1202,7 +1204,7 @@
         "galaxy": "Galaxy",
         "ownership": "Cone",
         "strata": "Strata",
-        "coupling": "Cloud"
+        "coupling": "Neural"
       },
       "view3dChoiceHint": {
         "flat": "the ordinary 2D map",
@@ -2057,6 +2059,7 @@
       "savedToast": "\"{name}\" saved",
       "vaultConflict": "This project file was changed first by another editor or AI agent. Refresh and save again.",
       "demoModeSaveFailed": "Can't save in demo mode. Open a markdown folder first.",
+      "createdToast": "\"{name}\" created",
       "createdAndOpenToast": "\"{name}\" created · fill in details on the edit screen",
       "eyebrowEdit": "Edit project",
       "titleNew": "New project",
@@ -5540,6 +5543,10 @@
       "unknown": "Could not check whether this folder is reachable."
     },
     "choose": {
+      "openAction": "Open folder",
+      "createAction": "Create new",
+      "defaultLocationAction": "Create in Documents",
+      "chooseLocationAction": "Choose a location",
       "eyebrow": "WHICH FOLDER",
       "title": "Choose the folder to work in",
       "bodyDesktop": "Atlas knows several folders. Choose one to open, or pick another.",

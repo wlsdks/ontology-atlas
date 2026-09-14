@@ -70,12 +70,10 @@ export function AgentActivitySettings() {
         }
       />
       {notificationsOn ? (
-        <SettingsRow
-          testId="app-settings-agent-notification-kinds"
-          label={t('agentNotificationKindsLabel')}
-          caption={t('agentNotificationKindsCaption')}
-          control={
-            <div className="flex flex-wrap justify-end gap-1.5">
+        <div data-testid="app-settings-agent-notification-kinds" className="min-w-0 px-3 py-2">
+          <p className="text-body text-[color:var(--color-text-secondary)]">{t('agentNotificationKindsLabel')}</p>
+          <p className="mt-0.5 text-label leading-label text-[color:var(--color-text-quaternary)]">{t('agentNotificationKindsCaption')}</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
               {AGENT_NOTIFICATION_KINDS.map((kind) => {
                 const on = !muted.has(kind);
                 return (
@@ -104,9 +102,8 @@ export function AgentActivitySettings() {
                   </button>
                 );
               })}
-            </div>
-          }
-        />
+          </div>
+        </div>
       ) : null}
     </SettingsGroup>
   );

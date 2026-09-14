@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
@@ -287,14 +287,14 @@ describe("GlobalSearch", () => {
     }
   });
 
-  it("닫히면 트리거로 포커스가 복귀한다", () => {
+  it("닫히면 트리거로 포커스가 복귀한다", async () => {
     render(<Harness />);
     const trigger = screen.getByRole("button", { name: "open trigger" });
     trigger.focus();
     fireEvent.click(trigger);
     fireEvent.keyDown(document, { key: "Escape" });
 
-    expect(document.activeElement).toBe(trigger);
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 
   it("data-overlay-spring 검증마커가 스크림·패널에 있다", () => {

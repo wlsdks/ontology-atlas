@@ -276,3 +276,12 @@ The same round measured a stale Playwright server on port 3100 three times. When
 browser behaviour contradicts current source under `reuseExistingServer`, inspect
 server age with `lsof -iTCP:<port>` before blaming code. Give parallel work an
 explicit `PLAYWRIGHT_BASE_URL` and unique port.
+
+## Canvas projections need independent runtime proof
+
+The 3D edge inspector and pointer picker once reused a flat control-point formula
+while paint used a separate projected curve. A source contract pinned that formula,
+so two agreeing consumers preserved the same error. `tests/e2e/map-3d-edge-picking.spec.ts`
+records actual canvas stroke commands and compares both the public inspection
+coordinates and pointer hits with those paths. Keep each comparison and its nonempty
+sample guard; a shared helper alone cannot prove that its consumers agree with paint.

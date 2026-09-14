@@ -494,7 +494,7 @@ export function TopologyIndexPanel({
         aria-label={labels.foldAria}
         title={labels.fold}
         data-testid="topology-index-fold"
-        className={controlClass({ shape: "row", className: "group mb-3 gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
+        className={controlClass({ shape: "row", className: "group mb-3 gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 max-md:pr-12 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
       >
         <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-tertiary)]">
           {labels.label}
@@ -782,7 +782,7 @@ export function TopologyIndexPanel({
             shape: "card",
             size: "sm",
             className:
-              "mt-2 shrink-0 text-left border-[color:var(--map-panel-border)] hover:bg-[color:var(--map-panel-row-hover)]",
+              "atlas-touch-floor mt-2 shrink-0 text-left border-[color:var(--map-panel-border)] hover:bg-[color:var(--map-panel-row-hover)]",
           })}
         >
           <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-tertiary)]">
@@ -899,7 +899,7 @@ export function TopologyIndexPanel({
             shape: "card",
             size: "sm",
             className:
-              "mt-2 shrink-0 text-left border-[color:var(--map-panel-border)] hover:bg-[color:var(--map-panel-row-hover)]",
+              "atlas-touch-floor mt-2 shrink-0 text-left border-[color:var(--map-panel-border)] hover:bg-[color:var(--map-panel-row-hover)]",
           })}
         >
           <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-tertiary)]">

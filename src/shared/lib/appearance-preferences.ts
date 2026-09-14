@@ -177,12 +177,12 @@ export type Accent = "indigo" | "ember";
 
 export const ACCENTS: readonly Accent[] = ["indigo", "ember"];
 
-export const DEFAULT_ACCENT: Accent = "indigo";
+const DEFAULT_ACCENT: Accent = "indigo";
 
 const ACCENT_KEY = "ontology-atlas:accent:v1";
 
 /** Paired with the CSS selector `:root[data-accent="ember"]`. */
-export const ACCENT_ATTRIBUTE = "data-accent";
+const ACCENT_ATTRIBUTE = "data-accent";
 
 function isAccent(value: string | null): value is Accent {
   return value !== null && (ACCENTS as readonly string[]).includes(value);

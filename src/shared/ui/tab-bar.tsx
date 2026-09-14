@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
 /**
- * The app's shared panel-navigation tab bar: compact adjacent targets,
- * standard body labels and engraved mono counts. The active tab rises from
- * the shared content boundary with a neutral surface, bounded top and sides,
- * rounded top corners, and a 2px indigo top cue. Inactive tabs use readable
- * secondary ink and reveal their click surface on hover. The strip itself
- * remains flat — it is not a segmented-control pill.
+ * Shared section navigation. Tabs sit on one quiet content boundary with a
+ * 2px bottom indicator, stronger selected type, and readable inactive labels.
+ * The 40px fine-pointer floor gives labels space; touch still promotes to 44px.
+ * These are section tabs, not raised file tabs or a segmented-control capsule.
  *
  * Presentational only — no router/navigation coupling, so it works whether
  * the caller reflects the active tab in a query string, local state, or
@@ -237,8 +235,8 @@ export function TabBar({
       // tablist uses — and page-level overflow never happens.
       className={
         placement === 'header'
-          ? "flex h-full items-end gap-1 overflow-x-auto"
-          : "flex gap-1 overflow-x-auto border-b border-[color:var(--color-divider)]"
+          ? "flex h-full items-end gap-3 overflow-x-auto"
+          : "flex gap-3 overflow-x-auto border-b border-[color:var(--color-divider)]"
       }
       style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
     >
@@ -283,15 +281,15 @@ export function TabBar({
              *
              * `atlas-touch-floor` is the finger height. This is a real `min-height` rather
              * than an expanded hit area on purpose (`app/globals.css`): adjacent document
-             * tabs must never have overlapping phantom targets. Fine pointers use the md
+             * tabs must never have overlapping phantom targets. Fine pointers use the lg
              * control height as a minimum, so a reader's enlarged line box can grow the tab
-             * rather than escape its border; coarse pointers promote the same minimum to
-             * 44px. `items-center` keeps the label tied to the selected surface at every height.
+             * rather than clip at a fixed height; coarse pointers promote the same minimum to
+             * 44px. `items-center` keeps the label centered above its indicator at every height.
              */
             className={
-              "atlas-touch-floor relative -mb-px inline-flex min-h-[var(--control-h-md)] shrink-0 items-center gap-2 whitespace-nowrap rounded-t-[var(--radius-chip)] border-x border-b border-t-[length:var(--tabbar-underline)] px-3 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+              "atlas-touch-floor relative -mb-px inline-flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-2 whitespace-nowrap border-b-[length:var(--tabbar-underline)] bg-transparent px-3 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
               (active
-                ? "border-x-[color:var(--color-border-strong)] border-t-[color:var(--color-indigo-accent)] border-b-[color:var(--color-elevated)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]"
+                ? "border-b-[color:var(--color-indigo-accent)] font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
                 : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]")
             }
           >

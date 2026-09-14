@@ -564,8 +564,12 @@ export function ProjectForm({
         if (!k) continue;
         map[k] = resolveValidationMessage(t, issue.message);
       }
+      // An automatic address cannot exist before its name. Keep the first
+      // correction on the visible name field instead of exposing a second,
+      // apparently malformed input the person never edited.
+      if (mode === "create" && !slugManuallyEdited && !values.name.trim()) delete map.slug;
       setErrors(map);
-      const firstField = Object.keys(map)[0] as keyof ProjectFormValues | undefined;
+      const firstField = map.name ? "name" : Object.keys(map)[0] as keyof ProjectFormValues | undefined;
       if (firstField) focusField(firstField);
       return;
     }

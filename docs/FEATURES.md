@@ -84,8 +84,9 @@ work here, and where it can.
 | Read / edit / create nodes in that folder | ✅ | ✅ | same parser, same schema, same files |
 | Remember the folder between visits | ❌ pick it again | ✅ | web keeps an FSA handle in its own IndexedDB; a convenience cache, not the source of truth |
 | Resume a single folder on launch | ❌ the browser needs a click for permission, and the chooser says so | ✅ opens it directly | File System Access permission has to come from a gesture, so the web presses something either way |
-| Choose between known folders on launch | ✅ | ✅ | two or more known folders and the app asks rather than guessing; one folder is never asked about, and forgetting a folder returns the launch to opening directly |
+| Choose between known folders on launch | ✅ | ✅ | two or more known folders open a wide list with Open folder and Create new above it; the page owns scrolling, and rows retain paths, counts, last-use and recovery actions; one folder resumes directly |
 | See which folder is open, and leave it | ✅ | ✅ | the folder's name sits at the top of the rail on every destination and opens the switcher; each row carries the folder's contents, its last opening, and whether it opens now |
+| Map entry feedback | ✅ | ✅ | sidebar and G M map entry show a live preparation scene before navigation; the first canvas draw releases it, and another destination or the return action can cancel the pending entry |
 | Work offline | ❌ | ✅ | |
 | Git history and snapshots | ❌ degraded card + `ontology-atlas snapshot` | ✅ | a browser has no right to run git on your machine |
 | API keys / in-app **agent** chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
@@ -344,8 +345,8 @@ had become false).
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
 - **Three 3D arrangements, chosen in one picker** — the `3D` chip in the top tool
-  lane opens a four-row list: **Flat** (the ordinary 2D map, default), **Cone**,
-  **Strata**, and **Cloud**. Cone and Strata both draw containment and answer
+  lane opens five views: **Flat** (the ordinary 2D map, default), **Galaxy**,
+  **Cone**, **Strata**, and **Neural**. Cone and Strata both draw containment and answer
   different questions with it: Cone makes a parent the apex of its own cone, so a
   subtree is a bump you can point at and rotate to the front; **Strata** (2026-09-06)
   lays the four kinds out as stacked planes — project on top, then domain,
@@ -365,7 +366,7 @@ had become false).
   a node keeps its parent's bearing, which makes every containment drop short,
   near-vertical and unable to cross a sibling's; a node whose parent is not in the
   map falls to the outer rim of its own plane, where "nothing above holds this"
-  is a position rather than a missing line. Cloud drops containment altogether and
+  is a position rather than a missing line. Neural uses all real relations instead of containment coordinates and
   lets relations decide all three coordinates. Switching between any two runs the
   same continuous morph — nodes travel, they do not cut — and the choice is
   remembered. Measured on the sample vault (2026-09-06): Strata leaves 2
@@ -373,6 +374,15 @@ had become false).
   same-tier. Geometry: `buildStrataTargets` and `layoutConeTree` in
   `src/widgets/ontology-map/model/dome-view.ts`; gates:
   `tests/e2e/map-3d-strata-drawing.spec.ts` and `map-3d-cone-drawing.spec.ts`.
+- **Neural composition and readable 3D connections** — Neural uses deterministic
+  relation communities as a layout aid, with tighter local groups, lit cell bodies,
+  and shallow connection arcs. Group proximity is inferred layout, not a new domain
+  or an accepted relation. Cone and Strata keep containment straight; other 3D
+  relations have bounded curves whose paint, pointer hit test, and measurement
+  share the same live endpoints. Reciprocal facts take opposite arcs. Labels are
+  larger in 3D; after closing the detail panel, Fit Map remains available to
+  leave retained selection and return to the whole map. Relation types, depth occlusion, ink floors,
+  keyboard navigation, and reduced-motion behavior remain part of the contract.
 - **A click lands on the concept you are pointing at, in every 3D arrangement**
   (2026-09-06) — the pointer answers with whatever the frame painted under the
   cursor, and the small pressable ring around a dot no longer competes with a
@@ -391,8 +401,9 @@ had become false).
   The 2D map is untouched at either ratio. Gate:
   `tests/e2e/map-3d-relation-ink.spec.ts`, which reads the canvas back at both.
 
-#### `TopologyFitControl` (top-right, desktop-only)
-- Single **Fit Map** tile — fits the camera to the graph bounds. Desktop-only (mobile uses pinch-zoom).
+#### `TopologyFitControl` (shared overview return)
+- Single **Fit Map** tile — fits the camera to the graph bounds. When the map is exposed, it remains visible on narrow and touch screens above the bottom-tab reserve; it yields while the phone INDEX sheet covers the map. Pinch zoom is an additional path. In 3D, closing a detail panel preserves selection and exposes Fit to clear it and return to the overview.
+- The map draws its keyboard focus outline inside the clipped canvas. Picking a search result hands focus to the map after the palette closes; cancellation returns to the opener. Activating a related concept transfers keyboard focus to the replacement inspector's close control. INDEX, detail and realm controls use the shared 44px touch floor.
 - The old "map controls" panel (search · "Hubs only" · overlays · depth/force sliders · in-panel shortcuts help) was a dead control board — the v2 canvas engine never read those focus/overlay/force fields — and was demolished (2026-07-21). Physics (force) tuning may return later as a real, wired feature (see BACKLOG).
 
 #### `HubRail` (left, collapsed default)
@@ -603,9 +614,9 @@ claim carrying the document it came from and the date a person last opened it (a
 cite says so (`harness.toolsUncited`) rather than rendering like the sourced rows); size against a
 documented cap, where the Codex bar measures the **merged** root + worst-nested `AGENTS.md`,
 because that is what Codex truncates and a per-file bar reads green while the merge is already
-being cut; byte status for the pairs the repository itself declares identical, with a difference
+being cut; reference byte comparisons between same-named tool guides, with a difference
 door (`harness.driftOpen`) that opens both complete files side by side under the row; and the file's modification time
-on this disk, labelled as that rather than as a commit date. Below the table the hook configs are
+on this disk, labelled as that rather than as a commit date. Comparison counts do not claim that the pairs match, and tool-specific differences are informational rather than a synchronization requirement. Below the table the hook configs are
 listed by script: wired (`harness.hookWired`) means the script the config names exists on disk, never that it runs
 — a script the config names and the disk does not have is called out, because that failure
 produces no error at all, and the Codex group carries its approval requirement (`harness.hookApprovalGate`) as a standing
@@ -1836,6 +1847,9 @@ Section labels are engraved (mono uppercase caption + hairline), matching the ce
 
 ### `/project/new` — Create (restructured 2026-07-27)
 
+Empty submission focuses the name and leaves the automatic address folded until it can be derived. Create-and-return confirms the saved project by name and offers a direct detail link, even when its list card is below the fold.
+
+
 Create is a **different screen from edit**, not the same one with fewer values. Creating asks for one thing — make a project — so the screen asks for exactly the four fields that make one, and nothing else is on top of them.
 
 - **Four essential fields, first screen, no scroll** — name · category · status · short description. Measured at 1512×950: name at y=292, category/status at y=395, description at y=472, primary action at y=698; the whole screen fits without scrolling (also verified at 1024 and 768).
@@ -2057,6 +2071,9 @@ The screen layout splits into two stages. First, **is this screen even in a stat
 When the screen first opens, only read-only tools are called (`git_status` / `git_diff` / `git_history`). Tools that change something (`git_init` · `git_set_remote` · `git_snapshot`) are executed only when the user presses their button (`onClick`).
 
 ### `/agents` — Agent (new 2026-08-20, catalog 90)
+
+Opening a conversation preserves the selected runner across the quick detection and subsequent login scan. A temporarily empty usable-runner list does not replace the requested tool with the first later result. The existing readiness and isolation checks still apply.
+
 
 **One sentence on what this screen does**: **Get · install · attach · fix · and start conversation with** the AI coding tool on this computer.
 
@@ -2541,6 +2558,7 @@ folder shows all eight.
 The phone tabs and the `G` keys read the same verdict.
 
 ### `AppSettingsMenu` (app shell + contextual page headers)
+- Accent swatches display their own existing palette under either selected app accent. Notification kinds wrap below their full-width explanation instead of compressing that explanation beside six controls.
 - The old 5-tab settings modal is now one compact settings sheet
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
   agent entry are scanned in one column. `LocaleSwitch` is an immediate screen

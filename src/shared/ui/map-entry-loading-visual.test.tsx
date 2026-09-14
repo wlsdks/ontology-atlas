@@ -20,7 +20,7 @@ describe('MapEntryLoadingVisual', () => {
       />,
     );
     const status = screen.getByRole('status');
-    expect(status).toHaveAttribute('aria-busy', 'true');
+    expect(status.closest('[aria-busy="true"]')).toBeNull();
     expect(status).toHaveAttribute('data-map-loading-layout', 'centered');
     expect(screen.getAllByTestId('brand-waiting-mark')).toHaveLength(1);
     expect(screen.getByTestId('brand-waiting-mark')).toHaveAttribute('aria-hidden', 'true');

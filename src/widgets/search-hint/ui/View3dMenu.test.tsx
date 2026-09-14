@@ -49,7 +49,7 @@ describe("View3dMenu — 보기 고르개", () => {
   it("눈에 보이는 것으로 부른다 — 화면에 「소유」·「결합」이 없다", () => {
     mount();
     expect(screen.getByText("원뿔")).toBeInTheDocument();
-    expect(screen.getByText("구름")).toBeInTheDocument();
+    expect(screen.getByText("뉴런")).toBeInTheDocument();
     expect(screen.queryByText("소유")).toBeNull();
     expect(screen.queryByText("결합")).toBeNull();
   });

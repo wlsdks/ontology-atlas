@@ -27,11 +27,11 @@ describe("SearchHint", () => {
     expect(picker).toHaveAccessibleName("3D view");
     expect(picker).toHaveAttribute(
       "title",
-      "Choose a map view. Current: Cloud.",
+      "Choose a map view. Current: Neural.",
     );
     // With 3D on, the chip names the arrangement: the indigo tint alone cannot
     // say which view this is once the labels fade and the choice survives a reload.
-    expect(picker).toHaveTextContent("Cloud");
+    expect(picker).toHaveTextContent("Neural");
   });
 
   it("reads 3D while the flat view is on", () => {

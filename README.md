@@ -190,6 +190,14 @@ What we decided *not* to build is [What this is not](#what-this-is-not).
 
 ### 1. Open a folder
 
+When several folders are known, the app opens a single list with **Open folder**
+and **Create new** above it. The page scrolls as a whole; folder rows keep their
+paths, last-use details, and recovery actions together.
+
+Choosing Map in the sidebar or with G M shows a live preparation scene,
+then reveals the first drawn frame. Section tabs use a flat shared treatment with
+a clear bottom selection indicator.
+
 Point the app at a directory of Markdown and it reads it in place. Ask it to
 start from your code instead, and it creates exactly one folder inside the
 project you picked:
@@ -262,12 +270,15 @@ parents, evidence and actions for an agent, from the same fact. Recent changes
 can narrow the map while keeping project and domain context, and Footprints
 record the order in which you opened concepts.
 
-![The current 3D picker in the installed macOS app, offering Flat for the ordinary 2D map, Cone for containment drawn as nested cones, and Cloud for clustering by what relates to what](docs/assets/readme/three-dimensional-views.png)
+![The installed macOS map picker offering Flat, Galaxy, Cone, Strata, and Neural, with the relation-driven Neural view behind it](docs/assets/readme/three-dimensional-views.png)
 
-Three spatial readings stay explicit rather than mixed: **Flat** is the normal 2D
-map, **Cone** hangs each parent's children on a cone with height as the
-containment tier, and **Cloud** lets relations determine all three axes. Changing
-the view never changes the graph.
+Five views keep their questions explicit: **Flat** is the normal 2D map and
+**Galaxy** shares its coordinates with a star-like presentation. **Cone** draws
+containment as nested cones, **Strata** separates kind tiers onto planes, and
+**Neural** groups related concepts in three dimensions with lit cell bodies and
+short connections. Keyboard focus remains visible while following related concepts,
+and Fit provides an explicit overview return on touch screens too. Every 3D view uses shallow, bounded relation curves shared by
+rendering and picking. Changing the view never changes the graph.
 
 ### 4. Gather and read documents in the Library
 
@@ -568,7 +579,8 @@ have documents and no code. Full contracts: the
 - **Not extensible by running other people's code.** There will be no third-party
   plugin runtime. Extension happens through MCP tools, agent skills, and files in
   your own vault — things a `git diff` shows you before they run.
-- **Not finished.** Every public build so far is a release candidate.
+- **Still evolving.** The [download page](https://ontologyatlas.com/en/download/)
+  records current release availability and platform status.
 
 ## Running from source
 

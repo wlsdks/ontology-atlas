@@ -3,6 +3,7 @@
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
+  type RefObject,
   useCallback,
   useEffect,
   useRef,
@@ -364,6 +365,8 @@ export interface OntologyMapDetailPanelProps {
   /** Hide this panel's filled action while another surface owns the primary next step. */
   suppressPrimaryAction?: boolean;
   onClose: () => void;
+  /** Stable keyboard destination when related-node navigation replaces this panel. */
+  closeButtonRef?: RefObject<HTMLButtonElement | null>;
   /**
    * S4 "Expand Domain" secondary discovery path — allows expanding the domain from the datasheet
    * in addition to the orbit button. Injected only for container nodes (with children) when outside a domain
@@ -710,7 +713,7 @@ function DetailActionMenu({
           size: "md",
           tone: "muted",
           className:
-            "border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)]",
+            "atlas-touch-floor atlas-touch-floor-wide border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)]",
         })}
       >
         {iconOnly ? <MoreHorizontal size={ICON_SIZE.md} aria-hidden /> : label}
@@ -920,6 +923,7 @@ export function OntologyMapDetailPanel({
   meaningReview,
   suppressPrimaryAction = false,
   onClose,
+  closeButtonRef,
   onEnterRealm,
   onOpenFullDetail,
   open,
@@ -1410,11 +1414,12 @@ export function OntologyMapDetailPanel({
               {labels.kindLabel}
             </span>
             <IconButton
+              ref={closeButtonRef}
               label={labels.close}
               size="sm"
               onClick={onClose}
               data-testid="map-detail-panel-close"
-              className="-mr-1 text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)] active:bg-[color:var(--map-panel-row-active)]"
+              className="atlas-touch-floor atlas-touch-floor-wide -mr-1 text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)] active:bg-[color:var(--map-panel-row-active)]"
             >
               <X size={ICON_SIZE.lg} />
             </IconButton>

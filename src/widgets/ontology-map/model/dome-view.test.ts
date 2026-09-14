@@ -19,7 +19,6 @@ import {
   DOME_PLANE,
   domeEgoWorldBounds,
   domeFocusYaw,
-  DOME_EDGE_BOW,
   DOME_HALO_MAX_PX,
   DOME_RING_ALPHA,
   DOME_RING_SAMPLES,
@@ -48,11 +47,9 @@ import {
   domeEdgeFogAlpha,
   domeEdgeWidthFactor,
   domeDetailFactor,
-  domeEdgeControl,
   domeFogAlpha,
   domeHaloPx,
   domeLineWidthFactor,
-  domeShellRadiusAtY,
   domeNearestYawTurn,
   domeTierRamp,
   domeWorldBounds,
@@ -464,83 +461,6 @@ describe("worldToScreen — 깊이 항이 없으면 출력이 종전과 동일�
 });
 
 /* ── 3D quality layer: shell · meridians · halo · latitude rings ─────────── */
-
-describe("돔 껍질 옆모습 — 볼록해야 자오선이 생긴다", () => {
-  it("꼭짓점 높이에서 0, 바닥 링 높이에서 바닥 반지름", () => {
-    expect(domeShellRadiusAtY(DOME_PLANE.project.y)).toBeCloseTo(0, 6);
-    expect(domeShellRadiusAtY(DOME_PLANE.element.y)).toBeCloseTo(DOME_PLANE.element.r, 6);
-  });
-
-  it("범위 밖은 양 끝으로 클램프된다 — 드래그로 평면 밖에 나간 노드도 해가 있다", () => {
-    expect(domeShellRadiusAtY(DOME_PLANE.project.y + 500)).toBeCloseTo(0, 6);
-    expect(domeShellRadiusAtY(DOME_PLANE.element.y - 500)).toBeCloseTo(DOME_PLANE.element.r, 6);
-  });
-
-  it("아래로 갈수록 단조 증가한다 — 껍질이 안으로 접히면 자오선이 뒤집힌다", () => {
-    let prev = -1;
-    for (let y = DOME_PLANE.project.y; y >= DOME_PLANE.element.y; y -= 4) {
-      const r = domeShellRadiusAtY(y);
-      expect(r).toBeGreaterThanOrEqual(prev);
-      prev = r;
-    }
-  });
-
-  /*
-   * `/gate-probe` — **the first implementation died exactly here.** With the
-   * shell as a linear interpolation between the four rings, the midpoint of a
-   * radial chord already lies on the shell, so the bulge is 0 and the screen
-   * shows a tent rather than a dome. The other assertions would have been green
-   * through that: linear interpolation satisfies both monotonic increase and the
-   * two endpoint values. Only convexity catches that failure.
-   */
-  it("링 사이에서 링 반지름보다 바깥에 있다 — 볼록(= 선형 보간이 아니다)", () => {
-    expect(domeShellRadiusAtY(DOME_PLANE.domain.y)).toBeGreaterThan(DOME_PLANE.domain.r);
-    expect(domeShellRadiusAtY(DOME_PLANE.capability.y)).toBeGreaterThan(DOME_PLANE.capability.r);
-  });
-});
-
-describe("자오선 제어점 — 관계선이 돔 속을 가로지르지 않는다", () => {
-  const model = {
-    arrangement: "ownership" as const,
-    centerX: 0,
-    centerY: 0,
-    unit: 1,
-    circles: [],
-    coords: new Map([
-      ["apex", { px: 0, py: DOME_PLANE.project.y, pz: 0 }],
-      ["ring", { px: DOME_PLANE.domain.r, py: DOME_PLANE.domain.y, pz: 0 }],
-      ["ringOpposite", { px: -DOME_PLANE.domain.r, py: DOME_PLANE.domain.y, pz: 0 }],
-    ]),
-  };
-
-  it("꼭짓점 → 링 관계선의 제어점이 현의 중점보다 바깥에 있다", () => {
-    const control = domeEdgeControl(model, "apex", "ring");
-    expect(control).not.toBeNull();
-    const chordMidR = DOME_PLANE.domain.r / 2;
-    expect(Math.hypot(control!.px, control!.pz)).toBeGreaterThan(chordMidR);
-  });
-
-  it("2차 베지어의 중점이 껍질에 닿는다 — 제어점을 2배로 미는 계약", () => {
-    const control = domeEdgeControl(model, "apex", "ring")!;
-    // At t=0.5 this is (A + 2C + B)/4.
-    const midX = (0 + 2 * control.px + DOME_PLANE.domain.r) / 4;
-    const midZ = (0 + 2 * control.pz + 0) / 4;
-    const midY = (DOME_PLANE.project.y + 2 * control.py + DOME_PLANE.domain.y) / 4;
-    expect(Math.hypot(midX, midZ)).toBeCloseTo(domeShellRadiusAtY(midY) * DOME_EDGE_BOW, 0);
-  });
-
-  it("마주 본 두 노드는 축을 관통하지 않는다 — 방위 합이 0 이면 휘지 않는다", () => {
-    const control = domeEdgeControl(model, "ring", "ringOpposite");
-    expect(control).not.toBeNull();
-    // Exact antipodes give no push direction → the chord midpoint stands; no arbitrary direction is picked.
-    expect(control!.px).toBeCloseTo(0, 6);
-    expect(control!.pz).toBeCloseTo(0, 6);
-  });
-
-  it("좌표가 없는 노드 쌍은 null — 호출부가 2D 제어점으로 떨어진다", () => {
-    expect(domeEdgeControl(model, "apex", "nope")).toBeNull();
-  });
-});
 
 describe("깊이 헤일로 — 가까운 것이 먼 것을 가린다", () => {
   it("가까울수록 넓고 멀수록 0 으로 수렴한다", () => {
@@ -994,10 +914,7 @@ describe("결합 구름 — 관계가 자리를 정한다", () => {
     expect(runtime.rings).toHaveLength(0);
   });
 
-  it("구름에는 껍질 휨이 없다 — 휘게 할 겉면이 없다", () => {
-    const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });
-    expect(domeEdgeControl(cloud, "a1", "a2")).toBeNull();
-  });
+
 });
 
 describe("콘 트리 — 자식은 부모 바로 아래 원 위에 놓인다 (2026-09-02)", () => {
@@ -1101,13 +1018,7 @@ describe("콘 트리 — 자식은 부모 바로 아래 원 위에 놓인다 (20
     expect(a.circles).toEqual(b.circles);
   });
 
-  it("담김 선은 곧고 관계선만 휜다 — 원뿔의 모서리는 직선이다", () => {
-    const m = buildDomeModel(tree);
-    expect(domeEdgeControl(m, "p", "d-big", "contains")).toBeNull();
-    expect(domeEdgeControl(m, "d-big", "d-mid", "depends")).not.toBeNull();
-    // Omitted kind keeps the bow — the older callers and the meridian tests above.
-    expect(domeEdgeControl(m, "d-big", "d-mid")).not.toBeNull();
-  });
+
 });
 
 describe("배치 모핑 — 전환은 컷이 아니라 이동이다 (2026-09-02)", () => {
@@ -1407,25 +1318,7 @@ describe("Strata — four labelled planes, and drops that cannot cross (2026-09-
     expect(Math.max(arc("c-a1"), arc("c-a2"))).toBeLessThan(Math.min(arc("c-b1"), arc("c-b2")));
   });
 
-  it("draws a containment drop straight — its control point is the chord's own midpoint", () => {
-    const model = buildDomeModel(tree, { arrangement: "strata" });
-    const control = domeEdgeControl(model, "d-a", "c-a1", "contains");
-    const a = model.coords.get("d-a")!;
-    const b = model.coords.get("c-a1")!;
-    expect(control).not.toBeNull();
-    expect(control!.px).toBeCloseTo((a.px + b.px) / 2, 12);
-    expect(control!.py).toBeCloseTo((a.py + b.py) / 2, 12);
-    expect(control!.pz).toBeCloseTo((a.pz + b.pz) / 2, 12);
-    // A dependency still rides the shell, exactly as on the cone.
-    const depends = domeEdgeControl(model, "c-a1", "c-b1", "depends");
-    expect(depends).not.toBeNull();
-    expect(Math.hypot(depends!.px, depends!.pz)).toBeGreaterThan(
-      Math.hypot((a.px + b.px) / 2, (a.pz + b.pz) / 2),
-    );
-    // The cone leaves containment on its 2D control point, as before.
-    const cone = buildDomeModel(tree, { arrangement: "ownership" });
-    expect(domeEdgeControl(cone, "d-a", "c-a1", "contains")).toBeNull();
-  });
+
 
   it("gives its plane rings their own base opacity, and leaves the cone's bases on theirs", () => {
     expect(domeRingAlphaFor("strata")).toBe(DOME_STRATA_RING_ALPHA);

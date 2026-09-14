@@ -18,7 +18,7 @@ import { waitFrames } from "./settle";
 const DESTINATIONS = [
   { key: "m", path: "/topology" },
   { key: "r", path: "/architecture" },
-  { key: "d", path: "/docs" },
+  { key: "d", path: "/library" },
   // Library, 2026-09-06. MCP had been missing from this list since 2026-09-05 — the one
   // proof that a destination can be reached without a pointer, and two destinations were
   // not in it. Both are here now.
@@ -66,7 +66,11 @@ test.describe("목적지 이동 단축키", () => {
     await page.waitForLoadState("domcontentloaded");
 
     for (const { key, path } of DESTINATIONS) {
-      const expected = new RegExp(`/ko${path.replace(/\//g, "\\/")}/?($|\\?)`);
+      // G D is the published Docs alias; await its canonical Library destination,
+      // including the Ontology tab, rather than racing the intermediate /docs URL.
+      const expected = key === "d"
+        ? /\/ko\/library\/(?=[^#]*[?&]tab=ontology(?:&|$))/
+        : new RegExp(`/ko${path.replace(/\//g, "\\/")}/?($|\\?)`);
       /*
        * **Retry once.** Some blocking surfaces mount on arrival, so one can appear
        * between the dismissal check and the key press. The first attempt is then

@@ -30,6 +30,8 @@ import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { AgentMascotPresence } from "@/features/agent-activity";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
+import { MapNavigationOverlay } from "./MapNavigationOverlay";
+import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/map-navigation-pending";
 import { useHydrated } from "@/shared/lib/use-hydrated";
 
 /**
@@ -133,6 +135,7 @@ function useGuideOverride(): void {
 function ShellColumn({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   const surface = resolveActiveNavDestination(pathname);
+  const mapPending = useMapNavigationPending();
 
   // Which screens get a destination guide. The map is excluded because it owns its
   // own eight-step journey, and projects gets one **only on the list** — the rail
@@ -195,12 +198,16 @@ function ShellColumn({ children }: { children: ReactNode }) {
         <div
           data-testid="app-shell-body-slot"
           data-app-shell-pane=""
+          inert={mapPending !== null}
+          aria-busy={mapPending !== null}
+          aria-hidden={mapPending !== null ? true : undefined}
           className="flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0"
         >
           <VaultRouteIdentityBoundary pathname={pathname}>
             {children}
           </VaultRouteIdentityBoundary>
         </div>
+        <MapNavigationOverlay />
       </div>
 
       {/* First-visit guide per destination (2026-07-26). The shell owns it because
@@ -390,6 +397,11 @@ function AppNavRailSlot() {
    */
   useDestinationShortcuts({
     navigate: (href, id) => {
+      if (id === "map" && resolveActiveNavDestination(pathname) !== "map") {
+        beginMapNavigation(() => router.push(href), pathname + window.location.search, true);
+        return;
+      }
+      cancelMapNavigation();
       router.push(href);
       /*
        * The map is **not done once you arrive** — the canvas needs focus before arrow

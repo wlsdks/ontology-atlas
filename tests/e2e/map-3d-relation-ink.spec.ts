@@ -95,7 +95,7 @@ const RATIOS = [2, 1] as const;
 const ARRANGEMENTS = [
   { key: "ownership", name: "Cone", containsFloor: 1.9, dependsFloor: 1.4 },
   { key: "strata", name: "Strata", containsFloor: 1.9, dependsFloor: 1.4 },
-  { key: "coupling", name: "Cloud", containsFloor: 1.9, dependsFloor: 1.4 },
+  { key: "coupling", name: "Neural", containsFloor: 1.9, dependsFloor: 1.4 },
 ] as const;
 
 async function open3d(page: Page, arrangement: string) {

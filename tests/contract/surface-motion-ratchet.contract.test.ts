@@ -273,7 +273,21 @@ const BASELINE_HARD_CUTS = 0;
  * trigger. `a11y-open-surfaces.spec.ts` creates the protocol-level work state, presses
  * the trigger, requires the region to be visible, and measures its content.
  */
-const BASELINE_APPEARING_SURFACES = 45;
+/*
+ * 45 -> 46 (2026-09-14): the returning-folder chooser groups creation locations in
+ * one anchored Surface. The owner selected this instead of three cards below a
+ * nested scrolling list. Its trigger needs multiple local folder records, so
+ * folder-chooser-layout.spec.ts seeds five real handles, opens the disclosure,
+ * measures it with axe, and verifies Escape plus cancellation back to the list.
+ * The source census failed at 45 before this explicit inventory update.
+ */
+/*
+ * 46 -> 47 (2026-09-14): map navigation now owns a live pending Surface outside
+ * the captured route pane. map-navigation-wait.spec.ts proves pending precedes
+ * navigation, completion reveals a canvas, keyboard focus survives, and leaving
+ * cancels the queued map push. The source census rejected this addition at 46.
+ */
+const BASELINE_APPEARING_SURFACES = 47;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';
