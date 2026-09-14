@@ -14,7 +14,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.76.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.77.0",
         "args": []
       }
     },
@@ -132,7 +132,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.148.0",
+        "package": "@tencent-ai/codebuddy-code@2.150.0",
         "args": [
           "--acp"
         ]
@@ -255,7 +255,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.5.1",
+        "package": "dimcode@0.5.2",
         "args": [
           "acp"
         ]
@@ -291,7 +291,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.216.0",
+        "package": "droid@0.218.1",
         "args": [
           "exec",
           "--output-format",
@@ -415,7 +415,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.28",
+        "package": "@xai-official/grok@1.0.30",
         "args": [
           "agent",
           "stdio"
@@ -509,6 +509,24 @@
       "launch": {
         "kind": "binary",
         "command": "kimi",
+        "args": [
+          "acp"
+        ]
+      }
+    },
+    {
+      "id": "minimax-code",
+      "name": "MiniMax Code",
+      "description": "MiniMax Code is an AI coding agent with Agent Client Protocol support.",
+      "website": "https://agent.minimax.io",
+      "license": "MIT",
+      "verified": false,
+      "icon": "/acp-icons/minimax-code.svg",
+      "brandInk": null,
+      "cli": null,
+      "launch": {
+        "kind": "npx",
+        "package": "@minimax-ai/code@0.2.7",
         "args": [
           "acp"
         ]
