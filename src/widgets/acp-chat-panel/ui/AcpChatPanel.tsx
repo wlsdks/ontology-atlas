@@ -1,6 +1,6 @@
 'use client';
 
-import type { AcpTurnStart, AcpTurnCompletion } from '@/features/acp-session';
+import type { AcpTurnStart, AcpTurnCompletion, TaskBaselineCaptureResult } from '@/features/acp-session';
 
 import {
   ArrowUp,
@@ -28,6 +28,7 @@ import { useTranslations } from 'next-intl';
 
 import { Chip, Disclosure, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
 import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
+import { Button } from '@/shared/ui/button';
 import { formatDate } from '@/shared/lib/format-date';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
@@ -86,6 +87,7 @@ import { AcpPresentationPanel } from './AcpPresentationPanel';
 import { groupEvents } from './group-events';
 import { splitAppRequest } from './request-parts';
 import { isVaultTool, toolLabel } from './tool-label';
+import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 
 /**
  * Markdown inside the conversation — one set of values tuned to **chat density**.
@@ -305,6 +307,7 @@ export function AcpChatPanel({
   onOntologyRelationPreviewChange,
   onWorkReceipt,
   onTurnStarted,
+  captureTaskBaseline,
 }: {
   runtimeId: string;
   runtimeLabel: string;
@@ -455,6 +458,7 @@ export function AcpChatPanel({
   /** Durable local summary of each ontology-write allow/reject and terminal result. */
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
   onTurnStarted?: (start: AcpTurnStart) => ((completion: AcpTurnCompletion) => void | Promise<void>) | null;
+  captureTaskBaseline?: (turn: AcpTurnStart) => Promise<TaskBaselineCaptureResult>;
 }) {
   const t = useTranslations('acpChat');
   const reducedMotion = usePrefersReducedMotion();
@@ -502,7 +506,15 @@ export function AcpChatPanel({
     resumeLatest,
     onWorkReceipt,
     onTurnStarted: captureTurnStart,
+    captureTaskBaseline,
     autoDecide,
+  });
+  const taskMeaningReview = useTaskMeaningReview({
+    pending,
+    runtimeId,
+    vaultRoot,
+    captureTaskBaseline,
+    events,
   });
   const pendingChangeSet = useMemo(
     () =>
@@ -883,6 +895,25 @@ export function AcpChatPanel({
         : null,
     [pendingHeld],
   );
+  const [deferredPermission, setDeferredPermission] = useState<typeof pending>(null);
+  const livePendingRef = useRef(pending);
+  useLayoutEffect(() => { livePendingRef.current = pending; }, [pending]);
+  const permissionDeferred = pending !== null && deferredPermission === pending;
+  const requestCorrection = () => {
+    // An exiting card must never answer a replacement request or overwrite its draft.
+    if (!pendingHeld || livePendingRef.current !== pendingHeld) return;
+    const rejected = pendingHeld.request.options.find((option) => option.kind === 'reject_once');
+    const correction = t('permission.correctionDraft', {
+      task: pendingHeld.origin?.task?.outcome ?? pendingHeld.origin?.turn?.text ?? '',
+      target: pendingHeldChangeSet?.items.map((item) => item.target).join(', ') ?? pendingHeld.request.toolName ?? '',
+      requestId: String(pendingHeld.request.requestId ?? pendingHeld.request.toolCallId ?? ''),
+    });
+    livePendingRef.current = null;
+    pendingHeld.resolve(rejected?.optionId ?? null);
+    setDeferredPermission(null);
+    setDraft((existing) => existing.trim() ? `${existing}\n\n${correction}` : correction);
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  };
 
   useEffect(() => {
     if (!sessionEnabled) return;
@@ -1718,20 +1749,34 @@ export function AcpChatPanel({
         1040×720 window. A checkpoint whose only two answers are unreachable is not a checkpoint;
         it is a wall.
 
-        `shrink-0` keeps it from being squeezed by the transcript above, `max-h-[45%]` keeps it
-        from taking the panel, and the scroll lives **inside** the card so the buttons — which sit
-        after the scroller, not in it — never leave the frame.
+        `shrink-0` keeps it from being squeezed by the transcript above. The old 45% ceiling left
+        only about 60px for task, depth and summary after fixed authority/intervention rows were
+        added. A bounded 70% keeps the composer plus a transcript foothold while giving the review
+        enough room for its principal task context. The scroll lives **inside** the card so the
+        fixed states and buttons never leave the frame.
       */}
       <Surface
         open={Boolean(pending)}
         origin="bottom center"
         motion="overlay"
-        className="max-h-[45%] shrink-0"
+        className="max-h-[70%] shrink-0"
       >
-        {pendingHeld ? (
+        {permissionDeferred ? (
+          <div className="flex items-center gap-2 rounded-panel border border-[color:var(--color-divider)] p-[var(--card-pad)]" data-testid="acp-permission-deferred">
+            <p className="min-w-0 flex-1 text-caption text-[color:var(--color-text-secondary)]">{t('permission.deferredNotice')}</p>
+            <Button variant="outline" size="sm" onClick={() => setDeferredPermission(null)}>
+              {t('permission.resumeReview')}
+            </Button>
+          </div>
+        ) : pendingHeld ? (
           <AcpPermissionCard
             vaultPath={vaultRoot}
             pending={pendingHeld}
+            taskReview={taskMeaningReview}
+            onRequestCorrection={pendingHeld.request.reviewKind === 'ontology-write' ? requestCorrection : undefined}
+            onDefer={pendingHeld.request.reviewKind === 'ontology-write' ? () => {
+              if (livePendingRef.current === pendingHeld) setDeferredPermission(pendingHeld);
+            } : undefined}
             writeVerdict={judgeWrite ? judgeWrite(pendingHeld.request) : null}
             changeSet={pendingHeldChangeSet}
             activeItemIndex={
@@ -1853,6 +1898,7 @@ export function AcpChatPanel({
             value={draft}
             disabled={!canType}
             style={{
+              minHeight: 'var(--touch-target-min)',
               // Growth is **surface movement** — it rides the app's shared ramp.
               transitionProperty: 'height',
               transitionDuration: 'var(--motion-base)',
@@ -2049,6 +2095,8 @@ export function AcpChatPanel({
               ) : null}
               <Tooltip content={t('newChat')} withProvider={false} side="top">
                 <IconButton
+                  className="atlas-touch-floor"
+                  style={{ minWidth: 'var(--touch-target-min)', minHeight: 'var(--touch-target-min)' }}
                   size="lg"
                   label={t('newChat')}
                   data-testid="acp-chat-new"
@@ -2068,6 +2116,12 @@ export function AcpChatPanel({
               <Chip size="md" tone="secondary" data-testid="acp-chat-stop" onClick={() => {
                 // Cancellation is requested now; protocol completion still waits for the adapter.
                 setCancelledWaitTurnId(events[lastUserEventIndex]?.id ?? null);
+                // A deferred write still has a live permission promise. Answer it before
+                // notifying the adapter, so cancellation cannot strand a hidden request.
+                const request = livePendingRef.current;
+                livePendingRef.current = null;
+                request?.resolve(null);
+                setDeferredPermission(null);
                 cancel();
               }}>
                 <Square size={ICON_SIZE.sm} aria-hidden />

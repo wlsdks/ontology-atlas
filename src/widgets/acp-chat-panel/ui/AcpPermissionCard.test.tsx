@@ -1,9 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
 import { AcpPermissionCard } from './AcpPermissionCard';
+import type { TaskMeaningReviewController } from '../model/use-task-meaning-review';
 
 const KO = koMessages.acpChat.permission;
 
@@ -162,6 +163,224 @@ describe('온톨로지 쓰기 검토 — 한 번의 정확한 결정만 제공�
     expect(review.textContent).toContain('depends_on');
     expect(review.textContent).toContain('domains/graph-modeling');
     expect(screen.queryByTestId('acp-permission-allow-always')).toBeNull();
+  });
+});
+
+describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 섞지 않는다', () => {
+  function taskCard(
+    resolve = vi.fn(),
+    taskReview?: TaskMeaningReviewController,
+    actions: { onRequestCorrection?: () => void; onDefer?: () => void } = {},
+  ) {
+    return {
+      resolve,
+      view: (
+        <NextIntlClientProvider locale="ko" messages={koMessages}>
+          <AcpPermissionCard
+            taskReview={taskReview}
+            vaultPath="/vault"
+            {...actions}
+            pending={{
+              request: {
+                requestId: 0,
+                sessionId: 'session-1',
+                title: 'mcp__atlas-vault__patch_concept',
+                toolCallId: 'tool-task-review',
+                toolName: 'mcp__atlas-vault__patch_concept',
+                toolKind: 'other',
+                filePath: null,
+                reviewKind: 'ontology-write',
+                rawInput: {
+                  slug: 'capabilities/refund',
+                  expected_mtime: 100,
+                  frontmatter: {
+                    title: 'Refund eligibility',
+                    description: 'Review a bounded refund policy.',
+                    status: 'proposed',
+                    dependencies: ['capabilities/ledger'],
+                    relates: ['capabilities/notifications'],
+                    relation_notes: {
+                      'capabilities/ledger': 'Refund eligibility depends on the recorded ledger state.',
+                      'capabilities/notifications': 'Notification delivery remains a separate responsibility.',
+                    },
+                  },
+                  body: '## Definition\n\nRefund eligibility for a captured payment.\n\n```md\n## Excludes\nThis heading is quoted data, not a section boundary.\n```\n\n## Includes\n\n- Refund only after capture.\n\n## Excludes\n\n- Do not retry a settled refund.\n\n## Uncertainty\n\nTransport delivery is unknown.\n',
+                },
+                options: [
+                  { optionId: 'reject', kind: 'reject_once', name: '거절' },
+                  { optionId: 'allow', kind: 'allow_once', name: '허용' },
+                ],
+              },
+              origin: {
+                sessionGeneration: 3,
+                turn: { sessionId: 'session-1', vaultRoot: '/vault', userEventId: 'user-event-7', text: '환불 자격 조건을 바꿔줘' },
+                task: { outcome: '환불 자격 조건을 바꿔줘', nonGoals: null, structure: 'unstructured' },
+                taskBaseline: null,
+              },
+              resolve,
+            }}
+          />
+        </NextIntlClientProvider>
+      ),
+    };
+  }
+
+  it('작업과 정확한 제안 범위를 먼저 보이고 의미 검토가 미완료라고 말한다', () => {
+    const { view } = taskCard();
+    render(view);
+    expect(screen.getByTestId('task-review-outcome-compact')).toHaveTextContent('환불 자격 조건을 바꿔줘');
+    expect(screen.getByTestId('task-review-task').tagName).toBe('DETAILS');
+    expect(document.getElementById('acp-permission-body')).toHaveClass('sr-only');
+    fireEvent.click(screen.getByTestId('task-review-action-scope').querySelector('summary')!);
+    expect(screen.getByTestId('task-review-action-scope')).toHaveTextContent(koMessages.acpChat.permission.ontologyWriteUnverifiedBody);
+    fireEvent.click(screen.getByTestId('task-review-task').querySelector('summary')!);
+    expect(screen.getByTestId('task-review-outcome')).toHaveTextContent('환불 자격 조건을 바꿔줘');
+    expect(screen.getByText(koMessages.acpChat.permission.taskReview.nonGoalsUnstructured)).toBeVisible();
+    expect(screen.getByTestId('task-review-summary')).toHaveTextContent('capabilities/refund');
+    expect(screen.getByTestId('task-review-summary')).toHaveTextContent('Refund only after capture.');
+    expect(screen.getByTestId('task-review-summary')).toHaveTextContent('This heading is quoted data, not a section boundary.');
+    expect(screen.getByTestId('task-review-summary')).not.toHaveTextContent('## Definition');
+    expect(screen.getByTestId('task-review-summary')).toHaveTextContent('Transport delivery is unknown.');
+    expect(screen.getByTestId('task-review-summary')).toHaveTextContent('Refund eligibility depends on the recorded ledger state.');
+    expect(screen.getByTestId('task-review-coverage')).toHaveTextContent('미완료');
+    expect(screen.getByTestId('task-review-coverage')).toHaveTextContent('6개 중 5개');
+    expect(screen.getByTestId('task-review-coverage')).toHaveTextContent('생략 1개');
+    expect(screen.queryByTestId('acp-ontology-change-review')).not.toBeInTheDocument();
+    expect(screen.getByTestId('acp-permission-allow').className).toContain('atlas-touch-floor');
+    expect(screen.getByTestId('acp-permission-allow').className).not.toContain('bg-[color:var(--color-indigo-accent)]');
+  });
+
+  it('작업 검토는 증거 머리말에서 시작하고 다음 Tab이 작업 공개로 간다', () => {
+    const { view } = taskCard();
+    render(view);
+    expect(document.activeElement).toBe(screen.getByTestId('task-review-heading'));
+    fireEvent.keyDown(document.activeElement!, { key: 'Tab' });
+    const disclosure = screen.getByTestId('task-review-task').querySelector('summary');
+    disclosure?.focus();
+    expect(document.activeElement).toBe(disclosure);
+    expect(document.activeElement).not.toBe(screen.getByTestId('acp-permission-allow'));
+  });
+
+  it('비교는 신뢰할 이전 값이 없다고 하고 제안값은 그대로 보인다', () => {
+    const { view } = taskCard();
+    render(view);
+    fireEvent.click(screen.getByTestId('task-review-depth-compare'));
+    const compare = screen.getByTestId('task-review-compare');
+    expect(compare).toHaveTextContent(koMessages.acpChat.permission.taskReview.beforeUnavailable);
+    expect(compare).toHaveTextContent('Refund only after capture.');
+    expect(compare).toHaveTextContent(koMessages.acpChat.permission.taskReview.beforeUnknown);
+  });
+
+  it('상세에서 전체 요청과 쓰기 조건·숫자 요청 id를 보존한다', () => {
+    const { view } = taskCard();
+    render(view);
+    fireEvent.click(screen.getByTestId('task-review-depth-details'));
+    expect(screen.getByTestId('acp-ontology-change-review')).toBeVisible();
+    const details = screen.getByTestId('task-review-details');
+    fireEvent.click(within(details).getByText(koMessages.acpChat.permission.taskReview.provenance));
+    const requestId = within(details).getByText('0');
+    expect(requestId).toHaveAttribute('data-request-id-type', 'number');
+    expect(details).toHaveTextContent('expected_mtime');
+  });
+
+  it('네 권한은 모두 unknown이고 이번만 허용은 의미 승인으로 바꾸지 않는다', () => {
+    const { view, resolve } = taskCard();
+    render(view);
+    for (const authority of ['meaning', 'code', 'merge', 'deployment']) {
+      expect(screen.getByTestId(`task-review-authority-${authority}`)).toHaveTextContent('알 수 없음');
+    }
+    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    expect(resolve).toHaveBeenCalledWith('allow');
+    expect(screen.queryByText(/승인됨|검증됨|배포됨/)).not.toBeInTheDocument();
+  });
+
+  it('신뢰 비교를 보여 주고 의미 승인 중에도 거절은 남기며 쓰기 권한을 실행하지 않는다', async () => {
+    let finish!: (value: boolean) => void;
+    const markMeaningAccepted = vi.fn(() => new Promise<boolean>((resolve) => { finish = resolve; }));
+    const controller: TaskMeaningReviewController = {
+      status: 'ready', requestKey: 'opaque-request', reasons: [],
+      items: [{
+        id: 'claim:condition', claimId: 'body', field: 'body', facet: 'condition', kind: 'changed',
+        before: { present: true, value: 'Refund only after settlement.' },
+        after: { present: true, value: 'Refund only after capture.' },
+        sourceRefs: [], counterevidence: [], unknowns: [], meaningImpact: 'review-required',
+      }],
+      coverage: { total: 1, inspected: 1, omitted: 0, complete: true },
+      proposal: null,
+      historicalBasis: { meaningBasis: 'meaning:before', sourceBasisId: 'source:before' },
+      currentBasis: { meaningBasis: 'meaning:current', sourceBasisId: 'source:current' },
+      meaningStatus: 'unreviewed', executionBlocked: false, actualReportedRoot: null,
+      guardStatus: 'verified', markMeaningAccepted,
+    };
+    const { view, resolve } = taskCard(vi.fn(), controller);
+    render(view);
+    expect(screen.getByTestId('task-review-authority-meaning')).toHaveTextContent('검토 대기');
+    fireEvent.click(screen.getByTestId('task-review-depth-compare'));
+    const compare = screen.getByTestId('task-review-compare');
+    expect(compare).toHaveTextContent('Refund only after settlement.');
+    expect(compare).toHaveTextContent('Refund only after capture.');
+
+    fireEvent.click(screen.getByTestId('task-review-depth-details'));
+    expect(screen.getByText(koMessages.ontologyChangeReview.requestValuesRaw)).toBeVisible();
+    expect(screen.queryByText(koMessages.ontologyChangeReview.afterValuesOnly)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('ontology-change-review-field-toggle'));
+    const acknowledgement = screen.getByRole('checkbox', { name: /요청 항목 1개 전체/ });
+    await waitFor(() => expect(acknowledgement).not.toBeDisabled());
+    fireEvent.click(acknowledgement);
+    fireEvent.click(screen.getByTestId('task-review-accept-meaning'));
+    expect(markMeaningAccepted).toHaveBeenCalledWith({ acknowledgeFullScope: true });
+    expect(resolve).not.toHaveBeenCalled();
+    expect(screen.getByTestId('acp-permission-allow')).toBeDisabled();
+    expect(screen.getByTestId('acp-permission-reject')).not.toBeDisabled();
+    finish(true);
+    await waitFor(() => expect(screen.getByTestId('acp-permission-allow')).not.toBeDisabled());
+  });
+
+  it('근거를 불러오는 동안 허용은 막고 거절은 계속 제공한다', () => {
+    const loading: TaskMeaningReviewController = {
+      status: 'loading', requestKey: 'opaque-loading', reasons: [], items: [],
+      coverage: { total: 0, inspected: 0, omitted: 0, complete: false },
+      proposal: null, historicalBasis: null, currentBasis: null, meaningStatus: 'unknown',
+      executionBlocked: false, actualReportedRoot: null, guardStatus: 'unknown',
+      markMeaningAccepted: vi.fn(async () => false),
+    };
+    render(taskCard(vi.fn(), loading).view);
+    expect(screen.getByTestId('acp-permission-allow')).toBeDisabled();
+    expect(screen.getByTestId('acp-permission-reject')).not.toBeDisabled();
+    expect(screen.getByTestId('task-review-authority-meaning')).toHaveTextContent('알 수 없음');
+  });
+
+  it('관찰된 연결 루트가 다를 때만 쓰기와 의미 승인을 막고 정확한 두 루트를 말한다', () => {
+    const mismatch: TaskMeaningReviewController = {
+      status: 'unavailable', requestKey: 'opaque-mismatch', reasons: ['connection_root_mismatch'], items: [],
+      coverage: { total: 0, inspected: 0, omitted: 0, complete: false },
+      proposal: null, historicalBasis: null, currentBasis: null, meaningStatus: 'unknown',
+      executionBlocked: true, actualReportedRoot: '/other-vault', guardStatus: 'unknown',
+      markMeaningAccepted: vi.fn(async () => false),
+    };
+    render(taskCard(vi.fn(), mismatch).view);
+    const warning = screen.getByTestId('task-review-root-mismatch');
+    expect(warning).toHaveTextContent('/other-vault');
+    expect(warning).toHaveTextContent('/vault');
+    expect(screen.getByTestId('acp-permission-allow')).toBeDisabled();
+    expect(screen.getByTestId('acp-permission-reject')).not.toBeDisabled();
+    fireEvent.click(screen.getByTestId('task-review-depth-details'));
+    expect(screen.queryByTestId('task-review-accept-meaning')).not.toBeInTheDocument();
+  });
+
+  it('수정과 대기는 쓰기 권한을 해결하지 않고 각 부모 동작만 요청한다', () => {
+    const onRequestCorrection = vi.fn();
+    const onDefer = vi.fn();
+    const { view, resolve } = taskCard(vi.fn(), undefined, { onRequestCorrection, onDefer });
+    render(view);
+    fireEvent.click(screen.getByTestId('task-review-correct'));
+    expect(onRequestCorrection).toHaveBeenCalledTimes(1);
+    expect(resolve).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('task-review-defer'));
+    expect(onDefer).toHaveBeenCalledTimes(1);
+    expect(resolve).not.toHaveBeenCalled();
+    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('자동으로 보내지 않습니다');
+    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('저장되지 않습니다');
   });
 });
 

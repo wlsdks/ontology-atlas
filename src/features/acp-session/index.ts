@@ -8,6 +8,8 @@ export type { ChatSuggestion } from "./model/chat-suggestions";
 export { useAcpSession } from "./model/use-acp-session";
 export type { AcpEvent, PendingPermission } from "./model/use-acp-session";
 export type { AcpTurnStart, AcpTurnCompletion } from './model/use-acp-session';
+export { captureTaskBaseline } from './model/task-baseline';
+export type { TaskBaselineCaptureRequest, TaskBaselineCaptureResult, TaskBaselineSourceInspection } from './model/task-baseline';
 export { ANALYSIS_FINDINGS_INSTRUCTION, analysisGraphFromInsight, currentAnalysisBasis } from './model/analysis-capture';
 export type { AnalysisCaptureContext, AnalysisSaveState } from './model/analysis-capture';
 export { useAnalysisCapture } from './model/use-analysis-capture';
@@ -21,6 +23,7 @@ export { withoutErrorEcho } from "./model/error-echo";
 export { linkSlugs } from "./model/link-slugs";
 export { readToolFallbackTarget, readToolTargets } from "./model/tool-targets";
 export { readToolOutcome } from "./model/tool-outcome";
+export { parseAtlasToolCall } from './model/atlas-tool-call';
 export { deriveAcpMapIntent } from "./model/map-intent";
 export type { AcpMapIntent } from "./model/map-intent";
 export {

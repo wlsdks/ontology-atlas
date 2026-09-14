@@ -3,6 +3,7 @@ import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TURN_SILENCE_LIMIT_MS } from '@/features/acp-session/model/turn-liveness';
+import type { TaskBaselineCaptureResult } from '@/features/acp-session';
 
 /**
  * A fake bridge — it imitates the protocol round trip with no real process.
@@ -144,6 +145,14 @@ function answerFor(id: number) {
   return (answer?.result as { outcome?: { outcome?: string; optionId?: string } })?.outcome;
 }
 
+async function startUserTurn(text: string) {
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: text } });
+  fireEvent.click(screen.getByTestId('acp-chat-send'));
+  await waitFor(() =>
+    expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'thinking'),
+  );
+}
+
 /** The work detail is collapsed by default. Checks that measure a tool row expand it explicitly first. */
 afterEach(() => {
   cleanup();
@@ -159,6 +168,17 @@ afterEach(() => {
 });
 
 describe('대화 패널 — 일어난 일만 그린다', () => {
+  it('forwards and awaits task baseline capture before prompting the agent', async () => {
+    let release!: (value: TaskBaselineCaptureResult) => void;
+    const captureTaskBaseline = vi.fn(() => new Promise<TaskBaselineCaptureResult>((resolve) => { release = resolve; }));
+    await bootSession({ captureTaskBaseline });
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Review this task' } });
+    fireEvent.click(screen.getByRole('button', { name: 'send' }));
+    await waitFor(() => expect(captureTaskBaseline).toHaveBeenCalledTimes(1));
+    expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(false);
+    release({ status: 'unavailable', capturedAt: 'now', vaultId: '/vault', scope: { requestedSlugs: [], capturedSlugs: [] }, counts: { requested: 0, captured: 0, bytes: 0 }, sourceUnavailableReasons: [], reasons: ['empty_scope'], documents: [], meaningBasis: null, sourceBasis: null });
+    await waitFor(() => expect(bridge.sent.some((message) => message.method === 'session/prompt')).toBe(true));
+  });
   it('재 보지 않은 작업 방식은 안전한 것처럼 보이지 않는다', async () => {
     render(
       <AcpChatPanel
@@ -962,6 +982,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await bootSession({
       onOntologyRelationPreviewChange: (preview) => previews.push(preview),
     });
+    await startUserTurn('관계 변경을 검토해줘');
     emit(
       mcpPermissionRequest('mcp__atlas-vault__add_relation', 91, {
         from: 'capabilities/contextual-editing',
@@ -976,6 +997,88 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await waitFor(() => expect(previews.at(-1)).toBeNull());
     expect(previews.some((preview) => preview?.phase === 'committing')).toBe(false);
     expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'reject' });
+  });
+
+  it('rejects the old proposal and preserves an unrelated draft when preparing a correction without sending it', async () => {
+    await bootSession();
+    await startUserTurn('Keep the refund exception');
+    emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 191, {
+      slug: 'capabilities/refund', expected_mtime: 100, body: 'Incorrect unconditional refund',
+    }));
+    await screen.findByTestId('task-review-correct');
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'My unrelated draft' } });
+    const promptsBefore = bridge.sent.filter((row) => row.method === 'session/prompt').length;
+    fireEvent.click(screen.getByTestId('task-review-correct'));
+    await waitFor(() => expect(answerFor(191)).toEqual({ outcome: 'selected', optionId: 'reject' }));
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toContain('My unrelated draft\n\npermission.correctionDraft:');
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toContain('capabilities/refund');
+    expect(bridge.sent.filter((row) => row.method === 'session/prompt')).toHaveLength(promptsBefore);
+  });
+
+  it('keeps the rejected proposal immutable and binds a user-sent correction to a distinct request', async () => {
+    await bootSession();
+    await startUserTurn('Keep the refund exception');
+    const original = { slug: 'capabilities/refund', expected_mtime: 100, body: 'Incorrect unconditional refund' };
+    emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 291, original));
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Existing draft' } });
+    fireEvent.click(await screen.findByTestId('task-review-correct'));
+    await waitFor(() => expect(answerFor(291)).toEqual({ outcome: 'selected', optionId: 'reject' }));
+    expect(original.body).toBe('Incorrect unconditional refund');
+    expect(screen.queryByTestId('task-review-meaning-accept')).not.toBeInTheDocument();
+
+    act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
+    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    const composer = screen.getByRole('textbox');
+    expect((composer as HTMLTextAreaElement).value).toContain('Existing draft');
+    await startUserTurn('Correct it: refund only after capture.');
+    expect(bridge.sent.filter((row) => row.method === 'session/prompt')).toHaveLength(2);
+
+    emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 292, {
+      slug: 'capabilities/refund', expected_mtime: 100, body: 'Refund only after capture.',
+    }));
+    expect(await screen.findByTestId('acp-permission-allow')).toBeInTheDocument();
+    expect(answerFor(292)).toBeUndefined();
+    expect(answerFor(291)).toEqual({ outcome: 'selected', optionId: 'reject' });
+    fireEvent.click(screen.getByTestId('task-review-depth-details'));
+    expect(screen.getByTestId('acp-ontology-change-review')).toHaveTextContent('Refund only after capture.');
+    expect(screen.queryByTestId('task-review-meaning-accept')).not.toBeInTheDocument();
+  });
+
+  it('defers and resumes the same live request without answering it', async () => {
+    await bootSession();
+    await startUserTurn('Review the refund exception');
+    emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 192, {
+      slug: 'capabilities/refund', expected_mtime: 100, body: 'Review later',
+    }));
+    fireEvent.click(await screen.findByTestId('task-review-defer'));
+    expect(screen.getByTestId('acp-permission-deferred')).toBeInTheDocument();
+    expect(screen.queryByTestId('acp-permission-allow')).not.toBeInTheDocument();
+    expect(answerFor(192)).toBeUndefined();
+    fireEvent.click(screen.getByRole('button', { name: 'permission.resumeReview' }));
+    expect(screen.getByTestId('acp-permission-allow')).toBeInTheDocument();
+    expect(answerFor(192)).toBeUndefined();
+    fireEvent.click(screen.getByTestId('acp-permission-reject'));
+    await waitFor(() => expect(answerFor(192)).toEqual({ outcome: 'selected', optionId: 'reject' }));
+  });
+
+  it('cancels a deferred request and does not defer a later request with the same tool call id', async () => {
+    await bootSession();
+    await startUserTurn('Review the first request');
+    emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 193, {
+      slug: 'capabilities/refund', expected_mtime: 100, body: 'First',
+    }));
+    fireEvent.click(await screen.findByTestId('task-review-defer'));
+    fireEvent.click(screen.getByTestId('acp-chat-stop'));
+    await waitFor(() => expect(answerFor(193)).toEqual({ outcome: 'selected', optionId: 'reject' }));
+    act(() => replyTo('session/prompt', { stopReason: 'cancelled' }));
+    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    await startUserTurn('Review the replacement request');
+    emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 194, {
+      slug: 'capabilities/refund', expected_mtime: 100, body: 'Replacement',
+    }));
+    expect(await screen.findByTestId('acp-permission-allow')).toBeInTheDocument();
+    expect(screen.queryByTestId('acp-permission-deferred')).not.toBeInTheDocument();
+    expect(answerFor(194)).toBeUndefined();
   });
 
   /**
@@ -1010,7 +1113,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     expect(card.contains(reject)).toBe(true);
     // The card yields its own height rather than the panel's, so the transcript is not evicted.
     expect(card.className).toContain('max-h-full');
-    expect(card.closest('[data-surface-state]')?.className).toContain('max-h-[45%]');
+    expect(card.closest('[data-surface-state]')?.className).toContain('max-h-[70%]');
   });
 
   it('온톨로지 쓰기의 사람 결정과 최종 도구 상태를 작업 영수증으로 내보낸다', async () => {
@@ -1054,6 +1157,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
   it('거절한 변경은 실행 안 함 영수증으로 즉시 닫는다', async () => {
     const receipts: AcpWorkReceipt[] = [];
     await bootSession({ onWorkReceipt: (receipt) => receipts.push(receipt) });
+    await startUserTurn('새 개념 제안을 검토해줘');
     emit(mcpPermissionRequest('mcp__atlas-vault__add_concept', 97, {
       slug: 'capabilities/not-created',
       kind: 'capability',
@@ -1075,6 +1179,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await bootSession({
       onOntologyRelationPreviewChange: (preview) => previews.push(preview),
     });
+    await startUserTurn('여러 관계 제안을 검토해줘');
     emit(
       mcpPermissionRequest('mcp__atlas-vault__add_relations', 90, {
         relations: [
@@ -1084,6 +1189,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
       }),
     );
     await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('task-review-depth-details'));
     const rows = screen.getAllByTestId('acp-ontology-change-item');
     expect(rows).toHaveLength(2);
     expect(rows[1]).toHaveTextContent('domains/two');
@@ -1101,6 +1207,13 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
       relationType: 'contains',
       phase: 'draft',
     }));
+    fireEvent.click(screen.getByTestId('task-review-depth-summary'));
+    const summary = screen.getByTestId('task-review-summary');
+    expect(summary).toHaveTextContent('capabilities/b');
+    expect(summary).toHaveTextContent('contains');
+    expect(summary).toHaveTextContent('domains/two');
+    expect(summary).toHaveTextContent('둘째 이유');
+    expect(screen.getByTestId('task-review-batch-remaining')).toHaveTextContent('1');
   });
 
   it('우리가 꽂아 준 볼트의 읽기 도구는 경로가 없어도 막지 않는다', async () => {
@@ -1114,6 +1227,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
 
   it('우리 볼트의 쓰기 도구는 경로가 없어도 변경안을 보여 주고 답을 기다린다', async () => {
     await bootSession();
+    await startUserTurn('새 개념을 추가해줘');
     emit(
       mcpPermissionRequest('mcp__atlas-vault__add_concept', 83, {
         slug: 'capabilities/contextual-editing',
@@ -1123,6 +1237,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
       }),
     );
 
+    fireEvent.click(await screen.findByTestId('task-review-depth-details'));
     await waitFor(() => expect(screen.getByTestId('acp-ontology-change-review')).toBeInTheDocument());
     expect(answerFor(83), '사람이 답하기 전에 ACP 세션을 이어가면 안 된다').toBeUndefined();
     expect(screen.getByText('capabilities/contextual-editing')).toBeInTheDocument();
@@ -1141,6 +1256,7 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
      */
     bridge.verdict = 'ask';
     await bootSession();
+    await startUserTurn('외부 문서를 흡수해줘');
     emit({
       jsonrpc: '2.0',
       id: 81,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocale } from 'next-intl';
 
 import {
@@ -33,6 +33,7 @@ import type {
   AcpWorkReceipt,
   AcpWorkResult,
 } from '@/shared/lib/acp-work-receipt';
+import { unavailableTaskBaseline, type TaskBaselineCaptureResult } from './task-baseline';
 
 /**
  * The lifetime of one ACP session — start it, talk to it, ask for permission, end it.
@@ -98,8 +99,27 @@ export type AcpSessionStatus =
 
 export interface PendingPermission {
   request: AcpPermissionRequest;
+  origin?: {
+    sessionGeneration: number;
+    turn: Pick<AcpTurnStart, 'sessionId' | 'vaultRoot' | 'userEventId' | 'text'> | null;
+    task: { outcome: string; nonGoals: null; structure: 'unstructured' } | null;
+    taskBaseline: TaskBaselineCaptureResult | null;
+  };
   /** Passes the user's choice back to the agent. `null` is a rejection. */
   resolve: (optionId: string | null) => void;
+}
+
+function deepFreeze<Value>(value: Value): Value {
+  if (value && typeof value === 'object') {
+    for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+/** Capture a queued permission before another request can delay its presentation. */
+export function snapshotPermissionRequest(request: AcpPermissionRequest): AcpPermissionRequest {
+  return deepFreeze(structuredClone(request));
 }
 
 export interface UseAcpSessionOptions {
@@ -114,6 +134,8 @@ export interface UseAcpSessionOptions {
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
   /** Captures the initiating context and returns that turn's archival observer. */
   onTurnStarted?: (turn: AcpTurnStart) => ((turn: AcpTurnCompletion) => void | Promise<void>) | null;
+  /** Captures bounded local evidence after the turn exists but before any prompt reaches the actor. */
+  captureTaskBaseline?: (turn: AcpTurnStart) => Promise<TaskBaselineCaptureResult>;
   /**
    * Lets the screen answer a permission request itself. Return a short note (what was
    * allowed, for the transcript) to allow the request at once without a card; return null
@@ -339,6 +361,7 @@ export function useAcpSession({
   approvalSettleMs = 0,
   onWorkReceipt,
   onTurnStarted,
+  captureTaskBaseline,
   autoDecide,
   resumeLatest = false,
 }: UseAcpSessionOptions) {
@@ -347,6 +370,10 @@ export function useAcpSession({
    * See {@link ANSWER_LANGUAGE_SLOT}.
    */
   const locale = useLocale();
+  const currentTurnScopeRef = useRef({ runtimeId, vaultRoot });
+  useLayoutEffect(() => {
+    currentTurnScopeRef.current = { runtimeId, vaultRoot };
+  }, [runtimeId, vaultRoot]);
   const [status, setStatus] = useState<AcpSessionStatus>('idle');
   /*
    * ⚠️ When the open turn last spoke, so the screen can tell "still working" from "stopped
@@ -391,6 +418,7 @@ export function useAcpSession({
     start: AcpTurnStart;
     observer: ((turn: AcpTurnCompletion) => void | Promise<void>) | null;
     cancelRequested: boolean;
+    taskBaseline: TaskBaselineCaptureResult | null;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** Commands the agent found in this folder — putting skills in the vault makes them appear here. */
@@ -699,11 +727,32 @@ export function useAcpSession({
 
   /** Creates the promise that waits until the screen answers. Concurrent asks queue up. */
   const askUser = useCallback((request: AcpPermissionRequest) => {
+    request = snapshotPermissionRequest(request);
     const generation = generationRef.current;
+    const activeStart = activeTurnRef.current?.start ?? null;
+    const origin = {
+      sessionGeneration: generation,
+      turn: activeStart
+        ? { sessionId: activeStart.sessionId, vaultRoot: activeStart.vaultRoot, userEventId: activeStart.userEventId, text: activeStart.text }
+        : null,
+      task: activeStart
+        ? { outcome: activeStart.text, nonGoals: null, structure: 'unstructured' as const }
+        : null,
+      taskBaseline: activeTurnRef.current?.taskBaseline ?? null,
+    };
     const present = () => new Promise<string | null>((resolve) => {
       // A question that waited in the queue may outlive its session: answered-by-nobody beats
       // presenting a card for a conversation that is already stopped or dead.
       if (generationRef.current !== generation || statusRef.current === 'exited') {
+        resolve(null);
+        return;
+      }
+      if (request.reviewKind === 'ontology-write' && (
+        !origin.turn
+        || request.requestId == null
+        || request.sessionId !== origin.turn.sessionId
+        || origin.turn.vaultRoot !== vaultRoot
+      )) {
         resolve(null);
         return;
       }
@@ -719,6 +768,7 @@ export function useAcpSession({
       pendingResolverRef.current = resolve;
       setPending({
         request,
+        origin,
         resolve: (optionId) => {
           const selectedKind = request.options.find((option) => option.optionId === optionId)?.kind;
           const ontologyWrite = request.reviewKind === 'ontology-write' && Boolean(request.toolName);
@@ -766,7 +816,7 @@ export function useAcpSession({
     // The chain must survive any outcome, or one settled question blocks every later one.
     askChainRef.current = result.catch(() => null);
     return result;
-  }, [approvalSettleMs, emitWorkReceipt, push, runtimeId, setApprovedOntologyWriteTracked]);
+  }, [approvalSettleMs, emitWorkReceipt, push, runtimeId, setApprovedOntologyWriteTracked, vaultRoot]);
 
   const start = useCallback(async () => {
     if (!isAcpBridgeAvailable() || !vaultRoot) return;
@@ -1203,11 +1253,41 @@ export function useAcpSession({
       try { observer = onTurnStarted?.(start) ?? null; } catch (error) {
         keepDiagnostic(`analysis-capture: ${error instanceof Error ? error.message : String(error)}`);
       }
-      activeTurnRef.current = { start, observer, cancelRequested: false };
+      activeTurnRef.current = { start, observer, cancelRequested: false, taskBaseline: null };
       latestUserRequestRef.current = text.trim();
       push({ kind: 'user', id: userEventId, text });
       setLastTurnUpdateAt(Date.now());
       setStatusTracked('thinking');
+      if (captureTaskBaseline) {
+        try {
+          const baseline = await captureTaskBaseline(start);
+          if (activeTurnRef.current?.start === start) activeTurnRef.current.taskBaseline = baseline;
+        } catch (error) {
+          keepDiagnostic(`task-baseline: ${error instanceof Error ? error.message : String(error)}`);
+          if (activeTurnRef.current?.start === start) {
+            activeTurnRef.current.taskBaseline = unavailableTaskBaseline(
+              start.startedAt, start.vaultRoot ?? '', [], ['capture_failed'],
+            );
+          }
+        }
+      }
+      const active = activeTurnRef.current;
+      const capturedBaseline = active?.start === start ? active.taskBaseline : null;
+      const baselineInvalidated = capturedBaseline?.status === 'unavailable'
+        && capturedBaseline.reasons.some((reason) => reason === 'context_changed' || reason === 'membership_changed');
+      const currentTurnScope = currentTurnScopeRef.current;
+      if (generationRef.current !== generation || disposedRef.current || sessionIdRef.current !== sessionId
+        || clientRef.current !== client || active?.start !== start || active.cancelRequested || baselineInvalidated
+        || currentTurnScope.runtimeId !== start.runtimeId || currentTurnScope.vaultRoot !== start.vaultRoot) {
+        if (active?.start === start) {
+          finishTurn('cancelled', baselineInvalidated
+            || currentTurnScope.runtimeId !== start.runtimeId || currentTurnScope.vaultRoot !== start.vaultRoot
+            ? 'capture_context_changed' : 'capture_cancelled');
+          setLastTurnUpdateAt(null);
+          setStatusTracked('ready');
+        }
+        return;
+      }
       try {
         const result = await client.prompt(sessionId, [{ type: 'text', text }]);
         if (generationRef.current !== generation) return;
@@ -1228,7 +1308,7 @@ export function useAcpSession({
         setStatusTracked('error');
       }
     },
-    [finishTurn, keepDiagnostic, onTurnStarted, push, runtimeId, setApprovedOntologyWriteTracked, setStatusTracked, vaultRoot],
+    [captureTaskBaseline, finishTurn, keepDiagnostic, onTurnStarted, push, runtimeId, setApprovedOntologyWriteTracked, setStatusTracked, vaultRoot],
   );
 
   const cancel = useCallback(() => {

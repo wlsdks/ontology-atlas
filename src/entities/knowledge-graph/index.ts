@@ -47,6 +47,15 @@ export {
   type OntologyChangeSet,
 } from "./lib/ontology-change-set";
 export {
+  buildMeaningDiff,
+  buildProposalBinding,
+  type ComparisonBasis,
+  type MeaningDiffItem,
+  type TaskReviewIdentity,
+  type TaskReviewRequest,
+  type TrustedBeforeSnapshot,
+} from "./lib/task-meaning-review";
+export {
   buildOntologyRelationEditPlan,
   buildOntologyRelationRemovalPlan,
   RELATION_EDGE_TYPE,

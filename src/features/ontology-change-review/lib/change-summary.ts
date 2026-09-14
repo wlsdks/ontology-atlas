@@ -30,6 +30,8 @@ export interface OntologyChangeSentence {
   text: string;
   /** The sentence currently in the file, when the change set carried one. Never inferred. */
   before?: string;
+  /** Explicit map-entry delta when both map snapshots are known. */
+  change?: 'added' | 'removed' | 'changed' | 'unchanged';
 }
 
 /**
@@ -58,14 +60,22 @@ export function sentenceMapChange(
   after: unknown,
   before: unknown,
 ): OntologyChangeSentence[] | null {
-  const next = sentenceMap(after);
+  const emptyAfter = Boolean(after && typeof after === 'object' && !Array.isArray(after) && Object.keys(after as object).length === 0);
+  const next = sentenceMap(after) ?? (emptyAfter ? [] : null);
   if (!next) return null;
   const previous = sentenceMap(before);
   if (!previous) return next;
-  const byTarget = new Map(previous.map((entry) => [entry.target, entry.text]));
-  return next.map((entry) => {
-    const was = byTarget.get(entry.target);
-    return was === undefined || was === entry.text ? entry : { ...entry, before: was };
+  const beforeByTarget = new Map(previous.map((entry) => [entry.target, entry.text]));
+  const afterByTarget = new Map(next.map((entry) => [entry.target, entry.text]));
+  return [...new Set([...afterByTarget.keys(), ...beforeByTarget.keys()])].map((target) => {
+    const hadBefore = beforeByTarget.has(target);
+    const hasAfter = afterByTarget.has(target);
+    const was = beforeByTarget.get(target);
+    const text = afterByTarget.get(target) ?? '';
+    if (!hasAfter) return { target, text, before: was, change: 'removed' };
+    if (!hadBefore) return { target, text, change: 'added' };
+    if (was === text) return { target, text, change: 'unchanged' };
+    return { target, text, before: was, change: 'changed' };
   });
 }
 

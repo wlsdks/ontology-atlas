@@ -143,15 +143,34 @@ describe('the shapes the rows are built from', () => {
     );
 
     expect(entries).toEqual([
-      { target: 'a/b', text: 'new reason', before: 'old reason' },
-      { target: 'c/d', text: 'same reason' },
-      { target: 'e/f', text: 'fresh target' },
+      { target: 'a/b', text: 'new reason', before: 'old reason', change: 'changed' },
+      { target: 'c/d', text: 'same reason', change: 'unchanged' },
+      { target: 'e/f', text: 'fresh target', change: 'added' },
     ]);
   });
 
   it('never invents a previous sentence when the change set holds none', () => {
     expect(sentenceMapChange({ 'a/b': 'reason' }, undefined)).toEqual([
       { target: 'a/b', text: 'reason' },
+    ]);
+  });
+
+  it('keeps previous-only sentences as explicit removals', () => {
+    expect(sentenceMapChange(
+      { 'domains/checkout': 'Checkout owns the current basket.' },
+      {
+        'domains/checkout': 'Checkout owned the old basket.',
+        'domains/legacy': 'Legacy checkout owned retry exceptions.',
+      },
+    )).toEqual([
+      { target: 'domains/checkout', text: 'Checkout owns the current basket.', before: 'Checkout owned the old basket.', change: 'changed' },
+      { target: 'domains/legacy', text: '', before: 'Legacy checkout owned retry exceptions.', change: 'removed' },
+    ]);
+  });
+
+  it('keeps delete-all maps as explicit removals', () => {
+    expect(sentenceMapChange({}, { ledger: 'Ledger owns retries.' })).toEqual([
+      { target: 'ledger', text: '', before: 'Ledger owns retries.', change: 'removed' },
     ]);
   });
 
