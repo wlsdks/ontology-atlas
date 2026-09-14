@@ -2910,7 +2910,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
      */
     const domeEdgeControlForFrame = (edge: WorldEdge) => {
       const dome = domeRuntimeRef.current;
-      return dome === null ? null : projectDomeEdgeControl(edge, dome.frame, dome.model.arrangement, cameraRef.current.scale.value, neuralRampRef.current);
+      return dome === null ? null : projectDomeEdgeControl(edge, dome.frame, dome.model.arrangement, cameraRef.current.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current);
     };
     /**
      * **`alpha: false` — this map never needs to show what is behind it.**
@@ -5266,9 +5266,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
        * trail lens, which does move, so the two are answered separately.
        */
       const neuralTarget = view3dRef.current && domeRuntimeRef.current?.model.arrangement === "coupling";
-      neuralRampRef.current = reducedMotionRef.current
-        ? (neuralTarget ? 1 : 0)
-        : stepFocusRamp(neuralRampRef.current, neuralTarget, dt, tokens.focusDimTau);
+      // Reduced motion keeps geometry at its destination; only the cell material
+      // crossfades. Curve projection separately uses the destination mix above.
+      if (reducedMotionRef.current) {
+        const target = neuralTarget ? 1 : 0;
+        const delta = target - neuralRampRef.current;
+        const stride = dt * 1000 / Math.max(1, tokens.trailReducedFadeMs);
+        neuralRampRef.current = Math.abs(delta) <= stride
+          ? target : neuralRampRef.current + Math.sign(delta) * stride;
+      } else {
+        neuralRampRef.current = stepFocusRamp(neuralRampRef.current, neuralTarget, dt, tokens.focusDimTau);
+      }
       galaxyRampRef.current = reducedMotionRef.current
         ? (galaxyRef.current ? 1 : 0)
         : stepFocusRamp(galaxyRampRef.current, galaxyRef.current, dt, tokens.focusDimTau);
@@ -6131,7 +6139,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           .map((e) => {
             const offA = edgeOff(e.sourceId);
             const offB = edgeOff(e.targetId);
-            const control = projectDomeEdgeControl(e, domeFrame, domeRuntimeRef.current?.model.arrangement ?? "ownership", camera.scale.value, neuralRampRef.current);
+            const control = projectDomeEdgeControl(e, domeFrame, domeRuntimeRef.current?.model.arrangement ?? "ownership", camera.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current);
             return {
             sourceId: e.sourceId,
             targetId: e.targetId,

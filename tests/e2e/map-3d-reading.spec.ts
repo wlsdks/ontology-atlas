@@ -77,3 +77,48 @@ test('Neural detail has a visible return path and fitting never paints overlappi
   expect(result.labelFrames, 'no visible labels were sampled').toBeGreaterThan(3);
   expect(result.overlaps).toEqual([]);
 });
+
+test('reduced motion fades Neural cell light without moving its settled curves', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await seedFirstRunSeen(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('atlas.appearance.view3d', 'on');
+    localStorage.setItem('atlas.appearance.map-arrangement', 'ownership');
+    const host = window as unknown as { neuralLightFrames: { alpha: number; curves: string }[]; recordNeuralLight: boolean; __atlasMap: { edges(): unknown[] } };
+    host.neuralLightFrames = [];
+    host.recordNeuralLight = false;
+    const proto = CanvasRenderingContext2D.prototype;
+    const draw = proto.drawImage;
+    const fill = proto.fillRect;
+    let sampled = false;
+    proto.fillRect = function (x, y, width, height) {
+      if (this.canvas.dataset.testid === 'ontology-map-canvas' && x === 0 && y === 0 && width > 100 && height > 100) sampled = false;
+      fill.call(this, x, y, width, height);
+    };
+    proto.drawImage = function (image: CanvasImageSource, ...args: number[]) {
+      if (host.recordNeuralLight && !sampled && this.canvas.dataset.testid === 'ontology-map-canvas' && image instanceof HTMLCanvasElement && image.width < 128 && args.length === 4) {
+        sampled = true;
+        host.neuralLightFrames.push({ alpha: this.globalAlpha, curves: JSON.stringify(host.__atlasMap.edges()) });
+      }
+      Reflect.apply(draw, this, [image, ...args]);
+    };
+  });
+  await page.goto('/en/topology/?synth=31&e2e=1&guides=off');
+  await waitForDomeEntered(page);
+  await waitForMapStill(page);
+  await page.getByTestId('topology-view-3d').click();
+  await page.evaluate(() => { (window as unknown as { recordNeuralLight: boolean }).recordNeuralLight = true; });
+  await page.getByTestId('topology-view-3d-choice-coupling').click();
+  await expect.poll(() => page.evaluate(() => {
+    const frames = (window as unknown as { neuralLightFrames: { alpha: number }[] }).neuralLightFrames;
+    const tail = frames.slice(-3);
+    return tail.length === 3 && tail[0].alpha > 0.05 && tail.every(frame => Math.abs(frame.alpha - tail[0].alpha) < 0.001);
+  })).toBe(true);
+  const frames = await page.evaluate(() => (window as unknown as { neuralLightFrames: { alpha: number; curves: string }[] }).neuralLightFrames);
+  const settledAlpha = frames.at(-1)!.alpha;
+  const fading = frames.filter(frame => frame.alpha > settledAlpha * 0.05 && frame.alpha < settledAlpha * 0.95);
+  expect(new Set(fading.map(frame => frame.alpha.toFixed(3))).size, 'cell light cut instead of fading').toBeGreaterThan(2);
+  expect(new Set(fading.map(frame => frame.curves)).size, 'reduced-motion curves travelled during the light fade').toBe(1);
+  console.log(`[Neural reduced motion] ${fading.length} fading frames, stationary projected curves`);
+});

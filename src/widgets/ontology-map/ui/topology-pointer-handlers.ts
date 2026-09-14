@@ -721,7 +721,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId)) continue;
       const offA = domeFrame?.get(edge.sourceId) ?? ZERO;
       const offB = domeFrame?.get(edge.targetId) ?? ZERO;
-      const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, neuralRampRef?.current);
+      const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, reducedMotionRef.current ? undefined : neuralRampRef?.current);
       candidates.push({
         edge,
         a: worldToScreen(cam, width, height, edge.ax + offA.dx, edge.ay + offA.dy),
