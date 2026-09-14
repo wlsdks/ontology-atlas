@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { LibraryPage } from '@/views/library';
+import { LibraryWorkspace } from '@/app-providers/library-workspace';
 import { RouteLoadingFallback } from '@/shared/ui';
 
 export async function generateMetadata({
@@ -14,22 +14,12 @@ export async function generateMetadata({
   return { title: t('title') };
 }
 
-/**
- * `/library` — the project documents gathered into this folder, and the wiki pages
- * written from them.
- *
- * The two lists shipped inside the Docs sidebar on 2026-09-05 and became a destination of
- * their own the next day; `src/views/library/ui/LibraryPage.tsx` carries the reason. Docs
- * is the ontology's Markdown again.
- *
- * The `Suspense` boundary matches every other route view here: the page below reads the
- * local folder on the client, and this fallback is what a static export prerenders in its
- * place rather than a blank frame.
- */
+/** Library composes Sources, Wiki, and the existing ontology editor. The
+ * Suspense boundary permits query-based tab selection in the static export. */
 export default function Page() {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
-      <LibraryPage />
+      <LibraryWorkspace />
     </Suspense>
   );
 }

@@ -220,7 +220,7 @@ export async function openLibraryCheckFolder(page: Page) {
 /** The folder, the Wiki half of the index, and the Check-results page open in the pane. */
 export async function openLibraryCheckReport(page: Page) {
   await openLibraryCheckFolder(page);
-  await page.getByTestId("library-index-segment-wiki").click();
+  await page.getByTestId("library-workspace-wiki").click();
   await page.getByTestId("library-wiki").waitFor({ timeout: 30_000 });
   await page.getByTestId("library-open-report").click();
   await expect(page.getByTestId("library-check-structural")).toBeVisible({ timeout: 25_000 });

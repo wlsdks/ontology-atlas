@@ -19,7 +19,6 @@ import {
   Blocks,
   Bot,
   Download,
-  BookOpen,
   FolderKanban,
   // `History as HistoryIcon` — under certain HMR/bundle states the bare `History`
   // identifier resolves to the global DOM History constructor and crashes the screen
@@ -157,10 +156,10 @@ function rememberRailRouteFocus(
  * It is shown from the `lg` breakpoint (≥1024px); below that `BottomTabBar` takes over.
  */
 export function AppNavRail({
+  contextHrefs,
   vaultSlot,
   settingsSlot,
   hidden,
-  contextHrefs,
   gitDirtyCount = 0,
   agentsNoticeCount = 0,
   visibleDestinations = null,
@@ -256,23 +255,7 @@ export function AppNavRail({
   const allDestinations: RailDestination[] = [
     { id: "map", href: DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
     { id: "architecture", href: DESTINATION_HREF.architecture, label: t("architecture"), Icon: Blocks },
-    { id: "docs", href: contextHrefs?.docs ?? DESTINATION_HREF.docs, label: t("docs"), Icon: BookOpen },
-    /*
-     * Library — a new destination on 2026-09-06, standing next to Docs because that is
-     * where its rows came from. Docs is the graph's Markdown again; what a person
-     * gathered (any format, kept verbatim) and what was written from it live one tile
-     * down.
-     *
-     * Why the icon is `Library`: at 20px it has to be told apart from the eight
-     * silhouettes already here, and the nearest neighbour is the one directly above it
-     * — `BookOpen`, a single spread book. `Library` is a **row of upright spines**, so
-     * the two differ in orientation rather than in detail, which is the only difference
-     * that survives 20px. `Archive` and `Boxes` both read as a closed container and say
-     * nothing about documents; `FileStack` is already the Sources section's own glyph
-     * inside this destination, and reusing it in the rail would make the tile name one
-     * of the two lists it opens.
-     */
-    { id: "library", href: DESTINATION_HREF.library, label: t("library"), Icon: Library },
+    { id: "library", href: contextHrefs?.docs ?? DESTINATION_HREF.library, label: t("library"), Icon: Library },
     /*
      * Why the icon is `LineChart` and not `BarChart3` (owner, 2026-09-08: *"these two icons
      * are too alike to tell apart"*). The note above chose `Library` against the tile **above**

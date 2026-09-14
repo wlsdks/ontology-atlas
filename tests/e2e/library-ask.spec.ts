@@ -197,7 +197,7 @@ async function openFolder(page: Page) {
   await page.getByTestId("app-nav-rail").getByRole("link", { name: "Library" }).click();
   await page.getByTestId("library-sources").waitFor({ timeout: 30_000 });
   // The index is a switch since 2026-09-07: the wiki rows exist only on the Wiki half.
-  await page.getByTestId("library-index-segment-wiki").click();
+  await page.getByTestId("library-workspace-wiki").click();
   await page.getByTestId("library-wiki").waitFor({ timeout: 30_000 });
 }
 

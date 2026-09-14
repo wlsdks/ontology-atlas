@@ -191,7 +191,7 @@ async function openFolder(page: Page) {
    * the first half of the work — so a spec about the wiki's doors presses the switch, the
    * same press a person makes.
    */
-  await page.getByTestId("library-index-segment-wiki").click();
+  await page.getByTestId("library-workspace-wiki").click();
   await page.getByTestId("library-wiki").waitFor({ timeout: 30_000 });
 }
 
@@ -211,7 +211,7 @@ test.describe("Check the wiki opens the agent dock", () => {
     // opens a real page rather than "<the page name>" (installed app, 2026-09-06).
     await expect(page.getByTestId("library-wiki")).not.toContainText("<the page name>");
     await expect(page.getByTestId("library-wiki")).not.toContainText("Wiki log");
-    await expect(page.getByTestId("library-index-segment")).toContainText("Wiki 2");
+    await expect(page.getByTestId("library-workspace-tabs")).toContainText("Wiki 2");
     // With nothing selected the pane is the graph (2026-09-06, third pass), so no page
     // heading is on screen here; the list above already proves the template is not a row.
     /*
@@ -246,7 +246,7 @@ test.describe("Check the wiki opens the agent dock", () => {
     await expect(page.getByTestId("library-check-report")).toBeVisible();
     await expect(page.getByTestId("library-reading-pane")).toHaveCount(0);
     // Back to the index the way a person goes: the switch is untouched by a page that is neither half.
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     // At a phone's width the report (still open: the switch does not close a page) is one
     // column that never scrolls sideways.
     await page.setViewportSize({ width: 390, height: 844 });

@@ -7,6 +7,10 @@ import {
 } from "./shortcut-scope";
 
 describe("surfaceForPathname", () => {
+  it('keeps ontology editor shortcuts in the Library ontology tab', () => {
+    expect(surfaceForPathname('/ko/library/', 'ontology')).toBe('docs');
+    expect(surfaceForPathname('/ko/library/', 'wiki')).toBe('global');
+  });
   it("루트와 /topology 는 지도 표면", () => {
     expect(surfaceForPathname("/")).toBe("topology");
     expect(surfaceForPathname("/topology")).toBe("topology");

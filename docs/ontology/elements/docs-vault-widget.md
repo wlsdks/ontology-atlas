@@ -3,7 +3,7 @@ uid: ad381f17-ccc6-4ce5-b6e7-2141e487781d
 slug: elements/docs-vault-widget
 kind: element
 title: Docs Vault (widget)
-display_ko: 문서함 (위젯)
+display_ko: 온톨로지 문서 (위젯)
 domain: domains/local-vault-management
 path: src/widgets/docs-vault
 created_by: "agent:unknown"
@@ -19,6 +19,8 @@ Vault tree/list UI widget. Implementation evidence for capabilities/docs-vault-l
 - Focused test: `src/widgets/docs-vault/lib/server-doc-content.test.ts#encodes path segments without flattening nested slugs`
 
 ## Includes
+
+- Flushing a pending browser draft when the editor unmounts, including an immediate Library tab switch; explicit Save remains the only disk write.
 
 - The document editor (markdown toolbar, mention-relation autocomplete, save with `expectedMtime` conflict detection) and its tree/list navigation.
 - The backlinks panel showing documents referencing the open document.

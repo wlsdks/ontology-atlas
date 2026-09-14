@@ -33,7 +33,7 @@ task, its implementation anchors, constraints, evidence, and unknowns. The
 person need not open Atlas for every task. A configured MCP connection is an
 interface, not a guarantee that every host calls it or respects its guidance.
 
-**The human workbench.** Map, Architecture, Docs, Library, Insights, and Git
+**The human workbench.** Map, Architecture, Library, Insights, and Git
 History help people inspect the meaning and evidence behind a question or
 change. Task-bound Meaning Diff is a development direction for comparing
 observed code changes, proposed meaning, and accepted meaning. Existing write

@@ -31,29 +31,7 @@
 export const DESTINATION_IDS = [
   'map',
   'architecture',
-  'docs',
-  /*
-   * Library — added 2026-09-06. Gathering project documents of any format, and the
-   * wiki pages compiled from them, shipped inside Docs on 2026-09-05 and the owner
-   * read the result the next day: *"the screen is very cluttered … is it right that
-   * everything for gathering and scaling data collects inside the Docs tab, rather
-   * than being separated out? Docs was originally where ontology information (md)
-   * was gathered."* Docs is the graph's Markdown; a raw PDF, its shadow, and a wiki
-   * page are a different job with different rows, different doors and a different
-   * reader, and the two were competing for one 280px sidebar.
-   *
-   * ⚠️ **Nine is the current ceiling.** The eight-cap this table carried since
-   * 2026-09-05 is reopened by the 2026-09-06 record, measured rather than assumed.
-   * At the app's minimum window (1040×720) the destinations pane is 616px tall.
-   * Eight tiles at a 64px pitch stood in 12–522; nine at that pitch would reach 586
-   * and leave 30px, which is a ninth that fits and a tenth that does not — so the
-   * tile's own padding moved with the cap (`py-1.5` → `py-1` on the button, pitch
-   * 64 → 60). Nine tiles now stand in 12–550 with 66px to spare, the gear is still
-   * drawn 48px above the window edge, and nothing scrolls. The fixed tokens did not
-   * move: the tile is still 38×32, the icon 20 and the label 11. A tenth requires
-   * another measured decision, and `destination-shortcuts.contract.test.ts`
-   * enforces that.
-   */
+  // Ontology documents now live inside Library; /docs remains a link alias.
   'library',
   'insights',
   'projects',
@@ -75,7 +53,7 @@ export const DESTINATION_IDS = [
   'git',
 ] as const;
 
-export type DestinationId = (typeof DESTINATION_IDS)[number];
+export type DestinationId = (typeof DESTINATION_IDS)[number] | 'docs';
 
 /**
  * Persistent destinations below `lg`. The installed app has five slots; web may
@@ -87,15 +65,7 @@ export type DestinationId = (typeof DESTINATION_IDS)[number];
 /*
  * ⚠️ **MCP is deliberately absent, and 1024 is its width floor** (design council, 2026-09-05).
  *
- * ⚠️ **The Library is absent too, and for a different reason** (2026-09-06). MCP is desk work;
- * the Library is not — a person really may want to read a wiki page on a phone, and the route
- * works at 390 (one column, selecting swaps it, a back control returns). What it is not is one
- * of *five*: the five slots are the reading and planning ladder, and evicting Docs, Insights,
- * Projects, Architecture or the map to seat it would cost more than it buys on a screen where
- * gathering files is not what anyone is doing. So it keeps a contextual entry point instead, and
- * that one is permanent rather than incidental: the Docs sidebar carries a row pointing at it
- * (`docs-sidebar-library-link`), where its two lists used to be. Below `lg` that row is the way
- * in, which is why it is a link and not a sentence.
+ * Library inherits the former Docs slot and contains the ontology editor.
  *
  * Below `lg` the rail is replaced by five bottom tabs, and MCP is not one of them. That is a
  * decision, not an omission: what the screen does is hand a coding tool a config and switch
@@ -110,7 +80,7 @@ export type DestinationId = (typeof DESTINATION_IDS)[number];
 export const MOBILE_DESTINATION_IDS = [
   'map',
   'architecture',
-  'docs',
+  'library',
   'insights',
   'projects',
 ] as const satisfies ReadonlyArray<DestinationId>;
@@ -159,9 +129,11 @@ export const DESTINATION_KEY: Record<DestinationId, string> = {
 export const NAV_LEADER_WINDOW_MS = 1500;
 
 /** Letter → destination, the direction the handler needs. */
-export const DESTINATION_BY_KEY: Record<string, DestinationId> = Object.fromEntries(
-  DESTINATION_IDS.map((id) => [DESTINATION_KEY[id], id]),
-) as Record<string, DestinationId>;
+export const DESTINATION_BY_KEY: Record<string, DestinationId> = {
+  ...Object.fromEntries(DESTINATION_IDS.map((id) => [DESTINATION_KEY[id], id])),
+  // Preserve the published shortcut and project-specific Docs href overrides.
+  d: 'docs',
+};
 
 /**
  * The destinations a folder of this shape earns.

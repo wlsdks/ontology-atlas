@@ -22,9 +22,7 @@ describe("retired Skills product surface", () => {
     expect(DESTINATION_IDS).toEqual([
       "map",
       "architecture",
-      "docs",
-      // Library joined 2026-09-06, beside Docs because that is where its two lists came
-      // from. Like MCP the day before, it moved the ceiling and reinstated nothing.
+      // Library now contains Sources, Wiki, and the former Docs ontology workbench.
       "library",
       "insights",
       "projects",
@@ -43,8 +41,8 @@ describe("retired Skills product surface", () => {
     expect(resolveActiveNavDestination("/mcp")).toBe("mcp");
     expect(resolveActiveNavDestination("/library")).toBe("library");
     expect(resolveActiveNavDestination("/ko/library/")).toBe("library");
-    // `/library` sits before `/docs` in the ladder; neither may swallow the other.
-    expect(resolveActiveNavDestination("/docs")).toBe("docs");
+    // `/docs` remains a route alias, and highlights the one destination it now enters.
+    expect(resolveActiveNavDestination("/docs")).toBe("library");
   });
 
   it("removes the route and all three product implementation layers", () => {

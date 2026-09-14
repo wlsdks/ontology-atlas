@@ -39,10 +39,10 @@ agent task`.
 
 | Surface | Entry | Audience |
 |---|---|---|
-| **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; primary workbench routes `/topology`, `/architecture`, `/docs`, `/library`, `/ontology/insights`, `/projects`, `/agents`, and `/mcp`; `/git` remains a contextual workbench route | daily visual ontology work — pick a local vault folder, inspect reviewed architecture, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
+| **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens the compatible `/docs/?intent=local` vault setup entry; primary workbench routes `/topology`, `/architecture`, `/library`, `/ontology/insights`, `/projects`, `/agents`, and `/mcp`; `/git` remains a contextual workbench route | daily visual ontology work — pick a local vault folder, inspect reviewed architecture, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
 | **CLI** (R12 / R14 / R15+ · 60 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / analysis / infer-imports / architecture / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, reviewed architecture conformance, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, architecture pre/post checks, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | current runtime read/write inventory over JSON-RPC (`tools/list`; prove with `mcp-verify`) | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
-| **Website** | GitHub Pages static export / `/` + `/topology` + `/download` | With no active vault, `/` is the gateway; with a loaded local vault it is the topology map, as is explicit `/topology`. `/download` is the product intro + current release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
+| **Website** | GitHub Pages static export / `/` + `/topology` + `/download` | With no active vault, `/` is the gateway; with a loaded local vault it is the topology map, as is explicit `/topology`. `/download` is the product intro + current release download path. Library remains local-first; desktop-only file abilities degrade in place while browser-supported reading and editing remain available. |
 
 Multi-project vaults use explicit selection at the agent boundary:
 `ontology-atlas agent-brief --project SLUG` forwards the same project identity
@@ -63,7 +63,7 @@ input (humans + AI agents)     parse           store              output
   .md in vault  →          frontmatter   →  user disk      →  Topology (/, /topology) map + INDEX
   (frontmatter)                              (vault)           Topology contextual write + review
   + architecture-profile/v1                                  Architecture (/architecture) intent + conformance handoff
-  + AI agent (MCP)                                            Docs workspace (/docs)
+  + AI agent (MCP)                                            Library → Ontology (/library?tab=ontology)
                                                               Insights (/ontology/insights) maintenance board
                                                               compatibility redirects (/ontology, /ontology/edit, /ontology/studio)
 ```
@@ -883,12 +883,11 @@ legacy addresses and malformed quoted remainders. Original bytes and existing
 wiki citations are not rewritten, and a matching source hash does not prove that
 an old ambiguous citation identifies the intended passage.
 
-It shipped inside the Docs sidebar on 2026-09-05 and moved out the next day. The owner
-read the merged screen as cluttered and asked whether gathering documents belonged inside
-Docs at all, and the measurement agreed: five capped lists shared one 280px column, so
-Sources and Wiki took 22dvh each while the document tree lived on what remained. Docs went
-back to the ontology's Markdown; the Docs sidebar keeps one row pointing here, which is
-also the only way in below `lg`.
+Sources and Wiki shipped inside the Docs sidebar on 2026-09-05 and moved to Library the
+next day after five capped lists competed inside one 280px column. On 2026-09-14 the owner
+unified navigation without recombining those lists: Library now has Sources, Wiki, and
+Ontology tabs, and each tab keeps its own reader and file meaning. The mobile Library tab
+inherits the former Docs slot; `/docs/?slug=…` remains a compatible document link.
 
 **Two panes.** The index on the left carries one of Sources and Wiki, chosen by a switch at
 its top, with that list's own doors. The right
@@ -1870,6 +1869,17 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 
 ---
 
+### Library — one home for Sources, Wiki, and Ontology (2026-09-14)
+
+Sources and generated Wiki pages remain separate from canonical ontology Markdown,
+but all three are reached through the same Library header. The Ontology tab loads
+the existing document editor on demand. A tab round trip preserves the exact document
+and an unsaved draft, including an edit made immediately before leaving. Markdown
+source headings open the source's existing line anchors and neighboring text, so a
+policy can be read without compilation or an external file viewer. Toasts keep their
+surface-owned positions and one optional action, with a status tile, clearer action
+boundary, and a permanently discoverable dismiss control.
+
 ### Library — ask about a passage, and a graph that explains its marks (2026-09-07)
 
 Select eight or more characters in a wiki page and one bar stands just above the first
@@ -2496,15 +2506,13 @@ their viewport. `OperationsNav` and `OntologySubNav` are retired (deleted, not
 just unmounted).
 
 ### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
-- 9 destinations: Map (`/`, `/topology`) · Harness (`/architecture`) ·
-  Docs (`/docs`) · Library (`/library`) · Insights (`/ontology/insights`) ·
-  Projects (`/projects` or `/project/*`) · Agents (`/agents`) · MCP (`/mcp`) ·
-  Git (`/git`). Workshop remains the map's contextual relation-writing surface.
-  The ninth tile is what moved the button's own padding from `py-1.5` to `py-1`
-  (list pitch 64 → 60): measured on the rendered rail at the app's 1040×720
-  window floor, nine tiles then stand in 12–550 of a 616px pane with 66px to
-  spare and the gear still 48px above the window edge. The fixed tokens — 38×32
-  tile, 20px icon, 11px label — did not move.
+- Eight destinations: Map (`/`, `/topology`) · Harness (`/architecture`) ·
+  Library (`/library`) · Insights (`/ontology/insights`) · Projects (`/projects`
+  or `/project/*`) · Agents (`/agents`) · MCP (`/mcp`) · Git (`/git`).
+  Library contains Sources, Wiki, and Ontology tabs. Its ontology tab reuses the
+  Markdown reader/editor and preserves `/docs/?slug=…` links, fragments, local drafts,
+  and conflict protection. Library also inherits the former mobile Docs slot.
+  Workshop remains the map's contextual relation-writing surface.
 - Bottom utility tier: the `settingsSlot` plus the web-only Get App tile.
   `AppShell` supplies the app-wide settings trigger by default; a page can
   override the slot for a surface-specific control.
@@ -2514,9 +2522,9 @@ just unmounted).
   omits its button.
 
 The rail draws only the destinations the folder earns (`destinationsForVaultShape`, 2026-09-06):
-a wiki without a map hides Map, Architecture, Docs, Insights and Projects; Agents, MCP, History
+a wiki without a map hides Map, Architecture, Insights and Projects; Agents, MCP, History
 and the Library stay (the Library holds `sources/` for any folder); a map, an empty folder, or no
-folder shows all nine.
+folder shows all eight.
 The phone tabs and the `G` keys read the same verdict.
 
 ### `AppSettingsMenu` (app shell + contextual page headers)

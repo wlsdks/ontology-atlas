@@ -32,7 +32,7 @@ test("filing a retained answer preserves unmeasured evidence and the outstanding
   const sourceRow = page.getByTestId(`library-source-${SOURCE}`);
   await expect(sourceRow.getByTestId("library-source-state-compiled")).toHaveCount(1);
 
-  await page.getByTestId("library-index-segment-wiki").click();
+  await page.getByTestId("library-workspace-wiki").click();
   await page.getByTestId("library-wiki-wiki/room").click();
   const paragraph = page.getByTestId("library-reading-pane").locator("p").filter({ hasText: ORIGINAL.trim() }).first();
   await expect(paragraph).toBeVisible();
@@ -63,10 +63,10 @@ test("filing a retained answer preserves unmeasured evidence and the outstanding
   expect(filed.files["wiki/room.md"]).toBe(ORIGINAL_PAGE);
   expect(filed.files[SOURCE]).toBe(REVISED);
 
-  if (!(await page.getByTestId("library-index-segment-sources").isVisible())) {
+  if (!(await page.getByTestId("library-workspace-sources").isVisible())) {
     await page.getByTestId("library-index-tab").click();
   }
-  await page.getByTestId("library-index-segment-sources").click();
+  await page.getByTestId("library-workspace-sources").click();
   await expect(sourceRow.getByTestId("library-source-state-compiled")).toHaveCount(0);
   await expect(sourceRow).toHaveAttribute("title", /different version|recorded no hash/);
   await page.getByRole("button", { name: "Undo", exact: true }).click();

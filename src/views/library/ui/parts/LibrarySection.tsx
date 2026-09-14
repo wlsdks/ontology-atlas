@@ -7,11 +7,12 @@ import { Link } from "@/i18n/navigation";
 import { BookText, Check, CloudDownload, FilePlus2, FileText, PencilLine, Search, Sparkles, Stethoscope } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
+import { humanPageSlug } from "@/features/library";
 import { writerLabel } from "../../lib/writer-label";
 import { cn } from "@/shared/lib/cn";
 import { BrandMark } from "@/shared/ui/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
-import { Chip, RowButton, Tooltip } from "@/shared/ui";
+import { Button, Chip, Dialog, RowButton, Tooltip } from "@/shared/ui";
 import { Input } from "@/shared/ui/input";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import {
@@ -28,6 +29,15 @@ import { useSourceSearch } from "../../lib/use-source-search";
 import { LibraryShelf } from "./LibraryShelf";
 import { StateBadge } from "./StateBadge";
 import type { LibraryUiModel } from "../../lib/use-library-model";
+import { WIKI_SECTION_ORDER } from "@/shared/lib/wiki-page-schema";
+
+const WIKI_SECTION_PREVIEW_KEYS = {
+  Summary: "summary",
+  Facts: "facts",
+  Decisions: "decisions",
+  "Open questions": "openQuestions",
+  "Not in sources": "notInSources",
+} as const;
 
 /**
  * The library's index: **Sources** or **Wiki**, one of them at a time.
@@ -156,7 +166,7 @@ export interface LibrarySectionProps {
   /** How an agent's wiki page write is handled: lands when it fits, or asks each time. */
   /** Files the last answer the agent gave as a wiki page; null when there is none. */
   /** Starts a page a person writes by hand, from a title. Null where the folder cannot be written. */
-  onNewPage?: ((title: string) => void) | null;
+  onNewPage?: ((title: string) => void | Promise<boolean>) | null;
   /**
    * The Check results page: how many findings and names it holds, whether it is the open
    * page, and the press that opens it. Null when the wiki was never checked — the row is
@@ -482,10 +492,29 @@ export function LibrarySection({
   })();
   const [newPageOpen, setNewPageOpen] = useState(false);
   const [newPageTitle, setNewPageTitle] = useState("");
+  const [newPageCreating, setNewPageCreating] = useState(false);
+  const closeNewPage = () => {
+    setNewPageOpen(false);
+    setNewPageTitle("");
+  };
+  const createNewPage = async () => {
+    const title = newPageTitle.trim();
+    if (!title || !onNewPage || busy || newPageCreating) return;
+    setNewPageCreating(true);
+    try {
+      const created = await onNewPage(title);
+      if (created !== false) closeNewPage();
+    } finally {
+      setNewPageCreating(false);
+    }
+  };
   const hasSources = model.sources.length > 0;
   const hasWiki = model.wikiPages.length > 0;
   /** Pages whose **own** shape misses the template — the rows that wear the amber pill. */
   const offTemplateRows = libraryOffTemplateCount(model.verdicts);
+  const newPagePreviewIsExample = newPageTitle.trim() === "";
+  const newPagePreviewTitle = newPageTitle.trim() || t("wiki.newPageExampleTitle");
+  const newPagePreviewPath = humanPageSlug(newPagePreviewTitle) + ".md";
 
   /*
    * One field, both halves (2026-09-07): it filters whichever list the switch shows, on
@@ -832,57 +861,13 @@ export function LibrarySection({
    * now — a shelf at rest, rows while searching — and one control cannot be written twice.
    */
   const newPageControl = onNewPage ? (
-    newPageOpen ? (
-      <span
-        id="library-new-page-row"
-        data-testid="library-new-page-row"
-        className="flex min-w-0 items-center gap-1 px-2 py-1"
-        onKeyDown={(event) => {
-          // The row owns Escape: pressed on the Make chip it must not reach the page
-          // handler, which would close the open document instead of this row.
-          if (event.key === "Escape") {
-            event.stopPropagation();
-            setNewPageOpen(false);
-          }
-        }}
-      >
-        <Input
-          data-testid="library-new-page-title"
-          size="sm"
-          aria-label={t("wiki.newPageTitle")}
-          placeholder={t("wiki.newPageTitle")}
-          value={newPageTitle}
-          autoFocus
-          onChange={(event) => setNewPageTitle(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && newPageTitle.trim()) {
-              onNewPage(newPageTitle.trim());
-              setNewPageTitle("");
-              setNewPageOpen(false);
-            }
-          }}
-          className="min-w-0 flex-1"
-        />
-        <Chip
-          data-testid="library-new-page-make"
-          tone="muted"
-          disabled={busy || newPageTitle.trim() === ""}
-          onClick={() => {
-            onNewPage(newPageTitle.trim());
-            setNewPageTitle("");
-            setNewPageOpen(false);
-          }}
-        >
-          {t("wiki.newPageMake")}
-        </Chip>
-      </span>
-    ) : (
+    <>
       <RowButton
         data-testid="library-new-page"
         onClick={() => setNewPageOpen(true)}
         disabled={busy}
-        aria-expanded={false}
-        aria-controls="library-new-page-row"
+        aria-expanded={newPageOpen}
+        aria-haspopup="dialog"
         title={t("wiki.newPageTooltip")}
         hoverSurface="lift"
         hoverInk="strong"
@@ -891,7 +876,100 @@ export function LibrarySection({
         <PencilLine size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
         <span className="min-w-0 flex-1 truncate">{t("wiki.newPage")}</span>
       </RowButton>
-    )
+      <Dialog
+        open={newPageOpen}
+        onClose={closeNewPage}
+        labelledBy="library-new-page-title-heading"
+        testId="library-new-page-row"
+        size="md"
+        className="max-h-[calc(100vh-var(--chrome-inset)*2)] overflow-y-auto flex flex-col gap-4"
+      >
+        <h2
+          id="library-new-page-title-heading"
+          className="text-heading-sm font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+        >
+          {t("wiki.newPageDialogTitle")}
+        </h2>
+        <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
+          {t("wiki.newPageDialogBody")}
+        </p>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            createNewPage();
+          }}
+        >
+          <Input
+            data-testid="library-new-page-title"
+            size="md"
+            label={t("wiki.newPageTitle")}
+            placeholder={t("wiki.newPageTitleExample")}
+            value={newPageTitle}
+            onChange={(event) => setNewPageTitle(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void createNewPage();
+              }
+            }}
+          />
+          <section
+            aria-label={t("wiki.newPagePreviewTitle")}
+            className="rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-3"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <h3 className="text-label font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+                {t("wiki.newPagePreviewTitle")}
+              </h3>
+              <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                {t("wiki.newPageFormat")}
+              </span>
+            </div>
+            <p className="mt-2 break-all font-mono text-label text-[color:var(--color-text-secondary)]">
+              {newPagePreviewPath}
+            </p>
+            {newPagePreviewIsExample ? (
+              <p className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
+                {t("wiki.newPagePreviewExample")}
+              </p>
+            ) : null}
+            <p className="mt-2 text-caption text-[color:var(--color-text-tertiary)]">
+              {t("wiki.newPageMetadata")}
+            </p>
+            <p className="mt-3 border-t border-[color:var(--color-border-soft)] pt-3 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+              {t("wiki.newPageStructure")}
+            </p>
+            <ol className="mt-2 flex flex-col gap-1.5">
+              {WIKI_SECTION_ORDER.map((section) => (
+                <li
+                  key={section}
+                  className="flex flex-wrap items-baseline gap-x-2 text-label text-[color:var(--color-text-secondary)]"
+                >
+                  <span className="font-mono">## {section}</span>
+                  <span className="text-[color:var(--color-text-quaternary)]">
+                    {t("wiki.newPageSection." + WIKI_SECTION_PREVIEW_KEYS[section])}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
+          <div className="-mx-4 -mb-4 flex justify-end gap-2 border-t border-[color:var(--color-divider)] px-4 py-3">
+            <Button variant="ghost" className="atlas-touch-floor" onClick={closeNewPage}>
+              {t("wiki.newPageCancel")}
+            </Button>
+            <Button
+              data-testid="library-new-page-make"
+              type="submit"
+              className="atlas-touch-floor"
+              disabled={busy || newPageCreating || newPageTitle.trim() === ""}
+            >
+              {t("wiki.newPageCreate")}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    </>
   ) : null;
 
   return (

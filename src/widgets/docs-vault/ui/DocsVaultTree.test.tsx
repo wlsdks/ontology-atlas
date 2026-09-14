@@ -2,7 +2,7 @@ import { fireEvent, render as rtlRender, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
-import type { VaultTreeNode } from '@/entities/docs-vault';
+import type { VaultDoc, VaultTreeNode } from '@/entities/docs-vault';
 import { DocsVaultTree } from './DocsVaultTree';
 
 const tree: VaultTreeNode = {
@@ -39,14 +39,16 @@ function renderTree({
   activeTagSlugs,
   query,
   visibleDocSlugs,
+  docsBySlug,
 }: {
   selectedSlug?: string | null;
   activeTagSlugs?: Set<string>;
   query?: string;
   visibleDocSlugs?: Set<string>;
+  docsBySlug?: Map<string, VaultDoc>;
 } = {}) {
   const onSelect = vi.fn();
-  rtlRender(
+  const view = rtlRender(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <DocsVaultTree
         tree={tree}
@@ -56,10 +58,11 @@ function renderTree({
         activeTag={activeTagSlugs ? 'archive' : null}
         activeTagSlugs={activeTagSlugs}
         visibleDocSlugs={visibleDocSlugs}
+        docsBySlug={docsBySlug}
       />
     </NextIntlClientProvider>,
   );
-  return { onSelect };
+  return { ...view, onSelect };
 }
 
 describe('DocsVaultTree', () => {
@@ -102,6 +105,42 @@ describe('DocsVaultTree', () => {
     expect(screen.queryByRole('button', { name: 'README' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /archive/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Old Note' })).toBeInTheDocument();
+  });
+
+  it('matches the localized title shown on screen and keeps canonical aliases searchable', () => {
+    const docsBySlug = new Map<string, VaultDoc>([
+      [
+        'archive/old-note',
+        {
+          slug: 'archive/old-note',
+          path: 'archive/old-note.md',
+          title: 'Old Note',
+          tags: [],
+          frontmatter: { display_ko: '로컬 볼트 및 데이터소스 관리' },
+          headings: [],
+          excerpt: '',
+          wordCount: 0,
+          updatedAt: '',
+          linksOut: [],
+        },
+      ],
+    ]);
+    const { rerender } = renderTree({ query: '로컬', docsBySlug });
+
+    expect(screen.getByRole('button', { name: '로컬 볼트 및 데이터소스 관리' })).toBeVisible();
+
+    rerender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocsVaultTree
+          tree={tree}
+          selectedSlug="README"
+          onSelect={vi.fn()}
+          query="archive/old-note"
+          docsBySlug={docsBySlug}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByRole('button', { name: '로컬 볼트 및 데이터소스 관리' })).toBeVisible();
   });
 
   it('selects a visible source record', () => {

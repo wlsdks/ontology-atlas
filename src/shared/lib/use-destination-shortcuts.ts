@@ -178,7 +178,7 @@ export function useDestinationShortcuts({
         leaderAt.current = null;
         if (!id) return;
         // A hidden destination has no tile, so its key is not a door either.
-        if (visible && !visible.has(id)) return;
+        if (visible && !visible.has(id === 'docs' ? 'library' : id)) return;
         event.preventDefault();
         /*
          * With a blocking surface up, **say so instead of navigating** (rule 3

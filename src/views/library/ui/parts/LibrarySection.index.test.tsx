@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -111,6 +111,35 @@ describe("the wiki half of the column is an index: search, three doors, the list
     fireEvent.change(title, { target: { value: "Meeting notes" } });
     fireEvent.keyDown(title, { key: "Enter" });
     expect(onNewPage).toHaveBeenCalledWith("Meeting notes");
+  });
+
+  it("keeps a failed title for retry and Escape cancels without writing, returning focus", async () => {
+    const onNewPage = vi.fn().mockResolvedValue(false);
+    mount(<Harness onNewPage={onNewPage} />);
+    const trigger = screen.getByTestId("library-new-page");
+    trigger.focus();
+    fireEvent.click(trigger);
+    const title = screen.getByTestId("library-new-page-title");
+    await waitFor(() => expect(title).toHaveFocus());
+    expect(screen.getByRole("dialog", { name: "New wiki page" })).toHaveTextContent(
+      "Markdown · draft",
+    );
+    expect(screen.getByRole("dialog", { name: "New wiki page" })).toHaveTextContent(
+      "## Open questions",
+    );
+    fireEvent.change(title, { target: { value: "Retry me" } });
+    expect(screen.getByRole("dialog", { name: "New wiki page" })).toHaveTextContent(
+      "wiki/retry-me.md",
+    );
+    fireEvent.click(screen.getByTestId("library-new-page-make"));
+    await waitFor(() => expect(onNewPage).toHaveBeenCalledWith("Retry me"));
+    expect(title).toHaveValue("Retry me");
+    expect(screen.getByTestId("library-new-page-row")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByTestId("library-new-page-row")).not.toBeInTheDocument());
+    expect(onNewPage).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveFocus();
   });
 
   it("holds nothing but the index: no findings, no names, no write switch, no log line (owner, 2026-09-07)", () => {

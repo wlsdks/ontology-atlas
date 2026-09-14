@@ -259,7 +259,7 @@ test.describe('the Library index with an empty wiki', () => {
     await page.goto('/en/docs/');
     await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
-    await page.getByTestId('library-index-segment-wiki').click();
+    await page.getByTestId('library-workspace-wiki').click();
     await expect(page.getByTestId('library-wiki-empty')).toBeVisible();
 
     const door = page.getByTestId('library-new-page');

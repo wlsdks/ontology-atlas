@@ -42,7 +42,7 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
   // again. Matched before `/docs` only in reading order; the two prefixes cannot
   // collide.
   if (path.startsWith("/library")) return "library";
-  if (path.startsWith("/docs")) return "docs";
+  if (path.startsWith("/docs")) return "library";
   if (path.startsWith("/projects") || path.startsWith("/project/")) return "projects";
   if (path === "/" || path.startsWith("/topology")) return "map";
   return null;

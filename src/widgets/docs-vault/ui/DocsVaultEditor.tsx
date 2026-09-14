@@ -182,6 +182,7 @@ export function DocsVaultEditor({
   // the conflict guard compare two current values and silently overwrite an external change.
   const loadedMtimeRef = useRef<number | undefined>(doc.mtime);
   const savedFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDraftRef = useRef<{ vaultScope: string; draft: EditorDraft } | null>(null);
 
   // Wikilink autocomplete state. The popover shows while open is not null.
   const [autocomplete, setAutocomplete] = useState<{
@@ -561,25 +562,36 @@ export function DocsVaultEditor({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [dirty]);
 
+  // Leaving for another Library tab must retain the last keystroke even before
+  // the normal draft debounce has elapsed. Disk writes still require Save.
+  useEffect(() => () => {
+    const pending = pendingDraftRef.current;
+    if (pending) writeEditorDraft(pending.vaultScope, pending.draft);
+    pendingDraftRef.current = null;
+  }, []);
+
   useEffect(() => {
     if (content === null || savedContent === null || loadedSlug !== doc.slug) return;
     if (!dirty) {
+      pendingDraftRef.current = null;
       clearEditorDraft(vaultScope, doc.slug);
       if (draftSavedAt !== null) {
         window.queueMicrotask(() => setDraftSavedAt(null));
       }
       return;
     }
-    const handle = window.setTimeout(() => {
-      const updatedAt = Date.now();
-      writeEditorDraft(vaultScope, {
+    const draft: EditorDraft = {
         slug: doc.slug,
         content,
         diskContent: savedContent,
         diskMtime: loadedMtimeRef.current,
-        updatedAt,
-      });
-      setDraftSavedAt(updatedAt);
+        updatedAt: Date.now(),
+    };
+    pendingDraftRef.current = { vaultScope, draft };
+    const handle = window.setTimeout(() => {
+      writeEditorDraft(vaultScope, draft);
+      pendingDraftRef.current = null;
+      setDraftSavedAt(draft.updatedAt);
     }, 250);
     return () => window.clearTimeout(handle);
   }, [content, dirty, doc.slug, draftSavedAt, loadedSlug, savedContent, vaultScope]);

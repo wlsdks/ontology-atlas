@@ -8,13 +8,18 @@ import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
 import type { AgentFilesUiModel } from "@/entities/agent-files";
 import { DOCS_HEAD_LABEL_MIN_PX, DocsSidebarBody } from "./DocsSidebarBody";
 
-function makeDoc(slug: string, title: string, updatedAt: string): VaultDoc {
+function makeDoc(
+  slug: string,
+  title: string,
+  updatedAt: string,
+  frontmatter: Record<string, unknown> = {},
+): VaultDoc {
   return {
     slug,
     path: `${slug}.md`,
     title,
     tags: [],
-    frontmatter: {},
+    frontmatter,
     headings: [],
     excerpt: "",
     wordCount: 0,
@@ -148,6 +153,26 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
       koMessages.vaultWidgets.parts.sidebar.searchPlaceholder,
     );
     fireEvent.change(search, { target: { value: "결제" } });
+    expect(screen.getAllByText("검색 결과 1개").length).toBeGreaterThan(0);
+  });
+
+  it("화면에 보이는 현지화 이름으로 목록을 찾고 같은 결과 수를 말한다", () => {
+    renderSidebar([
+      makeDoc(
+        "capabilities/local-vault",
+        "Local vault and data sources",
+        new Date().toISOString(),
+        { display_ko: "로컬 볼트 및 데이터소스 관리" },
+      ),
+      makeDoc("capabilities/checkout", "Checkout", new Date().toISOString()),
+    ]);
+
+    fireEvent.click(screen.getByTestId("docs-sidebar-search-toggle"));
+    fireEvent.change(
+      screen.getByPlaceholderText(koMessages.vaultWidgets.parts.sidebar.searchPlaceholder),
+      { target: { value: "로컬" } },
+    );
+
     expect(screen.getAllByText("검색 결과 1개").length).toBeGreaterThan(0);
   });
 

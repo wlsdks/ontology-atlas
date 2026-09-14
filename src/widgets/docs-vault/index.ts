@@ -32,3 +32,4 @@ export type { VaultCommand } from './model/command';
 export { PINNED_DOCS_STORAGE_PREFIX } from './lib/pinned-docs';
 export { useDocsBodyIndex } from './lib/use-docs-body-index';
 export { DocsVaultTree } from './ui/DocsVaultTree';
+export { matchesDocsTreeQuery } from './lib/tree-query';

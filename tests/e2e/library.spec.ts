@@ -220,18 +220,14 @@ test.describe("the Library destination", () => {
     await expect(sources).toContainText("XLSX");
 
     // The one invariant the whole library rests on: a raw source is not a document. It is
-    // now measured across the split — the tree lives on the other destination, and the
-    // rail is how a person crosses, so that is how this crosses too.
-    await page.getByTestId("app-nav-rail").getByRole("link", { name: "Docs" }).click();
+    // measured across the Library tabs: only ontology documents belong in this tree.
+    await page.getByTestId("library-workspace-ontology").click();
     const tree = page.getByRole("navigation", { name: "Document list" });
     await expect(tree).toBeVisible({ timeout: 25_000 });
     await expect(tree).not.toContainText("quarter-plan.pdf");
     await expect(tree).not.toContainText("budget.xlsx");
-    // And the row that says where they went, which below `lg` is the only way in.
-    await expect(page.getByTestId("docs-sidebar-library-link")).toHaveAttribute(
-      "href",
-      /\/library\//,
-    );
+    await expect(page.getByTestId("library-workspace-sources")).toBeVisible();
+    await expect(page.getByTestId("docs-sidebar-library-link")).toHaveCount(0);
   });
 
   test("distinguishes unwritten sources from source versions needing review", async ({
@@ -290,7 +286,7 @@ test.describe("the Library destination", () => {
   }) => {
     await openLibrary(page);
     // The index draws one list and opens on Sources (2026-09-07); the wiki is one press.
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
 
     const wiki = page.getByTestId("library-wiki-list");
     // Two spines; New page is the list's own last control (council 2026-09-07), not a page.
@@ -367,7 +363,7 @@ test.describe("the Library destination", () => {
   test("a wiki page opens in the reader, because it is ordinary Markdown", async ({ page }) => {
     await openLibrary(page);
     // The index draws one list and opens on Sources (2026-09-07); the wiki is one press.
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki-wiki/quarter-plan").click();
     const main = page.getByRole("main");
     await expect(main).toContainText("Three deliverables");
@@ -641,7 +637,7 @@ test.describe("the Library pane", () => {
   test("a page replaces the canvas, and closing it brings the canvas back", async ({ page }) => {
     await openLibrary(page);
     await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki-wiki/quarter-plan").click();
     await expect(page.getByTestId("library-wiki-header")).toBeVisible();
     await expect(page.getByTestId("library-reader-landing")).toHaveCount(0);
@@ -697,11 +693,11 @@ test.describe("the Library pane", () => {
     await expect(page.getByTestId("library-add-files")).toBeVisible();
 
     // The switch names both lists with their counts, so nothing is lost by drawing one.
-    const segment = page.getByTestId("library-index-segment");
+    const segment = page.getByTestId("library-workspace-tabs");
     await expect(segment).toContainText("Sources 12");
     await expect(segment).toContainText("Wiki 8");
-    await expect(page.getByTestId("library-index-segment-sources")).toHaveAttribute(
-      "aria-checked",
+    await expect(page.getByTestId("library-workspace-sources")).toHaveAttribute(
+      "aria-selected",
       "true",
     );
 
@@ -723,7 +719,7 @@ test.describe("the Library pane", () => {
      */
     const scroller = page.getByTestId("library-index-scroll");
     const switchStayed = await scroller.evaluate((element) => {
-      const control = document.querySelector('[data-testid="library-index-segment"]')!;
+      const control = document.querySelector('[data-testid="library-workspace-tabs"]')!;
       const before = control.getBoundingClientRect().top;
       element.scrollTop = 240;
       return { before, after: control.getBoundingClientRect().top, moved: element.scrollTop > 0 };
@@ -785,7 +781,7 @@ test.describe("the Library pane", () => {
     await measureRows();
 
     // 5 — the other segment, and the same geometry claims on the list it draws.
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     await expect(wiki).toBeVisible();
     await expect(sources).toHaveCount(0);
     // The doors travel with the list: Add files acts on sources and is not on this half.
@@ -916,7 +912,7 @@ test.describe("the Library pane", () => {
      * it to that file's own list. Both are what stop the index naming one thing while the
      * reader shows another.
      */
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     /*
      * The stored answer, not a reload: reopening this fixture means driving the picker
      * again, which is a different journey and would measure the folder-restore path
@@ -927,7 +923,7 @@ test.describe("the Library pane", () => {
     ).toBe("wiki");
     await page.getByTestId("library-wiki-wiki/note-01").click();
     await page.getByTestId("library-reader-back").click();
-    await expect(page.getByTestId("library-index-segment-wiki")).toHaveAttribute(
+    await expect(page.getByTestId("library-workspace-wiki")).toHaveAttribute(
       "aria-checked",
       "true",
     );
@@ -935,14 +931,14 @@ test.describe("the Library pane", () => {
 
   test("keyboard selection gives the reader focus and discovery keeps its own focus", async ({ page }) => {
     await openLibrary(page);
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki-wiki/quarter-plan").focus();
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("library-wiki-header")).toBeVisible();
     await expect(page.getByTestId("library-reader-landing")).toHaveCount(0);
     await expect(page.getByTestId("library-reader")).toBeFocused();
     await page.getByTestId("library-reader-back").click();
-    await page.getByTestId("library-index-segment-sources").click();
+    await page.getByTestId("library-workspace-sources").click();
     await page.getByTestId("library-find-documents").click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
@@ -954,7 +950,7 @@ test.describe("the Library pane", () => {
     await openLibrary(page);
     await expect(page.getByTestId("library-reader-landing")).toBeVisible();
     await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki-wiki/quarter-plan").click();
     await expect(page.getByTestId("library-wiki-header")).toContainText("Quarter plan");
     await expect(page.getByTestId("library-reader-landing")).toHaveCount(0);
@@ -1088,7 +1084,7 @@ for (const viewport of [
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await openLibrary(page, NARROW_VAULT);
 
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-new-page").click();
     await page.getByTestId("library-new-page-title").fill("Toast corner probe");
     await page.getByTestId("library-new-page-make").click();
@@ -1131,7 +1127,7 @@ for (const viewport of [
      * `size="viewport"` dialog this view has left since the graph became the home
      * (`docs/DECISIONS.md`, 2026-09-12).
      */
-    await page.getByTestId("library-index-segment-sources").click();
+    await page.getByTestId("library-workspace-sources").click();
     await page.getByTestId("library-find-documents").click();
     await expect(page.getByTestId("find-documents-list")).toBeVisible();
     await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);

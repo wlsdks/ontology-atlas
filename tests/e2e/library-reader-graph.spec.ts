@@ -42,7 +42,7 @@ test("a home popup returns its door on every close, and the canvas stands still"
   await expect(page.getByTestId("library-page")).toBeVisible();
 
   // 1 — a page replaces the picture and gives it back; the index row keeps its edge.
-  await page.getByTestId("library-index-segment-wiki").click();
+  await page.getByTestId("library-workspace-wiki").click();
   const selectedRow = page.getByTestId("library-wiki-wiki/workshop");
   const canvas = page.getByTestId("library-graph-canvas");
   await expect(canvas).toBeVisible();

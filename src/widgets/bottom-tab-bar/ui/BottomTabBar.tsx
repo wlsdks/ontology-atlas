@@ -3,7 +3,7 @@
 import { Link, usePathname } from '@/i18n/navigation';
 import { useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
-import { Blocks, BookOpen, Download, FolderKanban, Library, LineChart, Map as MapIcon } from 'lucide-react';
+import { Blocks, Download, FolderKanban, Library, LineChart, Map as MapIcon } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
 import { describeVaultShape } from '@/shared/lib/vault-shape';
@@ -47,7 +47,7 @@ const TABS: ReadonlyArray<TabItem> = [
     icon: ({
       map: MapIcon,
       architecture: Blocks,
-      docs: BookOpen,
+      library: Library,
       // `LineChart`, not `BarChart3` — beside the Library's shelf of spines a bar chart was
       // the same silhouette at tile size (`AppNavRail.tsx` carries the measurement).
       insights: LineChart,

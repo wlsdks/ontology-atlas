@@ -70,6 +70,13 @@ async function measureBlockedRows(page: Page) {
 async function openDocsTree(page: Page) {
   await page.goto("/ko/docs/?guides=off");
   await page.waitForLoadState("networkidle");
+  // The compatibility URL now opens the graph-backed Ontology collection. This
+  // instrument inspects every file kind, including notes, so it explicitly chooses All.
+  await page.getByTestId("docs-sidebar-collection-all").click();
+  await expect(page.getByTestId("docs-sidebar-collection-all")).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
   for (const folder of ["capabilities", "domains", "elements", "notes"]) {
     await page.getByRole("button", { name: new RegExp(folder) }).first().click();
     await page.waitForTimeout(120);

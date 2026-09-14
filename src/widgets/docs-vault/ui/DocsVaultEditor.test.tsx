@@ -1,4 +1,4 @@
-import { act, fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NextIntlClientProvider } from 'next-intl';
 import koMessages from '../../../../messages/ko.json';
@@ -38,11 +38,21 @@ const VAULT_SCOPE = 'test-vault';
 const draftKey = `ontology-atlas:docs-vault-editor-draft:${VAULT_SCOPE}:${doc.slug}`;
 
 afterEach(() => {
+  cleanup();
   window.localStorage.clear();
   vi.useRealTimers();
 });
 
 describe('DocsVaultEditor', () => {
+  it('retains the last edit when leaving before the draft debounce fires', async () => {
+    const onSave = vi.fn();
+    const view = render(<DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'original'} onSave={onSave} onClose={vi.fn()} />);
+    fireEvent.change(await screen.findByDisplayValue('original'), { target: { value: 'last keystroke' } });
+    view.unmount();
+    expect(JSON.parse(window.localStorage.getItem(draftKey)!)).toMatchObject({ content: 'last keystroke', diskContent: 'original', slug: doc.slug });
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
   it('shows a static native character only while the actual save is pending', async () => {
     let finish!: () => void;
     const pendingSave = new Promise<void>((resolve) => { finish = resolve; });

@@ -24,10 +24,11 @@ export const SHORTCUT_SCOPES: readonly ShortcutScope[] = ["current", "topology",
  * stripped. Screens with no dedicated shortcuts (studio, insights, projects) are
  * `global` — it is honest for the "current screen" tab to show only global shortcuts.
  */
-export function surfaceForPathname(pathname: string): ShortcutSurface {
+export function surfaceForPathname(pathname: string, libraryTab?: string | null): ShortcutSurface {
   const normalized = pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "") || "/";
   if (normalized === "/" || normalized.startsWith("/topology")) return "topology";
   if (normalized.startsWith("/docs")) return "docs";
+  if (normalized.startsWith("/library") && libraryTab === "ontology") return "docs";
   return "global";
 }
 

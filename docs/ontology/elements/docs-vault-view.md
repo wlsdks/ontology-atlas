@@ -3,7 +3,7 @@ uid: a2b4089e-0496-4ad2-b09d-8f2bcefd9ce4
 slug: elements/docs-vault-view
 kind: element
 title: Docs Vault (view)
-display_ko: 문서함 (화면)
+display_ko: 온톨로지 문서 (화면)
 domain: domains/local-vault-management
 path: src/views/docs-vault
 created_by: "agent:unknown"
@@ -11,9 +11,11 @@ dependencies: [elements/docs-vault-entity]
 relation_notes: { elements/docs-vault-entity: "The Docs workbench view reads documents and manifests through the docs-vault entity; src/views/docs-vault imports @/entities/docs-vault." }
 ---
 
-/docs page. Implementation evidence for capabilities/docs-vault-local.
+The ontology document workbench inside Library. Implementation evidence for capabilities/docs-vault-local.
 
 ## Evidence
+
+- Composition and tab/deep-link/draft round trip: `tests/e2e/library-workspace.spec.ts`
 
 - Primary implementation: `src/views/docs-vault/ui/DocsVaultPage.tsx#DocsVaultPage`
 - Supporting implementation: `src/views/docs-vault/ui/parts/DocFrontmatterBlock.tsx#DocFrontmatterBlock`
@@ -22,7 +24,7 @@ relation_notes: { elements/docs-vault-entity: "The Docs workbench view reads doc
 
 ## Includes
 
-- The `/docs` page shell: document viewer chrome, frontmatter block display, and the local-vault starter CTA.
+- The existing ontology page shell, composed by `src/app/library-workspace/index.tsx#LibraryWorkspace` at `/library/?tab=ontology` and the compatible `/docs` entry: document viewer chrome, frontmatter block display, and the local-vault starter CTA.
 - Composing the docs-vault entity's manifest and the docs-vault widget's editor/backlinks panels into one page.
 
 ## Excludes

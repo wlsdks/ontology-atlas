@@ -58,11 +58,16 @@ describe("목적지 이동 단축키 — 표가 정본이다", () => {
     for (const key of keys) {
       expect(key, `${key} 는 한 글자여야 한다`).toMatch(/^[a-z]$/);
     }
-    // Does the reverse table say the same thing as the forward one?
-    expect(Object.keys(DESTINATION_BY_KEY).length).toBe(keys.length);
+    // Does the reverse table say the same thing as the forward one? `d` is the one
+    // compatibility alias: Docs no longer has a tile, but its published leader
+    // shortcut and context-aware deep link still open Library's Ontology tab.
+    expect(Object.keys(DESTINATION_BY_KEY).sort()).toEqual([...keys, 'd'].sort());
     for (const id of DESTINATION_IDS) {
       expect(DESTINATION_BY_KEY[DESTINATION_KEY[id]]).toBe(id);
     }
+    expect(keys, 'the Docs compatibility alias must not replace a live destination key').not.toContain('d');
+    expect(DESTINATION_BY_KEY.d).toBe('docs');
+    expect(DESTINATION_HREF.docs).toBe('/docs/');
   });
 
   it("목적지마다 주소가 있고 라우트 모양이다", () => {
@@ -159,28 +164,17 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
     expect(table, "폭 하한(1024)이 표에 적혀 있지 않다").toContain("1024");
   });
 
-  /**
-   * **The Library is absent from the five for a different reason than MCP, and it pays
-   * for the absence with a link.**
-   *
-   * MCP is desk work. The Library is not — its route renders at 390 and a wiki page is
-   * worth reading on a phone. It is simply not one of *five*, and the price of that is a
-   * contextual entry point that exists at every width. Below `lg` the Docs sidebar's row
-   * is the only way in, so this asserts the row rather than the absence: an absence with
-   * no door is the dead pointer, not the decision.
-   */
-  it("자료실은 모바일 다섯 자리에 없는 대신 문 하나를 갖는다", () => {
+  /** Library now contains the former Docs surface, so it owns that mobile slot too. */
+  it("자료실이 문서함의 모바일 자리를 이어받고 낡은 문을 남기지 않는다", () => {
     expect(DESTINATION_IDS).toContain("library");
     expect(
       MOBILE_DESTINATION_IDS as readonly string[],
-      "자료실이 모바일 슬롯에 들어왔다 — 결정이 바뀐 것이라면 destinations.ts 의 주석부터 고쳐라",
-    ).not.toContain("library");
+      "자료실이 문서함의 모바일 슬롯을 이어받지 않았다",
+    ).toContain("library");
+    expect(MOBILE_DESTINATION_IDS as readonly string[]).not.toContain("docs");
     const sidebar = read("src/views/docs-vault/ui/parts/DocsSidebarBody.tsx");
-    expect(sidebar, "문서 화면에서 자료실로 가는 줄이 없다 — lg 아래에서는 이게 유일한 문이다").toContain(
+    expect(sidebar, "합쳐진 화면 안에 예전 자료실 이동 줄이 남았다").not.toContain(
       'data-testid="docs-sidebar-library-link"',
-    );
-    expect(sidebar, "그 줄이 /library 를 가리키지 않는다").toMatch(
-      /href="\/library\/"/,
     );
   });
 
@@ -241,8 +235,8 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
   });
 
   /**
-   * **Nine is the ceiling** (record of 2026-09-06, which amends the eight-cap of
-   * 2026-09-05, itself overturning the seven-cap decision (91) of 2026-08-21).
+   * **Nine remains the measured ceiling** (record of 2026-09-06), while the current
+   * visible inventory is eight after Docs moved inside Library on 2026-09-14.
    *
    * The number moved because the rail was measured again, and the tile's own padding
    * moved with it. At the app's minimum window (`minWidth: 1040`, `minHeight: 720`)
@@ -261,8 +255,8 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
    * overscroll-contain`, asserted below) for zoom, longer translations and every
    * smaller effective viewport.
    *
-   * What this check blocks is a tenth arriving quietly. It does not permit a new
-   * destination to evict an existing one as an implementation shortcut.
+   * What this check blocks is a tenth arriving quietly. The exact-inventory assertion
+   * below separately blocks using the newly free seat without a decision.
    */
   it("목적지는 아홉을 넘지 않는다 — 열째는 별도 결정을 요구한다", () => {
     expect(
@@ -272,29 +266,26 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
     ).toBeLessThanOrEqual(9);
   });
 
-  it("상한이 헐겁지 않다 — 여유를 무료로 두지 않는다", () => {
+  it("현재 목록은 여덟이다 — 합친 문서함이 별도 목적지로 돌아오지 않는다", () => {
     /*
      * The same grammar the system seat used on other ratchets: a ceiling with the
      * measurement far below it turns that slack into a free pass for whatever arrives
-     * next. Nine exist today — the seven the owner required to remain, MCP from the
-     * 2026-09-05 split, and the Library, which the 2026-09-06 record moved out of Docs
-     * after the owner read that screen as cluttered.
+     * next. Eight exist today: the 2026-09-14 owner decision moved Docs inside Library
+     * while retaining `/docs` only as a compatibility address.
      */
     expect(
       DESTINATION_IDS.length,
-      "목적지가 줄었다 — 자료실 추가가 기존 목적지를 제거하면 안 된다",
-    ).toBe(9);
+      "목적지 목록이 바뀌었다 — Library/Docs 통합 결정을 검토하라",
+    ).toBe(8);
   });
 
   /**
-   * **The pitch is part of the cap, so it is asserted with it.**
+   * **The compact pitch remains part of the measured rail, so it is asserted with it.**
    *
-   * Nine tiles fit only because the button's padding fell from `py-1.5` to `py-1`.
-   * Putting the padding back without touching this file would silently return the
-   * stack to 12–586 of a 616px pane and leave 30px — a rail one translation away from
-   * scrolling, with nothing red to say so.
+   * It was introduced when nine tiles had to fit. Merging two destinations does not
+   * silently restyle every remaining tile; that would be a separate visual change.
    */
-  it("아홉이 들어가게 한 타일 여백이 그대로다", () => {
+  it("측정된 타일 여백이 그대로다", () => {
     const rail = read("src/widgets/app-nav-rail/ui/AppNavRail.tsx");
     const block = rail.slice(rail.indexOf('shape: "card", className: "group relative w-full'));
     expect(block.slice(0, 200), "목적지 타일 버튼의 세로 여백이 py-1 이 아니다").toContain(

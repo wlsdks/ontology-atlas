@@ -36,7 +36,7 @@ test("a current source write-up revises an outdated related page; approval updat
   await browser.goto("/en/docs/?guides=off");
   await browser.getByRole("button", { name: /Open my folder/i }).click();
   await browser.getByTestId("app-nav-rail-item-library").click();
-  await browser.getByTestId("library-index-segment-wiki").click();
+  await browser.getByTestId("library-workspace-wiki").click();
   /*
    * ⚠️ **The waiting line left the index's foot on 2026-09-12** (owner: *"written like
    * this, who is ever going to look at it?"*). The home is the folder's graph, and this

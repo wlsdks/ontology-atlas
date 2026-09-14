@@ -136,7 +136,7 @@ test.describe("the structural check is the app's own", () => {
 
   test("with no agent and no press, the landing opens a report listing every planted finding", async ({ page }) => {
     await openLibraryCheckFolder(page);
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki").waitFor({ timeout: 30_000 });
 
     // Nothing on this screen can start a turn: the check is drawn with its reason, disabled.
@@ -245,7 +245,7 @@ test.describe("the structural check is the app's own", () => {
 
   test("the same list is there after quitting and reopening the app", async ({ page }) => {
     await openLibraryCheckFolder(page);
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-open-report").click();
     await openAdvisoryFold(page);
     await expect
@@ -301,12 +301,12 @@ test.describe("the index row's own state", () => {
         await page.goto("/en/library/?guides=off");
         /* The switch is remembered, so wait for the switch itself: `library-sources` is
            drawn only while that half is the chosen one. */
-        await page.getByTestId("library-index-segment-wiki").waitFor({ timeout: 30_000 });
+        await page.getByTestId("library-workspace-wiki").waitFor({ timeout: 30_000 });
       } else {
         await openLibraryCheckFolder(page);
         opened = true;
       }
-      await page.getByTestId("library-index-segment-wiki").click();
+      await page.getByTestId("library-workspace-wiki").click();
       await page.getByTestId("library-wiki").waitFor({ timeout: 30_000 });
       if (condition !== "other-hover") {
         await page.getByTestId("library-open-report").click();

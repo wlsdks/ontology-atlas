@@ -87,24 +87,29 @@ describe('sourceOutline — the shape, and never a shape it did not read', () =>
     }
   });
 
-  it('finds no headings in Markdown, because this reader counts lines there', () => {
-    const outline = sourceOutline(
-      caseBytes('sources/settlement-policy.md'),
-      'sources/settlement-policy.md',
-    );
+  it('opens Markdown headings through existing citation line anchors', () => {
+    const bytes = caseBytes('sources/settlement-policy.md');
+    const outline = sourceOutline(bytes, 'sources/settlement-policy.md');
+    const units = sourceUnits(bytes, 'sources/settlement-policy.md').units;
     expect(outline.format).toBe('text');
-    /*
-     * ⚠️ This is the gap slice U2 reports rather than closes. `## Settlement cycle` is a
-     * `line` unit, not a heading, and the selected direction excludes deriving headings
-     * from `^#`. Pinning the absence is what stops a later change from quietly promoting
-     * line units to headings and giving the pane anchors the citation grammar never
-     * minted.
-     */
-    expect(outline.headings).toEqual([]);
-    expect(outline.sheets).toEqual([]);
-    // Five non-empty lines; blank lines are not units, which is why a line count is a
-    // count of content rather than of the file's height.
+    expect(outline.headings.map((heading) => heading.title)).toContain('Settlement cycle');
+    for (const heading of outline.headings) {
+      expect(units.find((unit) => unit.anchor === heading.anchor)?.text).toContain(heading.title);
+      expect(heading.anchor).toMatch(/^l\d+$/);
+    }
     expect(outline.unitCount).toBe(5);
+  });
+
+  it('does not expose frontmatter, fenced examples, or indented code as headings', () => {
+    const text = ['---', '# metadata', '---', '# Policy', '', '```md', '## example', '```',
+      '    # code', '', '## Settlement cycle ##', '', 'Cards settle T+2.', '', 'Holdback', '--------'].join('\n');
+    const outline = sourceOutline(new TextEncoder().encode(text), 'sources/policy.md');
+    expect(outline.headings).toEqual([
+      { anchor: 'l4', title: 'Policy' },
+      { anchor: 'l11', title: 'Settlement cycle' },
+      { anchor: 'l15', title: 'Holdback' },
+    ]);
+    expect(sourceOutline(new TextEncoder().encode(text), 'sources/policy.txt').headings).toEqual([]);
   });
 
   it('counts records in a CSV, including the one whose quotes span two physical lines', () => {

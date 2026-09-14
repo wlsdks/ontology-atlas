@@ -84,7 +84,8 @@ export function VaultDiffToaster() {
 
     // The app's own writes (bootstrap, inline editing) already gave feedback through the action
     // itself; re-reporting them from a polling diff is a burst of noise.
-    const selfWritten = consumeSelfWrittenSlugs();
+    const observedSlugs = new Set([...added, ...modified]);
+    const selfWritten = consumeSelfWrittenSlugs(observedSlugs);
     const externalAdded = added.filter((slug) => !selfWritten.has(slug));
     const externalModified = modified.filter((slug) => !selfWritten.has(slug));
 

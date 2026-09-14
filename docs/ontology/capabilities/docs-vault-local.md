@@ -17,7 +17,7 @@ The ability to select, restore, and reopen one local Markdown vault as the real-
 ## Includes
 
 - Selecting, restoring, and reopening one local Markdown folder as the live source of truth, including the `<project>/atlas` child rule and the atomic manifest replacement.
-- Reading that mounted vault's documents in the workbench: the `/docs` shell, the document tree and editor, and the docs quick drawer (`elements/docs-quick-drawer`) that browses and jumps to a document from anywhere.
+- Reading that mounted vault's documents in the workbench: the Library Ontology tab (with `/docs` link compatibility), the document tree and editor, and the docs quick drawer (`elements/docs-quick-drawer`) that browses and jumps to a document from anywhere.
 
 ## Evidence
 - src/features/docs-vault-local (entry UI: open/create/guide/starter actions)

@@ -687,6 +687,33 @@ describe('useLocalVaultInternal — 기존 파일 보호 (createDoc / renameDoc)
     expect(target.write).not.toHaveBeenCalled();
     expect(target.state.text).toBe('target content');
   });
+
+  it('자체 쓰기 예약은 관찰된 slug에서만 소비되고 실패하면 되돌릴 수 있다', async () => {
+    const root = fakeRootHandle('my-vault');
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(makeBuildResult());
+
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    act(() => result.current.markSelfWrite('wiki/native-create'));
+    expect(result.current.consumeSelfWrittenSlugs(new Set())).toEqual(new Set());
+    expect(result.current.consumeSelfWrittenSlugs(new Set(['wiki/other']))).toEqual(new Set());
+    expect(result.current.consumeSelfWrittenSlugs(new Set(['wiki/native-create']))).toEqual(
+      new Set(['wiki/native-create']),
+    );
+    expect(result.current.consumeSelfWrittenSlugs(new Set(['wiki/native-create']))).toEqual(
+      new Set(),
+    );
+
+    act(() => result.current.markSelfWrite('wiki/failed-create'));
+    act(() => result.current.unmarkSelfWrite('wiki/failed-create'));
+    expect(result.current.consumeSelfWrittenSlugs(new Set(['wiki/failed-create']))).toEqual(
+      new Set(),
+    );
+    expect(result.current.selfEditTimestamps.has('wiki/failed-create')).toBe(false);
+  });
 });
 
 describe('structurallyEqualStatus — 폴링 가드가 실제로 작동한다', () => {

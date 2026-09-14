@@ -200,7 +200,7 @@ async function openFolder(page: Page) {
    * time and the switch decides which. The column opens on Sources — the first half of the
    * work — so this presses the switch, the same press a person makes.
    */
-  await page.getByTestId("library-index-segment-wiki").click();
+  await page.getByTestId("library-workspace-wiki").click();
   await page.getByTestId("library-wiki").waitFor({ timeout: 30_000 });
 }
 
@@ -311,7 +311,7 @@ test.describe("Compile opens the agent dock", () => {
      */
     await expect(page.getByTestId("library-actions-blocked")).toHaveCount(0);
 
-    await page.getByTestId("library-index-segment-sources").click();
+    await page.getByTestId("library-workspace-sources").click();
     await expect(page.getByTestId("library-sources")).toBeVisible();
     await page.getByTestId("library-source-sources/architecture.docx").click();
     await expect(page.getByTestId("library-stage")).toHaveCount(0);

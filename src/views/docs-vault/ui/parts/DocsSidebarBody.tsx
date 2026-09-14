@@ -9,7 +9,6 @@ import {
   FileText,
   Files,
   Hash,
-  Library,
   ListFilter,
   PinOff,
   Plus,
@@ -19,7 +18,6 @@ import {
   X,
 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { selectRecentVaultDocs } from "@/entities/knowledge-graph";
@@ -36,11 +34,13 @@ import {
   DOCS_TREE_SORTS,
   type DocsTreeGroup,
   type DocsTreeSort,
+  matchesDocsTreeQuery,
 } from "@/widgets/docs-vault";
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
 import { Chip, IconButton, RowButton, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { fieldClass } from '@/shared/ui/control-class';
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
+import { normalizeForMatch } from "@/shared/lib/node-name-match";
 
 /**
  * The docs sidebar body — the machined file tree.
@@ -305,7 +305,7 @@ export function DocsSidebarBody({
   );
   // Recently changed is a quiet section inside the list, collapsed by default.
   const [recentlyChangedOpen, setRecentlyChangedOpen] = useState(false);
-  const normalizedTreeQuery = treeQuery.trim().toLowerCase();
+  const normalizedTreeQuery = normalizeForMatch(treeQuery);
   // The set of slugs matching the active tag — `DocsVaultTree` calls `.has()` on it at
   // every node during recursion. A fresh Set per render would invalidate the tree's
   // internal `useMemo`s whether or not the filter changed, so it is stabilized here.
@@ -338,10 +338,7 @@ export function DocsSidebarBody({
   const queryMatchCount = useMemo(() => {
     if (!normalizedTreeQuery) return manifest.docs.length;
     return manifest.docs.filter((doc) =>
-      [doc.title, doc.slug, doc.path]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedTreeQuery),
+      matchesDocsTreeQuery(doc, normalizedTreeQuery),
     ).length;
   }, [manifest.docs, normalizedTreeQuery]);
   const collectionOptions: DocsVaultCollection[] = ["all", "guides", "ontology"];
@@ -683,33 +680,6 @@ export function DocsSidebarBody({
           onSelect={onSelect}
           t={t}
         />
-        {/*
-          Sources and Wiki stood here between 2026-09-05 and 2026-09-06 and now have their
-          own destination. Five capped lists in one 280px column left the document tree —
-          the thing this screen is for — living on what remained.
-
-          ⚠️ **The row stays, and it is not nostalgia.** Somebody who used those lists
-          yesterday needs to be told where they went, and below `lg` the rail is replaced
-          by five bottom tabs that do not include the Library, so this is also that width's
-          only way in. `/agents` keeps the same kind of row pointing at `/mcp`, for the
-          same reason. A destination reachable only by a typed address is the dead pointer
-          the surface registry exists to prevent.
-        */}
-        <Link
-          href="/library/"
-          data-testid="docs-sidebar-library-link"
-          className={controlClass({
-            shape: "row",
-            stacked: true,
-            tone: "muted",
-            hoverInk: "strong",
-            className:
-              "flex-none gap-1.5 border-b border-[color:var(--color-overlay-2)] px-3 py-2.5",
-          })}
-        >
-          <Library size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
-          <span className="min-w-0 flex-1 truncate text-body">{t("libraryLink")}</span>
-        </Link>
         {/* Recently changed is a quiet section inside the list, collapsed by default, rather
             than its own stack taking the top. Unlike `recentSlugs` (visited this session),
             these are documents inside a real 7-day mtime window. */}

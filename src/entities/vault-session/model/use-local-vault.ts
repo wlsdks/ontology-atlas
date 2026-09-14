@@ -1312,9 +1312,21 @@ export function useLocalVaultInternal() {
       return next;
     });
   }, []);
-  const consumeSelfWrittenSlugs = useCallback((): ReadonlySet<string> => {
-    const consumed = selfWrittenSlugsRef.current;
-    selfWrittenSlugsRef.current = new Set();
+  const unmarkSelfWrite = useCallback((slug: string) => {
+    selfWrittenSlugsRef.current.delete(slug);
+    setSelfEditTimestamps((prev) => {
+      if (!prev.has(slug)) return prev;
+      const next = new Map(prev);
+      next.delete(slug);
+      return next;
+    });
+  }, []);
+  const consumeSelfWrittenSlugs = useCallback((observedSlugs: ReadonlySet<string>): ReadonlySet<string> => {
+    const consumed = new Set<string>();
+    for (const slug of observedSlugs) {
+      if (!selfWrittenSlugsRef.current.delete(slug)) continue;
+      consumed.add(slug);
+    }
     return consumed;
   }, []);
 
@@ -1960,6 +1972,7 @@ export function useLocalVaultInternal() {
     ensureAgentConfigs,
     updateFrontmatter,
     markSelfWrite,
+    unmarkSelfWrite,
     consumeSelfWrittenSlugs,
     selfEditTimestamps,
   };

@@ -230,7 +230,10 @@ export function restoreFiledAnswer(current: RetainedLibraryAnswer | null, filed:
   return generation === filed.generation && current === null ? filed : current;
 }
 
-export function LibraryPage() {
+export function LibraryPage({ segment, onSegmentChange }: {
+  segment?: LibraryIndexSegment;
+  onSegmentChange?: (segment: LibraryIndexSegment) => void;
+} = {}) {
   const reducedMotion = usePrefersReducedMotion();
   const t = useTranslations("library");
   /* The folded check answer is drawn inside the chat, so its two strings live in that
@@ -247,7 +250,7 @@ export function LibraryPage() {
    */
   const failureSentence = useFailureSentence();
   const localVault = useLocalVault();
-  const { markSelfWrite } = localVault;
+  const { markSelfWrite, unmarkSelfWrite } = localVault;
   const workVaultScope = useVaultSessionIdentityScope();
 
   const handle = selectOpenVaultHandle(localVault.status, localVault.handle);
@@ -376,8 +379,12 @@ export function LibraryPage() {
      * index would otherwise say *Sources* while the pane showed a wiki page. Only a real
      * choice moves it; the back control leaves the switch where the person left it.
      */
-    if (next && next.kind !== "report") writeLibraryIndexSegment(next.kind === "wiki" ? "wiki" : "sources");
-  }, []);
+    if (next && next.kind !== "report") {
+      const nextSegment = next.kind === "wiki" ? "wiki" : "sources";
+      writeLibraryIndexSegment(nextSegment);
+      onSegmentChange?.(nextSegment);
+    }
+  }, [onSegmentChange]);
   const [busy, setBusy] = useState(false);
 
   /*
@@ -1171,38 +1178,49 @@ export function LibraryPage() {
 
   const handleNewPage = useCallback(
     async (title: string) => {
-      if (!handle) return;
+      if (!handle) return false;
       const page = buildHumanPage({ title, now: new Date() });
       if (knownSlugs.has(page.slug)) {
         toast.show(t("wiki.newPageExists", { page: page.slug }), "error");
         setSelected({ kind: "wiki", slug: page.slug });
-        return;
+        return true;
       }
+      let nativeWriteReserved = false;
       try {
         if (nativeVaultRootPath) {
+          markSelfWrite(page.slug);
+          nativeWriteReserved = true;
           if (!await createWikiFile(handle, page.path, page.text)) throw new Error(`Document already exists: "${page.slug}"`);
         } else {
           await writeWikiFile(handle, page.path, page.text);
+          markSelfWrite(page.slug);
         }
-        markSelfWrite(page.slug);
         setSelected({ kind: "wiki", slug: page.slug });
-        toast.show(t("wiki.newPageDone", { page: page.slug }), "success", {
-          label: t("wiki.undo"),
-          onClick: () => {
-            void deleteWikiFile(handle, page.path).then(
-              () => {
-                setSelected((current) => (current?.kind === "wiki" && current.slug === page.slug ? null : current));
-                toast.show(t("wiki.undone", { page: page.slug }), "success");
-              },
-              () => toast.show(t("wiki.undoFailed"), "error"),
-            );
+        toast.show(
+          t("wiki.newPageDone"),
+          "success",
+          {
+            label: t("wiki.undo"),
+            onClick: () => {
+              void deleteWikiFile(handle, page.path).then(
+                () => {
+                  setSelected((current) => (current?.kind === "wiki" && current.slug === page.slug ? null : current));
+                  toast.show(t("wiki.undone", { page: page.slug }), "success");
+                },
+                () => toast.show(t("wiki.undoFailed"), "error"),
+              );
+            },
           },
-        });
+          { description: title },
+        );
+        return true;
       } catch (err) {
+        if (nativeWriteReserved) unmarkSelfWrite(page.slug);
         toast.show(failureSentence(err, t("wiki.newPageFailed")).sentence, "error");
+        return false;
       }
     },
-    [failureSentence, handle, knownSlugs, markSelfWrite, nativeVaultRootPath, t, toast],
+    [failureSentence, handle, knownSlugs, markSelfWrite, nativeVaultRootPath, t, toast, unmarkSelfWrite],
   );
 
   const handleFileAnswer = useCallback(async () => {
@@ -1230,6 +1248,7 @@ export function LibraryPage() {
     // create only one write. A later answer can be filed independently.
     filedAnswersRef.current.add(filed);
     setFilingAnswer(filed);
+    let reservedSelfWrite: string | null = null;
     try {
       const cited = parseFrontmatter(page.text).frontmatter.sources;
       const observedInput = {
@@ -1242,14 +1261,18 @@ export function LibraryPage() {
       page = buildAnswerPage(observedInput);
       let created = false;
       for (let attempt = 0; attempt < 3; attempt += 1) {
+        markSelfWrite(page.slug);
+        reservedSelfWrite = page.slug;
         if (await createWikiFile(handle, page.path, page.text)) {
           created = true;
           break;
         }
+        unmarkSelfWrite(page.slug);
+        reservedSelfWrite = null;
         page = buildAnswerPage(observedInput);
       }
       if (!created) throw new Error('Could not reserve a fresh answer filename; existing pages were preserved.');
-      markSelfWrite(page.slug);
+      reservedSelfWrite = null;
       setLastAnswer((current) => clearFiledAnswer(current, filed));
       setSelected((current) =>
         answerGenerationRef.current === filed.generation && current === selectionAtFileStart
@@ -1271,12 +1294,13 @@ export function LibraryPage() {
         },
       });
     } catch (err) {
+      if (reservedSelfWrite) unmarkSelfWrite(reservedSelfWrite);
       filedAnswersRef.current.delete(filed);
       toast.show(failureSentence(err, t("wiki.fileAnswerRejected", { code: "write" })).sentence, "error");
     } finally {
       setFilingAnswer((current) => current === filed ? null : current);
     }
-  }, [agent.runtime, failureSentence, handle, lastAnswer, markSelfWrite, model.pairing.originalsByWiki, model.sources, nativeVaultRootPath, t, toast]);
+  }, [agent.runtime, failureSentence, handle, lastAnswer, markSelfWrite, model.pairing.originalsByWiki, model.sources, nativeVaultRootPath, t, toast, unmarkSelfWrite]);
 
   const autoDecide = useCallback(
     (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null; toolName: string | null }) => {
@@ -1769,6 +1793,7 @@ export function LibraryPage() {
     if (localReviewVisible || selected === null || findOpen || answerComparisonOpen || homeSurface !== null) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (document.querySelector('[aria-modal="true"]')) return;
       setSelected(null);
     };
     window.addEventListener("keydown", onKeyDown);
@@ -1776,7 +1801,8 @@ export function LibraryPage() {
   }, [agent.open, answerComparisonOpen, findOpen, homeSurface, localReviewVisible, selected]);
 
   /** Which list the index draws, and whether the column is folded — both per machine. */
-  const indexSegment = useLibraryIndexSegment();
+  const preferredSegment = useLibraryIndexSegment();
+  const indexSegment = segment ?? preferredSegment;
   const indexCollapsedByChoice = useLibraryIndexCollapsed();
   /*
    * **The reader keeps 420px, or the index folds on its own** (design-workbench, council
@@ -2470,6 +2496,7 @@ export function LibraryPage() {
         <div className="flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4">
           <LibraryHeader
             t={t}
+            title={segment ? t(`index.${segment}`, { count: segment === 'sources' ? model.sources.length : model.wikiPages.length }) : undefined}
             /*
              * The provider disclosure's one home. It is a fact about this place rather
              * than about a press, so it rides with the place's description instead of
@@ -2479,7 +2506,7 @@ export function LibraryPage() {
             onCollapse={() => setIndexCollapsed(true)}
             collapseRef={indexCollapseRef}
           />
-          <SegmentedControl
+          {!segment ? <SegmentedControl
             ariaLabel={t("index.aria")}
             value={indexSegment}
             onChange={(next: LibraryIndexSegment) => writeLibraryIndexSegment(next)}
@@ -2506,7 +2533,7 @@ export function LibraryPage() {
                 testId: "library-index-segment-wiki",
               },
             ]}
-          />
+          /> : null}
         </div>
         {/*
           One scroller, and it holds one list. Below `lg` the bottom tab bar stands over
@@ -3350,11 +3377,13 @@ export function LibraryPage() {
  */
 function LibraryHeader({
   t,
+  title,
   disclosure = null,
   onCollapse,
   collapseRef,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
+  title?: string;
   /**
    * **The one sentence about provider-owned traffic, when it is true** — the second
    * paragraph of the glyph's own panel, and the only place this screen prints it
@@ -3370,7 +3399,7 @@ function LibraryHeader({
   return (
     <div data-testid="library-header" className="flex min-w-0 items-center gap-1.5">
       <h1 className="min-w-0 truncate text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
-        {t("title")}
+        {title ?? t("title")}
       </h1>
       {/*
         Three corrections, each from a measurement (2026-09-07).
@@ -3431,7 +3460,7 @@ function LibraryHeader({
               The same step as the fold beside it: one glyph grade on this row, and this
               one now carries a panel of two paragraphs rather than a single aside.
             */}
-            <Info size={ICON_SIZE.lg} aria-hidden />
+            <Info size={ICON_SIZE.md} aria-hidden />
           </button>
         </Tooltip>
       </TooltipProvider>
@@ -3464,7 +3493,7 @@ function LibraryHeader({
             the same measurement: 10.5px of ink is the title's cap height and a 1.5px
             change from a glyph the owner had already read as too small.
           */}
-          <PanelLeftClose size={ICON_SIZE.lg} aria-hidden />
+          <PanelLeftClose size={ICON_SIZE.md} aria-hidden />
         </button>
       ) : null}
     </div>

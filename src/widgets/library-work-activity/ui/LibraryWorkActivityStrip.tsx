@@ -1,10 +1,14 @@
 "use client";
 
-import { BookOpen, Check, FilePenLine, Pause, TriangleAlert } from "lucide-react";
+import { useRef, type KeyboardEvent } from "react";
+import { BookOpen, Check, ChevronDown, FilePenLine, Pause, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { LibraryWorkActivity, LibraryWorkEvent, LibraryWorkTarget } from "@/features/library";
+import { useDismissibleMenu } from "@/shared/lib/use-dismissible-menu";
 import { Chip } from "@/shared/ui/controls";
+import { controlClass } from "@/shared/ui/control-class";
 import { Surface } from "@/shared/ui/surface";
+import { transientSurface } from "@/shared/ui/transient-surface";
 
 const ICONS = { read: BookOpen, proposal: FilePenLine, waiting: Pause, write: Check, error: TriangleAlert };
 const INK = {
@@ -35,6 +39,13 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
   const headline = current ?? activity.recent[0] ?? null;
   const Icon = headline ? ICONS[headline.kind] : BookOpen;
   const label = (event: LibraryWorkEvent) => t(`${event.phase}.${event.kind}`);
+  const historyTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const {
+    open: historyOpen,
+    setOpen: setHistoryOpen,
+    ref: historyRef,
+    surfaceRef: historySurfaceRef,
+  } = useDismissibleMenu();
   // Nothing to report and no session that could report: the picture keeps the height.
   // A receipt still outlives its conversation, which is the whole point of a receipt, so
   // the lane stands for one that is already there even after the dock is closed.
@@ -74,26 +85,81 @@ export function LibraryWorkActivityStrip({ activity, onSelect, reserved = false 
     <div className="h-28 flex-none min-[601px]:h-16" data-testid="library-work-lane">
     <Surface open={headline !== null} motion="overlay" as="section"
       aria-label={t("title")} data-testid="library-work-activity"
-      className="mx-5 flex h-full min-w-0 flex-col justify-center gap-2 overflow-x-auto border-b border-[color:var(--color-border-soft)] sm:mx-6 md:mx-10 min-[601px]:flex-row min-[601px]:items-center min-[601px]:gap-3">
+      className="relative mx-5 flex h-full min-w-0 flex-col justify-center gap-2 border-b border-[color:var(--color-border-soft)] sm:mx-6 md:mx-10 min-[601px]:flex-row min-[601px]:items-center min-[601px]:gap-4">
       {headline ? <>
-        <div className="flex min-w-0 items-center gap-2" data-testid="library-work-current" data-work-kind={headline.kind} data-work-phase={headline.phase}>
-          <span className={`flex-none ${INK[headline.kind]}`}><Icon size={20} aria-hidden="true" /></span>
-          <span className="flex-none text-label leading-body text-[color:var(--color-text-tertiary)]">{current ? t("now") : t("latest")}</span>
-          <p role="status" aria-atomic="true" className="flex min-w-0 items-baseline gap-x-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">
-            <span className="flex-none font-[var(--font-weight-strong)]">{label(headline)}</span>
-            <span title={headline.target?.ref ?? t("unbound")} className="min-w-0 truncate text-label text-[color:var(--color-text-secondary)]">{headline.target?.ref ?? t("unbound")}</span>
-          </p>
+        <div className="flex min-w-0 items-start gap-2 min-[601px]:flex-1" data-testid="library-work-current" data-work-kind={headline.kind} data-work-phase={headline.phase}>
+          <span className={"flex-none " + INK[headline.kind]}><Icon size={20} aria-hidden="true" /></span>
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-baseline gap-2">
+              <span className="flex-none text-label leading-body text-[color:var(--color-text-tertiary)]">{current ? t("now") : t("latest")}</span>
+              <p role="status" aria-atomic="true" className="truncate text-body-lg leading-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+                {label(headline)}
+              </p>
+            </div>
+            <p title={headline.target?.ref ?? t("unbound")} className="truncate font-mono text-caption leading-body text-[color:var(--color-text-secondary)]">
+              {headline.target?.ref ?? t("unbound")}
+            </p>
+          </div>
         </div>
-        <div className="flex min-w-0 items-center gap-2" data-testid="library-work-recent">
-          <span className="flex-none text-label leading-body text-[color:var(--color-text-tertiary)]">{t("recent")}</span>
-          {activity.recent.slice(0, 3).map((event) => {
-            const EventIcon = ICONS[event.kind];
-            const content = <><EventIcon size={14} aria-hidden="true" /><span className="truncate">{label(event)} · {event.target?.ref ?? t("unbound")}</span></>;
-            return event.target && (event.kind === "read" || event.kind === "write") ? <Chip key={event.id} size="md" tone="muted" className="min-w-0 max-w-full flex-none"
-              title={`${label(event)} · ${event.target.ref}`} onClick={() => onSelect(event.target!)}>{content}</Chip>
-              : <span key={event.id} className="flex min-w-0 items-center gap-1 text-label text-[color:var(--color-text-secondary)]">{content}</span>;
-          })}
-          {activity.recent.length === 0 ? <span className="text-label text-[color:var(--color-text-tertiary)]">{t("noReceipts")}</span> : null}
+        <div
+          ref={historyRef}
+          className="relative flex-none"
+          onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+            if (event.key !== "Escape" || !historyOpen) return;
+            event.preventDefault();
+            event.stopPropagation();
+            setHistoryOpen(false);
+            historyTriggerRef.current?.focus();
+          }}
+        >
+          <button
+            ref={historyTriggerRef}
+            type="button"
+            data-testid="library-work-history-toggle"
+            aria-expanded={historyOpen}
+            aria-haspopup="dialog"
+            onClick={() => setHistoryOpen((open) => !open)}
+            className={controlClass({
+              shape: "link",
+              size: "sm",
+              tone: "muted",
+              hoverInk: "strong",
+              className: "gap-1.5",
+            })}
+          >
+            <ChevronDown
+              size={14}
+              aria-hidden
+              className={"transition-transform " + (historyOpen ? "rotate-180" : "")}
+            />
+            <span>{t("recent")}</span>
+            <span className="font-mono tabular-nums">{activity.recent.length}</span>
+          </button>
+          <Surface
+            ref={(node: HTMLElement | null) => {
+              historySurfaceRef.current = node;
+            }}
+            open={historyOpen}
+            motion="overlay"
+            origin="top right"
+            role="dialog"
+            aria-label={t("recent")}
+            data-testid="library-work-recent"
+            {...transientSurface("anchored")}
+            className="absolute right-0 top-full z-[var(--z-dialog)] mt-1 flex w-[min(24rem,calc(100vw-2.5rem))] flex-col gap-1 rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-2 shadow-[var(--shadow-elevation-2)]"
+          >
+            {activity.recent.slice(0, 3).map((event) => {
+              const EventIcon = ICONS[event.kind];
+              const content = <><EventIcon size={14} aria-hidden="true" /><span className="truncate">{label(event)} · {event.target?.ref ?? t("unbound")}</span></>;
+              return event.target && (event.kind === "read" || event.kind === "write") ? <Chip key={event.id} size="md" tone="muted" className="min-w-0 max-w-full justify-start"
+                title={[label(event), event.target.ref].join(" · ")} onClick={() => {
+                  setHistoryOpen(false);
+                  onSelect(event.target!);
+                }}>{content}</Chip>
+                : <span key={event.id} className="flex min-w-0 items-center gap-1 px-2 py-1 text-label text-[color:var(--color-text-secondary)]">{content}</span>;
+            })}
+            {activity.recent.length === 0 ? <span className="text-label text-[color:var(--color-text-tertiary)]">{t("noReceipts")}</span> : null}
+          </Surface>
         </div>
       </> : null}
     </Surface>

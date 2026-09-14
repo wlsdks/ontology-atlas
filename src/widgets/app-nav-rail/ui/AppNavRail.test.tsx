@@ -73,11 +73,11 @@ describe("AppNavRail", () => {
     expect(screen.queryByText("Atlas")).toBeNull();
   });
 
-  it("renders all 9 destinations with i18n labels", () => {
+  it("renders eight destinations with ontology documents inside Library", () => {
     renderRail();
     expect(screen.getByTestId("app-nav-rail-item-map")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-architecture")).toBeInTheDocument();
-    expect(screen.getByTestId("app-nav-rail-item-docs")).toBeInTheDocument();
+    expect(screen.queryByTestId("app-nav-rail-item-docs")).not.toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-library")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-insights")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
@@ -168,29 +168,29 @@ describe("AppNavRail", () => {
 
   // Task ⑪ — LNB context carryover. If you select a node on the map and then
   // navigate to a document-vault item, that node's document should open immediately (no unrelated default screen).
-  it("overrides the docs item's href with contextHrefs.docs when provided", () => {
+  it("carries the selected ontology document into Library with contextHrefs.docs when provided", () => {
     renderRail(
       <AppNavRail contextHrefs={{ docs: "/docs/?slug=capabilities/mcp-server" }} />,
     );
-    expect(screen.getByTestId("app-nav-rail-item-docs")).toHaveAttribute(
+    expect(screen.getByTestId("app-nav-rail-item-library")).toHaveAttribute(
       "href",
       "/docs/?slug=capabilities/mcp-server&focus=main",
     );
   });
 
-  it("falls back to the default docs surface with the reading-start marker", () => {
+  it("falls back to the default Library surface with the reading-start marker", () => {
     renderRail();
-    expect(screen.getByTestId("app-nav-rail-item-docs")).toHaveAttribute(
+    expect(screen.getByTestId("app-nav-rail-item-library")).toHaveAttribute(
       "href",
-      "/docs/?focus=main",
+      "/library/?focus=main",
     );
   });
 
-  it("keeps the marked default docs surface when contextHrefs.docs is undefined", () => {
+  it("keeps the marked default Library surface when contextHrefs.docs is undefined", () => {
     renderRail(<AppNavRail contextHrefs={{}} />);
-    expect(screen.getByTestId("app-nav-rail-item-docs")).toHaveAttribute(
+    expect(screen.getByTestId("app-nav-rail-item-library")).toHaveAttribute(
       "href",
-      "/docs/?focus=main",
+      "/library/?focus=main",
     );
   });
 

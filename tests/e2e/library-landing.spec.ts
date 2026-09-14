@@ -168,7 +168,7 @@ test.describe("A folder of pages and no nodes opens on the Library", () => {
      * The index draws one list and the switch names both (2026-09-07), so the count that
      * proves the page arrived is on the switch; the list itself is one press away.
      */
-    const segment = page.getByTestId("library-index-segment");
+    const segment = page.getByTestId("library-workspace-tabs");
     await expect(segment).toBeVisible({ timeout: 30_000 });
     await expect(page).toHaveURL(/\/en\/library\/?/);
     await expect(segment).toContainText("Wiki 1");
@@ -182,7 +182,7 @@ test.describe("A folder of pages and no nodes opens on the Library", () => {
     await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
     await expect(page.getByTestId("library-guide-open")).toHaveCount(1);
     await expect(page.getByTestId("library-stage")).toHaveCount(0);
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     await expect(page.getByTestId("library-wiki")).toBeVisible();
     // The rail reads the same files: a wiki without a map has no map doors, and keeps the
     // wiki, the agent, MCP and history.

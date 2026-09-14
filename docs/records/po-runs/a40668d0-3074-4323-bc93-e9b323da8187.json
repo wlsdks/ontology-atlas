@@ -1,0 +1,35 @@
+{
+  "date": "2026-09-14",
+  "decision": "Unify Library navigation while restoring Markdown evidence reading",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "orient",
+  "changes": [
+    "surface-inventory",
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "scope",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-leverage"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-14",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "a40668d0-3074-4323-bc93-e9b323da8187",
+  "recordedAt": "2026-09-14T02:29:34.289Z"
+}

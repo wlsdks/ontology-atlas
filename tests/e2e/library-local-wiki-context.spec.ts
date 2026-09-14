@@ -101,7 +101,7 @@ async function openLocalCompile(page: Page, selectPage = false, options: Paramet
   });
   await page.getByTestId("app-nav-rail").getByRole("link", { name: "Library" }).click();
   await expect(page.getByTestId("library-sources")).toBeVisible({ timeout: 30_000 });
-  await page.getByTestId("library-index-segment-wiki").click();
+  await page.getByTestId("library-workspace-wiki").click();
   await expect(page.getByTestId("library-wiki")).toBeVisible({ timeout: 30_000 });
   /*
    * A retained question hides first-run guidance. Compile must still expose its review.

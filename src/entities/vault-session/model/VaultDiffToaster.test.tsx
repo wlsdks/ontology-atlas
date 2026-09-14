@@ -221,6 +221,61 @@ describe('VaultDiffToaster', () => {
     expect(toastMocks.show).toHaveBeenLastCalledWith('편집 — answer', 'success');
   });
 
+  it('자체 쓰기 예약은 빈 diff에서 살아남고, 해당 파일 도착 때만 한 번 소비된다', () => {
+    const pending = new Set(['wiki/native-create']);
+    const consumeSelfWrittenSlugs = (observed: ReadonlySet<string>) => {
+      const consumed = new Set<string>();
+      for (const slug of observed) {
+        if (!pending.delete(slug)) continue;
+        consumed.add(slug);
+      }
+      return consumed;
+    };
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      manifest: manifestWith([{ slug: 'seed', mtime: 1 }]),
+      consumeSelfWrittenSlugs,
+    });
+    const { rerender } = render(<VaultDiffToaster />);
+
+    // An unstable provider/toast object can rerender before the native create promise
+    // resolves. With no observed diff, that render must not consume the reservation.
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      manifest: manifestWith([{ slug: 'seed', mtime: 1 }]),
+      consumeSelfWrittenSlugs,
+    });
+    rerender(<VaultDiffToaster />);
+    expect(pending).toEqual(new Set(['wiki/native-create']));
+
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      manifest: manifestWith([
+        { slug: 'seed', mtime: 1 },
+        { slug: 'wiki/native-create', mtime: 2 },
+        { slug: 'wiki/external', mtime: 2 },
+      ]),
+      consumeSelfWrittenSlugs,
+    });
+    rerender(<VaultDiffToaster />);
+    expect(pending.size).toBe(0);
+    expect(toastMocks.show).toHaveBeenCalledTimes(1);
+    expect(toastMocks.show).toHaveBeenLastCalledWith('추가 — external', 'info');
+
+    localVaultMocks.useLocalVault.mockReturnValue({
+      status: 'loaded',
+      manifest: manifestWith([
+        { slug: 'seed', mtime: 1 },
+        { slug: 'wiki/native-create', mtime: 3 },
+        { slug: 'wiki/external', mtime: 2 },
+      ]),
+      consumeSelfWrittenSlugs,
+    });
+    rerender(<VaultDiffToaster />);
+    expect(toastMocks.show).toHaveBeenCalledTimes(2);
+    expect(toastMocks.show).toHaveBeenLastCalledWith('편집 — native-create', 'success');
+  });
+
   /**
    * **A notification has to carry information** (owner instruction, 2026-08-01). What the owner
    * caught on screen was `✓ Edited: capabilities/payment-authorization` — `capabilities/` is a

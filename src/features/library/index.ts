@@ -30,7 +30,7 @@ export type { AnswerObservation, RetainedAnswerHead } from './lib/answer-revisio
 export { answerRevisionStore, answerTextHash, prepareAnswerRefresh, saveAnswerRevision } from './lib/answer-revision-store';
 export type { AnswerRefreshSnapshot } from './lib/answer-revision-store';
 export { createWikiFile, deleteWikiFile, writeWikiFile } from "./lib/write-wiki-file";
-export { buildHumanPage } from "./lib/human-page";
+export { buildHumanPage, humanPageSlug } from "./lib/human-page";
 export {
   EMPTY_LIBRARY_WORK_ACTIVITY,
   appendLibraryWorkReceipt,

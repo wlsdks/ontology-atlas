@@ -156,7 +156,7 @@ installation with scripts disabled.
 - **A CLI with the same authority as the agent** — scaffold, validate, dry-run
   writes, traversal, blast radius, commit preflight, agent handoff.
   [CLI reference](cli/README.md).
-- **Every surface reads that one folder** — Map, Architecture, Docs, Library,
+- **Every surface reads that one folder** — Map, Architecture, Library,
   Insights, Projects, Agents, MCP, and Git History.
 - **Versioned AI analysis kept as local Markdown**, with its evidence and
   selectable history, and measured violations instead of an invented
@@ -220,11 +220,11 @@ Every screenshot below reads [`samples/storefront`](samples/storefront), an
 example folder in this repository; `node cli/src/index.mjs overview
 samples/storefront` prints its current census.
 
-![The current Docs workspace in the installed macOS app, with the vault tree open on the capabilities folder, the Checkout document beside it, its expanded frontmatter, word count and source date, its backlinks, and a link back to the same node on the map](docs/assets/readme/docs-workspace.png)
+![The Library Ontology workspace in the installed macOS app, with the vault tree open on the capabilities folder, the Checkout document beside it, its expanded frontmatter, word count and source date, its backlinks, and a link back to the same node on the map](docs/assets/readme/docs-workspace.png)
 
-Docs is the same folder without the canvas: preview or edit Markdown, inspect the
+**Library → Ontology** opens the same folder without the canvas: preview or edit Markdown, inspect the
 frontmatter that becomes the graph, follow backlinks, and jump back to the map.
-There is no imported copy to synchronize.
+There is no imported copy to synchronize. Sources, Wiki, and Ontology share one Library destination; existing `/docs/?slug=…` links still open the same document.
 
 ### 2. Connect your agent
 
@@ -265,7 +265,7 @@ map, **Cone** hangs each parent's children on a cone with height as the
 containment tier, and **Cloud** lets relations determine all three axes. Changing
 the view never changes the graph.
 
-### 4. Gather the documents in the Library
+### 4. Gather and read documents in the Library
 
 ![The current Library in the installed macOS app: the Sources 3 and Wiki 1 tabs over Add files, Find documents and Bring from a service, three gathered documents with their format, byte size and either a not-compiled badge or a written-up check, the line saying two are not written up yet, and beside them the Gather, Compile and Read stages with Gather done, Compile next on the two waiting sources, and Read offering the one page that exists](docs/assets/readme/library-sources.png)
 
@@ -284,6 +284,8 @@ from the same template whether a person or the in-app agent writes it, and
 the page. **Compile** starts one conversation that reads the sources and writes
 the page; the traffic goes from your coding agent straight to its own provider,
 which the screen states instead of implying that Atlas sits in the middle.
+
+Markdown source headings open their original cited lines inside Library, including the surrounding passage. No converted file is stored.
 
 Library also works without code or ontology nodes. Keep a question and its cited
 answer, inspect source changes, request an updated draft through Claude Code or
@@ -451,7 +453,7 @@ is lighter.
 | Structure | Freeform notes and links | Vendor-defined types | Project → domain → capability → element, documents, typed relations |
 | Graph questions | Note traversal | Graph engine | Blast radius, reachability, cycles, paths, centrality, health |
 | Evidence from code | Hand-authored | Corpus ingestion | Bounded read-only proposals; nothing lands until approval |
-| Human surface | Notes app | Vendor console | Local Map, Architecture, Docs, Library, Insights, Projects, Agents, MCP, History |
+| Human surface | Notes app | Vendor console | Local Map, Architecture, Library, Insights, Projects, Agents, MCP, History |
 
 The argument and its sources are in [Foundations](docs/FOUNDATIONS.md).
 

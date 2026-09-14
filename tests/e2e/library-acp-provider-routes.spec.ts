@@ -155,7 +155,7 @@ for (const runtimeId of ['claude-acp', 'codex-acp'] as const) {
   test(`${runtimeId} receives the compile click time rather than an inferred timestamp`, async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-09-11T01:02:03Z'));
     const harness = await openLibrary(page, runtimeId);
-    await page.getByTestId('library-index-segment-wiki').click();
+    await page.getByTestId('library-workspace-wiki').click();
     const clickedAt = '2026-09-11T04:05:06Z';
     await page.clock.setFixedTime(new Date(clickedAt));
     await page.getByTestId('library-compile').click();

@@ -28,8 +28,8 @@ tags: [architecture, infra, overview]
 │ ├─ /topology               map + contextual write     │
 │ ├─ /architecture           harness: coverage · guides │
 │ │                          · structure (?view=)        │
-│ ├─ /docs                   vault picker + editor       │
-│ ├─ /library                gathered sources + wiki     │
+│ ├─ /docs                   ontology link compatibility  │
+│ ├─ /library                sources + wiki + ontology     │
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
 │ ├─ /ontology/studio        compatibility → topology    │
@@ -354,13 +354,14 @@ graph. The separation is a property of the **walk**, not a filter applied later.
 - `src-tauri/src/library.rs` owns the native half: hashing, the native picker, the import
   copy, metadata-only discovery, and Finder reveal. It writes nothing outside
   `<vault>/sources/`, and its discovery walk contains no writer.
-- **Where it is drawn moved on 2026-09-06.** The two lists shipped inside the Docs
-  sidebar and became `/library` the next day, after the owner read that screen as
-  cluttered. `src/views/library/` owns the destination: an index of Sources and Wiki on
-  the left, and on the right either the wiki page in the shared reading pane
-  (`src/widgets/doc-reading-pane/`) or, for a source, the six facts the folder holds
-  about a file Atlas has never opened. Compile's agent dock came with it. The file rules
-  above did not change — only which screen draws them.
+- **One Library destination, three tabs (2026-09-14).**
+  `src/app/library-workspace/` composes `src/views/library/` for Sources/Wiki and
+  `src/views/docs-vault/` for Ontology. `/library/?tab=ontology` opens the existing
+  reader/editor; `/docs` remains a compatible entry with the same query and fragment.
+  Only the active view mounts, and no view imports another view. The mobile Library
+  slot replaces Docs. The editor flushes a pending browser draft on unmount; explicit
+  Save and the existing mtime conflict guard still own file writes. Markdown source
+  outlines preserve line anchors used by MCP citations and store no converted copy.
 - The reader owns the pane; the Library graph mounts only inside the shared
   viewport Dialog after an explicit Graph action. Its close path preserves
   selection and scroll and restores the opener. The unselected landing lists
@@ -615,19 +616,20 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 **Above the destinations the rail carries exactly one thing: the open folder's
 identity** (`src/features/vault-switch`, 2026-09-13). It is the only persistent
 place in the app that says which folder the data comes from — the shell has no
-header, and a wiki-only vault has no `/docs`, which was the one surface that named
-the folder — and pressing it opens the known folders plus a picker. The same list
+header, and no destination-specific header can name the folder everywhere — and
+pressing it opens the known folders plus a picker. The same list
 is the launch chooser: when two or more folders are known the cold restore stops
 rather than guess, leaving the folder screen to own the launch. Decision:
 `docs/DECISIONS.md`, "The folder count decides the launch".
 
 **One piece of code decides which nav item is active; each screen size shows a
-different list of buttons.** The desktop rail shows nine destinations: Map,
-Architecture, Docs, Library, Insights, Projects, Agents, MCP, and Git. The mobile bottom
-bar shows five persistent destinations: Map, Architecture, Docs, Insights, and Projects;
-web adds Get App as a separate utility. Contextual writing stays inside Map,
-Agents, MCP and Git keep their narrow-screen entry points, and the Library's is the row in
-the Docs sidebar where its two lists used to be.
+different list of buttons.** The desktop rail shows eight destinations: Map,
+Architecture, Library, Insights, Projects, Agents, MCP, and Git. The mobile bottom
+bar shows five persistent destinations: Map, Architecture, Library, Insights, and Projects;
+web adds Get App as a separate utility. Library contains Sources, Wiki, and Ontology;
+`/docs` remains a compatible document address and resolves active navigation to Library.
+Contextual writing stays inside Map, while Agents, MCP and Git keep their narrow-screen
+entry points.
 Both read the same rules in
 `src/shared/lib/nav-destination.ts`, so every route belongs to exactly one
 destination even on a screen size that deliberately hides that button. The

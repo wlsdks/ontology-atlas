@@ -16,6 +16,8 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 're
 export interface TabBarItem {
   key: string;
   label: string;
+  /** Stable selector for a product-specific tab. */
+  testId?: string;
   /** Engraved count next to the label (e.g. node count) — omit for tabs with no count. */
   count?: string | number;
   /**
@@ -32,6 +34,8 @@ export function TabBar({
   onSelect,
   ariaLabel,
   idPrefix = 'insights',
+  testId,
+  placement = 'default',
 }: {
   items: readonly TabBarItem[];
   activeKey: string;
@@ -55,6 +59,10 @@ export function TabBar({
    * unchanged.
    */
   idPrefix?: string;
+  /** Stable selector for the complete tab strip. */
+  testId?: string;
+  /** Lets a page header provide the strip's one shared bottom rule. */
+  placement?: 'default' | 'header';
 }) {
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingFocusKey = useRef<string | null>(null);
@@ -205,6 +213,7 @@ export function TabBar({
   return (
     <div
       ref={stripRef}
+      data-testid={testId}
       role="tablist"
       aria-orientation="horizontal"
       aria-label={ariaLabel}
@@ -228,7 +237,11 @@ export function TabBar({
       // carries seven tabs. Wrapping them would destroy the underline tab bar's identity,
       // so this scrolls horizontally inside itself — the same pattern AppSettingsMenu's
       // tablist uses — and page-level overflow never happens.
-      className="flex gap-7 overflow-x-auto border-b border-[color:var(--color-divider)]"
+      className={
+        placement === 'header'
+          ? "flex h-full items-end gap-7 overflow-x-auto"
+          : "flex gap-7 overflow-x-auto border-b border-[color:var(--color-divider)]"
+      }
       style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}
     >
       {items.map((item, index) => {
@@ -236,6 +249,7 @@ export function TabBar({
         return (
           <button
             key={item.key}
+            data-testid={item.testId}
             ref={(element) => {
               if (element) tabRefs.current.set(item.key, element);
               else tabRefs.current.delete(item.key);
@@ -300,6 +314,7 @@ export function TabBar({
              */
             className={
               "atlas-touch-floor -mb-px inline-flex shrink-0 items-end gap-2 whitespace-nowrap border-b-[length:var(--tabbar-underline)] px-0.5 pb-2.5 font-mono text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caps-14)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+              (placement === 'header' ? "h-[calc(100%+1px)] " : "") +
               (active
                 ? "border-[color:var(--color-indigo-accent)] text-[color:var(--color-text-primary)]"
                 : "border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]")

@@ -38,6 +38,7 @@ export type {
 export { VAULT_SOURCES_DIR } from './lib/build-local-manifest';
 export {
   buildLibraryModel,
+  selectWikiPages,
   countSourceFormats,
   formatSourceBytes,
   isWikiPage,

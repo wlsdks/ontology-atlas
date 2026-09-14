@@ -203,7 +203,7 @@ for (const [width, height] of [
     await page.getByTestId("library-sources").waitFor({ timeout: 30_000 });
 
     // The cited state, reached the way a reader reaches it: a citation on the page.
-    await page.getByTestId("library-index-segment-wiki").click();
+    await page.getByTestId("library-workspace-wiki").click();
     await page.getByTestId("library-wiki-wiki/settlement").click();
     const citation = page
       .locator('button[data-source-path="sources/settlement-policy.md"][data-source-anchor="l11"]')
@@ -213,6 +213,33 @@ for (const [width, height] of [
     // The passage read is what supplies the measured hash, which is the long value.
     await expect(page.getByTestId("library-source-passage")).toHaveAttribute("data-state", "resolved", {
       timeout: 25_000,
+    });
+
+    /*
+     * Measure the scroll end at the scroll end. Citation arrival intentionally lands the
+     * named passage near the top of the viewport, so its scroll position is unrelated to
+     * the document's closing gutter. With the Markdown headings added on 2026-09-14, the
+     * initial measurements were scrollTop 0 of 115 at 1512x901 and 167 of 323 at
+     * 1040x720; viewport coordinates therefore put the last block 83px/124px below the
+     * scroller even though both true ends retained exactly 32px of clearance.
+     */
+    await page.evaluate(() => {
+      const pane = document.querySelector<HTMLElement>('[data-testid="library-source-summary"]');
+      let scroller = pane?.parentElement ?? null;
+      while (scroller && !/auto|scroll/.test(getComputedStyle(scroller).overflowY)) {
+        scroller = scroller.parentElement;
+      }
+      if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    });
+    await page.waitForFunction(() => {
+      const pane = document.querySelector<HTMLElement>('[data-testid="library-source-summary"]');
+      let scroller = pane?.parentElement ?? null;
+      while (scroller && !/auto|scroll/.test(getComputedStyle(scroller).overflowY)) {
+        scroller = scroller.parentElement;
+      }
+      return scroller
+        ? Math.abs(scroller.scrollTop - (scroller.scrollHeight - scroller.clientHeight)) < 1
+        : false;
     });
 
     const measured = (await page.evaluate(PANE_END)) as PaneEnd | null;

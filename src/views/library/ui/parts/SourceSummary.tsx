@@ -39,31 +39,9 @@ const SOURCE_PASSAGE_HEADING_ID = "library-source-passage-heading";
 /** Names the outline section (`source.outline.title`) to a screen reader, through its own `aria-labelledby`. */
 const SOURCE_OUTLINE_HEADING_ID = "library-source-outline-heading";
 
-/**
- * **The file's shape as lines a person reads — only what the reader can actually back.**
- *
- * The per-format table is not a style choice; it is the list of things U1's reader really
- * returns, and the gap between that and what slice U2's brief asked for is reported
- * rather than papered over:
- *
- * | format | what this prints | why |
- * |---|---|---|
- * | DOCX | every heading, by name, pressable | the extractor mints `h:<slug>` anchors for them, so these are real addresses and the press opens the passage |
- * | XLSX | each sheet with its row count | `s<i>r<n>` carries the sheet, and "row 3" in a two-sheet workbook is ambiguous |
- * | CSV / TSV | the record count | records are the unit, and `r<n>` is their address |
- * | Markdown, text, HTML | nothing; the section says it cannot outline the shape | ⚠️ see below |
- * | PDF, anything else | nothing; the same sentence | zero units and no page count. A page count needs a PDF parser, which this slice excludes by name |
- *
- * A `paragraph` count rides along for DOCX because the headings alone would describe a
- * document of eight units as a document of four.
- *
- * ⚠️ **Markdown, text and HTML print no count at all** (design-lead, council 2026-09-11).
- * They used to print "18 lines", and a line count is not a structure: nobody can act on
- * it, it is not what this section promised, and it contradicted the neighbouring sentence
- * that says these formats *cannot* be outlined — a `##` line is a `line` unit to this
- * reader and its tags are stripped before units exist. So they take the same honest
- * sentence a PDF takes, and deriving Markdown headings stays its own decision.
- */
+/** Outline rows preserve the source reader's addresses. Markdown headings use
+ * original line anchors; DOCX headings keep h: anchors. Unsupported formats
+ * state the limitation instead of inventing counts or searchable text. */
 function outlineRows(
   outline: SourceOutline,
   t: ReturnType<typeof useTranslations<"library">>,
@@ -663,7 +641,7 @@ export function SourceSummary({
             /*
              * **A format whose shape this reader does not know says so, and prints no
              * number.** A PDF yields no units at all; "0 parts" would be a different and
-             * untrue fact, and the kind of number a person would believe. A Markdown or
+             * untrue fact, and the kind of number a person would believe. A heading-free text or
              * HTML file reaches the same sentence by the other road — it has units, and
              * none of them is structure. The Finder door is the honest answer in both
              * cases, which is why it stays.

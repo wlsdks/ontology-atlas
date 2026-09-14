@@ -19,7 +19,9 @@ import {
   type DocsTreeSort,
 } from '../lib/tree-order';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { normalizeForMatch } from '@/shared/lib/node-name-match';
 import { RowButton } from '@/shared/ui';
+import { matchesDocsTreeQuery } from '../lib/tree-query';
 
 interface Props {
   tree: VaultTreeNode;
@@ -83,24 +85,31 @@ function matchesTag(node: VaultTreeNode, activeTagSlugs?: Set<string>): boolean 
   return node.children?.some((c) => matchesTag(c, activeTagSlugs)) ?? false;
 }
 
-function matchesQuery(node: VaultTreeNode, query: string): boolean {
+function matchesQuery(
+  node: VaultTreeNode,
+  query: string,
+  docsBySlug?: Map<string, VaultDoc>,
+): boolean {
   if (!query) return true;
-  const haystack = [node.title, node.name, node.slug, node.path]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-  return haystack.includes(query);
+  const doc = node.slug ? docsBySlug?.get(node.slug) : undefined;
+  if (doc && matchesDocsTreeQuery(doc, query)) return true;
+  return [node.title, node.name, node.slug, node.path]
+    .filter((value): value is string => Boolean(value))
+    .some((value) => normalizeForMatch(value).includes(query));
 }
 
 function containsQueryMatch(
   node: VaultTreeNode,
   query: string,
   visibleDocSlugs?: Set<string>,
+  docsBySlug?: Map<string, VaultDoc>,
 ): boolean {
   if (!matchesVisibleDoc(node, visibleDocSlugs)) return false;
   if (!query) return true;
-  if (node.type === 'doc') return matchesQuery(node, query);
-  return node.children?.some((child) => containsQueryMatch(child, query, visibleDocSlugs)) ?? false;
+  if (node.type === 'doc') return matchesQuery(node, query, docsBySlug);
+  return node.children?.some((child) =>
+    containsQueryMatch(child, query, visibleDocSlugs, docsBySlug),
+  ) ?? false;
 }
 
 function containsSelectedSlug(
@@ -143,10 +152,10 @@ function TreeNode({
   );
   if (!matchesVisibleDoc(node, visibleDocSlugs)) return null;
   if (!matchesTag(node, activeTagSlugs)) return null;
-  if (!containsQueryMatch(node, query, visibleDocSlugs)) return null;
+  if (!containsQueryMatch(node, query, visibleDocSlugs, docsBySlug)) return null;
 
   if (node.type === 'doc' && node.slug) {
-    if (!matchesQuery(node, query)) return null;
+    if (!matchesQuery(node, query, docsBySlug)) return null;
     const active = selectedSlug === node.slug;
     return (
       <RowButton
@@ -245,7 +254,7 @@ export function DocsVaultTree({
   const t = useTranslations('vaultWidgets.tree');
   const children = useMemo(() => tree.children ?? [], [tree]);
   const tagSlugs = activeTag ? activeTagSlugs : undefined;
-  const normalizedQuery = query?.trim().toLowerCase() ?? '';
+  const normalizedQuery = normalizeForMatch(query ?? '');
   // Modification times live in the manifest, not the tree. In name order they are not
   // computed at all — there is no reason to build an unused index across 158 documents.
   const order = useMemo<DocsTreeOrder>(

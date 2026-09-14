@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from 'next/navigation';
 import { X } from "lucide-react";
 import {
   DESTINATION_IDS,
@@ -268,7 +269,8 @@ const SECTIONS: ShortcutSection[] = [
 export function ShortcutSheet({ open, onClose }: Props) {
   const t = useTranslations("searchWidgets.shortcuts");
   const pathname = usePathname() ?? "/";
-  const currentSurface = surfaceForPathname(pathname);
+  const searchParams = useSearchParams();
+  const currentSurface = surfaceForPathname(pathname, searchParams.get('tab'));
   // #67 — the contextual tabs. The default is "current screen": rather than pouring
   // out some 40 rows at once, it starts with what can actually be pressed now. The
   // `All` (all) tab keeps the previous list, so this is not hiding shortcuts to avoid
