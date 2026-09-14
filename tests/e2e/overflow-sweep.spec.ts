@@ -26,6 +26,8 @@ const VIEWPORTS = [
   { label: "desktop-2560", w: 2560, h: 1440 },
 ];
 
+const ONTOLOGY_LIBRARY_ROUTE = "/en/library/?tab=ontology&guides=off";
+
 const ROUTES = [
   "/en/",
   "/en/projects/",
@@ -35,9 +37,24 @@ const ROUTES = [
   "/en/topology/",
   "/en/ontology/",
   "/en/ontology/insights/",
-  "/en/docs/",
+  ONTOLOGY_LIBRARY_ROUTE,
   "/en/download/",
 ];
+
+async function waitForOverflowSurface(
+  page: import("@playwright/test").Page,
+  url: string,
+) {
+  if (url !== ONTOLOGY_LIBRARY_ROUTE) return;
+  await expect(page).toHaveURL(
+    (current) =>
+      current.pathname === "/en/library/" &&
+      current.searchParams.get("tab") === "ontology",
+  );
+  await expect(
+    page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+  ).toBeVisible();
+}
 
 async function measureOverflow(page: import("@playwright/test").Page) {
   return page.evaluate(() => ({
@@ -83,6 +100,7 @@ for (const vp of VIEWPORTS) {
     for (const url of ROUTES) {
       await page.goto(url, { waitUntil: "domcontentloaded" });
       await waitForDocumentPaint(page);
+      await waitForOverflowSurface(page, url);
       const measured = await measureOverflow(page);
       if (isOverflowing(measured)) {
         violations.push({ route: url, ...measured });
@@ -116,8 +134,11 @@ for (const vp of VIEWPORTS) {
  */
 test("계기 프로브 — 넘친 원소를 실제로 잡고, documentElement 만으로는 못 잡는다", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
+  await page.goto("/ko/library/?tab=ontology&guides=off", { waitUntil: "domcontentloaded" });
   await waitForDocumentPaint(page);
+  await expect(
+    page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+  ).toBeVisible();
 
   const clean = await measureOverflow(page);
   expect(
@@ -159,6 +180,7 @@ test("overflow sweep — resize transition 1920↔2560", async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await waitForDocumentPaint(page);
+    await waitForOverflowSurface(page, url);
 
     await page.setViewportSize({ width: 2560, height: 1440 });
     await waitForDocumentPaint(page);
