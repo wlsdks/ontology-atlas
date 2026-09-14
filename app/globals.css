@@ -5789,3 +5789,22 @@ html[data-gateway-stage] {
   --color-indigo-pale-a94: rgba(254, 200, 181, 0.94);
   --color-indigo-pale-a95: rgba(254, 200, 181, 0.95);
 }
+
+
+/* Decorative waiting geometry carries pending state, never a graph or progress value. */
+.map-wait-scene {
+  background: radial-gradient(ellipse at center, var(--color-indigo-a08), transparent 70%);
+}
+/* The destination can occupy the JS thread. A promoted HTML transform keeps
+   feedback on the compositor; SVG/background-position animation alone froze
+   in the native recording during graph preparation. */
+@media (prefers-reduced-motion: no-preference) {
+  .map-wait-orbit {
+    will-change: transform;
+    animation: map-wait-orbit calc(var(--motion-settle) * 10) linear infinite;
+  }
+}
+@keyframes map-wait-orbit {
+  from { transform: translateZ(0) rotate(0turn); }
+  to { transform: translateZ(0) rotate(1turn); }
+}

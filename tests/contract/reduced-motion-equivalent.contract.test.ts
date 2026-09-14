@@ -41,6 +41,7 @@ const CSS = readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
  * **red**.
  */
 const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
+  "map-wait-orbit": "The compositor-driven indeterminate wait orbit stops under reduced motion. The live status and return action remain; map-navigation-wait.spec.ts checks the static equivalent.",
   "atlas-waiting-mark":
     "The native character remains visible beside the parent's unchanged status and Stop action; reduced motion removes the decorative frame steps and hops.",
   "atlas-mascot-presence--walking":

@@ -36,6 +36,7 @@ export function RecentVaultList({
   onForget,
   onLocate,
   emphasis = false,
+  scroll = 'contained',
   className,
 }: {
   records: ReadonlyArray<LocalFsHandleRecord>;
@@ -65,6 +66,8 @@ export function RecentVaultList({
    * one part of a popover, not the whole question.
    */
   emphasis?: boolean;
+  /** A full-page chooser lets its page own scrolling; popovers retain a bounded list. */
+  scroll?: 'page' | 'contained';
   className?: string;
 }) {
   const t = useTranslations('vaultSwitch');
@@ -88,14 +91,8 @@ export function RecentVaultList({
     <div
       data-testid="recent-vault-list"
       className={cn(
-        /*
-         * The list scrolls, the screen does not. Five folders (`MAX_RECENT_HANDLES`) at the
-         * desktop row height reach past the app's declared window floor of 1040x720, and
-         * what went below the edge was the door out - on the one screen whose whole job is
-         * pressing a door (workbench seat, 2026-09-13). Bounding the list keeps the actions
-         * in view and makes the fifth row's cut edge the scroll affordance.
-         */
-        'grid max-h-[var(--recent-vault-list-max-h)] overflow-y-auto overscroll-contain rounded-chip border bg-[color:var(--color-panel)]',
+        'grid rounded-chip border bg-[color:var(--color-panel)]',
+        scroll === 'contained' && 'max-h-[var(--recent-vault-list-max-h)] overflow-y-auto overscroll-contain',
         emphasis
           ? 'border-[color:var(--color-indigo-line-a32)]'
           : 'border-[color:var(--color-border-soft)]',
@@ -109,6 +106,7 @@ export function RecentVaultList({
           nowMs={nowMs}
           busy={busy}
           divided={index > 0}
+          wrapName={scroll === 'page'}
           onOpen={onOpen}
           onForget={onForget}
           onLocate={onLocate}
@@ -143,6 +141,7 @@ function RecentVaultRowView({
   nowMs,
   busy,
   divided,
+  wrapName,
   onOpen,
   onForget,
   onLocate,
@@ -152,6 +151,7 @@ function RecentVaultRowView({
   nowMs: number;
   busy: boolean;
   divided: boolean;
+  wrapName: boolean;
   onOpen: (record: LocalFsHandleRecord) => void;
   onForget: (record: LocalFsHandleRecord) => void;
   onLocate?: () => void;
@@ -218,7 +218,7 @@ function RecentVaultRowView({
       </span>
       <span className="min-w-0">
         <span className="flex min-w-0 items-baseline gap-1.5">
-          <span className="min-w-0 truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          <span data-testid="recent-vault-name" className={cn("min-w-0 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]", wrapName ? "break-all" : "truncate")}>
             {row.name}
           </span>
           {row.isCurrent ? (

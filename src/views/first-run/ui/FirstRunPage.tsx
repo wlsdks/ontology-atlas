@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FolderOpen, Layers, Library, Map as MapIcon, Orbit, Sparkles, Zap } from "lucide-react";
 import type { VaultShape } from "@/shared/lib/vault-shape";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -15,6 +15,7 @@ import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { useToast } from "@/shared/ui/toast";
 import { controlClass } from '@/shared/ui/control-class';
+import { FirstRunFolderActions } from "./FirstRunFolderActions";
 import { Chip } from '@/shared/ui/controls';
 
 /**
@@ -86,7 +87,15 @@ export function FirstRunPage() {
    * Owner direction 2026-09-06: the question is asked once, at creation; the answer is
    * written as files (`scaffoldOntology`), and the rail reads those files afterwards.
    */
+  const createTrigger = useRef<HTMLButtonElement>(null);
+  const shapePanel = useRef<HTMLDivElement>(null);
+  const previousChoice = useRef<string | null>(null);
   const [choosingFor, setChoosingFor] = useState<"just-start" | "create" | null>(null);
+  useEffect(() => {
+    if (choosingFor) shapePanel.current?.focus();
+    else if (previousChoice.current) createTrigger.current?.focus();
+    previousChoice.current = choosingFor;
+  }, [choosingFor]);
   const chooseShape = useCallback(
     (shape: VaultShape) => {
       const door = choosingFor;
@@ -215,13 +224,13 @@ export function FirstRunPage() {
        * folders, the "create a new folder" card sat 60px below the fold (responsive seat,
        * 2026-09-13).
        */
-      className={`flex min-h-0 flex-1 justify-center overflow-auto bg-[color:var(--color-canvas)] px-6 ${choosingFolderHome ? "py-6" : "py-10"}`}
+      className={`flex min-h-0 flex-1 justify-center overflow-auto bg-[color:var(--color-canvas)] px-6 ${choosingFolderHome ? "pt-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1.5rem)] scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1.5rem)] lg:pb-6 lg:scroll-pb-6" : "py-10"}`}
     >
       <section
-        className={`my-auto grid h-fit w-full max-w-[var(--dialog-w-sm)] ${choosingFolderHome ? "gap-4" : "gap-6"}`}
+        className={`my-auto grid h-fit w-full gap-6 ${choosingFolderHome ? "max-w-3xl" : "max-w-[var(--dialog-w-sm)]"}`}
       >
         <header
-          className={`grid justify-items-center text-center ${choosingFolderHome ? "gap-2" : "gap-3"}`}
+          className={`grid gap-3 ${choosingFolderHome ? "justify-items-start text-left" : "justify-items-center text-center"}`}
         >
           <div className="inline-flex items-center gap-3">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
@@ -239,7 +248,7 @@ export function FirstRunPage() {
               {choosingFolder ? tSwitch("choose.title") : t("title")}
             </h1>
             <p
-              className={`mx-auto max-w-[360px] break-keep leading-body text-[color:var(--color-text-tertiary)] ${choosingFolderHome ? "text-label" : "text-body"}`}
+              className={`break-keep leading-body text-[color:var(--color-text-tertiary)] ${choosingFolderHome ? "text-body" : "mx-auto max-w-[360px] text-body"}`}
             >
               {choosingFolder
                 ? isTauriVaultRuntime()
@@ -251,7 +260,7 @@ export function FirstRunPage() {
         </header>
 
         {choosingFor ? (
-          <div className="grid gap-2" aria-busy={busy} data-testid="first-run-shape">
+          <div ref={shapePanel} tabIndex={-1} className="grid gap-2" aria-busy={busy} data-testid="first-run-shape">
             <div className="grid gap-1 px-1">
               <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                 {t("shapeEyebrow")}
@@ -312,6 +321,9 @@ export function FirstRunPage() {
               The region is named by its own visible caption (`aria-labelledby`) rather than
               by a copy of it, so a screen reader does not announce the same words twice.
             */}
+            {choosingFolderHome ? (
+              <FirstRunFolderActions trigger={createTrigger} busy={busy} showJustStart={showJustStart} onOpen={() => void handleOpen()} onCreate={setChoosingFor} />
+            ) : null}
             {knownFolders.length > 0 ? (
               <section className="grid gap-2" aria-labelledby="known-folders-heading">
                 <p
@@ -325,6 +337,7 @@ export function FirstRunPage() {
                   currentKey={storedFolderKey}
                   busy={busy}
                   emphasis={choosingFolder}
+                  scroll={choosingFolderHome ? "page" : "contained"}
                   onOpen={(record) => void vault.openRecent(record)}
                   onForget={(record) => void vault.forgetRecent(record)}
                   onLocate={() => void handleOpen()}
@@ -341,7 +354,7 @@ export function FirstRunPage() {
               </section>
             ) : null}
 
-        <div className="grid gap-2" aria-busy={busy}>
+        {!choosingFolderHome ? <div className="grid gap-2" aria-busy={busy}>
           {showJustStart ? (
             <button
               type="button"
@@ -434,7 +447,7 @@ export function FirstRunPage() {
             </span>
           </button>
 
-            </div>
+            </div> : null}
           </>
         )}
 

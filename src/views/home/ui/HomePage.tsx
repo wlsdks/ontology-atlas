@@ -271,6 +271,7 @@ import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
+import { readMapNavigationPending, completeMapNavigation, cancelMapNavigation } from "@/shared/lib/map-navigation-pending";
 import { MapEntryLoadingVisual } from "@/shared/ui/map-entry-loading-visual";
 import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
@@ -389,6 +390,8 @@ const INDEX_PANEL_COLLAPSED_KEY = "demo:index-panel-collapsed:v1";
  */
 export function HomePage() {
   const tMapEntry = useTranslations('mapEntry');
+  const tMapError = useTranslations('topology.widgetError');
+  const [mapEntryTicket] = useState(() => readMapNavigationPending()?.id ?? null);
   /*
    * **The split is for the first load, and only the first load** (2026-09-12).
    *
@@ -423,10 +426,12 @@ export function HomePage() {
       />
     );
   }
-  return <HomePageImpl />;
+  return <ErrorBoundary onError={() => cancelMapNavigation(mapEntryTicket)} fallback={({ error, reset }) => (
+    <WidgetErrorFallback error={error} onReset={reset} title={tMapError('mapTitle')} body={tMapError('body')} retryLabel={tMapError('retry')} className="h-full w-full" />
+  )}><HomePageImpl mapEntryTicket={mapEntryTicket} /></ErrorBoundary>;
 }
 
-function HomePageImpl() {
+function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const tWorkbench = useTranslations('analysisWorkbench');
   const t = useTranslations('topology');
   const tMeaningEditor = useTranslations('meaningEditor');
@@ -4217,6 +4222,10 @@ function HomePageImpl() {
    * opened — and then describe the zoom rule rather than the screen.
    */
   const [drawnConceptCount, setDrawnConceptCount] = useState(0);
+  const handleMapFrameDrawn = useCallback((count: number) => {
+    setDrawnConceptCount(count);
+    completeMapNavigation(mapEntryTicket);
+  }, [mapEntryTicket]);
   const totalConceptCount = ontologyInsight?.nodes.length ?? 0;
   const visibleTopologyNodeCount =
     localGraphRoot === null ? topologyTotalNodes : localGraphProjects.length;
@@ -5666,6 +5675,7 @@ function HomePageImpl() {
                   // the whole route; now the rail, the panels and the chrome stay usable and the
                   // map alone offers a retry.
                   <ErrorBoundary
+                    onError={() => cancelMapNavigation(mapEntryTicket)}
                     fallback={({ error, reset }) => (
                       <WidgetErrorFallback
                         error={error}
@@ -5742,7 +5752,7 @@ function HomePageImpl() {
                         handleClose();
                       }}
                       onVisibleCountChange={setTopologyVisibleCount}
-                      onDrawnCountChange={setDrawnConceptCount}
+                      onDrawnCountChange={handleMapFrameDrawn}
                       onGraphStatsChange={handleTopologyGraphStatsChange}
                       onZoomTierChange={setMapZoomTier}
                       onContextMenuNode={handleContextMenuNode}

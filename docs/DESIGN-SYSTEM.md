@@ -1204,18 +1204,17 @@ inbox's To do / Results / History categories. Other tablists — closable open-f
 preview/edit modes, and search filters — have different jobs and do not inherit this
 treatment by role alone.
 
-The shared strip answers two questions: *which document section am I looking at, and is
-there more than fits?* Its tabs are compact adjacent click areas on one flat content
-boundary. The selected tab has a neutral elevated surface, a clear top and side boundary,
-rounded chip-step top corners, and an indigo top edge. Inactive labels use secondary ink
-and reveal an overlay-1 surface on hover. Navigation labels use the sans body step; engraved
-counts stay on the smaller mono label step. There is no outer pill or segmented-control
-container: the earlier large segmented treatment grouped the choices but made a separate
-control float inside the header instead of connecting the selected tab to its content.
+The shared strip answers which section is selected and whether more tabs are offscreen.
+Tabs use a flat 40px minimum-height row, readable secondary labels, and a 2px bottom
+indicator with stronger primary text on the selected tab. There is no selected fill,
+raised frame, top cue, or rounded document-tab silhouette. The content boundary is one
+quiet shared rule; the Library header can own it. Coarse targets still reach 44px, and
+larger text can grow the row. Labels stay on the sans body ramp and optional counts on
+the smaller mono label ramp. Hover and keyboard focus remain separately visible.
 
 | Token | Value | What it defines |
 |---|---|---|
-| `--tabbar-underline` | 2px | Indigo selected-tab top edge; surface and side boundaries also carry selection |
+| `--tabbar-underline` | 2px | Selected-tab bottom indicator; stronger primary label also carries selection |
 | `--tabbar-edge-fade` | 22px | Overflow edge-fade mask width. Mask alpha only — no colour, no glow, no motion, so reduced-motion is unaffected |
 
 `--docs-tab-edge-fade` is now an alias of `--tabbar-edge-fade` at the same 22px. It kept
@@ -3246,11 +3245,12 @@ The value is not preference but **the exact derived value from the root face**; 
 --recent-vault-action-reserve: 5rem;          /* Row space kept clear for the chip over its corner */
 ```
 
-- The launch chooser's folder list (`src/features/vault-switch/ui/RecentVaultList.tsx`) is
-  read the same way `--dialog-max-h` is: the viewport relationship stays at the call site,
-  the ceiling is the token. `MAX_RECENT_HANDLES` is 5, and five rows plus the chooser's
-  header and door cards measured past the app's declared 1040×720 window floor — what went
-  below the edge was the door out.
+- The launch chooser uses a wide, unified list with Open folder and Create new above
+  it. Its page owns scrolling; the list has no height ceiling, and folder names wrap
+  rather than hiding the suffix that distinguishes two folders. The compact switcher
+  popover retains the bounded list through `scroll="contained"`. This replaces the
+  2026-09-13 chooser's bounded list and lower door cards after the owner's observed
+  nested-scroll and split-hierarchy failure.
 - `--recent-vault-action-reserve` exists so two numbers cannot drift apart: the row's right
   reserve and the `44px` touch floor the forget/locate chips are promoted to. In Korean the
   clearance measured 6.3px from the facts line before the reserve was bound to the floor.

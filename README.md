@@ -190,6 +190,14 @@ What we decided *not* to build is [What this is not](#what-this-is-not).
 
 ### 1. Open a folder
 
+When several folders are known, the app opens a single list with **Open folder**
+and **Create new** above it. The page scrolls as a whole; folder rows keep their
+paths, last-use details, and recovery actions together.
+
+Choosing Map in the sidebar or with G M shows a live preparation scene,
+then reveals the first drawn frame. Section tabs use a flat shared treatment with
+a clear bottom selection indicator.
+
 Point the app at a directory of Markdown and it reads it in place. Ask it to
 start from your code instead, and it creates exactly one folder inside the
 project you picked:

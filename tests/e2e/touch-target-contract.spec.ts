@@ -147,13 +147,7 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
           .map((tab) => (tab.textContent ?? "").trim().slice(0, 16)),
         pageScrollsSideways:
           document.documentElement.scrollWidth > document.documentElement.clientWidth,
-        /*
-         * The connected-tab revision moved the indigo cue from a bottom underline to the
-         * selected tab's top edge. The geometry contract is now the whole selected shape:
-         * one tab attached to the shared bottom boundary, a thicker distinct top cue,
-         * visible side boundaries, top-only rounding, and label ink contained by the box.
-         * Height alone cannot distinguish that from an unbounded filled rectangle.
-         */
+        // A section tab has one bottom indicator, not a raised document-shaped frame.
         selectedGeometry: tabs
           .filter((tab) => tab.getAttribute("aria-selected") === "true")
           .map((tab) => {
@@ -170,20 +164,9 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
             return {
               id: (tab.textContent ?? "").trim().slice(0, 16),
               attached: Math.abs(Math.round(rect.bottom) - Math.round(stripRect.bottom)) <= 1,
-              topCue:
-                topWidth > sideWidth &&
-                !transparent(style.borderTopColor) &&
-                style.borderTopColor !== style.borderLeftColor,
-              boundedSides:
-                px(style.borderLeftWidth) >= 1 &&
-                px(style.borderRightWidth) >= 1 &&
-                !transparent(style.borderLeftColor) &&
-                !transparent(style.borderRightColor),
-              topOnlyRounded:
-                px(style.borderTopLeftRadius) > 0 &&
-                px(style.borderTopRightRadius) > 0 &&
-                px(style.borderBottomLeftRadius) === 0 &&
-                px(style.borderBottomRightRadius) === 0,
+              bottomCue: px(style.borderBottomWidth) >= 2 && !transparent(style.borderBottomColor),
+              flatFrame: topWidth === 0 && sideWidth === 0 && px(style.borderTopLeftRadius) === 0,
+              unfilled: transparent(style.backgroundColor),
               labelContained:
                 labelRect !== undefined &&
                 labelRect.top >= rect.top + topWidth &&
@@ -200,9 +183,9 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
       `선택 탭의 연결된 경계가 무너졌다: ${JSON.stringify(measured.selectedGeometry[0])}`,
     ).toMatchObject({
       attached: true,
-      topCue: true,
-      boundedSides: true,
-      topOnlyRounded: true,
+      bottomCue: true,
+      flatFrame: true,
+      unfilled: true,
       labelContained: true,
     });
     expect(measured.short, `44px 미만 탭: ${JSON.stringify(measured.short)}`).toEqual([]);
