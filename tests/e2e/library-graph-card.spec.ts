@@ -357,6 +357,12 @@ test.describe("a press on a mark opens a card beside it", () => {
     const reset = () => page.evaluate(() => window.__atlasLibraryGraph!.paint().reset());
     const read = () => page.evaluate(() => window.__atlasLibraryGraph!.paint().frames);
 
+    await expect
+      .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.flow().pulsing ?? false), {
+        timeout: 20_000,
+        message: "the breath never began",
+      })
+      .toBe(true);
     // A **measurement window**, not a wait: the claim is that the breath asks for frames
     // while it runs, so some of its run has to pass before the count means anything.
     await reset();
