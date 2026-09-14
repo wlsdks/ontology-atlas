@@ -94,7 +94,7 @@ test('five folders use one page scroll and every action remains reachable', asyn
       await expect(page.getByTestId('first-run-create')).toBeVisible();
       const menu = await page.locator('#first-run-create-options').boundingBox();
       expect(menu).not.toBeNull();
-      expect(menu!.x).toBeGreaterThanOrEqual(0);
+      expect(menu!.x, `menu left at ${width}px`).toBeGreaterThanOrEqual(0);
       expect(menu!.x + menu!.width).toBeLessThanOrEqual(width);
       await page.keyboard.press('Escape');
       await expect(page.getByTestId('first-run-create-menu')).toBeFocused();
@@ -108,25 +108,27 @@ test('five folders use one page scroll and every action remains reachable', asyn
   await writeFile(`${evidence}/responsive.json`, JSON.stringify(measurements, null, 2));
 });
 
-test('a wrapped creation trigger keeps its menu inside the narrow viewport', async ({ page }) => {
-  await seedChooser(page);
-  await page.setViewportSize({ width: 320, height: 844 });
-  await page.goto('/en/?shell=desktop&guides=off');
-  await expect(page.getByTestId('recent-vault-row')).toHaveCount(5);
-  await page.getByTestId('first-run-folder-actions').evaluate(el => { el.style.width = '180px'; });
-  const open = await page.getByTestId('first-run-open').boundingBox();
-  const trigger = page.getByTestId('first-run-create-menu');
-  expect((await trigger.boundingBox())!.y).toBeGreaterThanOrEqual(open!.y + open!.height);
-  await trigger.click();
-  const option = page.getByTestId('first-run-create');
-  await expect(option).toBeVisible();
-  const menu = await page.locator('#first-run-create-options').boundingBox();
-  expect(menu!.x).toBeGreaterThanOrEqual(0);
-  expect(menu!.x + menu!.width).toBeLessThanOrEqual(320);
-  await page.keyboard.press('Escape');
-  await expect(trigger).toBeFocused();
-  await expect(option).toBeHidden();
-});
+for (const width of [320, 768]) {
+  test(`a wrapped creation trigger keeps its menu inside the ${width}px viewport`, async ({ page }) => {
+    await seedChooser(page);
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/en/?shell=desktop&guides=off');
+    await expect(page.getByTestId('recent-vault-row')).toHaveCount(5);
+    await page.getByTestId('first-run-folder-actions').evaluate(el => { el.style.width = '180px'; });
+    const open = await page.getByTestId('first-run-open').boundingBox();
+    const trigger = page.getByTestId('first-run-create-menu');
+    expect((await trigger.boundingBox())!.y).toBeGreaterThanOrEqual(open!.y + open!.height);
+    await trigger.click();
+    const option = page.getByTestId('first-run-create');
+    await expect(option).toBeVisible();
+    const menu = await page.locator('#first-run-create-options').boundingBox();
+    expect(menu!.x, `menu left at ${width}px`).toBeGreaterThanOrEqual(0);
+    expect(menu!.x + menu!.width).toBeLessThanOrEqual(width);
+    await page.keyboard.press('Escape');
+    await expect(trigger).toBeFocused();
+    await expect(option).toBeHidden();
+  });
+}
 
 test('creation disclosure is accessible and can be cancelled without opening a folder', async ({ page }) => {
   await seedChooser(page);
