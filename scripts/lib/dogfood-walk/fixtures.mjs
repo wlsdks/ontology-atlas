@@ -26,6 +26,7 @@ import {
 } from "../../../mcp/src/ontology-engine.mjs";
 import { GRAPH_ARRAY_KEYS } from "../../../mcp/src/vault.mjs";
 import { IMPORT_SOURCE_ROLE_VALUES, IMPORT_USAGE_VALUES } from "../../../mcp/src/infer-imports.mjs";
+import { TOOLS_FOR_LIST } from "../../../mcp/src/server/registry.mjs";
 
 const WRITE_TOOL_NAMES = new Set([
   "git_snapshot",
@@ -568,7 +569,16 @@ function postWriteMaintenanceSchemaFixture() {
   };
 }
 
+/** Keep the healthy fixture sourced from the public registry so schema ratchets cannot drift from
+ * the actual tools/list surface. Individual gate tests clone and deliberately mutate this shape. */
 export function makeDogfoodToolsList() {
+  // JSON cloning intentionally breaks shared schema references. The gate tests mutate one
+  // tool at a time; preserving registry aliasing would make an unrelated mutation look like
+  // drift in the first tool that reuses that nested schema.
+  return { tools: JSON.parse(JSON.stringify(TOOLS_FOR_LIST)) };
+}
+
+function makeLegacyDogfoodToolsList() {
   return {
     tools: EXPECTED_TOOLS.map((name) => {
       const tool = {
@@ -776,6 +786,7 @@ export function makeDogfoodToolsList() {
                 required: ["ok"],
                 properties: {
                   ok: { type: "boolean" },
+                  isNode: { type: "boolean" },
                   slug: { type: "string" },
                   uid: {
                     type: "string",
@@ -785,6 +796,15 @@ export function makeDogfoodToolsList() {
                   excerpt: { type: "string" },
                   neighbors: conceptNeighborsSchemaFixture(),
                   outgoingEdges: outgoingEdgesSchemaFixture(),
+                  review: {
+                    type: "object",
+                    required: ["state", "currentness"],
+                    properties: {
+                      state: { type: ["string", "null"] },
+                      currentness: { type: "string", enum: ["current", "stale", "unavailable"] },
+                    },
+                    additionalProperties: false,
+                  },
                   mtime: { type: "number", minimum: 0 },
                   warnings: vaultWarningsSchemaFixture(),
                 },
@@ -814,10 +834,11 @@ export function makeDogfoodToolsList() {
         };
         tool.outputSchema = {
           type: "object",
-          required: ["uid", "slug", "frontmatter", "bodyInfo", "neighbors", "outgoingEdges", "mtime"],
+          required: ["uid", "slug", "isNode", "frontmatter", "bodyInfo", "neighbors", "outgoingEdges", "review", "mtime"],
           properties: {
             uid: { type: "string", pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
             slug: { type: "string" },
+            isNode: { type: "boolean" },
             frontmatter: { type: "object" },
             excerpt: { type: "string" },
             body: { type: "string" },
@@ -836,6 +857,15 @@ export function makeDogfoodToolsList() {
             },
             neighbors: conceptNeighborsSchemaFixture(),
             outgoingEdges: outgoingEdgesSchemaFixture(),
+            review: {
+              type: "object",
+              required: ["state", "currentness"],
+              properties: {
+                state: { type: ["string", "null"], enum: ["verified", "review_required", "needs_evidence", "invalid", null] },
+                currentness: { type: "string", enum: ["current", "stale", "unavailable"] },
+              },
+              additionalProperties: false,
+            },
             mtime: { type: "number", minimum: 0 },
             warnings: vaultWarningsSchemaFixture(),
           },
@@ -1071,13 +1101,15 @@ export function makeDogfoodToolsList() {
           "Vault kind distribution for quick census; size up the vault without paging through list_concepts.";
         tool.outputSchema = {
           type: "object",
-          required: ["total", "byKind"],
+          required: ["total", "byKind", "referencedOnlyTotal", "conceptsIncludingReferenced"],
           properties: {
             total: { type: "integer", minimum: 0 },
             byKind: {
               type: "object",
               additionalProperties: { type: "integer", minimum: 0 },
             },
+            referencedOnlyTotal: { type: "integer", minimum: 0 },
+            conceptsIncludingReferenced: { type: "integer", minimum: 0 },
           },
           additionalProperties: false,
         };
@@ -1269,6 +1301,7 @@ export function makeDogfoodToolsList() {
             "resolvedEdgeCount",
             "externalEdgeCount",
             "unresolvedEdgeCount",
+            "referencedOnlyCount",
             "aliasCount",
             "ambiguousAliasCount",
             "issueCount",
@@ -1285,6 +1318,7 @@ export function makeDogfoodToolsList() {
             resolvedEdgeCount: { type: "integer", minimum: 0 },
             externalEdgeCount: { type: "integer", minimum: 0 },
             unresolvedEdgeCount: { type: "integer", minimum: 0 },
+            referencedOnlyCount: { type: "integer", minimum: 0 },
             aliasCount: { type: "integer", minimum: 0 },
             ambiguousAliasCount: { type: "integer", minimum: 0 },
             issueCount: { type: "integer", minimum: 0 },
