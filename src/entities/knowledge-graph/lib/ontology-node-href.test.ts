@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "../model";
 import {
   buildInsightsReturnMarker,
+  buildTopologyReturnHref,
+  buildTopologyReturnMarker,
+  parseTopologyReturnMarker,
   buildTopologyMeaningEditorNodeHref,
   buildTopologyMeaningEditorEdgeHref,
   buildOntologyInsightsNodeHref,
@@ -350,6 +353,38 @@ describe("buildOntologyInsightsNodeHref", () => {
       `/ontology/insights/?node=${encodeURIComponent(
         "capabilities/builder-vault-write",
       )}`,
+    );
+  });
+});
+
+describe("지도로 돌아오는 표식", () => {
+  /*
+   * ⚠️ Leaving the map used to be one-way. Full detail's "Open document" sent the reader
+   * to `/docs/`, whose crumb pointed at a bare `/topology` with nothing selected, so the
+   * node they had open was simply gone (owner, 2026-09-14). The marker carries the node
+   * they left from.
+   */
+  it("표식을 만들고 다시 읽으면 같은 노드가 나온다", () => {
+    const marker = buildTopologyReturnMarker("capability:mcp-server");
+    expect(marker).toBe("topology:capability:mcp-server");
+    expect(parseTopologyReturnMarker(marker)).toBe("capability:mcp-server");
+  });
+
+  it("폴더 표기도 정규 id 로 모은다 — `?p=` 가 쓰는 문법 하나", () => {
+    expect(buildTopologyReturnMarker("capabilities/mcp-server")).toBe(
+      "topology:capability:mcp-server",
+    );
+  });
+
+  it("다른 문법의 via 는 지도 표식이 아니다", () => {
+    expect(parseTopologyReturnMarker("insights:do-next")).toBeNull();
+    expect(parseTopologyReturnMarker(null)).toBeNull();
+    expect(parseTopologyReturnMarker("")).toBeNull();
+  });
+
+  it("돌아가는 주소는 그 노드를 고른 지도다", () => {
+    expect(buildTopologyReturnHref("capability:mcp-server")).toBe(
+      "/topology/?p=capability%3Amcp-server",
     );
   });
 });

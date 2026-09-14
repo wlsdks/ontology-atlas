@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   buildTopologyMeaningEditorNodeHref,
+  buildTopologyReturnMarker,
   deriveCodeLocations,
   resolveNodeAgentTarget,
   type KnowledgeGraphEdge,
@@ -295,11 +296,20 @@ export function useNodeDatasheetModel({
       // because for a node only named by a relation the sourceSlug is
       // *somebody else's* document citing it — using it makes the "document"
       // button open a different concept's write-up.
+      // `via` carries where the reader came from, so the document's crumb returns to this
+      // node on the map instead of a bare `/topology` with nothing selected. Leaving the
+      // map used to be one-way (owner, 2026-09-14).
       documentHref: nodeFocus.ownDocumentSlug
-        ? buildDocsVaultHref({ slug: nodeFocus.ownDocumentSlug })
+        ? buildDocsVaultHref({
+            slug: nodeFocus.ownDocumentSlug,
+            via: buildTopologyReturnMarker(selectedOntologyNode.id),
+          })
         : null,
       mentionDocumentHref: nodeFocus.mentionedInSlug
-        ? buildDocsVaultHref({ slug: nodeFocus.mentionedInSlug })
+        ? buildDocsVaultHref({
+            slug: nodeFocus.mentionedInSlug,
+            via: buildTopologyReturnMarker(selectedOntologyNode.id),
+          })
         : null,
       // The editor deep link passes the canonical `<kind>:<slug>` graph node
       // id unchanged, replacing the old inline `?node=<vault slug>` form so

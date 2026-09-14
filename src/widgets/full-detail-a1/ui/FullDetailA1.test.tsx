@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { describe, expect, it, vi } from "vitest";
@@ -66,6 +66,7 @@ const messages = {
       leadIn: "이 노드에서",
       stepUnit: "단계",
       afterSteps: "안에 닿는 개념",
+      stepsAria: koMessages.fullDetailA1.reach.stepsAria,
       ofTotal: "{count} / {total}",
       mostlyNone: "도달하는 개념이 없습니다.",
       mostlyOne: "대부분 {a}({aCount})에 있다.",
@@ -229,13 +230,23 @@ describe("FullDetailA1", () => {
     expect(onSelectNode).toHaveBeenCalledWith("capability:child");
   });
 
-  it("reach step 토글 클릭 → 다른 단계 숫자로 갱신", () => {
+  it("reach step 은 눌리는 것으로 보이는 라디오그룹이다 — 이름 있고, 선택이 접근성 트리에 있다", () => {
+    /*
+     * ⚠️ These were three chips with transparent borders, so at rest they read as grey
+     * numerals inside a sentence; the owner reported not realising they could be pressed
+     * (2026-09-14). They are also a genuine exclusive choice, which makes them a radiogroup.
+     *
+     * So what is measured is **role and selected state** rather than a `data-active`
+     * attribute after a click: is it a control a person can see, and does assistive tech
+     * know which one is chosen.
+     */
     renderFullDetail();
-    const step1 = screen.getByTestId("full-detail-a1").querySelector(
-      '[data-fulldetail-reach-step="1"]',
-    ) as HTMLElement;
-    fireEvent.click(step1);
-    expect(step1.getAttribute("data-active")).toBe("true");
+    const group = screen.getByRole("radiogroup", { name: koMessages.fullDetailA1.reach.stepsAria });
+    const steps = within(group).getAllByRole("radio");
+    expect(steps).toHaveLength(3);
+    fireEvent.click(steps[0]);
+    expect(steps[0]).toHaveAttribute("aria-checked", "true");
+    expect(steps[1]).toHaveAttribute("aria-checked", "false");
   });
 
   it("닫기 버튼 클릭 → onClose 호출", () => {
