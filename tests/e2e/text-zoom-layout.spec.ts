@@ -6,6 +6,7 @@ import {
   TEXT_ZOOM_WIDTHS,
   ZOOMED_ROOT_PX,
 } from "./text-zoom-probes";
+import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
@@ -56,6 +57,42 @@ test.describe("실제 브라우저 글자 크기 설정 200%", () => {
         "author-set 루트로 측정되고 있다. 이 그룹의 모든 레이아웃 주장이 무의미해진다",
     ).toBe(false);
     expect(state.pxBreakpoint, "레포의 px 미디어 쿼리는 그대로여야 한다").toBe(true);
+  });
+
+  test("선택된 공유 탭이 확대된 라인 박스를 경계 안에 담는다", async ({ page }) => {
+    await page.setViewportSize({ width: 1040, height: 900 });
+    await seedFirstRunSeen(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem("demo:sample-source:v1", "storefront");
+    });
+    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    const selected = page.locator('[role="tab"][aria-selected="true"]');
+    await expect(selected).toHaveCount(1);
+    await expect(selected).toBeVisible({ timeout: 30_000 });
+
+    const measured = await selected.evaluate((tab) => {
+      const label = tab.querySelector(":scope > span");
+      const tabRect = tab.getBoundingClientRect();
+      const labelRect = label?.getBoundingClientRect();
+      const style = getComputedStyle(tab);
+      const px = (value: string) => Number.parseFloat(value) || 0;
+      return {
+        root: getComputedStyle(document.documentElement).fontSize,
+        tabHeight: tabRect.height,
+        labelHeight: labelRect?.height ?? 0,
+        contained:
+          labelRect !== undefined &&
+          labelRect.top >= tabRect.top + px(style.borderTopWidth) &&
+          labelRect.bottom <= tabRect.bottom - px(style.borderBottomWidth),
+      };
+    });
+
+    expect(measured.root).toBe(`${ZOOMED_ROOT_PX}px`);
+    expect(measured.labelHeight, "선택 탭 라벨의 라인 박스를 재지 못했다").toBeGreaterThan(0);
+    expect(
+      measured.contained,
+      `확대 라인 ${measured.labelHeight}px 이 선택 탭 ${measured.tabHeight}px 경계를 벗어났다`,
+    ).toBe(true);
   });
 
   for (const width of TEXT_ZOOM_WIDTHS) {

@@ -284,11 +284,12 @@ export function TabBar({
              * `atlas-touch-floor` is the finger height. This is a real `min-height` rather
              * than an expanded hit area on purpose (`app/globals.css`): adjacent document
              * tabs must never have overlapping phantom targets. Fine pointers use the md
-             * control height; coarse pointers promote the same box to 44px. `items-center`
-             * keeps the label tied to the selected surface at both heights.
+             * control height as a minimum, so a reader's enlarged line box can grow the tab
+             * rather than escape its border; coarse pointers promote the same minimum to
+             * 44px. `items-center` keeps the label tied to the selected surface at every height.
              */
             className={
-              "atlas-touch-floor relative -mb-px inline-flex h-[var(--control-h-md)] shrink-0 items-center gap-2 whitespace-nowrap rounded-t-[var(--radius-chip)] border-x border-b border-t-[length:var(--tabbar-underline)] px-3 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+              "atlas-touch-floor relative -mb-px inline-flex min-h-[var(--control-h-md)] shrink-0 items-center gap-2 whitespace-nowrap rounded-t-[var(--radius-chip)] border-x border-b border-t-[length:var(--tabbar-underline)] px-3 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
               (active
                 ? "border-x-[color:var(--color-border-strong)] border-t-[color:var(--color-indigo-accent)] border-b-[color:var(--color-elevated)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]"
                 : "border-transparent text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]")

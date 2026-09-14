@@ -179,10 +179,11 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
                 px(style.borderRightWidth) >= 1 &&
                 !transparent(style.borderLeftColor) &&
                 !transparent(style.borderRightColor),
-              topRounded:
-                px(style.borderTopLeftRadius) > 0 && px(style.borderTopRightRadius) > 0,
-              bottomSquare:
-                px(style.borderBottomLeftRadius) === 0 && px(style.borderBottomRightRadius) === 0,
+              topOnlyRounded:
+                px(style.borderTopLeftRadius) > 0 &&
+                px(style.borderTopRightRadius) > 0 &&
+                px(style.borderBottomLeftRadius) === 0 &&
+                px(style.borderBottomRightRadius) === 0,
               labelContained:
                 labelRect !== undefined &&
                 labelRect.top >= rect.top + topWidth &&
@@ -201,8 +202,7 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
       attached: true,
       topCue: true,
       boundedSides: true,
-      topRounded: true,
-      bottomSquare: true,
+      topOnlyRounded: true,
       labelContained: true,
     });
     expect(measured.short, `44px 미만 탭: ${JSON.stringify(measured.short)}`).toEqual([]);

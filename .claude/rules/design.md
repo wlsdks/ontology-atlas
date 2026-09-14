@@ -319,6 +319,8 @@ absence of a class, or rendered geometry. Current owners include:
 - numeric Lucide icon props: `icon-size-ramp`;
 - inline prose-link display and target semantics: `prose-link` plus
   `touch-target-contract`;
+- connected TabBar selection geometry and its rendered 44px coarse floor:
+  `touch-target-contract`;
 - Korean mid-word wrapping: `korean-word-break.spec.ts`;
 - rendered pointer affordance: `cursor-affordance.spec.ts`;
 - topology-panel ink hierarchy: `topology-panel-ink-ladder`;

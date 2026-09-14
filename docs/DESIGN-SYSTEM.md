@@ -1237,11 +1237,13 @@ seven tabs):
    `?tab=<last>` at en/390 left the strip at `scrollLeft` 0 with the selected tab 433px
    past the right edge. Resize is the other way it leaves the viewport, and rotating a
    phone is not a remount.
-3. A fixed md control height on fine pointers and `atlas-touch-floor` on coarse pointers.
-   The actual tab box grows to 44px without a pseudo-element, so compact neighboring tabs
-   never receive overlapping hit areas. `items-center` keeps the label tied to its selected
-   surface at either height. Label and count use explicit body/label leading pairs and share
-   one center line across sans and monospace glyphs.
+3. A md control minimum on fine pointers and `atlas-touch-floor` on coarse pointers. The
+   actual tab box grows to 44px without a pseudo-element, so compact neighboring tabs never
+   receive overlapping hit areas. It may also grow past that minimum when browser text size
+   enlarges its line box: at a true 32px root, `text-body` has 40px leading and the tab grows
+   to contain it instead of clipping or painting through the selected boundary. `items-center`
+   keeps the label tied to its selected surface at every height. Label and count use explicit
+   body/label leading pairs and share one center line across sans and monospace glyphs.
 
 ### Caps tracking is a Latin device (owner, 2026-09-06)
 
@@ -2959,7 +2961,7 @@ The previous sentence (*"Heights outside this table are deviations"*) omitted th
 stacked items, it captures **the tile inside**, not the outer sum — trying to do so would let label character count dictate specs, causing the ladder to violate its own rule 1 (*"padding must not define height"*).
 **Scope — this table applies to «single-line horizontal» controls (2026-08-03 system log).**
 Applicable targets are only single-line shapes (`chip`·`pill`·`segment`·`row`·`card`) and squares
-(`icon`). **Vertical 2-axis surfaces are not in this table** — `tile` shapes, and controls stacked like NavRail items (icon above, label below) have their height defined by content and chrome geometry tokens (`--app-nav-rail-tile-*`). A NavRail item rendering at 62px is not a ladder deviation but **out of scope** (sum of tile 32px + label + spacing). As the rule audit noted, the phrase "outside this table is deviation" was undeterminable without specifying which shapes it applied to — this paragraph is that scope declaration. Underline tabs (`tab-bar`) are also out of scope as they are baseline-aligned surfaces, not boxes; however, the note that their height (measured 29px) is outside the lexicon remains unresolved (see "Next" below).
+(`icon`). **Vertical 2-axis surfaces are not in this table** — `tile` shapes, and controls stacked like NavRail items (icon above, label below) have their height defined by content and chrome geometry tokens (`--app-nav-rail-tile-*`). A NavRail item rendering at 62px is not a ladder deviation but **out of scope** (sum of tile 32px + label + spacing). As the rule audit noted, the phrase "outside this table is deviation" was undeterminable without specifying which shapes it applied to — this paragraph is that scope declaration. The connected `TabBar` is a single-line horizontal control in scope: its `--control-h-md` minimum is 32px on a fine pointer and 44px through `atlas-touch-floor` on a coarse pointer, while enlarged text may grow the box above that floor.
 
 **`xs` (micro tier) is not a height step (2026-08-03).** The value layer's `size: 'xs'`
 keeps the 24 floor (`min-h-6`) and only lowers **inset, type, and radius** to the micro tier (chip: `px-1.5 py-0.5`/caption/`rounded-micro`. Outside chips, it is an alias for `sm` — no consumers invent values). The reason for not creating a step below 24 is the first line of the table above: below WCAG 2.5.8 floor is not a "small step" but non-compliance. Evidence is the three-round continuous record in the ratchet ledger: "no step below sm" (full sweep 14 · 9 files).
