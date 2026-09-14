@@ -347,15 +347,6 @@ test.describe("a press on a mark opens a card beside it", () => {
    * the breath, none after it.
    */
   test("the arrival breath runs once and the canvas then goes quiet", async ({ page }) => {
-    await page.addInitScript(() => {
-      const counter = { frames: 0 };
-      (window as unknown as { __rafCount: typeof counter }).__rafCount = counter;
-      const original = window.requestAnimationFrame.bind(window);
-      window.requestAnimationFrame = (callback: FrameRequestCallback) => {
-        counter.frames += 1;
-        return original(callback);
-      };
-    });
     await seedFirstRunSeen(page);
     await stubDirectoryPicker(page, seedVault());
     await page.goto("/en/library/?guides=off&e2e=1");
@@ -363,14 +354,14 @@ test.describe("a press on a mark opens a card beside it", () => {
     await expect
       .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.alpha() ?? 1), { timeout: 20_000 })
       .toBeLessThan(0.01);
-    const read = () =>
-      page.evaluate(() => (window as unknown as { __rafCount: { frames: number } }).__rafCount.frames);
+    const reset = () => page.evaluate(() => window.__atlasLibraryGraph!.paint().reset());
+    const read = () => page.evaluate(() => window.__atlasLibraryGraph!.paint().frames);
 
     // A **measurement window**, not a wait: the claim is that the breath asks for frames
     // while it runs, so some of its run has to pass before the count means anything.
-    const duringFrom = await read();
+    await reset();
     await page.waitForTimeout(900);
-    const during = (await read()) - duringFrom;
+    const during = await read();
     expect(during, "the arrival breath asked for no frames at all").toBeGreaterThan(5);
 
     // Then it clears its own timestamp, and the canvas stops. The timestamp is the
@@ -381,11 +372,12 @@ test.describe("a press on a mark opens a card beside it", () => {
         message: "the breath never let go",
       })
       .toBe(false);
-    const quietFrom = await read();
+    await reset();
     // A **measurement window**, not a wait: "the breath became a loop" is a claim about a
-    // stretch of real time with no frame asked for, so the stretch has to pass.
+    // stretch of real time with no canvas paint, so the stretch has to pass. The graph's
+    // own paint probe is the counter: page-global rAF also includes unrelated UI animation.
     await page.waitForTimeout(2_000);
-    expect((await read()) - quietFrom, "the breath became a loop").toBe(0);
+    expect(await read(), "the breath became a loop").toBe(0);
   });
 
   test("a frame with a card open stays inside its budget", async ({ page }) => {

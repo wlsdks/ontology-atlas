@@ -103,7 +103,12 @@ test('out-of-scope URLs and crosslinks use one exact Document reader and return 
   await expect(page.locator('[data-docs-header-zone="tabs"]')).not.toContainText('Settlement');
 
   await page.getByTestId('docs-compatibility-library-return').click();
-  await expect(page).toHaveURL(/\/en\/library\/.+tab=ontology/);
+  await expect(page).toHaveURL((url) =>
+    url.pathname === '/en/library/' &&
+    url.searchParams.get('tab') === 'ontology' &&
+    url.searchParams.get('slug') === 'capabilities/settlement'
+  );
+  await expect(page.locator('[data-docs-viewer]')).toContainText('Schedules funds after capture');
   expect(new URL(page.url()).searchParams.get('slug')).toBe('capabilities/settlement');
   expect(new URL(page.url()).hash).toBe('');
   await expect(page.getByRole('heading', { level: 1, name: 'Ontology' })).toHaveCount(1);

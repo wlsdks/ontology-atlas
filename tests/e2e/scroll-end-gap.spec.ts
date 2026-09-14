@@ -97,6 +97,24 @@ const MIN_PILL_CLEARANCE = 8;
  */
 const ROUTES = AUDITED_ROUTES.map((url) => [url, url] as const);
 
+/** `/docs` without a target is a redirect; the audit measures its canonical Ontology reader. */
+function auditDestination(url: string) {
+  return url === "/ko/docs/" ? "/ko/library/?tab=ontology" : url;
+}
+
+async function waitForAuditDestination(
+  page: import("@playwright/test").Page,
+  sourceUrl: string,
+) {
+  if (sourceUrl !== "/ko/docs/") return;
+  await expect(page).toHaveURL(
+    (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+  );
+  await expect(
+    page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+  ).toBeVisible();
+}
+
 /** The width where the bottom tab bar stands — `BottomTabBar` is `lg:hidden`, so below 1024. */
 const BOTTOM_TAB_BAR_MAX_WIDTH = 1024;
 
@@ -329,7 +347,8 @@ for (const vp of VIEWPORTS) {
     let tabMeasured = 0;
 
     for (const [label, url] of ROUTES) {
-      await page.goto(url, { waitUntil: "domcontentloaded" });
+      await page.goto(auditDestination(url), { waitUntil: "domcontentloaded" });
+      await waitForAuditDestination(page, url);
       await waitForDocumentPaint(page);
       await waitForBoxStill(page.locator("body"));
       const m = await measure(page);

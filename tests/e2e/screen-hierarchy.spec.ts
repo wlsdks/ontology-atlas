@@ -160,7 +160,18 @@ async function measureRoute(
   page: import("@playwright/test").Page,
   route: string,
 ): Promise<RouteMeasurement> {
-  await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
+  const destination = route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route;
+  await page.goto(`${destination}${destination.includes("?") ? "&" : "?"}guides=off`, {
+    waitUntil: "domcontentloaded",
+  });
+  if (route === "/ko/docs/") {
+    await expect(page).toHaveURL(
+      (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+    );
+    await expect(
+      page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+    ).toBeVisible();
+  }
   await waitForDocumentPaint(page);
 
   if (PROBE.some((k) => k.length > 0)) {
@@ -373,7 +384,7 @@ const TITLE_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
   },
   {
     route: "/ko/docs/",
-    why: "지도와 같다 — h1 「문서함」이 `sr-only` 1×1. 같은 검사가 못박는다",
+    why: "통합 Ontology reader의 h1이 `sr-only` 1×1이다. 같은 검사가 못박는다",
   },
 ];
 const TITLE_EXEMPT_ROUTES = new Set(TITLE_EXEMPT.map((e) => e.route));

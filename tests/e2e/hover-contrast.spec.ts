@@ -258,9 +258,18 @@ for (const route of HOVER_ROUTES) {
   test(`호버 대비 — ${route}`, async ({ page }) => {
     await seedFirstRunSeen(page);
     await page.setViewportSize(VIEWPORT);
-    await page.goto(`${route}${route.includes("?") ? "&" : "?"}guides=off`, {
+    const destination = route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route;
+    await page.goto(`${destination}${destination.includes("?") ? "&" : "?"}guides=off`, {
       waitUntil: "domcontentloaded",
     });
+    if (route === "/ko/docs/") {
+      await expect(page).toHaveURL(
+        (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+      );
+      await expect(
+        page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+      ).toBeVisible();
+    }
     await page.waitForSelector("main", { timeout: 20_000 });
     await waitForDocumentPaint(page);
     const { offenders, compared } = await auditRoute(page);
