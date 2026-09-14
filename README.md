@@ -581,7 +581,8 @@ have documents and no code. Full contracts: the
 - **Not extensible by running other people's code.** There will be no third-party
   plugin runtime. Extension happens through MCP tools, agent skills, and files in
   your own vault — things a `git diff` shows you before they run.
-- **Not finished.** Every public build so far is a release candidate.
+- **Still evolving.** The [download page](https://ontologyatlas.com/en/download/)
+  records current release availability and platform status.
 
 ## Running from source
 
