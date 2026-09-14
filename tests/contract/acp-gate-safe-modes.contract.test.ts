@@ -73,10 +73,11 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
     expect(kept).toEqual(['default', 'plan', 'dontAsk']);
   });
 
-  it('claude-agent-acp 0.74.0 이 실제로 짓는 목록을 그대로 넣어 본다', () => {
+  it('claude-agent-acp 0.77.0 이 실제로 짓는 목록을 그대로 넣어 본다', () => {
     /*
-     * Read from `dist/session-mode.js` `buildAvailableModes()` on 2026-09-05. `bypassPermissions`
-     * is appended only under `ALLOW_BYPASS`, and `dontAsk` is gone from the built list entirely.
+     * Read from `dist/session-mode.js` `buildAvailableModes(allowBypass)` on 2026-09-15.
+     * `bypassPermissions` is appended only when that session argument is true, and `dontAsk`
+     * remains absent from the built list.
      */
     const kept = keepGateSafeModes([
       choice('default', 'Manual', 'standard'),
@@ -192,8 +193,13 @@ const TRANSCRIBED_FROM = {
    * `dontAsk` 4, `"plan"` 10, `availableModes` 12). What it adds is `session-model.js` and
    * `session-effort.js` — model and effort choices, neither of which can skip a permission
    * request, which is the one criterion this file measures.
+   *
+   * 0.77.0 (2026-09-15): `buildAvailableModes` now receives bypass availability per session
+   * instead of reading the process constant directly. The five advertised mode records and their
+   * `_meta.kind` values are unchanged; SHA-256 of `dist/session-mode.js` is
+   * `6d2b54c5b4a992fecc3bbaff9eea7a8d59eef08c36a60c4c27e3c83f00138658`.
    */
-  claude: '@agentclientprotocol/claude-agent-acp@0.76.0',
+  claude: '@agentclientprotocol/claude-agent-acp@0.77.0',
   /**
    * The launch is the newest upstream since 2026-09-07 (owner: "the version is always the
    * newest"; the pin's overturn is in `docs/DECISIONS.md`). 1.10.0 was inspected on 2026-09-05 and

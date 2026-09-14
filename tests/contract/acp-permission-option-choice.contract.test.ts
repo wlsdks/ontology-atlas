@@ -73,6 +73,16 @@ const reject = (name = 'No'): Option => ({ optionId: OPTION_ID.reject, name, kin
  */
 const CASES: Array<{ tool: string; options: Option[]; expected: string }> = [
   {
+    // 0.77.0 `defaultToNo`: rejection leads, followed by the same once/session options.
+    tool: 'Bash (defaultToNo decline-first order)',
+    options: [
+      reject(),
+      allowOnce(),
+      allowWithUpdates("Yes, and don't ask again for git commit commands"),
+    ],
+    expected: OPTION_ID.allowOnce,
+  },
+  {
     // shell.js `buildBashPermissionOptions` with a durable change set it can describe.
     tool: 'Bash',
     options: [
@@ -355,7 +365,11 @@ describe('permission options — the app picks the one that ends with this call'
 // 0.76.0 (2026-09-11): `dist/permissions/` is byte-identical to 0.75.1 again, and `optionId`
 // appears in no other `dist/**/*.js`, so nothing outside that directory builds an option array.
 // What 0.76.0 actually adds is `session-effort` and `session-model`; the builders did not move.
-const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.76.0';
+// 0.77.0 (2026-09-15): the four option builders and shared ids are byte-identical to 0.76.0.
+// `options.js` adds only the `defaultToNo` decline-first sort represented above; option ids and
+// kinds do not change. SHA-256: shared f3268e6d…, shell 102de11e…, tools fa0736e3…,
+// filesystem a4c5f1cb…, and the changed options.js f3e16436….
+const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.77.0';
 
 describe('transcribed adapter version', () => {
   it('reads the option builders from the version the app actually launches', () => {
