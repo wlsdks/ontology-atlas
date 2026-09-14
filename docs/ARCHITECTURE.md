@@ -362,6 +362,10 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   slot replaces Docs. The editor flushes a pending browser draft on unmount; explicit
   Save and the existing mtime conflict guard still own file writes. Markdown source
   outlines preserve line anchors used by MCP citations and store no converted copy.
+  `tree-query.ts` gives the Ontology tree and its result count one locale-aware
+  name/path matcher. `LibrarySection` previews the derived Wiki path and canonical
+  section order in a modal before creation; `LibraryWorkActivityStrip` keeps the current
+  receipt separate from its dismissible history surface.
 - The reader owns the pane; the Library graph mounts only inside the shared
   viewport Dialog after an explicit Graph action. Its close path preserves
   selection and scroll and restores the opener. The unselected landing lists

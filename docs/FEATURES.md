@@ -890,10 +890,15 @@ Sources and Wiki shipped inside the Docs sidebar on 2026-09-05 and moved to Libr
 next day after five capped lists competed inside one 280px column. On 2026-09-14 the owner
 unified navigation without recombining those lists: Library now has Sources, Wiki, and
 Ontology tabs, and each tab keeps its own reader and file meaning. The mobile Library tab
-inherits the former Docs slot; `/docs/?slug=…` remains a compatible document link.
+inherits the former Docs slot; `/docs/?slug=…` remains a compatible document link. The
+Ontology tree's name-and-path filter matches both localized display names and canonical
+paths. New Wiki pages begin in a centered dialog that previews the live Markdown path,
+draft state, and five required section headings before creation. The current local-work
+receipt remains primary while earlier receipts are available from History; an app write's
+matching folder-watch event is consumed instead of producing a second notification.
 
-**Two panes.** The index on the left carries one of Sources and Wiki, chosen by a switch at
-its top, with that list's own doors. The right
+**Two panes.** The index on the left carries the active Sources or Wiki tab with that
+list's own doors. The right
 pane branches on the kind of file selected — a wiki page opens in the reading pane every
 Markdown surface here shares (`src/widgets/doc-reading-pane/`), headed by its title, its
 author and status, and a chip per source it was built from; a source opens as the six

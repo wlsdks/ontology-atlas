@@ -224,7 +224,7 @@ samples/storefront` prints its current census.
 
 **Library → Ontology** opens the same folder without the canvas: preview or edit Markdown, inspect the
 frontmatter that becomes the graph, follow backlinks, and jump back to the map.
-There is no imported copy to synchronize. Sources, Wiki, and Ontology share one Library destination; existing `/docs/?slug=…` links still open the same document.
+There is no imported copy to synchronize. Sources, Wiki, and Ontology share one Library destination; existing `/docs/?slug=…` links still open the same document. The Ontology tree's name-and-path search matches localized display names as well as canonical paths.
 
 ### 2. Connect your agent
 
@@ -286,6 +286,8 @@ the page; the traffic goes from your coding agent straight to its own provider,
 which the screen states instead of implying that Atlas sits in the middle.
 
 Markdown source headings open their original cited lines inside Library, including the surrounding passage. No converted file is stored.
+
+Creating a Wiki page opens a centered, background-blocking dialog that previews its live `wiki/<slug>.md` path, Markdown draft state, and five required section headings before any write. The current local-work receipt stays visible while earlier receipts remain under History. A successful app write produces one actionable notification; the folder watcher suppresses its matching duplicate.
 
 Library also works without code or ontology nodes. Keep a question and its cited
 answer, inspect source changes, request an updated draft through Claude Code or
