@@ -5514,6 +5514,7 @@
     "switchTo": "SWITCH TO",
     "pickAnotherFolder": "Open a folder Atlas has not seen",
     "openFolder": "Open {name}",
+    "open": "Open",
     "forget": "Forget",
     "forgetFolder": "Stop listing {name}",
     "lastOpenBadge": "LAST OPEN",
@@ -5538,10 +5539,13 @@
     "choose": {
       "eyebrow": "WHICH FOLDER",
       "title": "Choose the folder to work in",
-      "bodyDesktop": "Atlas knows more than one folder on this computer and will not guess between them. Pick one below, or open a folder it has not seen.",
-      "bodyWeb": "A browser cannot reopen a folder on its own: File System Access permission has to come from a click, so this step is the browser's, not a choice Atlas added.",
+      "bodyDesktop": "Atlas knows several folders. Choose one to open, or pick another.",
+      "bodyWeb": "Your browser needs a click to reopen a folder. Choose one below or pick another.",
       "listTitle": "FOLDERS ATLAS KNOWS",
-      "releaseValve": "Leave one folder in this list and the next launch opens it directly."
+      "releaseValve": "Leave one folder in this list and the next launch opens it directly.",
+      "justStartBody": "Create a ready local folder in Documents without a picker.",
+      "openBody": "Choose another existing Markdown folder.",
+      "createBody": "Choose an empty folder, then select what it will hold."
     },
     "locate": "Find it again",
     "locateFolder": "Find {name} again through the folder picker",

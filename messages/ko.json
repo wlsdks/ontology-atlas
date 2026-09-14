@@ -5514,6 +5514,7 @@
     "switchTo": "바꿀 폴더",
     "pickAnotherFolder": "Atlas가 모르는 폴더 열기",
     "openFolder": "{name} 열기",
+    "open": "열기",
     "forget": "목록에서 빼기",
     "forgetFolder": "{name}을 목록에서 빼기",
     "lastOpenBadge": "마지막 사용",
@@ -5538,10 +5539,13 @@
     "choose": {
       "eyebrow": "어느 폴더",
       "title": "작업할 폴더를 고르세요",
-      "bodyDesktop": "이 컴퓨터에서 Atlas가 아는 폴더가 둘 이상이라 임의로 고르지 않습니다. 아래에서 하나를 고르거나, 아직 열어본 적 없는 폴더를 여십시오.",
-      "bodyWeb": "브라우저는 폴더를 스스로 다시 열 수 없습니다. File System Access 권한은 클릭에서만 나오기 때문에, 이 단계는 Atlas가 더한 것이 아니라 브라우저가 요구하는 것입니다.",
+      "bodyDesktop": "Atlas가 아는 폴더가 여러 개입니다. 하나를 열거나 다른 폴더를 고르세요.",
+      "bodyWeb": "브라우저는 클릭해야 폴더를 다시 열 수 있습니다. 아래에서 하나를 고르거나 다른 폴더를 여세요.",
       "listTitle": "ATLAS가 아는 폴더",
-      "releaseValve": "이 목록을 하나로 줄이면 다음 실행부터 그 폴더로 바로 들어갑니다."
+      "releaseValve": "이 목록을 하나로 줄이면 다음 실행부터 그 폴더로 바로 들어갑니다.",
+      "justStartBody": "폴더 선택 없이 내 문서에 새 로컬 폴더를 만듭니다.",
+      "openBody": "다른 마크다운 폴더를 엽니다.",
+      "createBody": "빈 폴더를 고른 다음 무엇을 담을지 선택합니다."
     },
     "locate": "다시 찾기",
     "locateFolder": "폴더 선택 창으로 {name}을 다시 찾기",

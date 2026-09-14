@@ -174,6 +174,9 @@ export function FirstRunPage() {
    * telling them what a vault is answers a question they did not ask.
    */
   const choosingFolder = vault.awaitingVaultChoice;
+  // The returning-folder chooser is a compact decision screen. Once a person starts the
+  // new-folder flow, the full first-run shape question keeps its original breathing room.
+  const choosingFolderHome = choosingFolder && choosingFor === null;
   const knownFolders = vault.recentVaults;
   const storedFolderKey = vault.storedVaultRecord
     ? recentVaultRowKey(vault.storedVaultRecord)
@@ -184,8 +187,17 @@ export function FirstRunPage() {
     className:
       "grid grid-cols-[32px_1fr] items-start gap-3 border bg-[color:var(--color-panel)] px-4 py-3.5",
   });
+  const secondaryCardBase = controlClass({
+    shape: "row",
+    className: choosingFolderHome
+      ? "grid grid-cols-[28px_1fr] items-start gap-2.5 border bg-[color:var(--color-panel)] px-3 py-2.5"
+      : "grid grid-cols-[32px_1fr] items-start gap-3 border bg-[color:var(--color-panel)] px-4 py-3.5",
+  });
   const iconChip =
     "flex h-8 w-8 items-center justify-center rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)]";
+  const secondaryIconChip = choosingFolderHome
+    ? "flex h-7 w-7 items-center justify-center rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)]"
+    : iconChip;
   /** The door cards' glyph ink: indigo only while a door is what the screen is asking about. */
   const doorGlyph = choosingFolder
     ? "text-[color:var(--color-text-tertiary)]"
@@ -203,10 +215,14 @@ export function FirstRunPage() {
        * folders, the "create a new folder" card sat 60px below the fold (responsive seat,
        * 2026-09-13).
        */
-      className="flex min-h-0 flex-1 justify-center overflow-auto bg-[color:var(--color-canvas)] px-6 py-10"
+      className={`flex min-h-0 flex-1 justify-center overflow-auto bg-[color:var(--color-canvas)] px-6 ${choosingFolderHome ? "py-6" : "py-10"}`}
     >
-      <section className="my-auto grid h-fit w-full max-w-[var(--dialog-w-sm)] gap-6">
-        <header className="grid justify-items-center gap-3 text-center">
+      <section
+        className={`my-auto grid h-fit w-full max-w-[var(--dialog-w-sm)] ${choosingFolderHome ? "gap-4" : "gap-6"}`}
+      >
+        <header
+          className={`grid justify-items-center text-center ${choosingFolderHome ? "gap-2" : "gap-3"}`}
+        >
           <div className="inline-flex items-center gap-3">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
               <Orbit size={ICON_SIZE.md} aria-hidden />
@@ -222,7 +238,9 @@ export function FirstRunPage() {
             <h1 className="break-keep text-display font-[var(--font-weight-signature)] leading-display text-[color:var(--color-text-primary)]">
               {choosingFolder ? tSwitch("choose.title") : t("title")}
             </h1>
-            <p className="mx-auto max-w-[360px] break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+            <p
+              className={`mx-auto max-w-[360px] break-keep leading-body text-[color:var(--color-text-tertiary)] ${choosingFolderHome ? "text-label" : "text-body"}`}
+            >
               {choosingFolder
                 ? isTauriVaultRuntime()
                   ? tSwitch("choose.bodyDesktop")
@@ -336,7 +354,7 @@ export function FirstRunPage() {
                * creates a *third* folder - the last thing a person choosing between two of
                * theirs is asking for.
                */
-              className={`${cardBase} ${
+              className={`${secondaryCardBase} ${
                 choosingFolder
                   ? "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]"
                   : "border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]"
@@ -350,7 +368,7 @@ export function FirstRunPage() {
                 glyph scored s·v = 0.561 against the folder list's 0.153, so the demoted card
                 was still the brightest ink in the action region (guardian, 2026-09-13).
               */}
-              <span className={`${iconChip} ${doorGlyph}`}>
+              <span className={`${secondaryIconChip} ${doorGlyph}`}>
                 <Zap size={ICON_SIZE.md} aria-hidden />
               </span>
               <span className="min-w-0">
@@ -362,7 +380,7 @@ export function FirstRunPage() {
                       : t("justStartTitle")}
                 </span>
                 <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
-                  {t("justStartBody")}
+                  {choosingFolderHome ? tSwitch("choose.justStartBody") : t("justStartBody")}
                 </span>
               </span>
             </button>
@@ -373,14 +391,14 @@ export function FirstRunPage() {
             onClick={() => void handleOpen()}
             disabled={busy}
             data-testid="first-run-open"
-            className={`${cardBase} ${
+            className={`${secondaryCardBase} ${
               showJustStart || choosingFolder
                 ? "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]"
                 : "border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]"
             }`}
           >
             <span
-              className={`${iconChip} ${showJustStart ? "text-[color:var(--color-text-tertiary)]" : doorGlyph}`}
+              className={`${secondaryIconChip} ${showJustStart ? "text-[color:var(--color-text-tertiary)]" : doorGlyph}`}
             >
               <FolderOpen size={ICON_SIZE.md} aria-hidden />
             </span>
@@ -391,7 +409,7 @@ export function FirstRunPage() {
                   : t("openTitle")}
               </span>
               <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
-                {t("openBody")}
+                {choosingFolderHome ? tSwitch("choose.openBody") : t("openBody")}
               </span>
             </span>
           </button>
@@ -401,9 +419,9 @@ export function FirstRunPage() {
             onClick={() => setChoosingFor("create")}
             disabled={busy}
             data-testid="first-run-create"
-            className={`${cardBase} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`}
+            className={`${secondaryCardBase} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`}
           >
-            <span className={`${iconChip} text-[color:var(--color-text-tertiary)]`}>
+            <span className={`${secondaryIconChip} text-[color:var(--color-text-tertiary)]`}>
               <Sparkles size={ICON_SIZE.md} aria-hidden />
             </span>
             <span className="min-w-0">
@@ -411,7 +429,7 @@ export function FirstRunPage() {
                 {scaffolding ? t("scaffolding") : t("createTitle")}
               </span>
               <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
-                {t("createBody")}
+                {choosingFolderHome ? tSwitch("choose.createBody") : t("createBody")}
               </span>
             </span>
           </button>

@@ -195,6 +195,7 @@ function RecentVaultRowView({
    */
   const openAriaLabel = [
     t('openFolder', { name: row.name }),
+    row.path,
     contents,
     countedLabel,
     openedLabel,
@@ -225,6 +226,11 @@ function RecentVaultRowView({
               {t('lastOpenBadge')}
             </span>
           ) : null}
+          {openable ? (
+            <span className="ml-auto shrink-0 text-label text-[color:var(--color-text-tertiary)]">
+              {t('open')}
+            </span>
+          ) : null}
         </span>
         {/* What is inside, and when it was last open - the two facts a name cannot carry. */}
         <span className="mt-0.5 block truncate text-label leading-body text-[color:var(--color-text-tertiary)]">
@@ -241,7 +247,7 @@ function RecentVaultRowView({
           <span className="tabular-nums">{openedLabel}</span>
         </span>
         {row.path ? (
-          <span className="mt-0.5 block truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+          <span className="mt-0.5 block break-words font-mono text-label leading-body text-[color:var(--color-text-tertiary)]">
             {row.path}
           </span>
         ) : null}
@@ -320,7 +326,9 @@ function RecentVaultRowView({
             data-testid="recent-vault-locate"
             onClick={onLocate}
             disabled={busy}
-            aria-label={t('locateFolder', { name: row.name })}
+            aria-label={[t('locateFolder', { name: row.name }), row.path]
+              .filter(Boolean)
+              .join(' · ')}
             /*
              * `atlas-touch-floor-wide` — `shape: 'chip'` carries only the height half of the
              * touch floor, so this measured 41.5x44 under a coarse pointer, which the repo's
@@ -358,7 +366,9 @@ function RecentVaultRowView({
           data-testid="recent-vault-forget"
           onClick={() => onForget(row.record)}
           disabled={busy}
-          aria-label={t('forgetFolder', { name: row.name })}
+          aria-label={[t('forgetFolder', { name: row.name }), row.path]
+            .filter(Boolean)
+            .join(' · ')}
           // The width half of the touch floor; see the note on the locate chip below.
           className={controlClass({
             shape: 'chip',
