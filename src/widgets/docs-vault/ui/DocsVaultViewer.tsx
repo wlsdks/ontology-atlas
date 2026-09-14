@@ -65,6 +65,8 @@ interface Props {
   knownOriginalPaths?: ReadonlySet<string>;
   /** Opens a known original source at the cited anchor. */
   onSourceNavigate?: (path: string, anchor?: string) => void;
+  /** Uses the smaller top inset when parent context already separates the body. */
+  compactTop?: boolean;
 }
 
 /**
@@ -92,6 +94,7 @@ export function DocsVaultViewer({
   vaultRepoRoot,
   knownOriginalPaths,
   onSourceNavigate,
+  compactTop = false,
 }: Props) {
   const t = useTranslations('vaultWidgets.viewer');
   const reducedMotion = usePrefersReducedMotion();
@@ -735,7 +738,11 @@ export function DocsVaultViewer({
   return (
     <article
       data-docs-viewer
-      className="mx-auto max-w-[var(--measure-doc-column)] px-6 py-8 md:px-10 md:py-10"
+      className={
+        compactTop
+          ? "mx-auto max-w-[var(--measure-doc-column)] px-6 pb-8 pt-3 md:px-10 md:pb-10 md:pt-3"
+          : "mx-auto max-w-[var(--measure-doc-column)] px-6 py-8 md:px-10 md:py-10"
+      }
     >
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {raw}

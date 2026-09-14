@@ -2127,8 +2127,8 @@ function DocsVaultContent({
           "where am I", and the rail's map destination (→ /topology) owns the way back, so this
           row's back link was duplicate navigation. That recovers 32px of vertical space; the one
           thing the rail cannot do — returning to the insights review the user came from — moved
-          into the header's zone-l (the insightsReturnTab chip below). The "docs" identity is kept
-          as an sr-only h1. */}
+          into the header's zone-l (the insightsReturnTab chip below). The Ontology panel keeps
+          its page identity as an sr-only h1. */}
       {/* Header three zones: [zone-l identity] [zone-c tabs] [zone-r tools]. The macOS download
           button was removed here entirely — it is owned by the read-only sample banner and
           /download alone. */}

@@ -296,7 +296,9 @@ const STANDING_LABEL_MAX_WIDTH = 132;
 const STANDING_LABEL_MAX_CHARS = 24;
 /**
  * The leader search: how far a name may be pushed from its mark, in how many steps, on how
- * many spokes.
+ * many spokes. Each ring rotates by the graph's established golden angle, so the same
+ * bounded number of candidates samples the gaps between the previous ring's rays instead
+ * of trying four distances along the same twelve lines.
  *
  * 44px is about three line heights at `--text-label`. Past that a name is not read as *that*
  * dot's name even with a line drawn to it; short of it, measured on the sixty-mark folder at
@@ -308,6 +310,7 @@ const STANDING_LABEL_MAX_CHARS = 24;
 const LEADER_REACH_MAX = 44;
 const LEADER_STEPS = 4;
 const LEADER_SPOKES = 12;
+const LEADER_RING_ROTATION = Math.PI * (3 - Math.sqrt(5));
 /**
  * Above this many marks the leader search is skipped, and a name that loses its four places
  * is dropped as it was before.
@@ -1118,7 +1121,10 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         for (let spoke = 0; spoke < LEADER_SPOKES; spoke += 1) {
           // Starting below the mark and going round, so the first offers stay near the two
           // places a reader looks first and the order is the same on every machine.
-          const angle = Math.PI / 2 + (spoke * 2 * Math.PI) / LEADER_SPOKES;
+          const angle =
+            Math.PI / 2 +
+            (step - 1) * LEADER_RING_ROTATION +
+            (spoke * 2 * Math.PI) / LEADER_SPOKES;
           const at = { x: centre.x + Math.cos(angle) * reach, y: centre.y + Math.sin(angle) * reach };
           // Slid back inside the frame rather than dropped for being near an edge — the same
           // rule the four base places take, and for the same reason: the fit puts marks

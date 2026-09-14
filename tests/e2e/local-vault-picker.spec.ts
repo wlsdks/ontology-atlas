@@ -113,6 +113,22 @@ test.describe("local workspace capability gate (N1)", () => {
     await page.getByRole("button", { name: "Expand document list" }).click();
     const documentList = page.getByRole("navigation", { name: "Document list" });
     await expect(documentList).toBeVisible();
-    await expect(documentList.getByRole("button", { name: "Agent Graph Workflow" })).toBeVisible();
+    const expandFolder = async (name: RegExp) => {
+      const folder = documentList.getByRole("button", { name });
+      if ((await folder.getAttribute("aria-expanded")) !== "true") await folder.click();
+      await expect(folder).toHaveAttribute("aria-expanded", "true");
+    };
+    await expandFolder(/^ontology \d+$/);
+    await expandFolder(/^capabilities \d+$/);
+    const current = documentList.locator('button[aria-current="page"]');
+    await expect(current).toBeVisible();
+    const other = documentList.locator('button:not([aria-expanded]):not([aria-current="page"])').first();
+    await expect(other).toBeVisible();
+    const otherTitle = (await other.innerText()).trim();
+    await other.click();
+    await expect(
+      documentList.getByRole("button", { name: otherTitle, exact: true }),
+    ).toHaveAttribute("aria-current", "page");
+    await expect(page.locator("main")).toContainText(otherTitle);
   });
 });

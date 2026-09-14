@@ -37,8 +37,8 @@ import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
  * folder the drop goes into. The doors sit in the order of how far away the document is:
  * on this disk, in a folder the app was granted, and somewhere else entirely. The third
  * one exists because a person whose notes live in Notion has nothing to drop and nothing
- * to find (owner, 2026-09-07: *"connecting a service is mostly for the Library anyway"*). There is no second heading: a tie between an `h1` and an
- * `h2` reads as two titles, and the destination's own name is on the rail.
+ * to find (owner, 2026-09-07: *"connecting a service is mostly for the Library anyway"*).
+ * The workspace label is navigation context rather than a heading, so this active panel owns h1.
  */
 export function LibraryStartStage({
   vaultLabel,

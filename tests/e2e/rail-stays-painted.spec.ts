@@ -159,8 +159,8 @@ async function readCrossing(page: Page): Promise<Crossing> {
 /** How long to keep sampling if a transition never ends — generous, because a stall is a failure. */
 const MAX_SAMPLE_MS = 3_000;
 
-/** The six destinations the rail offers on a vault-bearing workbench. */
-const DESTINATIONS = ["library", "agents", "mcp", "git", "map", "docs"] as const;
+/** Six current destinations the rail offers on a vault-bearing workbench. */
+const DESTINATIONS = ["library", "agents", "mcp", "git", "map", "architecture"] as const;
 
 test.use({ viewport: { width: 1512, height: 901 } });
 

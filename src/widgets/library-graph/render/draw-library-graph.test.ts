@@ -491,6 +491,48 @@ describe("drawing the library graph", () => {
     expect(rec.strokes.filter((style) => style === "page-ink").length).toBeGreaterThan(0);
   });
 
+  it("searches a different angle on each leader ring before leaving a crowded mark anonymous", () => {
+    const crowd: LibraryGraphNode[] = Array.from({ length: 7 }, (_, index) => ({
+      id: `page:wiki/crowded-${index}`,
+      kind: "page" as const,
+      label: `Page ${index}`,
+      ref: `wiki/crowded-${index}`,
+      href: null,
+    }));
+    /*
+     * A short landscape frame like the Library's 1040×720 graph after its workspace
+     * header was added. Four radial searches over the same twelve angles leave two of
+     * these seven names out even though free boxes exist between those rays.
+     */
+    const points = [
+      [99.7, 48.4],
+      [47.4, 70.9],
+      [134.8, 61.9],
+      [45.5, 47.6],
+      [139.1, 84.8],
+      [127.4, 86.9],
+      [44.3, 76.6],
+    ] as const;
+    const where = new Map(crowd.map((node, index) => [node.id, { x: points[index]![0], y: points[index]![1] }]));
+    const rec = recorder();
+
+    drawLibraryGraph(
+      rec.ctx,
+      frame({
+        nodes: crowd,
+        edges: [],
+        positions: where,
+        width: 200,
+        height: 120,
+        standingLabels: true,
+      }),
+    );
+
+    expect(rec.texts.map((entry) => entry.text).sort()).toEqual(
+      crowd.map((node) => node.label).sort(),
+    );
+  });
+
   it("paints its own ground: the canvas is opaque", () => {
     const rec = recorder();
     drawLibraryGraph(rec.ctx, frame());

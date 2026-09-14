@@ -106,11 +106,17 @@ async function stopFrameTextTrace(page: Page): Promise<string[]> {
 
 async function expectLocalOnlyTransition(
   page: Page,
-  destination: 'architecture' | 'docs' | 'insights' | 'projects',
+  destination: 'architecture' | 'library' | 'insights' | 'projects',
   localMarker: string,
+  section?: 'ontology',
 ) {
   await startFrameTextTrace(page);
   await page.getByTestId(`app-nav-rail-item-${destination}`).click();
+  if (section) {
+    const tab = page.getByTestId(`library-workspace-${section}`);
+    await tab.click();
+    await expect(tab).toHaveAttribute('aria-selected', 'true');
+  }
   await expect(page.locator('main')).toContainText(localMarker, { timeout: 20_000 });
   await page.waitForTimeout(250);
   const frames = await stopFrameTextTrace(page);
@@ -158,7 +164,7 @@ test('선택한 로컬 볼트의 LNB 전환은 번들 샘플을 한 프레임도
     await installedRail.evaluate((element) => Math.round(element.getBoundingClientRect().width)),
     '실제 로컬 볼트가 열린 설치 셸의 LNB 폭이 0이다',
   ).toBeGreaterThan(0);
-  await expectLocalOnlyTransition(page, 'docs', 'Local Only Capability');
+  await expectLocalOnlyTransition(page, 'library', 'Local Only Capability', 'ontology');
   await expect(page.getByTestId('docs-missing-slug-banner')).toHaveCount(0);
   await expectLocalOnlyTransition(page, 'insights', '로컬 전용 역량');
   await expectLocalOnlyTransition(page, 'projects', 'Local Only Project');

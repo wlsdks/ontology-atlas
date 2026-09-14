@@ -2407,6 +2407,11 @@ export function LibraryPage({ segment, onSegmentChange }: {
         : indexEdge.top
           ? `linear-gradient(to bottom, transparent 0, black ${indexFade})`
           : undefined;
+  const indexTitle = segment
+    ? t(`index.${segment}`, {
+        count: segment === "sources" ? model.sources.length : model.wikiPages.length,
+      })
+    : t("title");
 
   return (
     /*
@@ -2425,6 +2430,7 @@ export function LibraryPage({ segment, onSegmentChange }: {
       /* The conversation dock remains anchored to this stable row. */
       className="topology-ui-scale relative flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)] max-lg:flex-col"
     >
+      <h1 className="sr-only">{indexTitle}</h1>
       {/*
         **The folded index is one icon control, where the fold control stood.**
 
@@ -2496,7 +2502,7 @@ export function LibraryPage({ segment, onSegmentChange }: {
         <div className="flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4">
           <LibraryHeader
             t={t}
-            title={segment ? t(`index.${segment}`, { count: segment === 'sources' ? model.sources.length : model.wikiPages.length }) : undefined}
+            title={indexTitle}
             /*
              * The provider disclosure's one home. It is a fact about this place rather
              * than about a press, so it rides with the place's description instead of
@@ -2874,6 +2880,7 @@ export function LibraryPage({ segment, onSegmentChange }: {
                 doc={selectedWikiDoc}
                 originals={model.pairing.originalsByWiki.get(selectedWikiDoc.slug) ?? EMPTY_ORIGINALS}
                 onOpenSource={(path) => choose({ kind: "source", path })}
+                compactTop={selectedAnswer !== null}
                 t={t}
               />
               {/*
@@ -2925,6 +2932,7 @@ export function LibraryPage({ segment, onSegmentChange }: {
                   getDocContent={getDocContent}
                   resolveImage={resolveImage}
                   knownOriginalPaths={knownOriginalPaths}
+                  compactTop={selectedAnswer !== null}
                   /* The passage owns the landing, so the pane does not take focus from
                      it — `skipReaderFocusRef` is the existing seam for "this pane was
                      opened by something that knows where focus belongs". Measured
@@ -3398,9 +3406,9 @@ function LibraryHeader({
 }) {
   return (
     <div data-testid="library-header" className="flex min-w-0 items-center gap-1.5">
-      <h1 className="min-w-0 truncate text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
+      <p className="min-w-0 truncate text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
         {title ?? t("title")}
-      </h1>
+      </p>
       {/*
         Three corrections, each from a measurement (2026-09-07).
 

@@ -54,12 +54,15 @@ export function WikiPageHeader({
   doc,
   originals,
   onOpenSource,
+  compactTop = false,
   t,
 }: {
   doc: VaultDoc;
   /** The sources this page cites, resolved against the folder by `buildLibraryPairing`. */
   originals: readonly LibraryOriginalLink[];
   onOpenSource: (path: string) => void;
+  /** Retained answers already sit below workspace and reader chrome. */
+  compactTop?: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   const frontmatter = doc.frontmatter as Record<string, unknown>;
@@ -70,7 +73,7 @@ export function WikiPageHeader({
   return (
     <header
       data-testid="library-wiki-header"
-      className="mx-auto w-full max-w-[var(--measure-doc-column)] px-6 pt-8 md:px-10"
+      className={`mx-auto w-full max-w-[var(--measure-doc-column)] px-6 md:px-10 ${compactTop ? "pt-3" : "pt-8"}`}
     >
       <h2 className="text-display font-[var(--font-weight-signature)] leading-title tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
         {doc.title}

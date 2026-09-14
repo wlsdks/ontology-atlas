@@ -31,7 +31,17 @@ test("center Dialog 는 세 폭에서 스크림·폭 공식·수납을 지킨다
   // Choose the actual FileSystemDirectoryHandle (OPFS), but place one document in advance
   // to avoid going through the starter scaffold, which is not the subject of this test.
   await stubDirectoryPicker(page, {
-    "README.md": "# Dialog fixture\n\n새 문서 대화상자를 여는 최소 로컬 폴더.\n",
+    "capabilities/dialog-fixture.md": [
+      "---",
+      "uid: 22222222-2222-4222-8222-222222222222",
+      "kind: capability",
+      "title: Dialog fixture",
+      "slug: capabilities/dialog-fixture",
+      "---",
+      "",
+      "# Dialog fixture",
+      "",
+    ].join("\n"),
   });
   await page.goto("/ko/topology/", { waitUntil: "domcontentloaded" });
   await page.getByTestId("first-run-starter-open").click();
@@ -39,7 +49,7 @@ test("center Dialog 는 세 폭에서 스크림·폭 공식·수납을 지킨다
   await page.getByTestId("vault-guide-pick-existing").click();
   await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
 
-  // Open a new document dialog after the document library reads the same local handle.
+  // Open the small Ontology new-node dialog after the reader sees the same local handle.
   await page.goto("/ko/docs/", { waitUntil: "domcontentloaded" });
   const treeButton = page.getByRole("navigation", { name: "문서 목록" }).getByRole("button").first();
   await expect(treeButton).toBeVisible({ timeout: 30_000 });

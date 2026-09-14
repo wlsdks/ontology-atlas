@@ -27,10 +27,10 @@ import { seedFirstRunSeen } from "./first-run-seed";
  */
 
 const DESTINATIONS = [
-  { id: "docs", url: /\/docs\// },
   // Library, 2026-09-06 — a new tile is exactly where an indicator drawn from an index
   // times a constant row height would first go wrong, and the pitch moved 64 → 60 with it.
-  { id: "library", url: /\/library\// },
+  // Its Ontology section preserves the former Docs journey without inventing a removed rail tile.
+  { id: "library", url: /\/library\//, section: "ontology" },
   { id: "insights", url: /\/ontology\/insights\// },
   { id: "projects", url: /\/projects\// },
   { id: "map", url: /\/topology\// },
@@ -80,6 +80,11 @@ test.describe("레일 활성 표시 — 같은 것이 옮겨간다", () => {
     for (const destination of DESTINATIONS) {
       await page.getByTestId(`app-nav-rail-item-${destination.id}`).click();
       await page.waitForURL(destination.url);
+      if ("section" in destination) {
+        const tab = page.getByTestId(`library-workspace-${destination.section}`);
+        await tab.click();
+        await expect(tab).toHaveAttribute("aria-selected", "true");
+      }
 
       // Look at the settled state — measuring mid-travel measures scheduling, not the transition.
       await expect

@@ -46,7 +46,7 @@ export function LibraryWorkspace({ legacyOntology = false }: { legacyOntology?: 
   return (
     <div data-testid="library-workspace" className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
       <header className="topology-ui-scale flex h-14 shrink-0 items-stretch gap-5 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 md:px-4">
-        <h1 className="hidden shrink-0 items-end pb-2 text-body leading-label font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] sm:inline-flex">{t('title')}</h1>
+        <p className="hidden shrink-0 items-end pb-2 text-body leading-label font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] sm:inline-flex">{t('title')}</p>
         <span aria-hidden className="mb-2.5 hidden h-4 self-end border-l border-[color:var(--color-border-soft)] sm:block" />
         <TabBar
           ariaLabel={t('workspace.aria')}

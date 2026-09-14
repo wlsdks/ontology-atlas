@@ -226,12 +226,12 @@ const WATCH_MS = 900;
  * this gate silently counting frames on the wrong screen.
  */
 const ROUTE_PATH: Record<string, string> = {
+  architecture: "/architecture",
   agents: "/agents",
   git: "/git",
   map: "/topology",
   library: "/library",
   mcp: "/mcp",
-  docs: "/docs",
 };
 
 /** Leaves the destination and comes back, reporting what the return arrival painted. */
@@ -280,7 +280,7 @@ test("a pane the app has already read arrives painted on every rail crossing", a
 
   // ── Every return arrival must be painted ────────────────────────────────
   const returns: Record<string, Arrival> = {};
-  for (const destination of ["agents", "git", "map", "library", "mcp", "docs"]) {
+  for (const destination of ["agents", "git", "map", "library", "mcp", "architecture"]) {
     // Warm it once, so "already read" is true, then measure the arrival after that.
     if (destination !== "agents") await arriveFrom(page, destination);
     returns[destination] = await arriveFrom(page, destination);

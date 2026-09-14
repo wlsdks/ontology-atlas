@@ -839,7 +839,7 @@ test.describe("the Library pane", () => {
         return { y: r.y, bottom: r.bottom, right: r.right, cy: r.y + r.height / 2, h: r.height };
       };
       const header = document.querySelector('[data-testid="library-header"]')!;
-      const title = header.querySelector("h1")!;
+      const title = header.querySelector("p")!;
       const fold = document.querySelector('[data-testid="library-index-collapse"]')!;
       const svg = fold.querySelector("svg")!;
       const style = getComputedStyle(title);
@@ -854,7 +854,7 @@ test.describe("the Library pane", () => {
         header: box(header),
         title: box(title),
         fold: box(fold),
-        eyebrowRows: header.querySelectorAll("p").length,
+        eyebrowRows: header.querySelectorAll("p").length - 1,
         titleInk: measured.actualBoundingBoxAscent + measured.actualBoundingBoxDescent,
         glyphInk: (bbox.height * svg.getBoundingClientRect().width) / (viewBox[2] || 24),
       };

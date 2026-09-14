@@ -76,12 +76,15 @@ test.describe("Library live work activity", () => {
     await page.getByTestId("acp-permission-allow").click();
     await harness.write(page);
     await expect.poll(async () => (await harness.snapshot(page)).writes.some((write) => write.relativePath === "wiki/architecture.md")).toBe(true);
+    await page.getByTestId("library-work-history-toggle").click();
     await expect(page.getByTestId("library-work-recent")).toContainText("File changed");
+    await page.getByTestId("library-work-history-toggle").click();
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "write");
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-phase", "complete");
     await harness.finish(page);
     await expect(page.getByTestId("acp-chat-panel")).toHaveAttribute("data-acp-status", "ready");
     await page.getByRole("button", { name: "Close conversation" }).click();
+    await page.getByTestId("library-work-history-toggle").click();
     await page.getByRole("button", { name: "File changed · wiki/architecture", exact: true }).focus();
     await expect(page.getByRole("button", { name: "File changed · wiki/architecture", exact: true })).toBeFocused();
     await page.keyboard.press("Enter");
@@ -99,7 +102,9 @@ test.describe("Library live work activity", () => {
     await page.getByTestId("acp-permission-reject").click();
     await expect.poll(async () => (await harness.snapshot(page)).writes.length).toBe(0);
     await harness.finish(page);
+    await page.getByTestId("library-work-history-toggle").click();
     await expect(page.getByTestId("library-work-recent")).not.toContainText("File changed");
+    await page.getByTestId("library-work-history-toggle").click();
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-kind", "error");
     await expect(page.getByTestId("library-work-current")).toHaveAttribute("data-work-phase", "complete");
   });
@@ -113,9 +118,10 @@ test.describe("Library work receipts on touch", () => {
     await harness.wait(page);
     await page.getByTestId("acp-permission-allow").click();
     await harness.write(page);
-    await expect(page.getByTestId("library-work-recent")).toContainText("File changed");
     await harness.finish(page);
     await page.getByRole("button", { name: "Close conversation" }).click();
+    await page.getByTestId("library-work-history-toggle").click();
+    await expect(page.getByTestId("library-work-recent")).toContainText("File changed");
     const receipt = page.getByRole("button", { name: "File changed · wiki/architecture", exact: true });
     await expect(receipt).toBeVisible();
     const box = await receipt.boundingBox();
