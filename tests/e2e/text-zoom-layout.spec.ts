@@ -6,6 +6,7 @@ import {
   TEXT_ZOOM_WIDTHS,
   ZOOMED_ROOT_PX,
 } from "./text-zoom-probes";
+import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
  * **The browser's own text-size setting, at 200% — the layout half.**
@@ -139,6 +140,52 @@ test.describe("실제 브라우저 글자 크기 설정 200%", () => {
 
     });
   }
+
+  test("the first-run folder picker remains reachable above the bottom tab bar", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await stubDirectoryPicker(page, {
+      "README.md": "# Text zoom fixture\n\nA folder chosen from the first-run guide.\n",
+    });
+    await page.goto("/en/topology/?guides=off", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("first-run-starter-open").click();
+    const sheet = page.getByTestId("vault-guide-sheet");
+    const pick = page.getByTestId("vault-guide-pick-existing");
+    await expect(sheet).toBeVisible();
+    await pick.scrollIntoViewIfNeeded();
+
+    const measured = await page.evaluate(() => {
+      const sheetElement = document.querySelector<HTMLElement>('[data-testid="vault-guide-sheet"]');
+      const pickElement = document.querySelector<HTMLElement>('[data-testid="vault-guide-pick-existing"]');
+      const bar = document.querySelector<HTMLElement>('[data-tabbar="primary"]');
+      if (!sheetElement || !pickElement || !bar) return { subjects: 0 };
+      const pickRect = pickElement.getBoundingClientRect();
+      const barRect = bar.getBoundingClientRect();
+      const hit = document.elementFromPoint(
+        pickRect.x + pickRect.width / 2,
+        pickRect.y + pickRect.height / 2,
+      );
+      return {
+        subjects: 1,
+        sheetScrollable:
+          /auto|scroll/.test(getComputedStyle(sheetElement).overflowY) &&
+          sheetElement.scrollHeight > sheetElement.clientHeight,
+        pickBottom: pickRect.bottom,
+        barTop: barRect.top,
+        hit: hit === pickElement || pickElement.contains(hit),
+      };
+    });
+
+    expect(measured.subjects, "first-run picker measurement found no subject").toBe(1);
+    expect(measured.sheetScrollable, "the enlarged guide has no vertical scroller").toBe(true);
+    expect(
+      measured.pickBottom,
+      `folder picker bottom ${measured.pickBottom} crosses tab bar top ${measured.barTop}`,
+    ).toBeLessThanOrEqual(measured.barTop!);
+    expect(measured.hit, "the bottom tab bar intercepts the folder picker").toBe(true);
+
+    await pick.click();
+    await expect(page.getByTestId("first-run-starter")).toHaveCount(0);
+  });
 
   test("게이트웨이 헤드라인이 자기 섹션 제목보다 작아지지 않는다", async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 900 });

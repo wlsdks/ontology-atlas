@@ -102,7 +102,11 @@ export function VaultOpenGuideSheet({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: EXIT_TRANSITION }}
           transition={MOTION.base}
-          className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-backdrop-medium)] p-4 sm:p-6"
+          /* At a 200% browser text setting the rem breakpoints keep the fixed bottom bar
+             present in a wide window. Give this consumer its own bar reserve so the
+             folder actions remain inside the available viewport rather than underneath
+             that higher shell stacking context. */
+          className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-backdrop-medium)] p-4 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1rem)] sm:p-6 sm:max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1.5rem)]"
           onClick={onClose}
           data-testid="vault-guide-scrim"
         >
@@ -125,7 +129,7 @@ export function VaultOpenGuideSheet({
             // the first modal a user sees in the app, in a colour that is not indigo (measured in the
             // 2026-08-04 audit, reproduced on both app and web. Gate:
             // tests/e2e/dialog-focus-ring.spec.ts).
-            className="flex w-full max-w-[var(--dialog-w-sm)] flex-col overflow-hidden rounded-sheet border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] focus-visible:outline-none"
+            className="flex max-h-full w-full max-w-[var(--dialog-w-sm)] flex-col overflow-y-auto rounded-sheet border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] focus-visible:outline-none"
           >
             <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>
