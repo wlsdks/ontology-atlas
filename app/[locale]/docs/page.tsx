@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { LibraryWorkspace } from '@/app-providers/library-workspace';
+import { DocsVaultPage } from '@/views/docs-vault';
 import { RouteLoadingFallback } from '@/shared/ui';
 import { buildPageMetadata } from '@/shared/lib/page-metadata';
 
@@ -23,7 +23,7 @@ export async function generateMetadata({
 export default function Page() {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
-      <LibraryWorkspace legacyOntology />
+      <DocsVaultPage initialCollection="ontology" documentScope="ontology" legacyEntry />
     </Suspense>
   );
 }

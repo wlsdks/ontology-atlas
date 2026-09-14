@@ -40,24 +40,24 @@ describe('OntologyStarterCta', () => {
       screen.getByLabelText('시작 시드에 포함된 AI 검증 단계'),
     ).toBeInTheDocument();
     expect(screen.getByText(/Claude Code, Cursor, Codex용/)).toBeInTheDocument();
-    expect(screen.getByText('온톨로지란')).toBeInTheDocument();
-    expect(screen.getByText(/무엇에 의존하는지/)).toBeInTheDocument();
-    expect(screen.getByText(/프로젝트·도메인·역량·요소/)).toBeInTheDocument();
-    expect(screen.getByText('로컬')).toBeInTheDocument();
-    expect(screen.getByText('서로 맞는지 확인함')).toBeInTheDocument();
-    expect(screen.getByText('AI가 확인하는 순서')).toBeInTheDocument();
+    expect(screen.getByText('온톨로지가 기록하는 것')).toBeInTheDocument();
+    expect(screen.getByText(/무엇에 의존하며/)).toBeInTheDocument();
+    expect(screen.getByText(/프로젝트·도메인·역량·요소와 관계/)).toBeInTheDocument();
+    expect(screen.getByText('로컬 파일')).toBeInTheDocument();
+    expect(screen.getByText('연결 검사')).toBeInTheDocument();
+    expect(screen.getByText('먼저 읽기')).toBeInTheDocument();
     expect(screen.getByText(/validate_vault/)).toBeInTheDocument();
     expect(screen.getAllByText(/workspace_brief/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/agent_brief/).length).toBeGreaterThan(0);
     expect(screen.getByText(/mcp-verify/)).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'AI 검증 프롬프트 복사' }),
+      screen.getByRole('button', { name: '검증 프롬프트 복사' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: '터미널 근거 복사' }),
+      screen.getByRole('button', { name: 'CLI 점검 복사' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: '자동 점검 명령 복사' }),
+      screen.getByRole('button', { name: 'JSON 점검 복사' }),
     ).toBeInTheDocument();
   });
 
@@ -65,7 +65,7 @@ describe('OntologyStarterCta', () => {
     copyTextMock.mockResolvedValue(true);
     render(<OntologyStarterCta docCount={0} onScaffold={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'AI 검증 프롬프트 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: '검증 프롬프트 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -98,7 +98,7 @@ describe('OntologyStarterCta', () => {
       screen.getByRole('button', { name: '온톨로지 시작 시드 추가' }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'AI 검증 프롬프트 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: '검증 프롬프트 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(onScaffold).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe('OntologyStarterCta', () => {
     copyTextMock.mockResolvedValue(true);
     render(<OntologyStarterCta docCount={3} onScaffold={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: '터미널 근거 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: 'CLI 점검 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS);
@@ -129,7 +129,7 @@ describe('OntologyStarterCta', () => {
     copyTextMock.mockResolvedValue(true);
     render(<OntologyStarterCta docCount={0} onScaffold={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: '자동 점검 명령 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: 'JSON 점검 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
@@ -149,7 +149,7 @@ describe('OntologyStarterCta', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '터미널 근거 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: 'CLI 점검 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(

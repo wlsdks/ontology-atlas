@@ -28,7 +28,7 @@ tags: [architecture, infra, overview]
 │ ├─ /topology               map + contextual write     │
 │ ├─ /architecture           harness: coverage · guides │
 │ │                          · structure (?view=)        │
-│ ├─ /docs                   ontology link compatibility  │
+│ ├─ /docs                   exact-document compatibility │
 │ ├─ /library                sources + wiki + ontology     │
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
@@ -357,7 +357,10 @@ graph. The separation is a property of the **walk**, not a filter applied later.
 - **One Library destination, three tabs (2026-09-14).**
   `src/app/library-workspace/` composes `src/views/library/` for Sources/Wiki and
   `src/views/docs-vault/` for Ontology. `/library/?tab=ontology` opens the existing
-  reader/editor; `/docs` remains a compatible entry with the same query and fragment.
+  reader/editor and filters every list, search, count, and saved working set to explicit
+  authorable kinds. `/docs` redirects ontology and no-slug entries into Library; only an
+  exact existing non-ontology target stays in its bounded Document reader with the same
+  source context and fragment.
   Only the active view mounts, and no view imports another view. The mobile Library
   slot replaces Docs. The editor flushes a pending browser draft on unmount; explicit
   Save and the existing mtime conflict guard still own file writes. Markdown source
@@ -631,7 +634,8 @@ different list of buttons.** The desktop rail shows eight destinations: Map,
 Architecture, Library, Insights, Projects, Agents, MCP, and Git. The mobile bottom
 bar shows five persistent destinations: Map, Architecture, Library, Insights, and Projects;
 web adds Get App as a separate utility. Library contains Sources, Wiki, and Ontology;
-`/docs` remains a compatible document address and resolves active navigation to Library.
+`/docs` remains an exact-document compatibility address for non-ontology files and resolves
+active navigation to Library; it does not restore a general Docs home.
 Contextual writing stays inside Map, while Agents, MCP and Git keep their narrow-screen
 entry points.
 Both read the same rules in

@@ -1134,3 +1134,32 @@ test("WebView evidence records unavailable visual evidence diagnostics for agent
     summary: "screencapture returned a blank or low-contrast image.",
   });
 });
+
+test("WebView evidence records a rendered zero-ontology Library starter", () => {
+  const evidence = verifier.buildWebviewEvidencePayload({
+    href: "tauri://localhost/ko/library/?tab=ontology",
+    markers: {
+      libraryNav: true,
+      librarySurface: true,
+      librarySelectedTab: "ontology",
+      librarySelectedPanelVisible: true,
+      libraryOntologyHeadingCount: 1,
+      libraryOntologyContentState: "ontology-starter",
+      libraryOntologyReaderVisible: false,
+      libraryOntologyStarterVisible: true,
+    },
+  });
+
+  assert.deepEqual(evidence.librarySurfaceProof, {
+    proof: "library-rendered-surface",
+    status: "proved",
+    route: "/ko/library/?tab=ontology",
+    selectedTab: "ontology",
+    selectedPanelVisible: true,
+    ontologyHeadingCount: 1,
+    ontologyContentState: "ontology-starter",
+    ontologyReaderVisible: false,
+    ontologyStarterVisible: true,
+    agentNextAction: "create-the-first-ontology-nodes",
+  });
+});

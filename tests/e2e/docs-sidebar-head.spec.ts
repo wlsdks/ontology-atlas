@@ -4,10 +4,10 @@ import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
  * **The docs sidebar head holds its own width** (owner report 2026-09-07, installed app,
- * `/ko/docs`).
+ * `/ko/library?tab=ontology`).
  *
- * The head is one row of six controls: a three-way collection well (all · guides ·
- * ontology) and, at the trailing edge, filter · order · new document. At the only width the
+ * Library fixes this reader to Ontology, so the head is one row of the three controls that
+ * remain meaningful: filter · order · new document. At the only width the
  * desktop pane has — `--docs-list-width`, 280px — the active chip's own name spent more than
  * the row had, and **the new-document button was cut in half by the pane's right border**.
  * Measured before the fix on this same static export: `scrollWidth` 285 against
@@ -20,7 +20,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  *    overflows into a scroll container hides the last control instead of clipping it, which
  *    is the same defect wearing a different symptom.
  * ② **no control's right edge passes the row's content box** — nothing is drawn under the
- *    pane border, so every one of the six keeps its full hit area.
+ *    pane border, so every control keeps its full hit area.
  *
  * Both widths matter and they are not the same layout. 1040 is the desktop pane (280px,
  * `lg` and up, labels collapsed to glyphs). 390 is the drawer (300px), where the same
@@ -33,11 +33,8 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * threshold written into the class and the constant beside it are one number.
  */
 
-/** Every control in the head row, trailing three last. */
+/** Every control in Library's fixed-scope head row. */
 const HEAD_CONTROL_IDS = [
-  "docs-sidebar-collection-all",
-  "docs-sidebar-collection-guides",
-  "docs-sidebar-collection-ontology",
   "docs-sidebar-search-toggle",
   "docs-sidebar-order-toggle",
   "docs-sidebar-new-doc",
@@ -110,7 +107,10 @@ function expectHeadHolds(geometry: HeadGeometry) {
 test("문서함 머리줄이 데스크톱 280px 칸에서 잘리지 않는다", async ({ page }) => {
   await page.setViewportSize({ width: 1040, height: 800 });
   await seedFirstRunSeen(page);
-  await page.goto("/ko/docs/");
+  await page.goto("/ko/library/?tab=ontology");
+  await expect(page.getByTestId("docs-sidebar-collection-all")).toHaveCount(0);
+  await expect(page.getByTestId("docs-sidebar-collection-guides")).toHaveCount(0);
+  await expect(page.getByTestId("docs-sidebar-collection-ontology")).toHaveCount(0);
   await expect(page.getByTestId("docs-vault-doc-list").getByTestId("docs-sidebar-new-doc")).toBeVisible();
   expectHeadHolds(await measureHead(page, HEAD_CONTROL_IDS));
 });
@@ -118,7 +118,10 @@ test("문서함 머리줄이 데스크톱 280px 칸에서 잘리지 않는다", 
 test("문서함 머리줄이 390px 서랍에서도 잘리지 않는다", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await seedFirstRunSeen(page);
-  await page.goto("/ko/docs/");
+  await page.goto("/ko/library/?tab=ontology");
+  await expect(page.getByTestId("docs-sidebar-collection-all")).toHaveCount(0);
+  await expect(page.getByTestId("docs-sidebar-collection-guides")).toHaveCount(0);
+  await expect(page.getByTestId("docs-sidebar-collection-ontology")).toHaveCount(0);
   // Below `lg` the pane is a drawer, so the head only exists once it is opened.
   await page.getByRole("button", { name: "문서 목록 열기" }).click();
   await expect(page.getByRole("complementary").getByTestId("docs-sidebar-new-doc")).toBeVisible();

@@ -142,6 +142,24 @@ async function expectSourceIsSample(page: import("@playwright/test").Page): Prom
   await expect(page.locator('[data-testid="vault-chip-use-sample"]:visible')).toBeHidden();
 }
 
+async function waitForIntegratedOntologyReader(
+  page: import("@playwright/test").Page,
+): Promise<string> {
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === "/ko/library/" &&
+      url.searchParams.get("tab") === "ontology" &&
+      Boolean(url.searchParams.get("slug")),
+    { timeout: 20_000 },
+  );
+  await expect(
+    page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+  ).toBeVisible({ timeout: 20_000 });
+  const slug = new URL(page.url()).searchParams.get("slug");
+  expect(slug, "통합 Ontology reader가 선택 문서 없이 준비되었다").not.toBeNull();
+  return slug!;
+}
+
 test.describe("문서함 딥링크 — URL 이 이긴다", () => {
   test("로컬 볼트 복원 뒤의 콜드 로드에서 ?slug= 가 살아남는다", async ({ page }) => {
     test.setTimeout(120_000);
@@ -228,9 +246,7 @@ test.describe("문서함 딥링크 — URL 이 이긴다", () => {
     //    use the docs surface on sample first (storing the preference plus sample tabs
     //    and recents), then open the vault.
     await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
-    await expect
-      .poll(async () => new URL(page.url()).searchParams.get("slug"), { timeout: 20_000 })
-      .not.toBeNull();
+    await waitForIntegratedOntologyReader(page);
     await page.evaluate(() => {
       window.localStorage.setItem("demo:docs-vault:source", "server");
     });
@@ -246,10 +262,7 @@ test.describe("문서함 딥링크 — URL 이 이긴다", () => {
     await page.getByTestId("vault-guide-pick-existing").click();
     await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
     await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
-    await expect
-      .poll(async () => new URL(page.url()).searchParams.get("slug"), { timeout: 20_000 })
-      .not.toBeNull();
-    const localRestedSlug = new URL(page.url()).searchParams.get("slug");
+    const localRestedSlug = await waitForIntegratedOntologyReader(page);
     expect(localRestedSlug).not.toBe(DEEP_SLUG);
 
     // ③ Cold-load deep link with the stored preference still on sample — the deep

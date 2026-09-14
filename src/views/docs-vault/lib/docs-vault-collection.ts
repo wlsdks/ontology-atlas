@@ -7,6 +7,31 @@ export type DocsVaultCollection = 'all' | 'guides' | 'ontology';
 export type DocsVaultDocCollection = Exclude<DocsVaultCollection, 'all'>;
 
 const ONTOLOGY_KINDS = new Set(['project', 'domain', 'capability', 'element']);
+const AUTHORABLE_ONTOLOGY_KINDS = new Set([
+  'project',
+  'domain',
+  'capability',
+  'element',
+  'document',
+]);
+
+/**
+ * Whether this Markdown file is itself an authored ontology node.
+ *
+ * The public schema's five `VAULT_KINDS` are the authority. Location, `describes:`, and
+ * an ontology-looking path cannot promote ordinary prose into this set; conversely, a
+ * valid kind-bearing node remains ontology even when it was filed under `wiki/` or at the
+ * vault root. `vault-readme` is intentionally absent because it is a reader sentinel, not
+ * an authorable node kind.
+ */
+export function isAuthorableOntologyDocument(
+  doc: Pick<VaultDoc, 'frontmatter'>,
+): boolean {
+  const kind = typeof doc.frontmatter.kind === 'string'
+    ? doc.frontmatter.kind.trim()
+    : '';
+  return AUTHORABLE_ONTOLOGY_KINDS.has(kind);
+}
 
 function hasOntologyDescribes(frontmatter: Pick<VaultDoc, 'frontmatter'>['frontmatter']): boolean {
   return Array.isArray(frontmatter.describes) && frontmatter.describes.length > 0;

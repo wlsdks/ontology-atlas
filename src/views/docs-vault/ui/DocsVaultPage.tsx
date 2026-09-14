@@ -103,6 +103,7 @@ import {
 import {
   buildTagIndexForDocs,
   filterDocsByCollection,
+  isAuthorableOntologyDocument,
   resolveDocsVaultSlugAlias,
   resolveDocsVaultCollection,
   resolveInitialDocsCollection,
@@ -197,8 +198,12 @@ import {
 
 function DocsVaultContent({
   initialCollection,
+  documentScope,
+  legacyEntry,
 }: {
   initialCollection: DocsVaultDocCollection;
+  documentScope: 'all' | 'ontology';
+  legacyEntry: boolean;
 }) {
   const reducedMotion = usePrefersReducedMotion();
   const t = useTranslations('docsVault');
@@ -435,6 +440,27 @@ function DocsVaultContent({
   // `src/views/docs-vault/lib/url-state.ts`, so it needs no `useCallback` wrapper and drops
   // out of every call site's deps (a module reference is stable by construction).
   const replaceUrlState = replaceDocsVaultUrlState;
+  const generalDocsHref = useCallback((slug: string) => {
+    const query = new URLSearchParams(searchParams?.toString());
+    query.delete('tab');
+    query.set('slug', slug);
+    const suffix = query.toString();
+    return `/docs/${suffix ? `?${suffix}` : ''}${typeof window === 'undefined' ? '' : window.location.hash}`;
+  }, [searchParams]);
+  const legacyLibraryRedirectHref = useCallback(() => {
+    const query = new URLSearchParams(searchParams?.toString());
+    query.set('tab', 'ontology');
+    const suffix = query.toString();
+    return `/library/${suffix ? `?${suffix}` : ''}${typeof window === 'undefined' ? '' : window.location.hash}`;
+  }, [searchParams]);
+  const libraryOntologyHref = useMemo(() => {
+    const query = new URLSearchParams(searchParams?.toString());
+    query.delete('slug');
+    query.delete('view');
+    query.set('tab', 'ontology');
+    const suffix = query.toString();
+    return `/library/${suffix ? `?${suffix}` : ''}`;
+  }, [searchParams]);
 
   const handleViewChange = useCallback(
     (next: DocsVaultView) => {
@@ -449,18 +475,10 @@ function DocsVaultContent({
     const slug = 'AGENT-GRAPH-WORKFLOW';
     setSource('server');
     setStaticSampleOverride('dogfood');
-    setSelectedSlug(slug);
     setRecentSlugs(pushRecentDoc('server', slug));
-    setView('doc');
-    replaceUrlState({
-      source: 'server',
-      sample: 'dogfood',
-      slug,
-      view: 'doc',
-      intent: null,
-    });
     setAdvancedOpen(false);
-  }, [replaceUrlState, setAdvancedOpen, setRecentSlugs]);
+    router.push(`/docs/?source=server&sample=dogfood&slug=${slug}&view=doc`);
+  }, [router, setAdvancedOpen, setRecentSlugs]);
 
   useEffect(() => {
     migrateLegacyRecentDocs();
@@ -728,6 +746,32 @@ function DocsVaultContent({
     isLocalSourceLoaded && localVault.manifest
       ? localVault.manifest
       : staticVault.manifest;
+  const normalizedQuerySlug = useMemo(
+    () => resolveDocsVaultSlugAlias(querySlug, manifest.docs),
+    [manifest.docs, querySlug],
+  );
+  const legacyTargetDoc = useMemo(
+    () => legacyEntry && normalizedQuerySlug
+      ? manifest.docs.find((doc) => doc.slug === normalizedQuerySlug) ?? null
+      : null,
+    [legacyEntry, manifest.docs, normalizedQuerySlug],
+  );
+  const legacyDocumentMode = Boolean(
+    legacyTargetDoc && !isAuthorableOntologyDocument(legacyTargetDoc),
+  );
+  const legacyRedirectToLibrary = legacyEntry && !legacyDocumentMode;
+  const scopedDocs = useMemo(
+    () => legacyDocumentMode && legacyTargetDoc
+      ? [legacyTargetDoc]
+      : documentScope === 'ontology'
+      ? manifest.docs.filter(isAuthorableOntologyDocument)
+      : manifest.docs,
+    [documentScope, legacyDocumentMode, legacyTargetDoc, manifest.docs],
+  );
+  const scopedDocSlugs = useMemo(
+    () => new Set(scopedDocs.map((doc) => doc.slug)),
+    [scopedDocs],
+  );
 
   /*
    * Headings for the bundled vault were split out of the manifest into their own chunk:
@@ -872,9 +916,7 @@ function DocsVaultContent({
   const handleScaffoldOntologyStarter = useCallback(async () => {
       // A vault created from a screen in one language should read in that language.
     const result = await localVault.scaffoldOntology(locale);
-    setSelectedSlug('README');
     setRecentSlugs(pushRecentDoc(recentKey, 'README'));
-    replaceUrlState({ slug: 'README', view: 'doc' });
     setView('doc');
     setAdvancedOpen(false);
     toast.show(
@@ -888,12 +930,14 @@ function DocsVaultContent({
       }),
       'success',
     );
+    router.push(generalDocsHref('README'));
     return result;
   }, [
     locale,
     localVault,
     recentKey,
-    replaceUrlState,
+    generalDocsHref,
+    router,
     setAdvancedOpen,
     setRecentSlugs,
     t,
@@ -1146,10 +1190,22 @@ function DocsVaultContent({
   // direction (state → URL) is already handled by `router.push` on user interaction.
   // `usePrevious` compares against the previous URL value so the action fires only when the
   // URL actually changed.
-  const normalizedQuerySlug = useMemo(
-    () => resolveDocsVaultSlugAlias(querySlug, manifest.docs),
-    [manifest.docs, querySlug],
-  );
+  const outOfScopeQuerySlug =
+    documentScope === 'ontology' &&
+    !legacyEntry &&
+    normalizedQuerySlug &&
+    manifest.docs.some((doc) => doc.slug === normalizedQuerySlug) &&
+    !scopedDocSlugs.has(normalizedQuerySlug)
+      ? normalizedQuerySlug
+      : null;
+  useEffect(() => {
+    if (!vaultScopeSettled || !outOfScopeQuerySlug) return;
+    router.replace(generalDocsHref(outOfScopeQuerySlug), { scroll: false });
+  }, [generalDocsHref, outOfScopeQuerySlug, router, vaultScopeSettled]);
+  useEffect(() => {
+    if (!vaultScopeSettled || !legacyRedirectToLibrary) return;
+    router.replace(legacyLibraryRedirectHref(), { scroll: false });
+  }, [legacyLibraryRedirectHref, legacyRedirectToLibrary, router, vaultScopeSettled]);
   const showSampleWelcomeNote = shouldShowSampleWelcomeNote({
     source,
     normalizedQuerySlug,
@@ -1157,10 +1213,11 @@ function DocsVaultContent({
   });
   const prevQuerySlug = usePrevious(normalizedQuerySlug);
   useEffect(() => {
+    if (outOfScopeQuerySlug) return;
     if (prevQuerySlug !== normalizedQuerySlug && normalizedQuerySlug !== selectedSlug) {
       scheduleStateSync(() => setSelectedSlug(normalizedQuerySlug));
     }
-  }, [normalizedQuerySlug, prevQuerySlug, selectedSlug]);
+  }, [normalizedQuerySlug, outOfScopeQuerySlug, prevQuerySlug, selectedSlug]);
   const prevQueryView = usePrevious(queryView);
   useEffect(() => {
     if (prevQueryView !== queryView && queryView !== view) {
@@ -1220,7 +1277,11 @@ function DocsVaultContent({
     rememberActiveSlug,
     openTab: openDocTab,
     closeTab: closeDocTabInWorkingSet,
-  } = useOpenDocTabs({ sourceKey: recentKey, validSlugs: vaultSlugs });
+  } = useOpenDocTabs({
+    sourceKey: recentKey,
+    validSlugs: vaultSlugs,
+    visibleSlugs: scopedDocSlugs,
+  });
   // With no URL deeplink, restore the last active document from the per-vault tab store,
   // once. Both hydration and the restore target are checked before moving `selectedSlug`, so
   // the default README does not open first right after a sourceKey switch and overwrite
@@ -1264,18 +1325,22 @@ function DocsVaultContent({
       return;
     }
     if (!selectedSlug) return;
+    if (!scopedDocSlugs.has(selectedSlug)) return;
     const doc = docsBySlug.get(selectedSlug);
     if (!doc) return;
     openDocTab(selectedSlug, resolveLocaleDisplayName(doc.frontmatter, locale, doc.title));
   }, [
     selectedSlug,
+    scopedDocSlugs,
     docsBySlug,
     locale,
     openDocTab,
     openDocTabsHydrated,
     pendingRestoredActiveSlug,
   ]);
-  const selectedDoc = selectedSlug ? (docsBySlug.get(selectedSlug) ?? null) : null;
+  const selectedDoc = selectedSlug && scopedDocSlugs.has(selectedSlug)
+    ? (docsBySlug.get(selectedSlug) ?? null)
+    : null;
   /**
    * **The URL requests a document this vault does not have** — said once, then gone.
    *
@@ -1456,8 +1521,10 @@ function DocsVaultContent({
     selectedDoc ? `${selectedDocDisplayTitle} · ${siteT('siteName')}` : null,
   );
   const collectionDocs = useMemo(
-    () => filterDocsByCollection(manifest.docs, docCollection),
-    [docCollection, manifest.docs],
+    () => documentScope === 'ontology'
+      ? scopedDocs
+      : filterDocsByCollection(manifest.docs, docCollection),
+    [docCollection, documentScope, manifest.docs, scopedDocs],
   );
   const collectionTags = useMemo(
     () => buildTagIndexForDocs(collectionDocs),
@@ -1492,7 +1559,7 @@ function DocsVaultContent({
   // the active collection filter: a node reserved for a person does not stop
   // waiting because the list is currently showing something else.
   const reviewQueue = useReviewQueue({
-    docs: manifest.docs,
+    docs: scopedDocs,
     getDocContent,
     bundledContent: source === 'local' ? undefined : staticVault.content,
   });
@@ -1568,11 +1635,15 @@ function DocsVaultContent({
   );
   const collectionCounts = useMemo<Record<DocsVaultCollection, number>>(
     () => ({
-      all: manifest.docs.length,
-      guides: filterDocsByCollection(manifest.docs, 'guides').length,
-      ontology: filterDocsByCollection(manifest.docs, 'ontology').length,
+      all: scopedDocs.length,
+      guides: documentScope === 'ontology'
+        ? 0
+        : filterDocsByCollection(manifest.docs, 'guides').length,
+      ontology: documentScope === 'ontology'
+        ? scopedDocs.length
+        : filterDocsByCollection(manifest.docs, 'ontology').length,
     }),
-    [manifest.docs],
+    [documentScope, manifest.docs, scopedDocs],
   );
   const collectionPinnedSlugs = useMemo(
     () => pinnedSlugs.filter((slug) => collectionDocSlugs.has(slug)),
@@ -1591,6 +1662,7 @@ function DocsVaultContent({
   // deliberately chose (the chips show counts, so that click is intentional).
   const initialCollectionResolvedRef = useRef(false);
   useEffect(() => {
+    if (documentScope === 'ontology') return;
     if (initialCollectionResolvedRef.current) return;
     if (manifest.docs.length === 0) return;
     initialCollectionResolvedRef.current = true;
@@ -1598,9 +1670,10 @@ function DocsVaultContent({
     if (resolved !== docCollection) {
       scheduleStateSync(() => setDocCollection(resolved));
     }
-  }, [docCollection, initialCollection, manifest.docs]);
+  }, [docCollection, documentScope, initialCollection, manifest.docs]);
 
   useEffect(() => {
+    if (documentScope === 'ontology') return;
     if (!selectedDoc) return;
     // In the "all documents" view, picking a document does not narrow the collection — a
     // document selection must not undo the user's intent to see everything.
@@ -1609,11 +1682,13 @@ function DocsVaultContent({
     if (nextCollection !== docCollection) {
       scheduleStateSync(() => setDocCollection(nextCollection));
     }
-  }, [docCollection, selectedDoc]);
+  }, [docCollection, documentScope, selectedDoc]);
 
   const pickDefaultDocForCollection = useCallback(
     (collection: DocsVaultCollection): string | null => {
-      const docs = filterDocsByCollection(manifest.docs, collection);
+      const docs = documentScope === 'ontology'
+        ? scopedDocs
+        : filterDocsByCollection(manifest.docs, collection);
       const slugs = new Set(docs.map((doc) => doc.slug));
       const candidates = [
         ...pinnedSlugs,
@@ -1629,7 +1704,7 @@ function DocsVaultContent({
         null
       );
     },
-    [manifest.docs, pinnedSlugs, recentSlugs],
+    [documentScope, manifest.docs, pinnedSlugs, recentSlugs, scopedDocs],
   );
 
   const handleTreeSortChange = useCallback(
@@ -1650,6 +1725,7 @@ function DocsVaultContent({
 
   const handleCollectionChange = useCallback(
     (next: DocsVaultCollection) => {
+      if (documentScope === 'ontology') return;
       setDocCollection(next);
       setActiveTag(null);
       const nextSlugs = new Set(
@@ -1661,12 +1737,13 @@ function DocsVaultContent({
       setSelectedSlug(nextSlug);
       replaceUrlState({ slug: nextSlug });
     },
-    [manifest.docs, pickDefaultDocForCollection, replaceUrlState, selectedSlug],
+    [documentScope, manifest.docs, pickDefaultDocForCollection, replaceUrlState, selectedSlug],
   );
 
   useEffect(() => {
     if (!openDocTabsHydrated || pendingRestoredActiveSlug) return;
-    if (selectedSlug && docsBySlug.has(selectedSlug)) return;
+    if (outOfScopeQuerySlug) return;
+    if (selectedSlug && scopedDocSlugs.has(selectedSlug)) return;
     if (
       shouldDeferDocsVaultDefaultSelection({
         normalizedQuerySlug,
@@ -1711,10 +1788,14 @@ function DocsVaultContent({
        */
       replaceUrlState({ slug: nextSlug });
     });
-  }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, docsBySlug, normalizedQuerySlug, openDocTabsHydrated, pendingRestoredActiveSlug, replaceUrlState, selectedSlug, vaultScopeSettled]);
+  }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, normalizedQuerySlug, openDocTabsHydrated, outOfScopeQuerySlug, pendingRestoredActiveSlug, replaceUrlState, scopedDocSlugs, selectedSlug, vaultScopeSettled]);
 
   const handleSelect = useCallback(
     (slug: string, query?: string) => {
+      if (documentScope === 'ontology' && !scopedDocSlugs.has(slug)) {
+        router.push(generalDocsHref(slug), { scroll: false });
+        return;
+      }
       rememberActiveSlug(slug);
       setSelectedSlug(slug);
       setHighlightQuery(query);
@@ -1724,7 +1805,7 @@ function DocsVaultContent({
       // default-selection effect does not go through this function and is unaffected.)
       setSampleWelcomeDismissed(true);
     },
-    [recentKey, rememberActiveSlug, replaceUrlState, setRecentSlugs],
+    [documentScope, generalDocsHref, recentKey, rememberActiveSlug, replaceUrlState, router, scopedDocSlugs, setRecentSlugs],
   );
 
   // Tab close rule: closing the active tab moves to an adjacent one (left first, otherwise
@@ -1915,7 +1996,7 @@ function DocsVaultContent({
         id: 'new-doc',
         label: t('commands.newDoc'),
         icon: <Plus size={ICON_SIZE.sm} aria-hidden />,
-        visible: canEditCurrent,
+        visible: canEditCurrent && !legacyDocumentMode,
         onRun: () => handleOpenNewDocDialog(),
       },
       {
@@ -2001,6 +2082,7 @@ function DocsVaultContent({
     handleRenameCurrent,
     handleSourceChange,
     handleTogglePin,
+    legacyDocumentMode,
     setPaletteQuery,
     t,
   ]);
@@ -2066,6 +2148,8 @@ function DocsVaultContent({
       manifest={collectionManifest}
       collection={docCollection}
       collectionCounts={collectionCounts}
+      showCollectionChooser={documentScope !== 'ontology'}
+      showCreateDocument={!legacyDocumentMode}
       visibleDocSlugs={collectionDocSlugs}
       onSelect={handleSelectFromSidebar}
       onCollectionChange={handleCollectionChange}
@@ -2084,7 +2168,7 @@ function DocsVaultContent({
       group={treeGroup}
       onSortChange={handleTreeSortChange}
       onGroupChange={handleTreeGroupChange}
-      agentFiles={agentFiles}
+      agentFiles={documentScope === 'ontology' ? null : agentFiles}
     />
   );
 
@@ -2099,7 +2183,13 @@ function DocsVaultContent({
         ? localVault.handle.name
         : t('header.vaultPillSampleLabel');
   const vaultTopLevelFolderCount = manifest.tree.children?.filter(
-    (child) => child.type === 'dir',
+    (child) =>
+      child.type === 'dir' &&
+      (child.children?.some(function containsScopedDoc(descendant): boolean {
+        return descendant.type === 'doc'
+          ? Boolean(descendant.slug && scopedDocSlugs.has(descendant.slug))
+          : descendant.children?.some(containsScopedDoc) ?? false;
+      }) ?? false),
   ).length ?? 0;
   // The vault pill's "switch vault" keeps only the high-frequency swap, which is part of the
   // read/write flow. It used to open the vault tools dropdown; now local calls the native folder
@@ -2110,7 +2200,7 @@ function DocsVaultContent({
   // Hold one neutral frame while source preference and the restored local manifest settle. The
   // static manifest may still be computed for the web fallback, but it is never painted as the
   // installed app's data and cannot seed tabs or a `domains/order` fallback before local wins.
-  if (!vaultScopeSettled) return <RouteLoadingFallback />;
+  if (!vaultScopeSettled || legacyRedirectToLibrary) return <RouteLoadingFallback />;
 
   return (
     <div className="flex h-full w-full">
@@ -2150,7 +2240,9 @@ function DocsVaultContent({
           the global ladder (bars at 25, dialogs at 60) untouched.
           Gate: `tests/e2e/docs-vault-chip-menu-stacking.spec.ts`. */}
       <header className="relative isolate z-10 flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 bg-[color:var(--color-panel)] px-3 py-2 md:h-11 md:min-h-0 md:flex-nowrap md:gap-2 md:px-4 md:py-0">
-        <h1 className="sr-only">{t('header.title')}</h1>
+        <h1 className="sr-only">
+          {legacyDocumentMode ? t('compatibility.title') : t('header.title')}
+        </h1>
         {/* The header baseline. Under the active tab this 1px line must be replaced by a 2px indigo
             underline, so it is an absolutely positioned line rather than the header's own
             `border-b`. Its negative z-index is scoped by the header's `isolate`, so normal-flow
@@ -2176,11 +2268,32 @@ function DocsVaultContent({
             // from md it uses content width. The list-pane alignment contract (`lg:w-[calc...]`)
             // stays at lg only, since the pane is lg+ exclusive.
             "flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:w-auto md:flex-nowrap md:gap-3",
-            docListCollapsed
+            legacyDocumentMode
+              ? "lg:w-auto"
+              : docListCollapsed
               ? "lg:w-auto"
               : "lg:w-[calc(var(--docs-list-width)-1.5rem)]",
           )}
         >
+          {legacyDocumentMode ? (
+            <>
+              <Link
+                href={libraryOntologyHref}
+                data-testid="docs-compatibility-library-return"
+                className={controlClass({
+                  shape: 'chip',
+                  size: 'lg',
+                  className: 'flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
+                })}
+              >
+                <ArrowLeft size={ICON_SIZE.md} aria-hidden />
+                <span>{t('compatibility.back')}</span>
+              </Link>
+              <span className="text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+                {t('compatibility.title')}
+              </span>
+            </>
+          ) : null}
           {/* The one thing worth keeping from the removed breadcrumb: returning to the insights
               review the user came from. The rail's map destination does not cover that path, so it
               moved to the header. Not rendered on a normal (non-insights) entry — the rail owns
@@ -2231,7 +2344,7 @@ function DocsVaultContent({
                   ? t('header.vaultChipLocalPending')
                   : t('advanced.sourceServer')
             }
-            docCount={vaultChipIdentity.showDocCount ? manifest.docs.length : null}
+            docCount={vaultChipIdentity.showDocCount ? scopedDocs.length : null}
             folderCount={vaultTopLevelFolderCount}
             path={vaultPillPath}
             isLocalSourceLoaded={isLocalSourceLoaded}
@@ -2803,23 +2916,25 @@ function DocsVaultContent({
           ) : source === 'local' &&
             localVault.status === 'loaded' &&
             canEditCurrent &&
-            manifest.docs.length === 0 ? (
-            <div className="flex min-h-full items-center justify-center p-5">
-              <div className="w-full max-w-3xl">
-                <OntologyStarterCta
-                  onScaffold={handleScaffoldOntologyStarter}
-                  docCount={0}
-                  vaultPath={
-                    localVault.handle
-                      ? getTauriVaultRootPath(localVault.handle)
-                      : null
-                  }
-                />
+            scopedDocs.length === 0 ? (
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="flex min-h-full items-center justify-center px-5 pt-5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] lg:pb-5">
+                <div className="w-full max-w-3xl">
+                  <OntologyStarterCta
+                    onScaffold={handleScaffoldOntologyStarter}
+                    docCount={0}
+                    vaultPath={
+                      localVault.handle
+                        ? getTauriVaultRootPath(localVault.handle)
+                        : null
+                    }
+                  />
+                </div>
               </div>
             </div>
           ) : (
             <EmptyState
-              docCount={manifest.docs.length}
+              docCount={scopedDocs.length}
               onOpenAgentWorkflow={handleOpenAgentGraphWorkflowGuide}
               onOpenTree={() => setSourceTreeOpen(true)}
             />
@@ -2907,9 +3022,15 @@ function firstReadableSlug<T extends { slug: string; frontmatter: Record<string,
 
 export function DocsVaultPage({
   initialCollection = 'guides',
+  documentScope = 'all',
+  legacyEntry = false,
 }: {
   /** The collection a no-slug entry opens. Explicit slugs and later choices still win. */
   initialCollection?: DocsVaultDocCollection;
+  /** Fix Library's Ontology tab to authored ontology nodes; generic Docs remains unscoped. */
+  documentScope?: 'all' | 'ontology';
+  /** Resolve `/docs` only as an exact non-ontology document reader; otherwise return to Library. */
+  legacyEntry?: boolean;
 } = {}) {
   // Local-first core (`.claude/rules/local-first.md` §1) — reaching the vault picker passes through
   // no auth gate. The user's local disk is the source of truth.
@@ -2919,7 +3040,11 @@ export function DocsVaultPage({
           prerendered HTML is this fallback — null would make the deployed docs surface start as a black
           screen with only the rail. */}
       <Suspense fallback={<RouteLoadingFallback />}>
-        <DocsVaultContent initialCollection={initialCollection} />
+        <DocsVaultContent
+          initialCollection={initialCollection}
+          documentScope={documentScope}
+          legacyEntry={legacyEntry}
+        />
       </Suspense>
     </VaultSourceHydrationBoundary>
   );

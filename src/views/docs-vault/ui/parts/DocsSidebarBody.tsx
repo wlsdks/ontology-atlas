@@ -66,6 +66,10 @@ export interface DocsSidebarBodyProps {
   manifest: VaultManifest;
   collection: DocsVaultCollection;
   collectionCounts: Record<DocsVaultCollection, number>;
+  /** Hide the generic all/guides/ontology chooser when the parent owns a fixed scope. */
+  showCollectionChooser?: boolean;
+  /** Hide creation in a single-document compatibility reader. */
+  showCreateDocument?: boolean;
   visibleDocSlugs: Set<string>;
   onSelect: (slug: string) => void;
   onCollectionChange: (collection: DocsVaultCollection) => void;
@@ -259,6 +263,8 @@ export function DocsSidebarBody({
   manifest,
   collection,
   collectionCounts,
+  showCollectionChooser = true,
+  showCreateDocument = true,
   visibleDocSlugs,
   onSelect,
   onCollectionChange,
@@ -447,50 +453,52 @@ export function DocsSidebarBody({
           search, order, and new-document buttons beside them. One border binds them and says
           «this much is one set» — state and action mixed in one row was half the complexity.
         */}
-        <div
-          {...collectionGroup.groupProps}
-          aria-label={t("collectionAriaLabel")}
-          // `min-w-0` plus a shrinkable active chip is the **belt** behind the container
-          // query's braces: if some future locale's label is longer than the threshold was
-          // measured for, the name truncates inside the chip instead of pushing the trailing
-          // controls out of the row.
-          className="flex min-w-0 items-center gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5"
-        >
-          {collectionOptions.map((option, index) => {
-            const isActive = collection === option;
-            const tooltip = t(`collection.${option}.tooltip`, {
-              count: collectionCounts[option],
-            });
-            return (
-              <Tooltip key={option} content={tooltip}>
-                <Chip
-                  {...collectionGroup.itemProps(index)}
-                  data-testid={`docs-sidebar-collection-${option}`}
-                  aria-label={tooltip}
-                  active={isActive}
-                  tone={isActive ? "strong" : "muted"}
-                  className={
-                    isActive
-                      ? "min-w-0 hover:text-[color:var(--color-text-primary)]"
-                      : "min-w-0 flex-none hover:text-[color:var(--color-text-primary)]"
-                  }
-                >
-                  {collectionIcons[option]}
-                  {/*
-                    The label is drawn only where the row can hold it — see the container
-                    note above the row. `hidden` is the base and the container query turns it
-                    back on, so the narrow case needs no override and cannot be forgotten.
-                  */}
-                  {isActive ? (
-                    <span className="hidden min-w-0 truncate @min-[320px]/docs-head:inline">
-                      {t(`collection.${option}.label`)}
-                    </span>
-                  ) : null}
-                </Chip>
-              </Tooltip>
-            );
-          })}
-        </div>
+        {showCollectionChooser ? (
+          <div
+            {...collectionGroup.groupProps}
+            aria-label={t("collectionAriaLabel")}
+            // `min-w-0` plus a shrinkable active chip is the **belt** behind the container
+            // query's braces: if some future locale's label is longer than the threshold was
+            // measured for, the name truncates inside the chip instead of pushing the trailing
+            // controls out of the row.
+            className="flex min-w-0 items-center gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5"
+          >
+            {collectionOptions.map((option, index) => {
+              const isActive = collection === option;
+              const tooltip = t(`collection.${option}.tooltip`, {
+                count: collectionCounts[option],
+              });
+              return (
+                <Tooltip key={option} content={tooltip}>
+                  <Chip
+                    {...collectionGroup.itemProps(index)}
+                    data-testid={`docs-sidebar-collection-${option}`}
+                    aria-label={tooltip}
+                    active={isActive}
+                    tone={isActive ? "strong" : "muted"}
+                    className={
+                      isActive
+                        ? "min-w-0 hover:text-[color:var(--color-text-primary)]"
+                        : "min-w-0 flex-none hover:text-[color:var(--color-text-primary)]"
+                    }
+                  >
+                    {collectionIcons[option]}
+                    {/*
+                      The label is drawn only where the row can hold it — see the container
+                      note above the row. `hidden` is the base and the container query turns it
+                      back on, so the narrow case needs no override and cannot be forgotten.
+                    */}
+                    {isActive ? (
+                      <span className="hidden min-w-0 truncate @min-[320px]/docs-head:inline">
+                        {t(`collection.${option}.label`)}
+                      </span>
+                    ) : null}
+                  </Chip>
+                </Tooltip>
+              );
+            })}
+          </div>
+        ) : null}
         {/*
           **The three trailing controls are one cluster** (2026-09-07).
 
@@ -581,10 +589,12 @@ export function DocsSidebarBody({
             </Surface>
           </div>
           {/* State on the left of the hairline, action on its right — see the cluster note. */}
-          <span
-            aria-hidden
-            className="mx-0.5 h-4 w-px flex-none bg-[color:var(--color-border-soft)]"
-          />
+          {showCreateDocument ? (
+            <span
+              aria-hidden
+              className="mx-0.5 h-4 w-px flex-none bg-[color:var(--color-border-soft)]"
+            />
+          ) : null}
           {/* The "new document" entry point — the same kind-first dialog the map uses. */}
           {/*
             It is **pressable even in the read-only sample**. It used to be disabled with a
@@ -595,14 +605,16 @@ export function DocsSidebarBody({
             advance, so nothing is surprising — the charter's degradation grammar ("why it is
             unavailable **and where to go**") applied to one button.
           */}
-          <RailIconButton
-            testId="docs-sidebar-new-doc"
-            icon={<Plus size={ICON_SIZE.md} aria-hidden />}
-            label={canCreateNewDoc ? t("newDocButtonLabel") : t("newDocDisabledHint")}
-            active={false}
-            state={{ kind: "action" }}
-            onClick={onCreateNewDoc}
-          />
+          {showCreateDocument ? (
+            <RailIconButton
+              testId="docs-sidebar-new-doc"
+              icon={<Plus size={ICON_SIZE.md} aria-hidden />}
+              label={canCreateNewDoc ? t("newDocButtonLabel") : t("newDocDisabledHint")}
+              active={false}
+              state={{ kind: "action" }}
+              onClick={onCreateNewDoc}
+            />
+          ) : null}
         </div>
       </div>
       {/* This row states **only what a control cannot say** (2026-08-08).

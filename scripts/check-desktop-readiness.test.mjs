@@ -325,7 +325,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop empty-vault workspace surfaces the ontology starter in the main pane and opens README after creation/,
+    /✓ desktop zero-ontology workspace surfaces the ontology starter and opens the exact README in Document context after creation/,
   );
   assert.match(
     result.stdout,
@@ -737,6 +737,23 @@ test("desktop readiness checker defines durable protected-release markers", () =
   assert.ok(checker.includes("needs\\.admit-release\\.outputs\\.release_sha"));
   assert.ok(checker.includes("desktop:release-secrets -- --updater-only"));
   assert.ok(checker.includes("workflow_dispatch"));
+});
+
+test("desktop readiness guard covers strict ontology emptiness and the exact README handoff", () => {
+  const checker = readFileSync("scripts/check-desktop-readiness.mjs", "utf8");
+  const docsVaultPage = readFileSync("src/views/docs-vault/ui/DocsVaultPage.tsx", "utf8");
+
+  assert.ok(docsVaultPage.length > 0, "DocsVaultPage must remain a nonempty gate subject");
+  for (const marker of [
+    "scopedDocs.length === 0",
+    "return `/docs/${suffix ?",
+    "router.push(generalDocsHref('README'))",
+  ]) {
+    assert.ok(checker.includes(marker), `desktop readiness must require ${marker}`);
+    assert.ok(docsVaultPage.includes(marker), `DocsVaultPage must supply ${marker}`);
+  }
+  assert.ok(!checker.includes("manifest.docs.length === 0"));
+  assert.ok(!checker.includes("setSelectedSlug('README')"));
 });
 
 // Git for Windows checks tracked YAML out with CRLF by default. The readiness

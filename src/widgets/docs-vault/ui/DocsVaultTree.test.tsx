@@ -166,6 +166,36 @@ describe('DocsVaultTree', () => {
     expect(screen.getByRole('button', { name: /archive/i })).toHaveTextContent('1');
   });
 
+  it('engraves only documents inside the active scope', () => {
+    const scopedTree: VaultTreeNode = {
+      ...tree,
+      children: [
+        {
+          name: 'archive',
+          path: 'archive',
+          type: 'dir',
+          children: [
+            { name: 'kept', path: 'archive/kept.md', type: 'doc', slug: 'archive/kept', title: 'Kept' },
+            { name: 'hidden', path: 'archive/hidden.md', type: 'doc', slug: 'archive/hidden', title: 'Hidden' },
+          ],
+        },
+      ],
+    };
+    rtlRender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocsVaultTree
+          tree={scopedTree}
+          selectedSlug="archive/kept"
+          onSelect={vi.fn()}
+          visibleDocSlugs={new Set(['archive/kept'])}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: /archive/i })).toHaveTextContent('1');
+    expect(screen.queryByRole('button', { name: 'Hidden' })).not.toBeInTheDocument();
+  });
+
   it('renders a kind glyph for docs with an ontology frontmatter kind', () => {
     const docsBySlug = new Map([
       [

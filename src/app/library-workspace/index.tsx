@@ -21,7 +21,7 @@ const OntologyPage = dynamic(
 
 type LibraryTab = 'sources' | 'wiki' | 'ontology';
 
-export function LibraryWorkspace({ legacyOntology = false }: { legacyOntology?: boolean }) {
+export function LibraryWorkspace() {
   const t = useTranslations('library');
   const params = useSearchParams();
   const router = useRouter();
@@ -29,7 +29,7 @@ export function LibraryWorkspace({ legacyOntology = false }: { legacyOntology?: 
   const wikiCount = useMemo(() => selectWikiPages(vault.manifest?.docs ?? []).length, [vault.manifest?.docs]);
   const preferredSegment = useLibraryIndexSegment();
   const requested = params.get('tab');
-  const tab: LibraryTab = legacyOntology || requested === 'ontology'
+  const tab: LibraryTab = requested === 'ontology'
     ? 'ontology'
     : requested === 'sources' || requested === 'wiki' ? requested : preferredSegment;
 
@@ -85,7 +85,7 @@ export function LibraryWorkspace({ legacyOntology = false }: { legacyOntology?: 
         className="flex min-h-0 flex-1"
       >
         {tab === 'ontology'
-          ? <OntologyPage initialCollection="ontology" />
+          ? <OntologyPage initialCollection="ontology" documentScope="ontology" />
           : <LibraryPage segment={tab} onSegmentChange={selectTab} />}
       </div>
     </div>

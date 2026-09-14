@@ -781,7 +781,19 @@ cannot reach instead of drawing a shorter list and calling it the inventory.
 
 **Import direction is drawn as depth** (2026-09-08). The reviewed ladder stands on stacked translucent planes, one per layer, stepping 14 px per rank so the stack shears along one line and reads as a solid: an allowed import runs down onto a lower plane in indigo, a violation is the stroke that climbs to a higher plane in the danger tone with a halo that rises when either end is selected. Plane fill is capped under a role's own face so depth never inverts; the lit top edge carries the reading. Measured at 1512 and 1280: overlap count 0, every label at or above 4.5:1 on its plane, height up 1.6 to 2.8 percent, width unchanged.
 
-### `/docs` — Ontology workspace (reader + editor + palette)
+### Library → Ontology and `/docs` exact-document compatibility
+
+Library's Ontology tab is the reader, editor, and palette for the five explicitly authored
+schema kinds: `project`, `domain`, `capability`, `element`, and `document`. Paths, `describes`,
+README metadata, and architecture-profile metadata do not make an ordinary file an ontology
+node. Its tree, search, counts, pinned and recent lists, restored tabs, palette, and defaults all
+use that same fixed scope; the generic All/Guides/Ontology chooser is absent.
+
+`/docs` without a slug, with a missing slug, or with an ontology-node slug returns to the
+integrated Library Ontology tab. An exact existing non-ontology slug remains readable and
+editable in a single-document compatibility reader labelled **Document**, with no unrelated
+document list or creation action and a clean return to Library. Query source and reader context
+survive the compatibility hop; the return removes the incompatible slug, view, and fragment.
 
 #### Crumbs row (2026-07-18, engraved vault census — always visible, above header)
 - Back-to-workspace link · `Workspace` label · right-aligned engraved census (`concepts · relations`, mono numerals, sm+)
@@ -856,8 +868,8 @@ view-doc · pin · unpin · copy URL · print · edit · new doc · rename · de
 
 ### `/library` — Library (2026-09-06, its own destination)
 
-A vault holds three kinds of file and **only one is the graph**. Docs draws that one; this
-destination draws the other two.
+A vault holds three kinds of file and **only one is the graph**. Library gives each kind its own
+tab: Ontology draws the explicitly typed graph nodes, while Sources and Wiki draw the other two.
 
 The Library supports general knowledge as well as documents associated with code.
 Sources remain original files; write-ups and filed answers remain wiki pages.
@@ -890,9 +902,10 @@ Sources and Wiki shipped inside the Docs sidebar on 2026-09-05 and moved to Libr
 next day after five capped lists competed inside one 280px column. On 2026-09-14 the owner
 unified navigation without recombining those lists: Library now has Sources, Wiki, and
 Ontology tabs, and each tab keeps its own reader and file meaning. The mobile Library tab
-inherits the former Docs slot; `/docs/?slug=…` remains a compatible document link. The
-Ontology tree's name-and-path filter matches both localized display names and canonical
-paths. New Wiki pages begin in a centered dialog that previews the live Markdown path,
+inherits the former Docs slot; `/docs/?slug=…` remains a compatible exact-file link, using the
+general Document reader only when the target is outside Ontology. The Ontology tree and all of
+its displayed and restored working sets show only the five explicit schema kinds, and its name-and-path filter
+matches both localized display names and canonical paths. New Wiki pages begin in a centered dialog that previews the live Markdown path,
 draft state, and five required section headings before creation. The current local-work
 receipt remains primary while earlier receipts are available from History; an app write's
 matching folder-watch event is consumed instead of producing a second notification.

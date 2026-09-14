@@ -1170,6 +1170,39 @@ export function buildWebviewEvidencePayload(
         agentNextAction: "read-selected-node-popover-before-background-map-context",
       }
       : null;
+  const libraryRoute = /\/library\/?(?:\?|$)/.test(evidenceRoute(payload?.href));
+  const librarySelectedTab = markerText(markers, "librarySelectedTab");
+  const libraryOntologyContentState = markerText(
+    markers,
+    "libraryOntologyContentState",
+  );
+  const librarySurfaceProof = libraryRoute
+    ? {
+        proof: "library-rendered-surface",
+        status:
+          markers.librarySurface === true &&
+          markers.libraryNav === true &&
+          (librarySelectedTab !== "ontology" ||
+            (markers.librarySelectedPanelVisible === true &&
+              markerNumber(markers, "libraryOntologyHeadingCount") === 1 &&
+              ["document-reader", "ontology-starter"].includes(
+                libraryOntologyContentState,
+              )))
+            ? "proved"
+            : "incomplete",
+        route: evidenceRoute(payload?.href),
+        selectedTab: librarySelectedTab,
+        selectedPanelVisible: markers.librarySelectedPanelVisible === true,
+        ontologyHeadingCount: markerNumber(markers, "libraryOntologyHeadingCount"),
+        ontologyContentState: libraryOntologyContentState,
+        ontologyReaderVisible: markers.libraryOntologyReaderVisible === true,
+        ontologyStarterVisible: markers.libraryOntologyStarterVisible === true,
+        agentNextAction:
+          libraryOntologyContentState === "ontology-starter"
+            ? "create-the-first-ontology-nodes"
+            : "read-the-selected-ontology-document",
+      }
+    : null;
 
   return {
     capturedAt,
@@ -1193,6 +1226,7 @@ export function buildWebviewEvidencePayload(
     nodePopoverCompactVerificationProof,
     nodePopoverExpandedProof,
     selectedFocusDimProof,
+    librarySurfaceProof,
   };
 }
 

@@ -222,9 +222,13 @@ samples/storefront` prints its current census.
 
 ![The Library Ontology workspace in the installed macOS app, with the vault tree open on the capabilities folder, the Checkout document beside it, its expanded frontmatter, word count and source date, its backlinks, and a link back to the same node on the map](docs/assets/readme/docs-workspace.png)
 
-**Library → Ontology** opens the same folder without the canvas: preview or edit Markdown, inspect the
-frontmatter that becomes the graph, follow backlinks, and jump back to the map.
-There is no imported copy to synchronize. Sources, Wiki, and Ontology share one Library destination; existing `/docs/?slug=…` links still open the same document. The Ontology tree's name-and-path search matches localized display names as well as canonical paths.
+**Library → Ontology** opens only the folder's explicitly typed `project`, `domain`,
+`capability`, `element`, and `document` nodes without the canvas: preview or edit Markdown,
+inspect the frontmatter that becomes the graph, follow backlinks, and jump back to the map.
+There is no imported copy to synchronize. Sources, Wiki, and Ontology share one Library
+destination; an existing `/docs/?slug=…` link to ordinary Markdown opens that exact file in a
+single-document compatibility reader with a return to Library. The Ontology tree's name-and-path
+search matches localized display names as well as canonical paths.
 
 ### 2. Connect your agent
 

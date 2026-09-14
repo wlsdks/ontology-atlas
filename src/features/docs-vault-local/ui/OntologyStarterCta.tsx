@@ -18,10 +18,6 @@ import { controlClass } from '@/shared/ui/control-class';
 const NEUTRAL_CHIP_SKIN =
   'bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
 
-/** The indigo tint chip — border, background, and hover are still outside the ramp, so kept as one set. */
-const INDIGO_CHIP_SKIN =
-  'border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
-
 /** The primary action (indigo fill) — one set for the same reason. */
 const INDIGO_SOLID_SKIN =
   'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] hover:bg-[color:var(--color-indigo-a28)]';
@@ -194,139 +190,142 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
     return (
       <section
         aria-label={t('emptyAriaLabel')}
-        className="rounded-panel border border-dashed border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a06)] px-5 py-6 text-center"
+        className="rounded-panel border border-dashed border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a06)] px-4 py-5 sm:px-6 sm:py-6"
       >
-        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-indigo-accent)]">
-          {t('emptyEyebrow')}
-        </p>
-        <h2 className="mt-2 break-keep text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-          {t('emptyTitle')}
-        </h2>
-        <p className="mt-2 break-keep text-body leading-title text-[color:var(--color-text-secondary)]">
-          {t.rich('emptyBodyLine1', {
-            code: (chunks) => (
-              <code className="rounded-micro bg-[color:var(--color-overlay-2)] px-1 font-mono text-label">
-                {chunks}
-              </code>
-            ),
-          })}
-          <br />
-          {t('emptyBodyLine2')}
-        </p>
-        <div className="mx-auto mt-4 max-w-[var(--measure-note-column)] rounded-chip border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-surface-deep-a18)] px-3 py-2 text-left">
-          <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-accent)]">
-            {t('definitionLabel')}
-          </p>
-          <p className="mt-1 break-keep text-label leading-body text-[color:var(--color-text-secondary)]">
-            {t('definitionBody')}
-          </p>
-        </div>
-        <div className="mx-auto mt-4 grid max-w-[520px] gap-2 sm:grid-cols-3">
-          {proofCards.map((card) => (
-            <div
-              key={card.label}
-              className="rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-left"
-            >
-              <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-tertiary)]">
-                {card.label}
+        <div className="@container/ontology-starter mx-auto grid w-full max-w-[var(--measure-note-column)] gap-4 text-left">
+          <header className="grid gap-1.5">
+            <p className="font-mono text-caption leading-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-indigo-accent)]">
+              {t('emptyEyebrow')}
+            </p>
+            <h2 className="break-keep text-title font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
+              {t('emptyTitle')}
+            </h2>
+            <div className="grid gap-1">
+              <p className="break-keep text-body leading-body text-[color:var(--color-text-secondary)]">
+                {t.rich('emptyBodyLine1', {
+                  code: (chunks) => (
+                    <code className="rounded-micro bg-[color:var(--color-overlay-2)] px-1 font-mono text-label">
+                      {chunks}
+                    </code>
+                  ),
+                })}
               </p>
-              <p className="mt-1 break-keep text-label leading-body text-[color:var(--color-text-secondary)]">
-                {card.body}
+              <p className="break-keep text-body leading-body text-[color:var(--color-text-secondary)]">
+                {t('emptyBodyLine2')}
               </p>
             </div>
-          ))}
-        </div>
-        <div
-          aria-label={t('verifyAriaLabel')}
-          className="mx-auto mt-4 grid max-w-[420px] gap-2 text-left"
-        >
-          {verificationSteps.map((step, index) => (
-            <div
-              key={step}
-              className="grid grid-cols-[18px_1fr] items-start gap-2 rounded-chip border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-label leading-body text-[color:var(--color-text-secondary)]"
-            >
-              <CheckCircle2
-                size={ICON_SIZE.md}
-                aria-hidden
-                className="mt-0.5 text-[color:var(--color-indigo-accent)]"
-              />
-              <span>
-                <span className="font-mono text-caption text-[color:var(--color-text-tertiary)]">
-                  {index + 1}.
-                </span>{' '}
-                {step}
-              </span>
+          </header>
+
+          <div className="w-full rounded-chip border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-surface-deep-a18)] px-3 py-3">
+            <p className="text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-indigo-accent)]">
+              {t('definitionLabel')}
+            </p>
+            <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-secondary)]">
+              {t('definitionBody')}
+            </p>
+          </div>
+
+          <div className="grid w-full auto-rows-fr gap-2 @min-[32rem]/ontology-starter:grid-cols-3">
+            {proofCards.map((card) => (
+              <div
+                key={card.label}
+                className="flex h-full flex-col rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-3"
+              >
+                <p className="text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]">
+                  {card.label}
+                </p>
+                <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-secondary)]">
+                  {card.body}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div aria-label={t('verifyAriaLabel')} className="grid w-full gap-2">
+            {verificationSteps.map((step, index) => (
+              <div
+                key={step}
+                className="grid grid-cols-[18px_1fr] items-start gap-2 rounded-chip border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-label leading-label text-[color:var(--color-text-secondary)]"
+              >
+                <CheckCircle2
+                  size={ICON_SIZE.md}
+                  aria-hidden
+                  className="text-[color:var(--color-indigo-accent)]"
+                />
+                <span>
+                  <span className="font-mono text-caption leading-caption text-[color:var(--color-text-tertiary)]">
+                    {index + 1}.
+                  </span>{' '}
+                  {step}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid w-full gap-3">
+            <div className="grid w-full grid-cols-1 gap-2 @min-[32rem]/ontology-starter:grid-cols-3">
+              <button
+                type="button"
+                onClick={handleCopyPrompt}
+                className={controlClass({
+                  shape: 'chip',
+                  tone: 'secondary',
+                  className: `w-full min-w-0 justify-center text-center ${NEUTRAL_CHIP_SKIN}`,
+                })}
+              >
+                <ClipboardCopy size={ICON_SIZE.sm} className="shrink-0" aria-hidden />
+                {copyPromptLabel}
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyCliVerify}
+                className={controlClass({
+                  shape: 'chip',
+                  tone: 'secondary',
+                  className: `w-full min-w-0 justify-center text-center ${NEUTRAL_CHIP_SKIN}`,
+                })}
+              >
+                <ClipboardCopy size={ICON_SIZE.sm} className="shrink-0" aria-hidden />
+                {copyCliLabel}
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyJsonGate}
+                className={controlClass({
+                  shape: 'chip',
+                  tone: 'secondary',
+                  className: `w-full min-w-0 justify-center text-center ${NEUTRAL_CHIP_SKIN}`,
+                })}
+              >
+                <ClipboardCopy size={ICON_SIZE.sm} className="shrink-0" aria-hidden />
+                {copyJsonGateLabel}
+              </button>
             </div>
-          ))}
+            <button
+              type="button"
+              onClick={handleClick}
+              disabled={busy}
+              className={controlClass({
+                shape: 'chip',
+                size: 'lg',
+                tone: 'strong',
+                className: `w-full justify-center @min-[32rem]/ontology-starter:w-auto @min-[32rem]/ontology-starter:justify-self-end ${INDIGO_SOLID_SKIN}`,
+              })}
+            >
+              <Sparkles size={ICON_SIZE.sm} aria-hidden />
+              {busy ? t('emptyBusy') : t('emptyCta')}
+            </button>
+            {error ? (
+              <p
+                role="alert"
+                data-failure-detail={error.detail ?? undefined}
+                className="break-keep text-label leading-label text-[color:var(--color-status-danger)]"
+              >
+                {error.sentence}
+              </p>
+            ) : null}
+          </div>
         </div>
-        <div className="mt-3 flex flex-wrap justify-center gap-2">
-          <button
-            type="button"
-            onClick={handleCopyPrompt}
-            className={controlClass({
-              shape: 'chip',
-              tone: 'secondary',
-              className: NEUTRAL_CHIP_SKIN,
-            })}
-          >
-            <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
-            {copyPromptLabel}
-          </button>
-          <button
-            type="button"
-            onClick={handleCopyCliVerify}
-            className={controlClass({
-              shape: 'chip',
-              tone: 'secondary',
-              className: NEUTRAL_CHIP_SKIN,
-            })}
-          >
-            <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
-            {copyCliLabel}
-          </button>
-          {/*
-            When `tone: 'success'` was redefined against the text role token (a94) on 2026-08-03,
-            this slot returned to the ramp. The tint surface and border are values specific to this
-            slot on the signal ladder, so className wins (the same grammar as DependencyPicker's
-            warning pill).
-          */}
-          <button
-            type="button"
-            onClick={handleCopyJsonGate}
-            className={controlClass({
-              shape: 'chip',
-              tone: 'success',
-              className:
-                'gap-2 border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]',
-            })}
-          >
-            <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
-            {copyJsonGateLabel}
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={handleClick}
-          disabled={busy}
-          className={controlClass({
-            shape: 'chip',
-            size: 'lg',
-            tone: 'strong',
-            className: `mt-4 ${INDIGO_SOLID_SKIN}`,
-          })}
-        >
-          <Sparkles size={ICON_SIZE.sm} aria-hidden />
-          {busy ? t('emptyBusy') : t('emptyCta')}
-        </button>
-        {error ? (
-          <p
-            role="alert"
-            data-failure-detail={error.detail ?? undefined}
-            className="mt-3 break-keep text-label text-[color:var(--color-status-danger)]"
-          >
-            {error.sentence}
-          </p>
-        ) : null}
       </section>
     );
   }
@@ -355,7 +354,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         className={controlClass({
           shape: 'chip',
           tone: 'secondary',
-          className: `w-full justify-center ${INDIGO_CHIP_SKIN}`,
+          className: `w-full justify-center ${NEUTRAL_CHIP_SKIN}`,
         })}
       >
         <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
@@ -378,7 +377,11 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         type="button"
         onClick={handleCopyJsonGate}
         title={t('secondaryJsonGateTitle')}
-        className={controlClass({ shape: "chip", className: "w-full justify-center border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-3 py-1.5 text-label text-[color:var(--color-success-text-a94)] hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]" })}
+        className={controlClass({
+          shape: 'chip',
+          tone: 'secondary',
+          className: `w-full justify-center ${NEUTRAL_CHIP_SKIN}`,
+        })}
       >
         <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
         {copyJsonGateLabel}

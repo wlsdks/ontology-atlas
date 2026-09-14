@@ -49,6 +49,8 @@ function renderSidebar(
     tree?: VaultManifest["tree"];
     collection?: DocsVaultCollection;
     collectionCounts?: Record<DocsVaultCollection, number>;
+    showCollectionChooser?: boolean;
+    showCreateDocument?: boolean;
   } = {},
 ) {
   const manifest = makeManifest(docs);
@@ -75,6 +77,8 @@ function renderSidebar(
             ontology: 0,
           }
         }
+        showCollectionChooser={overrides.showCollectionChooser}
+        showCreateDocument={overrides.showCreateDocument}
         visibleDocSlugs={new Set(docs.map((d) => d.slug))}
         onSelect={onSelect}
         onCollectionChange={() => {}}
@@ -210,6 +214,17 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     expect(screen.getByTestId("docs-sidebar-collection-ontology")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("docs-sidebar-collection-ontology"));
     expect(onCollectionChange).toHaveBeenCalledWith("ontology");
+  });
+
+  it("고정된 온톨로지 범위에서는 다른 컬렉션으로 빠지는 선택지를 숨긴다", () => {
+    renderSidebar([], { showCollectionChooser: false });
+
+    expect(screen.queryByTestId("docs-sidebar-collection-all")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("docs-sidebar-collection-guides")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("docs-sidebar-collection-ontology")).not.toBeInTheDocument();
+    expect(screen.getByTestId("docs-sidebar-search-toggle")).toBeInTheDocument();
+    expect(screen.getByTestId("docs-sidebar-order-toggle")).toBeInTheDocument();
+    expect(screen.getByTestId("docs-sidebar-new-doc")).toBeInTheDocument();
   });
 
   /**
@@ -352,6 +367,11 @@ describe("DocsSidebarBody — 에이전트 파일 그룹 (읽기 전용 감지)"
 });
 
 describe("DocsSidebarBody — [D-4] 새 문서 진입점", () => {
+  it("hides creation in the exact-document compatibility reader", () => {
+    renderSidebar([], { showCreateDocument: false });
+    expect(screen.queryByTestId("docs-sidebar-new-doc")).not.toBeInTheDocument();
+  });
+
   it("calls onCreateNewDoc when the tree-header new-doc button is enabled and clicked", () => {
     const { onCreateNewDoc } = renderSidebar([], { canCreateNewDoc: true });
     const button = screen.getByTestId("docs-sidebar-new-doc");

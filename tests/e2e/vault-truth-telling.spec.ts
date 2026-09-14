@@ -58,34 +58,20 @@ async function measureBlockedRows(page: Page) {
 }
 
 /**
- * Opens the docs surface and expands every folder.
+ * Opens the requested file through its honest reader context.
  *
- * ⚠️ **Do not select via a `?slug=` deep link.** On a local vault that parameter
- * cannot beat the initial selection (measured 2026-08-04: whatever slug was given,
- * the alphabetically first document opened). That defect is not this spec's subject,
- * so selection happens the way a person does it — by clicking the tree. Whether the
- * instrument opened the screen it meant to measure is verified every time by
- * `openedFile` below.
+ * Typed ontology nodes arrive in Library's fixed Ontology reader. Untyped files stay
+ * reachable only through `/docs`' exact-document compatibility reader. The opened filename
+ * is verified every time below, so the instrument cannot measure an unintended fallback.
  */
-async function openDocsTree(page: Page) {
-  await page.goto("/ko/docs/?guides=off");
+async function openDocument(page: Page, slug: string) {
+  await page.goto(`/ko/docs/?guides=off&slug=${encodeURIComponent(slug)}`);
   await page.waitForLoadState("networkidle");
-  // The compatibility URL now opens the graph-backed Ontology collection. This
-  // instrument inspects every file kind, including notes, so it explicitly chooses All.
-  await page.getByTestId("docs-sidebar-collection-all").click();
-  await expect(page.getByTestId("docs-sidebar-collection-all")).toHaveAttribute(
-    "aria-checked",
-    "true",
-  );
-  for (const folder of ["capabilities", "domains", "elements", "notes"]) {
-    await page.getByRole("button", { name: new RegExp(folder) }).first().click();
-    await page.waitForTimeout(120);
-  }
 }
 
 /** Opens one document and measures whether that file states its own problems. */
 async function measureDoc(page: Page, title: string, expectFile: string) {
-  await page.getByRole("button", { name: title, exact: false }).first().click();
+  await expect(page.getByRole("heading", { name: title, exact: false }).first()).toBeVisible();
   // The validator runs after a 400ms debounce.
   await page.waitForTimeout(700);
   const measured = await page.evaluate(() => {
@@ -150,7 +136,7 @@ test.describe("결함 볼트 — 화면이 검사 결과를 말하는가", () =>
 
   test("② 오류가 파일 옆에서 보인다 (경고만 보여 주지 않는다)", async ({ page }) => {
     await loadVault(page, BROKEN_VAULT);
-    await openDocsTree(page);
+    await openDocument(page, "capabilities/checkout");
     const checkout = await measureDoc(page, "결제하기", "capabilities/checkout.md");
     console.log("[doc/checkout]", JSON.stringify(checkout));
     expect(checkout.hasBlock).toBe(true);
@@ -163,7 +149,7 @@ test.describe("결함 볼트 — 화면이 검사 결과를 말하는가", () =>
 
   test("③ kind 없는 문서가 자기 문제를 말한다", async ({ page }) => {
     await loadVault(page, BROKEN_VAULT);
-    await openDocsTree(page);
+    await openDocument(page, "notes/handover");
     const note = await measureDoc(page, "인수인계 메모", "notes/handover.md");
     console.log("[doc/handover]", JSON.stringify(note));
     expect(
@@ -172,6 +158,7 @@ test.describe("결함 볼트 — 화면이 검사 결과를 말하는가", () =>
     ).toBe(true);
     expect(note.diagnostics.length).toBeGreaterThan(0);
 
+    await openDocument(page, "elements/ghost");
     const ghost = await measureDoc(page, "유령 모듈", "elements/ghost.md");
     console.log("[doc/ghost]", JSON.stringify(ghost));
     expect(ghost.hasBlock, "kind 가 비었을 때도 같다").toBe(true);
@@ -182,7 +169,7 @@ test.describe("결함 볼트 — 화면이 검사 결과를 말하는가", () =>
     page,
   }) => {
     await loadVault(page, BROKEN_VAULT);
-    await openDocsTree(page);
+    await openDocument(page, "notes/handover");
     // `notes/handover` has no kind, so it is not a graph node.
     const note = await measureDoc(page, "인수인계 메모", "notes/handover.md");
     console.log("[doc/handover-map]", JSON.stringify(note));
@@ -197,6 +184,7 @@ test.describe("결함 볼트 — 화면이 검사 결과를 말하는가", () =>
     ).toBeNull();
 
     // A node that really exists in the graph must say the opposite.
+    await openDocument(page, "domains/orders");
     const domain = await measureDoc(page, "주문", "domains/orders.md");
     console.log("[doc/orders]", JSON.stringify(domain));
     expect(domain.proofState).toBe("true");

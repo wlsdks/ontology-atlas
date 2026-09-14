@@ -12,6 +12,35 @@ export function validateOntologyMapCanvasEvidence(markers) {
   return null;
 }
 
+export function validateLibrarySurfaceEvidence(markers, { requireOntology = false } = {}) {
+  if (markers?.librarySurface !== true || markers?.libraryNav !== true) {
+    return "WebView did not report a rendered Library surface and navigation";
+  }
+  if (!requireOntology) return null;
+  if (
+    markers.librarySelectedTab !== "ontology" ||
+    markers.librarySelectedPanelVisible !== true
+  ) {
+    return "WebView did not report the selected Ontology tab and its visible Library panel";
+  }
+  if (markerNumber(markers, "libraryOntologyHeadingCount") !== 1) {
+    return "WebView did not report exactly one Ontology page heading in the selected Library panel";
+  }
+  const contentState = markers.libraryOntologyContentState;
+  const renderedDocument =
+    contentState === "document-reader" &&
+    markers.libraryOntologyReaderVisible === true &&
+    markers.libraryOntologyStarterVisible !== true;
+  const renderedStarter =
+    contentState === "ontology-starter" &&
+    markers.libraryOntologyStarterVisible === true &&
+    markers.libraryOntologyReaderVisible !== true;
+  if (!renderedDocument && !renderedStarter) {
+    return "WebView did not report either a rendered ontology document or the real zero-ontology starter";
+  }
+  return null;
+}
+
 // `write_verify_line` in src-tauri/src/lib.rs tags window-lifecycle facts with this
 // prefix. webview-env.mjs owns the JSON payload prefix; this one is declared here
 // because the payload contract is its only reader.
@@ -145,9 +174,10 @@ export function validateWebviewVerifyPayload(payload, {
   // A documents-only folder intentionally has no code map or Docs destination.
   // Its Library route must instead prove both the real surface and its navigation.
   if (/\/library\/?$/.test(webviewPath)) {
-    if (payload.markers.librarySurface !== true || payload.markers.libraryNav !== true) {
-      return "WebView did not report a rendered Library surface and navigation";
-    }
+    const librarySurfaceError = validateLibrarySurfaceEvidence(payload.markers, {
+      requireOntology: webviewUrl.searchParams.get("tab") === "ontology",
+    });
+    if (librarySurfaceError) return librarySurfaceError;
   } else {
     if (payload.markers.ontologyNav !== true) {
       return "WebView did not report the ontology navigation marker";

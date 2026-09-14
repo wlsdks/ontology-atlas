@@ -29,6 +29,8 @@ export interface UseOpenDocTabsArgs {
   sourceKey: string;
   /** The slugs that actually exist in the current vault — tabs for deleted documents are pruned quietly. */
   validSlugs: ReadonlySet<string>;
+  /** The subset this reader may expose. Hidden tabs stay persisted for another honest reader. */
+  visibleSlugs?: ReadonlySet<string>;
 }
 
 export interface UseOpenDocTabsResult {
@@ -49,6 +51,7 @@ export interface UseOpenDocTabsResult {
 export function useOpenDocTabs({
   sourceKey,
   validSlugs,
+  visibleSlugs,
 }: UseOpenDocTabsArgs): UseOpenDocTabsResult {
   const [tabs, setTabs] = useState<DocTab[]>([]);
   const [hydratedSourceKey, setHydratedSourceKey] = useState<string | null>(null);
@@ -112,12 +115,17 @@ export function useOpenDocTabs({
   const closeTab = useCallback(
     (slug: string, activeSlug: string | null): string | null => {
       const key = sourceKeyRef.current;
-      const result = closeDocTab(readStoredDocTabs(key), slug, activeSlug);
+      const storedTabs = readStoredDocTabs(key);
+      const result = closeDocTab(storedTabs, slug, activeSlug);
+      const visibleTabs = visibleSlugs
+        ? storedTabs.filter((tab) => visibleSlugs.has(tab.slug))
+        : storedTabs;
+      const visibleResult = closeDocTab(visibleTabs, slug, activeSlug);
       setTabs(result.tabs);
       storeDocTabs(key, result.tabs);
-      return result.nextActiveSlug;
+      return visibleResult.nextActiveSlug;
     },
-    [],
+    [visibleSlugs],
   );
 
   const rememberActiveSlug = useCallback((slug: string) => {
@@ -127,10 +135,13 @@ export function useOpenDocTabs({
   }, []);
 
   const hydrated = hydratedSourceKey === sourceKey;
+  const visibleTabs = visibleSlugs
+    ? tabs.filter((tab) => visibleSlugs.has(tab.slug))
+    : tabs;
   const restoredActiveSlug = hydrated
     ? resolveRestoredActiveDocSlug({
-        tabs,
-        validSlugs,
+        tabs: visibleTabs,
+        validSlugs: visibleSlugs ?? validSlugs,
         querySlug: null,
         storedActiveSlug:
           storedActive?.sourceKey === sourceKey ? storedActive.slug : null,
@@ -138,7 +149,7 @@ export function useOpenDocTabs({
     : null;
 
   return {
-    tabs,
+    tabs: visibleTabs,
     hydrated,
     restoredActiveSlug,
     rememberActiveSlug,

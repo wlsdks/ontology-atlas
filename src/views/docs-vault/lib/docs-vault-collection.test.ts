@@ -3,6 +3,7 @@ import type { VaultDoc } from '@/entities/docs-vault';
 import {
   buildTagIndexForDocs,
   filterDocsByCollection,
+  isAuthorableOntologyDocument,
   resolveDocsVaultSlugAlias,
   resolveDocsVaultCollection,
   resolveInitialDocsCollection,
@@ -30,6 +31,24 @@ function doc(
 }
 
 describe('docs vault collections', () => {
+  it('scopes Library Ontology by the schema kinds rather than paths or describes heuristics', () => {
+    for (const kind of ['project', 'domain', 'capability', 'element', 'document']) {
+      expect(isAuthorableOntologyDocument(doc(`outside/${kind}`, { kind }))).toBe(true);
+    }
+    expect(isAuthorableOntologyDocument(doc('wiki/typed-node', { kind: 'document' }))).toBe(true);
+
+    expect(isAuthorableOntologyDocument(doc('docs/ontology/plain-note', {}))).toBe(false);
+    expect(
+      isAuthorableOntologyDocument(doc('notes/reference', { describes: ['capabilities/audit'] })),
+    ).toBe(false);
+    expect(isAuthorableOntologyDocument(doc('README', { kind: 'vault-readme' }))).toBe(false);
+    expect(
+      isAuthorableOntologyDocument(doc('architecture/profile', {
+        architecture_schema: 'architecture-profile/v1',
+      })),
+    ).toBe(false);
+  });
+
   it('treats ontology kind docs as ontology nodes', () => {
     expect(resolveDocsVaultCollection(doc('foo', { kind: 'capability' }))).toBe('ontology');
   });

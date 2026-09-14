@@ -10,6 +10,7 @@ import {
   webviewWorkbenchMarkersForPath,
 } from "./lib/verify-macos/webview-env.mjs";
 import {
+  validateLibrarySurfaceEvidence,
   validateOntologyMapCanvasEvidence,
   validateWindowStatePluginIsolation,
 } from "./lib/verify-macos/payload-contract.mjs";
@@ -124,6 +125,59 @@ test("payload contract accepts a rendered Library-only workbench without code de
     validateWebviewVerifyPayload({ ...payload, href: "tauri://localhost/ko/docs/" }, { expectedPath: "/ko/library/" }),
     /ontology navigation marker/,
   );
+});
+
+test("payload contract accepts populated and empty Ontology panels only with rendered content", () => {
+  const ontologyMarkers = {
+    ontologyNav: false,
+    sourceVaultNav: false,
+    libraryNav: true,
+    librarySurface: true,
+    librarySelectedTab: "ontology",
+    librarySelectedPanelVisible: true,
+    libraryOntologyHeadingCount: 1,
+  };
+  const reader = validPayload({
+    href: "tauri://localhost/ko/library/?tab=ontology",
+    markers: {
+      ...ontologyMarkers,
+      libraryOntologyContentState: "document-reader",
+      libraryOntologyReaderVisible: true,
+      libraryOntologyStarterVisible: false,
+    },
+  });
+  const starter = validPayload({
+    href: "tauri://localhost/ko/library/?tab=ontology",
+    markers: {
+      ...ontologyMarkers,
+      libraryOntologyContentState: "ontology-starter",
+      libraryOntologyReaderVisible: false,
+      libraryOntologyStarterVisible: true,
+    },
+  });
+  assert.equal(validateWebviewVerifyPayload(reader), null);
+  assert.equal(validateWebviewVerifyPayload(starter), null);
+
+  const brokenConditions = [
+    ["selected tab", { librarySelectedTab: "wiki" }],
+    ["visible panel", { librarySelectedPanelVisible: false }],
+    ["page heading", { libraryOntologyHeadingCount: 0 }],
+    ["rendered content", {
+      libraryOntologyContentState: "",
+      libraryOntologyReaderVisible: false,
+      libraryOntologyStarterVisible: false,
+    }],
+    ["matching starter state", { libraryOntologyReaderVisible: true }],
+  ];
+  for (const [name, markerOverrides] of brokenConditions) {
+    assert.ok(
+      validateLibrarySurfaceEvidence(
+        { ...starter.markers, ...markerOverrides },
+        { requireOntology: true },
+      ),
+      `${name} must remain required`,
+    );
+  }
 });
 
 test("payload contract · v2 캔버스 픽셀 증거가 없으면 멈춘다", () => {

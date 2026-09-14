@@ -46,6 +46,31 @@
                                   rect.width > 0 &&
                                   rect.height > 0;
                               };
+                              const libraryWorkspace = document.querySelector('[data-testid="library-workspace"]');
+                              const librarySelectedTab = libraryWorkspace?.querySelector('[role="tab"][aria-selected="true"]');
+                              const librarySelectedPanelId = librarySelectedTab?.getAttribute("aria-controls") || "";
+                              const librarySelectedPanel = librarySelectedPanelId
+                                ? document.getElementById(librarySelectedPanelId)
+                                : null;
+                              const librarySelectedPanelVisible = aiSettingsVisible(librarySelectedPanel);
+                              const librarySelectedTabKey = (librarySelectedTab?.id || "")
+                                .replace("library-workspace-tab-", "");
+                              const libraryOntologyHeadingCount = librarySelectedPanel
+                                ? librarySelectedPanel.querySelectorAll("h1").length
+                                : 0;
+                              const libraryOntologyReader = librarySelectedPanel?.querySelector('[data-docs-viewer]');
+                              const libraryOntologyStarter = librarySelectedPanel
+                                ? Array.from(librarySelectedPanel.querySelectorAll('main section[aria-label]')).find(
+                                    (section) => section.querySelector("h2") && section.querySelectorAll("button").length >= 4
+                                  ) || null
+                                : null;
+                              const libraryOntologyReaderVisible = aiSettingsVisible(libraryOntologyReader);
+                              const libraryOntologyStarterVisible = aiSettingsVisible(libraryOntologyStarter);
+                              const libraryOntologyContentState = libraryOntologyReaderVisible
+                                ? "document-reader"
+                                : libraryOntologyStarterVisible
+                                  ? "ontology-starter"
+                                  : "";
                               const aiSettingsPopover = document.querySelector('[data-testid="app-settings-popover"]');
                               const aiSettingsAiView = document.querySelector('[data-testid="app-settings-pane-ai"]');
                               const aiSettingsUrlInput = document.querySelector('[data-testid="ai-local-url"]');
@@ -958,7 +983,19 @@
                                   ontologyNav: links.some((link) => link.href.includes("/ontology") || /온톨로지|Ontology/.test(link.text)),
                                   sourceVaultNav: links.some((link) => link.href.includes("/docs") || /저장소|문서함|Source Vault|Documents/.test(link.text)),
                                   libraryNav: Boolean(document.querySelector('nav a[href*="/library"]')),
-                                  librarySurface: Boolean(document.querySelector('[data-testid="library-page"]')),
+                                  librarySurface: Boolean(
+                                    aiSettingsVisible(libraryWorkspace) &&
+                                    librarySelectedTab &&
+                                    librarySelectedPanelVisible &&
+                                    librarySelectedTab.getAttribute("aria-controls") === librarySelectedPanel?.id &&
+                                    librarySelectedPanel?.getAttribute("aria-labelledby") === librarySelectedTab.id
+                                  ),
+                                  librarySelectedTab: librarySelectedTabKey,
+                                  librarySelectedPanelVisible,
+                                  libraryOntologyHeadingCount,
+                                  libraryOntologyReaderVisible,
+                                  libraryOntologyStarterVisible,
+                                  libraryOntologyContentState,
                                   agentBriefCopy: buttons.some((text) => /브리핑 복사|Copy brief/.test(text)) && /agent_brief/.test(bodyText),
                                   insightsMaintenanceBoard: Boolean(insightsMaintenanceBoard),
                                   insightsQuestionModel:

@@ -145,4 +145,37 @@ describe("useOpenDocTabs", () => {
     expect(result.current.tabs.map((tab) => tab.slug)).toEqual(["a", "b"]);
     expect(readStoredDocTabs(SOURCE).map((tab) => tab.slug)).toEqual(["a", "b"]);
   });
+
+  it("hides out-of-scope tabs without pruning another reader's working set", async () => {
+    seed(["ontology/a", "README"]);
+    storeActiveDocSlug(SOURCE, "README");
+    const { result } = renderHook(() =>
+      useOpenDocTabs({
+        sourceKey: SOURCE,
+        validSlugs: new Set(["ontology/a", "README"]),
+        visibleSlugs: new Set(["ontology/a"]),
+      }),
+    );
+    await act(async () => {});
+
+    expect(result.current.tabs.map((tab) => tab.slug)).toEqual(["ontology/a"]);
+    expect(result.current.restoredActiveSlug).toBe("ontology/a");
+    expect(readStoredDocTabs(SOURCE).map((tab) => tab.slug)).toEqual(["ontology/a", "README"]);
+  });
+
+  it("shows no restored tabs when the active scope is empty", async () => {
+    seed(["README"]);
+    const { result } = renderHook(() =>
+      useOpenDocTabs({
+        sourceKey: SOURCE,
+        validSlugs: new Set(["README"]),
+        visibleSlugs: new Set(),
+      }),
+    );
+    await act(async () => {});
+
+    expect(result.current.tabs).toEqual([]);
+    expect(result.current.restoredActiveSlug).toBeNull();
+    expect(readStoredDocTabs(SOURCE).map((tab) => tab.slug)).toEqual(["README"]);
+  });
 });

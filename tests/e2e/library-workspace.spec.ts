@@ -43,7 +43,9 @@ test('Library reads Markdown evidence and keeps ontology in the same mobile home
 test('a no-slug Ontology entry opens graph-backed evidence instead of a Wiki guide', async ({ page }) => {
   await openLibrary(page);
   await page.getByTestId('library-workspace-ontology').click();
-  await expect(page.getByTestId('docs-sidebar-collection-ontology')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('docs-sidebar-collection-all')).toHaveCount(0);
+  await expect(page.getByTestId('docs-sidebar-collection-guides')).toHaveCount(0);
+  await expect(page.getByTestId('docs-sidebar-collection-ontology')).toHaveCount(0);
   await expect.poll(() => new URL(page.url()).searchParams.get('slug')).toMatch(
     /^(?:projects|domains|capabilities|elements)\//,
   );
@@ -69,6 +71,7 @@ test('closing New wiki page preserves the source passage underneath', async ({ p
 test('a legacy document link and the last unsaved keystroke survive a Library tab round trip', async ({ page }) => {
   await openLibrary(page);
   await page.goto('/en/docs/?slug=capabilities/checkout&guides=off&e2e=1#checkout');
+  await expect(page).toHaveURL(/\/library\//);
   await expect(page.getByTestId('library-workspace-ontology')).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('[data-docs-viewer]')).toContainText('결제 승인');
   await page.getByRole('tab', { name: 'Edit', exact: true }).click();

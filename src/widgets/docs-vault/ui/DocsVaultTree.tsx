@@ -47,9 +47,15 @@ interface Props {
 }
 
 /** How many actual documents (leaves) sit under a directory node — shown as an engraved count. */
-function countDocs(node: VaultTreeNode): number {
-  if (node.type === 'doc') return node.slug ? 1 : 0;
-  return (node.children ?? []).reduce((sum, child) => sum + countDocs(child), 0);
+function countDocs(node: VaultTreeNode, visibleDocSlugs?: Set<string>): number {
+  if (node.type === 'doc') {
+    if (!node.slug) return 0;
+    return !visibleDocSlugs || visibleDocSlugs.has(node.slug) ? 1 : 0;
+  }
+  return (node.children ?? []).reduce(
+    (sum, child) => sum + countDocs(child, visibleDocSlugs),
+    0,
+  );
 }
 
 function DocKindGlyph({
@@ -187,7 +193,7 @@ function TreeNode({
   }
 
   // directory
-  const docCount = countDocs(node);
+  const docCount = countDocs(node, visibleDocSlugs);
   return (
     <div>
       <RowButton
