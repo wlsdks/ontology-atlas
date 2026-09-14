@@ -12,8 +12,11 @@ describe('agents destination to map chat handoff', () => {
   });
 
   it('the map consumes the one-shot request only after that runtime is ready', () => {
-    expect(home).toContain('consumeQueuedAgentChatIntent()');
-    expect(home).toContain('acpRuntime?.id !== pendingAgentChatRuntimeId');
-    expect(home).toContain('setPendingAgentChatRuntimeId(null)');
+    expect(home.includes('consumeQueuedAgentChatIntent()'), 'Missing handoff contract: consumeQueuedAgentChatIntent()').toBe(true);
+    expect(home.includes('acpRuntime?.id !== pendingAgentChatRuntimeId'), 'Missing handoff contract: acpRuntime?.id !== pendingAgentChatRuntimeId').toBe(true);
+    // null now means a queued task awaiting the default runner; undefined is
+    // the consumed state. The rendered destination tests cover both requests.
+    expect(home.includes('pendingAgentChatRuntimeId === undefined'), 'Missing handoff contract: pendingAgentChatRuntimeId === undefined').toBe(true);
+    expect(home.includes('setPendingAgentChatRuntimeId(undefined)'), 'Missing handoff contract: setPendingAgentChatRuntimeId(undefined)').toBe(true);
   });
 });

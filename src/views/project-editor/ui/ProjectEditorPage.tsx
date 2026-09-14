@@ -139,6 +139,10 @@ function EditorContent({
           return;
         }
       }
+      toast.show(t(mode === "create" ? "createdToast" : "savedToast", { name: input.name }), "success", {
+        label: t("openPublicLabel"),
+        onClick: () => router.push(getProjectRuntimeDetailHref(input.slug)),
+      });
       router.push(safeReturnTo);
     } catch (err) {
       if (err instanceof VaultConflictError) {

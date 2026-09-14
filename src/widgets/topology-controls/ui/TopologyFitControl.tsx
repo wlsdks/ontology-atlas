@@ -8,6 +8,8 @@ interface TopologyFitControlProps {
   /** The "fit the whole map" callback — fits the camera to the graph's bounds on click. */
   onFitView: () => void;
   density?: 'default' | 'compact-focus';
+  /** A phone INDEX sheet owns the map area while it is expanded. */
+  mobileObscured?: boolean;
 }
 
 /**
@@ -15,24 +17,23 @@ interface TopologyFitControlProps {
  * `TopologyControls` panel (search, hubs-only, overlay, depth, force sliders,
  * shortcut help) was a dead control board the v2 canvas engine never consumed, so it
  * was demolished and only the Fit callback — which was genuinely live — remains.
- * Desktop only: mobile fits by pinch-zoom, so the tile is hidden. It keeps the
+ * Touch and keyboard users share the same explicit overview return. It keeps the
  * collapsed stack's first-tile position and token contract
  * (--topology-floating-control-*) so the right rail's "?" tile offset rhythm stays aligned.
  */
-export function TopologyFitControl({ onFitView, density = 'default' }: TopologyFitControlProps) {
+export function TopologyFitControl({ onFitView, density = 'default', mobileObscured = false }: TopologyFitControlProps) {
   const t = useTranslations('topologyWidgets.controls');
 
   return (
     <div
-      className="topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 flex flex-col gap-2 md:bottom-auto md:right-6 md:top-[var(--topology-floating-control-desktop-top)] xl:right-8"
+      className={`topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 ${mobileObscured ? 'hidden md:flex' : 'flex'} flex-col gap-2 md:bottom-auto md:right-6 md:top-[var(--topology-floating-control-desktop-top)] xl:right-8`}
       data-testid="topology-fit-control"
       data-agent-dock-adjacent-rail="true"
       data-controls-density={density}
       data-control-phone-bottom-token="--topology-floating-control-phone-bottom"
       data-control-desktop-top-token="--topology-floating-control-desktop-top"
     >
-      {/* Desktop only — mobile can fit by pinch-zoom. */}
-      <div className="hidden md:block">
+      <div>
         {/*
          * The tooltip is gone because the label replaced it. A tooltip names one
          * tile after a hover and a wait; `.chrome-rail` names the whole rail the

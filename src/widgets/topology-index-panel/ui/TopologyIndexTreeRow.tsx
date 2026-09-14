@@ -185,7 +185,7 @@ export function TopologyIndexTreeRow({
         // number two pixels under it. Rows with a subcount line stay taller: two
         // vertical axes mean content decides, the same exemption the nav rail's 62px
         // outer height takes.
-        className={`grid min-h-9 grid-cols-[22px_15px_1fr_auto] items-center gap-x-2 rounded-chip border py-1 pl-1 pr-2 text-body transition-colors ${
+        className={`atlas-touch-floor grid min-h-9 grid-cols-[22px_15px_1fr_auto] items-center gap-x-2 rounded-chip border py-1 pl-1 pr-2 text-body transition-colors ${
           selected
             ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--map-panel-metric-surface)] text-[color:var(--map-panel-text-primary)]"
             : "border-transparent text-[color:var(--map-panel-text-secondary)] hover:border-[color:var(--map-panel-action-border)] hover:text-[color:var(--map-panel-text-primary)]"

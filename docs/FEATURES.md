@@ -401,8 +401,9 @@ had become false).
   The 2D map is untouched at either ratio. Gate:
   `tests/e2e/map-3d-relation-ink.spec.ts`, which reads the canvas back at both.
 
-#### `TopologyFitControl` (top-right, desktop-only)
-- Single **Fit Map** tile — fits the camera to the graph bounds. Desktop-only (mobile uses pinch-zoom).
+#### `TopologyFitControl` (shared overview return)
+- Single **Fit Map** tile — fits the camera to the graph bounds. When the map is exposed, it remains visible on narrow and touch screens above the bottom-tab reserve; it yields while the phone INDEX sheet covers the map. Pinch zoom is an additional path. In 3D, closing a detail panel preserves selection and exposes Fit to clear it and return to the overview.
+- The map draws its keyboard focus outline inside the clipped canvas. Picking a search result hands focus to the map after the palette closes; cancellation returns to the opener. Activating a related concept transfers keyboard focus to the replacement inspector's close control. INDEX, detail and realm controls use the shared 44px touch floor.
 - The old "map controls" panel (search · "Hubs only" · overlays · depth/force sliders · in-panel shortcuts help) was a dead control board — the v2 canvas engine never read those focus/overlay/force fields — and was demolished (2026-07-21). Physics (force) tuning may return later as a real, wired feature (see BACKLOG).
 
 #### `HubRail` (left, collapsed default)
@@ -613,9 +614,9 @@ claim carrying the document it came from and the date a person last opened it (a
 cite says so (`harness.toolsUncited`) rather than rendering like the sourced rows); size against a
 documented cap, where the Codex bar measures the **merged** root + worst-nested `AGENTS.md`,
 because that is what Codex truncates and a per-file bar reads green while the merge is already
-being cut; byte status for the pairs the repository itself declares identical, with a difference
+being cut; reference byte comparisons between same-named tool guides, with a difference
 door (`harness.driftOpen`) that opens both complete files side by side under the row; and the file's modification time
-on this disk, labelled as that rather than as a commit date. Below the table the hook configs are
+on this disk, labelled as that rather than as a commit date. Comparison counts do not claim that the pairs match, and tool-specific differences are informational rather than a synchronization requirement. Below the table the hook configs are
 listed by script: wired (`harness.hookWired`) means the script the config names exists on disk, never that it runs
 — a script the config names and the disk does not have is called out, because that failure
 produces no error at all, and the Codex group carries its approval requirement (`harness.hookApprovalGate`) as a standing
@@ -1854,6 +1855,9 @@ Section labels are engraved (mono uppercase caption + hairline), matching the ce
 
 ### `/project/new` — Create (restructured 2026-07-27)
 
+Empty submission focuses the name and leaves the automatic address folded until it can be derived. Create-and-return confirms the saved project by name and offers a direct detail link, even when its list card is below the fold.
+
+
 Create is a **different screen from edit**, not the same one with fewer values. Creating asks for one thing — make a project — so the screen asks for exactly the four fields that make one, and nothing else is on top of them.
 
 - **Four essential fields, first screen, no scroll** — name · category · status · short description. Measured at 1512×950: name at y=292, category/status at y=395, description at y=472, primary action at y=698; the whole screen fits without scrolling (also verified at 1024 and 768).
@@ -2075,6 +2079,9 @@ The screen layout splits into two stages. First, **is this screen even in a stat
 When the screen first opens, only read-only tools are called (`git_status` / `git_diff` / `git_history`). Tools that change something (`git_init` · `git_set_remote` · `git_snapshot`) are executed only when the user presses their button (`onClick`).
 
 ### `/agents` — Agent (new 2026-08-20, catalog 90)
+
+Opening a conversation preserves the selected runner across the quick detection and subsequent login scan. A temporarily empty usable-runner list does not replace the requested tool with the first later result. The existing readiness and isolation checks still apply.
+
 
 **One sentence on what this screen does**: **Get · install · attach · fix · and start conversation with** the AI coding tool on this computer.
 
@@ -2559,6 +2566,7 @@ folder shows all eight.
 The phone tabs and the `G` keys read the same verdict.
 
 ### `AppSettingsMenu` (app shell + contextual page headers)
+- Accent swatches display their own existing palette under either selected app accent. Notification kinds wrap below their full-width explanation instead of compressing that explanation beside six controls.
 - The old 5-tab settings modal is now one compact settings sheet
   (`src/widgets/app-settings-menu`): screen controls, workspace, and the AI
   agent entry are scanned in one column. `LocaleSwitch` is an immediate screen

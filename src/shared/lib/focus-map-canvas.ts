@@ -61,12 +61,19 @@ function findMapCanvas(): HTMLElement | null {
  */
 export function focusMapCanvasWhenReady(
   maxFrames: number = FOCUS_MAP_CANVAS_MAX_FRAMES,
+  keyboardVisible = false,
 ): () => void {
   if (typeof window === 'undefined') return () => {};
+  const focus = (canvas: HTMLElement) => {
+    canvas.focus();
+    // WebKit can lose :focus-visible across a modal's deferred close. Retain
+    // the keyboard origin explicitly until blur or the next pointer action.
+    if (keyboardVisible && document.activeElement === canvas) canvas.dataset.keyboardFocus = 'true';
+  };
 
   const immediate = findMapCanvas();
   if (immediate) {
-    immediate.focus();
+    focus(immediate);
     return () => {};
   }
 
@@ -75,7 +82,7 @@ export function focusMapCanvasWhenReady(
   const tick = () => {
     const canvas = findMapCanvas();
     if (canvas) {
-      canvas.focus();
+      focus(canvas);
       return;
     }
     frame += 1;

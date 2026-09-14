@@ -26,6 +26,7 @@ export interface MountedGlobalSearchProps {
    * On project selection — unset defaults to pushing the static-export-safe fallback detail.
    */
   onSelectProject?: (project: Project) => void;
+  onSelectionFocus?: (keyboard: boolean) => void;
   /**
    * Move the default hotkey to ⇧⌘K when coexisting with the home topology's SearchPalette (⌘K).
    */
@@ -47,6 +48,7 @@ export interface MountedGlobalSearchProps {
 export function MountedGlobalSearch({
   onSelectNode,
   onSelectProject,
+  onSelectionFocus,
   hotkeyShift = false,
   open: controlledOpen,
   onOpenChange,
@@ -74,6 +76,7 @@ export function MountedGlobalSearch({
 
   return (
     <GlobalSearch
+      onSelectionFocus={onSelectionFocus}
       open={open}
       onOpenChange={setOpen}
       nodes={nodes}

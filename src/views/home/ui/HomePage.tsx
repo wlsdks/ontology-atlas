@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
+import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
 import { useHeldValue, usePanelPresence, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
@@ -2102,6 +2103,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   // to false on every fresh node selection so re-clicking a node always reopens its
   // popover. A `null` selection also clears it via `handleClose`.
   const [nodePopoverDismissed, setNodePopoverDismissed] = useState(false);
+  const detailKeyboardTargetRef = useRef<string | null>(null);
+  const detailCloseButtonRef = useRef<HTMLButtonElement | null>(null);
   const fullDetailOpen =
     fullDetailSlug != null && fullDetailSlug === selectedOntologyNode?.id;
   /**
@@ -2463,7 +2466,9 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   >([]);
   const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
   const [acpPresentationVisible, setAcpPresentationVisible] = useState(false);
-  const [pendingAgentChatRuntimeId, setPendingAgentChatRuntimeId] = useState<string | null>(null);
+  // undefined: no request; null: a queued task awaits the first ready runner.
+  const [pendingAgentChatRuntimeId, setPendingAgentChatRuntimeId] = useState<string | null | undefined>(undefined);
+  const requestedAcpRuntimeRef = useRef<string | null>(null);
   /**
    * A first turn the door asked to open with, held until the dock is actually up.
    *
@@ -2521,9 +2526,13 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         // found rather than only name it. Both are already on the registry row.
         .map((r) => ({ id: r.id, label: r.label, icon: r.icon, brandInk: r.brandInk }));
       setAcpRuntimes(usable);
-      setAcpRuntimeId((current) =>
-        current && usable.some((r) => r.id === current) ? current : (usable[0]?.id ?? null),
-      );
+      setAcpRuntimeId((current) => {
+        // The quick scan may contain no login-verified runners. Preserve the
+        // caller's choice until the login scan can resolve it, rather than
+        // replacing it with the first ready runner and stranding the request.
+        const preferred = requestedAcpRuntimeRef.current ?? current;
+        return preferred && usable.some((r) => r.id === preferred) ? preferred : (usable[0]?.id ?? null);
+      });
     };
     void detectAcpRuntimes().then((fast) => {
       apply(fast);
@@ -3006,6 +3015,16 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     v2DatasheetModel,
     selectedOntologyNode?.id ?? null,
   );
+  useLayoutEffect(() => {
+    if (!panelOpen || detailKeyboardTargetRef.current !== panelDatasheetModel?.nodeId) return;
+    // Related-node navigation replaces the inspector and its focused row. Keep
+    // keyboard focus on the new inspector's stable, visible close control.
+    const close = detailCloseButtonRef.current;
+    if (close) {
+      close.focus({ preventScroll: true });
+      detailKeyboardTargetRef.current = null;
+    }
+  }, [panelDatasheetModel?.nodeId, panelOpen]);
   const selectedNodeOwnsRightRail = selectedNodeFocusActive && !meaningWorkbenchOpen && !acpDockFrameOpen;
   /*
    * The connection card stands where the node inspector stands (same right inset, same
@@ -3024,6 +3043,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         ? "compact-focus"
         : "visible";
   const topologyUtilityChromeCompact =
+    reviewUsesSheet ||
     topologyUtilityChromeState === "compact-focus" ||
     topologyUtilityChromeState === "selected-node-inspector" ||
     agentDockRequestedOpen;
@@ -3363,7 +3383,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   useEffect(() => {
     const accept = (runtimeId: string | null, prompt: string | null) => {
       const target = runtimeId ?? acpRuntime?.id ?? null;
-      if (!target) return;
+      requestedAcpRuntimeRef.current = target;
       setAcpRuntimeId(target);
       // Held rather than set now: the panel only exists once the dock opens below, and a request
       // handed to a panel that is not mounted is a request nobody receives.
@@ -3377,8 +3397,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
 
   useEffect(() => {
     if (
-      pendingAgentChatRuntimeId === null ||
-      acpRuntime?.id !== pendingAgentChatRuntimeId ||
+      pendingAgentChatRuntimeId === undefined ||
+      (pendingAgentChatRuntimeId !== null && acpRuntime?.id !== pendingAgentChatRuntimeId) ||
       !agentChatUsesRuntime
     ) {
       return;
@@ -3387,11 +3407,12 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     window.queueMicrotask(() => {
       if (cancelled) return;
       agentDockTouchedRef.current = true;
+      requestedAcpRuntimeRef.current = null;
       openVaultAgent();
       const prompt = pendingAgentChatPromptRef.current;
       pendingAgentChatPromptRef.current = null;
       if (prompt) setAgentOpeningRequest({ text: prompt, nonce: Date.now(), scopeKey: JSON.stringify([gitVaultPath, 'meaning']) });
-      setPendingAgentChatRuntimeId(null);
+      setPendingAgentChatRuntimeId(undefined);
     });
     return () => {
       cancelled = true;
@@ -5779,6 +5800,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                       clusterHint={t('cluster.hint')}
                       realmRootId={resolvedRealmSlug}
                       onEnterRealm={handleEnterRealm}
+                      indexExpanded={renderedIndexState === "expanded"}
                       realmEnterLabel={t('realm.enterAction')}
                       realmEnterTooltip={t('realm.enterTooltip')}
                       realmCaption={realmCaption}
@@ -5844,6 +5866,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               selectedRelationActive ||
               (selectedNodeFocusActive && (!view3d || !nodePopoverDismissed)) ? null : (
                 <TopologyFitControl
+                  mobileObscured={renderedIndexState === "expanded"}
                   density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
                   onFitView={() => {
                     if (view3d) handleClose();
@@ -6225,6 +6248,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             <div className="pointer-events-none grid">
             {panelDatasheetModel ? (
               <OntologyMapDetailPanel
+                closeButtonRef={detailCloseButtonRef}
                 key={panelDatasheetModel.slug}
                 open={panelOpen}
                 onExited={() => {
@@ -6330,6 +6354,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                   sourceBusy: projectSourceLabels?.busy,
                 }}
                 onSelectConnection={(id) => {
+                  detailKeyboardTargetRef.current = document.activeElement?.matches(':focus-visible') ? id : null;
                   setMeaningEditorState(null);
                   handleSelect(id);
                 }}
@@ -6602,6 +6627,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             mandatory. Controlled through `open`/`onOpenChange`; the hotkeys are managed by
             `useTypingShortcuts` above. */}
         <MountedGlobalSearch
+          onSelectionFocus={(keyboard) => { focusMapCanvasWhenReady(undefined, keyboard); }}
           open={!createNodeOpen && ontologySearchOpen}
           onOpenChange={(next) => {
             if (createNodeOpen && next) return;

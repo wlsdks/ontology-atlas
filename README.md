@@ -276,7 +276,8 @@ Five views keep their questions explicit: **Flat** is the normal 2D map and
 **Galaxy** shares its coordinates with a star-like presentation. **Cone** draws
 containment as nested cones, **Strata** separates kind tiers onto planes, and
 **Neural** groups related concepts in three dimensions with lit cell bodies and
-short connections. Every 3D view uses shallow, bounded relation curves shared by
+short connections. Keyboard focus remains visible while following related concepts,
+and Fit provides an explicit overview return on touch screens too. Every 3D view uses shallow, bounded relation curves shared by
 rendering and picking. Changing the view never changes the graph.
 
 ### 4. Gather and read documents in the Library

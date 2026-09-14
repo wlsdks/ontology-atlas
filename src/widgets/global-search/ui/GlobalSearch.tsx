@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Command } from "cmdk";
 import * as Dialog from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -19,6 +19,7 @@ import {
 } from "@/entities/knowledge-graph";
 import { controlClass, HighlightedText } from "@/shared/ui";
 import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match";
+import { focusMapCanvasWhenReady, MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 
 export interface GlobalSearchProps {
   open: boolean;
@@ -33,6 +34,8 @@ export interface GlobalSearchProps {
    */
   projects?: readonly Project[];
   onSelectProject?: (project: Project) => void;
+  /** Inline selection can hand focus to its destination after the dialog releases it. */
+  onSelectionFocus?: (keyboard: boolean) => void;
 }
 
 /**
@@ -55,6 +58,7 @@ export function GlobalSearch({
   onSelectNode,
   projects,
   onSelectProject,
+  onSelectionFocus,
 }: GlobalSearchProps) {
   const t = useTranslations("searchWidgets.globalSearch");
   const kindLabel = useOntologyKindLabel();
@@ -65,13 +69,8 @@ export function GlobalSearch({
   // ref as well, to guarantee it explicitly whichever trigger path opened it (button
   // click or ⌘K shortcut).
   const previousFocusRef = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    if (open) {
-      previousFocusRef.current = document.activeElement as HTMLElement | null;
-    } else {
-      previousFocusRef.current?.focus?.({ preventScroll: true });
-    }
-  }, [open]);
+  const selectedResultRef = useRef(false);
+  const keyboardInteractionRef = useRef(false);
   const [query, setQuery] = useState("");
   // Narrow the ontology results with kind and project filter chips. A set-based
   // multi-select (toggle) model, cleared along with the query on close.
@@ -268,8 +267,22 @@ export function GlobalSearch({
           // to guarantee preventScroll explicitly.
           onOpenAutoFocus={(event) => {
             event.preventDefault();
+            previousFocusRef.current = document.activeElement as HTMLElement | null;
+            selectedResultRef.current = false;
+            keyboardInteractionRef.current = false;
             inputRef.current?.focus({ preventScroll: true });
           }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            // Cancel returns to the opener; choosing a map result continues the
+            // task on the map after Radix has released the modal focus scope.
+            if (selectedResultRef.current && onSelectionFocus) onSelectionFocus(keyboardInteractionRef.current);
+            else if (keyboardInteractionRef.current && previousFocusRef.current?.dataset.surfaceRole === MAP_CANVAS_SURFACE_ROLE) focusMapCanvasWhenReady(undefined, true);
+            else previousFocusRef.current?.focus?.({ preventScroll: true });
+          }}
+          onKeyDownCapture={() => { keyboardInteractionRef.current = true; }}
+          onEscapeKeyDown={() => { keyboardInteractionRef.current = true; }}
+          onPointerDownCapture={() => { keyboardInteractionRef.current = false; }}
           // An outside click closes (the de facto standard for command palettes:
           // Linear · VS Code · Raycast · Spotlight). Radix's `onPointerDownOutside`
           // does not fire here — this `Dialog.Content` is itself a `fixed inset-0` flex
@@ -482,6 +495,7 @@ export function GlobalSearch({
                     key={`ontology:${node.id}`}
                     value={`ontology:${node.id}`}
                     onSelect={() => {
+                      selectedResultRef.current = true;
                       onSelectNode(node);
                       closeAndClear();
                     }}
@@ -532,6 +546,7 @@ export function GlobalSearch({
                   key={`project:${project.slug}`}
                   value={`project:${project.slug}`}
                   onSelect={() => {
+                    selectedResultRef.current = true;
                     onSelectProject(project);
                     closeAndClear();
                   }}

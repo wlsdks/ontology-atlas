@@ -234,6 +234,8 @@ export interface OntologyMapProps {
   realmRootId?: string | null;
   /** S4 — clicking the orbit "expand" button enters the realm at this slug (HomePage does the URL round trip). */
   onEnterRealm?: (slug: string) => void;
+  /** Expanded INDEX covers the map on phones, so its floating controls yield. */
+  indexExpanded?: boolean;
   /** S4 — the orbit button's accessible label (i18n, injected by HomePage). The user-facing wording is "show only this" (show only this; owner decision 2026-07-23) while the internal name stays realm. */
   realmEnterLabel?: string;
   /** S4 — the orbit button's hover microtooltip copy ("look only inside this node" — look only inside this node). */
@@ -665,7 +667,7 @@ export function OntologyMap(props: OntologyMapProps) {
         // with `style.cursor = ""`, an inline default erases itself and falls to
         // `auto` (measured). As a class, the cascade restores `grab` where the inline
         // value was lifted — the reset becomes correct by itself.
-        className="cursor-grab outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+        className="cursor-grab outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)] data-[keyboard-focus=true]:outline-2 data-[keyboard-focus=true]:outline-solid data-[keyboard-focus=true]:-outline-offset-2 data-[keyboard-focus=true]:outline-[color:var(--color-indigo-focus-ring)]"
         style={{
           display: "block",
           width: "100%",
@@ -675,7 +677,11 @@ export function OntologyMap(props: OntologyMapProps) {
           // vertical and the map takes a horizontal drag.
           touchAction: wheelIntent === "page-scroll" ? "pan-y" : "none",
         }}
-        onPointerDown={handlePointerDown}
+        onPointerDown={(event) => {
+          delete event.currentTarget.dataset.keyboardFocus;
+          handlePointerDown(event);
+        }}
+        onBlur={(event) => { delete event.currentTarget.dataset.keyboardFocus; }}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
@@ -692,7 +698,7 @@ export function OntologyMap(props: OntologyMapProps) {
           refreshes the transform every frame). Hidden by default; shown only when the
           focused node has children and sits outside a realm. No radial menu — one
           button. A microtooltip on hover (one plain line). */}
-      {onEnterRealm ? (
+      {onEnterRealm && !detailPanelVisible ? (
         <button
           ref={realmEnterButtonRef}
           type="button"
@@ -721,7 +727,7 @@ export function OntologyMap(props: OntologyMapProps) {
           // transition's protagonist is the control appearing and leaving rather than
           // its hover colour, and leaving it on the default (confirmation, 120ms) puts
           // the jolt back into the fade. The easing keeps the same curve as the map surface.
-          className={controlClass({ shape: "icon", className: "group absolute left-0 top-0 z-40 flex h-7 w-7 rounded-full border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] text-[color:var(--map-indigo-bright)] shadow-[var(--map-panel-shadow)] transition-[opacity,background-color] duration-[var(--motion-fast)] ease-[var(--topology-motion-ease-out)] hover:bg-[color:var(--map-panel-row-hover)]" })}
+          className={controlClass({ shape: "icon", className: `${props.indexExpanded ? "max-md:hidden " : ""}atlas-touch-floor atlas-touch-floor-wide group absolute left-0 top-0 z-40 flex h-7 w-7 rounded-full border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] text-[color:var(--map-indigo-bright)] shadow-[var(--map-panel-shadow)] transition-[opacity,background-color] duration-[var(--motion-fast)] ease-[var(--topology-motion-ease-out)] hover:bg-[color:var(--map-panel-row-hover)]` })}
           style={{ opacity: 0, pointerEvents: "none" }}
         >
           <Orbit size={ICON_SIZE.md} aria-hidden />

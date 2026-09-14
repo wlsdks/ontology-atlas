@@ -48,7 +48,7 @@ const layout = read("app/layout.tsx");
  * does not change when the default flips.
  */
 const DEFAULT_ACCENT = (() => {
-  const m = /export const DEFAULT_ACCENT: Accent = "([a-z]+)"/.exec(prefs);
+  const m = /^(?:export )?const DEFAULT_ACCENT: Accent = "([a-z]+)"/m.exec(prefs);
   expect(m, "appearance-preferences 에서 DEFAULT_ACCENT 를 못 찾는다").not.toBeNull();
   return (m as RegExpExecArray)[1];
 })();

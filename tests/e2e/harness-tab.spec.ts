@@ -393,7 +393,8 @@ test.describe("하네스 탭", () => {
     await page.goto("/ko/architecture/?view=guides");
     const drift = page.getByTestId("harness-drift");
     await expect(drift).toBeVisible({ timeout: 30_000 });
-    await expect(drift).toContainText("어긋남");
+    await expect(drift).toContainText("내용 차이");
+    await expect(page.getByTestId("harness-guides")).toContainText("참고용 2쌍 비교");
 
     await drift.getByText("차이 보기").first().click();
     const diff = page.getByTestId("harness-drift-diff");

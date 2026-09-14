@@ -5736,6 +5736,7 @@ html[data-gateway-stage] {
  * **cover the same token set** (tokens existing only in one = screen breaking only for that color),
  * and if fill ink maintains AA in both palettes.
  */
+[data-accent-preview="ember"],
 :root[data-accent="ember"] {
   --color-indigo-brand: #c14a24;
   --color-indigo-accent: #f0894e;
@@ -5807,4 +5808,13 @@ html[data-gateway-stage] {
 @keyframes map-wait-orbit {
   from { transform: translateZ(0) rotate(0turn); }
   to { transform: translateZ(0) rotate(1turn); }
+}
+
+/* Swatches keep their own palette even when the surrounding app uses the other
+ * accent. These are the existing Indigo values; the rendered palette test
+ * compares them with the actual root palette in both directions. */
+[data-accent-preview="indigo"] {
+  --color-indigo-brand: #5e6ad2;
+  --color-indigo-accent: #7170ff;
+  --color-indigo-a24: rgba(94, 106, 210, 0.24);
 }
