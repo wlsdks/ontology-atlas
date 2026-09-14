@@ -7,13 +7,14 @@ import {
   type DestinationTourId,
 } from "./tour-steps";
 import { destinationTourStatusKey } from "./tour-storage";
-import { DESTINATION_IDS } from "@/shared/config/destinations";
+import { DESTINATION_HREF, DESTINATION_IDS } from "@/shared/config/destinations";
+import { resolveActiveNavDestination } from "@/shared/lib/nav-destination";
 
 const DESTINATIONS = Object.keys(DESTINATION_TOURS) as DestinationTourId[];
 
 /**
- * Every rail destination except the map — missing one means **that screen alone has
- * no guidance.**
+ * Every rail destination except the map has guidance. Compatible section routes keep
+ * their own guidance when they resolve into a current destination.
  *
  * ⚠️ **Changed from a hand-written list to a derivation** (2026-08-20). The expected
  * value used to be a pinned string array. That did signal when a destination was
@@ -21,14 +22,19 @@ const DESTINATIONS = Object.keys(DESTINATION_TOURS) as DestinationTourId[];
  * then reads as "add a line to the list" rather than "write the guidance"** — and the
  * gate defeats itself.
  *
- * It is now derived from `DESTINATION_IDS` (the rail's source of truth) minus the
- * map. Adding a destination makes this check say **there is no guidance**, not that
- * the lists differ.
+ * It is derived from `DESTINATION_IDS` (the rail's source of truth) minus the map,
+ * plus entries such as `docs` that remain in `DESTINATION_HREF` and resolve into a
+ * current destination. Adding a destination makes this check say **there is no
+ * guidance**, while preserving a compatibility section does not erase its guide.
  */
 describe("목적지 안내", () => {
   it("지도를 뺀 모든 레일 목적지가 자기 안내를 갖는다", () => {
     // The map is an eight-step journey with canvas anchors and an interactive click, so `TOUR_STEPS` owns it.
-    const expected = DESTINATION_IDS.filter((id) => id !== "map").slice().sort();
+    const primary = new Set<string>(DESTINATION_IDS);
+    const compatibleSections = Object.entries(DESTINATION_HREF)
+      .filter(([id, href]) => !primary.has(id) && resolveActiveNavDestination(href) !== null)
+      .map(([id]) => id);
+    const expected = [...DESTINATION_IDS.filter((id) => id !== "map"), ...compatibleSections].sort();
     expect(DESTINATIONS.slice().sort()).toEqual(expected);
   });
 

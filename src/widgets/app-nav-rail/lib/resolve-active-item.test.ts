@@ -8,9 +8,9 @@ describe("resolveActiveNavRailItem", () => {
     expect(resolveActiveNavRailItem("/topology/")).toBe("map");
   });
 
-  it("matches /docs to docs", () => {
-    expect(resolveActiveNavRailItem("/docs")).toBe("docs");
-    expect(resolveActiveNavRailItem("/docs/")).toBe("docs");
+  it("folds compatible /docs links into the Library destination", () => {
+    expect(resolveActiveNavRailItem("/docs")).toBe("library");
+    expect(resolveActiveNavRailItem("/docs/")).toBe("library");
   });
 
   it("folds the retired /ontology/edit builder route into the map workbench", () => {
