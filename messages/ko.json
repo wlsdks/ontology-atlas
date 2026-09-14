@@ -4184,7 +4184,18 @@
           "uncomparable": "비교할 수 없음"
         },
         "actionScope": "동작 범위",
-        "allowScope": "한 번 허용은 이 쓰기만 실행합니다."
+        "allowScope": "한 번 허용은 이 쓰기만 실행합니다.",
+        "canonicalPreview": "실제로 저장될 Markdown",
+        "canonicalPreviewNote": "작성기는 형식과 주석을 다시 구성합니다. 의미를 수락하기 전에 전체 저장 내용을 확인하세요.",
+        "previewUnavailable": "정확한 저장 내용을 확인할 수 없습니다. 의미 수락에는 기존 UID와 유효한 단일 문서 변경이 필요합니다.",
+        "decisionSave": {
+          "unsaved": "이 결정은 아직 이력에 저장되지 않았습니다.",
+          "saved": "의미 결정을 저장했습니다. 실행·코드 검사·병합·배포 상태는 별도입니다.",
+          "failed": "의미 결정을 저장하지 못했습니다. 이 폴더를 확인한 뒤 다시 시도하세요."
+        },
+        "terminalSaveFailed": "의미 결정은 보존했지만 최신 실행 결과를 저장하지 못했습니다. 이력에는 아직 미확인 상태로 표시될 수 있습니다.",
+        "noSemanticDelta": "이 요청은 해석된 의미를 바꾸지 않습니다. 의미 결정 기록이 필요하지 않습니다.",
+        "rationale": "이 해석을 수락하는 이유 (선택)"
       },
       "deferredNotice": "이 요청은 이 대화에서 계속 대기 중입니다. 저장되지 않으며 대화를 닫거나 취소하면 거절됩니다.",
       "resumeReview": "검토 다시 열기",
@@ -4606,7 +4617,75 @@
     "findingsEyebrow": "{count, plural, =0 {검토할 질문} other {검토할 질문 #개}}",
     "relationsEyebrow": "연결",
     "fillNotes": "빠진 연결 이유 {count}개 채우기",
-    "relationNotesPrompt": "이 범위에서 이유가 비어 있는 연결마다, 그 연결이 성립하는 까닭을 한 문장으로 `relation_notes`에 적어 주세요. Atlas 도구만 씁니다. 연결마다 두 문서를 get_concepts(body: \"full\")로 읽고, 대상을 나열한 쪽(출발 문서)에 patch_concept(expected_mtime 포함, 다른 키는 그대로)로 제안합니다. 이 폴더가 쓰는 언어로 적고, 'A가 B를 포함한다'처럼 연결을 되풀이하는 문장은 이유가 아닙니다. 문서에 까닭이 없으면 적지 말고 미해결 질문으로 남기세요. `domain:` 되가리킴은 부모의 포함과 같은 연결이므로 부모 문서에만 적고 자식 쪽에는 적지 마세요. 이번 턴에는 최대 {limit}개까지, 끝에 몇 개가 남았는지 말해 주세요."
+    "relationNotesPrompt": "이 범위에서 이유가 비어 있는 연결마다, 그 연결이 성립하는 까닭을 한 문장으로 `relation_notes`에 적어 주세요. Atlas 도구만 씁니다. 연결마다 두 문서를 get_concepts(body: \"full\")로 읽고, 대상을 나열한 쪽(출발 문서)에 patch_concept(expected_mtime 포함, 다른 키는 그대로)로 제안합니다. 이 폴더가 쓰는 언어로 적고, 'A가 B를 포함한다'처럼 연결을 되풀이하는 문장은 이유가 아닙니다. 문서에 까닭이 없으면 적지 말고 미해결 질문으로 남기세요. `domain:` 되가리킴은 부모의 포함과 같은 연결이므로 부모 문서에만 적고 자식 쪽에는 적지 마세요. 이번 턴에는 최대 {limit}개까지, 끝에 몇 개가 남았는지 말해 주세요.",
+    "meaningTransitions": {
+      "title": "의미 판단",
+      "boundary": "바꿀 수 없는 검토 기록입니다. 저장된 바이트는 사람의 신원, 코드 승인, 검사·병합·배포를 증명하지 않습니다.",
+      "openFolder": "온톨로지 폴더를 열면 의미 판단 기록을 볼 수 있습니다.",
+      "unavailable": "의미 판단 기록은 지원되는 컴퓨터의 설치된 앱에서 볼 수 있습니다.",
+      "loading": "의미 판단 기록을 읽고 있습니다…",
+      "empty": "이 폴더에 보관된 의미 판단 기록이 없습니다.",
+      "listLabel": "의미 판단 기록",
+      "selected": "선택한 판단",
+      "action": "의미 판단",
+      "outcome": "의미 쓰기",
+      "reviewEvidence": "검토 결속",
+      "decisionId": "판단 ID",
+      "previous": "이전 기록",
+      "openPrevious": "이전 기록 열기",
+      "previousNotLoaded": "이전 판단을 더 불러오면 열 수 있습니다",
+      "rationale": "기록된 이유",
+      "rationaleMissing": "기록된 이유가 없습니다.",
+      "acceptedGaps": "수락하면서 남긴 빈칸",
+      "remainingQuestions": "남은 질문",
+      "none": "기록 없음",
+      "correlation": "쓰기 연결 근거",
+      "codeChecks": "코드 검사",
+      "merge": "병합",
+      "deployment": "배포",
+      "unknown": "확인할 수 없음",
+      "rows": "쓰기 항목",
+      "git": "소스와 온톨로지 폴더의 Git 관측",
+      "artifacts": "보관한 정확한 바이트",
+      "loadingArtifacts": "보관한 바이트를 읽고 검증하고 있습니다…",
+      "artifactsUnavailable": "보관한 바이트를 읽을 수 없습니다. 이 기록을 쓰기 전에 위 오류를 확인하세요.",
+      "artifactMismatch": "보관한 자료가 기록된 다이제스트와 더는 일치하지 않습니다.",
+      "loadOlder": "이전 판단 더 보기",
+      "problems": "읽지 못한 판단 기록 {count}개",
+      "legacy": "이전 V1 기록",
+      "legacyDetails": "이전 V1 기록 상세",
+      "integrityBoundary": "무결성은 이 바이트를 그대로 다시 읽었다는 뜻입니다. 아래 권한 상태는 서로 분리된 제공 사실입니다.",
+      "phase": {
+        "decision": "판단 기록",
+        "terminal": "쓰기 기록"
+      },
+      "actions": {
+        "accept_meaning": "의미 수락",
+        "reject_meaning": "의미 거절",
+        "defer_meaning": "판단 미룸",
+        "accepted": "수락",
+        "rejected": "거절",
+        "deferred": "미룸",
+        "unknown": "미확인"
+      },
+      "outcomes": {
+        "accepted_unverified": "수락 · 쓰기 미확인",
+        "accepted_partial": "수락 · 일부 쓰기 근거",
+        "accepted_complete": "수락 · 정확한 쓰기 바이트 일치",
+        "rejected": "거절",
+        "deferred": "미룸",
+        "unknown": "미확인"
+      },
+      "artifactRoles": {
+        "before": "판단 전",
+        "preview": "검토한 미리보기",
+        "decision": "판단 결속"
+      },
+      "authority": { "observed": "관측됨", "unavailable": "확인할 수 없음", "unknown": "미확인" },
+      "permission": { "pending": "대기 중", "allowed": "허용", "rejected": "거절", "unknown": "미확인" },
+      "execution": { "completed": "완료", "failed": "실패", "not_run": "실행 안 함", "unknown": "미확인" },
+      "readback": { "matched": "정확한 바이트 일치", "mismatched": "바이트가 다름", "missing": "누락", "unknown": "미확인" }
+    }
   },
   "mcp": {
     "title": "MCP",

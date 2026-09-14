@@ -27,6 +27,10 @@ export interface ProjectSourceInspection {
   truncated: boolean;
   files: string[];
 }
+export interface ProjectSourceContinuityInspection extends ProjectSourceInspection {
+  scope: 'meaning-transition-continuity-v1';
+  exclusions: { target: string | null; archivePrefix: string | null };
+}
 
 type WritableChunk = string | Blob | ArrayBuffer | ArrayBufferView;
 
@@ -272,6 +276,17 @@ export async function inspectTauriProjectSource(
   const invoke = getInvoke();
   if (!invoke) return null;
   return invoke<ProjectSourceInspection>('inspect_project_source', { rootPath });
+}
+
+/** Fixed V4 continuity probe; callers name a vault slug, never arbitrary exclusion paths. */
+export async function inspectTauriProjectSourceContinuity(input: {
+  sourceRoot: string;
+  vaultRoot: string;
+  targetSlug: string;
+}): Promise<ProjectSourceContinuityInspection | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<ProjectSourceContinuityInspection>('inspect_project_source_continuity', input);
 }
 
 class TauriDirectoryHandle {

@@ -26,6 +26,7 @@ const bridge = vi.hoisted(() => {
     notice: null as ((message: string) => void) | null,
     /** stderr diagnostics — the clues to a corrupt npx cache arrive this way (measured). */
     stderr: null as ((line: string) => void) | null,
+    activeSessionId: null as string | null,
   };
   return state;
 });
@@ -79,12 +80,25 @@ import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 /** The agent sends one line. */
 function emit(payload: unknown) {
+  const message = payload && typeof payload === 'object' && !Array.isArray(payload)
+    ? payload as Record<string, unknown> : null;
+  const params = message?.params && typeof message.params === 'object' && !Array.isArray(message.params)
+    ? message.params as Record<string, unknown> : null;
+  if (message?.method === 'session/update' && params
+    && !Object.prototype.hasOwnProperty.call(params, 'sessionId') && bridge.activeSessionId) {
+    bridge.listener?.(JSON.stringify({ ...message, params: { ...params, sessionId: bridge.activeSessionId } }));
+    return;
+  }
   bridge.listener?.(JSON.stringify(payload));
 }
 
 /** Answer the last request we sent with that method. */
 function replyTo(method: string, result: unknown) {
   const call = [...bridge.sent].reverse().find((m) => m.method === method);
+  if ((method === 'session/new' || method === 'session/load') && result && typeof result === 'object'
+    && !Array.isArray(result) && typeof (result as Record<string, unknown>).sessionId === 'string') {
+    bridge.activeSessionId = (result as Record<string, unknown>).sessionId as string;
+  }
   emit({ jsonrpc: '2.0', id: call?.id, result });
 }
 
@@ -165,6 +179,7 @@ afterEach(() => {
   bridge.stderr = null;
   bridge.verdict = 'ask';
   bridge.stopped = [];
+  bridge.activeSessionId = null;
 });
 
 describe('대화 패널 — 일어난 일만 그린다', () => {
@@ -1654,7 +1669,7 @@ describe('대화 패널 — 못 하는 일은 정직하게', () => {
           jsonrpc: '2.0',
           method: 'session/update',
           params: {
-            sessionId: 'sess-1',
+            sessionId: 's-1',
             update: {
               sessionUpdate: 'agent_message_chunk',
               content: { type: 'text', text: `still going ${round}` },
@@ -2060,7 +2075,7 @@ describe('대화 패널 — 오류는 사람의 말로 말하고 다음 할 일�
       jsonrpc: '2.0',
       method: 'session/update',
       params: {
-        sessionId: 'sess-1',
+        sessionId: 's-1',
         update: {
           sessionUpdate: 'agent_message_chunk',
           content: { type: 'text', text: echo },
@@ -2772,6 +2787,7 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
     replyTo('initialize', { protocolVersion: 1 });
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
     replyTo('session/new', { sessionId: 's-1' });
+    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
     emit({
       jsonrpc: '2.0',
       method: 'session/update',
@@ -2807,6 +2823,7 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
     replyTo('initialize', { protocolVersion: 1 });
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
     replyTo('session/new', { sessionId: 's-1' });
+    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
     emit({
       jsonrpc: '2.0',
       method: 'session/update',

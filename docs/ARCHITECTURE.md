@@ -757,3 +757,9 @@ authenticate a human decision, verify a writer or check, or grant Git, merge,
 deployment, ontology-write, or source-repository authority. Existing analysis
 records and ACP execution receipts retain their original authority, and current
 ontology Markdown remains the editable canonical meaning.
+
+The archive accepts both the original `atlas-meaning-transition/v1` record and
+the additive V2 linked snapshot format. V2 publishes an immediate immutable
+meaning-decision snapshot and later appends terminal/readback refinements through
+an exact previous-record digest link; it never edits the earlier record or uses
+timestamps as proof of ordering.

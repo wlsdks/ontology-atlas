@@ -51,3 +51,48 @@ supplied human action, verify referenced checks, grant ontology or Git authority
 or make the immutable archive canonical current meaning. Trusted controller
 binding, actual decision and writer receipts, task-owned diffs, task/history
 navigation and fresh-successor evidence remain required before V4.1 is complete.
+
+## Live snapshot format
+
+`atlas-meaning-transition/v2` is an additive live-integration format; V1 remains
+readable and writable. V2 stores the explicit meaning action separately from the
+snapshot creation time and from ACP execution permission. An accepted meaning
+decision therefore remains accepted when a later write is rejected or does not
+run. Without an explicit meaning action, no V2 transition is created.
+
+The action time and snapshot creation time are distinct facts and may honestly
+share the same observed millisecond; no artificial offset is introduced. The
+first snapshot is an immediate `accepted_unverified`, rejected, or deferred
+decision record. Later terminal/readback snapshots are new immutable records
+linked by the previous event id, creation time, and record digest. The link must
+retain the exact decision id, task identity, proposal, meaning action, and
+structured ACP correlation basis. Source and vault Git observations belong to
+each snapshot and may honestly change after a write; they are immutable within
+that snapshot but are not rewritten into the earlier decision. The chain, rather than wall
+clock ordering, establishes succession; an identical snapshot retry keeps its
+generated identity and bytes.
+
+The initial live writer scope is one exact row. Its three distinct retained
+artifacts are role-bound: the retained-before digest equals the raw guard, the
+preview digest equals the expected persisted digest, and the canonical decision
+artifact digest binds the task, proposal, exact row manifest, decision id,
+explicit action, and retained review evidence. Review evidence is required and
+fail-closed: it either records why the exact basis is unavailable or retains the
+canonical proposal binding (identity, task request, source and meaning basis,
+raw input including its numeric guards, current content digest and binding
+digest) together with the observed source root, kind, id, revision, fingerprint,
+dirty state and source-basis id. The codec recomputes the proposal-binding digest;
+an unavailable or malformed basis cannot produce `accepted_complete`.
+Observed Git repositories carry real repository id/revision/dirty facts;
+unavailable observations carry a reason and never substitute a folder path.
+ACP correlation is observed only for the exact structured MCP approval
+session/request/tool chain. Synthetic elicitation ids remain unavailable.
+
+An all-row completed and byte-matched terminal snapshot may say
+`accepted_complete`; this means the bounded meaning writer/readback completed.
+It requires the exact observed structured MCP correlation and allowed execution;
+synthetic or unavailable correlation can be at most `accepted_partial` even when
+the supplied row bytes match.
+Code checks, merge, deployment and authentication remain separate explicit
+unknowns in this slice, and task-owned source diff remains outside this format's
+current live integration.

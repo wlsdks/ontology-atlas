@@ -295,6 +295,9 @@ The source workbench also offers task-bound ontology review: summary, comparison
 and full request details, with separate meaning acceptance and write permission.
 You can request a correction without losing a draft or defer a live request and
 resume it. Missing or changed comparison evidence stays explicit.
+For supported single-document patches in the installed app, exact Markdown
+previews and saved meaning decisions can be reopened from the existing History
+tab. Writer readback, code checks, merge and deployment remain separate facts.
 [Supported scope and limits](docs/TASK-MEANING-REVIEW.md).
 
 ### 5. Plan against reviewed architecture

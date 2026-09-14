@@ -196,6 +196,7 @@ function workReceipt({
   sessionId,
   runtimeId,
   userRequest,
+  origin,
   decision,
   result,
   at,
@@ -204,12 +205,27 @@ function workReceipt({
   sessionId: string | null;
   runtimeId: string;
   userRequest: string | null;
+  origin: PendingPermission['origin'];
   decision: AcpWorkDecision;
   result: AcpWorkResult;
   at: string;
 }): AcpWorkReceipt {
   const changeSet = buildOntologyChangeSet(request.toolName ?? 'ontology-write', request.rawInput);
   const toolCallId = request.toolCallId ?? `${changeSet.toolName}:${at}`;
+  const explicitOrigin = origin?.turn
+    && origin.turn.vaultRoot
+    && request.sessionId === origin.turn.sessionId
+    && request.requestId !== undefined && request.requestId !== null
+    && request.toolCallId
+      ? {
+          vaultId: origin.turn.vaultRoot,
+          sessionGeneration: origin.sessionGeneration,
+          sessionId: origin.turn.sessionId,
+          userEventId: origin.turn.userEventId,
+          requestId: request.requestId,
+          toolCallId: request.toolCallId,
+        }
+      : null;
   return {
     v: 1,
     id: `${sessionId ?? 'session'}:${toolCallId}`,
@@ -228,7 +244,21 @@ function workReceipt({
         : null,
       fields: item.fields.map((field) => field.key),
     })),
+    ...(explicitOrigin ? { origin: explicitOrigin } : {}),
+    ...(explicitOrigin && request.writerCorrelation ? {
+      writerCorrelation: { ...request.writerCorrelation, terminal: decision === 'allowed' ? 'pending' as const : 'not-observed' as const },
+    } : {}),
   };
+}
+
+function terminalMatchesWriter(update: Record<string, unknown>, receipt: AcpWorkReceipt): boolean {
+  const meta = update._meta && typeof update._meta === 'object' && !Array.isArray(update._meta)
+    ? update._meta as Record<string, unknown> : null;
+  if (meta?.is_mcp_tool_call !== true) return true;
+  const raw = update.rawInput && typeof update.rawInput === 'object' && !Array.isArray(update.rawInput)
+    ? update.rawInput as Record<string, unknown> : null;
+  const correlation = receipt.writerCorrelation;
+  return Boolean(correlation && raw?.server === correlation.server && raw.tool === correlation.tool);
 }
 
 /**
@@ -616,7 +646,8 @@ export function useAcpSession({
   );
 
   const applyUpdate = useCallback(
-    (update: Record<string, unknown>) => {
+    (update: Record<string, unknown>, updateContext: { sessionId: string | null }) => {
+      if (!updateContext.sessionId || updateContext.sessionId !== sessionIdRef.current) return;
       // Any update at all counts as the turn speaking; what it says does not matter here.
       setLastTurnUpdateAt(Date.now());
       const kind = typeof update.sessionUpdate === 'string' ? update.sessionUpdate : '';
@@ -704,7 +735,12 @@ export function useAcpSession({
           TERMINAL_TOOL_STATES.has(nextStatus) &&
           approvedOntologyWriteRef.current?.toolCallId === id
         ) {
-          if (approvedReceipt?.toolCallId === id) {
+          const receiptMatches = approvedReceipt?.toolCallId === id;
+          const originMatches = !approvedReceipt?.receipt.origin
+            || approvedReceipt.receipt.origin.sessionId === updateContext.sessionId;
+          const writerMatches = !approvedReceipt?.receipt.writerCorrelation
+            || terminalMatchesWriter(update, approvedReceipt.receipt);
+          if (approvedReceipt && receiptMatches && originMatches && writerMatches) {
             const result: AcpWorkResult =
               nextStatus === 'completed'
                 ? 'completed'
@@ -715,10 +751,17 @@ export function useAcpSession({
               ...approvedReceipt.receipt,
               updatedAt: new Date().toISOString(),
               result,
+              ...(approvedReceipt.receipt.writerCorrelation ? {
+                writerCorrelation: { ...approvedReceipt.receipt.writerCorrelation, terminal: result as 'completed' | 'failed' | 'cancelled' },
+              } : {}),
             });
             approvedReceiptRef.current = null;
           }
-          setApprovedOntologyWriteTracked(null);
+          // Legacy receipts have no explicit origin/correlation. Their same live session + tool id
+          // still closes the old UI state, but remains unverified because no provenance is added.
+          if (!approvedReceipt || (receiptMatches && originMatches && writerMatches)) {
+            setApprovedOntologyWriteTracked(null);
+          }
         }
       }
     },
@@ -780,6 +823,7 @@ export function useAcpSession({
               sessionId: sessionIdRef.current,
               runtimeId,
               userRequest: latestUserRequestRef.current,
+              origin,
               decision,
               result: decision === 'allowed' ? 'pending' : 'not-run',
               at,
