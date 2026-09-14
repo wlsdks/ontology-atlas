@@ -71,7 +71,18 @@ test.describe("공개 화면 건강 — 좁은 화면과 콘솔", () => {
       });
 
       await page.setViewportSize(PHONE);
-      const response = await page.goto(route, { waitUntil: "domcontentloaded" });
+      const response = await page.goto(
+        route === "/en/docs/" ? "/en/library/?tab=ontology" : route,
+        { waitUntil: "domcontentloaded" },
+      );
+      if (route === "/en/docs/") {
+        await expect(page).toHaveURL(
+          (url) => url.pathname === "/en/library/" && url.searchParams.get("tab") === "ontology",
+        );
+        await expect(
+          page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+        ).toBeVisible();
+      }
       // ⚠️ The previous specs swallowed navigation failures into `console.log` — passing even on a 500.
       expect(response?.ok(), `${route} 를 열지 못했다 (${response?.status()})`).toBe(true);
       await page.waitForTimeout(1_200);

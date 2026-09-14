@@ -55,7 +55,20 @@ test.describe("문서 스크롤 잠금 — 셸이 뷰포트를 소유한다", ()
       test(`${route} @ ${w}×${h} — 문서 스크롤 범위 0`, async ({ page }) => {
         await seedFirstRunSeen(page);
         await page.setViewportSize({ width: w, height: h });
-        await page.goto(route, { waitUntil: "domcontentloaded" });
+        await page.goto(
+          route === "/ko/docs/?guides=off"
+            ? "/ko/library/?tab=ontology&guides=off"
+            : route,
+          { waitUntil: "domcontentloaded" },
+        );
+        if (route === "/ko/docs/?guides=off") {
+          await expect(page).toHaveURL(
+            (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+          );
+          await expect(
+            page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+          ).toBeVisible();
+        }
         // During the gateway's Suspense swap there are briefly two <main> elements — first() just confirms readiness.
         await expect(page.locator("main").first()).toBeVisible({ timeout: 20_000 });
         // Hydration can shift the layout — poll for the settled value.

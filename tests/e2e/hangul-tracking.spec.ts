@@ -79,7 +79,17 @@ test.beforeEach(async ({ page }) => {
 for (const route of KOREAN_ROUTES) {
   test(`한글에는 대문자 자간이 걸리지 않는다 — ${route}`, async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 949 });
-    await page.goto(`${route}?guides=off`);
+    const destination = route === '/ko/docs/' ? '/ko/library/?tab=ontology' : route;
+    await page.goto(`${destination}${destination.includes('?') ? '&' : '?'}guides=off`);
+    if (route === '/ko/docs/') {
+      await expect(page).toHaveURL(
+        (current) =>
+          current.pathname === '/ko/library/' && current.searchParams.get('tab') === 'ontology',
+      );
+      await expect(
+        page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+      ).toBeVisible();
+    }
     await expect(page.locator('body')).toBeVisible();
     /*
      * ⚠️ **The locale reaches `<html>` from a client effect** (`LocaleHtmlLang`), and the override

@@ -118,7 +118,17 @@ test.describe("잠깐 뜨는 표면 3계약", () => {
     const violations: string[] = [];
 
     for (const route of ROUTES) {
-      await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
+      const destination = route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route;
+      const destinationUrl = `${destination}${destination.includes("?") ? "&" : "?"}guides=off`;
+      await page.goto(destinationUrl, { waitUntil: "domcontentloaded" });
+      if (route === "/ko/docs/") {
+        await expect(page).toHaveURL(
+          (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+        );
+        await expect(
+          page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+        ).toBeVisible();
+      }
       await routeSettled(page);
 
       const triggerCount = await page.evaluate(
@@ -144,9 +154,18 @@ test.describe("잠깐 뜨는 표면 3계약", () => {
          * rerender erases; contamination between triggers). That is this file's reason for
          * existing: **when the measuring tool is wrong, neither green nor red is
          * evidence.**
-         */
+        */
         if (index > 0) {
-          await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
+          await page.goto(destinationUrl, { waitUntil: "domcontentloaded" });
+          if (route === "/ko/docs/") {
+            await expect(page).toHaveURL(
+              (url) =>
+                url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+            );
+            await expect(
+              page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+            ).toBeVisible();
+          }
           await routeSettled(page);
         }
         const trigger = await page.evaluate((idx) => {

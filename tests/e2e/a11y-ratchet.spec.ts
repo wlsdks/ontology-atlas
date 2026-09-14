@@ -224,7 +224,18 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
   const emptyBodies: string[] = [];
 
   for (const route of ROUTES) {
-    await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
+    const destination = route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route;
+    await page.goto(`${destination}${destination.includes("?") ? "&" : "?"}guides=off`, {
+      waitUntil: "domcontentloaded",
+    });
+    if (route === "/ko/docs/") {
+      await expect(page).toHaveURL(
+        (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+      );
+      await expect(
+        page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+      ).toBeVisible();
+    }
     // The map's screen is only settled once the physics simulation converges —
     // measuring earlier measures an intermediate state.
     await page.waitForTimeout(2500);

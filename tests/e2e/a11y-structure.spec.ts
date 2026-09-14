@@ -48,7 +48,17 @@ interface Finding {
 }
 
 async function collect(page: Page, url: string, width: string, findings: Finding[]) {
-  await page.goto(url, { waitUntil: "domcontentloaded" });
+  const destination = url === "/en/docs/" ? "/en/library/?tab=ontology" : url;
+  await page.goto(destination, { waitUntil: "domcontentloaded" });
+  if (url === "/en/docs/") {
+    await expect(page).toHaveURL(
+      (current) =>
+        current.pathname === "/en/library/" && current.searchParams.get("tab") === "ontology",
+    );
+    await expect(
+      page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+    ).toBeVisible();
+  }
   await page.waitForTimeout(700);
 
   const info = await page.evaluate(() => {

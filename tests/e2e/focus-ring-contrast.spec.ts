@@ -114,7 +114,18 @@ for (const route of ROUTES) {
     test.setTimeout(120_000);
     await page.setViewportSize({ width: 1512, height: 900 });
     await seedFirstRunSeen(page);
-    await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
+    const destination = route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route;
+    await page.goto(`${destination}${destination.includes("?") ? "&" : "?"}guides=off`, {
+      waitUntil: "domcontentloaded",
+    });
+    if (route === "/ko/docs/") {
+      await expect(page).toHaveURL(
+        (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+      );
+      await expect(
+        page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+      ).toBeVisible();
+    }
     await page.waitForTimeout(900);
     await page.evaluate(KILL_MOTION);
 

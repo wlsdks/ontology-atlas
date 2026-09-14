@@ -155,7 +155,19 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
 
     for (const route of AUDITED_ROUTES) {
       if (route.includes("this-route-does-not-exist")) continue;
-      await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
+      const destination = route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route;
+      await page.goto(`${destination}${destination.includes("?") ? "&" : "?"}guides=off`, {
+        waitUntil: "domcontentloaded",
+      });
+      if (route === "/ko/docs/") {
+        await expect(page).toHaveURL(
+          (current) =>
+            current.pathname === "/ko/library/" && current.searchParams.get("tab") === "ontology",
+        );
+        await expect(
+          page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+        ).toBeVisible();
+      }
       await page.evaluate(() => document.fonts.ready);
       await settleDom(page);
 

@@ -56,7 +56,18 @@ test("접근성 없는 버튼·링크 탐지", async ({ page }) => {
   const scannedPerRoute: string[] = [];
 
   for (const url of ROUTES) {
-    await page.goto(url, { waitUntil: "domcontentloaded" });
+    await page.goto(url === "/en/docs/" ? "/en/library/?tab=ontology" : url, {
+      waitUntil: "domcontentloaded",
+    });
+    if (url === "/en/docs/") {
+      await expect(page).toHaveURL(
+        (current) =>
+          current.pathname === "/en/library/" && current.searchParams.get("tab") === "ontology",
+      );
+      await expect(
+        page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+      ).toBeVisible();
+    }
     /*
      * Wait on **something existing to look at** rather than a fixed delay — 600 ms is a
      * fast machine's number, and on a slow one there was nothing to scan, so the

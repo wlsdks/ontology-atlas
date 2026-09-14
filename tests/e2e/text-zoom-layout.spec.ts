@@ -9,6 +9,16 @@ import {
 import { seedFirstRunSeen } from "./first-run-seed";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
+async function openOntologyAudit(page: import("@playwright/test").Page) {
+  await page.goto("/ko/library/?tab=ontology&guides=off", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(
+    (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+  );
+  await expect(
+    page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+  ).toBeVisible();
+}
+
 /**
  * **The browser's own text-size setting, at 200% — the layout half.**
  *
@@ -39,7 +49,7 @@ test.use({
 test.describe("실제 브라우저 글자 크기 설정 200%", () => {
   test("계측 상태가 진짜다 — rem 미디어 쿼리가 실제로 움직였다", async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 900 });
-    await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
+    await openOntologyAudit(page);
     await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
 
     // Without this, the whole group could silently fall back to the script stand-in's state —
@@ -121,7 +131,7 @@ test.describe("실제 브라우저 글자 크기 설정 200%", () => {
   for (const width of [600, 768] as const) {
     test(`${width}px — 하단 탭 바가 예약한 자리에 실제로 들어간다`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
+      await openOntologyAudit(page);
       await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
       // The bar mounts with the below-`lg` shell rather than with the route, so it is waited
       // for by name — an absent bar would otherwise read as a reserve that fits.

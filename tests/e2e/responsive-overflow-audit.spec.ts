@@ -49,7 +49,15 @@ for (const vp of WIDTHS) {
   for (const route of ROUTES) {
     test(`${vp.label} ${vp.width}px — ${route} 가로 오버플로·겹침 없음`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
-      await page.goto(route);
+      await page.goto(route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route);
+      if (route === "/ko/docs/") {
+        await expect(page).toHaveURL(
+          (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+        );
+        await expect(
+          page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+        ).toBeVisible();
+      }
       // Time for canvases and charts to finish their first layout.
       await page.waitForTimeout(900);
 
@@ -152,7 +160,15 @@ for (const width of [375, 768, 1023, 1024] as const) {
   for (const route of ["/ko/docs/", "/ko/topology/"] as const) {
     test(`${width}px ${route} — 하단 탭바가 아무것도 덮지 않는다`, async ({ page }) => {
       await page.setViewportSize({ width, height: 1024 });
-      await page.goto(route);
+      await page.goto(route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route);
+      if (route === "/ko/docs/") {
+        await expect(page).toHaveURL(
+          (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+        );
+        await expect(
+          page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+        ).toBeVisible();
+      }
       await page.waitForTimeout(900);
 
       const report = await page.evaluate(

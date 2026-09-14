@@ -33,7 +33,18 @@ test("웹의 모든 목적지에서 앱 받기 타일이 같은 자리에 있다
   const positions: number[] = [];
 
   for (const surface of WEB_SURFACES) {
-    await page.goto(`${surface}?guides=off`, { waitUntil: "networkidle" });
+    const destination = surface === "/ko/docs/" ? "/ko/library/?tab=ontology" : surface;
+    await page.goto(`${destination}${destination.includes("?") ? "&" : "?"}guides=off`, {
+      waitUntil: "networkidle",
+    });
+    if (surface === "/ko/docs/") {
+      await expect(page).toHaveURL(
+        (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+      );
+      await expect(
+        page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+      ).toBeVisible();
+    }
 
     const tile = page.getByTestId("app-nav-rail-get-app");
     await expect(tile, `${surface}: 타일이 없다`).toBeVisible({ timeout: 15_000 });

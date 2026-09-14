@@ -127,8 +127,17 @@ test("한국어 문장이 단어 중간에서 끊기지 않는다", async ({ pag
     // Appending `?guides=off` verbatim to a route that already has a query (`?slug=`)
     // produces `?…?…` and breaks the slug — the separator is chosen from the route's
     // shape.
-    const separator = route.includes("?") ? "&" : "?";
-    await page.goto(`${route}${separator}guides=off`, { waitUntil: "domcontentloaded" });
+    const destination = route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route;
+    const separator = destination.includes("?") ? "&" : "?";
+    await page.goto(`${destination}${separator}guides=off`, { waitUntil: "domcontentloaded" });
+    if (route === "/ko/docs/") {
+      await expect(page).toHaveURL(
+        (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+      );
+      await expect(
+        page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+      ).toBeVisible();
+    }
     await page.waitForTimeout(1_800);
     const result = await scan(page);
     wrappedTotal += result.wrappedTexts;

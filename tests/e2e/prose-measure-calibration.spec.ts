@@ -11,6 +11,16 @@ import {
 
 import { seedFirstRunSeen } from './first-run-seed';
 
+async function openOntologyAudit(page: import('@playwright/test').Page) {
+  await page.goto('/en/library/?tab=ontology&guides=off', { waitUntil: 'domcontentloaded' });
+  await expect(page).toHaveURL(
+    (url) => url.pathname === '/en/library/' && url.searchParams.get('tab') === 'ontology',
+  );
+  await expect(
+    page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+  ).toBeVisible();
+}
+
 /**
  * **`--measure-prose` must be worth the sentence written next to it.**
  *
@@ -269,7 +279,7 @@ test.beforeEach(async ({ page }) => {
 
 test('the prose measure buys 80-92 characters per line in the shipped font', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 949 });
-  await page.goto('/en/docs/?guides=off');
+  await openOntologyAudit(page);
   await expect(page.locator('body')).toBeVisible();
   await assertShippedFontIsRendering(page);
 
@@ -304,7 +314,7 @@ test('the prose measure buys 80-92 characters per line in the shipped font', asy
 
 test('the docs and Library body applies the measure inside its column', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 949 });
-  await page.goto('/en/docs/?guides=off');
+  await openOntologyAudit(page);
   await expect(page.locator('[data-docs-viewer]').first()).toBeVisible();
   await assertShippedFontIsRendering(page);
 
@@ -386,7 +396,7 @@ test('the derived column, the measured advance and the JS mirror all still agree
   page,
 }) => {
   await page.setViewportSize({ width: 1512, height: 949 });
-  await page.goto('/en/docs/?guides=off');
+  await openOntologyAudit(page);
   await expect(page.locator('body')).toBeVisible();
   await assertShippedFontIsRendering(page);
 
@@ -477,7 +487,7 @@ test('instrument probe — a planted wider measure reads out of band and the shi
   page,
 }) => {
   await page.setViewportSize({ width: 1512, height: 949 });
-  await page.goto('/en/docs/?guides=off');
+  await openOntologyAudit(page);
   await expect(page.locator('body')).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
 

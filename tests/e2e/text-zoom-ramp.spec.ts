@@ -12,6 +12,16 @@ import {
   docColumnPxAtRoot,
 } from "../../src/shared/ui/reading-measure";
 
+async function openOntologyAudit(page: import("@playwright/test").Page) {
+  await page.goto("/ko/library/?tab=ontology&guides=off", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(
+    (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+  );
+  await expect(
+    page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+  ).toBeVisible();
+}
+
 /**
  * **Does the browser's text-only zoom reach the type?**
  *
@@ -154,7 +164,7 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     page,
   }) => {
     await page.setViewportSize({ width: 1512, height: 900 });
-    await page.goto("/ko/docs/", { waitUntil: "domcontentloaded" });
+    await openOntologyAudit(page);
     await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
 
     const steps = RAMP.map((entry) => entry.step);
@@ -193,7 +203,7 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     page,
   }) => {
     await page.setViewportSize({ width: 1512, height: 900 });
-    await page.goto("/ko/docs/", { waitUntil: "domcontentloaded" });
+    await openOntologyAudit(page);
     await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
 
     // The probe above would report "doubled" for any ramp that happens to be root-relative,
@@ -219,7 +229,7 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     page,
   }) => {
     await page.setViewportSize({ width: 1512, height: 900 });
-    await page.goto("/ko/docs/", { waitUntil: "domcontentloaded" });
+    await openOntologyAudit(page);
     await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
 
     const readColumn = async () => {
@@ -295,7 +305,7 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
 
   test("잘린 글자 탐지기가 실제로 문다 — 심어 넣은 절단을 찾아낸다", async ({ page }) => {
     await page.setViewportSize({ width: 1040, height: 900 });
-    await page.goto("/ko/docs/", { waitUntil: "domcontentloaded" });
+    await openOntologyAudit(page);
     await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
 
     // Every route above reports zero, and an instrument that reports zero because it looks at
@@ -334,7 +344,7 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
 
   test("실제 문서 본문이 200% 에서 두 배로 읽힌다 — 프로브가 아니라 화면에서", async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 900 });
-    await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
+    await openOntologyAudit(page);
     await expect(page.locator("[data-docs-viewer]").first()).toBeVisible({ timeout: 30_000 });
 
     // The probes above build their own elements. This reads a paragraph the page rendered and
@@ -376,4 +386,3 @@ test.describe("브라우저 «글자만 확대»가 타입 램프에 닿는다",
     expect(after!.textWidth).toBeGreaterThan(before!.textWidth);
   });
 });
-

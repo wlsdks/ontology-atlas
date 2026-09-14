@@ -535,7 +535,19 @@ test.describe("최소 타깃 계약 (pointer: fine — WCAG 2.5.8 AA)", () => {
     "/ko/ontology/insights/?tab=unmatched&guides=off",
   ]) {
     test(`${route} 의 타깃이 24×24 미달이면 인라인 면제·간격 예외 중 하나를 증명해야 한다`, async ({ page }) => {
-      await page.goto(route);
+      await page.goto(
+        route === "/ko/docs/?guides=off"
+          ? "/ko/library/?tab=ontology&guides=off"
+          : route,
+      );
+      if (route === "/ko/docs/?guides=off") {
+        await expect(page).toHaveURL(
+          (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+        );
+        await expect(
+          page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+        ).toBeVisible();
+      }
       await page.waitForLoadState("networkidle");
       const { scanned, failures } = (await page.evaluate(AUDIT_258)) as Audit258Result;
       // Idling guard — catching no targets means the selector is dead, not that the screen is perfect.

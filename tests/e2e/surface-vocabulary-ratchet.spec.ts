@@ -159,7 +159,16 @@ test("표면 조합이 늘지 않는다", async ({ page }) => {
   const census: unknown[] = [];
 
   for (const route of ROUTES) {
-    await page.goto(`${route}?guides=off`);
+    const destination = route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route;
+    await page.goto(`${destination}${destination.includes("?") ? "&" : "?"}guides=off`);
+    if (route === "/ko/docs/") {
+      await expect(page).toHaveURL(
+        (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+      );
+      await expect(
+        page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+      ).toBeVisible();
+    }
     await page.waitForTimeout(900);
     await page.evaluate(() => document.fonts.ready);
     const found = await page.evaluate(collectSurfaceVocabulary);

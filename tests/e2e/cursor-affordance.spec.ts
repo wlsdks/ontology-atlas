@@ -63,7 +63,18 @@ for (const route of AUDITED_ROUTES) {
   test(`커서 어포던스 — ${route} 의 활성 컨트롤은 전부 pointer`, async ({ page }) => {
     await seedFirstRunSeen(page);
     await page.setViewportSize(VIEWPORT);
-    await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
+    const destination = route === "/ko/docs/" ? "/ko/library/?tab=ontology" : route;
+    await page.goto(`${destination}${destination.includes("?") ? "&" : "?"}guides=off`, {
+      waitUntil: "domcontentloaded",
+    });
+    if (route === "/ko/docs/") {
+      await expect(page).toHaveURL(
+        (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+      );
+      await expect(
+        page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+      ).toBeVisible();
+    }
     await page.waitForSelector("main", { timeout: 20_000 });
     await page.waitForTimeout(900);
 
