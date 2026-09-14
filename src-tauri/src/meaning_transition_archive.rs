@@ -972,6 +972,7 @@ fn read_confined(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
     fn fixture() -> (
         std::path::PathBuf,
         String,
@@ -993,10 +994,12 @@ mod tests {
         let artifact = MeaningTransitionArtifactInput { digest, content };
         (root, name, body, artifact)
     }
+    #[cfg(unix)]
     fn identity(root: &std::path::Path) -> MeaningTransitionRootIdentity {
         observe_meaning_transition_root(root.to_string_lossy().into_owned()).unwrap()
     }
 
+    #[cfg(unix)]
     #[test]
     fn bundle_is_artifact_first_record_last_and_idempotent() {
         let (root, name, body, artifact) = fixture();
@@ -1036,6 +1039,7 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
 
+    #[cfg(unix)]
     #[test]
     fn conflicting_record_and_bad_artifact_preserve_published_bytes() {
         let (root, name, body, artifact) = fixture();
@@ -1069,6 +1073,7 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
 
+    #[cfg(unix)]
     #[test]
     fn invalid_names_oversize_and_malformed_history_are_fail_visible() {
         let (root, name, body, artifact) = fixture();
@@ -1105,6 +1110,7 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
 
+    #[cfg(unix)]
     #[test]
     fn interruption_before_record_leaves_no_visible_transition() {
         let (root, name, body, artifact) = fixture();
@@ -1133,6 +1139,7 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
 
+    #[cfg(unix)]
     #[test]
     fn mutated_artifact_blocks_record_publication() {
         let (root, name, body, artifact) = fixture();
@@ -1229,6 +1236,53 @@ mod tests {
         });
         assert!(result.is_err());
         assert_eq!(fs::read_dir(root.join(DIRECTORY)).unwrap().count(), 1);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[cfg(not(unix))]
+    #[test]
+    fn unsupported_platform_refuses_every_archive_entrypoint_without_creating_files() {
+        let root = std::env::temp_dir().join(format!(
+            "atlas-transition-unsupported-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&root).unwrap();
+        let path = root.to_string_lossy().into_owned();
+        let expected = MeaningTransitionRootIdentity {
+            canonical_path: fs::canonicalize(&root)
+                .unwrap()
+                .to_string_lossy()
+                .into_owned(),
+        };
+        let id = "95f4ba81-41f7-483b-a617-2a4be815be32";
+        let name = format!("2026-09-14T08-00-00-000Z-{id}.md");
+        let content = "proposal bytes".to_string();
+        let digest = format!("sha256:{}", digest_hex(content.as_bytes()));
+        let body = format!("---\nschema: \"atlas-meaning-transition/v1\"\nevent_id: \"{id}\"\ncreated_at: \"2026-09-14T08:00:00.000Z\"\nproposal: {{\"artifact\":{{\"contentDigest\":\"{digest}\"}}}}\ncodeEvidence: {{\"diffArtifact\":null}}\n---\n## Remaining questions\n\nNone recorded.\n");
+        let artifact = || MeaningTransitionArtifactInput {
+            digest: digest.clone(),
+            content: content.clone(),
+        };
+
+        assert!(observe_meaning_transition_root(path.clone()).is_err());
+        assert!(append_meaning_transition_bundle(
+            path.clone(),
+            expected.clone(),
+            name.clone(),
+            body,
+            vec![artifact()]
+        )
+        .is_err());
+        assert!(read_meaning_transition_record_text(path.clone(), expected.clone(), name).is_err());
+        assert!(
+            read_meaning_transition_artifact_text(path.clone(), expected.clone(), digest).is_err()
+        );
+        assert!(list_meaning_transition_history(path, expected, 0, 10).is_err());
+        assert!(!root.join(".ontology-atlas").exists());
         fs::remove_dir_all(root).unwrap();
     }
 }
