@@ -112,7 +112,7 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
    * point: a strip that fits at 1440 is not the strip a phone gets, and the earlier gate's
    * blind spot was exactly a control that only exists narrow.
    */
-  test("인사이트 탭 줄이 좁은 화면에서도 44px 높이를 갖는다", async ({ page }) => {
+  test("인사이트 탭 줄이 좁은 화면에서도 44px 연결 경계를 유지한다", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await seedFirstRunSeen(page);
     await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
@@ -135,46 +135,78 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
             };
           })
           .filter((tab) => tab.h < min),
-        wrapped: tabs.filter((tab) => {
-          const rect = tab.getBoundingClientRect();
-          return rect.height / Number.parseFloat(getComputedStyle(tab).lineHeight) > 3.5;
-        }).length,
+        wrapped: tabs
+          .filter((tab) => {
+            if (getComputedStyle(tab).whiteSpace !== "nowrap") return true;
+            return [...tab.children].some((child) => {
+              const range = document.createRange();
+              range.selectNodeContents(child);
+              return range.getClientRects().length > 1;
+            });
+          })
+          .map((tab) => (tab.textContent ?? "").trim().slice(0, 16)),
         pageScrollsSideways:
           document.documentElement.scrollWidth > document.documentElement.clientWidth,
         /*
-         * ⚠️ **The finger floor grows the box, and the underline rides its bottom edge.**
-         * With the label aligned to the top of a 44px tab the active underline — the only
-         * marker of which tab is selected — stood 26px below its own word, more than twice
-         * the 10px it keeps on a mouse and further than the label is tall. Height alone
-         * passed that screen, so the distance is measured with it: it must stay the tab's
-         * own `padding-bottom`.
+         * The connected-tab revision moved the indigo cue from a bottom underline to the
+         * selected tab's top edge. The geometry contract is now the whole selected shape:
+         * one tab attached to the shared bottom boundary, a thicker distinct top cue,
+         * visible side boundaries, top-only rounding, and label ink contained by the box.
+         * Height alone cannot distinguish that from an unbounded filled rectangle.
          */
-        detachedUnderline: tabs
+        selectedGeometry: tabs
+          .filter((tab) => tab.getAttribute("aria-selected") === "true")
           .map((tab) => {
             const rect = tab.getBoundingClientRect();
             const style = getComputedStyle(tab);
-            const range = document.createRange();
-            range.selectNodeContents(tab);
-            const ink = range.getBoundingClientRect();
-            const gap =
-              rect.bottom - Number.parseFloat(style.borderBottomWidth) - ink.bottom;
+            const stripRect = element.getBoundingClientRect();
+            const label = tab.querySelector(":scope > span");
+            const labelRect = label?.getBoundingClientRect();
+            const px = (value: string) => Number.parseFloat(value) || 0;
+            const transparent = (value: string) =>
+              value === "transparent" || value === "rgba(0, 0, 0, 0)";
+            const topWidth = px(style.borderTopWidth);
+            const sideWidth = Math.max(px(style.borderLeftWidth), px(style.borderRightWidth));
             return {
               id: (tab.textContent ?? "").trim().slice(0, 16),
-              gap: Math.round(gap),
-              pad: Math.round(Number.parseFloat(style.paddingBottom)),
+              attached: Math.abs(Math.round(rect.bottom) - Math.round(stripRect.bottom)) <= 1,
+              topCue:
+                topWidth > sideWidth &&
+                !transparent(style.borderTopColor) &&
+                style.borderTopColor !== style.borderLeftColor,
+              boundedSides:
+                px(style.borderLeftWidth) >= 1 &&
+                px(style.borderRightWidth) >= 1 &&
+                !transparent(style.borderLeftColor) &&
+                !transparent(style.borderRightColor),
+              topRounded:
+                px(style.borderTopLeftRadius) > 0 && px(style.borderTopRightRadius) > 0,
+              bottomSquare:
+                px(style.borderBottomLeftRadius) === 0 && px(style.borderBottomRightRadius) === 0,
+              labelContained:
+                labelRect !== undefined &&
+                labelRect.top >= rect.top + topWidth &&
+                labelRect.bottom <= rect.bottom - px(style.borderBottomWidth),
             };
-          })
-          .filter((tab) => tab.gap > tab.pad + 1),
+          }),
       };
     }, MIN);
 
     expect(measured.scanned, "탭을 충분히 재지 못했다").toBeGreaterThan(4);
+    expect(measured.selectedGeometry, "선택된 탭은 하나여야 한다").toHaveLength(1);
     expect(
-      measured.detachedUnderline,
-      `밑줄이 라벨에서 떨어졌다: ${JSON.stringify(measured.detachedUnderline)}`,
-    ).toEqual([]);
+      measured.selectedGeometry[0],
+      `선택 탭의 연결된 경계가 무너졌다: ${JSON.stringify(measured.selectedGeometry[0])}`,
+    ).toMatchObject({
+      attached: true,
+      topCue: true,
+      boundedSides: true,
+      topRounded: true,
+      bottomSquare: true,
+      labelContained: true,
+    });
     expect(measured.short, `44px 미만 탭: ${JSON.stringify(measured.short)}`).toEqual([]);
-    expect(measured.wrapped, "탭 라벨이 줄바꿈했다 — 밑줄이 한 탭 아래에 있지 않다").toBe(0);
+    expect(measured.wrapped, `탭 라벨이 줄바꿈했다: ${JSON.stringify(measured.wrapped)}`).toEqual([]);
     expect(measured.pageScrollsSideways, "탭 줄이 페이지를 가로로 밀었다").toBe(false);
   });
 
