@@ -84,12 +84,6 @@ export const SOURCE_STRING_LANGUAGE_ALLOWLIST = Object.freeze([
     allow: /\b(?:includes|startsWith|endsWith|test|some|every)\(|[=!]==/,
   }),
   Object.freeze({
-    id: 'desktop-smoke-korean-titles',
-    path: 'scripts/desktop-smoke.mjs',
-    why: 'The expected `<title>` of each Korean route — the same expected-UI data, keyed by locale.',
-    allow: /^\s*"ko:\/[^"]*":\s*".+ · Ontology Atlas",$/,
-  }),
-  Object.freeze({
     id: 'benchmark-korean-prompts',
     path: 'scripts/benchmark.mjs',
     why:

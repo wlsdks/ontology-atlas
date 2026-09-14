@@ -11,6 +11,8 @@ import {
   DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
   DESKTOP_SMOKE_ROUTE_TEXT_KEYS,
   DESKTOP_SMOKE_ROUTE_TITLES,
+  DESKTOP_SMOKE_ROUTE_TITLE_KEYS,
+  resolveRouteTitles,
   evaluateDesktopSmoke,
   resolveRouteText,
 } from "./desktop-smoke.mjs";
@@ -88,25 +90,31 @@ test("desktop smoke inventory covers the current packaged workbench", () => {
   ]);
 });
 
-test("desktop smoke titles follow current metadata and do not revive retired surfaces", () => {
-  assert.deepEqual(DESKTOP_SMOKE_ROUTE_TITLES, {
-    "en:/download": "Download · Ontology Atlas",
-    "ko:/download": "다운로드 · Ontology Atlas",
-    "en:/docs": "Docs · Ontology Atlas",
-    "ko:/docs": "문서함 · Ontology Atlas",
-    "en:/ontology": "Ontology · Ontology Atlas",
-    "ko:/ontology": "온톨로지 · Ontology Atlas",
-    "en:/topology": "Map · Ontology Atlas",
-    "ko:/topology": "지도 · Ontology Atlas",
-    "en:/ontology/insights": "Insights · Ontology Atlas",
-    "ko:/ontology/insights": "분석 · Ontology Atlas",
-  });
-  assert.equal(
-    Object.values(DESKTOP_SMOKE_ROUTE_TITLES).some((title) =>
-      /Edit Relations|관계 편집|Verify Graph|그래프 검증/.test(title),
-    ),
-    false,
-  );
+test("desktop smoke titles derive current route metadata for every locale", () => {
+  assert.equal(Object.keys(DESKTOP_SMOKE_ROUTE_TITLES).length, 10);
+  assert.equal(DESKTOP_SMOKE_ROUTE_TITLE_KEYS["/ontology/edit"], undefined);
+  for (const locale of DESKTOP_SMOKE_LOCALES) {
+    const { metadata } = JSON.parse(fs.readFileSync(`messages/${locale}.json`, "utf8"));
+    for (const [route, key] of Object.entries(DESKTOP_SMOKE_ROUTE_TITLE_KEYS)) {
+      assert.equal(DESKTOP_SMOKE_ROUTE_TITLES[`${locale}:${route}`], `${metadata.pages[key]} · ${metadata.siteName}`);
+    }
+  }
+});
+
+test("desktop title expectations follow a changed catalogue and reject missing metadata", () => {
+  const root = makeOutDir();
+  try {
+    const messages = JSON.parse(fs.readFileSync("messages/en.json", "utf8"));
+    messages.metadata.pages.docs = "Renamed fixture collection";
+    write(root, "messages/en.json", JSON.stringify(messages));
+    assert.equal(resolveRouteTitles({ root, locales: ["en"] })["en:/docs"], `Renamed fixture collection · ${messages.metadata.siteName}`);
+    delete messages.metadata.pages.docs;
+    write(root, "messages/en.json", JSON.stringify(messages));
+    assert.throws(() => resolveRouteTitles({ root, locales: ["en"] }), /en:\/docs.*metadata.pages.docs/);
+    assert.throws(() => resolveRouteTitles({ root, locales: [] }), /at least one locale/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 /**

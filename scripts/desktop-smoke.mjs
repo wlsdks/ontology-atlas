@@ -34,18 +34,33 @@ export const DESKTOP_SMOKE_DOCS = [
  * redirect to the map workbench and inherits the app title for the few milliseconds
  * before navigation. Its destination is proved through the chunk contract.
  */
-export const DESKTOP_SMOKE_ROUTE_TITLES = {
-  "en:/download": "Download · Ontology Atlas",
-  "ko:/download": "다운로드 · Ontology Atlas",
-  "en:/docs": "Docs · Ontology Atlas",
-  "ko:/docs": "문서함 · Ontology Atlas",
-  "en:/ontology": "Ontology · Ontology Atlas",
-  "ko:/ontology": "온톨로지 · Ontology Atlas",
-  "en:/topology": "Map · Ontology Atlas",
-  "ko:/topology": "지도 · Ontology Atlas",
-  "en:/ontology/insights": "Insights · Ontology Atlas",
-  "ko:/ontology/insights": "분석 · Ontology Atlas",
+export const DESKTOP_SMOKE_ROUTE_TITLE_KEYS = {
+  "/download": "download",
+  "/docs": "docs",
+  "/ontology": "ontology",
+  "/topology": "topology",
+  "/ontology/insights": "ontologyInsights",
 };
+
+// Route pages read metadata.pages; the locale layout supplies metadata.siteName.
+// Derive expected output from those same sources so renamed pages cannot leave
+// a release-only gate demanding yesterday's title.
+export function resolveRouteTitles({ root = process.cwd(), locales = DESKTOP_SMOKE_LOCALES } = {}) {
+  if (locales.length === 0) throw new Error("Desktop title inventory requires at least one locale");
+  return Object.fromEntries(locales.flatMap((locale) => {
+    const { metadata } = JSON.parse(fs.readFileSync(path.join(root, "messages", `${locale}.json`), "utf8"));
+    return Object.entries(DESKTOP_SMOKE_ROUTE_TITLE_KEYS).map(([route, key]) => {
+      const title = metadata?.pages?.[key];
+      const siteName = metadata?.siteName;
+      if (typeof title !== "string" || !title.trim() || typeof siteName !== "string" || !siteName.trim()) {
+        throw new Error(`Missing route metadata for ${locale}:${route} (metadata.pages.${key}, metadata.siteName)`);
+      }
+      return [`${locale}:${route}`, `${title} · ${siteName}`];
+    });
+  }));
+}
+
+export const DESKTOP_SMOKE_ROUTE_TITLES = resolveRouteTitles();
 
 /**
  * Server-rendered copy is required only where it is itself the static product
