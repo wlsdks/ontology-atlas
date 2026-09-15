@@ -27,6 +27,8 @@ const ATLAS_READ_TOOLS = new Set([
   'analyze_repo_structure',
   'infer_imports',
   'index_project',
+  'list_constellations',
+  'get_constellation',
 ]);
 
 export type AtlasToolMode = 'read' | 'write';
