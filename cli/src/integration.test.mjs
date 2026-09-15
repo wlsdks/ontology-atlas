@@ -48,6 +48,11 @@ const CLI_COMMAND_METADATA = parseCliCommandMetadataFromDescription(CLI_PKG.desc
 const MCP_TOOL_METADATA = parseMcpToolMetadataFromDescription(MCP_PKG.description);
 const EXPECTED_TOOL_COUNT = MCP_TOOL_METADATA?.toolCount;
 const EXPECTED_TOOL_SPLIT_RE = MCP_TOOL_METADATA?.splitPattern;
+const CONSTELLATION_FIXTURE = resolve(
+  __dirname,
+  '../../tests/contract/fixtures/library-collections/constellations-v1.json',
+);
+const CONSTELLATION_ID = '33333333-3333-4333-8333-333333333333';
 
 assert.ok(CLI_COMMAND_METADATA, 'cli/package.json description must include the current command count');
 assert.ok(MCP_TOOL_METADATA, 'mcp/package.json description must include the current tool count and split');
@@ -95,6 +100,45 @@ function withVault(seed = []) {
     writeFileSync(full, withFixtureUid(content), 'utf-8');
   }
   return root;
+}
+
+function makeConstellationVault() {
+  const vault = withVault([
+    {
+      slug: 'capabilities/current-member',
+      content: `---
+uid: aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
+kind: capability
+title: Current member
+path: mcp/src/index.js
+depends_on:
+  - capabilities/merged-member
+---
+
+Current source-backed evidence.
+`,
+    },
+    {
+      slug: 'capabilities/merged-member',
+      content: `---
+uid: 12121212-1212-4212-8212-121212121212
+merged_uids:
+  - bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb
+kind: capability
+title: Merged member
+---
+
+Current node for the saved merged identity.
+`,
+    },
+  ]);
+  mkdirSync(join(vault, '.ontology-atlas'));
+  writeFileSync(
+    join(vault, '.ontology-atlas/library-collections.json'),
+    readFileSync(CONSTELLATION_FIXTURE, 'utf8'),
+    'utf8',
+  );
+  return vault;
 }
 
 let passed = 0;
@@ -10165,6 +10209,49 @@ await test('bootstrap --reapply — explicit reapply flag cannot bypass semantic
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('constellations — public CLI wrappers recover a saved ID through the source MCP', async () => {
+  const vault = makeConstellationVault();
+  try {
+    const listed = await run(['constellations', vault, '--limit', '1', '--json']);
+    assert.equal(listed.code, 0, listed.stderr);
+    const listResult = JSON.parse(listed.stdout);
+    assert.equal(listResult.contract, 'savedConstellationList:v1');
+    assert.equal(listResult.constellations[0].id, CONSTELLATION_ID);
+    assert.equal(listResult.pagination.hasMore, true);
+
+    const focused = await run([
+      'constellation', CONSTELLATION_ID, vault,
+      '--limit', '2', '--relation-limit', '1', '--dependency-limit', '1', '--json',
+    ]);
+    assert.equal(focused.code, 0, focused.stderr);
+    const context = JSON.parse(focused.stdout);
+    assert.equal(context.contract, 'savedConstellationContext:v1');
+    assert.deepEqual(
+      context.current.resolvedMembers.map((member) => member.identityResolution),
+      ['current', 'merged'],
+    );
+    assert.equal(context.selection.pagination.hasMore, true);
+    assert.equal(context.coverage.transitiveImpactChecked, false);
+    assert.equal(context.coverage.meaningAcceptanceInferred, false);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+  }
+});
+
+await test('constellations — corrupt sidecar is unavailable and remains byte-identical', async () => {
+  const vault = makeConstellationVault();
+  const sidecar = join(vault, '.ontology-atlas/library-collections.json');
+  try {
+    writeFileSync(sidecar, '{oops', 'utf8');
+    const result = await run(['constellations', vault, '--json']);
+    assert.equal(result.code, 1, result.stderr);
+    assert.equal(JSON.parse(result.stdout).availability, 'unavailable');
+    assert.equal(readFileSync(sidecar, 'utf8'), '{oops');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
   }
 });
 
