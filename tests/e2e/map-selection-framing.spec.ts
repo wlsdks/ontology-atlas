@@ -95,8 +95,133 @@ test("auto-arrange while everything is expanded keeps every node on screen", asy
   await page.keyboard.press("0");
   await waitForMapStill(page);
   expect((await readMap(page)).offscreen).toBe(0);
-  // (Selecting a node ends expand-all by design, so the panel-close return is
-  // covered by `map-viewport-reframe.spec.ts` in the plain state instead.)
+  // Flat still ends expand-all on selection; Galaxy's different overview
+  // contract is covered below.
+});
+
+test("Galaxy inspection approaches the star, returns context, and yields to later camera input", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.locator('[data-testid="topology-view-3d"]').click();
+  await page.locator('[data-testid="topology-view-3d-choice-galaxy"]').click();
+  await expect(page.locator('[data-testid="topology-view-3d"]')).toHaveText(/Galaxy|갤럭시/);
+  // Galaxy is the complete ontology sky. It exposes every real concept on
+  // entry and omits Flat's expand control because that action would be inert.
+  await expect.poll(async () => (await readMap(page)).visible, { timeout: 20_000 }).toBeGreaterThan(100);
+  await expect(page.locator('[data-testid="topology-expand-all"]')).toHaveCount(0);
+  // Match the overview journey under test: INDEX is open before inspection and
+  // returns after the datasheet yields the left slot.
+  if (!(await page.locator('[data-testid="topology-index-panel"]').isVisible())) {
+    await page.locator('[data-testid="topology-index-tab"]').click();
+    await expect(page.locator('[data-testid="topology-index-panel"]')).toBeVisible();
+  }
+  await page.getByTestId("topology-fit-control").getByRole("button").click();
+  await waitForMapStill(page);
+
+  const fitted = await page.evaluate(() => ({
+    camera: window.__atlasMap?.camera() ?? null,
+    visible: window.__atlasMap?.nodes().filter((node) => !node.hidden).length ?? 0,
+    target:
+      window.__atlasMap
+        ?.nodes()
+        .filter((node) => !node.hidden && node.y > 100 && node.y < 740)
+        .sort((a, b) => b.x - a.x)[0] ?? null,
+  }));
+  expect(fitted.camera).not.toBeNull();
+  expect(fitted.target).not.toBeNull();
+
+  const canvas = (await page.locator('[data-testid="ontology-map-canvas"]').boundingBox())!;
+  await page.mouse.move(canvas.x + fitted.target!.x, canvas.y + fitted.target!.y);
+  await page.mouse.wheel(0, -80);
+  await waitForMapStill(page, { what: "camera" });
+  const zoomed = await page.evaluate((targetId) => ({
+    camera: window.__atlasMap?.camera() ?? null,
+    target: window.__atlasMap?.nodes().find((node) => node.id === targetId) ?? null,
+  }), fitted.target!.id);
+  expect(zoomed.camera!.scale).toBeGreaterThan(fitted.camera!.scale);
+  expect(zoomed.target).not.toBeNull();
+
+  await page.mouse.click(canvas.x + zoomed.target!.x, canvas.y + zoomed.target!.y);
+  await expect(page.locator('[data-testid="map-detail-panel"]')).toBeVisible({ timeout: 5_000 });
+  await waitForMapStill(page, { what: "camera" });
+
+  const selected = await page.evaluate((targetId) => {
+    const canvasRect = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const panelRect = document.querySelector('[data-testid="map-detail-panel"]')!.getBoundingClientRect();
+    const node = window.__atlasMap?.nodes().find((candidate) => candidate.id === targetId) ?? null;
+    return {
+      camera: window.__atlasMap?.camera() ?? null,
+      visible: window.__atlasMap?.nodes().filter((candidate) => !candidate.hidden).length ?? 0,
+      panelClearance: node ? panelRect.left - (canvasRect.left + node.x) : Number.NEGATIVE_INFINITY,
+    };
+  }, fitted.target!.id);
+  expect(selected.visible).toBe(fitted.visible);
+  // Inspection uses the existing focus camera spring to approach the star and
+  // place it in the free canvas beside the panel. It never collapses the graph.
+  expect(selected.camera!.scale).toBeGreaterThan(zoomed.camera!.scale);
+  expect(selected.panelClearance).toBeGreaterThan(0);
+  await expect(page.locator('[data-testid="topology-expand-all"]')).toHaveCount(0);
+
+  // Moving directly to another concept reframes from the current focus while
+  // retaining the original return target from before inspection began.
+  const next = await page.evaluate((targetId) => {
+    const canvasRect = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const panelRect = document.querySelector('[data-testid="map-detail-panel"]')!.getBoundingClientRect();
+    const freeCenterX = (panelRect.left - canvasRect.left) / 2;
+    return window.__atlasMap
+      ?.nodes()
+      .filter((node) => !node.hidden && node.id !== targetId && node.x > 80 && node.x < panelRect.left - canvasRect.left - 80 && node.y > 80 && node.y < canvasRect.height - 80)
+      .sort((a, b) => Math.abs(a.x - freeCenterX) - Math.abs(b.x - freeCenterX))[0] ?? null;
+  }, fitted.target!.id);
+  expect(next).not.toBeNull();
+  await page.mouse.click(canvas.x + next!.x, canvas.y + next!.y);
+  await expect.poll(async () => (await page.evaluate(() => window.__atlasMap?.selection().nodeId))).toBe(next!.id);
+  await waitForMapStill(page, { what: "camera" });
+
+  await page.locator('[data-testid="map-detail-panel-close"]').click();
+  await expect(page.locator('[data-testid="map-detail-panel"]')).toHaveCount(0, { timeout: 5_000 });
+  await waitForMapStill(page, { what: "camera" });
+  const closed = await page.evaluate(() => ({
+    camera: window.__atlasMap?.camera() ?? null,
+    visible: window.__atlasMap?.nodes().filter((node) => !node.hidden).length ?? 0,
+  }));
+  expect(closed.visible).toBe(fitted.visible);
+  expect(Math.abs(closed.camera!.x - zoomed.camera!.x)).toBeLessThan(0.1);
+  expect(Math.abs(closed.camera!.y - zoomed.camera!.y)).toBeLessThan(0.1);
+  expect(Math.abs(closed.camera!.scale - zoomed.camera!.scale)).toBeLessThan(0.001);
+  await expect(page.locator('[data-testid="topology-expand-all"]')).toHaveCount(0);
+
+  // A camera gesture during a later inspection replaces the saved return:
+  // closing the panel must retain the camera the person chose.
+  const restoredTarget = await page.evaluate((targetId) => window.__atlasMap?.nodes().find((node) => node.id === targetId) ?? null, fitted.target!.id);
+  await page.mouse.click(canvas.x + restoredTarget!.x, canvas.y + restoredTarget!.y);
+  await expect(page.locator('[data-testid="map-detail-panel"]')).toBeVisible({ timeout: 5_000 });
+  await waitForMapStill(page, { what: "camera" });
+  await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
+  await page.mouse.wheel(0, -80);
+  await waitForMapStill(page, { what: "camera" });
+  // The interactive spring can meet the frame-delta stillness threshold with
+  // a small amount of target convergence left. Let that tail settle before
+  // using this frame as the close-retention reference.
+  await page.waitForTimeout(2_000);
+  const userCamera = await page.evaluate(() => window.__atlasMap?.camera() ?? null);
+  await page.locator('[data-testid="map-detail-panel-close"]').click();
+  await expect(page.locator('[data-testid="map-detail-panel"]')).toHaveCount(0, { timeout: 5_000 });
+  await waitForMapStill(page, { what: "camera" });
+  const afterUserClose = await page.evaluate(() => window.__atlasMap?.camera() ?? null);
+  // Releasing focus also releases its pan leash, so the last few pixels of the
+  // user's already-recorded target may finish after close. Bound that spring
+  // tail in screen space while requiring the chosen zoom exactly.
+  expect(Math.abs(afterUserClose!.x - userCamera!.x) * afterUserClose!.scale).toBeLessThan(24);
+  expect(Math.abs(afterUserClose!.y - userCamera!.y) * afterUserClose!.scale).toBeLessThan(24);
+  expect(Math.abs(afterUserClose!.scale - userCamera!.scale)).toBeLessThan(0.001);
+
+  await page.mouse.move(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
+  await page.mouse.wheel(0, -80);
+  await waitForMapStill(page, { what: "camera" });
+  const afterSecondWheel = await page.evaluate(() => window.__atlasMap?.camera() ?? null);
+  expect(afterSecondWheel!.scale).toBeGreaterThan(afterUserClose!.scale);
+  expect(pageErrors).toEqual([]);
 });
 
 test("the Korean relation sentence joins its particles to the names", async ({ page }) => {

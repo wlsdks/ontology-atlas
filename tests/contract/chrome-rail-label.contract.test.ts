@@ -1,28 +1,11 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **The map's utility rail names itself as one group.**
- *
- * Four icon-only tiles (fit · tour · shortcuts · replay) sat on the right edge of
- * `/topology`, each with its own tooltip. Reading the rail therefore cost one hover
- * and one wait per tile, and a keyboard user got no names at all — a tooltip on a
- * `title` attribute is a pointer affordance.
- *
- * Measured in the browser at 1440×900 after the change (dev server, 2026-09-05):
- *
- * | State | tile width | label opacity |
- * |---|---|---|
- * | rest | 36 × 36 — exactly `--chrome-tile-size` | 0 |
- * | pointer over any one tile | 122 / 104 / 161 / 141 | 1 on **all four** |
- * | keyboard focus on any one tile | same | 1 on **all four** |
- * | `prefers-reduced-motion` | same widths, `transition-duration 0.01ms` | 1 |
- *
- * The rendered behaviour is proved by `tests/e2e/map-rail-labels.spec.ts`. This file
- * holds the parts a rendered check cannot see: that the collapsed geometry comes from
- * the token rather than a coincidence, that the keyboard half of the reveal was not
- * dropped, and that no literal duration crept into the transition.
+ * ChromeTile retains an optional group-label mode for labelled rails. The topology
+ * utility stack deliberately uses fixed square controls with individual tooltips;
+ * its rendered contract lives in `tests/e2e/map-rail-labels.spec.ts`.
  */
 
 const ROOT = process.cwd();
@@ -43,18 +26,6 @@ function ruleBody(selectorFragment: string): string {
     }
   }
   return CSS.slice(open + 1, i);
-}
-
-function sourceFiles(dir: string, acc: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    const full = path.join(dir, entry);
-    if (statSync(full).isDirectory()) {
-      sourceFiles(full, acc);
-      continue;
-    }
-    if (/\.tsx?$/.test(entry)) acc.push(full);
-  }
-  return acc;
 }
 
 const REST = ruleBody('.chrome-tile-label {');
@@ -120,24 +91,5 @@ describe('chrome rail label contract', () => {
     for (const block of reducedBlocks) {
       expect(block.slice(0, block.indexOf('\n}\n') + 1)).not.toContain('chrome-tile-label');
     }
-  });
-
-  it('the group class has consumers — a rule nobody applies is misinformation', () => {
-    const users = sourceFiles(path.join(ROOT, 'src')).filter((file) =>
-      /\bchrome-rail\b/.test(readFileSync(file, 'utf8')),
-    );
-    expect(users.length, 'no source applies .chrome-rail').toBeGreaterThan(0);
-
-    // The rail is four tiles — fit, tour, shortcuts, replay. Counting them rather
-    // than the files that hold them keeps the check honest when two of the four live
-    // in the same view, which is the shape today.
-    const labelled = sourceFiles(path.join(ROOT, 'src'))
-      .filter((file) => !file.endsWith('.test.tsx'))
-      .reduce(
-        (total, file) =>
-          total + (readFileSync(file, 'utf8').match(/<ChromeTile[\s\S]{0,400}?\blabel=/g)?.length ?? 0),
-        0,
-      );
-    expect(labelled, 'the rail lost a labelled tile').toBeGreaterThanOrEqual(4);
   });
 });

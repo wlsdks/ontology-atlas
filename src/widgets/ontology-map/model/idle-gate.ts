@@ -76,6 +76,8 @@ export interface CanvasActivityFlags {
    * halfway.
    */
   galaxySettling: boolean;
+  /** Visible Galaxy atmosphere twinkles and may emit a bounded meteor. */
+  galaxyAtmosphereActive: boolean;
 }
 
 /**
@@ -179,7 +181,8 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
     flags.spotlightSettling ||
     flags.trailLensSettling ||
     flags.trailMotionActive ||
-    flags.galaxySettling
+    flags.galaxySettling ||
+    flags.galaxyAtmosphereActive
   );
 }
 

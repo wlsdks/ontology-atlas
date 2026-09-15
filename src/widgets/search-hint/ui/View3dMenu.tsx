@@ -53,9 +53,11 @@ import {
 /**
  * One row of the list — the two flat views plus the three 3D arrangements.
  *
- * `galaxy` is flat too: the three 3D entries move where nodes *are*, and it changes only how
- * they are drawn. It is one row here because to a reader "how does the map look" is one
- * question, and because that is where the owner went looking for it (2026-09-10).
+ * `galaxy` is 2D too, but it owns a stable three-arm placement for every real
+ * concept while Flat keeps the containment map. It is one row here because to
+ * a reader "how does the map look" is one question, and because that is where
+ * the owner went looking for it (2026-09-10, superseded spatial direction
+ * selected 2026-09-15).
  */
 type View3dChoice = 'flat' | 'galaxy' | MapArrangement;
 
@@ -107,8 +109,8 @@ export function View3dMenu({
 
   const apply = (next: View3dChoice) => {
     if (next === 'flat' || next === 'galaxy') {
-      // Both flat views: the sky is a way of drawing the 2D map, so choosing either one turns
-      // the dome off and the two settle which drawing the flat map uses.
+      // Both 2D views turn the dome off; the Galaxy choice also selects its
+      // dedicated stable sky coordinates while Flat restores its prior map.
       writeGalaxy(next === 'galaxy');
       writeView3d(false);
     } else {
@@ -222,7 +224,7 @@ export function View3dMenu({
         'bg-[color:var(--map-panel-surface)] p-1.5 shadow-[var(--map-panel-shadow)]',
       )}
     >
-      <div {...group.groupProps} aria-label={t('view3dAriaLabel')} className="flex flex-col gap-1">
+      <div {...group.groupProps} aria-label={t('mapViewAriaLabel')} className="flex flex-col gap-1">
         {CHOICES.map((choice, index) => {
           const active = choice === value;
           return (

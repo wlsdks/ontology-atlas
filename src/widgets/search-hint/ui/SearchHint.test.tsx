@@ -17,14 +17,14 @@ beforeEach(() => {
 });
 
 describe("SearchHint", () => {
-  it("keeps the 3D picker name and describes the current map view in Help", () => {
+  it("names the map-view picker and describes the current map view in Help", () => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
     window.localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
 
     render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
 
     const picker = screen.getByTestId("topology-view-3d");
-    expect(picker).toHaveAccessibleName("3D view");
+    expect(picker).toHaveAccessibleName("Map view: Neural");
     expect(picker).toHaveAttribute(
       "title",
       "Choose a map view. Current: Neural.",
@@ -34,9 +34,20 @@ describe("SearchHint", () => {
     expect(picker).toHaveTextContent("Neural");
   });
 
-  it("reads 3D while the flat view is on", () => {
+  it("shows the current flat view rather than a 3D-only label", () => {
     render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
-    expect(screen.getByTestId("topology-view-3d")).toHaveTextContent("3D");
+    const picker = screen.getByTestId("topology-view-3d");
+    expect(picker).toHaveAccessibleName("Map view: Flat");
+    expect(picker).toHaveTextContent("Flat");
+  });
+
+  it("shows Galaxy as the current flat map view", () => {
+    window.localStorage.setItem("atlas.appearance.galaxy", "on");
+    render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
+    const picker = screen.getByTestId("topology-view-3d");
+    expect(picker).toHaveTextContent("Galaxy");
+    expect(picker).toHaveAccessibleName("Map view: Galaxy");
+    expect(picker).toHaveAttribute("data-map-view", "galaxy");
   });
 
   it("exposes utility-lane token contracts on search and auto-arrange actions", () => {

@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Maximize2 } from 'lucide-react';
-import { ChromeTile } from '@/shared/ui';
+import { ChromeTile, Tooltip } from '@/shared/ui';
 
 interface TopologyFitControlProps {
   /** The "fit the whole map" callback — fits the camera to the graph's bounds on click. */
@@ -33,21 +33,18 @@ export function TopologyFitControl({ onFitView, density = 'default', mobileObscu
       data-control-phone-bottom-token="--topology-floating-control-phone-bottom"
       data-control-desktop-top-token="--topology-floating-control-desktop-top"
     >
-      <div>
-        {/*
-         * The tooltip is gone because the label replaced it. A tooltip names one
-         * tile after a hover and a wait; `.chrome-rail` names the whole rail the
-         * moment the pointer or the focus ring arrives, and an OS tooltip repeating
-         * a label already on screen is the popup soup `.claude/rules/design.md`
-         * forbids. `title` and `label` carry the same string, so the accessible
-         * name *is* the visible one (WCAG 2.5.3) — see `ChromeTile`'s `label`.
-         */}
-        <ChromeTile
-          icon={<Maximize2 />}
-          title={t('fitViewTooltip')}
-          label={t('fitViewTooltip')}
-          onClick={onFitView}
-        />
+      {/* A flex wrapper has no text line box. At 200% root text, the former plain
+          div grew to a 48px line box around this 36px tile and shifted it into
+          the tour control below. */}
+      <div className="flex">
+        <Tooltip content={t('fitViewTooltip')} side="left">
+          <ChromeTile
+            icon={<Maximize2 />}
+            title=""
+            aria-label={t('fitViewTooltip')}
+            onClick={onFitView}
+          />
+        </Tooltip>
       </div>
     </div>
   );

@@ -26,6 +26,7 @@ const IDLE: CanvasActivityFlags = {
   trailLensSettling: false,
   trailMotionActive: false,
   galaxySettling: false,
+  galaxyAtmosphereActive: false,
 };
 
 describe("isCanvasActive", () => {

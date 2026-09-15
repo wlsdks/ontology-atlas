@@ -3605,40 +3605,25 @@
     /* Static double ring for selected node (not glow, mechanical ring) + hover preview ring.
        rgb(94,106,210) = same hue as --color-indigo-brand(#5e6ad2), only
        alpha differs — not violating "no multiple coloring systems" (maintain single indigo). */
-    /* ── The galaxy's colour temperature ─────────────────────────────────────
-       Kind is a *shape* near the ground — a hexagon is a project, a square a domain — and the
-       shape melts as altitude rises: `interpolateCornerRadius` rounds the corners off and
-       `FULL_CIRCLE_FAR_T` finishes it, so at the top every node is the same circle. These four
-       steps are where kind goes when its old channel is gone, not a second encoding of it
-       (owner, 2026-09-10: "totally like a galaxy"; direction B of three, chosen because it needs
-       no toggle and does not spend the emission that means "you walked here").
+    /* ── Galaxy colour temperature ────────────────────────────────────────────
+       Galaxy is an explicit map-view picker state. It paints borderless light
+       cores in a three-arm field; it does not reuse Flat's kind silhouettes.
+       Kind remains explicit in INDEX and the inspector through their glyph and
+       text. This warm-to-cool containment ramp helps connect the project core,
+       domain neighborhoods, capabilities, and elements without becoming the
+       sole kind channel. Baseline luminance still follows the graph magnitude
+       model; deterministic atmospheric twinkle modulates corona and glints, so
+       instantaneous brightness is not a live activity or recency measurement.
 
-       One ramp, warm to cool, read **down the containment ladder** — project contains domains
-       contain capabilities contain elements — so the temperature is depth rather than a lookup
-       table. The warm end is the hub amber this map already spends on "this is a centre"; the
-       cool end is a blue-white that is still neutral enough not to read as the selection indigo.
-       Kind never rests on colour alone: radius still says how much a node contains, so the
-       project stays the largest mark for a reader who separates none of these hues.
-
-       Measured 2026-09-10 — each step 13.6-16.4:1 over the canvas, so all four are visible
-       stars; adjacent steps ΔE 11.4-17.4, well past the ~5 where a step stops being separable;
-       b* runs 27.7 → 11.2 → -4.9 → -13.8 while L* stays inside 85.7-92.6. That narrow L* band is
-       the point and not an accident: **luminance is already spoken for** — it carries how
-       connected a node is — so temperature has to ride the blue-yellow axis at near-constant
-       lightness or it would corrupt the channel beside it. Riding that axis is also what makes
-       the ramp survive colour-vision deficiency: end-to-end ΔE is 42.2 under protanopia and 45.7
-       under deuteranopia against 41.5 with normal vision, because neither touches blue-yellow
-       much. Tritanopia flattens it to 19.4, still separable.
-
-       ⚠️ `capability` is `#e5eaf3` and not the `#ececf0` it started as, because that is the
-       walked-path star's own ink. Two facts on one token value is a coupling that changes the
-       meaning of one mark whenever someone retunes the other, which is the whole reason these
-       are tokens. The two still look alike, and that is fine: inside the trail lens "walked" is
-       carried by the lens dimming everything else, not by hue. */
-    --map-galaxy-project: #f0d5a4;
-    --map-galaxy-domain: #f2e6d2;
-    --map-galaxy-capability: #e5eaf3;
-    --map-galaxy-element: #cdd6f0;
+       Measured in the accepted 2026-09-15 actual-window cycle: 105/105 star
+       cores stayed at or above 3:1 (minimum 3.040:1), while all nine overview
+       labels measured 9.32–10.29:1. The selected indigo remains a separate
+       emphasis channel. The owner-selected living-sky and three-arm decisions
+       supersede the 2026-09-10 shared-silhouette/no-toggle direction. */
+    --map-galaxy-project: #f0c77b;
+    --map-galaxy-domain: #f0d4a4;
+    --map-galaxy-capability: #c8dcff;
+    --map-galaxy-element: #91b5ff;
     --map-selection-ring-indigo: var(--map-indigo-bright);
     --map-selection-ring-hairline: rgba(94, 106, 210, 0.45);
     /*

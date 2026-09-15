@@ -133,6 +133,10 @@ export interface TraceDrawState {
    * ring and never cut. Ignored unless `egoState === "normal"`.
    */
   hoverLift?: number;
+  /** Galaxy's source/target temperature blend for this real relation. */
+  galaxyInk?: string;
+  /** Bounded moving light on this real edge path; 0 outside Galaxy. */
+  galaxyGlint?: number;
   /**
    * Edge selection (pair focus) — drawn with the dedicated pale-indigo stroke.
    * Same family as node selection (standard indigo) but a different value, so
@@ -357,7 +361,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     // keeps coming from the depends comet tail.
     width = (isDepends ? 1.7 : 1.5) - farT * 0.4;
   } else if (egoState === "dim") {
-    stroke = tokens.edgeDim;
+    stroke = state.galaxyInk ? mixHex(state.galaxyInk, tokens.edgeDim, 0.45) : tokens.edgeDim;
     width = 1;
   } else if (egoState === "ego") {
     // Panel-linked ripple: brightest indigo + thicker; otherwise the standard
@@ -366,17 +370,18 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     width = (isDepends ? 1.8 : 1.5) - farT * 0.5 + (emphasized ? 0.9 : 0);
   } else {
     if (isDepends) {
-      stroke = tokens.edgeDepends;
+      stroke = state.galaxyInk ?? tokens.edgeDepends;
       width = 1.3 + (0.6 - 1.3) * farT;
     } else {
       // Ink ramp: L0 darker and thicker (trunk), L2 slightly receded (twig).
       const level = state.level ?? 1;
-      stroke =
+      stroke = state.galaxyInk ?? (
         level === 0
           ? tokens.edgeContainsL0 ?? tokens.edgeContains
           : level === 2
             ? tokens.edgeContainsL2 ?? tokens.edgeContains
-            : tokens.edgeContains;
+            : tokens.edgeContains
+      );
       width = (1 + (0.45 - 1) * farT) * CONTAINS_LEVEL_WIDTH_FACTOR[level];
     }
     const hoverLift = clamp01(state.hoverLift ?? 0);
@@ -388,6 +393,8 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
       width += HOVER_LIFT_WIDTH_PX * hoverLift;
     }
   }
+
+  if (state.galaxyInk && trailWalked <= 0.01) width *= 0.82;
 
   // 3D view — hairline falloff by depth. The caller (`topology-frame-draw.ts`)
   // computes it from the dome falloff × depth; 2D passes 1.
@@ -531,6 +538,27 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     ctx.globalAlpha = prevAlpha;
   }
 
+  if (
+    glint <= 0.01 &&
+    state.reducedMotion !== true &&
+    state.galaxyInk &&
+    (state.galaxyGlint ?? 0) > 0.01
+  ) {
+    const phase = clamp01(t);
+    const at = bezierPoint(a, control, b, phase);
+    const prevAlpha = ctx.globalAlpha;
+    const travel = Math.sin(Math.PI * phase);
+    ctx.globalAlpha = prevAlpha * (state.galaxyGlint ?? 0) * travel;
+    ctx.fillStyle = state.galaxyInk;
+    ctx.shadowColor = state.galaxyInk;
+    ctx.shadowBlur = 5;
+    ctx.beginPath();
+    ctx.arc(at.x, at.y, Math.max(0.7, width * 0.72), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = prevAlpha;
+  }
+
   /*
    * **The chevron — the walk's direction, standing still.**
    *
@@ -592,7 +620,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
      * This block's own header already says the walked path wins over every other state; the
      * comet stands down for as long as the lens is on it, and comes back when the ramp does.
      */
-    if (glint > 0.01) return;
+    if (glint > 0.01 || state.galaxyInk) return;
     // Always-on comets, restored on owner instruction "Bring the old one back", reversing the earlier demotion to "comet tail = focus
     // signal": the tail flows on every non-dim depends edge regardless of focus
     // (prototype §13 `drawEdge`, `state !== "dim"`). Phase advance is owned by

@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { ListTree, RefreshCcw, Rotate3d, Search } from 'lucide-react';
+import { ListTree, Map as MapIcon, RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
-import { ChromeChip } from '@/shared/ui/chrome-chip';
-import { useMapArrangement, useView3d } from '@/shared/lib/appearance-preferences';
+import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip } from '@/shared/ui/chrome-chip';
+import { useGalaxy, useMapArrangement, useView3d } from '@/shared/lib/appearance-preferences';
 import { View3dMenu } from './View3dMenu';
 
 interface Props {
@@ -109,11 +109,12 @@ export function SearchHint({
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
-  // Map view — subscribe to both stored facts so the picker's Help names the
-  // same Flat/Dome/Cloud arrangement that the canvas is currently drawing.
+  // Map view — subscribe to every stored fact so the compact picker names the
+  // same Flat/Galaxy/Cone/Strata/Neural view the canvas is currently drawing.
   const view3d = useView3d();
+  const galaxy = useGalaxy();
   const arrangement = useMapArrangement();
-  const currentView = view3d ? arrangement : 'flat';
+  const currentView = view3d ? arrangement : galaxy ? 'galaxy' : 'flat';
   const [view3dMenuOpen, setView3dMenuOpen] = useState(false);
   const view3dAnchorRef = useRef<HTMLDivElement | null>(null);
   const [arranging, setArranging] = useState(false);
@@ -230,14 +231,15 @@ export function SearchHint({
             {arranging ? t('relayoutActiveLabel') : t('relayoutLabel')}
           </ChromeChip>
         </div>
-        {/* The map-view picker chooses Flat (the default) or one of the two 3D
-            arrangements, Dome and Cloud. The active indigo tint states that a 3D
-            arrangement is on (no second colour). Same <md demotion as auto-arrange. */}
+        {/* The map-view picker chooses Flat (the default), Galaxy, or one of the
+            three 3D arrangements. The label names the current view while the active
+            indigo tint states that a spatial presentation is on. Same <md demotion
+            as auto-arrange. */}
         {/*
-          The 3D chip **opens a picker rather than toggling** (owner instruction,
+          The map-view chip **opens a picker rather than toggling** (owner instruction,
           2026-08-18: *"Pressing 3D should bring up a selection popup."* — pressing 3D should bring
-          up a selection popup). With two arrangements inside 3D, an on/off toggle can no
-          longer say 「what am I looking at」 — the rationale and the three reasons are in
+          up a selection popup). With several presentations inside the picker, an on/off toggle
+          cannot say 「what am I looking at」 — the rationale and the three reasons are in
           the `View3dMenu` doc-block.
         */}
         {/* The chip and its picker share one wrapper, and `view3dAnchorRef` hands that
@@ -252,6 +254,7 @@ export function SearchHint({
             aria-expanded={view3dMenuOpen}
             data-testid="topology-view-3d"
             data-view-3d={view3d ? 'true' : 'false'}
+            data-map-view={currentView}
             data-utility-action-token-contract="support-surface-family"
             data-utility-action-surface-token="--chrome-surface"
             data-utility-action-border-token="--chrome-border"
@@ -260,18 +263,16 @@ export function SearchHint({
             data-utility-action-active-border-token="--chrome-active-border"
             data-utility-action-shadow-token="--chrome-shadow"
             data-utility-action-focus-ring-token="--color-indigo-accent"
-            icon={<Rotate3d />}
-            active={view3d}
-            compact={compact}
-            aria-label={t('view3dAriaLabel')}
+            icon={<MapIcon />}
+            active={view3d || galaxy}
+            compact={false}
+            className={`max-xl:[&_[data-chip-label]]:hidden ${CHROME_CHIP_COMPACT_BELOW_XL}`}
+            aria-label={`${t('mapViewAriaLabel')}: ${t(`view3dChoice.${currentView}`)}`}
             title={t('view3dPickerHelp', {
               view: t(`view3dChoice.${currentView}`),
             })}
           >
-            {/* While a 3D arrangement is on, the chip names it (Cone, Cloud): once the
-                labels fade in 3D and the choice survives a reload, the indigo tint alone
-                no longer says which view this is (walkthrough finding, 2026-09-03). */}
-            {view3d ? t(`view3dChoice.${currentView}`) : t('view3dLabel')}
+            {t(`view3dChoice.${currentView}`)}
           </ChromeChip>
           <View3dMenu
             open={view3dMenuOpen}

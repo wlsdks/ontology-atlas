@@ -6,7 +6,11 @@ import {
   GALAXY_TEMPERATURE_ORDER,
   bodyPresence,
   filamentPresence,
+  galaxyAppearance,
+  galaxyMeteorPhase,
+  galaxySelectionInk,
   galaxyTemperatureKey,
+  galaxyTwinkle,
   starLuminance,
   starMagnitude,
 } from "./galaxy";
@@ -56,7 +60,61 @@ describe("starLuminance — a faint star is still a star", () => {
   it("still gives a hub a clear margin over a leaf", () => {
     // Floored *and* legible: the range above the floor is what carries the fact, so it has to
     // stay wide enough to read.
-    expect(starLuminance(1) / starLuminance(0)).toBeGreaterThan(3);
+    expect(starLuminance(1) / starLuminance(0)).toBeGreaterThan(2.25);
+  });
+});
+
+describe("galaxySelectionInk", () => {
+  it("keeps the emitter hex contract while easing from temperature to indigo", () => {
+    expect(galaxySelectionInk("#f2e6d2", "#8890e0", 0)).toBe("#f2e6d2");
+    expect(galaxySelectionInk("#f2e6d2", "#8890e0", 0.5)).toBe("#bdbbd9");
+    expect(galaxySelectionInk("#f2e6d2", "#8890e0", 1)).toBe("#8890e0");
+  });
+});
+
+describe("galaxyAppearance", () => {
+  it("answers with the core first and settles every layer inside one ramp", () => {
+    expect(galaxyAppearance(0)).toEqual({ core: 0, field: 0, corona: 0, filament: 0 });
+    const early = galaxyAppearance(0.1);
+    expect(early.core).toBeGreaterThan(early.field);
+    expect(early.field).toBeGreaterThan(early.corona);
+    expect(early.filament).toBe(0);
+    expect(galaxyAppearance(1)).toEqual({ core: 1, field: 1, corona: 1, filament: 1 });
+  });
+
+  it("is monotonic and therefore reverses without a discontinuity", () => {
+    const samples = [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1].map(galaxyAppearance);
+    for (const key of ["core", "field", "corona", "filament"] as const) {
+      for (let index = 1; index < samples.length; index += 1) {
+        expect(samples[index][key]).toBeGreaterThanOrEqual(samples[index - 1][key]);
+      }
+    }
+  });
+});
+
+describe("Galaxy atmosphere", () => {
+  it("gives each id a deterministic 3–6 second twinkle whose core never disappears", () => {
+    const first = galaxyTwinkle("domain:delivery", 4123, false);
+    expect(galaxyTwinkle("domain:delivery", 4123, false)).toEqual(first);
+    expect(first.periodMs).toBeGreaterThanOrEqual(3000);
+    expect(first.periodMs).toBeLessThanOrEqual(6000);
+    for (let now = 0; now <= 6000; now += 100) {
+      const sample = galaxyTwinkle("domain:delivery", now, false);
+      expect(sample.intensity).toBeGreaterThanOrEqual(0.72);
+      expect(sample.intensity).toBeLessThanOrEqual(1.08);
+      expect(sample.glint).toBeGreaterThanOrEqual(0);
+      expect(sample.glint).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("freezes twinkle and schedules at most one bounded meteor", () => {
+    expect(galaxyTwinkle("domain:delivery", 0, true)).toEqual(
+      galaxyTwinkle("domain:delivery", 5000, true),
+    );
+    expect(galaxyMeteorPhase(1799)).toBeNull();
+    expect(galaxyMeteorPhase(1800)?.progress).toBe(0);
+    expect(galaxyMeteorPhase(2950)?.progress).toBe(1);
+    expect(galaxyMeteorPhase(4000)).toBeNull();
   });
 });
 

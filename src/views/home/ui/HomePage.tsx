@@ -2689,13 +2689,12 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     // Deferred to a microtask to avoid a synchronous setState (cascading-render
 // warning).
 //
-// The 3D dome does not get this re-fit (measured 2026-08-18). This effect runs on
-// **every selection and deselection** (the INDEX rail demotion). In 2D the fit was
-// harmless because the focus dive overwrote it a frame later, but on the dome the
-// fit token takes the same path as auto-arrange (easing the pose home and re-arming
-// the autonomous rotation) — so selecting a node sent the dome home instead of
-// diving, and merely deselecting revived the attention rotation. Owner: *"I am not steering it; the screen turns by itself."* (I am not steering it; the screen turns by itself). The dome fit has 15% margin, which absorbs the INDEX rail's width change, and the selection reframe measures the inset itself at use time, so it avoids the panel without this re-fit.
-    if (!view3d && !acpDockFrameOpen) {
+// The 3D dome and Galaxy do not get this re-fit. This effect runs on **every
+// selection and deselection** because the INDEX demotes to the rail. Flat needs
+// the fit before its focus dive; Galaxy instead keeps the reader's current pan
+// and zoom while the inspector opens. Sending the shared fit token there would
+// silently replace that reading context with a full overview.
+    if (!view3d && !galaxy && !acpDockFrameOpen) {
       window.queueMicrotask(() => {
         if (!cancelled) setFitViewToken((count) => count + 1);
       });
@@ -2704,7 +2703,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       cancelled = true;
       delete root.dataset.topologyIndex;
     };
-  }, [renderedIndexState, view3d, acpDockFrameOpen]);
+  }, [renderedIndexState, view3d, galaxy, acpDockFrameOpen]);
   const copyV2NodeHandoff = useCallback(
     async (text: string) => {
       await copyHandoffWithFeedback({
@@ -3447,7 +3446,12 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       // Ontology node clicks and shareable vault slugs both stay on /topology;
       // selected-node resolution happens against `ontologyInsight`.
       interactionSelectedSlugRef.current = slug;
-      setExpandAllActive(false);
+      // Galaxy is an overview the reader chose, so opening one star's datasheet
+      // must not silently replace that overview with the collapsed spine. Flat
+      // keeps the standing select = collapse behavior, and explicit Galaxy
+      // expansion/focus actions still own their own state transitions.
+      if (!galaxy) setExpandAllActive(false);
+      setHoverEdge(null);
       // Selections chosen in the INDEX tree do not collapse the list (owner
 // critique 2026-07-24: clicking a row collapsed the panel into a slim tab, hiding the child just expanded).
 // Selections chosen on the map collapse as before, widening the map.
@@ -3474,8 +3478,10 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       setRouteState,
       beginExpandedIndexSelection,
       setFullDetailSlug,
+      setHoverEdge,
       setSelectedRelationActive,
       setNodePopoverDismissed,
+      galaxy,
     ],
   );
 
@@ -4593,7 +4599,10 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                       setTopologyRelayoutToken((current) => current + 1);
                       toast.show(t('controls.relayoutToast'), "info");
                     }}
-                    onToggleExpandAll={handleToggleExpandAll}
+                    // Galaxy always renders every real concept so its stellar
+                    // neighborhoods are complete. Hide the Flat expansion
+                    // action rather than showing a control with no effect.
+                    onToggleExpandAll={galaxy ? undefined : handleToggleExpandAll}
                     allExpanded={expandAllActive}
                     realmChip={
                       resolvedRealmSlug && realmTitle ? (
@@ -5797,7 +5806,9 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                       }
                       onToggleCluster={handleToggleCluster}
                       onHoverCluster={handleHoverCluster}
-                      clusterHint={t('cluster.hint')}
+                      // Galaxy exposes every real concept directly, so the Flat
+                      // density-gate hint would announce controls that do not exist.
+                      clusterHint={galaxy ? undefined : t('cluster.hint')}
                       realmRootId={resolvedRealmSlug}
                       onEnterRealm={handleEnterRealm}
                       indexExpanded={renderedIndexState === "expanded"}
@@ -5851,16 +5862,10 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                   to { opacity: 1; transform: scale(1); }
                 }
               `}</style>
-              {/*
-                  ── The utility rail is one group, not four neighbours ──────────────
-                  Fit, tour, shortcuts and replay are still positioned one by one from
-                  `--topology-floating-control-desktop-top` plus the tile rhythm, so this
-                  wrapper has no box of its own: `display: contents` leaves each tile positioned
-                  against the map exactly as before, and gives the four tiles one DOM ancestor so
-                  `:hover` and `:focus-within` on it (through any descendant, label included) reveal
-                  four at once (`.chrome-rail` in `app/globals.css`). A full-inset box was tried first
-                  and every geometry probe read it as a panel covering the map (map-keyboard-walk). */}
-              <div className="chrome-rail contents" data-testid="topology-utility-rail">
+              {/* The four utilities stay fixed square controls. Their shared tooltip
+                  carries the full name on pointer hover and keyboard focus without
+                  changing the rail's width or taking canvas drag space. */}
+              <div className="contents" data-testid="topology-utility-rail">
               {createNodeOpen ||
               topologyBlockingOverlayActive ||
               selectedRelationActive ||
@@ -5882,15 +5887,17 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
               selectedNodeFocusActive ? null : (
-                <ChromeTile
-                  icon={<Compass />}
-                  title={t('controls.tourTooltip')}
-                  label={t('controls.tourTooltip')}
-                  onClick={openGuidedTour}
-                  data-testid="topology-tour-button"
-                  data-agent-dock-adjacent-rail="true"
-                  className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-6 md:top-[var(--topology-tour-help-desktop-top)] md:inline-flex xl:right-8"
-                />
+                <Tooltip content={t('controls.tourTooltip')} side="left">
+                  <ChromeTile
+                    icon={<Compass />}
+                    title=""
+                    aria-label={t('controls.tourTooltip')}
+                    onClick={openGuidedTour}
+                    data-testid="topology-tour-button"
+                    data-agent-dock-adjacent-rail="true"
+                    className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-6 md:top-[var(--topology-tour-help-desktop-top)] md:inline-flex xl:right-8"
+                  />
+                </Tooltip>
               )}
               {/* Shortcut and gesture help entry point: two slots below the fit tile, after
                   the tour tile. On phones it appears only in overview and focus, where it
@@ -5899,10 +5906,11 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
               selectedNodeFocusActive ? null : (
-                <ChromeTile
+                <Tooltip content={t('controls.shortcutsTooltip')} side="left">
+                  <ChromeTile
                   icon={<HelpCircle />}
-                  title={t('controls.shortcutsTooltip')}
-                  label={t('controls.shortcutsTooltip')}
+                  title=""
+                  aria-label={t('controls.shortcutsTooltip')}
                   onClick={() => setShortcutsOpen(true)}
                   data-testid="topology-shortcuts-help-button"
                   data-agent-dock-adjacent-rail="true"
@@ -5944,7 +5952,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                       ? "inline-flex"
                       : "hidden"
                   }`}
-                />
+                  />
+                </Tooltip>
               )}
               {/* Growth replay (2026-09-02): the fourth slot of the right rail rhythm, one row
                   below the "?" tile. Replays the ontology appearing in containment order
@@ -5963,26 +5972,23 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                       active border and `aria-pressed` also fall away when the replay
                       simply reaches its end. Exits and the reason movement no longer
                       counts as one: `use-topology-loop.ts`, the token effect.
-                      The icon stays the play glyph while it runs: `ChromeTile`'s
-                      labelled mode makes the label the accessible name, and a stop glyph
-                      beside a label that says "watch" would tell two stories at once. The
-                      indigo active border is the state, the same one every other chrome
-                      toggle wears. */}
-                  <ChromeTile
-                    icon={<Play />}
-                    title={t('controls.replayGrowthTooltip')}
-                    label={t('controls.replayGrowthTooltip')}
-                    data-testid="topology-replay-growth"
-                    active={growthReplaying}
-                    aria-pressed={growthReplaying}
-                    onClick={() => setGrowthReplayToken((t) => t + 1)}
-                  />
+                      The icon stays the play glyph while it runs; the indigo active
+                      border is the state, the same one every other chrome toggle wears. */}
+                  <Tooltip content={t('controls.replayGrowthTooltip')} side="left">
+                    <ChromeTile
+                      icon={<Play />}
+                      title=""
+                      aria-label={t('controls.replayGrowthTooltip')}
+                      data-testid="topology-replay-growth"
+                      active={growthReplaying}
+                      aria-pressed={growthReplaying}
+                      onClick={() => setGrowthReplayToken((t) => t + 1)}
+                    />
+                  </Tooltip>
                 </div>
               )}
               </div>
-              {/* The settings gear moved to the bottom of the left nav rail. After the
-                  dead controls panel was removed, the right vertical rail holds only the
-                  map's three tiles: fit view, guided tour, and shortcuts. */}
+              {/* The settings gear moved to the bottom of the left nav rail. */}
               <HubRail
                 projects={renderProjects}
                 selectedSlug={canvasSelectedSlug}

@@ -23,6 +23,7 @@ import { smoothstep } from "../model/altitude";
 import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 import { computeHoverShimmer } from "../model/hover-shimmer";
 import { drawStarEmission } from "@/shared/lib/star-emission";
+import { drawDiffractionSpike } from "@/shared/lib/diffraction-spike";
 
 export interface Point {
   x: number;
@@ -625,9 +626,105 @@ export function drawNodeStar(
   });
 }
 
+/**
+ * Galaxy's borderless star treatment: circular heart, radial corona, and a
+ * sparse diffraction glint. Canonical radii still size hit areas and labels,
+ * while Galaxy paint contains no kind polygon or state orbit. Walked nodes use
+ * this same profile in Galaxy, so opening the trail lens cannot bring the old
+ * boxes back.
+ */
+type GalaxyLightSprite = { heart: HTMLCanvasElement; corona: HTMLCanvasElement };
+const galaxyLightSprites = new Map<string, GalaxyLightSprite>();
 
+/** Optical light kernels are cached by temperature, never by node or frame. */
+function galaxyLightSprite(ink: string): GalaxyLightSprite | null {
+  const cached = galaxyLightSprites.get(ink);
+  if (cached) return cached;
+  const color = Number.parseInt(ink.slice(1), 16);
+  const rgb = [(color >> 16) & 255, (color >> 8) & 255, color & 255];
+  const rgba = (alpha: number, heat = 0) =>
+    `rgba(${rgb.map((v) => Math.round(v + (255 - v) * heat)).join(",")},${alpha})`;
+  const make = (heart: boolean): HTMLCanvasElement | null => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 64;
+    const painter = canvas.getContext("2d");
+    if (!painter) return null;
+    const light = painter.createRadialGradient(32, 32, 0, 32, 32, 32);
+    if (heart) {
+      // A filled, hot centre with a continuous falloff: no rim, ring or clipped hole.
+      light.addColorStop(0, rgba(1, 0.88));
+      light.addColorStop(0.18, rgba(1, 0.66));
+      light.addColorStop(0.43, rgba(0.86, 0.18));
+      light.addColorStop(0.7, rgba(0.22));
+      light.addColorStop(1, rgba(0));
+    } else {
+      light.addColorStop(0, rgba(0.3));
+      light.addColorStop(0.2, rgba(0.18));
+      light.addColorStop(0.55, rgba(0.045));
+      light.addColorStop(1, rgba(0));
+    }
+    painter.fillStyle = light;
+    painter.fillRect(0, 0, 64, 64);
+    return canvas;
+  };
+  const heart = make(true);
+  const corona = make(false);
+  if (!heart || !corona) return null;
+  const sprite = { heart, corona };
+  // Selection blends introduce intermediate temperatures; keep memory bounded.
+  if (galaxyLightSprites.size >= 96) {
+    const oldest = galaxyLightSprites.keys().next().value;
+    if (oldest !== undefined) galaxyLightSprites.delete(oldest);
+  }
+  galaxyLightSprites.set(ink, sprite);
+  return sprite;
+}
 
-
+export function drawGalaxyNodeStar(
+  ctx: CanvasRenderingContext2D,
+  state: {
+    x: number;
+    y: number;
+    radius: number;
+    ink: string;
+    lit: number;
+    coronaLit: number;
+    presence: number;
+    glint: number;
+    glintRotation: number;
+  },
+): void {
+  const { x, y, radius, ink, lit, coronaLit, presence, glint, glintRotation } = state;
+  if (radius <= 0 || presence <= 0.01) return;
+  const sprite = galaxyLightSprite(ink);
+  if (!sprite) return;
+  const previousAlpha = ctx.globalAlpha;
+  const previousComposite = ctx.globalCompositeOperation;
+  const coreRadius = Math.min(radius, Math.max(1.8, Math.min(4.2, radius * 0.18)));
+  const heartRadius = coreRadius * 1.45;
+  const coronaRadius = Math.max(coreRadius * 3.8, Math.min(20, radius * 0.95));
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = Math.min(1, coronaLit);
+  ctx.drawImage(sprite.corona, x - coronaRadius, y - coronaRadius, coronaRadius * 2, coronaRadius * 2);
+  // Keep the point locatable at a twinkle trough; the surrounding light still breathes.
+  ctx.globalAlpha = Math.min(1, Math.max(0.62 * presence, lit));
+  ctx.drawImage(sprite.heart, x - heartRadius, y - heartRadius, heartRadius * 2, heartRadius * 2);
+  if (glint > 0.01) {
+    ctx.globalAlpha = 1;
+    drawDiffractionSpike(ctx, {
+      screenX: x,
+      screenY: y,
+      screenRadius: coreRadius,
+      color: ink,
+      alpha: presence * glint * 0.52,
+      rotation: glintRotation,
+      maxLong: Math.min(20, Math.max(6, coreRadius * 4.5)),
+    });
+  }
+  ctx.globalCompositeOperation = previousComposite;
+  ctx.globalAlpha = previousAlpha;
+}
 
 
 function strokeKindOutline(

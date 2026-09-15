@@ -1213,8 +1213,7 @@
         "strata": "the same containment, read level by level",
         "coupling": "clustered by what relates to what"
       },
-      "view3dLabel": "3D",
-      "view3dAriaLabel": "3D view",
+      "mapViewAriaLabel": "Map view",
       "view3dPickerHelp": "Choose a map view. Current: {view}.",
       "searchAriaLabel": "Concept search",
       "searchTitle": "Concept search",

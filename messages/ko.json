@@ -1213,8 +1213,7 @@
         "strata": "같은 담김 구조를 층으로 나눠 읽는 모양",
         "coupling": "관계가 가까운 것끼리 모인 모양"
       },
-      "view3dLabel": "3D",
-      "view3dAriaLabel": "3D 보기",
+      "mapViewAriaLabel": "지도 보기",
       "view3dPickerHelp": "지도 보기를 고르세요. 현재: {view}.",
       "searchAriaLabel": "개념 검색",
       "searchTitle": "개념 검색",

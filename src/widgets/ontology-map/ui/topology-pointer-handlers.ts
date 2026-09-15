@@ -60,6 +60,7 @@ import {
 } from "../interaction/pointer-state-machine";
 import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeUnfocusedPanBounds, HIT_TOUCH_SLACK_PX, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
+import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import { radiusForKind, type TopologyWorld, type WorldEdge } from "./topology-world";
 
@@ -158,6 +159,8 @@ export interface PointerHandlerRefs {
    * Optional so existing test fixtures keep working.
    */
   userDrivenCameraRef?: Ref<boolean>;
+  /** Monotonic camera-gesture revision. Programmatic fits never change it. */
+  cameraGestureRevisionRef?: Ref<number>;
   /** The live force simulation (`model/force-layout.ts`) — pin/movePin/clearPin during node-drag. Null before the world is built. */
   simRef: Ref<ForceSimulation | null>;
   /** Frames of remaining sim warmth — the rAF loop ticks the sim while > 0 (or while a node is pinned). Bumped by node-drag. */
@@ -270,6 +273,10 @@ export interface PointerHandlerRefs {
    * lockstep with what was drawn). Omitted defaults to `DEFAULT_TIER_REVEAL`.
    */
   tierRevealRef?: Ref<TierRevealConfig>;
+  /** Galaxy hides the default wiring field; edge hit candidates must match. */
+  galaxyRef?: Ref<boolean>;
+  pathEdgeIdsRef?: Ref<ReadonlySet<string> | null>;
+  visitedTrailRef?: Ref<readonly string[]>;
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
     position: { x: number; y: number } | null,
@@ -383,6 +390,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     rippleStartRef,
     reducedMotionRef,
     userDrivenCameraRef,
+    cameraGestureRevisionRef,
     simRef,
     heatRef,
     nodeDragRef,
@@ -404,6 +412,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     neuralRampRef,
     domeGripRef = { current: false },
     tierRevealRef,
+    galaxyRef,
+    pathEdgeIdsRef,
+    visitedTrailRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,
@@ -415,6 +426,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     onExpandEgoNeighbors,
     onExpandClusterBatch,
   } = refs;
+
+  const noteUserCameraGesture = () => {
+    if (userDrivenCameraRef) userDrivenCameraRef.current = true;
+    if (cameraGestureRevisionRef) cameraGestureRevisionRef.current += 1;
+  };
 
   /**
    * 3D view — this frame's dome delivery map (only while the ramp is > 0). Hit
@@ -654,6 +670,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // still view keeps the same generation.
     const domeFrame = domeFrameNow();
     const domeEpoch = domeFrame ? (domeRuntimeRef?.current?.frameEpoch ?? 0) : -1;
+    const selectedEdge = selectedEdgeRef?.current ?? null;
+    const pathIds = pathEdgeIdsRef?.current ?? null;
+    const visited = visitedTrailRef?.current ?? [];
     const cacheKey = [
       cameraRef.current.x.value,
       cameraRef.current.y.value,
@@ -662,6 +681,11 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       height,
       zoomRatio,
       focusedNodeId ?? "",
+      hoveredNodeIdRef.current ?? "",
+      galaxyRef?.current ? "galaxy" : "flat",
+      selectedEdge ? `${selectedEdge.sourceId}>${selectedEdge.targetId}` : "",
+      pathIds ? [...pathIds].sort().join(",") : "",
+      visited.join(","),
       domeEpoch,
     ].join("|");
     // Sets and maps are compared **by reference** — comparing only sizes lets a
@@ -719,6 +743,35 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const ZERO = { dx: 0, dy: 0, s: 1 };
     for (const edge of world.edges) {
       if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId)) continue;
+      if (galaxyRef?.current) {
+        let walked = false;
+        for (let index = 1; index < visited.length; index += 1) {
+          const left = visited[index - 1];
+          const right = visited[index];
+          if (
+            (left === edge.sourceId && right === edge.targetId) ||
+            (left === edge.targetId && right === edge.sourceId)
+          ) {
+            walked = true;
+            break;
+          }
+        }
+        const selected =
+          selectedEdge !== null &&
+          ((selectedEdge.sourceId === edge.sourceId && selectedEdge.targetId === edge.targetId) ||
+            (selectedEdge.sourceId === edge.targetId && selectedEdge.targetId === edge.sourceId));
+        if (
+          !isGalaxyEdgeVisible(edge, {
+            focusedNodeId,
+            hoveredNodeId: hoveredNodeIdRef.current,
+            selected,
+            path: edge.id !== undefined && pathIds?.has(edge.id) === true,
+            walked,
+          })
+        ) {
+          continue;
+        }
+      }
       const offA = domeFrame?.get(edge.sourceId) ?? ZERO;
       const offB = domeFrame?.get(edge.targetId) ?? ZERO;
       const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, reducedMotionRef.current ? undefined : neuralRampRef?.current);
@@ -886,7 +939,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
           const afterX = worldAtPrevMidX - (midX - width / 2) / newScale;
           const afterY = worldAtPrevMidY - (midY - height / 2) / newScale;
           cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
-          if (userDrivenCameraRef) userDrivenCameraRef.current = true;
+          noteUserCameraGesture();
           dampingRef.current = tokens.cameraDampingDefault;
           cameraAngularFreqRef.current = tokens.cameraSpringAngFreqInteractive;
           // Block residual flick velocity (as the wheel does) — a pinch is target driven.
@@ -1060,7 +1113,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       // only takes back over once the flick is released (`engine/momentum.ts`).
       cameraRef.current = { ...cameraRef.current, x: { value: nextX, velocity: 0 }, y: { value: nextY, velocity: 0 } };
       cameraTargetRef.current = { ...cameraTargetRef.current, tx: nextX, ty: nextY };
-      if (userDrivenCameraRef) userDrivenCameraRef.current = true;
+      noteUserCameraGesture();
       dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
       // Keep ~10 samples (~160ms at 60fps) so the release-velocity window
       // (`--map-camera-release-velocity-window-ms`) is always covered,
@@ -1368,7 +1421,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         );
       }
       cameraTargetRef.current = { tx: clampedLanding.x, ty: clampedLanding.y, tscale: cameraTargetRef.current.tscale };
-      if (userDrivenCameraRef) userDrivenCameraRef.current = true;
+      noteUserCameraGesture();
       cameraRef.current = {
         ...cameraRef.current,
         x: { value: cameraRef.current.x.value, velocity: px.worldVelocity },
@@ -1586,7 +1639,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const afterY = beforeY - (sy - height / 2) / newScale;
 
     cameraTargetRef.current = { tx: afterX, ty: afterY, tscale: newScale };
-    if (userDrivenCameraRef) userDrivenCameraRef.current = true;
+    noteUserCameraGesture();
     dampingRef.current = tokens.cameraDampingDefault;
     // R4 momentum-glide interruption — when a wheel zoom starts, the residual x/y
     // velocity of an in-flight flick deceleration is zeroed so it does not leak (zoom is

@@ -8,7 +8,8 @@
 import type { CameraAxes } from "../engine/camera";
 import { collectDomeAncestry, domeAncestryEdgeKey } from "../model/dome-ancestry";
 import { buildTrailGlintLegs, trailGlintLocalPhase } from "../model/footprint-steps";
-import { bodyPresence, filamentPresence, galaxyTemperatureKey, starLuminance } from "../model/galaxy";
+import { bodyPresence, filamentPresence, galaxyAppearance, galaxyMeteorPhase, galaxySelectionInk, galaxyTemperatureKey, galaxyTwinkle, starLuminance } from "../model/galaxy";
+import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
 import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, trailNodeInkStrength, type EdgeEgoState, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { backgroundParallaxOrigin, resolveBackgroundOrigin } from "../model/background-parallax";
@@ -84,10 +85,11 @@ import {
   type ReservedBox,
   type SafeRect,
 } from "../render/label-layout";
-import { draw as nodeShapesDraw, drawNodeStar } from "../render/node-shapes";
+import { draw as nodeShapesDraw, drawGalaxyNodeStar, drawNodeStar } from "../render/node-shapes";
 import { clusterChipOccupancyRect, drawClusterChip, clusterChipScale, type ClusterBarLabels } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
+import { drawGalaxyMeteor, drawGalaxyNebula } from "../render/galaxy-atmosphere";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
 import {
@@ -659,6 +661,10 @@ export interface FrameDrawParams {
    * cutting — the same shape every other lens on this canvas uses. The loop owns the clock.
    */
   galaxyRamp?: number;
+  /** Milliseconds since this Galaxy entry; drives only deterministic atmosphere. */
+  galaxyElapsedMs?: number;
+  /** Shared world radius of the real-node spiral; aligns the cached sky texture. */
+  galaxyLayoutRadius?: number;
   /** Coupling view material: lit cell bodies and softly tapered connections. */
   neuralRamp?: number;
   /** Semantic-zoom axis (`cameraScale / overviewEntryScale`) — drives tier visibility only. */
@@ -1049,6 +1055,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     camera,
     farT,
     galaxyRamp: galaxyRampProp = 0,
+    galaxyElapsedMs = 0,
+    galaxyLayoutRadius = 0,
     neuralRamp: neuralRampProp = 0,
     zoomRatio,
     now,
@@ -1238,6 +1246,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
    */
   const galaxy = domeOn ? 0 : galaxyRampProp;
   const galaxyOn = galaxy > 0.001;
+  const galaxyPhase = galaxyAppearance(galaxy);
   /**
    * One node's 3D transform (world offset + perspective factor). Nodes, labels,
    * edge endpoints, and chip anchors all pass through this map, so every mark on a
@@ -1294,8 +1303,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // assembly ramp** (2026-09-02 recording: they used to cut in one frame
       // while the tiers took 1,120 ms to rise — the background hard-cutting
       // under an easing protagonist is the defect the motion rules name). The
-      // grid already fades with altitude, so the ramp rides the same `farT`.
-      farT: Math.max(farT, domeRamp),
+      // The grid already fades with altitude. Galaxy uses the same established
+      // depth path so the blueprint recedes behind stars and relations instead
+      // of competing with them; no separate background style is introduced.
+      farT: Math.max(farT, domeRamp, galaxy),
       variant: backgroundVariant,
       gridPattern,
       paintAnimated: domeRamp > 0.001 ? null : paintAnimatedBackground,
@@ -1321,10 +1332,43 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       vignetteFarAlpha: tokens.vignetteFarAlpha,
     },
   );
+  if (galaxyOn && galaxyLayoutRadius > 0) {
+    const core = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
+    drawGalaxyNebula(ctx, {
+      centerX: core.x,
+      centerY: core.y,
+      radius: galaxyLayoutRadius * camera.scale.value,
+      alpha: Math.max(galaxyPhase.field * 0.88, galaxyPhase.corona * 0.7),
+      warmInk: tokens.galaxyProject,
+      coolInk: tokens.galaxyElement,
+      accentInk: tokens.indigo,
+    });
+  }
   // devicePixelRatio: 1 — ctx is already DPR-transformed once by the caller
   // (`use-topology-loop.ts`), so dust points (already in CSS-pixel space)
   // must not be scaled a second time.
-  drawStarDust(ctx, { points: dustPoints, farT, devicePixelRatio: 1, originX: gridOrigin.x, originY: gridOrigin.y, radialParallax: realmDustParallax });
+  drawStarDust(ctx, {
+    points: dustPoints,
+    // Galaxy borrows the existing seeded depth texture while its grid recedes.
+    // Point count, ink, and alpha remain the far-field contract; this only lets
+    // the chosen mode reach it without requiring an altitude change.
+    farT: Math.max(farT, galaxy),
+    devicePixelRatio: 1,
+    opacityScale: galaxyOn ? 1.8 : 1,
+    originX: reducedMotion ? 0 : gridOrigin.x,
+    originY: reducedMotion ? 0 : gridOrigin.y,
+    radialParallax: reducedMotion ? 0 : realmDustParallax,
+  });
+  if (galaxyOn && !reducedMotion) {
+    drawGalaxyMeteor(
+      ctx,
+      galaxyMeteorPhase(galaxyElapsedMs),
+      viewportWidth,
+      viewportHeight,
+      tokens.galaxyCapability,
+      galaxyPhase.corona * 0.82,
+    );
+  }
 
   // While a realm is active, the space **inside** the warding circle becomes
   // cosmos; outside it is clipped away. Independent of `farT` (a realm sits at
@@ -1598,6 +1642,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const domeA = domeNodeFrameReused[nodeIndex].a;
       if (domeA > 0) outAlpha = outAlpha + (1 - outAlpha) * domeA;
     }
+    // Galaxy's overview is the complete star field. The mode ramp reveals
+    // every real concept while Flat keeps its semantic-zoom tiers unchanged.
+    if (galaxyOn) outAlpha = outAlpha + (1 - outAlpha) * galaxy;
     effectiveAlphaById.set(node.id, outAlpha);
   }
 
@@ -1825,6 +1872,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     for (let drawPos = 0; drawPos < edgeDrawOrder.length; drawPos += 1) {
       const edge = edgeDrawOrder[drawPos];
       if (edge.kind !== kind) continue;
+      const sourceNode = world.nodeById.get(edge.sourceId);
+      const targetNode = world.nodeById.get(edge.targetId);
+      const galaxyFilamentInk =
+        galaxyOn && sourceNode && targetNode
+          ? galaxySelectionInk(
+              tokens[galaxyTemperatureKey(sourceNode.kind)],
+              tokens[galaxyTemperatureKey(targetNode.kind)],
+              0.5,
+            )
+          : undefined;
       // perf 2026-08-19 — read the precomputed alpha by original index (in dome
       // mode dereference the sort index; in 2D they coincide). -1 = collapsed by
       // the density condition, ≤0.02 = rejected by tier — both skip, as before.
@@ -1963,6 +2020,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         trailRamp > 0.001 && walkedEdgeKeys !== null && walkedEdgeKeys.has(walkedKey)
           ? trailRamp * walkedSweep
           : 0;
+      if (
+        galaxyOn &&
+        !isGalaxyEdgeVisible(edge, {
+          focusedNodeId,
+          hoveredNodeId,
+          selected: isSelectedEdge,
+          path: isPathEdge,
+          walked: walkedTrail > 0.01,
+        })
+      ) {
+        continue;
+      }
       /*
        * The stored direction is in key order (low id → high id); the line is drawn from
        * `edge.sourceId` to `edge.targetId`. When those disagree the light has to run the
@@ -2016,7 +2085,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
        * the thing Atlas exists to show (`model/galaxy.ts`). A walked relation is exempt, since
        * it is the answer to a question the reader asked by opening the lens.
        */
-      const filament = galaxyOn && walkedTrail <= 0.01 ? filamentPresence(galaxy) : 1;
+      const filament = galaxyOn && walkedTrail <= 0.01 ? filamentPresence(galaxyPhase.filament) : 1;
       ctx.globalAlpha =
         (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
         edgeSpotlightSink *
@@ -2055,6 +2124,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         edgeHaloScratch.px = TRAIL_HALO_PX * walkedTrail;
         edgeHaloScratch.alpha = TRAIL_HALO_ALPHA * walkedTrail;
       }
+      const galaxyEdgeInk = galaxyFilamentInk
+        ? hoverLift > 0 || edgeEgoState === "ego" || isSelectedEdge
+          ? tokens.indigoBright
+          : galaxyFilamentInk
+        : undefined;
       // Ego line glow — a blurred copy of the line under itself, indigo, on the centre's
       // focus ramp. Only the ego lines carry it (≤ degree per frame), so the blur's cost
       // stays bounded; everything else draws exactly as before.
@@ -2078,7 +2152,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
               },
               trailStarInk,
             )
-          : edgeEgoState === "ego" && !trailLensActive && beginEdgeGlow(ctx, egoGlowRamp, tokens);
+          : edgeEgoState === "ego" && !trailLensActive
+            ? beginEdgeGlow(ctx, egoGlowRamp, tokens)
+            : galaxyEdgeInk
+              ? beginEdgeGlow(
+                  ctx,
+                  galaxyPhase.filament * (hoverLift > 0 ? 0.82 : 0.36),
+                  {
+                    ...tokens,
+                    egoGlowAlpha: tokens.egoGlowAlpha * 0.7,
+                    egoGlowBlurPx: tokens.egoGlowBlurPx * 0.8,
+                  },
+                  galaxyEdgeInk,
+                )
+              : false;
       tracesDraw(
         ctx,
         {
@@ -2102,6 +2189,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           t: edge.t,
           emphasized,
           hoverLift,
+          galaxyInk: galaxyEdgeInk,
+          galaxyGlint:
+            kind === "depends" && galaxyEdgeInk && !reducedMotion
+              ? galaxyPhase.filament * (hoverLift > 0 || edgeEgoState === "ego" ? 0.78 : 0.32)
+              : 0,
           reducedMotion,
           level: edge.level,
           widthScale: domeEdgeExempt ? 1 : 1 + (domeWidthScale - 1) * (1 - hoverLift),
@@ -2594,7 +2686,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // Bloom — a blurred indigo disc under the focused node (on the focus ramp) or the
     // hovered node (on its emphasis ramp): light marks the one thing the hand is on.
     // 2D only; the 3D views keep their depth grammar.
-    if (!domeOn) {
+    if (!domeOn && !galaxyOn) {
       const bloomRamp =
         colorEgoState === "center"
           ? egoGlowRamp
@@ -2691,7 +2783,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
      * is nothing to collide with, and suppressing magnitude here would delete a fact to avoid a
      * conflict that has already been removed.
      */
-    if (farT > 0.02 && (world.brightStarIds.has(node.id) || node.kind === "project")) {
+    if (!galaxyOn && farT > 0.02 && (world.brightStarIds.has(node.id) || node.kind === "project")) {
       drawDiffractionSpike(ctx, {
         screenX: screen.x,
         screenY: screen.y,
@@ -2730,19 +2822,50 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
      * same precedence this file already applies to the ambient comet on a walked relation.
      */
     if (galaxyOn) {
-      drawNodeStar(
-        ctx,
-        node.kind,
-        screen.x,
-        screen.y,
-        screenRadius,
-        farT,
-        tokens[galaxyTemperatureKey(node.kind)],
-        nodeLayerAlpha * galaxy * starLuminance(node.starMagnitude),
-        1,
-        // The core arrives as the body leaves, so the node is never both a hole and a shape.
-        galaxy,
-      );
+      // Selection borrows the existing indigo state channel. The remaining
+      // stars keep their kind temperature, so the inspected fact is distinct
+      // from ordinary variation in magnitude.
+      const temperatureInk = tokens[galaxyTemperatureKey(node.kind)];
+      const galaxyInk = colorEgoState === "center"
+        ? galaxySelectionInk(temperatureInk, tokens.indigoBright, focusRamp)
+        : temperatureInk;
+      const attention = colorEgoState === "center"
+        ? focusRamp
+        : isHovered
+          ? Math.min(1, Math.max(0, emphasis))
+          : 0;
+      const luminance = nodeLayerAlpha * starLuminance(node.starMagnitude);
+      const atmosphere = galaxyTwinkle(node.id, now, reducedMotion);
+      const atmosphericLuminance = luminance * atmosphere.intensity;
+      drawGalaxyNodeStar(ctx, {
+        x: screen.x,
+        y: screen.y,
+        // Paint expands on the existing focus ramp while canonical hit and
+        // label geometry remain unchanged. A low-magnitude selected concept
+        // must still read as the protagonist beside brighter hubs.
+        radius: screenRadius * (1 + 0.32 * attention),
+        ink: galaxyInk,
+        lit: Math.min(
+          1,
+          Math.max(
+            atmosphericLuminance * galaxyPhase.core * (1 + 0.3 * attention),
+            0.82 * attention * galaxyPhase.core,
+          ),
+        ),
+        coronaLit: Math.min(
+          1,
+          Math.max(
+            atmosphericLuminance * galaxyPhase.corona * (1 + 0.55 * attention),
+            0.72 * attention * galaxyPhase.corona,
+          ),
+        ),
+        presence: nodeLayerAlpha * galaxyPhase.field,
+        glint:
+          (world.brightStarIds.has(node.id) || attention > 0
+            ? atmosphere.glint * galaxyPhase.corona
+            : 0),
+        glintRotation: atmosphere.rotation,
+      });
     }
 
 
@@ -2834,20 +2957,35 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
        * ink, at 2.95:1 against that indigo and clipping to white over it, did.
        */
       const starInk = node.id === focusedNodeId ? tokens.selectionRingIndigo : trailStarInk;
-      drawNodeStar(
-        ctx,
-        node.kind,
-        screen.x,
-        screen.y,
-        // The light swells out of the node as it ignites and settles back — a star arriving
-        // has a size, not only a brightness. It reaches 1 by the time the sweep is done, so
-        // the settled constellation is dimensionally still.
-        screenRadius,
-        farT,
-        starInk,
-        lit,
-        1 + TRAIL_STAR_SWELL * starSwellCurve(sweepT),
-      );
+      if (galaxyOn) {
+        const atmosphere = galaxyTwinkle(node.id, now, reducedMotion);
+        drawGalaxyNodeStar(ctx, {
+          x: screen.x,
+          y: screen.y,
+          radius: screenRadius,
+          ink: starInk,
+          lit: Math.min(1, lit * atmosphere.intensity),
+          coronaLit: Math.min(1, lit * atmosphere.intensity),
+          presence: layerAlpha * trailRamp,
+          glint: atmosphere.glint * trailRamp,
+          glintRotation: atmosphere.rotation,
+        });
+      } else {
+        drawNodeStar(
+          ctx,
+          node.kind,
+          screen.x,
+          screen.y,
+          // The light swells out of the node as it ignites and settles back — a star arriving
+          // has a size, not only a brightness. It reaches 1 by the time the sweep is done, so
+          // the settled constellation is dimensionally still.
+          screenRadius,
+          farT,
+          starInk,
+          lit,
+          1 + TRAIL_STAR_SWELL * starSwellCurve(sweepT),
+        );
+      }
       /*
        * ⚠️ Gated on the ramp, not only on the ink. With the lens closed these survived their
        * own stars — measured as orphan 11px numerals floating up-right of unmarked nodes
@@ -2881,7 +3019,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ) {
       ctx.save();
       ctx.setLineDash([...EXPANDED_AURA_DASH]);
-      ctx.globalAlpha = tierAlpha * EXPANDED_AURA_ALPHA;
+      ctx.globalAlpha = tierAlpha * EXPANDED_AURA_ALPHA * bodyPresence(galaxy);
       ctx.strokeStyle = tokens.indigo;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -2915,7 +3053,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ) {
       ctx.save();
       ctx.setLineDash([...EXPANDED_AURA_DASH]);
-      ctx.globalAlpha = tierAlpha * EXPANDED_COHORT_ALPHA;
+      ctx.globalAlpha = tierAlpha * EXPANDED_COHORT_ALPHA * bodyPresence(galaxy);
       ctx.strokeStyle = tokens.expandedCohort;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -3171,7 +3309,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // classified entry zoom as "element", lifted the budget, and let all 82 labels race
   // the greedy placer — 33 landed wherever they fit, leaf labels stacked into walls.
   // The workbench passes no override, so for it this line is byte-identical.
-  const applyLabelTopK = classifyZoomTier(zoomRatio) !== "element";
+  const labelZoomTier = classifyZoomTier(zoomRatio);
+  const applyLabelTopK = labelZoomTier !== "element";
+  // At Galaxy overview altitude the named constellations are the project and
+  // its real domains. Capability/element names return when the reader leans in
+  // or points/focuses, so the initial sky does not promote whichever leaves
+  // happened to win a global degree ranking over the domain anchors.
+  const galaxyOverviewLabelsOnly =
+    galaxyOn && labelZoomTier === "spine" && focusedNodeId === null && selectedEdge === null;
   // High-fan disc density prescription: an expanded phyllotaxis disc can hold dozens–
   // hundreds of children. Blanket-exempting them all (the old behavior) punched
   // a wall of ~60 labels across the map. Instead, per disc only the DOI top-K
@@ -3258,6 +3403,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const trailKept = isTrailKept(node.id);
     const pathKept = isPathLensNode(mapLensKind, node.id, spotlightIds);
     const isHovered = hoveredNodeId !== null && node.id === hoveredNodeId;
+    if (
+      galaxyOverviewLabelsOnly &&
+      node.kind !== "project" &&
+      node.kind !== "domain" &&
+      !isHovered &&
+      !previewEndpoint &&
+      !trailKept &&
+      !pathKept
+    ) {
+      continue;
+    }
     // High-fan disc density gate: an expanded-disc child that didn't make its
     // disc's DOI top-K stays a DOT (no label candidate) — unless it's the
     // hovered node or an ego member, which re-earn a label. Skipping here (before
@@ -3347,7 +3503,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // to measure outside the canvas — and why project/hub is on that list is also documented there.
       // With only two tiers having few clamp targets, the original concern that "everything stacks in the inset"
       // does not resurface, and collisions are still handled by greedy suppression.
-      if (!isSafeRectProtectedLabel({
+      if (!(galaxyOn && node.kind === "domain") && !isSafeRectProtectedLabel({
         egoState,
         isHovered,
         trailKept: trailKept || pathKept,
@@ -3371,6 +3527,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // "anonymous box wearing a ring" is the point of this lens, so the name has
       // to stand.
       const exempt =
+        (galaxyOn && (node.kind === "project" || node.kind === "domain")) ||
         egoState === "center" ||
         isHovered ||
         trailKept ||
@@ -3378,7 +3535,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         (egoState === "neighbor" && isEgoNeighborLabelExempt(node.id, egoNeighborLabelEligibleIds));
       labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
     }
-    const priority = resolveLabelPriority({
+    const priority = galaxyOn && (node.kind === "project" || node.kind === "domain") ? 1 : resolveLabelPriority({
       kind: node.kind,
       isSelected: egoState === "center",
       isHovered,

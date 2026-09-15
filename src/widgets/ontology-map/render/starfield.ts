@@ -178,6 +178,8 @@ export interface StarDustDrawState {
   originY?: number;
   farT: number;
   devicePixelRatio: number;
+  /** View-bounded visibility lift; defaults to the established far-field level. */
+  opacityScale?: number;
   /**
    * Radial parallax fall at the moment of realm expansion, 0..1 — each point is
    * pushed outward from screen centre in proportion to its depth, reading as
@@ -198,12 +200,14 @@ export interface StarDustDrawState {
  */
 let dustStyleSourcePoints: readonly DustPoint[] | null = null;
 let dustStyleFarT = -1;
+let dustStyleOpacityScale = -1;
 let dustStyles: string[] = [];
 
 /** Draws the static dust texture, fading in with `farT` (never fully at circuit altitude). */
 export function drawStarDust(ctx: CanvasRenderingContext2D, state: StarDustDrawState): void {
   if (state.farT <= 0.02) return;
   const { points, farT, devicePixelRatio } = state;
+  const opacityScale = Math.max(0, state.opacityScale ?? 1);
   const ox = state.originX ?? 0;
   const oy = state.originY ?? 0;
   // Parallax: each point follows the camera in proportion to its depth, slower
@@ -213,10 +217,11 @@ export function drawStarDust(ctx: CanvasRenderingContext2D, state: StarDustDrawS
   const h = ctx.canvas.height / devicePixelRatio;
   const rp = state.radialParallax ?? 0;
   const maxShift = Math.min(w, h) * 0.03;
-  if (dustStyleSourcePoints !== points || dustStyleFarT !== farT) {
+  if (dustStyleSourcePoints !== points || dustStyleFarT !== farT || dustStyleOpacityScale !== opacityScale) {
     dustStyleSourcePoints = points;
     dustStyleFarT = farT;
-    dustStyles = points.map((point) => `rgba(236,236,240,${point.alpha * farT})`);
+    dustStyleOpacityScale = opacityScale;
+    dustStyles = points.map((point) => `rgba(236,236,240,${Math.min(1, point.alpha * farT * opacityScale)})`);
   }
   for (let i = 0; i < points.length; i += 1) {
     const point = points[i];

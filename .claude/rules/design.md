@@ -116,6 +116,18 @@ ramp.”
   red-green distinction, so it was not information-safe.
 - Kind colour is data, not a card decoration. Use neutral surfaces with a small
   marker and label; never a full-height coloured rail.
+- Galaxy is the view-bounded exception to kind silhouettes, selected by the
+  owner on 2026-09-15. Its canvas nodes have no polygon, outline, nested ring,
+  or expanded orbit: only a circular core, radial corona, and sparse glint.
+  Kind remains explicit in INDEX/inspector text and through the existing
+  `--map-galaxy-*` temperature ramp; Flat, Dome, and hit geometry keep the
+  canonical shapes and radii. Deterministic twinkle is atmosphere, never
+  activity, recency, or a precise instantaneous importance rank. Reduced motion
+  freezes it at a steady readable level and omits the procedural shooting star.
+  Galaxy positions every real node in a stable three-arm arrangement: project
+  core, staggered domain anchors, and containment-derived local clouds. Its
+  overview paints and hit-tests no default edge mesh; hover, selection, path,
+  and walked trail reveal only real relations. Flat and Dome layouts are unchanged.
 - Distinguish workflow categories through shape—indigo underline for active,
   dashed for planned—not colour alone.
 - Selection stays within one indigo family: node selection uses the base indigo;
@@ -191,8 +203,9 @@ Shape, radius, magnitude, and embedded-count rules live only in
 assumed.** Node and edge overlays are *material* — they mark state on something a
 person is already looking at, and material does not glow. `globalCompositeOperation
 = "lighter"` is permitted only where the mark's meaning **is** light: the gateway
-hero, and the walked-path star (`shared/lib/star-emission.ts`) inside a lens the
-person opened. Every `lighter` region restores the previous operation in the same
+hero, the walked-path star (`shared/lib/star-emission.ts`) inside a lens the
+person opened, and the owner-selected Galaxy star/meteor atmosphere. Every
+`lighter` region restores the previous operation in the same
 function, and a node carries at most one diffraction cross per frame. That second
 clause is now satisfied by subtraction: the walked star wears no cross at all, so
 the magnitude spike never has to stand down for it. This sentence is written down

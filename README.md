@@ -273,12 +273,22 @@ record the order in which you opened concepts.
 ![The installed macOS map picker offering Flat, Galaxy, Cone, Strata, and Neural, with the relation-driven Neural view behind it](docs/assets/readme/three-dimensional-views.png)
 
 Five views keep their questions explicit: **Flat** is the normal 2D map and
-**Galaxy** shares its coordinates with a star-like presentation. **Cone** draws
+**Galaxy** turns every real concept into a stable three-arm sky: the project is
+the core, domains anchor contiguous constellations, and their owned concepts
+form nearby star clouds. Its default overview hides the relationship mesh so
+the groups read first; pointing at or selecting a star reveals only its actual
+adjacent relations as luminous filaments. The stars twinkle as atmosphere;
+their steady brightness still derives from connection count, never live activity.
+**Cone** draws
 containment as nested cones, **Strata** separates kind tiers onto planes, and
 **Neural** groups related concepts in three dimensions with lit cell bodies and
 short connections. Keyboard focus remains visible while following related concepts,
-and Fit provides an explicit overview return on touch screens too. Every 3D view uses shallow, bounded relation curves shared by
-rendering and picking. Changing the view never changes the graph.
+and Fit provides an explicit overview return on touch screens too. Inspecting a
+Galaxy concept keeps the expanded constellation in place and smoothly approaches
+the selected star in the free canvas beside the inspector, without zooming out a
+closer view. Closing restores the prior camera unless you navigated meanwhile.
+Every 3D view uses shallow, bounded relation
+curves shared by rendering and picking. Changing the view never changes the graph.
 
 ### 4. Gather and read documents in the Library
 

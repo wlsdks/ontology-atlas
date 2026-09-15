@@ -45,6 +45,8 @@ import { NAVIGATION_INTENT_EVENT, NAVIGATION_YIELD_MS } from "@/shared/lib/navig
 import { stepSpotlightPhase } from "../model/spotlight-motion";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import { resolveViewportReframeMode } from "../model/viewport-reframe";
+import { galaxyInspectionTarget } from "../model/galaxy-inspection-camera";
+import { computeGalaxyLayout, isGalaxyEdgeVisible, type GalaxyLayout } from "../model/galaxy-layout";
 import { classifyZoomTier, computeZoomRatio, DEFAULT_TIER_REVEAL, nodeTierAlpha, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
@@ -167,7 +169,7 @@ import {
 
 import { readOntologyMapTokensOrNull } from "./topology-read-tokens";
 import type { OntologyMapProps } from "./OntologyMap";
-import { applyForcePositions, buildTopologyWorld, computeRevealedBounds, recomputeWorldGeometry, type TopologyWorld, type WorldEdge, radiusForKind } from "./topology-world";
+import { applyForcePositions, buildTopologyWorld, computeRevealedBounds, isSpineNode, recomputeWorldGeometry, type TopologyWorld, type WorldEdge, radiusForKind } from "./topology-world";
 import { prepareRevealHome } from "./topology-reveal-home";
 
 /**
@@ -183,6 +185,50 @@ function overviewBoundsFor(
   clustered: ReadonlySet<string> | null,
 ) {
   return fit === "full" ? world.bounds : computeRevealedBounds(world, tokens, expandedParents, clustered);
+}
+
+/**
+ * Flat's absolute 0.24 floor protects a collapsed spine from becoming a speck.
+ * Galaxy has the opposite overview contract: every real concept must fit beside
+ * INDEX. Let its positive bounds-derived fit become the floor/altitude anchor;
+ * interactive zoom still derives its limits from that anchor.
+ */
+function overviewFitTokens<T extends { cameraScaleMin: number }>(tokens: T, galaxyActive: boolean): T {
+  return galaxyActive ? { ...tokens, cameraScaleMin: 0 } : tokens;
+}
+
+/** The eventual Flat overview bounds while Galaxy coordinates are still on screen. */
+function boundsForPositionTargets(
+  fit: "spine" | "full",
+  world: TopologyWorld,
+  tokens: OntologyMapTokens,
+  targets: ReadonlyMap<string, { x: number; y: number }>,
+  expandedParents: ReadonlySet<string>,
+) {
+  const included = new Set<string>();
+  if (fit === "full") {
+    for (const node of world.nodes) included.add(node.id);
+  } else {
+    for (const node of world.nodes) if (isSpineNode(node)) included.add(node.id);
+    for (const parentId of expandedParents) {
+      for (const childId of world.childrenByParent.get(parentId) ?? []) included.add(childId);
+    }
+  }
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  for (const id of included) {
+    const node = world.nodeById.get(id);
+    const point = targets.get(id);
+    if (!node || !point) continue;
+    const radius = radiusForKind(node.kind, tokens);
+    minX = Math.min(minX, point.x - radius);
+    minY = Math.min(minY, point.y - radius);
+    maxX = Math.max(maxX, point.x + radius);
+    maxY = Math.max(maxY, point.y + radius);
+  }
+  return Number.isFinite(minX) ? { minX, minY, maxX, maxY } : world.spineBounds;
 }
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 
@@ -635,6 +681,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** 3D view target — mirrored because draw reads it per frame and hit-testing reads it per event. */
   const view3dRef = useRef<boolean>(view3d);
   const galaxyRef = useRef<boolean>(galaxy);
+  const galaxyEnteredAtRef = useRef<number>(0);
+  /** Stable Galaxy positions for the current graph, shared with fit and backdrop. */
+  const galaxyLayoutRef = useRef<GalaxyLayout | null>(null);
+  /** The live Flat coordinates to restore after leaving Galaxy. */
+  const galaxyFlatReturnPositionsRef = useRef<ReadonlyMap<string, { x: number; y: number }> | null>(null);
+  /** Which mode owns the active coordinate homing transition. */
+  const galaxyLayoutHandoffRef = useRef<"galaxy" | "flat" | null>(null);
   /**
    * How far the galaxy view has come, 0 (flat) to 1 (sky).
    *
@@ -644,11 +697,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    */
   const galaxyRampRef = useRef<number>(galaxy ? 1 : 0);
   const neuralRampRef = useRef<number>(0);
-  // Synced in an effect, not during render: the loop reads this ref on its own clock, and
-  // writing a ref while rendering is the one way to make those two disagree.
-  useEffect(() => {
-    galaxyRef.current = galaxy;
-  }, [galaxy]);
   /**
    * Arrangement mirror, read by the draw loop. On change an effect below drops
    * the dome model so the next frame rebuilds it at the new angle; height and
@@ -897,6 +945,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     scale: { value: 1, velocity: 0 },
   });
   const cameraTargetRef = useRef<CameraTarget>({ tx: 0, ty: 0, tscale: 1 });
+  /** Galaxy focus approach and the exact camera context it must yield back to. */
+  const galaxyInspectionCameraRef = useRef<{
+    returnTarget: CameraTarget;
+    focusTarget: CameraTarget;
+    gestureRevision: number;
+  } | null>(null);
+  useEffect(() => {
+    if (!galaxy) galaxyInspectionCameraRef.current = null;
+  }, [galaxy]);
   /**
    * WCAG 2.2 §2.3.3 — "who moved the camera last". Pointer-handler gestures
    * (wheel, pinch, pan, flick) set it true; every **programmatic** move in this
@@ -907,6 +964,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * frame, which is worse than the motion being removed.
    */
   const userDrivenCameraRef = useRef(false);
+  /** Direct pan/zoom advances this; programmatic fits and rebuilds do not. */
+  const cameraGestureRevisionRef = useRef(0);
   /**
    * The live cubic camera transition, or null.
    * Set by `beginCameraTween` on every programmatic move (focus dive, cluster
@@ -1000,6 +1059,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const hoveredNodeIdRef = useRef<string | null>(null);
   /** The edge under hover — shared by the draw's ink emphasis and the micro-card. */
   const hoveredEdgeRef = useRef<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>(null);
+  const onHoverEdgeRef = useRef(onHoverEdge);
   /** Edge-selection (pair focus) prop mirror, for the rAF closure. */
   const selectedEdgeRef = useRef<{ sourceId: string; targetId: string; relationType?: string } | null>(selectedEdge);
   /** Footprint trail prop mirror — the rAF closure builds the recency rank from it each frame. */
@@ -1414,6 +1474,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraTweenRef.current = { start, target: tgt, startMs: performance.now(), durationMs: durationOverrideMs ?? cameraTransitionDurationMs(start, tgt) };
   }, []);
 
+  // Initial Galaxy mounts do not pass through the mode-toggle branch below,
+  // but their deterministic atmosphere still needs an entry epoch.
+  useEffect(() => {
+    if (galaxy && galaxyEnteredAtRef.current === 0) {
+      galaxyEnteredAtRef.current = performance.now();
+    }
+  }, [galaxy]);
+
+
+
   useEffect(() => {
     onGrowthReplayingChangeRef.current = onGrowthReplayingChange;
   });
@@ -1424,6 +1494,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onDomeTierAnchorsChangeRef.current = onDomeTierAnchorsChange;
     onTierLegendPlacementChangeRef.current = onTierLegendPlacementChange;
   }, [onZoomTierChange, onDrawnCountChange, onDomeTierAnchorsChange, onTierLegendPlacementChange]);
+
+  useEffect(() => {
+    onHoverEdgeRef.current = onHoverEdge;
+  }, [onHoverEdge]);
 
   useEffect(() => {
     onEnterRealmRef.current = onEnterRealm;
@@ -1456,8 +1530,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
      * resolver revive the stale id as a live hover ring on the
      * previously-clicked node. A fresh pointermove after deselect re-derives
      * the real hover.
-     */
+    */
     hoveredNodeIdRef.current = null;
+    if (hoveredEdgeRef.current !== null) {
+      hoveredEdgeRef.current = null;
+      onHoverEdgeRef.current?.(null, null);
+    }
     // Select and deselect are static state transitions, so force one more draw
     // even while idle skipping (symmetric with the selectedEdge effect).
     // Without this wake on deselect, the retained colorFocus fade freezes in
@@ -1838,6 +1916,90 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     overviewFitRef.current = overviewFit;
   }, [overviewFit]);
 
+  // Synced in an effect, not during render: the loop reads this ref on its own clock, and
+  // writing a ref while rendering is the one way to make those two disagree.
+  useEffect(() => {
+    if (galaxyRef.current === galaxy) return;
+    galaxyRef.current = galaxy;
+    galaxyEnteredAtRef.current = galaxy ? performance.now() : 0;
+    const world = worldRef.current;
+    const tokens = readOntologyMapTokensOrNull();
+    if (!world || !tokens) return;
+
+    const layout = computeGalaxyLayout(
+      world.nodes.map((node) => ({ id: node.id, kind: node.kind, parentId: node.parentId })),
+      {
+        domain: tokens.layoutRingDomain,
+        capability: tokens.layoutRingCapability,
+        element: tokens.layoutRingElement,
+      },
+    );
+    galaxyLayoutRef.current = layout;
+    if (galaxy && galaxyFlatReturnPositionsRef.current === null) {
+      galaxyFlatReturnPositionsRef.current = new Map(
+        world.nodes.map((node) => [node.id, { x: node.x, y: node.y }]),
+      );
+    }
+    const targets = galaxy
+      ? layout.points
+      : galaxyFlatReturnPositionsRef.current ??
+        new Map(world.nodes.map((node) => [node.id, { x: node.homeX, y: node.homeY }]));
+
+    // A view transition owns coordinates until it settles. Clear drag/force
+    // state first so the hand and the transition never fight over one node.
+    nodeDragRef.current = null;
+    heatRef.current = 0;
+    dragAffectedSetRef.current = null;
+    dragStartPosRef.current = null;
+    dragTugOffsetsRef.current.clear();
+    const springs = new Map<string, HomeSpringState>();
+    for (const node of world.nodes) {
+      if (targets.has(node.id)) springs.set(node.id, initHomeSpring(node.x, node.y));
+    }
+    homeSpringsRef.current = springs;
+    homeTargetOverrideRef.current = targets;
+    homingActiveRef.current = springs.size > 0;
+    galaxyLayoutHandoffRef.current = galaxy ? "galaxy" : "flat";
+    lastActiveMsRef.current = performance.now();
+
+    // The Galaxy overview knows its destination bounds before the stars finish
+    // moving, so camera and layout travel as one event. Flat waits for the
+    // restored coordinates and reuses its established fit path below.
+    const { width, height } = viewportRef.current;
+    if (width > 0 && height > 0 && hasInitializedRef.current) {
+      const fitBounds = galaxy
+        ? layout.bounds
+        : boundsForPositionTargets(
+            overviewFitRef.current,
+            world,
+            tokens,
+            targets,
+            expandedParentsRef.current,
+          );
+      const measuredTokens = overviewFitTokens(cameraTokens(tokens), galaxy);
+      const target = computeOverviewCameraTarget(
+        fitBounds,
+        width,
+        height,
+        measuredTokens,
+        world.nodes.length,
+      );
+      cameraTargetRef.current = target;
+      overviewScaleRef.current = computeOverviewFitScale(
+        fitBounds,
+        width,
+        height,
+        measuredTokens,
+        world.nodes.length,
+      );
+      userDrivenCameraRef.current = false;
+      dampingRef.current = tokens.cameraDampingDefault;
+      cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+      beginCameraTween(target);
+    }
+  }, [galaxy, beginCameraTween, cameraTokens]);
+
+
   /**
    * Safety net: if a resize or a monitor change leaves **no node on screen at
    * all**, return to the overview fit.
@@ -1849,26 +2011,39 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * the value so nothing jumps; reduced-motion is already honoured by the
    * camera tween contract.
    */
-  const rescueCameraIfEverythingOffscreen = (tokens: OntologyMapTokens) => {
+  const rescueCameraIfEverythingOffscreen = useCallback((tokens: OntologyMapTokens) => {
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
     if (hasAnyNodeOnScreen(cameraRef.current, width, height, world.nodes)) return;
-    const target = computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
+    const fitBounds = galaxyRef.current && galaxyLayoutRef.current
+      ? galaxyLayoutRef.current.bounds
+      : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+    const target = computeOverviewCameraTarget(
+      fitBounds,
+      width,
+      height,
+      overviewFitTokens(cameraTokens(tokens), galaxyRef.current),
+      world.nodes.length,
+    );
     cameraTargetRef.current = { tx: target.tx, ty: target.ty, tscale: target.tscale };
     userDrivenCameraRef.current = false;
-  };
+  }, [cameraTokens]);
 
-  const trySnapInitialCamera = (tokens: OntologyMapTokens) => {
+  const trySnapInitialCamera = useCallback((tokens: OntologyMapTokens) => {
     if (hasInitializedRef.current) return;
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
+    const fitBounds = galaxyRef.current && galaxyLayoutRef.current
+      ? galaxyLayoutRef.current.bounds
+      : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+    const measuredTokens = overviewFitTokens(cameraTokens(tokens), galaxyRef.current);
     const target = computeOverviewCameraTarget(
-      overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current),
+      fitBounds,
       width,
       height,
-      tokens,
+      measuredTokens,
       world.nodes.length,
     );
     cameraRef.current = {
@@ -1879,10 +2054,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraTargetRef.current = target;
     userDrivenCameraRef.current = false;
     overviewScaleRef.current = computeOverviewFitScale(
-      overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current),
+      fitBounds,
       width,
       height,
-      tokens,
+      measuredTokens,
       world.nodes.length,
     );
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -1890,7 +2065,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (pendingSpotlightFitRef.current && runSpotlightFitRef.current?.()) {
       pendingSpotlightFitRef.current = false;
     }
-  };
+  }, [cameraTokens]);
 
   // --- world (layout + adjacency) — rebuilt whenever the graph itself changes ---
   useEffect(() => {
@@ -1906,6 +2081,31 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // input to the world build and appears in the dep array below: changing the
     // preference rebuilds the world and children move to the new placement.
     const world = buildTopologyWorld(nodes, edges, tokens, expand.structure);
+    const galaxyLayout = computeGalaxyLayout(
+      world.nodes.map((node) => ({ id: node.id, kind: node.kind, parentId: node.parentId })),
+      {
+        domain: tokens.layoutRingDomain,
+        capability: tokens.layoutRingCapability,
+        element: tokens.layoutRingElement,
+      },
+    );
+    galaxyLayoutRef.current = galaxyLayout;
+    if (galaxyRef.current) {
+      galaxyFlatReturnPositionsRef.current = new Map(
+        world.nodes.map((node) => [node.id, { x: node.x, y: node.y }]),
+      );
+      for (const node of world.nodes) {
+        const target = galaxyLayout.points.get(node.id);
+        if (!target) continue;
+        node.x = target.x;
+        node.y = target.y;
+      }
+      recomputeWorldGeometry(world, tokens);
+      galaxyLayoutHandoffRef.current = null;
+    } else {
+      galaxyFlatReturnPositionsRef.current = null;
+      galaxyLayoutHandoffRef.current = null;
+    }
     worldRef.current = world;
     // Seed the new-node appearance ramp. On the first build (no previous set)
     // everything is 1, so nothing animates and this cannot collide with the
@@ -2153,7 +2353,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       commitViewportSizeRef.current = null;
       rebuildViewportLayersRef.current = null;
     };
-  }, []);
+  }, [rescueCameraIfEverythingOffscreen, trySnapInitialCamera]);
 
   // --- relayoutToken / fitViewToken — both mean "spring back to the full overview fit" ---
   /**
@@ -2222,17 +2422,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same
     // legible 8-node spine as the initial entry — and keeps `overviewScaleRef`
     // on the same spine bounds so the zoom-ratio/altitude anchor stays at ratio 1.
-    const overviewTarget = computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
+    const fitBounds = galaxyRef.current && galaxyLayoutRef.current
+      ? galaxyLayoutRef.current.bounds
+      : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+    const measuredTokens = overviewFitTokens(cameraTokens(tokens), galaxyRef.current);
+    const overviewTarget = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length);
     cameraTargetRef.current = overviewTarget;
     userDrivenCameraRef.current = false;
-    overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
+    overviewScaleRef.current = computeOverviewFitScale(fitBounds, width, height, measuredTokens, world.nodes.length);
     dampingRef.current = tokens.cameraDampingDefault;
     // Dive-zoom fix — "fit view"/relayout is a PROGRAMMATIC camera move, so it
     // eases via the cubic transition tween (reduced-motion → spring/snap), not
     // whatever a preceding wheel gesture left in interactive mode.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(overviewTarget);
-  }, [beginCameraTween, domeFitTarget]);
+  }, [beginCameraTween, cameraTokens, domeFitTarget]);
   /**
    * **The replay is a toggle, not a hold** (owner, 2026-09-07: *"nobody keeps the
    * mouse still after pressing a button; make the button show an active state
@@ -2449,12 +2653,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
     // Put the actual DOM width of INDEX/selection inspector into the same safe inset syntax.
     const tokens = cameraTokens(rawTokens);
-    const overviewBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
+    const fitTokens = overviewFitTokens(tokens, galaxyRef.current);
+    const overviewBounds = galaxyRef.current && galaxyLayoutRef.current
+      ? galaxyLayoutRef.current.bounds
+      : overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
     overviewScaleRef.current = computeOverviewFitScale(
       overviewBounds,
       width,
       height,
-      tokens,
+      fitTokens,
       world.nodes.length,
     );
 
@@ -2521,7 +2728,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         overviewBounds,
         width,
         height,
-        tokens,
+        fitTokens,
         world.nodes.length,
       );
     }
@@ -2605,6 +2812,30 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       return;
     }
 
+    // Galaxy has its own canonical arrangement. Auto-arrange returns the real
+    // stars to that stable three-arm layout rather than sending them to Flat's
+    // containment fan. Re-seed the simulation at the same targets so a drag
+    // after the spring settles begins exactly where the star was painted.
+    if (galaxyRef.current && galaxyLayoutRef.current !== null) {
+      const targets = galaxyLayoutRef.current.points;
+      simRef.current = createForceSimulation(
+        world.nodes.map((node) => {
+          const target = targets.get(node.id);
+          return { id: node.id, x: target?.x ?? node.x, y: target?.y ?? node.y };
+        }),
+        world.edges.map((edge) => ({ source: edge.sourceId, target: edge.targetId })),
+      );
+      const springs = new Map<string, HomeSpringState>();
+      for (const node of world.nodes) {
+        if (targets.has(node.id)) springs.set(node.id, initHomeSpring(node.x, node.y));
+      }
+      homeSpringsRef.current = springs;
+      homeTargetOverrideRef.current = targets;
+      galaxyLayoutHandoffRef.current = "galaxy";
+      homingActiveRef.current = springs.size > 0;
+      return;
+    }
+
     simRef.current = createForceSimulation(
       world.nodes.map((n) => ({ id: n.id, x: n.homeX, y: n.homeY })),
       world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
@@ -2659,6 +2890,97 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // skipped even if the camera-target computation bails out for some
     // reason.
     selectionPulseRef.current = focusedSlug !== null ? { nodeId: focusedSlug, startAtMs: performance.now() } : null;
+
+    /*
+     * Galaxy inspection approaches the selected star without rebuilding or
+     * collapsing the graph. It never zooms out a camera the reader already
+     * brought closer. Its paired return target is retained here, so close
+     * reverses the approach; if another camera action changes the target
+     * meanwhile, it wins and the saved context is discarded.
+     */
+    if (galaxyRef.current) {
+      const sameTarget = (a: CameraTarget, b: CameraTarget) =>
+        Math.abs(a.tx - b.tx) < 0.01 &&
+        Math.abs(a.ty - b.ty) < 0.01 &&
+        Math.abs(a.tscale - b.tscale) < 0.0001;
+      const currentTarget = cameraTargetRef.current;
+
+      if (focusedSlug === null) {
+        const inspection = galaxyInspectionCameraRef.current;
+        galaxyInspectionCameraRef.current = null;
+        if (!inspection || inspection.gestureRevision !== cameraGestureRevisionRef.current) return;
+        if (sameTarget(currentTarget, inspection.returnTarget)) return;
+        const tokens = readOntologyMapTokensOrNull();
+        if (!tokens) return;
+        cameraTargetRef.current = inspection.returnTarget;
+        userDrivenCameraRef.current = false;
+        dampingRef.current = tokens.cameraDampingDefault;
+        cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+        lastActiveMsRef.current = performance.now();
+        beginCameraTween(inspection.returnTarget);
+        return;
+      }
+
+      const previous = galaxyInspectionCameraRef.current;
+      const returnTarget =
+        previous && previous.gestureRevision === cameraGestureRevisionRef.current
+          ? previous.returnTarget
+          : { ...currentTarget };
+      galaxyInspectionCameraRef.current = {
+        returnTarget,
+        focusTarget: { ...currentTarget },
+        gestureRevision: cameraGestureRevisionRef.current,
+      };
+
+      // Wait one frame for the selected-node inspector to enter the DOM, then
+      // measure the actual free rectangle. No panel width is baked into canvas
+      // logic, and an already-clear star produces the identical target.
+      const raf = requestAnimationFrame(() => {
+        if (focusedSlugRef.current !== focusedSlug) return;
+        const canvasEl = canvasRef.current;
+        const world = worldRef.current;
+        const tokens = readOntologyMapTokensOrNull();
+        const node = world?.nodeById.get(focusedSlug);
+        const { width, height } = viewportRef.current;
+        if (!canvasEl || !world || !tokens || !node || width <= 0 || height <= 0) return;
+        const box = canvasEl.getBoundingClientRect();
+        const canvasRect: Rect = { x: box.x, y: box.y, width: box.width, height: box.height };
+        const freeArea = computeFreeArea(canvasRect, collectCanvasObstacles(canvasEl, canvasRect));
+        const source = cameraTargetRef.current;
+        const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+        const focusScale = Math.min(
+          computeEffectiveCameraScaleMax(
+            overviewEntryScale,
+            tokens.cameraMaxZoomRatio,
+            tokens.cameraScaleMax,
+          ),
+          overviewEntryScale * (tokens.focusMaxZoomRatio ?? 1),
+        );
+        const target = galaxyInspectionTarget({
+          camera: source,
+          node,
+          viewport: { width, height },
+          canvasRect,
+          freeArea,
+          targetScale: focusScale,
+        });
+        const inspection = galaxyInspectionCameraRef.current;
+        if (!inspection || focusedSlugRef.current !== focusedSlug) return;
+        // A direct camera gesture during the one-frame panel measurement wins.
+        // Internal world rebuilds may change camera targets, but they do not
+        // advance this revision and therefore cannot replace return context.
+        if (inspection.gestureRevision !== cameraGestureRevisionRef.current) return;
+        inspection.focusTarget = target;
+        if (sameTarget(source, target)) return;
+        cameraTargetRef.current = target;
+        userDrivenCameraRef.current = false;
+        dampingRef.current = tokens.cameraDampingDefault;
+        cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+        lastActiveMsRef.current = performance.now();
+        beginCameraTween(target);
+      });
+      return () => cancelAnimationFrame(raf);
+    }
 
     // In 3D the camera target is NOT computed here. The 2D formula
     // (`computeFocusCameraTarget`) works from a node's **2D coordinates**,
@@ -3206,6 +3528,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           galaxySettling:
             Math.abs(galaxyRampRef.current - (galaxyRef.current ? 1 : 0)) > 0.01 ||
             Math.abs(neuralRampRef.current - (view3dRef.current && mapArrangementRef.current === "coupling" ? 1 : 0)) > 0.01,
+          galaxyAtmosphereActive: galaxyRef.current && !reducedMotionRef.current,
           trailLensSettling:
             (trailLensPropRef.current?.current ?? false) !== drawnTrailLensRef.current ||
             Math.abs(
@@ -4196,6 +4519,19 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // of the FA2/tug block above (relayout resets heat/pin, so the two never
       // run in the same frame in practice).
       if (homingActiveRef.current) {
+        const finishGalaxyLayoutHandoff = () => {
+          const handoff = galaxyLayoutHandoffRef.current;
+          if (handoff === null) return;
+          // ForceSimulation owns a separate coordinate store. Reseed it at the
+          // arrived mode positions so the first drag cannot snap a star back to
+          // the previous view's coordinates.
+          simRef.current = createForceSimulation(
+            world.nodes.map((node) => ({ id: node.id, x: node.x, y: node.y })),
+            world.edges.map((edge) => ({ source: edge.sourceId, target: edge.targetId })),
+          );
+          if (handoff === "flat") galaxyFlatReturnPositionsRef.current = null;
+          galaxyLayoutHandoffRef.current = null;
+        };
         // Reduced-motion users get the relayout RESULT, not the journey.
         // Warding invariant: inside a realm the override (the realm's
         // `insideTargets`) wins as the homing target; null keeps the global
@@ -4212,6 +4548,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           homingActiveRef.current = false;
           homeSpringsRef.current.clear();
           homeTargetOverrideRef.current = null;
+          finishGalaxyLayoutHandoff();
         } else {
           let allConverged = true;
           for (const node of world.nodes) {
@@ -4234,6 +4571,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             homingActiveRef.current = false;
             homeSpringsRef.current.clear();
             homeTargetOverrideRef.current = null;
+            finishGalaxyLayoutHandoff();
           }
         }
       }
@@ -5189,12 +5527,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // (`frameClusteredIds`) is left intact, so the collapsed state returns as
       // it was on the frame 2D resumes, and the relax/reveal bookkeeping cannot
       // misfire on a dome toggle.
-      const domeAllVisible = domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0;
-      clusterChipsRef.current = domeAllVisible ? EMPTY_DOME_CHIPS : frameChips;
+      const modeShowsEveryNode =
+        galaxyRef.current ||
+        (domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0);
+      clusterChipsRef.current = modeShowsEveryNode ? EMPTY_DOME_CHIPS : frameChips;
       // Publish this frame's NOT-DRAWN set for hit-testing (density-gate
       // collapsed plus selective-ego hidden neighbours), so draw and hit see
       // the same set.
-      clusteredIdsRef.current = domeAllVisible ? EMPTY_DOME_CLUSTERED : frameClusteredIds;
+      clusteredIdsRef.current = modeShowsEveryNode ? EMPTY_DOME_CLUSTERED : frameClusteredIds;
       // Publish the depth override the draw used for this frame's tier alphas
       // to hit-testing as well (null when no realm is active), keeping draw and
       // hit in lockstep.
@@ -5333,6 +5673,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         camera,
         farT,
         galaxyRamp: galaxyRampRef.current,
+        galaxyLayoutRadius: galaxyLayoutRef.current?.radius ?? 0,
+        galaxyElapsedMs:
+          galaxyRef.current && galaxyEnteredAtRef.current > 0
+            ? Math.max(0, now - galaxyEnteredAtRef.current)
+            : 0,
         neuralRamp: neuralRampRef.current,
         zoomRatio,
         now,
@@ -5385,8 +5730,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         pulses: pulsesRef.current,
         selectionPulse: selectionPulseRef.current,
         agentFocusNodeId: agentFocusNodeIdRef.current,
-        clusteredIds: domeAllVisible ? EMPTY_DOME_CLUSTERED : frameClusteredIds,
-        clusterChips: domeAllVisible ? EMPTY_DOME_CHIPS : frameChips,
+        clusteredIds: modeShowsEveryNode ? EMPTY_DOME_CLUSTERED : frameClusteredIds,
+        clusterChips: modeShowsEveryNode ? EMPTY_DOME_CHIPS : frameChips,
         hoveredClusterId: hoveredClusterIdRef.current,
         wardingRing: realmWarding,
         realmTierKinds,
@@ -5615,6 +5960,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     rippleStartRef,
     reducedMotionRef,
     userDrivenCameraRef,
+    cameraGestureRevisionRef,
     simRef,
     heatRef,
     nodeDragRef,
@@ -5635,6 +5981,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     domeRuntimeRef,
     neuralRampRef,
     tierRevealRef,
+    galaxyRef,
+    pathEdgeIdsRef,
+    visitedTrailRef,
     onSelect,
     onSelectEdge,
     onHoverEdge,
@@ -5838,6 +6187,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       const next = { tx: target.tx, ty: target.ty, tscale };
       cameraTargetRef.current = next;
       userDrivenCameraRef.current = true;
+      cameraGestureRevisionRef.current += 1;
       dampingRef.current = tokens.cameraDampingDefault;
       cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
       beginCameraTween(next);
@@ -6134,16 +6484,38 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             : null;
         const EDGE_ZERO = { dx: 0, dy: 0, s: 1 };
         const edgeOff = (nodeId: string) => domeFrame?.get(nodeId) ?? EDGE_ZERO;
+        const selected = selectedEdgeRef.current;
+        const pathEdges = pathEdgeIdsRef.current;
+        const walkedEdges = buildWalkedEdgeKeys(visitedTrailRef.current);
+        const trailVisible = trailLensRampRef.current > 0.001;
         return world.edges
           .filter((e) => !clustered?.has(e.sourceId) && !clustered?.has(e.targetId))
           .map((e) => {
             const offA = edgeOff(e.sourceId);
             const offB = edgeOff(e.targetId);
             const control = projectDomeEdgeControl(e, domeFrame, domeRuntimeRef.current?.model.arrangement ?? "ownership", camera.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current);
+            const walkedKey = e.sourceId < e.targetId
+              ? `${e.sourceId} ${e.targetId}`
+              : `${e.targetId} ${e.sourceId}`;
+            const isSelected = selected !== null &&
+              selected.sourceId === e.sourceId &&
+              selected.targetId === e.targetId &&
+              (selected.relationType === undefined || selected.relationType === e.kind);
+            const visible =
+              galaxyRampRef.current <= 0.001 ||
+              isGalaxyEdgeVisible(e, {
+                focusedNodeId: focusedSlugRef.current,
+                hoveredNodeId: drawnHoveredNodeIdRef.current,
+                selected: isSelected,
+                path: e.id !== undefined && (pathEdges?.has(e.id) ?? false),
+                walked: trailVisible && walkedEdges.has(walkedKey),
+              });
             return {
             sourceId: e.sourceId,
             targetId: e.targetId,
             kind: e.kind,
+            visible,
+            hidden: !visible,
             ax: toScreenX(e.ax + offA.dx),
             ay: toScreenY(e.ay + offA.dy),
             bx: toScreenX(e.bx + offB.dx),

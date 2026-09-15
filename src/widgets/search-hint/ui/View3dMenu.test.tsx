@@ -34,6 +34,11 @@ beforeEach(() => {
 });
 
 describe("View3dMenu — 보기 고르개", () => {
+  it("지도 보기로 이름 붙는다 — 평면 보기까지 포함하는 고르개다", () => {
+    mount();
+    expect(screen.getByRole("radiogroup")).toHaveAccessibleName("지도 보기");
+  });
+
   it("세 줄이다 — 평면·돔·구름이 한 목록에 있다", () => {
     mount();
     expect(screen.getByTestId("topology-view-3d-choice-flat")).toBeInTheDocument();

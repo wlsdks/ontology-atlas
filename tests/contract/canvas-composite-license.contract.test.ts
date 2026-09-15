@@ -39,7 +39,25 @@ const LICENSED = {
   "src/views/download/ui/GatewayFx.tsx": "the gateway hero — the field is light itself",
   "src/shared/lib/star-emission.ts":
     "the walked-path star, inside a lens the person opened",
+  "src/widgets/ontology-map/render/node-shapes.ts":
+    "the owner-selected Galaxy node is a borderless light source",
 } as const;
+
+const GALAXY_ATMOSPHERE_FUNCTIONS = ["drawGalaxyNebula", "drawGalaxyMeteor"] as const;
+
+function functionBody(source: string, name: string): string {
+  const start = source.indexOf(`export function ${name}`);
+  expect(start, `${name} is missing`).toBeGreaterThanOrEqual(0);
+  const open = source.indexOf("{", start);
+  expect(open, `${name} has no body`).toBeGreaterThan(start);
+  let depth = 0;
+  for (let index = open; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}") depth -= 1;
+    if (depth === 0) return source.slice(open, index + 1);
+  }
+  throw new Error(`${name} has no closing brace`);
+}
 
 describe("캔버스 합성 — 발광은 허가된 곳에서만", () => {
   it("규칙이 실제로 design.md 에 적혀 있다", () => {
@@ -54,15 +72,29 @@ describe("캔버스 합성 — 발광은 허가된 곳에서만", () => {
     (rel) => {
       const source = readCode(rel);
       const uses = (source.match(/globalCompositeOperation\s*=/g) ?? []).length;
-      // One assignment turns it on, one puts it back. An odd count means a region leaked its
-      // mode into everything drawn after it.
-      expect(uses % 2, `${rel}: lighter 를 켜고 되돌리지 않는 구간이 있다`).toBe(0);
-      // Either restore is honest: putting back the saved value, or naming the default. What
-      // is not allowed is turning `lighter` on and leaving it on for whatever draws next.
+      const restoresExplicitly =
+        uses % 2 === 0 && /globalCompositeOperation\s*=\s*(prev|["']source-over["'])/.test(source);
+      const restoresCanvasState =
+        /ctx\.save\(\)[\s\S]*globalCompositeOperation\s*=\s*["']lighter["'][\s\S]*ctx\.restore\(\)/.test(source);
+      // Both Canvas restoration forms are honest: assign the saved/default
+      // composite explicitly, or bound the light inside save()/restore().
       expect(
-        /globalCompositeOperation\s*=\s*(prev|["']source-over["'])/.test(source),
-        `${rel}: lighter 를 켠 뒤 기본 합성으로 되돌리는 줄이 없다`,
+        restoresExplicitly || restoresCanvasState,
+        `${rel}: lighter 를 켠 뒤 캔버스 합성을 되돌리는 경계가 없다`,
       ).toBe(true);
+    },
+  );
+
+  it.each(GALAXY_ATMOSPHERE_FUNCTIONS)(
+    "galaxy-atmosphere.ts#%s 는 자기 함수 안에서 합성 모드를 되돌린다",
+    (name) => {
+      const body = functionBody(
+        readCode("src/widgets/ontology-map/render/galaxy-atmosphere.ts"),
+        name,
+      );
+      expect(body).toMatch(
+        /ctx\.save\(\)[\s\S]*globalCompositeOperation\s*=\s*["']lighter["'][\s\S]*ctx\.restore\(\)/,
+      );
     },
   );
 
