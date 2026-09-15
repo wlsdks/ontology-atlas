@@ -175,6 +175,8 @@ const DEV_TOOLING_SELECTOR = "nextjs-portal, [data-nextjs-toast], [data-nextjs-d
 async function auditRoute(page: Page) {
   const offenders: string[] = [];
   let compared = 0;
+  let colorChanged = 0;
+  let mainCompared = 0;
   await parkPointer(page);
   const controls = page.locator("a[href],button,[role=button],summary");
   const n = await controls.count();
@@ -208,14 +210,17 @@ async function auditRoute(page: Page) {
 
     const rest = resting[i];
     if (!rest) continue;
-    await el.hover({ timeout: 1500 }).catch(() => {});
+    const hovered = await el.hover({ timeout: 1500 }).then(() => true).catch(() => false);
+    if (!hovered) continue;
     await waitForFiniteAnimations(page);
     const hover = await readState(el);
     if (!hover) continue;
-    // A control whose colours do not change on hover is out of this check's scope.
-    if (hover.fg === rest.fg && hover.bg === rest.bg) continue;
-
+    // An unchanged pair is still a measured hover state. Counting only colour
+    // changes made the compact Projects index look unmeasured, although all four
+    // body links keep their text/background colours steady by design.
     compared++;
+    if (await el.evaluate(node => !!node.closest("main"))) mainCompared++;
+    if (hover.fg !== rest.fg || hover.bg !== rest.bg) colorChanged++;
     const R = judgeText(rest);
     const H = judgeText({ ...hover, fontSizePx: rest.fontSizePx, fontWeight: rest.fontWeight });
     // A parse failure is not a pass but a non-measurement — never skipped silently.
@@ -224,7 +229,7 @@ async function auditRoute(page: Page) {
     if (R!.passes && !H!.passes)
       offenders.push(`${rest.tag}«${rest.label}» ${R!.ratio} → ${H!.ratio} (필요 ${H!.required})`);
   }
-  return { offenders, compared };
+  return { offenders, compared, colorChanged, mainCompared };
 }
 
 /**
@@ -239,7 +244,8 @@ async function auditRoute(page: Page) {
  * a sentence and one degradation row. Measured, that is below the floor of 3, and the floor going
  * red there is the floor working: it says "this screen no longer has enough controls to prove
  * anything", not "these controls fail". The hover-bearing controls did not disappear, they moved,
- * so the audit follows them rather than lowering the number that noticed.
+ * so the audit followed them rather than lowering that historical colour-change
+ * floor. The routing split is retained; coverage now counts sampled state pairs.
  *
  * Both MCP tabs are walked, because they are different populations: the share tab is the connect
  * card's chips and links, the connectors tab is the tab strip plus the folder gate. Neither can
@@ -272,19 +278,18 @@ for (const route of HOVER_ROUTES) {
     }
     await page.waitForSelector("main", { timeout: 20_000 });
     await waitForDocumentPaint(page);
-    const { offenders, compared } = await auditRoute(page);
-    /*
-     * **Each route has a floor** (2026-08-15). With only the assertion above, a route
-     * could go green after comparing **0 items** — "no failures" and "nothing measured"
-     * look identical on screen. The two sibling ratchets (`contrast-ratchet`,
-     * `a11y-ratchet`) already use that grammar; only this instrument did not, and the
-     * guard existed on **one route out of 19**.
-     *
-     * 3 is the measured minimum (2026-08-15, 1512×900), where the sparsest route had 4,
-     * minus one for slack. If this number falls, either the screen got quieter or the
-     * instrument broke, and either way it needs looking at.
-     */
-    expect(compared, `${route} 에서 호버로 색이 바뀌는 컨트롤을 거의 못 찾았다 — 미달 0 이 증거가 아니다`).toBeGreaterThanOrEqual(3);
+    const { offenders, compared, colorChanged, mainCompared } = await auditRoute(page);
+    console.info(JSON.stringify({ route, compared, colorChanged, mainCompared }));
+    // Require actual successful hover/read pairs, not a minimum number of
+    // style changes. The separate planted-defect probe proves the detector moves.
+    expect(compared, `${route}: too few controls were measured on hover`).toBeGreaterThanOrEqual(3);
+    if (route === "/ko/projects/" || route === "/ko/project/fallback/") {
+      // Both URLs open the compact index. Shell-only evidence is insufficient:
+      // measure New project plus the row's name, detail and map links.
+      expect(mainCompared, "Project actions were not measured").toBeGreaterThanOrEqual(4);
+      await expect(page.getByTestId("project-selector-card").first()).toBeVisible();
+      await expect(page.getByTestId("project-selector-new-cta")).toBeVisible();
+    }
     expect(offenders, "쉴 때는 통과하는데 호버에서 AA 를 깬다").toEqual([]);
   });
 }
@@ -292,8 +297,8 @@ for (const route of HOVER_ROUTES) {
 /**
  * Confirms the detector is **not running over an empty set** (`/gate-probe`).
  *
- * The checks above look only at controls whose colours change on hover. If that set
- * reaches 0, every one of them is a free green. It also confirms the predicate
+ * Coverage counts successfully measured hover states, including steady colours.
+ * This independent probe still requires real colour changes and confirms the predicate
  * really distinguishes a failure — the earlier stylesheet-inference instrument
  * failed silently exactly here.
  */
@@ -304,8 +309,8 @@ test("계기가 헛돌지 않는다 — 비교 대상이 있고, 심어 둔 미�
   await page.waitForSelector("main", { timeout: 20_000 });
   await waitForDocumentPaint(page);
 
-  const { compared } = await auditRoute(page);
-  expect(compared, "호버로 색이 바뀌는 컨트롤이 하나도 없다 — 게이트가 헛돈다").toBeGreaterThan(5);
+  const { colorChanged } = await auditRoute(page);
+  expect(colorChanged, "호버로 색이 바뀌는 컨트롤이 하나도 없다 — 게이트가 헛돈다").toBeGreaterThan(5);
 
   // Plants a known failing pair (#5e6ad2 → #828fff with white ink) to confirm the predicate catches it.
   await page.addStyleTag({
@@ -323,4 +328,22 @@ test("계기가 헛돌지 않는다 — 비교 대상이 있고, 심어 둔 미�
     after.offenders.some((o) => o.includes("probe")),
     "심어 둔 호버 미달을 못 잡는다 — 이 게이트의 0건은 증거가 아니다",
   ).toBe(true);
+});
+
+
+test("steady-colour hover states are measured without inventing a colour change", async ({ page }) => {
+  await page.setViewportSize(VIEWPORT);
+  await page.setContent(`<main style="background:rgb(8,9,10)">
+    <style>button { width:80px; height:32px; margin:8px; color:rgb(255,255,255); background:rgb(30,30,30); font:14px sans-serif; }</style>
+    <button>First</button><button>Second</button><button>Third</button>
+  </main>`);
+  const report = await auditRoute(page);
+  expect(report.compared).toBe(3);
+  expect(report.mainCompared).toBe(3);
+  expect(report.colorChanged).toBe(0);
+  expect(report.offenders).toEqual([]);
+  await page.locator("button").evaluateAll(nodes => nodes.forEach(node => node.remove()));
+  const empty = await auditRoute(page);
+  expect(empty.compared).toBe(0);
+  expect(empty.mainCompared).toBe(0);
 });

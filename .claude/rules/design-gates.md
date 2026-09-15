@@ -93,7 +93,12 @@ its safe brightness margin is only 5.7%. Solid indigo therefore darkens to
 `--color-indigo-brand-hover` (`#5661c4`, 5.38:1). Tinted controls may still
 brighten, and tint ink uses `accentOnTint`.
 
-`tests/e2e/hover-contrast.spec.ts` performs a real hover across seventeen routes.
+`tests/e2e/hover-contrast.spec.ts` performs a real hover across its declared
+route inventory. Coverage counts successfully sampled resting/hover pairs,
+including steady colours; colour changes are reported separately. Project
+indexes also require four main-content action samples, so shell chrome cannot
+satisfy their coverage. Planted contrast failures and empty-inventory probes
+keep the detector accountable.
 Stylesheet inference failed because it selected the last matching rule rather
 than the cascade winner. Moving the mouse to `(2,2)` also failed because that
 point hovered the left rail, corrupting the next resting measurement. A planted
