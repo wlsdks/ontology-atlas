@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-15",
+  "decision": "Add calm continuous motion to the Galaxy nebula while preserving ontology positions",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "orient",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-15",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "e5c53a16-d4b3-4468-8087-eacf4b7f1f75",
+  "recordedAt": "2026-09-15T03:35:15.487Z"
+}

@@ -8,6 +8,7 @@ import {
   filamentPresence,
   galaxyAppearance,
   galaxyMeteorPhase,
+  galaxyNebulaMotion,
   galaxySelectionInk,
   galaxyTemperatureKey,
   galaxyTwinkle,
@@ -93,28 +94,83 @@ describe("galaxyAppearance", () => {
 });
 
 describe("Galaxy atmosphere", () => {
-  it("gives each id a deterministic 3–6 second twinkle whose core never disappears", () => {
+  it("gives each id a deterministic intermittent flare on its own 4–8 second clock", () => {
     const first = galaxyTwinkle("domain:delivery", 4123, false);
     expect(galaxyTwinkle("domain:delivery", 4123, false)).toEqual(first);
-    expect(first.periodMs).toBeGreaterThanOrEqual(3000);
-    expect(first.periodMs).toBeLessThanOrEqual(6000);
-    for (let now = 0; now <= 6000; now += 100) {
+    expect(first.periodMs).toBeGreaterThanOrEqual(4000);
+    expect(first.periodMs).toBeLessThanOrEqual(8000);
+    expect(galaxyTwinkle("domain:another", 4123, false).periodMs).not.toBe(first.periodMs);
+    let activeSamples = 0;
+    let restingSamples = 0;
+    for (let now = 0; now <= first.periodMs; now += 10) {
       const sample = galaxyTwinkle("domain:delivery", now, false);
-      expect(sample.intensity).toBeGreaterThanOrEqual(0.72);
-      expect(sample.intensity).toBeLessThanOrEqual(1.08);
+      expect(sample.intensity).toBeGreaterThanOrEqual(0.9);
+      expect(sample.intensity).toBeLessThanOrEqual(1.6);
       expect(sample.glint).toBeGreaterThanOrEqual(0);
       expect(sample.glint).toBeLessThanOrEqual(1);
+      if (sample.glint > 0.001) activeSamples += 1;
+      else restingSamples += 1;
     }
+    expect(activeSamples * 10).toBeGreaterThanOrEqual(680);
+    expect(activeSamples * 10).toBeLessThanOrEqual(1320);
+    expect(restingSamples).toBeGreaterThan(activeSamples * 2);
   });
 
-  it("freezes twinkle and schedules at most one bounded meteor", () => {
+  it("freezes twinkle and gives each meteor entry a stable varied path and gap", () => {
     expect(galaxyTwinkle("domain:delivery", 0, true)).toEqual(
       galaxyTwinkle("domain:delivery", 5000, true),
     );
-    expect(galaxyMeteorPhase(1799)).toBeNull();
-    expect(galaxyMeteorPhase(1800)?.progress).toBe(0);
-    expect(galaxyMeteorPhase(2950)?.progress).toBe(1);
-    expect(galaxyMeteorPhase(4000)).toBeNull();
+    expect(galaxyMeteorPhase(1799, 0.25)).toBeNull();
+    expect(galaxyMeteorPhase(1800, 0.25)?.progress).toBe(0);
+    expect(galaxyMeteorPhase(2200, 0.25)).toEqual(galaxyMeteorPhase(2200, 0.25));
+    expect(galaxyMeteorPhase(2200, 0.25)).not.toEqual(galaxyMeteorPhase(2200, 0.75));
+
+    const collectStarts = (entrySeed: number) => {
+      const starts: Array<{ at: number; phase: NonNullable<ReturnType<typeof galaxyMeteorPhase>> }> = [];
+      let previousActive = false;
+      for (let now = 1800; now <= 120_000; now += 100) {
+        const sample = galaxyMeteorPhase(now, entrySeed);
+        if (sample && !previousActive) starts.push({ at: now, phase: sample });
+        previousActive = sample !== null;
+      }
+      return starts;
+    };
+    for (const entrySeed of [0.17, 0.7334]) {
+      const starts = collectStarts(entrySeed);
+      expect(starts.length).toBeGreaterThan(8);
+      expect(new Set(starts.map(({ phase: sample }) => sample.direction))).toEqual(new Set([1, -1]));
+      expect(Math.max(...starts.map(({ phase: sample }) => sample.startX)) -
+        Math.min(...starts.map(({ phase: sample }) => sample.startX))).toBeGreaterThan(0.35);
+      expect(Math.max(...starts.map(({ phase: sample }) => sample.startY)) -
+        Math.min(...starts.map(({ phase: sample }) => sample.startY))).toBeGreaterThan(0.35);
+      for (const { phase: sample } of starts) {
+        expect(Math.abs(sample.deltaX)).toBeGreaterThanOrEqual(0.28);
+        expect(Math.abs(sample.deltaX)).toBeLessThanOrEqual(0.62);
+        expect(sample.startX + sample.deltaX).toBeGreaterThanOrEqual(0.03);
+        expect(sample.startX + sample.deltaX).toBeLessThanOrEqual(0.97);
+      }
+      const gaps = starts.slice(1).map((entry, index) => entry.at - starts[index].at);
+      expect(new Set(gaps).size).toBeGreaterThan(3);
+    }
+  });
+
+  it("flows only diffuse wisps and freezes every atmosphere phase for reduced motion", () => {
+    const start = galaxyNebulaMotion(0, false);
+    const later = galaxyNebulaMotion(2500, false);
+    expect(later).not.toEqual(start);
+    for (let now = 0; now <= 74_000; now += 500) {
+      const sample = galaxyNebulaMotion(now, false);
+      expect(sample.luminance).toBeGreaterThanOrEqual(0.879);
+      expect(sample.luminance).toBeLessThanOrEqual(1);
+      expect(Math.abs(sample.innerRotation)).toBeLessThanOrEqual(Math.PI / 150);
+      expect(Math.abs(sample.outerRotation)).toBeLessThanOrEqual(Math.PI / 120);
+    }
+    expect(galaxyNebulaMotion(0, true)).toEqual({
+      luminance: 1,
+      innerRotation: 0,
+      outerRotation: 0,
+    });
+    expect(galaxyNebulaMotion(0, true)).toEqual(galaxyNebulaMotion(74_000, true));
   });
 });
 

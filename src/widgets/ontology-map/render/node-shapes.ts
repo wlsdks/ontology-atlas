@@ -708,7 +708,7 @@ export function drawGalaxyNodeStar(
   ctx.globalAlpha = Math.min(1, coronaLit);
   ctx.drawImage(sprite.corona, x - coronaRadius, y - coronaRadius, coronaRadius * 2, coronaRadius * 2);
   // Keep the point locatable at a twinkle trough; the surrounding light still breathes.
-  ctx.globalAlpha = Math.min(1, Math.max(0.62 * presence, lit));
+  ctx.globalAlpha = Math.min(1, Math.max(0.72 * presence, lit));
   ctx.drawImage(sprite.heart, x - heartRadius, y - heartRadius, heartRadius * 2, heartRadius * 2);
   if (glint > 0.01) {
     ctx.globalAlpha = 1;
@@ -717,7 +717,7 @@ export function drawGalaxyNodeStar(
       screenY: y,
       screenRadius: coreRadius,
       color: ink,
-      alpha: presence * glint * 0.52,
+      alpha: presence * glint * 0.72,
       rotation: glintRotation,
       maxLong: Math.min(20, Math.max(6, coreRadius * 4.5)),
     });

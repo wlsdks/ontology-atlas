@@ -277,8 +277,11 @@ Five views keep their questions explicit: **Flat** is the normal 2D map and
 the core, domains anchor contiguous constellations, and their owned concepts
 form nearby star clouds. Its default overview hides the relationship mesh so
 the groups read first; pointing at or selecting a star reveals only its actual
-adjacent relations as luminous filaments. The stars twinkle as atmosphere;
-their steady brightness still derives from connection count, never live activity.
+adjacent relations as luminous filaments. Each star flares on its own intermittent
+cadence while its steady brightness still derives from connection count, never
+live activity.
+Diffuse gas flows gently inside the fixed arms while the stars and their spatial
+neighborhoods stay anchored; reduced motion freezes the whole atmosphere.
 **Cone** draws
 containment as nested cones, **Strata** separates kind tiers onto planes, and
 **Neural** groups related concepts in three dimensions with lit cell bodies and

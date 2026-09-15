@@ -1,4 +1,4 @@
-import type { GalaxyMeteorPhase } from "../model/galaxy";
+import { galaxyNebulaMotion, type GalaxyMeteorPhase } from "../model/galaxy";
 import { GALAXY_ARM_COUNT, GALAXY_VERTICAL_FLATTEN, galaxySpiralPoint } from "../model/galaxy-layout";
 
 export interface GalaxyNebulaState {
@@ -10,22 +10,41 @@ export interface GalaxyNebulaState {
   warmInk: string;
   coolInk: string;
   accentInk: string;
+  elapsedMs: number;
+  reducedMotion: boolean;
 }
 
 const NEBULA_TEXTURE_SIZE = 1200;
 const NEBULA_ARM_SCALE = 0.38;
-const nebulaTextures = new Map<string, HTMLCanvasElement>();
+interface GalaxyNebulaTextures {
+  /** Fixed spatial reference: disc, particulate field, and project-core light. */
+  base: HTMLCanvasElement;
+  /** Transparent inner-arm gas, free to drift inside the fixed disc. */
+  innerWisps: HTMLCanvasElement;
+  /** Transparent outer-arm gas on a slower counter-phase. */
+  outerWisps: HTMLCanvasElement;
+}
 
-/** A seeded optical texture: atmosphere has no graph ids, hits, or relation data. */
-function buildNebulaTexture(warmInk: string, coolInk: string, accentInk: string): HTMLCanvasElement | null {
-  const key = `${warmInk}:${coolInk}:${accentInk}`;
-  const cached = nebulaTextures.get(key);
-  if (cached) return cached;
+const nebulaTextures = new Map<string, GalaxyNebulaTextures>();
+
+function createTexture(): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null {
   const canvas = document.createElement("canvas");
   canvas.width = NEBULA_TEXTURE_SIZE;
   canvas.height = NEBULA_TEXTURE_SIZE;
   const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
+  return ctx ? { canvas, ctx } : null;
+}
+
+/** A seeded optical texture: atmosphere has no graph ids, hits, or relation data. */
+function buildNebulaTexture(warmInk: string, coolInk: string, accentInk: string): GalaxyNebulaTextures | null {
+  const key = `${warmInk}:${coolInk}:${accentInk}`;
+  const cached = nebulaTextures.get(key);
+  if (cached) return cached;
+  const baseTexture = createTexture();
+  const innerTexture = createTexture();
+  const outerTexture = createTexture();
+  if (!baseTexture || !innerTexture || !outerTexture) return null;
+  const baseCtx = baseTexture.ctx;
   let seed = 0x4f52494f;
   const random = () => {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
@@ -42,7 +61,7 @@ function buildNebulaTexture(warmInk: string, coolInk: string, accentInk: string)
     a.map((value, index) => value + (b[index] - value) * amount);
   const half = NEBULA_TEXTURE_SIZE / 2;
   const armRadius = NEBULA_TEXTURE_SIZE * NEBULA_ARM_SCALE;
-  const glow = (x: number, y: number, radius: number, color: number[], alpha: number, flatten = 1) => {
+  const glow = (ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, color: number[], alpha: number, flatten = 1) => {
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(1, flatten);
@@ -56,9 +75,11 @@ function buildNebulaTexture(warmInk: string, coolInk: string, accentInk: string)
     ctx.restore();
   };
 
-  ctx.globalCompositeOperation = "lighter";
+  baseCtx.globalCompositeOperation = "lighter";
+  innerTexture.ctx.globalCompositeOperation = "lighter";
+  outerTexture.ctx.globalCompositeOperation = "lighter";
   // A diffuse disc makes depth perceptible without a containing edge or orbit.
-  glow(half, half, armRadius * 1.2, accent, 0.08, GALAXY_VERTICAL_FLATTEN);
+  glow(baseCtx, half, half, armRadius * 1.2, accent, 0.08, GALAXY_VERTICAL_FLATTEN);
   for (let arm = 0; arm < GALAXY_ARM_COUNT; arm += 1) {
     for (let index = 0; index < 180; index += 1) {
       const t = 0.035 + (index / 179) * 0.945;
@@ -68,7 +89,8 @@ function buildNebulaTexture(warmInk: string, coolInk: string, accentInk: string)
       const scatterY = (random() + random() - 1) * width * GALAXY_VERTICAL_FLATTEN;
       const color = blend(warm, arm % 2 === 0 ? cool : accent, Math.min(1, t * 2));
       const envelope = Math.sin(Math.PI * t) ** 0.7;
-      glow(half + point.x + scatterX, half + point.y + scatterY,
+      const wispCtx = t < 0.56 ? innerTexture.ctx : outerTexture.ctx;
+      glow(wispCtx, half + point.x + scatterX, half + point.y + scatterY,
         width * (0.9 + random() * 1.1), color,
         (0.025 + random() * 0.035) * envelope, GALAXY_VERTICAL_FLATTEN);
     }
@@ -83,32 +105,55 @@ function buildNebulaTexture(warmInk: string, coolInk: string, accentInk: string)
     const x = half + point.x + (random() + random() + random() - 1.5) * spread;
     const y = half + point.y + (random() + random() + random() - 1.5) * spread * GALAXY_VERTICAL_FLATTEN;
     const energy = (0.07 + random() ** 4 * 0.34) * Math.sin(Math.PI * t) ** 0.45;
-    ctx.fillStyle = rgba(blend(warm, cool, Math.min(1, t * 1.7)), energy);
+    baseCtx.fillStyle = rgba(blend(warm, cool, Math.min(1, t * 1.7)), energy);
     const size = 0.4 + random() * 0.85;
-    ctx.fillRect(x, y, size, size);
+    baseCtx.fillRect(x, y, size, size);
   }
   // The luminous bulge belongs to the actual project core. Its footprint is
   // painted light only; it never adds a selectable pseudo-concept.
-  glow(half, half, armRadius * 0.36, warm, 0.22, GALAXY_VERTICAL_FLATTEN);
-  glow(half, half, armRadius * 0.13, blend(warm, [255, 255, 255], 0.55), 0.32, GALAXY_VERTICAL_FLATTEN);
+  glow(baseCtx, half, half, armRadius * 0.36, warm, 0.22, GALAXY_VERTICAL_FLATTEN);
+  glow(baseCtx, half, half, armRadius * 0.13, blend(warm, [255, 255, 255], 0.55), 0.32, GALAXY_VERTICAL_FLATTEN);
   if (nebulaTextures.size >= 2) {
     const oldest = nebulaTextures.keys().next().value;
     if (oldest !== undefined) nebulaTextures.delete(oldest);
   }
-  nebulaTextures.set(key, canvas);
-  return canvas;
+  const textures = {
+    base: baseTexture.canvas,
+    innerWisps: innerTexture.canvas,
+    outerWisps: outerTexture.canvas,
+  };
+  nebulaTextures.set(key, textures);
+  return textures;
 }
 
-/** One cached draw per frame; the optical disc follows the real Galaxy layout. */
+function drawNebulaLayer(
+  ctx: CanvasRenderingContext2D,
+  texture: HTMLCanvasElement,
+  centerX: number,
+  centerY: number,
+  size: number,
+  rotation: number,
+): void {
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(rotation);
+  ctx.drawImage(texture, -size / 2, -size / 2, size, size);
+  ctx.restore();
+}
+
+/** Three cached blits per frame; the fixed disc anchors two gently flowing wisp layers. */
 export function drawGalaxyNebula(ctx: CanvasRenderingContext2D, state: GalaxyNebulaState): void {
   if (state.alpha <= 0.01 || state.radius <= 0) return;
   const texture = buildNebulaTexture(state.warmInk, state.coolInk, state.accentInk);
   if (!texture) return;
   const size = state.radius / NEBULA_ARM_SCALE;
+  const motion = galaxyNebulaMotion(state.elapsedMs, state.reducedMotion);
   ctx.save();
-  ctx.globalAlpha *= state.alpha;
+  ctx.globalAlpha *= state.alpha * motion.luminance;
   ctx.globalCompositeOperation = "lighter";
-  ctx.drawImage(texture, state.centerX - size / 2, state.centerY - size / 2, size, size);
+  drawNebulaLayer(ctx, texture.base, state.centerX, state.centerY, size, 0);
+  drawNebulaLayer(ctx, texture.innerWisps, state.centerX, state.centerY, size, motion.innerRotation);
+  drawNebulaLayer(ctx, texture.outerWisps, state.centerX, state.centerY, size, motion.outerRotation);
   ctx.restore();
 }
 
@@ -123,17 +168,16 @@ export function drawGalaxyMeteor(
   alpha: number,
 ): void {
   if (!phase || alpha <= 0.01 || viewportWidth <= 0 || viewportHeight <= 0) return;
-  const direction = phase.direction;
-  const startX = direction > 0 ? -viewportWidth * 0.12 : viewportWidth * 1.12;
-  const endX = direction > 0 ? viewportWidth * 1.12 : -viewportWidth * 0.12;
-  const startY = viewportHeight * (0.1 + phase.lane * 0.32);
-  const endY = startY + viewportHeight * (0.22 + phase.lane * 0.12);
+  const startX = viewportWidth * phase.startX;
+  const endX = startX + viewportWidth * phase.deltaX;
+  const startY = viewportHeight * phase.startY;
+  const endY = startY + viewportHeight * phase.deltaY;
   const headX = startX + (endX - startX) * phase.progress;
   const headY = startY + (endY - startY) * phase.progress;
   const dx = endX - startX;
   const dy = endY - startY;
   const envelope = Math.sin(Math.PI * phase.progress);
-  const trailFraction = 0.2;
+  const trailFraction = phase.trailFraction;
   const segments = 18;
 
   ctx.save();

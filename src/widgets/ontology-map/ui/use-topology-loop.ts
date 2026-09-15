@@ -682,6 +682,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const view3dRef = useRef<boolean>(view3d);
   const galaxyRef = useRef<boolean>(galaxy);
   const galaxyEnteredAtRef = useRef<number>(0);
+  /** Sampled once per Galaxy entry; every meteor frame hashes this stable seed. */
+  const galaxyAtmosphereSeedRef = useRef<number>(0);
   /** Stable Galaxy positions for the current graph, shared with fit and backdrop. */
   const galaxyLayoutRef = useRef<GalaxyLayout | null>(null);
   /** The live Flat coordinates to restore after leaving Galaxy. */
@@ -1479,6 +1481,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     if (galaxy && galaxyEnteredAtRef.current === 0) {
       galaxyEnteredAtRef.current = performance.now();
+      galaxyAtmosphereSeedRef.current = Math.random();
     }
   }, [galaxy]);
 
@@ -1922,6 +1925,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (galaxyRef.current === galaxy) return;
     galaxyRef.current = galaxy;
     galaxyEnteredAtRef.current = galaxy ? performance.now() : 0;
+    galaxyAtmosphereSeedRef.current = galaxy ? Math.random() : 0;
     const world = worldRef.current;
     const tokens = readOntologyMapTokensOrNull();
     if (!world || !tokens) return;
@@ -5678,6 +5682,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           galaxyRef.current && galaxyEnteredAtRef.current > 0
             ? Math.max(0, now - galaxyEnteredAtRef.current)
             : 0,
+        galaxyAtmosphereSeed: galaxyAtmosphereSeedRef.current,
         neuralRamp: neuralRampRef.current,
         zoomRatio,
         now,

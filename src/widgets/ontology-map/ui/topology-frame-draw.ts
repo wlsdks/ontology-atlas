@@ -663,6 +663,8 @@ export interface FrameDrawParams {
   galaxyRamp?: number;
   /** Milliseconds since this Galaxy entry; drives only deterministic atmosphere. */
   galaxyElapsedMs?: number;
+  /** One entry-scoped seed; meteor paths remain stable throughout each apparition. */
+  galaxyAtmosphereSeed?: number;
   /** Shared world radius of the real-node spiral; aligns the cached sky texture. */
   galaxyLayoutRadius?: number;
   /** Coupling view material: lit cell bodies and softly tapered connections. */
@@ -1056,6 +1058,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     farT,
     galaxyRamp: galaxyRampProp = 0,
     galaxyElapsedMs = 0,
+    galaxyAtmosphereSeed = 0,
     galaxyLayoutRadius = 0,
     neuralRamp: neuralRampProp = 0,
     zoomRatio,
@@ -1342,6 +1345,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       warmInk: tokens.galaxyProject,
       coolInk: tokens.galaxyElement,
       accentInk: tokens.indigo,
+      elapsedMs: galaxyElapsedMs,
+      reducedMotion,
     });
   }
   // devicePixelRatio: 1 — ctx is already DPR-transformed once by the caller
@@ -1362,7 +1367,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   if (galaxyOn && !reducedMotion) {
     drawGalaxyMeteor(
       ctx,
-      galaxyMeteorPhase(galaxyElapsedMs),
+      galaxyMeteorPhase(galaxyElapsedMs, galaxyAtmosphereSeed),
       viewportWidth,
       viewportHeight,
       tokens.galaxyCapability,
@@ -2860,10 +2865,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           ),
         ),
         presence: nodeLayerAlpha * galaxyPhase.field,
-        glint:
-          (world.brightStarIds.has(node.id) || attention > 0
-            ? atmosphere.glint * galaxyPhase.corona
-            : 0),
+        glint: (
+          !reducedMotion || world.brightStarIds.has(node.id) || attention > 0
+            ? Math.max(
+                atmosphere.glint,
+                world.brightStarIds.has(node.id) || attention > 0 ? 0.16 : 0,
+              ) * galaxyPhase.corona
+            : 0
+        ),
         glintRotation: atmosphere.rotation,
       });
     }

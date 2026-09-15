@@ -353,10 +353,15 @@ had become false).
   names the project and domains while hiding the default relationship mesh;
   hovering or selecting a star reveals only its actual adjacent relations.
   Concepts render as borderless light cores with radial coronas and bounded
-  deterministic twinkle. Revealed relations become source/target-temperature
+  deterministic twinkle. Each concept's corona and glint flare independently on
+  a distinct 4–8 second interval while its contrast-safe core stays visible.
+  Revealed relations become source/target-temperature
   luminous filaments while retaining their solid/dashed and direction semantics;
   seeded dust and an occasional
-  procedural shooting star sit behind the graph and are never graph records.
+  procedural shooting star on a varied entry-seeded path sit behind the graph
+  and are never graph records.
+  Two cached diffuse-gas layers drift slowly within the fixed arms and breathe
+  only in luminance; concept positions and the anchored base field never move.
   Reduced motion freezes the atmosphere and omits the meteor. Galaxy inspection
   keeps the expanded constellation mounted and smoothly approaches the selected
   star in the free canvas beside the inspector. It never zooms out a view the

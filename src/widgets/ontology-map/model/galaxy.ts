@@ -167,16 +167,20 @@ export interface GalaxyTwinkle {
   periodMs: number;
 }
 
-/** Deterministic, slow stellar atmosphere; no frame mutates graph meaning. */
+/** Deterministic intermittent stellar atmosphere; no frame mutates graph meaning. */
 export function galaxyTwinkle(nodeId: string, nowMs: number, reducedMotion: boolean): GalaxyTwinkle {
   const seed = atmosphereHash(nodeId);
-  const periodMs = 3000 + seed * 3000;
+  const periodMs = 4000 + atmosphereHash(`${nodeId}:interval`) * 4000;
+  const flareDurationMs = 700 + atmosphereHash(`${nodeId}:duration`) * 600;
   const rotation = atmosphereHash(`${nodeId}:glint`) * Math.PI;
   if (reducedMotion) return { intensity: 0.9, glint: 0.32, rotation, periodMs };
-  const wave = 0.5 + 0.5 * Math.sin((nowMs / periodMs + seed) * Math.PI * 2);
-  const glint = phase(wave, 0.58, 1);
+  const cycleMs = ((nowMs + seed * periodMs) % periodMs + periodMs) % periodMs;
+  const flareProgress = cycleMs <= flareDurationMs ? cycleMs / flareDurationMs : -1;
+  const glint = flareProgress < 0 ? 0 : Math.sin(Math.PI * flareProgress) ** 2;
   return {
-    intensity: 0.72 + wave * 0.36,
+    // The hot core has its own contrast floor in the painter. This stronger
+    // range belongs to corona/glint, so a leaf can flare without blinking out.
+    intensity: 0.9 + glint * 0.7,
     glint,
     rotation,
     periodMs,
@@ -185,24 +189,103 @@ export function galaxyTwinkle(nodeId: string, nowMs: number, reducedMotion: bool
 
 export interface GalaxyMeteorPhase {
   progress: number;
-  lane: number;
   direction: 1 | -1;
+  startX: number;
+  startY: number;
+  deltaX: number;
+  deltaY: number;
+  trailFraction: number;
 }
 
-/** One bounded meteor: first at 1.8s, then every 9.5s, travelling for 1.15s. */
-export function galaxyMeteorPhase(elapsedMs: number): GalaxyMeteorPhase | null {
-  const firstAt = 1800;
-  const interval = 9500;
-  const duration = 1150;
-  if (!Number.isFinite(elapsedMs) || elapsedMs < firstAt) return null;
-  const sinceFirst = elapsedMs - firstAt;
-  const cycle = Math.floor(sinceFirst / interval);
-  const within = sinceFirst - cycle * interval;
+const METEOR_FIRST_AT_MS = 1800;
+const METEOR_INTERVAL_COUNT = 12;
+
+/** FNV plus Murmur's final avalanche; neighboring cycle suffixes must not share visible lanes. */
+function meteorHash(value: string): number {
+  let mixed = Math.floor(atmosphereHash(value) * 0xffff_ffff) >>> 0;
+  mixed ^= mixed >>> 16;
+  mixed = Math.imul(mixed, 0x85eb_ca6b);
+  mixed ^= mixed >>> 13;
+  mixed = Math.imul(mixed, 0xc2b2_ae35);
+  mixed ^= mixed >>> 16;
+  return (mixed >>> 0) / 0xffff_ffff;
+}
+
+const METEOR_INTERVALS_MS = Array.from({ length: METEOR_INTERVAL_COUNT }, (_, index) =>
+  7000 + meteorHash(`meteor-interval:${index}`) * 5000,
+);
+const METEOR_INTERVAL_BLOCK_MS = METEOR_INTERVALS_MS.reduce((sum, value) => sum + value, 0);
+
+/**
+ * One bounded meteor with a deterministic position, path, speed, and gap for
+ * each apparition. A repeating interval block finds the cycle in constant
+ * time; the global cycle id keeps the visible paths from repeating with it.
+ */
+export function galaxyMeteorPhase(elapsedMs: number, entrySeed = 0): GalaxyMeteorPhase | null {
+  if (!Number.isFinite(elapsedMs) || elapsedMs < METEOR_FIRST_AT_MS) return null;
+  const sinceFirst = elapsedMs - METEOR_FIRST_AT_MS;
+  const block = Math.floor(sinceFirst / METEOR_INTERVAL_BLOCK_MS);
+  let withinBlock = sinceFirst - block * METEOR_INTERVAL_BLOCK_MS;
+  let index = 0;
+  while (index < METEOR_INTERVALS_MS.length - 1 && withinBlock >= METEOR_INTERVALS_MS[index]) {
+    withinBlock -= METEOR_INTERVALS_MS[index];
+    index += 1;
+  }
+  const cycle = block * METEOR_INTERVAL_COUNT + index;
+  const seed = `${entrySeed.toFixed(6)}:${cycle}`;
+  const duration = 820 + meteorHash(`meteor-duration:${seed}`) * 620;
+  const within = withinBlock;
   if (within > duration) return null;
+  const direction = meteorHash(`meteor-direction:${seed}`) < 0.5 ? 1 : -1;
+  const deltaX = direction * (0.28 + meteorHash(`meteor-length-x:${seed}`) * 0.34);
+  const absDeltaX = Math.abs(deltaX);
+  const startX = direction > 0
+    ? 0.03 + meteorHash(`meteor-start-x:${seed}`) * (0.94 - absDeltaX)
+    : 0.97 - meteorHash(`meteor-start-x:${seed}`) * (0.94 - absDeltaX);
+  const verticalDirection = meteorHash(`meteor-slope:${seed}`) < 0.22 ? -1 : 1;
+  const deltaY = verticalDirection * (0.1 + meteorHash(`meteor-delta-y:${seed}`) * 0.2);
+  const absDeltaY = Math.abs(deltaY);
+  const startY = verticalDirection > 0
+    ? 0.04 + meteorHash(`meteor-start-y:${seed}`) * (0.92 - absDeltaY)
+    : 0.96 - meteorHash(`meteor-start-y:${seed}`) * (0.92 - absDeltaY);
   return {
     progress: Math.min(1, Math.max(0, within / duration)),
-    lane: atmosphereHash(`meteor:${cycle}`),
-    direction: cycle % 2 === 0 ? 1 : -1,
+    direction,
+    startX,
+    startY,
+    deltaX,
+    deltaY,
+    trailFraction: 0.3 + meteorHash(`meteor-trail:${seed}`) * 0.2,
+  };
+}
+
+export interface GalaxyNebulaMotion {
+  /** Multiplicative light level only; geometry never breathes or zooms. */
+  luminance: number;
+  /** Small counter-moving rotations for the two diffuse wisp layers. */
+  innerRotation: number;
+  outerRotation: number;
+}
+
+/**
+ * Calm motion for the diffuse Galaxy atmosphere.
+ *
+ * The anchored base texture and every real concept stay fixed. Two transparent
+ * wisp layers oscillate by less than two degrees over long, unequal cycles, so
+ * gas can flow inside the arms without turning the ontology disc as a whole.
+ * Reduced motion resolves to the readable anchored frame at every timestamp.
+ */
+export function galaxyNebulaMotion(elapsedMs: number, reducedMotion: boolean): GalaxyNebulaMotion {
+  if (reducedMotion) {
+    return { luminance: 1, innerRotation: 0, outerRotation: 0 };
+  }
+  const time = Number.isFinite(elapsedMs) ? Math.max(0, elapsedMs) : 0;
+  return {
+    // Six percent is visible across a few seconds without making the whole
+    // canvas pulse. Only light changes; the footprint never scales.
+    luminance: 0.94 + Math.sin((time / 8400) * Math.PI * 2) * 0.06,
+    innerRotation: Math.sin((time / 26000) * Math.PI * 2) * (Math.PI / 150),
+    outerRotation: Math.sin((time / 37000) * Math.PI * 2 + Math.PI * 0.72) * (Math.PI / 120),
   };
 }
 
