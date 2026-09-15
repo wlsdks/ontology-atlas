@@ -5777,22 +5777,26 @@ html[data-gateway-stage] {
 }
 
 
-/* Decorative waiting geometry carries pending state, never a graph or progress value. */
-.map-wait-scene {
-  background: radial-gradient(ellipse at center, var(--color-indigo-a08), transparent 70%);
+/* One low-contrast light field accompanies the status. It carries presence only:
+   no route progress, graph structure, or inferred completion. */
+.map-wait-halo {
+  background: radial-gradient(circle at center, var(--color-indigo-line-a13), var(--color-indigo-line-a06) 28%, transparent 68%);
 }
-/* The destination can occupy the JS thread. A promoted HTML transform keeps
-   feedback on the compositor; SVG/background-position animation alone froze
-   in the native recording during graph preparation. */
+.map-wait-cluster {
+  animation-play-state: paused;
+}
 @media (prefers-reduced-motion: no-preference) {
-  .map-wait-orbit {
-    will-change: transform;
-    animation: map-wait-orbit calc(var(--motion-settle) * 10) linear infinite;
+  .map-wait-cluster {
+    will-change: opacity;
+    animation: map-wait-presence calc(var(--motion-settle) * 8) var(--motion-ease) infinite;
+  }
+  .map-wait-cluster[data-map-wait-motion='running'] {
+    animation-play-state: running;
   }
 }
-@keyframes map-wait-orbit {
-  from { transform: translateZ(0) rotate(0turn); }
-  to { transform: translateZ(0) rotate(1turn); }
+@keyframes map-wait-presence {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
 }
 
 /* Swatches keep their own palette even when the surrounding app uses the other

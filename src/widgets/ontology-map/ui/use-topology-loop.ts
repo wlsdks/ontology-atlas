@@ -197,14 +197,14 @@ function overviewFitTokens<T extends { cameraScaleMin: number }>(tokens: T, gala
   return galaxyActive ? { ...tokens, cameraScaleMin: 0 } : tokens;
 }
 
-/** The eventual Flat overview bounds while Galaxy coordinates are still on screen. */
-function boundsForPositionTargets(
+/** The eventual Flat overview while Galaxy coordinates are still on screen. */
+function overviewForPositionTargets(
   fit: "spine" | "full",
   world: TopologyWorld,
   tokens: OntologyMapTokens,
   targets: ReadonlyMap<string, { x: number; y: number }>,
   expandedParents: ReadonlySet<string>,
-) {
+): { bounds: { minX: number; minY: number; maxX: number; maxY: number }; visibleCount: number } {
   const included = new Set<string>();
   if (fit === "full") {
     for (const node of world.nodes) included.add(node.id);
@@ -228,7 +228,10 @@ function boundsForPositionTargets(
     maxX = Math.max(maxX, point.x + radius);
     maxY = Math.max(maxY, point.y + radius);
   }
-  return Number.isFinite(minX) ? { minX, minY, maxX, maxY } : world.spineBounds;
+  return {
+    bounds: Number.isFinite(minX) ? { minX, minY, maxX, maxY } : world.spineBounds,
+    visibleCount: Math.max(1, included.size),
+  };
 }
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 
@@ -343,6 +346,8 @@ export interface UseTopologyLoopArgs {
   onGrowthReplayingChange?: (running: boolean) => void;
   /** Bumped to aim the camera at the spotlit nodes when the lens or its window changes (0 = unused). */
   spotlightFitToken?: number;
+  /** Saved-set focus identity used to pair a focus fit with a reversible camera return. */
+  constellationFocusId?: string | null;
   relayoutToken: number;
   /**
    * The first-map reveal. On increment every node starts at the spine centre
@@ -614,7 +619,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange, onTierLegendPlacementChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, domeTierLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange, onTierLegendPlacementChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, domeTierLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, galaxy = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const getRealmCaption = useEffectEvent(() => realmCaption);
   const annotationRef = useRef({ captions: args.relationCaptions, questions: args.reviewQuestionIds });
@@ -690,6 +695,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const galaxyFlatReturnPositionsRef = useRef<ReadonlyMap<string, { x: number; y: number }> | null>(null);
   /** Which mode owns the active coordinate homing transition. */
   const galaxyLayoutHandoffRef = useRef<"galaxy" | "flat" | null>(null);
+  /** The last camera intent in each 2D mode, restored when that mode is chosen again. */
+  const galaxyModeCameraRef = useRef<{
+    flat: { target: CameraTarget; userDriven: boolean } | null;
+    galaxy: { target: CameraTarget; userDriven: boolean } | null;
+  }>({ flat: null, galaxy: null });
+  /** Flat camera move waits for its coordinates, so the sky never shrinks around scattered stars. */
+  const pendingFlatCameraRef = useRef<{
+    target: CameraTarget;
+    overviewScale: number;
+    gestureRevision: number;
+    userDriven: boolean;
+  } | null>(null);
   /**
    * How far the galaxy view has come, 0 (flat) to 1 (sky).
    *
@@ -953,6 +970,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     focusTarget: CameraTarget;
     gestureRevision: number;
   } | null>(null);
+  /** Camera context paired with an explicit saved-constellation focus. */
+  const constellationCameraRef = useRef<{
+    returnTarget: CameraTarget;
+    dataSourceKey: string | null;
+  } | null>(null);
+  const previousConstellationFocusIdRef = useRef<string | null>(constellationFocusId);
   useEffect(() => {
     if (!galaxy) galaxyInspectionCameraRef.current = null;
   }, [galaxy]);
@@ -1923,9 +1946,29 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   // writing a ref while rendering is the one way to make those two disagree.
   useEffect(() => {
     if (galaxyRef.current === galaxy) return;
+    const previousHandoff = galaxyLayoutHandoffRef.current;
+    if (galaxy) {
+      // A reversal while Flat coordinates are still returning is still the
+      // same Galaxy departure. Do not overwrite the person's saved Flat view
+      // with the temporarily held Galaxy camera.
+      if (previousHandoff !== "flat") {
+        galaxyModeCameraRef.current.flat = {
+          target: { ...cameraTargetRef.current },
+          userDriven: userDrivenCameraRef.current,
+        };
+      }
+      pendingFlatCameraRef.current = null;
+    } else {
+      galaxyModeCameraRef.current.galaxy = {
+        target: { ...cameraTargetRef.current },
+        userDriven: userDrivenCameraRef.current,
+      };
+    }
     galaxyRef.current = galaxy;
-    galaxyEnteredAtRef.current = galaxy ? performance.now() : 0;
-    galaxyAtmosphereSeedRef.current = galaxy ? Math.random() : 0;
+    if (galaxy) {
+      galaxyEnteredAtRef.current = performance.now();
+      galaxyAtmosphereSeedRef.current = Math.random();
+    }
     const world = worldRef.current;
     const tokens = readOntologyMapTokensOrNull();
     if (!world || !tokens) return;
@@ -1966,14 +2009,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     galaxyLayoutHandoffRef.current = galaxy ? "galaxy" : "flat";
     lastActiveMsRef.current = performance.now();
 
-    // The Galaxy overview knows its destination bounds before the stars finish
-    // moving, so camera and layout travel as one event. Flat waits for the
-    // restored coordinates and reuses its established fit path below.
+    // Galaxy can travel with its already-known sky frame. Flat deliberately
+    // waits for its coordinates: fitting the final Flat bounds while stars are
+    // still scattered across the Galaxy made the interim frame look tiny and
+    // empty. Once the nodes arrive, `finishGalaxyLayoutHandoff` starts the
+    // stored Flat camera move.
     const { width, height } = viewportRef.current;
     if (width > 0 && height > 0 && hasInitializedRef.current) {
-      const fitBounds = galaxy
-        ? layout.bounds
-        : boundsForPositionTargets(
+      const flatOverview = galaxy
+        ? null
+        : overviewForPositionTargets(
             overviewFitRef.current,
             world,
             tokens,
@@ -1981,25 +2026,64 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             expandedParentsRef.current,
           );
       const measuredTokens = overviewFitTokens(cameraTokens(tokens), galaxy);
-      const target = computeOverviewCameraTarget(
+      const fitBounds = galaxy ? layout.bounds : flatOverview!.bounds;
+      const visibleCount = galaxy ? world.nodes.length : flatOverview!.visibleCount;
+      const fittedTarget = computeOverviewCameraTarget(
         fitBounds,
         width,
         height,
         measuredTokens,
-        world.nodes.length,
+        visibleCount,
       );
-      cameraTargetRef.current = target;
-      overviewScaleRef.current = computeOverviewFitScale(
+      const savedCamera = galaxy
+        ? galaxyModeCameraRef.current.galaxy
+        : galaxyModeCameraRef.current.flat;
+      const target = savedCamera?.target ?? fittedTarget;
+      const overviewScale = computeOverviewFitScale(
         fitBounds,
         width,
         height,
         measuredTokens,
-        world.nodes.length,
+        visibleCount,
       );
-      userDrivenCameraRef.current = false;
-      dampingRef.current = tokens.cameraDampingDefault;
-      cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-      beginCameraTween(target);
+      if (galaxy) {
+        overviewScaleRef.current = overviewScale;
+        cameraTargetRef.current = target;
+        userDrivenCameraRef.current = savedCamera?.userDriven ?? false;
+        dampingRef.current = tokens.cameraDampingDefault;
+        cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+        if (reducedMotionRef.current) {
+          cameraTweenRef.current = null;
+          cameraRef.current = {
+            x: { value: target.tx, velocity: 0 },
+            y: { value: target.ty, velocity: 0 },
+            scale: { value: target.tscale, velocity: 0 },
+          };
+        } else {
+          beginCameraTween(target);
+        }
+      } else {
+        // Stop an interrupted Galaxy camera tween at the visible frame. The
+        // deferred Flat move begins only after node homing finishes.
+        const camera = cameraRef.current;
+        cameraTweenRef.current = null;
+        cameraRef.current = {
+          x: { value: camera.x.value, velocity: 0 },
+          y: { value: camera.y.value, velocity: 0 },
+          scale: { value: camera.scale.value, velocity: 0 },
+        };
+        cameraTargetRef.current = {
+          tx: camera.x.value,
+          ty: camera.y.value,
+          tscale: camera.scale.value,
+        };
+        pendingFlatCameraRef.current = {
+          target,
+          overviewScale,
+          gestureRevision: cameraGestureRevisionRef.current,
+          userDriven: savedCamera?.userDriven ?? false,
+        };
+      }
     }
   }, [galaxy, beginCameraTween, cameraTokens]);
 
@@ -2187,6 +2271,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
      */
     if (dataSourceKey !== null && dataSourceKey !== fittedDataSourceKeyRef.current) {
       fittedDataSourceKeyRef.current = dataSourceKey;
+      galaxyModeCameraRef.current = { flat: null, galaxy: null };
+      pendingFlatCameraRef.current = null;
       hasInitializedRef.current = false;
     }
     trySnapInitialCamera(tokens);
@@ -2575,11 +2661,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     let hit = 0;
     for (const node of world.nodes) {
       if (!ids.has(node.id)) continue;
+      const point = galaxyRef.current
+        ? galaxyLayoutRef.current?.points.get(node.id) ?? node
+        : node;
       hit += 1;
-      if (node.x < minX) minX = node.x;
-      if (node.y < minY) minY = node.y;
-      if (node.x > maxX) maxX = node.x;
-      if (node.y > maxY) maxY = node.y;
+      if (point.x < minX) minX = point.x;
+      if (point.y < minY) minY = point.y;
+      if (point.x > maxX) maxX = point.x;
+      if (point.y > maxY) maxY = point.y;
     }
     // None of the spotlit ids may exist in the current world (inside a
     // collapsed cluster, say). With no bbox to fit, leave the camera alone —
@@ -2590,13 +2679,32 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // labels, rings and footprints.
     const padX = Math.max(48, (maxX - minX) * 0.18);
     const padY = Math.max(48, (maxY - minY) * 0.18);
-    const target = fitWorldTarget(
-      { minX: minX - padX, minY: minY - padY, maxX: maxX + padX, maxY: maxY + padY },
-      width,
-      height,
-      tokens.cameraScaleMax,
-      tokens.cameraScaleMin,
-    );
+    const focusBounds = {
+      minX: minX - padX,
+      minY: minY - padY,
+      maxX: maxX + padX,
+      maxY: maxY + padY,
+    };
+    const target = constellationFocusId !== null
+      ? computeOverviewCameraTarget(
+          focusBounds,
+          width,
+          height,
+          { ...cameraTokens(tokens), overviewEntryRatio: 1 },
+        )
+      : fitWorldTarget(
+          focusBounds,
+          width,
+          height,
+          tokens.cameraScaleMax,
+          tokens.cameraScaleMin,
+        );
+    if (constellationFocusId !== null && constellationCameraRef.current === null) {
+      constellationCameraRef.current = {
+        returnTarget: { ...cameraTargetRef.current },
+        dataSourceKey,
+      };
+    }
     cameraTargetRef.current = target;
     userDrivenCameraRef.current = false;
     dampingRef.current = tokens.cameraDampingDefault;
@@ -2617,7 +2725,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     } else if (motion === "follow") cameraTweenRef.current = null;
     else beginCameraTween(target);
     return true;
-  }, [beginCameraTween]);
+  }, [beginCameraTween, cameraTokens, constellationFocusId, dataSourceKey]);
   const getRunSpotlightFit = useEffectEvent(() => runSpotlightFit);
   useLayoutEffect(() => {
     runSpotlightFitRef.current = getRunSpotlightFit();
@@ -2628,6 +2736,23 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     lastProcessedSpotlightFitTokenRef.current = spotlightFitToken;
     if (!runSpotlightFit()) pendingSpotlightFitRef.current = true;
   }, [spotlightFitToken, runSpotlightFit]);
+
+  useEffect(() => {
+    const previousId = previousConstellationFocusIdRef.current;
+    previousConstellationFocusIdRef.current = constellationFocusId;
+    if (previousId === null || constellationFocusId !== null) return;
+    const saved = constellationCameraRef.current;
+    constellationCameraRef.current = null;
+    if (!saved || saved.dataSourceKey !== dataSourceKey) return;
+    const tokens = readOntologyMapTokensOrNull();
+    if (!tokens) return;
+    cameraTargetRef.current = saved.returnTarget;
+    userDrivenCameraRef.current = false;
+    dampingRef.current = tokens.cameraDampingDefault;
+    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+    lastActiveMsRef.current = performance.now();
+    beginCameraTween(saved.returnTarget);
+  }, [beginCameraTween, constellationFocusId, dataSourceKey]);
 
   /**
    * Follow docking panel/window/split width transitions to recalculate the currently
@@ -2912,6 +3037,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       if (focusedSlug === null) {
         const inspection = galaxyInspectionCameraRef.current;
         galaxyInspectionCameraRef.current = null;
+        // A saved-constellation focus intentionally replaces single-node
+        // inspection in the same render. Let its safe-area fit own the camera;
+        // restoring the inspection target here would race and overwrite it.
+        if (constellationFocusId !== null) return;
         if (!inspection || inspection.gestureRevision !== cameraGestureRevisionRef.current) return;
         if (sameTarget(currentTarget, inspection.returnTarget)) return;
         const tokens = readOntologyMapTokensOrNull();
@@ -3081,7 +3210,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       beginCameraTween(finalTarget);
     });
     return () => cancelAnimationFrame(raf);
-  }, [focusedSlug, beginCameraTween, cameraTokens]);
+  }, [focusedSlug, beginCameraTween, cameraTokens, constellationFocusId]);
 
   // --- Realm entry/exit: a `realmRootId` change relays out the subtree and
   // starts the transition choreography. Entering re-lays the subtree around
@@ -4533,7 +4662,34 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             world.nodes.map((node) => ({ id: node.id, x: node.x, y: node.y })),
             world.edges.map((edge) => ({ source: edge.sourceId, target: edge.targetId })),
           );
-          if (handoff === "flat") galaxyFlatReturnPositionsRef.current = null;
+          if (handoff === "flat") {
+            galaxyFlatReturnPositionsRef.current = null;
+            const pending = pendingFlatCameraRef.current;
+            pendingFlatCameraRef.current = null;
+            // A wheel/pan during coordinate return is newer intent than the
+            // mode's saved camera. Otherwise restore the exact Flat view (or
+            // the first-entry fit) only now that those bounds are real.
+            if (pending && pending.gestureRevision === cameraGestureRevisionRef.current) {
+              overviewScaleRef.current = pending.overviewScale;
+              cameraTargetRef.current = pending.target;
+              // Preserve the authorship of the saved view. A later resize may
+              // re-fit an overview, but it must not overwrite a wheel/pan view
+              // merely because that view crossed a mode boundary.
+              userDrivenCameraRef.current = pending.userDriven;
+              dampingRef.current = tokens.cameraDampingDefault;
+              cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+              if (reducedMotionRef.current) {
+                cameraTweenRef.current = null;
+                cameraRef.current = {
+                  x: { value: pending.target.tx, velocity: 0 },
+                  y: { value: pending.target.ty, velocity: 0 },
+                  scale: { value: pending.target.tscale, velocity: 0 },
+                };
+              } else {
+                beginCameraTween(pending.target);
+              }
+            }
+          }
           galaxyLayoutHandoffRef.current = null;
         };
         // Reduced-motion users get the relayout RESULT, not the journey.
@@ -5621,9 +5777,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       } else {
         neuralRampRef.current = stepFocusRamp(neuralRampRef.current, neuralTarget, dt, tokens.focusDimTau);
       }
+      const galaxyIdentityActive =
+        galaxyRef.current || galaxyLayoutHandoffRef.current === "flat";
       galaxyRampRef.current = reducedMotionRef.current
-        ? (galaxyRef.current ? 1 : 0)
-        : stepFocusRamp(galaxyRampRef.current, galaxyRef.current, dt, tokens.focusDimTau);
+        ? (galaxyIdentityActive ? 1 : 0)
+        : stepFocusRamp(galaxyRampRef.current, galaxyIdentityActive, dt, tokens.focusDimTau);
 
       if (reducedMotionRef.current) {
         /*
@@ -5677,9 +5835,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         camera,
         farT,
         galaxyRamp: galaxyRampRef.current,
+        galaxyIdentityActive,
         galaxyLayoutRadius: galaxyLayoutRef.current?.radius ?? 0,
         galaxyElapsedMs:
-          galaxyRef.current && galaxyEnteredAtRef.current > 0
+          galaxyRampRef.current > 0.001 && galaxyEnteredAtRef.current > 0
             ? Math.max(0, now - galaxyEnteredAtRef.current)
             : 0,
         galaxyAtmosphereSeed: galaxyAtmosphereSeedRef.current,
@@ -6491,6 +6650,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const edgeOff = (nodeId: string) => domeFrame?.get(nodeId) ?? EDGE_ZERO;
         const selected = selectedEdgeRef.current;
         const pathEdges = pathEdgeIdsRef.current;
+        const constellationIds =
+          mapLensKindRef.current === "constellation" ? spotlightIdsRef.current : null;
         const walkedEdges = buildWalkedEdgeKeys(visitedTrailRef.current);
         const trailVisible = trailLensRampRef.current > 0.001;
         return world.edges
@@ -6512,7 +6673,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 focusedNodeId: focusedSlugRef.current,
                 hoveredNodeId: drawnHoveredNodeIdRef.current,
                 selected: isSelected,
-                path: e.id !== undefined && (pathEdges?.has(e.id) ?? false),
+                path:
+                  (e.id !== undefined && (pathEdges?.has(e.id) ?? false)) ||
+                  (constellationIds?.has(e.sourceId) === true &&
+                    constellationIds.has(e.targetId)),
                 walked: trailVisible && walkedEdges.has(walkedKey),
               });
             return {

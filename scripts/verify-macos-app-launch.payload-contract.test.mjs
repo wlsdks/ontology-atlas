@@ -67,7 +67,7 @@ function validPayload({ markers: markerOverrides, ...overrides } = {}) {
     height: 917,
     // Markers are **merged** — overwriting drops the shell markers and a different
     // check fails first (this misled the author twice while writing these tests).
-    markers: { ontologyNav: true, sourceVaultNav: true, ...markerOverrides },
+    markers: { ontologyNav: true, sourceVaultNav: false, libraryNav: true, ...markerOverrides },
     ...overrides,
   };
 }
@@ -106,6 +106,19 @@ test("payload contract · topology route accepts the current map shell", () => {
 
 test("payload contract · 정상 페이로드는 통과한다", () => {
   assert.equal(validateWebviewVerifyPayload(validPayload()), null);
+});
+
+test("payload contract accepts the installed shell's consolidated Library navigation", () => {
+  const installedStyle = validPayload({
+    markers: { ontologyNav: true, sourceVaultNav: false, libraryNav: true },
+  });
+  const missingLibrary = validPayload({
+    markers: { ontologyNav: true, sourceVaultNav: false, libraryNav: false },
+  });
+  const navigationCases = [installedStyle, missingLibrary];
+  assert.equal(navigationCases.length, 2, "the installed and missing-Library payload inventory must not be empty");
+  assert.equal(validateWebviewVerifyPayload(navigationCases[0]), null);
+  assert.match(validateWebviewVerifyPayload(navigationCases[1]), /Library navigation marker/);
 });
 
 test("payload contract accepts a rendered Library-only workbench without code destinations", () => {

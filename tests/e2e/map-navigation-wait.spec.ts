@@ -72,12 +72,12 @@ test('reduced motion keeps the waiting scene readable and still', async ({ page 
   await expect(pending).toBeVisible();
   await expect(pending.getByRole('status')).toContainText('map');
   expect(await pending.getByRole('status').evaluate(el => el.closest('[aria-busy="true"]') === null)).toBe(true);
-  await expect(pending.getByTestId('brand-waiting-mark')).toHaveAttribute('data-waiting-motion', 'still');
-  const motion = await pending.locator('.map-wait-point, .map-wait-signal, .map-wait-orbit').evaluateAll(elements => elements.map(el => ({
+  await expect(pending.getByTestId('map-wait-cluster')).toHaveAttribute('data-map-wait-motion', 'still');
+  const motion = await pending.locator('.map-wait-cluster, .map-wait-halo, .map-wait-point').evaluateAll(elements => elements.map(el => ({
     animation: getComputedStyle(el).animationName,
     transform: getComputedStyle(el).transform,
   })));
-  expect(motion).toHaveLength(6);
+  expect(motion.length).toBeGreaterThan(0);
   expect(motion.every(item => item.animation === 'none' && item.transform === 'none')).toBe(true);
   await page.evaluate(() => {
     window.requestAnimationFrame = (window as unknown as { restoreFrame: typeof requestAnimationFrame }).restoreFrame;

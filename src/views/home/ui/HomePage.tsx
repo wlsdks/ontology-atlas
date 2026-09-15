@@ -88,6 +88,8 @@ import { useNavRailContextHrefs, useNavRailSettingsSlot } from "@/widgets/app-na
 import dynamic from "next/dynamic";
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { SearchHint } from "@/widgets/search-hint";
+import { SavedConstellationsControl } from "@/widgets/saved-constellations";
+import { buildConstellationAgentPrompt, type ConstellationCandidate } from "@/features/saved-constellations";
 // The dock down the right of the map. It has to sit in the same flex row as the
 // map so one width animation moves both columns — that is what reads as "the map
 // made room for it".
@@ -105,7 +107,7 @@ import {
 } from "../model/use-spotlight-fit-transition";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
-import { useCanvasBackground, useExpand, useFootprint, useGalaxy, useGlyphSet, useMapArrangement, useView3d } from "@/shared/lib/appearance-preferences";
+import { useCanvasBackground, useExpand, useFootprint, useGalaxy, useGlyphSet, useMapArrangement, useView3d, writeGalaxy, writeView3d } from "@/shared/lib/appearance-preferences";
 
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
@@ -293,6 +295,7 @@ import {
   buildV2Connections,
   buildV2ConnectionGroups,
   buildV2EvidenceRows,
+  computeGalaxyLayout,
   formatV2HandoffText,
   refreshIndexDependentTokens,
 } from "@/widgets/ontology-map";
@@ -1833,6 +1836,50 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         })
       : { nodes: [], edges: [] };
   }, [synthSize, ontologyInsight, freshChannelSlugs, dustySlugs]);
+  const constellationCandidates = useMemo<ConstellationCandidate[]>(() => {
+    if (vault.status !== 'loaded' || !vault.manifest || !ontologyInsight) return [];
+    const containmentParentById = new Map(
+      ontologyMapGraph.edges
+        .filter((edge) => edge.kind === 'contains')
+        .map((edge) => [edge.target, edge.source]),
+    );
+    const galaxyLayout = computeGalaxyLayout(
+      ontologyMapGraph.nodes.map((node) => ({
+        id: node.id,
+        kind: node.kind,
+        parentId: containmentParentById.get(node.id) ?? null,
+      })),
+      { domain: 250, capability: 145, element: 90 },
+    );
+    const insightById = new Map(ontologyInsight.nodes.map((node) => [node.id, node]));
+    const docsBySlug = new Map(vault.manifest.docs.map((document) => [document.slug, document]));
+    return ontologyMapGraph.nodes.flatMap((mapNode) => {
+      const insightNode = insightById.get(mapNode.id);
+      const ownSlug = insightNode ? resolveNodeDocument(insightNode).ownSlug : null;
+      const document = ownSlug ? docsBySlug.get(ownSlug) : null;
+      if (!document || typeof document.frontmatter.uid !== 'string') return [];
+      const uid = document.frontmatter.uid;
+      const mergedUids = Array.isArray(document.frontmatter.merged_uids)
+        ? document.frontmatter.merged_uids.filter((value): value is string => typeof value === 'string')
+        : [];
+      return [{
+        uid,
+        mergedUids,
+        mapId: mapNode.id,
+        lastKnownPath: document.path,
+        label: mapNode.label,
+        kind: mapNode.kind,
+        galaxyPoint: galaxyLayout.points.get(mapNode.id) ?? { x: 0, y: 0 },
+      }];
+    });
+  }, [ontologyInsight, ontologyMapGraph.edges, ontologyMapGraph.nodes, vault]);
+  const [activeConstellation, setActiveConstellation] = useState<{
+    id: string;
+    memberSlugs: ReadonlySet<string>;
+  } | null>(null);
+  const routedConstellation =
+    activeConstellation?.id === routeState.constellationIntent ? activeConstellation : null;
+  const [constellationFitToken, setConstellationFitToken] = useState(0);
 
   // Spotlight auto-expansion. Owner, 2026-07-23: *"If the change is somewhere you would have to
 // click into, just expand it all — everything connected"* (if the change is somewhere you would have to
@@ -3815,6 +3862,10 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         setLocalGraphStack((stack) => stack.slice(0, -1));
         break;
       case "none":
+        if (routedConstellation) {
+          setActiveConstellation(null);
+          setRouteState({ constellationIntent: null });
+        }
         break;
     }
   });
@@ -3957,11 +4008,19 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const mapLensIds =
     analysisMode === "path"
       ? pathLensNodeIds
-      : expandAllActive
-        ? allMapNodeIds
-        : spotlightIds;
+      : routedConstellation
+        ? routedConstellation.memberSlugs
+        : expandAllActive
+          ? allMapNodeIds
+          : spotlightIds;
   const mapLensKind =
-    analysisMode === "path" ? "path" as const : expandAllActive ? "all" as const : "recent" as const;
+    analysisMode === "path"
+      ? "path" as const
+      : routedConstellation
+        ? "constellation" as const
+        : expandAllActive
+          ? "all" as const
+          : "recent" as const;
   const pathExpandedParents = useMemo(() => {
     if (!pathLensNodeIds || ontologyMapGraph.edges.length === 0) return null;
     const parentOf = buildContainmentParentMap(ontologyMapGraph.edges);
@@ -4588,6 +4647,49 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                     phoneFocusSuppressed={selectedNodeFocusActive}
                     rightInspectorReserved={nodePanelMounted}
                     leftIndexReserved={renderedIndexState === "expanded"}
+                    constellationControl={(
+                      <SavedConstellationsControl
+                        handle={vault.status === 'loaded' ? vault.handle : null}
+                        candidates={constellationCandidates}
+                        selectedSlug={canvasSelectedSlug}
+                        intent={routeState.constellationIntent}
+                        activeId={routedConstellation?.id ?? null}
+                        onFocus={(id, memberSlugs) => {
+                          writeView3d(false);
+                          writeGalaxy(true);
+                          setActiveConstellation({ id, memberSlugs });
+                          setSelectedEdge(null);
+                          setSelectedRelationActive(false);
+                          setRouteState((current) => ({
+                            ...current,
+                            constellationIntent: id,
+                            selectedSlug: null,
+                            focusedHubSlug: null,
+                            analysisMode: 'overview',
+                            pathSourceSlug: null,
+                            pathTargetSlug: null,
+                            realmSlug: null,
+                          }));
+                          setConstellationFitToken((current) => current + 1);
+                        }}
+                        onClear={() => {
+                          setActiveConstellation(null);
+                          setRouteState({ constellationIntent: null });
+                        }}
+                        onPrepare={(saved) => {
+                          setVaultAgentPrefill({
+                            text: buildConstellationAgentPrompt(saved, {
+                              vaultPath: vault.handle
+                                ? getTauriVaultRootPath(vault.handle) ?? vault.handle.name
+                                : null,
+                            }),
+                            nonce: Date.now(),
+                          });
+                          openVaultAgent();
+                        }}
+                        canPrepare={llmBridgeAvailable}
+                      />
+                    )}
                     // <md expanded INDEX is a full-bleed sheet — while the sheet is the main surface,
 // the top chrome column is demoted (overlap eradication 2026-07-23, completion of rank7 sheet
 // syntax). Same contract as utility lane's hidden md:flex.
@@ -5751,7 +5853,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                       fitViewToken={combinedFitToken}
                       growthReplayToken={growthReplayToken}
                       onGrowthReplayingChange={setGrowthReplaying}
-                      spotlightFitToken={spotlightFitToken}
+                      spotlightFitToken={spotlightFitToken + constellationFitToken}
+                      constellationFocusId={routedConstellation?.id ?? null}
                       relayoutToken={topologyRelayoutToken}
                       revealToken={mapRevealToken}
                       onSelectEdge={(edge) => {

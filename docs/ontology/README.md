@@ -25,6 +25,8 @@ the shared mental model between the humans building Atlas and you.
 - `capabilities/`: user-visible features inside those domains, including the
   two agent surfaces: `capabilities/mcp-server` (runtime-advertised tools in
   `mcp/`) and `capabilities/cli-developer-entry` (local commands in `cli/`).
+  `capabilities/saved-constellations` records the durable task scope shared by
+  Galaxy, Library, MCP, and CLI without making saved membership a graph edge.
 - `elements/`: implementation evidence. Each element names a *role* (flat
   slug); the file location lives in its `path:` frontmatter, never in the slug.
 
@@ -107,6 +109,7 @@ node cli/src/index.mjs validate docs/ontology
 node cli/src/index.mjs health
 node cli/src/index.mjs maintenance docs/ontology
 node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000
+node cli/src/index.mjs constellations docs/ontology
 ```
 
 In a multi-project vault, select one containment tree explicitly instead of

@@ -229,6 +229,39 @@ pub(crate) fn open_or_create_relative_directory(
     Ok(current)
 }
 
+#[cfg(unix)]
+pub(crate) fn open_relative_directory(
+    root: &fs::File,
+    relative_path: &Path,
+) -> Result<Option<fs::File>, String> {
+    use std::os::fd::{AsRawFd, FromRawFd};
+
+    let mut current = root.try_clone().map_err(|error| err_str(error.to_string()))?;
+    for component in relative_path.components() {
+        let std::path::Component::Normal(part) = component else {
+            return Err(err_str("directory target must be a normal relative path"));
+        };
+        let name = unix_name(part)?;
+        let fd = unsafe {
+            libc::openat(
+                current.as_raw_fd(),
+                name.as_ptr(),
+                libc::O_RDONLY
+                    | libc::O_DIRECTORY
+                    | libc::O_CLOEXEC
+                    | libc::O_NOFOLLOW,
+            )
+        };
+        if fd < 0 {
+            let error = std::io::Error::last_os_error();
+            if error.kind() == std::io::ErrorKind::NotFound { return Ok(None); }
+            return Err(err_str(error.to_string()));
+        }
+        current = unsafe { fs::File::from_raw_fd(fd) };
+    }
+    Ok(Some(current))
+}
+
 /// Opens the parent of allowed relative config paths using a stable directory FD. Missing intermediate folders
 /// are created based on the already-opened parent FD, not the path string.
 #[cfg(unix)]
@@ -271,6 +304,49 @@ pub(crate) fn write_entry_atomically(
     create_mode: libc::mode_t,
 ) -> Result<(), String> {
     write_entry_bytes_atomically(parent, file_name, contents.as_bytes(), create_mode)
+}
+
+/// Reads one regular file relative to an already-open parent directory without following links.
+#[cfg(unix)]
+pub(crate) fn read_entry_text(
+    parent: &fs::File,
+    file_name: &std::ffi::CStr,
+) -> Result<Option<String>, String> {
+    use std::io::Read;
+    use std::os::fd::{AsRawFd, FromRawFd};
+
+    let fd = unsafe {
+        libc::openat(
+            parent.as_raw_fd(),
+            file_name.as_ptr(),
+            libc::O_RDONLY | libc::O_CLOEXEC | libc::O_NOFOLLOW | libc::O_NONBLOCK,
+        )
+    };
+    if fd < 0 {
+        let error = std::io::Error::last_os_error();
+        if error.kind() == std::io::ErrorKind::NotFound {
+            return Ok(None);
+        }
+        return Err(err_str(error.to_string()));
+    }
+    let file = unsafe { fs::File::from_raw_fd(fd) };
+    let metadata = file
+        .metadata()
+        .map_err(|error| err_str(error.to_string()))?;
+    if !metadata.is_file() {
+        return Err(err_str("collection preferences target is not a regular file"));
+    }
+    if metadata.len() > 1024 * 1024 {
+        return Err(err_str("collection preferences exceed the 1 MiB limit"));
+    }
+    let mut text = String::new();
+    file.take(1024 * 1024 + 1)
+        .read_to_string(&mut text)
+        .map_err(|error| err_str(error.to_string()))?;
+    if text.len() > 1024 * 1024 {
+        return Err(err_str("collection preferences exceed the 1 MiB limit"));
+    }
+    Ok(Some(text))
 }
 
 /// Publish complete bytes under a new name. Unlike renameat, linkat cannot

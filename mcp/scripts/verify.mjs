@@ -160,6 +160,8 @@ export const EXPECTED_READ_TOOLS = [
   'git_status',
   'git_history',
   'list_concepts',
+  'list_constellations',
+  'get_constellation',
   'get_concept',
   'get_concepts',
   'find_evidence',

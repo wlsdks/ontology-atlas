@@ -2,7 +2,7 @@
  * Recent changes, path, and full views share the same lens mechanism of "aligning
  * the camera to a set and sinking the rest", but their meanings must not be mixed.
  */
-export type TopologyMapLensKind = 'recent' | 'path' | 'all';
+export type TopologyMapLensKind = 'recent' | 'path' | 'all' | 'constellation';
 
 export function isPathLensNode(
   kind: TopologyMapLensKind,

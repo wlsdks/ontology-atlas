@@ -98,6 +98,7 @@ const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string }> = {
   to: { scope: "vault-scoped", note: "pathTo 의 옛 별칭" },
   open: { scope: "vault-scoped", note: "펼친 부모 슬러그 목록" },
   realm: { scope: "vault-scoped", note: "영역 루트 슬러그" },
+  constellation: { scope: "vault-scoped", note: "저장한 별자리 폴더 UUID 또는 새 별자리 의도" },
   impact: { scope: "global", note: "none|upstream|downstream|network" },
   pulse: { scope: "global", note: "all|7d|30d" },
   mode: { scope: "global", note: "overview|focus|path|health" },
@@ -445,6 +446,7 @@ describe("범위 등록부 — URL 쿼리 키", () => {
   it("지도의 모든 쿼리 키가 등록돼 있다", () => {
     const declared = new Set(Object.values(HOME_QUERY_KEYS));
     const registered = new Set(Object.keys(URL_KEY_REGISTRY));
+    expect(declared.size, "HOME_QUERY_KEYS 수집이 비어 있으면 범위 게이트도 무효다").toBeGreaterThan(0);
 
     const unregistered = [...declared].filter((key) => !registered.has(key));
     expect(

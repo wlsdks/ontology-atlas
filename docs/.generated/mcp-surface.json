@@ -2,8 +2,8 @@
   "_generatedBy": "pnpm docs:surface:build",
   "_contract": "Derived from the MCP tool registry and the CLI command registry. Never hand-edit — run `pnpm docs:surface:build` and commit the diff.",
   "mcp": {
-    "toolCount": 38,
-    "readToolCount": 22,
+    "toolCount": 40,
+    "readToolCount": 24,
     "writeToolCount": 16,
     "tools": [
       {
@@ -234,6 +234,20 @@
         "required": []
       },
       {
+        "name": "get_constellation",
+        "mode": "read",
+        "arguments": [
+          "dependencyLimit",
+          "id",
+          "limit",
+          "offset",
+          "relationLimit"
+        ],
+        "required": [
+          "id"
+        ]
+      },
+      {
         "name": "git_history",
         "mode": "read",
         "arguments": [
@@ -308,6 +322,15 @@
           "offset",
           "since",
           "summary"
+        ],
+        "required": []
+      },
+      {
+        "name": "list_constellations",
+        "mode": "read",
+        "arguments": [
+          "limit",
+          "offset"
         ],
         "required": []
       },
@@ -523,7 +546,7 @@
     ]
   },
   "cli": {
-    "commandCount": 60,
+    "commandCount": 62,
     "commands": [
       "absorb",
       "add",
@@ -541,6 +564,8 @@
       "compile",
       "components",
       "connect-source",
+      "constellation",
+      "constellations",
       "cycles",
       "delete",
       "disconnect-source",

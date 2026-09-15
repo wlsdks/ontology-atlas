@@ -1,7 +1,7 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser; on 2026-08-31 documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
+> Last updated: 2026-09-15 (added saved constellations as durable task scope across Galaxy, Library, MCP, and CLI. Earlier kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser; on 2026-08-31 documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
 > source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments,
 > and project meaning receipts — `/ontology` is a compatibility redirect to
 > `/topology?index=expanded`, `/ontology/edit` and
@@ -40,7 +40,7 @@ agent task`.
 | Surface | Entry | Audience |
 |---|---|---|
 | **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens the compatible `/docs/?intent=local` vault setup entry; primary workbench routes `/topology`, `/architecture`, `/library`, `/ontology/insights`, `/projects`, `/agents`, and `/mcp`; `/git` remains a contextual workbench route | daily visual ontology work — pick a local vault folder, inspect reviewed architecture, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
-| **CLI** (R12 / R14 / R15+ · 60 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / analysis / infer-imports / architecture / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, reviewed architecture conformance, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, architecture pre/post checks, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
+| **CLI** (R12 / R14 / R15+ · 62 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export / constellations / constellation` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export + saved task-scope recovery) · `index / analyze / analysis / infer-imports / architecture / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, reviewed architecture conformance, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, architecture pre/post checks, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | current runtime read/write inventory over JSON-RPC (`tools/list`; prove with `mcp-verify`) | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
 | **Website** | GitHub Pages static export / `/` + `/topology` + `/download` | With no active vault, `/` is the gateway; with a loaded local vault it is the topology map, as is explicit `/topology`. `/download` is the product intro + current release download path. Library remains local-first; desktop-only file abilities degrade in place while browser-supported reading and editing remain available. |
 
@@ -360,6 +360,10 @@ had become false).
   seeded dust and an occasional
   procedural shooting star on a varied entry-seeded path sit behind the graph
   and are never graph records.
+  In Galaxy, **My constellations** saves a named set of current ontology concepts
+  with its purpose. Opening a saved constellation focuses that whole set through
+  `?constellation=<folder UUID>`; `?constellation=new` opens the creation editor.
+  The set is durable task context, not a new graph kind or relation.
   Two cached diffuse-gas layers drift slowly within the fixed arms and breathe
   only in luminance; concept positions and the anchored base field never move.
   Reduced motion freezes the atmosphere and omits the meteor. Galaxy inspection
@@ -907,8 +911,9 @@ view-doc · pin · unpin · copy URL · print · edit · new doc · rename · de
 
 ### `/library` — Library (2026-09-06, its own destination)
 
-A vault holds three kinds of file and **only one is the graph**. Library gives each kind its own
-tab: Ontology draws the explicitly typed graph nodes, while Sources and Wiki draw the other two.
+A vault holds three kinds of file and **only one is the graph**. Library keeps their distinct
+meaning and adds a fourth presentation tab: Ontology draws the explicitly typed graph nodes,
+Sources and Wiki draw the other two file kinds, and Collections lists saved Galaxy constellations.
 
 The Library supports general knowledge as well as documents associated with code.
 Sources remain original files; write-ups and filed answers remain wiki pages.
@@ -939,8 +944,8 @@ an old ambiguous citation identifies the intended passage.
 
 Sources and Wiki shipped inside the Docs sidebar on 2026-09-05 and moved to Library the
 next day after five capped lists competed inside one 280px column. On 2026-09-14 the owner
-unified navigation without recombining those lists: Library now has Sources, Wiki, and
-Ontology tabs, and each tab keeps its own reader and file meaning. The mobile Library tab
+unified navigation without recombining those lists: Library now has Sources, Wiki, Ontology,
+and Collections tabs, and each tab keeps its own reader and file meaning. The mobile Library tab
 inherits the former Docs slot; `/docs/?slug=…` remains a compatible exact-file link, using the
 general Document reader only when the target is outside Ontology. The Ontology tree and all of
 its displayed and restored working sets show only the five explicit schema kinds, and its name-and-path filter
@@ -948,6 +953,16 @@ matches both localized display names and canonical paths. New Wiki pages begin i
 draft state, and five required section headings before creation. The current local-work
 receipt remains primary while earlier receipts are available from History; an app write's
 matching folder-watch event is consumed instead of producing a second notification.
+
+**Saved constellation task scope (2026-09-15).** Collections lists each saved
+constellation's name, purpose, and ontology concept count. Expanding a row resolves
+members by immutable UID against the current manifest; resolved names open the actual
+Ontology document, unresolved members stay visible, and the whole set opens in Galaxy.
+The Galaxy candidate keeps a separate `mapId` for map focus; the compatible `v1`
+sidecar stores immutable UID identity and the manifest's exact `document.path` as
+display-only `lastKnownPath`. Source and Wiki attachments stay
+distinguishable from ontology members. Empty, loading, corrupt, and read-only states remain
+explicit, and creation routes to Galaxy instead of writing a second Library collection.
 
 **Two panes.** The index on the left carries the active Sources or Wiki tab with that
 list's own doors. The right
@@ -2326,7 +2341,7 @@ file export + the local stdio MCP genuinely can't serve them.
 - **Save-conflict guard** — if a file changed on disk between read and write, `/docs` editor save surfaces a localized conflict notice and keeps the buffer dirty instead of silently overwriting unsaved edits
 - Effect: When files are edited via IDE · AI agent · CLI, the graph updates and toasts appear within ~1.5–5s without the user needing to click the web tab again.
 
-#### Read tools (20)
+#### Read tools (24)
 1. **connection_info** — active vault/repo roots plus the actually advertised `readOnly`, `toolCount`, `toolNames`, and `toolsetHash`; explicit `OATLAS_REPO_ROOT` wins, otherwise repo root is auto-discovered from the active vault's Git top-level before falling back to process cwd
 2. **git_status** — vault-scoped working-tree state and risk; no writes or remote transport
 3. **git_history** `{ limit? }` — newest-first commits that touched the active vault pathspec only (default 20, max 100), with `limited` / `hasMore`, shallow-repository state, and `historyComplete` so truncated evidence is not mistaken for complete history
@@ -2391,6 +2406,10 @@ Business capability candidates follow the same principle. They are proposed only
 18. **infer_imports** `{ rootPath?, sourceFolders?, ignore?, maxFiles?, reviewMode?, afterReviewId? }` — side-effect-free TS/JS, root-package Python, deterministic Rust, and root-module Go import evidence. Rust uses the existing file/module envelope for resolvable `use`, file-backed `mod`, and exact literal path/include forms; each file is capped at 256 KiB and 256 dependency statements. It does not expand macros, evaluate `cfg`, execute Cargo/compiler/network code, resolve symbols, or turn direct source direction into runtime/business impact. Conditional, escaped, non-literal, or otherwise ambiguous forms remain unresolved. External crate names are observed candidates only; package-contract evidence and review decide importance. Go remains separate as `packageImportEvidence` contract `goPackageImports:v1`, preserving exact importing files and repository-relative package directories without inventing target files. File and package receipts distinguish source role and usage; `value` does not claim runtime execution. Every collapsed edge includes whole-edge counts, their joint `productValueCount`, and up to five exact evidence receipts. Missing vault edges and Go package evidence are review-only, never executable write proposals. Compact and focus delivery surface Go counts plus the explicit full-evidence call instead of silently dropping a large package graph; CLI bootstrap approval plans derive candidate and unresolved totals from that validated compact summary rather than treating omitted full arrays as zero. CLI `infer-imports --apply` is disabled, and bootstrap/index cannot auto-create import endpoints or semantic `depends_on`; an agent must inspect both concepts, explain the meaning-level dependency, obtain human approval, and supply nonblank `why` before one explicit write.
 19. **index_project** `{ rootPath?, maxFiles?, threshold?, skipImports? }` — side-effect-free project indexing checkpoint that combines repo structure analysis, file-import and Go package-import indexing, and vault validation. It reuses one full import receipt for analyzer evidence, reports file and package relation counts separately, and preserves coverage instead of reducing uncertainty to one count. `plan.conceptDelta` separates raw candidates into existing, ambiguous-alias review, and genuinely new buckets, and `next.reviewCalls` gives exact calls for retrieving full rows before applying anything.
 20. **inspect_architecture** `{ rootPath?, profileSlug? }` — reads one reviewed `architecture-profile/v1`, scans current imports with the same bounded source analyzer, and returns the profile's governed import usages, usage-qualified role edges and receipts, violations, explicit unknowns, and the required `architectureChangePlan:v1` fields. Unknown usage stays fail-closed and cannot be declared away. Side effect 0; named architecture patterns remain declarations rather than inferred source facts.
+21. **validate_wiki** — validates the separate `wiki/**.md` page contract without treating pages as ontology nodes.
+22. **read_source** — reads one bounded raw source under `sources/` with format-specific citation anchors and no converted copy.
+23. **list_constellations** — returns the compatible saved-constellation inventory as bounded read-only task context, including identity, purpose, counts, and unresolved-member state.
+24. **get_constellation** `{ id }` — resolves one saved constellation by stable folder UUID, preserving member UIDs and display-only last-known paths without promoting membership into ontology edges.
 
 For first-pass construction, an `unqualified-project-exclusion` is an exact
 human-acceptance gap rather than a qualification-time hidden block.

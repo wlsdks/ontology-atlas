@@ -655,12 +655,15 @@ export interface FrameDrawParams {
   /** Visual-expression axis (constellation ↔ circuit) — node/edge/label morph, diffraction, vignette. */
   farT: number;
   /**
-   * How far the galaxy view has come, 0 (flat) to 1 (sky).
-   *
-   * A ramp rather than the boolean the person picked, so switching views crossfades instead of
-   * cutting — the same shape every other lens on this canvas uses. The loop owns the clock.
+   * Calm atmosphere/background ramp, 0 (flat) to 1 (sky). Node identity is
+   * separate so a selected Galaxy frame never exposes a moving Flat outline.
    */
   galaxyRamp?: number;
+  /**
+   * The chosen mode's optical identity. It changes with the mode selection,
+   * while `galaxyRamp` is reserved for the calm background/exit crossfade.
+   */
+  galaxyIdentityActive?: boolean;
   /** Milliseconds since this Galaxy entry; drives only deterministic atmosphere. */
   galaxyElapsedMs?: number;
   /** One entry-scoped seed; meteor paths remain stable throughout each apparition. */
@@ -1057,6 +1060,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     camera,
     farT,
     galaxyRamp: galaxyRampProp = 0,
+    galaxyIdentityActive = galaxyRampProp > 0.001,
     galaxyElapsedMs = 0,
     galaxyAtmosphereSeed = 0,
     galaxyLayoutRadius = 0,
@@ -1145,6 +1149,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const spotlightLensActive =
     spotlightIds !== null && spotlightRamp > 0.001 && colorFocusedNodeId === null && colorSelectedEdge === null;
   const pathLensActive = spotlightLensActive && mapLensKind === "path";
+  const constellationLensActive = spotlightLensActive && mapLensKind === "constellation";
   const recentSpotlightActive = spotlightLensActive && mapLensKind === "recent";
   const spotlightSink = (inSpotlight: boolean): number =>
     spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - tokens.spotlightRestAlpha) : 1;
@@ -1248,7 +1253,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
    * will.
    */
   const galaxy = domeOn ? 0 : galaxyRampProp;
-  const galaxyOn = galaxy > 0.001;
+  const galaxyAtmosphereOn = galaxy > 0.001;
+  const galaxyIdentityOn = !domeOn && galaxyIdentityActive;
+  const galaxyOn = galaxyIdentityOn || galaxyAtmosphereOn;
   const galaxyPhase = galaxyAppearance(galaxy);
   /**
    * One node's 3D transform (world offset + perspective factor). Nodes, labels,
@@ -1335,7 +1342,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       vignetteFarAlpha: tokens.vignetteFarAlpha,
     },
   );
-  if (galaxyOn && galaxyLayoutRadius > 0) {
+  if (galaxyAtmosphereOn && galaxyLayoutRadius > 0) {
     const core = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
     drawGalaxyNebula(ctx, {
       centerX: core.x,
@@ -1359,12 +1366,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // the chosen mode reach it without requiring an altitude change.
     farT: Math.max(farT, galaxy),
     devicePixelRatio: 1,
-    opacityScale: galaxyOn ? 1.8 : 1,
+    opacityScale: galaxyAtmosphereOn ? 1.8 : 1,
     originX: reducedMotion ? 0 : gridOrigin.x,
     originY: reducedMotion ? 0 : gridOrigin.y,
     radialParallax: reducedMotion ? 0 : realmDustParallax,
   });
-  if (galaxyOn && !reducedMotion) {
+  if (galaxyAtmosphereOn && !reducedMotion) {
     drawGalaxyMeteor(
       ctx,
       galaxyMeteorPhase(galaxyElapsedMs, galaxyAtmosphereSeed),
@@ -1649,7 +1656,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     }
     // Galaxy's overview is the complete star field. The mode ramp reveals
     // every real concept while Flat keeps its semantic-zoom tiers unchanged.
-    if (galaxyOn) outAlpha = outAlpha + (1 - outAlpha) * galaxy;
+    if (galaxyOn) {
+      const reveal = galaxyIdentityOn ? 1 : galaxy;
+      outAlpha = outAlpha + (1 - outAlpha) * reveal;
+    }
     effectiveAlphaById.set(node.id, outAlpha);
   }
 
@@ -1942,6 +1952,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         edge.targetId === selectedEdge.targetId &&
         (!selectedEdge.relationType || edge.relationType === selectedEdge.relationType);
       const isPathEdge = isPathLensEdge(mapLensKind, edge.id, pathEdgeIds);
+      const isConstellationEdge =
+        constellationLensActive &&
+        spotlightIds !== null &&
+        spotlightIds.has(edge.sourceId) &&
+        spotlightIds.has(edge.targetId);
       const hovered =
         hoveredEdge !== null &&
         edge.sourceId === hoveredEdge.sourceId &&
@@ -2031,7 +2046,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           focusedNodeId,
           hoveredNodeId,
           selected: isSelectedEdge,
-          path: isPathEdge,
+          path: isPathEdge || isConstellationEdge,
           walked: walkedTrail > 0.01,
         })
       ) {
@@ -2599,12 +2614,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       (spotlightIds !== null && spotlightIds.has(node.id)) || isHoveredNode || previewEndpoint,
     );
     const nodeLayerAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha * nodeSpotlightSink;
-    /*
-     * The body gives way to the light. It fades faster than the sky arrives (`bodyPresence` is
-     * quadratic), so there is no altitude at which a node is both a solid shape and a bright
-     * star — that frame is the one that would read as a rendering bug rather than as a galaxy.
-     */
-    ctx.globalAlpha = nodeLayerAlpha * (galaxyOn ? bodyPresence(galaxy) : 1);
+    // A selected Galaxy frame is a star immediately. On return, the loop keeps
+    // that identity until coordinates arrive, then this ramp reveals the Flat
+    // body while it is stationary.
+    ctx.globalAlpha = nodeLayerAlpha * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
     // Sheen top stop = lerp(fill, tint, blend) — resolved here (token layer)
     // so `render/node-shapes.ts` stays token-free and pure.
     // perf 2026-08-19 — equal fills yield equal result strings (tint and blend are
@@ -2853,8 +2866,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         lit: Math.min(
           1,
           Math.max(
-            atmosphericLuminance * galaxyPhase.core * (1 + 0.3 * attention),
-            0.82 * attention * galaxyPhase.core,
+            atmosphericLuminance * (galaxyIdentityOn ? 1 : galaxyPhase.core) * (1 + 0.3 * attention),
+            0.82 * attention * (galaxyIdentityOn ? 1 : galaxyPhase.core),
           ),
         ),
         coronaLit: Math.min(
@@ -2864,7 +2877,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             0.72 * attention * galaxyPhase.corona,
           ),
         ),
-        presence: nodeLayerAlpha * galaxyPhase.field,
+        presence: nodeLayerAlpha * (galaxyIdentityOn ? 1 : galaxyPhase.field),
         glint: (
           !reducedMotion || world.brightStarIds.has(node.id) || attention > 0
             ? Math.max(
@@ -3028,7 +3041,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ) {
       ctx.save();
       ctx.setLineDash([...EXPANDED_AURA_DASH]);
-      ctx.globalAlpha = tierAlpha * EXPANDED_AURA_ALPHA * bodyPresence(galaxy);
+      ctx.globalAlpha = tierAlpha * EXPANDED_AURA_ALPHA * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
       ctx.strokeStyle = tokens.indigo;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -3062,7 +3075,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     ) {
       ctx.save();
       ctx.setLineDash([...EXPANDED_AURA_DASH]);
-      ctx.globalAlpha = tierAlpha * EXPANDED_COHORT_ALPHA * bodyPresence(galaxy);
+      ctx.globalAlpha = tierAlpha * EXPANDED_COHORT_ALPHA * (galaxyIdentityOn ? 0 : bodyPresence(galaxy));
       ctx.strokeStyle = tokens.expandedCohort;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -3299,6 +3312,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     egoState: NodeEgoState;
     isHovered: boolean;
     revealAlpha: number;
+    emphasisAlpha: number;
     /** W6 agent visibility — this label's node matches the agent heartbeat's current focus. */
     agentFocus: boolean;
     /** This frame's normalised depth, 0 near … 1 far (always 0 in 2D) — the paint order. */
@@ -3411,6 +3425,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         : lensNodeEgoState(node.id, focusedNodeId, neighborsOfFocused, selectedEdge);
     const trailKept = isTrailKept(node.id);
     const pathKept = isPathLensNode(mapLensKind, node.id, spotlightIds);
+    const constellationKept =
+      mapLensKind === "constellation" && spotlightIds?.has(node.id) === true;
     const isHovered = hoveredNodeId !== null && node.id === hoveredNodeId;
     if (
       galaxyOverviewLabelsOnly &&
@@ -3419,7 +3435,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       !isHovered &&
       !previewEndpoint &&
       !trailKept &&
-      !pathKept
+      !pathKept &&
+      !constellationKept
     ) {
       continue;
     }
@@ -3436,20 +3453,27 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       !isHovered &&
       !previewEndpoint &&
       !trailKept &&
-      !pathKept
+      !pathKept &&
+      !constellationKept
     ) {
       continue;
     }
-    const pathLabelSink = pathLensActive
-      ? spotlightSink(pathKept || isHovered || previewEndpoint)
+    const pathLabelSink = pathLensActive || constellationLensActive
+      ? spotlightSink(pathKept || constellationKept || isHovered || previewEndpoint)
       : 1;
     const labelRevealAlpha = revealAlpha * pathLabelSink;
-    const compactAlpha = computeLabelAlpha({
+    const baseCompactAlpha = computeLabelAlpha({
       kind: node.kind,
       egoState,
       isHovered,
       revealAlpha: labelRevealAlpha,
     });
+    // A saved set is an explicit reading scope. Its names use the existing
+    // foreground alpha as the lens settles, while the surrounding map keeps
+    // its ordinary label hierarchy.
+    const compactAlpha = constellationKept
+      ? Math.max(baseCompactAlpha, spotlightRamp)
+      : baseCompactAlpha;
     /*
      * 3D used to draw **no resting labels at all**: every node that was not
      * hovered, ego or trail-kept had its label multiplied by `1 - assembly ramp`,
@@ -3515,7 +3539,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       if (!(galaxyOn && node.kind === "domain") && !isSafeRectProtectedLabel({
         egoState,
         isHovered,
-        trailKept: trailKept || pathKept,
+        trailKept: trailKept || pathKept || constellationKept,
         kind: node.kind,
         isHub: node.isHub,
       })) {
@@ -3541,15 +3565,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         isHovered ||
         trailKept ||
         pathKept ||
+        constellationKept ||
         (egoState === "neighbor" && isEgoNeighborLabelExempt(node.id, egoNeighborLabelEligibleIds));
       labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
     }
-    const priority = galaxyOn && (node.kind === "project" || node.kind === "domain") ? 1 : resolveLabelPriority({
-      kind: node.kind,
-      isSelected: egoState === "center",
-      isHovered,
-      isHub: node.isHub,
-    });
+    const priority = constellationKept
+      ? 0
+      : galaxyOn && (node.kind === "project" || node.kind === "domain")
+        ? 1
+        : resolveLabelPriority({
+            kind: node.kind,
+            isSelected: egoState === "center",
+            isHovered,
+            isHub: node.isHub,
+          });
     // The vertical extent is **measured from the font**. The old approximation
     // (`ascent = fontSize`, `descent = 2` constant) overshot above and undershot
     // below, and because the descent was constant while `fontSize` grew with zoom,
@@ -3611,6 +3640,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         egoState,
         isHovered,
         revealAlpha: labelRevealAlpha,
+        emphasisAlpha: constellationKept ? spotlightRamp : 0,
         agentFocus,
         depthU: domeOn ? labelDome.u : 0,
       },
@@ -3733,6 +3763,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         egoState: payload.egoState,
         isHovered: payload.isHovered,
         revealAlpha: payload.revealAlpha,
+        emphasisAlpha: payload.emphasisAlpha,
         agentFocus: payload.agentFocus,
         fontScale: labelScale,
         // A label is never brighter than its node's appear ramp — a node still

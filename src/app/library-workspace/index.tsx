@@ -5,11 +5,12 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useCallback, useMemo } from 'react';
 
-import { LibraryPage } from '@/views/library';
+import { LibraryConstellations, LibraryPage } from '@/views/library';
 import { useLocalVault } from '@/entities/vault-session';
 import { selectWikiPages } from '@/entities/docs-vault';
 import { useRouter } from '@/i18n/navigation';
 import { useLibraryIndexSegment, writeLibraryIndexSegment } from '@/shared/lib/appearance-preferences';
+import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
 import { RouteLoadingFallback, TabBar } from '@/shared/ui';
 
 // The editor is loaded only when its tab is opened. Composition belongs to the
@@ -19,7 +20,7 @@ const OntologyPage = dynamic(
   { loading: () => <RouteLoadingFallback /> },
 );
 
-type LibraryTab = 'sources' | 'wiki' | 'ontology';
+type LibraryTab = 'sources' | 'wiki' | 'ontology' | 'collections';
 
 export function LibraryWorkspace() {
   const t = useTranslations('library');
@@ -29,13 +30,14 @@ export function LibraryWorkspace() {
   const wikiCount = useMemo(() => selectWikiPages(vault.manifest?.docs ?? []).length, [vault.manifest?.docs]);
   const preferredSegment = useLibraryIndexSegment();
   const requested = params.get('tab');
-  const tab: LibraryTab = requested === 'ontology'
-    ? 'ontology'
+  const tab: LibraryTab = requested === 'ontology' || requested === 'collections'
+    ? requested
     : requested === 'sources' || requested === 'wiki' ? requested : preferredSegment;
+  const handle = selectOpenVaultHandle(vault.status, vault.handle);
 
   const selectTab = useCallback((next: LibraryTab) => {
     if (next === tab) return;
-    if (next !== 'ontology') writeLibraryIndexSegment(next);
+    if (next === 'sources' || next === 'wiki') writeLibraryIndexSegment(next);
     // Carry the selected document and its source/review context across a tab
     // round trip. The Docs URL writer preserves this tab parameter as well.
     const query = new URLSearchParams(params.toString());
@@ -75,6 +77,11 @@ export function LibraryWorkspace() {
               label: t('workspace.ontology'),
               testId: 'library-workspace-ontology',
             },
+            {
+              key: 'collections',
+              label: t('workspace.collections'),
+              testId: 'library-workspace-collections',
+            },
           ]}
         />
       </header>
@@ -84,9 +91,13 @@ export function LibraryWorkspace() {
         aria-labelledby={'library-workspace-tab-' + tab}
         className="flex min-h-0 flex-1"
       >
-        {tab === 'ontology'
-          ? <OntologyPage initialCollection="ontology" documentScope="ontology" />
-          : <LibraryPage segment={tab} onSegmentChange={selectTab} />}
+        {tab === 'ontology' ? (
+          <OntologyPage initialCollection="ontology" documentScope="ontology" />
+        ) : tab === 'collections' ? (
+          <LibraryConstellations handle={handle} documents={vault.manifest?.docs ?? []} />
+        ) : (
+          <LibraryPage segment={tab} onSegmentChange={selectTab} />
+        )}
       </div>
     </div>
   );

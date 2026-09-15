@@ -35,3 +35,4 @@ export { OntologyMapEdgePanel } from './ui/OntologyMapEdgePanel';
  */
 export { buildDomeModel } from './model/dome-view';
 export type { DomeInputNode, DomeViewKind } from './model/dome-view';
+export { computeGalaxyLayout } from './model/galaxy-layout';

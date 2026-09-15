@@ -44,7 +44,7 @@ describe("Galaxy living-sky paint contract", () => {
     const frame = readCode("src/widgets/ontology-map/ui/topology-frame-draw.ts");
     const loop = readCode("src/widgets/ontology-map/ui/use-topology-loop.ts");
 
-    expect(frame).toMatch(/galaxyOn\s*&&\s*!reducedMotion[\s\S]*drawGalaxyMeteor/);
+    expect(frame).toMatch(/galaxyAtmosphereOn\s*&&\s*!reducedMotion[\s\S]*drawGalaxyMeteor/);
     expect(loop).toContain("galaxyAtmosphereActive: galaxyRef.current && !reducedMotionRef.current");
   });
 

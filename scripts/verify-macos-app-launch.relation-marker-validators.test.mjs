@@ -53,7 +53,8 @@ test("WebView verification payload parser uses the latest reported DOM snapshot"
     readyState: "complete",
     markers: {
       ontologyNav: true,
-      sourceVaultNav: true,
+      sourceVaultNav: false,
+      libraryNav: true,
       agentBriefCopy: false,
       businessDecisionQuestions: false,
       readerDecisionLens: false,
@@ -523,7 +524,8 @@ test("WebView verification waits for the latest snapshot that passes route gates
     readyState: "complete",
     markers: {
       ontologyNav: true,
-      sourceVaultNav: true,
+      sourceVaultNav: false,
+      libraryNav: true,
       agentBriefCopy: false,
       businessDecisionQuestions: false,
       readerDecisionLens: false,

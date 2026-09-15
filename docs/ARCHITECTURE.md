@@ -82,10 +82,11 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC (separate process)
 
 ┌────────────────────────────────────────────────────────┐
-│ CLI (cli/, v0.11.0 — 60 commands)                      │
+│ CLI (cli/, v0.11.0 — 62 commands)                      │
 │ ├─ init/agent-activity/add/import/list/find/validate/query│
 │ ├─ mcp-verify/analyze/infer-imports/architecture       │
 │ ├─ bootstrap/compile                                   │
+│ ├─ constellations/constellation (read-only scope)      │
 │ ├─ preflight (commit preflight + pre-commit hook)      │
 │ └─ graph CRUD + deep dive commands                     │
 │                                                         │
@@ -354,9 +355,9 @@ graph. The separation is a property of the **walk**, not a filter applied later.
 - `src-tauri/src/library.rs` owns the native half: hashing, the native picker, the import
   copy, metadata-only discovery, and Finder reveal. It writes nothing outside
   `<vault>/sources/`, and its discovery walk contains no writer.
-- **One Library destination, three tabs (2026-09-14).**
+- **One Library destination, four tabs (2026-09-15).**
   `src/app/library-workspace/` composes `src/views/library/` for Sources/Wiki and
-  `src/views/docs-vault/` for Ontology. `/library/?tab=ontology` opens the existing
+  Collections, and `src/views/docs-vault/` for Ontology. `/library/?tab=ontology` opens the existing
   reader/editor and filters every list, search, count, and saved working set to explicit
   authorable kinds. `/docs` redirects ontology and no-slug entries into Library; only an
   exact existing non-ontology target stays in its bounded Document reader with the same
@@ -369,6 +370,13 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   name/path matcher. `LibrarySection` previews the derived Wiki path and canonical
   section order in a modal before creation; `LibraryWorkActivityStrip` keeps the current
   receipt separate from its dismissible history surface.
+- `src/entities/library-collection/` owns the compatible `v1` saved-constellation
+  schema and UID-based member resolution. The selected vault sidecar is shared by
+  Galaxy and Library; MCP and CLI mirror it for read-only recovery. The Galaxy
+  candidate carries a separate `mapId` for map focus, while persisted
+  `lastKnownPath` keeps the manifest's exact `document.path`
+  (for example `capabilities/x.md`) for display only. A saved membership is neither
+  an ontology kind nor an edge, and corrupt input is unavailable rather than empty.
 - The reader owns the pane; the Library graph mounts only inside the shared
   viewport Dialog after an explicit Graph action. Its close path preserves
   selection and scroll and restores the opener. The unselected landing lists
@@ -587,13 +595,14 @@ until a local manifest exists.
                            argument renders verbatim, and the switch stays off. The
                            installed app registers ontology-atlas://mcp?install= for that
                            link (2026-09-07) and answers no other address
-/library                   the project documents gathered into this folder and the wiki
-                           pages written from them. Two panes: Sources and Wiki on the
-                           left with the doors (Add files, Find documents, Bring from a
-                           service, Compile),
-                           and on the right either the selected wiki page in the shared
-                           reading pane or, for a source, what the folder knows about a
-                           file Atlas has never opened. Split out of /docs 2026-09-06:
+/library                   the project documents gathered into this folder, the wiki
+                           pages written from them, typed ontology documents, and saved
+                           constellations. Four tabs keep Sources, Wiki, Ontology, and
+                           Collections distinct. The first two use the two-pane document
+                           flow, whose right pane shows the selected Wiki page or the
+                           bounded facts known about a raw source. Collections resolves
+                           real ontology members by UID and returns the whole set to Galaxy
+                           with `?constellation=<folder UUID>`. Split out of /docs 2026-09-06:
                            gathering documents of any format and reading the ontology's
                            Markdown are different jobs, and five capped lists were
                            competing for one 280px column. With no folder open it is one
@@ -633,7 +642,7 @@ rather than guess, leaving the folder screen to own the launch. Decision:
 different list of buttons.** The desktop rail shows eight destinations: Map,
 Architecture, Library, Insights, Projects, Agents, MCP, and Git. The mobile bottom
 bar shows five persistent destinations: Map, Architecture, Library, Insights, and Projects;
-web adds Get App as a separate utility. Library contains Sources, Wiki, and Ontology;
+web adds Get App as a separate utility. Library contains Sources, Wiki, Ontology, and Collections;
 `/docs` remains an exact-document compatibility address for non-ontology files and resolves
 active navigation to Library; it does not restore a general Docs home.
 Contextual writing stays inside Map, while Agents, MCP and Git keep their narrow-screen
@@ -671,6 +680,7 @@ to an agent.
 | `recent` · `ask` | `/`, `/topology` | recent-change lens · agent first-words intent | typed parsers in `src/views/home/model/url-state.ts` |
 | `via` | `/`, `/topology`, `/ontology` | origin marker for the return chip | `insights:<tab>` |
 | `review` | `/`, `/topology`, `/ontology/insights` | exact Do-next review row carried across handoff | stable review id, only meaningful with the matching handoff |
+| `constellation` | `/topology` | saved Galaxy task scope or creation intent | stable folder UUID \| `new` |
 | `node` | `/ontology` (redirect) | node to focus after redirect → `?p=` | node id (translated by `translateOntologyDeeplinkToTopologyParam`) |
 | `node` · `mode` · `edit` | `/ontology/edit`, `/ontology/studio` | legacy write deep link translated to `p/workbench/edit` | canonical and plural-folder node forms tolerated; `mode=create` → `workbench=create` |
 | `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |

@@ -125,6 +125,8 @@ export interface HomeRouteState {
    * surfaces structurally impossible. null = off (parameter absent).
    */
   recentWindow: RecentSpotlightWindow | null;
+  /** Saved constellation id, or `new` to open its editor. This value belongs to one vault. */
+  constellationIntent: string | null;
 }
 
 /** Spotlight window — "auto" (adaptive) or an explicit day preset. */
@@ -157,6 +159,7 @@ export const HOME_QUERY_KEYS = {
   open: "open",
   realm: "realm",
   recent: "recent",
+  constellation: "constellation",
   via: ONTOLOGY_DEEPLINK_VIA_KEY,
   review: ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ask: ONTOLOGY_DEEPLINK_ASK_KEY,
@@ -200,6 +203,7 @@ export const VAULT_SCOPED_HOME_QUERY_KEYS = [
   "open",
   "realm",
   "edit",
+  "constellation",
 ] as const;
 
 /**
@@ -227,6 +231,7 @@ export function clearVaultScopedRouteState(current: HomeRouteState): HomeRouteSt
     pathTargetSlug: null,
     expandedParents: [],
     realmSlug: null,
+    constellationIntent: null,
     meaningEditorIntent: false,
     meaningEditParam: null,
     analysisMode: current.analysisMode === "path" ? "overview" : current.analysisMode,
@@ -267,6 +272,7 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   expandedParents: [],
   realmSlug: null,
   recentWindow: null,
+  constellationIntent: null,
 };
 
 /**
@@ -553,6 +559,7 @@ export function parseHomeRouteState(
     ),
     realmSlug: searchParams.get(HOME_QUERY_KEYS.realm) || null,
     recentWindow: parseRecentWindowParam(searchParams.get(HOME_QUERY_KEYS.recent)),
+    constellationIntent: searchParams.get(HOME_QUERY_KEYS.constellation) || null,
   };
 }
 
@@ -698,6 +705,7 @@ export function applyHomeRouteState(
   );
   setOrDelete(next, HOME_QUERY_KEYS.realm, state.realmSlug);
   setOrDelete(next, HOME_QUERY_KEYS.recent, serializeRecentWindowParam(state.recentWindow));
+  setOrDelete(next, HOME_QUERY_KEYS.constellation, state.constellationIntent);
   setOrDelete(
     next,
     HOME_QUERY_KEYS.ask,

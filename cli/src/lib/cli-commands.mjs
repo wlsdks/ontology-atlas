@@ -21,6 +21,8 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   absorb: runner('absorb.mjs', 'runAbsorb'),
   moment: runner('moment.mjs', 'runMoment'),
   backlinks: runner('backlinks.mjs', 'runBacklinks'),
+  constellations: runner('constellations.mjs', 'runConstellations'),
+  constellation: runner('constellation.mjs', 'runConstellation'),
   orphans: runner('orphans.mjs', 'runOrphans'),
   path: runner('path.mjs', 'runPath'),
   explain: runner('explain.mjs', 'runExplain'),

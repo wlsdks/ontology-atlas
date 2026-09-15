@@ -45,7 +45,17 @@ describe("parseHomeRouteState", () => {
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
+      constellationIntent: null,
     });
+  });
+
+  it("round-trips a vault-scoped saved constellation intent", () => {
+    const state = parseHomeRouteState(new URLSearchParams("constellation=11111111-1111-4111-8111-111111111111"));
+    expect(state.constellationIntent).toBe("11111111-1111-4111-8111-111111111111");
+    expect(applyHomeRouteState(new URLSearchParams(), state).get("constellation")).toBe(
+      "11111111-1111-4111-8111-111111111111",
+    );
+    expect(parseHomeRouteState(new URLSearchParams("constellation=new")).constellationIntent).toBe("new");
   });
 
   it("round-trips the contextual editor and legacy create workbench intents", () => {
@@ -92,9 +102,11 @@ describe("parseHomeRouteState", () => {
   it("silently demotes invalid ?recent= values to off (no lens-state pollution)", () => {
     expect(parseHomeRouteState(new URLSearchParams("recent=90"))).toMatchObject({
       recentWindow: null,
+      constellationIntent: null,
     });
     expect(parseHomeRouteState(new URLSearchParams("recent=yesterday"))).toMatchObject({
       recentWindow: null,
+      constellationIntent: null,
     });
   });
 
@@ -259,6 +271,7 @@ describe("applyHomeRouteState", () => {
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
+      constellationIntent: null,
     });
 
     expect(params.toString()).toBe(
@@ -287,6 +300,7 @@ describe("applyHomeRouteState", () => {
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
+      constellationIntent: null,
     });
 
     expect(params.toString()).toBe(
@@ -313,6 +327,7 @@ describe("applyHomeRouteState", () => {
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
+      constellationIntent: null,
     });
 
     expect(hidden.toString()).toBe("");
@@ -341,6 +356,7 @@ describe("applyHomeRouteState", () => {
         expandedParents: [],
         realmSlug: null,
         recentWindow: null,
+      constellationIntent: null,
       },
     );
 
@@ -366,6 +382,7 @@ describe("applyHomeRouteState", () => {
     const off = applyHomeRouteState(new URLSearchParams("recent=auto"), {
       ...DEFAULT_HOME_ROUTE_STATE,
       recentWindow: null,
+      constellationIntent: null,
     });
     expect(off.toString()).toBe("");
   });

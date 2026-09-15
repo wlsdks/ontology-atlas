@@ -43,6 +43,7 @@
 
 import { smoothstep } from "../model/altitude";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/tier-visibility";
+import { lerpColorHex } from "./grid";
 
 export interface LabelDrawState {
   kind: "project" | "domain" | "capability" | "element";
@@ -56,6 +57,8 @@ export interface LabelDrawState {
   isHovered: boolean;
   /** The node's own effective/tier alpha this frame (`model/tier-visibility.ts#effectiveNodeAlpha`) — ties capability/element label eligibility to "if you can click it, you can read it". Ignored by project/domain. */
   revealAlpha: number;
+  /** Explicit reading-scope emphasis, 0..1. Raises opacity without pretending the label is hovered or selected. */
+  emphasisAlpha?: number;
   /**
    * W6 agent visibility — true when this label belongs to the agent
    * heartbeat's current focus node (mirrors `NodeShapeDrawState.agentFocus`
@@ -496,7 +499,11 @@ export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, token
   const presenceAlpha = Math.min(1, Math.max(0, state.presenceAlpha ?? 1));
   const ty = state.baselineY ?? resolveLabelBaselineY(kind, y, r, fontScale);
 
-  const alpha = computeLabelAlpha({ kind, egoState, isHovered, revealAlpha }) * presenceAlpha;
+  const emphasisAlpha = Math.min(1, Math.max(0, state.emphasisAlpha ?? 0));
+  const alpha = Math.max(
+    computeLabelAlpha({ kind, egoState, isHovered, revealAlpha }),
+    emphasisAlpha,
+  ) * presenceAlpha;
   if (alpha <= 0.02) return;
 
   if (kind === "project") {
@@ -511,6 +518,11 @@ export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, token
   } else {
     ctx.font = scaledLabelFont("element", fontScale);
     ctx.fillStyle = tokens.labelElement;
+  }
+  if ((kind === "capability" || kind === "element") && emphasisAlpha > 0) {
+    ctx.fillStyle = emphasisAlpha >= 1
+      ? tokens.labelDomain
+      : lerpColorHex(ctx.fillStyle as string, tokens.labelDomain, emphasisAlpha);
   }
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";

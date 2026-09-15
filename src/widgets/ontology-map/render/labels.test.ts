@@ -307,6 +307,26 @@ describe("label halo", () => {
     expect(strokeAlpha).toBe(fillAlpha);
   });
 
+  it("lets an explicit reading scope raise a child label without claiming hover", () => {
+    const { ctx, calls } = record();
+    draw(ctx, {
+      kind: "element",
+      text: "meaning editor",
+      screenX: 100,
+      screenY: 100,
+      screenRadius: 8,
+      egoState: "normal",
+      isHovered: false,
+      revealAlpha: HITTABLE_MIN_TIER_ALPHA,
+      emphasisAlpha: 1,
+      agentFocus: false,
+    }, tokens);
+    const fillState = calls.find((c) => c.op === "fillText")?.args.at(-1) as Record<string, unknown>;
+    const fillAlpha = fillState.globalAlpha;
+    expect(fillAlpha).toBe(1);
+    expect(fillState.fillStyle).toBe(tokens.labelDomain);
+  });
+
   it("puts the glyph back in its own ink after the stroke", () => {
     const style = paint().find((c) => c.op === "fillText")?.args.at(-1) as Record<string, unknown>;
     expect(style.fillStyle).toBe("#d");

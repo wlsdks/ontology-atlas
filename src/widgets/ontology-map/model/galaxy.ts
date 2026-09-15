@@ -104,11 +104,9 @@ export function galaxyTemperatureKey(
 /**
  * How much of the node's ordinary body survives at this galaxy level.
  *
- * A star has no fill and no outline; it is light. But the body cannot simply be switched off,
- * because the ramp is continuous and a body that vanished at some threshold would put the flip
- * back that choosing altitude removed. It fades, and it fades **faster than the light arrives**
- * — the exponent — so there is no altitude at which a node is both a solid shape and a bright
- * star, which is the frame that would read as a bug.
+ * A selected Galaxy frame switches the ordinary body off immediately; this
+ * ramp is used after returning coordinates have settled, so Flat bodies can
+ * reappear without geometric outlines travelling across the sky.
  */
 export function bodyPresence(galaxy: number): number {
   const g = Number.isFinite(galaxy) ? Math.min(1, Math.max(0, galaxy)) : 0;
@@ -119,7 +117,7 @@ export function bodyPresence(galaxy: number): number {
 export interface GalaxyAppearance {
   /** Compact heart: responds first so the view change is acknowledged immediately. */
   core: number;
-  /** Stellar field presence: resolves with the retiring body crossfade. */
+  /** Stellar atmosphere presence; the readable hot core uses the mode identity. */
   field: number;
   /** Broad, faint corona: settles after the heart without extending the duration. */
   corona: number;

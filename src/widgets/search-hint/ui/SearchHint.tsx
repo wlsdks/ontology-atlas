@@ -75,6 +75,8 @@ interface Props {
    * announcing the route taken as "Trail · N". An empty slot costs nothing to render.
    */
   trailChip?: ReactNode;
+  /** Saved working scopes share this toolbar without owning its positioning. */
+  constellationControl?: ReactNode;
 }
 
 const subscribe = () => () => {};
@@ -106,6 +108,7 @@ export function SearchHint({
   returnChip,
   realmChip,
   trailChip,
+  constellationControl,
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
@@ -280,6 +283,7 @@ export function SearchHint({
             anchorRef={view3dAnchorRef}
           />
         </div>
+        {constellationControl}
         <ChromeChip
           type="button"
           onClick={onOpenSearch}

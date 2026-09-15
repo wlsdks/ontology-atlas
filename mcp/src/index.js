@@ -90,6 +90,10 @@ import {
   gitStatusTool,
 } from './tools/git.mjs';
 import {
+  getConstellationTool,
+  listConstellationsTool,
+} from './tools/constellations.mjs';
+import {
   compileOntologyTool,
   queryOntologyTool,
 } from './tools/graph.mjs';
@@ -199,6 +203,10 @@ server.setRequestHandler('tools/call', async (request) => {
         return ok(gitSnapshotTool(args));
       case 'list_concepts':
         return ok(listConcepts(args));
+      case 'list_constellations':
+        return ok(listConstellationsTool(args));
+      case 'get_constellation':
+        return ok(getConstellationTool(args));
       case 'get_concept':
         return ok(getConcept(args));
       case 'get_concepts':

@@ -182,8 +182,8 @@ export function validateWebviewVerifyPayload(payload, {
     if (payload.markers.ontologyNav !== true) {
       return "WebView did not report the ontology navigation marker";
     }
-    if (payload.markers.sourceVaultNav !== true) {
-      return "WebView did not report the source vault navigation marker";
+    if (payload.markers.libraryNav !== true) {
+      return "WebView did not report the Library navigation marker";
     }
   }
   // Map rebuild engine (docs/archive/TOPOLOGY-MAP-REBUILD.md) — validates the

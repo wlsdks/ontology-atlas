@@ -158,6 +158,9 @@ installation with scripts disabled.
   [CLI reference](cli/README.md).
 - **Every surface reads that one folder** — Map, Architecture, Library,
   Insights, Projects, Agents, MCP, and Git History.
+- **Saved constellations keep a task's concept set together** — name a set in
+  Galaxy, record its purpose, reopen the whole set on the map, inspect its real
+  members in Library, or recover the same read-only context through MCP and CLI.
 - **Versioned AI analysis kept as local Markdown**, with its evidence and
   selectable history, and measured violations instead of an invented
   maintainability score. [Analysis records](docs/ANALYSIS-RECORDS.md).
@@ -233,8 +236,10 @@ samples/storefront` prints its current census.
 **Library → Ontology** opens only the folder's explicitly typed `project`, `domain`,
 `capability`, `element`, and `document` nodes without the canvas: preview or edit Markdown,
 inspect the frontmatter that becomes the graph, follow backlinks, and jump back to the map.
-There is no imported copy to synchronize. Sources, Wiki, and Ontology share one Library
-destination; an existing `/docs/?slug=…` link to ordinary Markdown opens that exact file in a
+There is no imported copy to synchronize. Sources, Wiki, Ontology, and Collections share one
+Library destination. Collections lists saved Galaxy constellations, their purpose, and resolved
+ontology members; each member opens its actual Ontology document and each constellation returns
+to the whole saved set on the map. An existing `/docs/?slug=…` link to ordinary Markdown opens that exact file in a
 single-document compatibility reader with a return to Library. The Ontology tree's name-and-path
 search matches localized display names as well as canonical paths.
 
@@ -322,6 +327,16 @@ answer, inspect source changes, request an updated draft through Claude Code or
 Codex ACP, and compare before saving a new revision. Earlier answers remain
 available. Local Compile has its own read and approval path. See
 [retained answers](docs/RETAINED-ANSWERS.md).
+
+Galaxy can also save the current ontology-node selection as a named constellation
+with a purpose. Atlas stores that compatible `v1` task scope in the selected vault,
+uses immutable node UIDs for membership, and keeps the manifest's exact
+`document.path` only as display context. Library → Collections shows resolved and
+unresolved members without turning membership into an ontology relation. Use
+`ontology-atlas constellations [vault]` or
+`ontology-atlas constellation <id> [vault]` when an agent session cannot attach
+MCP; MCP exposes the equivalent
+read-only `list_constellations` and `get_constellation` tools.
 
 The source workbench also offers task-bound ontology review: summary, comparison
 and full request details, with separate meaning acceptance and write permission.

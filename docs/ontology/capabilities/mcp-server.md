@@ -4,11 +4,11 @@ slug: capabilities/mcp-server
 kind: capability
 title: MCP Server
 domain: domains/agent-integration
-elements: [elements/bounded-source-evidence-reader, elements/installed-mcp-identity-gate, elements/task-scoped-agent-brief-projection]
+elements: [elements/bounded-source-evidence-reader, elements/installed-mcp-identity-gate, elements/saved-constellation-sidecar, elements/task-scoped-agent-brief-projection]
 path: mcp/src
 created_by: "agent:unknown"
 dependencies: [capabilities/vault-ontology]
-relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract.", elements/task-scoped-agent-brief-projection: The compact projection is the concrete MCP read-side implementation that produces bounded selected-project task handoffs., elements/installed-mcp-identity-gate: "The MCP server capability relies on this gate to prove the compiled, signed, and installed sidecar preserves exact source-address semantics.", elements/bounded-source-evidence-reader: Repository analysis uses this reader to return and revalidate bounded implementation source ranges without granting semantic or write authority. }
+relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract.", elements/task-scoped-agent-brief-projection: The compact projection is the concrete MCP read-side implementation that produces bounded selected-project task handoffs., elements/installed-mcp-identity-gate: "The MCP server capability relies on this gate to prove the compiled, signed, and installed sidecar preserves exact source-address semantics.", elements/bounded-source-evidence-reader: Repository analysis uses this reader to return and revalidate bounded implementation source ranges without granting semantic or write authority., elements/saved-constellation-sidecar: The constellation readers use this mirrored sidecar contract to recover named task scope without treating saved membership as ontology meaning. }
 display_ko: AI 연결 서버
 display_en: AI Connection Server
 ---
@@ -25,6 +25,7 @@ The MCP server is the stdio JSON-RPC surface that lets an AI coding agent read a
 
 - MCP tool registration, annotations, and the `tools/list` inventory contract, including the read-only server variant that advertises no write tools.
 - The task-scoped compact `agent_brief` projection: one bounded handoff for a selected project and one task, carrying the selected capability, its evidence coordinates, and source currentness.
+- `list_constellations` and `get_constellation`: read-only recovery of named saved task scopes, preserving ontology UID identity and reporting unresolved members instead of treating them as deleted.
 - The vault Markdown parser and writer, the deterministic compiler, and graph queries over meaning, relationships, evidence, and impact.
 - `read_source`: the text of one file under `sources/`, cut into the units a wiki citation can name. DOCX headings receive distinct anchors when normalized names collide; originally unique names remain unchanged and a note identifies ambiguous legacy addresses. CSV/TSV quoted records stay together, with `r<n>` naming the physical starting line and pagination counting returned records. A malformed quoted remainder is retained with an explicit note. XLSX still uses sheet/row anchors, and text/HTML uses lines. Source bytes are unchanged, no converted copy or citation migration is written, and a byte hash does not prove extraction or claim validity. Implementation evidence: `mcp/src/source-text.mjs` and `mcp/src/source-text.test.mjs`.
 - `validate_wiki`: whether the pages under `wiki/` fit the wiki page contract. They carry no `kind:` by contract, so `validate_vault` cannot judge them and does not try; this is the separate answer, in the shape the CLI's `wiki-validate --json` prints.
@@ -57,6 +58,7 @@ The MCP server is the stdio JSON-RPC surface that lets an AI coding agent read a
 
 - The current set of tools is `TOOLS_FOR_LIST`, which applies annotations and a read-only filter to the registry in `mcp/src/server/registry.mjs`. Both the `Tool inventory` section of `tools/list` and initialize derive from the same array, so no other document owns a numeric or full name list.
 - A read-only server advertises neither write tools nor exposes them in its initial announcement. In both full mode and read-only mode, the header count and the set of read/write names must exactly match those in `tools/list`.
+- The read-only inventory includes both saved-constellation reads; their names and classification are verified from the registry alongside every other tool.
 - `mcp-verify` independently compares the live `tools/list` with the counts, classifications, and name sets in the initialize announcement. Documents and configuration screens reference `tools/list` and `mcp-verify`, avoiding promises to users about mutable fixed counts.
 
 ## First-Answer Performance Boundary

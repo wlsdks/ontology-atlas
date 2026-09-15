@@ -1,4 +1,7 @@
-import { BrandWaitingMark } from './brand-waiting-mark';
+'use client';
+
+import { useEffect, useRef } from 'react';
+import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 
 export interface MapEntryLoadingVisualProps {
   title: string;
@@ -8,7 +11,7 @@ export interface MapEntryLoadingVisualProps {
   lede?: string;
 }
 
-/** Map cold boot keeps one centered status and a native waiting character. */
+/** Map cold boot keeps one centered status and a quiet point of light. */
 export function MapEntryLoadingVisual({
   title,
   description,
@@ -39,36 +42,81 @@ export function MapEntryLoadingScene({ title, description }: Pick<MapEntryLoadin
       <div
         role="status"
         aria-live="polite"
-          data-map-loading-layout="centered"
-        className="flex max-w-md flex-col items-center text-center"
+        data-map-loading-layout="centered"
+        className="flex max-w-sm flex-col items-center px-4 text-center"
       >
-        <div className="map-wait-scene relative grid h-48 w-80 max-w-full place-items-center" aria-hidden="true">
-          <span className="map-wait-orbit absolute size-40 rounded-full border-2 border-transparent border-t-[color:var(--color-indigo-accent)]" />
-          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 320 192" fill="none">
-            <g stroke="var(--color-border-strong)" strokeWidth="1">
-              <path d="M62 50 160 96 262 48M46 142 160 96 274 144M62 50 46 142M262 48 274 144" />
-              <circle cx="160" cy="96" r="64" strokeDasharray="2 8" />
-            </g>
-            <g className="map-wait-signal" stroke="var(--color-indigo-line-a32)" strokeWidth="2">
-              <path d="M62 50 160 96 274 144" />
-            </g>
-            {[[62,50],[262,48],[46,142],[274,144]].map(([x,y]) => (
-              <g key={x} className="map-wait-point">
-                <rect x={x-15} y={y-10} width="30" height="20" rx="6" fill="var(--color-panel)" stroke="var(--color-border-strong)" />
-                <path d={`M${x-6} ${y}h12`} stroke="var(--color-text-quaternary)" />
-              </g>
-            ))}
-          </svg>
-          <div className="relative grid size-20 place-items-center rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)]">
-            <BrandWaitingMark active initialVisibility="visible" />
-          </div>
-        </div>
-        <p className="mt-5 text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        <MapWaitCluster />
+        <p className="mt-4 text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {title}
         </p>
-        <p className="mt-2 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+        <p className="mt-1.5 max-w-xs break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
           {description}
         </p>
       </div>
+  );
+}
+
+const WAIT_POINTS = [
+  [35, 41, 1.4],
+  [54, 72, 1.1],
+  [72, 30, 1.2],
+  [106, 25, 1],
+  [121, 68, 1.35],
+  [145, 43, 1.05],
+] as const;
+
+function MapWaitCluster() {
+  const ref = useRef<HTMLDivElement>(null);
+  const reducedMotion = usePrefersReducedMotion();
+
+  useEffect(() => {
+    const cluster = ref.current;
+    if (!cluster || reducedMotion) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      cluster.dataset.mapWaitMotion = 'still';
+      return;
+    }
+    let intersecting = true;
+    const update = () => {
+      cluster.dataset.mapWaitMotion = !document.hidden && intersecting ? 'running' : 'paused';
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      intersecting = entry?.isIntersecting === true;
+      update();
+    });
+    observer.observe(cluster);
+    document.addEventListener('visibilitychange', update);
+    update();
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', update);
+    };
+  }, [reducedMotion]);
+
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      data-testid="map-wait-cluster"
+      data-map-wait-motion={reducedMotion ? 'still' : 'running'}
+      className="map-wait-cluster relative h-28 w-44 max-w-full"
+    >
+      <span className="map-wait-halo absolute inset-0" />
+      <svg className="absolute inset-0 size-full" viewBox="0 0 176 112" fill="none">
+        {WAIT_POINTS.map(([cx, cy, radius]) => (
+          <circle
+            key={`${cx}-${cy}`}
+            className="map-wait-point"
+            cx={cx}
+            cy={cy}
+            r={radius}
+            fill="var(--color-text-quaternary)"
+          />
+        ))}
+        <circle cx="88" cy="54" r="9" fill="var(--color-indigo-line-a06)" />
+        <circle cx="88" cy="54" r="4" fill="var(--color-indigo-accent)" />
+        <circle cx="89" cy="53" r="1" fill="var(--color-text-primary)" />
+      </svg>
+    </div>
   );
 }

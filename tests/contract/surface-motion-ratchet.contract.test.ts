@@ -287,7 +287,14 @@ const BASELINE_HARD_CUTS = 0;
  * navigation, completion reveals a canvas, keyboard focus survives, and leaving
  * cancels the queued map push. The source census rejected this addition at 46.
  */
-const BASELINE_APPEARING_SURFACES = 47;
+/*
+ * 47 -> 49 (2026-09-15): saved constellations add the map's anchored saved-set
+ * list and the Library collection row's in-flow member disclosure. Both are born
+ * as `Surface`, so hard cuts stay at zero. Their open paths require a real folder
+ * handle and sidecar data that the static OPENERS fixture cannot synthesize;
+ * actual browser journeys cover both, while widget tests own their state paths.
+ */
+const BASELINE_APPEARING_SURFACES = 49;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';
