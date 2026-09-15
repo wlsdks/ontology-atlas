@@ -609,7 +609,7 @@ jobs:
           generate_release_notes: true
           files: |
             release-assets/*/*.dmg
-            release-assets/*/*.sha256
+            release-assets/ontology-atlas-macos-*/*.sha256
             release-assets/*/*.app.tar.gz
             release-assets/*/*.app.tar.gz.sig
             release-assets/*/*.dSYM.zip

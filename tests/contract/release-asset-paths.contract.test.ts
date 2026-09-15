@@ -231,15 +231,19 @@ describe("릴리스 자산 경로 계약", () => {
     expected.add(`release-assets/mcp/${bundleName}`);
     expected.add(`release-assets/mcp/${bundleName}.sha256`);
 
-    const matched = new Set<string>();
+    // Preserve repeated matches: concurrent uploads of the same checksum can
+    // delete or update one another's asset and fail draft creation with a 404.
+    const matched: string[] = [];
     for (const glob of globs) {
       const hits = globSync(glob, { cwd }).map((hit) => hit.split("\\").join("/"));
       // A glob that matches nothing is a misunderstanding, not a contract.
       expect(hits, `${glob} 이 아무 자산도 잡지 못했다`).not.toHaveLength(0);
-      for (const hit of hits) matched.add(hit);
+      matched.push(...hits);
     }
 
-    expect([...matched].sort()).toEqual([...expected].sort());
+    expect(matched.sort(), "Every release asset must be uploaded exactly once").toEqual(
+      [...expected].sort(),
+    );
   });
 
   it("스테이징 잡은 아치별 폴더로 내려받는다", () => {
