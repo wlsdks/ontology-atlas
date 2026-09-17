@@ -33,6 +33,7 @@ import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
 import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/map-navigation-pending";
 import { useHydrated } from "@/shared/lib/use-hydrated";
+import { LibraryRoundsProvider } from "@/views/library";
 
 /**
  * The persistent SPA shell. The nav rail lives here, in
@@ -95,9 +96,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             The settings sheet is inside the rail, so this provider must sit outside it.
           */}
           <AppUpdateProvider>
-            <RouteFocusManager />
-            <RouteViewTransitionSettle />
-            <ShellColumn>{children}</ShellColumn>
+            {/*
+              The Library's clock lives here, once, above every route (2026-09-17): a round
+              registered on the Rounds tab keeps running while the person is on the map, and
+              a second mount would tick twice and could open two adapters for one pass.
+            */}
+            <LibraryRoundsProvider>
+              <RouteFocusManager />
+              <RouteViewTransitionSettle />
+              <ShellColumn>{children}</ShellColumn>
+            </LibraryRoundsProvider>
           </AppUpdateProvider>
       </GuideReplayProvider>
     </NavRailShellProvider>

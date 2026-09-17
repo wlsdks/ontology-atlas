@@ -309,6 +309,16 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     destination: "atlas-git-web-get-app",
   },
   {
+    // Rounds (2026-09-17) keep a clock and open a headless agent session while the
+    // person is away; a browser tab can do neither, so the tab explains and points at
+    // the app. Registering a round on the web would be a promise nothing could keep.
+    name: "순회 — 브라우저는 자리를 비운 동안 시계를 지키거나 에이전트를 열 수 없다",
+    url: "/ko/library/?tab=rounds",
+    card: "library-rounds-app-required",
+    reason: /설치한 앱만 할 수 있습니다/,
+    destination: "library-rounds-get-app",
+  },
+  {
     // ⚠️ **This row claims "cannot save automatically", not "cannot connect"**
     // (2026-08-01). The previous wording was "You cannot connect on this screen" and it was false — MCP attaches to the folder,
     // not to Atlas, and the agent starts the server in its own session, so web users

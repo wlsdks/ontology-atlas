@@ -30,6 +30,7 @@ tags: [architecture, infra, overview]
 │ │                          · structure (?view=)        │
 │ ├─ /docs                   exact-document compatibility │
 │ ├─ /library                sources + wiki + ontology     │
+│ │                          + collections + rounds      │
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
 │ ├─ /ontology/studio        compatibility → topology    │
@@ -355,7 +356,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
 - `src-tauri/src/library.rs` owns the native half: hashing, the native picker, the import
   copy, metadata-only discovery, and Finder reveal. It writes nothing outside
   `<vault>/sources/`, and its discovery walk contains no writer.
-- **One Library destination, four tabs (2026-09-15).**
+- **One Library destination, five tabs (2026-09-17; four on 2026-09-15).**
   `src/app/library-workspace/` composes `src/views/library/` for Sources/Wiki and
   Collections, and `src/views/docs-vault/` for Ontology. `/library/?tab=ontology` opens the existing
   reader/editor and filters every list, search, count, and saved working set to explicit
@@ -370,6 +371,18 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   name/path matcher. `LibrarySection` previews the derived Wiki path and canonical
   section order in a modal before creation; `LibraryWorkActivityStrip` keeps the current
   receipt separate from its dismissible history surface.
+- **Rounds (2026-09-17).** `src/entities/library-round/` owns the round record, the
+  local-time cadence math, the `.ontology-atlas/rounds.json` store and the
+  `rounds-ledger.jsonl` pass ledger (500-line cap). `src/features/library-rounds/`
+  holds the pure judges: the standing scope (`round-scope.ts`, the decision's table as
+  code), the service pass brief, the local consistency pass, and the tick planner.
+  `src/views/library/lib/use-rounds-runner.ts` is the clock and the hands: one
+  60-second tick, one pass at a time, local rounds first, a catch-up once after sleep,
+  and a headless `useAcpSession` whose `autoDecide` answers every permission request
+  from the scope and can now refuse (`{ reject }`). `LibraryRoundsProvider` mounts it
+  once in `AppShell`, above every route; `/library/?tab=rounds` only reads. No Rust
+  change: hashing, the watcher and the ACP commands already existed. Spec:
+  `docs/superpowers/specs/2026-09-17-library-rounds-design.md`.
 - `src/entities/library-collection/` owns the compatible `v1` saved-constellation
   schema and UID-based member resolution. The selected vault sidecar is shared by
   Galaxy and Library; MCP and CLI mirror it for read-only recovery. The Galaxy

@@ -1,0 +1,118 @@
+import { describe, expect, it } from 'vitest';
+
+import { type ScopeInput, type ScopeRequest, judgeRoundScope, scopeNoteEffect } from './round-scope';
+
+const VAULT = '/Users/probe/Ontology Atlas/launch';
+
+function request(overrides: Partial<ScopeRequest> = {}): ScopeRequest {
+  return {
+    filePath: null,
+    toolName: null,
+    toolKind: null,
+    rawInput: {},
+    reviewKind: 'permission',
+    ...overrides,
+  };
+}
+
+function judge(overrides: Partial<ScopeInput> & { request: ScopeRequest }) {
+  return judgeRoundScope({
+    round: { kind: 'consistency', onStale: 'redraft' },
+    vaultRoot: VAULT,
+    vaultServerName: 'atlas-vault',
+    atlasToolMode: (toolName, server) => {
+      if (!toolName?.startsWith(`mcp__${server}__`)) return null;
+      return toolName.endsWith('get_concept') ? 'read' : 'write';
+    },
+    judgeWrite: (req) => {
+      const path = req.filePath?.startsWith(`${VAULT}/wiki/`) ? req.filePath.slice(VAULT.length + 1) : null;
+      if (!path) return null;
+      return { path, ok: req.rawInput.content !== 'broken' };
+    },
+    ...overrides,
+  });
+}
+
+const service = { kind: 'service' as const, connectorName: 'confluence' };
+
+describe('round scope', () => {
+  it('never lets a round write the ontology', () => {
+    expect(judge({ request: request({ reviewKind: 'ontology-write', toolName: 'mcp__atlas-vault__add_concept' }) }))
+      .toEqual({ decision: 'reject', reason: 'ontology-write' });
+    expect(judge({ request: request({ toolName: 'mcp__atlas-vault__add_concept' }) }))
+      .toEqual({ decision: 'reject', reason: 'mcp__atlas-vault__add_concept' });
+  });
+
+  it('allows the vault server\'s read tools for either kind', () => {
+    const req = request({ toolName: 'mcp__atlas-vault__get_concept', toolKind: 'other' });
+    expect(judge({ request: req }).decision).toBe('allow');
+    expect(judge({ request: req, round: service }).decision).toBe('allow');
+  });
+
+  it('allows the round\'s own connector unless the adapter says the call mutates', () => {
+    const search = request({ toolName: 'mcp__confluence__search', toolKind: 'other' });
+    expect(judge({ request: search, round: service })).toEqual({ decision: 'allow', note: 'call mcp__confluence__search' });
+    const unclassified = request({ toolName: 'mcp__confluence__get_page', toolKind: null });
+    expect(judge({ request: unclassified, round: service }).decision).toBe('allow');
+    const mutate = request({ toolName: 'mcp__confluence__create_page', toolKind: 'edit' });
+    expect(judge({ request: mutate, round: service })).toEqual({ decision: 'reject', reason: 'mcp__confluence__create_page' });
+    const execute = request({ toolName: 'mcp__confluence__run', toolKind: 'execute' });
+    expect(judge({ request: execute, round: service }).decision).toBe('reject');
+  });
+
+  it('refuses any other connector, and a connector for a consistency round', () => {
+    const other = request({ toolName: 'mcp__notion__search', toolKind: 'other' });
+    expect(judge({ request: other, round: service })).toEqual({ decision: 'reject', reason: 'mcp__notion__search' });
+    const own = request({ toolName: 'mcp__confluence__search', toolKind: 'other' });
+    expect(judge({ request: own }).decision).toBe('reject');
+  });
+
+  it('allows reads inside the folder and refuses anything outside it', () => {
+    expect(judge({ request: request({ filePath: `${VAULT}/sources/plan.md`, toolKind: 'read' }) }))
+      .toEqual({ decision: 'allow', note: 'read sources/plan.md' });
+    expect(judge({ request: request({ filePath: `${VAULT}/wiki`, toolKind: 'search' }) }).decision).toBe('allow');
+    expect(judge({ request: request({ filePath: '/Users/probe/other/plan.md', toolKind: 'read' }) }))
+      .toEqual({ decision: 'reject', reason: '/Users/probe/other/plan.md' });
+    expect(judge({ request: request({ filePath: `${VAULT}/../secrets.md`, toolKind: 'read' }) }).decision).toBe('reject');
+    expect(judge({ request: request({ filePath: `${VAULT}x/plan.md`, toolKind: 'read' }) }).decision).toBe('reject');
+  });
+
+  it('writes a wiki page only when the page judge accepts it, for either kind', () => {
+    const fits = request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content: 'ok' } });
+    expect(judge({ request: fits })).toEqual({ decision: 'allow', note: 'write wiki/plan.md' });
+    expect(judge({ request: fits, round: service }).decision).toBe('allow');
+    const broken = request({ filePath: `${VAULT}/wiki/plan.md`, toolKind: 'edit', rawInput: { content: 'broken' } });
+    expect(judge({ request: broken })).toEqual({ decision: 'reject', reason: 'wiki/plan.md' });
+  });
+
+  it('never writes retained answers or the wiki\'s furniture', () => {
+    const answer = request({ filePath: `${VAULT}/wiki/answers/q-1.md`, toolKind: 'edit', rawInput: { content: 'ok' } });
+    expect(judge({ request: answer, round: service }).decision).toBe('reject');
+    const log = request({ filePath: `${VAULT}/wiki/_log.md`, toolKind: 'edit', rawInput: { content: 'ok' } });
+    expect(judge({ request: log, round: service }).decision).toBe('reject');
+  });
+
+  it('lets only a service round touch sources/, and never delete or move there', () => {
+    const write = request({ filePath: `${VAULT}/sources/plan.md`, toolKind: 'edit', rawInput: { content: '# Plan' } });
+    expect(judge({ request: write, round: service })).toEqual({ decision: 'allow', note: 'write sources/plan.md' });
+    expect(judge({ request: write })).toEqual({ decision: 'reject', reason: 'sources/plan.md' });
+    const remove = request({ filePath: `${VAULT}/sources/plan.md`, toolKind: 'delete' });
+    expect(judge({ request: remove, round: service }).decision).toBe('reject');
+    const move = request({ filePath: `${VAULT}/sources/plan.md`, toolKind: 'move' });
+    expect(judge({ request: move, round: service }).decision).toBe('reject');
+  });
+
+  it('refuses a write anywhere else in the folder, and any execute', () => {
+    const node = request({ filePath: `${VAULT}/capabilities/x.md`, toolKind: 'edit', rawInput: { content: 'kind: capability' } });
+    expect(judge({ request: node, round: service })).toEqual({ decision: 'reject', reason: 'capabilities/x.md' });
+    const run = request({ filePath: `${VAULT}/sources/plan.md`, toolKind: 'execute' });
+    expect(judge({ request: run, round: service }).decision).toBe('reject');
+    expect(judge({ request: request({ toolName: 'Bash', toolKind: 'execute' }) }).decision).toBe('reject');
+  });
+
+  it('a note names its effect first, so the ledger can list writes apart from reads', () => {
+    expect(scopeNoteEffect('write wiki/plan.md')).toEqual({ effect: 'write', target: 'wiki/plan.md' });
+    expect(scopeNoteEffect('call mcp__confluence__search')).toEqual({ effect: 'call', target: 'mcp__confluence__search' });
+    expect(scopeNoteEffect('wiki/plan.md')).toBeNull();
+  });
+});

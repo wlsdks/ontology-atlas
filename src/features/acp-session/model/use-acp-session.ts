@@ -142,8 +142,13 @@ export interface UseAcpSessionOptions {
    * to ask the person as before. The Library uses it for a wiki page that fits the
    * contract (owner direction 2026-09-07: agents act, people can step in — not every write
    * waits). An ontology write never comes here: the caller's judge does not know nodes.
+   *
+   * Return `{ reject: reason }` to refuse without a card. An unattended Library round runs
+   * with nobody at the screen (decision 2026-09-17), so for it "ask" is not an answer: what
+   * its standing scope does not allow is refused, and the transcript names the refusal so
+   * the ledger can.
    */
-  autoDecide?: (request: AcpPermissionRequest) => string | null;
+  autoDecide?: (request: AcpPermissionRequest) => string | { reject: string } | null;
   /**
    * Whether opening this panel **continues where the folder left off** instead of starting a
    * blank conversation.
@@ -801,7 +806,13 @@ export function useAcpSession({
       }
       // The screen may already know the answer: a wiki page that fits its contract lands
       // without a card, and the transcript says so where the card would have stood.
-      const note = request.reviewKind === 'permission' ? (autoDecideRef.current?.(request) ?? null) : null;
+      const decided = request.reviewKind === 'permission' ? (autoDecideRef.current?.(request) ?? null) : null;
+      if (decided !== null && typeof decided === 'object') {
+        push({ kind: 'notice', id: nextEventId(), text: 'auto-refused', detail: decided.reject });
+        resolve(null);
+        return;
+      }
+      const note = decided;
       const allow = note !== null ? request.options.find((option) => option.kind === 'allow_once') : undefined;
       if (note !== null && allow) {
         push({ kind: 'notice', id: nextEventId(), text: 'auto-allowed', detail: note });

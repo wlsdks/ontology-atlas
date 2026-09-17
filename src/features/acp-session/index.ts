@@ -38,3 +38,4 @@ export type {
 export { permissionIntent } from "./model/permission-intent";
 export { permissionScope } from "./model/permission-scope";
 export { permissionLocality } from "./model/permission-locality";
+export { atlasToolMode } from "./model/atlas-tool-policy";

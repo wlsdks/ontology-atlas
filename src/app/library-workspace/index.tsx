@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useCallback, useMemo } from 'react';
 
-import { LibraryConstellations, LibraryPage } from '@/views/library';
+import { LibraryConstellations, LibraryPage, LibraryRounds, useLibraryRounds } from '@/views/library';
 import { useLocalVault } from '@/entities/vault-session';
 import { selectWikiPages } from '@/entities/docs-vault';
 import { useRouter } from '@/i18n/navigation';
@@ -20,7 +20,7 @@ const OntologyPage = dynamic(
   { loading: () => <RouteLoadingFallback /> },
 );
 
-type LibraryTab = 'sources' | 'wiki' | 'ontology' | 'collections';
+type LibraryTab = 'sources' | 'wiki' | 'ontology' | 'collections' | 'rounds';
 
 export function LibraryWorkspace() {
   const t = useTranslations('library');
@@ -30,7 +30,9 @@ export function LibraryWorkspace() {
   const wikiCount = useMemo(() => selectWikiPages(vault.manifest?.docs ?? []).length, [vault.manifest?.docs]);
   const preferredSegment = useLibraryIndexSegment();
   const requested = params.get('tab');
-  const tab: LibraryTab = requested === 'ontology' || requested === 'collections'
+  const rounds = useLibraryRounds();
+  const roundsOn = rounds ? rounds.rounds.filter((round) => round.enabled).length : 0;
+  const tab: LibraryTab = requested === 'ontology' || requested === 'collections' || requested === 'rounds'
     ? requested
     : requested === 'sources' || requested === 'wiki' ? requested : preferredSegment;
   const handle = selectOpenVaultHandle(vault.status, vault.handle);
@@ -48,8 +50,17 @@ export function LibraryWorkspace() {
   return (
     <div data-testid="library-workspace" className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
       <header className="topology-ui-scale flex h-14 shrink-0 items-stretch gap-5 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 md:px-4">
-        <p className="hidden shrink-0 items-end pb-2 text-body leading-label font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] sm:inline-flex">{t('title')}</p>
-        <span aria-hidden className="mb-2.5 hidden h-4 self-end border-l border-[color:var(--color-border-soft)] sm:block" />
+        {/*
+          The name of the place stands on the tab labels' line. Each tab is a bottom-aligned
+          box of `--control-h-lg` with its label centred, so the name and the rule take the
+          same box and the same centring rather than a hand-tuned bottom pad: pinned with
+          `items-end pb-2`, "Library" sat 7px under the tab labels and read as a stray word
+          stuck to the floor (owner, 2026-09-17).
+        */}
+        <p className="hidden shrink-0 self-end -mb-px min-h-[var(--control-h-lg)] items-center text-body leading-label font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] sm:inline-flex">{t('title')}</p>
+        <span aria-hidden className="hidden self-end -mb-px min-h-[var(--control-h-lg)] items-center sm:flex">
+          <span className="h-4 border-l border-[color:var(--color-border-soft)]" />
+        </span>
         <TabBar
           ariaLabel={t('workspace.aria')}
           activeKey={tab}
@@ -82,6 +93,13 @@ export function LibraryWorkspace() {
               label: t('workspace.collections'),
               testId: 'library-workspace-collections',
             },
+            {
+              key: 'rounds',
+              label: t('workspace.rounds'),
+              count: rounds && rounds.storeStatus !== 'no-vault' && roundsOn > 0 ? roundsOn : undefined,
+              countTitle: t('workspace.roundsCount'),
+              testId: 'library-workspace-rounds',
+            },
           ]}
         />
       </header>
@@ -95,6 +113,8 @@ export function LibraryWorkspace() {
           <OntologyPage initialCollection="ontology" documentScope="ontology" />
         ) : tab === 'collections' ? (
           <LibraryConstellations handle={handle} documents={vault.manifest?.docs ?? []} />
+        ) : tab === 'rounds' ? (
+          <LibraryRounds />
         ) : (
           <LibraryPage segment={tab} onSegmentChange={selectTab} />
         )}
