@@ -1229,7 +1229,15 @@ with a chip at the picture's top-left back to the islands and Escape as the same
 reaches its ceiling (the aim is the island under the pointer at the first wheel step), and
 zooming out of an opened island past 60% of its fit returns the map; **the marks travel**
 between the two pictures over one `--motion-settle` while the rest fade and the camera
-eases, never a cut (sampled: a page 480px in 230 ms on the motion curve);
+eases, never a cut (sampled: a page 480px in 230 ms on the motion curve); **the islands are
+bodies** (`library-islands-physics.ts`, owner question 2026-09-18 "doesn't it move like a
+force graph?"): a folder's islands start near the middle of the map and are pushed out to
+their places, largest first, in about half a second — the picture assembling rather than
+appearing — and dragging an island carries it while the islands it runs into are shoved
+aside and settle back once it has passed; a map laid again while showing keeps each island
+where it stands. At rest nothing moves, which keeps the 2026-09-08 rule; the physics is a
+spring home, a separation that leaves no two bodies overlapping, and heavy damping at a
+fixed step, deterministic and bounded;
 a dot on the overview takes a press only from an 8px radius, a real target. Inside an
 opened island, and on any folder whose page column folds, **folded pages stand in stacks**:
 each sub-column of pages keeps the files its pages read as a small grid directly to its

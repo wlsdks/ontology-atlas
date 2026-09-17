@@ -17,6 +17,15 @@ import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
 import type { FlowLayout, FlowWorld } from "../model/library-flow-layout";
 import { ISLANDS_MIN_MARKS, type IslandsLayout } from "../model/library-islands-layout";
 import {
+  createIslandField,
+  isIslandFieldMoving,
+  pinIsland,
+  releaseIsland,
+  settleIslandField,
+  stepIslandField,
+  type IslandField,
+} from "../model/library-islands-physics";
+import {
   applyLibraryFlowLayout,
   applyLibraryIslandsLayout,
   createLibrarySimulation,
@@ -148,6 +157,36 @@ function islandAt(
   const world = screenToWorld(point, view, box);
   return islands.find((island) => Math.hypot(world.x - island.x, world.y - island.y) <= island.r) ?? null;
 }
+/**
+ * Writes the bodies' places back onto the picture: each island's centre, and every dot
+ * at its offset from that centre, so the simulation's nodes (the position store every
+ * frame reads) follow the islands wherever the physics or a hand has put them.
+ */
+function placeIslandBodies(
+  sim: LibrarySimulation,
+  field: IslandField,
+  layout: IslandsLayout | null = null,
+  offsets: ReadonlyMap<string, { island: string; dx: number; dy: number }> | null = null,
+): void {
+  const byId = new Map(field.bodies.map((body) => [body.id, body]));
+  if (layout) {
+    for (const island of layout.islands) {
+      const body = byId.get(island.id);
+      if (!body) continue;
+      island.x = body.x;
+      island.y = body.y;
+    }
+  }
+  if (!offsets) return;
+  for (const node of sim.nodes) {
+    const offset = offsets.get(node.id);
+    if (!offset) continue;
+    const body = byId.get(offset.island);
+    if (!body) continue;
+    node.x = body.x + offset.dx;
+    node.y = body.y + offset.dy;
+  }
+}
 /** On the overview a page's name stands once its dot is this wide on screen. */
 const ISLAND_PAGE_LABEL_MIN_PX = 10;
 /** On the overview a file's name waits for a real zoom: a page dot this wide, not merely named. */
@@ -197,6 +236,8 @@ interface PointerState {
   pressedNodeId: string | null;
   /** Non-null while a mark is being carried; the offset keeps the grab point under the hand. */
   drag: { nodeId: string; offset: LayoutPoint } | null;
+  /** Non-null while an island of the overview is being carried, with its own grab offset. */
+  islandDrag: { id: string; offset: LayoutPoint } | null;
   history: Array<{ x: number; y: number; t: number }>;
 }
 
@@ -441,6 +482,15 @@ export function useLibraryGraphEngine({
   /** The island under the pointer on the overview, for its rim and the cursor. */
   const hoveredIslandRef = useRef<string | null>(null);
   /**
+   * The islands as bodies (`library-islands-physics.ts`): they arrive, they can be carried,
+   * and at rest they are still. Every dot keeps its offset from its island's centre, so a
+   * body moving carries its dots.
+   */
+  const islandFieldRef = useRef<IslandField | null>(null);
+  /** Whether the last picture laid was the whole folder, for telling a return from an opened island apart from a growing folder. */
+  const lastOverviewRef = useRef(true);
+  const islandOffsetsRef = useRef<Map<string, { island: string; dx: number; dy: number }>>(new Map());
+  /**
    * The island the last wheel zoom-in was aimed at, resolved at wheel time in world
    * units; null after a zoom-out. Resolved then, not per frame, because the camera's
    * clamp near the picture's edge slides the view under a fixed screen point, and the
@@ -549,6 +599,7 @@ export function useLibraryGraphEngine({
     last: null,
     pressedNodeId: null,
     drag: null,
+    islandDrag: null,
     history: [],
   });
   const touchesRef = useRef<Map<number, LayoutPoint>>(new Map());
@@ -1108,7 +1159,7 @@ export function useLibraryGraphEngine({
       const scaleText = view.scale.toFixed(4);
       if (canvas.dataset.viewScale !== scaleText) canvas.dataset.viewScale = scaleText;
       const interaction =
-        pointerRef.current.drag !== null
+        pointerRef.current.drag !== null || pointerRef.current.islandDrag !== null
           ? "node"
           : pointerRef.current.phase === "dragging"
             ? "pan"
@@ -1186,7 +1237,14 @@ export function useLibraryGraphEngine({
         return;
       }
       const reduced = stateRef.current.reducedMotion;
-      const busy = isLibrarySimulationRunning(sim) || hasPinnedNode(sim);
+      // The islands' own physics: one fixed step a frame while anything moves, then still.
+      const field = pictureRef.current === "islands" ? islandFieldRef.current : null;
+      if (field && isIslandFieldMoving(field)) {
+        if (reduced && pointerRef.current.islandDrag === null) settleIslandField(field);
+        else stepIslandField(field);
+        placeIslandBodies(sim, field, islandsRef.current, islandOffsetsRef.current);
+      }
+      const busy = isLibrarySimulationRunning(sim) || hasPinnedNode(sim) || (field !== null && isIslandFieldMoving(field));
       if (busy) {
         /*
          * ⚠️ **Reduced motion settles here, not only where the simulation is created.**
@@ -1361,8 +1419,45 @@ export function useLibraryGraphEngine({
         radiiRef.current = islandsRef.current.radii;
         zoomMaxRef.current = radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
         setIslandsList(islandsRef.current.islands.map(pick));
+        // Dots belong to their island: each keeps its offset from the island's centre.
+        const offsets = new Map<string, { island: string; dx: number; dy: number }>();
+        for (const island of islandsRef.current.islands) {
+          for (const id of [...island.pages, ...island.sources, ...(island.conceptId ? [island.conceptId] : [])]) {
+            const point = islandsRef.current.positions.get(id);
+            if (point) offsets.set(id, { island: island.id, dx: point.x - island.x, dy: point.y - island.y });
+          }
+        }
+        islandOffsetsRef.current = offsets;
+        /*
+         * The islands arrive on a folder's first map. A map laid again while it is showing
+         * — a folder loading in chunks, a file added — keeps each island where it stands and
+         * lets the spring carry it to its new home, so a growing folder flows rather than
+         * re-assembling; a return from an opened island travels instead (its marks were on
+         * the columns); reduced motion settles in place.
+         */
+        const world = islandsWorld(box);
+        const previous = islandFieldRef.current;
+        // A folder loading in chunks lays its map on the sync path too; that is still the
+        // first map, and it arrives. Only a return from an opened island does not.
+        const returning = travelling && !lastOverviewRef.current;
+        const arriving = !reducedMotion && !returning && previous === null;
+        const field = createIslandField(islandsRef.current.islands, { x: world.width / 2, y: world.height / 2 }, { arriving });
+        if (previous && !returning) {
+          for (const body of field.bodies) {
+            const was = previous.bodies[previous.index.get(body.id) ?? -1];
+            if (!was) continue;
+            body.x = was.x;
+            body.y = was.y;
+            if (Math.hypot(body.x - body.home.x, body.y - body.home.y) > 0.05) field.moving = true;
+          }
+        }
+        if (reducedMotion) settleIslandField(field);
+        islandFieldRef.current = field;
+        placeIslandBodies(sim, field, islandsRef.current, offsets);
       } else {
         islandsRef.current = null;
+        islandFieldRef.current = null;
+        islandOffsetsRef.current = new Map();
         setIslandsList([]);
         columnsRef.current = applyLibraryFlowLayout(sim, graph, flowWorld(box, zoomMaxRef.current));
       }
@@ -1372,6 +1467,7 @@ export function useLibraryGraphEngine({
         for (const id of [...from.keys()]) if (!ids.has(id)) from.delete(id);
         travelRef.current = from.size > 0 ? { from, since: typeof performance === "undefined" ? 0 : performance.now() } : null;
       }
+      lastOverviewRef.current = overviewRef.current;
       autoFitRef.current = { on: true, converged: false };
     };
     const existing = simRef.current;
@@ -1559,6 +1655,7 @@ export function useLibraryGraphEngine({
         releaseLibraryNode(sim, state.drag.nodeId, releaseVelocity(state.history, timeStamp, viewRef.current.scale));
         reheatLibrarySimulation(sim);
       }
+      if (state.islandDrag && islandFieldRef.current) releaseIsland(islandFieldRef.current, state.islandDrag.id);
       const pressed = state.pressedNodeId;
       pointerRef.current = {
         phase: "idle",
@@ -1567,6 +1664,7 @@ export function useLibraryGraphEngine({
         last: null,
         pressedNodeId: null,
         drag: null,
+    islandDrag: null,
         history: [],
       };
       const canvas = canvasRef.current;
@@ -1625,6 +1723,7 @@ export function useLibraryGraphEngine({
             last: null,
             pressedNodeId: null,
             drag: null,
+    islandDrag: null,
             history: [],
           };
           pinchRef.current = {
@@ -1650,6 +1749,7 @@ export function useLibraryGraphEngine({
         last: point,
         pressedNodeId: hit?.id ?? null,
         drag: null,
+    islandDrag: null,
         history: [{ x: point.x, y: point.y, t: event.timeStamp }],
       };
     },
@@ -1716,6 +1816,17 @@ export function useLibraryGraphEngine({
         // gesture carries, even if the hand has since left the mark.
         const grabbed = state.pressedNodeId;
         state.pressedNodeId = null;
+        // On the overview a hand on an island carries the island; the islands it runs into
+        // are shoved aside by the physics and settle back once it has passed.
+        const heldIsland =
+          !grabbed && pictureRef.current === "islands" && islandFieldRef.current
+            ? islandAt(islandsRef.current?.islands, viewRef.current, boxRef.current, state.down ?? point)
+            : null;
+        if (heldIsland && islandFieldRef.current) {
+          const world = screenToWorld(point, viewRef.current, box);
+          state.islandDrag = { id: heldIsland.id, offset: { x: heldIsland.x - world.x, y: heldIsland.y - world.y } };
+          pinIsland(islandFieldRef.current, heldIsland.id, { x: heldIsland.x, y: heldIsland.y });
+        }
         // In the flow layout a mark has one place; a hand that moves it pans the picture.
         if (grabbed && sim && sim.index.has(grabbed) && pictureRef.current === "force") {
           const node = sim.nodes[sim.index.get(grabbed)!]!;
@@ -1728,7 +1839,10 @@ export function useLibraryGraphEngine({
       }
 
       if (state.phase === "dragging") {
-        if (state.drag && sim) {
+        if (state.islandDrag && islandFieldRef.current) {
+          const world = screenToWorld(point, viewRef.current, box);
+          pinIsland(islandFieldRef.current, state.islandDrag.id, { x: world.x + state.islandDrag.offset.x, y: world.y + state.islandDrag.offset.y });
+        } else if (state.drag && sim) {
           const world = screenToWorld(point, viewRef.current, box);
           pinLibraryNode(sim, state.drag.nodeId, {
             x: world.x + state.drag.offset.x,
@@ -1893,8 +2007,8 @@ export function useLibraryGraphEngine({
         })),
       /** What the pointer is holding right now: a mark, the background, or nothing. */
       interaction: () => ({
-        kind: pointerRef.current.drag ? ("node" as const) : pointerRef.current.phase === "dragging" ? ("pan" as const) : ("idle" as const),
-        nodeId: pointerRef.current.drag?.nodeId ?? null,
+        kind: pointerRef.current.drag || pointerRef.current.islandDrag ? ("node" as const) : pointerRef.current.phase === "dragging" ? ("pan" as const) : ("idle" as const),
+        nodeId: pointerRef.current.drag?.nodeId ?? pointerRef.current.islandDrag?.id ?? null,
       }),
       view: () => ({ ...viewRef.current, ...boxRef.current }),
       /** The columns of the flow picture as last laid, or null under the force layout. */
@@ -1930,6 +2044,7 @@ export function useLibraryGraphEngine({
         (autoFitRef.current.on && !autoFitRef.current.converged) ||
         pendingBoxRef.current !== null ||
         travelRef.current !== null ||
+        (islandFieldRef.current !== null && pictureRef.current === "islands" && isIslandFieldMoving(islandFieldRef.current)) ||
         (simRef.current?.nodes.some((node) => node.entered < 1) ?? false),
       /**
        * The open card's placement in canvas CSS pixels, with the mark it hangs from.
