@@ -149,6 +149,15 @@ function islandAt(
 }
 /** On the overview a page's name stands once its dot is this wide on screen. */
 const ISLAND_PAGE_LABEL_MIN_PX = 10;
+/** On the overview a file's name waits for a real zoom: a page dot this wide, not merely named. */
+const ISLAND_SOURCE_LABEL_MIN_PX = 36;
+/**
+ * An island whose disc spans this share of the view's shorter side has been zoomed into,
+ * and opens; so does any island aimed at once the camera is at its ceiling, which a small
+ * island reaches first — measured 2026-09-18: at the 3.6× ceiling the largest topic of a
+ * 3,424-mark folder spans 360px of a 648px view and a ten-page island 180px.
+ */
+const ISLAND_OPENS_AT_VIEW_SHARE = 0.45;
 /**
  * On the overview a dot takes a press only once its radius is this, on screen: a 16px
  * mark is a target, a 4px one is texture and the island under it is what the press means.
@@ -349,6 +358,7 @@ export function useLibraryGraphEngine({
   onDismiss,
   layout = "flow",
   islandLabels = { unsorted: "Unsorted", unread: "Unread" },
+  overview = true,
 }: {
   graph: LibraryGraph;
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -360,6 +370,11 @@ export function useLibraryGraphEngine({
   layout?: "flow" | "force";
   /** The names of the two islands that are not a concept. */
   islandLabels?: { unsorted: string; unread: string };
+  /**
+   * Whether the graph is the whole folder. An opened island is not: it is drawn as columns
+   * however many marks it holds, because the person asked for that island by name.
+   */
+  overview?: boolean;
   reducedMotion: boolean;
   selectedId: string | null;
   hoveredId: string | null;
@@ -414,6 +429,13 @@ export function useLibraryGraphEngine({
   const islandsRef = useRef<IslandsLayout | null>(null);
   /** The island under the pointer on the overview, for its rim and the cursor. */
   const hoveredIslandRef = useRef<string | null>(null);
+  /**
+   * The island the last wheel zoom-in was aimed at, resolved at wheel time in world
+   * units; null after a zoom-out. Resolved then, not per frame, because the camera's
+   * clamp near the picture's edge slides the view under a fixed screen point, and the
+   * island under the pointer at the end of a zoom is not always the one it began on.
+   */
+  const zoomAimRef = useRef<string | null>(null);
   const onPressIslandRef = useRef(onPressIsland);
   const onHoverIslandRef = useRef(onHoverIsland);
   useEffect(() => {
@@ -437,9 +459,11 @@ export function useLibraryGraphEngine({
    */
   const pictureRef = useRef<"flow" | "force" | "islands">(layout);
   const islandLabelsRef = useRef(islandLabels);
+  const overviewRef = useRef(overview);
   useEffect(() => {
     islandLabelsRef.current = islandLabels;
-  }, [islandLabels]);
+    overviewRef.current = overview;
+  }, [islandLabels, overview]);
   useEffect(() => {
     layoutRef.current = layout;
   }, [layout]);
@@ -963,6 +987,32 @@ export function useLibraryGraphEngine({
             })
           : undefined;
       const widestPagePx = pictureRef.current === "islands" ? 2 * view.scale * Math.max(0, ...nodes.filter((node) => node.kind === "page").map((node) => radiiRef.current.get(node.id) ?? 0)) : Infinity;
+      /*
+       * **Zooming into an island opens it.** The map's own rule — zoom in until the streets
+       * have names — cannot be met by the packed island itself: its pages stand a breath
+       * apart so that it reads as a body, and a name needs room the body does not have. So
+       * once a person has zoomed until one island fills the view, that island is what they
+       * want, and it opens as columns the way a press would. The chip and Escape lead back.
+       */
+      const aim = zoomAimRef.current;
+      if (
+        pictureRef.current === "islands" &&
+        islands &&
+        aim &&
+        !(autoFitRef.current.on && !autoFitRef.current.converged) &&
+        pointerRef.current.phase !== "dragging" &&
+        onPressIslandRef.current
+      ) {
+        const atCeiling = view.scale >= zoomMaxRef.current - 1e-6;
+        const filling = islands.find(
+          (island) => island.id === aim && (atCeiling || island.r * 2 >= ISLAND_OPENS_AT_VIEW_SHARE * Math.min(width, height)),
+        );
+        const source = filling ? islandsRef.current?.islands.find((island) => island.id === filling.id) : null;
+        if (source) {
+          zoomAimRef.current = null;
+          onPressIslandRef.current(pick(source));
+        }
+      }
       drawLibraryGraph(context, {
         nodes,
         edges: graphRef.current.edges,
@@ -982,7 +1032,7 @@ export function useLibraryGraphEngine({
           pictureRef.current === "flow"
             ? (columnsRef.current?.columns.find((column) => column.kind === "source")?.grid ?? 1) === 1 || view.scale >= FOLDED_LABEL_MIN_SCALE
             : pictureRef.current === "islands"
-              ? widestPagePx >= ISLAND_PAGE_LABEL_MIN_PX * 2
+              ? widestPagePx >= ISLAND_SOURCE_LABEL_MIN_PX
               : view.scale >= SOURCE_LABEL_MIN_SCALE,
         conceptLabels:
           pictureRef.current === "flow"
@@ -1249,7 +1299,7 @@ export function useLibraryGraphEngine({
     radiiRef.current = libraryMarkRadii(graph);
     zoomMaxRef.current =
       radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
-    pictureRef.current = layoutRef.current === "flow" && graph.nodes.length >= ISLANDS_MIN_MARKS ? "islands" : layoutRef.current;
+    pictureRef.current = layoutRef.current === "flow" && overviewRef.current && graph.nodes.length >= ISLANDS_MIN_MARKS ? "islands" : layoutRef.current;
     setPicture(pictureRef.current);
     const layPicture = (sim: LibrarySimulation) => {
       if (pictureRef.current === "islands") {
@@ -1661,6 +1711,7 @@ export function useLibraryGraphEngine({
   );
 
   const onPointerLeave = useCallback(() => {
+    zoomAimRef.current = null;
     if (pointerRef.current.phase === "idle") onHoverRef.current(null);
     if (hoveredIslandRef.current !== null) {
       hoveredIslandRef.current = null;
@@ -1704,10 +1755,19 @@ export function useLibraryGraphEngine({
       const rect = canvas.getBoundingClientRect();
       rectRef.current = { left: rect.left, top: rect.top };
       takeCamera();
+      const about = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      // Where the person is zooming into: the island under this point is the one that
+      // opens once it fills the view, not whichever island the view's centre happens to be on.
+      // The first island of a zoom-in run is the aim; later wheel steps keep it, because the
+      // camera's clamp near the picture's edge slides the view under the pointer as it zooms.
+      if (pixels >= 0) zoomAimRef.current = null;
+      else if (pictureRef.current === "islands" && zoomAimRef.current === null) {
+        zoomAimRef.current = islandAt(islandsRef.current?.islands, viewRef.current, boxRef.current, about)?.id ?? null;
+      }
       viewRef.current = zoomViewAbout(
         viewRef.current,
         boxRef.current,
-        { x: event.clientX - rect.left, y: event.clientY - rect.top },
+        about,
         wheelZoomFactor(pixels),
         scaleBounds(zoomMaxRef.current),
       );

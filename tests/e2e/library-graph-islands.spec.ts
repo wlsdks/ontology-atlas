@@ -108,3 +108,20 @@ test("a press on an island opens it as columns; the chip and Escape both return 
   await page.keyboard.press("Escape");
   await expect(bar).toBeHidden();
 });
+
+test("zooming the wheel into an island opens it, the way a press does", async ({ page }) => {
+  await openMap(page);
+  const at = await islandPoint(page, "Risk");
+  await page.mouse.move(at.x, at.y);
+  const bar = page.getByTestId("library-graph-island-bar");
+  // Zoom in until the island fills its share of the view or the camera reaches its ceiling.
+  for (let step = 0; step < 24; step += 1) {
+    await page.mouse.wheel(0, -100);
+    if (await bar.isVisible()) break;
+  }
+  await expect(bar, "zooming into an island did not open it").toBeVisible();
+  await expect(page.getByTestId("library-graph-island-name")).toContainText("Risk");
+  await expect
+    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph!.layout()?.columns.map((column) => column.kind) ?? null))
+    .toEqual(["source", "page"]);
+});

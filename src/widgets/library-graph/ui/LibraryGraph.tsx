@@ -381,6 +381,7 @@ export function LibraryGraph({
     onPressMark: pressMark,
     onActivate: activate,
     onPressIsland: setIsland,
+    overview: island === null,
     onHoverIsland: setHoveredIsland,
     onDismiss: dismissCard,
   });
