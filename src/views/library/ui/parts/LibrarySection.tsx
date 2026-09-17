@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
@@ -98,6 +99,13 @@ const WIKI_SECTION_PREVIEW_KEYS = {
 
 export interface LibrarySectionProps {
   model: LibraryUiModel;
+  /**
+   * Where the search field stands when the column's head offers a place for it. With the
+   * list switch gone to the Library header (2026-09-14), the head's own title repeated the
+   * active tab word for word one row below it; the field takes that seat instead, and
+   * this component keeps owning its state through a portal (owner, 2026-09-17).
+   */
+  searchHost?: HTMLElement | null;
   selectedSlug: string | null;
   onSelect: (slug: string) => void;
   /**
@@ -364,6 +372,7 @@ function ListNote({ testId, children }: { testId: string; children: ReactNode })
 
 export function LibrarySection({
   model,
+  searchHost = null,
   selectedSlug,
   onSelect,
   onOpenSource,
@@ -532,7 +541,7 @@ export function LibrarySection({
    */
   const searchField =
     model.sources.length + model.wikiPages.length > 0 ? (
-      <div className="flex flex-none flex-col gap-1 px-3 pb-2">
+      <div className={searchHost ? "flex min-w-0 flex-1 flex-col gap-1" : "flex flex-none flex-col gap-1 px-3 pb-2"}>
         <Input
           data-testid="library-search"
           size="sm"
@@ -608,7 +617,7 @@ export function LibrarySection({
       /* No `min-h-0` and no overflow: the column above owns the one scroller, and a
          section that could shrink is a section that can cut a row in half. */
       <section data-testid="library-sources" className="flex flex-col pb-1 pt-3">
-        {searchField}
+        {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
         <SectionActions>
           <Tooltip content={t("sources.addTooltip")}>
             <Chip
@@ -974,7 +983,7 @@ export function LibrarySection({
 
   return (
     <section data-testid="library-wiki" className="flex flex-col pb-1 pt-3">
-      {searchField}
+      {searchHost && searchField ? createPortal(searchField, searchHost) : searchField}
       <SectionActions>
         {/*
           **Reading before writing, and both drawn whether or not they can run.**

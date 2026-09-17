@@ -281,6 +281,8 @@ export function LibraryPage({ segment, onSegmentChange }: {
    * one control per setting per screen (guardian, council 2026-09-11).
    */
   const [homeSurface, setHomeSurface] = useState<"guide" | "questions" | "compile" | "overflow" | null>(null);
+  /** The head row's seat for the search field while the list switch lives in the header tabs. */
+  const [searchHost, setSearchHost] = useState<HTMLDivElement | null>(null);
   /**
    * The marks the stale clause is about, while it is pressed. Null is the resting state.
    *
@@ -2503,6 +2505,7 @@ export function LibraryPage({ segment, onSegmentChange }: {
           <LibraryHeader
             t={t}
             title={indexTitle}
+            titleHidden={Boolean(segment)}
             /*
              * The provider disclosure's one home. It is a fact about this place rather
              * than about a press, so it rides with the place's description instead of
@@ -2512,6 +2515,8 @@ export function LibraryPage({ segment, onSegmentChange }: {
             onCollapse={() => setIndexCollapsed(true)}
             collapseRef={indexCollapseRef}
           />
+          {/* The field's seat: full width, so it starts and ends where the doors below do. */}
+          {segment ? <div ref={setSearchHost} data-testid="library-search-host" className="mt-2 min-w-0" /> : null}
           {!segment ? <SegmentedControl
             ariaLabel={t("index.aria")}
             value={indexSegment}
@@ -2560,6 +2565,7 @@ export function LibraryPage({ segment, onSegmentChange }: {
         >
           <LibrarySection
             model={model}
+            searchHost={segment ? searchHost : null}
             segment={indexSegment}
             selectedSlug={opened?.kind === "wiki" ? opened.slug : null}
             selectedSourcePath={opened?.kind === "source" ? opened.path : null}
@@ -3386,12 +3392,20 @@ export function LibraryPage({ segment, onSegmentChange }: {
 function LibraryHeader({
   t,
   title,
+  titleHidden = false,
   disclosure = null,
   onCollapse,
   collapseRef,
 }: {
   t: ReturnType<typeof useTranslations<"library">>;
   title?: string;
+  /**
+   * The title serves assistive technology only. With the list switch in the Library
+   * header (2026-09-14) the column's own title repeated the active tab word for word one
+   * row below it; the row keeps the glyph and the fold, and the search field takes the
+   * seat under them (owner, 2026-09-17).
+   */
+  titleHidden?: boolean;
   /**
    * **The one sentence about provider-owned traffic, when it is true** — the second
    * paragraph of the glyph's own panel, and the only place this screen prints it
@@ -3406,7 +3420,7 @@ function LibraryHeader({
 }) {
   return (
     <div data-testid="library-header" className="flex min-w-0 items-center gap-1.5">
-      <p className="min-w-0 truncate text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
+      <p className={titleHidden ? "sr-only" : "min-w-0 truncate text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]"}>
         {title ?? t("title")}
       </p>
       {/*
