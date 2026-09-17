@@ -49,18 +49,14 @@ export function LibraryWorkspace() {
 
   return (
     <div data-testid="library-workspace" className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-      <header className="topology-ui-scale flex h-14 shrink-0 items-stretch gap-5 border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 md:px-4">
+      <header className="topology-ui-scale flex h-14 shrink-0 items-stretch border-b border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-0">
         {/*
-          The name of the place stands on the tab labels' line. Each tab is a bottom-aligned
-          box of `--control-h-lg` with its label centred, so the name and the rule take the
-          same box and the same centring rather than a hand-tuned bottom pad: pinned with
-          `items-end pb-2`, "Library" sat 7px under the tab labels and read as a stray word
-          stuck to the floor (owner, 2026-09-17).
+          No name in the strip. Every other tabbed destination carries a display title
+          above its tabs (MCP, Insights); this workbench has none, and a body-size word
+          beside a hairline read as a sixth tab with a different font (owner, 2026-09-17,
+          twice). The rail already names the place. The tabs start on the index column's
+          own text line so the strip and the column share one start.
         */}
-        <p className="hidden shrink-0 self-end -mb-px min-h-[var(--control-h-lg)] items-center text-body leading-label font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] sm:inline-flex">{t('title')}</p>
-        <span aria-hidden className="hidden self-end -mb-px min-h-[var(--control-h-lg)] items-center sm:flex">
-          <span className="h-4 border-l border-[color:var(--color-border-soft)]" />
-        </span>
         <TabBar
           ariaLabel={t('workspace.aria')}
           activeKey={tab}
