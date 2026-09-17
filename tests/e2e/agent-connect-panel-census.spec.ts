@@ -67,8 +67,10 @@ test("「MCP 연결」 칸의 첫 화면 인구조사", async ({ page }, testInf
    * An attached vault is still required (otherwise the panel is not drawn). After
    * attaching, it navigates via the rail — the same path a user takes.
    */
-  await page.getByTestId("app-nav-rail").getByRole("link", { name: "MCP" }).click();
+  // MCP has been a section of the Agents page since 2026-09-18 (a tab of it the day before).
+  await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
   await expect(page.getByTestId("mcp-page")).toBeVisible({ timeout: 10_000 });
+  await page.getByTestId("mcp-page").scrollIntoViewIfNeeded();
 
   const pane = page.getByTestId("agent-setup-section");
   await expect(pane).toBeVisible({ timeout: 10_000 });

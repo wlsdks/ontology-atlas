@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useCallback } from 'react';
+import { useCallback, type ReactNode } from 'react';
 
 import { AcpRuntimeSettings } from '@/widgets/app-settings-menu';
 import { Disclosure } from '@/shared/ui';
@@ -50,7 +50,7 @@ import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/pa
  * section name is guidance only while that section is on the same screen, so that sentence now
  * carries a **link** to the new destination instead (`AcpRuntimeSettings`).
  */
-export function AgentsPage() {
+export function AgentsPage({ children }: { children?: ReactNode } = {}) {
   const t = useTranslations('agents');
   const router = useRouter();
   const openChatOnMap = useCallback(
@@ -115,6 +115,8 @@ export function AgentsPage() {
         <h2 className="sr-only">{t('runtimesHeading')}</h2>
         <AcpRuntimeSettings embedded onOpenChat={openChatOnMap} />
       </section>
+      {/* What the app layer folds in below the tools: the MCP section (2026-09-18). */}
+      {children}
 
     </main>
   );

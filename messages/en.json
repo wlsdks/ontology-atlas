@@ -199,7 +199,7 @@
       "agentNotificationKindsCaption": "Muted kinds never reach the bell.",
       "runtimes": {
         "intro": "Atlas finds the AI coding tools installed on this computer. Only a tool confirmed to ask before writing opens the chat beside the map; the rest can still be used for the agent connection (MCP) setup.",
-        "mcpLink": "Share this folder with a tool you run yourself, or attach a connector, on the MCP tab (the agent connection)",
+        "mcpLink": "Share this folder with a tool you run yourself, or attach a connector, in the MCP section below (the agent connection)",
         "recheck": "Check again",
         "checking": "Looking…",
         "readyHeading": "Found on this computer ({count})",
@@ -208,7 +208,7 @@
         "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Agent or Codex and they show up here. The install guides are in the list below.",
         "webLabel": "A browser is not allowed to start programs on this computer",
-        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Pointing a tool you started yourself at this folder works right now, in the “Share this folder” section on the MCP tab.",
+        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Pointing a tool you started yourself at this folder works right now, in the “Share this folder” section under MCP, below.",
         "state": {
           "ready": "Ready",
           "cli-missing": "Install needed",
@@ -5127,7 +5127,7 @@
       "islandUnsorted": "Unsorted",
       "islandUnread": "Unread",
       "legendIslands": "Past a few hundred files the picture is a map of islands: each island is one concept and the pages that name it, with the files those pages were written from packed around them. Unsorted holds pages naming no concept; Unread holds files no page has read yet. An amber dot is a page whose files changed since it was written. Scroll to zoom in until names appear; press a dot for a card beside it.",
-      "describeIsland": "{name}: an island — the pages that name this concept, with the files they read. Zoom in for their names.",
+      "describeIsland": "{name}: an island, the pages that name this concept with the files they read. Zoom in for their names.",
       "islandBack": "Islands",
       "islandName": "{name} · {pages} pages · {sources} files",
       "readerClose": "Close the page",
@@ -5668,7 +5668,7 @@
       },
       "other": {
         "title": "Another service",
-        "body": "Set one up by hand on the MCP tab of Agents (the agent connection), where the connection details live.",
+        "body": "Set one up by hand in the MCP section of Agents (the agent connection), where the connection details live.",
         "example": ""
       }
     },
