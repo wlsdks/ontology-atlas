@@ -21,7 +21,7 @@ import type { LayoutPoint } from "./library-graph-layout";
  * settles in a bounded number of steps; nothing here is random.
  */
 
-export interface IslandBody {
+interface IslandBody {
   id: string;
   x: number;
   y: number;
