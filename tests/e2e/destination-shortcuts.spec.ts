@@ -26,7 +26,8 @@ const DESTINATIONS = [
   { key: "i", path: "/ontology/insights" },
   { key: "p", path: "/projects" },
   { key: "a", path: "/agents" },
-  { key: "c", path: "/mcp" },
+  // MCP is a section of the Agents page since 2026-09-18; `G C` lands on that section.
+  { key: "c", path: "/agents/?tab=mcp" },
   { key: "g", path: "/git" },
 ] as const;
 
@@ -70,7 +71,9 @@ test.describe("목적지 이동 단축키", () => {
       // including the Ontology tab, rather than racing the intermediate /docs URL.
       const expected = key === "d"
         ? /\/ko\/library\/(?=[^#]*[?&]tab=ontology(?:&|$))/
-        : new RegExp(`/ko${path.replace(/\//g, "\\/")}/?($|\\?)`);
+        : key === "c"
+          ? /\/ko\/agents\/(?=[^#]*[?&]tab=mcp(?:&|$))/
+          : new RegExp(`/ko${path.replace(/\//g, "\\/")}/?($|\\?)`);
       /*
        * **Retry once.** Some blocking surfaces mount on arrival, so one can appear
        * between the dismissal check and the key press. The first attempt is then

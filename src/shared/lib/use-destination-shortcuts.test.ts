@@ -290,6 +290,31 @@ describe("useDestinationShortcuts", () => {
     expect(navigate).toHaveBeenCalledWith("/project/atlas/docs/", "docs");
   });
 
+  /**
+   * `g c` had died without anyone noticing (CI, 2026-09-18): MCP folded into the Agents
+   * page, the rail's visible set no longer named it, and the visibility check turned its
+   * key into nothing while the decision record still promised the shortcut. The alias is
+   * a door exactly while the tile that hosts it is drawn — the same rule Docs already had.
+   */
+  it("자리 잡은 타일이 보이면 별칭 단축키도 문이다 — g c 는 에이전트 타일을 통해, g d 는 자료실 타일을 통해", () => {
+    renderHook(() =>
+      useDestinationShortcuts({ navigate, visible: new Set(["map", "agents", "library"]) }),
+    );
+    press("g");
+    press("c");
+    expect(navigate).toHaveBeenCalledWith("/agents/?tab=mcp", "mcp");
+    press("g");
+    press("d");
+    expect(navigate).toHaveBeenLastCalledWith("/docs/", "docs");
+  });
+
+  it("자리 잡은 타일이 숨으면 별칭 단축키도 닫힌다", () => {
+    renderHook(() => useDestinationShortcuts({ navigate, visible: new Set(["map", "library"]) }));
+    press("g");
+    press("c");
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it("화면이 다시 그려져도 전역 keydown 리스너를 갈아 끼우지 않고 최신 목적지를 쓴다", () => {
     const removeListener = vi.spyOn(window, "removeEventListener");
     const firstNavigate = vi.fn();

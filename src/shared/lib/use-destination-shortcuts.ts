@@ -93,6 +93,9 @@ function matchesLetter(event: Pick<KeyboardEvent, 'key' | 'code'>, letter: strin
   return event.code === `Key${letter.toUpperCase()}`;
 }
 
+/** The rail tile an alias destination is reached through; a destination with its own tile is absent. */
+const HOST_TILE: Partial<Record<DestinationId, DestinationId>> = { docs: 'library', mcp: 'agents' };
+
 /** Which destination's letter this event is, or `null`. */
 function destinationForEvent(
   event: Pick<KeyboardEvent, 'key' | 'code'>,
@@ -177,8 +180,10 @@ export function useDestinationShortcuts({
         const id = destinationForEvent(event);
         leaderAt.current = null;
         if (!id) return;
-        // A hidden destination has no tile, so its key is not a door either.
-        if (visible && !visible.has(id === 'docs' ? 'library' : id)) return;
+        // A hidden destination has no tile, so its key is not a door either. The two
+        // aliases live on another tile: Docs is Library's Ontology tab, and MCP is a
+        // section of the Agents page (2026-09-18), so each is a door while its host is.
+        if (visible && !visible.has(HOST_TILE[id] ?? id)) return;
         event.preventDefault();
         /*
          * With a blocking surface up, **say so instead of navigating** (rule 3
