@@ -5587,7 +5587,8 @@
         "called": "호출",
         "asleep": "잠듦",
         "duration": "{seconds}초",
-        "heldLine": "{name} · {checked} · 유지"
+        "heldLine": "{name} · {checked} · 유지",
+        "noAgent": "이 맥에 준비된 코딩 에이전트가 없어 다시 쓰지 못했습니다. 에이전트 화면에서 로그인한 뒤 순회를 다시 돌리세요."
       },
       "sheet": {
         "title": "새 순회",

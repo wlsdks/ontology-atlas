@@ -189,6 +189,9 @@ export function RoundsLedger({
                           {t("ledger.wrote")}: {sourcesWritten(entry).join(", ")}
                         </p>
                       ) : null}
+                      {entry.note === "no-agent" ? (
+                        <p className="mt-2 text-label leading-label text-[color:var(--color-amber-source-a90)]">{t("ledger.noAgent")}</p>
+                      ) : null}
                       {entry.refused.length > 0 ? (
                         <p className="mt-2 truncate text-label leading-label text-[color:var(--color-danger-text)]">
                           {t("ledger.refused")}: {entry.refused.join(", ")}

@@ -196,14 +196,24 @@ export function useRoundsRunner(): RoundsRunnerValue {
   useEffect(() => {
     if (!isAcpBridgeAvailable()) return;
     let cancelled = false;
+    const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
+      if (cancelled) return;
+      const usable = (list ?? []).find(
+        (candidate) => candidate.state === "ready" && candidate.verified && isGuardedRuntime(candidate.id, candidate.isolated),
+      );
+      setRuntime(usable ? { id: usable.id, label: usable.label } : null);
+    };
+    /*
+     * The same two-step scan the Library runs: the fast pass names the tools on disk, and
+     * only the login probe turns `login-unknown` into `ready`. Measured in the installed
+     * app on 2026-09-17: with the fast pass alone every redraft was skipped as "no agent".
+     */
     void detectAcpRuntimes()
-      .then((list) => {
-        if (cancelled) return;
-        const usable = (list ?? []).find(
-          (candidate) => candidate.state === "ready" && candidate.verified && isGuardedRuntime(candidate.id, candidate.isolated),
-        );
-        setRuntime(usable ? { id: usable.id, label: usable.label } : null);
+      .then((fast) => {
+        apply(fast);
+        return detectAcpRuntimes({ probeLogin: true });
       })
+      .then(apply)
       .catch(() => {
         if (!cancelled) setRuntime(null);
       });
@@ -370,9 +380,11 @@ export function useRoundsRunner(): RoundsRunnerValue {
       let called: string[] = [];
       let failed = false;
       let agentTurns: 0 | 1 = 0;
+      let note: RoundPassEntry["note"];
 
       if (round.kind === "consistency") {
         const redraft = round.onStale !== "mark" && check.staleSources.length > 0;
+        if (redraft && !(agentReady && runtimeId)) note = "no-agent";
         if (redraft && agentReady && runtimeId) {
           activeRef.current = { round, data };
           mark("agent");
@@ -392,6 +404,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       } else {
         if (!agentReady || !runtimeId) {
           failed = true;
+          note = "no-agent";
         } else {
           activeRef.current = { round, data };
           mark("agent");
@@ -447,6 +460,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
         summary: "",
         trigger,
       };
+      if (note) entry.note = note;
     } catch (error) {
       entry = {
         v: 1,

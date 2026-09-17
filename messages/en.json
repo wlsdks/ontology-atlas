@@ -5587,7 +5587,8 @@
         "called": "called",
         "asleep": "Asleep",
         "duration": "{seconds} s",
-        "heldLine": "{name} · {checked} · held"
+        "heldLine": "{name} · {checked} · held",
+        "noAgent": "No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again."
       },
       "sheet": {
         "title": "New round",

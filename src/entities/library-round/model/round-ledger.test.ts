@@ -79,6 +79,11 @@ describe('round ledger', () => {
     expect(entry?.trigger).toBe('clock');
   });
 
+  it('keeps the reason a pass did less than asked, and drops a reason it does not know', () => {
+    expect(parseRoundPassEntry(JSON.stringify(pass({ note: 'no-agent' })))?.note).toBe('no-agent');
+    expect(parseRoundPassEntry(JSON.stringify({ ...pass(), note: 'sunspots' }))?.note).toBeUndefined();
+  });
+
   it('rejects an entry with an outcome it does not know', () => {
     expect(parseRoundPassEntry(JSON.stringify(pass({ outcome: 'exploded' as RoundPassEntry['outcome'] })))).toBeNull();
   });

@@ -50,6 +50,13 @@ export interface RoundPassEntry {
   summary: string;
   /** Manual "Run now" versus the clock. */
   trigger: 'clock' | 'manual' | 'catch-up';
+  /**
+   * Why the pass did less than the round asked. `no-agent`: a redraft or a service pass
+   * was due but no guarded coding agent was ready on this Mac, so nothing was written.
+   * Measured 2026-09-17: without this the ledger said "stale" and the person could not
+   * tell a skipped redraft from a round that never asked for one.
+   */
+  note?: 'no-agent';
 }
 
 const OUTCOMES: readonly RoundPassOutcome[] = ['held', 'stale', 'redrafted', 'refused', 'failed', 'asleep'];
@@ -88,6 +95,7 @@ export function parseRoundPassEntry(line: string): RoundPassEntry | null {
   if (typeof record.roundId === 'string') entry.roundId = record.roundId;
   if (typeof record.roundName === 'string') entry.roundName = record.roundName;
   if (record.kind === 'consistency' || record.kind === 'service') entry.kind = record.kind;
+  if (record.note === 'no-agent') entry.note = record.note;
   return entry;
 }
 
