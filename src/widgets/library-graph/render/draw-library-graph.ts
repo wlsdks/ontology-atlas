@@ -1037,7 +1037,49 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
    */
   const stalePages = new Set<string>();
   if (frame.layout === "islands") for (const edge of frame.edges) if (edge.certainty === "unverified") stalePages.add(edge.source);
+  /*
+   * **The overview at rest is painted in four fills, not eleven thousand.** Measured on
+   * 11,240 marks (2026-09-18): the per-mark loop below — a halo and a mark each, with its
+   * own path — cost 20 ms a frame, past the 16.7 ms a hover ramp has. At rest on the
+   * overview no line is drawn, so no halo is needed, and no dot is dimmed, hovered,
+   * selected or arriving, so every dot of one ink can go into one path: the files, the
+   * fresh pages, the stale pages. The moment any of those states holds, the loop below
+   * paints the frame as it always did.
+   */
+  const quietOverview =
+    frame.layout === "islands" &&
+    (frame.dim ?? 0) === 0 &&
+    frame.selectedId === null &&
+    frame.hoveredId === null &&
+    frame.focusedId === null &&
+    (flow === null || (flow.arrived.size === 0 && flow.edges.size === 0));
+  if (quietOverview) {
+    ctx.globalAlpha = 1;
+    const groups: Array<{ ink: string; square: boolean; test: (node: LibraryGraphNode) => boolean }> = [
+      { ink: ink.source, square: true, test: (node) => node.kind === "source" },
+      { ink: ink.page, square: false, test: (node) => node.kind === "page" && !stalePages.has(node.id) },
+      { ink: ink.stale, square: false, test: (node) => node.kind === "page" && stalePages.has(node.id) },
+    ];
+    for (const group of groups) {
+      ctx.beginPath();
+      for (const node of frame.nodes) {
+        if (!group.test(node)) continue;
+        const centre = nodeCentre(frame, node.id);
+        if (!centre) continue;
+        const radius = radiusOf(frame, node);
+        if (radius <= 0) continue;
+        if (group.square) ctx.rect(centre.x - radius, centre.y - radius, radius * 2, radius * 2);
+        else {
+          ctx.moveTo(centre.x + radius, centre.y);
+          ctx.arc(centre.x, centre.y, radius, 0, Math.PI * 2);
+        }
+      }
+      ctx.fillStyle = group.ink;
+      ctx.fill();
+    }
+  }
   for (const node of frame.nodes) {
+    if (quietOverview) break;
     const centre = nodeCentre(frame, node.id);
     if (!centre) continue;
     const radius = radiusOf(frame, node);
