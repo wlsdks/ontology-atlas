@@ -525,6 +525,8 @@ export function useLibraryGraphEngine({
     sources: island.sources,
   });
 
+  /** What the last sync of the graph cost, in ms: layout, simulation and physics together. */
+  const syncCostRef = useRef(0);
   /** The ids of the islands whose name the last frame placed; armed only under the `e2e` probe. */
   const islandReportRef = useRef<string[] | null>(null);
   /** Pages with at least one unverified citation, for the islands' stale counts. */
@@ -1097,8 +1099,10 @@ export function useLibraryGraphEngine({
         onPressIslandRef.current
       ) {
         const atCeiling = view.scale >= zoomMaxRef.current - 1e-6;
+        // The Unread island does not open (it is a pile, not a topic), so a zoom into it
+        // stays a zoom.
         const filling = islands.find(
-          (island) => island.id === aim && (atCeiling || island.r * 2 >= ISLAND_OPENS_AT_VIEW_SHARE * Math.min(width, height)),
+          (island) => island.id === aim && island.kind !== "unread" && (atCeiling || island.r * 2 >= ISLAND_OPENS_AT_VIEW_SHARE * Math.min(width, height)),
         );
         const source = filling ? islandsRef.current?.islands.find((island) => island.id === filling.id) : null;
         if (source) {
@@ -1386,6 +1390,7 @@ export function useLibraryGraphEngine({
   const syncSimulation = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const syncStartedAt = typeof performance === "undefined" ? 0 : performance.now();
     const graph = graphRef.current;
     const reducedMotion = stateRef.current.reducedMotion;
     const style = getComputedStyle(canvas);
@@ -1494,6 +1499,7 @@ export function useLibraryGraphEngine({
       }
     }
     lastKnownRef.current = new Map(graph.nodes.map((node) => [node.id, node]));
+    syncCostRef.current = (typeof performance === "undefined" ? 0 : performance.now()) - syncStartedAt;
     stalePagesRef.current = new Set(graph.edges.filter((edge) => edge.certainty === "unverified").map((edge) => edge.source));
 
     // The aspect is not published here: at creation the picture is still the seed spiral.
@@ -2067,6 +2073,8 @@ export function useLibraryGraphEngine({
        * is the most expensive frame this canvas ever paints and it is not what a card's
        * budget is about.
        */
+      /** What the last sync of the graph cost, in ms — the one-off work when a folder or an island changes. */
+      syncCost: () => syncCostRef.current,
       paint: () => ({
         last: paintCostRef.current.last,
         mean: paintCostRef.current.frames === 0 ? 0 : paintCostRef.current.total / paintCostRef.current.frames,

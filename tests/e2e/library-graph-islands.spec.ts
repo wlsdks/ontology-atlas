@@ -164,3 +164,12 @@ test("the keyboard walks the islands: arrows step, Enter opens, Escape returns",
   await page.keyboard.press("Escape");
   await expect(bar).toBeHidden();
 });
+
+test("the Unread island does not open: a press says what it is and where to start", async ({ page }) => {
+  await openMap(page);
+  const at = await islandPoint(page, "Unread");
+  await page.mouse.click(at.x, at.y);
+  await expect(page.getByTestId("library-graph-hint")).toContainText(/no page has read yet/);
+  await expect(page.getByTestId("library-graph-island-bar")).toBeHidden();
+  await expect.poll(async () => page.evaluate(() => (window.__atlasLibraryGraph!.islands() ?? []).length)).toBeGreaterThan(3);
+});

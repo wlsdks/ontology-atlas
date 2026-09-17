@@ -228,10 +228,28 @@ export function LibraryGraph({
    * until the streets have names", done as one press and one way back. The narrowed graph
    * is the whole graph filtered by id, so every fact on it is the folder's own.
    */
-  const [pickedIsland, setIsland] = useState<LibraryIslandPick | null>(null);
+  const [pickedIsland, setPickedIsland] = useState<LibraryIslandPick | null>(null);
+  /**
+   * **The Unread island does not open.** It is the files no page has read, and files no
+   * page has read have nothing between them: opened as columns it was a bare grid of
+   * fourteen hundred hollow squares (owner, 2026-09-18: "this looks bad when clicked — is
+   * it because they have no relation to each other?" — yes). What a press on it can do is
+   * say so, and point at the two places that act on it: the Sources list, where each of
+   * them is marked not compiled, and the Compile clause above the picture, which starts
+   * on the first. The island stays pressed until the pointer leaves it or Escape.
+   */
+  const [unreadPressed, setUnreadPressed] = useState<LibraryIslandPick | null>(null);
+  const setIsland = useCallback((next: LibraryIslandPick | null) => {
+    if (next && next.kind === "unread") {
+      setUnreadPressed(next);
+      return;
+    }
+    setUnreadPressed(null);
+    setPickedIsland(next);
+  }, []);
   /** The island under the pointer, for the legend's line: what this island is, in one sentence. */
   const [hoveredIsland, setHoveredIsland] = useState<LibraryIslandPick | null>(null);
-  const leaveIsland = useCallback(() => setIsland(null), []);
+  const leaveIsland = useCallback(() => setIsland(null), [setIsland]);
   /** The island the keyboard stands on, on the overview; arrows step, Enter opens. */
   const [focusedIslandId, setFocusedIslandId] = useState<string | null>(null);
   // The island is a view of a folder; a folder that no longer holds any of it lets it go.
@@ -385,7 +403,10 @@ export function LibraryGraph({
     onActivate: activate,
     onPressIsland: setIsland,
     overview: island === null,
-    onHoverIsland: setHoveredIsland,
+    onHoverIsland: (next: LibraryIslandPick | null) => {
+      setHoveredIsland(next);
+      if (next === null) setUnreadPressed(null);
+    },
     onLeaveIsland: leaveIsland,
     focusedIslandId,
     onDismiss: dismissCard,
@@ -636,6 +657,7 @@ export function LibraryGraph({
               // With a card open its own capture listener has already answered this press.
               setFocusedId(null);
               setFocusedIslandId(null);
+              setUnreadPressed(null);
               // With nothing else open, Escape is the way back off an island.
               if (cardId === null && island) setIsland(null);
             }
@@ -772,8 +794,12 @@ export function LibraryGraph({
               122, S19). The vocabulary is the half a reader still needs and is kept
               verbatim; only the gesture clause is swapped, for the two ways back out.
             */}
-            {!activeNode && (hoveredIsland ?? focusedIsland) && engine.picture === "islands"
-              ? t("graph.describeIsland", { name: (hoveredIsland ?? focusedIsland)!.label, pages: (hoveredIsland ?? focusedIsland)!.pages.length, sources: (hoveredIsland ?? focusedIsland)!.sources.length })
+            {!activeNode && unreadPressed && engine.picture === "islands"
+              ? t("graph.unreadPressed", { sources: unreadPressed.sources.length })
+              : !activeNode && (hoveredIsland ?? focusedIsland) && engine.picture === "islands"
+              ? (hoveredIsland ?? focusedIsland)!.kind === "unread"
+                ? t("graph.describeUnread", { sources: (hoveredIsland ?? focusedIsland)!.sources.length })
+                : t("graph.describeIsland", { name: (hoveredIsland ?? focusedIsland)!.label, pages: (hoveredIsland ?? focusedIsland)!.pages.length, sources: (hoveredIsland ?? focusedIsland)!.sources.length })
               : activeNode
               ? /* The mark whose card is open is described by how to leave it, not by how
                    to open it; pointing at some *other* mark while a card stands open still

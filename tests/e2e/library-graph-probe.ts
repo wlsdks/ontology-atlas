@@ -59,6 +59,8 @@ export interface LibraryGraphProbe {
   /** The islands of the overview in world units, or null under the flow or force picture. */
   islands: () => Array<{ id: string; kind: "concept" | "folder" | "unsorted" | "unread"; label: string; x: number; y: number; r: number; pages: number; sources: number }> | null;
   alpha: () => number;
+  /** What the last sync of the graph cost, in ms. */
+  syncCost: () => number;
   /** Whether the marks are still travelling to where they will stand (camera fit, entry, a pending box). */
   arriving: () => boolean;
   card: () => LibraryGraphProbeCard | null;

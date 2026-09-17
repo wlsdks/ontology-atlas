@@ -1107,8 +1107,59 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       ctx.fill();
     }
   }
+  /*
+   * **Marks leaving or arriving are painted in batches.** Opening an island of a
+   * 3,424-mark folder leaves three thousand ghosts fading for one `--motion-base`, each
+   * with the same alpha; drawn one path at a time they cost 25–58 ms a frame (measured
+   * 2026-09-18, the open, the return and a wheel that opened), which is the hitch a
+   * person feels exactly on the transition. A ghost and an arrival carry no state — no
+   * hover, no selection, no halo worth the paint — so every translucent mark of one kind
+   * and one alpha step goes into one path, and the loop below skips it.
+   */
+  const batched = new Set<string>();
+  if (opacity && opacity.size > 0 && !quietOverview) {
+    const groups = new Map<string, { ink: string; square: boolean; alpha: number; centres: Array<{ x: number; y: number; r: number }> }>();
+    for (const node of frame.nodes) {
+      const alpha = opacity.get(node.id);
+      if (alpha === undefined || alpha >= 1) continue;
+      if (node.id === frame.selectedId || node.id === frame.hoveredId || node.id === frame.focusedId) continue;
+      if (flow?.arrived.has(node.id)) continue;
+      if (node.kind === "source" && node.state === "not-compiled") continue;
+      if (node.kind === "concept") continue;
+      const centre = nodeCentre(frame, node.id);
+      if (!centre) continue;
+      const radius = radiusOf(frame, node);
+      if (radius <= 0) continue;
+      const step = Math.round(attention(node.id) * alpha * 32) / 32;
+      const inkFor = node.kind === "page" ? (stalePages.has(node.id) ? ink.stale : ink.page) : ink.source;
+      const key = `${node.kind}:${inkFor}:${step}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = { ink: inkFor, square: node.kind === "source", alpha: step, centres: [] };
+        groups.set(key, group);
+      }
+      group.centres.push({ x: centre.x, y: centre.y, r: radius });
+      batched.add(node.id);
+    }
+    for (const group of groups.values()) {
+      if (group.alpha <= 0) continue;
+      ctx.globalAlpha = group.alpha;
+      ctx.fillStyle = group.ink;
+      ctx.beginPath();
+      for (const centre of group.centres) {
+        if (group.square) ctx.rect(centre.x - centre.r, centre.y - centre.r, centre.r * 2, centre.r * 2);
+        else {
+          ctx.moveTo(centre.x + centre.r, centre.y);
+          ctx.arc(centre.x, centre.y, centre.r, 0, Math.PI * 2);
+        }
+      }
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
   for (const node of frame.nodes) {
     if (quietOverview) break;
+    if (batched.has(node.id)) continue;
     const centre = nodeCentre(frame, node.id);
     if (!centre) continue;
     const radius = radiusOf(frame, node);

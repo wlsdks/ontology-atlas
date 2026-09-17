@@ -5129,6 +5129,8 @@
       "legendIslands": "Past a few hundred files the picture is a map of islands: each island is one concept and the pages that name it, with the files those pages were written from packed around them. Unsorted holds pages naming no concept; Unread holds files no page has read yet. An amber dot is a page whose files changed since it was written. Scroll to zoom in until names appear; press a dot for a card beside it.",
       "describeIsland": "{name}: an island of {pages} pages and the {sources} files they read. Press it to open them as columns; zoom in for their names.",
       "announceIsland": "Island {name}, {position} of {total}: {pages} pages and {sources} files. Enter opens it as columns.",
+      "describeUnread": "Unread: {sources} files no page has read yet. Press it for where to start.",
+      "unreadPressed": "{sources} files no page has read yet, so there is nothing between them to draw. Each is marked not compiled in the Sources list; Compile next, above the picture, starts on the first.",
       "islandBack": "Islands",
       "islandName": "{name} · {pages} pages · {sources} files",
       "readerClose": "Close the page",
