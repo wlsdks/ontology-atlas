@@ -322,8 +322,10 @@ export function LibraryGraph({
   // A page always carries its name; what the order changes is which *files* are named, and
   // the camera decides that. See the note above the removed threshold.
   const standingLabels = true;
+  const islandLabels = useMemo(() => ({ unsorted: t("graph.islandUnsorted"), unread: t("graph.islandUnread") }), [t]);
   const engine = useLibraryGraphEngine({
     graph,
+    islandLabels,
     canvasRef,
     reducedMotion,
     selectedId,
@@ -629,7 +631,7 @@ export function LibraryGraph({
             the press. Two invisible sentences in one cell, and the taller sets the height
             in every state.
           */}
-          {(compact ? ["graph.legendShort", "graph.legendShortCardOpen"] : ["graph.legend", "graph.legendCardOpen"]).map((key) => (
+          {(compact ? ["graph.legendShort", "graph.legendShortCardOpen"] : ["graph.legend", "graph.legendCardOpen", "graph.legendIslands"]).map((key) => (
             <p
               key={key}
               aria-hidden
@@ -672,7 +674,9 @@ export function LibraryGraph({
               122, S19). The vocabulary is the half a reader still needs and is kept
               verbatim; only the gesture clause is swapped, for the two ways back out.
             */}
-            {activeNode
+            {activeNode && engine.picture === "islands" && activeNode.kind === "concept"
+              ? t("graph.describeIsland", { name: activeNode.label })
+              : activeNode
               ? /* The mark whose card is open is described by how to leave it, not by how
                    to open it; pointing at some *other* mark while a card stands open still
                    answers with what pressing that one would do, because it would. */
@@ -691,7 +695,9 @@ export function LibraryGraph({
                      from assistive technology at the same moment (design-infoviz,
                      2026-09-08). Compact states it in one line instead of four. */
                   t(cardNode ? "graph.legendShortCardOpen" : "graph.legendShort")
-                : t(cardNode ? "graph.legendCardOpen" : "graph.legend")}
+                : engine.picture === "islands" && !cardNode
+                  ? t("graph.legendIslands")
+                  : t(cardNode ? "graph.legendCardOpen" : "graph.legend")}
           </p>
         </div>
         {/* The keyboard path is said to the people who need it and not to the ones

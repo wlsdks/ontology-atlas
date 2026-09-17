@@ -61,6 +61,18 @@ import type { LibraryGraphInk } from "./library-graph-ink";
  * ring and different by its ink, which are both measurable; a bloom is neither.
  */
 
+export interface LibraryGraphIsland {
+  id: string;
+  kind: "concept" | "folder" | "unsorted" | "unread";
+  label: string;
+  x: number;
+  y: number;
+  r: number;
+  pages: number;
+  sources: number;
+  stale: number;
+}
+
 export interface LibraryGraphFrame {
   nodes: readonly LibraryGraphNode[];
   edges: readonly LibraryGraphEdge[];
@@ -87,8 +99,17 @@ export interface LibraryGraphFrame {
    * one number in one place and the renderer stays a pure function of its frame.
    */
   standingLabels: boolean;
-  /** `flow`: columns, edges drawn as horizontal S-curves; `force`: the bowed quadratic. */
-  layout?: "flow" | "force";
+  /** `flow`: columns, edges drawn as horizontal S-curves; `force`: the bowed quadratic; `islands`: the overview. */
+  layout?: "flow" | "force" | "islands";
+  /**
+   * The islands of the overview, in canvas pixels: drawn under the marks as a body with a
+   * name, and the one thing a person can read at rest on a folder of thousands.
+   */
+  islands?: readonly LibraryGraphIsland[];
+  /** Whether a page's name stands at rest; the overview names islands, not pages, until zoomed in. */
+  pageLabels?: boolean;
+  /** Draw only the edges of the mark being pointed at or held; the overview draws no line at rest. */
+  focusEdgesOnly?: boolean;
   /**
    * Whether a file's and a concept's name exist on this frame at all.
    *
@@ -484,6 +505,70 @@ function radiusOf(frame: Pick<LibraryGraphFrame, "radii">, node: LibraryGraphNod
  * one node and select another. Generous by 4px: a 5px square is smaller than the
  * pointing device of anybody's hand.
  */
+/** The least an island must be across, on screen, to carry its name inside it. */
+const ISLAND_LABEL_INSIDE_MIN_PX = 64;
+
+/**
+ * Each island: a disc a shade above the ground, a hairline rim, and its name with its
+ * page count — inside the disc when it is wide enough, under it otherwise, and skipped
+ * when it would cross a name already placed. An *Unread* island is drawn with a dashed
+ * rim: it is the part of the folder nobody has read, not a topic.
+ */
+function drawIslands(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, ink: LibraryGraphInk): void {
+  const dim = frame.dim ?? 0;
+  for (const island of frame.islands ?? []) {
+    ctx.globalAlpha = 1 - dim * 0.5;
+    ctx.beginPath();
+    ctx.arc(island.x, island.y, island.r, 0, Math.PI * 2);
+    ctx.fillStyle = ink.pageHalo;
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = ink.labelBorder;
+    ctx.setLineDash(island.kind === "unread" ? [3, 3] : []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/**
+ * The islands' names, painted after the marks so a name inside an island stands on its
+ * dots rather than under them. Largest first, so the biggest topics keep their names when
+ * two would cross.
+ */
+function drawIslandNames(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, ink: LibraryGraphInk): void {
+  const placed: Array<{ x: number; y: number; width: number; height: number }> = [];
+  const dim = frame.dim ?? 0;
+  ctx.font = `${ink.labelPx}px ${ink.fontFamily}`;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  const lineHeight = Math.round(ink.labelPx * 1.35);
+  const named = [...(frame.islands ?? [])].sort((a, b) => b.r - a.r);
+  for (const island of named) {
+    // A topic counts its pages; the Unread island has none, so it counts its files.
+    const text = `${island.label} · ${island.kind === "unread" ? island.sources : island.pages}`;
+    const width = ctx.measureText(text).width;
+    const inside = island.r * 2 >= Math.max(ISLAND_LABEL_INSIDE_MIN_PX, width + 12);
+    const box = inside
+      ? { x: island.x - width / 2, y: island.y - lineHeight / 2, width, height: lineHeight }
+      : { x: island.x - width / 2, y: island.y + island.r + 3, width, height: lineHeight };
+    if (box.x < 2 || box.x + box.width > frame.width - 2 || box.y < 2 || box.y + box.height > frame.height - 2) continue;
+    if (placed.some((other) => overlaps(box, other))) continue;
+    placed.push(box);
+    // A ground plate under every name: inside, it stands on the dots; under, it can stand
+    // on a neighbour's rim. Either way the name is read off the ground, not off the texture.
+    ctx.fillStyle = ink.ground;
+    ctx.globalAlpha = (1 - dim * 0.5) * 0.78;
+    ctx.fillRect(box.x - 4, box.y, box.width + 8, box.height);
+    ctx.globalAlpha = 1 - dim * 0.5;
+    ctx.fillStyle = inside ? ink.labelInk : ink.sourceLabel;
+    ctx.fillText(text, island.x, box.y + box.height / 2);
+  }
+  ctx.textAlign = "start";
+  ctx.textBaseline = "alphabetic";
+  ctx.globalAlpha = 1;
+}
+
 export function hitTestLibraryGraph(
   frame: Pick<LibraryGraphFrame, "nodes" | "positions" | "radii">,
   point: LayoutPoint,
@@ -639,6 +724,9 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   ctx.globalAlpha = 1;
   drawGround(ctx, frame);
 
+  // ── Islands under everything: a body, a shore, and a name. ──
+  if (frame.islands && frame.islands.length > 0) drawIslands(ctx, frame, ink);
+
   // ── Edges first, so no line crosses the mark it points at. ──
   // `butt`, not `round`: a round cap adds half a line width to each dash end, which
   // measured a 0.64 duty cycle on a `[3, 3]` pattern — the gap a person is supposed to
@@ -655,6 +743,10 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     // Pointing at a dot is a question about its links, so its links answer. This is also
     // what gives every edge a reading well above the 3:1 floor on demand.
     const touchesActive = active !== null && (edge.source === active || edge.target === active);
+    // The overview draws no line at rest: ten thousand citations are a grey field, and the
+    // islands already say which files each topic read. A pointed-at or held mark still
+    // answers with its own lines.
+    if (frame.focusEdgesOnly && !touchesSelection && !touchesActive && !(focus?.has(edge.source) && focus?.has(edge.target))) continue;
     /*
      * An edge is as present as its dimmer end. A line from a full-ink node to a dimmed one
      * that stayed bright would claim a relationship the dimming has just said is not the
@@ -924,14 +1016,24 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   }
 
   // ── Nodes. ──
+  /*
+   * **On the overview a stale page is an amber dot.** With no line drawn at rest there is
+   * no break to carry the amber, and the state a person came to see at a glance — where
+   * has the wiki gone stale — would vanish exactly where the folder is large enough to
+   * need it. The dot takes the same standing-amber ink the break's dot takes.
+   */
+  const stalePages = new Set<string>();
+  if (frame.layout === "islands") for (const edge of frame.edges) if (edge.certainty === "unverified") stalePages.add(edge.source);
   for (const node of frame.nodes) {
     const centre = nodeCentre(frame, node.id);
     if (!centre) continue;
     const radius = radiusOf(frame, node);
+    // A mark with no radius is a concept standing for its island: the island is drawn, not it.
+    if (radius <= 0) continue;
     const isSelected = node.id === frame.selectedId;
     const isHovered = node.id === frame.hoveredId;
     const isFocused = node.id === frame.focusedId;
-    const ownInk = node.kind === "page" ? ink.page : node.kind === "source" ? ink.source : ink.concept;
+    const ownInk = node.kind === "page" ? (stalePages.has(node.id) ? ink.stale : ink.page) : node.kind === "source" ? ink.source : ink.concept;
     const mark = isSelected ? ink.selected : ownInk;
 
     /*
@@ -1037,6 +1139,9 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
   }
   ctx.globalAlpha = 1;
 
+  // ── The islands' names, on top of their dots. ──
+  if (frame.islands && frame.islands.length > 0) drawIslandNames(ctx, frame, ink);
+
   // ── Real work, bounded to the node it actually touched. ──
   drawActivityMarks(ctx, frame);
 
@@ -1111,7 +1216,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     };
     /** Whether a file's or a concept's name exists on this frame at all. */
     const carriesName = (node: LibraryGraphNode): boolean => {
-      if (node.kind === "page") return true;
+      if (node.kind === "page") return frame.pageLabels ?? true;
       if (node.kind === "concept" ? (frame.conceptLabels ?? frame.sourceLabels) : frame.sourceLabels) return true;
       if (node.id === frame.selectedId || node.id === active) return true;
       return focus !== null && focus.has(node.id);

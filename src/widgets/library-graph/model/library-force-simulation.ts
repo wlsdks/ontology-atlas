@@ -1,6 +1,7 @@
 import type { LibraryGraph, LibraryGraphNodeKind } from "./build-library-graph";
 import { LibraryQuadtree } from "./library-graph-quadtree";
 import { flowLayout, type FlowLayout, type FlowWorld } from "./library-flow-layout";
+import { islandsLayout, type IslandsLayout } from "./library-islands-layout";
 import { seedPositions, type LayoutPoint } from "./library-graph-layout";
 import { packGroupsAroundCentre, type PackBox, type PackSlot } from "./library-graph-packing";
 
@@ -1297,6 +1298,30 @@ export function applyLibraryFlowLayout(
   const { positions } = layout;
   for (const node of sim.nodes) {
     const point = positions.get(node.id);
+    if (!point) continue;
+    node.x = point.x;
+    node.y = point.y;
+    node.vx = 0;
+    node.vy = 0;
+    node.fx = null;
+    node.fy = null;
+    node.entered = 1;
+  }
+  sim.alpha = 0;
+  sim.alphaTarget = 0;
+  return layout;
+}
+
+/** Lays the islands overview into the simulation's nodes, the same way the flow is laid. */
+export function applyLibraryIslandsLayout(
+  sim: LibrarySimulation,
+  graph: LibraryGraph,
+  world: { width: number; height: number },
+  labels: { unsorted: string; unread: string },
+): IslandsLayout {
+  const layout = islandsLayout(graph, world, labels);
+  for (const node of sim.nodes) {
+    const point = layout.positions.get(node.id);
     if (!point) continue;
     node.x = point.x;
     node.y = point.y;

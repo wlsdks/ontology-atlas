@@ -15,8 +15,10 @@ import {
 } from "../model/library-graph-card";
 import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
 import type { FlowLayout, FlowWorld } from "../model/library-flow-layout";
+import { ISLANDS_MIN_MARKS, type IslandsLayout } from "../model/library-islands-layout";
 import {
   applyLibraryFlowLayout,
+  applyLibraryIslandsLayout,
   createLibrarySimulation,
   hasPinnedNode,
   isLibrarySimulationRunning,
@@ -123,6 +125,20 @@ function flowWorld(box: { width: number; height: number }, ceiling: number): Flo
     ceiling,
   };
 }
+/**
+ * The world the islands overview is laid in: the pixel box less the fit padding, and a
+ * little smaller still, so the fit lands at 1:1 and a page dot is drawn at its own size.
+ */
+function islandsWorld(box: { width: number; height: number }): { width: number; height: number } {
+  const shrink = 0.94;
+  return {
+    width: Math.max(1, (box.width - FIT_PADDING * 2) * shrink),
+    height: Math.max(1, (box.height - FIT_PADDING * 2) * shrink),
+  };
+}
+/** On the overview a page's name stands once its dot is this wide on screen. */
+const ISLAND_PAGE_LABEL_MIN_PX = 10;
+
 /**
  * A folded file band (`FlowColumn.grid` above one) names its files only this far past the
  * source threshold: its squares stand 24px apart at the ceiling, which is no room for a
@@ -275,6 +291,8 @@ export interface LibraryGraphEngine {
   framed: boolean;
   /** The settled picture's width over its height, for `data-picture-aspect`. */
   pictureAspect: number | null;
+  /** The picture the folder got: `flow` names everything, `islands` is the overview past `ISLANDS_MIN_MARKS`. */
+  picture: "flow" | "force" | "islands";
   /**
    * Places the open card now, synchronously — what a layout effect calls on open, passing
    * the card's own id because this hook's own state ref is not filled until after it.
@@ -302,6 +320,7 @@ export function useLibraryGraphEngine({
   onActivate,
   onDismiss,
   layout = "flow",
+  islandLabels = { unsorted: "Unsorted", unread: "Unread" },
 }: {
   graph: LibraryGraph;
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -311,6 +330,8 @@ export function useLibraryGraphEngine({
    * simulation with draggable marks, kept for the map's reasons and for comparison.
    */
   layout?: "flow" | "force";
+  /** The names of the two islands that are not a concept. */
+  islandLabels?: { unsorted: string; unread: string };
   reducedMotion: boolean;
   selectedId: string | null;
   hoveredId: string | null;
@@ -357,6 +378,19 @@ export function useLibraryGraphEngine({
   const layoutRef = useRef(layout);
   /** The columns as last laid, for the label rule (a folded band names no file at rest). */
   const columnsRef = useRef<FlowLayout | null>(null);
+  /** The islands of the overview as last laid, or null under any other picture. */
+  const islandsRef = useRef<IslandsLayout | null>(null);
+  /** Pages with at least one unverified citation, for the islands' stale counts. */
+  const stalePagesRef = useRef<Set<string>>(new Set());
+  /**
+   * Which picture the folder gets: the flow names everything up to `ISLANDS_MIN_MARKS`
+   * marks; past that the overview is islands. The force picture stays what it was.
+   */
+  const pictureRef = useRef<"flow" | "force" | "islands">(layout);
+  const islandLabelsRef = useRef(islandLabels);
+  useEffect(() => {
+    islandLabelsRef.current = islandLabels;
+  }, [islandLabels]);
   useEffect(() => {
     layoutRef.current = layout;
   }, [layout]);
@@ -476,6 +510,8 @@ export function useLibraryGraphEngine({
   }, [graph]);
 
   const [pictureAspect, setPictureAspect] = useState<number | null>(null);
+  /** Which picture the folder got, for the legend: the flow names things, the islands do not. */
+  const [picture, setPicture] = useState<"flow" | "force" | "islands">(layout);
 
   /**
    * **Whether the picture is already framed**, published for the fit tile.
@@ -867,6 +903,17 @@ export function useLibraryGraphEngine({
       // The pass below appends; without this the measurement's array would be every
       // frame's names at once.
       if (labelReportRef.current) labelReportRef.current.length = 0;
+      // The islands in canvas pixels, and how wide a page dot is on screen right now.
+      const islands =
+        pictureRef.current === "islands" && islandsRef.current
+          ? islandsRef.current.islands.map((island) => {
+              const at = worldToScreen(island, view, { width, height });
+              let stale = 0;
+              for (const id of island.pages) if (stalePagesRef.current.has(id)) stale += 1;
+              return { id: island.id, kind: island.kind, label: island.label, x: at.x, y: at.y, r: island.r * view.scale, pages: island.pages.length, sources: island.sources.length, stale };
+            })
+          : undefined;
+      const widestPagePx = pictureRef.current === "islands" ? 2 * view.scale * Math.max(0, ...nodes.filter((node) => node.kind === "page").map((node) => radiiRef.current.get(node.id) ?? 0)) : Infinity;
       drawLibraryGraph(context, {
         nodes,
         edges: graphRef.current.edges,
@@ -883,20 +930,27 @@ export function useLibraryGraphEngine({
         // A plain source column has a row for every file name; a folded band names files
         // only zoomed in, as the force picture always did.
         sourceLabels:
-          layoutRef.current === "flow"
+          pictureRef.current === "flow"
             ? (columnsRef.current?.columns.find((column) => column.kind === "source")?.grid ?? 1) === 1 || view.scale >= FOLDED_LABEL_MIN_SCALE
-            : view.scale >= SOURCE_LABEL_MIN_SCALE,
+            : pictureRef.current === "islands"
+              ? widestPagePx >= ISLAND_PAGE_LABEL_MIN_PX * 2
+              : view.scale >= SOURCE_LABEL_MIN_SCALE,
         conceptLabels:
-          layoutRef.current === "flow"
+          pictureRef.current === "flow"
             ? (columnsRef.current?.columns.find((column) => column.kind === "concept")?.grid ?? 1) === 1 || view.scale >= FOLDED_LABEL_MIN_SCALE
-            : view.scale >= SOURCE_LABEL_MIN_SCALE,
+            : pictureRef.current === "islands"
+              ? false
+              : view.scale >= SOURCE_LABEL_MIN_SCALE,
         labelReport: labelReportRef.current ?? undefined,
         opacity,
         dim: dimState.value,
         focus,
         activity,
         flow,
-        layout: layoutRef.current,
+        layout: pictureRef.current,
+        islands,
+        pageLabels: pictureRef.current !== "islands" || widestPagePx >= ISLAND_PAGE_LABEL_MIN_PX,
+        focusEdgesOnly: pictureRef.current === "islands",
       });
 
       placeCard();
@@ -1145,6 +1199,22 @@ export function useLibraryGraphEngine({
     radiiRef.current = libraryMarkRadii(graph);
     zoomMaxRef.current =
       radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
+    pictureRef.current = layoutRef.current === "flow" && graph.nodes.length >= ISLANDS_MIN_MARKS ? "islands" : layoutRef.current;
+    setPicture(pictureRef.current);
+    const layPicture = (sim: LibrarySimulation) => {
+      if (pictureRef.current === "islands") {
+        columnsRef.current = null;
+        islandsRef.current = applyLibraryIslandsLayout(sim, graph, islandsWorld(box), islandLabelsRef.current);
+        // The overview's dots are its own size; the ceiling follows them, so zooming in
+        // still ends with a page as wide as a mark on the flow.
+        radiiRef.current = islandsRef.current.radii;
+        zoomMaxRef.current = radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
+      } else {
+        islandsRef.current = null;
+        columnsRef.current = applyLibraryFlowLayout(sim, graph, flowWorld(box, zoomMaxRef.current));
+      }
+      autoFitRef.current = { on: true, converged: false };
+    };
     const existing = simRef.current;
     if (!existing) {
       if (box.width === 0 || box.height === 0) return;
@@ -1155,16 +1225,13 @@ export function useLibraryGraphEngine({
        * animation slowed down; it is the same picture, arrived at synchronously, which is
        * exactly what the one-shot layout used to give everybody.
        */
-      if (layoutRef.current === "flow") columnsRef.current = applyLibraryFlowLayout(sim, graph, flowWorld(box, zoomMaxRef.current));
+      if (pictureRef.current !== "force") layPicture(sim);
       else if (reducedMotion) settleLibrarySimulation(sim);
       autoFitRef.current = { on: true, converged: false };
     } else {
       const changed = syncLibrarySimulation(existing, graph);
       // The columns are recomputed whole: a new page changes every row under it.
-      if (layoutRef.current === "flow") {
-        columnsRef.current = applyLibraryFlowLayout(existing, graph, flowWorld(box, zoomMaxRef.current));
-        autoFitRef.current = { on: true, converged: false };
-      }
+      if (pictureRef.current !== "force") layPicture(existing);
       const now = typeof performance === "undefined" ? 0 : performance.now();
       for (const gone of changed.removed) {
         const node = ghostsRef.current.get(gone.id)?.node ?? lastKnownRef.current.get(gone.id);
@@ -1172,6 +1239,7 @@ export function useLibraryGraphEngine({
       }
     }
     lastKnownRef.current = new Map(graph.nodes.map((node) => [node.id, node]));
+    stalePagesRef.current = new Set(graph.edges.filter((edge) => edge.certainty === "unverified").map((edge) => edge.source));
 
     // The aspect is not published here: at creation the picture is still the seed spiral.
     // The loop publishes it the moment the simulation comes to rest.
@@ -1209,8 +1277,9 @@ export function useLibraryGraphEngine({
         const before = { ...sim.box };
         resizeLibrarySimulation(sim, { width: rect.width, height: rect.height });
         // Columns are a fact about the box: a new width moves them, and the view refits.
-        if (layoutRef.current === "flow" && (before.width !== sim.box.width || before.height !== sim.box.height)) {
-          columnsRef.current = applyLibraryFlowLayout(sim, graphRef.current, flowWorld(sim.box, zoomMaxRef.current));
+        if (pictureRef.current !== "force" && (before.width !== sim.box.width || before.height !== sim.box.height)) {
+          if (pictureRef.current === "islands") islandsRef.current = applyLibraryIslandsLayout(sim, graphRef.current, islandsWorld(sim.box), islandLabelsRef.current);
+          else columnsRef.current = applyLibraryFlowLayout(sim, graphRef.current, flowWorld(sim.box, zoomMaxRef.current));
           autoFitRef.current = { on: true, converged: false };
         }
       }
@@ -1475,7 +1544,7 @@ export function useLibraryGraphEngine({
         const grabbed = state.pressedNodeId;
         state.pressedNodeId = null;
         // In the flow layout a mark has one place; a hand that moves it pans the picture.
-        if (grabbed && sim && sim.index.has(grabbed) && layoutRef.current !== "flow") {
+        if (grabbed && sim && sim.index.has(grabbed) && pictureRef.current === "force") {
           const node = sim.nodes[sim.index.get(grabbed)!]!;
           const world = screenToWorld(point, viewRef.current, box);
           state.drag = { nodeId: grabbed, offset: { x: node.x - world.x, y: node.y - world.y } };
@@ -1633,6 +1702,11 @@ export function useLibraryGraphEngine({
         columnsRef.current
           ? { rowGap: columnsRef.current.rowGap, columns: columnsRef.current.columns.map((column) => ({ kind: column.kind, x: column.x, grid: column.grid, count: column.ids.length })) }
           : null,
+      /** The islands of the overview, in world units, or null under any other picture. */
+      islands: () =>
+        islandsRef.current
+          ? islandsRef.current.islands.map((island) => ({ id: island.id, kind: island.kind, label: island.label, x: island.x, y: island.y, r: island.r, pages: island.pages.length, sources: island.sources.length }))
+          : null,
       /**
        * Every name the last frame actually placed, in canvas CSS pixels.
        *
@@ -1703,6 +1777,7 @@ export function useLibraryGraphEngine({
     fitToView,
     framed,
     pictureAspect,
+    picture,
     placeCard,
   };
 }
