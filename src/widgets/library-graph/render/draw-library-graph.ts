@@ -509,6 +509,8 @@ function radiusOf(frame: Pick<LibraryGraphFrame, "radii">, node: LibraryGraphNod
  */
 /** The least an island must be across, on screen, to carry its name inside it. */
 const ISLAND_LABEL_INSIDE_MIN_PX = 64;
+/** How far an island's shore reaches past its rim, in canvas px. */
+const ISLAND_SHORE_PX = 5;
 
 /**
  * Each island: a disc a shade above the ground, a hairline rim, and its name with its
@@ -520,9 +522,24 @@ function drawIslands(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, in
   const dim = frame.dim ?? 0;
   for (const island of frame.islands ?? []) {
     ctx.globalAlpha = 1 - dim * 0.5;
+    /*
+     * **A shore.** One wider disc under the island at half the halo's strength, so the
+     * island stands on shallows rather than being cut out of the dark: the same flat
+     * fill the mark halo is (`MARK_HALO_RATIO`), one step out, never a glow. The Unread
+     * island has no shore and its body is the ground — it is the part of the folder that
+     * is not land yet, and its dashed rim says the same.
+     */
+    if (island.kind !== "unread") {
+      ctx.beginPath();
+      ctx.arc(island.x, island.y, island.r + ISLAND_SHORE_PX, 0, Math.PI * 2);
+      ctx.fillStyle = ink.pageHalo;
+      ctx.globalAlpha = (1 - dim * 0.5) * 0.5;
+      ctx.fill();
+      ctx.globalAlpha = 1 - dim * 0.5;
+    }
     ctx.beginPath();
     ctx.arc(island.x, island.y, island.r, 0, Math.PI * 2);
-    ctx.fillStyle = ink.pageHalo;
+    ctx.fillStyle = island.kind === "unread" ? ink.ground : ink.pageHalo;
     ctx.fill();
     const hovered = island.id === frame.hoveredIslandId;
     ctx.lineWidth = hovered ? 1.5 : 1;

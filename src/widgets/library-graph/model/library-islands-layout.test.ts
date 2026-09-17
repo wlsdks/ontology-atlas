@@ -86,7 +86,21 @@ describe("islands layout", () => {
     const layout = islandsLayout(graph({ sources: ["a.md"], pages: ["one"], cites: [["one", "a.md"]] }), WORLD, LABELS);
     const page = layout.radii.get("page:one")!;
     const file = layout.radii.get("source:a.md")!;
-    expect(page / file).toBeCloseTo(ISLAND_PAGE_RADIUS / ISLAND_SOURCE_RADIUS, 6);
+    // A page dot is the page radius times its grain (0.85–1.25 by how much it read); one
+    // page alone sits mid-grain.
+    expect(page / file).toBeGreaterThanOrEqual((ISLAND_PAGE_RADIUS / ISLAND_SOURCE_RADIUS) * 0.85 - 1e-6);
+    expect(page / file).toBeLessThanOrEqual((ISLAND_PAGE_RADIUS / ISLAND_SOURCE_RADIUS) * 1.25 + 1e-6);
+  });
+
+  it("grows a page's dot with the files it read, the busiest a fifth wider than the quietest", () => {
+    const layout = islandsLayout(
+      graph({ sources: ["a.md", "b.md", "c.md", "d.md"], pages: ["quiet", "busy"], cites: [["quiet", "a.md"], ["busy", "b.md"], ["busy", "c.md"], ["busy", "d.md"]] }),
+      WORLD,
+      LABELS,
+    );
+    const quiet = layout.radii.get("page:quiet")!;
+    const busy = layout.radii.get("page:busy")!;
+    expect(busy / quiet).toBeCloseTo(1.25 / 0.85, 6);
   });
 
   it("is the same map for the same folder whatever order the nodes arrived in", () => {

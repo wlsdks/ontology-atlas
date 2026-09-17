@@ -32,6 +32,9 @@ export const ISLANDS_MIN_MARKS = 400;
 /** Dot radii in world units at the overview: a page is a small disc, a file a smaller square. */
 export const ISLAND_PAGE_RADIUS = 1.6;
 export const ISLAND_SOURCE_RADIUS = 1;
+/** A page dot's radius, as a share of `ISLAND_PAGE_RADIUS`, from the least-read page to the most. */
+const ISLAND_PAGE_GRAIN_MIN = 0.85;
+const ISLAND_PAGE_GRAIN_MAX = 1.25;
 /** Breath between dots, and between islands, in world units. */
 const DOT_GAP = 1.2;
 const ISLAND_GAP = 10;
@@ -134,14 +137,31 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
   // ── Inside each island: a sunflower, pages first. ──
   const positions = new Map<string, LayoutPoint>();
   const radii = new Map<string, number>();
-  const pageCell = (ISLAND_PAGE_RADIUS * 2 + DOT_GAP) ** 2;
-  const sourceCell = (ISLAND_SOURCE_RADIUS * 2 + DOT_GAP) ** 2;
+  /**
+   * A page's dot grows with the files it read, the way its disc does on the flow: the
+   * busiest page of a folder is a fifth wider than the quietest, enough to give an island a
+   * grain without any dot outgrowing its cell. The scale is the folder's own — its widest
+   * read against its narrowest — so a folder of even pages is even dots.
+   */
+  const reads = new Map<string, number>();
+  for (const page of pages) reads.set(page.id, (cites.get(page.id) ?? []).length);
+  const mostRead = Math.max(1, ...reads.values());
+  const leastRead = Math.min(mostRead, ...reads.values());
+  const pageRadius = (id: string): number => {
+    const t = mostRead > leastRead ? ((reads.get(id) ?? 0) - leastRead) / (mostRead - leastRead) : 0.5;
+    return ISLAND_PAGE_RADIUS * (ISLAND_PAGE_GRAIN_MIN + (ISLAND_PAGE_GRAIN_MAX - ISLAND_PAGE_GRAIN_MIN) * t);
+  };
+  const cellOf = (r: number): number => (r * 2 + DOT_GAP) ** 2;
+  const sourceCell = cellOf(ISLAND_SOURCE_RADIUS);
   type Packed = Island & { local: Array<{ id: string; x: number; y: number; r: number }> };
   const islands: Packed[] = [...members.entries()]
     .map(([id, held]) => {
       const local: Array<{ id: string; x: number; y: number; r: number }> = [];
       let area = 0;
-      const dots = [...held.pages.map((p) => ({ id: p, r: ISLAND_PAGE_RADIUS, cell: pageCell })), ...held.sources.map((s) => ({ id: s, r: ISLAND_SOURCE_RADIUS, cell: sourceCell }))];
+      const dots = [
+        ...held.pages.map((p) => ({ id: p, r: pageRadius(p), cell: cellOf(pageRadius(p)) })),
+        ...held.sources.map((s) => ({ id: s, r: ISLAND_SOURCE_RADIUS, cell: sourceCell })),
+      ];
       dots.forEach((dot, index) => {
         // The i-th dot stands at the radius that encloses the area of every cell before it.
         const radius = Math.sqrt((area + dot.cell / 2) / Math.PI);
