@@ -110,6 +110,8 @@ export interface LibraryGraphFrame {
   hoveredIslandId?: string | null;
   /** The island the keyboard stands on: a focus ring outside its rim, as a mark gets one. */
   focusedIslandId?: string | null;
+  /** Filled by the name pass with the ids of the islands whose name was placed, for the probe. */
+  islandReport?: string[];
   /** Whether a page's name stands at rest; the overview names islands, not pages, until zoomed in. */
   pageLabels?: boolean;
   /** Draw only the edges of the mark being pointed at or held; the overview draws no line at rest. */
@@ -584,6 +586,7 @@ function drawIslandNames(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame
     if (box.x < 2 || box.x + box.width > frame.width - 2 || box.y < 2 || box.y + box.height > frame.height - 2) continue;
     if (placed.some((other) => overlaps(box, other))) continue;
     placed.push(box);
+    frame.islandReport?.push(island.id);
     // A ground plate under every name: inside, it stands on the dots; under, it can stand
     // on a neighbour's rim. Either way the name is read off the ground, not off the texture.
     ctx.fillStyle = ink.ground;

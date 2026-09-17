@@ -73,6 +73,9 @@ test("a folder past four hundred marks is a map of islands, every kind on it and
   const unread = islands.find((island) => island.kind === "unread")!;
   // 66 pages × 4 files = 264 read; the other 116 of 380 are the Unread island.
   expect(unread.sources, "the files no page read are the Unread island").toBe(116);
+  // Every island carries its name at this window.
+  const named = await page.evaluate(() => window.__atlasLibraryGraph!.islandNames());
+  expect(new Set(named).size, "an island lost its name to a collision").toBe(islands.length);
   // No page is named at rest on the overview: the names are the islands'.
   const pageNames = await page.evaluate(() => window.__atlasLibraryGraph!.labels().filter((label) => label.nodeId.startsWith("page:")).length);
   expect(pageNames).toBe(0);

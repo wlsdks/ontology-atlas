@@ -475,6 +475,8 @@ export function useLibraryGraphEngine({
     sources: island.sources,
   });
 
+  /** The ids of the islands whose name the last frame placed; armed only under the `e2e` probe. */
+  const islandReportRef = useRef<string[] | null>(null);
   /** Pages with at least one unverified citation, for the islands' stale counts. */
   const stalePagesRef = useRef<Set<string>>(new Set());
   /**
@@ -1015,6 +1017,7 @@ export function useLibraryGraphEngine({
       // The pass below appends; without this the measurement's array would be every
       // frame's names at once.
       if (labelReportRef.current) labelReportRef.current.length = 0;
+      if (islandReportRef.current) islandReportRef.current.length = 0;
       // The islands in canvas pixels, and how wide a page dot is on screen right now.
       const islands =
         pictureRef.current === "islands" && islandsRef.current
@@ -1089,6 +1092,7 @@ export function useLibraryGraphEngine({
         islands,
         hoveredIslandId: hoveredIslandRef.current,
         focusedIslandId: focusedIslandRef.current,
+        islandReport: islandReportRef.current ?? undefined,
         pageLabels: pictureRef.current !== "islands" || widestPagePx >= ISLAND_PAGE_LABEL_MIN_PX,
         focusEdgesOnly: pictureRef.current === "islands",
       });
@@ -1912,6 +1916,8 @@ export function useLibraryGraphEngine({
        * frame has run with the report armed, which the next line does.
        */
       labels: () => labelReportRef.current ?? [],
+      /** The islands whose name the last frame placed; a name that lost a collision is not here. */
+      islandNames: () => islandReportRef.current ?? [],
       /** Where the simulation is: above the floor it is still arranging itself. */
       alpha: () => simRef.current?.alpha ?? 0,
       /**
@@ -1957,9 +1963,11 @@ export function useLibraryGraphEngine({
       }),
     };
     labelReportRef.current = [];
+    islandReportRef.current = [];
     (window as unknown as { __atlasLibraryGraph?: typeof probe }).__atlasLibraryGraph = probe;
     return () => {
       labelReportRef.current = null;
+      islandReportRef.current = null;
       delete (window as unknown as { __atlasLibraryGraph?: typeof probe }).__atlasLibraryGraph;
     };
   }, []);

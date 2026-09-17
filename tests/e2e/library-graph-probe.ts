@@ -50,6 +50,8 @@ export interface LibraryGraphProbe {
   nodes: () => LibraryGraphProbeNode[];
   edges: () => LibraryGraphProbeEdge[];
   labels: () => LibraryGraphProbeLabel[];
+  /** The ids of the islands whose name the last frame placed. */
+  islandNames: () => string[];
   interaction: () => { kind: "idle" | "node" | "pan"; nodeId: string | null };
   view: () => { scale: number; x: number; y: number; width: number; height: number };
   /** The flow picture's columns as last laid, or null under the force layout. */
