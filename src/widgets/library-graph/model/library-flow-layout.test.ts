@@ -137,6 +137,35 @@ describe("flow layout", () => {
     expect(y("concept:refunds")).toBe((y("page:alpha") + y("page:gamma")) / 2);
   });
 
+  it("stands folded pages in stacks, each with the files its pages read directly to its left", () => {
+    const pages = Array.from({ length: 60 }, (_, i) => `p${String(i).padStart(2, "0")}`);
+    const sources = Array.from({ length: 120 }, (_, i) => `s${String(i).padStart(3, "0")}.md`);
+    // Page i reads files 2i and 2i+1; the pages fold into two sub-columns of thirty here.
+    const cites: Array<[string, string]> = pages.flatMap((p, i) => [[p, sources[2 * i]], [p, sources[2 * i + 1]]] as Array<[string, string]>);
+    const layout = flowLayout(graph({ sources, pages, cites }), { width: 600, height: 340, ceiling: 2 });
+    const page = layout.columns.find((column) => column.kind === "page")!;
+    expect(page.grid).toBe(2);
+    const x = (id: string) => layout.positions.get(id)!.x;
+    const firstStackPages = page.ids.slice(0, 30);
+    const secondStackPages = page.ids.slice(30);
+    const stackPageX = [x(firstStackPages[0]), x(secondStackPages[0])];
+    expect(stackPageX[1]).toBeGreaterThan(stackPageX[0]);
+    // Every file read by a first-stack page stands left of that stack's pages and right of nothing else;
+    // every file read by a second-stack page stands between the first stack's pages and its own.
+    for (const [p, s] of cites) {
+      const inFirst = firstStackPages.includes(`page:${p}`);
+      if (inFirst) expect(x(`source:${s}`)).toBeLessThan(stackPageX[0]);
+      else {
+        expect(x(`source:${s}`)).toBeGreaterThan(stackPageX[0]);
+        expect(x(`source:${s}`)).toBeLessThan(stackPageX[1]);
+      }
+    }
+    // Rows line up across a stack: a page and its files share the same set of rows.
+    const ys = new Set(page.ids.map((id) => layout.positions.get(id)!.y));
+    expect(ys.size).toBe(30);
+    expect(layout.extent.width).toBeGreaterThanOrEqual(600);
+  });
+
   it("lays a single node at the centre", () => {
     const layout = flowLayout(graph({ pages: ["only"] }), BOX);
     expect(layout.positions.get("page:only")).toEqual({ x: 500, y: 300 });

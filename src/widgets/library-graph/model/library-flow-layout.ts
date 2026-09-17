@@ -54,6 +54,8 @@ const WIDEST_MARK = 9;
 const NAME_GAP = 5;
 /** A breath between a name's end and the next thing, in screen px. */
 const BREATH_PX = 8;
+/** Between a stack's files and its pages, in world units: the lines have room to be lines. */
+const ISLAND_STACK_GAP = 40;
 
 const COLUMN_ORDER: readonly LibraryGraphNodeKind[] = ["source", "page", "concept"];
 
@@ -281,6 +283,81 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   }
   for (let index = anchorIndex - 1; index >= 0; index -= 1) {
     place(index, rowsFor(index, new Set(columns[index + 1].ids)));
+  }
+
+  /**
+   * **Folded pages stand in stacks, each with its own files** (2026-09-18). With the page
+   * column folded into sub-columns, every citation from the one file grid to the second
+   * or third sub-column ran straight across the names of the first — measured on an
+   * opened island of 53 pages and 209 files, three sub-columns, most lines crossing two
+   * columns of names. So the picture becomes a newspaper: for each page sub-column, the
+   * files those pages read stand as their own small grid directly to its left, and the
+   * concepts keep the right edge. A file read by pages in two stacks goes to the first,
+   * and its second line is the one long line the picture still allows. Files no page read
+   * stand in the last stack. The world widens to hold the stacks; the camera fits it.
+   */
+  const pageColumn = columns.find((column) => column.kind === "page");
+  const sourceColumn = columns.find((column) => column.kind === "source");
+  if (pageColumn && sourceColumn && pageColumn.grid > 1) {
+    const stacks = pageColumn.grid;
+    const rows = rowsOf(pageColumn.ids.length, stacks);
+    const pageIndex = new Map(pageColumn.ids.map((id, index) => [id, index]));
+    const stackOf = new Map<string, number>();
+    for (const id of sourceColumn.ids) {
+      const first = Math.min(...(neighbours.get(id) ?? []).map((other) => pageIndex.get(other) ?? Number.POSITIVE_INFINITY));
+      stackOf.set(id, Number.isFinite(first) ? Math.floor(first / rows) : stacks - 1);
+    }
+    const groups: string[][] = Array.from({ length: stacks }, () => []);
+    for (const id of sourceColumn.ids) groups[stackOf.get(id)!].push(id);
+    const groupGrid = groups.map((group) => Math.max(1, Math.ceil(group.length / rows)));
+    const breath = BREATH_PX / scale;
+    // Left to right: [room if named] files_k · breath · pages_k · room … then the concepts.
+    let x = FLOW_SIDE_PAD;
+    const stackX: Array<{ files: number; pages: number }> = [];
+    groups.forEach((group, k) => {
+      if (groupGrid[k] === 1 && group.length > 0) x += labelRoom;
+      const filesLeft = x;
+      x += (groupGrid[k] - 1) * FLOW_GRID_STEP;
+      const filesRight = x;
+      x += group.length > 0 ? breath + ISLAND_STACK_GAP : 0;
+      const pagesX = x;
+      // The mark, its gap, the name's room, a breath.
+      x += WIDEST_MARK * 2 + NAME_GAP + labelRoom + breath;
+      stackX.push({ files: (filesLeft + filesRight) / 2, pages: pagesX });
+    });
+    const conceptColumn = columns.find((column) => column.kind === "concept");
+    const conceptX = conceptColumn ? x + breath : null;
+    x += conceptColumn ? breath + labelRoom : 0;
+    const needed = x + FLOW_SIDE_PAD;
+    // Re-centre what was laid on the wider world; the fit takes the new extent.
+    const stackWidth = Math.max(width, needed);
+    const shift = (stackWidth - needed) / 2;
+    const rowYs = placeEven(rows);
+    pageColumn.ids.forEach((id, i) => {
+      const k = Math.floor(i / rows);
+      const point = positions.get(id)!;
+      positions.set(id, { x: stackX[k].pages + shift, y: point.y });
+    });
+    groups.forEach((group, k) => {
+      const left = stackX[k].files - ((groupGrid[k] - 1) * FLOW_GRID_STEP) / 2 + shift;
+      group.forEach((id, i) => {
+        const sub = Math.floor(i / rows);
+        const row = i % rows;
+        positions.set(id, { x: left + FLOW_GRID_STEP * sub, y: rowYs[Math.min(row, rowYs.length - 1)] });
+      });
+    });
+    if (conceptColumn && conceptX !== null) {
+      const dx = conceptX + shift - conceptColumn.x;
+      for (const id of conceptColumn.ids) {
+        const point = positions.get(id)!;
+        positions.set(id, { x: point.x + dx, y: point.y });
+      }
+      conceptColumn.x = conceptX + shift;
+    }
+    sourceColumn.x = stackX.reduce((sum, at) => sum + at.files, 0) / stackX.length + shift;
+    sourceColumn.grid = Math.max(...groupGrid);
+    pageColumn.x = stackX.reduce((sum, at) => sum + at.pages, 0) / stackX.length + shift;
+    return { positions, columns, rowGap, extent: { width: stackWidth, height }, scale };
   }
 
   return { positions, columns, rowGap, extent: { width, height }, scale };

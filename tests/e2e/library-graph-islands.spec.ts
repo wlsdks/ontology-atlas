@@ -93,7 +93,8 @@ test("a press on an island opens it as columns; the chip and Escape both return 
   await expect(page.getByTestId("library-graph-island-name")).toContainText("Payments");
   await expect
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph!.layout()?.columns.map((column) => column.kind) ?? null))
-    .toEqual(["source", "page", "concept"]);
+    // The island's own concept is not on its picture: every page names it, the bar says it.
+    .toEqual(["source", "page"]);
   await expect.poll(async () => page.evaluate(() => window.__atlasLibraryGraph!.islands())).toBeNull();
 
   await page.getByTestId("library-graph-island-back").click();

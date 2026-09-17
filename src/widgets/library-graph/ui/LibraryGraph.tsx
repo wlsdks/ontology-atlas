@@ -237,8 +237,9 @@ export function LibraryGraph({
   }, [pickedIsland, wholeGraph]);
   const graph = useMemo(() => {
     if (!island) return wholeGraph;
+    // The island's own concept is what every page on it names — the bar says so — so its
+    // ring and the dashed line from every page to it would be fifty lines saying one word.
     const keep = new Set<string>([...island.pages, ...island.sources]);
-    if (island.conceptId) keep.add(island.conceptId);
     const nodes = wholeGraph.nodes.filter((node) => keep.has(node.id));
     const edges = wholeGraph.edges.filter((edge) => keep.has(edge.source) && keep.has(edge.target));
     return {
