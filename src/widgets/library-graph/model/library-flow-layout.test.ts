@@ -17,16 +17,13 @@ function graph(input: { sources?: string[]; pages?: string[]; concepts?: string[
 }
 
 const BOX = { width: 1000, height: 600, ceiling: 1 };
-/** Where the outer columns stand: the side pad plus the room for a name beside them. */
-const FIRST = FLOW_SIDE_PAD + FLOW_LABEL_ROOM_PX;
-const LAST = BOX.width - FIRST;
 
 describe("flow layout", () => {
   it("puts sources left, pages in the middle, concepts right, spread across the width", () => {
     const layout = flowLayout(graph({ sources: ["a.md"], pages: ["a"], concepts: ["x"], cites: [["a", "a.md"]], mentions: [["a", "x"]] }), BOX);
     expect(layout.columns.map((column) => column.kind)).toEqual(["source", "page", "concept"]);
-    // The outer columns leave room for the names standing outside them; the middle is halfway.
-    expect(layout.columns.map((column) => column.x)).toEqual([FIRST, (FIRST + LAST) / 2, LAST]);
+    // The columns stand a capped gap apart (260px at this scale of 1), centred in the box.
+    expect(layout.columns.map((column) => column.x)).toEqual([500 - 260, 500, 500 + 260]);
     expect(layout.positions.get("page:a")?.y).toBe(300);
     expect(layout.extent).toEqual({ width: 1000, height: 600 });
   });
@@ -34,7 +31,7 @@ describe("flow layout", () => {
   it("drops an empty column and centres what remains, so two pages never sit in a corner", () => {
     const layout = flowLayout(graph({ sources: ["a.md", "b.md"], pages: ["a", "b"], cites: [["a", "a.md"], ["b", "b.md"]] }), BOX);
     expect(layout.columns.map((column) => column.kind)).toEqual(["source", "page"]);
-    expect(layout.columns.map((column) => column.x)).toEqual([FIRST, LAST]);
+    expect(layout.columns.map((column) => column.x)).toEqual([500 - 130, 500 + 130]);
     expect(layout.columns.every((column) => column.grid === 1)).toBe(true);
     const ys = ["page:a", "page:b"].map((id) => layout.positions.get(id)!.y);
     expect((ys[0] + ys[1]) / 2).toBe(300);
@@ -99,11 +96,13 @@ describe("flow layout", () => {
     const height = FLOW_ROW_MIN * 29 + FLOW_TOP_PAD * 2;
     expect(long.extent.height).toBe(height);
     expect(long.extent.width).toBeCloseTo(600 * (height / 340), 6);
-    // The camera will fit this at 2 · 340 / height; the 132px name room is that much wider in world units.
+    // The camera will fit this at 2 · 340 / height; the two columns stand the capped gap
+    // apart (260px, so 260 / scale in world units), centred in the wider world.
     const scale = 2 * (340 / height);
     expect(long.scale).toBeCloseTo(scale, 6);
-    expect(long.columns[0].x).toBeCloseTo(FLOW_SIDE_PAD + FLOW_LABEL_ROOM_PX / scale, 6);
-    expect(long.columns[1].x).toBeCloseTo(long.extent.width - FLOW_SIDE_PAD - FLOW_LABEL_ROOM_PX / scale, 6);
+    const gap = 260 / scale;
+    expect(long.columns[1].x - long.columns[0].x).toBeCloseTo(gap, 6);
+    expect((long.columns[0].x + long.columns[1].x) / 2).toBeCloseTo(long.extent.width / 2, 6);
   });
 
   it("folds a named column into sub-columns with room for its names once a row would drop under 18px", () => {

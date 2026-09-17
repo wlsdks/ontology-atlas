@@ -56,6 +56,8 @@ const NAME_GAP = 5;
 const BREATH_PX = 8;
 /** Between a stack's files and its pages, in world units: the lines have room to be lines. */
 const ISLAND_STACK_GAP = 40;
+/** The widest a gap between two columns may be, in screen px: past this a line says nothing along its length. */
+const FLOW_COLUMN_GAP_MAX = 260;
 
 const COLUMN_ORDER: readonly LibraryGraphNodeKind[] = ["source", "page", "concept"];
 
@@ -209,10 +211,19 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     scale = next;
   }
   const bandsTotal = bandWidths.reduce((sum, w) => sum + w, 0);
-  const gap = ordered.length > 1 ? (width - FLOW_SIDE_PAD * 2 - labelRoom * (leftRoom + 1) - bandsTotal) / (ordered.length - 1) : 0;
+  /*
+   * **A column stands no further from the next than a line can carry.** Spreading the
+   * columns to the box's edges filled a wide canvas, and on an opened island of 28 pages
+   * and 113 files drew every citation as a thousand-pixel harp string with nothing along
+   * it (owner screenshot, 2026-09-18: "is this the best expression?"). The gap is capped
+   * at `FLOW_COLUMN_GAP_MAX` and the picture is centred in what is left.
+   */
+  const spread = ordered.length > 1 ? (width - FLOW_SIDE_PAD * 2 - labelRoom * (leftRoom + 1) - bandsTotal) / (ordered.length - 1) : 0;
+  const gap = Math.min(spread, FLOW_COLUMN_GAP_MAX / scale);
+  const slack = ordered.length > 1 ? (spread - gap) * (ordered.length - 1) : 0;
   const columnX = (index: number): number => {
     if (ordered.length === 1) return width / 2;
-    let x = FLOW_SIDE_PAD + labelRoom * leftRoom;
+    let x = FLOW_SIDE_PAD + labelRoom * leftRoom + slack / 2;
     for (let i = 0; i < index; i += 1) x += bandWidths[i] + gap;
     return x + bandWidths[index] / 2;
   };
