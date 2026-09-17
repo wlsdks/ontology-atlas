@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Maximize2 } from "lucide-react";
+import { ArrowLeft, Maximize2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import type { VaultDoc } from "@/entities/docs-vault";
@@ -10,6 +10,8 @@ import { useRouter } from "@/i18n/navigation";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { cn } from "@/shared/lib/cn";
 import { ChromeTile } from "@/shared/ui";
+import { controlClass } from "@/shared/ui/control-class";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 import {
   buildLibraryGraph,
@@ -25,7 +27,7 @@ import {
   type LibraryGraphCardSide,
 } from "../model/library-graph-card";
 import { LibraryMarkPopover } from "./LibraryMarkPopover";
-import { useLibraryGraphEngine, type LibraryGraphCardBox } from "./use-library-graph-engine";
+import { useLibraryGraphEngine, type LibraryGraphCardBox, type LibraryIslandPick } from "./use-library-graph-engine";
 
 /**
  * **The library's graph — one live canvas of what this folder's write-ups are made of.**
@@ -215,10 +217,43 @@ export function LibraryGraph({
   const router = useRouter();
   const reducedMotion = usePrefersReducedMotion();
 
-  const graph = useMemo(
+  const wholeGraph = useMemo(
     () => buildLibraryGraph({ docs, wikiPages, sources }),
     [docs, sources, wikiPages],
   );
+  /**
+   * **The island a person stepped onto.** On a folder past `ISLANDS_MIN_MARKS` the home is a
+   * map of islands; a press on one narrows the picture to that island's own pages, files
+   * and concept, which is few enough for the flow to name every one — the map's "zoom in
+   * until the streets have names", done as one press and one way back. The narrowed graph
+   * is the whole graph filtered by id, so every fact on it is the folder's own.
+   */
+  const [pickedIsland, setIsland] = useState<LibraryIslandPick | null>(null);
+  // The island is a view of a folder; a folder that no longer holds any of it lets it go.
+  const island = useMemo(() => {
+    if (!pickedIsland) return null;
+    const ids = new Set(wholeGraph.nodes.map((node) => node.id));
+    return pickedIsland.pages.some((id) => ids.has(id)) || pickedIsland.sources.some((id) => ids.has(id)) ? pickedIsland : null;
+  }, [pickedIsland, wholeGraph]);
+  const graph = useMemo(() => {
+    if (!island) return wholeGraph;
+    const keep = new Set<string>([...island.pages, ...island.sources]);
+    if (island.conceptId) keep.add(island.conceptId);
+    const nodes = wholeGraph.nodes.filter((node) => keep.has(node.id));
+    const edges = wholeGraph.edges.filter((edge) => keep.has(edge.source) && keep.has(edge.target));
+    return {
+      nodes,
+      edges,
+      counts: {
+        sources: nodes.filter((node) => node.kind === "source").length,
+        pages: nodes.filter((node) => node.kind === "page").length,
+        concepts: nodes.filter((node) => node.kind === "concept").length,
+        cites: edges.filter((edge) => edge.relation === "cites").length,
+        mentions: edges.filter((edge) => edge.relation === "mentions").length,
+      },
+    };
+  }, [island, wholeGraph]);
+
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const cardRef = useRef<HTMLElement | null>(null);
@@ -342,6 +377,7 @@ export function LibraryGraph({
     onHover: setHoveredId,
     onPressMark: pressMark,
     onActivate: activate,
+    onPressIsland: setIsland,
     onDismiss: dismissCard,
   });
 
@@ -475,6 +511,24 @@ export function LibraryGraph({
             real button over the canvas rather than a painted mark, so it is reachable by
             the keyboard and measurable by every touch-target gate in the repository. */}
         <div className="relative flex min-h-0 flex-1 flex-col">
+        {island ? (
+          /* The way back off an island, and its name: one chip at the picture's top-left,
+             where a map app puts its own "back to overview". */
+          <div className="absolute left-2 top-2 z-10 flex items-center gap-2" data-testid="library-graph-island-bar">
+            <button
+              type="button"
+              data-testid="library-graph-island-back"
+              className={controlClass({ shape: "chip", tone: "muted" })}
+              onClick={() => setIsland(null)}
+            >
+              <ArrowLeft size={ICON_SIZE.sm} aria-hidden />
+              <span>{t("graph.islandBack")}</span>
+            </button>
+            <span className="text-label text-[color:var(--color-text-secondary)]" data-testid="library-graph-island-name">
+              {t("graph.islandName", { name: island.label, pages: island.pages.length, sources: island.sources.length })}
+            </span>
+          </div>
+        ) : null}
         <canvas
           ref={canvasRef}
           data-testid="library-graph-canvas"
@@ -541,6 +595,8 @@ export function LibraryGraph({
             } else if (event.key === "Escape") {
               // With a card open its own capture listener has already answered this press.
               setFocusedId(null);
+              // With nothing else open, Escape is the way back off an island.
+              if (cardId === null && island) setIsland(null);
             }
           }}
           /* Only the keyboard's own position leaves with the keyboard. A pointer that

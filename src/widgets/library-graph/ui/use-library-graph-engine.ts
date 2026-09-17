@@ -136,6 +136,17 @@ function islandsWorld(box: { width: number; height: number }): { width: number; 
     height: Math.max(1, (box.height - FIT_PADDING * 2) * shrink),
   };
 }
+/** The island under a canvas point on the overview; null off every island. */
+function islandAt(
+  islands: IslandsLayout["islands"] | undefined,
+  view: LibraryGraphView,
+  box: { width: number; height: number },
+  point: LayoutPoint,
+): IslandsLayout["islands"][number] | null {
+  if (!islands) return null;
+  const world = screenToWorld(point, view, box);
+  return islands.find((island) => Math.hypot(world.x - island.x, world.y - island.y) <= island.r) ?? null;
+}
 /** On the overview a page's name stands once its dot is this wide on screen. */
 const ISLAND_PAGE_LABEL_MIN_PX = 10;
 
@@ -273,6 +284,16 @@ export interface LibraryGraphCardBox {
   mark: { x: number; y: number; radius: number };
 }
 
+/** An island a press picked: what it stands for and who is on it. */
+export interface LibraryIslandPick {
+  id: string;
+  kind: "concept" | "folder" | "unsorted" | "unread";
+  label: string;
+  conceptId: string | null;
+  pages: readonly string[];
+  sources: readonly string[];
+}
+
 export interface LibraryGraphEngine {
   onPointerDown: (event: ReactPointerEvent<HTMLCanvasElement>) => void;
   onPointerMove: (event: ReactPointerEvent<HTMLCanvasElement>) => void;
@@ -317,6 +338,7 @@ export function useLibraryGraphEngine({
   onCardPlaced,
   onHover,
   onPressMark,
+  onPressIsland,
   onActivate,
   onDismiss,
   layout = "flow",
@@ -369,6 +391,8 @@ export function useLibraryGraphEngine({
   onHover: (id: string | null) => void;
   /** A press, or `Enter`: the mark answers with a card beside it, and stays where it is. */
   onPressMark: (node: LibraryGraphNode) => void;
+  /** A press on an island of the overview, off any dot: the caller opens that island. */
+  onPressIsland?: (island: LibraryIslandPick) => void;
   /** A double press: the shortcut past the card, straight to the page or the map. */
   onActivate: (node: LibraryGraphNode) => void;
   /** A press that landed on no mark. Whatever stands open is dismissed by it. */
@@ -380,6 +404,13 @@ export function useLibraryGraphEngine({
   const columnsRef = useRef<FlowLayout | null>(null);
   /** The islands of the overview as last laid, or null under any other picture. */
   const islandsRef = useRef<IslandsLayout | null>(null);
+  /** The island under the pointer on the overview, for its rim and the cursor. */
+  const hoveredIslandRef = useRef<string | null>(null);
+  const onPressIslandRef = useRef(onPressIsland);
+  useEffect(() => {
+    onPressIslandRef.current = onPressIsland;
+  }, [onPressIsland]);
+
   /** Pages with at least one unverified citation, for the islands' stale counts. */
   const stalePagesRef = useRef<Set<string>>(new Set());
   /**
@@ -949,6 +980,7 @@ export function useLibraryGraphEngine({
         flow,
         layout: pictureRef.current,
         islands,
+        hoveredIslandId: hoveredIslandRef.current,
         pageLabels: pictureRef.current !== "islands" || widestPagePx >= ISLAND_PAGE_LABEL_MIN_PX,
         focusEdgesOnly: pictureRef.current === "islands",
       });
@@ -1371,6 +1403,8 @@ export function useLibraryGraphEngine({
         { nodes: graphRef.current.nodes, positions: screenRef.current, radii: screenRadiiRef.current },
         point,
         coarsePointer() ? COARSE_HIT_REACH : undefined,
+        // On the overview a dot is pressable only once it is a mark; below that the island is.
+        pictureRef.current === "islands" ? ISLAND_PAGE_LABEL_MIN_PX / 2 : 0,
       ),
     [],
   );
@@ -1429,8 +1463,13 @@ export function useLibraryGraphEngine({
           if (coarsePointer()) onHoverRef.current(node.id);
           onPressMark(node);
         } else {
-          /* A press on the empty canvas dismisses what stands open, and pans nothing. */
-          onDismiss();
+          /* A press on an island of the overview opens it; on the empty canvas it dismisses
+             what stands open, and pans nothing. */
+          const island = pictureRef.current === "islands" ? islandAt(islandsRef.current?.islands, viewRef.current, boxRef.current, commit) : null;
+          if (island && onPressIslandRef.current) {
+            onDismiss();
+            onPressIslandRef.current({ id: island.id, kind: island.kind, label: island.label, conceptId: island.conceptId, pages: island.pages, sources: island.sources });
+          } else onDismiss();
         }
       }
       wake();
@@ -1528,9 +1567,15 @@ export function useLibraryGraphEngine({
       if (state.phase === "idle") {
         const hit = hitTest(point);
         if (hit?.id !== stateRef.current.hoveredId) onHoverRef.current(hit?.id ?? null);
+        // On the overview an island is the thing under the pointer when no dot is.
+        const island = hit || pictureRef.current !== "islands" ? null : islandAt(islandsRef.current?.islands, viewRef.current, boxRef.current, point);
+        if ((island?.id ?? null) !== hoveredIslandRef.current) {
+          hoveredIslandRef.current = island?.id ?? null;
+          wake();
+        }
         // Nothing else on this canvas says a dot can be pressed, and no gate can see a
         // cursor over a painted mark (`cursor-affordance.spec.ts` measures DOM elements).
-        event.currentTarget.style.cursor = hit ? "pointer" : "grab";
+        event.currentTarget.style.cursor = hit || island ? "pointer" : "grab";
         return;
       }
 
@@ -1598,7 +1643,11 @@ export function useLibraryGraphEngine({
 
   const onPointerLeave = useCallback(() => {
     if (pointerRef.current.phase === "idle") onHoverRef.current(null);
-  }, []);
+    if (hoveredIslandRef.current !== null) {
+      hoveredIslandRef.current = null;
+      wake();
+    }
+  }, [wake]);
 
   const onDoubleClick = useCallback(
     (event: ReactPointerEvent<HTMLCanvasElement>) => {

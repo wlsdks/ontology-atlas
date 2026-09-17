@@ -61,7 +61,7 @@ import type { LibraryGraphInk } from "./library-graph-ink";
  * ring and different by its ink, which are both measurable; a bloom is neither.
  */
 
-export interface LibraryGraphIsland {
+interface LibraryGraphIsland {
   id: string;
   kind: "concept" | "folder" | "unsorted" | "unread";
   label: string;
@@ -106,6 +106,8 @@ export interface LibraryGraphFrame {
    * name, and the one thing a person can read at rest on a folder of thousands.
    */
   islands?: readonly LibraryGraphIsland[];
+  /** The island under the pointer: its rim lights, the way a mark's hover ring does. */
+  hoveredIslandId?: string | null;
   /** Whether a page's name stands at rest; the overview names islands, not pages, until zoomed in. */
   pageLabels?: boolean;
   /** Draw only the edges of the mark being pointed at or held; the overview draws no line at rest. */
@@ -522,8 +524,9 @@ function drawIslands(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, in
     ctx.arc(island.x, island.y, island.r, 0, Math.PI * 2);
     ctx.fillStyle = ink.pageHalo;
     ctx.fill();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = ink.labelBorder;
+    const hovered = island.id === frame.hoveredIslandId;
+    ctx.lineWidth = hovered ? 1.5 : 1;
+    ctx.strokeStyle = hovered ? ink.selectedRing : ink.labelBorder;
     ctx.setLineDash(island.kind === "unread" ? [3, 3] : []);
     ctx.stroke();
     ctx.setLineDash([]);
@@ -574,16 +577,26 @@ export function hitTestLibraryGraph(
   point: LayoutPoint,
   /** Extra reach around the mark. The caller widens it for a coarse pointer. */
   reachBonus: number = FINE_HIT_REACH,
+  /**
+   * The least a mark may be, on screen, to be the thing under the pointer. On the overview
+   * a dot two pixels across is texture, and the island it sits on is what a press means;
+   * once the camera has closed in and a dot is a mark, it is pressable again.
+   */
+  minRadius = 0,
 ): LibraryGraphNode | null {
   let best: LibraryGraphNode | null = null;
   let bestDistance = Infinity;
   for (const node of frame.nodes) {
     const centre = frame.positions.get(node.id);
     if (!centre) continue;
+    const radius = radiusOf(frame, node);
+    // A mark with no radius is a concept standing for its island on the overview: the
+    // island is what a press lands on, not the point at its centre.
+    if (radius <= 0 || radius < minRadius) continue;
     const dx = point.x - centre.x;
     const dy = point.y - centre.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    const reach = radiusOf(frame, node) + reachBonus;
+    const reach = radius + reachBonus;
     if (distance <= reach && distance < bestDistance) {
       best = node;
       bestDistance = distance;

@@ -39,7 +39,7 @@ const ISLAND_GAP = 10;
 const ISLAND_MARGIN = 3;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
-export interface Island {
+interface Island {
   id: string;
   kind: "concept" | "folder" | "unsorted" | "unread";
   label: string;
