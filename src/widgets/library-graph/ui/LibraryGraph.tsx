@@ -229,6 +229,8 @@ export function LibraryGraph({
    * is the whole graph filtered by id, so every fact on it is the folder's own.
    */
   const [pickedIsland, setIsland] = useState<LibraryIslandPick | null>(null);
+  /** The island under the pointer, for the legend's line: what this island is, in one sentence. */
+  const [hoveredIsland, setHoveredIsland] = useState<LibraryIslandPick | null>(null);
   // The island is a view of a folder; a folder that no longer holds any of it lets it go.
   const island = useMemo(() => {
     if (!pickedIsland) return null;
@@ -379,6 +381,7 @@ export function LibraryGraph({
     onPressMark: pressMark,
     onActivate: activate,
     onPressIsland: setIsland,
+    onHoverIsland: setHoveredIsland,
     onDismiss: dismissCard,
   });
 
@@ -734,8 +737,8 @@ export function LibraryGraph({
               122, S19). The vocabulary is the half a reader still needs and is kept
               verbatim; only the gesture clause is swapped, for the two ways back out.
             */}
-            {activeNode && engine.picture === "islands" && activeNode.kind === "concept"
-              ? t("graph.describeIsland", { name: activeNode.label })
+            {!activeNode && hoveredIsland && engine.picture === "islands"
+              ? t("graph.describeIsland", { name: hoveredIsland.label, pages: hoveredIsland.pages.length, sources: hoveredIsland.sources.length })
               : activeNode
               ? /* The mark whose card is open is described by how to leave it, not by how
                    to open it; pointing at some *other* mark while a card stands open still

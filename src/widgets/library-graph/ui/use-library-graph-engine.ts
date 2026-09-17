@@ -344,6 +344,7 @@ export function useLibraryGraphEngine({
   onHover,
   onPressMark,
   onPressIsland,
+  onHoverIsland,
   onActivate,
   onDismiss,
   layout = "flow",
@@ -398,6 +399,8 @@ export function useLibraryGraphEngine({
   onPressMark: (node: LibraryGraphNode) => void;
   /** A press on an island of the overview, off any dot: the caller opens that island. */
   onPressIsland?: (island: LibraryIslandPick) => void;
+  /** The island under the pointer changed; null once the pointer is off every island. */
+  onHoverIsland?: (island: LibraryIslandPick | null) => void;
   /** A double press: the shortcut past the card, straight to the page or the map. */
   onActivate: (node: LibraryGraphNode) => void;
   /** A press that landed on no mark. Whatever stands open is dismissed by it. */
@@ -412,9 +415,19 @@ export function useLibraryGraphEngine({
   /** The island under the pointer on the overview, for its rim and the cursor. */
   const hoveredIslandRef = useRef<string | null>(null);
   const onPressIslandRef = useRef(onPressIsland);
+  const onHoverIslandRef = useRef(onHoverIsland);
   useEffect(() => {
     onPressIslandRef.current = onPressIsland;
-  }, [onPressIsland]);
+    onHoverIslandRef.current = onHoverIsland;
+  }, [onHoverIsland, onPressIsland]);
+  const pick = (island: IslandsLayout["islands"][number]): LibraryIslandPick => ({
+    id: island.id,
+    kind: island.kind,
+    label: island.label,
+    conceptId: island.conceptId,
+    pages: island.pages,
+    sources: island.sources,
+  });
 
   /** Pages with at least one unverified citation, for the islands' stale counts. */
   const stalePagesRef = useRef<Set<string>>(new Set());
@@ -1473,7 +1486,7 @@ export function useLibraryGraphEngine({
           const island = pictureRef.current === "islands" ? islandAt(islandsRef.current?.islands, viewRef.current, boxRef.current, commit) : null;
           if (island && onPressIslandRef.current) {
             onDismiss();
-            onPressIslandRef.current({ id: island.id, kind: island.kind, label: island.label, conceptId: island.conceptId, pages: island.pages, sources: island.sources });
+            onPressIslandRef.current(pick(island));
           } else onDismiss();
         }
       }
@@ -1576,6 +1589,7 @@ export function useLibraryGraphEngine({
         const island = hit || pictureRef.current !== "islands" ? null : islandAt(islandsRef.current?.islands, viewRef.current, boxRef.current, point);
         if ((island?.id ?? null) !== hoveredIslandRef.current) {
           hoveredIslandRef.current = island?.id ?? null;
+          onHoverIslandRef.current?.(island ? pick(island) : null);
           wake();
         }
         // Nothing else on this canvas says a dot can be pressed, and no gate can see a
@@ -1650,6 +1664,7 @@ export function useLibraryGraphEngine({
     if (pointerRef.current.phase === "idle") onHoverRef.current(null);
     if (hoveredIslandRef.current !== null) {
       hoveredIslandRef.current = null;
+      onHoverIslandRef.current?.(null);
       wake();
     }
   }, [wake]);
