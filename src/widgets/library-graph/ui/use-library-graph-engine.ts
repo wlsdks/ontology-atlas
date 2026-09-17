@@ -452,6 +452,15 @@ export function useLibraryGraphEngine({
   }, [onHoverIsland, onLeaveIsland, onPressIsland]);
   /** The scale the fit last asked for; what "zoomed out past the fit" is measured against. */
   const fitScaleRef = useRef(1);
+  /**
+   * **A picture changing under the same marks travels, it does not cut.** Opening an island
+   * keeps every mark on it and lays it again as columns; closing one lays the map again.
+   * The marks that are on both pictures ease from where they stood to where they stand
+   * now over one `--motion-settle`, while the ones leaving fade as ghosts and the ones
+   * arriving fade in, and the camera eases to the new fit — one input, one event, every
+   * part starting on the same frame. Reduced motion snaps, as the camera does.
+   */
+  const travelRef = useRef<{ from: Map<string, LayoutPoint>; since: number } | null>(null);
   const pick = (island: IslandsLayout["islands"][number]): LibraryIslandPick => ({
     id: island.id,
     kind: island.kind,
@@ -803,6 +812,18 @@ export function useLibraryGraphEngine({
       publishFramed(isSameView(view, fitTarget));
 
       const world = libraryPositions(sim);
+      const travel = travelRef.current;
+      if (travel) {
+        const t = (now - travel.since) / Math.max(1, motionRef.current.settle);
+        if (t >= 1 || stateRef.current.reducedMotion) travelRef.current = null;
+        else {
+          const eased = easeMotion(t);
+          for (const [id, start] of travel.from) {
+            const end = world.get(id);
+            if (end) world.set(id, { x: start.x + (end.x - start.x) * eased, y: start.y + (end.y - start.y) * eased });
+          }
+        }
+      }
       const screen = new Map<string, LayoutPoint>();
       for (const [id, point] of world) screen.set(id, worldToScreen(point, view, box));
       // A mark's drawn size is its world radius through the same camera its position goes
@@ -1170,6 +1191,7 @@ export function useLibraryGraphEngine({
       }
       const settling =
         busy ||
+        travelRef.current !== null ||
         dimRef.current.value !== dimRef.current.target ||
         ghostsRef.current.size > 0 ||
         (autoFitRef.current.on && !autoFitRef.current.converged) ||
@@ -1312,7 +1334,8 @@ export function useLibraryGraphEngine({
       radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
     pictureRef.current = layoutRef.current === "flow" && overviewRef.current && graph.nodes.length >= ISLANDS_MIN_MARKS ? "islands" : layoutRef.current;
     setPicture(pictureRef.current);
-    const layPicture = (sim: LibrarySimulation) => {
+    const layPicture = (sim: LibrarySimulation, travelling: boolean) => {
+      const from = travelling && !reducedMotion ? libraryPositions(sim) : null;
       if (pictureRef.current === "islands") {
         columnsRef.current = null;
         islandsRef.current = applyLibraryIslandsLayout(sim, graph, islandsWorld(box), islandLabelsRef.current);
@@ -1323,6 +1346,12 @@ export function useLibraryGraphEngine({
       } else {
         islandsRef.current = null;
         columnsRef.current = applyLibraryFlowLayout(sim, graph, flowWorld(box, zoomMaxRef.current));
+      }
+      if (from && from.size > 0) {
+        // Only marks on both pictures travel; the rest are ghosts or arrivals.
+        const ids = new Set(sim.nodes.map((node) => node.id));
+        for (const id of [...from.keys()]) if (!ids.has(id)) from.delete(id);
+        travelRef.current = from.size > 0 ? { from, since: typeof performance === "undefined" ? 0 : performance.now() } : null;
       }
       autoFitRef.current = { on: true, converged: false };
     };
@@ -1336,13 +1365,13 @@ export function useLibraryGraphEngine({
        * animation slowed down; it is the same picture, arrived at synchronously, which is
        * exactly what the one-shot layout used to give everybody.
        */
-      if (pictureRef.current !== "force") layPicture(sim);
+      if (pictureRef.current !== "force") layPicture(sim, false);
       else if (reducedMotion) settleLibrarySimulation(sim);
       autoFitRef.current = { on: true, converged: false };
     } else {
       const changed = syncLibrarySimulation(existing, graph);
       // The columns are recomputed whole: a new page changes every row under it.
-      if (pictureRef.current !== "force") layPicture(existing);
+      if (pictureRef.current !== "force") layPicture(existing, true);
       const now = typeof performance === "undefined" ? 0 : performance.now();
       for (const gone of changed.removed) {
         const node = ghostsRef.current.get(gone.id)?.node ?? lastKnownRef.current.get(gone.id);
@@ -1879,6 +1908,7 @@ export function useLibraryGraphEngine({
       arriving: () =>
         (autoFitRef.current.on && !autoFitRef.current.converged) ||
         pendingBoxRef.current !== null ||
+        travelRef.current !== null ||
         (simRef.current?.nodes.some((node) => node.entered < 1) ?? false),
       /**
        * The open card's placement in canvas CSS pixels, with the mark it hangs from.
