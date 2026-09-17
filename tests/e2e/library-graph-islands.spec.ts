@@ -142,3 +142,22 @@ test("zooming the wheel out of an opened island returns the map", async ({ page 
   await expect(bar, "zooming out of the island did not return the map").toBeHidden();
   await expect.poll(async () => page.evaluate(() => (window.__atlasLibraryGraph!.islands() ?? []).length)).toBeGreaterThan(3);
 });
+
+test("the keyboard walks the islands: arrows step, Enter opens, Escape returns", async ({ page }) => {
+  await openMap(page);
+  const canvas = page.getByTestId("library-graph-canvas");
+  await canvas.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  // The legend line names the island the keyboard stands on.
+  await expect(page.getByTestId("library-graph-hint")).toContainText(/pages and .* files/);
+  await page.keyboard.press("Enter");
+  const bar = page.getByTestId("library-graph-island-bar");
+  await expect(bar, "Enter on a focused island did not open it").toBeVisible();
+  await expect
+    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph!.layout()?.columns.map((column) => column.kind) ?? null))
+    .toEqual(["source", "page"]);
+  await canvas.focus();
+  await page.keyboard.press("Escape");
+  await expect(bar).toBeHidden();
+});

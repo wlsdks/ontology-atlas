@@ -331,6 +331,8 @@ export interface LibraryGraphEngine {
   pictureAspect: number | null;
   /** The picture the folder got: `flow` names everything, `islands` is the overview past `ISLANDS_MIN_MARKS`. */
   picture: "flow" | "force" | "islands";
+  /** The islands of the overview, largest first, for the keyboard to step over; empty on any other picture. */
+  islands: readonly LibraryIslandPick[];
   /**
    * Places the open card now, synchronously — what a layout effect calls on open, passing
    * the card's own id because this hook's own state ref is not filled until after it.
@@ -363,6 +365,7 @@ export function useLibraryGraphEngine({
   layout = "flow",
   islandLabels = { unsorted: "Unsorted", unread: "Unread" },
   overview = true,
+  focusedIslandId = null,
 }: {
   graph: LibraryGraph;
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -379,6 +382,8 @@ export function useLibraryGraphEngine({
    * however many marks it holds, because the person asked for that island by name.
    */
   overview?: boolean;
+  /** The island the keyboard stands on; its rim wears the focus ring. */
+  focusedIslandId?: string | null;
   reducedMotion: boolean;
   selectedId: string | null;
   hoveredId: string | null;
@@ -604,6 +609,8 @@ export function useLibraryGraphEngine({
   const [pictureAspect, setPictureAspect] = useState<number | null>(null);
   /** Which picture the folder got, for the legend: the flow names things, the islands do not. */
   const [picture, setPicture] = useState<"flow" | "force" | "islands">(layout);
+  const [islandsList, setIslandsList] = useState<readonly LibraryIslandPick[]>([]);
+  const focusedIslandRef = useRef(focusedIslandId);
 
   /**
    * **Whether the picture is already framed**, published for the fit tile.
@@ -1081,6 +1088,7 @@ export function useLibraryGraphEngine({
         layout: pictureRef.current,
         islands,
         hoveredIslandId: hoveredIslandRef.current,
+        focusedIslandId: focusedIslandRef.current,
         pageLabels: pictureRef.current !== "islands" || widestPagePx >= ISLAND_PAGE_LABEL_MIN_PX,
         focusEdgesOnly: pictureRef.current === "islands",
       });
@@ -1145,6 +1153,11 @@ export function useLibraryGraphEngine({
     lastPaintRef.current = 0;
     frameRef.current = requestAnimationFrame((now) => stepRef.current(now));
   }, []);
+  // The keyboard's island changed: one frame, so its ring moves with it.
+  useEffect(() => {
+    focusedIslandRef.current = focusedIslandId;
+    wake();
+  }, [focusedIslandId, wake]);
 
   const currentActivitySignature = activitySignature(activity);
   useEffect(() => {
@@ -1343,8 +1356,10 @@ export function useLibraryGraphEngine({
         // still ends with a page as wide as a mark on the flow.
         radiiRef.current = islandsRef.current.radii;
         zoomMaxRef.current = radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
+        setIslandsList(islandsRef.current.islands.map(pick));
       } else {
         islandsRef.current = null;
+        setIslandsList([]);
         columnsRef.current = applyLibraryFlowLayout(sim, graph, flowWorld(box, zoomMaxRef.current));
       }
       if (from && from.size > 0) {
@@ -1960,6 +1975,7 @@ export function useLibraryGraphEngine({
     framed,
     pictureAspect,
     picture,
+    islands: islandsList,
     placeCard,
   };
 }

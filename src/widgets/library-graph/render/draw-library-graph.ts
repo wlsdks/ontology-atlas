@@ -108,6 +108,8 @@ export interface LibraryGraphFrame {
   islands?: readonly LibraryGraphIsland[];
   /** The island under the pointer: its rim lights, the way a mark's hover ring does. */
   hoveredIslandId?: string | null;
+  /** The island the keyboard stands on: a focus ring outside its rim, as a mark gets one. */
+  focusedIslandId?: string | null;
   /** Whether a page's name stands at rest; the overview names islands, not pages, until zoomed in. */
   pageLabels?: boolean;
   /** Draw only the edges of the mark being pointed at or held; the overview draws no line at rest. */
@@ -547,6 +549,13 @@ function drawIslands(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, in
     ctx.setLineDash(island.kind === "unread" ? [3, 3] : []);
     ctx.stroke();
     ctx.setLineDash([]);
+    if (island.id === frame.focusedIslandId) {
+      ctx.beginPath();
+      ctx.strokeStyle = ink.selectedRing;
+      ctx.lineWidth = 2;
+      ctx.arc(island.x, island.y, island.r + FOCUS_RING_GAP, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
   ctx.globalAlpha = 1;
 }

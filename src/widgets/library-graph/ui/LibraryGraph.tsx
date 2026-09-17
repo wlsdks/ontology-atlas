@@ -232,6 +232,8 @@ export function LibraryGraph({
   /** The island under the pointer, for the legend's line: what this island is, in one sentence. */
   const [hoveredIsland, setHoveredIsland] = useState<LibraryIslandPick | null>(null);
   const leaveIsland = useCallback(() => setIsland(null), []);
+  /** The island the keyboard stands on, on the overview; arrows step, Enter opens. */
+  const [focusedIslandId, setFocusedIslandId] = useState<string | null>(null);
   // The island is a view of a folder; a folder that no longer holds any of it lets it go.
   const island = useMemo(() => {
     if (!pickedIsland) return null;
@@ -385,6 +387,7 @@ export function LibraryGraph({
     overview: island === null,
     onHoverIsland: setHoveredIsland,
     onLeaveIsland: leaveIsland,
+    focusedIslandId,
     onDismiss: dismissCard,
   });
 
@@ -410,6 +413,17 @@ export function LibraryGraph({
   );
 
   const ordered = graph.nodes;
+  const focusedIsland = engine.islands.find((candidate) => candidate.id === focusedIslandId) ?? null;
+  const stepIsland = useCallback(
+    (delta: number) => {
+      const list = engine.islands;
+      if (list.length === 0) return;
+      const current = list.findIndex((candidate) => candidate.id === focusedIslandId);
+      const next = current === -1 ? (delta > 0 ? 0 : list.length - 1) : (current + delta + list.length) % list.length;
+      setFocusedIslandId(list[next]?.id ?? null);
+    },
+    [engine.islands, focusedIslandId],
+  );
   const stepFocus = useCallback(
     (delta: number) => {
       if (ordered.length === 0) return;
@@ -425,7 +439,15 @@ export function LibraryGraph({
    * **what Enter will do** — the one thing a bare title cannot say, and the one thing that
    * differs between a dot that selects here and a dot that leaves for the map.
    */
-  const announcement = activeNode
+  const announcement = focusedIsland && engine.picture === "islands"
+    ? t("graph.announceIsland", {
+        name: focusedIsland.label,
+        position: engine.islands.indexOf(focusedIsland) + 1,
+        total: engine.islands.length,
+        pages: focusedIsland.pages.length,
+        sources: focusedIsland.sources.length,
+      })
+    : activeNode
     ? t("graph.announce", {
         kind: t(`graph.kind.${activeNode.kind}`),
         name: activeNode.label,
@@ -589,12 +611,20 @@ export function LibraryGraph({
           onPointerLeave={engine.onPointerLeave}
           onDoubleClick={engine.onDoubleClick}
           onKeyDown={(event) => {
+            // On the overview the keyboard walks the islands, not three thousand dots.
+            const onIslands = engine.picture === "islands";
             if (event.key === "ArrowRight" || event.key === "ArrowDown") {
               event.preventDefault();
-              stepFocus(1);
+              if (onIslands) stepIsland(1);
+              else stepFocus(1);
             } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
               event.preventDefault();
-              stepFocus(-1);
+              if (onIslands) stepIsland(-1);
+              else stepFocus(-1);
+            } else if ((event.key === "Enter" || event.key === " ") && onIslands && focusedIsland) {
+              event.preventDefault();
+              setFocusedIslandId(null);
+              setIsland(focusedIsland);
             } else if (event.key === "Enter" || event.key === " ") {
               const target = activeNode;
               if (!target) return;
@@ -605,6 +635,7 @@ export function LibraryGraph({
             } else if (event.key === "Escape") {
               // With a card open its own capture listener has already answered this press.
               setFocusedId(null);
+              setFocusedIslandId(null);
               // With nothing else open, Escape is the way back off an island.
               if (cardId === null && island) setIsland(null);
             }
@@ -617,6 +648,7 @@ export function LibraryGraph({
              keyboard back to the top of the walk instead of to the mark it had been on. */
           onBlur={() => {
             if (cardId === null) setFocusedId(null);
+            setFocusedIslandId(null);
           }}
         />
         {cardNode ? (
@@ -740,8 +772,8 @@ export function LibraryGraph({
               122, S19). The vocabulary is the half a reader still needs and is kept
               verbatim; only the gesture clause is swapped, for the two ways back out.
             */}
-            {!activeNode && hoveredIsland && engine.picture === "islands"
-              ? t("graph.describeIsland", { name: hoveredIsland.label, pages: hoveredIsland.pages.length, sources: hoveredIsland.sources.length })
+            {!activeNode && (hoveredIsland ?? focusedIsland) && engine.picture === "islands"
+              ? t("graph.describeIsland", { name: (hoveredIsland ?? focusedIsland)!.label, pages: (hoveredIsland ?? focusedIsland)!.pages.length, sources: (hoveredIsland ?? focusedIsland)!.sources.length })
               : activeNode
               ? /* The mark whose card is open is described by how to leave it, not by how
                    to open it; pointing at some *other* mark while a card stands open still
