@@ -817,63 +817,57 @@ test.describe("the Library pane", () => {
     await expect(tip).toContainText("kept byte for byte");
 
     /*
-     * ⚠️ **The head is one row, and the fold stands on the title's own line** (owner,
+     * ⚠️ **The fold and the glyph stand in the strip, on the tabs' own line** (owner,
      * 2026-09-12: *"the fold icon's size and position — why is it like this? It should be
-     * centred the same as the text beside it, and bigger. And a label like 'in this
-     * folder' is not even needed"*).
+     * centred the same as the text beside it, and bigger"*; and 2026-09-17, twice: the strip
+     * carries no name, so the column's head lost its title row and its two controls moved
+     * up into the strip's right end, `library-strip-tools`, where the tabs are).
      *
-     * Measured at 1512 before the change: an `IN THIS FOLDER` eyebrow on its own 14px row,
-     * with the fold sitting on that row — 9px of ink whose centre was **29.5px above** the
-     * title's, and a right edge 4px past the column's box edge. All three are geometry, so
-     * all three are measured here rather than trusted to a class name.
-     *
-     * The ink ratio is the part that would rot quietly: `ICON_SIZE.sm` is still what most
-     * of this column's glyphs take, and a copy-paste back to it would leave every other
-     * assertion green. The bound is the title's own ink height, which is what the glyph is
-     * being sized to.
+     * Measured at 1512 before the 2026-09-12 change: a fold whose centre was **29.5px
+     * above** the text beside it and a right edge 4px past the box edge. The same three
+     * facts are measured against the new seat: the two glyphs are centred on the selected
+     * tab's row, the fold stops at the strip's inner edge, and the two are one size step.
      */
     const headGeometry = await page.evaluate(() => {
       const box = (el: Element | null) => {
         if (el === null) return null;
         const r = el.getBoundingClientRect();
-        return { y: r.y, bottom: r.bottom, right: r.right, cy: r.y + r.height / 2, h: r.height };
+        return { y: r.y, bottom: r.bottom, right: r.right, cy: r.y + r.height / 2, h: r.height, w: r.width };
       };
       const header = document.querySelector('[data-testid="library-header"]')!;
-      const title = header.querySelector("p")!;
+      const tools = document.querySelector('[data-testid="library-strip-tools"]')!;
+      const strip = tools.closest("header")!;
+      const tab = document.querySelector('[data-testid="library-workspace-sources"]')!;
+      const info = document.querySelector('[data-testid="library-lede-info"]')!;
       const fold = document.querySelector('[data-testid="library-index-collapse"]')!;
-      const svg = fold.querySelector("svg")!;
-      const style = getComputedStyle(title);
-      const metrics = document
-        .createElement("canvas")
-        .getContext("2d")!;
-      metrics.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-      const measured = metrics.measureText(title.textContent ?? "");
-      const viewBox = (svg.getAttribute("viewBox") ?? "0 0 24 24").split(/\s+/).map(Number);
-      const bbox = (svg as SVGGraphicsElement).getBBox();
       return {
-        header: box(header),
-        title: box(title),
+        inStrip: tools.contains(header),
+        visibleTitles: [...header.querySelectorAll("p")].filter((p) => p.getBoundingClientRect().width > 1).length,
+        strip: box(strip),
+        stripPaddingRight: parseFloat(getComputedStyle(tools).paddingRight),
+        tab: box(tab),
+        info: box(info),
         fold: box(fold),
-        eyebrowRows: header.querySelectorAll("p").length - 1,
-        titleInk: measured.actualBoundingBoxAscent + measured.actualBoundingBoxDescent,
-        glyphInk: (bbox.height * svg.getBoundingClientRect().width) / (viewBox[2] || 24),
+        infoGlyph: box(info.querySelector("svg")),
+        foldGlyph: box(fold.querySelector("svg")),
       };
     });
-    // Nothing above the title: the head's box starts where the title's does.
-    expect(headGeometry.eyebrowRows, "no eyebrow paragraph in the head").toBe(0);
-    expect(Math.abs(headGeometry.header!.y - headGeometry.title!.y)).toBeLessThanOrEqual(0.5);
+    expect(headGeometry.inStrip, "the column's head is seated in the strip").toBe(true);
+    // No name in the strip: the head's title is for assistive tech only.
+    expect(headGeometry.visibleTitles, "no visible title beside the tabs").toBe(0);
     expect(
-      Math.abs(headGeometry.fold!.cy - headGeometry.title!.cy),
-      "the fold is centred on the title's row",
+      Math.abs(headGeometry.fold!.cy - headGeometry.tab!.cy),
+      "the fold is centred on the tabs' row",
     ).toBeLessThanOrEqual(1);
     expect(
-      Math.abs(headGeometry.fold!.right - headGeometry.header!.right),
-      "the fold stops at the column's box edge",
+      Math.abs(headGeometry.info!.cy - headGeometry.tab!.cy),
+      "the glyph is centred on the tabs' row",
+    ).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(headGeometry.fold!.right + headGeometry.stripPaddingRight - headGeometry.strip!.right),
+      "the fold stops at the strip's inner edge",
     ).toBeLessThanOrEqual(0.5);
-    const inkRatio = headGeometry.glyphInk / headGeometry.titleInk;
-    expect(inkRatio, `glyph ink ${headGeometry.glyphInk} vs title ink ${headGeometry.titleInk}`)
-      .toBeGreaterThan(0.85);
-    expect(inkRatio).toBeLessThan(1.15);
+    expect(headGeometry.foldGlyph!.w, "the fold and the glyph are one size step").toBe(headGeometry.infoGlyph!.w);
     /*
      * ⚠️ **And it yields the moment the pointer moves, including onto the panel itself.**
      * Radix's default keeps a tooltip open while the pointer is over its content, and that

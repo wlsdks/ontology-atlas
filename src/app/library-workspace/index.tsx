@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { LibraryConstellations, LibraryPage, LibraryRounds, useLibraryRounds } from '@/views/library';
 import { useLocalVault } from '@/entities/vault-session';
@@ -36,6 +36,13 @@ export function LibraryWorkspace() {
     ? requested
     : requested === 'sources' || requested === 'wiki' ? requested : preferredSegment;
   const handle = selectOpenVaultHandle(vault.status, vault.handle);
+  /**
+   * The strip's right end is empty past its last tab; the Library's info glyph and the
+   * column fold stand there, portalled by `LibraryPage` so their state stays where it is.
+   * Measured 2026-09-17 (design pass): with them in the column's head, that head was 105px
+   * for a 28px field.
+   */
+  const [toolsHost, setToolsHost] = useState<HTMLDivElement | null>(null);
 
   const selectTab = useCallback((next: LibraryTab) => {
     if (next === tab) return;
@@ -98,6 +105,13 @@ export function LibraryWorkspace() {
             },
           ]}
         />
+        {/*
+          The column's two controls (the glyph, the fold) sit here, on the tabs' own row:
+          the tabs stand on the strip's bottom edge at `--control-h-lg`, so this box takes
+          the same seat and height rather than the strip's centre — measured 2026-09-18,
+          centring on the strip put the glyphs 8.5px above the tab text.
+        */}
+        <div ref={setToolsHost} data-testid="library-strip-tools" className="ml-auto flex min-h-[var(--control-h-lg)] shrink-0 items-center gap-1 self-end pr-3" />
       </header>
       <div
         id={'library-workspace-tabpanel-' + tab}
@@ -112,7 +126,7 @@ export function LibraryWorkspace() {
         ) : tab === 'rounds' ? (
           <LibraryRounds />
         ) : (
-          <LibraryPage segment={tab} onSegmentChange={selectTab} />
+          <LibraryPage segment={tab} onSegmentChange={selectTab} toolsHost={toolsHost} />
         )}
       </div>
     </div>

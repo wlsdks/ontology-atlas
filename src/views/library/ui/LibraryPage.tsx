@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { createPortal } from "react-dom";
 import { Info, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { useLocalVault, useVaultIdentityScope, useVaultSessionIdentityScope } from "@/entities/vault-session";
@@ -230,9 +231,16 @@ export function restoreFiledAnswer(current: RetainedLibraryAnswer | null, filed:
   return generation === filed.generation && current === null ? filed : current;
 }
 
-export function LibraryPage({ segment, onSegmentChange }: {
+export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   segment?: LibraryIndexSegment;
   onSegmentChange?: (segment: LibraryIndexSegment) => void;
+  /**
+   * A seat in the workspace strip for the info glyph and the fold (2026-09-17). Measured
+   * by the design pass: with both in the column's head, that head was 105px for a 28px
+   * field. The strip's right end past its last tab was empty; the two stand there now,
+   * portalled so their state stays in this view.
+   */
+  toolsHost?: HTMLElement | null;
 } = {}) {
   const reducedMotion = usePrefersReducedMotion();
   const t = useTranslations("library");
@@ -2501,7 +2509,20 @@ export function LibraryPage({ segment, onSegmentChange }: {
           tooltip: measured at 280px it was three lines of a sentence read once, and it was
           the ~60px this switch now stands in.
         */}
-        <div className="flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4">
+        <div className={segment && toolsHost ? "flex-none px-3 pb-2 pt-3" : "flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4"}>
+          {segment && toolsHost ? (
+            createPortal(
+              <LibraryHeader
+                t={t}
+                title={indexTitle}
+                titleHidden
+                disclosure={libraryProviderDisclosure({ route: agent.route }, t)}
+                onCollapse={() => setIndexCollapsed(true)}
+                collapseRef={indexCollapseRef}
+              />,
+              toolsHost,
+            )
+          ) : (
           <LibraryHeader
             t={t}
             title={indexTitle}
@@ -2515,6 +2536,7 @@ export function LibraryPage({ segment, onSegmentChange }: {
             onCollapse={() => setIndexCollapsed(true)}
             collapseRef={indexCollapseRef}
           />
+          )}
           {/* The field's seat: full width, so it starts and ends where the doors below do. */}
           {segment ? <div ref={setSearchHost} data-testid="library-search-host" className="mt-2 min-w-0" /> : null}
           {!segment ? <SegmentedControl
