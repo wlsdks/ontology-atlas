@@ -9,7 +9,7 @@ import { EMPTY_LIBRARY_WORK_ACTIVITY, type LibraryWorkActivity } from "@/feature
 import { useRouter } from "@/i18n/navigation";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { cn } from "@/shared/lib/cn";
-import { ChromeTile } from "@/shared/ui";
+import { ChromeTile, Surface } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
@@ -511,10 +511,12 @@ export function LibraryGraph({
             real button over the canvas rather than a painted mark, so it is reachable by
             the keyboard and measurable by every touch-target gate in the repository. */}
         <div className="relative flex min-h-0 flex-1 flex-col">
-        {island ? (
-          /* The way back off an island, and its name: one chip at the picture's top-left,
-             where a map app puts its own "back to overview". */
-          <div className="absolute left-2 top-2 z-10 flex items-center gap-2" data-testid="library-graph-island-bar">
+        {/* The way back off an island, and its name: one chip at the picture's top-left,
+            where a map app puts its own "back to overview". A `Surface`, so it leaves the
+            way every conditional surface in this repository leaves. */}
+        <Surface open={island !== null} className="absolute left-2 top-2 z-10 flex items-center gap-2" data-testid="library-graph-island-bar">
+          {island ? (
+          <>
             <button
               type="button"
               data-testid="library-graph-island-back"
@@ -527,8 +529,9 @@ export function LibraryGraph({
             <span className="text-label text-[color:var(--color-text-secondary)]" data-testid="library-graph-island-name">
               {t("graph.islandName", { name: island.label, pages: island.pages.length, sources: island.sources.length })}
             </span>
-          </div>
-        ) : null}
+          </>
+          ) : null}
+        </Surface>
         <canvas
           ref={canvasRef}
           data-testid="library-graph-canvas"

@@ -293,8 +293,13 @@ const BASELINE_HARD_CUTS = 0;
  * as `Surface`, so hard cuts stay at zero. Their open paths require a real folder
  * handle and sidecar data that the static OPENERS fixture cannot synthesize;
  * actual browser journeys cover both, while widget tests own their state paths.
+ * 49 -> 50 (2026-09-18): the Library graph's island bar — the chip back to the islands
+ * overview, standing only while an island is opened. Its opener is a press on a painted
+ * island of the canvas, which the a11y opener model (a DOM trigger testid) cannot express;
+ * `tests/e2e/library-graph-islands.spec.ts` presses the island and holds the bar's own
+ * checks (visible, Escape and the chip both return the map).
  */
-const BASELINE_APPEARING_SURFACES = 49;
+const BASELINE_APPEARING_SURFACES = 50;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

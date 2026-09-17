@@ -149,6 +149,11 @@ function islandAt(
 }
 /** On the overview a page's name stands once its dot is this wide on screen. */
 const ISLAND_PAGE_LABEL_MIN_PX = 10;
+/**
+ * On the overview a dot takes a press only once its radius is this, on screen: a 16px
+ * mark is a target, a 4px one is texture and the island under it is what the press means.
+ */
+const ISLAND_DOT_PRESS_MIN_PX = 8;
 
 /**
  * A folded file band (`FlowColumn.grid` above one) names its files only this far past the
@@ -1404,7 +1409,7 @@ export function useLibraryGraphEngine({
         point,
         coarsePointer() ? COARSE_HIT_REACH : undefined,
         // On the overview a dot is pressable only once it is a mark; below that the island is.
-        pictureRef.current === "islands" ? ISLAND_PAGE_LABEL_MIN_PX / 2 : 0,
+        pictureRef.current === "islands" ? ISLAND_DOT_PRESS_MIN_PX : 0,
       ),
     [],
   );
