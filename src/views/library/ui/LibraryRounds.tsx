@@ -12,7 +12,7 @@ import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_FRAME_FORM } from "@/shared/ui/page-frame";
-import { Button, EmptyState, IconButton, InfoHint, RowButton, useToast } from "@/shared/ui";
+import { Button, Chip, EmptyState, IconButton, InfoHint, RowButton, useToast } from "@/shared/ui";
 
 import { useLibraryRounds } from "../lib/library-rounds-context";
 import { lastOutcome, lastPass, nextRound, sinceSpan, summarizeSince } from "../lib/round-presentation";
@@ -210,19 +210,41 @@ export function LibraryRounds() {
         aria-label={t("indexAria")}
         className="flex w-full min-w-0 min-h-0 flex-col overflow-hidden bg-[color:var(--color-panel)] max-lg:max-h-[40vh] max-lg:border-b max-lg:border-[color:var(--color-border-soft)] lg:w-[var(--docs-list-width)] lg:flex-none lg:border-r lg:border-[color:var(--color-border-soft)]"
       >
-        <div className="flex h-14 shrink-0 items-center gap-2 px-4">
-          <h1 className="min-w-0 flex-1 truncate text-body-lg leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
-            {t("indexHeader", { count: rounds.length })}
-          </h1>
-          <InfoHint label={t("lede")} align="left">{t("lede")}</InfoHint>
+        {/*
+          **The same column head the other four tabs draw** (2026-09-17). The strip already
+          says "Rounds" and carries the count of the ones that are on; this column said
+          "Rounds · 3" 38 px below it — one thing, two numbers, neither labelled — while
+          Sources and Wiki carry no name at all since the owner's decision this morning. The
+          name is now assistive-only, the glyph keeps the seat the Library's info glyph has
+          (x 76), and the door below takes the seat the search field takes (76–331), so
+          switching tabs changes what the column lists and nothing about where it sits.
+        */}
+        <div className="flex-none border-b border-[color:var(--color-overlay-2)] px-3 pb-2.5 pt-4">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h1 className="sr-only">{t("indexHeader", { count: rounds.length })}</h1>
+            <InfoHint label={t("lede")} align="left">{t("lede")}</InfoHint>
+          </div>
+          {/*
+            The column's door wears the column's door grammar — the muted, left-reading chip
+            "Add files" and "Bring from a service" wear one tab away. As a filled 40px indigo
+            slab it measured the loudest object on the screen (255 × 40 of solid
+            `--color-indigo`), which put the attention winner on a door to a form instead of
+            on the morning card that says what went stale. The filled press still exists
+            where the commitment is made: the sheet's "Allow and save", and the empty stage.
+          */}
+          <div className="mt-2 min-w-0">
+            <Chip
+              onClick={openSheet}
+              data-testid="library-rounds-new"
+              tone="muted"
+              className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
+            >
+              <Plus size={ICON_SIZE.sm} aria-hidden />
+              <span className="min-w-0 truncate">{t("newRound")}</span>
+            </Chip>
+          </div>
         </div>
-        <div className="px-3 pb-3">
-          <Button onClick={openSheet} data-testid="library-rounds-new" className="atlas-touch-floor w-full">
-            <Plus size={ICON_SIZE.sm} aria-hidden />
-            {t("newRound")}
-          </Button>
-        </div>
-        <ul className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-2 pb-3" data-testid="library-rounds-list">
+        <ul className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-1 pb-3 pt-2" data-testid="library-rounds-list">
           {rounds.map((round) => {
             const word = outcomeWord(round);
             const isRunning = runner.running?.roundId === round.id;
@@ -236,8 +258,16 @@ export function LibraryRounds() {
                   aria-pressed={selectedId === round.id}
                   hoverInk="strong"
                   hoverSurface="lift"
-                  className="w-full text-left"
+                  className="w-full px-2 text-left"
                 >
+                  {/*
+                    The leading glyph the source and page rows carry, which is what puts this
+                    row's name on the list's text edge (96 at 1512) instead of 82, and what
+                    spec §9.1 asked for: the round's state, readable without reading.
+                  */}
+                  <span className="flex-none self-start pt-1 text-[color:var(--color-text-quaternary)]">
+                    {isRunning ? <Play size={ICON_SIZE.sm} aria-hidden /> : round.enabled ? <Clock3 size={ICON_SIZE.sm} aria-hidden /> : <Pause size={ICON_SIZE.sm} aria-hidden />}
+                  </span>
                   <span className="min-w-0 flex-1 py-0.5">
                     <span className="flex items-center gap-2">
                       <span className={cn("truncate text-body leading-body font-[var(--font-weight-strong)]", round.enabled ? "text-[color:var(--color-text-primary)]" : "text-[color:var(--color-text-tertiary)]")}>

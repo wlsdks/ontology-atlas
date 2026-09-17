@@ -126,7 +126,16 @@ export function RoundsLedger({
                     <span className="flex justify-center pt-2">
                       <Moon size={ICON_SIZE.sm} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
                     </span>
-                    <div className="my-1 border-y border-dashed border-[color:var(--color-divider)] bg-[repeating-linear-gradient(135deg,var(--color-overlay-1)_0_6px,transparent_6px_12px)] px-3 py-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]">
+                    {/*
+                      One inner edge and one type step down this column. Measured at 1512
+                      before this: the card's text began at 489, this band's at 484 and the
+                      held line's at 472 — three starts inside one column, and the band was
+                      11px where the held line beside it was 12.5 (`docs/DESIGN-SYSTEM.md`,
+                      "One text edge per column"). The band now wears the card's own
+                      `--card-pad` horizontally and the held line's step; quiet is carried
+                      by the quaternary ink, which is where quiet belongs.
+                    */}
+                    <div className="my-1 border-y border-dashed border-[color:var(--color-divider)] bg-[repeating-linear-gradient(135deg,var(--color-overlay-1)_0_6px,transparent_6px_12px)] px-[var(--card-pad)] py-1.5 text-body leading-body text-[color:var(--color-text-quaternary)]">
                       {t("ledger.asleep")} · {t("since.span", { from: time.format(new Date(entry.startedAt)), to: time.format(new Date(entry.endedAt)) })}
                     </div>
                   </>
@@ -159,8 +168,11 @@ export function RoundsLedger({
                               ? t("outcome.redrafted", { count: pagesWritten(entry).length })
                               : t(`outcome.${entry.outcome}`)}
                         </span>
+                        {/* A pass under a second says nothing about its length: "0 s" is not a
+                            duration a person can use, and it read as a defect beside a real one. */}
                         <span className="text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">
-                          {t("ledger.duration", { seconds: passDurationSeconds(entry) })} · {entry.agentTurns === 1 ? t("ledger.agentTurn") : t("ledger.noAgentTurn")}
+                          {passDurationSeconds(entry) > 0 ? `${t("ledger.duration", { seconds: passDurationSeconds(entry) })} · ` : null}
+                          {entry.agentTurns === 1 ? t("ledger.agentTurn") : t("ledger.noAgentTurn")}
                           {entry.trigger !== "clock" ? ` · ${entry.trigger === "manual" ? t("ledger.manual") : t("ledger.catchUp")}` : null}
                         </span>
                       </div>

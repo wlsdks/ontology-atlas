@@ -113,7 +113,10 @@ export function SinceYouLeft({
           ) : null}
           {summary.held > 0 ? (
             <li className="inline-flex items-center gap-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
-              <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-text-quaternary)]" />
+              {/* The same dot step as the three lines above it. A 6px dot put this line's first
+                  glyph at 407 where the others began at 409 — a broken start line bought for a
+                  quiet this line already has in its ink. */}
+              <span aria-hidden className="h-2 w-2 rounded-full bg-[color:var(--color-text-quaternary)]" />
               {t("since.held", { count: summary.held })}
             </li>
           ) : null}

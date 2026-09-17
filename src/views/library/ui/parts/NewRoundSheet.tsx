@@ -14,6 +14,7 @@ import {
   isValidClockTime,
   nextDueAt,
 } from "@/entities/library-round";
+import { fieldLabel } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { SegmentedControl } from "@/shared/ui/segmented-control";
 import { Button, Dialog } from "@/shared/ui";
@@ -141,7 +142,7 @@ export function NewRoundSheet({ open, onClose, connectors, agentReady, onSave }:
       </h2>
 
       <div className="flex flex-col gap-2">
-        <p id={whatId} className="text-label leading-label font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]">{t("sheet.what")}</p>
+        <p id={whatId} className={fieldLabel()}>{t("sheet.what")}</p>
         <SegmentedControl<RoundKind>
           labelledBy={whatId}
           value={kind}
@@ -162,12 +163,13 @@ export function NewRoundSheet({ open, onClose, connectors, agentReady, onSave }:
             <p className="text-body leading-body text-[color:var(--color-amber-source-a90)]">{t("sheet.noConnectors")}</p>
           ) : (
             <div className="mt-1 flex flex-col gap-2">
-              <p id={serviceId} className="text-label leading-label font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]">{t("sheet.service")}</p>
+              <p id={serviceId} className={fieldLabel()}>{t("sheet.service")}</p>
               <SegmentedControl<string>
                 labelledBy={serviceId}
                 value={connectorId ?? enabledConnectors[0].id}
                 onChange={setConnectorId}
                 variant="chips"
+                fill
                 testId="library-rounds-connector"
                 options={enabledConnectors.map((entry) => ({ value: entry.id, label: capitalize(entry.name) }))}
               />
@@ -186,38 +188,45 @@ export function NewRoundSheet({ open, onClose, connectors, agentReady, onSave }:
       </div>
 
       <div className="flex flex-col gap-2">
-        <p id={howId} className="text-label leading-label font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]">{t("sheet.how")}</p>
-        <div className="flex flex-wrap items-end gap-3">
-          <SegmentedControl<RoundCadenceKey>
-            labelledBy={howId}
-            value={cadence}
-            onChange={setCadence}
-            variant="chips"
-            testId="library-rounds-cadence"
-            options={[
-              { value: "hour", label: t("cadence.hour") },
-              { value: "6h", label: t("cadence.6h") },
-              { value: "daily", label: t("cadence.dailyChip") },
-              { value: "weekdays", label: t("cadence.weekdaysChip") },
-            ]}
+        <p id={howId} className={fieldLabel()}>{t("sheet.how")}</p>
+        {/*
+          `fill`, like the two groups above and below it: four cadence chips left ragged
+          measured 343 px of a 526 px sheet column (183 px, 35%, empty) while
+          "What to check" and "When a page goes stale" filled theirs exactly
+          (`docs/DESIGN-SYSTEM.md`, "Control groups fill their column"). The time field
+          therefore leaves this row and takes its own, because a field sharing the row
+          would eat the share each chip is owed.
+        */}
+        <SegmentedControl<RoundCadenceKey>
+          labelledBy={howId}
+          value={cadence}
+          onChange={setCadence}
+          variant="chips"
+          fill
+          testId="library-rounds-cadence"
+          options={[
+            { value: "hour", label: t("cadence.hour") },
+            { value: "6h", label: t("cadence.6h") },
+            { value: "daily", label: t("cadence.dailyChip") },
+            { value: "weekdays", label: t("cadence.weekdaysChip") },
+          ]}
+        />
+        {cadence === "daily" || cadence === "weekdays" ? (
+          <Input
+            label={t("sheet.time")}
+            type="time"
+            value={time}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setTime(event.target.value)}
+            className="w-32"
+            data-testid="library-rounds-time"
+            error={timeValid ? undefined : "HH:MM"}
           />
-          {cadence === "daily" || cadence === "weekdays" ? (
-            <Input
-              label={t("sheet.time")}
-              type="time"
-              value={time}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setTime(event.target.value)}
-              className="w-32"
-              data-testid="library-rounds-time"
-              error={timeValid ? undefined : "HH:MM"}
-            />
-          ) : null}
-        </div>
+        ) : null}
       </div>
 
       {kind === "consistency" ? (
         <div className="flex flex-col gap-2">
-          <p id={staleId} className="text-label leading-label font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]">{t("sheet.onStale")}</p>
+          <p id={staleId} className={fieldLabel()}>{t("sheet.onStale")}</p>
           <SegmentedControl<RoundOnStale>
             labelledBy={staleId}
             value={onStale}
@@ -237,7 +246,7 @@ export function NewRoundSheet({ open, onClose, connectors, agentReady, onSave }:
       ) : null}
 
       <div className="rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]" data-testid="library-rounds-scope">
-        <p className="text-label leading-label font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]">{t("sheet.may")}</p>
+        <p className={fieldLabel()}>{t("sheet.may")}</p>
         <ul className="mt-2 flex flex-col gap-1.5">
           {may.map((line) => (
             <li key={line} className="flex items-start gap-2 text-body leading-body text-[color:var(--color-text-primary)]">
