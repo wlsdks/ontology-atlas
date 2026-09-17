@@ -48,6 +48,11 @@ export function pageName(path: string): string {
   return path.replace(/^wiki\//, "").replace(/\.md$/, "");
 }
 const pagesWritten = (entry: RoundPassEntry) => entry.written.filter((path) => path.startsWith("wiki/"));
+/** A page that went stale and was redrafted in the same pass is one chip, the redraft. */
+const staleNotRedrafted = (entry: RoundPassEntry) => {
+  const redrafted = new Set(pagesWritten(entry).map((path) => path.replace(/\.md$/, "")));
+  return entry.stale.filter((slug) => !redrafted.has(slug));
+};
 const sourcesWritten = (entry: RoundPassEntry) => entry.written.filter((path) => !path.startsWith("wiki/"));
 
 export function RoundsLedger({
@@ -165,7 +170,7 @@ export function RoundsLedger({
                       </p>
                       {entry.stale.length > 0 || pagesWritten(entry).length > 0 ? (
                         <div className="mt-2 flex flex-wrap gap-1.5">
-                          {entry.stale.map((slug) => (
+                          {staleNotRedrafted(entry).map((slug) => (
                             <Chip key={`stale-${slug}`} size="sm" onClick={() => onOpenPage(slug)} aria-label={t("since.openPage", { page: pageName(slug) })}>
                               <span className={cn("rounded-full", DOT.stale)} aria-hidden />
                               {pageName(slug)}

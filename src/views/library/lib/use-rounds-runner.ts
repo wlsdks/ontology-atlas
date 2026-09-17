@@ -27,7 +27,7 @@ import {
   vaultMcpServers,
   vaultSelfReadSlot,
 } from "@/features/acp-session";
-import { buildCompileBrief, judgePageWrite } from "@/features/library";
+import { appendWikiLog, buildCompileBrief, judgePageWrite } from "@/features/library";
 import {
   TICK_MS,
   afterPass,
@@ -486,12 +486,27 @@ export function useRoundsRunner(): RoundsRunnerValue {
     try {
       await ledger.append(entry);
       await store.patch(round.id, afterPass(round, new Date()));
+      /*
+       * The wiki's own record stays complete (spec §8): a page a round wrote is a compile
+       * event in `wiki/_log.md` like any other, with the round as the writer, so a person
+       * reading the log in an editor sees who touched the page and when.
+       */
+      const pages = entry.written.filter((path) => path.startsWith("wiki/")).map((path) => path.replace(/^wiki\//, "").replace(/\.md$/, ""));
+      if (handle && pages.length > 0) {
+        const sources = round.kind === "consistency" ? entry.stale.map((slug) => slug.replace(/^wiki\//, "")).join(", ") : (round.connectorName ?? round.name);
+        await appendWikiLog(handle, {
+          at: entry.endedAt,
+          kind: "compile",
+          summary: `${sources} → ${pages.map((page) => `${page} (revised)`).join(", ")}`,
+          writer: `round:${round.name}`,
+        }).catch(() => undefined);
+      }
     } finally {
       runningRef.current = null;
       setRunning(null);
       await refresh();
     }
-  }, [agentReady, agentTurn, ledger, locale, readPassData, refresh, rootPath, runtimeId, store]);
+  }, [agentReady, agentTurn, handle, ledger, locale, readPassData, refresh, rootPath, runtimeId, store]);
 
   /* ---- The clock ---------------------------------------------------------------------- */
 
