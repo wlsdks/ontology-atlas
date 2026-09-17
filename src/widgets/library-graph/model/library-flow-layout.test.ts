@@ -68,17 +68,23 @@ describe("flow layout", () => {
     expect(few.columns[0].grid).toBe(1);
   });
 
+  it("keeps a row for every file while the picture can afford one at the 18px floor, even past the rows that fit at the ceiling", () => {
+    // 340 world tall at ceiling 2 fits 15 rows at the ceiling and affords 37 at the floor.
+    const twelve = flowLayout(graph({ sources: Array.from({ length: 20 }, (_, i) => `s${i}.md`), pages: ["a"], cites: [["a", "s0.md"]] }), { width: 600, height: 340, ceiling: 2 });
+    expect(twelve.columns[0].grid).toBe(1);
+    expect(twelve.extent.height).toBe(FLOW_ROW_MIN * 19 + FLOW_TOP_PAD * 2);
+  });
+
   it("folds a file band taller than the box into a grid at the floor gap, and names keep their rows", () => {
     const many = flowLayout(graph({ sources: Array.from({ length: 300 }, (_, i) => `s${i}.md`) }), { width: 600, height: 340, ceiling: 2 });
     const column = many.columns[0];
-    // (340 - 32) / 22 = 14 gaps → 15 rows; 300 / 15 = 20 sub-columns.
-    expect(column.grid).toBe(20);
+    // Rows affordable at 18px each: (340 · 2 / (18/22) − 32) / 22 + 1 = 37 → 300 files are 9 sub-columns of 34.
+    expect(column.grid).toBe(9);
     expect(many.rowGap).toBe(FLOW_ROW_MIN);
-    expect(many.extent).toEqual({ width: 600, height: 340 });
     const ys = new Set(column.ids.map((id) => many.positions.get(id)!.y));
-    expect(ys.size).toBe(15);
+    expect(ys.size).toBe(34);
     const xs = [...new Set(column.ids.map((id) => many.positions.get(id)!.x))].sort((a, b) => a - b);
-    expect(xs.length).toBe(20);
+    expect(xs.length).toBe(9);
     expect(xs[1] - xs[0]).toBe(FLOW_GRID_STEP);
     // The grid is centred on the column's own x.
     expect(xs.reduce((sum, x) => sum + x, 0) / xs.length).toBeCloseTo(column.x, 6);
@@ -113,6 +119,22 @@ describe("flow layout", () => {
     expect(xs[1] - xs[0]).toBeGreaterThanOrEqual(18 + 5 + FLOW_LABEL_ROOM_PX / layout.scale);
     // The picture stays wider than its bands and the name room outside them.
     expect(layout.extent.width).toBeGreaterThanOrEqual(FLOW_SIDE_PAD * 2 + (FLOW_LABEL_ROOM_PX / layout.scale) * 2 + (xs[1] - xs[0]));
+  });
+
+  it("stands pages that name the same concept together, and the concept level with them", () => {
+    const layout = flowLayout(
+      graph({
+        pages: ["alpha", "beta", "gamma", "delta"],
+        concepts: ["refunds", "payments"],
+        mentions: [["alpha", "refunds"], ["beta", "payments"], ["gamma", "refunds"], ["delta", "payments"]],
+      }),
+      BOX,
+    );
+    // Concepts rank by title (payments 0, refunds 1); pages follow their concept, then title.
+    expect(layout.columns.find((column) => column.kind === "page")!.ids).toEqual(["page:beta", "page:delta", "page:alpha", "page:gamma"]);
+    const y = (id: string) => layout.positions.get(id)!.y;
+    expect(y("concept:payments")).toBe((y("page:beta") + y("page:delta")) / 2);
+    expect(y("concept:refunds")).toBe((y("page:alpha") + y("page:gamma")) / 2);
   });
 
   it("lays a single node at the centre", () => {

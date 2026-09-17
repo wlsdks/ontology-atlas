@@ -528,6 +528,14 @@ function flowEdgeControls(from: LayoutPoint, to: LayoutPoint): [LayoutPoint, Lay
   ];
 }
 
+/**
+ * Where an unverified citation breaks in the flow picture, as a fraction of the curve from
+ * the page (every edge starts at the write-up). At the midpoint every break of a folder
+ * stood on one vertical between the columns and read as a fourth column of amber; beside
+ * the page it reads as what it is — this write-up did not receive what its file now says.
+ */
+const FLOW_BREAK_T = 0.22;
+
 /** One point on the cubic, for the break in an unverified citation. */
 function cubicAt(from: LayoutPoint, c1: LayoutPoint, c2: LayoutPoint, to: LayoutPoint, t: number): LayoutPoint {
   const u = 1 - t;
@@ -701,14 +709,14 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         const steps = 12;
         ctx.moveTo(from.x, from.y);
         for (let i = 1; i <= steps; i += 1) {
-          const t = (0.5 - half) * (i / steps);
+          const t = (FLOW_BREAK_T - half) * (i / steps);
           const point = cubicAt(from, c1, c2, to, t);
           ctx.lineTo(point.x, point.y);
         }
-        const resume = cubicAt(from, c1, c2, to, 0.5 + half);
+        const resume = cubicAt(from, c1, c2, to, FLOW_BREAK_T + half);
         ctx.moveTo(resume.x, resume.y);
         for (let i = 1; i <= steps; i += 1) {
-          const t = 0.5 + half + (0.5 - half) * (i / steps);
+          const t = FLOW_BREAK_T + half + (1 - FLOW_BREAK_T - half) * (i / steps);
           const point = cubicAt(from, c1, c2, to, t);
           ctx.lineTo(point.x, point.y);
         }
@@ -892,7 +900,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         frame.layout === "flow"
           ? (() => {
               const [c1, c2] = flowEdgeControls(from, to);
-              return cubicAt(from, c1, c2, to, 0.5);
+              return cubicAt(from, c1, c2, to, FLOW_BREAK_T);
             })()
           : quadraticAt(from, edgeControlPoint(from, to), to, 0.5);
       const gap = Math.min(BROKEN_EDGE_GAP, Math.hypot(to.x - from.x, to.y - from.y) / 3);

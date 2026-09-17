@@ -109,9 +109,20 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     link(edge.target, edge.source);
   }
 
-  // Pages first, by title: the middle column is the one a person reads names in, so it is
-  // the one that must not shuffle when a source is added.
-  const pages = [...(nodesByKind.get("page") ?? [])].sort(byLabel);
+  /**
+   * **Pages are ordered by topic, then by title.** The middle column is the one a person
+   * reads names in, so it must not shuffle when a file is added — and it should read as
+   * the wiki's own structure. Concepts are ranked by title first; a page's rank is the
+   * mean rank of the concepts it names, so pages that name the same concept stand together
+   * and the concept beside them lands level with its group (one crossing-reduction sweep,
+   * both ways). A page naming no concept goes last, by title. A folder with no concepts is
+   * plain title order.
+   */
+  const conceptRank = new Map([...(nodesByKind.get("concept") ?? [])].sort(byLabel).map((node, row) => [node.id, row]));
+  const pages = [...(nodesByKind.get("page") ?? [])]
+    .map((node) => ({ node, key: barycentre(node.id, neighbours, conceptRank) }))
+    .sort((a, b) => a.key - b.key || byLabel(a.node, b.node))
+    .map((entry) => entry.node);
   const pageRow = new Map(pages.map((node, row) => [node.id, row]));
   const outer = (kind: LibraryGraphNodeKind) =>
     [...(nodesByKind.get(kind) ?? [])]
@@ -146,10 +157,12 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
   const named = ordered.filter((column) => column.kind !== "source");
   const namedGrid = new Map(named.map((column) => [column.kind, Math.max(1, Math.ceil(column.nodes.length / rowsAffordable))]));
   const rowsOf = (count: number, grid: number): number => Math.ceil(count / grid);
-  const namedRows = Math.max(1, ...named.map((column) => rowsOf(column.nodes.length, namedGrid.get(column.kind) ?? 1)));
-  const rows = Math.max(rowsFit, namedRows);
+  // A file band folds on the same terms as a named column: only past the rows the picture
+  // can afford at the 18px floor. Measured 2026-09-18 in a real window (648px canvas): folding
+  // at the rows that fit *at the ceiling* folded twelve files into two unnamed sub-columns
+  // beside ten named pages, when a twelve-row list at 1.7× named every one of them.
   const gridOf = (kind: LibraryGraphNodeKind, count: number): number =>
-    kind === "source" ? Math.max(1, Math.ceil(count / rows)) : (namedGrid.get(kind) ?? 1);
+    kind === "source" ? Math.max(1, Math.ceil(count / rowsAffordable)) : (namedGrid.get(kind) ?? 1);
   const longestRows = Math.max(1, ...ordered.map((column) => rowsOf(column.nodes.length, gridOf(column.kind, column.nodes.length))));
   // One gap for every column, so rows line up across the picture and an edge between two
   // columns is a straight-ish S rather than a fan.
