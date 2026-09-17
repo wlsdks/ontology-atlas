@@ -125,3 +125,20 @@ test("zooming the wheel into an island opens it, the way a press does", async ({
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph!.layout()?.columns.map((column) => column.kind) ?? null))
     .toEqual(["source", "page"]);
 });
+
+test("zooming the wheel out of an opened island returns the map", async ({ page }) => {
+  await openMap(page);
+  const at = await islandPoint(page, "Payments");
+  await page.mouse.click(at.x, at.y);
+  const bar = page.getByTestId("library-graph-island-bar");
+  await expect(bar).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.__atlasLibraryGraph!.arriving())).toBe(false);
+  const box = (await page.getByTestId("library-graph-canvas").boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  for (let step = 0; step < 24; step += 1) {
+    await page.mouse.wheel(0, 100);
+    if (await bar.isHidden()) break;
+  }
+  await expect(bar, "zooming out of the island did not return the map").toBeHidden();
+  await expect.poll(async () => page.evaluate(() => (window.__atlasLibraryGraph!.islands() ?? []).length)).toBeGreaterThan(3);
+});

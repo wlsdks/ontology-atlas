@@ -231,6 +231,7 @@ export function LibraryGraph({
   const [pickedIsland, setIsland] = useState<LibraryIslandPick | null>(null);
   /** The island under the pointer, for the legend's line: what this island is, in one sentence. */
   const [hoveredIsland, setHoveredIsland] = useState<LibraryIslandPick | null>(null);
+  const leaveIsland = useCallback(() => setIsland(null), []);
   // The island is a view of a folder; a folder that no longer holds any of it lets it go.
   const island = useMemo(() => {
     if (!pickedIsland) return null;
@@ -383,6 +384,7 @@ export function LibraryGraph({
     onPressIsland: setIsland,
     overview: island === null,
     onHoverIsland: setHoveredIsland,
+    onLeaveIsland: leaveIsland,
     onDismiss: dismissCard,
   });
 

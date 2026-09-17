@@ -40,6 +40,7 @@ import {
   isSameView,
   isWheelZoomIntent,
   LIBRARY_ZOOM_MAX,
+  LIBRARY_ZOOM_MIN,
   libraryZoomMax,
   panView,
   scaleBounds,
@@ -158,6 +159,8 @@ const ISLAND_SOURCE_LABEL_MIN_PX = 36;
  * 3,424-mark folder spans 360px of a 648px view and a ten-page island 180px.
  */
 const ISLAND_OPENS_AT_VIEW_SHARE = 0.45;
+/** An opened island zoomed out to this share of its fit scale gives way to the map. */
+const ISLAND_LEAVES_BELOW_FIT = 0.6;
 /**
  * On the overview a dot takes a press only once its radius is this, on screen: a 16px
  * mark is a target, a 4px one is texture and the island under it is what the press means.
@@ -354,6 +357,7 @@ export function useLibraryGraphEngine({
   onPressMark,
   onPressIsland,
   onHoverIsland,
+  onLeaveIsland,
   onActivate,
   onDismiss,
   layout = "flow",
@@ -416,6 +420,8 @@ export function useLibraryGraphEngine({
   onPressIsland?: (island: LibraryIslandPick) => void;
   /** The island under the pointer changed; null once the pointer is off every island. */
   onHoverIsland?: (island: LibraryIslandPick | null) => void;
+  /** The person zoomed out of an opened island past its fit: the caller returns to the map. */
+  onLeaveIsland?: () => void;
   /** A double press: the shortcut past the card, straight to the page or the map. */
   onActivate: (node: LibraryGraphNode) => void;
   /** A press that landed on no mark. Whatever stands open is dismissed by it. */
@@ -438,10 +444,14 @@ export function useLibraryGraphEngine({
   const zoomAimRef = useRef<string | null>(null);
   const onPressIslandRef = useRef(onPressIsland);
   const onHoverIslandRef = useRef(onHoverIsland);
+  const onLeaveIslandRef = useRef(onLeaveIsland);
   useEffect(() => {
     onPressIslandRef.current = onPressIsland;
     onHoverIslandRef.current = onHoverIsland;
-  }, [onHoverIsland, onPressIsland]);
+    onLeaveIslandRef.current = onLeaveIsland;
+  }, [onHoverIsland, onLeaveIsland, onPressIsland]);
+  /** The scale the fit last asked for; what "zoomed out past the fit" is measured against. */
+  const fitScaleRef = useRef(1);
   const pick = (island: IslandsLayout["islands"][number]): LibraryIslandPick => ({
     id: island.id,
     kind: island.kind,
@@ -751,6 +761,7 @@ export function useLibraryGraphEngine({
        * nothing. The tile stops offering instead, and this is what it reads.
        */
       const fitTarget = fitView(bounds, box, FIT_PADDING, zoomMaxRef.current);
+      fitScaleRef.current = fitTarget.scale;
       if (autoFitRef.current.on) {
         const target = fitTarget;
         const current = viewRef.current;
@@ -1771,6 +1782,18 @@ export function useLibraryGraphEngine({
         wheelZoomFactor(pixels),
         scaleBounds(zoomMaxRef.current),
       );
+      /*
+       * **Zooming out of an opened island returns to the map** — the mirror of zooming in
+       * to open one. Past the fit by a clear margin the person is asking for more than this
+       * island, and the map is what holds more. The margin keeps a pinch that overshoots
+       * the fit from bouncing back out.
+       */
+      // A wide island fits near the camera's floor already; a wheel-out at the floor is the
+      // same ask, so the floor counts as past the margin.
+      const scaleNow = viewRef.current.scale;
+      if (pixels > 0 && !overviewRef.current && (scaleNow <= fitScaleRef.current * ISLAND_LEAVES_BELOW_FIT || scaleNow <= LIBRARY_ZOOM_MIN + 1e-6)) {
+        onLeaveIslandRef.current?.();
+      }
       wake();
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });

@@ -1225,6 +1225,9 @@ an amber dot; no line is drawn at rest, and a pointed-at or held mark still answ
 own. The layout is pure and deterministic, like the flow. **A press on an island opens it
 as columns** — its own pages, files and rows, few enough for the flow to name every one —
 with a chip at the picture's top-left back to the islands and Escape as the same way out;
+**zooming the wheel into an island opens it too** once it spans 45% of the view or the camera
+reaches its ceiling (the aim is the island under the pointer at the first wheel step), and
+zooming out of an opened island past 60% of its fit returns the map;
 a dot on the overview takes a press only from an 8px radius, a real target. Inside an
 opened island, and on any folder whose page column folds, **folded pages stand in stacks**:
 each sub-column of pages keeps the files its pages read as a small grid directly to its
