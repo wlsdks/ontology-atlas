@@ -1,5 +1,6 @@
 import type { LibraryGraph, LibraryGraphNodeKind } from "./build-library-graph";
 import { LibraryQuadtree } from "./library-graph-quadtree";
+import { flowLayout, type FlowLayout, type FlowWorld } from "./library-flow-layout";
 import { seedPositions, type LayoutPoint } from "./library-graph-layout";
 import { packGroupsAroundCentre, type PackBox, type PackSlot } from "./library-graph-packing";
 
@@ -1280,6 +1281,36 @@ function resolveCollision(first: SimulationNode, second: SimulationNode): void {
 }
 
 /** Puts energy back in — a drag, a resize, or a folder that gained a file. */
+/**
+ * **Arrange by flow and stand still.** The columns come from `flowLayout`; every node is
+ * set on its row with no velocity and the alpha is dropped to rest, so the loop's own
+ * `isLibrarySimulationRunning` reads false and not one physics tick moves a mark. The
+ * force code stays for the `force` layout and for the map's reasons; this is the Library's
+ * picture since 2026-09-17 (owner: "restructure it altogether").
+ */
+export function applyLibraryFlowLayout(
+  sim: LibrarySimulation,
+  graph: LibraryGraph,
+  world: FlowWorld = sim.box,
+): FlowLayout {
+  const layout = flowLayout(graph, world);
+  const { positions } = layout;
+  for (const node of sim.nodes) {
+    const point = positions.get(node.id);
+    if (!point) continue;
+    node.x = point.x;
+    node.y = point.y;
+    node.vx = 0;
+    node.vy = 0;
+    node.fx = null;
+    node.fy = null;
+    node.entered = 1;
+  }
+  sim.alpha = 0;
+  sim.alphaTarget = 0;
+  return layout;
+}
+
 export function reheatLibrarySimulation(sim: LibrarySimulation, alpha = REHEAT_ALPHA): void {
   sim.alpha = Math.max(sim.alpha, alpha);
 }

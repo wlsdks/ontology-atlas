@@ -118,6 +118,12 @@ async function openGraph(page: Page): Promise<void> {
   await expect
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.alpha() ?? 1), { timeout: 20_000 })
     .toBeLessThan(0.01);
+  // The flow layout is laid, not settled, so the alpha is 0 from the first frame; the marks
+  // still travel while the camera eases to its fit, and a press aimed at a mark read
+  // mid-journey lands on canvas.
+  await expect
+    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.arriving() ?? true), { timeout: 20_000 })
+    .toBe(false);
   /*
    * The home's single stale breath runs once the picture settles; let it finish so what
    * moves next moved because of the press. The breath clears its own timestamp and

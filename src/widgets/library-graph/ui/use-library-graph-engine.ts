@@ -14,7 +14,9 @@ import {
   type LibraryGraphCardSide,
 } from "../model/library-graph-card";
 import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
+import type { FlowLayout, FlowWorld } from "../model/library-flow-layout";
 import {
+  applyLibraryFlowLayout,
   createLibrarySimulation,
   hasPinnedNode,
   isLibrarySimulationRunning,
@@ -41,6 +43,7 @@ import {
   scaleBounds,
   screenToWorld,
   SOURCE_LABEL_MIN_SCALE,
+  WIDEST_MARK_WORLD_RADIUS,
   wheelPixelDelta,
   wheelZoomFactor,
   worldToScreen,
@@ -107,6 +110,25 @@ const DRAG_THRESHOLD_PX = 7;
  * makes one folder one framing.
  */
 const FIT_PADDING = LIBRARY_FIT_PADDING;
+/**
+ * The world the flow layout is laid in: the pixel box seen through the zoom ceiling, less
+ * the fit padding, and a little smaller still so the fit lands **on** the ceiling — which
+ * is what draws a small folder's widest mark at `LIBRARY_MAX_MARK_PX` on every window.
+ */
+function flowWorld(box: { width: number; height: number }, ceiling: number): FlowWorld {
+  const shrink = 0.9;
+  return {
+    width: Math.max(1, ((box.width - FIT_PADDING * 2) / ceiling) * shrink),
+    height: Math.max(1, ((box.height - FIT_PADDING * 2) / ceiling) * shrink),
+    ceiling,
+  };
+}
+/**
+ * A folded file band (`FlowColumn.grid` above one) names its files only this far past the
+ * source threshold: its squares stand 24px apart at the ceiling, which is no room for a
+ * name, so the names arrive once the person has zoomed the band to about 60px a row.
+ */
+const FOLDED_LABEL_MIN_SCALE = SOURCE_LABEL_MIN_SCALE * 3.5;
 
 /** How fast an auto-fitting view catches up with the settling picture, per frame. */
 const AUTO_FIT_FOLLOW = 0.16;
@@ -279,9 +301,16 @@ export function useLibraryGraphEngine({
   onPressMark,
   onActivate,
   onDismiss,
+  layout = "flow",
 }: {
   graph: LibraryGraph;
   canvasRef: RefObject<HTMLCanvasElement | null>;
+  /**
+   * `flow` (default since 2026-09-17): sources → pages → concepts in columns, still, the
+   * same on every visit; a press on a mark opens its card, a drag pans. `force`: the live
+   * simulation with draggable marks, kept for the map's reasons and for comparison.
+   */
+  layout?: "flow" | "force";
   reducedMotion: boolean;
   selectedId: string | null;
   hoveredId: string | null;
@@ -325,6 +354,12 @@ export function useLibraryGraphEngine({
   onDismiss: () => void;
 }): LibraryGraphEngine {
   const simRef = useRef<LibrarySimulation | null>(null);
+  const layoutRef = useRef(layout);
+  /** The columns as last laid, for the label rule (a folded band names no file at rest). */
+  const columnsRef = useRef<FlowLayout | null>(null);
+  useEffect(() => {
+    layoutRef.current = layout;
+  }, [layout]);
   const viewRef = useRef<LibraryGraphView>({ scale: 1, x: 0, y: 0 });
   /**
    * Whether the view is still following the picture, and whether it has caught up.
@@ -845,13 +880,23 @@ export function useLibraryGraphEngine({
         activeLabel: stateRef.current.activeLabel,
         standingLabels: stateRef.current.standingLabels,
         radii: screenRadiiRef.current,
-        sourceLabels: view.scale >= SOURCE_LABEL_MIN_SCALE,
+        // A plain source column has a row for every file name; a folded band names files
+        // only zoomed in, as the force picture always did.
+        sourceLabels:
+          layoutRef.current === "flow"
+            ? (columnsRef.current?.columns.find((column) => column.kind === "source")?.grid ?? 1) === 1 || view.scale >= FOLDED_LABEL_MIN_SCALE
+            : view.scale >= SOURCE_LABEL_MIN_SCALE,
+        conceptLabels:
+          layoutRef.current === "flow"
+            ? (columnsRef.current?.columns.find((column) => column.kind === "concept")?.grid ?? 1) === 1 || view.scale >= FOLDED_LABEL_MIN_SCALE
+            : view.scale >= SOURCE_LABEL_MIN_SCALE,
         labelReport: labelReportRef.current ?? undefined,
         opacity,
         dim: dimState.value,
         focus,
         activity,
         flow,
+        layout: layoutRef.current,
       });
 
       placeCard();
@@ -898,9 +943,10 @@ export function useLibraryGraphEngine({
     const sim = simRef.current;
     const bounds = sim ? librarySimulationBounds(sim) : null;
     if (!bounds) return;
-    const spanX = bounds.maxX - bounds.minX;
-    const spanY = bounds.maxY - bounds.minY;
-    if (!(spanX > 0) || !(spanY > 0)) return;
+    // A one-row flow picture (a page and its one source) has no vertical span of centres;
+    // its height is a mark's, so the witness still reports a shape rather than nothing.
+    const spanX = Math.max(bounds.maxX - bounds.minX, 2 * WIDEST_MARK_WORLD_RADIUS);
+    const spanY = Math.max(bounds.maxY - bounds.minY, 2 * WIDEST_MARK_WORLD_RADIUS);
     setPictureAspect((current) =>
       current !== null && Math.abs(current - spanX / spanY) < 0.005 ? current : spanX / spanY,
     );
@@ -1109,10 +1155,16 @@ export function useLibraryGraphEngine({
        * animation slowed down; it is the same picture, arrived at synchronously, which is
        * exactly what the one-shot layout used to give everybody.
        */
-      if (reducedMotion) settleLibrarySimulation(sim);
+      if (layoutRef.current === "flow") columnsRef.current = applyLibraryFlowLayout(sim, graph, flowWorld(box, zoomMaxRef.current));
+      else if (reducedMotion) settleLibrarySimulation(sim);
       autoFitRef.current = { on: true, converged: false };
     } else {
       const changed = syncLibrarySimulation(existing, graph);
+      // The columns are recomputed whole: a new page changes every row under it.
+      if (layoutRef.current === "flow") {
+        columnsRef.current = applyLibraryFlowLayout(existing, graph, flowWorld(box, zoomMaxRef.current));
+        autoFitRef.current = { on: true, converged: false };
+      }
       const now = typeof performance === "undefined" ? 0 : performance.now();
       for (const gone of changed.removed) {
         const node = ghostsRef.current.get(gone.id)?.node ?? lastKnownRef.current.get(gone.id);
@@ -1153,7 +1205,15 @@ export function useLibraryGraphEngine({
       const sim = simRef.current;
       // A resize records the new box and moves nothing: the mark scale, the collision reach
       // and the composition are all facts about the folder now, never about the window.
-      if (sim) resizeLibrarySimulation(sim, { width: rect.width, height: rect.height });
+      if (sim) {
+        const before = { ...sim.box };
+        resizeLibrarySimulation(sim, { width: rect.width, height: rect.height });
+        // Columns are a fact about the box: a new width moves them, and the view refits.
+        if (layoutRef.current === "flow" && (before.width !== sim.box.width || before.height !== sim.box.height)) {
+          columnsRef.current = applyLibraryFlowLayout(sim, graphRef.current, flowWorld(sim.box, zoomMaxRef.current));
+          autoFitRef.current = { on: true, converged: false };
+        }
+      }
       // The first measurement is also what makes the simulation possible: it runs in the
       // canvas's own pixels, so before there is a box there is nothing to create.
       else if (rect.width > 0 && rect.height > 0) syncSimulationRef.current();
@@ -1414,7 +1474,8 @@ export function useLibraryGraphEngine({
         // gesture carries, even if the hand has since left the mark.
         const grabbed = state.pressedNodeId;
         state.pressedNodeId = null;
-        if (grabbed && sim && sim.index.has(grabbed)) {
+        // In the flow layout a mark has one place; a hand that moves it pans the picture.
+        if (grabbed && sim && sim.index.has(grabbed) && layoutRef.current !== "flow") {
           const node = sim.nodes[sim.index.get(grabbed)!]!;
           const world = screenToWorld(point, viewRef.current, box);
           state.drag = { nodeId: grabbed, offset: { x: node.x - world.x, y: node.y - world.y } };
@@ -1567,6 +1628,11 @@ export function useLibraryGraphEngine({
         nodeId: pointerRef.current.drag?.nodeId ?? null,
       }),
       view: () => ({ ...viewRef.current, ...boxRef.current }),
+      /** The columns of the flow picture as last laid, or null under the force layout. */
+      layout: () =>
+        columnsRef.current
+          ? { rowGap: columnsRef.current.rowGap, columns: columnsRef.current.columns.map((column) => ({ kind: column.kind, x: column.x, grid: column.grid, count: column.ids.length })) }
+          : null,
       /**
        * Every name the last frame actually placed, in canvas CSS pixels.
        *
@@ -1578,6 +1644,16 @@ export function useLibraryGraphEngine({
       labels: () => labelReportRef.current ?? [],
       /** Where the simulation is: above the floor it is still arranging itself. */
       alpha: () => simRef.current?.alpha ?? 0,
+      /**
+       * Whether the marks are still travelling to where they will stand: the camera easing
+       * to its fit, a mark still entering, a box change not yet applied. Under the flow
+       * layout `alpha()` is 0 from the first frame — the layout is laid, not settled — so a
+       * spec that reads a mark's place to press it waits on this, not on the alpha.
+       */
+      arriving: () =>
+        (autoFitRef.current.on && !autoFitRef.current.converged) ||
+        pendingBoxRef.current !== null ||
+        (simRef.current?.nodes.some((node) => node.entered < 1) ?? false),
       /**
        * The open card's placement in canvas CSS pixels, with the mark it hangs from.
        *

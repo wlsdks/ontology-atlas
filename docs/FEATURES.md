@@ -1189,10 +1189,28 @@ against 1.73 ms approximated at 800; one whole tick is 0.10 / 0.40 / 1.73 ms at 
 800 nodes). Nothing new is installed: Graphology is no longer imported by this widget at
 all.
 
-**Four gestures, and a picture that is still until a hand moves it.** Dragging a mark pins it under the
-pointer while the springs pull its neighbours after it, and releasing hands it a capped
-flick — on a folder where six pages cite the same seven sources no layout can separate
-anything, so *pulling one dot out of the tangle* is the reading operation. The wheel zooms
+**The picture is columns** (2026-09-17). The owner opened the home on his own folder —
+two pages, a few files — and read the live cloud as half-made: dots floating in a black
+field at positions that changed with every visit. `library-flow-layout.ts` replaces the
+force picture at rest with a pure, deterministic layout: files in a column on the left,
+the pages written from them in the middle, the concepts those pages name on the right,
+each column ordered by the barycentre of its neighbours so a page sits level with the
+files it cites, and every edge an S-curve from column to column. The layout is laid in a
+world box seen through the zoom ceiling, so a folder of thirty marks or fewer fits with
+its widest mark at 36px on every window; a longer folder lays out taller than the box and
+the camera fits it, down to an 18px row, past which a column of pages folds into
+sub-columns with room for every name and a band of hundreds of files folds into a grid of
+squares that names a file on hover or once zoomed open. A file's name stands left of its
+square and a page's or concept's right of its disc, where no edge runs. Measured on the
+four fixtures at 1040, 1512 and 1920: every page of a 60-page folder is named at 1512 and
+1920, no name crosses another, and the same folder draws the same picture on every visit.
+The simulation below remains as the engine's position store; its forces are not stepped
+under this layout. Decision: `docs/records/decisions/2026-09-17-library-graph-flow-columns-*.md`.
+
+**Four gestures, and a picture that is still until a hand moves it.** A drag on a mark
+moves the whole picture, the same pan a drag on the background makes — a mark has a place
+in its column, not a position a hand may improve (under the earlier force picture a drag
+pinned the mark and the springs pulled its neighbours after it). The wheel zooms
 about the pointer between half and four times the fit; dragging empty canvas pans;
 double-click and a `ChromeTile` in the canvas's corner fit the whole picture; a coarse
 pointer gets one-finger drag and pinch. Which gesture a press *is* is decided once, at

@@ -52,7 +52,11 @@ export interface LibraryGraphProbe {
   labels: () => LibraryGraphProbeLabel[];
   interaction: () => { kind: "idle" | "node" | "pan"; nodeId: string | null };
   view: () => { scale: number; x: number; y: number; width: number; height: number };
+  /** The flow picture's columns as last laid, or null under the force layout. */
+  layout: () => { rowGap: number; columns: Array<{ kind: "source" | "page" | "concept"; x: number; grid: number; count: number }> } | null;
   alpha: () => number;
+  /** Whether the marks are still travelling to where they will stand (camera fit, entry, a pending box). */
+  arriving: () => boolean;
   card: () => LibraryGraphProbeCard | null;
   flow: () => { edges: string[]; stale: string[]; pulsing: boolean };
   paint: () => {

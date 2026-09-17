@@ -87,6 +87,8 @@ export interface LibraryGraphFrame {
    * one number in one place and the renderer stays a pure function of its frame.
    */
   standingLabels: boolean;
+  /** `flow`: columns, edges drawn as horizontal S-curves; `force`: the bowed quadratic. */
+  layout?: "flow" | "force";
   /**
    * Whether a file's and a concept's name exist on this frame at all.
    *
@@ -96,6 +98,11 @@ export interface LibraryGraphFrame {
    * named whatever this says.
    */
   sourceLabels: boolean;
+  /**
+   * Whether a concept's name stands at rest. The force picture ties it to the source
+   * threshold; in the flow picture an unfolded concept column has a row for every name.
+   */
+  conceptLabels?: boolean;
   /**
    * The drawn half-extent of each mark, graded by degree
    * (`libraryMarkRadii`). Absent falls back to the flat {@link NODE_RADIUS} band, which is
@@ -507,6 +514,29 @@ export function hitTestLibraryGraph(
  * scatter of curves; and since every edge in this graph leaves a page, that side is
  * always the same side of the page too.
  */
+/**
+ * The two control points of a column-to-column edge: horizontal tangents at both ends, so
+ * every line leaves and arrives level and a bundle of citations reads as a sheaf rather
+ * than a scatter of bows (the Architecture canvas's own edge grammar).
+ */
+function flowEdgeControls(from: LayoutPoint, to: LayoutPoint): [LayoutPoint, LayoutPoint] {
+  const reach = Math.abs(to.x - from.x) * 0.5;
+  const sign = to.x >= from.x ? 1 : -1;
+  return [
+    { x: from.x + sign * reach, y: from.y },
+    { x: to.x - sign * reach, y: to.y },
+  ];
+}
+
+/** One point on the cubic, for the break in an unverified citation. */
+function cubicAt(from: LayoutPoint, c1: LayoutPoint, c2: LayoutPoint, to: LayoutPoint, t: number): LayoutPoint {
+  const u = 1 - t;
+  return {
+    x: u * u * u * from.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * to.x,
+    y: u * u * u * from.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * to.y,
+  };
+}
+
 export function edgeControlPoint(from: LayoutPoint, to: LayoutPoint): LayoutPoint {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
@@ -662,6 +692,33 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     // stay legible against a line that is itself wider on an emptier canvas.
     ctx.lineWidth =
       relationWidth * (touchesSelection ? 1.5 : touchesActive ? 1.33 : 1);
+    if (frame.layout === "flow") {
+      const [c1, c2] = flowEdgeControls(from, to);
+      if (edge.certainty === "unverified") {
+        // The same break as the bowed line: two pieces of the curve with a gap at its middle.
+        const length = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+        const half = Math.min(BROKEN_EDGE_GAP, length / 3) / 2 / length;
+        const steps = 12;
+        ctx.moveTo(from.x, from.y);
+        for (let i = 1; i <= steps; i += 1) {
+          const t = (0.5 - half) * (i / steps);
+          const point = cubicAt(from, c1, c2, to, t);
+          ctx.lineTo(point.x, point.y);
+        }
+        const resume = cubicAt(from, c1, c2, to, 0.5 + half);
+        ctx.moveTo(resume.x, resume.y);
+        for (let i = 1; i <= steps; i += 1) {
+          const t = 0.5 + half + (0.5 - half) * (i / steps);
+          const point = cubicAt(from, c1, c2, to, t);
+          ctx.lineTo(point.x, point.y);
+        }
+      } else {
+        ctx.moveTo(from.x, from.y);
+        ctx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, to.x, to.y);
+      }
+      ctx.stroke();
+      continue;
+    }
     const control = edgeControlPoint(from, to);
     if (edge.certainty === "unverified") {
       /*
@@ -831,8 +888,13 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       if (!from || !to) continue;
       const pulsing = flow !== null && flow.pulse.has(edge.id);
       const rise = pulsing ? breath : 0;
-      const control = edgeControlPoint(from, to);
-      const middle = quadraticAt(from, control, to, 0.5);
+      const middle =
+        frame.layout === "flow"
+          ? (() => {
+              const [c1, c2] = flowEdgeControls(from, to);
+              return cubicAt(from, c1, c2, to, 0.5);
+            })()
+          : quadraticAt(from, edgeControlPoint(from, to), to, 0.5);
       const gap = Math.min(BROKEN_EDGE_GAP, Math.hypot(to.x - from.x, to.y - from.y) / 3);
       const radius =
         Math.max(STALE_DOT_RADIUS_MIN, Math.min(STALE_DOT_RADIUS, gap / 2)) + STALE_DOT_BREATH * rise;
@@ -996,7 +1058,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
    * themselves are occupied first: a name may lose to a **dot** as well as to another name,
    * which is what stops a label from sitting on top of the thing it is not naming.
    */
-  if (frame.standingLabels) {
+  if (frame.standingLabels || frame.layout === "flow") {
     ctx.textBaseline = "top";
     ctx.textAlign = "center";
     const taken: Array<{ x: number; y: number; width: number; height: number; of?: string }> = [];
@@ -1042,7 +1104,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     /** Whether a file's or a concept's name exists on this frame at all. */
     const carriesName = (node: LibraryGraphNode): boolean => {
       if (node.kind === "page") return true;
-      if (frame.sourceLabels) return true;
+      if (node.kind === "concept" ? (frame.conceptLabels ?? frame.sourceLabels) : frame.sourceLabels) return true;
       if (node.id === frame.selectedId || node.id === active) return true;
       return focus !== null && focus.has(node.id);
     };
@@ -1095,12 +1157,24 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         Math.max(2, centre.x - width / 2),
         Math.max(2, frame.width - 2 - width),
       );
-      const candidates = [
-        { x: centred, y: centre.y + half + STANDING_LABEL_GAP },
-        { x: centred, y: centre.y - half - STANDING_LABEL_GAP - lineHeight },
-        { x: centre.x + half + STANDING_LABEL_GAP, y: centre.y - lineHeight / 2 },
-        { x: centre.x - half - STANDING_LABEL_GAP - width, y: centre.y - lineHeight / 2 },
-      ];
+      const under = { x: centred, y: centre.y + half + STANDING_LABEL_GAP };
+      const over = { x: centred, y: centre.y - half - STANDING_LABEL_GAP - lineHeight };
+      const right = { x: centre.x + half + STANDING_LABEL_GAP, y: centre.y - lineHeight / 2 };
+      const left = { x: centre.x - half - STANDING_LABEL_GAP - width, y: centre.y - lineHeight / 2 };
+      /*
+       * **In the flow picture a name stands on the side its column keeps clear.** The
+       * layout leaves `FLOW_LABEL_ROOM_PX` outside the outer columns for exactly this: a
+       * file's name to the left of its square, where no edge runs, and a page's or a
+       * concept's to the right of its disc. Under-first is the force picture's rule, where a
+       * mark has no side of its own; in columns a name under a mark is a name on the next
+       * row's edges, and a file's name to its right is a name across every citation it has.
+       */
+      const candidates =
+        frame.layout === "flow"
+          ? node.kind === "source"
+            ? [left, right, under, over]
+            : [right, left, under, over]
+          : [under, over, right, left];
       /*
        * ⚠️ **A name that loses all four places is pushed out on a leader, not deleted.**
        *

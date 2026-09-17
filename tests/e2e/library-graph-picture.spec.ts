@@ -371,6 +371,12 @@ async function openGraph(page: Page, seed: Record<string, string>): Promise<void
   await expect
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.alpha() ?? 1), { timeout: 20_000 })
     .toBeLessThan(0.01);
+  // The flow layout is laid, not settled, so the alpha is 0 from the first frame; the marks
+  // still travel while the camera eases to its fit, and a press aimed at a mark read
+  // mid-journey lands on canvas.
+  await expect
+    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.arriving() ?? true), { timeout: 20_000 })
+    .toBe(false);
   // One more frame after the settle, so `labels()` holds the resting placement. A frame
   // is the unit; 120 ms was this machine's estimate of one.
   await waitFrames(page, 2);
@@ -563,6 +569,14 @@ interface Picture {
   centreOfMassOffset: number;
   /** The furthest group of the folder from the picture's middle, over the picture's radius. */
   componentSpread: number;
+  /** How far the picture's bounding box sits from the canvas's centre, as a fraction of it. */
+  pictureCentreOffset: number;
+  /** Per flow column, how far its marks' vertical midpoint sits from the canvas's middle, over the canvas height. */
+  columnOffsets: Array<{ kind: string; offset: number }>;
+  /** Whether the flow columns stand left to right in the order files, pages, concepts. */
+  columnsInOrder: boolean;
+  /** The flow columns as the engine laid them, or null under the force layout. */
+  layout: { rowGap: number; columns: Array<{ kind: string; x: number; grid: number; count: number }> } | null;
   /** How many connected groups the folder drew. */
   componentCount: number;
   /** Of the folder's pages, how many carry their own name. */
@@ -608,6 +622,7 @@ async function measure(page: Page): Promise<Picture> {
       nodes: probe.nodes(),
       edges: probe.edges(),
       labels: probe.labels(),
+      layout: probe.layout(),
       width: view.width,
       height: view.height,
       scale: view.scale,
@@ -760,6 +775,39 @@ async function measure(page: Page): Promise<Picture> {
   }
   const pictureCentre = { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
   const pictureRadius = Math.max(1, Math.hypot(spanX, spanY) / 2);
+  const pictureCentreOffset = Math.hypot(
+    (pictureCentre.x - canvas.width / 2) / Math.max(1, canvas.width),
+    (pictureCentre.y - canvas.height / 2) / Math.max(1, canvas.height),
+  );
+  /*
+   * **Every column of the flow picture stands level with the canvas's middle.** The layout
+   * re-centres each column on the picture's middle after the barycentre pass, so the
+   * midpoint of a column's marks — not their mean, which a busy top would skew — is what
+   * says whether a column drifted; and the columns keep their order, files to the left of
+   * pages to the left of concepts, or the picture is not reading left to right.
+   */
+  const columnOffsets: Array<{ kind: string; offset: number }> = [];
+  let columnsInOrder = true;
+  if (raw.layout) {
+    const byKind = new Map<string, ProbeNode[]>();
+    for (const node of raw.nodes) {
+      if (!Number.isFinite(node.x)) continue;
+      const held = byKind.get(node.kind);
+      if (held) held.push(node);
+      else byKind.set(node.kind, [node]);
+    }
+    let lastX = Number.NEGATIVE_INFINITY;
+    for (const column of raw.layout.columns) {
+      const members = byKind.get(column.kind) ?? [];
+      if (members.length === 0) continue;
+      const top = Math.min(...members.map((node) => node.y));
+      const bottom = Math.max(...members.map((node) => node.y));
+      columnOffsets.push({ kind: column.kind, offset: Math.abs((top + bottom) / 2 - canvas.height / 2) / Math.max(1, canvas.height) });
+      const meanX = members.reduce((sum, node) => sum + node.x, 0) / members.length;
+      if (meanX <= lastX) columnsInOrder = false;
+      lastX = meanX;
+    }
+  }
   let componentSpread = 0;
   for (const members of groups.values()) {
     const cx = members.reduce((sum, node) => sum + node.x, 0) / members.length;
@@ -806,9 +854,13 @@ async function measure(page: Page): Promise<Picture> {
    * label box is a mark a person cannot ask a question about.
    */
   const namedAlready = new Set(raw.labels.map((label) => label.nodeId));
+  // A folded file band (`FlowColumn.grid` above one) stands its squares 24px apart at the
+  // ceiling: no room for a name, so its files carry theirs only once the person has zoomed
+  // the band open (`FOLDED_LABEL_MIN_SCALE` in the engine), not at the source threshold.
+  const foldedFiles = (raw.layout?.columns.find((column) => column.kind === "source")?.grid ?? 1) > 1;
   const anonymous = raw.nodes
     .filter((node) => Number.isFinite(node.x))
-    .filter((node) => node.kind === "page" || raw.scale >= SOURCE_LABEL_MIN_SCALE)
+    .filter((node) => node.kind === "page" || (raw.scale >= SOURCE_LABEL_MIN_SCALE && !(node.kind === "source" && foldedFiles)))
     .filter((node) => !namedAlready.has(node.id))
     .map((node) => node.id);
 
@@ -852,6 +904,10 @@ async function measure(page: Page): Promise<Picture> {
     maxNodeDiameterPx: Math.max(0, ...raw.nodes.map((node) => node.radius * 2)),
     centreOfMassOffset,
     componentSpread,
+    pictureCentreOffset,
+    columnOffsets,
+    columnsInOrder,
+    layout: raw.layout,
     componentCount: groups.size,
     pagesNamed,
     namedPageWeight: {
@@ -1319,33 +1375,29 @@ for (const fixture of FIXTURES) {
 
       // ── The composition. ──
       /*
-       * The groups are packed **around the centre** rather than searched for on the canvas, so
-       * the picture is a rosette: its middle is where the eye lands, and no cluster is at a
-       * wall. Both bars are stated against the observation that opened G1 — three clusters at
-       * three walls with 54% of the canvas holding nothing.
-       */
-      expect(
-        picture.centreOfMassOffset,
-        "the picture's weight sits more than a sixth of the canvas off its centre",
-      ).toBeLessThanOrEqual(0.166);
-      /*
-       * ⚠️ **0.6 was the directions' estimate and it is arithmetically unreachable.** A
-       * rosette of equal circles puts the outer ones' centres at 2r while the whole picture's
-       * radius is 3r — 0.667 exactly, before any inequality between the groups.
+       * **Columns, since 2026-09-17.** The picture is the flow layout — files on the left,
+       * the pages written from them in the middle, the concepts those pages name on the
+       * right — so "a rosette around the centre" is no longer what a good picture looks
+       * like: a folder's files stand at the left rim *by design*, and a folder's weight sits
+       * where its files are. Both of the rosette's bars (weight within a sixth of the
+       * centre; no group past 0.8 of the picture's radius) are still computed and written
+       * out for the record, and what is asserted is what the columns promise instead:
        *
-       * ⚠️ **And this number does not distinguish the two builds.** Measured on these four
-       * folders at these three windows: `origin/main` 0.043–0.702, this branch 0.027–0.761.
-       * The occupancy search put groups at the *canvas's* walls, and the fit then pinned the
-       * picture's bounding box to the canvas — so relative to the picture's own radius they
-       * were in the same place a rosette puts them. What the search cost was measured
-       * elsewhere (the composition changed with the window; `viewScale` 0.18–5.11 against a
-       * clamped 0.49–1.6), and this bar is a **guard**, not the improvement: 0.8 is above
-       * everything either build measures and below a group standing alone at the rim.
+       * - the picture's bounding box is centred on the canvas — the fit's own claim, and
+       *   the one a person sees as "it is in the middle";
+       * - every column stands level with the canvas's middle, so no column is a ladder
+       *   hanging from the top edge;
+       * - the columns read left to right in the order the evidence flows.
        */
       expect(
-        picture.componentSpread,
-        "a group of the folder stands at the picture's rim rather than around its middle",
-      ).toBeLessThanOrEqual(0.8);
+        picture.pictureCentreOffset,
+        "the picture's bounding box sits off the canvas's centre",
+      ).toBeLessThanOrEqual(0.05);
+      expect(picture.layout, "the flow layout did not report its columns").not.toBeNull();
+      for (const column of picture.columnOffsets) {
+        expect(column.offset, `the ${column.kind} column hangs off the canvas's middle`).toBeLessThanOrEqual(0.08);
+      }
+      expect(picture.columnsInOrder, "the columns do not read files → pages → concepts").toBe(true);
     });
   }
 }

@@ -159,23 +159,26 @@ async function openGraph(page: Page): Promise<void> {
   await expect
     .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.alpha() ?? 1), { timeout: 15_000 })
     .toBeLessThan(0.01);
+  // The flow layout is laid, not settled, so the alpha is 0 from the first frame; the marks
+  // still travel while the camera eases to its fit, and a press aimed at a mark read
+  // mid-journey lands on canvas.
+  await expect
+    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.arriving() ?? true), { timeout: 20_000 })
+    .toBe(false);
 }
 
 const nodes = (page: Page): Promise<ProbeNode[]> =>
   page.evaluate(() => window.__atlasLibraryGraph!.nodes());
 
 test.describe("the library graph responds", () => {
-  test("a drag carries the mark and pulls its neighbours after it", async ({ page }) => {
+  test("a drag on a mark moves the whole picture and no mark leaves its row", async ({ page }) => {
     await openGraph(page);
     const canvas = page.getByTestId("library-graph-canvas");
     const box = (await canvas.boundingBox())!;
     const before = await nodes(page);
-    // The busiest source: the mark with the most pages hanging off it, so the neighbours
-    // that must follow are unambiguous.
     const target = before
       .filter((node) => node.kind === "source")
       .sort((first, second) => second.radius - first.radius)[0]!;
-    const neighbours = before.filter((node) => node.kind === "page");
 
     await page.mouse.move(box.x + target.x, box.y + target.y);
     await page.mouse.down();
@@ -183,28 +186,33 @@ test.describe("the library graph responds", () => {
     // teleport, and the pointer state machine is entitled to read it as one.
     for (let step = 1; step <= 8; step += 1) {
       await page.mouse.move(box.x + target.x + step * 16, box.y + target.y + step * 10);
-      // One drawn frame between steps. A drag is delivered in frames; 24 ms was this
-      // machine's guess at one and a half of them.
       await frames(page, 1);
     }
 
-    // ⚠️ The assertion that makes every other one in this case mean anything: the gesture
-    // is holding a **node**, not the background.
+    /*
+     * **Since 2026-09-17 the picture is columns, and a mark has a place, not a position a
+     * hand may improve.** A file stands in the file column on the row of the page that
+     * read it; dragging it somewhere else would put it on a row that means nothing, and
+     * the live-spring test this replaced ("the neighbours followed") was the force
+     * picture's proof of life. The gesture is still honoured — it is the same drag a
+     * person makes on the background, and the whole picture goes with it — so what is
+     * asserted is that the hand moved the *camera*: every mark travelled by one and the
+     * same offset, and none by a different one.
+     */
     const holding = await page.evaluate(() => window.__atlasLibraryGraph!.interaction());
-    expect(holding.kind, "the drag grabbed the background instead of a mark").toBe("node");
-    expect(holding.nodeId).toBe(target.id);
+    expect(holding.kind, "a drag on a mark in the flow picture is a pan").toBe("pan");
 
     const during = await nodes(page);
     const moved = during.find((node) => node.id === target.id)!;
-    expect(Math.hypot(moved.x - target.x, moved.y - target.y)).toBeGreaterThan(40);
-
-    // The neighbours reacted. A settled layout could move the mark under the pointer and
-    // nothing else; live springs cannot.
-    const pulled = neighbours.filter((node) => {
+    const offset = { x: moved.x - target.x, y: moved.y - target.y };
+    expect(Math.hypot(offset.x, offset.y), "the picture did not go with the hand").toBeGreaterThan(40);
+    for (const node of before) {
       const now = during.find((candidate) => candidate.id === node.id)!;
-      return Math.hypot(now.x - node.x, now.y - node.y) > 2;
-    });
-    expect(pulled.length, "no page moved while its source was dragged away").toBeGreaterThan(0);
+      expect(
+        Math.hypot(now.x - node.x - offset.x, now.y - node.y - offset.y),
+        `${node.id} moved by a different offset than the picture`,
+      ).toBeLessThan(0.5);
+    }
 
     await page.mouse.up();
     await expect

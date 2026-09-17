@@ -620,20 +620,30 @@ export function LibraryGraph({
             owner saw. Both sentences are laid in one grid cell so the taller of them sets
             the height and the visible one never changes it. */}
         <div className={cn("mt-1.5 grid", captionQuiet && "max-lg:mt-0")}>
-          <p
-            aria-hidden
-            className={cn(
-              "invisible col-start-1 row-start-1 text-label leading-body [word-break:keep-all]",
-              captionQuiet && "max-lg:sr-only",
-              // Compact reserves one line, not the legend's four: the short legend and the
-              // describe line are each one sentence, so the row's height never moves.
-              compact && "line-clamp-1",
-            )}
-          >
-            {compact
-              ? t(cardNode ? "graph.legendShortCardOpen" : "graph.legendShort")
-              : t(cardNode ? "graph.legendCardOpen" : "graph.legend")}
-          </p>
+          {/*
+            ⚠️ **Both states' sentences size the row, not the current one.** The sizer used
+            to print the sentence of the state it was in, so the row was the *rest* legend's
+            height until a card opened and the shorter card-open legend took a line away:
+            measured 2026-09-18 at 1512, three lines to two, the canvas above grew 20px, and
+            the flow picture — which lays itself into its box — moved every mark 8–14px on
+            the press. Two invisible sentences in one cell, and the taller sets the height
+            in every state.
+          */}
+          {(compact ? ["graph.legendShort", "graph.legendShortCardOpen"] : ["graph.legend", "graph.legendCardOpen"]).map((key) => (
+            <p
+              key={key}
+              aria-hidden
+              className={cn(
+                "invisible col-start-1 row-start-1 text-label leading-body [word-break:keep-all]",
+                captionQuiet && "max-lg:sr-only",
+                // Compact reserves one line, not the legend's four: the short legend and the
+                // describe line are each one sentence, so the row's height never moves.
+                compact && "line-clamp-1",
+              )}
+            >
+              {t(key as "graph.legend")}
+            </p>
+          ))}
           <p
             id="library-graph-hint"
             data-testid="library-graph-hint"
