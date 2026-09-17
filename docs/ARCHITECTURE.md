@@ -36,7 +36,7 @@ tags: [architecture, infra, overview]
 │ ├─ /ontology/studio        compatibility → topology    │
 │ ├─ /ontology/insights      five measures + Flow        │
 │ ├─ /git                    vault Git workbench         │
-│ ├─ /agents                 tabs: agents · MCP           │
+│ ├─ /agents                 agents, MCP section below   │
 │ ├─ /mcp                    compatibility → /agents      │
 │ ├─ /projects               project list                │
 │ ├─ /project/[slug]         project detail              │
@@ -590,11 +590,12 @@ until a local manifest exists.
                            Workspace stay in settings (the 2026-08-16 freeze and a different
                            owning domain). Desktop launches the tools; on the web the page
                            still renders and says what it cannot do, plus what it can. MCP
-                           left this screen on 2026-09-05 for /mcp and came back on
-                           2026-09-17 as the second tab (?tab=mcp) of one Agents destination:
-                           src/app/agents-workspace/ composes src/views/agents/ and
-                           src/views/mcp/ under a header tab strip; only the active view
-                           mounts and neither imports the other
+                           left this screen on 2026-09-05 for /mcp, came back on 2026-09-17
+                           as the second tab of one Agents destination, and on 2026-09-18
+                           became the page's last section (the owner: fold it into the
+                           page, not a strip at the top): src/app/agents-workspace/ renders
+                           src/views/agents/ with src/views/mcp/ embedded as its children;
+                           ?tab=mcp scrolls to the section and neither view imports the other
 /mcp                       compatibility redirect → /agents/?tab=mcp (2026-09-17). Its own
                            section rides along as ?mcp=share|connectors, and every other
                            parameter travels unchanged, which is what keeps the installed

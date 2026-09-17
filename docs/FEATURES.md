@@ -1207,6 +1207,37 @@ four fixtures at 1040, 1512 and 1920: every page of a 60-page folder is named at
 The simulation below remains as the engine's position store; its forces are not stepped
 under this layout. Decision: `docs/records/decisions/2026-09-17-library-graph-flow-columns-*.md`.
 
+**Past four hundred marks the picture is a map of islands** (2026-09-18). The owner:
+*"a wiki piles up thousands of files in no time; plan for tens of thousands. Find the
+picture that makes a person go 'wow' and is still calm and good to look at."* Columns name
+everything up to a few hundred marks; past `ISLANDS_MIN_MARKS` (400) no picture can name
+things, and the home shows shape and state instead. The reference is the data map (Nomic
+Atlas's information cartography: points as texture, a few topic labels at rest, detail as
+the camera closes in); Atlas's version uses what the wiki already knows instead of an
+embedding. `library-islands-layout.ts` makes **an island per concept**: the pages that name
+it as small discs at the centre, the files those pages were written from as smaller squares
+packed around them on a sunflower spiral, so an island reads as a body with a shore. Pages
+naming no concept gather on *Unsorted* (or on an island per wiki sub-folder); files no page
+has read gather on *Unread*, which on a half-read folder is the largest island and the truth
+the home should tell. Islands pack largest-first about the centre on a spiral stretched to
+the box's aspect; every island carries its name and count on a ground plate; a stale page is
+an amber dot; no line is drawn at rest, and a pointed-at or held mark still answers with its
+own. The layout is pure and deterministic, like the flow. **A press on an island opens it
+as columns** — its own pages, files and rows, few enough for the flow to name every one —
+with a chip at the picture's top-left back to the islands and Escape as the same way out;
+a dot on the overview takes a press only from an 8px radius, a real target. Inside an
+opened island, and on any folder whose page column folds, **folded pages stand in stacks**:
+each sub-column of pages keeps the files its pages read as a small grid directly to its
+left, rows aligned, so no citation crosses another stack's names. Measured in Chrome:
+3,424 marks in 26 islands at a 2.5 ms frame; 11,240 marks in 42 islands at 4.8 ms, every
+island named — the quiet overview paints in four fills, one per ink. The layout itself
+takes 36 ms at 10,000 files and 107 ms at 30,000 (`library-islands-layout.perf.test.ts`).
+What the measurement had to raise locally is the folder walk's own cap,
+`VAULT_WALK_MAX_ENTRIES` (4,000, mirrored in Rust): past it the walk truncates and says so,
+so a folder of ten thousand files is not yet a folder the Library sees whole. Gates:
+`tests/e2e/library-graph-islands.spec.ts`. Decision:
+`docs/records/decisions/2026-09-18-library-islands-map-*.md`.
+
 **Four gestures, and a picture that is still until a hand moves it.** A drag on a mark
 moves the whole picture, the same pan a drag on the background makes — a mark has a place
 in its column, not a position a hand may improve (under the earlier force picture a drag
@@ -2176,13 +2207,16 @@ Opening a conversation preserves the selected runner across the quick detection 
 
 **What changed on 2026-09-07**: only the tools Atlas confirmed on this machine are listed inline. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product. Nothing left the list; a fold of 36 rows had nowhere to put a search.
 
-### `/agents?tab=mcp` — MCP (new 2026-09-05; the second tab of Agents since 2026-09-17)
+### `/agents?tab=mcp` — MCP (new 2026-09-05; a section of the Agents page since 2026-09-18)
 
 **One sentence on what this screen does**: everything MCP — the folder's own server
 (share this folder with a coding tool) and the external connectors an in-app agent may
-reach — as the second tab of the Agents destination, with its own two sections on `?mcp=`.
+reach — as the last section of the Agents page, with its own two sections on `?mcp=`.
 The owner folded the two rail destinations into one on 2026-09-17 ("merge these two,
-split them as tabs inside"); `/mcp/` and `/mcp/?tab=connectors` redirect into the tab with
+split them as tabs inside"), then on 2026-09-18 took the header tab strip away too ("this
+way of showing them at the top is very bad… it should be folded in here"): the strip spent
+a 56px chrome band on two words and left the rest empty, and the two were one subject.
+`?tab=mcp` scrolls to the section; `/mcp/` and `/mcp/?tab=connectors` redirect into it with
 every parameter kept, so the installed app's `ontology-atlas://mcp?install=…` deep link
 still opens the connectors dialog. The rail lost its MCP tile; `g c` still lands here.
 
