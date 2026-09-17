@@ -275,9 +275,13 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     const count = rowsOf(column.ids.length, column.grid);
     const step = stepOf(column.kind);
     const left = column.x - (step * (column.grid - 1)) / 2;
+    // A folded file band tiles row by row: the files one page read stand side by side on
+    // one row, so their lines leave as one sheaf rather than from three scattered rows. A
+    // folded page column stays column by column — a stack is a run of consecutive pages.
+    const rowMajor = column.kind === "source" && column.grid > 1;
     column.ids.forEach((id, i) => {
-      const sub = Math.floor(i / count);
-      const row = i % count;
+      const sub = column.grid === 1 ? 0 : rowMajor ? i % column.grid : Math.floor(i / count);
+      const row = column.grid === 1 ? i : rowMajor ? Math.floor(i / column.grid) : i % count;
       const y = rowYs[Math.min(row, rowYs.length - 1)];
       const x = column.grid === 1 ? column.x : left + step * sub;
       yOf.set(id, y);
@@ -352,9 +356,13 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     });
     groups.forEach((group, k) => {
       const left = stackX[k].files - ((groupGrid[k] - 1) * FLOW_GRID_STEP) / 2 + shift;
+      // A group with fewer rows than its stack sits level with the stack's middle, so the
+      // files stand beside the pages that read them rather than hanging from the top.
+      const groupRows = Math.ceil(group.length / groupGrid[k]);
+      const firstRow = Math.max(0, Math.floor((rows - groupRows) / 2));
       group.forEach((id, i) => {
-        const sub = Math.floor(i / rows);
-        const row = i % rows;
+        const sub = i % groupGrid[k];
+        const row = firstRow + Math.floor(i / groupGrid[k]);
         positions.set(id, { x: left + FLOW_GRID_STEP * sub, y: rowYs[Math.min(row, rowYs.length - 1)] });
       });
     });

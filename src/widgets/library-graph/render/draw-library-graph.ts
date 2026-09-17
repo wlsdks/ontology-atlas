@@ -662,10 +662,13 @@ function flowEdgeControls(from: LayoutPoint, to: LayoutPoint): [LayoutPoint, Lay
 /**
  * Where an unverified citation breaks in the flow picture, as a fraction of the curve from
  * the page (every edge starts at the write-up). At the midpoint every break of a folder
- * stood on one vertical between the columns and read as a fourth column of amber; beside
- * the page it reads as what it is — this write-up did not receive what its file now says.
+ * stood on one vertical between the columns and read as a fourth column of amber; at
+ * 0.22 an island where every page was stale still drew them as one slit down the picture
+ * (owner screenshot, 2026-09-18). Just short of the page, where the lines have already
+ * converged, the break reads as what it is — this write-up did not receive what its
+ * file now says — and a folder of stale pages reads as stale pages, not a fault line.
  */
-const FLOW_BREAK_T = 0.22;
+const FLOW_BREAK_T = 0.12;
 
 /** One point on the cubic, for the break in an unverified citation. */
 function cubicAt(from: LayoutPoint, c1: LayoutPoint, c2: LayoutPoint, to: LayoutPoint, t: number): LayoutPoint {
