@@ -30,6 +30,13 @@ export function parseMcpTab(raw: string | null | undefined): McpTab {
  * one a person copies, and the locale-prefixed current pathname is passed in when only the
  * query of the current document changes.
  */
-export function buildMcpTabHref(tab: McpTab, pathname = '/mcp/'): string {
-  return tab === DEFAULT_MCP_TAB ? pathname : `${pathname}?tab=${tab}`;
+/**
+ * MCP is the second tab of the Agents destination (2026-09-17), so its own section lives
+ * under `?mcp=` beside the workspace's `?tab=mcp`. `/mcp/?tab=<section>` still resolves:
+ * the retired route redirects here with the same section.
+ */
+export function buildMcpTabHref(tab: McpTab, pathname = '/agents/'): string {
+  return tab === DEFAULT_MCP_TAB ? `${pathname}?tab=mcp` : `${pathname}?tab=mcp&mcp=${tab}`;
 }
+
+export const MCP_SECTION_PARAM = 'mcp';

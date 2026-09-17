@@ -82,7 +82,8 @@ describe("AppNavRail", () => {
     expect(screen.getByTestId("app-nav-rail-item-insights")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
-    expect(screen.getByTestId("app-nav-rail-item-mcp")).toBeInTheDocument();
+    // MCP is the second tab of Agents since 2026-09-17, not a rail item.
+    expect(screen.queryByTestId("app-nav-rail-item-mcp")).not.toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
     // The retired ERD builder (2026-07-24) — removed from the rail.
     expect(screen.queryByTestId("app-nav-rail-item-builder")).not.toBeInTheDocument();
@@ -92,7 +93,7 @@ describe("AppNavRail", () => {
   it("draws only the destinations the folder's shape earns", () => {
     // A wiki without a map (owner direction 2026-09-06): no empty map, reading, analysis
     // or project doors; the wiki, the agent, MCP and history stay.
-    renderRail(<AppNavRail visibleDestinations={new Set(["library", "agents", "mcp", "git"])} />);
+    renderRail(<AppNavRail visibleDestinations={new Set(["library", "agents", "git"])} />);
     expect(screen.getByTestId("app-nav-rail-item-library")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();

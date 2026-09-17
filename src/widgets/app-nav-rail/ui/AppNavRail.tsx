@@ -27,7 +27,6 @@ import {
   Library,
   LineChart,
   Map as MapIcon,
-  Plug,
 } from "lucide-react";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
@@ -285,18 +284,7 @@ export function AppNavRail({
       // of the eye cannot be read if it changes every second).
       badgeCount: agentsNoticeCount,
     },
-    /*
-     * MCP — a new destination on 2026-09-05. The folder's own MCP connection and the
-     * external connectors left `/agents`; that screen now answers only "which coding
-     * tools does this computer have, and open a conversation".
-     *
-     * Why the icon is `Plug`: at 20px on the rail every candidate has to be told apart
-     * from the seven silhouettes already there. `Plug` is the only outline in this set
-     * with two prongs on a stalk, and it is the one lucide draws for "attach a thing to
-     * a thing", which is what this destination does. `Cable` reads as a loop at 20px and
-     * collides with nothing but says nothing either.
-     */
-    { id: "mcp", href: DESTINATION_HREF.mcp, label: t("mcp"), Icon: Plug },
+    // MCP left the rail on 2026-09-17: it is the second tab of Agents (`/agents/?tab=mcp`).
     // Owner correction, 2026-08-26: Architecture is additive. Git keeps its
     // primary destination, current-route marker, and uncommitted-change badge.
     { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },

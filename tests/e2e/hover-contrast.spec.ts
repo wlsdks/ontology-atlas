@@ -257,7 +257,7 @@ async function auditRoute(page: Page) {
  */
 const HOVER_ROUTES = [
   ...AUDITED_ROUTES.filter((route) => route !== "/ko/agents/"),
-  "/ko/mcp/?tab=connectors",
+  "/ko/agents/?tab=mcp",
 ] as const;
 
 for (const route of HOVER_ROUTES) {

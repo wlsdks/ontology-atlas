@@ -100,7 +100,7 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     await waitFor(() =>
       expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toBeInTheDocument(),
     );
-    expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/mcp/');
+    expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/agents/?tab=mcp');
     // The bridge really was available on this path — otherwise this test measures the browser
     // branch and passes for the wrong reason.
     expect(bridge.detect).toHaveBeenCalled();
@@ -373,7 +373,7 @@ describe('실행기 목록 — 못 하는 일은 정직하게', () => {
      * section of this same screen; MCP became its own destination, and a name with no way there is
      * the dead-end guidance `.claude/rules/surfaces.md` forbids in a degradation card.
      */
-    expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/mcp/');
+    expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/agents/?tab=mcp');
     // In a browser it does not even set out to look.
     expect(bridge.detect).not.toHaveBeenCalled();
   });

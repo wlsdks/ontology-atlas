@@ -33,7 +33,7 @@ const MEMBERS = [
   // MCP (2026-09-05) — a new list destination wearing the same frame. A member that is
   // not on this list is a screen free to pick its own top spacing again, which is the
   // exact defect this spec exists for.
-  { route: "/ko/mcp/", title: "MCP" },
+  { route: "/ko/agents/?tab=mcp", title: "MCP" },
 ] as const;
 
 async function measureHeader(

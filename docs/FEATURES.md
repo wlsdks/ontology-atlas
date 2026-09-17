@@ -2158,11 +2158,15 @@ Opening a conversation preserves the selected runner across the quick detection 
 
 **What changed on 2026-09-07**: only the tools Atlas confirmed on this machine are listed inline. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product. Nothing left the list; a fold of 36 rows had nowhere to put a search.
 
-### `/mcp` — MCP (new 2026-09-05)
+### `/agents?tab=mcp` — MCP (new 2026-09-05; the second tab of Agents since 2026-09-17)
 
 **One sentence on what this screen does**: everything MCP — the folder's own server
 (share this folder with a coding tool) and the external connectors an in-app agent may
-reach — under one address, on two tabs (`?tab=`).
+reach — as the second tab of the Agents destination, with its own two sections on `?mcp=`.
+The owner folded the two rail destinations into one on 2026-09-17 ("merge these two,
+split them as tabs inside"); `/mcp/` and `/mcp/?tab=connectors` redirect into the tab with
+every parameter kept, so the installed app's `ontology-atlas://mcp?install=…` deep link
+still opens the connectors dialog. The rail lost its MCP tile; `g c` still lands here.
 
 - **Share this folder** — the three steps that put a ready config in front of each tool,
   the connection status those files add up to, the first-contact proof packet an agent

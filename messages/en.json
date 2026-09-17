@@ -199,7 +199,7 @@
       "agentNotificationKindsCaption": "Muted kinds never reach the bell.",
       "runtimes": {
         "intro": "Atlas finds the AI coding tools installed on this computer. Only a tool confirmed to ask before writing opens the chat beside the map; the rest can still be used for the agent connection (MCP) setup.",
-        "mcpLink": "Share this folder with a tool you run yourself, or attach a connector, on the MCP screen",
+        "mcpLink": "Share this folder with a tool you run yourself, or attach a connector, on the MCP tab (the agent connection)",
         "recheck": "Check again",
         "checking": "Looking…",
         "readyHeading": "Found on this computer ({count})",
@@ -208,7 +208,7 @@
         "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Agent or Codex and they show up here. The install guides are in the list below.",
         "webLabel": "A browser is not allowed to start programs on this computer",
-        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Pointing a tool you started yourself at this folder works right now, in the “Share this folder” section on the MCP screen.",
+        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Pointing a tool you started yourself at this folder works right now, in the “Share this folder” section on the MCP tab.",
         "state": {
           "ready": "Ready",
           "cli-missing": "Install needed",
@@ -4450,6 +4450,12 @@
     "checkAnswerFull": "The agent's report, verbatim"
   },
   "agents": {
+    "workspace": {
+      "aria": "Agents view",
+      "agents": "Agents",
+      "mcp": "MCP",
+      "mcpCount": "Connectors switched on"
+    },
     "title": "Agents",
     "lede": "Atlas finds the coding tools already on this computer.",
     "runtimesHeading": "Tools on this computer",
@@ -5656,7 +5662,7 @@
       },
       "other": {
         "title": "Another service",
-        "body": "Set one up by hand on the MCP screen, where the connection details live.",
+        "body": "Set one up by hand on the MCP tab of Agents (the agent connection), where the connection details live.",
         "example": ""
       }
     },

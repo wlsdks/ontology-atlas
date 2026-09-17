@@ -343,7 +343,8 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
       await page.getByTestId("first-run-starter-open").click();
       await page.getByTestId("vault-guide-pick-existing").click();
       await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
-      await page.getByTestId("app-nav-rail").getByRole("link", { name: "MCP" }).click();
+      await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
+      await page.getByTestId("agents-workspace-mcp").click();
       await page.getByTestId("agent-setup-section").waitFor({ timeout: 15_000 });
     },
     needsVault: true,
@@ -382,7 +383,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     // screen; MCP became its own destination, so the row now names the place *and*
     // carries a link to it. A name with no way there is the dead pointer this whole
     // registry exists to prevent.
-    alsoHereLink: { testId: "app-settings-runtimes-mcp-link", href: /\/mcp\// },
+    alsoHereLink: { testId: "app-settings-runtimes-mcp-link", href: /\/agents\/\?tab=mcp/ },
   },
   {
     // **"Connectors"** (registered 2026-09-05) — external MCP servers a person lets the
@@ -399,7 +400,8 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
       await page.getByTestId("first-run-starter-open").click();
       await page.getByTestId("vault-guide-pick-existing").click();
       await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
-      await page.getByTestId("app-nav-rail").getByRole("link", { name: "MCP" }).click();
+      await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
+      await page.getByTestId("agents-workspace-mcp").click();
       /*
        * ⚠️ **Two presses further in since 2026-09-05.** Connectors are the second tab of the MCP
        * destination, and this card moved into the "add a connector" dialog — finding what is
@@ -574,7 +576,8 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     await page.getByTestId("first-run-starter-open").click();
     await page.getByTestId("vault-guide-pick-existing").click();
     await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
-    await page.getByTestId("app-nav-rail").getByRole("link", { name: "MCP" }).click();
+    await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
+      await page.getByTestId("agents-workspace-mcp").click();
     await page.getByTestId("agent-setup-section").waitFor({ timeout: 15_000 });
 
     const panel = page.getByTestId("web-manual-connect");
@@ -625,7 +628,7 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
      */
     await expect(page.getByTestId("agent-setup-section")).toBeVisible();
     // 2026-09-05: the pane moved to its own destination.
-    expect(new URL(page.url()).pathname).toBe("/ko/mcp/");
+    expect(new URL(page.url()).pathname).toBe("/ko/agents/");
   });
 
   /**

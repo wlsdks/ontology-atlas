@@ -4,8 +4,8 @@ import { installDesktopRailRuntime, mountDesktopVault } from './desktop-rail-arr
 test('Map announces preparation before leaving the current pane and reveals a drawn canvas', async ({ page }) => {
   await installDesktopRailRuntime(page);
   await mountDesktopVault(page);
-  await page.getByTestId('app-nav-rail-item-mcp').click();
-  await expect(page.getByRole('heading', { name: 'MCP', exact: true })).toBeVisible();
+  await page.getByTestId('app-nav-rail-item-agents').click();
+  await expect(page.getByRole('heading', { name: 'Agents', exact: true })).toBeVisible();
   await page.evaluate(() => {
     const events: { type: string; pathname: string; inert: boolean; canvas: boolean }[] = [];
     (window as unknown as { mapWaitEvents: typeof events }).mapWaitEvents = events;
@@ -28,11 +28,11 @@ test('Map announces preparation before leaving the current pane and reveals a dr
   const events = await page.evaluate(() => (window as unknown as { mapWaitEvents: { type: string; pathname: string; inert: boolean; canvas: boolean }[] }).mapWaitEvents);
   expect(events).toHaveLength(2);
   expect(events[0]).toMatchObject({ type: 'pending', inert: true });
-  expect(events[0].pathname).toContain('/mcp/');
+  expect(events[0].pathname).toContain('/agents/');
   expect(events[1]).toMatchObject({ type: 'released', inert: false, canvas: true });
 
-  await page.getByTestId('app-nav-rail-item-mcp').click();
-  await expect(page.getByRole('heading', { name: 'MCP', exact: true })).toBeVisible();
+  await page.getByTestId('app-nav-rail-item-agents').click();
+  await expect(page.getByRole('heading', { name: 'Agents', exact: true })).toBeVisible();
   await page.keyboard.press('g');
   await page.keyboard.press('m');
   await expect(page.getByTestId('map-navigation-wait')).toHaveCount(0);
@@ -42,8 +42,8 @@ test('Map announces preparation before leaving the current pane and reveals a dr
 test('leaving during map preparation does not strand an overlay', async ({ page }) => {
   await installDesktopRailRuntime(page);
   await mountDesktopVault(page);
-  await page.getByTestId('app-nav-rail-item-mcp').click();
-  await expect(page.getByRole('heading', { name: 'MCP', exact: true })).toBeVisible();
+  await page.getByTestId('app-nav-rail-item-agents').click();
+  await expect(page.getByRole('heading', { name: 'Agents', exact: true })).toBeVisible();
   // Dispatch the second real navigation in the same task, before the two-frame
   // preparation boundary. The queued map push must not run afterwards.
   await page.evaluate(() => {
@@ -59,8 +59,8 @@ test('reduced motion keeps the waiting scene readable and still', async ({ page 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await installDesktopRailRuntime(page);
   await mountDesktopVault(page);
-  await page.getByTestId('app-nav-rail-item-mcp').click();
-  await expect(page.getByRole('heading', { name: 'MCP', exact: true })).toBeVisible();
+  await page.getByTestId('app-nav-rail-item-agents').click();
+  await expect(page.getByRole('heading', { name: 'Agents', exact: true })).toBeVisible();
   // Defer the queued destination work, not the CSS or the feedback commit.
   // This makes the pending state inspectable without adding a product delay.
   await page.evaluate(() => {
@@ -84,5 +84,5 @@ test('reduced motion keeps the waiting scene readable and still', async ({ page 
   });
   await pending.getByRole('button', { name: 'Return to previous screen' }).click();
   await expect(pending).toHaveCount(0);
-  await expect(page).toHaveURL(/\/mcp\//);
+  await expect(page).toHaveURL(/\/agents\//);
 });

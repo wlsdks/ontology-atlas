@@ -13,7 +13,7 @@ import { TabBar } from '@/shared/ui';
 import { useSwapHeight } from '@/shared/lib/use-presence';
 import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
 
-import { buildMcpTabHref, parseMcpTab, type McpTab } from '../lib/mcp-tab-state';
+import { MCP_SECTION_PARAM, buildMcpTabHref, parseMcpTab, type McpTab } from '../lib/mcp-tab-state';
 
 /**
  * The **MCP** destination — the folder's own MCP connection, and the external connectors an
@@ -63,7 +63,7 @@ export function McpPage() {
   const enabledCount = connectors.connectors.filter((connector) => connector.enabled).length;
 
   const searchParams = useSearchParams();
-  const [tab, setTabState] = useState<McpTab>(() => parseMcpTab(searchParams.get('tab')));
+  const [tab, setTabState] = useState<McpTab>(() => parseMcpTab(searchParams.get(MCP_SECTION_PARAM)));
   /*
    * The two panels are very different heights, and swapping them in one frame drops the page's
    * scroll position somewhere unrelated. `useSwapHeight` is this repository's grammar for exactly
@@ -80,7 +80,7 @@ export function McpPage() {
   useEffect(() => {
     const syncFromHistory = () => {
       capturePanelHeight();
-      setTabState(parseMcpTab(new URL(window.location.href).searchParams.get('tab')));
+      setTabState(parseMcpTab(new URL(window.location.href).searchParams.get(MCP_SECTION_PARAM)));
     };
     window.addEventListener('popstate', syncFromHistory);
     return () => window.removeEventListener('popstate', syncFromHistory);

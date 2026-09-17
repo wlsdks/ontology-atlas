@@ -107,7 +107,7 @@ Routes are locale-prefixed; use `@/i18n/navigation`. `/` chooses gateway or
 vault-bearing map/first-run; a wiki without nodes opens `/library`. The app must
 not offer its own download. `/topology` owns map/relation review; ACP writes wait
 for `allow_once` or `reject_once`. Route additions/removals require a decision
-fragment. `/ontology`, `/ontology/edit`, and `/ontology/studio` are redirects;
+fragment. `/ontology`, `/ontology/edit`, `/ontology/studio`, and `/mcp` are redirects;
 `/ontology/insights` is live. Check the forbidden rule before reviving a retired
 namespace.
 

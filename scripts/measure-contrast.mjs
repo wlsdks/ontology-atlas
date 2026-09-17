@@ -67,7 +67,7 @@ export const DEFAULT_ROUTES = [
   "/ko/agents/",
   // MCP (added 2026-09-05) — the folder's own connection and the connectors split off
   // `/agents` into their own destination.
-  "/ko/mcp/",
+  "/ko/agents/?tab=mcp",
   "/ko/library/",
   // 404 is **two pages** — with and without a locale prefix. This is exactly where
   // the AA shortfall of 4.42:1 hid on 2026-08-03, and neither ratchet had ever looked

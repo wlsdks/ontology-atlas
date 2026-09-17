@@ -61,7 +61,9 @@ describe("목적지 이동 단축키 — 표가 정본이다", () => {
     // Does the reverse table say the same thing as the forward one? `d` is the one
     // compatibility alias: Docs no longer has a tile, but its published leader
     // shortcut and context-aware deep link still open Library's Ontology tab.
-    expect(Object.keys(DESTINATION_BY_KEY).sort()).toEqual([...keys, 'd'].sort());
+    // `c` is the second alias: MCP left the rail for the Agents tab on 2026-09-17, and
+    // its published `g c` still lands there.
+    expect(Object.keys(DESTINATION_BY_KEY).sort()).toEqual([...keys, 'd', DESTINATION_KEY.mcp].sort());
     for (const id of DESTINATION_IDS) {
       expect(DESTINATION_BY_KEY[DESTINATION_KEY[id]]).toBe(id);
     }
@@ -154,8 +156,10 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
    * never a trap there. Without this line the next person reads the absence as an oversight and
    * "fixes" it.
    */
-  it("MCP 는 모바일 다섯 자리에 일부러 없다 — 빠뜨린 것이 아니다", () => {
-    expect(DESTINATION_IDS).toContain("mcp");
+  it("MCP 는 에이전트의 둘째 탭이다 — 레일과 모바일 자리에 일부러 없다", () => {
+    // 2026-09-17: the tile folded into Agents; the address stays as a tab.
+    expect(DESTINATION_IDS).not.toContain("mcp");
+    expect(DESTINATION_HREF.mcp).toBe("/agents/?tab=mcp");
     expect(
       MOBILE_DESTINATION_IDS as readonly string[],
       "MCP 가 모바일 슬롯에 들어왔다 — 결정이 바뀐 것이라면 destinations.ts 의 주석부터 고쳐라",
@@ -266,17 +270,18 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
     ).toBeLessThanOrEqual(9);
   });
 
-  it("현재 목록은 여덟이다 — 합친 문서함이 별도 목적지로 돌아오지 않는다", () => {
+  it("현재 목록은 일곱이다 — 합친 문서함과 MCP 가 별도 목적지로 돌아오지 않는다", () => {
     /*
      * The same grammar the system seat used on other ratchets: a ceiling with the
      * measurement far below it turns that slack into a free pass for whatever arrives
-     * next. Eight exist today: the 2026-09-14 owner decision moved Docs inside Library
-     * while retaining `/docs` only as a compatibility address.
+     * next. Seven exist today: the 2026-09-14 owner decision moved Docs inside Library
+     * while retaining `/docs` only as a compatibility address, and the 2026-09-17 decision
+     * folded MCP into Agents the same way.
      */
     expect(
       DESTINATION_IDS.length,
-      "목적지 목록이 바뀌었다 — Library/Docs 통합 결정을 검토하라",
-    ).toBe(8);
+      "목적지 목록이 바뀌었다 — Library/Docs 와 Agents/MCP 통합 결정을 검토하라",
+    ).toBe(7);
   });
 
   /**

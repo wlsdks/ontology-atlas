@@ -43,17 +43,15 @@ export const DESTINATION_IDS = [
    */
   'agents',
   /*
-   * MCP — added 2026-09-05. The folder's own MCP connection and the external
-   * connectors left `/agents`, which had grown into two unrelated jobs under one
-   * title: "which coding tools does this computer have" and "what does an agent
-   * reach through MCP". Owner: *"Agents itself needs a redesign — MCP separately
-   * (doesn't it need its own LNB tab?) …"*
+   * MCP — added 2026-09-05 as its own destination, folded into Agents as its second tab
+   * on 2026-09-17 (owner: "merge these two, split them as tabs inside"). `/mcp/` redirects
+   * to `/agents/?tab=mcp`, and `DESTINATION_HREF.mcp` still names that address for the
+   * links and the `g c` shortcut.
    */
-  'mcp',
   'git',
 ] as const;
 
-export type DestinationId = (typeof DESTINATION_IDS)[number] | 'docs';
+export type DestinationId = (typeof DESTINATION_IDS)[number] | 'docs' | 'mcp';
 
 /**
  * Persistent destinations below `lg`. The installed app has five slots; web may
@@ -99,7 +97,7 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   insights: '/ontology/insights/',
   projects: '/projects/',
   agents: '/agents/',
-  mcp: '/mcp/',
+  mcp: '/agents/?tab=mcp',
   library: '/library/',
   git: '/git/',
 };
@@ -133,6 +131,8 @@ export const DESTINATION_BY_KEY: Record<string, DestinationId> = {
   ...Object.fromEntries(DESTINATION_IDS.map((id) => [DESTINATION_KEY[id], id])),
   // Preserve the published shortcut and project-specific Docs href overrides.
   d: 'docs',
+  // `g c` still lands on the connectors, now the MCP tab of Agents.
+  c: 'mcp',
 };
 
 /**
@@ -151,7 +151,7 @@ export function destinationsForVaultShape(
   shape: { map: boolean; wiki: boolean } | null | undefined,
 ): ReadonlySet<DestinationId> {
   if (!shape || shape.map || !shape.wiki) return new Set(DESTINATION_IDS);
-  return new Set<DestinationId>(['library', 'agents', 'mcp', 'git']);
+  return new Set<DestinationId>(['library', 'agents', 'git']);
 }
 
 /** The bottom tabs for a wiki without a map: the Library is the one place to go. */

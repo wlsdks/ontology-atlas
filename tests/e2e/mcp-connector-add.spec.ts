@@ -28,7 +28,7 @@ async function openConnectorsWithVault(page: import("@playwright/test").Page) {
   await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
   await page.getByTestId("vault-guide-pick-existing").click();
   await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
-  await page.goto("/ko/mcp/?tab=connectors");
+  await page.goto("/ko/agents/?tab=mcp&mcp=connectors");
   await page.waitForLoadState("networkidle");
   await expect(page.getByTestId("connectors-panel")).toBeVisible();
 }
@@ -189,6 +189,8 @@ test("설치 링크는 대화상자를 채워 열 뿐, 아무것도 붙이지 �
     "utf8",
   ).toString("base64");
   await page.goto(`/ko/mcp/?tab=connectors&install=${encodeURIComponent(config)}`);
+  // The retired address still resolves: it redirects into the Agents destination.
+  await expect(page).toHaveURL(/\/agents\/\?tab=mcp/);
   await page.waitForLoadState("networkidle");
 
   await expect(page.getByTestId("connectors-add-dialog")).toBeVisible();

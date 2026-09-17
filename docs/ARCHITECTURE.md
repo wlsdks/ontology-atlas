@@ -36,8 +36,8 @@ tags: [architecture, infra, overview]
 │ ├─ /ontology/studio        compatibility → topology    │
 │ ├─ /ontology/insights      five measures + Flow        │
 │ ├─ /git                    vault Git workbench         │
-│ ├─ /agents                 fetch · install · converse   │
-│ ├─ /mcp                    folder server + connectors  │
+│ ├─ /agents                 tabs: agents · MCP           │
+│ ├─ /mcp                    compatibility → /agents      │
 │ ├─ /projects               project list                │
 │ ├─ /project/[slug]         project detail              │
 │ ├─ /download               gateway as an explicit link │
@@ -590,24 +590,17 @@ until a local manifest exists.
                            Workspace stay in settings (the 2026-08-16 freeze and a different
                            owning domain). Desktop launches the tools; on the web the page
                            still renders and says what it cannot do, plus what it can. MCP
-                           left this screen on 2026-09-05 for /mcp
-/mcp                       everything MCP: the folder's own server (share this folder with a
-                           coding tool — the three steps, the config each tool needs, and the
-                           first-contact proof packet) and Connectors (the external MCP
-                           servers an in-app agent may reach). Two tabs on ?tab=. Split out
-                           of /agents 2026-09-05: "which coding tools does this computer
-                           have" and "what does an agent reach over MCP" are different
-                           questions, and only the first needs programs on this machine. The
-                           whole screen works on the web, because MCP attaches to the folder
-                           rather than to an Atlas screen; discovery of already-registered
-                           servers and keychain storage are the app-only halves and each says
-                           so where it is missing. ?install=<base64 server config> (2026-09-07)
-                           opens the add dialog pre-filled from an "Add to Ontology Atlas"
-                           link in the Cursor/VS Code shape, and never attaches on its own:
-                           an unknown field refuses the payload, no value crosses, every
-                           argument renders verbatim, and the switch stays off. The
-                           installed app registers ontology-atlas://mcp?install= for that
-                           link (2026-09-07) and answers no other address
+                           left this screen on 2026-09-05 for /mcp and came back on
+                           2026-09-17 as the second tab (?tab=mcp) of one Agents destination:
+                           src/app/agents-workspace/ composes src/views/agents/ and
+                           src/views/mcp/ under a header tab strip; only the active view
+                           mounts and neither imports the other
+/mcp                       compatibility redirect → /agents/?tab=mcp (2026-09-17). Its own
+                           section rides along as ?mcp=share|connectors, and every other
+                           parameter travels unchanged, which is what keeps the installed
+                           app's ontology-atlas://mcp?install=… deep link (answered by Rust
+                           as /<locale>/mcp/?tab=connectors&install=…) landing on the
+                           connectors dialog. Was its own destination from 2026-09-05.
 /library                   the project documents gathered into this folder, the wiki
                            pages written from them, typed ontology documents, and saved
                            constellations. Four tabs keep Sources, Wiki, Ontology, and

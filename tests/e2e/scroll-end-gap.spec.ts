@@ -494,8 +494,8 @@ for (const vp of VIEWPORTS) {
  * pass above already measures on every route.
  */
 const VAULT_ROUTES = [
-  "/ko/mcp/",
-  "/ko/mcp/?tab=connectors",
+  "/ko/agents/?tab=mcp",
+  "/ko/agents/?tab=mcp&mcp=connectors",
   "/ko/agents/",
   "/ko/ontology/insights/",
   "/ko/projects/",

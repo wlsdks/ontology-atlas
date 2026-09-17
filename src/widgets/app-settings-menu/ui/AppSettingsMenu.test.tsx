@@ -283,7 +283,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
      */
     fireEvent.click(screen.getByTestId('app-settings-nav-mcp'));
     expect(routerPush).toHaveBeenCalledTimes(1);
-    expect(String(routerPush.mock.calls[0][0])).toContain('/mcp/');
+    expect(String(routerPush.mock.calls[0][0])).toContain('/agents/?tab=mcp');
   });
 
   /**

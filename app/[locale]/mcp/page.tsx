@@ -1,8 +1,9 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { McpPage } from '@/views/mcp';
+import { McpRedirectPage } from '@/views/mcp-redirect';
 import { RouteLoadingFallback } from '@/shared/ui';
+import { absoluteUrl } from '@/shared/config';
 
 export async function generateMetadata({
   params,
@@ -11,23 +12,22 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'mcp' });
-  return { title: t('title') };
+  // A redirect, not a destination (2026-09-17): the canonical address is the Agents
+  // destination that now holds the MCP tab, so search engines see one page, not two.
+  return { title: t('title'), alternates: { canonical: absoluteUrl(`/${locale}/agents/`) } };
 }
 
 /**
- * `/mcp` — everything MCP: the folder's own server on one tab, the external connectors on the
- * other.
+ * `/mcp` — redirects into `/agents/?tab=mcp`, carrying its section and every other parameter,
+ * so older links and the installed app's `ontology-atlas://mcp?install=…` deep link still land.
  *
- * ⚠️ **The `Suspense` boundary is required, not decorative.** The view reads `?tab=` through
- * `useSearchParams`, and with `output: 'export'` a prerendered page that calls it without a
- * boundary fails the build outright ("useSearchParams() should be wrapped in a suspense
- * boundary"). `/ontology/insights` carries the same wrapper for the same reason, and this file
- * copies it rather than inventing a second answer.
+ * The `Suspense` boundary is required: the view reads the query through `useSearchParams`, and
+ * with `output: 'export'` a prerendered page without one fails the build.
  */
 export default function Page() {
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
-      <McpPage />
+      <McpRedirectPage />
     </Suspense>
   );
 }

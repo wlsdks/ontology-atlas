@@ -91,7 +91,7 @@ export const AUDITED_ROUTES = [
   // Measures the no-vault state: a browser cannot read this machine's agent config
   // files or hold a token, so that is both what the ratchet can see and what a
   // first-time visitor meets.
-  "/ko/mcp/",
+  "/ko/agents/?tab=mcp",
   // Library (added 2026-09-06). Sources and Wiki left `/docs` for their own destination;
   // the same reason MCP is on this list applies unchanged — a new route that is not here
   // is a surface four gates (scroll padding, responsive overflow, cursor, Korean line
@@ -140,4 +140,6 @@ export const EXCLUDED_ROUTES: Readonly<Record<string, string>> = {
   "/ontology": "리다이렉트 → /topology?index=expanded — 목적지를 이미 잰다",
   "/ontology/edit": "호환 리다이렉트 → /topology contextual workbench — 목적지와 편집 상태를 이미 잰다",
   "/ontology/studio": "호환 리다이렉트 → /topology contextual workbench — 자기 화면이 없다",
+  // MCP folded into Agents on 2026-09-17; the address only forwards its parameters.
+  "/mcp": "호환 리다이렉트 → /agents/?tab=mcp — 목적지를 이미 잰다",
 };
