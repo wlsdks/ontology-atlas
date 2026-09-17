@@ -255,7 +255,19 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     ids: column.nodes.map((node) => node.id),
     grid: grids[index],
   }));
-  const anchorIndex = columns.reduce((best, column, index) => (rowsOf(column.ids.length, column.grid) > rowsOf(columns[best].ids.length, columns[best].grid) ? index : best), 0);
+  /*
+   * The anchor is the column spread evenly; the others follow it by barycentre. It is the
+   * column with the most rows — except when the file band is folded: a grid is even by
+   * construction and carries no names, and a page column placed *after* it clumped where
+   * the files happened to tile (an opened island of 18 pages: five spread across the top
+   * half, thirteen packed at the bottom — owner screenshot, 2026-09-18). So a folded file
+   * band never anchors; the pages do, evenly, and the files tile beside them.
+   */
+  const anchorIndex = columns.reduce((best, column, index) => {
+    if (column.kind === "source" && column.grid > 1) return best;
+    if (columns[best].kind === "source" && columns[best].grid > 1) return index;
+    return rowsOf(column.ids.length, column.grid) > rowsOf(columns[best].ids.length, columns[best].grid) ? index : best;
+  }, 0);
 
   /** Lays one column: a plain band takes the rows as given; a folded band tiles them. */
   const place = (index: number, rowYs: number[]): void => {

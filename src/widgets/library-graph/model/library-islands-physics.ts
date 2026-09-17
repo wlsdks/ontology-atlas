@@ -21,7 +21,7 @@ import type { LayoutPoint } from "./library-graph-layout";
  * settles in a bounded number of steps; nothing here is random.
  */
 
-interface IslandBody {
+export interface IslandBody {
   id: string;
   x: number;
   y: number;
@@ -32,6 +32,8 @@ interface IslandBody {
   home: LayoutPoint;
   /** Where a hand holds it, or null. */
   pinned: LayoutPoint | null;
+  /** How far the body had to travel when it set out, for the arrival's fade; 0 once home. */
+  journey: number;
 }
 
 export interface IslandField {
@@ -53,8 +55,15 @@ const DAMPING = 0.66;
 const BODY_GAP = 10;
 /** A body that moved less than this in one step, in world units, is at rest. */
 const REST_DISTANCE = 0.05;
-/** How far in from home an arriving body starts, as a share of its distance to the map's centre. */
-const ARRIVAL_START = 0.35;
+/**
+ * Where an arriving body starts, as a share of its distance from the map's centre: just
+ * inside its place, so the islands close the last stretch together and never cross.
+ * The first setting, 0.35, piled every island on the middle and let the separation throw
+ * them apart — the owner saw it: "very cluttered and strange while it moves".
+ */
+const ARRIVAL_START = 0.9;
+/** While a hand holds one body, the others' spring is this much of itself: they yield rather than fight. */
+const YIELD_WHILE_HELD = 0.25;
 /** A settle never runs longer than this many steps. */
 const SETTLE_MAX_STEPS = 600;
 
@@ -68,7 +77,7 @@ export function createIslandField(
     const start = options.arriving
       ? { x: centre.x + (home.x - centre.x) * ARRIVAL_START, y: centre.y + (home.y - centre.y) * ARRIVAL_START }
       : home;
-    return { id: island.id, x: start.x, y: start.y, vx: 0, vy: 0, r: island.r, home, pinned: null };
+    return { id: island.id, x: start.x, y: start.y, vx: 0, vy: 0, r: island.r, home, pinned: null, journey: Math.hypot(home.x - start.x, home.y - start.y) };
   });
   return { bodies, index: new Map(bodies.map((body, i) => [body.id, i])), moving: options.arriving && bodies.length > 0 };
 }
@@ -88,7 +97,15 @@ export function releaseIsland(field: IslandField, id: string): void {
   if (!body) return;
   body.pinned = null;
   body.home = { x: body.x, y: body.y };
+  body.journey = 0;
   field.moving = true;
+}
+
+/** How far along its arrival a body is, 0 at the start and 1 once home; 1 for a body that never travelled. */
+export function islandArrival(body: IslandBody): number {
+  if (body.journey <= 0) return 1;
+  const left = Math.hypot(body.home.x - body.x, body.home.y - body.y);
+  return Math.max(0, Math.min(1, 1 - left / body.journey));
 }
 
 export function isIslandFieldMoving(field: IslandField): boolean {
@@ -106,11 +123,13 @@ export function stepIslandField(field: IslandField): boolean {
     body.vx = 0;
     body.vy = 0;
   }
-  // The spring home.
+  // The spring home; softer for everyone else while a hand holds one body.
+  const held = bodies.some((body) => body.pinned !== null);
+  const pull = held ? HOME_PULL * YIELD_WHILE_HELD : HOME_PULL;
   for (const body of bodies) {
     if (body.pinned) continue;
-    body.vx += (body.home.x - body.x) * HOME_PULL;
-    body.vy += (body.home.y - body.y) * HOME_PULL;
+    body.vx += (body.home.x - body.x) * pull;
+    body.vy += (body.home.y - body.y) * pull;
   }
   // Collisions: overlapping discs are pushed apart, the larger moving less; a held body
   // does not move at all, so its whole overlap goes to the other.

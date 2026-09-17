@@ -1,5 +1,5 @@
 import type { LibraryGraphEdge, LibraryGraphNode, LibraryGraphNodeKind } from "../model/build-library-graph";
-import type { LayoutPoint } from "../model/library-graph-layout";
+import { easeMotion, type LayoutPoint } from "../model/library-graph-layout";
 import type { LibraryGraphInk } from "./library-graph-ink";
 
 /**
@@ -71,6 +71,8 @@ interface LibraryGraphIsland {
   pages: number;
   sources: number;
   stale: number;
+  /** How far along its arrival the island is, 0–1; its body, shore and name fade in with it. */
+  arrival?: number;
 }
 
 export interface LibraryGraphFrame {
@@ -525,7 +527,8 @@ const ISLAND_SHORE_PX = 5;
 function drawIslands(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, ink: LibraryGraphInk): void {
   const dim = frame.dim ?? 0;
   for (const island of frame.islands ?? []) {
-    ctx.globalAlpha = 1 - dim * 0.5;
+    const presence = (1 - dim * 0.5) * easeMotion(island.arrival ?? 1);
+    ctx.globalAlpha = presence;
     /*
      * **A shore.** One wider disc under the island at half the halo's strength, so the
      * island stands on shallows rather than being cut out of the dark: the same flat
@@ -537,9 +540,9 @@ function drawIslands(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, in
       ctx.beginPath();
       ctx.arc(island.x, island.y, island.r + ISLAND_SHORE_PX, 0, Math.PI * 2);
       ctx.fillStyle = ink.pageHalo;
-      ctx.globalAlpha = (1 - dim * 0.5) * 0.5;
+      ctx.globalAlpha = presence * 0.5;
       ctx.fill();
-      ctx.globalAlpha = 1 - dim * 0.5;
+      ctx.globalAlpha = presence;
     }
     ctx.beginPath();
     ctx.arc(island.x, island.y, island.r, 0, Math.PI * 2);
@@ -589,10 +592,11 @@ function drawIslandNames(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame
     frame.islandReport?.push(island.id);
     // A ground plate under every name: inside, it stands on the dots; under, it can stand
     // on a neighbour's rim. Either way the name is read off the ground, not off the texture.
+    const presence = (1 - dim * 0.5) * easeMotion(island.arrival ?? 1);
     ctx.fillStyle = ink.ground;
-    ctx.globalAlpha = (1 - dim * 0.5) * 0.78;
+    ctx.globalAlpha = presence * 0.78;
     ctx.fillRect(box.x - 4, box.y, box.width + 8, box.height);
-    ctx.globalAlpha = 1 - dim * 0.5;
+    ctx.globalAlpha = presence;
     ctx.fillStyle = inside ? ink.labelInk : ink.sourceLabel;
     ctx.fillText(text, island.x, box.y + box.height / 2);
   }

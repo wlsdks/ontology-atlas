@@ -19,6 +19,7 @@ import { ISLANDS_MIN_MARKS, type IslandsLayout } from "../model/library-islands-
 import {
   createIslandField,
   isIslandFieldMoving,
+  islandArrival,
   pinIsland,
   releaseIsland,
   settleIslandField,
@@ -930,6 +931,20 @@ export function useLibraryGraphEngine({
       // ── Arrivals and departures. ──
       const opacity = new Map<string, number>();
       for (const node of sim.nodes) if (node.entered < 1) opacity.set(node.id, easeMotion(node.entered));
+      // On the overview a dot arrives with its island: it fades in as the island closes in.
+      if (pictureRef.current === "islands" && islandFieldRef.current && isIslandFieldMoving(islandFieldRef.current)) {
+        const arrivalOf = new Map<string, number>();
+        for (const body of islandFieldRef.current.bodies) {
+          const arrival = islandArrival(body);
+          if (arrival < 1) arrivalOf.set(body.id, easeMotion(arrival));
+        }
+        if (arrivalOf.size > 0) {
+          for (const [id, offset] of islandOffsetsRef.current) {
+            const alpha = arrivalOf.get(offset.island);
+            if (alpha !== undefined) opacity.set(id, Math.min(opacity.get(id) ?? 1, alpha));
+          }
+        }
+      }
       const nodes: LibraryGraphNode[] = [...graphRef.current.nodes];
       const ghosts = ghostsRef.current;
       if (ghosts.size > 0) {
@@ -1078,7 +1093,8 @@ export function useLibraryGraphEngine({
               const at = worldToScreen(island, view, { width, height });
               let stale = 0;
               for (const id of island.pages) if (stalePagesRef.current.has(id)) stale += 1;
-              return { id: island.id, kind: island.kind, label: island.label, x: at.x, y: at.y, r: island.r * view.scale, pages: island.pages.length, sources: island.sources.length, stale };
+              const body = islandFieldRef.current?.bodies[islandFieldRef.current.index.get(island.id) ?? -1];
+              return { id: island.id, kind: island.kind, label: island.label, x: at.x, y: at.y, r: island.r * view.scale, pages: island.pages.length, sources: island.sources.length, stale, arrival: body ? islandArrival(body) : 1 };
             })
           : undefined;
       const widestPagePx = pictureRef.current === "islands" ? 2 * view.scale * Math.max(0, ...nodes.filter((node) => node.kind === "page").map((node) => radiiRef.current.get(node.id) ?? 0)) : Infinity;
@@ -1249,7 +1265,16 @@ export function useLibraryGraphEngine({
         placeIslandBodies(sim, field, islandsRef.current, islandOffsetsRef.current);
       }
       const busy = isLibrarySimulationRunning(sim) || hasPinnedNode(sim) || (field !== null && isIslandFieldMoving(field));
-      if (busy) {
+      /*
+       * ⚠️ **The forces run only under the force picture.** The flow and the islands are
+       * laid, and their marks stand closer than the simulation's collision reach: stepping
+       * it while the islands arrived let the collision blow three thousand packed dots out
+       * into a cloud over every island, which the physics then dragged back each frame —
+       * the "very cluttered and strange" motion the owner saw on 2026-09-18.
+       */
+      // A laid picture still lets a mark that is fading in arrive, at the simulation's own rate.
+      if (pictureRef.current !== "force") for (const node of sim.nodes) if (node.entered < 1) node.entered = Math.min(1, node.entered + 0.08);
+      if (busy && pictureRef.current === "force") {
         /*
          * ⚠️ **Reduced motion settles here, not only where the simulation is created.**
          * `usePrefersReducedMotion` reports `false` on the first client render by design —
@@ -1414,8 +1439,16 @@ export function useLibraryGraphEngine({
       radiiRef.current.size === 0 ? LIBRARY_ZOOM_MAX : libraryZoomMax(Math.max(...radiiRef.current.values()));
     pictureRef.current = layoutRef.current === "flow" && overviewRef.current && graph.nodes.length >= ISLANDS_MIN_MARKS ? "islands" : layoutRef.current;
     setPicture(pictureRef.current);
-    const layPicture = (sim: LibrarySimulation, travelling: boolean) => {
+    const layPicture = (sim: LibrarySimulation, travelling: boolean, known: ReadonlySet<string> | null = null) => {
+      /*
+       * Only a mark that was on the previous picture travels. A mark the sync has just
+       * added stands where the simulation seeded it — a spiral across the whole canvas —
+       * and travelling from there sent three thousand dots flying through the map as
+       * their islands arrived (owner, 2026-09-18: "very cluttered and strange while it
+       * moves"). A new mark is placed where it belongs and fades in with its island.
+       */
       const from = travelling && !reducedMotion ? libraryPositions(sim) : null;
+      if (from && known) for (const id of [...from.keys()]) if (!known.has(id)) from.delete(id);
       if (pictureRef.current === "islands") {
         columnsRef.current = null;
         islandsRef.current = applyLibraryIslandsLayout(sim, graph, islandsWorld(box), islandLabelsRef.current);
@@ -1430,6 +1463,28 @@ export function useLibraryGraphEngine({
           for (const id of [...island.pages, ...island.sources, ...(island.conceptId ? [island.conceptId] : [])]) {
             const point = islandsRef.current.positions.get(id);
             if (point) offsets.set(id, { island: island.id, dx: point.x - island.x, dy: point.y - island.y });
+          }
+        }
+        /*
+         * **A dot that changed island does not fly across the map.** A folder loading in
+         * chunks lays the map again as pages arrive, and sixteen hundred files that were
+         * on the Unread pile now belong to topics: travelling them sent a cloud of dots
+         * through every island (owner, 2026-09-18: "very cluttered and strange while it
+         * moves"). Such a dot leaves a ghost where it was and fades in where it belongs.
+         */
+        const previousOffsets = islandOffsetsRef.current;
+        if (from && previousOffsets.size > 0) {
+          const now = typeof performance === "undefined" ? 0 : performance.now();
+          for (const [id, start] of [...from.entries()]) {
+            const before = previousOffsets.get(id)?.island;
+            const after = offsets.get(id)?.island;
+            if (before === undefined || after === undefined || before === after) continue;
+            from.delete(id);
+            const node = graph.nodes.find((candidate) => candidate.id === id);
+            const live = sim.nodes[sim.index.get(id) ?? -1];
+            if (!node || !live) continue;
+            live.entered = 0;
+            ghostsRef.current.set(`${id}#moved`, { node: { ...node, id: `${id}#moved` }, x: start.x, y: start.y, since: now });
           }
         }
         islandOffsetsRef.current = offsets;
@@ -1489,9 +1544,10 @@ export function useLibraryGraphEngine({
       else if (reducedMotion) settleLibrarySimulation(sim);
       autoFitRef.current = { on: true, converged: false };
     } else {
+      const known = new Set(existing.nodes.map((node) => node.id));
       const changed = syncLibrarySimulation(existing, graph);
       // The columns are recomputed whole: a new page changes every row under it.
-      if (pictureRef.current !== "force") layPicture(existing, true);
+      if (pictureRef.current !== "force") layPicture(existing, true, known);
       const now = typeof performance === "undefined" ? 0 : performance.now();
       for (const gone of changed.removed) {
         const node = ghostsRef.current.get(gone.id)?.node ?? lastKnownRef.current.get(gone.id);
