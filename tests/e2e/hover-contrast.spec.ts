@@ -236,29 +236,19 @@ async function auditRoute(page: Page) {
  * **The routes this instrument walks, and the one place it differs from the audited list.**
  *
  * Everything else in this file measures `AUDITED_ROUTES`, and it should: a route nobody hovers is
- * a route whose hover contrast nobody knows. The one substitution below exists because this
- * instrument has a floor, and a floor is only meaningful on a screen that has controls.
+ * a route whose hover contrast nobody knows. The one subtraction below exists because this
+ * instrument has a floor, and a floor is only meaningful on a screen whose controls it has not
+ * already counted.
  *
- * ⚠️ **`/ko/agents/` came off on 2026-09-05.** MCP left that destination, and what remains of it
- * **in the state this file opens it in** — a browser, which cannot launch a program — is a title,
- * a sentence and one degradation row. Measured, that is below the floor of 3, and the floor going
- * red there is the floor working: it says "this screen no longer has enough controls to prove
- * anything", not "these controls fail". The hover-bearing controls did not disappear, they moved,
- * so the audit followed them rather than lowering that historical colour-change
- * floor. The routing split is retained; coverage now counts sampled state pairs.
- *
- * Both MCP tabs are walked, because they are different populations: the share tab is the connect
- * card's chips and links, the connectors tab is the tab strip plus the folder gate. Neither can
- * seed a folder from here — `seedFirstRunSeen` is all this file has — so what is measured is the
- * no-folder state of each, which is the state a first visit meets.
- *
- * `/ko/agents/` keeps its coverage in `contrast-ratchet` and `a11y-ratchet`, which measure resting
- * state and have no such floor.
+ * `/ko/agents/` came off on 2026-09-05, when MCP left that destination and what remained — in a
+ * browser, which cannot launch a program — was a title, a sentence and one degradation row, below
+ * the floor of 3. On 2026-09-18 MCP came back as a section of that same page, so the page has its
+ * controls again and is walked as itself. `/ko/agents/?tab=mcp` is that page scrolled to the
+ * section: the same document, the same controls, and a second walk over it would count the same
+ * state pairs twice. The ratchets that measure resting state keep the address because they see
+ * the scrolled viewport; this instrument hovers controls, which do not move when the page scrolls.
  */
-const HOVER_ROUTES = [
-  ...AUDITED_ROUTES.filter((route) => route !== "/ko/agents/"),
-  "/ko/agents/?tab=mcp",
-] as const;
+const HOVER_ROUTES = AUDITED_ROUTES.filter((route) => route !== "/ko/agents/?tab=mcp");
 
 for (const route of HOVER_ROUTES) {
   test(`호버 대비 — ${route}`, async ({ page }) => {
