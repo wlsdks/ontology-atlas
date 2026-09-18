@@ -13,6 +13,13 @@ describe('compactOntologyDescription', () => {
     ).toBe('MCP server exposes graph tools.');
   });
 
+  it('reads a wikilink as the words a reader would see', () => {
+    expect(compactOntologyDescription('About [[capabilities/payments]].')).toBe('About capabilities/payments.');
+    expect(compactOntologyDescription('Relates to [[capabilities/refunds|Refunds]] and [[risk#review]] this quarter.')).toBe(
+      'Relates to Refunds and risk this quarter.',
+    );
+  });
+
   it('normalizes whitespace and clamps long body excerpts', () => {
     const text = compactOntologyDescription(
       '  Long body excerpt\n\nwithout an early sentence boundary that would otherwise fill the topology tooltip with too much prose and make the node hard to scan. Extra detail follows.  ',
