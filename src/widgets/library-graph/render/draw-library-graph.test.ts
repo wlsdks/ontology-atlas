@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { LibraryGraphEdge, LibraryGraphNode } from "../model/build-library-graph";
+import type { LibraryGraphLabelBox } from "./draw-library-graph";
 import {
   CITES_WIDTH,
   DIMMED_INK,
@@ -458,6 +459,40 @@ describe("drawing the library graph", () => {
     expect(ego.texts.map((entry) => entry.text)).toEqual(["Open page", "Elsewhere"]);
     // Asked first, it also keeps the place a name belongs in: under its own mark.
     expect(ego.texts[0]!.y).toBeGreaterThan(100);
+  });
+
+  /**
+   * **In the flow picture a page's name shortens before it leaves its side** (installed
+   * app, 2026-09-19: with the conversation dock open two page names whose right side met
+   * a concept ring fell to *under* and *left*, onto the discs and lines of the rows below).
+   */
+  it("keeps a flow page's name on its right side by shortening it when a concept ring stands close", () => {
+    const crowd: LibraryGraphNode[] = [
+      { id: "page:wiki/long", kind: "page", label: "Chargeback path", ref: "wiki/long", href: null },
+      { id: "concept:domains/risk", kind: "concept", label: "Risk review", ref: "domains/risk", href: null },
+    ];
+    // The ring stands 90px to the right of the page, on the same line as its name.
+    const where = new Map([
+      ["page:wiki/long", { x: 100, y: 100 }],
+      ["concept:domains/risk", { x: 190, y: 104 }],
+    ]);
+    const rec = recorder();
+    // Eight pixels a glyph, so the full name is far wider than the room and a short one fits.
+    rec.ctx.measureText = vi.fn((text: string) => ({ width: text.length * 8 })) as never;
+    const report: LibraryGraphLabelBox[] = [];
+    drawLibraryGraph(rec.ctx, frame({ nodes: crowd, edges: [], positions: where, standingLabels: true, layout: "flow", labelReport: report }));
+    const name = report.find((box) => box.nodeId === "page:wiki/long")!;
+    expect(name.text.endsWith("…")).toBe(true);
+    // Right of the disc, on the disc's own line, and clear of the ring.
+    expect(name.x).toBeGreaterThan(100);
+    expect(Math.abs(name.y + name.height / 2 - 100)).toBeLessThan(2);
+    expect(name.x + name.width).toBeLessThanOrEqual(190 - NODE_RADIUS.concept);
+    // Without the ring the same name stands whole.
+    const alone = recorder();
+    alone.ctx.measureText = vi.fn((text: string) => ({ width: text.length * 8 })) as never;
+    const wholeReport: LibraryGraphLabelBox[] = [];
+    drawLibraryGraph(alone.ctx, frame({ nodes: [crowd[0]], edges: [], positions: where, standingLabels: true, layout: "flow", labelReport: wholeReport }));
+    expect(wholeReport[0]!.text).toBe("Chargeback path");
   });
 
   /**

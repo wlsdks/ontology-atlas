@@ -328,6 +328,8 @@ const MENTIONS_WIDTH = 1;
 function libraryEdgeWidth(relation: "cites" | "mentions"): number {
   return relation === "mentions" ? MENTIONS_WIDTH : CITES_WIDTH;
 }
+/** The least a shortened name may be, on screen, to still be a name: about six glyphs. */
+const STANDING_LABEL_MIN_PX = 48;
 /** Gap between a mark and the name standing under it. */
 const STANDING_LABEL_GAP = 5;
 
@@ -1396,13 +1398,13 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       const fontPx = labelFontPx(ink, node.kind);
       ctx.font = `${fontPx}px ${ink.fontFamily}`;
       const lineHeight = Math.round(fontPx * 1.35);
-      const text = truncateToWidth(
+      let text = truncateToWidth(
         ctx,
         middleEllipsis(node.label, STANDING_LABEL_MAX_CHARS),
         Math.min(STANDING_LABEL_MAX_WIDTH, frame.width - 8),
       );
       if (!text) continue;
-      const width = ctx.measureText(text).width;
+      let width = ctx.measureText(text).width;
       /*
        * **Four places a name may stand, and it takes the first that is free.**
        *
@@ -1421,6 +1423,32 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
        * most likely to be looking at.
        */
       const half = radiusOf(frame, node);
+      /*
+       * **In the flow picture a page's or a concept's name shortens before it leaves its
+       * side.** With the conversation dock open beside a 1512 window the canvas is ~430px,
+       * and two page names whose right side met a concept ring fell through to *under* and
+       * *left*, onto the discs and the citation lines of the rows below (installed app,
+       * 2026-09-19). A name on the wrong side of its column is on top of everything that
+       * column keeps clear; a name cut to the room it has, with an ellipsis, is still a name
+       * on its dot. The room is what stands between the name's start and the first thing
+       * already placed on that line, marks included; below {@link STANDING_LABEL_MIN_PX} it
+       * is not a name and the four places take over as before.
+       */
+      if (frame.layout === "flow" && node.kind !== "source") {
+        const startX = centre.x + half + STANDING_LABEL_GAP;
+        const lineTop = centre.y - lineHeight / 2;
+        let room = frame.width - 2 - startX;
+        for (const other of taken) {
+          if (other.of === node.id || other.x < startX) continue;
+          if (other.y + other.height <= lineTop || other.y >= lineTop + lineHeight) continue;
+          room = Math.min(room, other.x - STANDING_LABEL_GAP - startX);
+        }
+        if (width > room && room >= STANDING_LABEL_MIN_PX) {
+          text = truncateToWidth(ctx, text, room);
+          if (!text) continue;
+          width = ctx.measureText(text).width;
+        }
+      }
       const centred = Math.min(
         Math.max(2, centre.x - width / 2),
         Math.max(2, frame.width - 2 - width),
