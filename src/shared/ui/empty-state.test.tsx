@@ -159,4 +159,11 @@ describe("EmptyState — 제목 태그", () => {
     render(<EmptyState titleAs="h1" title="X" />);
     expect(screen.getByText("X").className).toBe(asP);
   });
+
+  it('a shape stands in the skeleton\'s place and carries no loading marker', () => {
+    const { container } = render(<EmptyState title="Empty" shape={<div data-testid="ghost">name · cadence</div>} skeleton />);
+    expect(container.querySelector('[data-empty-shape]')).not.toBeNull();
+    expect(container.querySelector('[data-empty-skeleton]')).toBeNull();
+    expect(container.querySelector('[data-empty-shape]')?.getAttribute('aria-hidden')).toBe('true');
+  });
 });

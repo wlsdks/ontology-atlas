@@ -5494,6 +5494,7 @@
       "emptyDescription": "실제 온톨로지 개념으로 별자리를 만들면, 같은 이름과 범위로 여기에서 다시 돌아갈 수 있습니다.",
       "memberCount": "개념 {count}개",
       "referenceCount": "참고 자료 {count}개",
+      "shape": { "name": "이름", "members": "개념 수", "purpose": "남긴 목적" },
       "noPurpose": "남긴 목적이 없습니다",
       "viewInGalaxy": "갤럭시에서 보기",
       "viewInGalaxyNamed": "{name} 갤럭시에서 보기",
@@ -5523,6 +5524,7 @@
       "malformedTitle": "순회 파일을 봐야 합니다",
       "malformedDescription": ".ontology-atlas/rounds.json을 읽지 못해 그대로 두었습니다. 고치거나 지운 뒤 다시 읽으세요.",
       "retry": "다시 읽기",
+      "shape": { "name": "이름", "cadence": "주기", "next": "다음 회차" },
       "emptyTitle": "아직 스스로 도는 것이 없습니다",
       "emptyDescription": "순회를 등록하세요. 한 시간마다 모든 문서가 원문과 여전히 맞는지 확인하고, 아침마다 서비스가 보낸 것을 다시 읽어 바뀐 문서를 다시 씁니다.",
       "kind": {

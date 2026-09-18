@@ -29,6 +29,15 @@ interface EmptyStateProps {
    * Decorative, hence `aria-hidden`.
    */
   skeleton?: boolean | ReactNode;
+  /**
+   * The shape the list will take, drawn with its own words — a ghost of one row with its
+   * column names — instead of the loading bars. `skeleton` says *not here yet* and the
+   * arrival gate counts it as unpainted (`[data-empty-skeleton]`); an empty destination is
+   * painted and finished, and the owner read the bars there as a load that never ends
+   * (installed app, 2026-09-18: the empty Collections and Rounds tabs). Decorative, hence
+   * `aria-hidden`; rendered in the skeleton's place and never together with it.
+   */
+  shape?: ReactNode;
   /** Primary action at the bottom. */
   action?: ReactNode;
   /** `regular` when the card needs more room. */
@@ -70,6 +79,7 @@ export function EmptyState({
   description,
   icon,
   skeleton,
+  shape,
   action,
   size = 'regular',
   tone = 'dashed',
@@ -119,15 +129,21 @@ export function EmptyState({
     </span>
   ) : null;
 
-  const skeletonEl = skeleton
-    ? typeof skeleton === 'boolean'
-      ? <DefaultSkeleton align={align} />
-      : (
-          <div aria-hidden data-empty-skeleton className={cn('w-full', isCenter && 'flex justify-center')}>
-            {skeleton}
-          </div>
-        )
-    : null;
+  const skeletonEl = shape
+    ? (
+        <div aria-hidden data-empty-shape className={cn('w-full', isCenter && 'flex justify-center')}>
+          {shape}
+        </div>
+      )
+    : skeleton
+      ? typeof skeleton === 'boolean'
+        ? <DefaultSkeleton align={align} />
+        : (
+            <div aria-hidden data-empty-skeleton className={cn('w-full', isCenter && 'flex justify-center')}>
+              {skeleton}
+            </div>
+          )
+      : null;
 
   const textBlock = (
     <div className="min-w-0">

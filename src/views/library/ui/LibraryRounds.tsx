@@ -17,6 +17,7 @@ import { Button, Chip, EmptyState, IconButton, InfoHint, RowButton, useToast } f
 import { useLibraryRounds } from "../lib/library-rounds-context";
 import { lastOutcome, lastPass, nextRound, sinceSpan, summarizeSince } from "../lib/round-presentation";
 import { NewRoundSheet } from "./parts/NewRoundSheet";
+import { EmptyShape } from "./parts/EmptyShape";
 import { RoundsLedger } from "./parts/RoundsLedger";
 import { SinceYouLeft } from "./parts/SinceYouLeft";
 
@@ -334,7 +335,7 @@ export function LibraryRounds() {
               title={t("emptyTitle")}
               description={t("emptyDescription")}
               icon={<Clock3 />}
-              skeleton
+              shape={<EmptyShape icon={<Clock3 />} columns={[t("shape.name"), t("shape.cadence"), t("shape.next")]} />}
               tone="solid"
               action={
                 <Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={openSheet}>

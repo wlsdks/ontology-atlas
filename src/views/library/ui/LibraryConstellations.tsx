@@ -17,6 +17,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { PAGE_FRAME_FORM } from '@/shared/ui/page-frame';
 import { Button, EmptyState, RowButton, Surface } from '@/shared/ui';
+import { EmptyShape } from './parts/EmptyShape';
 
 type MemberRow =
   | { kind: 'ontology'; resolution: ResolvedCollectionMember }
@@ -139,7 +140,7 @@ export function LibraryConstellations({
         title={t('emptyTitle')}
         description={t('emptyDescription')}
         icon={<Orbit />}
-        skeleton
+        shape={<EmptyShape icon={<Orbit />} columns={[t('shape.name'), t('shape.members'), t('shape.purpose')]} />}
         action={<Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInGalaxy}>{t('create')}</Button>}
         tone="solid"
       />

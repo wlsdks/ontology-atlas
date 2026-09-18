@@ -5494,6 +5494,7 @@
       "emptyDescription": "Create a constellation from real ontology concepts, then return to the same named scope here.",
       "memberCount": "{count, plural, one {# concept} other {# concepts}}",
       "referenceCount": "{count, plural, one {# reference} other {# references}}",
+      "shape": { "name": "Name", "members": "Concepts", "purpose": "Purpose" },
       "noPurpose": "No purpose added",
       "viewInGalaxy": "View in Galaxy",
       "viewInGalaxyNamed": "View {name} in Galaxy",
@@ -5523,6 +5524,7 @@
       "malformedTitle": "The rounds file needs attention",
       "malformedDescription": "Atlas could not read .ontology-atlas/rounds.json and left it unchanged. Fix or remove it, then read again.",
       "retry": "Read again",
+      "shape": { "name": "Name", "cadence": "Cadence", "next": "Next run" },
       "emptyTitle": "Nothing runs on its own yet",
       "emptyDescription": "Register a round: every hour, check that every page still matches its sources; every morning, re-read what a service sent and redraft what changed.",
       "kind": {
