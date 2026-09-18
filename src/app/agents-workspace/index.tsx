@@ -30,11 +30,12 @@ export function AgentsWorkspace() {
     document.getElementById('agents-mcp')?.scrollIntoView({ block: 'start' });
   }, [wantsMcp]);
 
+  // No wrapper: `AgentsPage`'s `<main>` is the shell slot's first child, as every destination's
+  // is. A wrapper with its own `overflow-y-auto` was a second scroll container inside the slot,
+  // and the scroll-end gate measured the slot as never scrolling (CI, 2026-09-18).
   return (
-    <div data-testid="agents-workspace" className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto">
-      <AgentsPage>
-        <McpPage embedded />
-      </AgentsPage>
-    </div>
+    <AgentsPage>
+      <McpPage embedded />
+    </AgentsPage>
   );
 }

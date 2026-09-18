@@ -70,9 +70,14 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * screens, not a mirror of `audited-routes`, and the connectors card reuses the same
  * `border-soft + overlay-1` panel the routes below already contribute — adding it would grow the
  * walk without growing what is measured.
+ *
+ * 2026-09-18 — 9 → **10**, the mirror of the 2026-09-05 drop. MCP folded back into `/agents`
+ * as a section of that page (`/mcp/` now redirects there), so the one combination its pane took
+ * away when it left is on the walked routes again. Nothing new was assembled: the same pane,
+ * the same boxes, walked once more because the route that carries it is in the sample.
  */
-// Chart marks encode data, not card appearances; the actual surface vocabulary is nine.
-const BASELINE_SURFACE_COMBOS = 9;
+// Chart marks encode data, not card appearances; the actual surface vocabulary is ten.
+const BASELINE_SURFACE_COMBOS = 10;
 const BASELINE_CONTROL_COMBOS = 17;
 
 const ROUTES = [

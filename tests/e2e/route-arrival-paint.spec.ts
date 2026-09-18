@@ -231,7 +231,6 @@ const ROUTE_PATH: Record<string, string> = {
   git: "/git",
   map: "/topology",
   library: "/library",
-  mcp: "/mcp",
 };
 
 /** Leaves the destination and comes back, reporting what the return arrival painted. */
@@ -280,7 +279,8 @@ test("a pane the app has already read arrives painted on every rail crossing", a
 
   // ── Every return arrival must be painted ────────────────────────────────
   const returns: Record<string, Arrival> = {};
-  for (const destination of ["agents", "git", "map", "library", "mcp", "architecture"]) {
+  // MCP is a section of the Agents page since 2026-09-18, not a rail crossing of its own.
+  for (const destination of ["agents", "git", "map", "library", "architecture"]) {
     // Warm it once, so "already read" is true, then measure the arrival after that.
     if (destination !== "agents") await arriveFrom(page, destination);
     returns[destination] = await arriveFrom(page, destination);
