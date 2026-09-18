@@ -5120,6 +5120,7 @@
     "graph": {
       "title": "Graph",
       "counts": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {concepts, plural, one {# concept} other {# concepts}} · {cites} cites · {mentions} mentions",
+      "countsIsland": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {cites} cites",
       "empty": "Nothing to draw yet. Once Compile writes a page, this shows which source it was written from and which concepts it names.",
       "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
       "legend": "Sources stand on the left, the pages written from them beside, and the concepts those pages name on the right; the lines run from a source to the page that read it. A filled circle is a page, a square a source, a ring a concept on the map. A thicker line is a citation, a dashed one a mention. Scroll to zoom, drag the background to move, press a dot for a card beside it.",

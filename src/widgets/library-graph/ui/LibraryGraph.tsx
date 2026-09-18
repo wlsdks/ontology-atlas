@@ -484,13 +484,21 @@ export function LibraryGraph({
    * dashed mark matters in this folder at all, and the caption is the picture's only
    * written statement of what it contains (design-infoviz, 2026-09-06).
    */
-  const caption = t("graph.counts", {
-    sources: counts.sources,
-    pages: counts.pages,
-    concepts: counts.concepts,
-    cites: counts.cites,
-    mentions: counts.mentions,
-  });
+  /*
+   * Inside an opened island the concept is the island itself — its name stands on the bar
+   * and its mark is not on the picture — so the folder's caption read *0 concepts · 0
+   * mentions* there (dev, 2026-09-19), a count of a thing the picture excludes by design.
+   * The island's caption counts what the picture shows: its files, its pages, its cites.
+   */
+  const caption = island
+    ? t("graph.countsIsland", { sources: counts.sources, pages: counts.pages, cites: counts.cites })
+    : t("graph.counts", {
+        sources: counts.sources,
+        pages: counts.pages,
+        concepts: counts.concepts,
+        cites: counts.cites,
+        mentions: counts.mentions,
+      });
 
   return (
     /*
