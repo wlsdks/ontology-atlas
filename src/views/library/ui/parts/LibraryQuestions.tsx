@@ -60,7 +60,7 @@ import { AgentDoor } from './AgentDoor';
  * combination. Three states, three channels. No transform, so there is nothing for
  * reduced motion to replace
  */
-export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk, askBlockedReason, askBlockedReasonId, agentDoor = false, t }: {
+export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk, askBlockedReason, askBlockedReasonId, agentDoor = false, headingHidden = false, t }: {
   answers: readonly RetainedAnswerHead[];
   knownSources: ReadonlySet<string>;
   hashes: ReadonlyMap<string, string>;
@@ -92,6 +92,12 @@ export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk,
    * owns it, that card carries the door and this one carries neither. False on the web.
    */
   agentDoor?: boolean;
+  /**
+   * The host already names this section (the home popover's title is the same sentence), so
+   * the heading stays for the accessibility tree and leaves the screen: two identical lines
+   * 40px apart read as a stutter (installed app, 2026-09-19).
+   */
+  headingHidden?: boolean;
   t: ReturnType<typeof useTranslations<'library'>>;
 }) {
   const observationId = useId();
@@ -105,10 +111,10 @@ export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk,
     <section data-testid="library-questions" aria-labelledby="library-questions-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h2 id="library-questions-title" className="text-title font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
+          <h2 id="library-questions-title" className={headingHidden ? 'sr-only' : 'text-title font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]'}>
             {t('answers.title')}
           </h2>
-          <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">{t('answers.lede')}</p>
+          <p className={headingHidden ? 'text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]' : 'mt-2 text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]'}>{t('answers.lede')}</p>
         </div>
         {onAsk || askBlocked ? (
           <Button

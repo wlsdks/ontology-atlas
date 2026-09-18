@@ -25,4 +25,15 @@ describe('the retained question entrance', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Which policy? (two)' }));
     expect(onOpen).toHaveBeenCalledWith('wiki/answers/two');
   });
+
+  it('hides its heading from sight when the host already names it, and keeps it for the accessibility tree', () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <LibraryQuestions answers={[]} knownSources={new Set()} hashes={new Map()} onOpen={() => {}} onAsk={null} askBlockedReason={null} headingHidden t={((key: string) => key) as never} />
+      </NextIntlClientProvider>,
+    );
+    const heading = screen.getByRole('heading', { level: 2 });
+    expect(heading.className).toContain('sr-only');
+    expect(screen.getByTestId('library-questions')).toHaveAttribute('aria-labelledby', heading.id);
+  });
 });

@@ -3169,6 +3169,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
             askBlockedReason={agentOnlyReason}
             askBlockedReasonId={null}
             agentDoor={agentDoor}
+            headingHidden
             t={t}
           />
         </div>
