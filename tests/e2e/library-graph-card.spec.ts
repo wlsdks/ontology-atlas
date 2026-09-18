@@ -496,3 +496,20 @@ test.describe("with reduced motion", () => {
     expect(third).toBe(first);
   });
 });
+
+test("the keyboard walks the flow picture in reading order: the third arrow lands on the third square from the top", async ({ page }) => {
+  await openGraph(page);
+  const canvas = page.getByTestId("library-graph-canvas");
+  await canvas.focus();
+  for (let i = 0; i < 3; i += 1) await page.keyboard.press("ArrowRight");
+  /*
+   * Measured 2026-09-19 before the fix: the walk followed the model's order and three
+   * presses from the top landed on the seventh source from the top. The picture is read
+   * column by column, top to bottom, and the keyboard follows the picture.
+   */
+  const expected = await page.evaluate(() => {
+    const sources = window.__atlasLibraryGraph!.nodes().filter((node) => node.kind === "source");
+    return [...sources].sort((a, b) => a.y - b.y || a.x - b.x)[2]!.id;
+  });
+  await expect(canvas).toHaveAttribute("data-focused-node-id", expected);
+});

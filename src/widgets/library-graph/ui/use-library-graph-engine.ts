@@ -391,6 +391,13 @@ export interface LibraryGraphEngine {
   /** The islands of the overview, largest first, for the keyboard to step over; empty on any other picture. */
   islands: readonly LibraryIslandPick[];
   /**
+   * The marks in the picture's reading order — column by column, top to bottom — for the
+   * keyboard to step over. Empty when the picture has no columns (force, islands), and the
+   * caller falls back to the graph's own order. Before this the walk followed the model:
+   * three ArrowRights from the top landed on the seventh square from the top (2026-09-19).
+   */
+  walkOrder: readonly string[];
+  /**
    * Places the open card now, synchronously — what a layout effect calls on open, passing
    * the card's own id because this hook's own state ref is not filled until after it.
    */
@@ -683,6 +690,12 @@ export function useLibraryGraphEngine({
   /** Which picture the folder got, for the legend: the flow names things, the islands do not. */
   const [picture, setPicture] = useState<"flow" | "force" | "islands">(layout);
   const [islandsList, setIslandsList] = useState<readonly LibraryIslandPick[]>([]);
+  const [walkOrder, setWalkOrder] = useState<readonly string[]>([]);
+  /** Publishes the laid columns' reading order; `null` when the picture has no columns. */
+  const publishWalkOrder = (layout: FlowLayout | null): void => {
+    const next = layout ? layout.columns.flatMap((column) => column.ids) : [];
+    setWalkOrder((previous) => (previous.length === next.length && previous.every((id, i) => id === next[i]) ? previous : next));
+  };
   const focusedIslandRef = useRef(focusedIslandId);
 
   /**
@@ -1480,6 +1493,7 @@ export function useLibraryGraphEngine({
       if (from && known) for (const id of [...from.keys()]) if (!known.has(id)) from.delete(id);
       if (pictureRef.current === "islands") {
         columnsRef.current = null;
+        publishWalkOrder(null);
         islandsRef.current = applyLibraryIslandsLayout(sim, graph, islandsWorld(box), islandLabelsRef.current);
         // The overview's dots are its own size; the ceiling follows them, so zooming in
         // still ends with a page as wide as a mark on the flow.
@@ -1549,6 +1563,7 @@ export function useLibraryGraphEngine({
         islandOffsetsRef.current = new Map();
         setIslandsList([]);
         columnsRef.current = applyLibraryFlowLayout(sim, graph, flowWorld(box, zoomMaxRef.current));
+        publishWalkOrder(columnsRef.current);
       }
       if (from && from.size > 0) {
         // Only marks on both pictures travel; the rest are ghosts or arrivals.
@@ -1625,7 +1640,10 @@ export function useLibraryGraphEngine({
         // Columns are a fact about the box: a new width moves them, and the view refits.
         if (pictureRef.current !== "force" && (before.width !== sim.box.width || before.height !== sim.box.height)) {
           if (pictureRef.current === "islands") islandsRef.current = applyLibraryIslandsLayout(sim, graphRef.current, islandsWorld(sim.box), islandLabelsRef.current);
-          else columnsRef.current = applyLibraryFlowLayout(sim, graphRef.current, flowWorld(sim.box, zoomMaxRef.current));
+          else {
+            columnsRef.current = applyLibraryFlowLayout(sim, graphRef.current, flowWorld(sim.box, zoomMaxRef.current));
+            publishWalkOrder(columnsRef.current);
+          }
           autoFitRef.current = { on: true, converged: false };
         }
       }
@@ -2196,6 +2214,7 @@ export function useLibraryGraphEngine({
     pictureAspect,
     picture,
     islands: islandsList,
+    walkOrder,
     placeCard,
   };
 }

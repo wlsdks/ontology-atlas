@@ -433,7 +433,15 @@ export function LibraryGraph({
     [cardId, graph],
   );
 
-  const ordered = graph.nodes;
+  /* The keyboard walks the picture as it is read: column by column, top to bottom. */
+  const nodes = graph.nodes;
+  const walkOrder = engine.walkOrder;
+  const ordered = useMemo(() => {
+    if (walkOrder.length === 0) return nodes;
+    const byId = new Map(nodes.map((node) => [node.id, node]));
+    const laid = walkOrder.map((id) => byId.get(id)).filter((node): node is (typeof nodes)[number] => node !== undefined);
+    return laid.length === nodes.length ? laid : nodes;
+  }, [nodes, walkOrder]);
   const focusedIsland = engine.islands.find((candidate) => candidate.id === focusedIslandId) ?? null;
   const stepIsland = useCallback(
     (delta: number) => {
