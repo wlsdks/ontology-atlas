@@ -4088,6 +4088,7 @@
     "composerLabel": "Write what you want done",
     "send": "Send",
     "stop": "Stop",
+    "stoppedBeforeAnswer": "Stopped before the agent answered. Nothing was written.",
     "turnSilent": "The agent has said nothing for {minutes} minutes",
     "turnSilentHint": "It may still be working, or it may have finished without telling us. Press Stop to type again.",
     "status": {

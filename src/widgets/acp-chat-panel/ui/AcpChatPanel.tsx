@@ -1221,6 +1221,14 @@ export function AcpChatPanel({
   const [cancelledWaitTurnId, setCancelledWaitTurnId] = useState<string | null>(null);
   // A received answer belongs to the reader immediately. Only the current turn's
   // unanswered wait gets one character; permission and silence keep their own meaning.
+  /** The last turn ended by the Stop press before the agent said anything, and nothing has been asked since. */
+  const stoppedWithoutAnswer =
+    !busy
+    && lastUserEventIndex >= 0
+    && cancelledWaitTurnId !== null
+    && events[lastUserEventIndex]?.id === cancelledWaitTurnId
+    && !hasCompletedAgentAnswer
+    && !events.some((event, index) => index > lastUserEventIndex && event.kind === 'tool');
   const showAnswerWait = busy
     && lastUserEventIndex >= 0
     && events[lastUserEventIndex]?.id !== cancelledWaitTurnId
@@ -1555,6 +1563,22 @@ export function AcpChatPanel({
           <div data-testid="acp-answer-wait" className="flex justify-center py-2">
             <BrandWaitingMark active />
           </div>
+        ) : null}
+        {stoppedWithoutAnswer ? (
+          /*
+           * **A turn stopped before it said anything says so.** A tool that was mid-flight
+           * carries its own "stopped" on its row; a turn stopped before any tool or word left
+           * only the request bubble, and the transcript read as an agent that never
+           * answered (installed app, 2026-09-19). One quiet line under the request, in the
+           * status ink, and nothing else: the person pressed Stop and knows why.
+           */
+          <p
+            data-testid="acp-turn-stopped"
+            role="status"
+            className="px-1 py-1 text-label leading-label text-[color:var(--color-text-tertiary)]"
+          >
+            {t('stoppedBeforeAnswer')}
+          </p>
         ) : null}
         <Surface
           as="section"

@@ -1076,6 +1076,29 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await waitFor(() => expect(answerFor(192)).toEqual({ outcome: 'selected', optionId: 'reject' }));
   });
 
+  it('a turn stopped before the agent said anything leaves one line under the request, and the next turn clears it', async () => {
+    await bootSession();
+    await startUserTurn('Read the wiki');
+    expect(screen.queryByTestId('acp-turn-stopped')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('acp-chat-stop'));
+    act(() => replyTo('session/prompt', { stopReason: 'cancelled' }));
+    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    // Installed app, 2026-09-19: the request bubble stood alone, as if the agent never answered.
+    expect(await screen.findByTestId('acp-turn-stopped')).toHaveTextContent('stoppedBeforeAnswer');
+    await startUserTurn('Read it again');
+    expect(screen.queryByTestId('acp-turn-stopped')).not.toBeInTheDocument();
+  });
+
+  it('a turn stopped after the agent had answered says nothing extra', async () => {
+    await bootSession();
+    await startUserTurn('Read the wiki');
+    emit({ method: 'session/update', params: { update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Reading…' } } } });
+    fireEvent.click(screen.getByTestId('acp-chat-stop'));
+    act(() => replyTo('session/prompt', { stopReason: 'cancelled' }));
+    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    expect(screen.queryByTestId('acp-turn-stopped')).not.toBeInTheDocument();
+  });
+
   it('cancels a deferred request and does not defer a later request with the same tool call id', async () => {
     await bootSession();
     await startUserTurn('Review the first request');
