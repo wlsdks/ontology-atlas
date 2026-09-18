@@ -140,7 +140,7 @@ export function LibraryConstellations({
         title={t('emptyTitle')}
         description={t('emptyDescription')}
         icon={<Orbit />}
-        shape={<EmptyShape icon={<Orbit />} columns={[t('shape.name'), t('shape.members'), t('shape.purpose')]} />}
+        shape={<EmptyShape icon={<Orbit size={ICON_SIZE.md} aria-hidden />} columns={[t('shape.name'), t('shape.members'), t('shape.purpose')]} />}
         action={<Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={createInGalaxy}>{t('create')}</Button>}
         tone="solid"
       />

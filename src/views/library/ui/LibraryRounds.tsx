@@ -335,7 +335,7 @@ export function LibraryRounds() {
               title={t("emptyTitle")}
               description={t("emptyDescription")}
               icon={<Clock3 />}
-              shape={<EmptyShape icon={<Clock3 />} columns={[t("shape.name"), t("shape.cadence"), t("shape.next")]} />}
+              shape={<EmptyShape icon={<Clock3 size={ICON_SIZE.md} aria-hidden />} columns={[t("shape.name"), t("shape.cadence"), t("shape.next")]} />}
               tone="solid"
               action={
                 <Button className="atlas-touch-floor atlas-touch-floor-wide" onClick={openSheet}>
