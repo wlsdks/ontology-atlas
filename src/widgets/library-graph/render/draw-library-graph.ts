@@ -728,12 +728,16 @@ function lerp(a: LayoutPoint, b: LayoutPoint, t: number): LayoutPoint {
  * names need a word's worth of space to read as two; vertically a name stands 5px under
  * its own mark by design, so a large gap there would reject every label on the canvas.
  */
+/** The breathing gap two names keep, across and down; the room a name is cut to keeps the same. */
+const NAME_GAP_X = 7;
+const NAME_GAP_Y = 2;
+
 function overlaps(
   a: { x: number; y: number; width: number; height: number },
   b: { x: number; y: number; width: number; height: number },
 ): boolean {
-  const padX = 7;
-  const padY = 2;
+  const padX = NAME_GAP_X;
+  const padY = NAME_GAP_Y;
   return (
     a.x - padX < b.x + b.width &&
     a.x + a.width + padX > b.x &&
@@ -1438,10 +1442,12 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         const startX = centre.x + half + STANDING_LABEL_GAP;
         const lineTop = centre.y - lineHeight / 2;
         let room = frame.width - 2 - startX;
+        // The same gaps `overlaps` will test the placed box with, so a name cut to this room
+        // is a name that passes; without them the cut name still lost its side (2026-09-19).
         for (const other of taken) {
           if (other.of === node.id || other.x < startX) continue;
-          if (other.y + other.height <= lineTop || other.y >= lineTop + lineHeight) continue;
-          room = Math.min(room, other.x - STANDING_LABEL_GAP - startX);
+          if (other.y + other.height + NAME_GAP_Y <= lineTop || other.y - NAME_GAP_Y >= lineTop + lineHeight) continue;
+          room = Math.min(room, other.x - NAME_GAP_X - startX);
         }
         if (width > room && room >= STANDING_LABEL_MIN_PX) {
           text = truncateToWidth(ctx, text, room);

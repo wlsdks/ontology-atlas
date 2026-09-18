@@ -486,7 +486,18 @@ describe("drawing the library graph", () => {
     // Right of the disc, on the disc's own line, and clear of the ring.
     expect(name.x).toBeGreaterThan(100);
     expect(Math.abs(name.y + name.height / 2 - 100)).toBeLessThan(2);
-    expect(name.x + name.width).toBeLessThanOrEqual(190 - NODE_RADIUS.concept);
+    // Clear of the ring by the word's worth of space two names keep, not merely not touching.
+    expect(name.x + name.width).toBeLessThanOrEqual(190 - NODE_RADIUS.concept - 7);
+    // With the ring a little closer the room shrinks by a glyph and the name still keeps its side.
+    for (const ringX of [186, 182]) {
+      const closer = recorder();
+      closer.ctx.measureText = vi.fn((text: string) => ({ width: text.length * 8 })) as never;
+      const closerReport: LibraryGraphLabelBox[] = [];
+      drawLibraryGraph(closer.ctx, frame({ nodes: crowd, edges: [], positions: new Map([["page:wiki/long", { x: 100, y: 100 }], ["concept:domains/risk", { x: ringX, y: 104 }]]), standingLabels: true, layout: "flow", labelReport: closerReport }));
+      const cut = closerReport.find((box) => box.nodeId === "page:wiki/long")!;
+      expect(cut.x, `ring at ${ringX}`).toBeGreaterThan(100);
+      expect(Math.abs(cut.y + cut.height / 2 - 100), `ring at ${ringX}`).toBeLessThan(2);
+    }
     // Without the ring the same name stands whole.
     const alone = recorder();
     alone.ctx.measureText = vi.fn((text: string) => ({ width: text.length * 8 })) as never;
