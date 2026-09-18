@@ -41,8 +41,9 @@ describe('볼트 walk 규칙 — TS 와 Rust 가 같아야 한다', () => {
   });
 
   it('항목 수 상한이 같다', () => {
-    expect(VAULT_WALK_MAX_ENTRIES).toBe(4000);
-    expect(rustSource).toMatch(/const VAULT_WALK_MAX_ENTRIES: usize = 4000;/);
+    // 50,000 since 2026-09-18: a wiki fills by the thousand and the owner asks for tens of thousands.
+    expect(VAULT_WALK_MAX_ENTRIES).toBe(50000);
+    expect(rustSource).toMatch(/const VAULT_WALK_MAX_ENTRIES: usize = 50000;/);
   });
 
   it('가지치기 디렉터리 목록이 같다', () => {

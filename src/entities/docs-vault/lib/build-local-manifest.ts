@@ -176,8 +176,14 @@ const PRUNE_BY_NAME = new Set(['node_modules']);
  */
 const CACHE_DIR_TAG = 'CACHEDIR.TAG';
 
-/** Roughly 20× a normal vault. Past this the walk truncates and **says so**. */
-export const VAULT_WALK_MAX_ENTRIES = 4000;
+/**
+ * Past this the walk truncates and **says so**. It was 4,000 (roughly 20× a normal vault)
+ * from 2026-07-29, when the bound's job was to survive the repository root being picked;
+ * `CACHEDIR.TAG` pruning now handles that tree. A wiki fills by the thousand — the owner
+ * asks for tens of thousands of files (2026-09-18) — so the ceiling is one a document
+ * folder does not meet, and the truncation notice stays for the folder that is not one.
+ */
+export const VAULT_WALK_MAX_ENTRIES = 50000;
 /** A realistic ceiling for a document folder. Deeper usually means someone else's tree. */
 export const VAULT_WALK_MAX_DEPTH = 12;
 

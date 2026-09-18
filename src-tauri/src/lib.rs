@@ -2453,7 +2453,7 @@ fn inspect_project_source(root_path: String) -> Result<ProjectSourceInspection, 
 /// **Must equal** TS `VAULT_WALK_MAX_DEPTH` (a contract test watches it).
 const VAULT_WALK_MAX_DEPTH: usize = 12;
 /// Same value as TS `VAULT_WALK_MAX_ENTRIES`.
-const VAULT_WALK_MAX_ENTRIES: usize = 4000;
+const VAULT_WALK_MAX_ENTRIES: usize = 50000;
 /// Same list as TS `PRUNE_BY_NAME`.
 const VAULT_PRUNE_DIR_NAMES: &[&str] = &["node_modules"];
 /// Same value as TS `CACHE_DIR_TAG`.

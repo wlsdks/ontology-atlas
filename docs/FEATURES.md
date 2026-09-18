@@ -1249,7 +1249,7 @@ left, rows aligned, so no citation crosses another stack's names. Measured in Ch
 island named — the quiet overview paints in four fills, one per ink. The layout itself
 takes 36 ms at 10,000 files and 107 ms at 30,000 (`library-islands-layout.perf.test.ts`).
 What the measurement had to raise locally is the folder walk's own cap,
-`VAULT_WALK_MAX_ENTRIES` (4,000, mirrored in Rust): past it the walk truncates and says so,
+`VAULT_WALK_MAX_ENTRIES` (50,000 since 2026-09-18, mirrored in Rust; 4,000 before): past it the walk truncates and says so,
 so a folder of ten thousand files is not yet a folder the Library sees whole. Gates:
 `tests/e2e/library-graph-islands.spec.ts`. Decision:
 `docs/records/decisions/2026-09-18-library-islands-map-*.md`.

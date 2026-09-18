@@ -54,7 +54,7 @@ import { passageLabelFor, sourceUnits, type PassageLabel, type SourceUnit } from
  * non-Markdown files crossed as a 27.8 MB JSON wire. Markdown takes the cheap string
  * path.
  *
- * This is **not** the folder walk's own cap (`VAULT_WALK_MAX_ENTRIES`, 4,000 entries),
+ * This is **not** the folder walk's own cap (`VAULT_WALK_MAX_ENTRIES`, 50,000 entries),
  * which decides what the folder is; this one decides what a search read. Both say so on
  * screen rather than truncating in silence.
  */
