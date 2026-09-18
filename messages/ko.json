@@ -5103,6 +5103,7 @@
       }
     },
     "shelf": {
+      "commonState": "{count}개 · {state}",
       "listAria": "위키 페이지와 원문 버전 상태",
       "freshness": {
         "fresh": "확인된 원문 버전이 그대로입니다.",

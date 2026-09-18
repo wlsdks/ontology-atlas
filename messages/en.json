@@ -5103,6 +5103,7 @@
       }
     },
     "shelf": {
+      "commonState": "{count} pages · {state}",
       "listAria": "Wiki pages and their source versions",
       "freshness": {
         "fresh": "The checked source versions have not changed.",

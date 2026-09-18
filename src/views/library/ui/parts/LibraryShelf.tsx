@@ -6,10 +6,13 @@ import type { useTranslations } from "next-intl";
 import type { LibraryWikiPage } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
-import { spineFreshness } from "../../lib/spine-shape";
+import { spineFreshness, type SpineFreshness } from "../../lib/spine-shape";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 import { isWikiFolderCode } from "../../lib/merge-wiki-verdict";
 import { writerLabel } from "../../lib/writer-label";
+
+/** One screen of spines: past this, a caption repeated on every row is texture and folds into the head. */
+const SHELF_STATE_FOLDS_FROM = 12;
 
 /**
  * **The wiki index: what the folder holds, and how much of it is still true.**
@@ -102,12 +105,54 @@ export function LibraryShelf({
       }),
     [model.pairing.writeUpsBySource, model.verdicts, pages],
   );
+  /**
+   * **The caption most rows share is said once, above the shelf; the rows keep the
+   * exceptions** — the rule the source list and the writer label already follow. Every
+   * spine still says its state in words below one screen of rows (`SHELF_STATE_FOLDS_FROM`),
+   * which is what the cases in `LibraryShelf.test.tsx` pin; past that, 400 spines reading
+   * *needs review · off template* were one texture (installed app, 2026-09-18), and the one
+   * row that differed could not be found. A folded row keeps its words for a screen reader.
+   */
+  const captionOf = (freshness: SpineFreshness, ownProblem: { code: string } | null): string =>
+    ownProblem ? `${t(`shelf.state.${freshness}`)} · ${t("wiki.offTemplate")}` : t(`shelf.state.${freshness}`);
+  const folded = useMemo(() => {
+    if (spines.length < SHELF_STATE_FOLDS_FROM) return null;
+    const counts = new Map<string, { count: number; attention: boolean }>();
+    for (const { freshness, ownProblem } of spines) {
+      const key = captionOf(freshness, ownProblem);
+      const held = counts.get(key) ?? { count: 0, attention: Boolean(ownProblem) };
+      held.count += 1;
+      counts.set(key, held);
+    }
+    let best: { caption: string; count: number; attention: boolean } | null = null;
+    let tied = false;
+    for (const [caption, { count, attention }] of counts) {
+      if (!best || count > best.count) { best = { caption, count, attention }; tied = false; }
+      else if (count === best.count) tied = true;
+    }
+    return best && !tied && best.count * 2 > spines.length ? best : null;
+    // `t` is stable for the locale; the captions change only with the spines.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spines]);
 
   return (
     <div
       data-testid="library-wiki-list"
       data-compiling={compiling ? "board" : undefined}
     >
+      {folded ? (
+        <p
+          data-testid="library-wiki-states"
+          className="flex items-center gap-1.5 px-3 pt-2 text-label leading-label text-[color:var(--color-text-tertiary)]"
+        >
+          {folded.attention ? (
+            <span aria-hidden className="size-1.5 flex-none rounded-full bg-[color:var(--color-amber-source-a90)]" />
+          ) : null}
+          <span className="min-w-0 truncate tabular-nums">
+            {t("shelf.commonState", { count: folded.count, state: folded.caption })}
+          </span>
+        </p>
+      ) : null}
       <ul
         data-testid="library-wiki-shelf"
         aria-label={t("shelf.listAria")}
@@ -238,8 +283,14 @@ export function LibraryShelf({
                   <span className="line-clamp-2 break-keep text-body leading-body">
                     {page.title}
                   </span>
-                  <span className="flex min-w-0 items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
-                    {needsAttention ? (
+                  <span
+                    className={
+                      folded && folded.caption === captionOf(freshness, ownProblem) && !answerVersion
+                        ? "sr-only"
+                        : "flex min-w-0 items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]"
+                    }
+                  >
+                    {needsAttention && !(folded && folded.caption === captionOf(freshness, ownProblem)) ? (
                       <span
                         aria-hidden
                         data-testid="library-spine-attention-dot"
@@ -250,9 +301,7 @@ export function LibraryShelf({
                       {answerVersion
                         ? `${t(`answers.version.${answerVersion}`)} · `
                         : ''}
-                      {ownProblem
-                        ? `${t(`shelf.state.${freshness}`)} · ${t("wiki.offTemplate")}`
-                        : t(`shelf.state.${freshness}`)}
+                      {captionOf(freshness, ownProblem)}
                     </span>
                   </span>
                 </span>
