@@ -47,6 +47,7 @@ export function windowRows(
   viewportTop: number,
   viewportHeight: number,
   overscan: number,
+  pin: number | null = null,
 ): WindowedRows {
   const count = heights.length;
   if (count === 0) return { start: 0, end: 0, before: 0, after: 0 };
@@ -64,6 +65,12 @@ export function windowRows(
   }
   start = Math.max(0, start - overscan);
   end = Math.min(count, end + overscan);
+  // A pinned row (the keyboard's stop) is rendered wherever the viewport is, with its
+  // own overscan, so focus can move onto it before the scroller has followed.
+  if (pin !== null && pin >= 0 && pin < count) {
+    start = Math.min(start, Math.max(0, pin - overscan));
+    end = Math.max(end, Math.min(count, pin + overscan + 1));
+  }
   let before = 0;
   for (let i = 0; i < start; i += 1) before += heights[i] + gap;
   let after = 0;
@@ -91,11 +98,14 @@ export function useWindowedRows({
   count,
   estimate,
   overscan = 8,
+  pin = null,
 }: {
   count: number;
   /** A row's height in px before it has been measured. */
   estimate: number;
   overscan?: number;
+  /** A row index that must be rendered whatever the scroller shows: the keyboard's stop. */
+  pin?: number | null;
 }): [WindowedRows, RefObject<HTMLUListElement | null>] {
   const listRef = useRef<HTMLUListElement | null>(null);
   /** Every row's height, measured where it has been rendered, the estimate elsewhere. */
@@ -120,10 +130,10 @@ export function useWindowedRows({
       const basePadTop = (Number.parseFloat(style.paddingTop) || 0) - appliedBeforeRef.current;
       // The first row's top in the scroller's content coordinates.
       const rowsTop = list.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop + basePadTop;
-      next = windowRows(heightsRef.current, gap, scroller.scrollTop - rowsTop, scroller.clientHeight, overscan);
+      next = windowRows(heightsRef.current, gap, scroller.scrollTop - rowsTop, scroller.clientHeight, overscan, pin);
     }
     setRange((previous) => (sameWindow(previous, next) ? previous : next));
-  }, [count, estimate, overscan]);
+  }, [count, estimate, overscan, pin]);
 
   useLayoutEffect(() => {
     appliedBeforeRef.current = range.before;

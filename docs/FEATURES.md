@@ -2098,7 +2098,11 @@ folder wore the same amber pill on 1,600 rows). Both lists keep only the rows in
 the DOM (`useWindowedRows`, 2026-09-18): 3,000 file rows were 33,000 nodes and ~450 ms of
 element creation on the rail press, and every later layout read paid for the whole tree;
 now the scroller is the whole list's height and holds about forty rows, heights measured
-as they are seen, and a list with no scroller or no height renders every row as before. The scroll-end gate measures the Library's own scrollers. The
+as they are seen, and a list with no scroller or no height renders every row as before.
+Each list is one tab stop (`useRovingRows`, 2026-09-19): the arrows, PageDown and PageUp,
+Home and End walk the rows, the window keeps the keyboard's row rendered wherever the
+scroller is, and Tab leaves the list for the next control, the way the radiogroups
+already rove. The scroll-end gate measures the Library's own scrollers. The
 end of a page now keeps room for the floating *Back to top*: the last line stands clear of
 the pill instead of ending behind it — on a wiki page, on *Check results*, and on the Docs
 reader, which is the same pane — and below `lg` the pill itself stands above the bottom tab

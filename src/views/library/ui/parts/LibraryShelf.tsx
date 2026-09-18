@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
 import type { useTranslations } from "next-intl";
 
 import type { LibraryWikiPage } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
+import { useRovingRows } from "@/shared/lib/use-roving-rows";
 import { useWindowedRows } from "@/shared/lib/use-windowed-rows";
 import { controlClass } from "@/shared/ui/control-class";
 import { spineFreshness, type SpineFreshness } from "../../lib/spine-shape";
@@ -141,7 +142,9 @@ export function LibraryShelf({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spines]);
 
-  const [shelfWindow, shelfListRef] = useWindowedRows({ count: spines.length, estimate: SHELF_ROW_ESTIMATE_PX });
+  const shelfListRef = useRef<HTMLUListElement | null>(null);
+  const shelfRoving = useRovingRows({ count: spines.length, listRef: shelfListRef });
+  const [shelfWindow, shelfWindowRef] = useWindowedRows({ count: spines.length, estimate: SHELF_ROW_ESTIMATE_PX, pin: shelfRoving.focusIndex });
 
   return (
     <div
@@ -162,7 +165,11 @@ export function LibraryShelf({
         </p>
       ) : null}
       <ul
-        ref={shelfListRef}
+        ref={(node) => {
+          shelfListRef.current = node;
+          shelfWindowRef.current = node;
+        }}
+        onKeyDown={shelfRoving.onKeyDown}
         data-testid="library-wiki-shelf"
         data-window={`${shelfWindow.start}-${shelfWindow.end}`}
         aria-label={t("shelf.listAria")}
@@ -172,7 +179,8 @@ export function LibraryShelf({
            the rest, so 8,000 pages are a scroller of the right height and forty rows. */
         style={shelfWindow.before || shelfWindow.after ? { paddingTop: SHELF_PAD_TOP_PX + shelfWindow.before, paddingBottom: SHELF_PAD_BOTTOM_PX + shelfWindow.after } : undefined}
       >
-        {spines.slice(shelfWindow.start, shelfWindow.end).map(({ page, freshness, ownProblem }) => {
+        {spines.slice(shelfWindow.start, shelfWindow.end).map(({ page, freshness, ownProblem }, offset) => {
+          const rowIndex = shelfWindow.start + offset;
           const active = page.slug === selectedSlug;
           const answerVersion = model.answerVersions?.get(page.slug);
           const writer = (page.createdBy ?? "") !== majorityWriter ? writerLabel(page.createdBy, t) : null;
@@ -212,6 +220,9 @@ export function LibraryShelf({
               <button
                 type="button"
                 data-testid={`library-wiki-${page.slug}`}
+                data-row-index={rowIndex}
+                tabIndex={shelfRoving.tabIndexOf(rowIndex)}
+                onFocus={() => shelfRoving.onRowFocus(rowIndex)}
                 data-freshness={freshness}
                 aria-current={active ? "true" : undefined}
                 aria-label={facts.join(" · ")}

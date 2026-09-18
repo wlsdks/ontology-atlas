@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { useTranslations } from "next-intl";
 
@@ -28,6 +28,7 @@ import { captionWindow } from "../../lib/caption-window";
 import { passageLabelText } from "../../lib/passage-label";
 import { useSourceSearch } from "../../lib/use-source-search";
 import { LibraryShelf } from "./LibraryShelf";
+import { useRovingRows } from "@/shared/lib/use-roving-rows";
 import { useWindowedRows } from "@/shared/lib/use-windowed-rows";
 import { StateBadge } from "./StateBadge";
 
@@ -510,7 +511,9 @@ export function LibrarySection({
     if (candidates.some((c) => c !== best && c.count === best.count)) return null;
     return best.count * 2 > visibleSources.length ? best.state : null;
   })();
-  const [sourceWindow, sourceListRef] = useWindowedRows({ count: visibleSources.length, estimate: SOURCE_ROW_ESTIMATE_PX });
+  const sourceListRef = useRef<HTMLUListElement | null>(null);
+  const sourceRoving = useRovingRows({ count: visibleSources.length, listRef: sourceListRef });
+  const [sourceWindow, sourceWindowRef] = useWindowedRows({ count: visibleSources.length, estimate: SOURCE_ROW_ESTIMATE_PX, pin: sourceRoving.focusIndex });
   const visiblePages = needle
     ? model.wikiPages.filter((page) => matches(page.title) || matches(model.pageTexts.get(page.slug)))
     : model.wikiPages;
@@ -720,7 +723,11 @@ export function LibrarySection({
               </p>
             ) : null}
             <ul
-              ref={sourceListRef}
+              ref={(node) => {
+                sourceListRef.current = node;
+                sourceWindowRef.current = node;
+              }}
+              onKeyDown={sourceRoving.onKeyDown}
               data-testid="library-source-list"
               /* The list says which phase drew it, so a proof can assert that a finished
                  answer and an unfinished read never share a frame. */
@@ -732,7 +739,8 @@ export function LibrarySection({
                  for the rest so the scroller's height is the whole list's. */
               style={sourceWindow.before || sourceWindow.after ? { paddingTop: sourceWindow.before, paddingBottom: sourceWindow.after } : undefined}
             >
-              {visibleSources.slice(sourceWindow.start, sourceWindow.end).map((row) => {
+              {visibleSources.slice(sourceWindow.start, sourceWindow.end).map((row, offset) => {
+                const rowIndex = sourceWindow.start + offset;
                 const active = row.path === selectedSourcePath;
                 const stateLabel = t(`sources.state.${row.state}.label`);
                 const hit = needle ? search.hits.get(row.path) : undefined;
@@ -744,6 +752,9 @@ export function LibrarySection({
                       active={active}
                       aria-current={active ? "true" : undefined}
                       data-testid={`library-source-${row.path}`}
+                      data-row-index={rowIndex}
+                      tabIndex={sourceRoving.tabIndexOf(rowIndex)}
+                      onFocus={() => sourceRoving.onRowFocus(rowIndex)}
                       onClick={() => onOpenSource(row)}
                       // The full name first: a 280px column truncates, and the row's own
                       // hover text is the only place the rest of the name exists.
