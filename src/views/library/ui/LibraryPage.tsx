@@ -1628,6 +1628,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
             nativeVaultRootPath !== null || localVault.sourceHandles.has(row.path)
               ? () => handleOpenSource(row)
               : null,
+          revealsCopy: nativeVaultRootPath === null,
         };
       }
 

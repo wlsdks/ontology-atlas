@@ -244,6 +244,12 @@ test.describe("a press on a mark opens a card beside it", () => {
 
     await pressMark(page, target);
     await expect(page.getByTestId("library-graph-card")).toBeVisible();
+    /*
+     * The browser has no Finder: a source card's reveal door hands over the file it was
+     * granted, and says so with the source pane's own word. Measured 2026-09-19: the card
+     * said "Show in Finder" on the web while the pane beside it said "Open a copy".
+     */
+    await expect(page.getByTestId("library-graph-card-reveal")).toHaveText("Open a copy");
     // The card took the keyboard, so Tab reaches its doors.
     await expect
       .poll(async () =>

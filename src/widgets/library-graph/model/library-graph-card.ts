@@ -222,6 +222,14 @@ export interface LibraryGraphCardFacts {
    * place, because a door that cannot open is worse than a sentence saying so.
    */
   refresh?: { onRequest: (() => void) | null; reason: string | null };
-  /** Where the file is on disk, when the host can show it. Never a door in the browser. */
+  /**
+   * Shows where the file is: Finder in the app, the file itself in the browser, which has
+   * no Finder and no absolute path and hands over the file it was granted instead
+   * (`.claude/rules/surfaces.md`, "Reveal a file in Finder"). The two are one door with two
+   * words, and the word is the host's: the source pane already says *open a copy* on the
+   * web, and the card said *show in Finder* there (dev, 2026-09-19).
+   */
   onReveal?: (() => void) | null;
+  /** True when `onReveal` hands over a copy rather than revealing a place, so the door says so. */
+  revealsCopy?: boolean;
 }

@@ -341,7 +341,7 @@ export function LibraryMarkPopover({
             data-testid="library-graph-card-reveal"
             onClick={facts.onReveal}
           >
-            {t("source.reveal")}
+            {facts.revealsCopy ? t("source.download") : t("source.reveal")}
           </Button>
         ) : null}
         {hidden > 0 ? (
