@@ -36,7 +36,7 @@ export const DEFAULT_POLL_CADENCE: PollCadenceConfig = {
  * the poll take more than a twentieth of the time. `MAX_POLL_DELAY_MS` keeps the promise
  * in `.claude/rules/surfaces.md` that the web is *delayed, not unavailable*.
  */
-export const POLL_COST_SHARE = 20;
+const POLL_COST_SHARE = 20;
 export const MAX_POLL_DELAY_MS = 60_000;
 
 /**
