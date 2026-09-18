@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import type { useTranslations } from "next-intl";
 
 import type { LibraryWikiPage } from "@/entities/docs-vault";
@@ -142,9 +142,8 @@ export function LibraryShelf({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spines]);
 
-  const shelfListRef = useRef<HTMLUListElement | null>(null);
-  const shelfRoving = useRovingRows({ count: spines.length, listRef: shelfListRef });
-  const [shelfWindow, shelfWindowRef] = useWindowedRows({ count: spines.length, estimate: SHELF_ROW_ESTIMATE_PX, pin: shelfRoving.focusIndex });
+  const [shelfWindow, shelfListRef, scrollToSpine] = useWindowedRows({ count: spines.length, estimate: SHELF_ROW_ESTIMATE_PX });
+  const shelfRoving = useRovingRows({ count: spines.length, listRef: shelfListRef, scrollToRow: scrollToSpine, rendered: shelfWindow });
 
   return (
     <div
@@ -165,10 +164,7 @@ export function LibraryShelf({
         </p>
       ) : null}
       <ul
-        ref={(node) => {
-          shelfListRef.current = node;
-          shelfWindowRef.current = node;
-        }}
+        ref={shelfListRef}
         onKeyDown={shelfRoving.onKeyDown}
         data-testid="library-wiki-shelf"
         data-window={`${shelfWindow.start}-${shelfWindow.end}`}

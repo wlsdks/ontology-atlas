@@ -22,7 +22,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObje
  *
  * The caller applies `before` and `after` as the list's top and bottom padding (adding its
  * own base padding back), renders `rows.slice(start, end)`, and puts the ref on the list.
- * Returned as a pair, so the window is a value and the ref stays a ref to the lint.
+ * The third element brings a row into the scroller, for a keyboard walk over rows that
+ * are not rendered yet. Returned as a tuple, so the window is a value and the ref stays a
+ * ref to the lint.
  */
 
 export interface WindowedRows {
@@ -47,7 +49,6 @@ export function windowRows(
   viewportTop: number,
   viewportHeight: number,
   overscan: number,
-  pin: number | null = null,
 ): WindowedRows {
   const count = heights.length;
   if (count === 0) return { start: 0, end: 0, before: 0, after: 0 };
@@ -65,12 +66,6 @@ export function windowRows(
   }
   start = Math.max(0, start - overscan);
   end = Math.min(count, end + overscan);
-  // A pinned row (the keyboard's stop) is rendered wherever the viewport is, with its
-  // own overscan, so focus can move onto it before the scroller has followed.
-  if (pin !== null && pin >= 0 && pin < count) {
-    start = Math.min(start, Math.max(0, pin - overscan));
-    end = Math.max(end, Math.min(count, pin + overscan + 1));
-  }
   let before = 0;
   for (let i = 0; i < start; i += 1) before += heights[i] + gap;
   let after = 0;
@@ -78,6 +73,13 @@ export function windowRows(
   // The gap after the last rendered row is drawn by the list itself when `after` is 0.
   if (end < count) after -= gap;
   return { start, end, before, after: Math.max(0, after) };
+}
+
+/** Where row `index` starts, measured from the first row's top edge. */
+export function rowTop(heights: ArrayLike<number>, gap: number, index: number): number {
+  let y = 0;
+  for (let i = 0; i < Math.min(index, heights.length); i += 1) y += heights[i] + gap;
+  return y;
 }
 
 function scrollParent(node: HTMLElement | null): HTMLElement | null {
@@ -98,15 +100,12 @@ export function useWindowedRows({
   count,
   estimate,
   overscan = 8,
-  pin = null,
 }: {
   count: number;
   /** A row's height in px before it has been measured. */
   estimate: number;
   overscan?: number;
-  /** A row index that must be rendered whatever the scroller shows: the keyboard's stop. */
-  pin?: number | null;
-}): [WindowedRows, RefObject<HTMLUListElement | null>] {
+}): [WindowedRows, RefObject<HTMLUListElement | null>, (index: number) => void] {
   const listRef = useRef<HTMLUListElement | null>(null);
   /** Every row's height, measured where it has been rendered, the estimate elsewhere. */
   const heightsRef = useRef<number[]>([]);
@@ -130,10 +129,36 @@ export function useWindowedRows({
       const basePadTop = (Number.parseFloat(style.paddingTop) || 0) - appliedBeforeRef.current;
       // The first row's top in the scroller's content coordinates.
       const rowsTop = list.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop + basePadTop;
-      next = windowRows(heightsRef.current, gap, scroller.scrollTop - rowsTop, scroller.clientHeight, overscan, pin);
+      next = windowRows(heightsRef.current, gap, scroller.scrollTop - rowsTop, scroller.clientHeight, overscan);
     }
     setRange((previous) => (sameWindow(previous, next) ? previous : next));
-  }, [count, estimate, overscan, pin]);
+  }, [count, estimate, overscan]);
+
+  /**
+   * Bring row `index` into the scroller, the way `scrollIntoView({ block: "nearest" })`
+   * would if the row existed: the keyboard walks rows that are not rendered yet, so the
+   * scroller moves first, the window follows on its scroll event, and the row is there to
+   * take focus. Rendering the row where the viewport is not (a "pin") was tried and rendered
+   * every row between the two (measured 2026-09-19: Home at the shelf's end drew all 400).
+   */
+  const scrollToRow = useCallback(
+    (index: number) => {
+      const list = listRef.current;
+      const scroller = scrollParent(list);
+      if (!list || !scroller || scroller.clientHeight === 0) return;
+      const style = getComputedStyle(list);
+      const gap = Number.parseFloat(style.rowGap) || 0;
+      const basePadTop = (Number.parseFloat(style.paddingTop) || 0) - appliedBeforeRef.current;
+      const rowsTop = list.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop + basePadTop;
+      const heights = heightsRef.current;
+      const top = rowsTop + rowTop(heights, gap, index);
+      const bottom = top + (heights[index] ?? estimate);
+      if (top < scroller.scrollTop) scroller.scrollTop = top;
+      else if (bottom > scroller.scrollTop + scroller.clientHeight) scroller.scrollTop = bottom - scroller.clientHeight;
+      compute();
+    },
+    [compute, estimate],
+  );
 
   useLayoutEffect(() => {
     appliedBeforeRef.current = range.before;
@@ -168,5 +193,5 @@ export function useWindowedRows({
     };
   }, [compute]);
 
-  return [range, listRef];
+  return [range, listRef, scrollToRow];
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { useTranslations } from "next-intl";
 
@@ -511,9 +511,8 @@ export function LibrarySection({
     if (candidates.some((c) => c !== best && c.count === best.count)) return null;
     return best.count * 2 > visibleSources.length ? best.state : null;
   })();
-  const sourceListRef = useRef<HTMLUListElement | null>(null);
-  const sourceRoving = useRovingRows({ count: visibleSources.length, listRef: sourceListRef });
-  const [sourceWindow, sourceWindowRef] = useWindowedRows({ count: visibleSources.length, estimate: SOURCE_ROW_ESTIMATE_PX, pin: sourceRoving.focusIndex });
+  const [sourceWindow, sourceListRef, scrollToSource] = useWindowedRows({ count: visibleSources.length, estimate: SOURCE_ROW_ESTIMATE_PX });
+  const sourceRoving = useRovingRows({ count: visibleSources.length, listRef: sourceListRef, scrollToRow: scrollToSource, rendered: sourceWindow });
   const visiblePages = needle
     ? model.wikiPages.filter((page) => matches(page.title) || matches(model.pageTexts.get(page.slug)))
     : model.wikiPages;
@@ -723,10 +722,7 @@ export function LibrarySection({
               </p>
             ) : null}
             <ul
-              ref={(node) => {
-                sourceListRef.current = node;
-                sourceWindowRef.current = node;
-              }}
+              ref={sourceListRef}
               onKeyDown={sourceRoving.onKeyDown}
               data-testid="library-source-list"
               /* The list says which phase drew it, so a proof can assert that a finished

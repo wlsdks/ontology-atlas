@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { describe, expect, it } from "vitest";
 
 import { useRovingRows } from "./use-roving-rows";
-import { windowRows } from "./use-windowed-rows";
+import { rowTop } from "./use-windowed-rows";
 
 function List({ count }: { count: number }) {
   const listRef = useRef<HTMLUListElement | null>(null);
@@ -50,6 +50,20 @@ describe("useRovingRows", () => {
     expect(screen.getByTestId("row-0").tabIndex).toBe(-1);
   });
 
+  it("when the stop has scrolled out of the rendered rows, the nearest rendered row carries the tab stop", () => {
+    function Windowed({ start, end }: { start: number; end: number }) {
+      const listRef = useRef<HTMLUListElement | null>(null);
+      const roving = useRovingRows({ count: 100, listRef, rendered: { start, end } });
+      const rows = [...new Set([start, end - 1, 0])];
+      return <div>{rows.map((i) => <button key={i} type="button" data-testid={`row-${i}`} data-row-index={i} tabIndex={roving.tabIndexOf(i)} />)}</div>;
+    }
+    const { rerender } = render(<Windowed start={0} end={10} />);
+    expect(screen.getByTestId("row-0").tabIndex).toBe(0);
+    rerender(<Windowed start={60} end={80} />);
+    expect(screen.getByTestId("row-60").tabIndex).toBe(0);
+    expect(screen.getByTestId("row-79").tabIndex).toBe(-1);
+  });
+
   it("keys from something inside the list that is not a row are left alone", () => {
     render(<List count={3} />);
     const list = screen.getByTestId("list");
@@ -59,23 +73,10 @@ describe("useRovingRows", () => {
   });
 });
 
-describe("windowRows with a pinned row", () => {
-  const heights = Array.from({ length: 1000 }, () => 36);
-
-  it("renders the pinned row with its overscan even when the viewport is far away", () => {
-    const w = windowRows(heights, 4, 0, 600, 8, 500);
-    expect(w.start).toBe(0);
-    expect(w.end).toBe(509);
-    // The pads still add up to the rows not rendered.
-    expect(w.before).toBe(0);
-    expect(w.after).toBe((1000 - 509) * 40 - 4);
-  });
-
-  it("a pinned row inside the viewport changes nothing", () => {
-    expect(windowRows(heights, 4, 0, 600, 8, 3)).toEqual(windowRows(heights, 4, 0, 600, 8));
-  });
-
-  it("a pin outside the list is ignored", () => {
-    expect(windowRows(heights, 4, 0, 600, 8, 5000)).toEqual(windowRows(heights, 4, 0, 600, 8));
+describe("rowTop", () => {
+  it("is the sum of the rows before, each with its gap", () => {
+    expect(rowTop([10, 20, 30], 4, 0)).toBe(0);
+    expect(rowTop([10, 20, 30], 4, 2)).toBe(10 + 4 + 20 + 4);
+    expect(rowTop([10, 20, 30], 4, 9)).toBe(10 + 4 + 20 + 4 + 30 + 4);
   });
 });

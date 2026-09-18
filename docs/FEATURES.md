@@ -2100,9 +2100,9 @@ element creation on the rail press, and every later layout read paid for the who
 now the scroller is the whole list's height and holds about forty rows, heights measured
 as they are seen, and a list with no scroller or no height renders every row as before.
 Each list is one tab stop (`useRovingRows`, 2026-09-19): the arrows, PageDown and PageUp,
-Home and End walk the rows, the window keeps the keyboard's row rendered wherever the
-scroller is, and Tab leaves the list for the next control, the way the radiogroups
-already rove. The scroll-end gate measures the Library's own scrollers. The
+Home and End walk the rows, the list scrolls a row into its scroller before focus moves
+onto it, the nearest rendered row carries the stop when the keyboard's row has scrolled
+away, and Tab leaves the list for the next control, the way the radiogroups already rove. The scroll-end gate measures the Library's own scrollers. The
 end of a page now keeps room for the floating *Back to top*: the last line stands clear of
 the pill instead of ending behind it — on a wiki page, on *Check results*, and on the Docs
 reader, which is the same pane — and below `lg` the pill itself stands above the bottom tab
