@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import type { useTranslations } from "next-intl";
 
 import type { LibraryWikiPage } from "@/entities/docs-vault";
@@ -144,6 +144,20 @@ export function LibraryShelf({
 
   const [shelfWindow, shelfListRef, scrollToSpine] = useWindowedRows({ count: spines.length, estimate: SHELF_ROW_ESTIMATE_PX });
   const shelfRoving = useRovingRows({ count: spines.length, listRef: shelfListRef, scrollToRow: scrollToSpine, rendered: shelfWindow });
+  /*
+   * **The shelf follows the open page.** A page opened from the graph's card or a citation
+   * is selected in a list that may not even have its row rendered: on the 3,000-file folder
+   * the shelf stayed at its top with nothing marked (dev, 2026-09-19). The selected spine is
+   * scrolled into view and becomes the keyboard's stop; a spine already in view moves nothing.
+   */
+  const { onRowFocus: shelfRowFocus } = shelfRoving;
+  useEffect(() => {
+    if (!selectedSlug) return;
+    const index = spines.findIndex(({ page }) => page.slug === selectedSlug);
+    if (index < 0) return;
+    scrollToSpine(index);
+    shelfRowFocus(index);
+  }, [scrollToSpine, selectedSlug, shelfRowFocus, spines]);
 
   return (
     <div

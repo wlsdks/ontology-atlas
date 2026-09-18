@@ -513,6 +513,15 @@ export function LibrarySection({
   })();
   const [sourceWindow, sourceListRef, scrollToSource] = useWindowedRows({ count: visibleSources.length, estimate: SOURCE_ROW_ESTIMATE_PX });
   const sourceRoving = useRovingRows({ count: visibleSources.length, listRef: sourceListRef, scrollToRow: scrollToSource, rendered: sourceWindow });
+  /* The list follows the open file, the way the shelf follows the open page (2026-09-19). */
+  const { onRowFocus: sourceRowFocus } = sourceRoving;
+  useEffect(() => {
+    if (!selectedSourcePath) return;
+    const index = visibleSources.findIndex((row) => row.path === selectedSourcePath);
+    if (index < 0) return;
+    scrollToSource(index);
+    sourceRowFocus(index);
+  }, [scrollToSource, selectedSourcePath, sourceRowFocus, visibleSources]);
   const visiblePages = needle
     ? model.wikiPages.filter((page) => matches(page.title) || matches(model.pageTexts.get(page.slug)))
     : model.wikiPages;

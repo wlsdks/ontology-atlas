@@ -165,6 +165,46 @@ test("the keyboard walks the islands: arrows step, Enter opens, Escape returns",
   await expect(bar).toBeHidden();
 });
 
+test("a page opened from an island's card is marked and in view on the shelf, however far down it stands", async ({ page }) => {
+  await openMap(page);
+  const at = await islandPoint(page, "Payments");
+  await page.mouse.click(at.x, at.y);
+  await expect(page.getByTestId("library-graph-island-bar")).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.__atlasLibraryGraph!.arriving())).toBe(false);
+  // The lowest page disc of the island: on the shelf it stands well past the first screen.
+  const disc = await page.evaluate(() => {
+    const pages = window.__atlasLibraryGraph!.nodes().filter((node) => node.kind === "page");
+    return [...pages].sort((a, b) => a.y - b.y || a.x - b.x).at(-1)!;
+  });
+  const box = (await page.getByTestId("library-graph-canvas").boundingBox())!;
+  await page.mouse.move(box.x + disc.x, box.y + disc.y);
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect(page.getByTestId("library-graph-card")).toBeVisible();
+  await page.getByTestId("library-graph-card-open").click();
+  const shelf = page.getByTestId("library-wiki-shelf");
+  await expect(shelf).toBeVisible();
+  /*
+   * Measured 2026-09-19 before the fix: the shelf stayed at its top (window `0-20`), the
+   * selected spine neither rendered nor in view. The list follows its selection now, and
+   * the exact finish is the browser's own scrollIntoView once the row exists.
+   */
+  await expect.poll(async () =>
+    page.evaluate(() => {
+      const shelf = document.querySelector('[data-testid="library-wiki-shelf"]')!;
+      const current = shelf.querySelector('[aria-current="true"]');
+      if (!current) return "not rendered";
+      let scroller: HTMLElement | null = shelf.parentElement as HTMLElement;
+      while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+      const s = scroller!.getBoundingClientRect();
+      const c = current.getBoundingClientRect();
+      return c.top >= s.top - 1 && c.bottom <= s.bottom + 1 ? "in view" : "out of view";
+    }),
+  ).toBe("in view");
+  // And it is the keyboard's stop, so Tab from the search lands on it.
+  await expect(shelf.locator('[aria-current="true"]')).toHaveAttribute("tabindex", "0");
+});
+
 test("the Unread island does not open: a press says what it is and where to start", async ({ page }) => {
   await openMap(page);
   const at = await islandPoint(page, "Unread");

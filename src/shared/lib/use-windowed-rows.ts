@@ -111,6 +111,13 @@ export function useWindowedRows({
   const heightsRef = useRef<number[]>([]);
   /** The `before` pad the list is currently drawn with, so its own top can be found under it. */
   const appliedBeforeRef = useRef(0);
+  /**
+   * A row asked for while it is not rendered yet. Heights past the window are estimates,
+   * and the error adds up over a long jump, so the first scroll lands near the row, not on
+   * it; once the row exists the browser's own `scrollIntoView` finishes the job exactly,
+   * and while it does not, the scroll is retried with the heights measured on the way.
+   */
+  const pendingRef = useRef<{ index: number; tries: number } | null>(null);
   const [range, setRange] = useState<WindowedRows>(() => EVERYTHING(count));
 
   const compute = useCallback(() => {
@@ -141,11 +148,20 @@ export function useWindowedRows({
    * take focus. Rendering the row where the viewport is not (a "pin") was tried and rendered
    * every row between the two (measured 2026-09-19: Home at the shelf's end drew all 400).
    */
+  const scrollToRowRef = useRef<((index: number) => void) | null>(null);
   const scrollToRow = useCallback(
     (index: number) => {
       const list = listRef.current;
       const scroller = scrollParent(list);
       if (!list || !scroller || scroller.clientHeight === 0) return;
+      // The exact finish, once the row exists; a row already rendered needs nothing else.
+      const rendered = list.querySelector<HTMLElement>(`[data-row-index="${index}"]`);
+      if (rendered) {
+        pendingRef.current = null;
+        rendered.scrollIntoView({ block: "nearest" });
+        return;
+      }
+      if (!pendingRef.current || pendingRef.current.index !== index) pendingRef.current = { index, tries: 0 };
       const style = getComputedStyle(list);
       const gap = Number.parseFloat(style.rowGap) || 0;
       const basePadTop = (Number.parseFloat(style.paddingTop) || 0) - appliedBeforeRef.current;
@@ -164,6 +180,20 @@ export function useWindowedRows({
     appliedBeforeRef.current = range.before;
     const list = listRef.current;
     if (!list) return;
+    const pending = pendingRef.current;
+    if (pending) {
+      const target = list.querySelector<HTMLElement>(`[data-row-index="${pending.index}"]`);
+      if (target) {
+        pendingRef.current = null;
+        target.scrollIntoView({ block: "nearest" });
+      } else if (pending.tries >= 6) {
+        pendingRef.current = null;
+      } else {
+        pending.tries += 1;
+        // Retried after this effect's own measuring below, on the next frame.
+        requestAnimationFrame(() => scrollToRowRef.current?.(pending.index));
+      }
+    }
     // Read the rendered rows' heights; a change re-runs the window so the pads stay exact.
     let changed = false;
     const rows = list.children;
@@ -192,6 +222,10 @@ export function useWindowedRows({
       observer?.disconnect();
     };
   }, [compute]);
+
+  useEffect(() => {
+    scrollToRowRef.current = scrollToRow;
+  }, [scrollToRow]);
 
   return [range, listRef, scrollToRow];
 }
