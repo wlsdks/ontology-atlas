@@ -1217,10 +1217,13 @@ the camera closes in); Atlas's version uses what the wiki already knows instead 
 embedding. `library-islands-layout.ts` makes **an island per concept**: the pages that name
 it as small discs at the centre, the files those pages were written from as smaller squares
 packed around them on a sunflower spiral, so an island reads as a body with a shore. Pages
-naming no concept gather on *Unsorted* (or on an island per wiki sub-folder); files no page
-has read gather on *Unread*, which on a half-read folder is the largest island and the truth
-the home should tell. Islands pack largest-first about the centre on a spiral stretched to
-the box's aspect; every island carries its name and count on a ground plate; a stale page is
+naming no concept gather on *Unsorted* (or on an island per wiki sub-folder). Files no page
+has read are not a topic, so they are not an island: they are the **shore**, a staggered band
+of dots under the archipelago, as wide as it stands and rows deep in proportion to how much
+is unread (2026-09-18: packed as a disc it was the largest thing on a freshly filled folder
+and took the middle with the topics ringed around it). Named islands pack largest-first
+about the centre on a spiral stretched to the box's aspect, Unsorted after them; every
+island carries its name and count on a ground plate; a stale page is
 an amber dot; no line is drawn at rest, and a pointed-at or held mark still answers with its
 own. The layout is pure and deterministic, like the flow. **A press on an island opens it
 as columns** — its own pages, files and rows, few enough for the flow to name every one —
@@ -2088,7 +2091,10 @@ its own and unfolds above 460px; unfolding it while narrow is the person's choic
 stands. The fold is one icon control in one place — the panel glyph on the column's
 eyebrow line closes it, and the same glyph at the pane's top-left opens it — and the
 reader's way back reads *Graph*, the thing it shows, with no arrow (owner, 2026-09-07). A search whose matches all sit on the other half of the switch says so under the empty list and offers the switch, instead of a count over nothing. A page whose first line is a section heading no longer carries the section gap above it. A *Conversation* chip on the graph's status row and on the reader's top row reopens the dock after it was closed; before, closing it was the end of the transcript. The conversation's composer has one quiet row at its bottom, the way chat composers are laid out elsewhere: the tool with its model as one text picker (*Codex · GPT-5.6-Sol (low)*) and the mode on the left, the status word, past conversations, new conversation and send on the right; a tool that has run out of plan is named as a limit with the hour it lifts, not as a generic problem with a retry. The app's Claude follows the terminal login at every session start, and which place holds that login is measured rather than assumed: both of Claude Code's keychain items and `~/.claude/.credentials.json` are compared by digest, carriers that agree settle it themselves, carriers that disagree are settled by whichever the terminal wrote last, and carriers that settle nothing install nothing at all. The winner is mirrored into the app's own keychain item, so an account switched in the terminal reaches the app without a repair. The account name beside a login is a cache each side refreshes on its own clock, not a fact about the token, so the terminal's name travels into the app folder only when it is the fresher of the two. A door pressed into a broken session restarts the session and then sends, instead of waiting behind the old error. The writer label prints only on the rows that are the exception to the
-folder's majority writer. The scroll-end gate measures the Library's own scrollers. The
+folder's majority writer, and the source list treats its state word the same way: past one
+screen of rows the most common state is said once above the list, in its own tone with its
+count, and a row keeps a badge only when its state differs (2026-09-18: a freshly filled
+folder wore the same amber pill on 1,600 rows). The scroll-end gate measures the Library's own scrollers. The
 end of a page now keeps room for the floating *Back to top*: the last line stands clear of
 the pill instead of ending behind it — on a wiki page, on *Check results*, and on the Docs
 reader, which is the same pane — and below `lg` the pill itself stands above the bottom tab

@@ -73,6 +73,20 @@ interface LibraryGraphIsland {
   stale: number;
   /** How far along its arrival the island is, 0–1; its body, shore and name fade in with it. */
   arrival?: number;
+  /** The Unread shore's rectangle about `x, y`, in canvas pixels; absent on a disc island. */
+  band?: { width: number; height: number };
+}
+
+/** The island's outline: a disc, or the shore's rounded band, grown by `inset` on every side. */
+function islandPath(ctx: CanvasRenderingContext2D, island: LibraryGraphIsland, inset: number): void {
+  ctx.beginPath();
+  if (island.band) {
+    const w = island.band.width + inset * 2;
+    const h = island.band.height + inset * 2;
+    ctx.roundRect(island.x - w / 2, island.y - h / 2, w, h, Math.min(ISLAND_SHORE_PX * 2, h / 2));
+  } else {
+    ctx.arc(island.x, island.y, island.r + inset, 0, Math.PI * 2);
+  }
 }
 
 export interface LibraryGraphFrame {
@@ -544,8 +558,7 @@ function drawIslands(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, in
       ctx.fill();
       ctx.globalAlpha = presence;
     }
-    ctx.beginPath();
-    ctx.arc(island.x, island.y, island.r, 0, Math.PI * 2);
+    islandPath(ctx, island, 0);
     ctx.fillStyle = island.kind === "unread" ? ink.ground : ink.pageHalo;
     ctx.fill();
     const hovered = island.id === frame.hoveredIslandId;
@@ -555,10 +568,9 @@ function drawIslands(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, in
     ctx.stroke();
     ctx.setLineDash([]);
     if (island.id === frame.focusedIslandId) {
-      ctx.beginPath();
+      islandPath(ctx, island, FOCUS_RING_GAP);
       ctx.strokeStyle = ink.selectedRing;
       ctx.lineWidth = 2;
-      ctx.arc(island.x, island.y, island.r + FOCUS_RING_GAP, 0, Math.PI * 2);
       ctx.stroke();
     }
   }
@@ -582,7 +594,8 @@ function drawIslandNames(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame
     // A topic counts its pages; the Unread island has none, so it counts its files.
     const text = `${island.label} · ${island.kind === "unread" ? island.sources : island.pages}`;
     const width = ctx.measureText(text).width;
-    const inside = island.r * 2 >= Math.max(ISLAND_LABEL_INSIDE_MIN_PX, width + 12);
+    const across = island.band ? island.band.width : island.r * 2;
+    const inside = across >= Math.max(ISLAND_LABEL_INSIDE_MIN_PX, width + 12);
     const box = inside
       ? { x: island.x - width / 2, y: island.y - lineHeight / 2, width, height: lineHeight }
       : { x: island.x - width / 2, y: island.y + island.r + 3, width, height: lineHeight };

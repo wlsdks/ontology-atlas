@@ -156,7 +156,13 @@ function islandAt(
 ): IslandsLayout["islands"][number] | null {
   if (!islands) return null;
   const world = screenToWorld(point, view, box);
-  return islands.find((island) => Math.hypot(world.x - island.x, world.y - island.y) <= island.r) ?? null;
+  return (
+    islands.find((island) =>
+      island.band
+        ? Math.abs(world.x - island.x) <= island.band.width / 2 && Math.abs(world.y - island.y) <= island.band.height / 2
+        : Math.hypot(world.x - island.x, world.y - island.y) <= island.r,
+    ) ?? null
+  );
 }
 /**
  * Writes the bodies' places back onto the picture: each island's centre, and every dot
@@ -1094,7 +1100,19 @@ export function useLibraryGraphEngine({
               let stale = 0;
               for (const id of island.pages) if (stalePagesRef.current.has(id)) stale += 1;
               const body = islandFieldRef.current?.bodies[islandFieldRef.current.index.get(island.id) ?? -1];
-              return { id: island.id, kind: island.kind, label: island.label, x: at.x, y: at.y, r: island.r * view.scale, pages: island.pages.length, sources: island.sources.length, stale, arrival: body ? islandArrival(body) : 1 };
+              return {
+                id: island.id,
+                kind: island.kind,
+                label: island.label,
+                x: at.x,
+                y: at.y,
+                r: island.r * view.scale,
+                pages: island.pages.length,
+                sources: island.sources.length,
+                stale,
+                arrival: body ? islandArrival(body) : 1,
+                ...(island.band ? { band: { width: island.band.width * view.scale, height: island.band.height * view.scale } } : {}),
+              };
             })
           : undefined;
       const widestPagePx = pictureRef.current === "islands" ? 2 * view.scale * Math.max(0, ...nodes.filter((node) => node.kind === "page").map((node) => radiiRef.current.get(node.id) ?? 0)) : Infinity;
@@ -2081,7 +2099,7 @@ export function useLibraryGraphEngine({
       /** The islands of the overview, in world units, or null under any other picture. */
       islands: () =>
         islandsRef.current
-          ? islandsRef.current.islands.map((island) => ({ id: island.id, kind: island.kind, label: island.label, x: island.x, y: island.y, r: island.r, pages: island.pages.length, sources: island.sources.length }))
+          ? islandsRef.current.islands.map((island) => ({ id: island.id, kind: island.kind, label: island.label, x: island.x, y: island.y, r: island.r, pages: island.pages.length, sources: island.sources.length, ...(island.band ? { band: island.band } : {}) }))
           : null,
       /**
        * Every name the last frame actually placed, in canvas CSS pixels.

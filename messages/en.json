@@ -4882,6 +4882,7 @@
       "findTooltip": "Propose documents already in this folder and in the project folders you bound. Nothing is copied until you pick.",
       "empty": "No raw sources yet. Add the project documents you already have. Any format; Atlas keeps them exactly as they arrived.",
       "noFormat": "FILE",
+      "statesAria": "Source states: the most common state is said once here, and only exceptions stay on the rows",
       "needsCompile": "{count, plural, one {# not written up yet} other {# not written up yet}}",
       "dropHint": "Or make a sources/ folder inside {folder} in Finder and drop files there; the list updates by itself.",
       "state": {
@@ -5126,7 +5127,7 @@
       "legendShortCardOpen": "A circle is a page, a square a source, a ring a concept. Escape closes the card.",
       "islandUnsorted": "Unsorted",
       "islandUnread": "Unread",
-      "legendIslands": "Past a few hundred files the picture is a map of islands: each island is one concept and the pages that name it, with the files those pages were written from packed around them. Unsorted holds pages naming no concept; Unread holds files no page has read yet. An amber dot is a page whose files changed since it was written. Scroll to zoom in until names appear; press a dot for a card beside it.",
+      "legendIslands": "Past a few hundred files the picture is a map of islands: each island is one concept and the pages that name it, with the files those pages were written from packed around them. Unsorted holds pages naming no concept; Unread is the band under the islands: files no page has read yet. An amber dot is a page whose files changed since it was written. Scroll to zoom in until names appear; press a dot for a card beside it.",
       "describeIsland": "{name}: an island of {pages} pages and the {sources} files they read. Press it to open them as columns; zoom in for their names.",
       "announceIsland": "Island {name}, {position} of {total}: {pages} pages and {sources} files. Enter opens it as columns.",
       "describeUnread": "Unread: {sources} files no page has read yet. Press it for where to start.",

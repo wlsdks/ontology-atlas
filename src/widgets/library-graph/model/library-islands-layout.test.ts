@@ -41,6 +41,41 @@ describe("islands layout", () => {
     expect(byId.get("unread")?.kind).toBe("unread");
   });
 
+  it("lays Unread as a shore band under the islands, as wide as they stand, even when it holds the most files", () => {
+    // Three small concepts and a pile of 200 files nobody read: the pile is by far the largest.
+    const read = Array.from({ length: 30 }, (_, i) => `r${i}.md`);
+    const unread = Array.from({ length: 200 }, (_, i) => `u${i}.md`);
+    const pages = Array.from({ length: 30 }, (_, i) => `p${i}`);
+    const concepts = ["alpha", "beta", "gamma"];
+    const cites: Array<[string, string]> = read.map((s, i) => [pages[i], s]);
+    const mentions: Array<[string, string]> = pages.map((p, i) => [p, concepts[i % 3]]);
+    const layout = islandsLayout(graph({ sources: [...read, ...unread], pages, concepts, cites, mentions }), WORLD, LABELS);
+    const shore = layout.islands.find((i) => i.kind === "unread")!;
+    const named = layout.islands.filter((i) => i.kind === "concept");
+    expect(shore.band).toBeDefined();
+    expect(shore.sources.length).toBe(200);
+    // Wider than tall, and as wide as the archipelago above it.
+    expect(shore.band!.width).toBeGreaterThan(shore.band!.height);
+    const left = Math.min(...named.map((i) => i.x - i.r));
+    const right = Math.max(...named.map((i) => i.x + i.r));
+    expect(Math.abs(shore.band!.width - (right - left))).toBeLessThanOrEqual((ISLAND_SOURCE_RADIUS * 2 + 1.2) * 1.5 + 6 + 1);
+    // Under every island: its top edge is below the lowest island's bottom edge.
+    const lowest = Math.max(...named.map((i) => i.y + i.r));
+    expect(shore.y - shore.band!.height / 2).toBeGreaterThanOrEqual(lowest - 1e-6);
+    // Every unread dot sits inside the band's rectangle.
+    for (const id of shore.sources) {
+      const p = layout.positions.get(id)!;
+      expect(Math.abs(p.x - shore.x)).toBeLessThanOrEqual(shore.band!.width / 2);
+      expect(Math.abs(p.y - shore.y)).toBeLessThanOrEqual(shore.band!.height / 2);
+    }
+  });
+
+  it("a folder with only unread files is one shore band, wider than tall", () => {
+    const layout = islandsLayout(graph({ sources: Array.from({ length: 50 }, (_, i) => `u${i}.md`) }), WORLD, LABELS);
+    expect(layout.islands.map((i) => i.kind)).toEqual(["unread"]);
+    expect(layout.islands[0].band!.width).toBeGreaterThan(layout.islands[0].band!.height);
+  });
+
   it("groups by wiki sub-folder when a page names no concept", () => {
     const layout = islandsLayout(graph({ pages: ["wiki/payments/fees", "wiki/payments/tiers", "wiki/notes"] }), WORLD, LABELS);
     expect(layout.islands.map((island) => [island.id, island.pages.length]).sort()).toEqual([["folder:payments", 2], ["unsorted", 1]]);
@@ -58,16 +93,27 @@ describe("islands layout", () => {
     for (const island of layout.islands) {
       for (const id of [...island.pages, ...island.sources]) {
         const p = layout.positions.get(id)!;
-        expect(Math.hypot(p.x - island.x, p.y - island.y) + layout.radii.get(id)!).toBeLessThanOrEqual(island.r + 1e-6);
+        if (island.band) {
+          expect(Math.abs(p.x - island.x) + layout.radii.get(id)!).toBeLessThanOrEqual(island.band.width / 2 + 1e-6);
+          expect(Math.abs(p.y - island.y) + layout.radii.get(id)!).toBeLessThanOrEqual(island.band.height / 2 + 1e-6);
+        } else {
+          expect(Math.hypot(p.x - island.x, p.y - island.y) + layout.radii.get(id)!).toBeLessThanOrEqual(island.r + 1e-6);
+        }
       }
     }
     for (const a of layout.islands) for (const b of layout.islands) {
       if (a === b) continue;
-      expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(a.r + b.r - 1e-6);
+      if (a.band || b.band) {
+        // A band against a disc: the disc stands wholly above the band's top edge.
+        const [band, disc] = a.band ? [a, b] : [b, a];
+        expect(disc.y + disc.r).toBeLessThanOrEqual(band.y - band.band!.height / 2 + 1e-6);
+      } else {
+        expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(a.r + b.r - 1e-6);
+      }
     }
-    // The largest island stands about the middle of the map: the ring around it is not
-    // symmetric, so "about" is within a sixth of the world on either axis.
-    const largest = [...layout.islands].sort((a, b) => b.r - a.r)[0];
+    // The largest named island stands about the middle of the map: the ring around it is
+    // not symmetric, so "about" is within a sixth of the world on either axis.
+    const largest = [...layout.islands].filter((i) => i.kind === "concept" || i.kind === "folder").sort((a, b) => b.r - a.r)[0];
     expect(Math.abs(largest.x - WORLD.width / 2)).toBeLessThanOrEqual(WORLD.width / 6);
     expect(Math.abs(largest.y - WORLD.height / 2)).toBeLessThanOrEqual(WORLD.height / 6);
     // The map fills the world on one axis and never leaves it.

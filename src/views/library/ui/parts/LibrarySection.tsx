@@ -29,6 +29,11 @@ import { passageLabelText } from "../../lib/passage-label";
 import { useSourceSearch } from "../../lib/use-source-search";
 import { LibraryShelf } from "./LibraryShelf";
 import { StateBadge } from "./StateBadge";
+
+/** One screen of index rows: past this, a pill repeated on every row is texture and folds into the head. */
+const SOURCE_STATE_FOLDS_FROM = 12;
+/** The order the head counts states in: what to act on first, what is done last. */
+const SOURCE_STATE_ORDER: readonly LibrarySourceRow["state"][] = ["stale", "partial", "not-compiled", "compiled", "checking"];
 import type { LibraryUiModel } from "../../lib/use-library-model";
 import { WIKI_SECTION_ORDER } from "@/shared/lib/wiki-page-schema";
 
@@ -478,6 +483,30 @@ export function LibrarySection({
           (search.phase === "reading" && !search.read.has(row.path)),
       )
     : model.sources;
+  /**
+   * **The majority state is said once, at the head; the rows keep only the exceptions**
+   * (the rule `majorityWriter` below already applies to the wiki list). A folder that was
+   * just filled lists 3,000 files, and 1,600 of them wore the same amber pill in a column
+   * (installed app, 2026-09-18): a pill on every row is texture, and the eye cannot find
+   * the row that differs. So the counts stand under the actions, the most common state is
+   * printed there in its own tone, and a row wearing that state carries the word for a
+   * screen reader only. `compiled` never folds — its check is already the quiet mark —
+   * and `checking` is a moment, not a state to summarise. Below one screen of rows
+   * (`SOURCE_STATE_FOLDS_FROM`) every pill is still legible and nothing folds.
+   */
+  const stateCounts = (() => {
+    const counts = new Map<LibrarySourceRow["state"], number>();
+    for (const row of visibleSources) counts.set(row.state, (counts.get(row.state) ?? 0) + 1);
+    return SOURCE_STATE_ORDER.filter((state) => counts.has(state)).map((state) => ({ state, count: counts.get(state)! }));
+  })();
+  const foldedState = (() => {
+    if (visibleSources.length < SOURCE_STATE_FOLDS_FROM) return null;
+    const candidates = stateCounts.filter(({ state }) => state !== "compiled" && state !== "checking");
+    if (candidates.length === 0) return null;
+    const best = candidates.reduce((a, b) => (b.count > a.count ? b : a));
+    if (candidates.some((c) => c !== best && c.count === best.count)) return null;
+    return best.count * 2 > visibleSources.length ? best.state : null;
+  })();
   const visiblePages = needle
     ? model.wikiPages.filter((page) => matches(page.title) || matches(model.pageTexts.get(page.slug)))
     : model.wikiPages;
@@ -662,6 +691,30 @@ export function LibrarySection({
 
         {hasSources ? (
           <>
+            {stateCounts.length > 0 ? (
+              <p
+                data-testid="library-source-states"
+                data-folded-state={foldedState ?? undefined}
+                aria-label={t("sources.statesAria")}
+                className={`flex flex-wrap items-center gap-x-2 gap-y-1 pb-2 pt-1 text-caption text-[color:var(--color-text-quaternary)] ${INDEX_LIST_INSET}`}
+              >
+                {stateCounts.map(({ state, count }) =>
+                  state === foldedState ? (
+                    <StateBadge
+                      key={state}
+                      tone={state === "stale" || state === "partial" ? "warning" : "neutral"}
+                      testId={`library-source-states-${state}`}
+                    >
+                      {t(`sources.state.${state}.label`)} · {count.toLocaleString()}
+                    </StateBadge>
+                  ) : (
+                    <span key={state} data-testid={`library-source-states-${state}`} className="tabular-nums">
+                      {t(`sources.state.${state}.label`)} {count.toLocaleString()}
+                    </span>
+                  ),
+                )}
+              </p>
+            ) : null}
             <ul
               data-testid="library-source-list"
               /* The list says which phase drew it, so a proof can assert that a finished
@@ -721,6 +774,12 @@ export function LibrarySection({
                           data-testid="library-source-state-checking"
                           className="flex-none text-caption text-[color:var(--color-text-quaternary)]"
                         >
+                          {stateLabel}
+                        </span>
+                      ) : row.state === foldedState ? (
+                        /* The head already says this state once; the row keeps the word
+                           for a screen reader and shows nothing. */
+                        <span data-testid="library-source-state-folded" className="sr-only">
                           {stateLabel}
                         </span>
                       ) : (

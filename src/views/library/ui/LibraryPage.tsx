@@ -2715,8 +2715,11 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         }}
         tabIndex={-1}
         data-testid="library-reader"
-        /* One stable column keeps reading focus and the work lane across selections. */
-        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-lg:order-first"
+        /* One stable column keeps reading focus and the work lane across selections.
+           The focus it takes is for reading order, not a control's: it is a region, so
+           it draws no ring. Without this the global focus-visible floor outlined the
+           whole pane in indigo after every row press (installed app, 2026-09-18). */
+        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-lg:order-first focus-visible:outline-none"
       >
         {/* Work stays above the reader and guidance, independent of the graph dialog. */}
         <LibraryWorkActivityStrip

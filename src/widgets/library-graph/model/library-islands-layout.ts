@@ -53,6 +53,12 @@ interface Island {
   sources: string[];
   /** The concept node this island stands for, when it is one. */
   conceptId: string | null;
+  /**
+   * The Unread shore is a band, not a disc: its width and height about `x, y`. `r` is then
+   * half its height — the disc inscribed top to bottom — which is what the packing and the
+   * hit test above it need; a press inside the band's own rectangle is what the engine tests.
+   */
+  band?: { width: number; height: number };
 }
 
 export interface IslandsLayout {
@@ -72,6 +78,11 @@ function folderOf(ref: string): string | null {
   const parts = ref.split("/");
   if (parts.length < 3) return null;
   return parts.slice(1, -1).join("/");
+}
+
+/** Packing order by kind: named islands take the middle and Unsorted follows; Unread is the shore, packed apart. */
+function islandRank(kind: Island["kind"]): number {
+  return kind === "unread" ? 2 : kind === "unsorted" ? 1 : 0;
 }
 
 export function islandsLayout(graph: LibraryGraph, world: { width: number; height: number }, labels: { unsorted: string; unread: string }): IslandsLayout {
@@ -154,7 +165,9 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
   const cellOf = (r: number): number => (r * 2 + DOT_GAP) ** 2;
   const sourceCell = cellOf(ISLAND_SOURCE_RADIUS);
   type Packed = Island & { local: Array<{ id: string; x: number; y: number; r: number }> };
+  const unreadMember = members.get("unread") ?? null;
   const islands: Packed[] = [...members.entries()]
+    .filter(([, held]) => held.kind !== "unread")
     .map(([id, held]) => {
       const local: Array<{ id: string; x: number; y: number; r: number }> = [];
       let area = 0;
@@ -172,8 +185,15 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
       const r = Math.sqrt(area / Math.PI) + ISLAND_MARGIN;
       return { id, kind: held.kind, label: held.label, conceptId: held.conceptId, pages: held.pages, sources: held.sources, r, x: 0, y: 0, local };
     })
-    // Largest first: the biggest topic is the middle of the map.
-    .sort((a, b) => b.r - a.r || a.id.localeCompare(b.id));
+    /*
+     * Largest named island first: the biggest topic is the middle of the map. Unsorted
+     * and Unread pack after every named island, however big they are — on a folder that
+     * has just been filled the Unread pile is the largest thing there, and packed by size
+     * it sat in the middle with the concepts ringed around it (installed app, 3,000
+     * files, 2026-09-18). The middle belongs to what the wiki is about; the pile nobody
+     * has read is the shore.
+     */
+    .sort((a, b) => islandRank(a.kind) - islandRank(b.kind) || b.r - a.r || a.id.localeCompare(b.id));
 
   // ── Islands packed about the centre: each takes the nearest free place on a spiral. ──
   const placed: Array<{ x: number; y: number; r: number }> = [];
@@ -199,16 +219,71 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
     placed.push({ x: island.x, y: island.y, r: island.r });
   }
 
+  /*
+   * ── The Unread shore: a band under the islands, as wide as they stand. ──
+   *
+   * Files no page has read are not a topic, so they are not an island. Packed as one
+   * they were the largest disc on a freshly filled folder and took the middle of the map
+   * with the topics ringed around them (installed app, 3,000 files, 2026-09-18). They are
+   * the shore the islands stand off: a flat band of dots along the bottom edge, as wide
+   * as the archipelago above it, rows deep in proportion to how much is unread. The
+   * eye reads the islands as the map and the band as its ground, which is what it is.
+   */
+  if (unreadMember) {
+    const cell = ISLAND_SOURCE_RADIUS * 2 + DOT_GAP;
+    const n = unreadMember.sources.length;
+    let left = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    for (const island of islands) {
+      left = Math.min(left, island.x - island.r);
+      right = Math.max(right, island.x + island.r);
+      bottom = Math.max(bottom, island.y + island.r);
+    }
+    const hasIslands = Number.isFinite(left);
+    // Alone, the shore is still a band: wider than tall in the world's proportion.
+    const span = hasIslands ? right - left : Math.sqrt(n) * cell * Math.sqrt(aspect * 2);
+    const cols = Math.max(1, Math.floor((span - ISLAND_MARGIN * 2) / cell));
+    const rows = Math.max(1, Math.ceil(n / cols));
+    // Every other row steps half a cell along, so the band is a shore of pebbles, not a grid.
+    const width = cols * cell + cell / 2 + ISLAND_MARGIN * 2;
+    const height = rows * cell + ISLAND_MARGIN * 2;
+    const local: Array<{ id: string; x: number; y: number; r: number }> = unreadMember.sources.map((id, i) => {
+      const row = Math.floor(i / cols);
+      return {
+        id,
+        x: -width / 2 + ISLAND_MARGIN + ((i % cols) + 0.5) * cell + (row % 2 === 1 ? cell / 2 : 0),
+        y: -height / 2 + ISLAND_MARGIN + (row + 0.5) * cell,
+        r: ISLAND_SOURCE_RADIUS,
+      };
+    });
+    islands.push({
+      id: "unread",
+      kind: "unread",
+      label: unreadMember.label,
+      conceptId: null,
+      pages: [],
+      sources: unreadMember.sources,
+      x: hasIslands ? (left + right) / 2 : 0,
+      y: hasIslands ? bottom + ISLAND_GAP * 2 + height / 2 : 0,
+      r: height / 2,
+      band: { width, height },
+      local,
+    });
+  }
+
   // ── The whole map scaled to the world box, keeping its aspect, and centred. ──
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
   for (const island of islands) {
-    minX = Math.min(minX, island.x - island.r);
-    minY = Math.min(minY, island.y - island.r);
-    maxX = Math.max(maxX, island.x + island.r);
-    maxY = Math.max(maxY, island.y + island.r);
+    const halfW = island.band ? island.band.width / 2 : island.r;
+    const halfH = island.band ? island.band.height / 2 : island.r;
+    minX = Math.min(minX, island.x - halfW);
+    minY = Math.min(minY, island.y - halfH);
+    maxX = Math.max(maxX, island.x + halfW);
+    maxY = Math.max(maxY, island.y + halfH);
   }
   if (!Number.isFinite(minX)) {
     return { positions, radii, islands: [], extent: { width: Math.max(1, world.width), height: Math.max(1, world.height) } };
@@ -226,7 +301,18 @@ export function islandsLayout(graph: LibraryGraph, world: { width: number; heigh
       positions.set(dot.id, { x: x + dot.x * s, y: y + dot.y * s });
       radii.set(dot.id, dot.r * s);
     }
-    out.push({ id: island.id, kind: island.kind, label: island.label, conceptId: island.conceptId, pages: island.pages, sources: island.sources, x, y, r: island.r * s });
+    out.push({
+      id: island.id,
+      kind: island.kind,
+      label: island.label,
+      conceptId: island.conceptId,
+      pages: island.pages,
+      sources: island.sources,
+      x,
+      y,
+      r: island.r * s,
+      ...(island.band ? { band: { width: island.band.width * s, height: island.band.height * s } } : {}),
+    });
   }
   // A concept is its island: its mark stands at the island's centre with no radius, so the
   // island is what a person sees and the concept is what a press on it opens. A concept no
