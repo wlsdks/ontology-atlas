@@ -144,6 +144,22 @@ test("zooming the wheel out of an opened island returns the map", async ({ page 
   }
   await expect(bar, "zooming out of the island did not return the map").toBeHidden();
   await expect.poll(async () => page.evaluate(() => (window.__atlasLibraryGraph!.islands() ?? []).length)).toBeGreaterThan(3);
+  /*
+   * The wheel that returned the map keeps turning for a few steps, as a hand does. Those
+   * steps belong to the return, not to the map: measured before the fix (2026-09-19) they
+   * left the archipelago at a 0.46 scale in the middle of a dark canvas. The map stands at
+   * its fit once the camera settles.
+   */
+  for (let step = 0; step < 6; step += 1) await page.mouse.wheel(0, 100);
+  await expect.poll(async () => page.evaluate(() => window.__atlasLibraryGraph!.arriving())).toBe(false);
+  const canvas = page.getByTestId("library-graph-canvas");
+  await expect
+    .poll(async () => {
+      const scale = Number(await canvas.getAttribute("data-view-scale"));
+      const fit = await page.evaluate(() => window.__atlasLibraryGraph!.fitScale?.() ?? null);
+      return fit === null ? "no fit" : scale >= fit * 0.95 ? "fitted" : `scale ${scale.toFixed(2)} of fit ${fit.toFixed(2)}`;
+    })
+    .toBe("fitted");
 });
 
 test("the keyboard walks the islands: arrows step, Enter opens, Escape returns", async ({ page }) => {

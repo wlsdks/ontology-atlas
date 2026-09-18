@@ -208,6 +208,15 @@ const ISLAND_OPENS_AT_VIEW_SHARE = 0.45;
 /** An opened island zoomed out to this share of its fit scale gives way to the map. */
 const ISLAND_LEAVES_BELOW_FIT = 0.6;
 /**
+ * After a wheel-out returned the map, further wheel-out steps of the same gesture are the
+ * return's, not the map's. A wheel is a stream, and the return consumed it: measured on the
+ * 3,424-mark folder (dev, 2026-09-19) the two steps that followed the return took the camera
+ * off the map's fit to a 0.46 scale, a small archipelago standing in the middle of a dark
+ * canvas, the one thing the return exists to avoid. For this long after a wheel return the
+ * map ignores wheel-out; wheel-in, a press or a drag still take the camera at once.
+ */
+const WHEEL_RETURN_SETTLE_MS = 700;
+/**
  * On the overview a dot takes a press only once its radius is this, on screen: a 16px
  * mark is a target, a 4px one is texture and the island under it is what the press means.
  */
@@ -504,6 +513,8 @@ export function useLibraryGraphEngine({
    * island under the pointer at the end of a zoom is not always the one it began on.
    */
   const zoomAimRef = useRef<string | null>(null);
+  /** When a wheel-out last returned the map, in event time; wheel-out is ignored for a beat after. */
+  const wheelReturnedAtRef = useRef(-Infinity);
   const onPressIslandRef = useRef(onPressIsland);
   const onHoverIslandRef = useRef(onHoverIsland);
   const onLeaveIslandRef = useRef(onLeaveIsland);
@@ -2005,6 +2016,7 @@ export function useLibraryGraphEngine({
       const pixels = wheelPixelDelta(event, typeof window === "undefined" ? 800 : window.innerHeight);
       if (!isWheelZoomIntent(pixels, event.ctrlKey)) return;
       event.preventDefault();
+      if (pixels > 0 && overviewRef.current && event.timeStamp - wheelReturnedAtRef.current < WHEEL_RETURN_SETTLE_MS) return;
       const rect = canvas.getBoundingClientRect();
       rectRef.current = { left: rect.left, top: rect.top };
       takeCamera();
@@ -2034,6 +2046,7 @@ export function useLibraryGraphEngine({
       // same ask, so the floor counts as past the margin.
       const scaleNow = viewRef.current.scale;
       if (pixels > 0 && !overviewRef.current && (scaleNow <= fitScaleRef.current * ISLAND_LEAVES_BELOW_FIT || scaleNow <= LIBRARY_ZOOM_MIN + 1e-6)) {
+        wheelReturnedAtRef.current = event.timeStamp;
         onLeaveIslandRef.current?.();
       }
       wake();
@@ -2097,6 +2110,8 @@ export function useLibraryGraphEngine({
           ? { rowGap: columnsRef.current.rowGap, columns: columnsRef.current.columns.map((column) => ({ kind: column.kind, x: column.x, grid: column.grid, count: column.ids.length })) }
           : null,
       /** The islands of the overview, in world units, or null under any other picture. */
+      /** The scale the fit tile would take the camera to, for a spec to say whether the map stands at its fit. */
+      fitScale: () => fitScaleRef.current,
       islands: () =>
         islandsRef.current
           ? islandsRef.current.islands.map((island) => ({ id: island.id, kind: island.kind, label: island.label, x: island.x, y: island.y, r: island.r, pages: island.pages.length, sources: island.sources.length, ...(island.band ? { band: island.band } : {}) }))
