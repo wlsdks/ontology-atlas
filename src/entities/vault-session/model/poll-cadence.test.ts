@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextPollDelay, DEFAULT_POLL_CADENCE, createAdaptivePoller } from './poll-cadence';
+import { nextPollDelay, DEFAULT_POLL_CADENCE, MAX_POLL_DELAY_MS, createAdaptivePoller } from './poll-cadence';
 
 // microtask flush for the async poll continuation
 const flush = async () => {
@@ -99,5 +99,40 @@ describe('nextPollDelay', () => {
     const now = 0;
     expect(nextPollDelay(now, now)).toBe(1500);
     expect(nextPollDelay(now - 20_000, now)).toBe(5000);
+  });
+
+  it('a poll that costs more never runs more often than a twentieth of the time', () => {
+    // A 230 ms walk (the 12k fixture) still idles at 5 s; a 2 s walk waits 40 s; nothing waits past a minute.
+    expect(nextPollDelay(null, 1_000_000, DEFAULT_POLL_CADENCE, 230)).toBe(5000);
+    expect(nextPollDelay(null, 1_000_000, DEFAULT_POLL_CADENCE, 2000)).toBe(40_000);
+    expect(nextPollDelay(null, 1_000_000, DEFAULT_POLL_CADENCE, 10_000)).toBe(MAX_POLL_DELAY_MS);
+    // The burst keeps its floor too: a change on a slow folder does not turn into a busy loop.
+    expect(nextPollDelay(1_000_000, 1_000_500, DEFAULT_POLL_CADENCE, 2000)).toBe(40_000);
+    expect(nextPollDelay(1_000_000, 1_000_500, DEFAULT_POLL_CADENCE, 50)).toBe(1500);
+  });
+
+  it('the poller measures its own poll and feeds the next delay', async () => {
+    let clock = 0;
+    const timers: Array<{ cb: () => void; ms: number }> = [];
+    const poller = createAdaptivePoller({
+      poll: async () => {
+        clock += 3000;
+        return false;
+      },
+      now: () => clock,
+      setTimer: (cb, ms) => {
+        timers.push({ cb, ms });
+        return timers.length;
+      },
+      clearTimer: () => {},
+    });
+    poller.start();
+    expect(timers[0]!.ms).toBe(5000);
+    timers[0]!.cb();
+    await Promise.resolve();
+    await Promise.resolve();
+    // The poll took 3 s, so the next delay is 60 s (3 s x 20).
+    expect(timers[1]!.ms).toBe(60_000);
+    poller.stop();
   });
 });

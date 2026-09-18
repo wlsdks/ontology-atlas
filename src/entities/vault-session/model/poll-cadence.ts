@@ -25,6 +25,21 @@ export const DEFAULT_POLL_CADENCE: PollCadenceConfig = {
 };
 
 /**
+ * **A poll never takes more than this share of the wall clock.**
+ *
+ * A web poll walks the whole folder and calls `getFile()` on every entry, because the File
+ * System Access API has no cheaper way to read a modification time. Measured on the
+ * 12,025-file fixture (2026-09-19, dev server, 15 s CPU profile at rest): about 230 ms per
+ * walk, every 5 s — the only work on an idle Library, and it grows with the folder. So the
+ * delay after a poll is at least the poll's own duration times this factor: a 230 ms walk
+ * still idles at 5 s, a 2 s walk on a far larger folder waits 40 s, and no folder can make
+ * the poll take more than a twentieth of the time. `MAX_POLL_DELAY_MS` keeps the promise
+ * in `.claude/rules/surfaces.md` that the web is *delayed, not unavailable*.
+ */
+export const POLL_COST_SHARE = 20;
+export const MAX_POLL_DELAY_MS = 60_000;
+
+/**
  * Delay (ms) before the next poll.
  * @param lastChangeAt epoch ms of the last detected change, or null if none yet
  * @param now epoch ms
@@ -34,11 +49,14 @@ export function nextPollDelay(
   lastChangeAt: number | null,
   now: number,
   config: PollCadenceConfig = DEFAULT_POLL_CADENCE,
+  /** How long the last poll itself took, in ms; the delay is never less than `POLL_COST_SHARE` times it. */
+  lastPollMs = 0,
 ): number {
-  if (lastChangeAt == null) return config.idleMs;
+  const floor = Math.min(MAX_POLL_DELAY_MS, Math.max(0, lastPollMs) * POLL_COST_SHARE);
+  if (lastChangeAt == null) return Math.max(config.idleMs, floor);
   const sinceChange = now - lastChangeAt;
-  if (sinceChange < 0) return config.idleMs; // clock skew guard
-  return sinceChange < config.burstWindowMs ? config.burstMs : config.idleMs;
+  if (sinceChange < 0) return Math.max(config.idleMs, floor); // clock skew guard
+  return Math.max(sinceChange < config.burstWindowMs ? config.burstMs : config.idleMs, floor);
 }
 
 export interface AdaptivePoller {
@@ -72,18 +90,21 @@ export function createAdaptivePoller(opts: {
   let active = false;
   let timer: unknown = null;
   let lastChangeAt: number | null = null;
+  let lastPollMs = 0;
 
   const schedule = (gen: number): void => {
     if (!active || gen !== generation) return;
     timer = setTimer(() => {
       if (gen !== generation) return; // stopped/restarted before this fired
       void (async () => {
+        const startedAt = now();
         const changed = await opts.poll();
+        lastPollMs = Math.max(0, now() - startedAt);
         if (gen !== generation) return; // stopped/restarted during the await — do NOT re-arm
         if (changed) lastChangeAt = now();
         schedule(gen);
       })();
-    }, nextPollDelay(lastChangeAt, now(), config));
+    }, nextPollDelay(lastChangeAt, now(), config, lastPollMs));
   };
 
   return {
