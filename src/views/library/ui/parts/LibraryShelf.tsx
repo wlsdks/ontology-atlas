@@ -5,12 +5,18 @@ import type { useTranslations } from "next-intl";
 
 import type { LibraryWikiPage } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
+import { useWindowedRows } from "@/shared/lib/use-windowed-rows";
 import { controlClass } from "@/shared/ui/control-class";
 import { spineFreshness, type SpineFreshness } from "../../lib/spine-shape";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 import { isWikiFolderCode } from "../../lib/merge-wiki-verdict";
 import { writerLabel } from "../../lib/writer-label";
 
+/** A spine before it is measured: a one-line title over its caption, with the row's inset. */
+const SHELF_ROW_ESTIMATE_PX = 52;
+/** `pt-2` and `pb-1` of the shelf list, kept under the window's pads. */
+const SHELF_PAD_TOP_PX = 8;
+const SHELF_PAD_BOTTOM_PX = 4;
 /** One screen of spines: past this, a caption repeated on every row is texture and folds into the head. */
 const SHELF_STATE_FOLDS_FROM = 12;
 
@@ -135,6 +141,8 @@ export function LibraryShelf({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spines]);
 
+  const [shelfWindow, shelfListRef] = useWindowedRows({ count: spines.length, estimate: SHELF_ROW_ESTIMATE_PX });
+
   return (
     <div
       data-testid="library-wiki-list"
@@ -154,12 +162,17 @@ export function LibraryShelf({
         </p>
       ) : null}
       <ul
+        ref={shelfListRef}
         data-testid="library-wiki-shelf"
+        data-window={`${shelfWindow.start}-${shelfWindow.end}`}
         aria-label={t("shelf.listAria")}
         aria-busy={compiling || undefined}
-      className="flex flex-col gap-1 px-3 pb-1 pt-2"
+        className="flex flex-col gap-1 px-3 pb-1 pt-2"
+        /* Only the spines in view are in the DOM (`useWindowedRows`); the pads stand in for
+           the rest, so 8,000 pages are a scroller of the right height and forty rows. */
+        style={shelfWindow.before || shelfWindow.after ? { paddingTop: SHELF_PAD_TOP_PX + shelfWindow.before, paddingBottom: SHELF_PAD_BOTTOM_PX + shelfWindow.after } : undefined}
       >
-        {spines.map(({ page, freshness, ownProblem }) => {
+        {spines.slice(shelfWindow.start, shelfWindow.end).map(({ page, freshness, ownProblem }) => {
           const active = page.slug === selectedSlug;
           const answerVersion = model.answerVersions?.get(page.slug);
           const writer = (page.createdBy ?? "") !== majorityWriter ? writerLabel(page.createdBy, t) : null;

@@ -2094,7 +2094,11 @@ reader's way back reads *Graph*, the thing it shows, with no arrow (owner, 2026-
 folder's majority writer, and the source list treats its state word the same way: past one
 screen of rows the most common state is said once above the list, in its own tone with its
 count, and a row keeps a badge only when its state differs (2026-09-18: a freshly filled
-folder wore the same amber pill on 1,600 rows). The scroll-end gate measures the Library's own scrollers. The
+folder wore the same amber pill on 1,600 rows). Both lists keep only the rows in view in
+the DOM (`useWindowedRows`, 2026-09-18): 3,000 file rows were 33,000 nodes and ~450 ms of
+element creation on the rail press, and every later layout read paid for the whole tree;
+now the scroller is the whole list's height and holds about forty rows, heights measured
+as they are seen, and a list with no scroller or no height renders every row as before. The scroll-end gate measures the Library's own scrollers. The
 end of a page now keeps room for the floating *Back to top*: the last line stands clear of
 the pill instead of ending behind it — on a wiki page, on *Check results*, and on the Docs
 reader, which is the same pane — and below `lg` the pill itself stands above the bottom tab

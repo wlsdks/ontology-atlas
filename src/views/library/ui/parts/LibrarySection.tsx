@@ -28,8 +28,11 @@ import { captionWindow } from "../../lib/caption-window";
 import { passageLabelText } from "../../lib/passage-label";
 import { useSourceSearch } from "../../lib/use-source-search";
 import { LibraryShelf } from "./LibraryShelf";
+import { useWindowedRows } from "@/shared/lib/use-windowed-rows";
 import { StateBadge } from "./StateBadge";
 
+/** A source row before it is measured: one line of `text-body` in `RowButton` with its inset. */
+const SOURCE_ROW_ESTIMATE_PX = 36;
 /** One screen of index rows: past this, a pill repeated on every row is texture and folds into the head. */
 const SOURCE_STATE_FOLDS_FROM = 12;
 /** The order the head counts states in: what to act on first, what is done last. */
@@ -507,6 +510,7 @@ export function LibrarySection({
     if (candidates.some((c) => c !== best && c.count === best.count)) return null;
     return best.count * 2 > visibleSources.length ? best.state : null;
   })();
+  const [sourceWindow, sourceListRef] = useWindowedRows({ count: visibleSources.length, estimate: SOURCE_ROW_ESTIMATE_PX });
   const visiblePages = needle
     ? model.wikiPages.filter((page) => matches(page.title) || matches(model.pageTexts.get(page.slug)))
     : model.wikiPages;
@@ -716,14 +720,19 @@ export function LibrarySection({
               </p>
             ) : null}
             <ul
+              ref={sourceListRef}
               data-testid="library-source-list"
               /* The list says which phase drew it, so a proof can assert that a finished
                  answer and an unfinished read never share a frame. */
               data-phase={search.phase}
+              data-window={`${sourceWindow.start}-${sourceWindow.end}`}
               aria-label={t("sources.listAria")}
               className={`flex flex-col gap-0.5 ${INDEX_LIST_INSET}`}
+              /* Only the rows in view are in the DOM (`useWindowedRows`); the pads stand in
+                 for the rest so the scroller's height is the whole list's. */
+              style={sourceWindow.before || sourceWindow.after ? { paddingTop: sourceWindow.before, paddingBottom: sourceWindow.after } : undefined}
             >
-              {visibleSources.map((row) => {
+              {visibleSources.slice(sourceWindow.start, sourceWindow.end).map((row) => {
                 const active = row.path === selectedSourcePath;
                 const stateLabel = t(`sources.state.${row.state}.label`);
                 const hit = needle ? search.hits.get(row.path) : undefined;
