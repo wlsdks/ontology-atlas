@@ -2869,6 +2869,20 @@ button still receives it — leaving cmdk's root only the Enter that comes from 
 search field, which is the one place "open the highlighted row" is what a person
 means.
 
+**The reason survives a phone** (2026-09-19). The reason column was `md:`-only, so
+below that breakpoint the class that hid it took the whole answer with it — measured
+at 390x844 on the bundled sample: `policy` showed 4 rows with **0** marks, `order` and
+`shopper` 20 rows with 0, while the desktop layout explained every one of them. A
+reason that **carries a mark** now drops to a line of its own under the name there
+(rows grow 44 → 58px, and only those rows do); a reason with no mark is the summary
+standing in as context, and giving that a second line would double every phone row to
+repeat something the row is not there for, so it stays a `md`-and-up column. From `md`
+up nothing moved: one fixed-width column, one text start line. The same pass fixed the
+project chip's scroller, a hardcoded `height: 24` around a chip that the touch floor
+makes 44px tall — `overflow-x: auto` clips the other axis too, so the finger got 24.
+The box now reads `--control-h-sm`, and the gate for it asks the document what is at
+the chip's top and bottom edge, because a clipped control still measures full size.
+
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio
 - 2-column grid on sm+, focus trap, `Esc` closes
