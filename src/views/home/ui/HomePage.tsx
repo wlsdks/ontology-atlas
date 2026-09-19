@@ -5616,6 +5616,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                         count: unboundProjectSource?.count ?? 0,
                       }),
                       sourceUnboundAction: t("index.sourceUnboundAction"),
+                      tidyHeading: t("index.tidyHeading"),
                       openedInsideLabel: t("index.openedInsideLabel"),
                       openedInsideDismiss: t("index.openedInsideDismiss"),
                       // Rendered only in plain mode; the panel gates it.

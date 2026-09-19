@@ -2807,6 +2807,7 @@
       "brokenDocsAction": "Open Ontology documents",
       "sourceUnboundLabel": "{count} project(s) with no code folder",
       "sourceUnboundAction": "Connect",
+      "tidyHeading": "To tidy",
       "plainHint": "Elements are hidden: click a dot on the map to reveal its elements",
       "openedInsideLabel": "Opened the map folder found inside the project you picked.",
       "openedInsideDismiss": "Dismiss this notice"

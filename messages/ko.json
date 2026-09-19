@@ -2807,6 +2807,7 @@
       "brokenDocsAction": "온톨로지 문서 열기",
       "sourceUnboundLabel": "코드 폴더가 연결 안 된 프로젝트 {count}개",
       "sourceUnboundAction": "연결",
+      "tidyHeading": "정리할 것",
       "plainHint": "요소는 숨겨져 있어요. 지도의 점을 누르면 그 요소들이 보여요",
       "openedInsideLabel": "고른 프로젝트 안에 있는 지도 폴더를 열었어요.",
       "openedInsideDismiss": "알림 닫기"
