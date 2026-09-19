@@ -273,7 +273,15 @@ function DestinationLink({
   return (
     <Link
       href={href}
-      className={controlClass({ shape: 'link', className })}
+      /*
+       * `hoverInk: 'strong'` is the value layer's registered answer for this shape. Measured
+       * 2026-09-20 with the transition settled: rest and hover were the same pixel on all six of
+       * these links — same colour, no background, no underline — so the pointer got no reply at
+       * all. (The same probe read the button's focus ring as absent; that one was the tool
+       * sampling a frame into a 120ms box-shadow transition, and the ring is a 2px opaque indigo
+       * band once settled. Measure settled, or measure nothing.)
+       */
+      className={controlClass({ shape: 'link', hoverInk: 'strong', className })}
       data-brief-destination={sameBoard ?? 'away'}
       onClick={
         sameBoard
