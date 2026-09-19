@@ -20,7 +20,7 @@ import {
 } from "@/entities/knowledge-graph";
 import { controlClass, HighlightedText } from "@/shared/ui";
 import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match";
-import { describeMatchReason } from "../lib/match-reason";
+import { describeMatchReason, reasonLineClass } from "../lib/match-reason";
 import { focusMapCanvasWhenReady, MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 
 /**
@@ -433,10 +433,16 @@ export function GlobalSearch({
               {/* @tanstack/react-virtual horizontal virtualizer — renders only the
                   chips in the viewport (~10–15) even in a workspace of 1,979 projects.
                   The overflow-x-auto + relative + absolute-child pattern. */}
+              {/* The scroller's height is the control's, not a number.
+                  `overflow-x: auto` clips the other axis too, and this was a hardcoded
+                  24px while the chip inside it is `--control-h-sm` — 28px on a mouse
+                  and 44px under a coarse pointer, where the touch floor raises it.
+                  Measured 2026-09-19 at 390x844: the chip rendered 44px tall inside a
+                  24px box and lost its bottom 20px, so the control the touch floor
+                  exists for was clipped to 24. */}
               <div
                 ref={attachProjectScroll}
-                className="relative flex-1 overflow-x-auto"
-                style={{ height: 24 }}
+                className="relative h-[var(--control-h-sm)] flex-1 overflow-x-auto"
               >
                 <div
                   className="relative"
@@ -550,33 +556,32 @@ export function GlobalSearch({
                     <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">
                       {kindLabel(node.kind)}
                     </span>
-                    <span
-                      data-search-result-path-like={pathLike ? "true" : undefined}
-                      className={cn(
-                        "min-w-0 flex-1 truncate",
-                        pathLike
-                          ? "font-mono text-body text-[color:var(--color-text-tertiary)]"
-                          : "text-[color:var(--color-text-primary)]",
-                      )}
-                    >
-                      <HighlightedText text={label} query={isEmptyQuery ? undefined : query} />
-                    </span>
-                    {reason ? (
+                    {/* Beside the name from `md` up, under it below — see
+                        `reasonLineClass`. */}
+                    <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-2">
                       <span
-                        data-search-result-reason={reason.kind}
-                        // A fixed width, not a maximum: the column is one column, so
-                        // its text starts on one line. Measured 2026-09-19 with
-                        // `max-w`, four rows of "policy" began at four different x
-                        // (763-916, a 153px spread) because each short name was
-                        // pushed flush right by the label's `flex-1`.
+                        data-search-result-path-like={pathLike ? "true" : undefined}
                         className={cn(
-                          "hidden w-[14rem] shrink-0 truncate text-body text-[color:var(--color-text-tertiary)] md:block",
-                          reason.kind === "id" && "font-mono text-caption",
+                          "min-w-0 truncate md:flex-1",
+                          pathLike
+                            ? "font-mono text-body text-[color:var(--color-text-tertiary)]"
+                            : "text-[color:var(--color-text-primary)]",
                         )}
                       >
-                        <HighlightedText text={reason.text} query={reason.query} />
+                        <HighlightedText text={label} query={isEmptyQuery ? undefined : query} />
                       </span>
-                    ) : null}
+                      {reason ? (
+                        <span
+                          data-search-result-reason={reason.kind}
+                          className={cn(
+                            reasonLineClass(reason),
+                            reason.kind === "id" && "font-mono text-caption",
+                          )}
+                        >
+                          <HighlightedText text={reason.text} query={reason.query} />
+                        </span>
+                      ) : null}
+                    </div>
                   </Command.Item>
                 );
               })}
@@ -613,24 +618,26 @@ export function GlobalSearch({
                   {/* Marked like the concept rows above. The same project appears in
                       both groups — as a concept and as a project — and only one of the
                       two was showing why it was there (measured live 2026-09-19). */}
-                  <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
-                    <HighlightedText text={project.name} query={isEmptyQuery ? undefined : query} />
-                  </span>
                   {/* Same seat, same job as the concept rows: the reason. It holds the
                       slug until something else earned the row — the English name, or
                       the description, tag or category that matched and which this row
                       otherwise never shows. */}
-                  {reason ? (
-                    <span
-                      data-search-result-reason={reason.kind}
-                      className={cn(
-                        "hidden w-[14rem] shrink-0 truncate text-caption text-[color:var(--color-text-tertiary)] md:block",
-                        reason.kind !== "summary" && "font-mono",
-                      )}
-                    >
-                      <HighlightedText text={reason.text} query={reason.query} />
+                  <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-2">
+                    <span className="min-w-0 truncate text-[color:var(--color-text-primary)] md:flex-1">
+                      <HighlightedText text={project.name} query={isEmptyQuery ? undefined : query} />
                     </span>
-                  ) : null}
+                    {reason ? (
+                      <span
+                        data-search-result-reason={reason.kind}
+                        className={cn(
+                          reasonLineClass(reason),
+                          reason.kind !== "summary" && "font-mono",
+                        )}
+                      >
+                        <HighlightedText text={reason.text} query={reason.query} />
+                      </span>
+                    ) : null}
+                  </div>
                   <span className="shrink-0 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">
                     {project.status}
                   </span>
