@@ -80,11 +80,22 @@ describe('tauri git bridge', () => {
     });
   });
 
-  it('invokes git_history with the default limit of 10', async () => {
+  it('invokes git_history with the default limit of 10 and no document scope', async () => {
     tauriApiMock.runtimeAvailable = true;
     tauriApiMock.invoke.mockResolvedValue([]);
     await gitHistory('/v');
-    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_history', { vaultPath: '/v', limit: 10 });
+    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_history', { vaultPath: '/v', limit: 10, path: null });
+  });
+
+  it('scopes git_history to one document when a path is given', async () => {
+    tauriApiMock.runtimeAvailable = true;
+    tauriApiMock.invoke.mockResolvedValue([]);
+    await gitHistory('/v', 13, 'domains/orders.md');
+    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_history', {
+      vaultPath: '/v',
+      limit: 13,
+      path: 'domains/orders.md',
+    });
   });
 
   it('invokes git_diff and git_pull with the vault path', async () => {
