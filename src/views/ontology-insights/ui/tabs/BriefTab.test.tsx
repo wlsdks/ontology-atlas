@@ -128,6 +128,34 @@ describe("BriefTab", () => {
     expect(harness.querySelector('a[href="/download/"]')).not.toBeNull();
   });
 
+  it("gives every card the same three bands, so a core nobody could count still starts where its siblings do", () => {
+    /*
+     * The row is four cards wide and the harness cannot be counted in a browser. While that card
+     * printed no magnitude row its state columns and its sentence rose into the number's line —
+     * 48/79 against the siblings' 49/80 at 1512x900 and 1920x1080 (design-audit 2026-09-20). The
+     * structural invariant behind that geometry: label, magnitude, columns, lines — four children,
+     * in that order, on every card.
+     */
+    mount(brief());
+    for (const key of ["ontology", "wiki", "harness", "agent"]) {
+      const card = screen.getByTestId(`brief-core-${key}`);
+      expect([...card.children].map((child) => child.tagName)).toEqual(["DIV", "P", "DIV", "UL"]);
+    }
+    const absent = screen.getByTestId("brief-core-headline-absent");
+    expect(screen.getByTestId("brief-core-harness")).toContainElement(absent);
+    // The dash is the columns' own mark for a value this session cannot state, and it is alignment
+    // rather than a fact, so it stays out of the accessibility tree.
+    expect(absent).toHaveAttribute("aria-hidden");
+  });
+
+  it("keeps the four bands when a measured core has no magnitude to print", () => {
+    // The other way into an empty magnitude row: the input was read and still yields no size.
+    mount(brief({ agent: core({ core: "agent", headline: null, lines: [] }) }));
+    const card = screen.getByTestId("brief-core-agent");
+    expect([...card.children].map((child) => child.tagName)).toEqual(["DIV", "P", "DIV", "UL"]);
+    expect(card).toContainElement(screen.getByTestId("brief-core-unmeasured"));
+  });
+
   it("names what changed since, newest first, and counts the rest", () => {
     mount(brief());
     const since = screen.getByTestId("brief-since");

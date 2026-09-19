@@ -125,14 +125,29 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent }: { core: BriefCore; 
   const measured = core.availability === 'measured';
   return (
     <CensusTile label={t(`core.${core.core}`)} testId={`brief-core-${core.core}`} rowKey={core.core}>
+      {/*
+       * **The magnitude row is drawn even when this session cannot count it.** A card that
+       * cannot be measured already prints why one line below, so this row says nothing new —
+       * but omitting the row moved the card's state band and its sentence 31px up while its
+       * three siblings kept theirs, one row of four cards reading on two baselines (measured
+       * 2026-09-20 at 1512x900 and 1920x1080: 49/80 against 48/79). The dash is the mark the
+       * state columns underneath already use for a value this session cannot state, and it is
+       * hidden from assistive technology because it carries alignment, not a fact.
+       */}
       {core.headline == null ? (
-        // A card that cannot be measured already prints why, one line below; a second sentence
-        // saying the same thing twice is ink for nothing.
         core.availability === 'measured' ? (
-          <p className="text-label text-[color:var(--color-text-quaternary)]" data-testid="brief-core-unmeasured">
-            {t('notMeasured')}
+          <p className="text-body-lg text-[color:var(--color-text-quaternary)]">
+            <span className="text-label" data-testid="brief-core-unmeasured">{t('notMeasured')}</span>
           </p>
-        ) : null
+        ) : (
+          <p
+            className="font-mono text-body-lg font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-quaternary)]"
+            data-testid="brief-core-headline-absent"
+            aria-hidden
+          >
+            –
+          </p>
+        )
       ) : (
         <p className="font-mono text-body-lg font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-primary)]">
           {core.headline}
