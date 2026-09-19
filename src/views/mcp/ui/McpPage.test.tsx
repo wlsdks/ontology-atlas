@@ -92,7 +92,12 @@ describe('MCP 탭 — 아직 모르는 수를 말하지 않는다', () => {
     expect(screen.getByText(ko.mcp.connectorsHeading)).toBeInTheDocument();
   });
 
-  it('스토어가 답하면 그때 켜 둔 수를 말한다', () => {
+  /*
+   * Both numbers, because the card below stopped saying the denominator on 2026-09-20 and this
+   * heading is now the only place it appears. A heading that dropped back to "1 on" would leave
+   * a person unable to tell a missing connector from a switched-off one.
+   */
+  it('스토어가 답하면 그때 켜 둔 수와 전체 수를 함께 말한다', () => {
     draw({
       status: 'ready',
       connectors: [
@@ -100,6 +105,8 @@ describe('MCP 탭 — 아직 모르는 수를 말하지 않는다', () => {
         { id: 'b', name: 'two', transport: 'http', url: 'https://y', args: [], env: [], headers: [], enabled: false },
       ] as VaultConnectorsState['connectors'],
     });
-    expect(screen.getByRole('heading', { level: 3 }).textContent).toContain('1');
+    const heading = screen.getByRole('heading', { level: 3 }).textContent ?? '';
+    expect(heading).toContain('1');
+    expect(heading).toContain('2');
   });
 });

@@ -158,12 +158,26 @@ export function McpPage({
         <SettingsGroupHeading
           id="mcp-connectors-heading"
           /*
-           * **How many are switched on**, not how many are written down. Everything starts
-           * off, and a list of five where none is on reaches an agent as nothing at all —
-           * the number that answers "is anything actually attached" is this one.
+           * **How many are switched on, over how many are written down** — one statement, in
+           * this one place. Everything starts off, and a list of five where none is on reaches
+           * an agent as nothing at all, so the number that answers "is anything actually
+           * attached" leads; the denominator follows it because a person who reads "1 on"
+           * still has to know whether the other one is missing or merely off.
+           *
+           * ⚠️ It used to be said twice. This heading arrived on 2026-09-19 saying "N on"
+           * while the card below it kept its own quieter line saying "N of M on" — the same
+           * count, in two wordings, 30px apart, on a screen whose owner had just asked for
+           * less prose. The card's line held the only fact this one lacked, so that fact moved
+           * up here and `countInHeading` silences the line rather than deleting it: the panel
+           * still states its own count for any caller that draws no heading.
            */
           label={
-            countKnown ? t('connectorsHeadingCount', { count: enabledCount }) : t('connectorsHeading')
+            countKnown
+              ? t('connectorsHeadingCount', {
+                  on: enabledCount,
+                  total: connectors.connectors.length,
+                })
+              : t('connectorsHeading')
           }
           trailing={
             connectorsListed ? (
@@ -203,6 +217,7 @@ export function McpPage({
             store={connectors}
             addOpenRequest={addOpenRequest}
             externalAddOpener={addOpenerRef}
+            countInHeading
             /*
              * The panel cannot import this itself: both are features, and a feature reaching
              * sideways into another adds an edge to a ledger that only falls

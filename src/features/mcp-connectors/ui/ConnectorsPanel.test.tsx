@@ -70,12 +70,19 @@ import { useVaultConnectors } from '../model/use-vault-connectors';
  * a second `useVaultConnectors` would never hear about the first one's writes. So the panel
  * takes the state as a prop, and the harness plays the caller.
  */
-function Panel({ handle }: { handle: FileSystemDirectoryHandle | null }) {
+function Panel({
+  handle,
+  countInHeading = false,
+}: {
+  handle: FileSystemDirectoryHandle | null;
+  countInHeading?: boolean;
+}) {
   const store = useVaultConnectors(handle);
   return (
     <ConnectorsPanel
       handle={handle}
       store={store}
+      countInHeading={countInHeading}
       /* The view's slot — stood in for here, since the panel may not import it (FSD). */
       openFolderAction={<button type="button" data-testid="connectors-open-vault">open</button>}
     />
@@ -192,6 +199,35 @@ beforeEach(() => {
 });
 
 afterEach(cleanup);
+
+/**
+ * **One count, in one place** (2026-09-20).
+ *
+ * The card states how many of its rows are switched on, because a caller that draws no heading
+ * would otherwise leave that number only in a bare badge somewhere else. The Agents destination's
+ * MCP tab does draw a heading, and on 2026-09-19 that heading started saying the same thing — so
+ * for one day the screen carried "1 on" in the heading and "1 of 2 on" a line below it, two
+ * wordings of one fact on a screen whose owner had just asked for less prose. The denominator
+ * moved up into the heading and `countInHeading` silences the line here.
+ *
+ * Both directions are asserted, because a prop that silences something is only worth having if
+ * the something exists without it.
+ */
+describe('연결 도구 패널 — 개수는 한 곳에서만 말한다', () => {
+  it('머리글이 없으면 카드가 켜진 수를 말한다', async () => {
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item')).toBeInTheDocument());
+    expect(screen.getByTestId('connectors-on-of-total')).toHaveTextContent('1');
+  });
+
+  it('머리글이 이미 말했다면 카드는 같은 수를 다시 말하지 않는다', async () => {
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<Panel handle={vault.handle} countInHeading />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item')).toBeInTheDocument());
+    expect(screen.queryByTestId('connectors-on-of-total')).toBeNull();
+  });
+});
 
 describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다', () => {
   it('무엇이 실제로 실행되는지, 어디로 오가는지, 어떤 기록에 안 남는지 켜기 전에 말한다', async () => {

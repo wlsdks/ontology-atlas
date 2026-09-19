@@ -141,6 +141,7 @@ export function ConnectorsPanel({
   testIdPrefix = 'connectors',
   addOpenRequest = 0,
   externalAddOpener,
+  countInHeading = false,
 }: {
   handle: FileSystemDirectoryHandle | null;
   /**
@@ -173,6 +174,15 @@ export function ConnectorsPanel({
    */
   addOpenRequest?: number;
   externalAddOpener?: RefObject<HTMLButtonElement | null>;
+  /**
+   * **The caller's heading already says how many are on**, so the list does not say it again
+   * (2026-09-20). The Agents destination's MCP tab gives this group a heading that reads
+   * "Connectors · 1 of 2 on"; for a while the card kept its own line saying the same thing in
+   * different words a few pixels below, which is the duplicated prose the owner objected to on
+   * this screen. Off by default: a caller that draws no heading still needs the count, and the
+   * panel's own component test owns that case.
+   */
+  countInHeading?: boolean;
 }) {
   const t = useTranslations('connectors');
   const vaultPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
@@ -529,6 +539,7 @@ export function ConnectorsPanel({
       <AttachedList
         connectors={store.connectors}
         status={store.status}
+        countStatedAbove={countInHeading}
         registeredNames={registeredNames}
         storedRefs={storedRefs}
         onToggle={(id, enabled) => void store.setEnabled(id, enabled)}
@@ -675,6 +686,7 @@ function AttachedList({
   onToggle,
   onOpenDetail,
   testIdPrefix,
+  countStatedAbove,
 }: {
   connectors: ConnectorRecord[];
   /** The store's own state - `loading` is not "none", and this list must not say it is. */
@@ -685,6 +697,8 @@ function AttachedList({
   onToggle: (id: string, enabled: boolean) => void;
   onOpenDetail: (id: string) => void;
   testIdPrefix: string;
+  /** The group heading above the card states the count; see `countInHeading`. */
+  countStatedAbove?: boolean;
 }) {
   const t = useTranslations('connectors');
   /*
@@ -717,17 +731,26 @@ function AttachedList({
       {/*
         **How many are on, in words.** The tab strip shows the same number as a bare badge, and a
         number with no unit beside a word is a number somebody has to guess the meaning of
-        (design council, 2026-09-05). This says it once, where the rows it counts are.
+        (design council, 2026-09-05). This says it once, where the rows it counts are — unless
+        the caller's own group heading already says it, which the Agents destination's MCP tab
+        has done since 2026-09-19. Two wordings of one count, a line apart, was prose the owner
+        had just asked this screen to shed; the denominator moved into that heading instead.
       */}
-      <p
-        data-testid={`${testIdPrefix}-on-of-total`}
-        className="mt-3 text-label leading-label text-[color:var(--color-text-quaternary)]"
-      >
-        {t('onOfTotal', { on: enabled, total: connectors.length })}
-      </p>
+      {countStatedAbove ? null : (
+        <p
+          data-testid={`${testIdPrefix}-on-of-total`}
+          className="mt-3 text-label leading-label text-[color:var(--color-text-quaternary)]"
+        >
+          {t('onOfTotal', { on: enabled, total: connectors.length })}
+        </p>
+      )}
     <ul
       data-testid={`${testIdPrefix}-list`}
-      /* The card no longer carries a heading, so the list names itself for assistive tech. */
+      /*
+        The card carries no heading of its own, so the list names itself for assistive tech —
+        including under a caller that does draw one, where the section's own `aria-labelledby`
+        names the group and this names the rows inside it.
+      */
       aria-label={t('title')}
       className="mt-2 flex flex-col gap-2"
     >
