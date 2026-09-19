@@ -89,6 +89,8 @@ export interface LabelTokens {
   labelDomain: string;
   labelCapability: string;
   labelElement: string;
+  /** `--map-ego-dim-label-alpha` — what a dimmed project or domain keeps of its name. */
+  egoDimLabelAlpha: number;
   /** W6 agent visibility — same amber signal tone as the node ring (`NodeShapeTokens.amberHub`), reused here for the label-side activity mark. */
   amberHub: string;
   /**
@@ -311,11 +313,17 @@ export interface LabelAlphaInput {
   egoState: LabelDrawState["egoState"];
   isHovered: boolean;
   revealAlpha: number;
+  /**
+   * `--map-ego-dim-label-alpha`: what a dimmed project or domain keeps of its
+   * name. Omitted means 0, the pre-2026-09-19 behaviour the older callers and
+   * tests were written against.
+   */
+  dimLabelAlpha?: number;
 }
 
 /**
- * Resolves a label's opacity for this frame. `0` whenever the node is
- * `"dim"` (ego focus owns visibility there); `1` unconditionally for the
+ * Resolves a label's opacity for this frame. A `"dim"` project or domain keeps
+ * `dimLabelAlpha` of its name and a dimmed child `0`; `1` unconditionally for the
  * SELECTED node or the currently-hovered node, any kind (no more
  * unlabeled-circle selections/hovers); otherwise the per-kind formula:
  * project and domain always 1, capability/element ramp with the node's own
@@ -331,8 +339,12 @@ export interface LabelAlphaInput {
  * own tier arrives, which is a separate question owned by the label budget.
  */
 export function computeLabelAlpha(input: LabelAlphaInput): number {
-  const { kind, egoState, isHovered, revealAlpha } = input;
-  if (egoState === "dim") return 0;
+  const { kind, egoState, isHovered, revealAlpha, dimLabelAlpha = 0 } = input;
+  // A dimmed domain keeps a faint name: selecting one domain used to leave
+  // the others anonymous grey chips, and a person choosing where to go next
+  // had to hover each one (2026-09-19). Dimmed children stay unnamed — they
+  // were unnamed before the selection as well.
+  if (egoState === "dim") return kind === "project" || kind === "domain" ? dimLabelAlpha : 0;
   if (egoState === "center" || isHovered) return 1;
 
   if (kind === "project" || kind === "domain") return 1;
@@ -500,8 +512,11 @@ export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, token
   const ty = state.baselineY ?? resolveLabelBaselineY(kind, y, r, fontScale);
 
   const emphasisAlpha = Math.min(1, Math.max(0, state.emphasisAlpha ?? 0));
+  // The same rule the candidate pass applied, token included: without it the
+  // dimmed domain was placed but drawn at 0 (measured 2026-09-19, max
+  // luminance 14 under the name against 185 for a neighbour).
   const alpha = Math.max(
-    computeLabelAlpha({ kind, egoState, isHovered, revealAlpha }),
+    computeLabelAlpha({ kind, egoState, isHovered, revealAlpha, dimLabelAlpha: tokens.egoDimLabelAlpha }),
     emphasisAlpha,
   ) * presenceAlpha;
   if (alpha <= 0.02) return;

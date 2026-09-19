@@ -3466,6 +3466,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       kind: node.kind,
       egoState,
       isHovered,
+      dimLabelAlpha: tokens.egoDimLabelAlpha,
       revealAlpha: labelRevealAlpha,
     });
     // A saved set is an explicit reading scope. Its names use the existing
@@ -3775,6 +3776,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         labelDomain: tokens.labelDomain,
         labelCapability: tokens.labelCapability,
         labelElement: tokens.labelElement,
+        egoDimLabelAlpha: tokens.egoDimLabelAlpha,
         amberHub: tokens.amberHub,
         labelHalo: tokens.canvasBgNear,
       },
