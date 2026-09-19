@@ -528,12 +528,30 @@ function RestoreDock({
             type="button"
             data-testid="atlas-git-restore"
             onClick={() => setConfirming(true)}
+            /*
+             * The screen's two doors share one grammar. Measured 2026-09-20: this door
+             * resolved to `--color-text-quaternary` (#82828a) and sat between a caption on
+             * the same token and a heading on `--color-text-tertiary` (#8a8f98) — a 3%
+             * luminance spread, so at rest nothing told the only control that writes to
+             * disk apart from the sentences around it. The chip shape carries the
+             * affordance (padding, a border on hover) exactly as the discard door does;
+             * `secondary` carries legibility. Neither adds a colour.
+             */
             className={controlClass({
-              shape: "link",
+              shape: "chip",
               size: "sm",
-              tone: "muted",
+              tone: "secondary",
               hoverInk: "strong",
-              className: "text-label",
+              hoverBorder: "strong",
+              /*
+               * The chip's own `px-2` would start this label 9px right of everything
+               * else in the column — the section heading, the timeline rows and the
+               * document name all begin on one line, and a control that breaks it
+               * reads as an indent rather than as an affordance. The negative inline
+               * start margin puts the label back on that line while the chip keeps
+               * its padding to draw a hover border around.
+               */
+              className: "-ml-2 self-start border-transparent",
             })}
           >
             {t("restoreAction")}
