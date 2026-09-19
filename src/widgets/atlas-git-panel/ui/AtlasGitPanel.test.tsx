@@ -133,6 +133,12 @@ function installDesktopGit({
   // reader's language, and only the screen already holds `ahead`/`behind`.
   fetch = { ok: true, upstream: "origin/main", ahead: 2, behind: 0, summary: "remote-diverged" },
   pull = { ok: true, upstream: "origin/main", summary: "1개 받아옴" },
+  restore = (args: Record<string, unknown>) => ({
+    restored: true,
+    path: args.relativePath,
+    source: args.source,
+    previousStatus: "modified",
+  }),
 }: {
   status?: unknown;
   diff?: unknown;
@@ -143,6 +149,7 @@ function installDesktopGit({
   probe?: unknown;
   fetch?: unknown;
   pull?: unknown;
+  restore?: unknown;
 } = {}) {
   tauriApiMock.runtimeAvailable = true;
   tauriApiMock.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) => {
@@ -157,6 +164,8 @@ function installDesktopGit({
     if (command === "git_probe") return probe;
     if (command === "git_fetch") return fetch;
     if (command === "git_pull") return pull;
+    if (command === "git_restore_file")
+      return typeof restore === "function" ? restore(args ?? {}) : restore;
     throw new Error(`unexpected command: ${command}`);
   });
 }
@@ -1422,5 +1431,97 @@ describe("AtlasGitPanel — 열려 있는 동안 폴더를 따라간다", () => 
     renderPanel(<AtlasGitPanel vaultPath={null} />);
     await screen.findByTestId("atlas-git-web-get-app");
     expect(tauriEventMock.listen).not.toHaveBeenCalled();
+  });
+});
+
+describe("AtlasGitPanel — 문서 하나를 되돌린다", () => {
+  /*
+   * The screen's own copy promised that earlier content can be brought back while no restore existed
+   * anywhere (2026-09-19). Two doors, two confirms: discard says the lines are unrecoverable,
+   * restore-from-commit says the result stays uncommitted and reversible. Both name the
+   * documents that stay untouched, and nothing runs before the confirm click.
+   */
+  const restoreCalls = () =>
+    tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_restore_file");
+
+  it("고른 문서의 변경 버리기 — 확인문이 사라질 줄 수와 남는 문서 수를 말하고, 누르기 전엔 쓰기 0회", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-change-groups");
+
+    const rows = screen.getAllByTestId("atlas-git-change-row");
+    const bar = rows.find((row) => row.textContent?.includes("bar"));
+    expect(bar).toBeTruthy();
+    fireEvent.click(bar!);
+
+    fireEvent.click(await screen.findByTestId("atlas-git-discard"));
+    const step = await screen.findByTestId("atlas-git-discard-step");
+    expect(step).toHaveTextContent("1줄 추가");
+    expect(step).toHaveTextContent("되찾을 수 없어요");
+    expect(step).toHaveTextContent("커밋 안 한 변경 1개");
+    expect(restoreCalls()).toHaveLength(0);
+
+    fireEvent.click(screen.getByTestId("atlas-git-discard-confirm"));
+    await waitFor(() => expect(restoreCalls()).toHaveLength(1));
+    expect(restoreCalls()[0][1]).toEqual({
+      vaultPath: "/repo/vault",
+      relativePath: "docs/elements/bar.md",
+      source: "HEAD",
+    });
+    expect(await screen.findByTestId("atlas-git-restore-notice")).toHaveTextContent("버렸어요");
+    expect(snapshotInvokeCalls()).toHaveLength(0);
+  });
+
+  it("한 번도 커밋하지 않은 문서에는 버리기 문이 없다 — 버리기가 곧 삭제가 되니까", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-change-groups");
+    const rows = screen.getAllByTestId("atlas-git-change-row");
+    const foo = rows.find((row) => row.textContent?.includes("foo"));
+    fireEvent.click(foo!);
+    await waitFor(() => expect(screen.queryByTestId("atlas-git-discard")).toBeNull());
+  });
+
+  it("커밋 상세에서 이 시점 내용으로 되돌리기 — 결과가 커밋 안 한 변경으로 남는다고 말하고, 해시를 그대로 보낸다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+
+    fireEvent.click(await screen.findByTestId("atlas-git-restore"));
+    const step = await screen.findByTestId("atlas-git-restore-step");
+    expect(step).toHaveTextContent("docs/capabilities/foo.md");
+    expect(step).toHaveTextContent("커밋하지 않은 변경으로 남아요");
+    expect(restoreCalls()).toHaveLength(0);
+
+    fireEvent.click(screen.getByTestId("atlas-git-restore-confirm"));
+    await waitFor(() => expect(restoreCalls()).toHaveLength(1));
+    expect(restoreCalls()[0][1]).toEqual({
+      vaultPath: "/repo/vault",
+      relativePath: "docs/capabilities/foo.md",
+      source: "abc1234def5678",
+    });
+    expect(await screen.findByTestId("atlas-git-restore-notice")).toHaveTextContent("되돌렸어요");
+  });
+
+  it("신원이 다른 시점은 거부되고, 문서가 그대로라는 말이 같이 선다", async () => {
+    installDesktopGit({
+      restore: () => {
+        throw new Error("restore-identity-mismatch: slug domains/orders -> domains/order");
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+    fireEvent.click(await screen.findByTestId("atlas-git-restore"));
+    fireEvent.click(await screen.findByTestId("atlas-git-restore-confirm"));
+
+    const error = await screen.findByTestId("atlas-git-restore-error");
+    expect(error).toHaveTextContent("신원");
+    expect(error).toHaveTextContent("문서는 바뀌지 않았어요");
+    // The confirm step stays open: the person can read why and choose again.
+    expect(screen.getByTestId("atlas-git-restore-step")).toBeInTheDocument();
   });
 });
