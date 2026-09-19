@@ -5480,6 +5480,7 @@
         "changed": "Cited originals changed",
         "missing": "A cited original is missing",
         "new-sources": "New originals need consideration",
+        "rewritten": "A cited original changed and this answer was rewritten from that version",
         "unmeasured": "Source version not established",
         "unchanged": "No change since source observation"
       },
@@ -5523,7 +5524,8 @@
       "paths": {
         "changed": "Changed originals",
         "missing": "Missing originals",
-        "added": "New originals to consider"
+        "added": "New originals to consider",
+        "rewritten": "Rewritten from"
       },
       "version": {
         "head": "Latest draft",
