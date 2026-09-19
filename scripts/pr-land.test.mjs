@@ -19,6 +19,8 @@ import {
   waitingLineHead,
   describeLock,
   readOutcome,
+  protectionFrom,
+  distanceFrom,
   isBrowserCommand,
   isCiOwnedCommand,
   localCheckPlan,
@@ -301,6 +303,22 @@ describe('the landing lock', () => {
     assert.equal(readOutcome({ failed: true, output: 'dial tcp: lookup api.github.com: no such host' }).failure.reason, 'unreachable');
     assert.match(readOutcome({ failed: true, output: 'dial tcp: no such host' }).failure.detail, /no such host/);
     assert.deepEqual(readOutcome('{"object":{"sha":"abc"}}').value, { object: { sha: 'abc' } });
+  });
+
+  it('never lets a failed read accuse main of having no gate', () => {
+    const refused = { failed: true, output: '{"message":"API rate limit exceeded for user ID 1"}' };
+    assert.equal(protectionFrom(readOutcome(refused)).contexts, null);
+    // A 404 is a real answer here — main genuinely has no required-checks rule — and stays one.
+    assert.deepEqual(protectionFrom(readOutcome({ failed: true, output: 'gh: Not Found (HTTP 404)' })).contexts, []);
+    assert.deepEqual(protectionFrom(readOutcome('{"contexts":["Unit · Contract"]}')).contexts, ['Unit · Contract']);
+  });
+
+  it('never lets a failed read say main has stayed still', () => {
+    // Answering 0 would skip pouring main in and spend the one CI run on a base nothing checked.
+    assert.equal(distanceFrom(readOutcome({ failed: true, output: 'API rate limit exceeded' })).behindBy, null);
+    assert.equal(distanceFrom(readOutcome({ failed: true, output: 'gh: Not Found (HTTP 404)' })).behindBy, null);
+    assert.equal(distanceFrom(readOutcome('{"behind_by":3}')).behindBy, 3);
+    assert.equal(distanceFrom(readOutcome('{"behind_by":0}')).behindBy, 0);
   });
 
   it('honours a lease the holder wrote, not only the default', () => {

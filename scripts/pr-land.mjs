@@ -756,17 +756,41 @@ function readPr(number) {
   return ghJson(['pr', 'view', String(number), '--json', PR_FIELDS]);
 }
 
-function readRequiredContexts(slug) {
-  const required = ghJson(['api', `repos/${slug}/branches/main/protection/required_status_checks`], {
-    allowFailure: true,
-  });
-  return Array.isArray(required?.contexts) ? required.contexts : [];
+/**
+ * The protection's own list, or `null` when the question could not be asked.
+ *
+ * The difference is not cosmetic. An empty list makes this script print 「main declares no required
+ * status checks」, which accuses the repository of having no gate — and the obvious way to act on
+ * that accusation is to go and weaken branch protection so a landing can proceed. A rate-limited
+ * read must not be able to say that sentence.
+ */
+export function protectionFrom(read) {
+  if (read.failure) return { contexts: null, failure: read.failure };
+  // A 404 here is a real answer: main has no required-checks rule at all. Only a read that never
+  // happened is unknown.
+  return { contexts: Array.isArray(read.value?.contexts) ? read.value.contexts : [], failure: null };
 }
 
-/** How far `main` has run ahead of this branch since they parted. */
+function readRequiredContexts(slug) {
+  return protectionFrom(ghRead(['api', `repos/${slug}/branches/main/protection/required_status_checks`]));
+}
+
+/**
+ * How far `main` has run ahead of this branch since they parted, or `null` when it could not be
+ * read. A failed read used to answer `0`, which is 「main has not moved」 — so the landing skipped
+ * pouring main in and spent its one CI run on a base it had never checked. That is the opposite of
+ * what this step exists for.
+ */
+export function distanceFrom(read) {
+  if (read.failure) return { behindBy: null, failure: read.failure };
+  // Unlike the protection read, a 404 answers nothing here: a comparison that returned no body
+  // cannot say main has stayed still.
+  if (!read.value) return { behindBy: null, failure: { reason: 'unreadable', detail: 'the comparison returned no body' } };
+  return { behindBy: read.value.behind_by ?? 0, failure: null };
+}
+
 function readBehindBy(slug, headSha) {
-  const comparison = ghJson(['api', `repos/${slug}/compare/main...${headSha}`], { allowFailure: true });
-  return comparison?.behind_by ?? 0;
+  return distanceFrom(ghRead(['api', `repos/${slug}/compare/main...${headSha}`]));
 }
 
 /**
@@ -1186,7 +1210,13 @@ export function runPrLand(argv, io = console) {
     return 1;
   }
 
-  const requiredContexts = readRequiredContexts(slug);
+  const protection = readRequiredContexts(slug);
+  if (protection.failure) {
+    io.error(`[pr-land] could not read main's required status checks: ${protection.failure.detail}`);
+    io.error("[pr-land] this says nothing about main's protection; try again once the read works");
+    return 1;
+  }
+  const requiredContexts = protection.contexts;
   if (requiredContexts.length === 0) {
     io.error('[pr-land] main declares no required status checks; refusing to land without a gate');
     return 1;
@@ -1249,7 +1279,15 @@ export function runPrLand(argv, io = console) {
   while (Date.now() < deadline) {
     const { payload, unreadable } = readLockPayload(slug);
     const lock = classifyLock({ payload, unreadable, nowMs: Date.now() });
-    const behindBy = held ? readBehindBy(slug, pr.headRefOid) : 0;
+    const distance = held ? readBehindBy(slug, pr.headRefOid) : { behindBy: 0, failure: null };
+    if (distance.failure) {
+      // Guessing 0 here would skip pouring main in and spend the one CI run on an unchecked base.
+      log(`could not read how far main has moved: ${distance.failure.detail} (retry in ${POLL_SECONDS}s)`);
+      sleep(POLL_SECONDS);
+      pr = readPr(number);
+      continue;
+    }
+    const behindBy = distance.behindBy;
     // Consecutive readings that found no run at all for this head. One of those is
     // the gap between a push and its run set appearing; two is a pull request with no
     // event left to fire.
