@@ -2685,6 +2685,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // collapsed cluster, say). With no bbox to fit, leave the camera alone —
     // and record no debt, because retrying gives the same result.
     if (hit === 0) return true;
+    // A path is read against the ring it sits in. Fitting the two endpoints
+    // alone put the camera at 1.55× the overview, and the rest of the spine
+    // overflowed: three domains under the toolbar, one off the canvas
+    // (measured 2026-09-19). The lens dims that ring now, so it is the frame
+    // the path wants, not a crop to cut away.
+    if (mapLensKindRef.current === "path" && !galaxyRef.current) {
+      const spine = world.spineBounds;
+      if (spine.minX < minX) minX = spine.minX;
+      if (spine.minY < minY) minY = spine.minY;
+      if (spine.maxX > maxX) maxX = spine.maxX;
+      if (spine.maxY > maxY) maxY = spine.maxY;
+    }
 
     // Pad so nothing sits flush against the edge: fitting the raw bbox clips
     // labels, rings and footprints.
