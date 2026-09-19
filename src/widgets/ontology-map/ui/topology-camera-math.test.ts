@@ -12,8 +12,7 @@ import {
   computeUnfocusedPanBounds,
   fitWorldTarget,
   hitTestWorld,
-  worldToScreen,
-} from "./topology-camera-math";
+  worldToScreen, clampFitInsets, MAX_FIT_CHROME_SHARE } from "./topology-camera-math";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { computeEgoBounds, type TopologyWorld } from "./topology-world";
 
@@ -667,5 +666,36 @@ describe("hitTestWorld — 그려진 잉크가 여유 링을 이긴다 (3D 원�
     expect(
       hitTestWorld(movedWorld, camera as never, 800, 600, tokens, 400, 300, undefined, offset as never, radiusScale as never),
     ).toBeNull();
+  });
+});
+
+describe("clampFitInsets — the chrome may not eat the map", () => {
+  it("leaves a desktop reservation alone: 470 of 1216 is under the ceiling", () => {
+    expect(clampFitInsets(350, 120, 1216)).toEqual({ lo: 350, hi: 120 });
+  });
+
+  it("shrinks both sides in proportion when they pass the ceiling", () => {
+    // 390-wide canvas: 470 asked, 195 allowed.
+    const { lo, hi } = clampFitInsets(350, 120, 390);
+    expect(lo + hi).toBeCloseTo(390 * MAX_FIT_CHROME_SHARE, 6);
+    expect(lo / hi).toBeCloseTo(350 / 120, 6);
+    expect(390 - lo - hi).toBeCloseTo(390 * (1 - MAX_FIT_CHROME_SHARE), 6);
+  });
+
+  it("never shrinks below what a panel measurably covers", () => {
+    // An 820-wide canvas with a 324 px panel on the left and nothing on the right.
+    const { lo, hi } = clampFitInsets(350, 120, 820, 324, 0);
+    expect(lo, "the graph would slide under the open panel").toBeGreaterThanOrEqual(324);
+    expect(lo + hi).toBeCloseTo(820 * MAX_FIT_CHROME_SHARE, 6);
+  });
+
+  it("a floor wider than the ceiling wins — occlusion is not negotiable", () => {
+    const { lo, hi } = clampFitInsets(600, 120, 900, 600, 0);
+    expect(lo).toBe(600);
+    expect(hi).toBe(0);
+  });
+
+  it("a zero or unknown extent changes nothing", () => {
+    expect(clampFitInsets(350, 120, 0)).toEqual({ lo: 350, hi: 120 });
   });
 });
