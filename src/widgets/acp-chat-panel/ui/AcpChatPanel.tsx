@@ -1404,7 +1404,34 @@ export function AcpChatPanel({
          * 8px, so messages clumped together. When the text grows the space between has
          * to grow with it — spacing reads as **a ratio to the text**, not an absolute.
          */
-        className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
+        /*
+         * **A conversation settles at the bottom, against the hand** (owner selection, 2026-09-19,
+         * direction B of `design-directions`).
+         *
+         * ⚠️ Measured across one whole journey at the dock's default width — a 462×810 panel, first
+         * conversation, every step: the newest thing said stood 337, 544, 516, 590 and 504 pixels
+         * above the composer, and the transcript was **never** scrollable. Sixty to seventy percent
+         * of the panel was empty air between the answer and the box the person types in, and the
+         * 「file this answer」 chip sat about 470px from the answer it files.
+         *
+         * This file already made the same argument once, about the box rather than the words: a
+         * composer at the bottom is 「not taste but where the hand goes」. That reasoning does not
+         * stop at the composer. So while the conversation is shorter than its own box it grows
+         * upward from the bottom, and the moment it is taller it scrolls exactly as before.
+         *
+         * `mt-auto` on the first row, not `justify-end` on the box: an auto margin absorbs only
+         * **positive** free space, so it is zero the instant the content overflows. `justify-end`
+         * would keep pushing and clip the top of a long conversation out of reach, which is the
+         * flexbox trap this idiom exists to avoid.
+         *
+         * It is applied only while a conversation exists. The empty guide and the starting block
+         * centre themselves (`m-auto`) on purpose — 「in the center of where records will
+         * accumulate」 — and are the one thing on this screen that should not sit against the box.
+         */
+        className={cn(
+          'atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto',
+          events.length > 0 && '[&>*:first-child]:mt-auto',
+        )}
       >
         {/*
           A 「Starting」 (starting) chip alone is not enough for the first download (owner's
