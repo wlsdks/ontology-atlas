@@ -1,6 +1,6 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
 import type { HarnessReport } from '@/entities/agent-files';
@@ -138,5 +138,39 @@ describe('HarnessAnatomyView', () => {
     expect(screen.getByTestId('harness-anatomy-slot-permissions')).toHaveTextContent(
       '허용 1 · 물어봄 1 · 금지 2',
     );
+  });
+
+  it('offers the address that would fill an empty part, and only for the empty ones', () => {
+    /* The owner's goal for this tab: an empty place is visible *and addable*. The line is an
+       address from the tool's own documentation, never "you should have one" — which is the
+       maturity score this view refuses, wearing a different hat. */
+    mount(
+      report({
+        checks: { wiredHooks: 0, gitHooks: 0, scripts: ['lint'], total: 1 },
+      }),
+    );
+    const empty = screen.getByTestId('harness-anatomy-slot-tools');
+    expect(empty).toHaveTextContent('이런 것이 사는 자리');
+    expect(empty).toHaveTextContent('.mcp.json');
+
+    /* A part that is there is not told where it could have been. */
+    const present = screen.getByTestId('harness-anatomy-slot-checks');
+    expect(present).not.toHaveTextContent('이런 것이 사는 자리');
+  });
+
+  it('never offers an address for the part the repository does not own', () => {
+    mount(report());
+    expect(screen.getByTestId('harness-anatomy-slot-loop')).not.toHaveTextContent(
+      '이런 것이 사는 자리',
+    );
+  });
+
+  it('copies the address rather than writing anything into the repository', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    mount(report());
+    fireEvent.click(screen.getByTestId('harness-anatomy-copy-tools'));
+    expect(writeText).toHaveBeenCalledWith('.mcp.json');
+    expect(await screen.findByText('복사함')).toBeInTheDocument();
   });
 });

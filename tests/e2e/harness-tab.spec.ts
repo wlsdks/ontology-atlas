@@ -154,10 +154,12 @@ test.describe("하네스 탭", () => {
     // Nested AGENTS.md files attach by path, which is the whole reason they exist.
     await expect(page.getByTestId("harness-anatomy-slot-scoped")).toContainText("src/AGENTS.md");
 
-    // A hook that can refuse is not the same fact as a hook that only records.
+    // A hook that can refuse is not the same fact as a hook that only records, and the fixture's
+    // Claude and Codex copies of one guard are one name: the script's own.
     await expect(page.getByTestId("harness-anatomy-slot-toolGates")).toContainText(
-      ".claude/hooks/block-unsafe-git.sh",
+      "block-unsafe-git.sh",
     );
+    await expect(page.getByTestId("harness-anatomy-count-toolGates")).toHaveText("훅 1개");
     await expect(page.getByTestId("harness-anatomy-slot-permissions")).toContainText(
       "허용 1 · 물어봄 0 · 금지 2",
     );
@@ -165,6 +167,15 @@ test.describe("하네스 탭", () => {
     // The pipeline phase has its own row, so a repository guarded only by CI is not drawn as
     // having nothing watching it. This fixture has no workflows, which the row states.
     await expect(page.getByTestId("harness-anatomy-count-pipeline")).toHaveText("아직 없음");
+
+    // An empty part is visible *and addable*: the conventional address, copyable, never advice.
+    const emptyTools = page.getByTestId("harness-anatomy-slot-tools");
+    await expect(emptyTools).toContainText("이런 것이 사는 자리");
+    await expect(emptyTools).toContainText(".mcp.json");
+    // And a part that is there is not told where it could have been.
+    await expect(page.getByTestId("harness-anatomy-slot-always")).not.toContainText(
+      "이런 것이 사는 자리",
+    );
 
     // Nothing here is a mark out of ten, and an absent part says so in words.
     await expect(page.getByTestId("harness-anatomy-count-tools")).toHaveText("아직 없음");

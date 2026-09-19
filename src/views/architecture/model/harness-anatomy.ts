@@ -63,6 +63,12 @@ export interface AnatomySlot {
   items: readonly string[];
   /** Items beyond the cap, so the screen can say how many it is not showing. */
   overflow: number;
+  /**
+   * Where a part like this conventionally lives, shown only while the slot is absent.
+   *
+   * An address, not advice: see `FILL_PATH`. `null` where no single answer exists.
+   */
+  fillPath: string | null;
 }
 
 export type AnatomySlotId =
@@ -79,6 +85,36 @@ export type AnatomySlotId =
   | 'discoveredTests'
   | 'pipeline'
   | 'loop';
+
+/**
+ * **Where a part of a harness lives when a repository decides to have one.**
+ *
+ * The owner's standing goal for this tab is that an empty place should be visible *and addable*
+ * (2026-09-13). Until this slice an absent row said "none yet" and stopped, which names the gap and
+ * leaves the reader to go and find out what fills it.
+ *
+ * What this is and is not: it is **the conventional path**, taken from each tool's own published
+ * documentation — the same kind of fact the guides table already prints with its source beside it —
+ * and it is never a recommendation that the repository ought to have one. Plenty of repositories
+ * rightly have no sub-agents and no MCP servers. The row offers the address; deciding to write
+ * there is the person's, and Atlas writes nothing into a source repository either way.
+ *
+ * `discoveredTests` deliberately has none. "Where do tests live" has no one answer, and inventing
+ * one would be the screen telling a repository how to be organised.
+ */
+const FILL_PATH: Readonly<Partial<Record<AnatomySlotId, string>>> = Object.freeze({
+  always: 'AGENTS.md',
+  scoped: '<folder>/AGENTS.md',
+  skills: '.claude/skills/<name>/SKILL.md',
+  subagents: '.claude/agents/<name>.md',
+  tools: '.mcp.json',
+  toolGates: '.claude/settings.json → hooks.PreToolUse',
+  permissions: '.claude/settings.json → permissions.deny',
+  gitGates: '.githooks/pre-commit',
+  watchers: '.claude/settings.json → hooks.PostToolUse',
+  checks: 'package.json → scripts.test',
+  pipeline: '.github/workflows/checks.yml',
+});
 
 /** How many names a slot prints before it starts counting the rest. */
 const ITEM_CAP = 4;
@@ -110,6 +146,7 @@ function slot(
     count,
     items: items.slice(0, ITEM_CAP),
     overflow: Math.max(0, items.length - ITEM_CAP),
+    fillPath: FILL_PATH[id] ?? null,
   };
 }
 
@@ -362,6 +399,8 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
       count: 0,
       items: [],
       overflow: 0,
+      /* No address: this part is not missing from the repository, it is not the repository's. */
+      fillPath: null,
     },
   ];
 

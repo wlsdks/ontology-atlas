@@ -484,7 +484,11 @@
       "pipeline": "워크플로 {count}개",
       "skills": "스킬 {count}개",
       "subagents": "브리프 {count}개"
-    }
+    },
+    "anatomyFillHere": "이런 것이 사는 자리",
+    "anatomyFillCopy": "경로 복사",
+    "anatomyFillCopied": "복사함",
+    "anatomyFillCopyAria": "경로 복사: {path}"
   },
   "architecture": {
     "eyebrow": "코드 아키텍처",

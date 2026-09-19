@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import type { HarnessReport } from '@/entities/agent-files';
-import { InfoHint } from '@/shared/ui';
+import { CompactCopyButton, InfoHint } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
 
 import {
@@ -55,11 +55,15 @@ function SlotRow({
   slot,
   t,
   extra,
+  copied,
+  onCopy,
 }: {
   slot: AnatomySlot;
   t: TranslateFn;
   /** One line a specific slot earns — the permission split, and nothing else so far. */
   extra?: string | null;
+  copied: boolean;
+  onCopy: (slot: AnatomySlot) => void;
 }) {
   const absent = slot.status === 'absent';
   return (
@@ -114,6 +118,34 @@ function SlotRow({
           {slot.overflow > 0 ? ` · ${t('anatomyMore', { count: slot.overflow })}` : ''}
         </p>
       ) : null}
+      {absent && slot.fillPath ? (
+        /*
+          ⚠️ **An address, not advice.** The owner's goal for this tab is that an empty place is
+          visible *and addable*; until this line an absent row said "none yet" and stopped. What it
+          adds is the conventional path a part like this lives at, from the tool's own docs — never
+          "you should have one", because plenty of repositories rightly have no sub-agents and no
+          MCP servers, and a screen that turns every blank into a to-do is the maturity score this
+          view refuses in another costume.
+
+          Copy rather than a write: Atlas puts nothing into a source repository, and the person
+          pasting the path into their editor is the step where they decide.
+        */
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-caption text-[color:var(--color-text-quaternary)]">
+            {t('anatomyFillHere')}
+          </span>
+          <code className="min-w-0 break-all font-mono text-caption text-[color:var(--color-text-tertiary)]">
+            {slot.fillPath}
+          </code>
+          <CompactCopyButton
+            data-testid={`harness-anatomy-copy-${slot.id}`}
+            copied={copied}
+            label={copied ? t('anatomyFillCopied') : t('anatomyFillCopy')}
+            ariaLabel={t('anatomyFillCopyAria', { path: slot.fillPath })}
+            onClick={() => onCopy(slot)}
+          />
+        </div>
+      ) : null}
     </li>
   );
 }
@@ -122,6 +154,17 @@ export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
   const t = useTranslations('harness');
   const anatomy = useMemo(() => buildHarnessAnatomy(report), [report]);
   const toolSlot = anatomy.slots.find((slot) => slot.band === 'tool');
+  /* One id, not a set: a second copy replaces the first acknowledgement rather than leaving a
+     column of green checks behind, which is what the other copy affordances in this product do. */
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const copy = useCallback((slot: AnatomySlot) => {
+    if (!slot.fillPath) return;
+    void navigator.clipboard?.writeText(slot.fillPath).then(
+      () => setCopiedId(slot.id),
+      /* A refused clipboard is not an error worth a dialog; the path is on screen to be typed. */
+      () => undefined,
+    );
+  }, []);
 
   return (
     <section
@@ -172,6 +215,8 @@ export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
                     key={slot.id}
                     slot={slot}
                     t={t}
+                    copied={copiedId === slot.id}
+                    onCopy={copy}
                     extra={
                       slot.id === 'permissions' && anatomy.permissions
                         ? t('anatomyPermissionSplit', {

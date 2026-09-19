@@ -484,7 +484,11 @@
       "pipeline": "{count, plural, one {# workflow} other {# workflows}}",
       "skills": "{count, plural, one {# skill} other {# skills}}",
       "subagents": "{count, plural, one {# brief} other {# briefs}}"
-    }
+    },
+    "anatomyFillHere": "One of these lives at",
+    "anatomyFillCopy": "Copy path",
+    "anatomyFillCopied": "Copied",
+    "anatomyFillCopyAria": "Copy path: {path}"
   },
   "architecture": {
     "eyebrow": "CODE ARCHITECTURE",
