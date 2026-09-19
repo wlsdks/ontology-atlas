@@ -4300,6 +4300,7 @@
       "addRelation": "Linked a relation"
     },
     "fullRequest": "Full request",
+    "seatedDetail": "{lines, plural, one {# instruction this screen attached} other {# instructions this screen attached}}",
     "toolRepeat": "Repeated {count} times",
     "toolOutcome": {
       "foundUnit": " found",

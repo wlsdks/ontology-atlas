@@ -4300,6 +4300,7 @@
       "addRelation": "관계를 이었어요"
     },
     "fullRequest": "요청 전문",
+    "seatedDetail": "이 화면이 붙인 지시 {lines, number}줄",
     "toolRepeat": "같은 호출 {count}번",
     "toolOutcome": {
       "foundUnit": "개 찾음",

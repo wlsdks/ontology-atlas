@@ -1,3 +1,5 @@
+import { READ_ONLY_TOOL_INSTRUCTION } from '@/features/acp-session';
+
 import type { InsightsTab } from './insights-tab-state';
 
 export interface InsightsAgentRuntime {
@@ -66,7 +68,7 @@ export function buildInsightsAgentPrompt({
   return locale === 'ko'
     ? [
         '이 분석 탭을 현재 온톨로지 근거만으로 설명해줘.',
-        'Atlas MCP 읽기 도구만 사용하고 쓰기 도구, shell, 파일, 소스, 웹은 호출하지 마.',
+        READ_ONLY_TOOL_INSTRUCTION.ko,
         '',
         readHandoff,
         '',
@@ -74,7 +76,7 @@ export function buildInsightsAgentPrompt({
       ].join('\n')
     : [
         'Explain this Analysis tab from the current ontology evidence only.',
-        'Use only Atlas MCP read tools. Do not call write tools, shell, files, source, or the web.',
+        READ_ONLY_TOOL_INSTRUCTION.en,
         '',
         readHandoff,
         '',
