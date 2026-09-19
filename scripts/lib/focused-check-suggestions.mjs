@@ -775,6 +775,47 @@ const RULES = [
     ],
   },
   {
+    /*
+     * ⚠️ **Editing the Agents destination runs the e2e that drives it** (2026-09-19).
+     *
+     * The same hole the docs rule above was opened for. Measured on this branch: changing
+     * `McpPage.tsx`, `ConnectorsPanel.tsx`, `agents-workspace/index.tsx`, `AgentsPage.tsx` or
+     * `McpRedirectPage.tsx` suggested **no Playwright spec at all**, while three specs drive
+     * exactly those files — including the one that proves `ontology-atlas://mcp?install=…`
+     * still opens the connectors dialog, which is the named falsifier of the 2026-09-19
+     * decision that made MCP a tab of this page. The e2e specs only ran during that work
+     * because the specs themselves were edited; a person changing the screen alone would have
+     * shipped past them.
+     *
+     * All three are true for every path listed: `mcp-connector-add` presses into the
+     * connectors card and arrives through `/mcp/`'s redirect, `agent-connect-panel-census`
+     * reaches the share pane through the rail and the tab strip, and `web-surface-smoke`
+     * registers this screen's degradation cards (`agent-server-unavailable`, the connectors
+     * card) and the tab address they are reached by.
+     */
+    command:
+      'pnpm exec playwright test tests/e2e/mcp-connector-add.spec.ts ' +
+      'tests/e2e/agent-connect-panel-census.spec.ts tests/e2e/web-surface-smoke.spec.ts',
+    reason: 'the Agents destination changed — three e2e specs drive its tabs, its connectors card and its deep link',
+    matches: [
+      /^src\/views\/(?:agents|mcp|mcp-redirect)\/.+\.tsx?$/,
+      /^src\/app\/agents-workspace\/.+\.tsx?$/,
+      /^src\/features\/mcp-connectors\/.+\.tsx?$/,
+      /^src\/widgets\/app-settings-menu\/ui\/(?:AgentSetupSection|VaultAgentSetupPanel)\.tsx$/,
+    ],
+  },
+  {
+    /*
+     * The runtime list is the other half of that destination, and only one of those three
+     * specs reaches it: `web-surface-smoke` registers `app-settings-runtimes-web`, the card a
+     * browser sees instead of the list, and asserts the link it carries. Naming the other two
+     * here would be a mapping that does not measure this file.
+     */
+    command: 'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
+    reason: 'the runtime list changed — the web surface draws its degradation card instead',
+    matches: [/^src\/widgets\/app-settings-menu\/ui\/AcpRuntimeSettings\.tsx$/],
+  },
+  {
     // Since the surface split (2026-07-27) the web does not follow the app, so anyone
     // touching a capability bridge easily checks only the app and moves on. The web is
     // an unattended surface, so that pass becomes decay — touching a bridge also
