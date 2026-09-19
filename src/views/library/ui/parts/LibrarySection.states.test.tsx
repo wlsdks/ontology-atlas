@@ -33,7 +33,7 @@ function source(index: number, state: string) {
   return { path: `sources/doc-${index}.md`, name: `doc-${index}.md`, format: "md", bytes: 20, mtime: 1, state, citedBy: state === "not-compiled" ? [] : ["wiki/page"] };
 }
 
-function Harness({ model, segment }: { model: LibraryUiModel; segment: "sources" | "wiki" }) {
+function Harness({ model, segment, compile = true }: { model: LibraryUiModel; segment: "sources" | "wiki"; compile?: boolean }) {
   const t = useTranslations("library");
   return (
     <LibrarySection
@@ -47,7 +47,7 @@ function Harness({ model, segment }: { model: LibraryUiModel; segment: "sources"
       onAddFiles={() => {}}
       onFindDocuments={() => {}}
       onImportFromService={() => {}}
-      onCompile={() => {}}
+      onCompile={compile ? () => {} : null}
       onLint={() => {}}
       onNewPage={null}
       report={null}
@@ -60,10 +60,10 @@ function Harness({ model, segment }: { model: LibraryUiModel; segment: "sources"
   );
 }
 
-function mount(model: LibraryUiModel, segment: "sources" | "wiki") {
+function mount(model: LibraryUiModel, segment: "sources" | "wiki", compile = true) {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <Harness model={model} segment={segment} />
+      <Harness model={model} segment={segment} compile={compile} />
     </NextIntlClientProvider>,
   );
 }
@@ -143,5 +143,24 @@ describe("the wiki shelf says its common caption once", () => {
     mount({ ...BASE, wikiPages: stale, pairing: { originalsByWiki: new Map(), writeUpsBySource } } as unknown as LibraryUiModel, "wiki");
     expect(screen.queryByTestId("library-wiki-states")).toBeNull();
     expect(screen.getByTestId("library-wiki-wiki/p0").querySelector(".sr-only")).toBeNull();
+  });
+});
+
+/**
+ * **A door at the end of a sentence must not wear the sentence's ink.**
+ *
+ * Measured 2026-09-19 on the wiki tab in a browser: the note "writing needs the app…"
+ * ended in *Get the app* set in the same tertiary grey with no underline, so the one way
+ * out read as three more words. The tone is the accent the Rounds tab's door to the same
+ * page wears; the note itself stays tertiary.
+ */
+describe("the web note's door to the app is a door", () => {
+  it("sets the link in the accent ink while the sentence stays tertiary", () => {
+    mount({ ...BASE, sources: [source(0, "not-compiled")] } as LibraryUiModel, "wiki", false);
+    const note = screen.getByTestId("library-compile-web-limit");
+    const door = screen.getByTestId("library-compile-web-get-app");
+    expect(note.className).toContain("--color-text-tertiary");
+    expect(door.className).toContain("--color-indigo-accent");
+    expect(door.className).not.toContain("--color-text-tertiary");
   });
 });

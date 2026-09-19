@@ -1147,11 +1147,19 @@ export function LibrarySection({
           className="px-3 pb-1 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
         >
           {t("wiki.compileWebLimit")}{" "}
+          {/*
+            Accent, not the sentence's grey: measured 2026-09-19 on the wiki tab, the door
+            wore the tertiary ink of the note it ends and no underline, so "Get the app"
+            read as three more words of the sentence — the same dead end the search
+            caption's link fell into (2026-09-07, above). The Rounds tab's own door to the
+            same page wears this tone; one page, one colour.
+          */}
           <Link
             href="/download"
             data-testid="library-compile-web-get-app"
             className={controlClass({
               shape: "link",
+              tone: "accent",
               hoverInk: "strong",
               className: "rounded-chip px-1.5 py-0.5",
             })}

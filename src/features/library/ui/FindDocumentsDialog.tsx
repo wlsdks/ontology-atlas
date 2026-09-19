@@ -117,8 +117,11 @@ export function FindDocumentsDialog({
             // the base border-transparent wins by source order.
             // `hoverInk: 'strong'` is the axis for exactly this; writing the class by
             // hand is what the hover-axis ratchet counts.
+            // `tone: "accent"`: in the note's tertiary grey the door read as the end of
+            // the sentence (2026-09-19); the Library's other doors to /download wear this.
             className={controlClass({
               shape: "link",
+              tone: "accent",
               hoverInk: "strong",
               className: "rounded-chip px-1.5 py-0.5",
             })}
