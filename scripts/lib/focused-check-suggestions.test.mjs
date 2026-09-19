@@ -771,6 +771,41 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('points the Agents destination at the three e2e specs that drive it', () => {
+    /*
+     * Probe for the 2026-09-19 rule. Before it, every one of these files suggested **no**
+     * Playwright spec, while `mcp-connector-add.spec.ts` is what proves the installed app's
+     * `install=` deep link still opens the connectors dialog — the named falsifier of the
+     * decision that made MCP a tab of this page. Delete the rule and this goes red.
+     */
+    const command =
+      'pnpm exec playwright test tests/e2e/mcp-connector-add.spec.ts ' +
+      'tests/e2e/agent-connect-panel-census.spec.ts tests/e2e/web-surface-smoke.spec.ts';
+    for (const path of [
+      'src/views/agents/ui/AgentsPage.tsx',
+      'src/views/mcp/ui/McpPage.tsx',
+      'src/views/mcp-redirect/ui/McpRedirectPage.tsx',
+      'src/app/agents-workspace/index.tsx',
+      'src/features/mcp-connectors/ui/ConnectorsPanel.tsx',
+      'src/widgets/app-settings-menu/ui/AgentSetupSection.tsx',
+    ]) {
+      assert.ok(
+        domainCommands(suggestFocusedChecks([path])).includes(command),
+        `${path} suggested no e2e for the Agents destination`,
+      );
+    }
+  });
+
+  it('points the runtime list only at the spec that measures it', () => {
+    // Naming the connectors specs here would be a mapping that does not measure this file:
+    // only the web smoke registers the card a browser draws instead of the runtime list.
+    const commands = domainCommands(
+      suggestFocusedChecks(['src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx']),
+    );
+    assert.ok(commands.includes('pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts'));
+    assert.ok(!commands.some((command) => command.includes('mcp-connector-add')));
+  });
+
   it('suggests the web surface smoke when a desktop capability bridge changes', () => {
     const result = suggestFocusedChecks(['src/shared/lib/tauri-secrets.ts']);
 

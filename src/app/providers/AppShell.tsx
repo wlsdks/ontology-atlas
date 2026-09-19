@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
 import { settleRouteViewTransition } from "@/shared/lib/route-view-transition";
@@ -25,7 +26,11 @@ import {
 } from "@/features/guided-tour";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
-import { isGatewaySurface, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
+import {
+  isGatewaySurface,
+  resolveActiveNavDestination,
+  resolveGuideDestination,
+} from "@/shared/lib/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { AgentMascotPresence } from "@/features/agent-activity";
@@ -143,18 +148,25 @@ function useGuideOverride(): void {
 function ShellColumn({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   const surface = resolveActiveNavDestination(pathname);
+  /*
+   * **The MCP tab keeps its own guide** (2026-09-20). MCP folded into `/agents` as a tab, and
+   * `/mcp` became a redirect — so `resolveActiveNavDestination` answers "agents" for both tabs
+   * and the "mcp" guide, whose two pages describe exactly this tab, could never appear. The
+   * rail's active marker must still read "agents" here (MCP has no tile), so the tab is read
+   * from the address for the guide alone rather than by changing that resolution.
+   */
+  const searchParams = useSearchParams();
   const mapPending = useMapNavigationPending();
 
   // Which screens get a destination guide. The map is excluded because it owns its
   // own eight-step journey, and projects gets one **only on the list** — the rail
   // lights the same destination for `/project/<slug>`, but the guide's copy
   // ("they stand as cards") does not describe that screen.
-  const guideDestination =
-    !surface || surface === "map"
-      ? null
-      : surface === "projects" && !resolveIsProjectListPath(pathname)
-        ? null
-        : surface;
+  const guideDestination = resolveGuideDestination({
+    surface,
+    pathname,
+    tab: searchParams?.get("tab") ?? null,
+  });
 
   return (
     // **The shell owns the viewport.** The alternative — a `--app-viewport-h` token
@@ -328,10 +340,6 @@ function VaultRouteIdentityBoundary({
   return children;
 }
 
-/** Is this the project **list** screen? `/project/<slug>` detail and edit are not. */
-function resolveIsProjectListPath(pathname: string): boolean {
-  return pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "").startsWith("/projects");
-}
 
 function AppNavRailSlot() {
   const { settingsSlot, hidden, contextHrefs } = useNavRailShellValue();

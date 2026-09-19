@@ -231,9 +231,12 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByLabelText('확인 명령 결과 읽는 법'),
     ).toBeInTheDocument();
-    expect(screen.getByText('안 됨')).toBeInTheDocument();
-    expect(screen.getByText('느림')).toBeInTheDocument();
-    expect(screen.getByText('준비됨')).toBeInTheDocument();
+    // Scoped to the gate-rules list: the ready word is also a tool row's button label since
+    // 2026-09-19, when those buttons dropped the tool name the row already carries.
+    const gateRules = screen.getByLabelText('확인 명령 결과 읽는 법');
+    expect(within(gateRules).getByText('안 됨')).toBeInTheDocument();
+    expect(within(gateRules).getByText('느림')).toBeInTheDocument();
+    expect(within(gateRules).getByText('준비됨')).toBeInTheDocument();
     expect(screen.getByText('코드를 고친 뒤')).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -316,7 +319,10 @@ describe('VaultAgentSetupPanel', () => {
     const connections = screen.getByRole('list', {
       name: '도구별 연결 파일 상태',
     });
-    expect(within(connections).getByText('Claude Code · Cursor')).toBeInTheDocument();
+    // Only the two files Atlas reads are named here; Cursor's own scope is .cursor/mcp.json,
+    // which this screen writes and never reads back.
+    expect(within(connections).getByText('Claude Code')).toBeInTheDocument();
+    expect(within(connections).queryByText(/Cursor/)).toBeNull();
     expect(within(connections).getByText('.mcp.json')).toBeInTheDocument();
     expect(within(connections).getByText('Codex')).toBeInTheDocument();
     expect(within(connections).getByText('.codex/config.toml')).toBeInTheDocument();
@@ -1263,6 +1269,54 @@ describe('VaultAgentSetupPanel', () => {
         name: 'Codex 명령 복사됨',
       }),
     ).toBeInTheDocument();
+  });
+
+  it('남의 설정이 있는 행은 그 사실을 자기 줄에서 말한다 — 동사만 바뀌지 않는다', () => {
+    // Caught by rendering the mixed state, 2026-09-19: the control changed to "copy a correct
+    // one" while the row said only the file path, so the page showed three rows offering to
+    // connect and one offering a replacement for no visible reason.
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault({
+          agentConfigStatus: {
+            mcpJson: true,
+            mcpJsonValid: true,
+            codexConfig: true,
+            codexConfigValid: false,
+            mcpExample: false,
+            mcpExampleValid: false,
+          },
+        })}
+        serverAvailability={bundledServer}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    const codexRow = screen.getByTestId('agent-setup-row-codex');
+    expect(codexRow).toHaveTextContent(
+      '점검: .codex/config.toml는 Ontology Atlas 연결 설정이 아니에요',
+    );
+    // The row whose file is ours keeps the plain path.
+    expect(screen.getByTestId('agent-setup-row-claude-code')).toHaveTextContent('.mcp.json');
+    expect(screen.getByTestId('agent-setup-row-claude-code')).not.toHaveTextContent('점검:');
+  });
+
+  it('서버 조회가 답하기 전에는 아무 주장도 그리지 않는다', () => {
+    // `launch: null` alone cannot tell a browser from the app still asking, so this panel used
+    // to open on the browser's degradation card inside the installed app.
+    const { container } = render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault()}
+        serverAvailability={{ ...agentServerUnavailable(null), pending: true }}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByTestId('agent-server-unavailable')).toBeNull();
+    expect(screen.queryByTestId('agent-setup-steps')).toBeNull();
   });
 
   it('첫 화면은 도구 행 넷이고, 확인과 상세 검증은 대화상자 뒤에 있다', () => {

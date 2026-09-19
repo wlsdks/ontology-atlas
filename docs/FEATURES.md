@@ -2241,7 +2241,7 @@ Opening a conversation preserves the selected runner across the quick detection 
 
 **Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **API Keys and workspaces remain in settings** — the former has a "Path Freezing" decision on 2026-08-16 (promoting destination is itself an emphasis), and the latter's axis answered by vault is different.
 
-**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01). That row names the place and links to it, because since 2026-09-05 the place is `/mcp` and not a section of this screen.
+**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01). That row names the place: since 2026-09-19 it is the MCP tab on the same strip, one press away, so the sentence no longer carries a link (the settings sheet, which has no strip, still does).
 
 **2026-09-06**: the screen wears `PAGE_FRAME_FORM` (960px) like `/mcp`, and the frame carries the desktop bottom breath itself.
 
@@ -2249,23 +2249,31 @@ Opening a conversation preserves the selected runner across the quick detection 
 
 **What changed on 2026-09-07**: only the tools Atlas confirmed on this machine are listed inline. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product. Nothing left the list; a fold of 36 rows had nowhere to put a search.
 
-### `/agents?tab=mcp` — MCP (new 2026-09-05; a section of the Agents page since 2026-09-18)
+### `/agents?tab=mcp` — MCP (new 2026-09-05; the Agents page's second tab since 2026-09-19)
 
 **One sentence on what this screen does**: everything MCP — the folder's own server
 (share this folder with a coding tool) and the external connectors an in-app agent may
-reach — as the last section of the Agents page, with its own two sections on `?mcp=`.
+reach — as the second tab of the Agents page, in two groups stacked under one strip.
 The owner folded the two rail destinations into one on 2026-09-17 ("merge these two,
-split them as tabs inside"), then on 2026-09-18 took the header tab strip away too ("this
-way of showing them at the top is very bad… it should be folded in here"): the strip spent
-a 56px chrome band on two words and left the rest empty, and the two were one subject.
-`?tab=mcp` scrolls to the section; `/mcp/` and `/mcp/?tab=connectors` redirect into it with
-every parameter kept, so the installed app's `ontology-atlas://mcp?install=…` deep link
-still opens the connectors dialog. The rail lost its MCP tile; `g c` still lands here.
+split them as tabs inside"), took the header tab strip away on 2026-09-18 ("this way of
+showing them at the top is very bad… it should be folded in here": it spent a 56px chrome
+band on two words), and on 2026-09-19 rejected the stack that replaced it ("I don't want
+agents and MCP on one screen with a scroll — split them into tabs"). Both objections hold
+at once when the strip is the page's own, under the title: no chrome band, one question on
+screen at a time. `?tab=mcp` selects the tab and `?mcp=connectors` scrolls to the
+connectors group; `/mcp/` and `/mcp/?tab=connectors` redirect in with every parameter
+kept, so the installed app's `ontology-atlas://mcp?install=…` deep link still opens the
+connectors dialog. The rail lost its MCP tile; `g c` still lands here.
 
-- **Share this folder** — the three steps that put a ready config in front of each tool,
-  the connection status those files add up to, the first-contact proof packet an agent
-  pastes to prove it attached, and a collapsed "Not working?" fold holding file status,
-  CLI verification, and connecting from another code folder.
+- **Share this folder** — one row per tool since 2026-09-19 ("this design is poor — make it
+  properly; a popup, say"): the tool's mark, its name, the file it writes, and on the right
+  the one control in that tool's own state (connect, copy, or ready). A row whose file exists
+  but belongs to another tool says so in warning tone instead of its path. What Atlas cannot
+  know on its own — did you restart it, did it attach — opens from the group heading as one
+  dialog holding the restart step, the connection status those files add up to, the
+  first-contact proof packet an agent pastes to prove it attached, and the former
+  "Not working?" fold (file status, CLI verification, connecting from another code folder).
+  The server-lifetime sentence and the folder-root note wait in a hint beside the heading.
 - **Connectors** — the attached list: one line per connector carrying the service mark, the name,
   what will actually run, the switch, and one more-actions button; that button's dialog holds the
   keychain fields and removal, and removal confirms first because forgetting a token cannot be

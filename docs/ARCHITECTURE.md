@@ -36,7 +36,7 @@ tags: [architecture, infra, overview]
 │ ├─ /ontology/studio        compatibility → topology    │
 │ ├─ /ontology/insights      five measures + Flow        │
 │ ├─ /git                    vault Git workbench         │
-│ ├─ /agents                 agents, MCP section below   │
+│ ├─ /agents                 agents · MCP, two tabs      │
 │ ├─ /mcp                    compatibility → /agents      │
 │ ├─ /projects               project list                │
 │ ├─ /project/[slug]         project detail              │

@@ -102,6 +102,16 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(screen.queryByTestId('app-settings-runtimes-web')).toBeNull();
   });
 
+  it('대화를 열 수 있는 도구가 없으면 디스크 고지를 그리지 않는다 — 물음표만 남지 않게', async () => {
+    // The disclosure is about what opening a chat writes to disk, and a chat opens only for a
+    // tool this screen confirmed and guards. With none, the hint was a lone question mark
+    // beside a list that says no tool was found.
+    bridge.detect.mockResolvedValue([makeRuntime({ id: 'cursor', state: 'cli-missing' })]);
+    render(<AcpRuntimeSettings embedded />);
+    await waitFor(() => expect(screen.getByText('noneReady')).toBeInTheDocument());
+    expect(screen.queryByTestId('app-settings-runtimes-disk-note')).toBeNull();
+  });
+
   it('시트에서는 MCP 링크가 남는다 — 띠가 없는 곳에서 이름만 대지 않는다', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
@@ -109,6 +119,19 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     render(<AcpRuntimeSettings />);
     await screen.findByTestId('app-settings-runtime-claude-acp');
     expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/agents/?tab=mcp');
+  });
+
+  it('첫 탐색이 끝나기 전에는 「다시 확인」을 누를 수 없다', async () => {
+    // The row used to offer a re-scan beside a list that says it is still looking, and a press
+    // started a second scan over the first. `runtimes` is null exactly until the first answer.
+    let settle: (value: unknown) => void = () => undefined;
+    bridge.detect.mockReturnValue(new Promise((resolve) => { settle = resolve; }));
+    render(<AcpRuntimeSettings embedded />);
+    expect(screen.getByTestId('app-settings-runtimes-recheck')).toBeDisabled();
+    settle([makeRuntime({ id: 'claude-acp', isolated: true, verified: true })]);
+    await waitFor(() =>
+      expect(screen.getByTestId('app-settings-runtimes-recheck')).not.toBeDisabled(),
+    );
   });
 
   it('디스크에 무엇이 생기는지는 힌트 안에서 말한다 — 목록 위 문단이 아니라', async () => {

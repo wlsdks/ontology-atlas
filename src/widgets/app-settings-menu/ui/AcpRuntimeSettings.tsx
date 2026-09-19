@@ -303,8 +303,16 @@ export function AcpRuntimeSettings({
             above it: the sentence matters at the moment of pressing "open a chat", and a hint
             is one press from that button without standing between the title and the tools.
             Gate: `tests/contract/acp-disk-disclosure.contract.test.ts`.
+
+            ⚠️ **Only where a chat can start** (2026-09-20). `link_credentials` runs when a
+            conversation opens, and a conversation opens only for a tool this screen confirmed
+            and guards — so on a machine with none, this answered a question nobody can ask,
+            and as a hint rather than the old paragraph it left a lone question mark beside a
+            list that says "no tool found". The condition is the same one the chat button uses.
+            The gate greps this file for the sentence and the testid, so it cannot see either
+            this change or its reverse; the reason it is right is the disclosure's own subject.
           */}
-          {runtimes !== null ? (
+          {runtimes !== null && ready.some((r) => isGuardedRuntime(r.id, r.isolated)) ? (
             <InfoHint label={t('hintLabel')} align="left">
               <p
                 data-testid="app-settings-runtimes-disk-note"
@@ -319,9 +327,17 @@ export function AcpRuntimeSettings({
           size="lg"
           tone="secondary"
           data-testid="app-settings-runtimes-recheck"
-          disabled={checking}
+          /*
+           * **Not while the first scan is still running** (2026-09-20). `checking` covers a
+           * re-scan this button started; the very first detection, before any answer exists,
+           * left it live — so the row offered "check again" beside a list that says it is
+           * still looking, and a press started a second scan over the first. `runtimes` is
+           * null exactly until that first answer lands.
+           */
+          disabled={checking || runtimes === null}
           onClick={() => void refresh()}
-          className={DETAIL_TOGGLE_CHIP}
+          /* `shrink-0`: at 390 the chip yielded to the sentence and broke its two words onto two lines. */
+          className={`${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`}
         >
           <RefreshCw size={ICON_SIZE.md} aria-hidden />
           {t('recheck')}
@@ -627,11 +643,20 @@ function RuntimeRow({
                 size="lg"
                 tone="accentOnTint"
                 data-testid={`app-settings-runtime-chat-${runtime.id}`}
+                /*
+                 * **The verb alone, and the sentence as the name** (2026-09-19). The row already
+                 * carries this tool's mark and its name, so "open a chat with this tool" says
+                 * "this tool" a second time — and three of these sentences stacked down the
+                 * column were what pushed the names to 0px at 390. A screen reader moving from
+                 * control to control does not see the row beside it, so the accessible name
+                 * keeps the whole sentence; the same split the MCP tab's rows use.
+                 */
+                aria-label={t('openChat')}
                 onClick={() => onOpenChat(runtime.id)}
                 className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
               >
                 <MessageSquare size={ICON_SIZE.md} aria-hidden />
-                {t('openChat')}
+                {t('openChatShort')}
               </Chip>
             ) : null}
             {/*
