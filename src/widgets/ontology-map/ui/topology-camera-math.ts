@@ -13,7 +13,7 @@
  * in the convention the engine layer expects.
  */
 
-import { computePanBounds, type CameraAxes, type CameraTarget, type PanBounds } from "../engine/camera";
+import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget, type PanBounds } from "../engine/camera";
 import { LABEL_OFFSET } from "../render/labels";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { computeClusterDiscBounds, computeEgoBounds, radiusForKind, type Bounds, type TopologyWorld } from "./topology-world";
@@ -691,7 +691,22 @@ export function computeFocusCameraTarget(
    * (`(left - right) / (2 × scale)`). Divide by the zoom factor because the same
    * screen offset is a shorter world distance the further in you are zoomed.
    */
-  return { ...centerForInsets(centerX, centerY, insets, scale), tscale: scale };
+  // The physics keeps a focused camera inside `cameraFocusPanMargin` of the
+  // focused node (`topology-physics-step.ts`). A target outside that box can
+  // never be reached: the spring pushes, the clamp pulls back, and the idle
+  // gate reads "camera moving" for as long as the node stays selected.
+  // Measured 2026-09-19 on a capability whose neighbours sat in two folded
+  // domains far to the right: target 370 world units from the node, leash 180,
+  // camera jittering by 0.01 at 120 frames per second indefinitely.
+  const centred = centerForInsets(centerX, centerY, insets, scale);
+  const focusNode = world.nodeById.get(focusedSlug);
+  if (!focusNode) return { ...centred, tscale: scale };
+  const leash = computePanBounds(
+    { minX: focusNode.x, minY: focusNode.y, maxX: focusNode.x, maxY: focusNode.y },
+    tokens.cameraFocusPanMargin,
+  );
+  const clamped = clampPointToPanBounds(centred.tx, centred.ty, leash);
+  return { tx: clamped.x, ty: clamped.y, tscale: scale };
 }
 
 /**
