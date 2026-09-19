@@ -3684,6 +3684,7 @@
     "restoreDone": "Restored {path} to this commit's content. It is an uncommitted change now.",
     "restoreDoneOthers": "The other {count} document(s) this commit changed stay as they are.",
     "restoreFailedSafe": "The document was not changed.",
+    "restoreAbsentDeleted": "This step deleted the document, so the content to restore is in the steps below",
     "restoreConceptDoc": "This concept's document {path}",
     "docHistoryTitle": "Other steps that changed this document",
     "docHistoryOnly": "This is the only step that changed this document",

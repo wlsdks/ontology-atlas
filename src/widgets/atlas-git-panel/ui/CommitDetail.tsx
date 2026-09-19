@@ -301,6 +301,19 @@ export function CommitDetail({
               </div>
               {focusedFile ? (
                 <div className="px-5 pt-3">
+                  {/* A step that deleted the document holds no content to put back, so the
+                      door is not drawn — but its absence is said, not left silent: the person
+                      is looking at a concept and would otherwise read the missing door as a
+                      missing feature (installed-app walk, 2026-09-19). The document's own
+                      steps below still hold its content. */}
+                  {focusedFile.status === "deleted" ? (
+                    <p
+                      data-testid="atlas-git-restore-absent"
+                      className="text-caption leading-label text-[color:var(--color-text-quaternary)]"
+                    >
+                      {t("restoreAbsentDeleted")}
+                    </p>
+                  ) : null}
                   {focusedFile.status !== "deleted" ? (
                   <RestoreDock
                     t={t}

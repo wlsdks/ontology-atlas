@@ -1638,6 +1638,7 @@ describe("AtlasGitPanel — 열리지 않을 문은 그리지 않는다", () => 
     fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
     await screen.findByTestId("atlas-git-commit-file");
     expect(screen.queryByTestId("atlas-git-restore")).toBeNull();
+
   });
 
   it("이름을 바꾼 미커밋 문서에는 버리기 문이 없다 — 마지막 커밋은 옛 이름을 갖고 있으니까", async () => {
@@ -1840,5 +1841,53 @@ describe("AtlasGitPanel — 본문은 표시가 아니라 뜻을 읽힌다", () 
     await waitFor(() => expect(reader).toHaveTextContent("Executor List"));
     expect(reader.textContent).not.toContain("**");
     expect(reader.textContent).toContain("2.");
+  });
+});
+
+describe("AtlasGitPanel — 문이 없는 이유는 말한다", () => {
+  /*
+   * Walked in the installed app on 2026-09-19: a concept whose document that step deleted
+   * showed no restore door and no reason, and a missing door reads as a missing feature.
+   */
+  const GRAPH = {
+    nodes: [
+      {
+        id: "capability:foo",
+        title: "Foo Capability",
+        display: "첫 실행 안내",
+        kind: "capability",
+        projectIds: [],
+        evidenceIds: ["capabilities/foo"],
+        hasOwnDocument: true,
+        agentSlug: "capabilities/foo",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: null,
+      },
+    ],
+    edges: [],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+
+  it("이 걸음이 문서를 지웠으면 되돌리기 문 대신 그 사실이 선다", async () => {
+    installDesktopGit({
+      history: [
+        {
+          shortHash: "del1234",
+          hash: "del1234def5678",
+          subject: "chore: retire the foo capability",
+          relativeTime: "2 hours ago",
+          isoTime: "2026-09-19T06:00:00.000Z",
+          files: [
+            { path: "docs/capabilities/foo.md", status: "deleted", kind: "capability", slug: "capabilities/foo", renamedFrom: null },
+          ],
+        },
+      ],
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    await screen.findByTestId("atlas-git-history-detail");
+    expect(await screen.findByTestId("atlas-git-restore-absent")).toHaveTextContent("지웠어요");
+    expect(screen.queryByTestId("atlas-git-restore")).toBeNull();
   });
 });
