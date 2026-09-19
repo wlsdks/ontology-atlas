@@ -36,7 +36,7 @@ test.describe("인사이트 할 일 — 탭 배지와 목록 제목이 같은 �
    * what this measures.
    */
   test("탭 배지 = 목록 제목이 말하는 규모", async ({ page }) => {
-    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => document.fonts.ready);
     await expect(page.getByTestId("do-next-list")).toBeVisible({ timeout: 20_000 });
 
@@ -152,7 +152,7 @@ test.describe("인사이트 인구조사 — 타일 큰 숫자와 탭 배지가 
       timeout: 30_000,
     });
 
-    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    await page.goto("/ko/ontology/insights/?guides=off&tab=composition", { waitUntil: "domcontentloaded" });
     // Long enough to outlast the 400ms intro — and the sample→vault swap falls inside it.
     await page.waitForTimeout(2_000);
 

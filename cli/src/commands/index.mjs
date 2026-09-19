@@ -141,6 +141,7 @@ export async function runIndex(args) {
       errorFiles: validation.summary?.errorFiles ?? 0,
       warningFiles: validation.summary?.warningFiles ?? 0,
       pathDrift: validation.pathDrift?.drifts?.length ?? 0,
+      evidenceStale: (validation.evidenceDrift?.counts?.stale ?? 0) + (validation.evidenceDrift?.counts?.missing ?? 0),
     },
     meaningGate: summarizeMeaningGate(analyzeResult.meaningGate),
     next: {
@@ -372,7 +373,7 @@ function printPlan(payload) {
   process.stdout.write(
     `${COLORS.bold}index${COLORS.reset} ${COLORS.dim}repo=${payload.rootPath}\n      vault=${payload.vaultRoot}${COLORS.reset}\n\n` +
       `  ${COLORS.bold}plan${COLORS.reset}      ${payload.plan.concepts} concepts · ${payload.plan.suggestedRelations} suggested relations · ${payload.plan.importRelations} import review candidates\n` +
-      `  ${COLORS.bold}validate${COLORS.reset}  ${payload.validation.scanned} files · ${payload.validation.problemFiles} problem files · ${payload.validation.pathDrift} path drift\n\n` +
+      `  ${COLORS.bold}validate${COLORS.reset}  ${payload.validation.scanned} files · ${payload.validation.problemFiles} problem files · ${payload.validation.pathDrift} path drift · ${payload.validation.evidenceStale} concepts whose cited code moved or vanished\n\n` +
       `  ${COLORS.bold}meaning${COLORS.reset}   ${payload.meaningGate.businessOntology.domains} domains · ${payload.meaningGate.businessOntology.capabilities} capabilities · ${payload.meaningGate.businessOntology.evidence} business evidence rows · ${payload.meaningGate.implementationEvidence.elements} evidence elements · ${payload.meaningGate.implementationEvidence.reviewRequiredCapabilities} review-required capabilities\n` +
       `            report business/product domain + capability first; use code rows as implementation evidence\n\n` +
       evidenceBlock +

@@ -11,6 +11,7 @@ import {
   inspectVaultGit,
   inspectVaultGitHistory,
   snapshotVaultGit,
+  collectPathLastChanges,
 } from './git-tools.mjs';
 
 function git(root, ...args) {
@@ -411,6 +412,45 @@ test('inspectVaultGit preserves unicode and spaces as usable paths', () => {
     assert.equal(status.vaultPathspec, '온톨로지 vault');
     assert.deepEqual(status.files.map((row) => row.path), ['온톨로지 vault/새 노드.md']);
     assert.deepEqual(status.stagedOutsideVault, ['외부 note.txt']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collectPathLastChanges dates repo paths and vault documents in one walk and refuses escapes', () => {
+  const { root, vault } = makeRepo();
+  try {
+    mkdirSync(join(root, 'src'));
+    writeFileSync(join(root, 'src', 'pay.ts'), 'export const pay = 1;\n');
+    writeFileSync(join(vault, 'pay.md'), '---\nkind: capability\nslug: pay\npath: src/pay.ts\n---\n');
+    const commitAt = (when, message) =>
+      execFileSync('git', ['-C', root, 'commit', '-m', message], {
+        encoding: 'utf8',
+        env: { ...process.env, GIT_AUTHOR_DATE: when, GIT_COMMITTER_DATE: when },
+      });
+    git(root, 'add', '.');
+    commitAt('2026-09-10T00:00:00Z', 'meaning');
+    writeFileSync(join(root, 'src', 'pay.ts'), 'export const pay = 2;\n');
+    git(root, 'add', '.');
+    commitAt('2026-09-12T00:00:00Z', 'code moved');
+
+    const result = collectPathLastChanges({
+      repoRoot: root,
+      vaultRoot: vault,
+      repoPaths: ['src/pay.ts', 'src', 'src/gone.ts', '../outside.txt', '--flag'],
+      vaultPaths: ['pay.md', 'never.md'],
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.changes.has('../outside.txt'), false);
+    assert.equal(result.changes.has('--flag'), false);
+    const pay = result.changes.get('src/pay.ts');
+    const doc = result.changes.get('pay.md');
+    assert.equal(pay.exists, true);
+    assert.equal(doc.exists, true);
+    assert.ok(Date.parse(pay.lastChangedAt) > Date.parse(doc.lastChangedAt));
+    assert.equal(result.changes.get('src').lastChangedAt, pay.lastChangedAt);
+    assert.deepEqual(result.changes.get('src/gone.ts'), { exists: false, lastChangedAt: null });
+    assert.deepEqual(result.changes.get('never.md'), { exists: false, lastChangedAt: null });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

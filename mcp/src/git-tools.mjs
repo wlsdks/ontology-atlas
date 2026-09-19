@@ -571,3 +571,78 @@ function splitNodeRevision(text) {
   }
   return { body, children: [...new Set(children)] };
 }
+
+/**
+ * When each path last changed, in one bounded walk. `repoPaths` are repository-relative
+ * (`path:` values); `vaultPaths` are vault-relative document paths resolved through the
+ * vault's own place in the repository. A path is an address, never an option or a way
+ * out: anything that could climb the tree or look like a flag is dropped, not escaped.
+ * Mirrors `git_paths_last_change` in the desktop app so the agent and the screen read
+ * the same fact from the same walk.
+ */
+export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], vaultPaths = [], maxCommits = 3000 }) {
+  const scope = resolveVaultGitScope({ repoRoot, vaultRoot, operation: 'path_last_changes' });
+  if (!scope.ok) return scope;
+  const { gitRoot, vaultRelative } = scope;
+  const prefix = vaultRelative === '.' ? '' : `${vaultRelative}/`;
+  const wanted = [];
+  const seen = new Set();
+  const push = (key, resolved) => {
+    if (wanted.length >= 512 || seen.has(key)) return;
+    seen.add(key);
+    wanted.push({ key, resolved });
+  };
+  for (const raw of repoPaths) {
+    const clean = safeRelativePath(raw);
+    if (clean) push(raw, clean);
+  }
+  for (const raw of vaultPaths) {
+    const clean = safeRelativePath(raw);
+    if (clean) push(raw, `${prefix}${clean}`);
+  }
+  const changes = new Map();
+  if (wanted.length === 0) return { operation: 'path_last_changes', ok: true, repoRoot: gitRoot, changes };
+  const REC = '\x1e';
+  const log = git(
+    gitRoot,
+    ['log', `--max-count=${Math.max(1, Math.min(maxCommits, 20000))}`, `--pretty=format:${REC}%cI`, '--name-only', '--no-renames', '--', ...wanted.map((w) => w.resolved)],
+    { allowFailure: true },
+  );
+  const last = new Map();
+  if (log.ok) {
+    let currentTime = null;
+    for (const rawLine of log.stdout.split('\n')) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      if (line.startsWith(REC)) {
+        currentTime = line.slice(1).trim();
+        continue;
+      }
+      if (!currentTime) continue;
+      for (const { key, resolved } of wanted) {
+        if (last.has(key)) continue;
+        if (line === resolved || line.startsWith(`${resolved}/`)) last.set(key, currentTime);
+      }
+    }
+  }
+  for (const { key, resolved } of wanted) {
+    changes.set(key, { exists: existsSync(resolve(gitRoot, resolved)), lastChangedAt: last.get(key) ?? null });
+  }
+  return { operation: 'path_last_changes', ok: true, repoRoot: gitRoot, changes };
+}
+
+function safeRelativePath(raw) {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim().replace(/\/+$/, '');
+  if (
+    !trimmed ||
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('-') ||
+    trimmed.includes('\\') ||
+    trimmed.includes('\0') ||
+    trimmed.split('/').some((part) => part === '..')
+  ) {
+    return null;
+  }
+  return trimmed;
+}
