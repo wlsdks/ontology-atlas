@@ -192,25 +192,37 @@ export function DocumentChangeReader({
    * effect never runs and the fallback is drawn from the first render.
    */
   const [whole, setWhole] = useState<AtlasGitDiffFile | null | undefined>(undefined);
+  /** The document is past the command's ceiling, so its hunks are what there is to draw. */
+  const [tooLarge, setTooLarge] = useState(false);
   useEffect(() => {
     if (!vaultPath) return;
     let cancelled = false;
-    void gitDocumentDiff(vaultPath, entry.path, source)
+    void gitDocumentDiff(vaultPath, entry.path, source, entry.renamedFrom)
       .then((result) => {
         if (cancelled) return;
-        const parsed = result ? parseUnifiedDiff(result.diff)[0] ?? null : null;
+        setTooLarge(result?.tooLarge ?? false);
+        const parsed = result && !result.tooLarge ? parseUnifiedDiff(result.diff)[0] ?? null : null;
         setWhole(parsed);
       })
       .catch(() => {
-        if (!cancelled) setWhole(null);
+        if (!cancelled) {
+          setTooLarge(false);
+          setWhole(null);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [vaultPath, entry.path, source]);
+  }, [vaultPath, entry.path, entry.renamedFrom, source]);
 
   const file = whole ?? fallback;
-  const partial = (whole === null || !vaultPath) && fallback !== null;
+  /*
+   * Two different sentences, because they are two different facts: the document is longer
+   * than one pane may carry, or this screen could not read it whole at all (the web, a
+   * refused read). Either way what is drawn is the same hunks, and the header says which.
+   */
+  const longDocument = tooLarge && fallback !== null;
+  const partial = !longDocument && (whole === null || !vaultPath) && fallback !== null;
   const { frontmatter, body, lines, frontmatterChanged, firstHeadingIndex } = useMemo(() => {
     const all = file?.lines ?? [];
     const split = splitFrontmatter(all);
@@ -253,7 +265,7 @@ export function DocumentChangeReader({
             <span className="text-[color:var(--color-success-text-a90)]">{`+${added}`}</span>{" "}
             <span className="text-[color:var(--color-danger-text)]">{`−${removed}`}</span>
           </span>
-          {partial ? <span>{t("docReaderPartial")}</span> : null}
+          {longDocument ? <span>{t("docReaderLong")}</span> : partial ? <span>{t("docReaderPartial")}</span> : null}
         </p>
       </header>
 

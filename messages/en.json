@@ -3688,6 +3688,7 @@
     "docReaderDeleted": "Deleted document",
     "docReaderRenamed": "Renamed document",
     "docReaderPartial": "The whole document could not be read; only the changed part is shown",
+    "docReaderLong": "The document is long, so only the changed part is shown",
     "docReaderInfoBoxUnchanged": "Front matter · no lines changed"
   },
   "agentFiles": {

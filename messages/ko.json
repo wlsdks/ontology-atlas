@@ -3688,6 +3688,7 @@
     "docReaderDeleted": "지운 문서",
     "docReaderRenamed": "이름 바꾼 문서",
     "docReaderPartial": "문서 전체를 읽지 못해 바뀐 부분만 보여요",
+    "docReaderLong": "문서가 길어서 바뀐 부분만 보여요",
     "docReaderInfoBoxUnchanged": "정보칸 · 바뀐 줄 없음"
   },
   "agentFiles": {

@@ -133,6 +133,12 @@ function installDesktopGit({
   // reader's language, and only the screen already holds `ahead`/`behind`.
   fetch = { ok: true, upstream: "origin/main", ahead: 2, behind: 0, summary: "remote-diverged" },
   pull = { ok: true, upstream: "origin/main", summary: "1개 받아옴" },
+  /**
+   * The whole document at a point in time. `null` stands for "this screen cannot read it
+   * whole", which is what the web and an older app answer, and the reader then draws the
+   * hunks it already has.
+   */
+  documentDiff = null as unknown,
   restore = (args: Record<string, unknown>) => ({
     restored: true,
     path: args.relativePath,
@@ -150,6 +156,7 @@ function installDesktopGit({
   fetch?: unknown;
   pull?: unknown;
   restore?: unknown;
+  documentDiff?: unknown;
 } = {}) {
   tauriApiMock.runtimeAvailable = true;
   tauriApiMock.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) => {
@@ -168,6 +175,8 @@ function installDesktopGit({
     if (command === "git_pull") return pull;
     if (command === "git_restore_file")
       return typeof restore === "function" ? restore(args ?? {}) : restore;
+    if (command === "git_document_diff")
+      return typeof documentDiff === "function" ? documentDiff(args ?? {}) : documentDiff;
     throw new Error(`unexpected command: ${command}`);
   });
 }
@@ -1694,5 +1703,59 @@ describe("AtlasGitPanel — 읽기 창은 한 번에 한 문서다", () => {
     fireEvent.click(chips.find((c) => c.getAttribute("title")?.includes("bar"))!);
     await waitFor(() => expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/elements/bar.md"));
     expect(screen.getAllByTestId("atlas-git-diff-pre")).toHaveLength(1);
+  });
+});
+
+describe("AtlasGitPanel — 읽기 창은 그리는 것을 사실대로 말한다", () => {
+  /*
+   * Two facts the reader used to get wrong. A long document has no ceiling: measured
+   * 2026-09-19, a 6,009-line document produced a 6,014-line diff (~600 KB over IPC, one DOM
+   * node per line) whose hunks were ten lines. And a renamed document asked for by its new
+   * name alone comes back from git as a brand-new file, every line "added", although its
+   * bytes never changed.
+   */
+  it("문서가 상한을 넘으면 훅 조각을 그리고 길어서 그렇다고 말한다", async () => {
+    installDesktopGit({
+      documentDiff: () => ({ path: "docs/elements/bar.md", diff: "", untracked: false, tooLarge: true }),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const reader = await screen.findByTestId("atlas-git-diff-pre");
+    await waitFor(() => expect(reader).toHaveTextContent("문서가 길어서"));
+    // The hunks are still drawn — they always hold the changed lines.
+    expect(reader).toHaveTextContent("new line");
+    expect(reader).not.toHaveTextContent("문서 전체를 읽지 못해");
+  });
+
+  it("이름 바뀐 문서는 옛 이름과 함께 물어본다 — 전부 추가로 그리지 않도록", async () => {
+    installDesktopGit({
+      diff: {
+        count: 1,
+        files: [
+          {
+            path: "docs/elements/baz.md",
+            status: "renamed",
+            kind: "element",
+            slug: "elements/baz",
+            renamedFrom: "docs/elements/bar.md",
+          },
+        ],
+        diff: "",
+      },
+      documentDiff: (args: Record<string, unknown>) => ({
+        path: args.relativePath,
+        diff: `diff --git a/${String(args.relativePath)} b/${String(args.relativePath)}\n@@ -1,1 +1,1 @@\n unchanged body line\n`,
+        untracked: false,
+        tooLarge: false,
+      }),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-pending-row"));
+    await screen.findByTestId("atlas-git-diff-pre");
+    await waitFor(() => {
+      const asked = tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_document_diff");
+      expect(asked.length).toBeGreaterThan(0);
+      expect((asked[asked.length - 1][1] as { previousPath?: string }).previousPath).toBe("docs/elements/bar.md");
+    });
+    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("unchanged body line");
   });
 });

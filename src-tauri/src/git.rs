@@ -1378,6 +1378,8 @@ pub struct GitDocumentDiffResult {
     diff: String,
     /// `true` when git has never seen the document: the diff then lists every line as added.
     untracked: bool,
+    /// `true` when the document is past `MAX_DOCUMENT_DIFF_LINES`; `diff` is then empty.
+    too_large: bool,
 }
 
 /// One document's changes with the whole document around them.
@@ -1386,16 +1388,45 @@ pub struct GitDocumentDiffResult {
 /// `source` a hash: what that commit did to the document, against its parent.
 /// The reader on the Record screen draws the document as prose and marks the changed lines;
 /// it needs every line, so the context is the file length (`-U` with a large count).
+/// How many diff lines one document may send across IPC.
+///
+/// The reader draws one element per line with no windowing, and a whole-document read is
+/// unbounded by nature: a 6,009-line document measured on 2026-09-19 produced a 6,014-line
+/// diff (~600 KB) whose hunks were ten lines. Past this ceiling the command sends nothing and
+/// says so, and the screen draws the hunks it already has — they always hold the changed
+/// lines, while the first 3,000 lines of a long document may hold none of them.
+const MAX_DOCUMENT_DIFF_LINES: usize = 3_000;
+
+/// Applies the ceiling. A capped answer carries no diff at all rather than a prefix: half a
+/// document read as the whole one is a lie the screen cannot see through.
+fn cap_document_diff(path: String, diff: String, untracked: bool) -> GitDocumentDiffResult {
+    if diff.lines().count() > MAX_DOCUMENT_DIFF_LINES {
+        return GitDocumentDiffResult { path, diff: String::new(), untracked, too_large: true };
+    }
+    GitDocumentDiffResult { path, diff, untracked, too_large: false }
+}
+
 #[tauri::command]
 pub fn git_document_diff(
     vault_path: String,
     relative_path: String,
     source: Option<String>,
+    previous_path: Option<String>,
 ) -> Result<GitDocumentDiffResult, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
     let vault_spec = vault_pathspec(&repo_root, &vault_dir);
     let repo_rel = vault_document_path(&relative_path, &vault_spec)?;
+    /*
+     * The name the document had, when it has just been renamed. Both names go into the
+     * pathspec so git can pair them: with only the new one, git sees a path that did not
+     * exist and reports **every line as added** — a rename drawn as a brand-new document
+     * (measured 2026-09-19: 45 lines "added" for a file whose bytes never changed).
+     */
+    let previous_rel = match previous_path.as_deref().map(str::trim).filter(|p| !p.is_empty()) {
+        Some(previous) => Some(vault_document_path(previous, &vault_spec)?),
+        None => None,
+    };
     const WHOLE: &str = "-U1000000";
 
     if let Some(hash) = source.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
@@ -1407,7 +1438,7 @@ pub fn git_document_diff(
         if !out.success {
             return Err(coded("restore-source-missing", ""));
         }
-        return Ok(GitDocumentDiffResult { path: repo_rel, diff: out.stdout, untracked: false });
+        return Ok(cap_document_diff(repo_rel, out.stdout, false));
     }
 
     let rows = get_porcelain_status(&repo_root, &repo_rel)?;
@@ -1423,17 +1454,40 @@ pub fn git_document_diff(
             diff.push_str(line);
             diff.push('\n');
         }
-        return Ok(GitDocumentDiffResult { path: repo_rel, diff, untracked: true });
+        return Ok(cap_document_diff(repo_rel, diff, true));
     }
-    let out = run_git(&repo_root, &["diff", WHOLE, "--no-color", "HEAD", "--", &repo_rel])?;
+    let mut args: Vec<&str> = vec!["diff", WHOLE, "--no-color", "HEAD", "--", &repo_rel];
+    if let Some(previous) = previous_rel.as_deref() {
+        args.push(previous);
+    }
+    let out = run_git(&repo_root, &args)?;
     let diff = if out.success {
         out.stdout
     } else {
-        run_git(&repo_root, &["diff", WHOLE, "--no-color", "--", &repo_rel])
-            .map(|o| o.stdout)
-            .unwrap_or_default()
+        let mut staged: Vec<&str> = vec!["diff", WHOLE, "--no-color", "--", &repo_rel];
+        if let Some(previous) = previous_rel.as_deref() {
+            staged.push(previous);
+        }
+        run_git(&repo_root, &staged).map(|o| o.stdout).unwrap_or_default()
     };
-    Ok(GitDocumentDiffResult { path: repo_rel, diff, untracked: false })
+    /*
+     * A pure rename has no content lines at all (`similarity index 100%`), so there would be
+     * nothing for the reader to draw and the screen would fall back to "no earlier content to
+     * compare" — which is the sentence for a new document, not a renamed one. The document
+     * itself is the answer here: its lines, unmarked, under a header that already says the
+     * name changed.
+     */
+    if previous_rel.is_some() && !diff.lines().any(|line| line.starts_with('+') || line.starts_with('-')) {
+        let raw = fs::read_to_string(repo_root.join(&repo_rel)).unwrap_or_default();
+        let mut context = format!("diff --git a/{repo_rel} b/{repo_rel}\n@@ -1,1 +1,1 @@\n");
+        for line in raw.lines() {
+            context.push(' ');
+            context.push_str(line);
+            context.push('\n');
+        }
+        return Ok(cap_document_diff(repo_rel, context, false));
+    }
+    Ok(cap_document_diff(repo_rel, diff, false))
 }
 
 // ── restore one document ────────────────────────────────────────────────────
@@ -2021,6 +2075,19 @@ mod tests {
     fn validate_vault_dir_rejects_missing_path() {
         let err = validate_vault_dir("/path/does/not/exist/atlas").unwrap_err();
         assert!(!err.is_empty());
+    }
+
+    #[test]
+    fn a_document_past_the_ceiling_sends_no_diff_at_all() {
+        let short = cap_document_diff("a.md".into(), "+one\n+two\n".into(), false);
+        assert!(!short.too_large);
+        assert_eq!(short.diff, "+one\n+two\n");
+
+        let long: String = (0..MAX_DOCUMENT_DIFF_LINES + 1).map(|i| format!(" line {i}\n")).collect();
+        let capped = cap_document_diff("a.md".into(), long, false);
+        assert!(capped.too_large);
+        assert_eq!(capped.diff, "");
+        assert_eq!(capped.path, "a.md");
     }
 
     #[test]
