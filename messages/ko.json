@@ -4298,7 +4298,8 @@
       "running": "진행 중",
       "done": "완료",
       "failed": "실패",
-      "cancelled": "중지됨"
+      "cancelled": "중지됨",
+      "unfinished": "끝나지 않음"
     },
     "workGroup": "작업 과정 · {count}단계",
     "workGroupActive": "작업 중 · {count}단계",
