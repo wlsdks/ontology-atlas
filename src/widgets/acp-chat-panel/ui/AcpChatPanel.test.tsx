@@ -1057,8 +1057,11 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await waitFor(() => expect(screen.getByTestId('acp-permission-allow')).toBeInTheDocument());
     expect(answerFor(292)).toBeUndefined();
     expect(answerFor(291)).toEqual({ outcome: 'selected', optionId: 'reject' });
-    fireEvent.click(screen.getByTestId('task-review-depth-details'));
-    expect(screen.getByTestId('acp-ontology-change-review')).toHaveTextContent('Refund only after capture.');
+    // The review card's own controls arrive with the card, not with the permission buttons.
+    fireEvent.click(await screen.findByTestId('task-review-depth-details'));
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-ontology-change-review')).toHaveTextContent('Refund only after capture.'),
+    );
     expect(screen.queryByTestId('task-review-meaning-accept')).not.toBeInTheDocument();
   });
 
