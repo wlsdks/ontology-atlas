@@ -10,6 +10,8 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { usePanelPresence } from "@/shared/lib/use-presence";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, Chip, Surface, Tooltip } from "@/shared/ui";
 import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader } from "@/widgets/acp-chat-panel";
+
+import { LIBRARY_HANDOFF_APPENDIX } from "../../lib/library-handoff";
 import type { ComponentProps } from "react";
 
 type AcpChatPanelProps = ComponentProps<typeof AcpChatPanel>;
@@ -97,6 +99,7 @@ export function LibraryAgentDock({
   onTerminalToolObservation,
   onFileAnswer = null,
   filingAnswer = false,
+  fileAnswerNote = null,
   noticeActions = null,
   chatWidth,
 }: {
@@ -125,6 +128,12 @@ export function LibraryAgentDock({
   onFileAnswer?: (() => void) | null;
   /** Keeps the offer visible while its create-only write is pending. */
   filingAnswer?: boolean;
+  /**
+   * Why the last press on the save chip filed nothing, kept under the chip until the next
+   * answer. The refusal was a toast alone (2026-09-19, installed app): it left in a few
+   * seconds, and a person who looked away saw a chip that did nothing.
+   */
+  fileAnswerNote?: string | null;
   /** The doors an `auto-allowed` notice carries; see `AcpChatPanelProps.noticeActions`. */
   noticeActions?: AcpChatPanelProps["noticeActions"];
   /**
@@ -306,24 +315,36 @@ export function LibraryAgentDock({
             onTerminalToolObservation={onTerminalToolObservation}
             knownSlugs={knownSlugs}
             noticeActions={noticeActions}
+            systemPromptAppendix={LIBRARY_HANDOFF_APPENDIX}
             beforeComposer={
               onFileAnswer ? (
                 // The LLM Wiki pattern's "answers can be filed back", standing under the
                 // answer it files rather than in the index column (owner, 2026-09-07).
-                <Tooltip content={tLibrary("wiki.fileAnswerTooltip")}>
-                  <Chip
-                    data-testid="library-file-answer"
-                    onClick={onFileAnswer}
-                    disabled={filingAnswer}
-                    aria-busy={filingAnswer || undefined}
-                    tone="secondary"
-                    hoverInk="strong"
-                    aria-label={tLibrary("wiki.fileAnswerTooltip")}
-                  >
-                    <FilePlus2 size={ICON_SIZE.sm} aria-hidden />
-                    <span>{tLibrary(filingAnswer ? "localCompile.applying" : "wiki.fileAnswer")}</span>
-                  </Chip>
-                </Tooltip>
+                <div className="flex flex-col items-start gap-1.5">
+                  <Tooltip content={tLibrary("wiki.fileAnswerTooltip")}>
+                    <Chip
+                      data-testid="library-file-answer"
+                      onClick={onFileAnswer}
+                      disabled={filingAnswer}
+                      aria-busy={filingAnswer || undefined}
+                      tone="secondary"
+                      hoverInk="strong"
+                      aria-label={tLibrary("wiki.fileAnswerTooltip")}
+                    >
+                      <FilePlus2 size={ICON_SIZE.sm} aria-hidden />
+                      <span>{tLibrary(filingAnswer ? "localCompile.applying" : "wiki.fileAnswer")}</span>
+                    </Chip>
+                  </Tooltip>
+                  {fileAnswerNote ? (
+                    <p
+                      data-testid="library-file-answer-note"
+                      role="status"
+                      className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+                    >
+                      {fileAnswerNote}
+                    </p>
+                  ) : null}
+                </div>
               ) : null
             }
           />
