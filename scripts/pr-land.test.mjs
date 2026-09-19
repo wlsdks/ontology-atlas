@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import {
@@ -308,8 +309,9 @@ describe('the landing lock', () => {
   it('never lets a failed read accuse main of having no gate', () => {
     const refused = { failed: true, output: '{"message":"API rate limit exceeded for user ID 1"}' };
     assert.equal(protectionFrom(readOutcome(refused)).contexts, null);
-    // A 404 is a real answer here — main genuinely has no required-checks rule — and stays one.
-    assert.deepEqual(protectionFrom(readOutcome({ failed: true, output: 'gh: Not Found (HTTP 404)' })).contexts, []);
+    // Nor may a 404: this endpoint answers a caller without admin rights much as it answers a
+    // branch with no rule, and only one of those two deserves the accusation.
+    assert.equal(protectionFrom(readOutcome({ failed: true, output: 'gh: Not Found (HTTP 404)' })).contexts, null);
     assert.deepEqual(protectionFrom(readOutcome('{"contexts":["Unit · Contract"]}')).contexts, ['Unit · Contract']);
   });
 
@@ -319,6 +321,26 @@ describe('the landing lock', () => {
     assert.equal(distanceFrom(readOutcome({ failed: true, output: 'gh: Not Found (HTTP 404)' })).behindBy, null);
     assert.equal(distanceFrom(readOutcome('{"behind_by":3}')).behindBy, 3);
     assert.equal(distanceFrom(readOutcome('{"behind_by":0}')).behindBy, 0);
+  });
+
+  /*
+   * The states of a read are all single-call facts; this one is about the holder across polls, and
+   * no single-call test reaches it. A `continue` that lands above the refresh means the holder
+   * spends a poll without renewing, `acquiredAt` stops moving, the lease expires under a live
+   * holder, and the next lander force-takes the lock — the defect this file is about, by a quieter
+   * road. Caught in review on the first version of that guard, where the new compare-read exit sat
+   * above the refresh and only a holder could reach it.
+   */
+  it('renews the lease before any poll a holder can leave early', () => {
+    const source = readFileSync(new URL('./pr-land.mjs', import.meta.url), 'utf8');
+    const loop = source.slice(source.indexOf('while (Date.now() < deadline) {'));
+    const refresh = loop.indexOf('if (held) refreshLock(');
+    const firstExit = loop.indexOf('continue;');
+    assert.ok(refresh !== -1, 'the poll no longer refreshes the lease it holds');
+    assert.ok(
+      refresh < firstExit,
+      'a poll can end before the holder renews its lease; move the refresh above every early exit',
+    );
   });
 
   it('honours a lease the holder wrote, not only the default', () => {

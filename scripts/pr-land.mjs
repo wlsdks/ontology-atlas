@@ -775,9 +775,23 @@ function readPr(number) {
  */
 export function protectionFrom(read) {
   if (read.failure) return { contexts: null, failure: read.failure };
-  // A 404 here is a real answer: main has no required-checks rule at all. Only a read that never
-  // happened is unknown.
-  return { contexts: Array.isArray(read.value?.contexts) ? read.value.contexts : [], failure: null };
+  /*
+   * Unlike the lock ref, a 404 here is **not** a real answer, and the difference is ownership. The
+   * lock ref belongs to this script — it creates and deletes it — so「no ref」is a fact the script
+   * itself authored. Branch protection belongs to the repository, and its endpoints answer a
+   * caller without admin rights much as they answer a branch with no rule. A scope change, a
+   * re-auth or a different host would therefore make this script print 「main declares no required
+   * status checks」as a measurement, which is the one sentence here that invites a person to go
+   * and weaken branch protection. Both readings refuse to land, so insisting on a body costs
+   * nothing and removes the misleading one.
+   */
+  if (!read.value) {
+    return {
+      contexts: null,
+      failure: { reason: 'unreadable', detail: "main's protection returned no body; 「no rule」 and 「not allowed to look」 read alike here" },
+    };
+  }
+  return { contexts: Array.isArray(read.value.contexts) ? read.value.contexts : [], failure: null };
 }
 
 function readRequiredContexts(slug) {
@@ -1288,6 +1302,16 @@ export function runPrLand(argv, io = console) {
   while (Date.now() < deadline) {
     const { payload, unreadable } = readLockPayload(slug);
     const lock = classifyLock({ payload, unreadable, nowMs: Date.now() });
+    /*
+     * ⚠️ **A holder renews its lease before it decides anything.** Every `continue` below this
+     * line is a poll in which the holder does nothing else, and a poll that skips the refresh
+     * stops `acquiredAt` moving, ages the lock past its lease, and invites the next lander to
+     * force-take a lock somebody is still holding. That is the same two-landers-on-one-lock
+     * outcome this file is otherwise about, reached by a quieter road, so the refresh goes first
+     * and unconditionally.
+     */
+    if (held) refreshLock(slug, lockBody({ pr: number, token }));
+
     const distance = held ? readBehindBy(slug, pr.headRefOid) : { behindBy: 0, failure: null };
     if (distance.failure) {
       // Guessing 0 here would skip pouring main in and spend the one CI run on an unchecked base.
@@ -1375,8 +1399,6 @@ export function runPrLand(argv, io = console) {
       stepOutOfLine();
       continue;
     }
-
-    refreshLock(slug, lockBody({ pr: number, token }));
 
     if (step.action === 'merge-main') {
       log(`main moved by ${step.behindBy} commit(s); merging it into ${pr.headRefName} while this is still a draft`);
