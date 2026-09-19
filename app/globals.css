@@ -3512,6 +3512,14 @@
     --git-ego-ellipse-y: 0.8;
     --map-node-fill-dim: #1e1e24;
     --map-node-stroke-dim: #6a6a74;
+    /* The name of a domain the ego focus dimmed. It used to go to 0 with the
+       disc's colour, which left three of nine domains anonymous grey chips the
+       moment one was selected (measured 2026-09-19); a person deciding where
+       to go next had to hover to learn which chip was which. The value sits
+       with the dim stroke: readable as context, never competing with the
+       selected node's own name. Children stay at 0 — they were unnamed before
+       the selection too. */
+    --map-ego-dim-label-alpha: 0.42;
     /* Recent change spotlight rest alpha (council design 2026-07-23). product reason: when the "changes in last N days" lens is ON, sink nodes/edges outside the window to this alpha so change nodes (fresh channel) win by contrast — not "glowing" but "sinking" (prohibited glow/pulse per charter, fulfilling owner's 'at a glance' desire). Lighter than ego dim(0.15): in the full-map lens, remaining structure must remain readable as context (ego is local focus, so sinks deeper). state/layer:
        map lens. Responsive: value itself is width-agnostic (alpha scalar). Marker: lens state is deterministically reproducible via URL `?recent=`. */
     --map-spotlight-rest-alpha: 0.65;
@@ -4166,6 +4174,20 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
        of the chrome system. Maintain single source via --chrome-inset reference. */
     --topology-index-inset: var(--chrome-inset);
     --topology-index-top: 84px;
+  }
+
+  /* A short window does not keep tall reservations (2026-09-19). The lanes
+     above were sized for a tall desktop window; on the 14-inch MacBook the
+     browser gives the map 806 px and a 1024x768 window 764, and a third of
+     that went to bands holding nothing that tall — the spine ring filled 64 %
+     and 51 % of the height. Below 880 px the top keeps the tool lane plus one
+     chip row and the bottom the readout plus one name; the camera and the
+     label cull read the same numbers, refreshed on every viewport commit. */
+  @media (max-height: 880px) {
+    :root {
+      --map-safe-inset-top: 112;
+      --map-safe-inset-bottom: 72;
+    }
   }
 
   html[data-topology-index="collapsed"] {

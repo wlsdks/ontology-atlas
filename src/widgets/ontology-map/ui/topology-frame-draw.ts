@@ -85,7 +85,7 @@ import {
   type ReservedBox,
   type SafeRect,
 } from "../render/label-layout";
-import { draw as nodeShapesDraw, drawGalaxyNodeStar, drawNodeStar } from "../render/node-shapes";
+import { draw as nodeShapesDraw, drawGalaxyNodeStar, drawNodeStar, SPOTLIGHT_RING_OFFSET } from "../render/node-shapes";
 import { clusterChipOccupancyRect, drawClusterChip, clusterChipScale, type ClusterBarLabels } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
@@ -2594,7 +2594,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // reserve the ring clearance too, because the selection ring and expand
     // badge sit just outside the disc.
     const attended = egoState === "center" || egoState === "neighbor" || node.id === hoveredNodeId;
-    const reservedHalf = attended ? screenRadius + EXPANDED_AURA_RING_OFFSET : screenRadius + 1;
+    // A changed node wears the recent-changes ring outside its disc; reserve it
+    // too, or a neighbour's name is laid across the ring (2026-09-19).
+    const wearsSpotlightRing = recentSpotlightActive && spotlightIds !== null && spotlightIds.has(node.id);
+    const reservedHalf = attended
+      ? screenRadius + EXPANDED_AURA_RING_OFFSET
+      : screenRadius + (wearsSpotlightRing ? SPOTLIGHT_RING_OFFSET + 1 : 1);
     nodeDiscReservations.push({
       ownerId: node.id,
       priority: NODE_DISC_LABEL_PRIORITY,
@@ -3477,6 +3482,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       kind: node.kind,
       egoState,
       isHovered,
+      dimLabelAlpha: tokens.egoDimLabelAlpha,
       revealAlpha: labelRevealAlpha,
     });
     // A saved set is an explicit reading scope. Its names use the existing
@@ -3790,6 +3796,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         labelDomain: tokens.labelDomain,
         labelCapability: tokens.labelCapability,
         labelElement: tokens.labelElement,
+        egoDimLabelAlpha: tokens.egoDimLabelAlpha,
         amberHub: tokens.amberHub,
         labelHalo: tokens.canvasBgNear,
       },

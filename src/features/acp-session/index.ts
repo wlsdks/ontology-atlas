@@ -21,7 +21,7 @@ export { claudeLoginRepairCommand } from "./model/claude-login-repair";
 export { modeCopyKey } from "./model/mode-copy";
 export { withoutErrorEcho } from "./model/error-echo";
 export { linkSlugs } from "./model/link-slugs";
-export { readToolFallbackTarget, readToolTargets } from "./model/tool-targets";
+export { readToolFallbackTarget, readToolPathArgument, readToolTargets } from "./model/tool-targets";
 export { readToolOutcome } from "./model/tool-outcome";
 export { parseAtlasToolCall } from './model/atlas-tool-call';
 export { deriveAcpMapIntent } from "./model/map-intent";
