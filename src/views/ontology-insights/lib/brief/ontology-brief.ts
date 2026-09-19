@@ -26,6 +26,8 @@ interface OntologyBriefDoc {
 interface OntologyEvidenceStates {
   current: ReadonlySet<string>;
   stale: ReadonlySet<string>;
+  /** Evidence paths no longer on disk — the meaning points at nothing. */
+  missing: ReadonlySet<string>;
 }
 
 export interface OntologyBriefInput {
@@ -50,19 +52,24 @@ export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
   let current = 0;
   let stale = 0;
   let unknown = 0;
+  let missing = 0;
   let agentUnreviewed = 0;
   let changedSince = 0;
   for (const node of concepts) {
     const doc = node.docSlug ? input.docs.get(node.docSlug) : undefined;
     if (isAgentWritten(node.createdBy) && !doc?.reviewedBy) agentUnreviewed += 1;
     if (doc && isAfter(doc.updatedAt, input.anchorMs)) changedSince += 1;
-    if (input.evidence?.stale.has(node.id)) stale += 1;
+    if (input.evidence?.missing.has(node.id)) {
+      missing += 1;
+      stale += 1;
+    } else if (input.evidence?.stale.has(node.id)) stale += 1;
     else if (input.evidence?.current.has(node.id)) current += 1;
     else unknown += 1;
   }
 
   const lines: BriefLine[] = [
-    { id: 'ontology-evidence-moved', count: input.evidence ? stale : 0, state: 'stale' },
+    { id: 'ontology-evidence-moved', count: input.evidence ? stale - missing : 0, state: 'stale' },
+    { id: 'ontology-evidence-missing', count: missing, state: 'stale' },
     // Without the Git bridge every concept is unchecked; in the app only pathless ones remain.
     { id: 'ontology-evidence-unchecked', count: unknown, state: 'unknown' },
     { id: 'ontology-agent-unreviewed', count: agentUnreviewed, state: 'unknown' },

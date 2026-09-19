@@ -15,6 +15,7 @@ import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
  */
 const LINE_HREF: Record<string, string> = {
   'ontology-evidence-moved': '/ontology/insights/?tab=growth',
+  'ontology-evidence-missing': '/ontology/insights/?tab=do-next',
   'ontology-evidence-unchecked': '/download/',
   'ontology-agent-unreviewed': '/topology/',
   'ontology-changed-since': '/ontology/insights/?tab=growth',

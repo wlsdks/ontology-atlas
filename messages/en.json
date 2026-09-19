@@ -1579,6 +1579,7 @@
         "open": "Open",
         "line": {
           "ontology-evidence-moved": "{count, plural, one {# concept whose} other {# concepts whose}} meaning stands while the code under it moved",
+          "ontology-evidence-missing": "{count, plural, one {# concept} other {# concepts}} whose cited code file is gone",
           "ontology-evidence-unchecked": "{count, plural, one {# concept} other {# concepts}} whose code could not be checked here",
           "ontology-agent-unreviewed": "{count, plural, one {# concept} other {# concepts}} an agent wrote that no person has looked at",
           "ontology-changed-since": "{count, plural, one {# concept} other {# concepts}} whose document changed since",

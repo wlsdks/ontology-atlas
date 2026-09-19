@@ -1439,7 +1439,11 @@ fn identity_difference(current: &DocumentIdentity, source: &DocumentIdentity) ->
 /// Anything else is refused before git sees it. Returns the normalized repo-relative path.
 fn vault_document_path(relative_path: &str, vault_spec: &str) -> Result<String, String> {
     let trimmed = relative_path.trim();
-    if trimmed.is_empty() || trimmed.starts_with('/') || trimmed.contains('\\') || trimmed.contains('\0') {
+    if trimmed.is_empty()
+        || trimmed.starts_with('/')
+        || trimmed.contains('\\')
+        || trimmed.contains('\0')
+    {
         return Err(coded("restore-path-invalid", ""));
     }
     let mut parts = Vec::new();
@@ -1463,9 +1467,8 @@ fn validate_restore_source(source: &str) -> Result<String, String> {
     if trimmed == "HEAD" {
         return Ok(trimmed.into());
     }
-    let hex = trimmed.len() >= 7
-        && trimmed.len() <= 40
-        && trimmed.chars().all(|c| c.is_ascii_hexdigit());
+    let hex =
+        trimmed.len() >= 7 && trimmed.len() <= 40 && trimmed.chars().all(|c| c.is_ascii_hexdigit());
     if hex {
         Ok(trimmed.to_ascii_lowercase())
     } else {
@@ -1516,7 +1519,9 @@ pub fn git_restore_file(
         return Err(coded("restore-source-missing", ""));
     }
     if let Ok(current) = fs::read_to_string(repo_root.join(&repo_rel)) {
-        if let Some(difference) = identity_difference(&read_identity(&current), &read_identity(&show.stdout)) {
+        if let Some(difference) =
+            identity_difference(&read_identity(&current), &read_identity(&show.stdout))
+        {
             return Err(coded("restore-identity-mismatch", difference));
         }
     }
@@ -1704,6 +1709,142 @@ pub fn vault_node_revisions(
         }
     }
     Ok(revisions)
+}
+
+/// When one repository path last changed, for the analysis brief's evidence check.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PathLastChange {
+    /// The key the caller passed, unchanged, so it can be matched back without guessing.
+    path: String,
+    /// Whether the path exists on disk now — a file or a folder that moved reads `false`.
+    exists: bool,
+    /// ISO time of the newest commit in the walk window touching the path or anything under
+    /// it. `None` when no commit in the window did: uncommitted, or older than the window.
+    last_changed_at: Option<String>,
+}
+
+/// One screen paint must not spawn one process per concept. The whole answer is one
+/// `git log --name-only` walk over a bounded window, matched in memory.
+const MAX_EVIDENCE_PATHS: usize = 512;
+const EVIDENCE_WALK_COMMITS: &str = "--max-count=3000";
+
+/// Last change per path. `repo_paths` are relative to the repository root — the `path:`
+/// values the ontology records for its concepts. `vault_paths` are relative to the vault
+/// folder — the concept documents themselves — and are resolved through the vault's own
+/// pathspec so the caller never needs to know where the vault sits inside the repository.
+///
+/// A path is an address, never a way out: anything that could climb the tree, reach an
+/// absolute path, or look like an option is dropped rather than escaped, because every
+/// value here reaches a `git log` argument.
+#[tauri::command]
+pub fn git_paths_last_change(
+    vault_path: String,
+    repo_paths: Vec<String>,
+    vault_paths: Vec<String>,
+) -> Result<Vec<PathLastChange>, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let pathspec = vault_pathspec(&repo_root, &vault_dir);
+    let prefix = if pathspec == "." {
+        String::new()
+    } else {
+        format!("{pathspec}/")
+    };
+
+    // (key as the caller wrote it, repository-relative path git is asked about)
+    let mut wanted: Vec<(String, String)> = Vec::new();
+    let mut push = |key: &str, resolved: String| {
+        if wanted.len() >= MAX_EVIDENCE_PATHS {
+            return;
+        }
+        if wanted.iter().any(|(k, _)| k == key) {
+            return;
+        }
+        wanted.push((key.to_string(), resolved));
+    };
+    for raw in &repo_paths {
+        if let Some(clean) = safe_relative_path(raw) {
+            push(raw, clean);
+        }
+    }
+    for raw in &vault_paths {
+        if let Some(clean) = safe_relative_path(raw) {
+            push(raw, format!("{prefix}{clean}"));
+        }
+    }
+    if wanted.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    const REC: char = '\x1e';
+    let format = format!("--pretty=format:{REC}%cI");
+    let mut args: Vec<&str> = vec![
+        "log",
+        EVIDENCE_WALK_COMMITS,
+        &format,
+        "--name-only",
+        "--no-renames",
+        "--",
+    ];
+    for (_, resolved) in &wanted {
+        args.push(resolved.as_str());
+    }
+    let out = run_git(&repo_root, &args)?;
+
+    let mut last: std::collections::HashMap<usize, String> = std::collections::HashMap::new();
+    if out.success {
+        let mut current_time: Option<String> = None;
+        for line in out.stdout.lines() {
+            let line = line.trim();
+            if line.is_empty() {
+                continue;
+            }
+            if let Some(rest) = line.strip_prefix(REC) {
+                current_time = Some(rest.trim().to_string());
+                continue;
+            }
+            let Some(time) = current_time.as_ref() else {
+                continue;
+            };
+            for (index, (_, resolved)) in wanted.iter().enumerate() {
+                if last.contains_key(&index) {
+                    continue;
+                }
+                let under = line.len() > resolved.len()
+                    && line.starts_with(resolved.as_str())
+                    && line.as_bytes().get(resolved.len()) == Some(&b'/');
+                if line == resolved || under {
+                    last.insert(index, time.clone());
+                }
+            }
+        }
+    }
+
+    Ok(wanted
+        .iter()
+        .enumerate()
+        .map(|(index, (key, resolved))| PathLastChange {
+            path: key.clone(),
+            exists: repo_root.join(resolved).exists(),
+            last_changed_at: last.get(&index).cloned(),
+        })
+        .collect())
+}
+
+/// A repository- or vault-relative path the caller may ask git about, or `None`.
+fn safe_relative_path(raw: &str) -> Option<String> {
+    let trimmed = raw.trim().trim_end_matches('/');
+    if trimmed.is_empty()
+        || trimmed.starts_with('/')
+        || trimmed.starts_with('-')
+        || trimmed.contains('\\')
+        || trimmed.contains('\0')
+        || trimmed.split('/').any(|part| part == "..")
+    {
+        return None;
+    }
+    Some(trimmed.to_string())
 }
 
 /// Summary nodes are a small, bounded set by construction (`project` and `domain` only).
@@ -1938,6 +2079,28 @@ mod tests {
     }
 
     #[test]
+    fn safe_relative_path_refuses_escapes_and_options() {
+        assert_eq!(
+            safe_relative_path("src/widgets/app-nav-rail/"),
+            Some("src/widgets/app-nav-rail".into())
+        );
+        assert_eq!(
+            safe_relative_path("  cli/src/index.mjs "),
+            Some("cli/src/index.mjs".into())
+        );
+        assert_eq!(safe_relative_path("../secrets"), None);
+        assert_eq!(safe_relative_path("src/../../etc"), None);
+        assert_eq!(safe_relative_path("/etc/passwd"), None);
+        assert_eq!(safe_relative_path("--output=x"), None);
+        assert_eq!(safe_relative_path(""), None);
+        // A dotted segment that is not `..` is an ordinary name.
+        assert_eq!(
+            safe_relative_path("docs/..hidden/a.md"),
+            Some("docs/..hidden/a.md".into())
+        );
+    }
+
+    #[test]
     fn validate_vault_dir_rejects_missing_path() {
         let err = validate_vault_dir("/path/does/not/exist/atlas").unwrap_err();
         assert!(!err.is_empty());
@@ -1945,13 +2108,27 @@ mod tests {
 
     #[test]
     fn restore_path_stays_inside_the_vault() {
-        assert_eq!(vault_document_path("domains/orders.md", ".").unwrap(), "domains/orders.md");
-        assert_eq!(vault_document_path(" domains/orders.md ", ".").unwrap(), "domains/orders.md");
+        assert_eq!(
+            vault_document_path("domains/orders.md", ".").unwrap(),
+            "domains/orders.md"
+        );
+        assert_eq!(
+            vault_document_path(" domains/orders.md ", ".").unwrap(),
+            "domains/orders.md"
+        );
         assert_eq!(
             vault_document_path("docs/ontology/domains/orders.md", "docs/ontology").unwrap(),
             "docs/ontology/domains/orders.md"
         );
-        for bad in ["", "/etc/passwd", "../outside.md", "a/../b.md", "a//b.md", "./a.md", "a\\b.md"] {
+        for bad in [
+            "",
+            "/etc/passwd",
+            "../outside.md",
+            "a/../b.md",
+            "a//b.md",
+            "./a.md",
+            "a\\b.md",
+        ] {
             let err = vault_document_path(bad, ".").unwrap_err();
             assert!(err.starts_with("restore-path-invalid"), "{bad}: {err}");
         }
@@ -1966,7 +2143,14 @@ mod tests {
     fn restore_source_is_head_or_a_hash() {
         assert_eq!(validate_restore_source("HEAD").unwrap(), "HEAD");
         assert_eq!(validate_restore_source("A1B2C3D").unwrap(), "a1b2c3d");
-        for bad in ["", "HEAD~1", "main", "abc", "--output=x", "a1b2c3d..a1b2c3e"] {
+        for bad in [
+            "",
+            "HEAD~1",
+            "main",
+            "abc",
+            "--output=x",
+            "a1b2c3d..a1b2c3e",
+        ] {
             let err = validate_restore_source(bad).unwrap_err();
             assert!(err.starts_with("restore-source-invalid"), "{bad}: {err}");
         }
@@ -1974,9 +2158,13 @@ mod tests {
 
     #[test]
     fn identity_guard_names_the_field_that_would_change() {
-        let now = "---\nuid: 11111111\nslug: domains/orders\nmerged_uids: [22222222]\n---\n# Orders\n";
+        let now =
+            "---\nuid: 11111111\nslug: domains/orders\nmerged_uids: [22222222]\n---\n# Orders\n";
         let same = "---\nuid: \"11111111\"\nslug: 'domains/orders'\nmerged_uids: [22222222]\n---\nolder body\n";
-        assert_eq!(identity_difference(&read_identity(now), &read_identity(same)), None);
+        assert_eq!(
+            identity_difference(&read_identity(now), &read_identity(same)),
+            None
+        );
 
         let other_uid = "---\nuid: 99999999\nslug: domains/orders\nmerged_uids: [22222222]\n---\n";
         assert_eq!(
@@ -1994,7 +2182,10 @@ mod tests {
             Some("merged_uids would be dropped")
         );
         // A body-only file on both sides has no identity to disagree about.
-        assert_eq!(identity_difference(&read_identity("# a"), &read_identity("# b")), None);
+        assert_eq!(
+            identity_difference(&read_identity("# a"), &read_identity("# b")),
+            None
+        );
     }
 
     #[test]

@@ -74,7 +74,7 @@ export function visibleLines(core: BriefCore): readonly BriefLine[] {
 }
 
 /** ISO/epoch → ms, or null for anything unparseable. Ledger and log stamps are ISO-8601. */
-function toMs(value: string | number | null | undefined): number | null {
+export function toMs(value: string | number | null | undefined): number | null {
   if (value == null) return null;
   const ms = typeof value === 'number' ? value : Date.parse(value);
   return Number.isFinite(ms) ? ms : null;

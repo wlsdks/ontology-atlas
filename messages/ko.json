@@ -1579,6 +1579,7 @@
         "open": "열기",
         "line": {
           "ontology-evidence-moved": "의미는 그대로인데 밑의 코드 파일이 움직인 개념 {count}개",
+          "ontology-evidence-missing": "근거로 적은 코드 파일이 사라진 개념 {count}개",
           "ontology-evidence-unchecked": "코드가 움직였는지 확인 못 한 개념 {count}개",
           "ontology-agent-unreviewed": "에이전트가 쓰고 사람이 아직 안 본 개념 {count}개",
           "ontology-changed-since": "그 뒤로 문서가 바뀐 개념 {count}개",

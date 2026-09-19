@@ -16,6 +16,8 @@ import { deriveCoverageAreas, useHarnessReport } from '@/features/harness-report
 import { atlasBareToolMode } from '@/features/acp-session';
 import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
+import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/tauri-git';
+import { resolveEvidenceStates, type EvidenceConceptInput } from './evidence-states';
 import { resolveBriefAnchor, useBriefSeenAt, type BriefAnchor } from './brief-anchor';
 import { buildAgentBrief } from './agent-brief';
 import { buildHarnessBrief } from './harness-brief';
@@ -134,6 +136,66 @@ export function useInsightsBrief({
   const harnessState = useHarnessReport(handle, projectSlugs, enabled, coverage.capabilityPaths);
   const harnessReport = harnessState.status === 'ready' ? harnessState.report : null;
 
+  /*
+   * Where each concept's evidence lives, from the vault alone: its own `path:` and the
+   * `path:` of every element it lists. The Git bridge then answers, in one walk, when each of
+   * those and the concept's own document last changed.
+   */
+  const evidenceConcepts = useMemo<EvidenceConceptInput[]>(() => {
+    const pathBySlug = new Map<string, string>();
+    for (const doc of docs) {
+      const path = doc.frontmatter.path;
+      if (typeof path === 'string' && path.length > 0) pathBySlug.set(doc.slug, path);
+    }
+    const out: EvidenceConceptInput[] = [];
+    for (const node of nodes) {
+      if (!node.docSlug) continue;
+      const doc = docs.find((candidate) => candidate.slug === node.docSlug);
+      if (!doc) continue;
+      const own = pathBySlug.get(doc.slug);
+      const elements = Array.isArray(doc.frontmatter.elements)
+        ? (doc.frontmatter.elements as unknown[]).filter((slug): slug is string => typeof slug === 'string')
+        : [];
+      const paths = new Set<string>();
+      if (own) paths.add(own);
+      for (const slug of elements) {
+        const path = pathBySlug.get(slug);
+        if (path) paths.add(path);
+      }
+      out.push({ id: node.id, docPath: `${doc.slug}.md`, evidencePaths: [...paths] });
+    }
+    return out;
+  }, [docs, nodes]);
+
+  const [evidenceChanges, setEvidenceChanges] = useState<{
+    key: string;
+    changes: ReadonlyMap<string, GitPathLastChange>;
+  } | null>(null);
+  const evidenceKey = nativeRootPath ? `${nativeRootPath}\0${vault.lastLoadedAt ?? ''}` : '';
+  useEffect(() => {
+    if (!enabled || !nativeRootPath || !isGitBridgeAvailable()) return;
+    const repoPaths = [...new Set(evidenceConcepts.flatMap((concept) => concept.evidencePaths))];
+    const vaultPaths = evidenceConcepts.map((concept) => concept.docPath).filter((path): path is string => path != null);
+    if (repoPaths.length === 0) return;
+    let cancelled = false;
+    const key = evidenceKey;
+    void gitPathsLastChange(nativeRootPath, repoPaths, vaultPaths)
+      .then((rows) => {
+        if (cancelled || !rows) return;
+        setEvidenceChanges({ key, changes: new Map(rows.map((row) => [row.path, row])) });
+      })
+      .catch(() => {
+        /* no repository or no git: the brief says unknown, which is the truth here */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, nativeRootPath, evidenceKey, evidenceConcepts]);
+  const evidence = useMemo(() => {
+    if (!evidenceChanges || evidenceChanges.key !== evidenceKey) return null;
+    return resolveEvidenceStates(evidenceConcepts, evidenceChanges.changes);
+  }, [evidenceChanges, evidenceKey, evidenceConcepts]);
+
   const docFacts = useMemo(() => {
     const map = new Map<string, { reviewedBy: string | null; updatedAt: string | null }>();
     for (const doc of docs) {
@@ -151,12 +213,12 @@ export function useInsightsBrief({
       buildOntologyBrief({
         nodes,
         docs: docFacts,
-        evidence: null,
+        evidence,
         repairCount,
         unmatchedCount,
         anchorMs: anchor.anchorMs,
       }),
-    [nodes, docFacts, repairCount, unmatchedCount, anchor.anchorMs],
+    [nodes, docFacts, evidence, repairCount, unmatchedCount, anchor.anchorMs],
   );
 
   const wiki = useMemo(() => {

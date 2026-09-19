@@ -350,3 +350,31 @@ export async function gitFetch(vaultPath: string): Promise<GitFetchResult | null
 export function gitErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
   return nativeErrorMessage(err, lookup);
 }
+
+/** When one repository path last changed, as `git_paths_last_change` reports it. */
+export interface GitPathLastChange {
+  /** The key exactly as passed — a `path:` value or a vault-relative document path. */
+  path: string;
+  exists: boolean;
+  /** ISO time of the newest commit touching the path in the walk window, else null. */
+  lastChangedAt: string | null;
+}
+
+/**
+ * Last change per path in one Git walk. `repoPaths` are repository-relative (`path:`
+ * values); `vaultPaths` are vault-relative document paths the Rust side resolves through
+ * the vault's own pathspec. `null` without the bridge.
+ */
+export async function gitPathsLastChange(
+  vaultPath: string,
+  repoPaths: readonly string[],
+  vaultPaths: readonly string[],
+): Promise<GitPathLastChange[] | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<GitPathLastChange[]>('git_paths_last_change', {
+    vaultPath,
+    repoPaths: [...repoPaths],
+    vaultPaths: [...vaultPaths],
+  });
+}
