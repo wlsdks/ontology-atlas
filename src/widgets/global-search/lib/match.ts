@@ -204,17 +204,45 @@ export function matchProjects(
   for (const project of projects) {
     const name = project.name.toLowerCase();
     const nameEn = project.nameEn?.toLowerCase() ?? "";
+    // Every word a screen draws for the project (`display_<locale>`) matches like its name.
+    const displays = Object.values(project.displayNames ?? {}).map((value) => value.toLowerCase());
     const description = project.description?.toLowerCase() ?? "";
     const tags = project.tags.join(" ").toLowerCase();
     const category = (project.category ?? '').toLowerCase();
     const slug = project.slug.toLowerCase();
 
     let score = 0;
-    if (name === trimmed || nameEn === trimmed) score = 7;
-    else if (name.startsWith(trimmed) || nameEn.startsWith(trimmed)) score = 6;
-    else if (name.includes(trimmed) || nameEn.includes(trimmed)) score = 5;
-    else if (hangulStartsWith(name, trimmed) || hangulStartsWith(nameEn, trimmed)) score = 4;
-    else if (hangulIncludes(name, trimmed) || hangulIncludes(nameEn, trimmed)) score = 3;
+    /*
+     * A `display_<locale>` is a name the screen shows, so it matches exactly where `name` and
+     * `nameEn` do — including the Hangul rungs, since a Korean display name is the one a person
+     * types jamo into. Merged 2026-09-20 from the Korean-keyboard ladder and the display-name
+     * change, which arrived at this block from either side.
+     */
+    if (name === trimmed || nameEn === trimmed || displays.includes(trimmed)) score = 7;
+    else if (
+      name.startsWith(trimmed)
+      || nameEn.startsWith(trimmed)
+      || displays.some((display) => display.startsWith(trimmed))
+    )
+      score = 6;
+    else if (
+      name.includes(trimmed)
+      || nameEn.includes(trimmed)
+      || displays.some((display) => display.includes(trimmed))
+    )
+      score = 5;
+    else if (
+      hangulStartsWith(name, trimmed)
+      || hangulStartsWith(nameEn, trimmed)
+      || displays.some((display) => hangulStartsWith(display, trimmed))
+    )
+      score = 4;
+    else if (
+      hangulIncludes(name, trimmed)
+      || hangulIncludes(nameEn, trimmed)
+      || displays.some((display) => hangulIncludes(display, trimmed))
+    )
+      score = 3;
     else if (
       description.includes(trimmed)
       || tags.includes(trimmed)
