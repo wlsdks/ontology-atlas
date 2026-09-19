@@ -128,6 +128,21 @@ export function NewRoundSheet({ open, onClose, connectors, agentReady, onSave }:
   }
   may.push(t("sheet.mayNothingElse"));
 
+  const readbackCadence =
+    cadence === "hour"
+      ? t("sheet.readbackHour")
+      : cadence === "6h"
+        ? t("sheet.readback6h")
+        : cadence === "daily"
+          ? t("sheet.readbackDaily", { time })
+          : t("sheet.readbackWeekdays", { time });
+  const readback =
+    kind === "service"
+      ? t("sheet.readbackService", { cadence: readbackCadence, service: serviceLabel || t("sheet.service") })
+      : t("sheet.readbackConsistency", {
+          cadence: readbackCadence,
+          onStale: onStale === "redraft" ? t("sheet.readbackRedraft") : t("sheet.readbackMark"),
+        });
   const cost =
     kind === "service"
       ? t("sheet.costPerPass", { count: perDay })
@@ -136,10 +151,40 @@ export function NewRoundSheet({ open, onClose, connectors, agentReady, onSave }:
         : t("sheet.costNone");
 
   return (
-    <Dialog open={open} onClose={onClose} size="md" labelledBy={titleId} testId="library-rounds-sheet" className="flex flex-col gap-5">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      size="md"
+      labelledBy={titleId}
+      testId="library-rounds-sheet"
+      /*
+       * Capped at the window and scrolling inside: a service check with its connector
+       * row, query field and the readback line runs past a 720px window, and the shared
+       * dialog has no height cap of its own, so "Allow and save" stood below the window
+       * with no way to reach it (measured in the rounds spec, 2026-09-20). The cap uses
+       * the same chrome inset the viewport-sized dialog keeps.
+       */
+      className="flex max-h-[calc(100vh-var(--chrome-inset)*2)] flex-col gap-5 overflow-y-auto atlas-scroll-quiet"
+    >
       <h2 id={titleId} className="text-title leading-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
         {t("sheet.title")}
       </h2>
+      {/*
+        **The sheet reads back what it will do, as one sentence, before anything is
+        saved** (owner on the installed app, 2026-09-19: the screen was "hard to operate",
+        and the comparison drawn was with tools that show the result of each choice as
+        it is made). Four controls each answer their own question; nobody answered the
+        person's: "so what happens, when?" This line does, and it changes under every
+        press, so the chips below become the words of a sentence that is already there.
+      */}
+      <p
+        data-testid="library-rounds-readback"
+        role="status"
+        aria-live="polite"
+        className="rounded-card border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a14)] px-[var(--card-pad)] py-3 text-body-lg leading-title text-[color:var(--color-text-primary)] [word-break:keep-all]"
+      >
+        {readback}
+      </p>
 
       <div className="flex flex-col gap-2">
         <p id={whatId} className={fieldLabel()}>{t("sheet.what")}</p>
