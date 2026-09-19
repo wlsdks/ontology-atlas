@@ -2801,6 +2801,23 @@ The phone tabs and the `G` keys read the same verdict.
 - **`⇧⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized)
 - Both palettes share keyboard: `↑↓` navigate · `↵` select · `Esc` close
 
+**The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised
+substrings only, so the two things a Korean typist does first found nothing on the
+bundled Online Store sample: initials alone (the four consonants of a four-syllable
+capability), and any name mid-syllable — which every Korean word passes through,
+because the IME emits one jamo at a time, so the list blinked empty on most
+keystrokes. `shared/lib/hangul-match` adds exactly two rules, no general fuzziness:
+consonant initials matched in order with spaces ignored on both sides, and a trailing
+partial syllable whose jamo must prefix the syllable it lands on, with compound
+medials and final clusters split into the keys that type them. These rank **below**
+every literal name tier and above a description match, so a name that really contains
+what was typed still wins. The match is marked in the row, including when it spans a
+space, and a description match now opens at the match with a leading ellipsis rather
+than highlighting past the truncation — measured live: rows whose mark rendered
+outside its own box went from 1-2 per English query to 0. The per-node name index is
+built once and kept (`WeakMap`), which also took a plain query over 12,000 nodes from
+243 ms to 29.8 ms; `node-name-match.perf.test.ts` holds the ratio.
+
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio
 - 2-column grid on sm+, focus trap, `Esc` closes
