@@ -191,7 +191,13 @@ export function CommitDetail({
     const concept = concepts.find((c) => (c.id.split(":").pop() ?? c.id) === tail);
     return {
       entry: activeEntry,
-      label: concept?.label ?? (activeEntry.path.split("/").pop() ?? activeEntry.path),
+      // A document without a matching concept is named by its file, minus the `.md` the
+      // uncommitted pane's chips also drop; a config file keeps its full name.
+      label:
+        concept?.label ??
+        (activeEntry.kind
+          ? (activeEntry.path.split("/").pop() ?? activeEntry.path).replace(/\.md$/i, "")
+          : (activeEntry.path.split("/").pop() ?? activeEntry.path)),
       kind: activeEntry.kind,
     };
   }, [activeEntry, concepts]);
