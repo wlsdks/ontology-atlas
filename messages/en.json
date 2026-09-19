@@ -3687,6 +3687,11 @@
     "docReaderChanged": "Edited document",
     "docReaderDeleted": "Deleted document",
     "docReaderRenamed": "Renamed document",
+    "docReaderFileNew": "New file",
+    "docReaderFileChanged": "Edited file",
+    "docReaderFileDeleted": "Deleted file",
+    "docReaderFileRenamed": "Renamed file",
+    "docReaderRenamedFrom": "was {path}",
     "docReaderPartial": "The whole document could not be read; only the changed part is shown",
     "docReaderLong": "The document is long, so only the changed part is shown",
     "docReaderInfoBoxUnchanged": "Front matter · no lines changed"

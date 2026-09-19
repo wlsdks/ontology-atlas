@@ -1721,6 +1721,8 @@ describe("AtlasGitPanel — 읽기 창은 그리는 것을 사실대로 말한�
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     const reader = await screen.findByTestId("atlas-git-diff-pre");
     await waitFor(() => expect(reader).toHaveTextContent("문서가 길어서"));
+    // Said above the body, in the cut grammar: what follows is a fragment, not the document.
+    expect(screen.getByTestId("atlas-git-doc-fragment")).toHaveTextContent("문서가 길어서");
     // The hunks are still drawn — they always hold the changed lines.
     expect(reader).toHaveTextContent("new line");
     expect(reader).not.toHaveTextContent("문서 전체를 읽지 못해");
@@ -1757,6 +1759,8 @@ describe("AtlasGitPanel — 읽기 창은 그리는 것을 사실대로 말한�
       expect((asked[asked.length - 1][1] as { previousPath?: string }).previousPath).toBe("docs/elements/bar.md");
     });
     expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("unchanged body line");
+    // A renamed document carries the name it had.
+    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/elements/bar.md");
   });
 });
 
@@ -1785,5 +1789,8 @@ describe("AtlasGitPanel — 개념이 아닌 파일은 산문이 아니다", () 
     // document's name is a heading on this pane.
     expect(reader.querySelectorAll("h3, h4")).toHaveLength(0);
     expect(reader).toHaveTextContent("build/");
+    // It is called a file, and a file at the folder's root does not read its name twice.
+    expect(reader).toHaveTextContent("고친 파일");
+    expect(reader).not.toHaveTextContent("고친 문서");
   });
 });

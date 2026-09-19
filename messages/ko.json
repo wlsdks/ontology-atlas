@@ -3687,6 +3687,11 @@
     "docReaderChanged": "고친 문서",
     "docReaderDeleted": "지운 문서",
     "docReaderRenamed": "이름 바꾼 문서",
+    "docReaderFileNew": "새 파일",
+    "docReaderFileChanged": "고친 파일",
+    "docReaderFileDeleted": "지운 파일",
+    "docReaderFileRenamed": "이름 바꾼 파일",
+    "docReaderRenamedFrom": "이전 이름 {path}",
     "docReaderPartial": "문서 전체를 읽지 못해 바뀐 부분만 보여요",
     "docReaderLong": "문서가 길어서 바뀐 부분만 보여요",
     "docReaderInfoBoxUnchanged": "정보칸 · 바뀐 줄 없음"

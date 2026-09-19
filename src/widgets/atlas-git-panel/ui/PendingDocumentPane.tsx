@@ -267,13 +267,21 @@ export function DocumentChangeReader({
           <span className="min-w-0 truncate">{label}</span>
         </h2>
         <p className="flex flex-wrap items-baseline gap-x-2 font-mono text-caption text-[color:var(--color-text-quaternary)]">
-          <span className="min-w-0 break-all">{entry.path}</span>
-          <span className="text-[color:var(--color-text-tertiary)]">{t(statusKey(entry.status))}</span>
+          {/* The path, unless it is the name already shown above it — a file at the folder's
+              root would otherwise read its own name twice, at two sizes, in two lines. */}
+          {entry.path === label ? null : <span className="min-w-0 break-all">{entry.path}</span>}
+          <span className="text-[color:var(--color-text-tertiary)]">
+            {t(statusKey(entry.status, isDocument))}
+          </span>
+          {/* A renamed document carries the name it had: "renamed" without it is half the fact. */}
+          {entry.renamedFrom ? (
+            <span className="min-w-0 break-all">{t("docReaderRenamedFrom", { path: entry.renamedFrom })}</span>
+          ) : null}
           <span className="tabular-nums">
             <span className="text-[color:var(--color-success-text-a90)]">{`+${added}`}</span>{" "}
             <span className="text-[color:var(--color-danger-text)]">{`−${removed}`}</span>
           </span>
-          {longDocument ? <span>{t("docReaderLong")}</span> : partial ? <span>{t("docReaderPartial")}</span> : null}
+
         </p>
       </header>
 
@@ -288,6 +296,22 @@ export function DocumentChangeReader({
         16px prose to one right edge.
       */}
       <div className="flex w-full max-w-[var(--measure-doc-column)] flex-col gap-4">
+      {/*
+        What follows is a fragment, not the document, and that changes the meaning of every
+        line below it — so it is said in the reader's own voice above the body, in the same
+        cut grammar the skipped stretches use, rather than as a fourth token in the metadata
+        line where it read as one more number (measured on screen, 2026-09-19).
+      */}
+      {longDocument || partial ? (
+        <p
+          data-testid="atlas-git-doc-fragment"
+          className="flex items-center gap-2 text-caption leading-label text-[color:var(--color-text-quaternary)]"
+        >
+          <span aria-hidden className="w-4 border-t border-dashed border-[color:var(--color-border-strong)]" />
+          <span className="min-w-0">{longDocument ? t("docReaderLong") : t("docReaderPartial")}</span>
+          <span aria-hidden className="min-w-4 flex-1 border-t border-dashed border-[color:var(--color-border-strong)]" />
+        </p>
+      ) : null}
       {frontmatter.length > 0 ? (
         frontmatterChanged ? (
           <section
@@ -336,11 +360,13 @@ export function DocumentChangeReader({
 
 type Line = { kind: "added" | "removed" | "context" | "skip"; text: string };
 
-function statusKey(status: string): string {
-  if (status === "added") return "docReaderNew";
-  if (status === "deleted") return "docReaderDeleted";
-  if (status === "renamed") return "docReaderRenamed";
-  return "docReaderChanged";
+/** What the reader is looking at, in the noun it deserves: a concept document, or a file. */
+function statusKey(status: string, isDocument: boolean): string {
+  const noun = isDocument ? "" : "File";
+  if (status === "added") return `docReader${noun}New`;
+  if (status === "deleted") return `docReader${noun}Deleted`;
+  if (status === "renamed") return `docReader${noun}Renamed`;
+  return `docReader${noun}Changed`;
 }
 
 /** The leading `---` block, when the document has one, kept apart as the information box. */
