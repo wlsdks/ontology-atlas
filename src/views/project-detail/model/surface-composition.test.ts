@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
-import { buildSurfaceComposition, countPlanOnlyDomains, countWikiPages } from "./surface-composition";
+import { buildSurfaceComposition, countPlanOnlyDomains } from "./surface-composition";
 
 const labels = {
   domains: "Domains",
@@ -22,12 +22,6 @@ const manifest = (sources: number): VaultManifest =>
      sources: Array.from({ length: sources }, (_, i) => ({ path: `sources/${i}.pdf` })) }) as unknown as VaultManifest;
 const domain = (capabilityCount: number, elementCount: number) =>
   ({ id: `d${capabilityCount}${elementCount}`, title: "d", capabilityCount, elementCount, total: capabilityCount + elementCount, capabilities: [] });
-
-describe("countWikiPages", () => {
-  it("counts only the folder's wiki documents", () => {
-    expect(countWikiPages([doc("wiki/a"), doc("wiki/b"), doc("domains/order"), doc("wikipedia")])).toBe(2);
-  });
-});
 
 describe("countPlanOnlyDomains", () => {
   it("counts domains that name a capability and hold no element", () => {

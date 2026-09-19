@@ -54,11 +54,18 @@ export function SurfaceCompositionBoard({
             {cell.figures.length > 0 ? (
               <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
                 {cell.figures.map((figure) => (
-                  <div key={figure.label} className="flex items-baseline gap-1.5">
+                  /*
+                   * `dt` before `dd` in the document, drawn the other way round. A description
+                   * list groups a term with its description in that order — reversed, "9" is a
+                   * description whose term has not been read yet, and a screen reader pairs them
+                   * wrongly. The figure still reads "9 domains" on screen, because the row is
+                   * reversed visually rather than in the markup.
+                   */
+                  <div key={figure.label} className="flex flex-row-reverse items-baseline justify-end gap-1.5">
+                    <dt className="text-body text-[color:var(--color-text-tertiary)]">{figure.label}</dt>
                     <dd className="font-mono text-title tabular-nums text-[color:var(--color-text-primary)]">
                       {figure.value}
                     </dd>
-                    <dt className="text-body text-[color:var(--color-text-tertiary)]">{figure.label}</dt>
                   </div>
                 ))}
               </dl>
