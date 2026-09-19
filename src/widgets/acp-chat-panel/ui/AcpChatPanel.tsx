@@ -3018,13 +3018,29 @@ function TranscriptEntry({
          * list was a dead receipt at the one moment the consequence was on screen
          * (design-interaction, council 2026-09-07). The second door writes the same
          * setting Settings owns; it is a way back, not a second place to change the mode.
+         *
+         * ⚠️ **Both doors were below the touch floor** (measured 2026-09-20, `(pointer: coarse)`
+         * matching): `Open` came back **16x24** and `Ask next time` **43x24**, against the 44px
+         * `--touch-target-min` this repository applies through `.atlas-touch-floor`. A sixteen
+         * pixel wide target is not reachable by a finger, and this is the receipt for a file that
+         * was written **without being asked about** — the one notice where the way back matters.
+         *
+         * `touch-target-contract.spec.ts` sweeps real controls and would have caught it; it never
+         * saw these two, because no test could reach this notice at all until this round. The
+         * floor is applied here and the reachability is now gated beside it.
          */
         <span className="ml-2 inline-flex flex-wrap items-center gap-x-2 align-baseline">
           <button
             type="button"
             data-testid="acp-notice-open-page"
             onClick={() => noticeActions.openPage(event.detail ?? '')}
-            className={controlClass({ shape: 'link', size: 'sm', tone: 'accent', hoverInk: 'strong' })}
+            className={controlClass({
+              shape: 'link',
+              size: 'sm',
+              tone: 'accent',
+              hoverInk: 'strong',
+              className: 'atlas-touch-floor atlas-touch-floor-wide',
+            })}
           >
             {t('notice.openPage')}
           </button>
@@ -3032,7 +3048,13 @@ function TranscriptEntry({
             type="button"
             data-testid="acp-notice-ask-next"
             onClick={noticeActions.askNext}
-            className={controlClass({ shape: 'link', size: 'sm', tone: 'muted', hoverInk: 'strong' })}
+            className={controlClass({
+              shape: 'link',
+              size: 'sm',
+              tone: 'muted',
+              hoverInk: 'strong',
+              className: 'atlas-touch-floor atlas-touch-floor-wide',
+            })}
           >
             {t('notice.askNext')}
           </button>
