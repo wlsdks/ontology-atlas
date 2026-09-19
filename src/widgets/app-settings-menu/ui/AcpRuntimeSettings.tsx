@@ -303,8 +303,16 @@ export function AcpRuntimeSettings({
             above it: the sentence matters at the moment of pressing "open a chat", and a hint
             is one press from that button without standing between the title and the tools.
             Gate: `tests/contract/acp-disk-disclosure.contract.test.ts`.
+
+            ⚠️ **Only where a chat can start** (2026-09-20). `link_credentials` runs when a
+            conversation opens, and a conversation opens only for a tool this screen confirmed
+            and guards — so on a machine with none, this answered a question nobody can ask,
+            and as a hint rather than the old paragraph it left a lone question mark beside a
+            list that says "no tool found". The condition is the same one the chat button uses.
+            The gate greps this file for the sentence and the testid, so it cannot see either
+            this change or its reverse; the reason it is right is the disclosure's own subject.
           */}
-          {runtimes !== null ? (
+          {runtimes !== null && ready.some((r) => isGuardedRuntime(r.id, r.isolated)) ? (
             <InfoHint label={t('hintLabel')} align="left">
               <p
                 data-testid="app-settings-runtimes-disk-note"

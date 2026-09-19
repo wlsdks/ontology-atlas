@@ -102,6 +102,16 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(screen.queryByTestId('app-settings-runtimes-web')).toBeNull();
   });
 
+  it('대화를 열 수 있는 도구가 없으면 디스크 고지를 그리지 않는다 — 물음표만 남지 않게', async () => {
+    // The disclosure is about what opening a chat writes to disk, and a chat opens only for a
+    // tool this screen confirmed and guards. With none, the hint was a lone question mark
+    // beside a list that says no tool was found.
+    bridge.detect.mockResolvedValue([makeRuntime({ id: 'cursor', state: 'cli-missing' })]);
+    render(<AcpRuntimeSettings embedded />);
+    await waitFor(() => expect(screen.getByText('noneReady')).toBeInTheDocument());
+    expect(screen.queryByTestId('app-settings-runtimes-disk-note')).toBeNull();
+  });
+
   it('시트에서는 MCP 링크가 남는다 — 띠가 없는 곳에서 이름만 대지 않는다', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
