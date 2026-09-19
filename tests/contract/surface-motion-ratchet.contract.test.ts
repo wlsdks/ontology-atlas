@@ -298,8 +298,13 @@ const BASELINE_HARD_CUTS = 0;
  * island of the canvas, which the a11y opener model (a DOM trigger testid) cannot express;
  * `tests/e2e/library-graph-islands.spec.ts` presses the island and holds the bar's own
  * checks (visible, Escape and the chip both return the map).
+ * 50 -> 51 (2026-09-19): the project page's agent dock, born as `Surface` like the
+ * Library's and Analysis's. It mounts only behind the desktop bridge with a guarded
+ * runtime, which the static OPENERS fixture cannot synthesize;
+ * `tests/e2e/project-agent-dock.spec.ts` opens it through the bridge stub and holds its
+ * own checks (the frame opens, the brief request is seated, closing puts it away).
  */
-const BASELINE_APPEARING_SURFACES = 50;
+const BASELINE_APPEARING_SURFACES = 51;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';
