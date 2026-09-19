@@ -816,13 +816,11 @@ export function TopologyIndexPanel({
             {lensActive ? labels.recentEmptyHint : labels.emptyHint}
           </p>
         ) : (
-          visibleRoots.map((root, rootIndex) => (
+          visibleRoots.map((root) => (
             <TopologyIndexTreeRow
               key={root.node.id}
               entry={root}
               depth={0}
-              position={rootIndex + 1}
-              setSize={visibleRoots.length}
               isOpen={isOpen}
               onToggleOpen={toggleOpen}
               onSelect={onSelect}
