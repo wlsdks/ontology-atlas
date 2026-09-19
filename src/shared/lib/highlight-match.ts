@@ -1,3 +1,5 @@
+import { findHangulMatch } from './hangul-match';
+
 /**
  * Splits text into matched / unmatched segments for search highlighting. Pure data, no
  * JSX, so it unit-tests easily and the renderer only has to wrap segments in `<mark>`.
@@ -17,6 +19,11 @@
  *   accepted a contiguous phrase, search would report a hit while the viewer showed zero
  *   marks. Reproduced live by searching "relationship type" and opening the CLI Developer Entry
  *   body match.
+ * - **A Hangul query no literal pass found falls back to `shared/lib/hangul-match`.**
+ *   Consonant initials, and a name whose last syllable the keyboard has not finished,
+ *   are matches the palette ranks, so the reader has to be able to see them; an
+ *   unmarked row is a row with no visible reason for being in the list, which is the
+ *   state highlighting exists to prevent.
  */
 export interface HighlightSegment {
   text: string;
@@ -89,6 +96,31 @@ function scanSegments(text: string, re: RegExp): HighlightSegment[] | null {
   return segments;
 }
 
+/**
+ * Every Hangul-aware occurrence, as segments. Ranges from `findHangulMatch` index the
+ * NFC form, so the text is normalised once and the segments are cut from that — the
+ * same characters, rendered identically.
+ */
+function scanHangulSegments(text: string, query: string): HighlightSegment[] | null {
+  const normalized = text.normalize('NFC');
+  const segments: HighlightSegment[] = [];
+  let cursor = 0;
+  while (cursor < normalized.length) {
+    const found = findHangulMatch(normalized.slice(cursor), query);
+    if (!found) break;
+    const start = cursor + found.start;
+    const end = cursor + found.end;
+    if (start > cursor) segments.push({ text: normalized.slice(cursor, start), match: false });
+    segments.push({ text: normalized.slice(start, end), match: true });
+    cursor = end;
+  }
+  if (segments.length === 0) return null;
+  if (cursor < normalized.length) {
+    segments.push({ text: normalized.slice(cursor), match: false });
+  }
+  return segments;
+}
+
 export function splitHighlightSegments(
   text: string,
   query: string,
@@ -103,6 +135,44 @@ export function splitHighlightSegments(
   // search.ts's AND-match contract and the mark + scrollIntoView still land.
   const tokens = query.trim().split(/\s+/).filter(Boolean);
   const tokenRe = buildScatteredTokenMatcher(tokens);
-  if (!tokenRe) return [{ text, match: false }];
-  return scanSegments(text, tokenRe) ?? [{ text, match: false }];
+  const tokenSegments = tokenRe ? scanSegments(text, tokenRe) : null;
+  if (tokenSegments) return tokenSegments;
+
+  // Still nothing literal: the query may be Hangul the keyboard has not finished
+  // writing, which is what the matcher ranked this row on.
+  return scanHangulSegments(text, query) ?? [{ text, match: false }];
+}
+
+/**
+ * The summary, cut so its first match is near the start.
+ *
+ * A search result's description is one truncated line, so a match late in the
+ * sentence is highlighted past the ellipsis and the row shows **no reason at all**
+ * for being in the list — measured live on 2026-09-19: searching an English word
+ * the Korean titles do not carry marked the description of every row, and on some
+ * of them the mark rendered outside its own box. Starting the line at the match is
+ * what every code search does, and the leading ellipsis says the sentence began
+ * earlier.
+ *
+ * The cut lands on the **first** whitespace inside the `leadIn` characters before
+ * the match, so a word or two of run-up survives and no word is sliced in half. One
+ * unbroken token that long leaves no boundary to use, and the line then starts at
+ * the match itself. A match already inside `leadIn` leaves the text alone — nothing
+ * is hidden to buy space that was not needed.
+ */
+export function snippetAroundFirstMatch(
+  text: string,
+  query: string,
+  leadIn = 12,
+): string {
+  const segments = splitHighlightSegments(text, query);
+  const firstMatch = segments.findIndex((segment) => segment.match);
+  if (firstMatch <= 0) return text;
+  const before = segments.slice(0, firstMatch).reduce((sum, s) => sum + s.text.length, 0);
+  if (before <= leadIn) return text;
+  const whole = segments.map((s) => s.text).join('');
+  const window = whole.slice(before - leadIn, before);
+  const boundary = window.search(/\s/);
+  const cut = boundary === -1 ? before : before - leadIn + boundary + 1;
+  return `…${whole.slice(cut)}`;
 }
