@@ -18,7 +18,7 @@ import { WIKI_SECTION_ORDER } from '@/shared/lib/wiki-page-schema';
 import { Button, controlClass, Dialog, Disclosure } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { LG_BREAKPOINT_PX, useViewportBelow } from '@/shared/lib/use-viewport-below';
-import { describeWikiProblem, type WikiTemplateProblem } from '../../lib/describe-wiki-problem';
+import { describeWikiProblem, type WikiTemplateProblem } from '@/features/library';
 import { sectionSlices } from '../../lib/section-slices';
 
 /**

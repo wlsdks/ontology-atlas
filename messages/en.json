@@ -4262,6 +4262,7 @@
       "scopeUnknownHint": "This tool did not say what the grant covers. Allowing once is the safer choice.",
       "pageFits": "The page keeps its shape: every fact cited, the five sections in order.",
       "pageFails": "{count, plural, one {# problem} other {# problems}} with this page's shape. Allow saves it as is; the Wiki list will show them.",
+      "pageFailsRest": "{count, plural, one {# more} other {# more}} beyond these. The Wiki list shows them all.",
       "insideFolderTitle": "It wants to change a file in this folder",
       "insideFolderBody": "The path is below. Nothing happens until you allow it.",
       "insideProjectTitle": "It wants to look at code in your project",

@@ -17,7 +17,7 @@ import {
   type WikiProblemContext,
   type WikiProblemWhere,
   type WikiProblemWords,
-} from "../../lib/describe-wiki-problem";
+} from "@/features/library";
 import { localizeWikiLogSummary } from "../../lib/wiki-log-summary";
 import { WikiProblemSentence, type WikiProblemDoors } from "./WikiTemplateProblems";
 

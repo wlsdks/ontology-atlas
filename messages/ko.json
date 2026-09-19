@@ -4262,6 +4262,7 @@
       "scopeUnknownHint": "이 도구가 허용 범위를 알려 주지 않았어요. 한 번만 허용하는 쪽이 안전해요.",
       "pageFits": "문서 모양이 맞습니다. 사실마다 인용이 있고 다섯 절이 순서대로입니다.",
       "pageFails": "문서 모양에 어긋나는 문제 {count}건. 허용하면 이대로 저장되고 위키 목록에 표시됩니다.",
+      "pageFailsRest": "그 밖에 {count}건이 더 있어요. 위키 목록에서 전부 볼 수 있어요.",
       "insideFolderTitle": "이 폴더의 파일을 바꾸려고 해요",
       "insideFolderBody": "경로는 아래에 있어요. 허락하기 전에는 아무 일도 일어나지 않아요.",
       "insideProjectTitle": "내 프로젝트 안의 코드를 보려고 해요",
