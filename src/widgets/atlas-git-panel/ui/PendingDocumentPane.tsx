@@ -390,6 +390,58 @@ function MarkLabel({ t, kind }: { t: Translator; kind: Line["kind"] }) {
   return null;
 }
 
+/**
+ * The inline marks an ontology document actually carries, drawn rather than shown raw.
+ *
+ * Measured in the installed app on a real vault (2026-09-19): a document's body read
+ * `**receive, install, attach**` and `` `/agents/` `` with the asterisks and backticks on
+ * screen. A person judging a meaning should read the meaning, not its markup. Only the three
+ * marks a vault document uses are handled — strong, code, and a link's text — and anything
+ * else stays exactly as written, because a reader that guesses is worse than one that shows.
+ */
+function inlineMarkdown(text: string): React.ReactNode {
+  const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[\[[^\]]+\]\]|\[[^\]]+\]\([^)]*\))/g;
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  for (const match of text.matchAll(pattern)) {
+    const at = match.index ?? 0;
+    if (at > last) out.push(text.slice(last, at));
+    const piece = match[0];
+    const key = `${at}`;
+    if (piece.startsWith("**")) {
+      out.push(
+        <b key={key} className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+          {piece.slice(2, -2)}
+        </b>,
+      );
+    } else if (piece.startsWith("`")) {
+      out.push(
+        <code key={key} className="rounded-[var(--radius-micro)] bg-[color:var(--color-overlay-1)] px-1 font-mono text-caption">
+          {piece.slice(1, -1)}
+        </code>,
+      );
+    } else if (piece.startsWith("[[")) {
+      // A wikilink names another document; its target is a concern of the map, not of this
+      // reader, so the name is what is drawn.
+      out.push(
+        <span key={key} className="text-[color:var(--color-text-primary)]">
+          {(piece.slice(2, -2).split("|").pop() ?? "").trim()}
+        </span>,
+      );
+    } else {
+      const label = /^\[([^\]]+)\]/.exec(piece);
+      out.push(
+        <span key={key} className="text-[color:var(--color-text-primary)]">
+          {label ? label[1] : piece}
+        </span>,
+      );
+    }
+    last = at + piece.length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out.length > 0 ? out : text;
+}
+
 /** A stretch the diff left out, drawn rather than left as blank space: hiding the cut
  *  would make the reading a lie. */
 function SkipRule({ t }: { t: Translator }) {
@@ -451,24 +503,30 @@ function ProseLine({
         )}
       >
         <MarkLabel t={t} kind={line.kind} />
-        {heading[2]}
+        {inlineMarkdown(heading[2])}
       </Tag>
     );
   }
-  const item = /^\s*[-*]\s+(.*)$/.exec(text);
+  /*
+   * A list item, bulleted or numbered. A numbered item keeps its own number — it is the
+   * document's, and renumbering someone's list while showing them a change would be a small
+   * lie — and only the marker moves into its own column so the text lines up.
+   */
+  const item = /^\s*([-*]|\d+[.)])\s+(.*)$/.exec(text);
   if (item) {
+    const bullet = item[1] === "-" || item[1] === "*" ? "•" : item[1];
     return (
       <p className={cn("-mx-2 flex gap-2 px-2 pl-5 text-reading leading-prose text-[color:var(--color-text-secondary)]", mark)}>
-        <span aria-hidden className="w-2 shrink-0 text-[color:var(--color-text-quaternary)]">•</span>
+        <span aria-hidden className="shrink-0 tabular-nums text-[color:var(--color-text-quaternary)]">{bullet}</span>
         <MarkLabel t={t} kind={line.kind} />
-        <span className="min-w-0 break-words">{item[1]}</span>
+        <span className="min-w-0 break-words">{inlineMarkdown(item[2])}</span>
       </p>
     );
   }
   return (
     <p className={cn("-mx-2 break-words px-2 text-reading leading-prose text-[color:var(--color-text-secondary)]", mark)}>
       <MarkLabel t={t} kind={line.kind} />
-      {text}
+      {inlineMarkdown(text)}
     </p>
   );
 }

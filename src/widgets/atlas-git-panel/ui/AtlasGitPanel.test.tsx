@@ -1794,3 +1794,51 @@ describe("AtlasGitPanel — 개념이 아닌 파일은 산문이 아니다", () 
     expect(reader).not.toHaveTextContent("고친 문서");
   });
 });
+
+describe("AtlasGitPanel — 본문은 표시가 아니라 뜻을 읽힌다", () => {
+  it("굵게와 코드 표시를 별표와 백틱째 보여주지 않는다", async () => {
+    installDesktopGit({
+      documentDiff: () => ({
+        path: "docs/elements/bar.md",
+        diff: [
+          "diff --git a/docs/elements/bar.md b/docs/elements/bar.md",
+          "@@ -1,2 +1,3 @@",
+          " A single location (`/agents/`) where you **receive and attach** tools.",
+          "+One more line.",
+          "",
+        ].join("\n"),
+        untracked: false,
+        tooLarge: false,
+      }),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const reader = await screen.findByTestId("atlas-git-diff-pre");
+    await waitFor(() => expect(reader).toHaveTextContent("receive and attach"));
+    expect(reader.textContent).not.toContain("**");
+    expect(reader.textContent).not.toContain("`");
+    expect(reader.querySelector("code")).toHaveTextContent("/agents/");
+    expect(reader.querySelector("b")).toHaveTextContent("receive and attach");
+  });
+
+  it("번호 목록도 항목으로 서고, 번호는 문서의 것을 그대로 쓴다", async () => {
+    installDesktopGit({
+      documentDiff: () => ({
+        path: "docs/elements/bar.md",
+        diff: [
+          "diff --git a/docs/elements/bar.md b/docs/elements/bar.md",
+          "@@ -1,3 +1,3 @@",
+          " 1. **Executor List**: tools confirmed on this device.",
+          " 2. **Connection Check**: review eight steps.",
+          "",
+        ].join("\n"),
+        untracked: false,
+        tooLarge: false,
+      }),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const reader = await screen.findByTestId("atlas-git-diff-pre");
+    await waitFor(() => expect(reader).toHaveTextContent("Executor List"));
+    expect(reader.textContent).not.toContain("**");
+    expect(reader.textContent).toContain("2.");
+  });
+});
