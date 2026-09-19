@@ -373,13 +373,19 @@ export function AcpChatPanel({
   /**
    * Answers a file permission itself when the screen's own contract says the write fits:
    * the request lands without a card and the transcript notes it. Null asks the person.
+   *
+   * ⚠️ **A rejection is an answer too, and this type used to forbid it** (2026-09-20). The
+   * session it feeds has always accepted `{ reject }` and pushes an `auto-refused` notice for
+   * it — `use-rounds-runner` answers that way on every write outside a round's scope — but the
+   * panel's own prop said `string | null`, so the case could not be written down here and the
+   * notice fell through the transcript's chain to the unrelated `notice.gateOff`.
    */
   autoDecide?: (request: {
     filePath: string | null;
     rawInput: Record<string, unknown>;
     toolKind: string | null;
     toolName: string | null;
-  }) => string | null;
+  }) => string | { reject: string } | null;
   /**
    * The answer to 「What should I ask?」 (what should I ask) — drawn from **this folder's
    * current state** (`useChatSuggestions`). It appears in the empty conversation and,
@@ -3004,13 +3010,27 @@ function TranscriptEntry({
       data-notice={event.text}
       className="break-keep rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-label leading-prose text-[color:var(--color-text-secondary)]"
     >
+      {/*
+       * ⚠️ **Every notice kind needs its own arm, because the last one is an `else`.**
+       *
+       * `auto-refused` had none (found 2026-09-20). The session pushes it whenever `autoDecide`
+       * answers with a rejection — which `use-rounds-runner` does on every write outside a round's
+       * scope — and it fell through this chain to `notice.gateOff`, a sentence saying Atlas
+       * *cannot* ask before a file outside the folder is touched. The opposite of what happened:
+       * Atlas had decided, and refused. The subject it refused (`detail`) was dropped with it.
+       *
+       * There was no `notice.autoRefused` string either, so the branch could not have been
+       * written without writing the sentence first.
+       */}
       {event.text === 'mode-moved'
         ? t(event.serverGate ? 'notice.modeMovedServerGate' : 'notice.modeMoved', {
             mode: event.mode ?? '',
           })
         : event.text === 'auto-allowed'
           ? t('notice.autoAllowed', { detail: event.detail ?? '' })
-          : t(event.text === 'died-mid-turn' ? 'notice.diedMidTurn' : 'notice.gateOff')}
+          : event.text === 'auto-refused'
+            ? t('notice.autoRefused', { detail: event.detail ?? '' })
+            : t(event.text === 'died-mid-turn' ? 'notice.diedMidTurn' : 'notice.gateOff')}
       {event.text === 'auto-allowed' && noticeActions && event.detail ? (
         /*
          * The receipt carries its two doors: the page that landed, and the switch to being
