@@ -291,6 +291,7 @@ import {
   OntologyMapContextMenu,
   OntologyMapDetailPanel,
   OntologyMapEdgeHoverCard,
+  type HoverAvoidRect,
   OntologyMapClusterHoverCard,
   buildV2Connections,
   buildV2ConnectionGroups,
@@ -1453,13 +1454,14 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null };
     x: number;
     y: number;
+    avoid: readonly HoverAvoidRect[];
   } | null>(null);
   const handleHoverEdge = useCallback(
     (
       edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
-      position: { x: number; y: number } | null,
+      position: { x: number; y: number; avoid: readonly HoverAvoidRect[] } | null,
     ) => {
-      setHoverEdge(edge && position ? { edge, x: position.x, y: position.y } : null);
+      setHoverEdge(edge && position ? { edge, x: position.x, y: position.y, avoid: position.avoid } : null);
     },
     [setHoverEdge],
   );
@@ -1484,6 +1486,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
       why: edgeRecord?.label?.trim() || null,
       x: hoverEdge.x,
       y: hoverEdge.y,
+      avoid: hoverEdge.avoid,
     };
   }, [hoverEdge, ontologyInsight, t, relationVocabulary, relationRegister]);
   // Cluster-chip hover tooltip: state plus the sentence model. The parent title and
@@ -6587,6 +6590,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             clickHint={t("edgeHover.clickHint")}
             x={hoverEdgeCardModel.x}
             y={hoverEdgeCardModel.y}
+            avoid={hoverEdgeCardModel.avoid}
           />
         ) : null}
         {/* Cluster-chip hover tooltip, mutually exclusive with the edge card and the

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isVaultTool, toolLabel } from './tool-label';
+import { isVaultTool, labelWithoutRepeatedPath, toolLabel, type ToolLabel } from './tool-label';
 
 /**
  * A tool line records **what happened, not a function name.**
@@ -75,5 +75,36 @@ describe('isVaultTool — whose answer is this', () => {
     expect(isVaultTool('Grep', 'atlas-vault')).toBe(false);
     expect(isVaultTool('mcp__atlas-vault-evil__list_concepts', 'atlas-vault')).toBe(false);
     expect(isVaultTool('', 'atlas-vault')).toBe(false);
+  });
+});
+
+describe('labelWithoutRepeatedPath — 한 줄이 같은 경로를 두 번 찍지 않는다', () => {
+  const raw = (text: string): ToolLabel => ({ kind: 'raw', text });
+
+  it('제목 끝의 경로를 떼고 동사만 남긴다 — 실측한 기본 쓰기 도구', () => {
+    const path = '/Users/probe/Ontology Atlas/launch/wiki/architecture.md';
+    expect(labelWithoutRepeatedPath(raw(`Write ${path}`), path)).toEqual({ kind: 'raw', text: 'Write' });
+    expect(labelWithoutRepeatedPath(raw(`Edit: ${path}`), path)).toEqual({ kind: 'raw', text: 'Edit' });
+    expect(labelWithoutRepeatedPath(raw(`Read · ${path}`), path)).toEqual({ kind: 'raw', text: 'Read' });
+  });
+
+  it('경로만 있고 동사가 없으면 줄이 빈 채로 남지 않게 그대로 둔다', () => {
+    const path = 'wiki/architecture.md';
+    expect(labelWithoutRepeatedPath(raw(path), path)).toEqual(raw(path));
+    expect(labelWithoutRepeatedPath(raw(`  ${path}  `), path)).toEqual(raw(`  ${path}  `));
+  });
+
+  it('정확히 끝나는 경우에만 자른다 — 비슷한 경로나 가운데 언급은 건드리지 않는다', () => {
+    expect(labelWithoutRepeatedPath(raw('Write wiki/architecture.md then stop'), 'wiki/architecture.md'))
+      .toEqual(raw('Write wiki/architecture.md then stop'));
+    expect(labelWithoutRepeatedPath(raw('Write docs/architecture.md'), 'wiki/architecture.md'))
+      .toEqual(raw('Write docs/architecture.md'));
+  });
+
+  it('뜻을 아는 도구 이름과 빈 경로는 손대지 않는다', () => {
+    const known: ToolLabel = { kind: 'known', text: 'addNode' };
+    expect(labelWithoutRepeatedPath(known, '/a/b.md')).toBe(known);
+    expect(labelWithoutRepeatedPath(raw('Write /a/b.md'), null)).toEqual(raw('Write /a/b.md'));
+    expect(labelWithoutRepeatedPath(raw('Write /a/b.md'), '   ')).toEqual(raw('Write /a/b.md'));
   });
 });
