@@ -162,6 +162,59 @@ describe("GlobalSearch", () => {
     expect(findOntologyOption("element:mcp-index")).not.toBeNull();
   });
 
+  // 2026-09-19 — cmdk's root listens for Enter across the whole palette and turns it
+  // into "open the highlighted row", preventDefault included, so it swallowed Enter
+  // pressed on a control. Measured live: tabbing to a kind chip and pressing Enter
+  // left the chip aria-pressed="false" and instead closed the palette and flew the
+  // map to whichever row happened to be highlighted. The close button did the same.
+  describe("Enter 는 포커스된 컨트롤의 것이다", () => {
+    const openPalette = (onSelectNode = vi.fn()) => {
+      render(
+        <GlobalSearch
+          open
+          onOpenChange={() => {}}
+          nodes={nodes}
+          onSelectNode={onSelectNode}
+          projects={projects}
+          onSelectProject={() => {}}
+        />,
+      );
+      return onSelectNode;
+    };
+
+    it("필터 칩 위의 Enter 는 결과를 열지 않는다", () => {
+      const onSelectNode = openPalette();
+      fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+        target: { value: "mcp" },
+      });
+      const chip = screen.getByRole("button", { name: "Element" });
+      chip.focus();
+      fireEvent.keyDown(chip, { key: "Enter" });
+      expect(onSelectNode).not.toHaveBeenCalled();
+    });
+
+    it("닫기 버튼 위의 Enter 도 결과를 열지 않는다", () => {
+      const onSelectNode = openPalette();
+      fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+        target: { value: "mcp" },
+      });
+      const close = screen.getByTestId("global-search-close");
+      close.focus();
+      fireEvent.keyDown(close, { key: "Enter" });
+      expect(onSelectNode).not.toHaveBeenCalled();
+    });
+
+    it("검색칸 위의 Enter 는 그대로 결과를 연다", () => {
+      // The behaviour the guard must not cost: from the field, Enter is exactly
+      // "open the highlighted row".
+      const onSelectNode = openPalette();
+      const field = screen.getByRole("combobox", { name: "Search this map" });
+      fireEvent.change(field, { target: { value: "mcp server" } });
+      fireEvent.keyDown(field, { key: "Enter" });
+      expect(onSelectNode).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("N12 — 파일 경로 형태 element title 은 mono/quaternary 로 강등되고, 일반 title 은 그대로 primary", () => {
     render(
       <GlobalSearch
