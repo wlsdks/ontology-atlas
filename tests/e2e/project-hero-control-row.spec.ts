@@ -163,3 +163,51 @@ test("the view-only state is drawn as a fact, not as a fourth control", async ({
     expect(measured.door.borderWidth, `door: ${JSON.stringify(measured.door)}`).toBeGreaterThan(0);
   }
 });
+
+/**
+ * The board's doors, measured where a finger presses them.
+ *
+ * Each cell's door is the point of the cell: read the figures, then choose where to go. As a text
+ * link it carries no height token, so its box is the font's height — 24px on a phone against the
+ * 44px contract `globals.css` states. `touch-hit-expand` is that file's own remedy for
+ * text-shaped controls: it widens the hit area under `pointer: coarse` and changes nothing
+ * visible. A class cannot be checked by reading the source, because the rule lives in a media
+ * query, so this presses around the box and asks what would receive it.
+ */
+test.describe("on a phone", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test("each surface door answers a press across the whole touch target", async ({ page }) => {
+    await page.goto("/en/project/fallback/?slug=storefront&guides=off");
+    await expect(page.getByTestId("project-detail-surface-board")).toBeVisible({ timeout: 30_000 });
+
+    const measured = await page.evaluate(() => {
+      const doors = [...document.querySelectorAll('[data-testid="project-detail-surface-open"]')];
+      return doors.map((door) => {
+        door.scrollIntoView({ block: "center" });
+        const box = door.getBoundingClientRect();
+        const x = Math.round(box.x + box.width / 2);
+        const y = Math.round(box.y + box.height / 2);
+        const receives = (dy: number) => {
+          const at = document.elementFromPoint(x, y + dy);
+          return Boolean(at && (at === door || door.contains(at) || at.closest?.('[data-testid="project-detail-surface-open"]') === door));
+        };
+        return {
+          label: (door.textContent ?? "").trim().slice(0, 16),
+          visible: Math.round(box.height),
+          inside: receives(-20) && receives(20),
+          outside: receives(-26) || receives(26),
+        };
+      });
+    });
+
+    expect(measured.length, "one door per surface").toBe(3);
+    for (const door of measured) {
+      // The visible box stays small; only the reach grows.
+      expect(door.visible, `${door.label} box: ${JSON.stringify(door)}`).toBeLessThan(32);
+      expect(door.inside, `${door.label} reach: ${JSON.stringify(door)}`).toBe(true);
+      // And it does not reach so far that two controls could fight over one press.
+      expect(door.outside, `${door.label} overreach: ${JSON.stringify(door)}`).toBe(false);
+    }
+  });
+});

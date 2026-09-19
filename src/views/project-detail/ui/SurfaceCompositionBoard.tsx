@@ -83,7 +83,15 @@ export function SurfaceCompositionBoard({
             href={cell.href}
             prefetch={false}
             data-testid="project-detail-surface-open"
-            className={controlClass({ shape: "link", tone: "accent", className: "self-end" })}
+            /*
+             * The door is the cell's whole point — read the figures, then choose where to go — and
+             * as a text link it has no height token, so it measured 24px on a phone against the
+             * 44px touch contract. `touch-hit-expand` widens the hit area only under
+             * `pointer: coarse` and changes nothing visible, which is the remedy `globals.css`
+             * wrote for text-shaped controls. Safe here because each cell holds one door and the
+             * cards sit a card gap apart, so no two expanded areas can meet.
+             */
+            className={controlClass({ shape: "link", tone: "accent", className: "touch-hit-expand self-end" })}
           >
             {openLabels[cell.id]}
           </Link>
