@@ -207,13 +207,16 @@ function renderView({
   ariaLabel?: string;
   dataTestId?: string;
 }) {
-  // ariaLabel has to reach view mode too: with `role=button`, a screen reader must
-  // be able to say which field this button edits. It was previously destructured
-  // but never spread, leaving view mode with no accessible name.
+  // `ariaLabel` names the *field* ("Project name"), and in edit mode it labels the input.
+  // In view mode it must not become the element's accessible name: an `aria-label` on the
+  // `h1` replaced "Online Store" with "Project name" for every screen reader, on the
+  // read-only page too (measured 2026-09-19). The name stays the content. When the view is
+  // a button, the field name rides along as the description so a reader still hears which
+  // field the button edits.
   const commonProps = {
     className,
     "data-testid": dataTestId,
-    ...(ariaLabel ? { "aria-label": ariaLabel } : {}),
+    ...(interactive && ariaLabel ? { "aria-description": ariaLabel } : {}),
     ...(interactive
       ? {
           role: "button" as const,
