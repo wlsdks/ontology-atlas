@@ -50,3 +50,13 @@ export type {
   LibraryWorkEvent,
   LibraryWorkTarget,
 } from "./model/library-work-activity";
+export { useLibraryModel } from "./model/use-library-model";
+export type { LibraryUiModel } from "./model/use-library-model";
+export {
+  isAdvisoryWikiCode,
+  isWikiFolderCode,
+  libraryDanglingLinkCount,
+  libraryOffTemplateCount,
+  mergeWikiVerdict,
+} from "./model/merge-wiki-verdict";
+export type { WikiVerdictLike } from "./model/merge-wiki-verdict";

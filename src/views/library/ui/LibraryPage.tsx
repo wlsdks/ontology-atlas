@@ -116,11 +116,11 @@ import {
   libraryTransferSentence,
 } from "../lib/compile-availability";
 import { libraryWaitingLine } from "../lib/stage-steps";
-import { isWikiFolderCode, libraryOffTemplateCount } from "../lib/merge-wiki-verdict";
+import { isWikiFolderCode, libraryOffTemplateCount } from "@/features/library";
 import { useCitedPassage } from "../lib/use-cited-passage";
 import { useSourceOutline } from "../lib/use-source-outline";
 import { sectionSlices } from "../lib/section-slices";
-import { useLibraryModel } from "../lib/use-library-model";
+import { useLibraryModel } from "@/features/library";
 import { useObservedWikiWork } from "../lib/use-observed-wiki-work";
 import { useLibraryAgent } from "../lib/use-library-agent";
 import { useAnswerRefresh } from '../lib/use-answer-refresh';

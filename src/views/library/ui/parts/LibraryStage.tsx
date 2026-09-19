@@ -23,7 +23,7 @@ import {
   libraryWaitingLine,
   type LibraryStepState,
 } from "../../lib/stage-steps";
-import type { LibraryUiModel } from "../../lib/use-library-model";
+import type { LibraryUiModel } from "@/features/library";
 import type { LibraryLocalModel } from "../../lib/use-library-agent";
 import { CompileBrainSelect } from "./CompileBrainSelect";
 import { AgentDoor } from "./AgentDoor";

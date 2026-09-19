@@ -23,7 +23,7 @@ import {
   type LibraryIndexSegment,
 } from "@/shared/lib/appearance-preferences";
 
-import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount } from "../../lib/merge-wiki-verdict";
+import { isAdvisoryWikiCode, isWikiFolderCode, libraryOffTemplateCount } from "@/features/library";
 import { captionWindow } from "../../lib/caption-window";
 import { passageLabelText } from "../../lib/passage-label";
 import { useSourceSearch } from "../../lib/use-source-search";
@@ -38,7 +38,7 @@ const SOURCE_ROW_ESTIMATE_PX = 36;
 const SOURCE_STATE_FOLDS_FROM = 12;
 /** The order the head counts states in: what to act on first, what is done last. */
 const SOURCE_STATE_ORDER: readonly LibrarySourceRow["state"][] = ["stale", "partial", "not-compiled", "compiled", "checking"];
-import type { LibraryUiModel } from "../../lib/use-library-model";
+import type { LibraryUiModel } from "@/features/library";
 import { WIKI_SECTION_ORDER } from "@/shared/lib/wiki-page-schema";
 
 const WIKI_SECTION_PREVIEW_KEYS = {
