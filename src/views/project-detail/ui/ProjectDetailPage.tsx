@@ -30,7 +30,13 @@ import {
   projectHasDisplayName,
   type Project,
 } from "@/entities/project";
-import { useProjects, useProjectMutations, useProjectBody, useVaultDocs } from "@/features/project-data-source";
+import {
+  useProjects,
+  useProjectMutations,
+  useProjectBody,
+  useVaultDocs,
+  useVaultManifest,
+} from "@/features/project-data-source";
 import { buildDocsVaultHref, findProjectDocInList } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
@@ -374,6 +380,9 @@ export function ProjectDetailPage({
   const handoffCopy = useCopyFeedback();
   const briefCopy = useCopyFeedback();
   const vaultDocs = useVaultDocs();
+  // The same manifest those docs come from: the Library cell counts sources and wiki pages
+  // out of one folder, not the open folder's sources beside the chosen sample's pages.
+  const vaultManifest = useVaultManifest();
 
   if (!slug) {
     return (
@@ -418,7 +427,7 @@ export function ProjectDetailPage({
   const surfaceCells = buildSurfaceComposition({
     metrics,
     domains: domainComposition.domains,
-    manifest: localVault.manifest,
+    manifest: vaultManifest,
     docs: vaultDocs,
     labels: {
       domains: t("metricDomains"),
