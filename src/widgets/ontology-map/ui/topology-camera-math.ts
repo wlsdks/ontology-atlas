@@ -351,6 +351,35 @@ export function computeOverviewCameraTarget(
 }
 
 /**
+ * **The lens fit** — expand-all and the recent-changes spotlight. Fits the lens
+ * bounds into the width left beside the side panels and centres them there.
+ *
+ * Measured 2026-09-19 at 1512×806 with the INDEX panel open: this fit used the
+ * raw viewport, so expand-all put the graph's centre at x 719 while the area
+ * beside the panel is centred at 835 — and the very next "fit" press moved the
+ * map, because that fit does read the panels. The top and bottom lanes are
+ * deliberately not reserved here: the lens bounds already carry their own 18 %
+ * padding (`runSpotlightFit`), and reserving both on top of it cut the fill from
+ * 75 % to 49 % of the height. With zero insets this is exactly `fitWorldTarget`.
+ */
+export function computeLensFitTarget(
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+  viewportWidth: number,
+  viewportHeight: number,
+  tokens: Pick<OntologyMapTokens, "cameraScaleMax" | "cameraScaleMin"> & SafeInsetTokens,
+): CameraTarget {
+  const insets = { left: tokens.safeInsetLeft ?? 0, right: tokens.safeInsetRight ?? 0, top: 0, bottom: 0 };
+  const fit = fitWorldTarget(
+    bounds,
+    Math.max(1, viewportWidth - insets.left - insets.right),
+    viewportHeight,
+    tokens.cameraScaleMax,
+    tokens.cameraScaleMin,
+  );
+  return { ...centerForInsets(fit.tx, fit.ty, insets, fit.tscale), tscale: fit.tscale };
+}
+
+/**
  * **The cone's own fit** — fill the free canvas, not the safe rect.
  *
  * ## Why the overview fit could not do this (measured 2026-09-05, sample vault)

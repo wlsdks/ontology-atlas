@@ -177,6 +177,36 @@ test("상단 전체 펼치기는 전 노드를 드러내고 자동으로 화면 
   });
   expect(offscreen, "전체 펼치기 뒤 화면 밖에 남은 노드가 있다").toBe(0);
 
+  // Centred beside the panels, not on the raw canvas. Measured 2026-09-19 at
+  // 1512 wide with the INDEX panel open: the lens fit used the whole canvas and
+  // put the drawn centre at x 719 while the width left beside the panel is
+  // centred at 835 — and the next "fit" press, which does read the panels,
+  // moved the map. The expected centre is derived from the same two sources
+  // the camera reads: the safe-inset tokens and the measured obstruction.
+  const centring = await page.evaluate(() => {
+    const map = document.querySelector<HTMLElement>('[data-testid="ontology-map"]');
+    const probe = window.__atlasMap;
+    const nodes = probe?.nodes().filter((node) => !node.hidden) ?? [];
+    const camera = probe?.camera();
+    const insets = probe?.obstacleInsets();
+    if (!map || !camera || !insets || nodes.length === 0) return null;
+    const style = getComputedStyle(map);
+    const left = Math.max(Number(style.getPropertyValue("--map-safe-inset-left")), insets.left);
+    const right = Math.max(Number(style.getPropertyValue("--map-safe-inset-right")), insets.right);
+    let minX = Infinity;
+    let maxX = -Infinity;
+    for (const node of nodes) {
+      minX = Math.min(minX, node.x - node.radius);
+      maxX = Math.max(maxX, node.x + node.radius);
+    }
+    return { drawn: (minX + maxX) / 2, expected: (left + camera.width - right) / 2 };
+  });
+  expect(centring, "가운데 검사가 읽을 계기가 없다").not.toBeNull();
+  expect(
+    Math.abs(centring!.drawn - centring!.expected),
+    `전체 펼치기가 패널 옆 빈 자리 가운데(${Math.round(centring!.expected)})가 아니라 ${Math.round(centring!.drawn)}에 놓였다`,
+  ).toBeLessThan(24);
+
   await action.click();
   await expect(page.getByTestId("ontology-map")).not.toHaveAttribute("data-map-lens");
 });
