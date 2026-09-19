@@ -56,7 +56,3 @@ export function splitProjectBrief(body: string | null | undefined): ProjectBrief
   return { lead: leadLines.join("\n").trim(), sections };
 }
 
-/** Two-digit ordinal for a block's eyebrow: `01`, `02`, … */
-export function briefOrdinal(index: number): string {
-  return String(index + 1).padStart(2, "0");
-}
