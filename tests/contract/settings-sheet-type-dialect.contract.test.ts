@@ -68,7 +68,7 @@ import { describe, expect, it } from "vitest";
  * - A settings JSON `<pre>` the user must check character by character, at 9.5px
  *
  * So the reach widens to drill-ins and below. The chain is
- * `VaultAgentSetupPanel` → `AgentClientButtons` → `WebManualConnectPanel`.
+ * `VaultAgentSetupPanel` → `useAgentClientControls` (`AgentClientButtons.tsx`) → `WebManualConnectPanel`.
  *
  * **Noise is prevented by narrowing the exemption, not the reach.** Measured when
  * widening: **41 violations → 0 after replacement**, with overflow still 0.
@@ -94,7 +94,6 @@ const ROOT_SHEET_FILES = [
 const DRILL_IN_FILES = [
   `${UI}/VaultAgentSetupPanel.tsx`,
   `${UI}/AiConnectionPanel.tsx`,
-  `${UI}/AgentSetupStep.tsx`,
   "src/features/docs-vault-local/ui/AgentClientButtons.tsx",
   "src/features/docs-vault-local/ui/WebManualConnectPanel.tsx",
 ] as const;
@@ -200,7 +199,7 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
       );
     }
     // Is the chain alive — do these files really render inside the settings sheet.
-    expect(sourceAtPath(`${UI}/VaultAgentSetupPanel.tsx`)).toContain("AgentClientButtons");
+    expect(sourceAtPath(`${UI}/VaultAgentSetupPanel.tsx`)).toContain("useAgentClientControls");
     expect(sourceAtPath("src/features/docs-vault-local/ui/AgentClientButtons.tsx")).toContain(
       "WebManualConnectPanel",
     );

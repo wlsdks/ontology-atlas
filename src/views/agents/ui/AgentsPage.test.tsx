@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../messages/ko.json';
 import { AgentsPage } from './AgentsPage';
@@ -9,27 +9,29 @@ vi.mock('@/i18n/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-/**
- * The "agents" destination — **does it say the same thing twice?**
- *
- * Caught in a 2026-08-20 capture of the installed app: the page's lede and the panel's intro line were
- * near-identical sentences stacked one above the other. This screen had already suffered that
- * same-sentence-copy defect once (18 of the runner list's 20 lines), and the council's prescription was
- * "three explanatory paragraphs down to one".
- */
+let search = '';
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams(search),
+}));
+
 vi.mock('@/widgets/app-settings-menu', () => ({
   AcpRuntimeSettings: ({ embedded }: { embedded?: boolean }) => (
     <div data-testid="acp-runtimes" data-embedded={embedded ? 'true' : 'false'} />
   ),
 }));
 
-function renderPage() {
+function renderPage(children?: React.ReactNode, mcpCount?: number) {
   return render(
     <NextIntlClientProvider locale="ko" messages={ko}>
-      <AgentsPage />
+      <AgentsPage mcpCount={mcpCount}>{children}</AgentsPage>
     </NextIntlClientProvider>,
   );
 }
+
+afterEach(() => {
+  search = '';
+  window.history.replaceState(null, '', '/ko/agents/');
+});
 
 describe('에이전트 목적지', () => {
   it('제목과 한 줄 설명을 갖는다', () => {
@@ -51,16 +53,70 @@ describe('에이전트 목적지', () => {
     expect(header, '헤더가 없다').not.toBeNull();
     expect(header!.contains(lede), '설명이 헤더 안에 있다').toBe(false);
   });
+
+  it('설명은 한 줄뿐이다 — 접힌 문단도, 아래를 가리키는 문장도 없다', () => {
+    // Owner, 2026-09-19: "there is so much useless text here". The fold "what this screen
+    // does" and its paragraph are gone; the page says one sentence and then the strip.
+    renderPage();
+    expect(screen.queryByText('이 화면이 하는 일')).toBeNull();
+    const main = screen.getByRole('main');
+    const paragraphs = [...main.querySelectorAll('p')].filter((p) => p.textContent?.trim());
+    expect(paragraphs.map((p) => p.textContent)).toEqual([ko.agents.lede]);
+  });
 });
 
-/**
- * **Landmarks and the bottom reserve** — things that became checkable only once this became a destination.
- *
- * The first draft drew a `<div>`, and the accessibility ratchet caught it with
- * *"`/ko/agents/`: 0 elements inside `<main>`"*. That check's wording was exact: "zero violations" was
- * not a pass but **nothing measured**, and "skip to content" had nowhere to go on this screen alone.
- * It is blocked here before e2e has to catch it.
- */
+describe('두 탭, 한 번에 하나', () => {
+  it('기본은 에이전트 탭이고 MCP 탭의 몸통은 그리지 않는다', () => {
+    renderPage(<div data-testid="mcp-body" />);
+    expect(screen.getByRole('tab', { name: ko.agents.workspace.agents })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByTestId('acp-runtimes')).toBeInTheDocument();
+    expect(screen.queryByTestId('mcp-body')).toBeNull();
+    expect(screen.getByRole('main')).toHaveAttribute('data-agents-tab', 'agents');
+  });
+
+  it('?tab=mcp 는 MCP 탭을 열고 그 탭의 설명을 위에 둔다', () => {
+    search = 'tab=mcp';
+    renderPage(<div data-testid="mcp-body" />);
+    expect(screen.getByTestId('mcp-body')).toBeInTheDocument();
+    expect(screen.queryByTestId('acp-runtimes')).toBeNull();
+    expect(screen.getByText(ko.mcp.lede)).toBeInTheDocument();
+    expect(screen.queryByText(ko.agents.lede)).toBeNull();
+    expect(screen.getByRole('main')).toHaveAttribute('data-agents-tab', 'mcp');
+  });
+
+  it('탭을 누르면 주소가 따라온다 — 새로 고침과 공유 링크가 같은 탭을 연다', () => {
+    window.history.replaceState(null, '', '/ko/agents/?guides=off');
+    renderPage(<div data-testid="mcp-body" />);
+    fireEvent.click(screen.getByRole('tab', { name: ko.agents.workspace.mcp }));
+    expect(screen.getByTestId('mcp-body')).toBeInTheDocument();
+    expect(window.location.search).toBe('?guides=off&tab=mcp');
+    fireEvent.click(screen.getByRole('tab', { name: ko.agents.workspace.agents }));
+    expect(screen.getByTestId('acp-runtimes')).toBeInTheDocument();
+    expect(window.location.search).toBe('?guides=off');
+  });
+
+  it('탭 띠는 페이지 몸통에 있다 — 머리띠(56px 크롬)가 아니다', () => {
+    // 2026-09-18 the owner rejected a header strip; 2026-09-19 the stack. The strip lives
+    // inside `<main>`, below the title, as the Library's and Insights' do.
+    renderPage();
+    const strip = screen.getByRole('tablist');
+    const main = screen.getByRole('main');
+    expect(main.contains(strip)).toBe(true);
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('켜 둔 연결 도구 수가 MCP 탭 옆에 선다 — 알기 전에는 0을 찍지 않는다', () => {
+    renderPage(undefined, 2);
+    expect(screen.getByRole('tab', { name: `${ko.agents.workspace.mcp}, 2` })).toBeInTheDocument();
+    const { unmount } = renderPage();
+    unmount();
+  });
+});
+
 describe('목적지의 기본 골격', () => {
   it('`<main>` 랜드마크를 소유한다 — 이 저장소는 셸이 아니라 뷰가 소유한다', () => {
     renderPage();
@@ -83,21 +139,8 @@ describe('목적지의 기본 골격', () => {
   });
 });
 
-/**
- * **One job per destination** (2026-09-05).
- *
- * This screen used to carry the MCP connection pane as well, and the two halves shared only the
- * word "agent": one is about programs installed on this computer, the other about a wire that
- * works identically in a browser. MCP moved to `/mcp`, and what this asserts is that the move
- * really happened here rather than being drawn twice — two screens rendering the same pane is the
- * duplicate-source defect this repository names by name.
- *
- * Where the runner row's web sentence now points is asserted by `AcpRuntimeSettings.test.tsx`
- * (a link) and by `web-surface-smoke` (the link resolves), because that sentence belongs to the
- * runner list, not to this page.
- */
 describe('한 목적지에 한 가지 일', () => {
-  it('MCP 칸을 더는 그리지 않는다 — 같은 칸을 두 화면이 그리면 어느 쪽이 현재인지 알 수 없다', () => {
+  it('MCP 칸을 스스로 그리지 않는다 — 앱 층이 자식으로 건넨다', () => {
     renderPage();
     expect(screen.queryByTestId('agent-setup-section')).toBeNull();
     expect(screen.queryByTestId('connectors-panel')).toBeNull();

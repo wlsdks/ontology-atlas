@@ -112,7 +112,10 @@ export function LibraryRounds() {
     if (!runner) return false;
     const ok = await runner.save(round);
     if (ok) {
-      toast.show(t("sheet.saved", { name: round.name, time: dueLabel(round.nextDueAt) }), "success");
+      toast.show(
+        t(round.kind === "consistency" ? "sheet.savedRunningNow" : "sheet.saved", { name: round.name, time: dueLabel(round.nextDueAt) }),
+        "success",
+      );
       setSelectedId(round.id);
     }
     return ok;

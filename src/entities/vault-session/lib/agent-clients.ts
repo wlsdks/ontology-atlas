@@ -61,6 +61,13 @@ export interface AgentClient {
    * be able to confirm "why is this file appearing" in **the tool's own words** rather than ours.
    */
   docsUrl: string;
+  /**
+   * The bundled mark and its brand ink, as the runtime registry (`src-tauri/src/acp-registry.json`)
+   * records them for the same tools — one drawing per tool on both tabs of the Agents destination.
+   * The ink is data about a vendor, not a design token, which is why it is not a CSS variable.
+   */
+  icon: `/acp-icons/${string}.svg`;
+  brandInk: string | null;
 }
 
 export const AGENT_CLIENTS: readonly AgentClient[] = [
@@ -70,6 +77,8 @@ export const AGENT_CLIENTS: readonly AgentClient[] = [
     labelKey: 'claudeCode',
     files: ['.mcp.json'],
     docsUrl: 'https://docs.claude.com/en/docs/claude-code/mcp',
+    icon: '/acp-icons/claude-acp.svg',
+    brandInk: '#D97757',
   },
   {
     id: 'codex',
@@ -77,6 +86,8 @@ export const AGENT_CLIENTS: readonly AgentClient[] = [
     labelKey: 'codex',
     files: ['.codex/config.toml'],
     docsUrl: 'https://developers.openai.com/codex/mcp',
+    icon: '/acp-icons/codex-acp.svg',
+    brandInk: null,
   },
   {
     id: 'cursor',
@@ -84,6 +95,8 @@ export const AGENT_CLIENTS: readonly AgentClient[] = [
     labelKey: 'cursor',
     files: ['.cursor/mcp.json'],
     docsUrl: 'https://docs.cursor.com/context/model-context-protocol',
+    icon: '/acp-icons/cursor.svg',
+    brandInk: null,
   },
   {
     id: 'antigravity',
@@ -91,6 +104,8 @@ export const AGENT_CLIENTS: readonly AgentClient[] = [
     labelKey: 'antigravity',
     files: ['.agents/mcp_config.json'],
     docsUrl: 'https://antigravity.google/docs/mcp',
+    icon: '/acp-icons/antigravity-acp.svg',
+    brandInk: null,
   },
 ];
 
