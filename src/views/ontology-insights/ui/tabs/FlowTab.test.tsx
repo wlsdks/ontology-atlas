@@ -22,6 +22,19 @@ const labels: FlowTabLabels = {
   copied: "Copied",
   noVaultTitle: "Open a folder first",
   noVaultBody: "nothing to explain",
+  writtenAt: ({ when, writer }) => `${when} · written by ${writer}`,
+  standingCurrent: "the folder has not moved since",
+  standingStale: "the folder moved after this was written",
+  standingUnknown: "not checked against the folder",
+  ungrounded: "the reads behind this answer could not be proven",
+  changedTitle: "What changed since the last one",
+  changeAdded: "new",
+  changeRemoved: "gone",
+  changeRewritten: "rewritten",
+  noVersionTitle: "Nothing has been written yet",
+  noVersionBody: "Ask an agent to read this folder once.",
+  rewrite: "Write it again",
+  versionsLabel: (count) => `${count} kept.`,
 };
 
 const REQUEST = "Read only this vault and explain this product's business flow.";

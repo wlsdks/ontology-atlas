@@ -1951,7 +1951,20 @@
         "copied": "Copied",
         "noVaultTitle": "Open a folder first",
         "noVaultBody": "There is no vault to explain yet.",
-        "request": "Use only Atlas MCP read tools to explain this ontology's business flow. Never call shell, file, source, web, or other tools.\n\nReturn exactly six ### headings with one paragraph each:\n1) Why this product exists.\n2) Which domains own which responsibilities.\n3) How the main capabilities form a business flow.\n4) How those capabilities appear in elements or paths.\n5) Which declared dependencies explain impact, and what remains unknown.\n6) Which partial, visible-gap, stale, or unverified limits must be retained.\n\nRules:\n- Inspect the project map first and choose one representative meaning-to-implementation chain; do not enumerate every node.\n- Read at most 12 concepts with get_concept(body: full) or get_concepts(body: full).\n- Every paragraph names an exact full node slug whose complete body was read this turn.\n- Write a from --type--> to relation only when it exists in the current ontology.\n- Keep partial, visible-gap, and unknown qualifiers throughout.\n- A capability's excludes bound that capability only; do not widen them to project scope.\n- If the ontology cannot answer, say why instead of filling the gap from other knowledge."
+        "request": "Use only Atlas MCP read tools to explain this ontology's business flow. Never call shell, file, source, web, or other tools.\n\nReturn exactly six ### headings with one paragraph each:\n1) Why this product exists.\n2) Which domains own which responsibilities.\n3) How the main capabilities form a business flow.\n4) How those capabilities appear in elements or paths.\n5) Which declared dependencies explain impact, and what remains unknown.\n6) Which partial, visible-gap, stale, or unverified limits must be retained.\n\nRules:\n- Inspect the project map first and choose one representative meaning-to-implementation chain; do not enumerate every node.\n- Read at most 12 concepts with get_concept(body: full) or get_concepts(body: full).\n- Every paragraph names an exact full node slug whose complete body was read this turn.\n- Write a from --type--> to relation only when it exists in the current ontology.\n- Keep partial, visible-gap, and unknown qualifiers throughout.\n- A capability's excludes bound that capability only; do not widen them to project scope.\n- If the ontology cannot answer, say why instead of filling the gap from other knowledge.",
+        "writtenAt": "{when} · written by {writer}",
+        "standingCurrent": "the folder has not moved since",
+        "standingStale": "the folder moved after this was written",
+        "standingUnknown": "not checked against the folder as it stands",
+        "ungrounded": "the reads behind this answer could not be proven",
+        "changedTitle": "What changed since the last one",
+        "changeAdded": "new",
+        "changeRemoved": "gone",
+        "changeRewritten": "rewritten",
+        "noVersionTitle": "Nothing has been written yet",
+        "noVersionBody": "Ask an agent to read this folder once and say what the product is and how it moves. The answer stays here, and the next writing shows what changed.",
+        "rewrite": "Write it again",
+        "versionsLabel": "{count, number} kept."
       },
       "vaultHistory": {
         "title": "What the folder holds",
@@ -1977,9 +1990,9 @@
       },
       "core": {
         "brief": "Brief",
-        "ontology": "Ontology",
-        "library": "Library",
-        "harness": "Harness"
+        "ontology": "Concepts",
+        "library": "Wiki",
+        "harness": "Guidance"
       },
       "coreAriaLabel": "What to look at",
       "libraryTab": {

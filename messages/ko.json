@@ -1951,7 +1951,20 @@
         "copied": "복사했습니다",
         "noVaultTitle": "먼저 폴더를 여세요",
         "noVaultBody": "설명할 온톨로지가 아직 없습니다.",
-        "request": "Atlas의 온톨로지 읽기 도구만 사용해 이 온톨로지의 비즈니스 흐름을 설명해줘. shell·파일·소스·웹·다른 도구는 호출하지 마.\n\n정확히 여섯 개의 ### 제목과 각 한 문단으로 답해:\n1) 이 제품이 왜 존재하는가.\n2) 어느 도메인이 무엇을 책임지는가.\n3) 주요 capability가 어떤 비즈니스 흐름을 만드는가.\n4) 그 capability가 element나 path에서 어떻게 구현되는가.\n5) 선언된 dependency가 어떤 영향을 설명하며 무엇이 unknown인가.\n6) 다음 사람이 유지해야 할 partial, visible-gap, stale, unverified 한계는 무엇인가.\n\n규칙:\n- 먼저 전체 지도를 보고 대표 의미→구현 체인 하나를 골라. 모든 노드를 열거하지 마.\n- get_concept(body: full) 또는 get_concepts(body: full)는 합쳐서 최대 12개 개념만 읽어.\n- 모든 문단은 이번 턴에 본문 전체를 읽은 정확한 전체 노드 슬러그를 하나 이상 적어.\n- from --type--> to 관계는 현재 온톨로지에 실제로 있을 때만 적어.\n- partial, visible-gap, unknown 한정을 끝까지 유지해.\n- capability의 제외를 제품 전체 범위로 넓히지 마.\n- 답할 수 없으면 이유와 함께 모른다고 말하고, 다른 지식으로 메우지 마."
+        "request": "Atlas의 온톨로지 읽기 도구만 사용해 이 온톨로지의 비즈니스 흐름을 설명해줘. shell·파일·소스·웹·다른 도구는 호출하지 마.\n\n정확히 여섯 개의 ### 제목과 각 한 문단으로 답해:\n1) 이 제품이 왜 존재하는가.\n2) 어느 도메인이 무엇을 책임지는가.\n3) 주요 capability가 어떤 비즈니스 흐름을 만드는가.\n4) 그 capability가 element나 path에서 어떻게 구현되는가.\n5) 선언된 dependency가 어떤 영향을 설명하며 무엇이 unknown인가.\n6) 다음 사람이 유지해야 할 partial, visible-gap, stale, unverified 한계는 무엇인가.\n\n규칙:\n- 먼저 전체 지도를 보고 대표 의미→구현 체인 하나를 골라. 모든 노드를 열거하지 마.\n- get_concept(body: full) 또는 get_concepts(body: full)는 합쳐서 최대 12개 개념만 읽어.\n- 모든 문단은 이번 턴에 본문 전체를 읽은 정확한 전체 노드 슬러그를 하나 이상 적어.\n- from --type--> to 관계는 현재 온톨로지에 실제로 있을 때만 적어.\n- partial, visible-gap, unknown 한정을 끝까지 유지해.\n- capability의 제외를 제품 전체 범위로 넓히지 마.\n- 답할 수 없으면 이유와 함께 모른다고 말하고, 다른 지식으로 메우지 마.",
+        "writtenAt": "{when} · {writer}가 쓴 설명",
+        "standingCurrent": "쓴 뒤로 폴더가 그대로예요",
+        "standingStale": "쓴 뒤로 폴더가 바뀌었어요",
+        "standingUnknown": "지금 폴더와 맞는지 확인 못 했어요",
+        "ungrounded": "읽은 근거를 증명하지 못한 답이에요",
+        "changedTitle": "지난 설명과 달라진 곳",
+        "changeAdded": "새로 생김",
+        "changeRemoved": "없어짐",
+        "changeRewritten": "다시 씀",
+        "noVersionTitle": "아직 쓴 설명이 없어요",
+        "noVersionBody": "에이전트가 이 폴더만 읽고 제품이 무엇이고 어떻게 도는지 한 번 써 두면, 여기에 그 설명이 남고 다음에 다시 쓸 때 무엇이 달라졌는지 함께 보여드려요.",
+        "rewrite": "다시 쓰게 하기",
+        "versionsLabel": "{count, number}개 남아 있어요."
       },
       "vaultHistory": {
         "title": "폴더가 담고 있는 것",
@@ -1977,9 +1990,9 @@
       },
       "core": {
         "brief": "브리핑",
-        "ontology": "온톨로지",
-        "library": "자료실",
-        "harness": "하네스"
+        "ontology": "개념",
+        "library": "위키",
+        "harness": "지침"
       },
       "coreAriaLabel": "분석에서 볼 것",
       "libraryTab": {

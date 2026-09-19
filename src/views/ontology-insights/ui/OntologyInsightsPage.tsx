@@ -46,6 +46,7 @@ import { MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-sea
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { Button, EmptyState, TabBar, useToast } from "@/shared/ui";
+import { SegmentedControl } from "@/shared/ui/segmented-control";
 import {
   DEFAULT_INSIGHTS_TAB,
   INSIGHTS_CORES,
@@ -54,7 +55,6 @@ import {
   coreOfTab,
   parseInsightsTab,
   tabOfCore,
-  type InsightsCore,
   type InsightsTab,
 } from "../lib/insights-tab-state";
 import { buildUnmatchedBoard } from "../lib/unmatched-board";
@@ -131,12 +131,15 @@ import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import {
   presentationRelationKeysForGraphEdge,
   analysisGraphFromInsight,
+  currentAnalysisBasis,
   type AnalysisCaptureContext,
   runtimeOwnsWriteGate,
   vaultMcpServers,
   vaultSelfReadSlot,
 } from "@/features/acp-session";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
+import { readAnalysisHistory, type AnalysisBasis, type AnalysisRecord } from "@/entities/analysis-record";
+import { selectFlowVersions } from "../lib/flow-history";
 import { InsightsAgentDock } from "./parts/InsightsAgentDock";
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -588,6 +591,46 @@ export function OntologyInsightsPage() {
     t,
     toast,
   ]);
+  /*
+   * **The product's explanation is kept, not thrown away.** Every completed analysis turn is
+   * already recorded beside the vault; the flow tab reads those back as versions so a person
+   * sees what an agent wrote, when, and what changed since — rather than the request that
+   * produced it (owner, 2026-09-19).
+   */
+  const [flowArchive, setFlowArchive] = useState<{
+    handle: FileSystemDirectoryHandle | null;
+    records: readonly AnalysisRecord[];
+    basis: AnalysisBasis | null;
+  }>({ handle: null, records: [], basis: null });
+  const flowHandle = tab === "flow" ? analysisContext.handle : null;
+  useEffect(() => {
+    if (!flowHandle) return;
+    let cancelled = false;
+    const load = () => {
+      void Promise.all([
+        readAnalysisHistory(flowHandle, { limit: 20 }).catch(() => null),
+        currentAnalysisBasis(analysisContext, []).catch(() => null),
+      ]).then(([page, basis]) => {
+        // An unreadable archive is no versions, never a wrong one.
+        if (!cancelled) setFlowArchive({ handle: flowHandle, records: page?.records ?? [], basis });
+      });
+    };
+    load();
+    window.addEventListener("atlas-analysis-records-changed", load);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("atlas-analysis-records-changed", load);
+    };
+  }, [flowHandle, analysisContext]);
+  // A folder that closed or changed never keeps the previous folder's versions on screen.
+  const flowVersions = useMemo(
+    () =>
+      flowArchive.handle && flowArchive.handle === flowHandle
+        ? selectFlowVersions(flowArchive.records, analysisContext, flowArchive.basis)
+        : [],
+    [flowArchive, flowHandle, analysisContext],
+  );
+
   const agentContextLabel = agentPrefill
     ? t('agentContext', { tab: t(`tab.${agentPrefill.kind}`) })
     : '';
@@ -1420,12 +1463,21 @@ export function OntologyInsightsPage() {
           * carries the ontology's own questions. A reader looking at "relations" could not tell
           * which of the three it counted (owner, 2026-09-19).
           */}
-        <nav className="mt-[var(--section-gap)] flex flex-col gap-1">
-          <TabBar
+        {/*
+          * **Two rows, two kinds of control.** The subject is a mode, so it wears a segmented
+          * control; the questions inside a subject are sections, so they wear tabs. Stacking two
+          * identical tab rows is a named anti-pattern — the active state becomes ambiguous and
+          * spatial memory goes (Nielsen Norman, "Tabs, Used Right"), which is what a reader hit
+          * here (owner, 2026-09-19). The question row exists only for the concepts subject; the
+          * other three are single views and draw no second row at all.
+          */}
+        <nav className="mt-[var(--section-gap)] flex flex-col gap-2">
+          <SegmentedControl
             ariaLabel={t("coreAriaLabel")}
-            activeKey={coreOfTab(tab)}
-            onSelect={(key) => setTab(tabOfCore(key as InsightsCore))}
-            items={INSIGHTS_CORES.map((key) => ({ key, label: t(`core.${key}`) }))}
+            value={coreOfTab(tab)}
+            onChange={(key) => setTab(tabOfCore(key))}
+            options={INSIGHTS_CORES.map((key) => ({ value: key, label: t(`core.${key}`), testId: `insights-core-${key}` }))}
+            testId="insights-core-switch"
           />
           {coreOfTab(tab) === "ontology" ? (
           <TabBar
@@ -1737,7 +1789,21 @@ export function OntologyInsightsPage() {
                   copied: t("flow.copied"),
                   noVaultTitle: t("flow.noVaultTitle"),
                   noVaultBody: t("flow.noVaultBody"),
+                  writtenAt: (values) => t("flow.writtenAt", values),
+                  standingCurrent: t("flow.standingCurrent"),
+                  standingStale: t("flow.standingStale"),
+                  standingUnknown: t("flow.standingUnknown"),
+                  ungrounded: t("flow.ungrounded"),
+                  changedTitle: t("flow.changedTitle"),
+                  changeAdded: t("flow.changeAdded"),
+                  changeRemoved: t("flow.changeRemoved"),
+                  changeRewritten: t("flow.changeRewritten"),
+                  noVersionTitle: t("flow.noVersionTitle"),
+                  noVersionBody: t("flow.noVersionBody"),
+                  rewrite: t("flow.rewrite"),
+                  versionsLabel: (count) => t("flow.versionsLabel", { count }),
                 }}
+                versions={flowVersions}
                 request={flowRequest}
                 hasGraph={totalNodes > 0}
                 hasOwnFolder={vault.status === "loaded"}

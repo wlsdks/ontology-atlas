@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { controlClass } from "@/shared/ui/control-class";
+import { Disclosure } from "@/shared/ui";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { flowHeadingChanges, type FlowVersion } from "../../lib/flow-history";
 
 /**
  * **The one tab whose answer is written rather than measured.**
@@ -45,12 +47,28 @@ export interface FlowTabLabels {
   copied: string;
   noVaultTitle: string;
   noVaultBody: string;
+  /** The saved explanation's own header: when it was written and by which runtime. */
+  writtenAt: (values: { when: string; writer: string }) => string;
+  standingCurrent: string;
+  standingStale: string;
+  standingUnknown: string;
+  ungrounded: string;
+  changedTitle: string;
+  changeAdded: string;
+  changeRemoved: string;
+  changeRewritten: string;
+  noVersionTitle: string;
+  noVersionBody: string;
+  rewrite: string;
+  versionsLabel: (count: number) => string;
 }
 
 export interface FlowTabProps {
   labels: FlowTabLabels;
   /** The exact text handed to the agent, already scoped to this folder. */
   request: string;
+  /** Saved explanations of this product, newest first. The newest is the body a person reads. */
+  versions?: readonly FlowVersion[];
   /**
    * Whether there is a graph to explain at all. This is the same condition the
    * five sibling tabs draw on, and it is deliberately **not** "the person has
@@ -80,6 +98,7 @@ export interface FlowTabProps {
 export function FlowTab({
   labels,
   request,
+  versions,
   hasGraph,
   hasOwnFolder,
   canLaunchAgent,
@@ -110,12 +129,62 @@ export function FlowTab({
     }
   }
 
+  const latest = versions?.[0] ?? null;
+  const previous = versions?.[1] ?? null;
+  const changes = latest && previous ? flowHeadingChanges(latest.answer, previous.answer) : [];
+
   return (
     <section className="flex flex-col gap-4" data-testid="flow-tab">
       <div className="flex flex-col gap-2">
         <InsightsSectionTitle level={2}>{labels.title}</InsightsSectionTitle>
         <p className="max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{labels.lead}</p>
       </div>
+
+      {/*
+        * **The written explanation is the body; the request is not.** This tab showed the tool
+        * rules that go to the agent and nothing else, so a reader could not tell what it was for
+        * (owner, 2026-09-19). What is worth reading is what an agent wrote, what is worth keeping
+        * is how it changed between writings, and the request belongs behind a fold.
+        */}
+      {latest ? (
+        <article className="flex flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]" data-testid="flow-version">
+          <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-body text-[color:var(--color-text-secondary)]">
+              {labels.writtenAt({ when: latest.createdAt.slice(0, 16).replace("T", " "), writer: latest.writer })}
+            </span>
+            <span className="text-label text-[color:var(--color-text-tertiary)]" data-flow-standing={latest.standing}>
+              {latest.standing === "current" ? labels.standingCurrent : latest.standing === "stale" ? labels.standingStale : labels.standingUnknown}
+            </span>
+            {latest.grounded ? null : <span className="text-label text-[color:var(--color-amber-source-a90)]">{labels.ungrounded}</span>}
+          </header>
+          <div className="max-w-[72ch] whitespace-pre-wrap text-body leading-prose text-[color:var(--color-text-primary)]" data-testid="flow-answer">
+            {latest.answer}
+          </div>
+          {changes.length > 0 ? (
+            <section data-testid="flow-changes" className="border-t border-[color:var(--color-divider)] pt-3">
+              <h3 className="text-label text-[color:var(--color-text-tertiary)]">{labels.changedTitle}</h3>
+              <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-label text-[color:var(--color-text-secondary)]">
+                {changes.map((change) => (
+                  <li key={`${change.heading}-${change.change}`}>
+                    {change.heading}
+                    <span className="ml-1.5 text-[color:var(--color-text-quaternary)]">
+                      {change.change === "added" ? labels.changeAdded : change.change === "removed" ? labels.changeRemoved : labels.changeRewritten}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          {versions && versions.length > 1 ? (
+            <p className="text-label text-[color:var(--color-text-quaternary)]">{labels.versionsLabel(versions.length)}</p>
+          ) : null}
+        </article>
+      ) : (
+        <div className="flex flex-col gap-1.5 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]" data-testid="flow-no-version">
+          <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{labels.noVersionTitle}</p>
+          <p className="max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{labels.noVersionBody}</p>
+        </div>
+      )}
 
       {agentChecking ? (
         <p role="status" className="text-label text-[color:var(--color-text-tertiary)]">
@@ -129,7 +198,7 @@ export function FlowTab({
             data-testid="flow-prefill"
             onClick={() => onPrefill?.(request)}
           >
-            {labels.action}
+            {latest ? labels.rewrite : labels.action}
           </button>
           <span className="text-label text-[color:var(--color-text-tertiary)]">{labels.actionHint}</span>
         </div>
@@ -144,24 +213,23 @@ export function FlowTab({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-caption uppercase tracking-wide text-[color:var(--color-text-tertiary)]">
-            {labels.requestLabel}
-          </span>
-          <button
-            type="button"
-            className={controlClass({ shape: "chip", size: "sm" })}
-            data-testid="flow-copy"
-            onClick={copyRequest}
-          >
-            {copied ? labels.copied : labels.copy}
-          </button>
+      <Disclosure summary={labels.requestLabel} summaryTestId="flow-request-open" open={!latest}>
+        <div className="mt-2 flex flex-col gap-2">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              className={controlClass({ shape: "chip", size: "sm" })}
+              data-testid="flow-copy"
+              onClick={copyRequest}
+            >
+              {copied ? labels.copied : labels.copy}
+            </button>
+          </div>
+          <pre className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 text-label leading-prose text-[color:var(--color-text-secondary)]">
+            {request}
+          </pre>
         </div>
-        <pre className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 text-label leading-prose text-[color:var(--color-text-secondary)]">
-          {request}
-        </pre>
-      </div>
+      </Disclosure>
     </section>
   );
 }
