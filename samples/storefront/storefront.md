@@ -13,8 +13,26 @@ elements: []
 
 # Online Store
 
+## What it does
+
 Not a real company: an example built so that a first-time visitor can learn how to read the map. It draws a small online store that ships physical goods, clothes and household items, out of a single warehouse by parcel carrier: paid by card and one-tap wallets, shipped through three carriers, brought back with coupons and points. A store like any other.
 
-The nine areas sit on one big flow: browse, buy, receive, come back. Browsing is the catalog; buying is orders and payment, with inventory guarding the numbers behind them; receiving is fulfillment, with customer support catching what goes wrong; coming back is customers, marketing and loyalty. Follow one order from cart to refund and you can see how all nine connect.
+## How work flows
 
-The map is deliberately uneven, too. Loyalty names five things it wants to do but has built only a point balance: an area that is still mostly a plan. Inventory is the opposite: four things to do, ten things it must keep distinct. Real maps always look like this, sparse in one place and dense in another, and that unevenness is exactly what tells you where to look next.
+1. **Browse.** The [[domains/catalog|catalog]] is what a shopper meets first: products, categories, search.
+2. **Buy.** [[domains/order|Orders]] and [[domains/payment|payment]] cross the line from looking to owning, with [[domains/inventory|inventory]] guarding the numbers behind them.
+3. **Receive.** [[domains/fulfillment|Fulfillment]] gets the parcel out of the warehouse, and [[domains/support|customer support]] catches what goes wrong.
+4. **Come back.** [[domains/customer|Customers]], [[domains/marketing|marketing]] and [[domains/loyalty|loyalty]] are what brings a shopper back for a second order.
+
+Follow one order from cart to refund and you can see how all nine areas connect.
+
+## Where it is uneven
+
+- [[domains/loyalty|Loyalty]] names five things it wants to do but has built only a point balance: an area that is still mostly a plan.
+- [[domains/inventory|Inventory]] is the opposite: four things to do, ten things it must keep distinct.
+- Real maps always look like this, sparse in one place and dense in another. The unevenness is what tells you where to look next.
+
+## Where to look next
+
+- [[domains/order|Orders]] touch more areas than anything else on the map: one state change moves stock, payment, delivery and points at once.
+- Partial cancellation is the hardest rule here: the shipping fee, the coupon's minimum amount and points already earned all land at the same moment.

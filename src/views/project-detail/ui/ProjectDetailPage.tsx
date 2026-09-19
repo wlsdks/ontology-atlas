@@ -10,8 +10,6 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, FileText, FolderSearch, Layers, Waypoints } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
@@ -51,6 +49,8 @@ import { buildProjectDomainComposition } from "../model/domain-composition";
 import { buildConnectedProjects, findRelatesGraphProjectSlugs } from "../model/connected-projects";
 import { buildAgentHandoffSnippet } from "../model/agent-handoff-snippet";
 import { DomainCompositionRows } from "./DomainCompositionRows";
+import { ProjectBrief } from "./ProjectBrief";
+import { splitProjectBrief } from "../model/project-brief";
 import { ConstructionReviewPanel } from "./construction-review/ConstructionReviewPanel";
 import { TabBar } from "@/shared/ui/tab-bar";
 import {
@@ -367,6 +367,7 @@ export function ProjectDetailPage({
   const insightEdges = insight?.edges ?? [];
 
   const handoffCopy = useCopyFeedback();
+  const briefCopy = useCopyFeedback();
   const vaultDocs = useVaultDocs();
 
   if (!slug) {
@@ -508,6 +509,14 @@ export function ProjectDetailPage({
       : handoffCopy.state === "failed"
         ? t("handoffCopyErrorLabel")
         : t("handoffCopyLabel");
+  const briefIsStructured = splitProjectBrief(dedupedBodyContent).sections.length > 0;
+  const briefPrompt = t("briefPrompt", { slug: project.slug, doc: projectDoc?.path ?? `${project.slug}.md` });
+  const briefCopyLabel =
+    briefCopy.state === "copied"
+      ? t("briefAskCopied")
+      : briefCopy.state === "failed"
+        ? t("briefAskCopyError")
+        : t("briefAskCopy");
 
   return (
     <ProjectDetailShell>
@@ -856,15 +865,10 @@ export function ProjectDetailPage({
             </span>
           </div>
           {bodyContent ? (
-            // The column above is the line; no per-line cap here.
-            // `break-keep` — the Korean body broke mid-word as 「jangba|gi」 at 584px (measured
-            // 2026-08-12). `word-break` inherits, so this one wrapper covers every markdown paragraph.
-            <div
-              className={`${storyMarkdownClassName} break-keep`}
-              data-testid="project-detail-body-content"
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{dedupedBodyContent}</ReactMarkdown>
-            </div>
+            // The column above is the line; no per-line cap here. `ProjectBrief` draws the body's
+            // `##` sections as blocks and falls back to prose (with `break-keep`, which covers every
+            // markdown paragraph: the Korean body broke mid-word as 「jangba|gi」 at 584px, 2026-08-12).
+            <ProjectBrief body={dedupedBodyContent ?? bodyContent} proseClassName={storyMarkdownClassName} />
           ) : (
             <div data-testid="project-detail-body-empty">
               <EmptyState
@@ -874,6 +878,42 @@ export function ProjectDetailPage({
               />
             </div>
           )}
+          {/*
+            The ask (owner, 2026-09-19): this is the place the agent should analyse and lay out. The
+            page cannot start a turn itself yet (the Library's dock is where turns run), so it hands
+            over the exact instructions: read the map through MCP, write four sections, change only
+            the body with `patch_concept` under `expected_mtime`. The person reviews the file in the
+            Library; nothing is written from here.
+          */}
+          <div
+            data-testid="project-detail-brief-ask"
+            data-brief-state={briefIsStructured ? "structured" : "unstructured"}
+            className="mt-6 border-t border-[color:var(--color-divider)] pt-4"
+          >
+            <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+              {t("briefAskTitle")}
+            </span>
+            <p className="mt-1 mb-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+              {briefIsStructured ? t("briefAskStructured") : t("briefAskUnstructured")}
+            </p>
+            <Button
+              type="button"
+              variant={briefIsStructured ? "outline" : "primary"}
+              size="sm"
+              onClick={() => void briefCopy.copy(briefPrompt)}
+              data-testid="project-detail-brief-ask-copy"
+            >
+              {briefCopyLabel}
+            </Button>
+            <details className="mt-3">
+              <summary className="select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                {t("handoffHumanCaption")}
+              </summary>
+              <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap break-keep text-[color:var(--color-text-quaternary)]">
+                {briefPrompt}
+              </pre>
+            </details>
+          </div>
           </div>
         </article>
         )}
