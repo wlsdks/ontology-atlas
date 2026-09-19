@@ -1964,6 +1964,8 @@
       "briefAskCopy": "정리 안내 복사",
       "briefAskCopied": "복사됨: 에이전트 채팅에 붙여넣으세요",
       "briefAskCopyError": "복사 실패: 다시 시도",
+      "briefAskOpen": "에이전트에게 맡기기",
+      "briefAskAgent": "여기서 에이전트를 열어 지도를 읽고 네 절로 다시 쓰게 해요. 파일에 쓰기 전에는 허락을 묻고, 결과는 자료실에서 검토할 수 있어요.",
       "briefPrompt": "{slug}의 개요를 정리해 줘. 먼저 get_concept(\"{slug}\", body: \"full\")와 query_ontology('{'operation: \"project_map\", project: \"{slug}\"'}')로 지도를 읽고, 도메인·역량·요소 문서에서 근거를 확인해. 그다음 {doc}의 본문을 ## 제목 네 개로 다시 써 줘: 1) 무엇을 하는가 (두세 문장), 2) 일이 어떻게 흐르는가 (번호 목록, 각 단계에 해당 도메인을 [[domains/…]] 위키링크로), 3) 어디가 고르지 않은가 (글머리, 역량은 많은데 요소가 적은 곳과 그 반대), 4) 다음에 볼 곳 (글머리, 항목마다 근거 문서 위키링크). 지도에 없는 사실은 쓰지 마. 쓰기 전에 get_concept이 준 mtime을 expected_mtime으로 넘겨 patch_concept으로 본문만 바꿔. 내가 자료실에서 검토할게.",
       "connectedTitle": "연결된 프로젝트",
       "connectedRelation": "서로 연결",
@@ -2807,6 +2809,7 @@
       "brokenDocsAction": "온톨로지 문서 열기",
       "sourceUnboundLabel": "코드 폴더가 연결 안 된 프로젝트 {count}개",
       "sourceUnboundAction": "연결",
+      "tidyHeading": "정리할 것",
       "plainHint": "요소는 숨겨져 있어요. 지도의 점을 누르면 그 요소들이 보여요",
       "openedInsideLabel": "고른 프로젝트 안에 있는 지도 폴더를 열었어요.",
       "openedInsideDismiss": "알림 닫기"
