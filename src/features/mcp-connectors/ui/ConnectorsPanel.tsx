@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { MoreHorizontal, Plus, X } from 'lucide-react';
@@ -139,6 +139,8 @@ export function ConnectorsPanel({
   store,
   openFolderAction,
   testIdPrefix = 'connectors',
+  addOpenRequest = 0,
+  externalAddOpener,
 }: {
   handle: FileSystemDirectoryHandle | null;
   /**
@@ -159,6 +161,18 @@ export function ConnectorsPanel({
    */
   openFolderAction?: ReactNode;
   testIdPrefix?: string;
+  /**
+   * **The opener may stand outside the card** (2026-09-19). On the Agents destination's MCP
+   * tab the "add a connector" press sits in the group heading, beside the count, where the
+   * share group keeps its own control — so the two groups read the same way and the card no
+   * longer opens with a row that holds one chip and empty span. The parent owns that chip;
+   * it bumps `addOpenRequest` to open the dialog here and lends the chip's ref so focus still
+   * returns to the opener after a removal. With `externalAddOpener` set, the card draws no
+   * opener of its own in the listed state; the empty state keeps its indigo ask, because that
+   * ask *is* the card's content.
+   */
+  addOpenRequest?: number;
+  externalAddOpener?: RefObject<HTMLButtonElement | null>;
 }) {
   const t = useTranslations('connectors');
   const vaultPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
@@ -320,7 +334,7 @@ export function ConnectorsPanel({
   const [removedTick, setRemovedTick] = useState(0);
   useEffect(() => {
     if (removedTick === 0) return;
-    addOpenRef.current?.focus();
+    (externalAddOpener?.current ?? addOpenRef.current)?.focus();
     /*
      * ⚠️ **`connectors.length` is in the list on purpose** (2026-09-07). Removal is asynchronous:
      * the tick is bumped when the confirmation closes, but the row leaves only when the folder
@@ -329,7 +343,14 @@ export function ConnectorsPanel({
      * the body. Re-running when the list actually changes puts it on the card's own door, which
      * is the only control left on screen.
      */
-  }, [removedTick, store.connectors.length]);
+  }, [removedTick, store.connectors.length, externalAddOpener]);
+
+  // The parent's opener, read the way an arriving install link is: adjust state during render.
+  const [seenAddRequest, setSeenAddRequest] = useState(addOpenRequest);
+  if (addOpenRequest !== seenAddRequest) {
+    setSeenAddRequest(addOpenRequest);
+    setAddOpen(true);
+  }
 
   /*
    * **A link opens the dialog once.** The comparison is against what was seen last render rather
@@ -375,7 +396,7 @@ export function ConnectorsPanel({
         discarded one. A person could not tell the two apart. The Share tab already answers this
         state by asking for the folder; this is the same answer on the same screen.
       */}
-      {noFolder || isEmpty ? null : (
+      {noFolder || isEmpty || externalAddOpener ? null : (
         <div className="flex flex-wrap items-start justify-end gap-x-4 gap-y-2">
           <Chip
             ref={addOpenRef}

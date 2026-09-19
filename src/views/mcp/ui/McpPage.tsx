@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 
@@ -9,6 +10,8 @@ import { ConnectorsPanel, useVaultConnectors, type VaultConnectorsState } from '
 import { OpenVaultCta } from '@/features/docs-vault-local';
 import { useLocalVault } from '@/entities/vault-session';
 import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
+import { Chip } from '@/shared/ui';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import { MCP_SECTION_PARAM, parseMcpTab } from '../lib/mcp-tab-state';
 
@@ -56,6 +59,7 @@ export function McpPage({
   handle?: FileSystemDirectoryHandle | null;
 } = {}) {
   const t = useTranslations('mcp');
+  const tConnectors = useTranslations('connectors');
   const localVault = useLocalVault();
   // Kept across a rescan: a null handle here re-read the connectors from nothing each time.
   const ownHandle = selectOpenVaultHandle(localVault.status, localVault.handle);
@@ -65,6 +69,20 @@ export function McpPage({
   const ownConnectors = useVaultConnectors(providedConnectors ? null : handle);
   const connectors = providedConnectors ?? ownConnectors;
   const enabledCount = connectors.connectors.filter((connector) => connector.enabled).length;
+
+  /*
+   * The "add a connector" press lives in the group heading, beside the count, where the share
+   * group keeps its own control — the two groups read the same way, and the card no longer
+   * opens with a row that holds one chip and empty span. The panel keeps the dialog and the
+   * empty state's indigo ask; this heading chip only asks it to open, and lends its ref so
+   * focus returns here after a removal (`ConnectorsPanel`, `externalAddOpener`).
+   */
+  const addOpenerRef = useRef<HTMLButtonElement | null>(null);
+  const [addOpenRequest, setAddOpenRequest] = useState(0);
+  const connectorsListed =
+    handle !== null &&
+    connectors.status !== 'unavailable' &&
+    !(connectors.status !== 'loading' && connectors.connectors.length === 0);
 
   const searchParams = useSearchParams();
   const section = parseMcpTab(searchParams?.get(MCP_SECTION_PARAM));
@@ -92,11 +110,28 @@ export function McpPage({
            * the number that answers "is anything actually attached" is this one.
            */
           label={t('connectorsHeadingCount', { count: enabledCount })}
+          trailing={
+            connectorsListed ? (
+              <Chip
+                ref={addOpenerRef}
+                size="sm"
+                tone="secondary"
+                data-testid="connectors-add-open"
+                hoverSurface="lift"
+                onClick={() => setAddOpenRequest((n) => n + 1)}
+              >
+                <Plus size={ICON_SIZE.sm} aria-hidden />
+                {tConnectors('addOpen')}
+              </Chip>
+            ) : null
+          }
         />
         <div className="mt-1.5">
           <ConnectorsPanel
             handle={handle}
             store={connectors}
+            addOpenRequest={addOpenRequest}
+            externalAddOpener={addOpenerRef}
             /*
              * The panel cannot import this itself: both are features, and a feature reaching
              * sideways into another adds an edge to a ledger that only falls

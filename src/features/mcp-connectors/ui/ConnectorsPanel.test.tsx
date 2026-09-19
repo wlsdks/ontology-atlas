@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import type { ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../messages/ko.json';
@@ -1065,5 +1065,50 @@ describe('what runs, in one line', () => {
     expect(connectorDestination({ ...stdioRecord, transport: 'http', url: 'not a url' })).toBe(
       'not a url',
     );
+  });
+});
+
+describe('the opener may stand outside the card (2026-09-19)', () => {
+  function HeadedPanel({ handle }: { handle: FileSystemDirectoryHandle | null }) {
+    const store = useVaultConnectors(handle);
+    const opener = useRef<HTMLButtonElement | null>(null);
+    const [request, setRequest] = useState(0);
+    return (
+      <>
+        <button
+          type="button"
+          ref={opener}
+          data-testid="heading-add-open"
+          onClick={() => setRequest((n) => n + 1)}
+        >
+          add
+        </button>
+        <ConnectorsPanel
+          handle={handle}
+          store={store}
+          addOpenRequest={request}
+          externalAddOpener={opener}
+          openFolderAction={<button type="button" data-testid="connectors-open-vault">open</button>}
+        />
+      </>
+    );
+  }
+
+  it('with an external opener the listed card draws none of its own, and the request opens the dialog', async () => {
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<HeadedPanel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-list')).toBeInTheDocument());
+    // The Agents page's MCP tab puts the press in the group heading; two would be one too many.
+    expect(screen.queryByTestId('connectors-add-open')).toBeNull();
+    expect(screen.queryByTestId('connectors-add-dialog')).toBeNull();
+    fireEvent.click(screen.getByTestId('heading-add-open'));
+    await waitFor(() => expect(screen.getByTestId('connectors-add-dialog')).toBeInTheDocument());
+  });
+
+  it('the empty state keeps its own indigo ask even with an external opener — that ask is the card', async () => {
+    const vault = fakeVault(seeded());
+    draw(<HeadedPanel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
+    expect(screen.getByTestId('connectors-add-open')).toBeInTheDocument();
   });
 });
