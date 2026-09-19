@@ -23,6 +23,7 @@ import { buildAgentBrief } from './agent-brief';
 import { buildHarnessBrief } from './harness-brief';
 import { buildOntologyBrief, type OntologyBriefNode } from './ontology-brief';
 import { buildWikiBrief } from './wiki-brief';
+import { buildSinceList, type SinceRow } from './since-list';
 import type { BriefCore } from './brief-model';
 
 export interface InsightsBrief {
@@ -34,6 +35,9 @@ export interface InsightsBrief {
   wiki: BriefCore;
   harness: BriefCore;
   agent: BriefCore;
+  /** What happened after the anchor, newest first, bounded; `sinceTotal` is the whole count. */
+  since: readonly SinceRow[];
+  sinceTotal: number;
 }
 
 const EMPTY_DOCS: readonly VaultDoc[] = [];
@@ -259,7 +263,24 @@ export function useInsightsBrief({
     [mode, vault.agentActivityLog, anchor.anchorMs],
   );
 
-  return { anchor, sinceDays, markSeen, ontology, wiki, harness, agent };
+  const sinceList = useMemo(
+    () =>
+      buildSinceList({
+        docs: docs.map((doc) => ({
+          slug: doc.slug,
+          title: doc.title,
+          kind: typeof doc.frontmatter.kind === 'string' ? doc.frontmatter.kind : null,
+          updatedAt: doc.updatedAt ?? null,
+        })),
+        wikiLog: log,
+        guideFiles: (harnessReport?.times ?? []).map((time) => ({ path: time.path, mtimeMs: time.lastModified })),
+        agentCalls: mode === 'local' ? vault.agentActivityLog : [],
+        anchorMs: anchor.anchorMs,
+      }),
+    [docs, log, harnessReport, mode, vault.agentActivityLog, anchor.anchorMs],
+  );
+
+  return { anchor, sinceDays, markSeen, ontology, wiki, harness, agent, since: sinceList.rows, sinceTotal: sinceList.total };
 }
 
 async function readWikiLog(handle: FileSystemDirectoryHandle): Promise<string> {

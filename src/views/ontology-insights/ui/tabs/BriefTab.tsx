@@ -1,10 +1,12 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { CensusBigNumber, CensusSubStat, CensusTile } from '@/shared/ui/census-tile';
 import { controlClass } from '@/shared/ui/control-class';
 import { Button } from '@/shared/ui';
+import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
+import type { SinceRow } from '../../lib/brief/since-list';
 import { cn } from '@/shared/lib/cn';
 import { briefTotals, visibleLines, type BriefCore, type BriefLine, type BriefState } from '../../lib/brief/brief-model';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
@@ -78,6 +80,7 @@ export function BriefTab({ brief }: { brief: InsightsBrief }) {
           <BriefCoreCard key={core.core} core={core} />
         ))}
       </div>
+      <BriefSinceList rows={brief.since} total={brief.sinceTotal} />
     </section>
   );
 }
@@ -126,5 +129,58 @@ function BriefLineRow({ line }: { line: BriefLine }) {
         </Link>
       ) : null}
     </li>
+  );
+}
+
+const CORE_MARK: Record<SinceRow['core'], string> = {
+  ontology: 'bg-[color:var(--color-indigo-text-strong)]',
+  wiki: 'bg-[color:var(--color-text-secondary)]',
+  harness: 'bg-[color:var(--color-amber-source-a90)]',
+  agent: 'bg-[color:var(--color-text-tertiary)]',
+};
+
+/**
+ * The cards count; this names. Everything that happened after the anchor, newest first,
+ * from the dates the folder already carries — no list is invented and none is copied.
+ */
+function BriefSinceList({ rows, total }: { rows: readonly SinceRow[]; total: number }) {
+  const t = useTranslations('ontologyPages.insights.brief');
+  const format = useFormatter();
+  if (total === 0) return null;
+  return (
+    <section data-testid="brief-since" className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+      <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+        {t('sinceTitle', { count: total })}
+      </h3>
+      <ol className="mt-3 flex flex-col divide-y divide-[color:var(--color-divider)]">
+        {rows.map((row, index) => (
+          <li key={`${row.core}-${row.at}-${index}`} className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-3 py-2 text-body" data-since-core={row.core}>
+            <span aria-hidden="true" className={cn('size-2 rounded-full', CORE_MARK[row.core])} />
+            <span className="min-w-0 truncate text-[color:var(--color-text-primary)]" title={row.label}>
+              <span className="text-[color:var(--color-text-tertiary)]">{t(`since.${row.kind}`)}</span>
+              {' '}
+              {row.label}
+            </span>
+            <time dateTime={row.at} className="font-mono tabular-nums text-label text-[color:var(--color-text-quaternary)]">
+              {format.relativeTime(new Date(row.at))}
+            </time>
+            {row.href ? (
+              <Link href={row.href} className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>
+                {t('open')}
+              </Link>
+            ) : (
+              <span />
+            )}
+          </li>
+        ))}
+      </ol>
+      <HiddenCountLine
+        total={total}
+        shown={rows.length}
+        label={(hidden) => t('sinceHidden', { count: hidden })}
+        route={<Link href="/git/" className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>{t('sinceHiddenRoute')}</Link>}
+        className="mt-3"
+      />
+    </section>
   );
 }
