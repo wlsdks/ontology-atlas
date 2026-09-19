@@ -710,7 +710,7 @@
       },
       "relations": {
         "title": "Lines are relationships",
-        "body": "A solid line means \"contained in\", a dashed line means \"depends on\". The legend here always reminds you."
+        "body": "A solid line means \"contained in\", a dashed line means \"depends on\". Press ? to see it again under Keyboard shortcuts."
       },
       "tryClick": {
         "title": "Try clicking one",
