@@ -1,5 +1,4 @@
-import type { AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
-import { READ_ONLY_TOOL_INSTRUCTION, isGuardedRuntime } from '@/features/acp-session';
+import { READ_ONLY_TOOL_INSTRUCTION } from '@/features/acp-session';
 
 import type { InsightsTab } from './insights-tab-state';
 
@@ -20,40 +19,6 @@ export type InsightsAgentPromptPlan =
   | { action: 'open-current'; request: InsightsAgentPrefill }
   | { action: 'seat'; request: InsightsAgentPrefill }
   | { action: 'confirm-replace'; request: InsightsAgentPrefill };
-
-/** Only verified, ready runtimes with an app-owned permission boundary may open chat. */
-export function selectInsightsAgentRuntimes(
-  runtimes: readonly AcpRuntimeStatus[] | null | undefined,
-): InsightsAgentRuntime[] {
-  return (runtimes ?? [])
-    .filter((runtime) => (
-      runtime.state === 'ready'
-      && runtime.verified
-      && isGuardedRuntime(runtime.id, runtime.isolated)
-    ))
-    .map(({ id, label }) => ({ id, label }));
-}
-
-export function resolveInsightsAgentRoute({
-  bridgeAvailable,
-  runtimeCheckComplete,
-  serverCheckComplete,
-  runtime,
-  vaultRoot,
-  serverReady,
-}: {
-  bridgeAvailable: boolean;
-  runtimeCheckComplete: boolean;
-  serverCheckComplete: boolean;
-  runtime: InsightsAgentRuntime | null;
-  vaultRoot: string | null;
-  serverReady: boolean;
-}): InsightsAgentRoute {
-  if (!bridgeAvailable) return 'clipboard';
-  if (!runtimeCheckComplete || !serverCheckComplete) return 'checking';
-  if (runtime && vaultRoot && serverReady) return 'agent';
-  return 'clipboard';
-}
 
 /**
  * Tab selection itself never calls this planner. An explicit agent action either
