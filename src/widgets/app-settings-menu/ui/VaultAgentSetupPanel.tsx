@@ -898,7 +898,28 @@ export function VaultAgentSetupPanel({
         }
       >
         {clientRows ? (
-          AGENT_CLIENTS.map((client) => (
+          AGENT_CLIENTS.map((client) => {
+            /*
+             * ⚠️ **A row that offers a replacement says what it is replacing** (2026-09-19,
+             * caught by rendering the mixed state). Atlas reads two of these four files, and
+             * when one exists but is not ours the control changes to "copy a correct one" —
+             * which, on its own, is a verb with no fact behind it. The sentence that states
+             * the fact already exists and was already translated; it had moved into the
+             * verification dialog with the rest of the status line, leaving the page with
+             * three rows saying "connect" and one saying "copy a correct one" for no visible
+             * reason. It belongs on the row whose file it is about.
+             *
+             * Only Claude Code and Codex can reach this state: `agentSetupFiles` is what Atlas
+             * reads, and Cursor and Antigravity are written without being read back.
+             */
+            const inspected =
+              client.id === 'claude-code'
+                ? { state: mcpJsonState, path: agentSetupFiles[0].path }
+                : client.id === 'codex'
+                  ? { state: codexConfigState, path: agentSetupFiles[1].path }
+                  : null;
+            const foreignConfig = inspected?.state === 'invalid';
+            return (
             <SettingsRow
               key={client.id}
               testId={`agent-setup-row-${client.id}`}
@@ -906,14 +927,20 @@ export function VaultAgentSetupPanel({
               iconInk={client.brandInk}
               label={client.name}
               /* The file this row writes, so "ready" and "connect" both say which file they mean. */
-              caption={client.files.join(' · ')}
+              caption={
+                foreignConfig
+                  ? t('agentSetup.nextInvalid', { path: inspected.path })
+                  : client.files.join(' · ')
+              }
+              captionTone={foreignConfig ? 'warning' : 'neutral'}
               /* One column: every control is `w-full` inside the same fixed slot, so the four
                  buttons share a left edge instead of a ragged one (owner detail rule, 2026-09-12:
                  a group of controls fills a grid). 144px since the labels became verbs alone
                  (2026-09-19); the row's own label and file carry the tool's name. */
               control={<span className="flex w-36 max-w-full">{clientRows[client.id]}</span>}
             />
-          ))
+            );
+          })
         ) : (
           /* No launchable server (a browser): the degradation card and the by-hand panel are
              the group's whole body — there is no per-tool button to put on a row. */

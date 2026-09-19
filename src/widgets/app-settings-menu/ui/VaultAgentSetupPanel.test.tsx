@@ -1268,6 +1268,37 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
+  it('남의 설정이 있는 행은 그 사실을 자기 줄에서 말한다 — 동사만 바뀌지 않는다', () => {
+    // Caught by rendering the mixed state, 2026-09-19: the control changed to "copy a correct
+    // one" while the row said only the file path, so the page showed three rows offering to
+    // connect and one offering a replacement for no visible reason.
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault({
+          agentConfigStatus: {
+            mcpJson: true,
+            mcpJsonValid: true,
+            codexConfig: true,
+            codexConfigValid: false,
+            mcpExample: false,
+            mcpExampleValid: false,
+          },
+        })}
+        serverAvailability={bundledServer}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    const codexRow = screen.getByTestId('agent-setup-row-codex');
+    expect(codexRow).toHaveTextContent(
+      '점검: .codex/config.toml는 Ontology Atlas 연결 설정이 아니에요',
+    );
+    // The row whose file is ours keeps the plain path.
+    expect(screen.getByTestId('agent-setup-row-claude-code')).toHaveTextContent('.mcp.json');
+    expect(screen.getByTestId('agent-setup-row-claude-code')).not.toHaveTextContent('점검:');
+  });
+
   it('첫 화면은 도구 행 넷이고, 확인과 상세 검증은 대화상자 뒤에 있다', () => {
     render(
       <VaultAgentSetupPanel
