@@ -863,3 +863,53 @@ describe("island captions group their counts", () => {
     expect(captions.some((text) => /\d{4}/.test(text))).toBe(false);
   });
 });
+
+/**
+ * **A name stands beside its own island, never on a neighbour** (2026-09-19, 1040×720 on
+ * the 3,000-file fixture): under-and-centred was the only seat, and it landed a name on the
+ * next island's marks. Four seats now, and the first that touches no other island wins.
+ */
+describe("island names keep off neighbouring islands", () => {
+  const island = (id: string, x: number, y: number, r: number) => ({
+    id, kind: "concept" as const, label: id, x, y, r, pages: 3, sources: 1, stale: 0,
+  });
+  const cover = (box: { x: number; y: number; width: number; height: number }, other: { x: number; y: number; r: number }) => {
+    const nx = Math.max(box.x, Math.min(other.x, box.x + box.width));
+    const ny = Math.max(box.y, Math.min(other.y, box.y + box.height));
+    return Math.hypot(nx - other.x, ny - other.y) < other.r;
+  };
+
+  it("moves a name off the island standing right under its own", () => {
+    // A small island (its name cannot fit inside) with a neighbour directly below it.
+    const rec = recorder();
+    const upper = island("Upper", 300, 100, 20);
+    const lower = island("Lower", 300, 160, 40);
+    drawLibraryGraph(rec.ctx, frame({ layout: "islands", islands: [lower, upper] }));
+    const name = rec.texts.find((entry) => entry.text.startsWith("Upper"));
+    expect(name).toBeDefined();
+    const width = 40; // the recorder's measureText answers 40 for every string
+    const box = { x: name!.x - width / 2, y: name!.y - 7, width, height: 14 };
+    expect(cover(box, lower)).toBe(false);
+    // And it did not simply vanish: it sits above its island.
+    expect(name!.y).toBeLessThan(upper.y);
+  });
+
+  it("leaves an island unnamed at rest rather than standing its name on a neighbour's marks", () => {
+    // Hemmed in on all four sides at a distance no seat can clear.
+    const rec = recorder();
+    const middle = island("Middle", 300, 160, 20);
+    const ring = [island("N", 300, 100, 34), island("S", 300, 220, 34), island("E", 360, 160, 34), island("W", 240, 160, 34)];
+    const report: string[] = [];
+    drawLibraryGraph(rec.ctx, frame({ layout: "islands", islands: [...ring, middle], islandReport: report }));
+    expect(rec.texts.some((entry) => entry.text.startsWith("Middle"))).toBe(false);
+    expect(report).not.toContain("Middle");
+  });
+
+  it("keeps the seat under the island when nothing stands there", () => {
+    const rec = recorder();
+    const lone = island("Lone", 300, 100, 20);
+    drawLibraryGraph(rec.ctx, frame({ layout: "islands", islands: [lone] }));
+    const name = rec.texts.find((entry) => entry.text.startsWith("Lone"));
+    expect(name!.y).toBeGreaterThan(lone.y + lone.r);
+  });
+});
