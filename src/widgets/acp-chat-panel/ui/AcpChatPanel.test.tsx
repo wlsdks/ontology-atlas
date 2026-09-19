@@ -1051,7 +1051,10 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 292, {
       slug: 'capabilities/refund', expected_mtime: 100, body: 'Refund only after capture.',
     }));
-    expect(await screen.findByTestId('acp-permission-allow')).toBeInTheDocument();
+    // Re-query rather than holding the first node: the panel re-renders as the replacement
+    // request settles, and under a loaded parallel run that node is detached by the time the
+    // matcher reads it (the same flake as the deferred-request test above).
+    await waitFor(() => expect(screen.getByTestId('acp-permission-allow')).toBeInTheDocument());
     expect(answerFor(292)).toBeUndefined();
     expect(answerFor(291)).toEqual({ outcome: 'selected', optionId: 'reject' });
     fireEvent.click(screen.getByTestId('task-review-depth-details'));
