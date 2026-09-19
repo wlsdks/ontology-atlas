@@ -18,6 +18,20 @@ import { installLibraryWorkHarness } from './library-work-harness';
  * threshold, and the width the app's own smallest window opens at — in both locales, because the
  * Korean mode name is half again as wide as the English one and it is the Korean one that decides.
  */
+/**
+ * **What actually reddens each rule, measured rather than assumed (2026-09-20).**
+ *
+ * The obvious reversal does not work, and a green run from it would be misread as proof. Restoring
+ * the mode picker's old `basis-0 flex-1` leaves every case green: below the threshold the runtime
+ * name has already stood down, and above it the name's `shrink-[99]` makes the name yield first.
+ *
+ * | rule | what turns it red |
+ * |---|---|
+ * | the mode keeps its word | drop `shrink-[99]` from the runtime name **and** show the name below the threshold — 22px of a 40px word in English, 30px of a 60px word in Korean, at 320 |
+ * | the name stands down | drop `@min-[286px]/composer:inline` from the runtime name (verified: two cases fail on `toBeHidden`) |
+ *
+ * Found by main-7-c2's gate probe and confirmed here on the second row.
+ */
 /** The panel's own documented floor (`panel-width.ts`), where the clipping was worst. */
 const CHAT_WIDTH_MIN = 320;
 /**
@@ -41,11 +55,23 @@ async function openDockAt(page: Page, width: number, locale: 'en' | 'ko') {
     window.localStorage.setItem('atlas.acp-chat.width', String(stored));
   }, width);
   const harness = await installLibraryWorkHarness(page, {});
+  /*
+   * ⚠️ **Each step waits by name.** `playwright.config.ts` sets a 60s test budget and no
+   * `actionTimeout`, so a bare `.click()` on an element that never arrives waits out the whole
+   * test and reports nothing about which step hung — which is exactly what the one-minute
+   * failures in CI looked like. A visibility expectation first fails in 15s and says where.
+   */
   await page.goto(`/${locale}/docs/`);
-  await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
+  const openFolder = page.getByRole('button', { name: /Open my folder|내 폴더 열기/i });
+  await expect(openFolder, 'waiting for the open-folder door').toBeVisible();
+  await openFolder.click();
   await page.goto(`/${locale}/library/?guides=off&e2e=1`);
-  await page.getByTestId('library-workspace-wiki').click();
-  await page.getByTestId('library-open-conversation').click();
+  const workspace = page.getByTestId('library-workspace-wiki');
+  await expect(workspace, 'waiting for the wiki workspace').toBeVisible();
+  await workspace.click();
+  const conversation = page.getByTestId('library-open-conversation');
+  await expect(conversation, 'waiting for the conversation door').toBeVisible();
+  await conversation.click();
   await expect(page.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready');
   return harness;
 }
