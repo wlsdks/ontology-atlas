@@ -826,6 +826,7 @@ export function TopologyIndexPanel({
               agentAttributedNodeId={recentChanges?.agentAttributedNodeId ?? null}
               maxDomainDescendantCount={maxDomainDescendantCount}
               domainCensus={domainCensus}
+              query={trimmedQuery || undefined}
               labels={labels}
             />
           ))

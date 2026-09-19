@@ -2818,6 +2818,17 @@ outside its own box went from 1-2 per English query to 0. The per-node name inde
 built once and kept (`WeakMap`), which also took a plain query over 12,000 nodes from
 243 ms to 29.8 ms; `node-name-match.perf.test.ts` holds the ratio.
 
+**INDEX marks where the query landed** (2026-09-19). The panel's own search field
+filtered 125 concepts down to two and marked nothing in either, on an 11px label,
+while the palette on the same screen had been marking its rows for months — the
+filter said which rows survived, nothing said where. Both index panels now hand their
+trimmed query to `TopologyIndexTreeRow`, which draws the name through
+`HighlightedText`, so a chosung query marks there too (`shared/lib/highlight-match`
+already reads a Hangul keyboard). Measured on the map panel's own surface: the mark's
+ink clears **8.59:1** against its composited background. Rows kept only as the path to
+a match stay unmarked, which is what they are; telling a match apart from the path it
+sits on is a separate open question.
+
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio
 - 2-column grid on sm+, focus trap, `Esc` closes

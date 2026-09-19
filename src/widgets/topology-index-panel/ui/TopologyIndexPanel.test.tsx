@@ -212,6 +212,51 @@ describe("TopologyIndexPanel", () => {
     });
   });
 
+  // 2026-09-19 — INDEX filtered 125 concepts down to two and marked nothing in
+  // either, on an 11px label, while the palette on the same screen had been marking
+  // its rows for months. The filter says which rows survived; the mark says where.
+  it("남은 행에 친 글자가 어디 있는지 표시한다", async () => {
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    const search = screen.getByTestId("topology-index-search");
+    fireEvent.change(search, { target: { value: "MCP" } });
+
+    const row = await screen.findByText(
+      (_, element) => element?.textContent === "MCP Server" && element.tagName === "SPAN",
+    );
+    const mark = row.querySelector("mark");
+    expect(mark).not.toBeNull();
+    expect(mark?.textContent).toBe("MCP");
+  });
+
+  it("빈 검색어면 아무것도 표시하지 않는다", () => {
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    expect(document.querySelectorAll("mark")).toHaveLength(0);
+  });
+
   it("does not render the retired agent/growth/handoff footer", () => {
     render(
       <TopologyIndexPanel

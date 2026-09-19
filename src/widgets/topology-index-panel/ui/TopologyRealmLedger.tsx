@@ -294,6 +294,7 @@ export function TopologyRealmLedger({
               changedSlugs={changedSlugs}
               maxDomainDescendantCount={maxDomainDescendantCount}
               domainCensus={domainCensus}
+              query={trimmedQuery || undefined}
               labels={{
                 capabilitiesShort: labels.capabilitiesShort,
                 elementsShort: labels.elementsShort,
