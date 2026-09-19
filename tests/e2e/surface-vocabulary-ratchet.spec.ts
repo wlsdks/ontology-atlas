@@ -77,7 +77,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * the same boxes, walked once more because the route that carries it is in the sample.
  */
 // Chart marks encode data, not card appearances; the actual surface vocabulary is ten.
-const BASELINE_SURFACE_COMBOS = 10;
+const BASELINE_SURFACE_COMBOS = 9;
 const BASELINE_CONTROL_COMBOS = 17;
 
 const ROUTES = [
