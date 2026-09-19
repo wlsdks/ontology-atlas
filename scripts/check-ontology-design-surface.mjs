@@ -158,7 +158,11 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       'data-insights-surface="maintenance-board"',
       'data-insights-question-model="one-tab-one-question"',
       "TabBar",
-      'role="tabpanel"',
+      // The question row is the only real tab row, so its panel is a `tabpanel` named by the
+      // tab that opened it while the other three subjects draw a named region. Both shapes wear
+      // the panel marker, which is what the installed-app probe finds the panel by.
+      'role: "tabpanel"',
+      "data-insights-panel={tab}",
       '{tab === "flow" ? (',
       "<FlowTab",
       'request={flowRequest}',

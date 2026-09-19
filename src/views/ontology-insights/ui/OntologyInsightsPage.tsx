@@ -1560,12 +1560,20 @@ export function OntologyInsightsPage() {
           <div ref={insightsSwapHostRef} className="flex flex-1 flex-col">
           <div
             key={tab}
-            role="tabpanel"
+            /*
+             * The question row draws real tabs, so its panel is a `tabpanel` named by the tab that
+             * opened it. The other three subjects have no tab — the subject row is a radiogroup —
+             * and `aria-labelledby="insights-tab-brief"` pointed at an id that does not exist,
+             * which resolves to no name at all. They are named regions instead.
+             */
+            {...(coreOfTab(tab) === "ontology"
+              ? ({ role: "tabpanel", "aria-labelledby": `insights-tab-${tab}` } as const)
+              : ({ role: "region", "aria-label": t(`core.${coreOfTab(tab)}`) } as const))}
             id={`insights-tabpanel-${tab}`}
-            aria-labelledby={`insights-tab-${tab}`}
+            data-insights-panel={tab}
             className="insights-tab-crossfade mt-[var(--section-gap)] flex flex-1 flex-col"
           >
-            {tab === "library" ? <LibraryTab detail={brief.library} /> : null}
+            {tab === "library" ? <LibraryTab detail={brief.library} nowMs={brief.nowMs} /> : null}
             {tab === "harness" ? <HarnessTab detail={brief.harnessDetail} /> : null}
             {tab === "brief" ? (
               <BriefTab
