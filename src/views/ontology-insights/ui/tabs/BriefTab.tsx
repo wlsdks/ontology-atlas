@@ -23,6 +23,7 @@ const LINE_HREF: Record<string, string> = {
   'ontology-evidence-moved': '/ontology/insights/?tab=growth',
   'ontology-evidence-missing': '/ontology/insights/?tab=do-next',
   'ontology-evidence-folder-only': '/topology/',
+  // Where it goes depends on why it cannot be checked. See `lineHref`.
   'ontology-evidence-unchecked': '/download/',
   'ontology-agent-unreviewed': '/topology/',
   'ontology-changed-since': '/ontology/insights/?tab=growth',
@@ -251,7 +252,7 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent, onOpenTab }: { core: 
           <li className="text-body text-[color:var(--color-text-tertiary)]">{t('quiet')}</li>
         ) : null}
         {lines.map((line) => (
-          <BriefLineRow key={line.id} line={line} details={details.get(line.id) ?? EMPTY_DETAILS} nowMs={nowMs} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
+          <BriefLineRow key={line.id} line={line} availability={core.availability} details={details.get(line.id) ?? EMPTY_DETAILS} nowMs={nowMs} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
         ))}
       </ul>
     </CensusTile>
@@ -284,6 +285,21 @@ const DETAIL_ROWS = 5;
  */
 function destinationLabel(href: string, t: (key: string) => string): string {
   return href === '/download/' ? t('getApp') : t('open');
+}
+
+/**
+ * The destination a line opens, given what this session could measure.
+ *
+ * ⚠️ **"Get the app" inside the app.** The unchecked-evidence line sends a browser reader to the
+ * download page, because a browser cannot read the code beside a folder at all. Once the app is
+ * reading it, the same line means something else entirely — concepts that cite no implementation
+ * path — and offering the app to someone already inside it is the exact defect that sent this
+ * panel back once before. Measured in the installed app at 1040x720 on this repository's own
+ * vault, 2026-09-20: "50 concepts whose code could not be checked · Get the app".
+ */
+function lineHref(lineId: string, availability: BriefCore['availability']): string | undefined {
+  if (lineId === 'ontology-evidence-unchecked' && availability === 'measured') return '/topology/';
+  return LINE_HREF[lineId];
 }
 
 const LINE_LINK = 'atlas-touch-floor shrink-0 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]';
@@ -345,11 +361,11 @@ function DestinationLink({
  * rests on. A count whose only destination is another screen counting something else is
  * the falsifier this decision wrote down for itself (PO evidence seat, 2026-09-19).
  */
-function BriefLineRow({ line, details, nowMs, onAskAgent, onOpenTab }: { line: BriefLine; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
+function BriefLineRow({ line, availability, details, nowMs, onAskAgent, onOpenTab }: { line: BriefLine; availability: BriefCore['availability']; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const format = useFormatter();
   const locale = useLocale();
-  const href = LINE_HREF[line.id];
+  const href = lineHref(line.id, availability);
   const sentence = t(`line.${line.id}`, { count: line.count });
   const shown = details.slice(0, DETAIL_ROWS);
   /*

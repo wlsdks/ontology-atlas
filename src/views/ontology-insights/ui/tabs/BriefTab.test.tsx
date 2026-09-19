@@ -295,3 +295,32 @@ describe("taking the visit mark back", () => {
     expect(screen.queryByTestId("brief-mark-seen-undo")).toBeNull();
   });
 });
+
+describe("a line that cannot be checked", () => {
+  it("offers the app in a browser and never inside it", () => {
+    /*
+     * Measured in the installed app at 1040x720 on this repository's own vault: "50 concepts
+     * whose code could not be checked · Get the app", inside the app. In a browser the same line
+     * is honest, because a browser cannot read the code beside a folder at all.
+     */
+    const line = { id: "ontology-evidence-unchecked", count: 4, state: "unknown" } as const;
+
+    const browser = render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <BriefTab brief={brief({ ontology: core({ core: "ontology", availability: "app-only", headline: 9, lines: [line] }) })} />
+      </NextIntlClientProvider>,
+    );
+    const inBrowser = browser.container.querySelector('[data-brief-line="ontology-evidence-unchecked"] a');
+    expect(inBrowser?.getAttribute("href")).toContain("/download/");
+    browser.unmount();
+
+    const app = render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <BriefTab brief={brief({ ontology: core({ core: "ontology", availability: "measured", headline: 9, lines: [line] }) })} />
+      </NextIntlClientProvider>,
+    );
+    const inApp = app.container.querySelector('[data-brief-line="ontology-evidence-unchecked"] a');
+    expect(inApp?.getAttribute("href"), "앱 안에서 앱을 받으라고 한다").not.toContain("/download/");
+    expect(inApp?.getAttribute("href")).toContain("/topology/");
+  });
+});
