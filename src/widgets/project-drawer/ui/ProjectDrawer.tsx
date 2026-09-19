@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { badgeClass } from "@/shared/ui/badge-class";
 import Image from "next/image";
 import { Link, useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   AnimatePresence,
   motion,
@@ -37,6 +37,7 @@ import {
   resolveProjectFreshnessInsight,
   resolveProjectImpactInsight,
   resolveProjectRelationshipKind,
+  projectDisplayName,
   type Project,
   type ProjectImpactMode,
 } from "@/entities/project";
@@ -84,16 +85,19 @@ export function ProjectDrawer({
   const isContainerNode = project?.category === "__container__";
   // The Layer 1 drawer title also drops the container-name prefix: "Demo Reactor ·
   // Router" → "Router" (the breadcrumb chip already carries the container context).
+  const locale = useLocale();
   const displayName = (() => {
     if (!project) return "";
+    // The word the map label draws for this project on this screen (`display_<locale>`).
+    const name = projectDisplayName(project, locale);
     const prefix = containerLabel?.trim();
-    if (!prefix || isContainerNode) return project.name;
+    if (!prefix || isContainerNode) return name;
     const sep = `${prefix} · `;
-    if (project.name.startsWith(sep)) {
-      const rest = project.name.slice(sep.length).trim();
-      return rest.length > 0 ? rest : project.name;
+    if (name.startsWith(sep)) {
+      const rest = name.slice(sep.length).trim();
+      return rest.length > 0 ? rest : name;
     }
-    return project.name;
+    return name;
   })();
   const asideRef = useRef<HTMLElement | null>(null);
   const { ref: asideLockoutRef, onAnimationStart: asideLockoutOnAnimationStart } = useExitLockout<HTMLElement>();

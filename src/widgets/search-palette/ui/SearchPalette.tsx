@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { badgeClass } from "@/shared/ui/badge-class";
 import { Link, useRouter } from '@/i18n/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { BookOpen, Search, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -21,7 +21,7 @@ import {
 } from '@/shared/motion';
 import { mergeRefs } from "@/shared/lib/merge-refs";
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
-import type { Project } from '@/entities/project';
+import { projectDisplayName, type Project } from '@/entities/project';
 import { useTaxonomy } from '@/features/taxonomy';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { useStaticVaultSource } from '@/entities/vault-session';
@@ -175,6 +175,7 @@ function SearchPaletteDialog({
   containerLabel,
 }: DialogProps) {
   const t = useTranslations('searchWidgets.projectSearch');
+  const locale = useLocale();
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -680,7 +681,7 @@ function SearchPaletteDialog({
                                 : 'text-[color:var(--color-text-primary)]',
                             )}
                           >
-                            {highlightMatch(r.project.name, query)}
+                            {highlightMatch(projectDisplayName(r.project, locale), query)}
                           </span>
                           {r.project.isHub ? (
                             <span className="rounded-full bg-[color:var(--color-indigo-brand)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-on-accent)]">
