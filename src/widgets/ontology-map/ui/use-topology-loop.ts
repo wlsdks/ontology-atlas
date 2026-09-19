@@ -1124,6 +1124,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
   /** The focus leash in screen pixels, set at the selection dive (`focusLeashPx`). */
   const focusLeashPxRef = useRef<FocusLeashPx | null>(null);
+  const lastTapRef = useRef<{ nodeId: string; at: number } | null>(null);
   /**
    * The nodes this frame did **not** draw: density-gate collapsed ones plus
    * neighbours hidden by selective ego. Pointer hit-testing reads it to exclude
@@ -6193,6 +6194,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
+    lastTapRef,
     expandPrefRef,
     clusterBarLabelsRef,
     clusteredIdsRef,
