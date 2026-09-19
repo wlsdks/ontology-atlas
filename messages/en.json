@@ -425,10 +425,6 @@
         "title": "Attached by path",
         "body": "Guides that join only when a file in their folder is touched. This is how the always-read set stays short."
       },
-      "onDemand": {
-        "title": "Fetched when called",
-        "body": "Skills and agent briefs. Only their names are in view until something needs them."
-      },
       "tools": {
         "title": "Tools it can reach",
         "body": "Servers this repository wires up over the agent connection (MCP). This is the reach an agent has."
@@ -464,12 +460,19 @@
       "pipeline": {
         "title": "Runs after it is pushed",
         "body": "Files under .github/workflows/. They run after the code leaves this machine, so they catch what a local run let past."
+      },
+      "skills": {
+        "title": "Skills, fetched when called",
+        "body": "Task write-ups that stay as names until something needs them. This is how the always-read set stays short without being shallow."
+      },
+      "subagents": {
+        "title": "Sub-agents sent out",
+        "body": "Briefs for workers that run on their own context. A Codex and a Claude copy of one name count once."
       }
     },
     "anatomyUnits": {
       "always": "{count, plural, one {# document} other {# documents}}",
       "scoped": "{count, plural, one {# document} other {# documents}}",
-      "onDemand": "{count, plural, one {# folder} other {# folders}}",
       "tools": "{count, plural, one {# server} other {# servers}}",
       "toolGates": "{count, plural, one {# hook} other {# hooks}}",
       "permissions": "{count, plural, one {# rule} other {# rules}}",
@@ -478,7 +481,9 @@
       "checks": "{count, plural, one {# script} other {# scripts}}",
       "discoveredTests": "{count, plural, one {# file} other {# files}}",
       "loop": "{count}",
-      "pipeline": "{count, plural, one {# workflow} other {# workflows}}"
+      "pipeline": "{count, plural, one {# workflow} other {# workflows}}",
+      "skills": "{count, plural, one {# skill} other {# skills}}",
+      "subagents": "{count, plural, one {# brief} other {# briefs}}"
     }
   },
   "architecture": {

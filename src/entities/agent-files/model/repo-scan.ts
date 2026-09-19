@@ -195,6 +195,14 @@ export interface HarnessReport {
    */
   testFiles: readonly string[];
   /**
+   * Files under `.githooks/`, independent of the coverage pass.
+   *
+   * Same reason as `workflowFiles`: the census has always carried the *number*, but the names came
+   * only from the coverage join, so a repository whose vault records no implementation path got a
+   * bare count with nothing a reader could open (measured on this repository, 2026-09-20).
+   */
+  gitHookFiles: readonly string[];
+  /**
    * `.github/workflows/*` paths, independent of the coverage pass.
    *
    * The scan has always read these files; until 2026-09-19 they reached the screen only through
@@ -565,6 +573,7 @@ export async function scanHarness(
     coverage,
     documentReach,
     testFiles: [...new Set(testFiles)].sort(),
+    gitHookFiles: [...gitHooks.keys()].sort(),
     workflowFiles: [...workflows.keys()].sort(),
     timesAreFileMtime: true,
   };

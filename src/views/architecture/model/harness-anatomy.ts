@@ -68,7 +68,8 @@ export interface AnatomySlot {
 export type AnatomySlotId =
   | 'always'
   | 'scoped'
-  | 'onDemand'
+  | 'skills'
+  | 'subagents'
   | 'tools'
   | 'toolGates'
   | 'gitGates'
@@ -110,6 +111,20 @@ function slot(
     items: items.slice(0, ITEM_CAP),
     overflow: Math.max(0, items.length - ITEM_CAP),
   };
+}
+
+/**
+ * The name of the thing a path belongs to: `.claude/skills/po-pass/SKILL.md` → `po-pass`.
+ *
+ * A skill or a brief is called by its own name, and the directory above it says only which tool
+ * tree it sits in. Two tools holding the same name are one thing a person can call, so the name is
+ * what de-duplicates.
+ */
+function namedUnit(path: string): string {
+  const parts = path.split('/');
+  /* `.claude/skills/<name>/SKILL.md` and `.claude/agents/<name>.md` are both three deep at most. */
+  const name = parts.length > 3 ? parts[2]! : parts[parts.length - 1]!;
+  return name.replace(/\.[^.]+$/, '');
 }
 
 /** A path's first segment, used to fold a directory of skills or rules into one name. */
@@ -195,7 +210,8 @@ export interface HarnessAnatomy {
 export const ANATOMY_ORDER: readonly AnatomySlotId[] = [
   'always',
   'scoped',
-  'onDemand',
+  'skills',
+  'subagents',
   'tools',
   'toolGates',
   'permissions',
@@ -214,7 +230,8 @@ export const ANATOMY_ORDER: readonly AnatomySlotId[] = [
 export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
   const always: string[] = [];
   const scoped: string[] = [];
-  const onDemand: string[] = [];
+  const skills: string[] = [];
+  const subagents: string[] = [];
   const toolConfigs: string[] = [];
 
   for (const record of report.analysis.records) {
@@ -224,7 +241,15 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
     }
     if (!isGuideRecord(record)) continue;
     if (record.kind === 'skill' || record.kind === 'agent') {
-      onDemand.push(topFolder(record.path));
+      /*
+       * Folded to the **named unit**, not to the directory above it. Folding at depth two put this
+       * repository's 18 skills and 15 briefs on screen as "4 folders", which is a true sentence
+       * about a fact nobody asked for; the reader wants to know how many things can be called and
+       * what they are called (measured on this repository, 2026-09-20). The two kinds are separate
+       * rows because they are separate subsystems — extensibility and orchestration — and because
+       * a reader deciding whether the harness has any skills is not asking about sub-agents.
+       */
+      (record.kind === 'skill' ? skills : subagents).push(namedUnit(record.path));
       continue;
     }
     if (record.ruleId === 'nested-agents-md') {
@@ -263,7 +288,15 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
       /* A hook whose script is missing is not a guard. It is counted nowhere and shown by the
          guides view, which already says what silence costs. */
       if (hook.status !== 'wired') continue;
-      const name = hook.ref.path ?? hook.ref.command;
+      /*
+       * The script's own name, so a guard mirrored into `.claude/hooks/` and `.codex/hooks/` is
+       * counted once. Nine of this repository's hook scripts exist in both trees as real mirrored
+       * files; counting the copies made the row say nine blocking hooks where five guards exist,
+       * and the coverage view already settled this the same way — one name, and the tools carry
+       * the multiplicity (measured on this repository, 2026-09-20).
+       */
+      const path = hook.ref.path;
+      const name = path ? (path.split('/').pop() ?? path) : hook.ref.command;
       (isBlockingEvent(hook.events) ? blocking : watching).push(name);
     }
   }
@@ -272,20 +305,16 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
     permissionCounts(report.contents.get('.claude/settings.json')) ??
     permissionCounts(report.contents.get('.claude/settings.local.json'));
 
-  /*
-   * Names come from the coverage pass when it ran; the count never does. `checks.gitHooks` is
-   * counted on every scan, so a repository whose vault records no implementation path still gets
-   * the right number with no names beside it, rather than an empty row that reads as "nothing
-   * guards a commit here".
-   */
-  const gitHookNames = report.coverage
-    .filter((declaration) => declaration.origin === 'git-hook')
-    .map((declaration) => declaration.label);
+  /* Straight from the scan. Reading them out of the coverage pass left the row with a bare count
+     on any repository whose vault records no implementation path, because that pass does not run
+     there (measured on this repository, 2026-09-20). */
+  const gitHookNames = report.gitHookFiles;
 
   const slots: AnatomySlot[] = [
     slot('always', 'tells', uniqueSorted(always)),
     slot('scoped', 'tells', uniqueSorted(scoped)),
-    slot('onDemand', 'tells', uniqueSorted(onDemand)),
+    slot('skills', 'tells', uniqueSorted(skills)),
+    slot('subagents', 'tells', uniqueSorted(subagents)),
     slot(
       'tools',
       'tells',
@@ -307,7 +336,12 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
     slot(
       'discoveredTests',
       'watches',
-      uniqueSorted(report.testFiles.map((path) => topFolder(path, 3))),
+      /*
+       * The top folder, because depth three produced 689 distinct names for 1471 files on this
+       * repository and the citation line became a list nobody can read. `src/ · mcp/ · cli/` is
+       * what a person needs to know: where the runner finds them.
+       */
+      uniqueSorted(report.testFiles.map((path) => topFolder(path, 1))),
       report.testFiles.length,
     ),
     /*

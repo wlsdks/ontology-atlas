@@ -28,6 +28,7 @@ function report(partial: Partial<HarnessReport> = {}): HarnessReport {
     coverage: [],
     documentReach: { total: 0 } as never,
     testFiles: [],
+    gitHookFiles: [],
     workflowFiles: [],
     timesAreFileMtime: true,
     ...partial,

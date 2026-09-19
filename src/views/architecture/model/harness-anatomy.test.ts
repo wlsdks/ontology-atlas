@@ -34,6 +34,7 @@ function report(partial: Partial<HarnessReport> = {}): HarnessReport {
     coverage: [],
     documentReach: { total: 0 } as never,
     testFiles: [],
+    gitHookFiles: [],
     workflowFiles: [],
     timesAreFileMtime: true,
     ...partial,
@@ -95,19 +96,25 @@ describe('buildHarnessAnatomy', () => {
     expect(slotOf(anatomy, 'always').count).toBe(0);
   });
 
-  it('folds a directory of skills into one name per skill', () => {
+  it('counts skills and briefs by name, and keeps them in separate rows', () => {
+    /* Folding at the directory put this repository's 18 skills and 15 briefs on screen as "4
+       folders" — true, and useless. The reader is asking what can be called. */
     const anatomy = buildHarnessAnatomy(
       report({
         analysis: {
           records: [
             record({ path: '.claude/skills/po-pass/SKILL.md', kind: 'skill' }),
             record({ path: '.claude/skills/po-pass/reference.md', kind: 'skill' }),
+            record({ path: '.agents/skills/po-pass/SKILL.md', kind: 'skill' }),
+            record({ path: '.claude/skills/design-build/SKILL.md', kind: 'skill' }),
             record({ path: '.claude/agents/chief.md', kind: 'agent' }),
           ],
         } as never,
       }),
     );
-    expect(slotOf(anatomy, 'onDemand').items).toEqual(['.claude/agents/', '.claude/skills/']);
+    /* One name per thing a person can call: the Codex copy of a skill is the same skill. */
+    expect(slotOf(anatomy, 'skills').items).toEqual(['design-build', 'po-pass']);
+    expect(slotOf(anatomy, 'subagents').items).toEqual(['chief']);
   });
 
   it('separates hooks that can refuse from hooks that only watch', () => {
@@ -149,22 +156,60 @@ describe('buildHarnessAnatomy', () => {
         ] as never,
       }),
     );
+    /* One guard, one name: the Claude and Codex copies of a mirrored hook are the same guard. */
     expect(slotOf(anatomy, 'toolGates').items).toEqual([
-      '.claude/hooks/block-publish.sh',
-      '.codex/hooks/block-secret-read.sh',
+      'block-publish.sh',
+      'block-secret-read.sh',
     ]);
-    expect(slotOf(anatomy, 'watchers').items).toEqual(['.claude/hooks/report-drift.sh']);
+    expect(slotOf(anatomy, 'watchers').items).toEqual(['report-drift.sh']);
     expect(anatomy.approvalGates).toEqual(['.codex/hooks.json']);
   });
 
-  it('counts git hooks from the census, not from the coverage pass', () => {
-    /* The coverage pass runs only when the vault records implementation paths. The number must not
-       depend on that, or a repository with no ontology reads as having no commit-time guard. */
+  it('counts a mirrored hook once, because it is one guard', () => {
     const anatomy = buildHarnessAnatomy(
-      report({ checks: { wiredHooks: 0, gitHooks: 3, scripts: [], total: 3 } }),
+      report({
+        hookGroups: [
+          {
+            configPath: '.claude/settings.json',
+            approvalGate: false,
+            hooks: [
+              {
+                events: 'PreToolUse',
+                ref: { path: '.claude/hooks/block-unsafe-git.sh', command: 'x' },
+                status: 'wired',
+              },
+            ],
+          },
+          {
+            configPath: '.codex/hooks.json',
+            approvalGate: false,
+            hooks: [
+              {
+                events: 'beforeToolUse',
+                ref: { path: '.codex/hooks/block-unsafe-git.sh', command: 'x' },
+                status: 'wired',
+              },
+            ],
+          },
+        ] as never,
+      }),
+    );
+    expect(slotOf(anatomy, 'toolGates').count).toBe(1);
+    expect(slotOf(anatomy, 'toolGates').items).toEqual(['block-unsafe-git.sh']);
+  });
+
+  it('counts and names git hooks without the coverage pass', () => {
+    /* The coverage pass runs only when the vault records implementation paths. Neither the number
+       nor the names may depend on that, or a repository with no ontology reads as having a
+       commit-time guard nobody can open. */
+    const anatomy = buildHarnessAnatomy(
+      report({
+        checks: { wiredHooks: 0, gitHooks: 3, scripts: [], total: 3 },
+        gitHookFiles: ['commit-msg', 'pre-commit', 'pre-push'],
+      }),
     );
     expect(slotOf(anatomy, 'gitGates').count).toBe(3);
-    expect(slotOf(anatomy, 'gitGates').items).toEqual([]);
+    expect(slotOf(anatomy, 'gitGates').items).toEqual(['commit-msg', 'pre-commit', 'pre-push']);
   });
 
   it('shows the MCP config path when its servers cannot be read', () => {
@@ -211,6 +256,23 @@ describe('buildHarnessAnatomy', () => {
     const without = buildHarnessAnatomy(report());
     expect(without.permissions).toBeNull();
     expect(slotOf(without, 'permissions').status).toBe('absent');
+  });
+
+  it('folds discovered tests to the folder the runner walks, not to every subtree', () => {
+    /* Depth three produced 689 names for 1471 files on this repository; the citation became a list
+       nobody reads. Where the runner finds them is the answer. */
+    const anatomy = buildHarnessAnatomy(
+      report({
+        testFiles: [
+          'src/a/b/x.test.ts',
+          'src/c/d/y.test.ts',
+          'mcp/src/z.test.mjs',
+          'tests/contract/w.contract.test.ts',
+        ],
+      }),
+    );
+    expect(slotOf(anatomy, 'discoveredTests').items).toEqual(['mcp/', 'src/', 'tests/']);
+    expect(slotOf(anatomy, 'discoveredTests').count).toBe(4);
   });
 
   it('caps the names a slot prints and says how many are left', () => {
