@@ -1,6 +1,7 @@
 "use client";
 
 import { projectDomeEdgeControl } from '../model/dome-edge';
+import { refreshIndexDependentTokens } from "../tokens/read-map-tokens";
 
 /**
  * `OntologyMap`'s engine hook — owns the canvas/rAF/pointer wiring so the
@@ -1121,6 +1122,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const prevExpandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** Density gate — this frame's cluster chips (world-anchored). Hit-testing reads it. */
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
+  const lastTapRef = useRef<{ nodeId: string; at: number } | null>(null);
   /**
    * The nodes this frame did **not** draw: density-gate collapsed ones plus
    * neighbours hidden by selective ego. Pointer hit-testing reads it to exclude
@@ -2309,6 +2311,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
     /** The cheap half, called from inside a frame: backing size and viewport facts only. */
     const commitViewportSize = () => {
+      // The top and bottom lanes follow the viewport height; read them before
+      // the fit and the label cull consume the size that just changed.
+      refreshIndexDependentTokens();
       const pending = pendingViewportRef.current;
       if (!pending) return false;
       pendingViewportRef.current = null;
@@ -2685,6 +2690,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // collapsed cluster, say). With no bbox to fit, leave the camera alone —
     // and record no debt, because retrying gives the same result.
     if (hit === 0) return true;
+    // A path is read against the ring it sits in. Fitting the two endpoints
+    // alone put the camera at 1.55× the overview, and the rest of the spine
+    // overflowed: three domains under the toolbar, one off the canvas
+    // (measured 2026-09-19). The lens dims that ring now, so it is the frame
+    // the path wants, not a crop to cut away.
+    if (mapLensKindRef.current === "path" && !galaxyRef.current) {
+      const spine = world.spineBounds;
+      if (spine.minX < minX) minX = spine.minX;
+      if (spine.minY < minY) minY = spine.minY;
+      if (spine.maxX > maxX) maxX = spine.maxX;
+      if (spine.maxY > maxY) maxY = spine.maxY;
+    }
 
     // Pad so nothing sits flush against the edge: fitting the raw bbox clips
     // labels, rings and footprints.
@@ -5153,7 +5170,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         for (const id of realmExpandChainRef.current.chain) withRealm.add(id);
         effectiveExpanded = withRealm;
       }
-      const clusterState = computeTopologyClusterState(world, effectiveExpanded);
+      // The focused node's neighbours held by another parent stay drawn inside
+      // that parent's fold, so the ego graph shows every relation the panel
+      // lists. Its own children are not held: a domain's fold is its chip's job.
+      let heldOpen: Set<string> | undefined;
+      {
+        const focusId = focusedSlugRef.current;
+        const neighbors = focusId ? world.neighborMap.get(focusId) : undefined;
+        if (focusId && neighbors) {
+          for (const id of neighbors) {
+            const parentId = world.nodeById.get(id)?.parentId ?? null;
+            if (parentId === focusId) continue;
+            (heldOpen ??= new Set<string>()).add(id);
+          }
+        }
+      }
+      const clusterState = computeTopologyClusterState(world, effectiveExpanded, heldOpen);
 
       // Selective ego: when a focused node has more neighbours than the batch
       // limit, keep the top (revealedBatches × limit) by DOI and collapse the
@@ -6148,6 +6180,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
+    lastTapRef,
     expandPrefRef,
     clusterBarLabelsRef,
     clusteredIdsRef,

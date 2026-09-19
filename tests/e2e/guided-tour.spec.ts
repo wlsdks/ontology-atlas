@@ -28,7 +28,7 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
 
   test("all 8 steps render a resolvable anchor + card", async ({ page }, testInfo) => {
     // The tour runs on the map — since 2026-07-30 `/` is the gateway.
-    await gotoAndSettle(page, "/en/topology/");
+    await gotoAndSettle(page, "/en/topology/?e2e=1");
 
     const tourButton = page.getByTestId("topology-tour-button");
     await expect(tourButton).toBeVisible({ timeout: 15_000 });
@@ -65,6 +65,23 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
     await expect(cutout).toBeVisible({ timeout: 5_000 });
     const cutoutBox = await cutout.boundingBox();
     expect(cutoutBox).not.toBeNull();
+    // The card asks the person to press the lit node; it must not sit on that
+    // node's name (2026-09-19: the card's top cut the hub's name in half).
+    const nameClearance = await page.evaluate(() => {
+      const probe = window.__atlasMap!;
+      const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+      const cut = document.querySelector('[data-testid="guided-tour-cutout"]')!.getBoundingClientRect();
+      const cx = cut.left + cut.width / 2 - canvas.left;
+      const cy = cut.top + cut.height / 2 - canvas.top;
+      const lit = probe.nodes().reduce((best, n) => (Math.hypot(n.x - cx, n.y - cy) < Math.hypot(best.x - cx, best.y - cy) ? n : best));
+      const name = probe.labels().find((l) => l.nodeId === lit.id);
+      const card = document.querySelector('[data-testid="guided-tour-card"]')!.getBoundingClientRect();
+      return { lit: lit.label, nameBottom: name ? canvas.top + name.maxY : null, cardTop: card.top, cardBelow: card.top > cut.top };
+    });
+    expect(nameClearance.nameBottom, `켜진 노드 ${nameClearance.lit} 의 이름이 안 그려졌다`).not.toBeNull();
+    if (nameClearance.cardBelow) {
+      expect(nameClearance.cardTop, `카드 위쪽(${Math.round(nameClearance.cardTop)})이 켜진 노드의 이름(${Math.round(nameClearance.nameBottom!)})을 덮는다`).toBeGreaterThanOrEqual(nameClearance.nameBottom!);
+    }
     if (cutoutBox) {
       await page.mouse.click(
         cutoutBox.x + cutoutBox.width / 2,
@@ -141,5 +158,64 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
 
     await page.mouse.click(cx, cy);
     await expect(overlay).toHaveAttribute("data-tour-step", "datasheet", { timeout: 5_000 });
+  });
+});
+
+/**
+ * **The INDEX step shows the INDEX, not the first-run card** (2026-09-19).
+ *
+ * A first-run person starts the tour from the first-run card, so at the
+ * "INDEX: the map's table of contents" step that card was still standing where
+ * the list should be, and the cutout lit a sample picker and an open-folder
+ * button while the copy described a list of names. The card gives way to the
+ * list for that step; the other specs seed the card away and could not see it.
+ */
+test.describe("guided tour on a true first run", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("the INDEX step lights the list, not the first-run card", async ({ page }) => {
+    await page.goto("/en/topology/?e2e=1&guides=off");
+    await page.waitForLoadState("networkidle");
+    const starterTour = page.getByTestId("first-run-tour-cta");
+    await expect(starterTour, "이 스펙은 첫 실행 카드에서 출발한다").toBeVisible();
+    await starterTour.click();
+    const overlay = page.getByTestId("guided-tour-overlay");
+    await expect(overlay).toHaveAttribute("data-tour-step", "welcome");
+    const card = page.getByTestId("guided-tour-card");
+    for (const step of ["nodes", "relations", "try-click"]) {
+      await card.getByTestId("guided-tour-next").click();
+      await expect(overlay).toHaveAttribute("data-tour-step", step);
+    }
+    const cutout = page.getByTestId("guided-tour-cutout");
+    await expect(cutout).toBeVisible({ timeout: 5_000 });
+    const box = (await cutout.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(overlay).toHaveAttribute("data-tour-step", "datasheet", { timeout: 5_000 });
+    await card.getByTestId("guided-tour-next").click();
+    await expect(overlay).toHaveAttribute("data-tour-step", "index");
+
+    await expect(page.getByTestId("topology-index-tree"), "INDEX 단계인데 목록이 안 보인다").toBeVisible();
+    await expect(page.getByTestId("first-run-starter-dismiss"), "INDEX 단계인데 첫 실행 카드가 서 있다").toHaveCount(0);
+
+    // The developer step points at the card's one-line command; the line has
+    // to be showing, not folded behind its disclosure.
+    await card.getByTestId("guided-tour-next").click();
+    await expect(overlay).toHaveAttribute("data-tour-step", "recent");
+    await card.getByTestId("guided-tour-dev-branch").click();
+    await expect(overlay).toHaveAttribute("data-tour-step", "agent");
+    await expect(page.getByTestId("first-run-starter-cli-toggle"), "개발자 단계인데 명령 한 줄이 접혀 있다").toHaveAttribute("aria-expanded", "true");
+    // ...and showing in full, not clipped under the card's edge: the card
+    // scrolls, and the command is its last row.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const block = document.querySelector('[data-testid="first-run-starter-cli-bridge"]')!.getBoundingClientRect();
+            const card = document.querySelector('[data-testid="first-run-starter"]')!.getBoundingClientRect();
+            return Math.round(block.bottom - card.bottom);
+          }),
+        { timeout: 5_000, message: "명령 블록이 카드 아래로 잘려 있다" },
+      )
+      .toBeLessThanOrEqual(1);
   });
 });

@@ -1161,6 +1161,8 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const answerGenerationRef = useRef(0);
   const filedAnswersRef = useRef(new WeakSet<RetainedLibraryAnswer>());
   const [filingAnswer, setFilingAnswer] = useState<RetainedLibraryAnswer | null>(null);
+  /** The last refusal to file, kept under the save chip until the next answer (2026-09-19). */
+  const [fileAnswerNote, setFileAnswerNote] = useState<string | null>(null);
   const consumedOpeningNonceRef = useRef<number | null>(null);
   const judgeWrite = useCallback(
     (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null }) =>
@@ -1251,7 +1253,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     };
     let page = buildAnswerPage(input);
     if (page.problems.length > 0) {
-      toast.show(t("wiki.fileAnswerRejected", { code: page.problems[0]!.code }), "error");
+      const refusal = t("wiki.fileAnswerRejected", { code: page.problems[0]!.code });
+      setFileAnswerNote(refusal);
+      toast.show(refusal, "error");
       return;
     }
     // Lock the exact answer synchronously; two presses before a React commit still
@@ -1289,6 +1293,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           ? { kind: "wiki", slug: page.slug }
           : current,
       );
+      setFileAnswerNote(null);
       toast.show(t("wiki.fileAnswerDone", { page: page.slug }), "success", {
         label: t("wiki.undo"),
         onClick: () => {
@@ -1306,7 +1311,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     } catch (err) {
       if (reservedSelfWrite) unmarkSelfWrite(reservedSelfWrite);
       filedAnswersRef.current.delete(filed);
-      toast.show(failureSentence(err, t("wiki.fileAnswerRejected", { code: "write" })).sentence, "error");
+      const refusal = failureSentence(err, t("wiki.fileAnswerRejected", { code: "write" })).sentence;
+      setFileAnswerNote(refusal);
+      toast.show(refusal, "error");
     } finally {
       setFilingAnswer((current) => current === filed ? null : current);
     }
@@ -1383,6 +1390,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
         : null;
       if (opening?.kind === "ask") pendingAskRef.current = null;
       setLastAnswer(null);
+      setFileAnswerNote(null);
       const stamp = (list: typeof docs) =>
         new Map(
           list
@@ -3338,6 +3346,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
           onTerminalToolObservation={handleTerminalToolObservation}
           onFileAnswer={lastAnswer ? handleFileAnswer : null}
           filingAnswer={lastAnswer !== null && filingAnswer === lastAnswer}
+          fileAnswerNote={fileAnswerNote}
           noticeActions={{
             openPage: (path) => choose({ kind: "wiki", slug: path.replace(/\.md$/, "") }),
             askNext: () => {

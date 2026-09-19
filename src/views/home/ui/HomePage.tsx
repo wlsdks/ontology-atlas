@@ -5516,6 +5516,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                     onSelect={(id) => handleSelect(id, { keepIndexOpen: true })}
                     onCollapse={handleIndexCollapse}
                     onStartTour={openGuidedTour}
+                    tourIndexSpotlit={tour.open && tour.step?.id === "index"}
+                    tourAgentSpotlit={tour.open && tour.step?.id === "agent"}
                     onEnablePlainMode={() => setAudiencePlain(true)}
                     // Gates the quiet hint row explaining why element rows are not
                     // visible. `treeResult` above has already removed them; the single
@@ -5619,6 +5621,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                         count: unboundProjectSource?.count ?? 0,
                       }),
                       sourceUnboundAction: t("index.sourceUnboundAction"),
+                      tidyHeading: t("index.tidyHeading"),
                       openedInsideLabel: t("index.openedInsideLabel"),
                       openedInsideDismiss: t("index.openedInsideDismiss"),
                       // Rendered only in plain mode; the panel gates it.

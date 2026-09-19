@@ -26,6 +26,8 @@ export interface OntologyMapTokens {
   nodeStrokeElement: string;
   nodeFillDim: string;
   nodeStrokeDim: string;
+  /** `--map-ego-dim-label-alpha` — the name of a domain the ego focus dimmed; children stay at 0. */
+  egoDimLabelAlpha: number;
   nodeFillStale: string;
   nodeStrokeStale: string;
   nodeHoleFill: string;
@@ -224,6 +226,8 @@ export interface OntologyMapTokens {
    * ramp (zero new easings).
    */
   spotlightRestAlpha: number;
+  /** `--map-path-rest-alpha` — the rest alpha off the path while the path lens is ON; deeper than the spotlight's, a path being two ends and a line rather than a whole-map lens. */
+  pathRestAlpha: number;
   /** `--map-spotlight-ring-speed` — rotation speed of the dashed ring on a changed node (px/ms). */
   spotlightRingSpeed: number;
   rippleStaggerMs: number;
@@ -326,6 +330,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "nodeStrokeElement", cssVar: "--map-node-stroke-element", kind: "color" },
   { key: "nodeFillDim", cssVar: "--map-node-fill-dim", kind: "color" },
   { key: "nodeStrokeDim", cssVar: "--map-node-stroke-dim", kind: "color" },
+  { key: "egoDimLabelAlpha", cssVar: "--map-ego-dim-label-alpha", kind: "number" },
   { key: "nodeFillStale", cssVar: "--map-node-fill-stale", kind: "color" },
   { key: "nodeStrokeStale", cssVar: "--map-node-stroke-stale", kind: "color" },
   { key: "nodeHoleFill", cssVar: "--map-node-hole-fill", kind: "color" },
@@ -417,6 +422,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "focusDimTau", cssVar: "--map-focus-dim-tau", kind: "number" },
   { key: "trailReducedFadeMs", cssVar: "--map-trail-reduced-fade-ms", kind: "number" },
   { key: "spotlightRestAlpha", cssVar: "--map-spotlight-rest-alpha", kind: "number" },
+  { key: "pathRestAlpha", cssVar: "--map-path-rest-alpha", kind: "number" },
   { key: "spotlightRingSpeed", cssVar: "--map-spotlight-ring-speed", kind: "number" },
   { key: "clusterRevealTau", cssVar: "--map-cluster-reveal-tau", kind: "number" },
   { key: "rippleStaggerMs", cssVar: "--map-ripple-stagger-ms", kind: "number" },
@@ -547,7 +553,10 @@ export function clearOntologyMapTokensCache(): void {
  * one line here; skipping it leaves that value stale alone — a quieter failure than
  * a full invalidation, which is why it is pinned in a comment.
  */
-const INDEX_DEPENDENT_TOKEN_KEYS = ["safeInsetLeft"] as const;
+// The top and bottom lanes follow the viewport height (`@media (max-height)`
+// in globals.css), so they are refreshed with the INDEX-dependent left lane
+// on every viewport commit — three reads, not the 115 of a blanket refresh.
+const INDEX_DEPENDENT_TOKEN_KEYS = ["safeInsetLeft", "safeInsetTop", "safeInsetBottom"] as const;
 
 /**
  * After an INDEX state (`data-topology-index`) transition, re-read **only the tokens

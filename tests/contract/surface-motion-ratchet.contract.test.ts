@@ -298,8 +298,19 @@ const BASELINE_HARD_CUTS = 0;
  * island of the canvas, which the a11y opener model (a DOM trigger testid) cannot express;
  * `tests/e2e/library-graph-islands.spec.ts` presses the island and holds the bar's own
  * checks (visible, Escape and the chip both return the map).
+ * 50 -> 51 (2026-09-19): the project page's agent dock, born as `Surface` like the
+ * Library's and Analysis's. It mounts only behind the desktop bridge with a guarded
+ * runtime, which the static OPENERS fixture cannot synthesize;
+ * `tests/e2e/project-agent-dock.spec.ts` opens it through the bridge stub and holds its
+ * own checks (the frame opens, the brief request is seated, closing puts it away).
+ * 51 -> 52 (2026-09-19): the MCP tab's verification dialog — restart, check and the
+ * "not working?" fold moved off the page into one `Dialog` (born as `Surface`, so hard
+ * cuts stay at zero) when the three-step accordion became tool rows. Its opener is
+ * `agent-setup-verify-open`, drawn only with a launchable server and an open folder,
+ * which the static OPENERS fixture cannot synthesize; `VaultAgentSetupPanel.test.tsx`
+ * owns its open path.
  */
-const BASELINE_APPEARING_SURFACES = 50;
+const BASELINE_APPEARING_SURFACES = 52;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

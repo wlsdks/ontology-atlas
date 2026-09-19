@@ -208,7 +208,7 @@
         "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Agent or Codex and they show up here. The install guides are in the list below.",
         "webLabel": "A browser is not allowed to start programs on this computer",
-        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Pointing a tool you started yourself at this folder works right now, in the “Share this folder” section under MCP, below.",
+        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Pointing a tool you started yourself at this folder works right now, in the “Share this folder” section on the MCP tab.",
         "state": {
           "ready": "Ready",
           "cli-missing": "Install needed",
@@ -219,8 +219,8 @@
           "login-needed": "Sign in needed",
           "login-unknown": "Sign-in not checked"
         },
-        "guardedExplainer": "Atlas can pause ontology writes for review and ask before access outside this folder only for: {names}. Other tools remain available for connection setup, but cannot open in-app chat here.",
-        "guardedExplainerNone": "No tool is confirmed yet to have its writes reviewed and to ask before touching anything outside the folder. Detected tools can still be used for connection setup.",
+        "guardedExplainer": "In-app chat opens only with {names} for now. The other tools are for connection setup only.",
+        "guardedExplainerNone": "No tool can open an in-app chat yet. Detected tools can still be used for connection setup.",
         "unknownExplainer": "\"Could not check\" does not mean the tool is absent; it means Atlas does not yet know how to find it on this computer. You can follow the install guide or connect over MCP, but the in-app chat opens only with a tool confirmed to ask before writing.",
         "installGuide": "How to install",
         "openChat": "Open a chat with this tool",
@@ -232,7 +232,8 @@
         "othersSearchLabel": "Search",
         "othersSearchPlaceholder": "A name, or what it is",
         "othersNoneForSearch": "None of them matches “{query}”.",
-        "othersClose": "Close"
+        "othersClose": "Close",
+        "hintLabel": "What starting a chat creates"
       },
       "appUpdate": {
         "intro": "When a new build of this app ships, we tell you in the bottom-right corner. You can also check right now.",
@@ -785,7 +786,7 @@
       },
       "mcpTabs": {
         "title": "Two tabs, two jobs",
-        "body": "“Share this folder” hands a coding tool the config that points it here. “Connectors” is the outside servers that agent may also reach, and the number beside it counts the ones switched on."
+        "body": "“Agents” is the coding tools on this computer. “MCP” is the config that hands them this folder, and the outside servers that agent may also reach. The number beside it counts the connectors switched on."
       },
       "libraryWhat": {
         "title": "Library",
@@ -2168,6 +2169,8 @@
       "briefAskCopy": "Copy the instructions",
       "briefAskCopied": "Copied: paste it into the agent chat",
       "briefAskCopyError": "Copy failed: try again",
+      "briefAskOpen": "Hand it to the agent",
+      "briefAskAgent": "Opens the agent here to read the map and rewrite the overview in four sections. It asks before writing to the file, and the result can be reviewed in the Library.",
       "briefPrompt": "Lay out the overview of {slug}. First read the map with get_concept(\"{slug}\", body: \"full\") and query_ontology('{'operation: \"project_map\", project: \"{slug}\"'}'), and check the evidence in the domain, capability and element documents. Then rewrite the body of {doc} under four ## headings: 1) What it does (two or three sentences), 2) How work flows (a numbered list, each step naming its domains as [[domains/…]] wikilinks), 3) Where it is uneven (bullets: where capabilities outnumber elements and the reverse), 4) Where to look next (bullets, each with a wikilink to its evidence document). Write nothing the map does not support. Before writing, pass the mtime from get_concept as expected_mtime and change only the body with patch_concept. I will review it in the Library.",
       "connectedTitle": "Connected projects",
       "connectedRelation": "Relates",
@@ -2504,7 +2507,7 @@
       "connectionReady": "file ready",
       "connectionNeedsReview": "review",
       "connectionCheckReady": "The connection files are ready. Restart the agent and it starts reading this folder.",
-      "connectionCheckPending": "{ready}/{total} connection files ready. Fill in the rest in step 1.",
+      "connectionCheckPending": "{ready}/{total} connection files ready. The connect button on a tool's row writes the rest.",
       "connectionHint": ".mcp.json.example is a template for another folder, so it is not counted as a connection file. This screen checks the launch shape and folder path; restart the agent and confirm the live connection inside each tool.",
       "boundaryTitle": "This is where outside tools get wired in",
       "boundaryDesc": "This panel connects Claude Code, Codex and Cursor for use in their own app or terminal; it does not open a chat here. The in-app Claude Agent chat, which asks first before touching anything outside the folder, is its own screen.",
@@ -2639,6 +2642,7 @@
       "stepStateDone": "done",
       "stepListAriaLabel": "Three steps to connect",
       "troubleshootToggle": "Not working?",
+      "serverHintLabel": "How the server runs",
       "troubleshootAriaLabel": "What to check when the connection does not work",
       "groupFiles": "Connection file status",
       "groupHowAgentsUse": "How agents use this folder"
@@ -3011,6 +3015,7 @@
       "brokenDocsAction": "Open Ontology documents",
       "sourceUnboundLabel": "{count} project(s) with no code folder",
       "sourceUnboundAction": "Connect",
+      "tidyHeading": "To tidy",
       "plainHint": "Elements are hidden: click a dot on the map to reveal its elements",
       "openedInsideLabel": "Opened the map folder found inside the project you picked.",
       "openedInsideDismiss": "Dismiss this notice"
@@ -3885,7 +3890,11 @@
     "restoreDone": "Restored {path} to this commit's content. It is an uncommitted change now.",
     "restoreDoneOthers": "The other {count} document(s) this commit changed stay as they are.",
     "restoreFailedSafe": "The document was not changed.",
-    "restoreConceptDoc": "This concept's document {path}"
+    "restoreConceptDoc": "This concept's document {path}",
+    "docHistoryTitle": "Other steps that changed this document",
+    "docHistoryOnly": "This is the only step that changed this document",
+    "docHistoryOlder": "Older steps exist too. Show older steps in the list on the left to reach them",
+    "docHistoryJumpHint": "Press to jump to that step"
   },
   "agentFiles": {
     "header": "Agent files",
@@ -4364,10 +4373,13 @@
         "summary": "Summary",
         "compare": "Compare",
         "details": "Details",
-        "scope": "Proposed {operation} for {target} · selected item {selected} of {items} · {fields} requested fields",
-        "relationScope": "Proposed relation {from} → {type} → {to} · selected item {selected} of {items}",
+        "scopeRelation": "{from} → {type} → {to}",
+        "scopeItem": "item {selected} of {items} in this batch",
+        "scopeFields": "{count, plural, one {# requested field} other {# requested fields}}",
         "batchRemaining": "{count, plural, one {# other batch item is outside this summary} other {# other batch items are outside this summary}}.",
         "incomplete": "Meaning review incomplete · {inspected} of {total} recorded meaning units shown · {omitted} omitted. Details contains the complete request.",
+        "coverageNone": "This request records no meaning text. Details carries the complete request.",
+        "coverageAll": "{total, plural, one {The # recorded meaning unit is shown in full} other {All # recorded meaning units are shown}}. Details carries the complete request.",
         "beforeUnavailable": "A trusted historical vault snapshot is unavailable. Current request values are shown without inventing a before state.",
         "beforeUnknown": "Before · unavailable",
         "before": "Before",
@@ -4487,6 +4499,7 @@
       "addRelation": "Linked a relation"
     },
     "fullRequest": "Full request",
+    "seatedDetail": "{lines, plural, one {# instruction this screen attached} other {# instructions this screen attached}}",
     "toolRepeat": "Repeated {count} times",
     "toolOutcome": {
       "foundUnit": " found",
@@ -4496,8 +4509,8 @@
       "failed": "failed",
       "cancelled": "stopped"
     },
-    "workGroup": "Work details · {count} steps",
-    "workGroupActive": "Working · {count} steps",
+    "workGroup": "Work details · {count, plural, one {# step} other {# steps}}",
+    "workGroupActive": "Working · {count, plural, one {# step} other {# steps}}",
     "resize": "Resize the chat panel",
     "resizeHint": "Drag to widen or narrow. Arrow keys work too.",
     "closeHistory": "Close the past chats list",
@@ -4698,9 +4711,7 @@
     },
     "title": "Agents",
     "lede": "Atlas finds the coding tools already on this computer.",
-    "runtimesHeading": "Tools on this computer",
-    "ledeMore": "What this screen does",
-    "ledeDetail": "It shows which of them can open safely inside the app, installs a supported one that is missing, and opens a conversation with the one you pick. API keys and the folder itself are not set here."
+    "runtimesHeading": "Tools on this computer"
   },
   "nativeErrors": {
     "unsupported-provider": "That is not an AI provider this app knows. Pick Anthropic, OpenAI, or Gemini, or connect a local runner by its address.",
@@ -4965,10 +4976,11 @@
   },
   "mcp": {
     "title": "MCP",
-    "lede": "MCP is the wire an AI coding agent uses. One end reaches this folder, the other reaches the services you attach. Both ends live on this screen.",
+    "lede": "The agent connection (MCP) is the wire a coding agent uses to read and write this folder. Outside services attach here too.",
     "tablistAriaLabel": "MCP sections",
     "shareHeading": "Share this folder",
     "connectorsHeading": "Connectors",
+    "connectorsHeadingCount": "Connectors · {count} on",
     "connectorsCountTitle": "Connectors switched on"
   },
   "connectors": {
@@ -5746,20 +5758,20 @@
       "roundsCount": "Rounds switched on"
     },
     "collections": {
-      "eyebrow": "SAVED SCOPE",
+      "eyebrow": "PICKED ON THE MAP",
       "title": "Collections",
-      "description": "Return to the concepts you gathered for a piece of work, with the reason you kept them together.",
-      "create": "Create in Galaxy",
-      "openGalaxy": "Open Galaxy",
+      "description": "Return to the concepts you picked on the map for a piece of work, with the reason you kept them together.",
+      "create": "Pick on the map",
+      "openGalaxy": "Open the map",
       "loadingTitle": "Reading saved collections",
-      "loadingDescription": "Atlas is checking this ontology folder for constellations.",
+      "loadingDescription": "Atlas is checking this ontology folder for saved collections.",
       "unavailableTitle": "Open an ontology folder to see its collections",
-      "unavailableDescription": "Constellations stay with the folder where you created them.",
+      "unavailableDescription": "Collections stay with the folder where you created them.",
       "errorTitle": "Collections need attention",
       "errorDescription": "Atlas could not read the saved collection file. It was left unchanged.",
       "retry": "Read again",
-      "emptyTitle": "Keep a working set in this galaxy",
-      "emptyDescription": "Create a constellation from real ontology concepts, then return to the same named scope here.",
+      "emptyTitle": "No collection yet",
+      "emptyDescription": "Switch the map to its Galaxy view, pick a few concepts and give them a name and a purpose; that set is kept here so you can return to the same scope. “Pick on the map” takes you there.",
       "memberCount": "{count, plural, one {# concept} other {# concepts}}",
       "referenceCount": "{count, plural, one {# reference} other {# references}}",
       "shape": {
@@ -5768,11 +5780,11 @@
         "purpose": "Purpose"
       },
       "noPurpose": "No purpose added",
-      "viewInGalaxy": "View in Galaxy",
-      "viewInGalaxyNamed": "View {name} in Galaxy",
+      "viewInGalaxy": "View on the map",
+      "viewInGalaxyNamed": "View {name} on the map",
       "membersNamed": "Concepts in {name}",
       "membersWithReferencesNamed": "Concepts and references in {name}",
-      "noMembers": "This constellation has no saved items.",
+      "noMembers": "This collection has no saved items.",
       "missing": "Missing",
       "ambiguous": "Needs review",
       "openDocumentNamed": "Open {name} in Ontology",
@@ -5914,6 +5926,7 @@
         "allowAndSave": "Allow and save",
         "cancel": "Cancel",
         "saved": "{name} runs first at {time}.",
+        "savedRunningNow": "Running {name} once now; the next pass is at {time}.",
         "saveFailed": "Could not save the round: {reason}"
       },
       "name": {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSwapHeight } from "@/shared/lib/use-presence";
@@ -32,7 +32,6 @@ import {
 } from "@/features/vault-ontology";
 import type { VaultDocumentIssue } from "@/shared/lib/validate-vault-document";
 import {
-  useAgentServer,
   useDataSourceMode,
   VaultSourceHydrationBoundary,
   useLocalVault,
@@ -126,16 +125,12 @@ import { VaultHistorySection } from "./parts/VaultHistorySection";
 import { useVaultHistory } from "../lib/use-vault-history";
 import { FlowTab } from "./tabs/FlowTab";
 import { buildBusinessFlowRequest } from "@/features/vault-agent";
-import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import {
   presentationRelationKeysForGraphEdge,
   analysisGraphFromInsight,
   currentAnalysisBasis,
   type AnalysisCaptureContext,
-  runtimeOwnsWriteGate,
-  vaultMcpServers,
-  vaultSelfReadSlot,
 } from "@/features/acp-session";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
 import { readAnalysisHistory, type AnalysisBasis, type AnalysisRecord } from "@/entities/analysis-record";
@@ -147,16 +142,13 @@ import { MessageCircle } from 'lucide-react';
 import {
   buildInsightsAgentPrompt,
   planInsightsAgentPrompt,
-  resolveInsightsAgentRoute,
-  selectInsightsAgentRuntimes,
   type InsightsAgentPrefill,
+  type InsightsAgentRoute,
 } from '../lib/insights-agent';
+import { useVaultAgentRuntime } from '@/widgets/acp-chat-panel';
 
 const EMPTY_NODES: KnowledgeGraphNode[] = [];
 const EMPTY_EDGES: KnowledgeGraphEdge[] = [];
-const subscribeAcpBridge = () => () => undefined;
-const readAcpBridge = () => isAcpBridgeAvailable();
-const readServerAcpBridge = () => false;
 const HUB_DISPLAY_LIMIT = 6;
 /**
  * How many impact-ranking rows to show — the ceiling that still reads inside the
@@ -388,13 +380,10 @@ export function OntologyInsightsPage() {
   const vault = useLocalVault();
   const dataSourceMode = useDataSourceMode();
   const staticVaultSource = useStaticVaultSource();
-  const agentServer = useAgentServer();
-  const acpBridgeAvailable = useSyncExternalStore(
-    subscribeAcpBridge,
-    readAcpBridge,
-    readServerAcpBridge,
-  );
   const gitVaultPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
+  // Runtime and vault MCP server are read the one way every dock reads them; this page
+  // never handed the session its connectors, and the refactor keeps that.
+  const vaultAgent = useVaultAgentRuntime(gitVaultPath, { connectors: false });
   /*
    * The counts the chart ends on come from the same manifest every other tile reads, and
    * are classified by the same path rule the history is — the commonest way a series like
@@ -416,9 +405,8 @@ export function OntologyInsightsPage() {
     historyManifest?.docs,
     historyManifest?.sources?.map((source) => source.path),
   );
-  const [acpRuntimes, setAcpRuntimes] = useState<ReturnType<typeof selectInsightsAgentRuntimes>>([]);
-  const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
-  const [runtimeCheckComplete, setRuntimeCheckComplete] = useState(false);
+  const acpRuntimes = vaultAgent.runtimes;
+  const setAcpRuntimeId = vaultAgent.setRuntimeId;
   const [agentOpen, setAgentOpen] = useState(false);
   const [agentDraftPresent, setAgentDraftPresent] = useState(false);
   const [agentPrefill, setAgentPrefill] = useState<InsightsAgentPrefill | null>(null);
@@ -434,60 +422,11 @@ export function OntologyInsightsPage() {
     };
   }, [insight, vault.manifest, vault.handle, vault.status, vault.fileHandles, dataSourceMode]);
 
-  useEffect(() => {
-    if (!acpBridgeAvailable) return;
-    let cancelled = false;
-    const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
-      if (cancelled) return;
-      const usable = selectInsightsAgentRuntimes(list);
-      setAcpRuntimes(usable);
-      setAcpRuntimeId((current) => (
-        current && usable.some((runtime) => runtime.id === current)
-          ? current
-          : (usable[0]?.id ?? null)
-      ));
-    };
-    void detectAcpRuntimes()
-      .then((fast) => {
-        apply(fast);
-        return detectAcpRuntimes({ probeLogin: true });
-      })
-      .then(apply)
-      .catch(() => apply(null))
-      .finally(() => {
-        if (!cancelled) setRuntimeCheckComplete(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [acpBridgeAvailable]);
 
-  const acpRuntime = acpRuntimes.find((runtime) => runtime.id === acpRuntimeId) ?? null;
-  const acpMcpServers = useMemo(() => {
-    const registration = vaultSelfReadSlot(acpRuntimeId) === 'codex-config'
-      ? {
-          command: vault.agentConfigStatus?.codexRegisteredCommand ?? null,
-          validForCurrentVault: vault.agentConfigStatus?.codexConfigValid === true,
-        }
-      : null;
-    return vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
-      ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
-    });
-  }, [
-    acpRuntimeId,
-    agentServer.launch,
-    gitVaultPath,
-    vault.agentConfigStatus?.codexConfigValid,
-    vault.agentConfigStatus?.codexRegisteredCommand,
-  ]);
-  const agentRoute = resolveInsightsAgentRoute({
-    bridgeAvailable: acpBridgeAvailable,
-    runtimeCheckComplete,
-    serverCheckComplete: agentServer.launch !== null || agentServer.reason !== null,
-    runtime: acpRuntime,
-    vaultRoot: gitVaultPath,
-    serverReady: agentServer.launch !== null,
-  });
+  const acpRuntime = vaultAgent.runtime;
+  const acpMcpServers = vaultAgent.mcpServers;
+  // The shared hook says `unavailable`; this page has always called that `clipboard`.
+  const agentRoute: InsightsAgentRoute = vaultAgent.route === 'unavailable' ? 'clipboard' : vaultAgent.route;
 
   // At lg+ the nav rail's bottom gear opens settings, matching the map. Below lg
   // the chrome tile in the top utility lane takes over (the width where the rail is

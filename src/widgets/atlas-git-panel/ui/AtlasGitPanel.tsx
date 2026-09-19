@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useRef, useS
 import { listen } from "@tauri-apps/api/event";
 import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
 import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
+import { useRovingRows } from "@/shared/lib/use-roving-rows";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { useFormatter, useTranslations } from "next-intl";
 // `History as HistoryIcon` — usability review P0 (2026-07-23): under certain
@@ -681,10 +682,22 @@ export function AtlasGitPanel({
   const loadMoreHistory = useCallback(() => {
     setHistoryLimit(historyLimit + HISTORY_PAGE);
   }, [historyLimit, setHistoryLimit]);
+  /**
+   * A step a document's history named that the list has not read yet. While set, each landed
+   * page is checked for it and the next page is read until it appears.
+   */
+  const [jumpHash, setJumpHash] = useState<string | null>(null);
   /** Lands a page on the memory **as it is then** — a status read that overlapped is kept. */
   const landHistoryPage = useEffectEvent((page: { history: GitCommitInfo[]; historyHasMore: boolean }) => {
     if (!workspace) return;
     rememberWorkspace({ read: { ...workspace.read, ...page }, referenceMs: Date.now() });
+    // A jump still looking for its step reads the next page; found, or no more pages, it ends.
+    if (jumpHash === null) return;
+    if (page.history.some((commit) => commit.hash === jumpHash) || !page.historyHasMore) {
+      setJumpHash(null);
+      return;
+    }
+    setHistoryLimit(historyLimit + HISTORY_PAGE);
   });
   const reportHistoryPageFailure = useEffectEvent((err: unknown) => {
     reportWorkspaceReadFailure(err);
@@ -710,6 +723,27 @@ export function AtlasGitPanel({
       cancelled = true;
     };
   }, [desktop, vaultPath, historyLimit, historyShort]);
+
+  /**
+   * Jump to a step named by a document's own history. The step is in the repository, but it
+   * may sit below the depth the list has read; then the list reads on, a page at a time,
+   * until the row exists — the person asked for that step, not for a blank right column.
+   */
+  const jumpToCommit = useCallback(
+    (hash: string) => {
+      setSelectionChoice({ kind: "commit", hash });
+      setFocusedConceptId(null);
+      const loaded = history.some((commit) => commit.hash === hash);
+      setJumpHash(loaded ? null : hash);
+      if (!loaded && historyHasMore && !historyShort) setHistoryLimit(historyLimit + HISTORY_PAGE);
+    },
+    [history, historyHasMore, historyShort, historyLimit, setHistoryLimit],
+  );
+  /** A plain selection from the list ends any jump still reading on. */
+  const selectStep = useCallback((next: WorkbenchSelection) => {
+    setSelectionChoice(next);
+    setJumpHash(null);
+  }, []);
 
   // Split what the user judges (concepts) from the files that ride along. What
   // they have to read here is "which of my concepts changed"; `.gitignore` and
@@ -886,8 +920,20 @@ export function AtlasGitPanel({
             ? ` ${discard ? t("discardConfirmOthers", { count: others }) : t("restoreDoneOthers", { count: others })}`
             : "";
         setRestoreNotice(`${done}${rest}`);
-        // A discarded document leaves the pending list; keeping it chosen would point at nothing.
-        if (discard) setSelectedPath(null);
+        if (discard) {
+          // A discarded document leaves the pending list; keeping it chosen would point at nothing.
+          setSelectedPath(null);
+        } else {
+          /*
+           * A restore from a commit lands as an uncommitted change, and the diff of that
+           * change is the result of what the person just did. The same rule as after a
+           * commit: show the result. The "now" row is selected with this document chosen,
+           * so the right column reads the restored lines at once.
+           */
+          setSelectionChoice({ kind: "pending" });
+          setSelectedPath(path);
+          setJumpHash(null);
+        }
         await refresh();
         return true;
       } catch (err) {
@@ -1086,13 +1132,23 @@ export function AtlasGitPanel({
             confirmSnapshot={confirmSnapshot}
             onRetry={refresh}
             selection={selection}
-            setSelection={setSelectionChoice}
+            setSelection={selectStep}
             diffFiles={diffFiles}
             history={localizedHistory}
             historyHasMore={historyHasMore}
             historyMoreBusy={historyMoreBusy}
             onMoreHistory={loadMoreHistory}
             onRestoreDocument={restoreDocument}
+            onJumpToCommit={jumpToCommit}
+            whenOf={(isoTime: string) => {
+              const instant = new Date(isoTime);
+              if (Number.isNaN(instant.getTime())) return isoTime;
+              try {
+                return format.relativeTime(instant, historyNowMs);
+              } catch {
+                return isoTime;
+              }
+            }}
             restoreBusy={restoreBusy}
             restoreNotice={restoreNotice}
             restoreError={restoreError}
@@ -2340,9 +2396,11 @@ function ChangeList({
       {/*
         The chosen document's one destructive door. A never-committed document has no
         earlier content to go back to, so "discard" there would be "delete", and that door is
-        not offered — the Rust side refuses it too.
+        not offered — the Rust side refuses it too. A renamed document is not offered either:
+        the last commit holds the old name, not this path, so the door would only open on a
+        refusal.
       */}
-      {selectedEntry && selectedEntry.status !== "added" ? (
+      {selectedEntry && selectedEntry.status !== "added" && selectedEntry.status !== "renamed" ? (
         <DiscardDock
           t={t}
           path={selectedEntry.path}
@@ -2625,6 +2683,33 @@ function StepList({
   upstream: string | null;
   onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
 }) {
+  /*
+   * A jump from a document's history can select a row far below the fold. The row is the
+   * proof that the selection landed, so it is brought into view; `nearest` never moves a row
+   * that is already visible, so an ordinary click does not scroll.
+   */
+  const revealSelectedRow = useCallback((node: HTMLButtonElement | null) => {
+    if (node && typeof node.scrollIntoView === "function") node.scrollIntoView({ block: "nearest" });
+  }, []);
+  /*
+   * One tab stop, arrows between rows (2026-09-19). The list is a master-detail list, and
+   * before this every row was its own tab stop: reaching the fortieth step by keyboard meant
+   * forty presses. The same hook the Library's lists use; Enter or Space on a row is the
+   * row's own click, so selection stays a deliberate press.
+   */
+  const rowCount =
+    (behind && behind > 0 ? 1 : 0) + (pendingCount > 0 ? 1 : 0) + history.length + (hasMore ? 1 : 0);
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const roving = useRovingRows({ count: rowCount, listRef });
+  let rowIndex = 0;
+  const rowProps = () => {
+    const index = rowIndex++;
+    return {
+      "data-row-index": index,
+      tabIndex: roving.tabIndexOf(index),
+      onFocus: () => roving.onRowFocus(index),
+    };
+  };
   if (history.length === 0) {
     return (
       <div className="flex flex-col gap-1 px-4 py-3">
@@ -2654,12 +2739,13 @@ function StepList({
   const unpushed = Math.max(0, Math.min(ahead ?? 0, history.length));
 
   return (
-    <ul data-testid="atlas-git-steps" className="flex flex-col">
+    <ul data-testid="atlas-git-steps" className="flex flex-col" ref={listRef} onKeyDown={roving.onKeyDown}>
       {behind && behind > 0 ? (
         <li>
           <button
             type="button"
             data-testid="atlas-git-behind-row"
+            {...rowProps()}
             onClick={() => onRemoteAction("pull")}
             className={cn(STEP_ROW, "border-l-transparent")}
           >
@@ -2686,6 +2772,7 @@ function StepList({
           <button
             type="button"
             data-testid="atlas-git-pending-row"
+            {...rowProps()}
             /*
              * **`aria-current`, not `aria-pressed`** (2026-08-15 (8)). This row
              * points at "what I am currently looking at" in a master-detail list;
@@ -2757,6 +2844,8 @@ function StepList({
             <button
               type="button"
               data-testid="atlas-git-history-item"
+              {...rowProps()}
+              ref={expanded ? revealSelectedRow : undefined}
               aria-expanded={expanded}
               title={t("stepSelectHint")}
               onClick={() => setSelection({ kind: "commit", hash: commit.hash })}
@@ -2835,6 +2924,7 @@ function StepList({
           <button
             type="button"
             data-testid="atlas-git-history-more"
+            {...rowProps()}
             disabled={moreBusy}
             onClick={onMore}
             className={controlClass({
@@ -3111,6 +3201,8 @@ function DesktopBody({
   historyMoreBusy,
   onMoreHistory,
   onRestoreDocument,
+  onJumpToCommit,
+  whenOf,
   restoreBusy,
   restoreNotice,
   restoreError,
@@ -3180,6 +3272,10 @@ function DesktopBody({
   onMoreHistory: () => void;
   /** Restores one document to `source` (`HEAD` or a hash); resolves true when git did it. */
   onRestoreDocument: (relativePath: string, source: string, others: number) => Promise<boolean>;
+  /** Selects a step by hash, reading deeper into the list when it is not loaded yet. */
+  onJumpToCommit: (hash: string) => void;
+  /** The list's own relative-time wording for an ISO instant. */
+  whenOf: (isoTime: string) => string;
   restoreBusy: boolean;
   restoreNotice: string | null;
   restoreError: string | null;
@@ -3641,6 +3737,9 @@ function DesktopBody({
                     pendingDelta={deltaByPath}
                     onRestore={(path, others) => onRestoreDocument(path, picked.hash, others)}
                     restoreBusy={restoreBusy}
+                    onJumpToCommit={onJumpToCommit}
+                    whenOf={whenOf}
+                    headlineOf={(subject) => humanizeStepSubject(t, subject)}
                     focusedConceptId={focusedConceptId}
                     setFocusedConceptId={setFocusedConceptId}
                     egoFor={egoFor}

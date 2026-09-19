@@ -65,6 +65,7 @@ import {
   linkSlugs,
   readToolFallbackTarget,
   readToolOutcome,
+  readToolPathArgument,
   readToolTargets,
   deriveAcpTurnActivity,
   type AcpTurnActivity,
@@ -86,7 +87,7 @@ import { AcpPermissionCard } from './AcpPermissionCard';
 import { AcpPresentationPanel } from './AcpPresentationPanel';
 import { groupEvents } from './group-events';
 import { splitAppRequest } from './request-parts';
-import { isVaultTool, toolLabel } from './tool-label';
+import { isVaultTool, labelWithoutRepeatedPath, toolLabel } from './tool-label';
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useMeaningTransitionCapture } from '../model/use-meaning-transition-capture';
 
@@ -277,6 +278,7 @@ export function AcpChatPanel({
   runtimeLabel,
   vaultRoot,
   beforeComposer = null,
+  systemPromptAppendix = null,
   noticeActions = null,
   mcpServers,
   sessionEnabled = true,
@@ -403,6 +405,8 @@ export function AcpChatPanel({
    * rather than in the index column (owner, 2026-09-07). Null draws nothing.
    */
   beforeComposer?: ReactNode;
+  /** The screen's own paragraph after the vault handoff; see `UseAcpSessionOptions`. */
+  systemPromptAppendix?: string | null;
   /**
    * What a person can do from an `auto-allowed` notice, at the one moment the consequence
    * is visible: open the page that landed, or ask before the next one. Null draws the
@@ -517,6 +521,7 @@ export function AcpChatPanel({
     onTurnStarted: captureTurnStart,
     captureTaskBaseline,
     autoDecide,
+    systemPromptAppendix,
   });
   const taskMeaningReview = useTaskMeaningReview({
     pending,
@@ -883,9 +888,35 @@ export function AcpChatPanel({
   const prefillNonce = prefillRequest?.nonce ?? null;
   const prefillText = prefillRequest?.text ?? null;
   const [seenPrefillNonce, setSeenPrefillNonce] = useState<number | null>(null);
+  /**
+   * **The app-composed half of a seated request, held out of the box the person writes in.**
+   *
+   * ⚠️ Measured on the Insights dock (2026-09-19). Pressing 「ask the agent」 seated five lines in
+   * the composer, and the first thing in the box a person is meant to read and edit was
+   * `Use only Atlas MCP read tools. Do not call write tools, shell, files, source, or the web.`
+   * followed by a literal `query_ontology({operation:"maintenance_plan"})`. The box grew to about
+   * a quarter of the dock's height and the conversation above it became an empty void.
+   *
+   * The transcript already solved this: `splitAppRequest` stands the readable sentence and folds
+   * the machine block behind one disclosure. The composer was the one place the same request
+   * arrived whole — and it is the place where it matters most, because that text is also what the
+   * person is being asked to edit.
+   *
+   * ⚠️ **Nothing is dropped, and nothing is rewritten.** `full` is the exact string the caller
+   * seated; an unedited send transmits those bytes and not a re-joined copy of them, so a caller
+   * matching on its own request text (`presentationRequest`, `answerFold`) still matches. Only an
+   * edited lead is re-joined, which is the one case where the bytes had to change anyway.
+   */
+  const [seatedDetail, setSeatedDetail] = useState<
+    { lead: string; detail: string; full: string } | null
+  >(null);
   if (prefillNonce !== null && prefillText && prefillNonce !== seenPrefillNonce) {
     setSeenPrefillNonce(prefillNonce);
-    setDraft(prefillText);
+    const parts = splitAppRequest(prefillText);
+    setDraft(parts.lead);
+    setSeatedDetail(
+      parts.detail ? { lead: parts.lead, detail: parts.detail, full: prefillText } : null,
+    );
   }
   /*
    * There has to be something to draw while the exit animation runs — if the content
@@ -1057,13 +1088,22 @@ export function AcpChatPanel({
   }, [draft]);
 
   const submit = useCallback(() => {
-    const text = draft.trim();
-    if (!text || status === 'thinking') return;
+    const lead = draft.trim();
+    if (!lead || status === 'thinking') return;
+    /*
+     * The seated half travels with the sentence it was seated beside. Untouched, the caller's
+     * own bytes go out verbatim — a re-joined copy would differ by whatever whitespace the split
+     * trimmed, and a caller that recognises its own request by its text would stop recognising it.
+     */
+    const text = seatedDetail
+      ? (lead === seatedDetail.lead ? seatedDetail.full : `${lead}\n\n${seatedDetail.detail}`)
+      : lead;
     setPresentationOpen(false);
     onPresentationVisibilityChange?.(false);
     setDraft('');
+    setSeatedDetail(null);
     void send(text);
-  }, [draft, onPresentationVisibilityChange, send, setPresentationOpen, status]);
+  }, [draft, onPresentationVisibilityChange, seatedDetail, send, setPresentationOpen, setSeatedDetail, status]);
 
       {/*
         Pickers — **only what actually arrived is drawn.** Measured: codex offers 33
@@ -1112,9 +1152,21 @@ export function AcpChatPanel({
          * width is 320. Without it the third one is simply clipped away by the dock's
          * `overflow-hidden`, which is the defect this whole row was rewritten for.
          */
+        /*
+         * ⚠️ **It is no longer `flex-1`** (measured across the drag range, 2026-09-19). A
+         * `basis-0 flex-1` slot is served *last*: the runtime name beside it took its full
+         * content width and this row got whatever remained. At the panel's own documented
+         * minimum the remainder was 48px — the picker's floor — and the mode's word was
+         * clipped to fourteen pixels while the name it shares the row with was never
+         * truncated by a single pixel, at any width.
+         *
+         * That is the wrong order. The name is a label with nothing to act on; the mode names
+         * the promise this screen is built on. Content-sized here, plus a name that absorbs the
+         * shortfall first, puts the yielding the right way round.
+         */
         <div
           data-testid="acp-chat-choices"
-          className="flex min-w-0 flex-1 items-center gap-0.5"
+          className="flex min-w-0 items-center gap-0.5"
         >
           {choices.modes.length > 0 ? (
             <Select
@@ -1923,6 +1975,28 @@ export function AcpChatPanel({
             })}
           </ul>
         ) : null}
+        {/*
+          **What the app added, standing where it can be read before it is sent.**
+
+          The seated sentence is the person's to edit; these are the instructions the caller
+          attached to it, verbatim and in one piece. They sit above the box rather than inside it,
+          for the same reason the transcript keeps the folded half outside the request bubble: a
+          control inside the box the person writes in would make the box stop being their words.
+        */}
+        {seatedDetail ? (
+          <Disclosure
+            className="mb-2"
+            summaryTestId="acp-chat-seated-detail"
+            summary={t('seatedDetail', { lines: seatedDetail.detail.split('\n').filter((line) => line.trim()).length })}
+          >
+            <p
+              data-testid="acp-chat-seated-detail-text"
+              className="mt-1.5 whitespace-pre-wrap break-words font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+            >
+              {seatedDetail.detail}
+            </p>
+          </Disclosure>
+        ) : null}
         <div className="relative" data-acp-composer>
           <Textarea
             ref={inputRef}
@@ -1944,6 +2018,12 @@ export function AcpChatPanel({
             onBlur={() => setComposerFocused(false)}
             onChange={(e) => {
               setDraft(e.target.value);
+              /*
+               * Clearing the box clears the whole seated request. Keeping the folded half alive
+               * behind an empty composer would let the next Enter send instructions with no
+               * sentence in front of them — the person emptied the box to be rid of it.
+               */
+              if (!e.target.value.trim()) setSeatedDetail(null);
               // Typing again clears the hand-dismissed memory — otherwise the list
               // never opens for the rest of the session.
               setSlashDismissed(false);
@@ -2065,9 +2145,31 @@ export function AcpChatPanel({
                 className={cn(PICKER_MIN_WIDTH_CLASS, PICKER_MAX_WIDTH_CLASS, 'shrink')}
               />
             ) : (
+              /*
+                ⚠️ **This name yields first, and below the width that holds both it leaves**
+                (measured 2026-09-19). `shrink-[99]` is the order, not a size: whatever the row
+                is short by comes out of this name before the mode picker gives up a pixel of
+                its word.
+
+                Order alone is not enough at the bottom of the drag range. Measured in Korean,
+                the name (67px) and the mode (94px) need 163px and the group has 111px at the
+                documented minimum — no division of that row shows both. So below the container
+                width that fits them the name stands down, because it is the only thing here a
+                person cannot act on, the panel's own accessible name still carries it, and the
+                Agents destination names it in full.
+
+                The threshold is the composer's own width, not the window's — the same screen
+                holds this box at 262px and at 968px — and it is a **content-box** measure,
+                because `container-type: inline-size` queries the content box. 286 is therefore
+                the narrowest composer at which the Korean mode name and this name both measured
+                unclipped; it lands at a 380px panel, and the app's own smallest window opens
+                this panel at 436. Above the threshold a longer adapter mode name takes its room
+                out of this name rather than out of its own word, which is what `shrink-[99]`
+                above is for.
+              */
               <span
                 data-testid="acp-chat-runtime-label"
-                className="min-w-0 shrink truncate text-label leading-label text-[color:var(--color-text-tertiary)]"
+                className="hidden min-w-0 shrink-[99] truncate text-label leading-label text-[color:var(--color-text-tertiary)] @min-[286px]/composer:inline"
               >
                 {toolPicker[0]?.label ?? runtimeLabel}
               </span>
@@ -2702,7 +2804,7 @@ function TranscriptEntry({
      * something plausible for the unknown makes the screen lie on the day it diverges
      * from what was actually done.
      */
-    const label = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
+    const rawLabel = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
     const outcome = readToolOutcome(
       event.rawOutput,
       event.status,
@@ -2718,6 +2820,14 @@ function TranscriptEntry({
      * marker — it names something the vault may not contain (`tool-targets.ts`).
      */
     const fallbackTarget = toolTargets.length === 0 ? readToolFallbackTarget(event.rawInput) : null;
+    /*
+     * Only when the path slot is the one actually drawn. With node names in the target slot the
+     * fallback lane is silent, and cutting the path out of the label there would delete the one
+     * place this row says which file was touched.
+     */
+    const label = fallbackTarget?.kind === 'path'
+      ? labelWithoutRepeatedPath(rawLabel, readToolPathArgument(event.rawInput))
+      : rawLabel;
     return (
       <p
         data-acp-entry="tool"

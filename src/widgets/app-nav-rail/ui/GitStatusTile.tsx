@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { History } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { listen } from "@tauri-apps/api/event";
 import { gitStatus, isGitBridgeAvailable } from "@/shared/lib/tauri-git";
 import { cn } from "@/shared/lib/cn";
 
@@ -66,9 +67,34 @@ export function GitStatusTile({
     void check();
     const onFocus = () => void check();
     window.addEventListener("focus", onFocus);
+    /*
+     * And once per change the folder's watcher reports (2026-09-19). A commit, a restore or
+     * an agent's write used to leave this dot describing the folder as it was at the last
+     * focus change — the Record screen itself could say "all committed" while the rail still
+     * showed the dot. The Rust watcher already emits `vault-changed` for the loaded vault;
+     * this only listens, coalescing a burst into one read. Still no polling.
+     */
+    let unlisten: (() => void) | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    void listen("vault-changed", () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = undefined;
+        if (!cancelled) void check();
+      }, 300);
+    })
+      .then((un) => {
+        if (cancelled) un();
+        else unlisten = un;
+      })
+      .catch(() => {
+        /* No event channel — focus return still re-reads, as before. */
+      });
     return () => {
       cancelled = true;
       window.removeEventListener("focus", onFocus);
+      if (timer) clearTimeout(timer);
+      unlisten?.();
     };
   }, [vaultPath]);
 
