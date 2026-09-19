@@ -49,6 +49,18 @@ interface TopologyIndexTreeRowLabels {
 export interface TopologyIndexTreeRowProps {
   entry: OntologyTreeNode;
   depth: number;
+  /**
+   * Where this row sits among its siblings, one-based, and how many there are.
+   *
+   * The tree is flat in the DOM — no nested `role="group"` — and its shape is
+   * drawn with `marginLeft: depth * 16`. A reader cannot see a margin, so the
+   * shape has to be spoken: WAI-ARIA asks a `treeitem` outside a `group` for
+   * `aria-level`, and for its place among the siblings it is announced with.
+   * Measured 2026-09-20 before this existed: ten rows, no groups and no levels,
+   * so a project and its nine domains were announced as ten peers.
+   */
+  position: number;
+  setSize: number;
   isOpen: (nodeId: string) => boolean;
   onToggleOpen: (nodeId: string) => void;
   onSelect: (nodeId: string) => void;
@@ -96,6 +108,8 @@ export interface TopologyIndexTreeRowProps {
 export function TopologyIndexTreeRow({
   entry,
   depth,
+  position,
+  setSize,
   isOpen,
   onToggleOpen,
   onSelect,
@@ -158,6 +172,9 @@ export function TopologyIndexTreeRow({
     <div>
       <div
         role="treeitem"
+        aria-level={depth + 1}
+        aria-posinset={position}
+        aria-setsize={setSize}
         aria-selected={selected}
         aria-expanded={hasChildren ? open : undefined}
         // Roving tabindex: only the active row is a Tab entry point, the rest are -1
@@ -300,11 +317,13 @@ export function TopologyIndexTreeRow({
         >
           {branchMounted ? (
           <div ref={branchContentRef} className="ai-row-disclosure-body">
-          {children.map((child) => (
+          {children.map((child, childIndex) => (
             <TopologyIndexTreeRow
               key={child.node.id}
               entry={child}
               depth={depth + 1}
+              position={childIndex + 1}
+              setSize={children.length}
               isOpen={isOpen}
               onToggleOpen={onToggleOpen}
               onSelect={onSelect}
