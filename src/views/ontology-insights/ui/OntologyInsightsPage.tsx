@@ -1224,6 +1224,9 @@ export function OntologyInsightsPage() {
       t("doNext.touchUpWhyNeglectedHub", { degree, days: agoDays }),
     whyOrphan: t("doNext.whyOrphan"),
     whyPromotion: (count: number) => t("doNext.touchUpWhyPromotion", { count }),
+    whyPromotionNamed: (names: string) => t("doNext.whyPromotionNamed", { names }),
+    whyPromotionNamedMore: (names: string, count: number) =>
+      t("doNext.whyPromotionNamedMore", { names, count }),
     whyCycle: (length: number) => t("doNext.touchUpWhyCycle", { length }),
     whyDuplicate: (percent: number) => t("doNext.whyDuplicate", { percent }),
     whyMissingDefinition: t("doNext.whyMissingDefinition"),

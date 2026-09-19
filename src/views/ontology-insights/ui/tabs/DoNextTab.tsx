@@ -93,6 +93,10 @@ export interface DoNextTabLabels extends FixRowLabels {
   whyNeglectedHub: (degree: number, agoDays: number) => string;
   whyOrphan: string;
   whyPromotion: (count: number) => string;
+  /** The concepts behind a promotion row's count, by name, when every one of them is named. */
+  whyPromotionNamed: (names: string) => string;
+  /** The same, when the count is larger than the names printed. */
+  whyPromotionNamedMore: (names: string, count: number) => string;
   whyCycle: (length: number) => string;
   whyDuplicate: (percent: number) => string;
   whyMissingDefinition: string;
@@ -558,9 +562,24 @@ export function DoNextTab({
       case "orphan":
         return queueRowsOfKind(group).map((row) => {
           const candidate = { id: row.id, title: row.title };
+          /*
+           * A count is not evidence a person can judge: the row claimed "N places reference this"
+           * and named none of them, so the reader had to open the map to see what the
+           * recommendation rested on (walkthrough, 2026-09-20). The count stays the true total and
+           * the names are the first few behind it.
+           */
+          const names = group === "promotion" ? (row.referencedBy ?? []) : [];
+          const promotionSentence = () => {
+            const total = row.degree ?? 0;
+            if (names.length === 0) return labels.whyPromotion(total);
+            const named = names.join(", ");
+            return total > names.length
+              ? labels.whyPromotionNamedMore(named, total)
+              : labels.whyPromotionNamed(named);
+          };
           const sentence =
             group === "promotion"
-              ? labels.whyPromotion(row.degree ?? 0)
+              ? promotionSentence()
               : group === "neglected-hub"
                 ? labels.whyNeglectedHub(row.degree ?? 0, row.agoDays ?? 0)
                 : labels.whyOrphan;

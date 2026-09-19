@@ -1939,7 +1939,9 @@
           "duplicate-uid": "다른 문서와 uid가 겹쳐요.",
           "other": "파일 맨 위 정보칸에 문제가 있어요."
         },
-        "showAll": "모두 보기"
+        "showAll": "모두 보기",
+        "whyPromotionNamed": "{names}에서 가리켜요. 상위 개념으로 올릴 만해요",
+        "whyPromotionNamedMore": "{names} 등 {count}곳에서 가리켜요. 상위 개념으로 올릴 만해요"
       },
       "flow": {
         "title": "제품 흐름",

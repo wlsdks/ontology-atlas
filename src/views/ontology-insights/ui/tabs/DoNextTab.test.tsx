@@ -60,6 +60,8 @@ const labels: DoNextTabLabels = {
   whyNeglectedHub: (degree, agoDays) => `${degree} places use it, unchanged for ${agoDays} days`,
   whyOrphan: "Nothing links to it yet.",
   whyPromotion: (count) => `Referenced from ${count} places.`,
+  whyPromotionNamed: (names: string) => `Pointed at by ${names}.`,
+  whyPromotionNamedMore: (names: string, count: number) => `Pointed at by ${names} and others, ${count} in all.`,
   whyCycle: (length) => `${length} concepts point at each other.`,
   whyDuplicate: (percent) => `The names overlap ${percent}%.`,
   whyMissingDefinition: "Nothing says what this means.",

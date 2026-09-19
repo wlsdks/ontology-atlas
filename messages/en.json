@@ -1939,7 +1939,9 @@
           "duplicate-uid": "Another document claims the same uid.",
           "other": "Something is wrong in the information block at the top of the file."
         },
-        "showAll": "Show all"
+        "showAll": "Show all",
+        "whyPromotionNamed": "Pointed at by {names}. Worth promoting.",
+        "whyPromotionNamedMore": "Pointed at by {names} and others, {count} in all. Worth promoting."
       },
       "flow": {
         "title": "Product flow",
