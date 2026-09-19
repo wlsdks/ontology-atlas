@@ -7,14 +7,16 @@ import {
 } from "./insights-tab-state";
 
 describe("parseInsightsTab", () => {
-  it("defaults to do-next when the param is missing", () => {
-    expect(parseInsightsTab(null)).toBe("do-next");
-    expect(parseInsightsTab(undefined)).toBe("do-next");
-    expect(parseInsightsTab("")).toBe("do-next");
+  it("defaults to the brief when the param is missing", () => {
+    expect(parseInsightsTab(null)).toBe("brief");
+    expect(parseInsightsTab(undefined)).toBe("brief");
+    expect(parseInsightsTab("")).toBe("brief");
   });
 
   it("accepts every question tab", () => {
     expect(INSIGHTS_TABS).toEqual([
+      // What in this reader's understanding has to change — across all three cores.
+      "brief",
       "do-next",
       "unmatched",
       "composition",
@@ -60,10 +62,11 @@ describe("the freshness rename", () => {
 
 describe("buildInsightsTabHref", () => {
   it("omits the query string for the default tab", () => {
-    expect(buildInsightsTabHref("do-next")).toBe("/ontology/insights/");
+    expect(buildInsightsTabHref("brief")).toBe("/ontology/insights/");
   });
 
   it("appends ?tab= for non-default tabs", () => {
+    expect(buildInsightsTabHref("do-next")).toBe("/ontology/insights/?tab=do-next");
     expect(buildInsightsTabHref("composition")).toBe("/ontology/insights/?tab=composition");
     expect(buildInsightsTabHref("connections")).toBe("/ontology/insights/?tab=connections");
     expect(buildInsightsTabHref("boundaries")).toBe("/ontology/insights/?tab=boundaries");
@@ -74,7 +77,7 @@ describe("buildInsightsTabHref", () => {
     expect(buildInsightsTabHref("composition", "/ko/ontology/insights/")).toBe(
       "/ko/ontology/insights/?tab=composition",
     );
-    expect(buildInsightsTabHref("do-next", "/en/ontology/insights/")).toBe(
+    expect(buildInsightsTabHref("brief", "/en/ontology/insights/")).toBe(
       "/en/ontology/insights/",
     );
   });
@@ -93,10 +96,10 @@ describe("switching tabs keeps the rest of the address", () => {
   });
 
   it("still drops ?tab= entirely for the default tab, flags and all kept", () => {
-    expect(buildInsightsTabHref("do-next", "/ontology/insights/", "?guides=off&tab=growth")).toBe(
+    expect(buildInsightsTabHref("brief", "/ontology/insights/", "?guides=off&tab=growth")).toBe(
       "/ontology/insights/?guides=off",
     );
-    expect(buildInsightsTabHref("do-next", "/ontology/insights/", "?tab=growth")).toBe(
+    expect(buildInsightsTabHref("brief", "/ontology/insights/", "?tab=growth")).toBe(
       "/ontology/insights/",
     );
   });

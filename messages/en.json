@@ -1548,6 +1548,7 @@
       "subtitleSample": "The loaded sample at a glance. Every number is computed from that sample's documents.",
       "tabsAriaLabel": "Insights tabs",
       "tab": {
+        "brief": "Brief",
         "do-next": "Do next",
         "unmatched": "Not held",
         "composition": "Inventory",
@@ -1557,6 +1558,47 @@
         "freshness": "Recent changes",
         "structure": "Structure",
         "flow": "Flow"
+      },
+      "brief": {
+        "sinceSeen": "{days, plural, =0 {Since you looked today} one {Since you looked # day ago} other {Since you looked # days ago}}",
+        "sinceDefault": "The last 7 days",
+        "sinceGloss": "The counts below are only what happened after that. There is no score; every line opens to what it counts.",
+        "markSeen": "Seen up to here",
+        "markSeenDone": "Counting from now",
+        "core": { "ontology": "Ontology", "wiki": "Wiki", "harness": "Harness", "agent": "Agent activity" },
+        "col": {
+          "current": "Current", "stale": "Stale", "unknown": "Unknown",
+          "told": "Told", "gated": "Gated", "watched": "Watched",
+          "reads": "Reads", "writes": "Writes", "agents": "Agents"
+        },
+        "appOnly": "Measured in the app only. A browser cannot read the code beside the folder or its hidden folders.",
+        "noData": "Nothing to measure yet.",
+        "quiet": "Nothing new to learn since then.",
+        "open": "Open",
+        "line": {
+          "ontology-evidence-moved": "{count, plural, one {# concept whose} other {# concepts whose}} meaning stands while the code under it moved",
+          "ontology-agent-unreviewed": "{count, plural, one {# concept} other {# concepts}} an agent wrote that no person has looked at",
+          "ontology-changed-since": "{count, plural, one {# concept} other {# concepts}} whose document changed since",
+          "ontology-repair": "{count, plural, one {# thing} other {# things}} to fix now",
+          "ontology-unmatched": "{count, plural, one {# name} other {# names}} an agent asked for that this folder does not hold",
+          "wiki-stale-pages": "{count, plural, one {# page} other {# pages}} whose source changed underneath",
+          "wiki-disagreements": "{count, plural, one {# disagreement or superseded fact} other {# disagreements or superseded facts}} the last check found",
+          "wiki-sources-unwritten": "{count, plural, one {# source} other {# sources}} not written up yet",
+          "wiki-orphan-pages": "{count, plural, one {# page} other {# pages}} nothing links to",
+          "wiki-dangling-links": "{count, plural, one {# link} other {# links}} to a page that does not exist",
+          "wiki-written-since": "{count, plural, one {# page} other {# pages}} an agent wrote since",
+          "wiki-redrafted-since": "{count, plural, one {# page} other {# pages}} the automatic check rewrote",
+          "wiki-passes-troubled-since": "{count, plural, one {# automatic check} other {# automatic checks}} refused or failed",
+          "harness-app-only": "Guide and check coverage is measured in the app",
+          "harness-untold-areas": "{count, plural, one {# area} other {# areas}} no guide reaches",
+          "harness-ungated-areas": "{count, plural, one {# area} other {# areas}} with no blocking rule",
+          "harness-unwatched-areas": "{count, plural, one {# area} other {# areas}} no check watches",
+          "harness-mirror-drift": "{count, plural, one {# file} other {# files}} where the two agent trees disagree",
+          "harness-changed-since": "{count, plural, one {# guide file} other {# guide files}} changed since",
+          "agent-calls-since": "{count, plural, one {# agent call} other {# agent calls}} since",
+          "agent-writes-since": "{count, plural, one {# of them wrote} other {# of them wrote}} to the folder",
+          "agent-distinct-since": "{count, plural, one {# agent} other {# agents}} at work"
+        }
       },
       "tabCountTitle": {
         "do-next": "Items to fix",

@@ -9,8 +9,8 @@ export interface AgentBriefEntry {
 
 export interface AgentBriefInput {
   entries: readonly AgentBriefEntry[];
-  /** Tool names that write to the vault, from the MCP registry's write list. */
-  writeTools: ReadonlySet<string>;
+  /** Whether a tool name writes to the vault — the app's own tool policy, never a second list. */
+  isWriteTool: (tool: string) => boolean;
   anchorMs: number;
 }
 
@@ -21,7 +21,7 @@ export interface AgentBriefInput {
  */
 export function buildAgentBrief(input: AgentBriefInput): BriefCore {
   const since = input.entries.filter((entry) => isAfter(entry.at, input.anchorMs));
-  const writes = since.filter((entry) => input.writeTools.has(entry.tool)).length;
+  const writes = since.filter((entry) => input.isWriteTool(entry.tool)).length;
   const agents = new Set(since.map((entry) => entry.agent ?? 'unknown')).size;
   const lines: BriefLine[] = [
     { id: 'agent-calls-since', count: since.length, state: 'current' },

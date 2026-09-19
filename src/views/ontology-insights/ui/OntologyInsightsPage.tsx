@@ -96,6 +96,8 @@ import {
   type InsightsCensusStripLabels,
 } from "./parts/InsightsCensusStrip";
 import { DoNextTab } from "./tabs/DoNextTab";
+import { BriefTab } from "./tabs/BriefTab";
+import { useInsightsBrief } from "../lib/brief/use-insights-brief";
 import { buildDoNextGroupCounts, type DoNextGroupKey } from "../lib/do-next-groups";
 import {
   buildContainmentPlan,
@@ -232,6 +234,8 @@ const RECENT_UPDATES_EVIDENCE_LIMIT = 3;
  * operating instructions (bug sweep 2026-09-01).
  */
 const HANDOFF_PAYLOAD_KEY: Record<InsightsTab, keyof InsightsHandoffProse> = {
+  // The brief draws no handoff row (see the row's condition); the key only satisfies the record.
+  brief: "tabDoNext",
   "do-next": "tabDoNext",
   unmatched: "tabUnmatched",
   composition: "tabComposition",
@@ -266,6 +270,8 @@ const INSIGHTS_TAB_BADGE: Record<
   InsightsTab,
   (input: InsightsBadgeInput) => string | number | undefined
 > = {
+  // The brief is sentences across three cores; no single count is its scale.
+  brief: () => undefined,
   "do-next": (i) => i.verdictTotal,
   unmatched: (i) => i.unmatchedTotal,
   composition: (i) => i.totalNodes,
@@ -1025,6 +1031,22 @@ export function OntologyInsightsPage() {
     () => buildInsightsVerdict(insightsSignalCounts),
     [insightsSignalCounts],
   );
+  const briefNodes = useMemo(
+    () =>
+      (insight?.nodes ?? []).map((node) => ({
+        id: node.id,
+        kind: node.kind,
+        createdBy: node.createdBy ?? null,
+        docSlug: node.evidenceIds[0] ?? null,
+      })),
+    [insight],
+  );
+  const brief = useInsightsBrief({
+    nodes: briefNodes,
+    repairCount: insightsVerdict.total,
+    unmatchedCount: unmatchedBoard.totalCount,
+    enabled: tab === "brief",
+  });
   /**
    * The scale of each finding group — the **same** `InsightsSignalCounts` the verdict is built
    * from, re-keyed. One argument means the ten group counts and the one title count cannot drift
@@ -1405,7 +1427,9 @@ export function OntologyInsightsPage() {
                 : 0,
               // What an unlabelled number counts — one line, surfaced only on hover and to assistive tech.
               countTitle:
-                key === "growth" || key === "flow" ? undefined : t(`tabCountTitle.${key}`),
+                key === "growth" || key === "flow" || key === "brief"
+                  ? undefined
+                  : t(`tabCountTitle.${key}`),
             }))}
           />
         </nav>
@@ -1455,6 +1479,7 @@ export function OntologyInsightsPage() {
             aria-labelledby={`insights-tab-${tab}`}
             className="insights-tab-crossfade mt-[var(--section-gap)] flex flex-1 flex-col"
           >
+            {tab === "brief" ? <BriefTab brief={brief} /> : null}
             {tab === "do-next" ? (
               <DoNextTab
                 totalCount={insightsVerdict.total}
@@ -1670,7 +1695,7 @@ export function OntologyInsightsPage() {
           * at 1040×720, sits over the long Flow request. It returns when the dock closes and remains
           * the browser/copy-only path.
           */}
-        {tab === "do-next" || agentOpen ? null : (
+        {tab === "do-next" || tab === "brief" || agentOpen ? null : (
         <InsightsHandoffRow
           label={t("handoffLabel")}
           caption={t("handoffCaption")}

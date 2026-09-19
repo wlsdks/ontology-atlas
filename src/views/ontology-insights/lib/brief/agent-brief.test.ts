@@ -12,7 +12,7 @@ describe('buildAgentBrief', () => {
         { at: '2026-09-18T02:00:00Z', tool: 'patch_concept', agent: null },
         { at: '2026-09-17T02:00:00Z', tool: 'add_concept', agent: 'codex' },
       ],
-      writeTools: new Set(['add_concept', 'patch_concept']),
+      isWriteTool: (tool) => tool === 'add_concept' || tool === 'patch_concept',
       anchorMs,
     });
     expect(brief.availability).toBe('measured');
@@ -20,6 +20,6 @@ describe('buildAgentBrief', () => {
   });
 
   it('says no-data when the folder has no activity log at all', () => {
-    expect(buildAgentBrief({ entries: [], writeTools: new Set(), anchorMs }).availability).toBe('no-data');
+    expect(buildAgentBrief({ entries: [], isWriteTool: () => false, anchorMs }).availability).toBe('no-data');
   });
 });

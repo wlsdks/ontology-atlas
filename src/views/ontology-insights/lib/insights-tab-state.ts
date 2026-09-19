@@ -3,7 +3,7 @@
  * link must open the same tab, so parsing and serialization are pure functions rather than
  * component-local state.
  *
- * There are seven tabs, **one per question**: to do (the default) · unmatched · composition ·
+ * There are eight tabs, **one per question**: brief (the default) · to do · unmatched · composition ·
  * connections · boundaries · growth · flow. Flow is the only one whose answer is written by an agent rather
  * than computed from the graph: its question is "what is this product and how does it move", and
  * that is prose a person reads once on first contact, not a measurement. When one tab holds several questions, a user has to scroll past two
@@ -19,6 +19,7 @@
  * `scripts/check-ontology-design-surface.mjs`, so nothing may be written inside it.
  */
 export const INSIGHTS_TABS = [
+  "brief",
   "do-next",
   "unmatched",
   "composition",
@@ -30,7 +31,12 @@ export const INSIGHTS_TABS = [
 
 export type InsightsTab = (typeof INSIGHTS_TABS)[number];
 
-export const DEFAULT_INSIGHTS_TAB: InsightsTab = "do-next";
+/*
+ * The brief opens first (2026-09-19). A person who delegated work and came back asks "what in
+ * my understanding has to change", and that is one screen across the ontology, the wiki and the
+ * harness; the six measured tabs and Flow keep answering their own questions behind it.
+ */
+export const DEFAULT_INSIGHTS_TAB: InsightsTab = "brief";
 
 function isInsightsTab(value: string): value is InsightsTab {
   return (INSIGHTS_TABS as readonly string[]).includes(value);

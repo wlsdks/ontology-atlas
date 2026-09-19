@@ -143,6 +143,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     markers: [
       [
         "export const INSIGHTS_TABS = [",
+        '  "brief",',
         '  "do-next",',
         '  "unmatched",',
         '  "composition",',
@@ -171,7 +172,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "CopyAgentTextButton",
     ],
     reason:
-      "/ontology/insights must keep six measured maintenance tabs plus a rendered Flow panel with its visible request, person-owned prefill, browser copy fallback, and tab-scoped agent handoff.",
+      "/ontology/insights must keep the brief first, six measured maintenance tabs and a rendered Flow panel with its visible request, person-owned prefill, browser copy fallback, and tab-scoped agent handoff.",
   },
   {
     id: "product-design-operating-system",
