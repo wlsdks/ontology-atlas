@@ -529,6 +529,22 @@ export function AcpPermissionCard({
               ))}
             </div>
           ) : reviewDepth === 'compare' ? (
+            /*
+             * **"There is no before" is said once, and the reason it is missing is the card's.**
+             *
+             * Measured on this tab (2026-09-20): with no comparison basis it stated the same fact
+             * five times on one screen — a sentence claiming no trusted snapshot, a reason line
+             * saying the request shape cannot be compared yet, and `Before · unavailable` once per
+             * meaning unit, three times. The three proposed values a person came here to read were
+             * pushed apart by three copies of a line that never changes.
+             *
+             * Worse than repetition, the first two disagreed about **why**. The generic sentence
+             * asserted a missing snapshot; the reason said the request shape is not comparable.
+             * Only one of those was true, and it was the specific one. So the standing sentence
+             * keeps the half that is always true — values are not invented — and the cause is left
+             * to the reason list, which knows it. The per-unit line goes: `After` still prefixes
+             * every value, so each one is still marked as proposed rather than current.
+             */
             <div data-testid="task-review-compare" className="grid gap-2">
               <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
                 {t('taskReview.beforeUnavailable')}
@@ -541,7 +557,6 @@ export function AcpPermissionCard({
               {visibleMeaningUnits.map((unit) => (
                 <div key={unit.id} className="grid gap-1 border-t border-[color:var(--color-divider)] pt-2 first:border-t-0 first:pt-0">
                   <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">{unit.label}</span>
-                  <p className="text-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.beforeUnknown')}</p>
                   <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
                     <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.after')}</span>
                     {unit.displayText}

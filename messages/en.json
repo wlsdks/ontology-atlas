@@ -4171,7 +4171,7 @@
         "incomplete": "Meaning review incomplete · {inspected} of {total} recorded meaning units shown · {omitted} omitted. Details contains the complete request.",
         "coverageNone": "This request records no meaning text. Details carries the complete request.",
         "coverageAll": "{total, plural, one {The # recorded meaning unit is shown in full} other {All # recorded meaning units are shown}}. Details carries the complete request.",
-        "beforeUnavailable": "A trusted historical vault snapshot is unavailable. Current request values are shown without inventing a before state.",
+        "beforeUnavailable": "Only the values in this request are shown; a before state is never invented.",
         "beforeUnknown": "Before · unavailable",
         "before": "Before",
         "after": "Proposed",
