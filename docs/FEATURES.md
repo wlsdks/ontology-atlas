@@ -2212,8 +2212,14 @@ The screen layout splits into two stages. First, **is this screen even in a stat
 - Git's internal notation (`diff --git` · `index <sha>..<sha>` ·
   `@@ -a,b +c,d @@`) is not exposed on screen. However, a dashed line is **left** for skipped sections — hiding the fact that it was skipped makes that diff a lie
 
+#### Restoring one document (2026-09-19)
+The screen's own copy had promised that earlier content can be brought back (`atlasGit.notInitializedHint`) while no restore existed. Now one Tauri command, `git_restore_file(vault, path, source)`, puts **exactly one document** back to its content at `source` with `git restore --source --worktree --staged -- <path>`, and two doors on screen open it:
+- **Discard** (`source = HEAD`): on the chosen document in the uncommitted list, when it has ever been committed. The confirm says how many added and removed lines go away, that git holds no copy of them so this cannot be undone, and that the other N uncommitted documents stay as they are. A never-committed document gets no door, because discarding it would be deleting it; the Rust side refuses that too (`restore-untracked`).
+- **Restore this version** (`source = <hash>`): in a commit's detail, under the file list for the active file, and in the default concept lens for the focused concept's own document. The confirm names the document and the commit's time, says when the document's own uncommitted lines would go with it, that the result stays an uncommitted change the person can read line by line and discard, and which of the commit's other documents stay untouched.
+- The command refuses a path outside the vault (`restore-path-invalid`), a source without the document (`restore-source-missing`), and a source whose frontmatter identity differs from the file on disk in `uid`, `slug`, or by dropping `merged_uids` (`restore-identity-mismatch`), because neighbours link to the current identity and `git restore` is identity-blind. Every refusal on screen ends with the sentence that the document was not changed (`atlasGit.restoreFailedSafe`). Decision record: `docs/records/decisions/2026-09-19-record-screen-restores-one-document-*.md`.
+
 #### Nothing is written until the user clicks
-When the screen first opens, only read-only tools are called (`git_status` / `git_diff` / `git_history`). Tools that change something (`git_init` · `git_set_remote` · `git_snapshot`) are executed only when the user presses their button (`onClick`).
+When the screen first opens, only read-only tools are called (`git_status` / `git_diff` / `git_history`). Tools that change something (`git_init` · `git_set_remote` · `git_snapshot` · `git_restore_file`) are executed only when the user presses their button (`onClick`).
 
 ### `/agents` — Agent (new 2026-08-20, catalog 90)
 
