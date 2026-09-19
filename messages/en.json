@@ -1590,6 +1590,8 @@
           "harness": "Open the harness",
           "agent": "Connect an agent"
         },
+        "reading": "Reading the folder.",
+        "unreadable": "The guide files in this folder could not be read. Reopening the folder tries again.",
         "markSeen": "Seen up to here",
         "markSeenDone": "Counting from now",
         "core": { "ontology": "Ontology", "wiki": "Wiki", "harness": "Harness", "agent": "Agent activity" },

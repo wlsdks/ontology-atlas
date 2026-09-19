@@ -1590,6 +1590,8 @@
           "harness": "하네스 열기",
           "agent": "에이전트 연결"
         },
+        "reading": "지금 폴더를 읽고 있어요.",
+        "unreadable": "이 폴더의 지침 파일을 읽지 못했어요. 폴더를 다시 열면 다시 시도해요.",
         "markSeen": "여기까지 봤음",
         "markSeenDone": "지금부터 다시 셉니다",
         "core": { "ontology": "온톨로지", "wiki": "위키", "harness": "하네스", "agent": "에이전트 활동" },

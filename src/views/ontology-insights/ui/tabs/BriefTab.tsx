@@ -139,6 +139,11 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent }: { core: BriefCore; 
         <CensusSubStat label={t(`col.${c3}`)} value={core.unknown != null ? core.unknown : '–'} />
       </div>
       <ul className="mt-1 flex flex-1 flex-col gap-3" data-testid="brief-core-lines">
+        {core.availability === 'reading' || core.availability === 'unreadable' ? (
+          <li className="text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-${core.availability}-${core.core}`}>
+            {t(core.availability)}
+          </li>
+        ) : null}
         {core.availability === 'app-only' ? (
           <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]">
             <span className="min-w-0">{t('appOnly')}</span>
@@ -155,7 +160,7 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent }: { core: BriefCore; 
             </Link>
           </li>
         ) : null}
-        {measured && lines.length === 0 ? (
+        {core.availability === 'measured' && lines.length === 0 ? (
           <li className="text-body text-[color:var(--color-text-tertiary)]">{t('quiet')}</li>
         ) : null}
         {lines.map((line) => (

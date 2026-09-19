@@ -12,6 +12,13 @@ describe('buildHarnessBrief', () => {
     expect(visibleLines(brief)).toEqual([]);
   });
 
+  it('says it is reading or could not read rather than asking for the app it is already in', () => {
+    const reading = buildHarnessBrief({ areas: null, state: 'reading', driftCount: null, fileTimes: null, guideFileCount: null, anchorMs });
+    expect(reading.availability).toBe('reading');
+    expect(reading.lines).toEqual([]);
+    expect(buildHarnessBrief({ areas: null, state: 'unreadable', driftCount: null, fileTimes: null, guideFileCount: null, anchorMs }).availability).toBe('unreadable');
+  });
+
   it('counts the empty cells per column and rule files changed since the anchor', () => {
     const brief = buildHarnessBrief({
       areas: [

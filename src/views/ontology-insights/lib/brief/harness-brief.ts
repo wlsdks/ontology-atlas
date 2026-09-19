@@ -8,8 +8,10 @@ interface HarnessBriefArea {
 }
 
 export interface HarnessBriefInput {
-  /** Null in the browser: the File System Access API cannot see `.claude/` and friends. */
+  /** Null when there is no report: `state` says whether that is a browser, a wait, or a failure. */
   areas: readonly HarnessBriefArea[] | null;
+  /** How the scan stands, so a card inside the app never claims the app is missing. */
+  state?: 'browser' | 'reading' | 'unreadable' | 'ready';
   /** Mirror findings between `.claude/**` and `.agents/**`. */
   driftCount: number | null;
   /** Guide and rule file change times, so "a rule changed since you looked" is a count. */
@@ -27,14 +29,15 @@ export interface HarnessBriefInput {
  */
 export function buildHarnessBrief(input: HarnessBriefInput): BriefCore {
   if (!input.areas) {
+    const state = input.state ?? 'browser';
     return {
       core: 'harness',
-      availability: 'app-only',
+      availability: state === 'reading' ? 'reading' : state === 'unreadable' ? 'unreadable' : 'app-only',
       headline: null,
       current: null,
       stale: null,
       unknown: null,
-      lines: [{ id: 'harness-app-only', count: 0, state: 'unknown' }],
+      lines: state === 'browser' ? [{ id: 'harness-app-only', count: 0, state: 'unknown' }] : [],
     };
   }
   const untold = input.areas.filter((area) => area.told.length === 0).length;

@@ -224,17 +224,33 @@ export function useInsightsBrief({
     return resolveEvidenceStates(evidenceConcepts, evidenceChanges.changes);
   }, [evidenceChanges, evidenceKey, evidenceConcepts]);
 
+  /*
+   * When this concept document last changed — from Git where the walk reached it, from the
+   * file otherwise. A checkout stamps every file with the moment it landed, so in a fresh
+   * worktree the file answer said all 106 concepts had changed this week (measured in the
+   * installed app, 2026-09-19). Git knows better and the walk already asked it.
+   */
+  const docChangedAt = useCallback(
+    (slug: string, fallback: string | null) => {
+      const fromGit = evidenceChanges?.key === evidenceKey
+        ? evidenceChanges.changes.get(`${slug}.md`)?.lastChangedAt ?? null
+        : null;
+      return fromGit ?? fallback;
+    },
+    [evidenceChanges, evidenceKey],
+  );
+
   const docFacts = useMemo(() => {
     const map = new Map<string, { reviewedBy: string | null; updatedAt: string | null }>();
     for (const doc of docs) {
       const reviewedBy = doc.frontmatter.reviewed_by;
       map.set(doc.slug, {
         reviewedBy: typeof reviewedBy === 'string' && reviewedBy.length > 0 ? reviewedBy : null,
-        updatedAt: doc.updatedAt ?? null,
+        updatedAt: docChangedAt(doc.slug, doc.updatedAt ?? null),
       });
     }
     return map;
-  }, [docs]);
+  }, [docs, docChangedAt]);
 
   const ontology = useMemo(
     () =>
@@ -265,7 +281,12 @@ export function useInsightsBrief({
 
   const harness = useMemo(() => {
     if (!harnessReport) {
-      return buildHarnessBrief({ areas: null, driftCount: null, fileTimes: null, guideFileCount: null, anchorMs: anchor.anchorMs });
+      const state = harnessState.status === 'loading'
+        ? 'reading'
+        : harnessState.status === 'failed'
+          ? 'unreadable'
+          : 'browser';
+      return buildHarnessBrief({ areas: null, state, driftCount: null, fileTimes: null, guideFileCount: null, anchorMs: anchor.anchorMs });
     }
     const matrix = buildCoverageMatrix(harnessReport.coverage, coverage.areas, harnessReport.testFiles);
     return buildHarnessBrief({
@@ -275,7 +296,7 @@ export function useInsightsBrief({
       guideFileCount: harnessReport.guideDocumentCount,
       anchorMs: anchor.anchorMs,
     });
-  }, [harnessReport, coverage.areas, anchor.anchorMs]);
+  }, [harnessReport, harnessState.status, coverage.areas, anchor.anchorMs]);
 
   const agent = useMemo(
     () =>
@@ -329,14 +350,14 @@ export function useInsightsBrief({
           slug: doc.slug,
           title: doc.title,
           kind: typeof doc.frontmatter.kind === 'string' ? doc.frontmatter.kind : null,
-          updatedAt: doc.updatedAt ?? null,
+          updatedAt: docChangedAt(doc.slug, doc.updatedAt ?? null),
         })),
         wikiLog: log,
         guideFiles: (harnessReport?.times ?? []).map((time) => ({ path: time.path, mtimeMs: time.lastModified })),
         agentCalls: mode === 'local' ? vault.agentActivityLog : [],
         anchorMs: anchor.anchorMs,
       }),
-    [docs, log, harnessReport, mode, vault.agentActivityLog, anchor.anchorMs],
+    [docs, docChangedAt, log, harnessReport, mode, vault.agentActivityLog, anchor.anchorMs],
   );
 
   return { anchor, sinceDays, nowMs, markSeen, ontology, wiki, harness, agent, since: sinceList.rows, sinceTotal: sinceList.total, details };
