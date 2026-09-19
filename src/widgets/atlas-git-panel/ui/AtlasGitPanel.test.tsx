@@ -157,7 +157,9 @@ function installDesktopGit({
     if (command === "git_diff") return diff;
     if (command === "git_commit_diff") return { count: 0, files: [], diff: COMMIT_PATCH };
     if (command === "git_history")
-      return typeof history === "function" ? history(Number(args?.limit ?? 0)) : history;
+      return typeof history === "function"
+        ? history(Number(args?.limit ?? 0), (args?.path as string | undefined) ?? undefined)
+        : history;
     if (command === "git_snapshot") return snapshot;
     if (command === "git_init") return init;
     if (command === "git_set_remote") return setRemote;
@@ -1523,5 +1525,71 @@ describe("AtlasGitPanel — 문서 하나를 되돌린다", () => {
     expect(error).toHaveTextContent("문서는 바뀌지 않았어요");
     // The confirm step stays open: the person can read why and choose again.
     expect(screen.getByTestId("atlas-git-restore-step")).toBeInTheDocument();
+  });
+});
+
+describe("AtlasGitPanel — 문서 하나의 이력", () => {
+  /*
+   * "When else did this concept change" used to mean scanning every row for the concept's
+   * name. A commit's detail now lists the other steps that touched the focused document,
+   * read from git scoped to that path, and a row jumps to that step — reading the list on,
+   * page by page, when the step sits below the depth already loaded.
+   */
+  const step = (n: number, subject: string) => ({
+    shortHash: `d${n.toString().padStart(6, "0")}`,
+    hash: `d${n.toString().padStart(6, "0")}${"0".repeat(33)}`,
+    subject,
+    relativeTime: `${n} hours ago`,
+    isoTime: new Date(Date.parse("2026-09-19T08:00:00Z") - n * 3_600_000).toISOString(),
+    files: [
+      { path: "docs/capabilities/foo.md", status: "modified", kind: "capability", slug: "capabilities/foo", renamedFrom: null },
+    ],
+  });
+  // Thirty steps in the repository; the document changed in steps 1 and 25.
+  const all = Array.from({ length: 30 }, (_, i) => step(i + 1, `docs: step ${i + 1}`));
+  const forDocument = [all[0], all[24]];
+
+  it("상세가 그 문서를 바꾼 다른 커밋을 보여주고, 누르면 목록이 그 커밋까지 읽어 내려가 선택한다", async () => {
+    installDesktopGit({
+      history: (limit: number, path?: string) => (path ? forDocument.slice(0, limit) : all.slice(0, limit)),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click((await screen.findAllByTestId("atlas-git-history-item"))[0]);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+
+    const list = await screen.findByTestId("atlas-git-document-history");
+    expect(list).toHaveTextContent("이 문서를 바꾼 다른 커밋");
+    const rows = screen.getAllByTestId("atlas-git-document-step");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent("docs: step 25");
+    // Scoped read: git was asked for this document's path.
+    const scoped = tauriApiMock.invoke.mock.calls.filter(
+      ([command, args]) => command === "git_history" && (args as { path?: string }).path === "docs/capabilities/foo.md",
+    );
+    expect(scoped.length).toBeGreaterThan(0);
+
+    fireEvent.click(rows[0]);
+    // Step 25 lies below the first ten; the list reads on until the row exists and is selected.
+    await waitFor(
+      () => {
+        const selected = screen
+          .getAllByTestId("atlas-git-history-item")
+          .find((row) => row.getAttribute("aria-expanded") === "true");
+        expect(selected).toHaveTextContent("docs: step 25");
+      },
+      { timeout: 4000 },
+    );
+    expect(screen.getByTestId("atlas-git-detail-headline")).toHaveTextContent("docs: step 25");
+  });
+
+  it("그 문서를 바꾼 커밋이 이것뿐이면 그렇게 말한다", async () => {
+    installDesktopGit({ history: (limit: number, path?: string) => (path ? [all[0]] : all.slice(0, limit)) });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click((await screen.findAllByTestId("atlas-git-history-item"))[0]);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+    expect(await screen.findByTestId("atlas-git-document-history")).toHaveTextContent("이것뿐이에요");
+    expect(screen.queryByTestId("atlas-git-document-step")).toBeNull();
   });
 });
