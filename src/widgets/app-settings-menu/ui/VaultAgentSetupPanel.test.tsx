@@ -6,6 +6,7 @@ import type { VaultManifest } from '@/entities/docs-vault';
 import { agentServerFromBundle, agentServerUnavailable } from '@/shared/config';
 import { copyText } from '@/shared/lib/copy-text';
 import { TooltipProvider } from '@/shared/ui';
+import { AGENT_CLIENTS } from '@/entities/vault-session';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
 vi.mock('@/shared/lib/copy-text', () => ({
@@ -1276,6 +1277,13 @@ describe('VaultAgentSetupPanel', () => {
     );
     // One row per tool, each with its file and its own control (owner, 2026-09-19).
     const rows = screen.getByTestId('agent-setup-steps');
+    // Render order is derived from `AGENT_CLIENTS` — "one list, two truths" (2026-07-30) stays
+    // closed: change the array order and the rows must follow.
+    expect(
+      [...rows.querySelectorAll("[data-testid^='agent-setup-row-']")].map((el) =>
+        el.getAttribute('data-testid'),
+      ),
+    ).toEqual(AGENT_CLIENTS.map((client) => `agent-setup-row-${client.id}`));
     expect(within(rows).getByTestId('agent-setup-row-claude-code')).toHaveTextContent('.mcp.json');
     expect(within(rows).getByTestId('agent-setup-row-codex')).toHaveTextContent('.codex/config.toml');
     expect(within(rows).getByTestId('agent-setup-row-cursor')).toBeInTheDocument();
