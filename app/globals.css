@@ -4169,6 +4169,20 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
     --topology-index-top: 84px;
   }
 
+  /* A short window does not keep tall reservations (2026-09-19). The lanes
+     above were sized for a tall desktop window; on the 14-inch MacBook the
+     browser gives the map 806 px and a 1024x768 window 764, and a third of
+     that went to bands holding nothing that tall — the spine ring filled 64 %
+     and 51 % of the height. Below 880 px the top keeps the tool lane plus one
+     chip row and the bottom the readout plus one name; the camera and the
+     label cull read the same numbers, refreshed on every viewport commit. */
+  @media (max-height: 880px) {
+    :root {
+      --map-safe-inset-top: 112;
+      --map-safe-inset-bottom: 72;
+    }
+  }
+
   html[data-topology-index="collapsed"] {
     /* feat/chrome-system §4 — tab-width(26) + inset(24) + gap(28) = 78
        (old 72 = 26 + 18 + 28). */

@@ -1,6 +1,7 @@
 "use client";
 
 import { projectDomeEdgeControl } from '../model/dome-edge';
+import { refreshIndexDependentTokens } from "../tokens/read-map-tokens";
 
 /**
  * `OntologyMap`'s engine hook — owns the canvas/rAF/pointer wiring so the
@@ -2309,6 +2310,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
     /** The cheap half, called from inside a frame: backing size and viewport facts only. */
     const commitViewportSize = () => {
+      // The top and bottom lanes follow the viewport height; read them before
+      // the fit and the label cull consume the size that just changed.
+      refreshIndexDependentTokens();
       const pending = pendingViewportRef.current;
       if (!pending) return false;
       pendingViewportRef.current = null;

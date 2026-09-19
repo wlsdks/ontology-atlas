@@ -550,7 +550,10 @@ export function clearOntologyMapTokensCache(): void {
  * one line here; skipping it leaves that value stale alone — a quieter failure than
  * a full invalidation, which is why it is pinned in a comment.
  */
-const INDEX_DEPENDENT_TOKEN_KEYS = ["safeInsetLeft"] as const;
+// The top and bottom lanes follow the viewport height (`@media (max-height)`
+// in globals.css), so they are refreshed with the INDEX-dependent left lane
+// on every viewport commit — three reads, not the 115 of a blanket refresh.
+const INDEX_DEPENDENT_TOKEN_KEYS = ["safeInsetLeft", "safeInsetTop", "safeInsetBottom"] as const;
 
 /**
  * After an INDEX state (`data-topology-index`) transition, re-read **only the tokens
