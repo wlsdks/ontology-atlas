@@ -66,7 +66,7 @@ const PARENT = { x: 400, y: 300, radius: 17 };
 const ANCHOR = { x: 520, y: 300 };
 /** The copy actually shown on screen (ko) — measured with this, not the English fallback. */
 const KO_BAR_LABELS: ClusterBarLabels = {
-  expandAll: "모두 펼치기",
+  expand: "펼치기",
   expandCount: "{count}개 펼치기",
   collapse: "접기",
 };
@@ -711,7 +711,7 @@ describe("동시에 펼쳐 둘 부모 — 딥링크도 상한을 받는다", () 
 describe("머리 위 막대 — 동사가 든 글자 버튼", () => {
   it("접히면 동사를 말하고, 펼쳐지면 되돌리는 동사를 말한다", () => {
     expect(clusterBarLabel({ expanded: false, count: 17, batchSize: 24, labels: KO_BAR_LABELS }))
-      .toBe("모두 펼치기");
+      .toBe("펼치기");
     expect(clusterBarLabel({ expanded: true, count: 17, batchSize: 24, labels: KO_BAR_LABELS }))
       .toBe("접기");
   });
@@ -772,11 +772,48 @@ describe("머리 위 막대 — 동사가 든 글자 버튼", () => {
 
   /** Draw and reservation use **the same string** — diverge and the rectangles diverge. */
   it("예약 사각형이 그려질 문구의 폭과 같다", () => {
-    for (const [expanded, label] of [[false, "모두 펼치기"], [true, "접기"]] as const) {
+    for (const [expanded, label] of [[false, "펼치기"], [true, "접기"]] as const) {
       const rect = clusterChipOccupancyRect(
         chipInput({ affordance: "bar", focused: true, expanded, count: 17 }),
       );
       expect(rect?.w, label).toBeCloseTo(estimateCanvasTextWidth(label, 12) + 20, 6);
+    }
+  });
+
+  /**
+   * **Two controls, two scopes, two names** (map round, 2026-09-20).
+   *
+   * The map toolbar's button opens **every** folded node and refits the view; the
+   * bar over a selected parent opens **that parent's** children. In English both
+   * said the literal words "Expand all", and in Korean two synonyms of it. The
+   * bar now says the bare verb, the mirror of its own Collapse, so the words
+   * with "all" belong to the toolbar alone. The count still appears only when
+   * the batch is smaller than the fold (the 2026-08-02 ledger decision).
+   */
+  it("칩 바는 펼칠 개수를 말한다 — 「전체 펼치기」는 도구 막대 하나뿐", () => {
+    // One press opens everything left: the bare verb, no number (the node engraves it).
+    expect(clusterBarLabel({ expanded: false, count: 15, batchSize: 24, labels: KO_BAR_LABELS })).toBe("펼치기");
+    // A batch smaller than the fold: unchanged.
+    expect(clusterBarLabel({ expanded: false, count: 108, batchSize: 12, labels: KO_BAR_LABELS })).toBe("12개 펼치기");
+    // Expanded still collapses.
+    expect(clusterBarLabel({ expanded: true, count: 15, batchSize: 24, labels: KO_BAR_LABELS })).toBe("접기");
+  });
+
+  it("두 펼치기 컨트롤의 이름이 로케일마다 서로 다르다", () => {
+    for (const locale of ["ko", "en"] as const) {
+      const messages = JSON.parse(readFileSync(`messages/${locale}.json`, "utf8")) as {
+        searchWidgets: { hint: Record<string, string> };
+        topology: { cluster: Record<string, string> };
+      };
+      const toolbar = messages.searchWidgets.hint.expandAllLabel;
+      const cluster = messages.topology.cluster;
+      expect(toolbar, locale).toBeTruthy();
+      expect(cluster.barExpandAll, `${locale}: the bar must not keep a second "all" name`).toBeUndefined();
+      expect(cluster.barExpand, locale).toBeTruthy();
+      expect(cluster.barExpandCount, locale).toContain("{count}");
+      for (const [key, value] of Object.entries(cluster)) {
+        expect(value, `${locale}.${key} repeats the toolbar's name`).not.toBe(toolbar);
+      }
     }
   });
 
@@ -789,7 +826,7 @@ describe("머리 위 막대 — 동사가 든 글자 버튼", () => {
    */
   it("지도 화면이 세 문구를 번역해 캔버스로 넘긴다", () => {
     const source = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
-    expect(source).toContain('t("cluster.barExpandAll")');
+    expect(source).toContain('t("cluster.barExpand")');
     expect(source).toContain('t("cluster.barExpandCount"');
     expect(source).toContain('t("cluster.barCollapse")');
     expect(source).toContain("clusterBarLabels={clusterBarLabels}");
@@ -798,7 +835,7 @@ describe("머리 위 막대 — 동사가 든 글자 버튼", () => {
         topology: { cluster: Record<string, string> };
       };
       const cluster = messages.topology.cluster;
-      for (const key of ["barExpandAll", "barExpandCount", "barCollapse"]) {
+      for (const key of ["barExpand", "barExpandCount", "barCollapse"]) {
         expect(cluster[key], `${locale}.${key}`).toBeTruthy();
       }
       // The renderer fills the `{count}` placeholder — lose it and it renders literally.
