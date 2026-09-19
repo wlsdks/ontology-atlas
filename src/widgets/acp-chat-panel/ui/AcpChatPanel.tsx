@@ -65,6 +65,7 @@ import {
   linkSlugs,
   readToolFallbackTarget,
   readToolOutcome,
+  readToolPathArgument,
   readToolTargets,
   deriveAcpTurnActivity,
   type AcpTurnActivity,
@@ -86,7 +87,7 @@ import { AcpPermissionCard } from './AcpPermissionCard';
 import { AcpPresentationPanel } from './AcpPresentationPanel';
 import { groupEvents } from './group-events';
 import { splitAppRequest } from './request-parts';
-import { isVaultTool, toolLabel } from './tool-label';
+import { isVaultTool, labelWithoutRepeatedPath, toolLabel } from './tool-label';
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useMeaningTransitionCapture } from '../model/use-meaning-transition-capture';
 
@@ -277,6 +278,7 @@ export function AcpChatPanel({
   runtimeLabel,
   vaultRoot,
   beforeComposer = null,
+  systemPromptAppendix = null,
   noticeActions = null,
   mcpServers,
   sessionEnabled = true,
@@ -403,6 +405,8 @@ export function AcpChatPanel({
    * rather than in the index column (owner, 2026-09-07). Null draws nothing.
    */
   beforeComposer?: ReactNode;
+  /** The screen's own paragraph after the vault handoff; see `UseAcpSessionOptions`. */
+  systemPromptAppendix?: string | null;
   /**
    * What a person can do from an `auto-allowed` notice, at the one moment the consequence
    * is visible: open the page that landed, or ask before the next one. Null draws the
@@ -517,6 +521,7 @@ export function AcpChatPanel({
     onTurnStarted: captureTurnStart,
     captureTaskBaseline,
     autoDecide,
+    systemPromptAppendix,
   });
   const taskMeaningReview = useTaskMeaningReview({
     pending,
@@ -2702,7 +2707,7 @@ function TranscriptEntry({
      * something plausible for the unknown makes the screen lie on the day it diverges
      * from what was actually done.
      */
-    const label = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
+    const rawLabel = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
     const outcome = readToolOutcome(
       event.rawOutput,
       event.status,
@@ -2718,6 +2723,14 @@ function TranscriptEntry({
      * marker — it names something the vault may not contain (`tool-targets.ts`).
      */
     const fallbackTarget = toolTargets.length === 0 ? readToolFallbackTarget(event.rawInput) : null;
+    /*
+     * Only when the path slot is the one actually drawn. With node names in the target slot the
+     * fallback lane is silent, and cutting the path out of the label there would delete the one
+     * place this row says which file was touched.
+     */
+    const label = fallbackTarget?.kind === 'path'
+      ? labelWithoutRepeatedPath(rawLabel, readToolPathArgument(event.rawInput))
+      : rawLabel;
     return (
       <p
         data-acp-entry="tool"

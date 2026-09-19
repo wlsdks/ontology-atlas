@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
@@ -158,7 +159,12 @@ export function OntologyMapEdgePanel({
             onClick={() => onSelectNode(n.id)}
             className="rounded-chip text-[color:var(--map-panel-text-secondary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-primary)]"
           >
-            {n.title}
+            {/* The same row grammar as the node panel's connection rows: the kind
+                glyph first, then the name. Two bare names read as headings, not as
+                the doors to the two nodes they are (2026-09-19). The kind is the
+                id's prefix — the one place it is always known. */}
+            <OntologyMapKindGlyph kind={n.id.split(":")[0] ?? ""} />
+            <span className="min-w-0 flex-1 truncate">{n.title}</span>
           </RowButton>
         ))}
       </div>
