@@ -1573,6 +1573,7 @@
         "detailDocUnknown": "기록 없음",
         "detailGone": "파일이 없어요",
         "detailHidden": "{count, number}개 더",
+        "notMeasured": "아직 못 쟀어요",
         "markSeen": "여기까지 봤음",
         "markSeenDone": "지금부터 다시 셉니다",
         "core": { "ontology": "온톨로지", "wiki": "위키", "harness": "하네스", "agent": "에이전트 활동" },

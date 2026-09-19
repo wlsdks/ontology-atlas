@@ -2,7 +2,7 @@
 
 import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { CensusBigNumber, CensusSubStat, CensusTile } from '@/shared/ui/census-tile';
+import { CensusSubStat, CensusTile } from '@/shared/ui/census-tile';
 import { controlClass } from '@/shared/ui/control-class';
 import { Button, Disclosure } from '@/shared/ui';
 import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
@@ -50,10 +50,16 @@ const COLUMNS: Record<BriefCore['core'], readonly [string, string, string]> = {
   agent: ['reads', 'writes', 'agents'],
 };
 
+/**
+ * One shape per state, so a reader scanning marks alone is never reading colour: a filled
+ * dot is something to learn, a hollow ring is something nobody checked, and a dash is
+ * something that merely happened. Two filled circles 1.48:1 apart failed that test
+ * (design-infoviz, 2026-09-19).
+ */
 const STATE_MARK: Record<BriefState, string> = {
-  current: 'bg-[color:var(--color-text-tertiary)]',
-  stale: 'bg-[color:var(--color-amber-source-a90)]',
-  unknown: 'border border-[color:var(--color-text-tertiary)] bg-transparent',
+  current: 'mt-[10px] h-0.5 w-2.5 rounded-full bg-[color:var(--color-text-tertiary)]',
+  stale: 'mt-[7px] size-2 rounded-full bg-[color:var(--color-amber-source-a90)]',
+  unknown: 'mt-[7px] size-2 rounded-full border border-[color:var(--color-text-tertiary)] bg-transparent',
 };
 
 export function BriefTab({ brief }: { brief: InsightsBrief }) {
@@ -93,7 +99,16 @@ function BriefCoreCard({ core, details, nowMs }: { core: BriefCore; details: Ins
   const measured = core.availability === 'measured';
   return (
     <CensusTile label={t(`core.${core.core}`)} testId={`brief-core-${core.core}`} rowKey={core.core}>
-      <CensusBigNumber value={core.headline ?? '–'} unit={t(`unit.${core.core}`)} scale="section" />
+      {core.headline == null ? (
+        <p className="text-label text-[color:var(--color-text-quaternary)]" data-testid="brief-core-unmeasured">
+          {t(`unit.${core.core}`)} · {t('notMeasured')}
+        </p>
+      ) : (
+        <p className="font-mono text-body-lg font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-primary)]">
+          {core.headline}
+          <span className="ml-1.5 text-label text-[color:var(--color-text-quaternary)]">{t(`unit.${core.core}`)}</span>
+        </p>
+      )}
       <div className="flex flex-wrap gap-x-4 gap-y-1" data-testid="brief-core-columns">
         <CensusSubStat label={t(`col.${c1}`)} value={measured && core.current != null ? core.current : '–'} />
         <CensusSubStat label={t(`col.${c2}`)} value={measured && core.stale != null ? core.stale : '–'} tone={core.stale ? 'warning' : 'numeral'} />
@@ -135,7 +150,7 @@ function BriefLineRow({ line, details, nowMs }: { line: BriefLine; details: read
   return (
     <li className="text-body text-[color:var(--color-text-primary)]" data-brief-line={line.id} data-brief-state={line.state}>
       <div className="flex items-start gap-2.5">
-        <span aria-hidden="true" className={cn('mt-[7px] size-2 shrink-0 rounded-full', STATE_MARK[line.state])} />
+        <span aria-hidden="true" className={cn('shrink-0', STATE_MARK[line.state])} />
         {shown.length > 0 ? (
           <Disclosure className="min-w-0 flex-1" summary={sentence} summaryTestId={`brief-line-open-${line.id}`}>
             <ul className="mt-2 flex flex-col gap-1.5 border-l border-[color:var(--color-divider)] pl-3" data-testid={`brief-line-rows-${line.id}`}>
@@ -180,13 +195,6 @@ function BriefLineRow({ line, details, nowMs }: { line: BriefLine; details: read
   );
 }
 
-const CORE_MARK: Record<SinceRow['core'], string> = {
-  ontology: 'bg-[color:var(--color-indigo-text-strong)]',
-  wiki: 'bg-[color:var(--color-text-secondary)]',
-  harness: 'bg-[color:var(--color-amber-source-a90)]',
-  agent: 'bg-[color:var(--color-text-tertiary)]',
-};
-
 /**
  * The cards count; this names. Everything that happened after the anchor, newest first,
  * from the dates the folder already carries — no list is invented and none is copied.
@@ -202,8 +210,7 @@ function BriefSinceList({ rows, total, nowMs }: { rows: readonly SinceRow[]; tot
       </h3>
       <ol className="mt-3 flex flex-col divide-y divide-[color:var(--color-divider)]">
         {rows.map((row, index) => (
-          <li key={`${row.core}-${row.at}-${index}`} className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-3 py-2 text-body" data-since-core={row.core}>
-            <span aria-hidden="true" className={cn('size-2 rounded-full', CORE_MARK[row.core])} />
+          <li key={`${row.core}-${row.at}-${index}`} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 py-2 text-body" data-since-core={row.core}>
             <span className="min-w-0 truncate text-[color:var(--color-text-primary)]" title={row.label}>
               <span className="text-[color:var(--color-text-tertiary)]">{t(`since.${row.kind}`)}</span>
               {' '}
