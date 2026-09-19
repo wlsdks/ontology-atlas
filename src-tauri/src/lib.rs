@@ -1313,6 +1313,14 @@ fn acp_send(
 /// End the session and everything it spawned.
 #[tauri::command]
 fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), String> {
+    /*
+     * **Who ended it, and when.** A session whose stdin closes takes its adapter with it: the
+     * child prints nothing and exits 0 (measured by hand 2026-09-20 — the adapter exits the
+     * moment stdin closes and never idles out). The log said only that the session had ended,
+     * so an end the screen asked for and an end the child chose read the same. This line
+     * separates them.
+     */
+    log::info!("acp session {session_id} stop requested by the screen");
     let pid = sessions.take_pid(&session_id)?;
     match pid {
         Some(pid) => acp::terminate_tree(pid),
@@ -1326,6 +1334,7 @@ fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), 
 /// Without this, closing the window leaves the adapter and its grandchildren
 /// running. The user believes the app is off while the machine keeps working.
 fn terminate_all_acp_sessions(app: &AppHandle) {
+    log::info!("acp sessions ending because the app is shutting down");
     let Some(state) = app.try_state::<AcpSessions>() else {
         return;
     };
