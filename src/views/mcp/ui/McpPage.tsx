@@ -109,20 +109,27 @@ export function McpPage({
   useEffect(() => {
     if (section !== 'connectors' || !connectorsSettled) return;
     /*
-     * Two frames, because the settled store and the laid-out list are not the same moment: the
-     * commit that flips `status` is when the rows are *created*, and their height is known one
-     * layout later. Scrolling on the commit measured a delta against a page still growing.
+     * **Corrects until the position stops moving, rather than guessing a frame.** The first
+     * version scrolled two frames after the store settled and landed correctly against a dev
+     * server and below the fold against the lane's own — a timing guess, which is what a
+     * render-order race always turns into. The invariant is not "n frames"; it is "the delta
+     * is zero". So it re-applies each frame while the page is still growing under it and
+     * stops on the first frame that needs no correction, bounded so nothing can fight a
+     * person's own scrolling for long.
      */
     let frame = 0;
-    const run = () => {
+    let framesLeft = 30;
+    const step = () => {
       const group = document.getElementById('mcp-connectors');
       const slot = group?.closest<HTMLElement>('[data-testid="app-shell-body-slot"]');
       if (!group || !slot) return;
-      slot.scrollTop += group.getBoundingClientRect().top - slot.getBoundingClientRect().top;
+      const delta = group.getBoundingClientRect().top - slot.getBoundingClientRect().top;
+      if (Math.abs(delta) < 1) return;
+      slot.scrollTop += delta;
+      framesLeft -= 1;
+      if (framesLeft > 0) frame = requestAnimationFrame(step);
     };
-    frame = requestAnimationFrame(() => {
-      frame = requestAnimationFrame(run);
-    });
+    frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
   }, [section, connectorsSettled]);
 
