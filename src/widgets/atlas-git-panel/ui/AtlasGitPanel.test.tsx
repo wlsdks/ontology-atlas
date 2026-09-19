@@ -15,9 +15,29 @@ vi.mock("@tauri-apps/api/core", () => ({
   isTauri: () => tauriApiMock.runtimeAvailable,
 }));
 
+/**
+ * The desktop file watcher's event channel. `listen` hands back the handlers so a test can
+ * play the role of the Rust watcher and say "the folder changed".
+ */
+const tauriEventMock = vi.hoisted(() => ({
+  handlers: [] as Array<(event: { payload: unknown }) => void>,
+  listen: vi.fn(async (_name: string, handler: (event: { payload: unknown }) => void) => {
+    tauriEventMock.handlers.push(handler);
+    return () => {
+      tauriEventMock.handlers = tauriEventMock.handlers.filter((h) => h !== handler);
+    };
+  }),
+}));
+
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: tauriEventMock.listen,
+}));
+
 afterEach(() => {
   tauriApiMock.runtimeAvailable = false;
   tauriApiMock.invoke.mockReset();
+  tauriEventMock.handlers = [];
+  tauriEventMock.listen.mockClear();
 });
 
 function renderPanel(ui: React.ReactElement) {
@@ -125,11 +145,12 @@ function installDesktopGit({
   pull?: unknown;
 } = {}) {
   tauriApiMock.runtimeAvailable = true;
-  tauriApiMock.invoke.mockImplementation(async (command: string) => {
+  tauriApiMock.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) => {
     if (command === "git_status") return status;
     if (command === "git_diff") return diff;
     if (command === "git_commit_diff") return { count: 0, files: [], diff: COMMIT_PATCH };
-    if (command === "git_history") return typeof history === "function" ? history() : history;
+    if (command === "git_history")
+      return typeof history === "function" ? history(Number(args?.limit ?? 0)) : history;
     if (command === "git_snapshot") return snapshot;
     if (command === "git_init") return init;
     if (command === "git_set_remote") return setRemote;
@@ -1267,5 +1288,139 @@ describe("AtlasGitPanel — git이 없어도 바뀐 것은 보인다", () => {
   it("웹 강등도 같은 요약 컴포넌트를 쓴다 — 두 곳이 갈라지지 않게", async () => {
     renderPanel(<AtlasGitPanel sessionChangeset={CHANGESET} />);
     expect(await screen.findByTestId("atlas-git-session-changes")).toHaveTextContent("개념 추가 1");
+  });
+});
+
+describe("AtlasGitPanel — 이력은 끝까지 닿는다", () => {
+  /*
+   * The screen asked git for ten steps and drew ten, and the list simply stopped. A folder with
+   * forty steps kept thirty of them out of reach with no sign that anything was missing
+   * (measured with a fourteen-step stub, 2026-09-19: rows=10, then blank column).
+   */
+  const step = (n: number) => ({
+    shortHash: `s${n.toString().padStart(6, "0")}`,
+    hash: `s${n.toString().padStart(6, "0")}${"0".repeat(33)}`,
+    subject: `docs: step ${n}`,
+    relativeTime: `${n} hours ago`,
+    isoTime: new Date(Date.parse("2026-09-19T08:00:00Z") - n * 3_600_000).toISOString(),
+    files: [],
+  });
+  const forty = Array.from({ length: 40 }, (_, i) => step(i + 1));
+
+  it("첫 열 개 뒤에 더 보기 줄이 있고, 누르면 더 긴 이력을 읽어 온다", async () => {
+    installDesktopGit({ history: (limit: number) => forty.slice(0, limit) });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    await screen.findByTestId("atlas-git-workbench");
+    await waitFor(() => expect(screen.getAllByTestId("atlas-git-history-item")).toHaveLength(10));
+    expect(screen.queryByTestId("atlas-git-history-end")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("atlas-git-history-more"));
+    await waitFor(() => expect(screen.getAllByTestId("atlas-git-history-item")).toHaveLength(20));
+    // Only history is re-read — the status and diff already on screen are not asked for again.
+    const historyLimits = tauriApiMock.invoke.mock.calls
+      .filter(([command]) => command === "git_history")
+      .map(([, args]) => (args as { limit: number }).limit);
+    expect(Math.max(...historyLimits)).toBeGreaterThan(20);
+    expect(snapshotInvokeCalls()).toHaveLength(0);
+  });
+
+  it("이력이 다 보이면 더 보기 대신 첫 커밋임을 말한다", async () => {
+    installDesktopGit({ history: (limit: number) => forty.slice(0, Math.min(limit, 3)) });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    await screen.findByTestId("atlas-git-workbench");
+    await waitFor(() => expect(screen.getAllByTestId("atlas-git-history-item")).toHaveLength(3));
+    expect(screen.queryByTestId("atlas-git-history-more")).toBeNull();
+    expect(screen.getByTestId("atlas-git-history-end")).toHaveTextContent("첫 커밋");
+  });
+});
+
+describe("AtlasGitPanel — 자동 제목은 그래프가 있어도 원문으로 새지 않는다", () => {
+  /*
+   * The 2026-07-27 rule ("a step's summary reads in human language") held only while the row
+   * had no concept to name. Once #842 put the concept in the name column, the third column
+   * fell back to the raw subject, so the real screen — the one with a graph — read
+   * `ontology snapshot: ~1 u…` on every automatic step (measured 2026-09-19).
+   */
+  const GRAPH = {
+    nodes: [
+      {
+        id: "domain:orders",
+        title: "Orders",
+        display: "주문",
+        kind: "domain",
+        projectIds: [],
+        evidenceIds: ["domains/orders"],
+        hasOwnDocument: true,
+        agentSlug: "domains/orders",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: null,
+      },
+    ],
+    edges: [],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+
+  const AUTO_STEP = [
+    {
+      shortHash: "auto123",
+      hash: "auto123def5678",
+      subject: "ontology snapshot: ~1 updated (domains/orders)",
+      relativeTime: "2 hours ago",
+      isoTime: "2026-09-19T06:00:00.000Z",
+      files: [
+        { path: "domains/orders.md", status: "modified", kind: "domain", slug: "domains/orders", renamedFrom: null },
+      ],
+    },
+  ];
+
+  it("걸음 행의 셋째 열과 상세 제목이 사람 말로 서고, 원문은 상세의 작은 줄에만 남는다", async () => {
+    installDesktopGit({ history: AUTO_STEP });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+
+    const row = await screen.findByTestId("atlas-git-history-item");
+    expect(row).toHaveTextContent("주문");
+    expect(row).toHaveTextContent("수정 1");
+    expect(row).not.toHaveTextContent("ontology snapshot");
+
+    fireEvent.click(row);
+    const detail = await screen.findByTestId("atlas-git-history-detail");
+    expect(screen.getByTestId("atlas-git-detail-headline")).toHaveTextContent("수정 1");
+    expect(screen.getByTestId("atlas-git-detail-headline")).not.toHaveTextContent("ontology snapshot");
+    // The audit trail stays: the raw subject is still on screen, one step down.
+    expect(detail).toHaveTextContent("ontology snapshot: ~1 updated (domains/orders)");
+  });
+});
+
+describe("AtlasGitPanel — 열려 있는 동안 폴더를 따라간다", () => {
+  /*
+   * Read-only follow. An editor or an agent writing to the folder while this screen is open used
+   * to leave the count and the preview stale until the next arrival, so the confirm step could
+   * say "3 to commit" for a folder that by then held five changes.
+   */
+  it("vault-changed 가 오면 상태를 다시 읽는다 — 쓰기는 0회", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-workbench");
+    await waitFor(() => expect(tauriEventMock.listen).toHaveBeenCalledWith("vault-changed", expect.any(Function)));
+
+    const before = tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_status").length;
+    await act(async () => {
+      for (const handler of tauriEventMock.handlers) handler({ payload: null });
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    });
+    await waitFor(() =>
+      expect(tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_status").length).toBeGreaterThan(before),
+    );
+    expect(snapshotInvokeCalls()).toHaveLength(0);
+    expect(tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_init")).toHaveLength(0);
+  });
+
+  it("브라우저 강등에서는 워처를 구독하지 않는다", async () => {
+    renderPanel(<AtlasGitPanel vaultPath={null} />);
+    await screen.findByTestId("atlas-git-web-get-app");
+    expect(tauriEventMock.listen).not.toHaveBeenCalled();
   });
 });

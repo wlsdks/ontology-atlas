@@ -76,6 +76,7 @@ export function CommitDetail({
   isoTime,
   relativeTime,
   subject,
+  headline = null,
   concepts,
   files,
   focusedConceptId,
@@ -90,6 +91,12 @@ export function CommitDetail({
   isoTime: string;
   relativeTime: string;
   subject: string;
+  /**
+   * The subject in the reader's language when the subject is one of our own automatic
+   * `ontology snapshot: …` strings; `null` when a person wrote it. The raw subject stays on
+   * screen either way — one line down — because the audit trail is the raw text.
+   */
+  headline?: string | null;
   concepts: readonly CommitConcept[];
   files: readonly GitChangeEntry[];
   focusedConceptId: string | null;
@@ -157,10 +164,14 @@ export function CommitDetail({
     >
       {/* Identity — survives either lens. */}
       <header className="flex flex-none flex-col gap-1 px-5 pt-4 pb-3">
-        <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-          {subject}
+        <p
+          data-testid="atlas-git-detail-headline"
+          className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
+        >
+          {headline ?? subject}
         </p>
         <p className="font-mono text-caption break-all text-[color:var(--color-text-quaternary)]">
+          {headline ? <>{subject} · </> : null}
           {t("historyItemDetail", { hash, isoTime })} · {relativeTime}
         </p>
       </header>

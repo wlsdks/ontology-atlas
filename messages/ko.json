@@ -3651,7 +3651,11 @@
     "initSessionTitle": "지금까지 바뀐 것",
     "summaryNoUpstream": "아직 보낼 곳이 없어요",
     "summaryInSync": "원격과 같아요",
-    "summaryDiverged": "내 걸음 {ahead}개, 원격 걸음 {behind}개"
+    "summaryDiverged": "내 걸음 {ahead}개, 원격 걸음 {behind}개",
+    "historyMore": "이전 커밋 더 보기",
+    "historyMoreBusy": "읽는 중…",
+    "historyEnd": "여기가 첫 커밋이에요",
+    "stepAutoSubject": "자동 제목 · {summary}"
   },
   "agentFiles": {
     "header": "에이전트 파일",

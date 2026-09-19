@@ -47,7 +47,7 @@ const SOURCES = [
   { path: "sources/settlement-policy.md", name: "settlement-policy.md", format: "md", bytes: SETTLEMENT.length, mtime: 1, state: "not-compiled", citedBy: [] },
 ];
 
-function modelWith(sources: typeof SOURCES, wikiPages: unknown[] = []): LibraryUiModel {
+function modelWith(sources: typeof SOURCES, wikiPages: unknown[] = [], verdicts: Map<string, unknown> = new Map()): LibraryUiModel {
   return {
     sources,
     wikiPages,
@@ -55,7 +55,7 @@ function modelWith(sources: typeof SOURCES, wikiPages: unknown[] = []): LibraryU
     notCompiledCount: 0,
     staleCount: 0,
     pathsNeedingHash: [],
-    verdicts: new Map(),
+    verdicts,
     offTemplateCount: 0,
     hashes: new Map(),
     pageTexts: new Map(),
@@ -69,6 +69,7 @@ function Harness({
   onOpenSource = () => {},
   sources = SOURCES,
   wikiPages = [],
+  verdicts = new Map<string, unknown>(),
   selectedSourcePath = null,
   selectedSourceAnchor = null,
   segment = "sources" as const,
@@ -77,6 +78,7 @@ function Harness({
   onOpenSource?: (row: { path: string }, anchor?: string) => void;
   sources?: typeof SOURCES;
   wikiPages?: unknown[];
+  verdicts?: Map<string, unknown>;
   selectedSourcePath?: string | null;
   selectedSourceAnchor?: string | null;
   segment?: "sources" | "wiki";
@@ -84,7 +86,7 @@ function Harness({
   const t = useTranslations("library");
   return (
     <LibrarySection
-      model={modelWith(sources, wikiPages)}
+      model={modelWith(sources, wikiPages, verdicts)}
       selectedSlug={null}
       selectedSourcePath={selectedSourcePath}
       selectedSourceAnchor={selectedSourceAnchor}
@@ -402,5 +404,41 @@ describe("a search with no match on either half", () => {
       expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
     });
     expect(screen.queryByTestId("library-search-nothing-note")).toBeNull();
+  });
+});
+
+/**
+ * **The foot under the wiki list counts the rows on screen** (installed app, 3,000 files,
+ * 2026-09-19): under a search that matched nothing it still said *400 pages miss the
+ * template*, a number about rows nobody could see.
+ */
+describe("the off-template foot counts what the list shows", () => {
+  const page = (slug: string, title: string) => ({ slug, title, sourcePaths: [], createdBy: "agent:claude", compiledAt: null });
+  const verdict = (codes: string[]) => ({ ok: codes.length === 0, firstProblem: codes[0] ?? null, firstProblemMessage: null, problemCount: codes.length, problems: codes.map((code) => ({ code, message: code })) });
+  const mountTwo = () =>
+    renderWith({
+      handles: bothHandles(),
+      segment: "wiki",
+      wikiPages: [page("wiki/sash", "Sash frames"), page("wiki/lintel", "Lintel spans")],
+      verdicts: new Map([["wiki/sash", verdict(["missing-field:summary"])], ["wiki/lintel", verdict([])]]),
+    });
+
+  it("says one page at rest, and nothing once the search hides that page", async () => {
+    mountTwo();
+    expect(screen.getByTestId("library-off-template-count")).toHaveTextContent("1 page");
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "Lintel" } });
+    await waitFor(() => {
+      expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
+    });
+    expect(screen.queryByTestId("library-off-template-count")).toBeNull();
+  });
+
+  it("keeps the count when the search keeps the page", async () => {
+    mountTwo();
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "Sash" } });
+    await waitFor(() => {
+      expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
+    });
+    expect(screen.getByTestId("library-off-template-count")).toHaveTextContent("1 page");
   });
 });

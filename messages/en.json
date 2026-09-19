@@ -3651,7 +3651,11 @@
     "initSessionTitle": "Changed so far",
     "summaryNoUpstream": "no remote to send to yet",
     "summaryInSync": "same as the remote",
-    "summaryDiverged": "{ahead} of yours, {behind} of theirs"
+    "summaryDiverged": "{ahead} of yours, {behind} of theirs",
+    "historyMore": "Show older steps",
+    "historyMoreBusy": "Reading…",
+    "historyEnd": "This is the first step",
+    "stepAutoSubject": "automatic title · {summary}"
   },
   "agentFiles": {
     "header": "Agent files",
