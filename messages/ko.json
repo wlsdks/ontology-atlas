@@ -5394,6 +5394,7 @@
       "placeholder": "원문·문서 검색",
       "matches": "원문 {sources, number}개(구절 {passages, number}개) · 문서 {pages, number}개 일치",
       "noneHere": "이 목록에는 없습니다.",
+      "nothing": "「{needle}」와 맞는 원문도 문서도 없습니다. 다른 말로 찾아보세요.",
       "showPages": "위키 문서 {count, number}개 보기",
       "showSources": "원문 {count, number}개 보기",
       "reading": "원문을 읽고 있습니다<count> · {read, number}/{total, number}</count>",

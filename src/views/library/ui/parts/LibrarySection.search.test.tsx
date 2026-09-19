@@ -364,3 +364,43 @@ describe("the index search reads the sources", () => {
     writeLibraryIndexQuery("", "");
   });
 });
+
+/**
+ * **A search that matches nowhere says so** (browser walk, 2026-09-19). Both lists emptied
+ * under a caption of zeros and nothing else; a person who mistyped read a folder with
+ * nothing in it. The sentence names the word, on whichever half the person is standing.
+ */
+describe("a search with no match on either half", () => {
+  it("prints one sentence naming the word under the sources list", async () => {
+    renderWith({ handles: bothHandles() });
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "qzqzqz" } });
+    await waitFor(() => {
+      expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
+    });
+    expect(screen.getByTestId("library-search-nothing-note")).toHaveTextContent("Nothing matches “qzqzqz”");
+    expect(screen.queryByTestId("library-search-other-half-note")).toBeNull();
+  });
+
+  it("prints the same sentence under the wiki list", async () => {
+    // A wiki with a page: the sentence belongs to the list, not to the "no pages yet" state.
+    renderWith({
+      handles: bothHandles(),
+      segment: "wiki",
+      wikiPages: [{ slug: "wiki/sash", title: "Sash frames", sourcePaths: [], createdBy: "agent:claude", compiledAt: null }],
+    });
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "qzqzqz" } });
+    await waitFor(() => {
+      expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
+    });
+    expect(screen.getByTestId("library-search-nothing-note")).toHaveTextContent("Nothing matches “qzqzqz”");
+  });
+
+  it("stays silent while the files are still being read, and when something matched", async () => {
+    renderWith({ handles: bothHandles() });
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "T+2" } });
+    await waitFor(() => {
+      expect(screen.getByTestId("library-search-matches")).toHaveAttribute("data-phase", "ready");
+    });
+    expect(screen.queryByTestId("library-search-nothing-note")).toBeNull();
+  });
+});

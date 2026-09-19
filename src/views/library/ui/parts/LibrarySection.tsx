@@ -913,6 +913,17 @@ export function LibrarySection({
               </ListNote>
             ) : null}
             {/*
+             * **A search that matches nowhere says so in a sentence** (browser walk,
+             * 2026-09-19). With no match on either half the list simply emptied under a
+             * caption of zeros — "0 sources (0 passages) · 0 pages" over blank space — and
+             * a person who mistyped read a folder with nothing in it. The other-half note
+             * above covers one half being empty; this covers both, and it waits for the
+             * reading to finish for the same reason that one does.
+             */}
+            {needle && search.phase !== "reading" && visibleSources.length === 0 && visiblePages.length === 0 ? (
+              <ListNote testId="library-search-nothing-note">{t("search.nothing", { needle })}</ListNote>
+            ) : null}
+            {/*
              * ⚠️ **The waiting count is not a footnote under the list any more** (owner,
              * 2026-09-12): *"this 'one source version needs review' line — written like
              * this, who is ever going to look at it? … a different way is needed."*
@@ -1347,6 +1358,10 @@ export function LibrarySection({
             <ListNote testId="library-search-other-half-note">
               <OtherHalf count={visibleSources.length} segment="sources" t={t} />
             </ListNote>
+          ) : null}
+          {/* Both halves empty: the same sentence the sources half prints, for the same reason. */}
+          {needle && search.phase !== "reading" && visiblePages.length === 0 && visibleSources.length === 0 ? (
+            <ListNote testId="library-search-nothing-note">{t("search.nothing", { needle })}</ListNote>
           ) : null}
           {offTemplateRows > 0 ? (
             <ListNote testId="library-off-template-count">

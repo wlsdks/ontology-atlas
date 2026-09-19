@@ -5394,6 +5394,7 @@
       "placeholder": "Search sources and pages",
       "matches": "{sources, number} sources ({passages, number} passages) · {pages, number} pages matched",
       "noneHere": "None in this list.",
+      "nothing": "Nothing matches “{needle}” in the originals or the pages. Try another word.",
       "showPages": "Show {count, plural, one {# wiki page} other {# wiki pages}}",
       "showSources": "Show {count, plural, one {# source} other {# sources}}",
       "reading": "Reading the sources<count> · {read, number}/{total, number}</count>",
