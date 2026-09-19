@@ -378,7 +378,7 @@ function StructuralGroup({
     >
       <h4
         id={`report-code-${group.code}`}
-        className="scroll-mt-4 max-w-[var(--measure-prose)] text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+        className="scroll-mt-4 text-body font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
       >
         {reportRuleTitle(group.code, t)}
         <span className="ml-2 text-label font-normal text-[color:var(--color-text-quaternary)]">
@@ -388,7 +388,7 @@ function StructuralGroup({
       {rule.sentence ? (
         <p
           data-testid="library-structural-rule"
-          className="mt-1 max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+          className="mt-1 text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
         >
           {/* The place is a word here and not a press: this page is not the page, so there
               is nothing on screen to travel to. Each row's own door opens it. */}
@@ -398,7 +398,7 @@ function StructuralGroup({
       {rule.action ? (
         <p
           data-testid="library-structural-rule-action"
-          className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+          className="text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
         >
           {rule.action}
         </p>
@@ -412,12 +412,12 @@ function StructuralGroup({
           >
             <div className="min-w-0 flex-1">
               {rule.sentence ? null : (
-                <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+                <p className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
                   <WikiProblemSentence words={words} doors={doors} t={t} />
                 </p>
               )}
               {!rule.action && words.action ? (
-                <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+                <p className="text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
                   {words.action}
                 </p>
               ) : null}
@@ -613,7 +613,7 @@ export function LibraryCheckReport({
               licensing record's falsifier describes. */}
           <p
             data-testid="library-check-structural-head"
-            className="mt-1.5 max-w-[var(--measure-prose)] text-label leading-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+            className="mt-1.5 text-label leading-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
           >
             {t("report.structuralHead", {
               pages: structural.pageCount,
@@ -626,7 +626,7 @@ export function LibraryCheckReport({
                different states and the second one must never wear the first one's words. */
             <p
               data-testid="library-check-unmeasured"
-              className="mt-2 max-w-[var(--measure-prose)] text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+              className="mt-2 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
             >
               {t("report.unmeasured", { count: structural.unmeasured.length })}
             </p>
@@ -675,7 +675,7 @@ export function LibraryCheckReport({
             </nav>
           ) : null}
           {structural.groups.length === 0 && structural.unmeasured.length === 0 ? (
-            <p className="mt-3 max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+            <p className="mt-3 text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
               {t("report.structuralClean")}
             </p>
           ) : null}
@@ -763,11 +763,13 @@ export function LibraryCheckReport({
 
         {semanticEmpty ? (
           <div className="mt-4 flex flex-col items-start gap-3">
-            {/* The lede, a finding's sentence and the candidates note are read as lines, so
-                they take `--measure-prose`; the report's own column stays
-                `--measure-doc-column` (2026-09-11 calibration — `app/globals.css`,
-                `--measure-prose`). */}
-            <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+            {/* The lede, a finding's sentence and the candidates note are lines in the
+                report's column, and the column is the measure: `--measure-doc-column` is
+                `--measure-prose` spent at the reading size plus the gutters. They wore the
+                `ch` cap themselves until 2026-09-19, which at `text-body` resolved shorter
+                than the column (491px in 629px, browser, 1512) and gave the report a second
+                right edge. */}
+            <p className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
               {lastLint ? (lastCheckFoundSomething ? t("report.gone") : t("report.clean")) : t("report.emptyLede")}
             </p>
           </div>
@@ -818,7 +820,7 @@ export function LibraryCheckReport({
               <p
                 id="library-check-report-lint-blocked"
                 data-testid="library-check-report-lint-blocked"
-                className="max-w-[var(--measure-prose)] text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+                className="text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
               >
                 {lintBlockedReason}
               </p>
@@ -846,7 +848,7 @@ export function LibraryCheckReport({
                   className="flex min-w-0 items-start gap-4 py-3"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]">
+                    <p className="text-body leading-body text-[color:var(--color-text-primary)] [word-break:keep-all]">
                       {finding.summary}
                     </p>
                     <PageDoors pages={finding.pages} onOpenPage={onOpenPage} />
@@ -892,7 +894,7 @@ export function LibraryCheckReport({
                 {candidates.length}
               </span>
             </h4>
-            <p className="mt-1 max-w-[var(--measure-prose)] text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+            <p className="mt-1 text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
               {t("wiki.candidatesTooltip")}
             </p>
             <ul className="mt-3 flex flex-col divide-y divide-[color:var(--color-divider)]">

@@ -333,6 +333,20 @@ test.describe("the Library on its first day, with no agent", () => {
       "has never opened this file",
     );
 
+    /*
+     * **One right edge in the column** (2026-09-19). The sentence wore the `ch` measure
+     * itself and, at its 11px, ended 197px short of the table under it — two right edges
+     * inside one reading column, which the 2026-09-12 column decision exists to remove.
+     * The column is the measure; the sentence ends where the table ends.
+     */
+    const [sentenceRight, tableRight] = await page.evaluate(() => {
+      const sentence = document.querySelector('[data-testid="library-source-opened-state"]');
+      const table = sentence?.parentElement?.querySelector("dl");
+      if (!sentence || !table) throw new Error("the opened-state sentence and its table must both render");
+      return [sentence.getBoundingClientRect().right, table.getBoundingClientRect().right];
+    });
+    expect(Math.abs(sentenceRight - tableRight), `sentence ends at ${sentenceRight}, table at ${tableRight}`).toBeLessThan(1);
+
     await captureSettled(page, ".claude/shots-2026-09-11/library-day-one/2-outline-every-file.png");
   });
 

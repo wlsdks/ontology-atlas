@@ -362,10 +362,14 @@ function ProblemGroup({
       {/* The explanation and every finding are sentences at one step and one left edge
           (`text-body`, owner 2026-09-12). They were `text-label` (11px) under a
           `text-body` heading — the smallest type on the card carrying the only thing a
-          person had to act on. `--measure-prose` caps the line and `[word-break:keep-all]`
-          arrives with the cap: the first narrower render in the installed app broke a
-          Korean word across the wrap, stranding its final syllable and its particle. */}
-      <p className="mt-1 max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+          person had to act on. The card's column caps the line — `--measure-doc-column` is
+          the measure spent at the reading size — and a second cap on the sentence itself was
+          a shorter one: `ch` resolves at the element's own 12.5px, so these lines ended at
+          491px inside a 595px card and the technical note at 432px (2026-09-19, browser,
+          1512), three right edges on one card. `[word-break:keep-all]` stays: the first
+          narrower render in the installed app broke a Korean word across the wrap,
+          stranding its final syllable and its particle. */}
+      <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
         {body}
       </p>
       <ul className="mt-2.5 flex flex-col gap-2.5 font-sans">
@@ -373,7 +377,7 @@ function ProblemGroup({
           <li
             key={`${words.code}-${index}`}
             data-testid="library-wiki-problem"
-            className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+            className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
           >
             <p>
               <WikiProblemSentence words={words} places={places} doors={doors} t={t} />
@@ -390,7 +394,7 @@ function ProblemGroup({
           back (the reason the check report's group headings keep the code too — both
           design seats, council 2026-09-12). */}
       <Disclosure className="mt-3" summary={t("wiki.technical")} summaryTestId={`${testId}-technical`}>
-        <p className="mt-2 max-w-[var(--measure-prose)] text-label leading-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+        <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
           {t("wiki.technicalNote")}
         </p>
         {/* ⚠️ **The page's own address, because the sentence above no longer carries it**

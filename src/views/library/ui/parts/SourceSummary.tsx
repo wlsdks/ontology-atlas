@@ -109,7 +109,7 @@ function PassageLine({ unit, cited }: { unit: SourceUnit; cited: boolean }) {
     <p
       data-testid={cited ? "library-source-passage-cited" : "library-source-passage-context"}
       className={cn(
-        "max-w-[var(--measure-prose)] whitespace-pre-wrap [overflow-wrap:break-word] [word-break:keep-all]",
+        "whitespace-pre-wrap [overflow-wrap:break-word] [word-break:keep-all]",
         cited
           ? "text-reading leading-prose text-[color:var(--color-text-primary)]"
           : "text-body leading-body text-[color:var(--color-text-tertiary)]",
@@ -422,12 +422,15 @@ export function SourceSummary({
           {row.name}
         </h2>
       </div>
-      {/* The line, not the column: `--measure-doc-column` is the box this pane sits in and
-          `--measure-prose` is how long a line inside it may run (2026-09-11 calibration —
-          see that token's block in `app/globals.css`). */}
+      {/* The column is the line. `--measure-doc-column` is the measure spent at the reading
+          size plus one gutter each side, so every line in this pane already ends where the
+          body's would. Wearing `max-w-[var(--measure-prose)]` here as well cut a line short:
+          `ch` resolves at the element's own size, and this 11px sentence measured 432px
+          beside a 629px table in one 629px column (2026-09-19, browser, 1512) — the two
+          right edges the 2026-09-12 column decision was written to remove. */}
       <p
         data-testid="library-source-opened-state"
-        className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+        className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
       >
         {t(openedSentence)}
       </p>
@@ -530,7 +533,7 @@ export function SourceSummary({
           </ul>
         ) : (
           <div className="mt-2 flex flex-col gap-2">
-            <p className="max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+            <p className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
               {t("source.citedByNobody")}
             </p>
             <div>
@@ -557,7 +560,7 @@ export function SourceSummary({
                */
               <p
                 data-testid="library-transfer"
-                className="max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+                className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
               >
                 {compileNote}
               </p>
@@ -753,7 +756,7 @@ export function SourceSummary({
           {passage.phase === "failed" ? (
             <p
               data-testid="library-source-passage-unreadable"
-              className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:break-word] [word-break:keep-all]"
+              className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:break-word] [word-break:keep-all]"
             >
               {passage.error
                 ? t("source.passage.unreadable", { reason: passage.error })
@@ -823,7 +826,7 @@ export function SourceSummary({
                 */}
               <p
                 data-testid="library-source-passage-missing"
-                className="max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-primary)] [overflow-wrap:break-word] [word-break:keep-all]"
+                className="text-body leading-body text-[color:var(--color-text-primary)] [overflow-wrap:break-word] [word-break:keep-all]"
               >
                 {t("source.passage.missing", { anchor: passage.anchor })}
               </p>
@@ -833,7 +836,7 @@ export function SourceSummary({
               {passage.passage.candidates.length > 0 ? (
                 <p
                   data-testid="library-source-passage-ambiguous"
-                  className="max-w-[var(--measure-prose)] text-caption leading-body text-[color:var(--color-text-quaternary)] [overflow-wrap:break-word] [word-break:keep-all]"
+                  className="text-caption leading-body text-[color:var(--color-text-quaternary)] [overflow-wrap:break-word] [word-break:keep-all]"
                 >
                   {t("source.passage.ambiguous", {
                     candidates: passage.passage.candidates.map((one) => `#${one}`).join(", "),
@@ -846,7 +849,7 @@ export function SourceSummary({
           {passage.phase === "ready" && passage.passage?.state === "no-text" ? (
             <p
               data-testid="library-source-passage-no-text"
-              className="mt-2 max-w-[var(--measure-prose)] text-label leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:break-word] [word-break:keep-all]"
+              className="mt-2 text-label leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:break-word] [word-break:keep-all]"
             >
               {t("source.passage.noText", {
                 label: passageLabelText(passage.passage.label, passage.anchor, t),
