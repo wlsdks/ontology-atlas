@@ -1972,6 +1972,7 @@
       "handoffCopiedLabel": "복사됨: AI 채팅에 붙여넣으세요",
       "handoffCopyErrorLabel": "복사 실패: 다시 시도",
       "footerSummary": "<value>{slug}</value> · 업데이트 {date}",
+      "footerSummaryDoc": "<value>{slug}</value> · 파일 <value>{path}</value>",
       "saveSuccessName": "이름 저장됨",
       "saveSuccessDescription": "설명 저장됨",
       "saveErrorGeneric": "저장 실패",

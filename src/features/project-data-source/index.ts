@@ -4,3 +4,4 @@ export type {
 } from './model/use-project-mutations';
 export { useProjects } from './model/use-projects';
 export { useProjectBody } from './model/use-project-body';
+export { useVaultDocs } from './model/use-vault-docs';
