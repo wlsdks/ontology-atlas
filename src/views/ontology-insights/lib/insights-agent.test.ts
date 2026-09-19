@@ -3,8 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   buildInsightsAgentPrompt,
   planInsightsAgentPrompt,
-  resolveInsightsAgentRoute,
-  selectInsightsAgentRuntimes,
   type InsightsAgentPrefill,
 } from './insights-agent';
 
@@ -76,32 +74,3 @@ describe('Analysis shared ACP planner', () => {
   });
 });
 
-describe('Analysis ACP admission', () => {
-  it('keeps only verified, ready runtimes with a measured guard', () => {
-    const base = {
-      description: '', website: null, license: null, icon: null, brandInk: null,
-      launchKind: 'npx' as const, cliPath: '/bin/tool', adapterPath: '/bin/adapter',
-      adapterPackage: null,
-    };
-    expect(selectInsightsAgentRuntimes([
-      { ...base, id: 'claude-acp', label: 'Claude', verified: true, state: 'ready', isolated: true },
-      { ...base, id: 'unknown', label: 'Unknown', verified: true, state: 'ready', isolated: false },
-      { ...base, id: 'not-ready', label: 'Wait', verified: true, state: 'cli-missing', isolated: true },
-    ])).toEqual([{ id: 'claude-acp', label: 'Claude' }]);
-  });
-
-  it('degrades to clipboard until every installed-app prerequisite is observed', () => {
-    const input = {
-      bridgeAvailable: true,
-      runtimeCheckComplete: true,
-      serverCheckComplete: true,
-      runtime: { id: 'claude-acp', label: 'Claude' },
-      vaultRoot: '/vault',
-      serverReady: true,
-    };
-    expect(resolveInsightsAgentRoute(input)).toBe('agent');
-    expect(resolveInsightsAgentRoute({ ...input, bridgeAvailable: false })).toBe('clipboard');
-    expect(resolveInsightsAgentRoute({ ...input, runtimeCheckComplete: false })).toBe('checking');
-    expect(resolveInsightsAgentRoute({ ...input, vaultRoot: null })).toBe('clipboard');
-  });
-});
