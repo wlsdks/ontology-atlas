@@ -4124,6 +4124,7 @@
   "acpChat": {
     "ariaLabel": "Conversation with {runtime}",
     "emptyHint": "Ask anything about this folder.",
+    "emptySeatedHint": "This screen has written a question for you. Edit it below, or send it as it is.",
     "composerLabel": "Write what you want done",
     "send": "Send",
     "stop": "Stop",
