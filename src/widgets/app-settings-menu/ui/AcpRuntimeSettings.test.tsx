@@ -121,6 +121,19 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/agents/?tab=mcp');
   });
 
+  it('첫 탐색이 끝나기 전에는 「다시 확인」을 누를 수 없다', async () => {
+    // The row used to offer a re-scan beside a list that says it is still looking, and a press
+    // started a second scan over the first. `runtimes` is null exactly until the first answer.
+    let settle: (value: unknown) => void = () => undefined;
+    bridge.detect.mockReturnValue(new Promise((resolve) => { settle = resolve; }));
+    render(<AcpRuntimeSettings embedded />);
+    expect(screen.getByTestId('app-settings-runtimes-recheck')).toBeDisabled();
+    settle([makeRuntime({ id: 'claude-acp', isolated: true, verified: true })]);
+    await waitFor(() =>
+      expect(screen.getByTestId('app-settings-runtimes-recheck')).not.toBeDisabled(),
+    );
+  });
+
   it('디스크에 무엇이 생기는지는 힌트 안에서 말한다 — 목록 위 문단이 아니라', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),

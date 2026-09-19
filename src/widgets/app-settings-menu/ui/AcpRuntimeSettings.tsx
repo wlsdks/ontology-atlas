@@ -327,7 +327,14 @@ export function AcpRuntimeSettings({
           size="lg"
           tone="secondary"
           data-testid="app-settings-runtimes-recheck"
-          disabled={checking}
+          /*
+           * **Not while the first scan is still running** (2026-09-20). `checking` covers a
+           * re-scan this button started; the very first detection, before any answer exists,
+           * left it live — so the row offered "check again" beside a list that says it is
+           * still looking, and a press started a second scan over the first. `runtimes` is
+           * null exactly until that first answer lands.
+           */
+          disabled={checking || runtimes === null}
           onClick={() => void refresh()}
           /* `shrink-0`: at 390 the chip yielded to the sentence and broke its two words onto two lines. */
           className={`${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`}
