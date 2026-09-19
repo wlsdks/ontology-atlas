@@ -1,5 +1,7 @@
 import { WIKI_DIR, validateWikiPage } from "@/shared/lib/wiki-page-schema";
 
+import type { WikiTemplateProblem } from "./describe-wiki-problem";
+
 /**
  * Judge a wiki page **before** the person allows the write.
  *
@@ -22,7 +24,15 @@ export interface PageWriteVerdict {
   /** Vault-relative `wiki/<slug>.md`. */
   path: string;
   ok: boolean;
-  problems: ReadonlyArray<{ code: string; message: string; line?: number }>;
+  /**
+   * The findings as the validator handed them over, `detail` included.
+   *
+   * This used to be narrowed to `{ code, message, line }`, which dropped the one field a
+   * surface needs to say the finding in the reader's language. The objects always carried
+   * `detail`; only the type forgot, so the permission card had nothing but the English
+   * `message` to print and printed it into a Korean screen (measured 2026-09-20).
+   */
+  problems: ReadonlyArray<WikiTemplateProblem>;
 }
 
 /** The three facts of a permission request this judgement reads; the card owns the rest. */

@@ -19,6 +19,7 @@ import { Button, Checkbox, Textarea } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { describeWikiProblem, type WikiTemplateProblem } from '@/features/library';
 import type { PendingPermission } from '@/features/acp-session';
 import type { TaskMeaningReviewController } from '../model/use-task-meaning-review';
 
@@ -104,6 +105,14 @@ function proposedMeaningUnits(item: OntologyChangeSet['items'][number] | null) {
  * as the other two, people pick the easiest one. So it drops to a text button and
  * says what it means.
  */
+/**
+ * How many findings the card lists before it counts the rest.
+ *
+ * Four is what fits beside the buttons without the decision leaving the first screen. The
+ * number is only a budget: whatever it hides is stated as a count, never dropped.
+ */
+const VERDICT_ROWS = 4;
+
 export function AcpPermissionCard({
   pending,
   changeSet: providedChangeSet,
@@ -121,7 +130,7 @@ export function AcpPermissionCard({
    * contract by the screen that owns the folder (the Library). Null when the write is not a
    * wiki page or its text cannot be known; then nothing is drawn, rather than a guess.
    */
-  writeVerdict?: { ok: boolean; problems: ReadonlyArray<{ code: string; message: string; line?: number }> } | null;
+  writeVerdict?: { ok: boolean; problems: ReadonlyArray<WikiTemplateProblem> } | null;
   taskReview?: TaskMeaningReviewController;
   onRequestCorrection?: () => void;
   onDefer?: () => void;
@@ -133,6 +142,13 @@ export function AcpPermissionCard({
   onActiveItemChange?: (index: number) => void;
 }) {
   const t = useTranslations('acpChat.permission');
+  /*
+   * The Library's own namespace, for one reason: `describeWikiProblem` rebuilds a finding's
+   * sentence from `library.wiki.problem.<key>`, and those sentences are written once for
+   * every surface that shows a finding. Copying them under `acpChat` would be a second
+   * place to fix the same sentence and one place to forget.
+   */
+  const libraryT = useTranslations('library');
   const tChange = useTranslations('ontologyChangeReview');
   const { request, resolve } = pending;
   const reviewStateKey = `${typeof request.requestId}:${String(request.requestId)}:${request.toolCallId ?? ''}`;
@@ -682,8 +698,18 @@ export function AcpPermissionCard({
        * rejected" and nothing rejected it; the codes showed up in the Wiki list after the
        * page had landed. Here they show before Allow, on the same card, so the person
        * decides with them in view. A fitting page says so in one quiet line; a failing one
-       * lists its codes, first message included, and leaves both buttons where they are —
-       * the gate is the person, not the validator.
+       * lists its findings and leaves both buttons where they are — the gate is the person,
+       * not the validator.
+       *
+       * **Each row says what is wrong, in the reader's language** (2026-09-20). Measured on
+       * the rendered card: the header said 8 problems, four rows followed, and nothing said
+       * the other four existed. Of those four rows only the first carried a sentence, and
+       * that sentence was the validator's English — `` `title:` is missing. The page name a
+       * person reads. `` — printed whole into a Korean card, above three bare machine codes.
+       * `describeWikiProblem` already owned the localised retelling for the Library's own
+       * surfaces; the verdict simply never carried `detail` far enough for this one to ask.
+       * The count of what is not shown is now its own line, because a header that says eight
+       * above a list of four is a header a reader stops believing.
        */}
       {writeVerdict ? (
         <div
@@ -700,17 +726,24 @@ export function AcpPermissionCard({
           ) : (
             <>
               <p className="break-keep">{t('pageFails', { count: writeVerdict.problems.length })}</p>
-              <ul className="mt-1 flex flex-col gap-0.5">
-                {writeVerdict.problems.slice(0, 4).map((problem, index) => (
-                  <li key={`${problem.code}-${problem.line ?? index}`} className="flex min-w-0 gap-2">
-                    <code className="flex-none font-mono text-[color:var(--color-text-primary)]">
+              <ul className="mt-1 flex flex-col gap-1">
+                {writeVerdict.problems.slice(0, VERDICT_ROWS).map((problem, index) => (
+                  <li key={`${problem.code}-${problem.line ?? index}`} className="flex min-w-0 flex-col">
+                    <span className="min-w-0 break-keep text-[color:var(--color-text-primary)]">
+                      {describeWikiProblem(problem, libraryT).sentence}
+                    </span>
+                    <code className="min-w-0 truncate font-mono text-[color:var(--color-text-quaternary)]">
                       {problem.code}
                       {problem.line ? `:${problem.line}` : ''}
                     </code>
-                    {index === 0 ? <span className="min-w-0 break-keep">{problem.message}</span> : null}
                   </li>
                 ))}
               </ul>
+              {writeVerdict.problems.length > VERDICT_ROWS ? (
+                <p className="mt-1 break-keep text-[color:var(--color-text-quaternary)]">
+                  {t('pageFailsRest', { count: writeVerdict.problems.length - VERDICT_ROWS })}
+                </p>
+              ) : null}
             </>
           )}
         </div>
