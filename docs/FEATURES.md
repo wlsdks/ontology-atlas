@@ -326,6 +326,14 @@ had become false).
 - **Shift-click 2 nodes** → highlight shortest path
 - **The trail you walked** → every node that takes focus is appended to a session trail. The map leaves footprints beside the relation lines actually crossed (offset along the line's own curve, never on it) and a step number beside each visited node; the top-centre **Trail** chip opens a newest-first mini timeline. Each row carries, under the title, how that step connects to the step before it: the relation word plus the reason recorded on that edge (`relation_notes`), the relation word alone when no reason is written, or "Not directly related" when the two share no edge. **Hand off to AI** copies the same per-step lines into the agent brief, so the argument the walk made travels with the names. Past trails are archived in the vault folder.
 - **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms).
+- **The chrome may not eat the map** (2026-09-20) → the camera's side insets are
+  absolute pixels (350 for the INDEX panel, 120 for the tool rail), so they did
+  not shrink with the window: on an 820-wide canvas they reserved 57% of it, and
+  on a 390-wide canvas more than the whole canvas, collapsing the free width to
+  one pixel so only the minimum zoom kept a frame. The fit now reserves at most
+  half of each axis, and never less than what an open panel measurably covers,
+  so the graph still clears the panel. Measured drawn width as a share of the
+  canvas: 1512, 1280 and 1024 unchanged; 820 31%→37%, 640 19%→37%, 390 30%→37%.
 - **Expand all** → the top action opens every containment parent in one step and
   fits every rendered node inside the map. It is a temporary overview, not a
   saved default; pressing it again collapses the batch. A route arriving with
