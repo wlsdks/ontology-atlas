@@ -71,6 +71,12 @@ vi.mock('next-intl', () => ({
   useLocale: () => 'en',
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
     values ? `${key}:${JSON.stringify(values)}` : key,
+  // The permission card reads a write guard's epoch through the locale's own date format. A mock
+  // missing this throws inside the card, so every case that renders one fails on a blank body
+  // rather than on what it was asserting.
+  useFormatter: () => ({
+    dateTime: (value: Date) => value.toISOString(),
+  }),
 }));
 
 import {
