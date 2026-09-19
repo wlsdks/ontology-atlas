@@ -1,47 +1,61 @@
 "use client";
+import { useLayoutEffect, useRef, useState } from "react";
 import { transientSurface } from "@/shared/ui/transient-surface";
 import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
+import { placeHoverCard, type Rect } from "../interaction/hover-card-placement";
 
-/**
- * P3c — the edge hover microcard. A lighter predecessor of the click popover
- * (P3b, OntologyMapEdgePanel): near the cursor, one plain sentence plus the type
- * plus one evidence line when there is one. What opened the gate was an owner
- * usage signal (*"Hovering a line should show its meaning"* — hovering a line should show its
- * meaning); P3c had originally been held back pending proof that 3b was used.
- *
- * Contract: non-interactive (pointer-events-none — it never steals a click),
- * clamped to the viewport, and mutually exclusive with the popover (not rendered
- * while an edge is selected — the caller's responsibility).
- */
 export interface OntologyMapEdgeHoverCardProps {
-  /** The plain sentence — "A leans on B" (from the same relation lexicon as P3b). */
   sentence: string;
-  /** The formal type label — "depends". */
   typeLabel: string;
-  /** P6 relation_notes — truncated to one line when present. */
   why: string | null;
-  /** The click hint (i18n). */
   clickHint: string;
-  /** Cursor viewport coordinates — the card offsets to the bottom right and clamps to the viewport. */
   x: number;
   y: number;
+  /**
+   * What the card must not cover — the discs and names drawn near the pointer,
+   * in client coordinates (`topology-pointer-handlers.ts#collectHoverAvoidRects`).
+   * Empty keeps the card at the pointer's lower right.
+   */
+  avoid?: readonly Rect[];
 }
 
 const OFFSET = 14;
 const CARD_MAX_WIDTH = 280;
+/** The height assumed for the first paint, before the card has been measured. */
+const CARD_ESTIMATED_HEIGHT = 96;
 const EDGE_MARGIN = 8;
+const NO_AVOID: readonly Rect[] = [];
 
-export function OntologyMapEdgeHoverCard({ sentence, typeLabel, why, clickHint, x, y }: OntologyMapEdgeHoverCardProps) {
-  /*
-   * The right wall is **the map's edge, not the screen's** (review, 2026-08-16).
-   * With a conversation panel standing to the right of the map,
-   * `window.innerWidth` points past that panel, and this card — which explains
-   * the map — ends up written on top of it.
-   */
-  const left = Math.min(x + OFFSET, currentFloatingRightBound() - CARD_MAX_WIDTH - EDGE_MARGIN);
-  const top = Math.min(y + OFFSET, (typeof window !== "undefined" ? window.innerHeight : 1080) - 120 - EDGE_MARGIN);
+export function OntologyMapEdgeHoverCard({ sentence, typeLabel, why, clickHint, x, y, avoid = NO_AVOID }: OntologyMapEdgeHoverCardProps) {
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  // The card's own size decides which corner clears the drawn nodes, and it is
+  // only known once painted; the first paint uses the estimate and the measured
+  // size corrects it in the same frame, before the person sees it.
+  const [size, setSize] = useState({ w: CARD_MAX_WIDTH, h: CARD_ESTIMATED_HEIGHT });
+  useLayoutEffect(() => {
+    const element = cardRef.current;
+    if (!element) return;
+    const box = element.getBoundingClientRect();
+    if (box.width <= 0 || box.height <= 0) return;
+    setSize((current) =>
+      Math.abs(current.w - box.width) < 1 && Math.abs(current.h - box.height) < 1
+        ? current
+        : { w: box.width, h: box.height },
+    );
+    // The size follows the words, so the words are the reason to measure again.
+  }, [sentence, typeLabel, why, clickHint]);
+  const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 1080;
+  const bounds = {
+    x: EDGE_MARGIN,
+    y: EDGE_MARGIN,
+    w: Math.max(size.w, currentFloatingRightBound() - 2 * EDGE_MARGIN),
+    h: Math.max(size.h, viewportHeight - 2 * EDGE_MARGIN),
+  };
+  const { left, top, corner } = placeHoverCard({ x, y }, size, avoid, bounds, OFFSET);
   return (
     <div
+      ref={cardRef}
+      data-corner={corner}
       {...transientSurface("hint")}
       data-testid="map-edge-hover-card"
       role="status"

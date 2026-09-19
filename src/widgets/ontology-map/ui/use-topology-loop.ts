@@ -65,7 +65,7 @@ import {
 } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
 import { centerForInsets, computeClusterFitTarget, computeDomeFitCameraTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
-import { drawTopologyFrame, lastDrawnLabelBoxes, lastDrawnNodeCount, lastDrawnRelationCaptions } from "./topology-frame-draw";
+import { drawTopologyFrame, lastDrawnLabelBoxes, lastDrawnNodeAlphas, lastDrawnNodeCount, lastDrawnRelationCaptions } from "./topology-frame-draw";
 import { MOTION } from "@/shared/motion";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
 import { relaxNewlyVisible } from "../model/layout";
@@ -145,6 +145,7 @@ import { buildRealmRuntimeData, fallbackAngleFor, realmCameraTarget, realmVisibl
 import { computeVisibleWardingRadius } from "../model/realm";
 import { initWardingFit, stepWardingFit, type WardingFitState } from "../model/realm-warding-fit";
 import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./topology-pointer-handlers";
+import type { HoverAvoidRect } from "./topology-pointer-handlers";
 import { stepTopologyPhysics } from "./topology-physics-step";
 import { updatePulses, type Pulse } from "../render/edge-fireflies";
 import {
@@ -363,7 +364,7 @@ export interface UseTopologyLoopArgs {
   /** Edge hover micro-card. Fires only when the identified edge changes; null clears. */
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
-    position: { x: number; y: number } | null,
+    position: { x: number; y: number; avoid: readonly HoverAvoidRect[] } | null,
   ) => void;
   onSelect?: (slug: string) => void;
   /**
@@ -2506,6 +2507,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         lastActiveMsRef.current = performance.now();
         return;
       }
+    }
+    // Expand-all is a lens, and its frame is the lens fit. The overview fit
+    // below reserves the tool lane and the docking-chip row on top and the
+    // readout on the bottom, which is right for the spine but shrinks the
+    // expanded map from 75 % to 63 % of the height and moves it — pressing
+    // "fit" or "auto-arrange" after expand-all made the map jump to a second,
+    // smaller frame of the same nodes (measured 2026-09-19 at 1512×806). One
+    // lens, one frame: hand the fit to the lens while it is on.
+    if (overviewFitRef.current === "full" && spotlightIdsRef.current !== null && runSpotlightFitRef.current?.()) {
+      return;
     }
     // Panel-aware: spring back to the overview centered in the VISIBLE area, not
     // behind the left ReaderLens panel (design guardian's camera rejection). Fits the
@@ -6581,6 +6592,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
             ? domeRuntimeRef.current.frame
             : null;
+        const drawnAlphas = lastDrawnNodeAlphas();
         return world.nodes.map((n) => {
           const dOff = domeFrame?.get(n.id) ?? { dx: 0, dy: 0, s: 1 };
           return {
@@ -6600,6 +6612,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           agentFocus: agentFocusNodeIdRef.current === n.id,
           /** A collapsed subtree is replaced by a chip and is not on screen. */
           hidden: isPreviewEndpointHidden(clustered?.has(n.id) ?? false, preview, n.id),
+          /**
+           * The alpha the last frame drew this node at. `hidden` says
+           * "collapsed"; it does not say "drawn": at the overview the density
+           * gate keeps capabilities at alpha 0 with `hidden` false, and a spec
+           * that read `hidden` alone counted 26 invisible discs as on screen
+           * (2026-09-03). Whether the thing is visible is this number.
+           */
+          alpha: drawnAlphas.get(n.id) ?? 1,
           previewEndpoint: isPreviewEndpoint(preview, n.id),
           /**
            * ★ For the graph-readability instrument: overlap cannot be counted
