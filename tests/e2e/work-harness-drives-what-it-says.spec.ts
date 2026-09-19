@@ -71,3 +71,50 @@ test('the wiki kind still drives the wiki tool', async ({ page }) => {
     .map((row) => (row.textContent ?? '').trim()));
   expect(rows.join(' | ')).toContain('write_wiki_file');
 });
+
+/**
+ * **Three surfaces this suite could not reach at all.**
+ *
+ * The past-conversation list, the slash-command menu and the agent's thinking are ordinary things
+ * an adapter sends, and nothing here could produce any of them — so nothing had ever rendered
+ * them. A harness that cannot reach a surface is why a surface goes unlooked-at.
+ */
+test('past conversations reach the history list', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 982 });
+  await openLibraryWorkScenario(page, {
+    pastSessions: [
+      { sessionId: 's-1', title: 'Tidy the stale pages', updatedAt: '2026-09-18T04:00:00.000Z' },
+      { sessionId: 's-2', updatedAt: '2026-09-15T08:00:00.000Z' },
+    ],
+  });
+  await page.getByTestId('acp-chat-history').click();
+  const rows = page.getByTestId('acp-chat-history-item');
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toContainText('Tidy the stale pages');
+  // A row the client would discard for an unknown folder must not be how this passes.
+  const heights = await rows.evaluateAll((nodes) => nodes.map((n) => Math.round(n.getBoundingClientRect().height)));
+  expect(new Set(heights).size, 'rows in one list do not share a height').toBe(1);
+});
+
+test('the command list reaches the slash menu', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 982 });
+  await openLibraryWorkScenario(page, {
+    slashCommands: [{ name: 'compact', description: 'Shorten the conversation' }, { name: 'review' }],
+  });
+  await page.getByTestId('acp-chat-panel').getByRole('textbox').fill('/');
+  await expect(page.getByTestId('acp-chat-slash-menu')).toBeVisible();
+  await expect(page.getByTestId('acp-chat-slash-menu')).toContainText('/compact');
+  await expect(page.getByTestId('acp-chat-slash-menu')).toContainText('/review');
+});
+
+test('thinking reaches the work trace', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 982 });
+  const harness = await openLibraryWorkScenario(page, {});
+  await harness.think(page, 'A thought the transcript folds away by default.');
+  const group = page.getByTestId('acp-chat-work-group');
+  await expect(group).toBeVisible();
+  // Folded is the default; the words arrive only when asked for.
+  await expect(page.locator('[data-acp-entry="thought"]')).toBeHidden();
+  await group.click();
+  await expect(page.locator('[data-acp-entry="thought"]').first()).toContainText('folds away by default');
+});
