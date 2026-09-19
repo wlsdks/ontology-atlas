@@ -379,8 +379,8 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     fireEvent.click(screen.getByTestId('task-review-defer'));
     expect(onDefer).toHaveBeenCalledTimes(1);
     expect(resolve).not.toHaveBeenCalled();
-    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('자동으로 보내지 않습니다');
-    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('저장되지 않습니다');
+    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('대신 보내지도');
+    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('저장되지 않아요');
   });
 });
 
@@ -704,7 +704,7 @@ describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => 
     render(cardWithVerdict({ ok: true, problems: [] }));
     const block = screen.getByTestId('acp-permission-page-verdict');
     expect(block.getAttribute('data-ok')).toBe('true');
-    expect(block.textContent).toContain('문서 모양이 맞습니다');
+    expect(block.textContent).toContain('문서 모양이 맞아요');
     expect(screen.getByTestId('acp-permission-allow')).toBeTruthy();
     expect(screen.getByTestId('acp-permission-reject')).toBeTruthy();
   });
