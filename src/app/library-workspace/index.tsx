@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useMemo, useState } from 'react';
 
 import { LibraryConstellations, LibraryPage, LibraryRounds, useLibraryRounds } from '@/views/library';
@@ -24,6 +24,8 @@ type LibraryTab = 'sources' | 'wiki' | 'ontology' | 'collections' | 'rounds';
 
 export function LibraryWorkspace() {
   const t = useTranslations('library');
+  // Counts past a thousand read as the messages write them (`{count, number}`): grouped.
+  const format = useFormatter();
   const params = useSearchParams();
   const router = useRouter();
   const vault = useLocalVault();
@@ -75,14 +77,14 @@ export function LibraryWorkspace() {
             {
               key: 'sources',
               label: t('workspace.sources'),
-              count: vault.manifest ? vault.manifest.sources?.length ?? 0 : undefined,
+              count: vault.manifest ? format.number(vault.manifest.sources?.length ?? 0) : undefined,
               countTitle: t('workspace.sourcesCount'),
               testId: 'library-workspace-sources',
             },
             {
               key: 'wiki',
               label: t('workspace.wiki'),
-              count: vault.manifest ? wikiCount : undefined,
+              count: vault.manifest ? format.number(wikiCount) : undefined,
               countTitle: t('workspace.wikiCount'),
               testId: 'library-workspace-wiki',
             },
@@ -99,7 +101,7 @@ export function LibraryWorkspace() {
             {
               key: 'rounds',
               label: t('workspace.rounds'),
-              count: rounds && rounds.storeStatus !== 'no-vault' && roundsOn > 0 ? roundsOn : undefined,
+              count: rounds && rounds.storeStatus !== 'no-vault' && roundsOn > 0 ? format.number(roundsOn) : undefined,
               countTitle: t('workspace.roundsCount'),
               testId: 'library-workspace-rounds',
             },

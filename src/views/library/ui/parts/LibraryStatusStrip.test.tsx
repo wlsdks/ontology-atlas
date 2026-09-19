@@ -142,3 +142,21 @@ describe("LibraryStatusStrip — the waiting clauses are the home's own", () => 
     expect(text).toContain("1개 기다림");
   });
 });
+
+/**
+ * **A thousand is written the same way on every surface** (2026-09-19, 3,000-file fixture).
+ *
+ * The index chip formatted by hand ("not compiled 1,400") while this strip and the home's
+ * clauses printed the bare argument ("not compiled 1400", "1600 sources changed"): one
+ * screen, two ways of writing the same number. A bare `{count}` is printed as typed; only
+ * `{count, number}` and the plural forms group, which is why the English messages already
+ * read "1,600".
+ */
+describe("LibraryStatusStrip — counts past a thousand are grouped", () => {
+  it("groups the not-compiled and changed counts the way the index chip does", () => {
+    const text = strip({ "wiki/a": [] }, { needsCompileCount: 3000, notCompiledCount: 1400, staleCount: 1600 });
+    expect(text).toContain("정리 전 1,400개");
+    expect(text).toContain("원문 1,600개 달라짐");
+    expect(text).not.toMatch(/\d{4}/);
+  });
+});

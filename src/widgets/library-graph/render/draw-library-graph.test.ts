@@ -97,6 +97,10 @@ function recorder(): Recorder {
       fills.push(state.fillStyle);
       alphaAt.push({ style: state.fillStyle, alpha: state.globalAlpha });
     }),
+    // The islands picture draws its body and shore with these; nothing here measures them.
+    rect: vi.fn(),
+    roundRect: vi.fn(),
+    bezierCurveTo: vi.fn(),
     strokeRect: vi.fn(() => {
       strokes.push(state.strokeStyle);
       alphaAt.push({ style: state.strokeStyle, alpha: state.globalAlpha });
@@ -822,5 +826,40 @@ describe("what moves while a card is open", () => {
     expect(empty.strokedDash).toEqual(without.strokedDash);
     expect(empty.fills).toEqual(without.fills);
     expect(empty.arcs).toEqual(without.arcs);
+  });
+});
+
+/**
+ * **The one number the renderer writes itself is grouped like every other** (2026-09-19).
+ *
+ * At 3,000 files the Unread band read "Unread · 1400" under an index chip saying "1,400"
+ * and a caption saying "3,000 sources": the canvas was the last surface printing a bare
+ * integer. The frame carries the page's locale and the count goes through it.
+ */
+describe("island captions group their counts", () => {
+  // Two islands apart from each other, so neither caption yields its place to the other.
+  const island = (kind: "concept" | "unread", label: string, pages: number, sources: number, x: number) => ({
+    id: `${kind}:${label}`,
+    kind,
+    label,
+    x,
+    y: 160,
+    r: 100,
+    pages,
+    sources,
+    stale: 0,
+  });
+
+  it("writes the unread band's file count and a topic's page count with a thousands separator", () => {
+    const rec = recorder();
+    drawLibraryGraph(rec.ctx, frame({
+      layout: "islands",
+      locale: "ko",
+      islands: [island("unread", "읽지 않음", 0, 1400, 150), island("concept", "Payments", 1053, 2, 450)],
+    }));
+    const captions = rec.texts.map((entry) => entry.text);
+    expect(captions).toContain("읽지 않음 · 1,400");
+    expect(captions).toContain("Payments · 1,053");
+    expect(captions.some((text) => /\d{4}/.test(text))).toBe(false);
   });
 });

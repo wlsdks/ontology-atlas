@@ -4866,8 +4866,8 @@
     "index": {
       "tab": "Index",
       "aria": "Which list the index shows",
-      "sources": "Sources {count}",
-      "wiki": "Wiki {count}",
+      "sources": "Sources {count, number}",
+      "wiki": "Wiki {count, number}",
       "about": "What this folder holds",
       "collapse": "Fold the index away",
       "expand": "Show the index"
@@ -4875,7 +4875,7 @@
     "emptyTitle": "Nothing gathered yet",
     "emptyBody": "Bring in the documents this project already has: a spec, a slide deck, a spreadsheet, a page you exported. Atlas copies them into sources/ untouched and never opens them until you ask.",
     "sources": {
-      "header": "Sources · {count}",
+      "header": "Sources · {count, number}",
       "listAria": "Raw sources in this folder",
       "add": "Add files",
       "addTooltip": "Copy documents into this folder's sources/",
@@ -4923,7 +4923,7 @@
       "pagesNeedReview": "{count, plural, one {# existing page needs rechecking} other {# existing pages need rechecking}}"
     },
     "wiki": {
-      "header": "Wiki · {count}",
+      "header": "Wiki · {count, number}",
       "listAria": "Wiki pages in this folder",
       "compile": "Ask the agent to compile",
       "compileTooltip": "Read sources and update their write-ups. Retained answers are reported for separate review and refresh.",
@@ -4951,7 +4951,7 @@
       "compileWebGetApp": "Get the app",
       "offTemplateReason": "Does not fit the wiki template: {code}. Open the page to see what to change.",
       "offTemplateAriaLabel": "How this page differs from the wiki template",
-      "offTemplateTitle": "{count} to fix · page template",
+      "offTemplateTitle": "{count, number} to fix · page template",
       "offTemplateBody": "It is still a document and still yours to edit. Fixing what follows makes it read the same way every other page does.",
       "writtenBy": "Written by {author}",
       "writer": {
@@ -4970,10 +4970,10 @@
       "compileCreateFile": "Create {path}",
       "compileModifyFile": "Replace {path}",
       "logCount": {
-        "disagreement": "disagreement {count}",
-        "superseded": "superseded {count}",
-        "missingLink": "missing link {count}",
-        "nameWithoutPage": "names without a page {count}"
+        "disagreement": "disagreement {count, number}",
+        "superseded": "superseded {count, number}",
+        "missingLink": "missing link {count, number}",
+        "nameWithoutPage": "names without a page {count, number}"
       },
       "logNoCounts": "ran, counts not stated",
       "logNew": "new",
@@ -5025,7 +5025,7 @@
       "undone": "Removed {page}.",
       "undoFailed": "Could not undo: the file is already gone or the folder is not writable.",
       "linkFindingsAriaLabel": "How this page connects inside the folder",
-      "linkFindingsTitle": "{count} connections to check",
+      "linkFindingsTitle": "{count, number} connections to check",
       "linkFindingsBody": "The page fits the template. What follows is about the folder: things no single page can see about itself.",
       "fixWithAgent": "Let the agent fix it",
       "fixWithAgentTooltip": "Starts one agent turn that brings this page back to the template. A repaired page that fits the template is saved as it is; one that does not stops at the permission card.",
@@ -5104,7 +5104,7 @@
       }
     },
     "shelf": {
-      "commonState": "{count} pages · {state}",
+      "commonState": "{count, number} pages · {state}",
       "listAria": "Wiki pages and their source versions",
       "freshness": {
         "fresh": "The checked source versions have not changed.",
@@ -5120,8 +5120,8 @@
     },
     "graph": {
       "title": "Graph",
-      "counts": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {concepts, plural, one {# concept} other {# concepts}} · {cites} cites · {mentions} mentions",
-      "countsIsland": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {cites} cites",
+      "counts": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {concepts, plural, one {# concept} other {# concepts}} · {cites, number} cites · {mentions, number} mentions",
+      "countsIsland": "{sources, plural, one {# source} other {# sources}} · {pages, plural, one {# page} other {# pages}} · {cites, number} cites",
       "empty": "Nothing to draw yet. Once Compile writes a page, this shows which source it was written from and which concepts it names.",
       "canvasAria": "The library graph: raw sources, wiki pages, and the concepts those pages name.",
       "legend": "Sources stand on the left, the pages written from them beside, and the concepts those pages name on the right; the lines run from a source to the page that read it. A filled circle is a page, a square a source, a ring a concept on the map. A thicker line is a citation, a dashed one a mention. Scroll to zoom, drag the background to move, press a dot for a card beside it.",
@@ -5131,15 +5131,15 @@
       "islandUnsorted": "Unsorted",
       "islandUnread": "Unread",
       "legendIslands": "Past a few hundred files the picture is a map of islands: each island is one concept and the pages that name it, with the files those pages were written from packed around them. Unsorted holds pages naming no concept; Unread is the band under the islands: files no page has read yet. An amber dot is a page whose files changed since it was written. Scroll to zoom in until names appear; press a dot for a card beside it.",
-      "describeIsland": "{name}: an island of {pages} pages and the {sources} files they read. Press it to open them as columns; zoom in for their names.",
-      "announceIsland": "Island {name}, {position} of {total}: {pages} pages and {sources} files. Enter opens it as columns.",
-      "describeUnread": "Unread: {sources} files no page has read yet. Press it for where to start.",
-      "unreadPressed": "{sources} files no page has read yet, so there is nothing between them to draw. Each is marked not compiled in the Sources list; Compile next, above the picture, starts on the first.",
+      "describeIsland": "{name}: an island of {pages, number} pages and the {sources, number} files they read. Press it to open them as columns; zoom in for their names.",
+      "announceIsland": "Island {name}, {position, number} of {total, number}: {pages, number} pages and {sources, number} files. Enter opens it as columns.",
+      "describeUnread": "Unread: {sources, number} files no page has read yet. Press it for where to start.",
+      "unreadPressed": "{sources, number} files no page has read yet, so there is nothing between them to draw. Each is marked not compiled in the Sources list; Compile next, above the picture, starts on the first.",
       "islandBack": "Islands",
-      "islandName": "{name} · {pages} pages · {sources} files",
+      "islandName": "{name} · {pages, number} pages · {sources, number} files",
       "readerClose": "Close the page",
       "keys": "Arrow keys move between dots, Enter opens a card beside the one you are on, Escape closes it.",
-      "announce": "{kind} {name}, {position} of {total}. Enter {action}.",
+      "announce": "{kind} {name}, {position, number} of {total, number}. Enter {action}.",
       "kind": {
         "page": "Wiki page",
         "source": "Source",
@@ -5169,7 +5169,7 @@
         "rowMissing": "not in this folder",
         "open": "Open",
         "refresh": "Ask for a redraft",
-        "seeAll": "See all {count} originals",
+        "seeAll": "See all {count, number} originals",
         "factOriginals": "{count, plural, one {# original} other {# originals}}",
         "factMentions": "{count, plural, one {# mention} other {# mentions}}",
         "factPassages": "{count, plural, one {# quoted passage} other {# quoted passages}}",
@@ -5193,7 +5193,7 @@
       "walkedRoots": "Also walked: {roots}",
       "walking": "Reading the folder listings…",
       "empty": "Nothing to propose. Every document in these folders is already in sources/, or none of them is a document format Atlas offers.",
-      "rootHeader": "{root} · {count}",
+      "rootHeader": "{root} · {count, number}",
       "truncated": "The list stopped at the first 500 files, so this is not all of them.",
       "unreadable": "Could not be read: {roots}",
       "declined": "{count, plural, one {# file you passed on before is hidden} other {# files you passed on before are hidden}}",
@@ -5246,9 +5246,9 @@
         "reading": "Reading this file's structure",
         "unreadable": "Atlas does not read the structure of this format. Open the file to see it.",
         "failed": "This file could not be read, so its structure is unknown.",
-        "sheet": "Sheet {sheet} · {rows} rows",
-        "records": "{count} records",
-        "paragraphs": "{count} paragraphs"
+        "sheet": "Sheet {sheet} · {rows, number} rows",
+        "records": "{count, number} records",
+        "paragraphs": "{count, number} paragraphs"
       }
     },
     "kindsAria": "What this folder keeps",
@@ -5265,7 +5265,7 @@
         "checking": "checking"
       },
       "none": "None",
-      "formatEntry": "{format} {count}",
+      "formatEntry": "{format} {count, number}",
       "gather": {
         "title": "Gather"
       },
@@ -5279,10 +5279,10 @@
         "title": "Read",
         "startWith": "Start with {title}",
         "nothingYet": "No wiki page yet. Compile writes the first one.",
-        "coveredLine": "{compiled} of {total} sources written up",
-        "coveredChecking": "{compiled} of {total} written up, {checking} still being checked",
-        "coveredPartial": "{compiled} of {total} written up, {partial} read in part",
-        "coveredStale": "{compiled} of {total} written up, {stale} changed since"
+        "coveredLine": "{compiled, number} of {total, number} sources written up",
+        "coveredChecking": "{compiled, number} of {total, number} written up, {checking, number} still being checked",
+        "coveredPartial": "{compiled, number} of {total, number} written up, {partial, number} read in part",
+        "coveredStale": "{compiled, number} of {total, number} written up, {stale, number} changed since"
       },
       "brainAgent": "{name}",
       "brainLocal": "{model} on {host}",
@@ -5314,7 +5314,7 @@
       "runningWith": "{model} is reading {count, plural, one {# file} other {# files}}.",
       "stop": "Stop",
       "sectionsLabel": "Sections",
-      "sectionEntry": "{name} {count}",
+      "sectionEntry": "{name} {count, number}",
       "citationsLabel": "Citations",
       "readLabel": "Written from",
       "truncatedLabel": "Read in part",
@@ -5338,7 +5338,7 @@
       "refusedTitle": "This page cannot be written yet",
       "refusedLede": "Nothing is offered for this one. Compile again, or write the page yourself.",
       "allow": "Allow once",
-      "allowCount": "Allow once ({count})",
+      "allowCount": "Allow once ({count, number})",
       "deny": "Don’t",
       "dismiss": "Close",
       "applying": "Writing…",
@@ -5359,7 +5359,7 @@
     "report": {
       "title": "Check results",
       "structuralTitle": "What the app checked",
-      "structuralHead": "{pages, plural, one {# page} other {# pages}} · {offTemplate} off-template · {findings, plural, one {# finding} other {# findings}}",
+      "structuralHead": "{pages, plural, one {# page} other {# pages}} · {offTemplate, number} off-template · {findings, plural, one {# finding} other {# findings}}",
       "structuralClean": "Every page fits the template, every link resolves, and no two write-ups of one document ignore each other.",
       "advisoryMark": "true of a young wiki",
       "advisoryFold": "{count, plural, one {# advisory finding} other {# advisory findings}}",
@@ -5386,18 +5386,18 @@
         "shared-source-unlinked": "Two write-ups do not link"
       },
       "namesTitle": "Names without a page",
-      "open": "Check results {count}",
+      "open": "Check results {count, number}",
       "running": "Checking the wiki…",
       "unseen": "new"
     },
     "search": {
       "placeholder": "Search sources and pages",
-      "matches": "{sources} sources ({passages} passages) · {pages} pages matched",
+      "matches": "{sources, number} sources ({passages, number} passages) · {pages, number} pages matched",
       "noneHere": "None in this list.",
       "showPages": "Show {count, plural, one {# wiki page} other {# wiki pages}}",
       "showSources": "Show {count, plural, one {# source} other {# sources}}",
-      "reading": "Reading the sources<count> · {read}/{total}</count>",
-      "capped": "read the first {count} only"
+      "reading": "Reading the sources<count> · {read, number}/{total, number}</count>",
+      "capped": "read the first {count, number} only"
     },
     "conversation": {
       "open": "Conversation",
@@ -5417,7 +5417,7 @@
         "unmeasured": "Source version not established",
         "unchanged": "No change since source observation"
       },
-      "alternatives": "{count} alternative revisions",
+      "alternatives": "{count, number} alternative revisions",
       "historyProblem": "Revision history needs review",
       "evidence": "Answer evidence and revisions",
       "older": "This is an earlier retained answer. Return to questions to see later revisions.",
@@ -5446,7 +5446,7 @@
       "rawText": "Read exact Markdown",
       "sourceDelta": "{added} cited originals added · {removed} removed",
       "sameSources": "The draft cites the same originals.",
-      "removedLines": "{count} earlier lines removed or reworded",
+      "removedLines": "{count, number} earlier lines removed or reworded",
       "closeCompare": "Continue reading",
       "saveDraft": "Save as new draft",
       "reviewDraft": "Review updated answer",
@@ -5516,7 +5516,7 @@
       "eyebrow": "WHILE YOU ARE AWAY",
       "title": "Rounds",
       "lede": "A round is a rule the Library keeps on its own while Atlas is open on this Mac: what to check, how often, and what it may write. Nothing else runs without a press.",
-      "indexHeader": "Rounds · {count}",
+      "indexHeader": "Rounds · {count, number}",
       "indexAria": "Rounds this Mac keeps for this folder",
       "newRound": "New round",
       "limit": "Runs while Ontology Atlas is open on this Mac. Sleep pauses it; the next pass catches up once.",
@@ -5636,7 +5636,7 @@
         "mayWritePages": "write pages under wiki/ that fit the template, as drafts",
         "mayNothingElse": "nothing else; anything else is refused and named in the ledger",
         "costNone": "No agent turn.",
-        "costPerPass": "One agent turn per pass · about {count} a day at this cadence.",
+        "costPerPass": "One agent turn per pass · about {count, number} a day at this cadence.",
         "costOnStale": "One agent turn only on a pass that finds something stale.",
         "allowAndSave": "Allow and save",
         "cancel": "Cancel",

@@ -428,6 +428,7 @@ export function useLibraryGraphEngine({
   onDismiss,
   layout = "flow",
   islandLabels = { unsorted: "Unsorted", unread: "Unread" },
+  locale,
   overview = true,
   focusedIslandId = null,
 }: {
@@ -441,6 +442,8 @@ export function useLibraryGraphEngine({
   layout?: "flow" | "force";
   /** The names of the two islands that are not a concept. */
   islandLabels?: { unsorted: string; unread: string };
+  /** The page's locale; the renderer groups an island's count with it. */
+  locale?: string;
   /**
    * Whether the graph is the whole folder. An opened island is not: it is drawn as columns
    * however many marks it holds, because the person asked for that island by name.
@@ -561,6 +564,10 @@ export function useLibraryGraphEngine({
    * marks; past that the overview is islands. The force picture stays what it was.
    */
   const pictureRef = useRef<"flow" | "force" | "islands">(layout);
+  const localeRef = useRef(locale);
+  useEffect(() => {
+    localeRef.current = locale;
+  }, [locale]);
   const islandLabelsRef = useRef(islandLabels);
   const overviewRef = useRef(overview);
   useEffect(() => {
@@ -1175,6 +1182,7 @@ export function useLibraryGraphEngine({
         width,
         height,
         ink: inkRef.current,
+        locale: localeRef.current,
         selectedId: stateRef.current.selectedId,
         hoveredId: stateRef.current.hoveredId,
         focusedId: stateRef.current.focusedId,

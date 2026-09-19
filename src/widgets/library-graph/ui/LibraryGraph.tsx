@@ -2,7 +2,7 @@
 
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, Maximize2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import type { VaultDoc } from "@/entities/docs-vault";
 import { EMPTY_LIBRARY_WORK_ACTIVITY, type LibraryWorkActivity } from "@/features/library";
@@ -382,9 +382,11 @@ export function LibraryGraph({
   // the camera decides that. See the note above the removed threshold.
   const standingLabels = true;
   const islandLabels = useMemo(() => ({ unsorted: t("graph.islandUnsorted"), unread: t("graph.islandUnread") }), [t]);
+  const locale = useLocale();
   const engine = useLibraryGraphEngine({
     graph,
     islandLabels,
+    locale,
     canvasRef,
     reducedMotion,
     selectedId,

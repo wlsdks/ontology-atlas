@@ -97,6 +97,8 @@ export interface LibraryGraphFrame {
   width: number;
   height: number;
   ink: LibraryGraphInk;
+  /** The page's locale, for the one number the renderer writes itself (an island's count). */
+  locale?: string;
   selectedId: string | null;
   /**
    * Under the pointer. Separate from {@link focusedId} because they are separate states
@@ -593,8 +595,11 @@ function drawIslandNames(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame
   const lineHeight = Math.round(ink.labelPx * 1.35);
   const named = [...(frame.islands ?? [])].sort((a, b) => b.r - a.r);
   for (const island of named) {
-    // A topic counts its pages; the Unread island has none, so it counts its files.
-    const text = `${island.label} · ${island.kind === "unread" ? island.sources : island.pages}`;
+    // A topic counts its pages; the Unread island has none, so it counts its files. The
+    // count is grouped the way every other count on the screen is (`{count, number}` in
+    // the messages, 2026-09-19): the band read "Unread · 1400" under a chip saying "1,400".
+    const count = island.kind === "unread" ? island.sources : island.pages;
+    const text = `${island.label} · ${count.toLocaleString(frame.locale)}`;
     const width = ctx.measureText(text).width;
     const across = island.band ? island.band.width : island.r * 2;
     const inside = across >= Math.max(ISLAND_LABEL_INSIDE_MIN_PX, width + 12);
