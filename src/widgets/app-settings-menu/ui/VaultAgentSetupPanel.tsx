@@ -909,8 +909,9 @@ export function VaultAgentSetupPanel({
               caption={client.files.join(' · ')}
               /* One column: every control is `w-full` inside the same fixed slot, so the four
                  buttons share a left edge instead of a ragged one (owner detail rule, 2026-09-12:
-                 a group of controls fills a grid). The slot fits the longest label. */
-              control={<span className="flex w-52 max-w-full">{clientRows[client.id]}</span>}
+                 a group of controls fills a grid). 144px since the labels became verbs alone
+                 (2026-09-19); the row's own label and file carry the tool's name. */
+              control={<span className="flex w-36 max-w-full">{clientRows[client.id]}</span>}
             />
           ))
         ) : (

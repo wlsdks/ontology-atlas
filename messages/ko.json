@@ -3441,6 +3441,17 @@
     "advancedToggle": "고급 · 자세한 검증",
     "connecting": "연결 중…",
     "actionFailed": "안 됐어요. 다시 눌러 주세요.",
+    "short": {
+      "connect": "연결",
+      "created": "만들었어요",
+      "ready": "준비됨",
+      "copyConfig": "설정 복사",
+      "copyCommand": "명령 복사",
+      "copyCorrect": "교체본 복사",
+      "copied": "복사됨",
+      "connecting": "연결 중…",
+      "failed": "안 됐어요"
+    },
     "connectClaudeCode": "Claude Code에 연결",
     "claudeCodeDone": "이 폴더에 .mcp.json을 만들었어요",
     "claudeCodeReady": ".mcp.json 준비됨",

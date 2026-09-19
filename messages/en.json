@@ -3441,6 +3441,17 @@
     "advancedToggle": "Advanced · detailed checks",
     "connecting": "Connecting…",
     "actionFailed": "That did not work. Press it again.",
+    "short": {
+      "connect": "Connect",
+      "created": "Created",
+      "ready": "Ready",
+      "copyConfig": "Copy config",
+      "copyCommand": "Copy command",
+      "copyCorrect": "Copy a correct one",
+      "copied": "Copied",
+      "connecting": "Connecting…",
+      "failed": "Did not work"
+    },
     "connectClaudeCode": "Connect to Claude Code",
     "claudeCodeDone": "Created .mcp.json in this folder",
     "claudeCodeReady": ".mcp.json ready",

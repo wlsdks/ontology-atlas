@@ -231,9 +231,12 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByLabelText('확인 명령 결과 읽는 법'),
     ).toBeInTheDocument();
-    expect(screen.getByText('안 됨')).toBeInTheDocument();
-    expect(screen.getByText('느림')).toBeInTheDocument();
-    expect(screen.getByText('준비됨')).toBeInTheDocument();
+    // Scoped to the gate-rules list: the ready word is also a tool row's button label since
+    // 2026-09-19, when those buttons dropped the tool name the row already carries.
+    const gateRules = screen.getByLabelText('확인 명령 결과 읽는 법');
+    expect(within(gateRules).getByText('안 됨')).toBeInTheDocument();
+    expect(within(gateRules).getByText('느림')).toBeInTheDocument();
+    expect(within(gateRules).getByText('준비됨')).toBeInTheDocument();
     expect(screen.getByText('코드를 고친 뒤')).toBeInTheDocument();
     expect(
       screen.getByText(
