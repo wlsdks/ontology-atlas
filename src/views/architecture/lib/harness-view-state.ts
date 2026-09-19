@@ -4,27 +4,37 @@
  * than component state. Same grammar as `/mcp`'s `?tab=`; two screens must not grow two ways of
  * writing the same query.
  *
- * **`coverage` is the default, and the two old addresses still land where they meant.** The tab's
- * spine is the matrix of this repository's own areas: it is the one view that can say where nothing
- * is watching, and a destination whose first screen is a detail view of one artifact type makes the
- * reader find that question instead of being handed it.
+ * ⚠️ **`structure` changed what it means on 2026-09-19, and that was the point of the slice.**
+ * It used to open the product's layer ladder — routes, app shell, screens, widgets, features,
+ * entities, shared — inside a destination called Harness. The owner named the mismatch: that ladder
+ * is the codebase's **architecture**, and in the vocabulary this tab borrows, architecture fitness
+ * is one of the three things a harness *regulates*, not a part of the harness itself. So the ladder
+ * moved to `?view=architecture` and `structure` now opens the harness's own anatomy.
  *
- * One carve-out: **`?view=sensors` opens the coverage view.** The sensors view named exactly this —
- * which checks cover each domain's paths and where nobody is watching — and said it was not built.
- * It is built now, so the old address resolves to the answer rather than to a missing view.
+ * Nothing silently redirects between the two. An old `?view=structure` link opens a real view about
+ * the same repository, one tab away from the ladder, and the alternative — mapping the old address
+ * to `architecture` — would have made the tab a person presses and the tab a link opens disagree
+ * for the rest of the product's life.
+ *
+ * One carve-out remains: **`?view=sensors` opens the coverage view.** The sensors view named
+ * exactly what the matrix answers — which checks cover each domain's paths, and where nobody is
+ * watching — and said it was not built. It is built, so the old address resolves to the answer.
  */
-const HARNESS_VIEWS = ['structure', 'coverage', 'guides'] as const;
+const HARNESS_VIEWS = ['structure', 'coverage', 'guides', 'architecture'] as const;
 
 export type HarnessView = (typeof HARNESS_VIEWS)[number];
 
 /**
- * **The blueprint is the first tab and the arrival view** (owner, 2026-09-13).
+ * **The arrival view is the harness's own structure** (owner, 2026-09-19).
  *
- * The coverage matrix is the tab's spine — it is the view that can say where nothing is watching —
- * and it is still one press away at `?view=coverage`. What the default decides is not which view
- * matters but which screen a person walks into, and the owner's call is the ladder. It also
- * restores the plain `/architecture/` address to exactly what every link written before this slice
- * meant, which removes the whole class of breakage the `?role=` carve-out existed to patch.
+ * The owner chose the layer ladder as the arrival on 2026-09-13, when it was the only structural
+ * view this destination had. Six days later he said the thing that changes the answer: the ladder
+ * is not harness engineering. A destination named Harness whose first screen is the product's
+ * architecture teaches the wrong word for the whole tab, so the first screen is now the anatomy —
+ * what this repository tells, gates and watches — and the ladder is a press away.
+ *
+ * The plain `/architecture/` address still opens the tab with no query on it, which is what every
+ * link written before this slice meant.
  */
 export const DEFAULT_HARNESS_VIEW: HarnessView = 'structure';
 
@@ -42,6 +52,29 @@ export function parseHarnessView(raw: string | null | undefined): HarnessView {
   if (!raw) return DEFAULT_HARNESS_VIEW;
   if (isHarnessView(raw)) return raw;
   return RETIRED_VIEWS[raw] ?? DEFAULT_HARNESS_VIEW;
+}
+
+/**
+ * **Parameters only the blueprint has, which therefore name it when no view is written.**
+ *
+ * `?role=` and `?stage=` are written by the blueprint's own deep links, and they were meaningful
+ * with no `?view=` beside them for as long as the blueprint was the default. Moving the default
+ * would have made every one of those links — the ones this repository's writing calls the point of
+ * a deep link, "look at what widgets may depend on" sent as a URL — open a screen with no roles on
+ * it. Reading them is not a guess: no other view on this destination has a role or a stage.
+ */
+const BLUEPRINT_ONLY_PARAMS = ['role', 'stage'] as const;
+
+/**
+ * The view an address names, including the case where it names it only by what else it carries.
+ *
+ * An explicit `?view=` always wins; `parseHarnessView` owns it, retired names and all.
+ */
+export function resolveAddressView(params: URLSearchParams | null | undefined): HarnessView {
+  const raw = params?.get('view');
+  if (raw) return parseHarnessView(raw);
+  if (params && BLUEPRINT_ONLY_PARAMS.some((name) => params.has(name))) return 'architecture';
+  return DEFAULT_HARNESS_VIEW;
 }
 
 /**

@@ -17,11 +17,13 @@ import {
   buildHarnessViewHref,
   HARNESS_VIEW_ORDER,
   parseHarnessView,
+  resolveAddressView,
   type HarnessView,
 } from '../lib/harness-view-state';
 import { deriveCoverageAreas } from '../model/coverage-areas';
 import { useHarnessReport } from '../model/use-harness-report';
 import { ArchitecturePage } from './ArchitecturePage';
+import { HarnessAnatomyView } from './HarnessAnatomyView';
 import { HarnessCoverageView } from './HarnessCoverageView';
 import { HarnessGuidesView } from './HarnessGuidesView';
 import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
@@ -111,7 +113,7 @@ function HarnessPageInner() {
    * URL with `replaceState`, which `useSearchParams` does not observe.
    */
   const [viewOverride, setViewOverride] = useState<HarnessView | null>(null);
-  const addressView = parseHarnessView(searchParams.get('view'));
+  const addressView = resolveAddressView(searchParams);
   const view = viewOverride ?? addressView;
   const [reloadNonce, setReloadNonce] = useState(0);
   const mode = useDataSourceMode();
@@ -158,7 +160,7 @@ function HarnessPageInner() {
        what putting the view in the URL was meant to prevent. */
     const onPopState = () => {
       const params = new URL(window.location.href).searchParams;
-      setViewOverride(parseHarnessView(params.get('view')));
+      setViewOverride(resolveAddressView(params));
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -167,7 +169,7 @@ function HarnessPageInner() {
   const reportState = useHarnessReport(
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     projectSlugs,
-    view !== 'structure',
+    view !== 'architecture',
     coverage.capabilityPaths,
     reloadNonce,
   );
@@ -288,11 +290,11 @@ function HarnessPageInner() {
         </div>
       </div>
 
-      {view === 'structure' ? (
+      {view === 'architecture' ? (
         <ArchitecturePage
           embedded
-          harnessPanelId="harness-tabpanel-structure"
-          harnessPanelLabelledBy="harness-tab-structure"
+          harnessPanelId="harness-tabpanel-architecture"
+          harnessPanelLabelledBy="harness-tab-architecture"
         />
       ) : (
         /*
@@ -341,7 +343,14 @@ function HarnessPageInner() {
             </div>
             {reportState.status === 'ready' ? (
               <div className="architecture-result-arrive">
-                {view === 'coverage' ? (
+                {view === 'structure' ? (
+                  <>
+                    <HarnessAnatomyView report={reportState.report} />
+                    <p className="mt-6 font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                      {t('sourceRoot', { path: reportState.sourceRoot })}
+                    </p>
+                  </>
+                ) : view === 'coverage' ? (
                   <HarnessCoverageView
                     report={reportState.report}
                     areas={coverage.areas}

@@ -191,6 +191,8 @@ const SOURCE_FILES: Record<string, string> = {
   // An anchored lane filter: the gate says which paths it runs for, so it lands in one area.
   ".githooks/pre-commit": "#!/bin/sh\nprintf '%s' \"$CHANGED\" | grep -qE '^src/' && pnpm lint\nexit 0\n",
   ".claude/settings.json": JSON.stringify({
+    // The strongest gate a harness has, and the one no prose can talk around.
+    permissions: { allow: ["Bash(pnpm test:*)"], deny: ["Read(./.env*)", "Read(./secrets/**)"], ask: [] },
     hooks: {
       PreToolUse: [
         {

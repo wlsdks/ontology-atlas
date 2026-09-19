@@ -158,12 +158,20 @@ behaviour, while unclassified usage can never be declared away. Their
 `architectureConformance:v1` result is `conforms`, `violated`, or `unknown`;
 unsupported languages, incomplete scans, unknown usages, unmapped edges,
 unruled edges, and empty roles prevent a false green result. The
-`/architecture?view=structure` Living Blueprint
+`/architecture?view=architecture` Living Blueprint
 renders the declared model and copies the typed pre/post agent plan, while source
-analysis remains in MCP/CLI rather than being duplicated into Markdown. The default
-`?view=coverage` crosses the ontology's own domains with the path scopes this repository's guides,
+analysis remains in MCP/CLI rather than being duplicated into Markdown. It moved off the default
+address on 2026-09-19: the layer ladder is the product's architecture, which a harness *regulates*
+(maintainability · architecture fitness · behaviour), and not a part of the harness itself.
+
+The default `?view=structure` is the **harness's own anatomy**: what this repository tells an agent
+(always-read guides, path-scoped guides, skills and briefs, MCP servers), what gates it (blocking
+hooks, `permissions.deny`/`ask`, `.githooks/`), what watches it (after-the-fact hooks, check
+scripts, tests a runner discovers), and one band for what a checkout cannot answer at all — the
+agent loop and the model, which belong to the tool. `?view=coverage`
+crosses the ontology's own domains with the path scopes this repository's guides,
 gates and checks declare, so a domain nothing names is stated rather than inferred. Beside them
-`?view=guides` reads the same repository's **agent harness** — the guide files, which tool
+`?view=guides` reads the same repository's guide files — which tool
 reads which, size against a documented cap, declared mirror-pair drift, and hook wiring — from
 files only, through the installed app's bridge (`entities/agent-files`); the browser cannot see a
 dot directory at all and says so instead of drawing a shorter list.

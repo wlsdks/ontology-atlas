@@ -275,7 +275,8 @@
     "views": {
       "guides": "Guides",
       "structure": "Structure",
-      "coverage": "Coverage"
+      "coverage": "Coverage",
+      "architecture": "Architecture"
     },
     "sentence": "This repository speaks to agents through {documents, plural, one {# document} other {# documents}} and has {checks, plural, one {# check} other {# checks}} in place.",
     "checksBreakdown": "{hooks, plural, one {# hook script} other {# hook scripts}} · {gitHooks, plural, one {# file under .githooks/} other {# files under .githooks/}} · {scripts, plural, one {# package.json script} other {# package.json scripts}}",
@@ -401,7 +402,79 @@
     "coverageGapWatched": "domains no check names",
     "coverageEverywhereStat": "reaches every domain",
     "reachMirroredLabel": "the Codex copy of a declared pair",
-    "reachNamedDirectLabel": "named by a guide directly"
+    "reachNamedDirectLabel": "named by a guide directly",
+    "anatomyTitle": "Harness structure",
+    "anatomyCaption": "The parts an agent meets when it works in this repository, in the order it meets them. Each number is files read from this folder. No score, no grade.",
+    "anatomyProvenanceLabel": "Where these parts come from",
+    "anatomyProvenance": "Four public sources name roughly the same parts. Fowler and Böckeler, “Harness engineering for coding agent users”, split guides from sensors. arXiv 2609.00006, “Harness Engineering: Anatomy, Architecture, and Evolution of Coding Agents” (CC BY 4.0), counts seven subsystems: agent loop, model integration, tools, memory and context, safety and permissions, orchestration, extensibility. OpenAI’s “Harness engineering” and the Codex AGENTS.md guide describe the instruction chain merged root-down, and Anthropic’s “Effective harnesses for long-running agents” describes what carries work across context windows. Five of the seven are countable from a checkout. The loop and the model are not.",
+    "anatomyTellsCaption": "What an agent reads or is handed before it touches anything.",
+    "anatomyGatesCaption": "What actually stops it, rather than asking it to behave.",
+    "anatomyWatchesCaption": "What runs afterwards. None of it blocks.",
+    "anatomyToolBand": "Not decided by this repository",
+    "anatomyToolCaption": "The centre of a harness, and unreadable from this folder. Left blank because the answer is elsewhere, not because nothing is there.",
+    "anatomyAbsent": "None yet",
+    "anatomyMore": "{count} more",
+    "anatomyPermissionSplit": "{allow} allowed · {ask} ask first · {deny} denied",
+    "anatomyApprovalGate": "Hooks in {config} run only once a person has trusted them inside the tool. That approval lives in no file, so it cannot be read here.",
+    "anatomySlots": {
+      "always": {
+        "title": "Read every time",
+        "body": "Guides an agent reads before it starts. Anything not here, it has to go and find."
+      },
+      "scoped": {
+        "title": "Attached by path",
+        "body": "Guides that join only when a file in their folder is touched. This is how the always-read set stays short."
+      },
+      "onDemand": {
+        "title": "Fetched when called",
+        "body": "Skills and agent briefs. Only their names are in view until something needs them."
+      },
+      "tools": {
+        "title": "Tools it can reach",
+        "body": "Servers this repository wires up over the agent connection (MCP). This is the reach an agent has."
+      },
+      "toolGates": {
+        "title": "Refuses a tool call",
+        "body": "Hooks that run just before a tool call and can refuse it. It says the script is on disk; whether it ever blocked anything is not readable from files."
+      },
+      "permissions": {
+        "title": "Not allowed at all",
+        "body": "Deny and ask rules in settings. They bite before a path is even resolved, and they outrank every hook."
+      },
+      "gitGates": {
+        "title": "Caught at commit or push",
+        "body": "Files under .githooks/. The same gate whether a person or an agent typed the commit."
+      },
+      "watchers": {
+        "title": "Watches after the fact",
+        "body": "Hooks that run after a tool call or at the end of a turn. They record or warn; they do not block."
+      },
+      "checks": {
+        "title": "Checks a command runs",
+        "body": "package.json lint, typecheck and test scripts. Declarations counted, not runs observed."
+      },
+      "discoveredTests": {
+        "title": "Tests found by name",
+        "body": "Test files no command names, which the runner discovers and runs anyway."
+      },
+      "loop": {
+        "title": "The agent loop and the model",
+        "body": "What gets read first, when to stop, what to drop when the context fills, which model runs: the tool decides all of it. No amount of reading this repository reveals it, and the same guides give different results in a different tool."
+      }
+    },
+    "anatomyUnits": {
+      "always": "{count, plural, one {# document} other {# documents}}",
+      "scoped": "{count, plural, one {# document} other {# documents}}",
+      "onDemand": "{count, plural, one {# folder} other {# folders}}",
+      "tools": "{count, plural, one {# server} other {# servers}}",
+      "toolGates": "{count, plural, one {# hook} other {# hooks}}",
+      "permissions": "{count, plural, one {# rule} other {# rules}}",
+      "gitGates": "{count, plural, one {# file} other {# files}}",
+      "watchers": "{count, plural, one {# hook} other {# hooks}}",
+      "checks": "{count, plural, one {# script} other {# scripts}}",
+      "discoveredTests": "{count, plural, one {# file} other {# files}}",
+      "loop": "{count}"
+    }
   },
   "architecture": {
     "eyebrow": "CODE ARCHITECTURE",
@@ -4739,10 +4812,29 @@
         "preview": "Reviewed preview",
         "decision": "Decision binding"
       },
-      "authority": { "observed": "Observed", "unavailable": "Unavailable", "unknown": "Unknown" },
-      "permission": { "pending": "Pending", "allowed": "Allowed", "rejected": "Rejected", "unknown": "Unknown" },
-      "execution": { "completed": "Completed", "failed": "Failed", "not_run": "Not run", "unknown": "Unknown" },
-      "readback": { "matched": "Exact bytes matched", "mismatched": "Bytes differed", "missing": "Missing", "unknown": "Unknown" }
+      "authority": {
+        "observed": "Observed",
+        "unavailable": "Unavailable",
+        "unknown": "Unknown"
+      },
+      "permission": {
+        "pending": "Pending",
+        "allowed": "Allowed",
+        "rejected": "Rejected",
+        "unknown": "Unknown"
+      },
+      "execution": {
+        "completed": "Completed",
+        "failed": "Failed",
+        "not_run": "Not run",
+        "unknown": "Unknown"
+      },
+      "readback": {
+        "matched": "Exact bytes matched",
+        "mismatched": "Bytes differed",
+        "missing": "Missing",
+        "unknown": "Unknown"
+      }
     }
   },
   "mcp": {
@@ -5545,7 +5637,11 @@
       "emptyDescription": "Create a constellation from real ontology concepts, then return to the same named scope here.",
       "memberCount": "{count, plural, one {# concept} other {# concepts}}",
       "referenceCount": "{count, plural, one {# reference} other {# references}}",
-      "shape": { "name": "Name", "members": "Concepts", "purpose": "Purpose" },
+      "shape": {
+        "name": "Name",
+        "members": "Concepts",
+        "purpose": "Purpose"
+      },
       "noPurpose": "No purpose added",
       "viewInGalaxy": "View in Galaxy",
       "viewInGalaxyNamed": "View {name} in Galaxy",
@@ -5575,7 +5671,11 @@
       "malformedTitle": "The rounds file needs attention",
       "malformedDescription": "Atlas could not read .ontology-atlas/rounds.json and left it unchanged. Fix or remove it, then read again.",
       "retry": "Read again",
-      "shape": { "name": "Name", "cadence": "Cadence", "next": "Next run" },
+      "shape": {
+        "name": "Name",
+        "cadence": "Cadence",
+        "next": "Next run"
+      },
       "emptyTitle": "Nothing runs on its own yet",
       "emptyDescription": "Register a round: every hour, check that every page still matches its sources; every morning, re-read what a service sent and redraft what changed.",
       "kind": {

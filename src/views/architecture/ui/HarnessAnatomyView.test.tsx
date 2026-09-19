@@ -1,0 +1,140 @@
+import { render, screen, within } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
+import { describe, expect, it } from 'vitest';
+
+import koMessages from '../../../../messages/ko.json';
+import type { HarnessReport } from '@/entities/agent-files';
+
+import { HarnessAnatomyView } from './HarnessAnatomyView';
+
+/**
+ * **The structure view's one job: say what is here, what is not, and what a checkout cannot know.**
+ *
+ * Each test below names the reading it refuses. The screen competes with a field of tools that
+ * grade a repository out of ten, and this repository measured why that fails — a maturity scanner
+ * put Anthropic's own skills repository at the same grade as an abandoned toy, because files alone
+ * cannot tell *absent* from *rightly absent*. So an absent part says "none yet" and the agent loop
+ * says something else entirely, and both of those are assertions here rather than styling.
+ */
+
+function report(partial: Partial<HarnessReport> = {}): HarnessReport {
+  return {
+    analysis: { records: [], checks: {} as never, findings: [] } as never,
+    hookGroups: [],
+    times: [],
+    contents: new Map(),
+    checks: { wiredHooks: 0, gitHooks: 0, scripts: [], total: 0 },
+    guideDocumentCount: 0,
+    coverage: [],
+    documentReach: { total: 0 } as never,
+    testFiles: [],
+    timesAreFileMtime: true,
+    ...partial,
+  } as HarnessReport;
+}
+
+function mount(value: HarnessReport) {
+  return render(
+    <NextIntlClientProvider locale="ko" messages={koMessages}>
+      <HarnessAnatomyView report={value} />
+    </NextIntlClientProvider>,
+  );
+}
+
+describe('HarnessAnatomyView', () => {
+  it('borrows the coverage matrix’s three words rather than inventing a second vocabulary', () => {
+    mount(report());
+    for (const band of ['tells', 'gates', 'watches']) {
+      expect(screen.getByTestId(`harness-anatomy-band-${band}`)).toBeInTheDocument();
+    }
+    expect(screen.getByTestId('harness-anatomy-band-tells')).toHaveTextContent('말해둔 것');
+    expect(screen.getByTestId('harness-anatomy-band-gates')).toHaveTextContent('막는 것');
+    expect(screen.getByTestId('harness-anatomy-band-watches')).toHaveTextContent('지켜보는 것');
+  });
+
+  it('says "none yet" for a part this repository does not have, and never a grade', () => {
+    mount(report());
+    expect(screen.getByTestId('harness-anatomy-count-tools')).toHaveTextContent('아직 없음');
+    expect(screen.getByTestId('harness-anatomy-slot-tools')).toHaveAttribute(
+      'data-status',
+      'absent',
+    );
+    expect(document.body.textContent).not.toMatch(/%|\/\s*10\b/);
+  });
+
+  it('prints the agent loop as something the repository does not decide, not as zero', () => {
+    mount(report());
+    const loop = screen.getByTestId('harness-anatomy-slot-loop');
+    expect(loop).toHaveAttribute('data-status', 'tool-owned');
+    expect(loop).not.toHaveTextContent('아직 없음');
+    expect(screen.getByTestId('harness-anatomy-band-tool')).toHaveTextContent(
+      '저장소가 정하지 않는 것',
+    );
+  });
+
+  it('carries a unit beside every count, so no number reads as a rank', () => {
+    mount(
+      report({
+        checks: { wiredHooks: 0, gitHooks: 2, scripts: ['lint', 'test'], total: 4 },
+      }),
+    );
+    expect(screen.getByTestId('harness-anatomy-count-checks')).toHaveTextContent('스크립트 2개');
+    expect(screen.getByTestId('harness-anatomy-count-gitGates')).toHaveTextContent('파일 2개');
+  });
+
+  it('shows the names behind a count, and says how many it is not showing', () => {
+    mount(
+      report({
+        checks: {
+          wiredHooks: 0,
+          gitHooks: 0,
+          scripts: ['lint', 'lint:css', 'test', 'test:e2e', 'typecheck'],
+          total: 5,
+        },
+      }),
+    );
+    const slot = screen.getByTestId('harness-anatomy-slot-checks');
+    expect(slot).toHaveTextContent('lint · lint:css · test · test:e2e');
+    expect(slot).toHaveTextContent('그 외 1개');
+  });
+
+  it('states the approval a file cannot record, once per band rather than per hook', () => {
+    mount(
+      report({
+        hookGroups: [
+          {
+            configPath: '.codex/hooks.json',
+            approvalGate: true,
+            hooks: [
+              {
+                events: 'beforeToolUse',
+                ref: { path: '.codex/hooks/guard.sh', command: 'x' },
+                status: 'wired',
+              },
+            ],
+          },
+        ] as never,
+      }),
+    );
+    const gates = screen.getByTestId('harness-anatomy-band-gates');
+    expect(within(gates).getByTestId('harness-anatomy-approval')).toHaveTextContent(
+      '.codex/hooks.json',
+    );
+  });
+
+  it('splits the permission decisions instead of printing one number for all of them', () => {
+    mount(
+      report({
+        contents: new Map([
+          [
+            '.claude/settings.json',
+            JSON.stringify({ permissions: { allow: ['a'], deny: ['b', 'c'], ask: ['d'] } }),
+          ],
+        ]),
+      }),
+    );
+    expect(screen.getByTestId('harness-anatomy-slot-permissions')).toHaveTextContent(
+      '허용 1 · 물어봄 1 · 금지 2',
+    );
+  });
+});
