@@ -4301,8 +4301,8 @@
       "failed": "failed",
       "cancelled": "stopped"
     },
-    "workGroup": "Work details · {count} steps",
-    "workGroupActive": "Working · {count} steps",
+    "workGroup": "Work details · {count, plural, one {# step} other {# steps}}",
+    "workGroupActive": "Working · {count, plural, one {# step} other {# steps}}",
     "resize": "Resize the chat panel",
     "resizeHint": "Drag to widen or narrow. Arrow keys work too.",
     "closeHistory": "Close the past chats list",
