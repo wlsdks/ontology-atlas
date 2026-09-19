@@ -686,6 +686,29 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     expect(screen.getByTestId('index-body'), '렌즈를 켰는데 INDEX 가 안 열렸다').toBeInTheDocument();
   });
 
+  it('the tour pointing at the INDEX folds the card for that step, and gives it back after', () => {
+    const { rerender } = render(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1}>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.queryByTestId('index-body')).toBeNull();
+
+    rerender(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1} indexSpotlit>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.getByTestId('index-body'), 'the tour lit the INDEX and the list did not open').toBeInTheDocument();
+
+    rerender(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1}>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.queryByTestId('index-body'), 'the step was left and the card did not come back').toBeNull();
+  });
+
   it('렌즈를 꺼도 다시 펼치지 않는다 — 보던 트리를 뺏지 않는다', () => {
     const { rerender } = render(
       <FirstRunStarterModule concepts={1} relations={1} domains={1} lensActive>
