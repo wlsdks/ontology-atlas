@@ -306,6 +306,32 @@ test.describe("Library rounds", () => {
     });
   });
 
+  test("a local check runs once as it is saved, so the first result stands before the clock", async ({ page }) => {
+    /*
+     * Owner, 2026-09-19: the screen was "hard to operate". Measured on the installed app, a
+     * check saved at 21:35 showed nothing until its 22:00 boundary or until a person found
+     * "run now". A consistency pass costs no agent turn, so it runs as the sheet closes.
+     */
+    await seedFirstRunSeen(page);
+    await installDesktopBridge(page, { seedRounds: false });
+    await openRounds(page);
+    await page.getByTestId("library-rounds-new").click();
+    await expect(page.getByTestId("library-rounds-sheet")).toBeVisible();
+    // The defaults are the local check, hourly, redraft on stale.
+    await page.getByTestId("library-rounds-allow").click();
+    await expect(page.getByTestId("library-rounds-sheet")).toBeHidden();
+
+    const ledger = page.getByTestId("library-rounds-ledger");
+    await expect(ledger.locator("[data-outcome='held']")).toHaveCount(1);
+    await expect(ledger).toContainText("run by hand");
+    const stored = await page.evaluate(() => {
+      const files = (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles;
+      return (files[".ontology-atlas/rounds-ledger.jsonl"] ?? "").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line));
+    });
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toMatchObject({ kind: "consistency", outcome: "held", trigger: "manual", agentTurns: 0 });
+  });
+
   test("the web build explains and points at the app", async ({ page }) => {
     await seedFirstRunSeen(page);
     await page.goto("/en/library/?tab=rounds");

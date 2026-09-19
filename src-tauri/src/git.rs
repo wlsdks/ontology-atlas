@@ -1058,10 +1058,20 @@ fn run_push(repo_root: &Path) -> PushOutcome {
 /// Summary of recent commits touching the vault path (hash/message/time) — Obsidian
 /// Git history parity. Empty list when there are no commits at all.
 #[tauri::command]
-pub fn git_history(vault_path: String, limit: Option<u32>) -> Result<Vec<GitCommitInfo>, String> {
+pub fn git_history(
+    vault_path: String,
+    limit: Option<u32>,
+    path: Option<String>,
+) -> Result<Vec<GitCommitInfo>, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
-    let pathspec = vault_pathspec(&repo_root, &vault_dir);
+    let vault_spec = vault_pathspec(&repo_root, &vault_dir);
+    // One document's history: the log is scoped to that path, which must lie inside the
+    // vault like every other path the screen hands back (`vault_document_path`).
+    let pathspec = match path.as_deref().map(str::trim).filter(|p| !p.is_empty()) {
+        Some(document) => vault_document_path(document, &vault_spec)?,
+        None => vault_spec,
+    };
     let max_count = limit.unwrap_or(10).max(1).to_string();
     const SEP: char = '\x1f';
     /*

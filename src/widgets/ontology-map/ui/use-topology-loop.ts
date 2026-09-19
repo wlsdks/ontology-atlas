@@ -1,6 +1,7 @@
 "use client";
 
 import { projectDomeEdgeControl } from '../model/dome-edge';
+import { refreshIndexDependentTokens } from "../tokens/read-map-tokens";
 
 /**
  * `OntologyMap`'s engine hook — owns the canvas/rAF/pointer wiring so the
@@ -65,7 +66,7 @@ import {
 } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
 import { centerForInsets, computeClusterFitTarget, computeDomeFitCameraTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
-import { drawTopologyFrame, lastDrawnLabelBoxes, lastDrawnNodeCount, lastDrawnRelationCaptions } from "./topology-frame-draw";
+import { drawTopologyFrame, lastDrawnLabelBoxes, lastDrawnNodeAlphas, lastDrawnNodeCount, lastDrawnRelationCaptions } from "./topology-frame-draw";
 import { MOTION } from "@/shared/motion";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
 import { relaxNewlyVisible } from "../model/layout";
@@ -145,6 +146,7 @@ import { buildRealmRuntimeData, fallbackAngleFor, realmCameraTarget, realmVisibl
 import { computeVisibleWardingRadius } from "../model/realm";
 import { initWardingFit, stepWardingFit, type WardingFitState } from "../model/realm-warding-fit";
 import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./topology-pointer-handlers";
+import type { HoverAvoidRect } from "./topology-pointer-handlers";
 import { stepTopologyPhysics } from "./topology-physics-step";
 import { updatePulses, type Pulse } from "../render/edge-fireflies";
 import {
@@ -363,7 +365,7 @@ export interface UseTopologyLoopArgs {
   /** Edge hover micro-card. Fires only when the identified edge changes; null clears. */
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
-    position: { x: number; y: number } | null,
+    position: { x: number; y: number; avoid: readonly HoverAvoidRect[] } | null,
   ) => void;
   onSelect?: (slug: string) => void;
   /**
@@ -2308,6 +2310,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
     /** The cheap half, called from inside a frame: backing size and viewport facts only. */
     const commitViewportSize = () => {
+      // The top and bottom lanes follow the viewport height; read them before
+      // the fit and the label cull consume the size that just changed.
+      refreshIndexDependentTokens();
       const pending = pendingViewportRef.current;
       if (!pending) return false;
       pendingViewportRef.current = null;
@@ -2684,6 +2689,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // collapsed cluster, say). With no bbox to fit, leave the camera alone —
     // and record no debt, because retrying gives the same result.
     if (hit === 0) return true;
+    // A path is read against the ring it sits in. Fitting the two endpoints
+    // alone put the camera at 1.55× the overview, and the rest of the spine
+    // overflowed: three domains under the toolbar, one off the canvas
+    // (measured 2026-09-19). The lens dims that ring now, so it is the frame
+    // the path wants, not a crop to cut away.
+    if (mapLensKindRef.current === "path" && !galaxyRef.current) {
+      const spine = world.spineBounds;
+      if (spine.minX < minX) minX = spine.minX;
+      if (spine.minY < minY) minY = spine.minY;
+      if (spine.maxX > maxX) maxX = spine.maxX;
+      if (spine.maxY > maxY) maxY = spine.maxY;
+    }
 
     // Pad so nothing sits flush against the edge: fitting the raw bbox clips
     // labels, rings and footprints.
@@ -6591,6 +6608,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
             ? domeRuntimeRef.current.frame
             : null;
+        const drawnAlphas = lastDrawnNodeAlphas();
         return world.nodes.map((n) => {
           const dOff = domeFrame?.get(n.id) ?? { dx: 0, dy: 0, s: 1 };
           return {
@@ -6610,6 +6628,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           agentFocus: agentFocusNodeIdRef.current === n.id,
           /** A collapsed subtree is replaced by a chip and is not on screen. */
           hidden: isPreviewEndpointHidden(clustered?.has(n.id) ?? false, preview, n.id),
+          /**
+           * The alpha the last frame drew this node at. `hidden` says
+           * "collapsed"; it does not say "drawn": at the overview the density
+           * gate keeps capabilities at alpha 0 with `hidden` false, and a spec
+           * that read `hidden` alone counted 26 invisible discs as on screen
+           * (2026-09-03). Whether the thing is visible is this number.
+           */
+          alpha: drawnAlphas.get(n.id) ?? 1,
           previewEndpoint: isPreviewEndpoint(preview, n.id),
           /**
            * ★ For the graph-readability instrument: overlap cannot be counted
