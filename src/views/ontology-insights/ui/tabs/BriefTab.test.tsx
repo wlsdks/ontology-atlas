@@ -103,7 +103,11 @@ describe("BriefTab", () => {
     const harness = screen.getByTestId("brief-core-harness");
     expect(harness).toHaveTextContent("앱에서만 잴 수 있어요");
     expect(harness.querySelectorAll("[data-brief-line]")).toHaveLength(0);
-    expect(screen.getByTestId("brief-core-wiki")).toHaveTextContent("아직 잴 것이 없어요");
+    const wiki = screen.getByTestId("brief-core-wiki");
+    expect(wiki).toHaveTextContent("이 폴더엔 아직 위키 페이지가 없어요");
+    // A core with nothing to count still owes a next step rather than a dead end.
+    expect(wiki.querySelector('a[href="/library/"]')).not.toBeNull();
+    expect(harness.querySelector('a[href="/download/"]')).not.toBeNull();
   });
 
   it("names what changed since, newest first, and counts the rest", () => {

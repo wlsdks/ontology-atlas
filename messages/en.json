@@ -1577,6 +1577,19 @@
         "askAgent": "Ask the agent",
         "copyRequest": "Copy request",
         "copiedRequest": "Copied",
+        "getApp": "Get the app",
+        "empty": {
+          "ontology": "This folder holds no concepts yet.",
+          "wiki": "This folder holds no wiki pages yet. Write up a source and they are counted here.",
+          "harness": "This folder holds no agent guide files.",
+          "agent": "No agent has worked here yet. Connect one and what it read and wrote appears here."
+        },
+        "emptyAction": {
+          "ontology": "Open the map",
+          "wiki": "Open the library",
+          "harness": "Open the harness",
+          "agent": "Connect an agent"
+        },
         "markSeen": "Seen up to here",
         "markSeenDone": "Counting from now",
         "core": { "ontology": "Ontology", "wiki": "Wiki", "harness": "Harness", "agent": "Agent activity" },

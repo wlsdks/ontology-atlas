@@ -44,6 +44,18 @@ const LINE_HREF: Record<string, string> = {
   'agent-distinct-since': '/agents/',
 };
 
+/**
+ * Where a core that cannot be counted here sends the reader. A card saying only "nothing to
+ * measure" spends a quarter of the screen on a dead end; every state on this tab owes a
+ * sentence and a next step, the same rule its numbers follow.
+ */
+const CORE_NEXT_HREF: Record<BriefCore['core'], string> = {
+  ontology: '/topology/',
+  wiki: '/library/',
+  harness: '/architecture/',
+  agent: '/agents/',
+};
+
 /** The three column names each core speaks in; the model's slots are positional. */
 const COLUMNS: Record<BriefCore['core'], readonly [string, string, string]> = {
   ontology: ['current', 'stale', 'unknown'],
@@ -125,10 +137,20 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent }: { core: BriefCore; 
       </div>
       <ul className="mt-1 flex flex-1 flex-col gap-3" data-testid="brief-core-lines">
         {core.availability === 'app-only' ? (
-          <li className="text-body text-[color:var(--color-text-tertiary)]">{t('appOnly')}</li>
+          <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]">
+            <span className="min-w-0">{t('appOnly')}</span>
+            <Link href="/download/" className={controlClass({ shape: 'link', className: LINE_LINK })}>
+              {t('getApp')}
+            </Link>
+          </li>
         ) : null}
         {core.availability === 'no-data' ? (
-          <li className="text-body text-[color:var(--color-text-tertiary)]">{t('noData')}</li>
+          <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-empty-${core.core}`}>
+            <span className="min-w-0">{t(`empty.${core.core}`)}</span>
+            <Link href={CORE_NEXT_HREF[core.core]} className={controlClass({ shape: 'link', className: LINE_LINK })}>
+              {t(`emptyAction.${core.core}`)}
+            </Link>
+          </li>
         ) : null}
         {measured && lines.length === 0 ? (
           <li className="text-body text-[color:var(--color-text-tertiary)]">{t('quiet')}</li>
