@@ -33,3 +33,13 @@ describe('brief seen storage', () => {
     expect(readBriefSeenAt('vault-c')).toBeNull();
   });
 });
+
+describe('marking the visit is visible in the same frame', () => {
+  it('reads as a recorded visit the moment it is written, not after a reload', () => {
+    const at = Date.parse('2026-09-19T09:00:00Z');
+    // The screen advances its read instant with the write; the anchor is then the visit itself.
+    expect(resolveBriefAnchor(at, at + 1)).toEqual({ anchorMs: at, isDefaultWindow: false });
+    // Without that advance the value is not yet in the past and the sentence would not change.
+    expect(resolveBriefAnchor(at, at).isDefaultWindow).toBe(true);
+  });
+});

@@ -114,7 +114,7 @@ function BriefCoreCard({ core, details, nowMs }: { core: BriefCore; details: Ins
         <CensusSubStat label={t(`col.${c2}`)} value={measured && core.stale != null ? core.stale : '–'} tone={core.stale ? 'warning' : 'numeral'} />
         <CensusSubStat label={t(`col.${c3}`)} value={core.unknown != null ? core.unknown : '–'} />
       </div>
-      <ul className="mt-1 flex flex-1 flex-col gap-2" data-testid="brief-core-lines">
+      <ul className="mt-1 flex flex-1 flex-col gap-3" data-testid="brief-core-lines">
         {core.availability === 'app-only' ? (
           <li className="text-body text-[color:var(--color-text-tertiary)]">{t('appOnly')}</li>
         ) : null}
@@ -134,6 +134,14 @@ function BriefCoreCard({ core, details, nowMs }: { core: BriefCore; details: Ins
 
 const EMPTY_DETAILS: readonly BriefLineDetail[] = [];
 const DETAIL_ROWS = 5;
+
+/**
+ * The line's own link carries real width and height rather than a transparent hit area:
+ * two of these sit 12px apart, and this repository measured phantom hit areas overlapping
+ * at that distance and rejected them (`app/globals.css`, 2026-08-05). The negative margin
+ * keeps the text on the same right edge it had before the padding.
+ */
+const LINE_LINK = 'shrink-0 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]';
 
 /**
  * One line of the brief. When the line's own calculation produced named rows, the line
@@ -184,7 +192,7 @@ function BriefLineRow({ line, details, nowMs }: { line: BriefLine; details: read
           <>
             <span className="min-w-0 flex-1 break-keep">{sentence}</span>
             {href ? (
-              <Link href={href} className={controlClass({ shape: 'link', className: 'shrink-0 text-[color:var(--color-indigo-text-strong)]' })}>
+              <Link href={href} className={controlClass({ shape: 'link', className: LINE_LINK })}>
                 {t('open')}
               </Link>
             ) : null}
@@ -220,7 +228,7 @@ function BriefSinceList({ rows, total, nowMs }: { rows: readonly SinceRow[]; tot
               {format.relativeTime(new Date(row.at), nowMs)}
             </time>
             {row.href ? (
-              <Link href={row.href} className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>
+              <Link href={row.href} className={controlClass({ shape: 'link', className: LINE_LINK })}>
                 {t('open')}
               </Link>
             ) : (

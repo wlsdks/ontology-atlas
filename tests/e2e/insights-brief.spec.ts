@@ -103,4 +103,13 @@ test("브리핑은 연 폴더의 위키·에이전트를 이름으로 말하고,
   const since = page.getByTestId("brief-since");
   await expect(since).toContainText("add_concept");
   await expect(since).toContainText("Refund");
+
+  // The one state-changing control answers in the same frame: the window sentence becomes a
+  // visit sentence and the counts it governed restart at zero.
+  await expect(brief).toContainText("최근 7일 기준");
+  await page.getByTestId("brief-mark-seen").click();
+  await expect(brief).toContainText("오늘 본 뒤로");
+  await expect(agent.locator('[data-brief-line="agent-calls-since"]')).toHaveCount(0);
+  await expect(page.getByTestId("brief-since")).toHaveCount(0);
+
 });

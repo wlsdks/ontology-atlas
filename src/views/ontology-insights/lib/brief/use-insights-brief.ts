@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale } from 'next-intl';
 import {
   useDataSourceMode,
@@ -100,10 +100,21 @@ export function useInsightsBrief({
   const docs = manifest?.docs ?? EMPTY_DOCS;
   const nativeRootPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
 
-  const [seenAt, markSeen] = useBriefSeenAt(identityScope);
+  const [seenAt, writeSeenAt] = useBriefSeenAt(identityScope);
   // Read once per load, inside the loader below, so no render calls the clock.
   const [nowMs, setNowMs] = useState(() => Date.now());
   const anchor = useMemo(() => resolveBriefAnchor(seenAt, nowMs), [seenAt, nowMs]);
+  /*
+   * Marking the visit moves the read instant with it. Without that, the new anchor is not yet
+   * in the past by the clock this render captured, `resolveBriefAnchor` falls back to the
+   * default window, and the one state-changing control on the tab leaves every sentence
+   * exactly as it was — the reader cannot tell it worked (design-interaction, 2026-09-19).
+   */
+  const markSeen = useCallback(() => {
+    const at = Date.now();
+    writeSeenAt(at);
+    setNowMs(at + 1);
+  }, [writeSeenAt]);
   const sinceDays = Math.max(0, Math.floor((nowMs - anchor.anchorMs) / 86_400_000));
 
   const library = useLibraryModel({
