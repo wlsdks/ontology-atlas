@@ -62,17 +62,6 @@ request, then squash merge, delete the branch, release the lock.
 run; `pnpm pr:land --release` frees a wedged lock. Why, and why GitHub's own
 merge queue is unavailable: `scripts/pr-land.mjs`.
 
-**Know which lanes your branch will run, before CI tells you.**
-`node scripts/classify-change.mjs --base=origin/main` prints them in a second
-(`gates=true unit=full …`). It matters because the focused local lanes are not
-the CI plan: `pnpm lint` runs the whole repo at `--max-warnings 0` and belongs
-to the full gates lane, so a dead variable in a file you never touched fails
-your pull request while the same warning leaves a differently-planned one green.
-Measured 2026-09-20: one unused declaration in an e2e spec failed every
-`gates=true` landing and none of the others, which looked like a repo-wide
-outage until the plan was read. When it prints `gates=true`, run `pnpm lint`
-locally before landing, not only `pnpm checks:changed`.
-
 ## Pull requests
 
 - Start the title with one of the conventional prefixes above. Use `Summary`
