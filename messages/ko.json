@@ -4124,6 +4124,8 @@
   "acpChat": {
     "ariaLabel": "{runtime} 대화",
     "emptyHint": "이 폴더에 대해 무엇이든 물어보세요.",
+    "codeCopy": "복사",
+    "codeCopied": "복사했어요",
     "composerLabel": "무엇을 시킬지 적어요",
     "send": "보내기",
     "stop": "그만",

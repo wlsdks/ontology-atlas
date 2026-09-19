@@ -355,6 +355,48 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     expect(screen.getAllByText(/네, 볼게요\./)).toHaveLength(1);
   });
 
+  /*
+   * Measured at the dock's documented floor (2026-09-20): the answer column is 260px and
+   * `pnpm atlas compile --page wiki/architecture.md --force --locale ko` lays out at 456px, so
+   * 196px — 43% of the command — sat behind `overflow-x: auto` and a 2px scrollbar with no copy
+   * control anywhere. The one actionable line in the answer could be neither read nor taken.
+   */
+  it('답에 실린 명령은 통째로 가져갈 수 있다 — 잘려 보이더라도', async () => {
+    const written: string[] = [];
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: (text: string) => { written.push(text); return Promise.resolve(); } },
+    });
+    await bootSession();
+    const command = 'pnpm atlas compile --page wiki/architecture.md --force --locale ko';
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: { sessionUpdate: 'agent_message_chunk', content: { text: `Run it:\n\n\`\`\`bash\n${command}\n\`\`\`` } },
+      },
+    });
+
+    const chip = await screen.findByTestId('acp-chat-code-copy');
+    fireEvent.click(chip);
+    // What is copied is the command as drawn, not the markdown fence around it.
+    await waitFor(() => expect(written).toEqual([`${command}\n`]));
+    await waitFor(() => expect(chip.textContent).toBe('codeCopied'));
+  });
+
+  it('표에는 복사 칩이 붙지 않는다 — 명령이 아니라 읽을 것이라서', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: { sessionUpdate: 'agent_message_chunk', content: { text: '| 항목 | 값 |\n| --- | --- |\n| 소스 | 없음 |' } },
+      },
+    });
+    await screen.findByTestId('acp-chat-markdown-table');
+    expect(screen.queryByTestId('acp-chat-code-copy')).toBeNull();
+  });
+
   it('에이전트의 GFM 표를 좁은 패널에서도 구획과 가로 스크롤이 있는 표로 그린다', async () => {
     await bootSession();
     emit({

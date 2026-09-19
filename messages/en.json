@@ -4124,6 +4124,8 @@
   "acpChat": {
     "ariaLabel": "Conversation with {runtime}",
     "emptyHint": "Ask anything about this folder.",
+    "codeCopy": "Copy",
+    "codeCopied": "Copied",
     "composerLabel": "Write what you want done",
     "send": "Send",
     "stop": "Stop",
