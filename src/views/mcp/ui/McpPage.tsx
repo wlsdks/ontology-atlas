@@ -86,10 +86,45 @@ export function McpPage({
 
   const searchParams = useSearchParams();
   const section = parseMcpTab(searchParams?.get(MCP_SECTION_PARAM));
+  /*
+   * ⚠️ **The scroll waits for the list, or it lands nowhere near it** (measured 2026-09-19 at
+   * four viewports, then in the spec's own fixture). `?mcp=connectors` is where
+   * `/mcp/?tab=connectors` and the installed app's `ontology-atlas://mcp?install=…` land.
+   * Scrolling on mount runs while the connector store is still `loading`, against a page at
+   * its short height: the list then renders and pushes the group down, and the scroll stays
+   * where it was. With two connectors attached in a 1440×600 window the group ended up
+   * **1315px below the fold**; with none attached, at 1440×600, it overshot the other way and
+   * left the heading 140px **above** the viewport. At 1280×900 nothing scrolls at all — the
+   * group is already in view — which is why one desktop size hid all of it.
+   *
+   * Waiting for the store to settle scrolls once, against the height the person will see.
+   *
+   * ⚠️ **And it scrolls the shell's own scroller, not `scrollIntoView`.** That call walks every
+   * scrollable ancestor, including one with `overflow-y: hidden` between this section and the
+   * slot: measured, it took 242px of the scroll into an element nothing can scroll back, and the
+   * group still landed 845px below a 600px fold. Moving `app-shell-body-slot` by the measured
+   * delta touches the one container that is meant to move, and repeats harmlessly.
+   */
+  const connectorsSettled = connectors.status !== 'loading';
   useEffect(() => {
-    if (section !== 'connectors') return;
-    document.getElementById('mcp-connectors')?.scrollIntoView({ block: 'start' });
-  }, [section]);
+    if (section !== 'connectors' || !connectorsSettled) return;
+    /*
+     * Two frames, because the settled store and the laid-out list are not the same moment: the
+     * commit that flips `status` is when the rows are *created*, and their height is known one
+     * layout later. Scrolling on the commit measured a delta against a page still growing.
+     */
+    let frame = 0;
+    const run = () => {
+      const group = document.getElementById('mcp-connectors');
+      const slot = group?.closest<HTMLElement>('[data-testid="app-shell-body-slot"]');
+      if (!group || !slot) return;
+      slot.scrollTop += group.getBoundingClientRect().top - slot.getBoundingClientRect().top;
+    };
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(run);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [section, connectorsSettled]);
 
   return (
     <section
