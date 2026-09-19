@@ -42,13 +42,44 @@ const SLUG_ARG_KEYS = [
  */
 const TOOL_TARGET_LIMIT = 3;
 
+/**
+ * **The envelope a call to an MCP server arrives in, opened once.**
+ *
+ * Measured in the rendered transcript (2026-09-20): a read reported flat as
+ * `{ file_path: 'sources/architecture.docx' }` named its file, and the write beside it —
+ * reported by the same adapter as `{ server, tool, arguments: { file_path, content } }` because
+ * it carried `is_mcp_tool_call` — named nothing at all. Every key these readers look for was one
+ * level down, so the row drew `write_wiki_file` and stopped.
+ *
+ * That is backwards where it costs most: the wrapped shape is what **this product's own vault
+ * server** produces, and the row that lost its target was the one that had just **failed**. A
+ * failure whose subject is missing is the least readable line in the trace.
+ *
+ * `acp-client.ts` already required `server`, `tool` and an object `arguments` together before
+ * trusting this shape (`readCorrelatedMcpToolContext`); the same three are required here, so a
+ * tool that merely happens to take an `arguments` parameter is left alone.
+ */
+function toolArguments(input: Record<string, unknown>): Record<string, unknown> {
+  const inner = input.arguments;
+  if (
+    typeof input.server === 'string'
+    && typeof input.tool === 'string'
+    && !!inner
+    && typeof inner === 'object'
+    && !Array.isArray(inner)
+  ) {
+    return inner as Record<string, unknown>;
+  }
+  return input;
+}
+
 export function readToolTargets(
   rawInput: unknown,
   known: ReadonlySet<string>,
 ): string[] {
   if (known.size === 0) return [];
   if (!rawInput || typeof rawInput !== 'object' || Array.isArray(rawInput)) return [];
-  const input = rawInput as Record<string, unknown>;
+  const input = toolArguments(rawInput as Record<string, unknown>);
   const out: string[] = [];
   for (const key of SLUG_ARG_KEYS) {
     const value = input[key];
@@ -156,7 +187,7 @@ export function readToolPathArgument(rawInput: unknown): string | null {
 
 export function readToolFallbackTarget(rawInput: unknown): ToolFallbackTarget | null {
   if (!rawInput || typeof rawInput !== 'object' || Array.isArray(rawInput)) return null;
-  const input = rawInput as Record<string, unknown>;
+  const input = toolArguments(rawInput as Record<string, unknown>);
 
   const path = firstString(input, PATH_ARG_KEYS);
   if (path) return { kind: 'path', value: clamp(pathTail(path)) };
