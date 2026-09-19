@@ -3437,7 +3437,7 @@
     "step1TitleManual": "Create the connect config",
     "step1Desc": "Press the button for your tool and it's ready to read and write this folder with you.",
     "step2Title": "Restart the agent",
-    "step2Desc": "Quit and reopen Claude Code, Codex, Cursor, or Antigravity to apply the connection.",
+    "step2Desc": "Quit and reopen the tool you just connected. The others can stay as they are.",
     "step3Title": "Confirm the connection",
     "step3Desc": "Once the agent starts reading this map, it shows up here.",
     "advancedToggle": "Advanced · detailed checks",

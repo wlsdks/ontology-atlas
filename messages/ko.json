@@ -3437,7 +3437,7 @@
     "step1TitleManual": "연결 설정 만들기",
     "step1Desc": "쓰는 도구의 버튼을 누르면 이 폴더를 함께 읽고 쓸 준비가 돼요.",
     "step2Title": "에이전트 다시 시작",
-    "step2Desc": "Claude Code·Codex·Cursor·Antigravity를 껐다 켜면 연결이 반영돼요.",
+    "step2Desc": "방금 연결한 도구를 껐다 켜면 반영돼요. 나머지는 그대로 둬도 됩니다.",
     "step3Title": "연결 확인",
     "step3Desc": "에이전트가 이 지도를 읽기 시작하면 여기에 표시돼요.",
     "advancedToggle": "고급 · 자세한 검증",
