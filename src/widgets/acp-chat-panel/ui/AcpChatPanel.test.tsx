@@ -253,15 +253,33 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     );
 
     const choices = screen.getByTestId('acp-chat-choices');
-    // Equal slots decide the width, so a long option label cannot widen one picker past the
-    // other or push the send button off the composer row.
-    expect(choices).toHaveClass('flex', 'min-w-0', 'flex-1');
+    /*
+     * ⚠️ **Not `flex-1`** (2026-09-19). A `basis-0 flex-1` slot is served last, so the runtime
+     * name beside it took its full content width and this row got the remainder — 48px, the
+     * picker's floor, with the mode's word clipped to fourteen pixels while that name was never
+     * truncated at any width. Content-sized here serves the control first.
+     *
+     * It still cannot push send off the row: `min-w-0` plus the default shrink means this row
+     * yields once the name has nothing left to give, and the picker inside keeps its own cap.
+     * The rendered proof across the drag range is `agent-composer-footer-width.spec.ts`.
+     */
+    expect(choices).toHaveClass('flex', 'min-w-0');
+    expect(choices).not.toHaveClass('flex-1');
     expect(choices).not.toHaveClass('shrink-0');
     // `className` lands on the Select's own wrapper; the trigger inside it is `w-full`.
     // A quiet picker is content-sized with a floor, never an equal slot that could swell.
     const modeWrapper = screen.getByTestId('acp-chat-mode').closest('.relative')!;
     expect(modeWrapper.className).toContain('min-w-[3rem]');
     expect(modeWrapper.className).toContain('shrink');
+    expect(modeWrapper.className).toContain('max-w-[16rem]');
+    /*
+     * The name is the elastic one, and below the width that holds both it leaves. The class
+     * carries both halves of that rule; which width it lands at is measured in the rendered
+     * sweep, not here — jsdom has no layout.
+     */
+    const runtimeName = screen.getByTestId('acp-chat-runtime-label');
+    expect(runtimeName.className).toContain('shrink-[99]');
+    expect(runtimeName.className).toContain('@min-[286px]/composer:inline');
     // One tool, one model: nothing to choose, so the tool's name carries the model as text
     // instead of a one-entry picker (owner, 2026-09-07: the model is the tool's own entry).
     expect(screen.queryByTestId('acp-chat-runtime')).toBeNull();
