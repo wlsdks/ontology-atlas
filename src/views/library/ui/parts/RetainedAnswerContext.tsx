@@ -87,18 +87,21 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
   const paths = (['changed', 'missing', 'added'] as const).filter((kind) => observation[kind].length);
   return (
     /*
-     * `[&_p]:max-w-[var(--measure-prose)]` rather than a cap on the section: the rule below this
-     * block is drawn by the inner `border-b`, and narrowing that would turn a column-wide
-     * divider into a short dash. The cap belongs on the lines a person reads
-     * (`app/globals.css`, `--measure-prose`).
+     * The column is the line. `--measure-doc-column` is the prose measure spent at the reading
+     * size plus a gutter each side, so every line in this block already ends where the answer's
+     * body does. Until 2026-09-19 the block also put `max-w-[var(--measure-prose)]` on each `p`,
+     * and `ch` resolves at the element's own size: these 11px lines ended at 432px inside the
+     * 629px column the body fills (browser, 1512) — a second right edge over the answer, the
+     * state the 2026-09-12 column decision was written to remove, and the same cap
+     * `SourceSummary` and the problem cards dropped in #1667.
      *
-     * `[&_p]:[word-break:keep-all]` travels with it. A narrower line is a line that wraps, and
-     * `word-break: normal` breaks Hangul between any two syllables — the same defect
-     * `korean-word-break.spec.ts` was written for. The paths paragraph keeps `break-words`
-     * beside it: that is `overflow-wrap`, a different property, so a long unspaced source path
-     * can still break out of its box while a Korean sentence cannot break inside a word.
+     * `[&_p]:[word-break:keep-all]` stays. A line that wraps with `word-break: normal` breaks
+     * Hangul between any two syllables — the defect `korean-word-break.spec.ts` was written
+     * for. The paths paragraph keeps `break-words` beside it: that is `overflow-wrap`, a
+     * different property, so a long unspaced source path can still break out of its box while
+     * a Korean sentence cannot break inside a word.
      */
-    <section data-testid="retained-answer-context" className="mx-auto mt-4 w-full max-w-[var(--measure-doc-column)] px-6 [&_p]:max-w-[var(--measure-prose)] [&_p]:[word-break:keep-all] md:px-10" aria-label={t('answers.evidence')}>
+    <section data-testid="retained-answer-context" className="mx-auto mt-4 w-full max-w-[var(--measure-doc-column)] px-6 [&_p]:[word-break:keep-all] md:px-10" aria-label={t('answers.evidence')}>
       <div role="group" aria-label={t('answers.refresh')} className="border-b border-[color:var(--color-divider)] pb-4">
         <p role="status" aria-live="polite" className="sr-only">{working ? t(`answers.phase.${phase}`) : ''}</p>
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">

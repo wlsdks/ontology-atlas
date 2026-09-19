@@ -367,6 +367,23 @@ test('the answer page demotes leaving for the list below asking for a draft', as
   await page.getByTestId('library-questions-open').click();
   await expect(page.getByTestId('retained-answer-context')).toBeVisible();
 
+  /*
+   * **The block's lines end where the answer's body ends** (2026-09-19). Each `p` wore the
+   * `ch` measure itself and, at 11px, stopped 197px short of the column the body fills: a
+   * second right edge over the answer. The column is the measure; no line carries its own.
+   */
+  const lines = await page.evaluate(() => {
+    const block = document.querySelector('[data-testid="retained-answer-context"]')!;
+    const column = block.firstElementChild!.getBoundingClientRect().right;
+    return Array.from(block.querySelectorAll('p'))
+      .filter((line) => line.textContent?.trim() && !line.classList.contains('sr-only'))
+      .map((line) => ({ own: getComputedStyle(line).maxWidth, gap: column - line.getBoundingClientRect().right }));
+  });
+  expect(lines.length).toBeGreaterThan(1);
+  expect(lines.map((line) => line.own)).toEqual(lines.map(() => 'none'));
+  // The lines that share no row with a control reach the column; the first sits beside the request button.
+  expect(lines.filter((line) => Math.abs(line.gap) < 1).length).toBeGreaterThanOrEqual(2);
+
   const hierarchy = await page.evaluate(() => {
     const read = (id: string) => {
       const node = document.querySelector(`[data-testid="${id}"]`)!;
