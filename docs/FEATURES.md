@@ -1,7 +1,7 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-09-17 (added Library Rounds: unattended hourly consistency checks and one-turn service passes under a standing scope approved once, with a since-you-left card and a time-axis ledger. Earlier (2026-09-15) added saved constellations as durable task scope across Galaxy, Library, MCP, and CLI. Earlier kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser; on 2026-08-31 documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
+> Last updated: 2026-09-19 (the analysis opens on a brief across the ontology, the wiki, the harness and agent activity, measured from the reader's last visit, with the app dating cited code against each concept in one Git walk. Earlier (2026-09-17) added Library Rounds: unattended hourly consistency checks and one-turn service passes under a standing scope approved once, with a since-you-left card and a time-axis ledger. Earlier (2026-09-15) added saved constellations as durable task scope across Galaxy, Library, MCP, and CLI. Earlier kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser; on 2026-08-31 documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
 > source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments,
 > and project meaning receipts — `/ontology` is a compatibility redirect to
 > `/topology?index=expanded`, `/ontology/edit` and
@@ -1742,7 +1742,7 @@ surface chrome.
 
 ---
 
-### `/ontology/insights` — Insights (6-tab maintenance board)
+### `/ontology/insights` — Insights (the brief, then the 6-tab maintenance board)
 
 The first five tabs derive their numbers from the data source the page already used
 (`useOntologyInsight`, `entities/knowledge-graph/lib/ontology-tree`) — no separate persona or
@@ -1751,11 +1751,17 @@ agent one visible, reviewable request grounded in the same ontology. **One tab a
 different questions and grew to 2.2× the 14-inch viewport, so it was split into
 Composition / Connection / Boundary. Scroll contract: every tab stays ≤ 1.3× viewport.
 
-#### Census strip (always visible, 2026-09-06)
+#### Tab 0 — Brief (default, 2026-09-19)
+- **What in your understanding has to change**, across the three cores and agent activity, measured from the reader's last visit to this vault (browser storage, never the folder; the last seven days on a first visit; "Seen up to here" moves the anchor). Four equal-height cards: ontology, wiki, harness, agent activity. Each opens with its magnitude (concepts · pages · guide files · calls since), then three words — current / stale / unknown for ontology and wiki, told / gated / watched for the harness, reads / writes / agents for activity — then lines: one count per sentence, a mark by state, and **Open** to the screen that lists what the line counts (the to-do or growth tab, `/library`, `/architecture?view=coverage`, `/agents`). No list is copied here.
+- The heading states two sums of named lines — things to learn (stale) and things not checked (unknown) — never one score. Lines the builders rank: code moved under a concept, cited code gone, agent-written and unreviewed, names not held; pages whose source changed, disagreements the last check found, sources not written up, orphan pages, dangling links, pages written or rewritten since; areas no guide reaches / no rule gates / no check watches, mirror drift, guide files changed since; calls, writes, agents since. `lib/brief/*` are pure builders with tests; `use-insights-brief.ts` feeds them from the readers the Library, Harness and Agents screens already use.
+- **Honest about where it stands.** The browser cannot read the code beside a vault or its dot folders, so ontology evidence and harness coverage read "measured in the app"; in the app one bounded Git walk (`git_paths_last_change`) dates every cited `path:` and every concept document, and `evidence-states.ts` states each concept current, stale (code moved after the meaning was last touched), missing (cited path gone) or unknown. Decision: `docs/records/decisions/2026-09-19-analysis-brief-across-three-cores-*.md`.
+- The census strip below does not draw on this tab: its numbers are the cards' magnitudes.
+
+#### Census strip (every tab but the brief, 2026-09-06)
 - Four equal-height tiles above the tab bar (`InsightsCensusStrip`): concepts (kind chips and the share held by a domain), relations (top types, the hidden remainder named, density), health (the verdict in words, blocking and advisory counts, orphans · islands · cycles), and the last 12 weeks (hairline bars from `weeklyTotals`, a quiet week drawn as a baseline tick). It replaced the corner census line, the audience banner, the Composition hero and the Freshness aggregate trend, which all counted the same folder. Decision: `docs/DECISIONS.md` 2026-09-06.
 #### Header
 - Title + subtitle
-- `TabBar` — Do next (default) / Composition Inventory / Connection Connections / Boundary Boundaries / Freshness / Flow. Tab state in `?tab=`; the first four badges count what their tabs are about (verdict total / nodes / edges / cross-domain relations). Freshness and Flow leave the badge slot empty because neither has an honest single count. Legacy `?tab=structure|overview` → Composition, `?tab=relations` → Connection, so bookmarks and agent return-chip links stay alive.
+- `TabBar` — Brief (default) / Do next / Not held / Inventory / Connections / Boundaries / Growth / Flow. Tab state in `?tab=`; the default omits it, so `/ontology/insights/` is the brief and the to-do list is `?tab=do-next`; the first four badges count what their tabs are about (verdict total / nodes / edges / cross-domain relations). Freshness and Flow leave the badge slot empty because neither has an honest single count. Legacy `?tab=structure|overview` → Composition, `?tab=relations` → Connection, so bookmarks and agent return-chip links stay alive.
 
 #### Tab 1 — Do next
 - **One row per finding group** (2026-09-06, `lib/do-next-groups.ts`): name · count · disclosure, five rows per opened group with its own "N more"; the first group starts open so the most urgent files are named without a click. Group counts are the verdict's own signal counts re-keyed and `tests/contract/do-next-group-sum.contract.test.ts` pins their sum to the title count. The badge is the single verdict model (`insights-verdict`) shared with the body. The picks band and the readiness gauge are gone.
