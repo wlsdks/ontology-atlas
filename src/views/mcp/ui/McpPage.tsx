@@ -67,6 +67,13 @@ export function McpPage({
   const ownConnectors = useVaultConnectors(providedConnectors ? null : handle);
   const connectors = providedConnectors ?? ownConnectors;
   const enabledCount = connectors.connectors.filter((connector) => connector.enabled).length;
+  /*
+   * **The heading states the count only once it knows one.** `connectors` is an empty list
+   * while the folder is still being read, so a count taken then says "0 switched on" — a
+   * fact, in the same breath as the panel below saying it is still looking. The plain name
+   * until the store answers; the number the moment it does.
+   */
+  const countKnown = connectors.status === 'ready';
 
   /*
    * The "add a connector" press lives in the group heading, beside the count, where the share
@@ -149,7 +156,9 @@ export function McpPage({
            * off, and a list of five where none is on reaches an agent as nothing at all —
            * the number that answers "is anything actually attached" is this one.
            */
-          label={t('connectorsHeadingCount', { count: enabledCount })}
+          label={
+            countKnown ? t('connectorsHeadingCount', { count: enabledCount }) : t('connectorsHeading')
+          }
           trailing={
             connectorsListed ? (
               <Chip
