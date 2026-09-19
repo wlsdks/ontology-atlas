@@ -499,7 +499,10 @@
     "anatomyAlwaysWeight": "{size} read every turn",
     "anatomyAlwaysWeightLabel": "Why this size matters",
     "anatomyAlwaysWeightHint": "These files are read before the agent has seen a line of code, on every turn, in every session, whatever the tool. A count cannot say it: three 2 KB documents and three 40 KB documents are both \"3\", and that difference is the subject. Codex merges the root AGENTS.md with the nested file on the working path and silently truncates past its cap. Per-file sizes against that cap are in the Guides view.",
-    "anatomySilentGuards": "{count, plural, one {# script this config names is not on disk} other {# scripts these configs name are not on disk}}: {scripts}. That produces no block and no error; the guard is simply absent."
+    "anatomySilentGuards": "{count, plural, one {# script this config names is not on disk} other {# scripts these configs name are not on disk}}: {scripts}. That produces no block and no error; the guard is simply absent.",
+    "anatomyChainWeight": "the deepest chain, {path}, adds {size} for {total} a turn",
+    "anatomyChainWeightLabel": "How the chain is merged",
+    "anatomyChainWeightHint": "A coding agent concatenates the AGENTS.md files it meets from the repository root down to the folder it is working in, at most one per directory, with the nearer file overriding what came before. So a turn does not have one cost per repository: it is the always-read set plus whatever that folder adds. The figure here is the deepest chain, which is the most expensive case; work in a shallower folder costs less."
   },
   "architecture": {
     "eyebrow": "CODE ARCHITECTURE",

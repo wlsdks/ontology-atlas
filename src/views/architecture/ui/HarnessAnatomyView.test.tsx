@@ -224,4 +224,22 @@ describe('HarnessAnatomyView', () => {
     mount(report());
     expect(screen.queryByTestId('harness-anatomy-silent')).toBeNull();
   });
+
+  it('prints what the deepest working path adds on top of every turn', () => {
+    mount(
+      report({
+        analysis: {
+          records: [
+            { path: 'AGENTS.md', kind: 'instructions', ruleId: 'agents-md', tools: [], bytes: 10_240, drift: [] },
+            { path: 'mcp/AGENTS.md', kind: 'instructions', ruleId: 'nested-agents-md', tools: [], bytes: 5_120, drift: [] },
+          ],
+        } as never,
+      }),
+    );
+    const scoped = screen.getByTestId('harness-anatomy-slot-scoped');
+    expect(scoped).toHaveTextContent('5.0 KB');
+    /* The sum is the point: 10 KB always plus 5 KB in that folder is what a turn there costs. */
+    expect(scoped).toHaveTextContent('15.0 KB');
+    expect(scoped).toHaveTextContent('mcp/AGENTS.md');
+  });
 });

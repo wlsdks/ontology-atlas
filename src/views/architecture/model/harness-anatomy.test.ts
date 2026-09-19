@@ -448,3 +448,43 @@ describe('a guard that fails in silence', () => {
   });
 });
 
+describe('the instruction chain', () => {
+  it('names the deepest nested file and what it adds, not the whole nested set', () => {
+    /* A turn does not have one cost per repository: the tool concatenates root-down to the folder
+       being worked in, so the standing cost is the always-read set plus what that folder adds. */
+    const anatomy = buildHarnessAnatomy(
+      report({
+        analysis: {
+          records: [
+            record({ path: 'AGENTS.md', kind: 'instructions', bytes: 10_240 }),
+            record({ path: 'src/AGENTS.md', kind: 'instructions', ruleId: 'nested-agents-md', bytes: 2_048 }),
+            record({ path: 'mcp/AGENTS.md', kind: 'instructions', ruleId: 'nested-agents-md', bytes: 4_096 }),
+          ],
+        } as never,
+      }),
+    );
+    /* Same depth, so the heavier one is the honest example: it is the most a turn can be asked to
+       carry. */
+    expect(anatomy.deepestNested).toEqual({ path: 'mcp/AGENTS.md', bytes: 4_096 });
+    expect(anatomy.alwaysBytes).toBe(10_240);
+  });
+
+  it('prefers depth over weight, because depth is what a working path walks', () => {
+    const anatomy = buildHarnessAnatomy(
+      report({
+        analysis: {
+          records: [
+            record({ path: 'src/AGENTS.md', kind: 'instructions', ruleId: 'nested-agents-md', bytes: 9_000 }),
+            record({ path: 'src/widgets/AGENTS.md', kind: 'instructions', ruleId: 'nested-agents-md', bytes: 1_000 }),
+          ],
+        } as never,
+      }),
+    );
+    expect(anatomy.deepestNested?.path).toBe('src/widgets/AGENTS.md');
+  });
+
+  it('is null where nothing nests, which is most repositories', () => {
+    expect(buildHarnessAnatomy(report()).deepestNested).toBeNull();
+  });
+});
+

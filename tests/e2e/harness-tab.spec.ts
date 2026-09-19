@@ -195,6 +195,10 @@ test.describe("하네스 탭", () => {
     await expect(loop).not.toContainText("아직 없음");
     await expect(anatomy).not.toContainText("%");
 
+    // The chain: a turn inside a governed folder pays the always-read set plus that folder's file,
+    // which is the mechanic the tool documents and a flat per-repository number cannot express.
+    await expect(page.getByTestId("harness-anatomy-slot-scoped")).toContainText("가장 깊은 사슬");
+
     // ⚠️ The fixture's config names `block-npm-publish.sh` and the disk does not have it. Every
     // count on this screen stays healthy while that guard is absent, so the absence is said out
     // loud — the one warning this view draws.

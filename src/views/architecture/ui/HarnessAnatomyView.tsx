@@ -65,6 +65,7 @@ function SlotRow({
   copied,
   onCopy,
   extraHint,
+  extraHintLabel,
   bodyHint,
 }: {
   slot: AnatomySlot;
@@ -73,6 +74,8 @@ function SlotRow({
   extra?: string | null;
   /** The hint that line needs when the number is one a reader will want to argue with. */
   extraHint?: string | null;
+  /** That hint's button label, when the row is not the always-read one. */
+  extraHintLabel?: string;
   /** Detail a row's one sentence should not carry, behind this destination's usual hint. */
   bodyHint?: string | null;
   copied: boolean;
@@ -139,7 +142,7 @@ function SlotRow({
         <div className="mt-1 flex flex-wrap items-center gap-x-1 text-caption tabular-nums text-[color:var(--color-text-tertiary)]">
           <span>{extra}</span>
           {extraHint ? (
-            <InfoHint align="left" label={t('anatomyAlwaysWeightLabel')}>
+            <InfoHint align="left" label={extraHintLabel ?? t('anatomyAlwaysWeightLabel')}>
               {extraHint}
             </InfoHint>
           ) : null}
@@ -260,8 +263,17 @@ export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
                     t={t}
                     copied={copiedId === slot.id}
                     onCopy={copy}
-                    extraHint={slot.id === 'always' ? t('anatomyAlwaysWeightHint') : null}
+                    extraHint={
+                      slot.id === 'always'
+                        ? t('anatomyAlwaysWeightHint')
+                        : slot.id === 'scoped' && anatomy.deepestNested
+                          ? t('anatomyChainWeightHint')
+                          : null
+                    }
                     bodyHint={slot.id === 'blind' ? t('anatomySlots.blind.hint') : null}
+                    extraHintLabel={
+                      slot.id === 'scoped' ? t('anatomyChainWeightLabel') : undefined
+                    }
                     extra={
                       slot.id === 'permissions' && anatomy.permissions
                         ? t('anatomyPermissionSplit', {
@@ -269,7 +281,15 @@ export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
                             ask: anatomy.permissions.ask,
                             deny: anatomy.permissions.deny,
                           })
-                        : slot.id === 'always' && anatomy.alwaysBytes > 0
+                        : slot.id === 'scoped' && anatomy.deepestNested
+                          ? t('anatomyChainWeight', {
+                              path: anatomy.deepestNested.path,
+                              size: formatKb(anatomy.deepestNested.bytes),
+                              total: formatKb(
+                                anatomy.alwaysBytes + anatomy.deepestNested.bytes,
+                              ),
+                            })
+                          : slot.id === 'always' && anatomy.alwaysBytes > 0
                           ? /*
                               The turn's standing cost, beside the count that cannot carry it:
                               three documents of 2 KB and three of 40 KB are the same "3", and the

@@ -254,6 +254,19 @@ export interface HarnessAnatomy {
    * they are different questions.
    */
   alwaysBytes: number;
+  /**
+   * The nested instruction file that costs the most beside the always-read set, and what it adds.
+   *
+   * The mechanic this is about is documented by the tool rather than invented here: Codex
+   * concatenates `AGENTS.md` from the repository root down to the working directory, at most one
+   * file per directory, and a nearer file overrides an earlier one. So the standing cost of a turn
+   * is not one number for the whole repository — it is the always-read set **plus whatever the
+   * folder being worked in adds** — and a reader who only sees the first number will underestimate
+   * every turn that happens inside a governed folder.
+   *
+   * `null` when the repository nests nothing, which is most repositories.
+   */
+  deepestNested: { path: string; bytes: number } | null;
   /** `permissions.deny` / `ask` counts, or `null` when no settings file parsed. */
   permissions: { allow: number; deny: number; ask: number } | null;
   /** Configs that gate execution behind an approval this app cannot read (Codex). */
@@ -297,6 +310,7 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
   const always: string[] = [];
   const blind: string[] = [];
   let alwaysBytes = 0;
+  let deepestNested: { path: string; bytes: number } | null = null;
   const scoped: string[] = [];
   const skills: string[] = [];
   const subagents: string[] = [];
@@ -329,6 +343,17 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
     }
     if (record.ruleId === 'nested-agents-md') {
       scoped.push(record.path);
+      /* Deepest first, then heaviest: the chain a turn walks is decided by where the work happens,
+         and among equals the one that adds the most is the honest example to print. */
+      const depth = record.path.split('/').length;
+      const bestDepth = deepestNested ? deepestNested.path.split('/').length : -1;
+      if (
+        !deepestNested ||
+        depth > bestDepth ||
+        (depth === bestDepth && record.bytes > deepestNested.bytes)
+      ) {
+        deepestNested = { path: record.path, bytes: record.bytes };
+      }
       continue;
     }
     if (record.kind === 'rules') {
@@ -460,6 +485,7 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
   return {
     slots: ANATOMY_ORDER.map((id) => byId.get(id)!),
     alwaysBytes,
+    deepestNested,
     permissions,
     approvalGates: uniqueSorted(approvalGates),
     silentGuards: {
