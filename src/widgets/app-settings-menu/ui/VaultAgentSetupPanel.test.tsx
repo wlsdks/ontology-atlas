@@ -1359,6 +1359,49 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByTestId('agent-setup-advanced')).toBeInTheDocument();
   });
 
+  /*
+   * **One dialog, one name, one count** (2026-09-20).
+   *
+   * Rendered, the verification dialog said its own name three times — on the chip that opens it,
+   * as its own title, and again as the heading of the section holding the per-tool table — and
+   * stated how many connection files were ready twice, in the subtitle and again 130px below in
+   * the section's first line. Both are the duplicated prose the owner asked this screen to shed.
+   *
+   * Counted rather than matched on a sentence: the rule is "not twice", and a wording change
+   * that keeps it once should not redden this.
+   */
+  it('확인 대화상자는 제 이름과 개수를 한 번씩만 말한다', () => {
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault()}
+        serverAvailability={bundledServer}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('agent-setup-verify-open'));
+    const dialog = screen.getByTestId('agent-setup-verify-dialog');
+    const title = koMessages.agentConnect.step3Title;
+    const headings = [...dialog.querySelectorAll('h2, h3')].map((h) => h.textContent?.trim());
+    expect(headings.filter((h) => h === title)).toHaveLength(1);
+
+    /*
+     * "N/M connection files ready" is the subtitle's job; the section below states what to do
+     * about the missing ones. Matched on the **shape** rather than the sentence, so the
+     * catalogue can be reworded and the rule still reads "said once".
+     */
+    const countShape = /\d+\/\d+개 준비됨/;
+    const saidTheCount = [...dialog.querySelectorAll('p, span')].filter((el) =>
+      countShape.test(el.textContent ?? ''),
+    );
+    // Ancestors repeat a descendant's text, so the deepest element carrying it is the count.
+    const owners = saidTheCount.filter(
+      (el) => !saidTheCount.some((other) => other !== el && el.contains(other)),
+    );
+    expect(owners).toHaveLength(1);
+  });
+
   it('missing 설정은 생성 버튼이고 이미 유효한 설정은 준비 상태다', () => {
     render(
       <VaultAgentSetupPanel
