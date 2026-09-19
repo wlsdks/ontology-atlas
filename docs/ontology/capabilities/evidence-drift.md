@@ -22,7 +22,9 @@ Says, for one concept, whether the meaning a person recorded still stands on the
 1. **One rule, both surfaces.** `mcp/src/evidence-verdict.mjs` holds the verdict and its priority, and the analysis screen reaches it through `src/shared/lib/evidence-verdict.mjs`. They disagreed for a day, so `tests/contract/evidence-drift-parity.contract.test.ts` runs one fixture through the screen's resolver and the server's and compares.
 2. **The priority is total.** A cited path that is gone outranks a file that moved; a moved file outranks anything undated; a folder that moved is never stale, because a folder changes on almost any commit, so it lands in unknown with its own reason.
 3. **Unknown is a real answer.** A browser cannot read the code beside a vault, a vault may sit outside Git, and a path may have no commit in the walk window. Each of those says so rather than reporting the concept as current.
-4. **Bounded by construction.** One `git log --name-only` walk over at most 3000 commits and 512 paths answers every concept; rows are sorted by slug so two runtimes report one order.
+4. **Bounded by construction.** One `git log --name-only` walk over at most 3000 commits and 512 paths answers every concept; rows are sorted by slug so two runtimes report one order. The walk asks Git for literal paths, so a non-ASCII name matches what was asked about, and it dates the concept documents before the paths they cite, so a vault citing more paths than the cap still knows when its own meaning was written.
+5. **Nothing checked is not zero drift.** The walk cannot run in two cases: a folder outside a readable repository, and a vault where no concept cites an implementation path. Every count is then zero, and a surface must not print that as a clean bill of health. The answer carries `checked: false` with its reason, and each readout says the code was not checked instead of reporting a zero.
+6. **A count of concepts is disclosed as concepts.** A line that counts concepts opens into one row per concept, carrying the path its verdict rests on. A concept whose cited path is gone *and* whose other path moved is counted once, under the verdict that claimed it.
 
 ## Evidence
 
@@ -30,6 +32,8 @@ Says, for one concept, whether the meaning a person recorded still stands on the
 - The server's answer: mcp/src/tools/validate-vault.mjs, returned as `validate_vault.evidenceDrift`
 - The walk, in Node: mcp/src/git-tools.mjs#collectPathLastChanges
 - The walk, in the installed app: src-tauri/src/git.rs#git_paths_last_change
+- The terminal readout: cli/src/commands/index.mjs#evidenceSentence
+- The named rows behind a count: src/views/ontology-insights/lib/brief/evidence-details.ts#buildEvidenceDetails
 - The screen's resolver: src/views/ontology-insights/lib/brief/evidence-states.ts#resolveEvidenceStates
 - Parity gate: tests/contract/evidence-drift-parity.contract.test.ts
 
@@ -37,6 +41,7 @@ Says, for one concept, whether the meaning a person recorded still stands on the
 
 - A per-concept verdict wherever Git can be read, and the named rows behind a count: the concept, the exact path, the date it changed and the date its document last changed.
 - The same four words for a person and for an agent, so a handoff does not change the fact.
+- Three readouts of one answer: the analysis screen, `validate_vault.evidenceDrift` for an agent, and the terminal's index summary.
 
 ## Excludes
 
