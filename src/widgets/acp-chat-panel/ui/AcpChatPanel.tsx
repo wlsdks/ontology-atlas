@@ -277,6 +277,7 @@ export function AcpChatPanel({
   runtimeLabel,
   vaultRoot,
   beforeComposer = null,
+  systemPromptAppendix = null,
   noticeActions = null,
   mcpServers,
   sessionEnabled = true,
@@ -403,6 +404,8 @@ export function AcpChatPanel({
    * rather than in the index column (owner, 2026-09-07). Null draws nothing.
    */
   beforeComposer?: ReactNode;
+  /** The screen's own paragraph after the vault handoff; see `UseAcpSessionOptions`. */
+  systemPromptAppendix?: string | null;
   /**
    * What a person can do from an `auto-allowed` notice, at the one moment the consequence
    * is visible: open the page that landed, or ask before the next one. Null draws the
@@ -517,6 +520,7 @@ export function AcpChatPanel({
     onTurnStarted: captureTurnStart,
     captureTaskBaseline,
     autoDecide,
+    systemPromptAppendix,
   });
   const taskMeaningReview = useTaskMeaningReview({
     pending,
