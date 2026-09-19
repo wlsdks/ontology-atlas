@@ -26,6 +26,8 @@ export interface OntologyMapTokens {
   nodeStrokeElement: string;
   nodeFillDim: string;
   nodeStrokeDim: string;
+  /** `--map-ego-dim-label-alpha` — the name of a domain the ego focus dimmed; children stay at 0. */
+  egoDimLabelAlpha: number;
   nodeFillStale: string;
   nodeStrokeStale: string;
   nodeHoleFill: string;
@@ -326,6 +328,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "nodeStrokeElement", cssVar: "--map-node-stroke-element", kind: "color" },
   { key: "nodeFillDim", cssVar: "--map-node-fill-dim", kind: "color" },
   { key: "nodeStrokeDim", cssVar: "--map-node-stroke-dim", kind: "color" },
+  { key: "egoDimLabelAlpha", cssVar: "--map-ego-dim-label-alpha", kind: "number" },
   { key: "nodeFillStale", cssVar: "--map-node-fill-stale", kind: "color" },
   { key: "nodeStrokeStale", cssVar: "--map-node-stroke-stale", kind: "color" },
   { key: "nodeHoleFill", cssVar: "--map-node-hole-fill", kind: "color" },
