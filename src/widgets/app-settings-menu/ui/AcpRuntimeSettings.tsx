@@ -321,7 +321,8 @@ export function AcpRuntimeSettings({
           data-testid="app-settings-runtimes-recheck"
           disabled={checking}
           onClick={() => void refresh()}
-          className={DETAIL_TOGGLE_CHIP}
+          /* `shrink-0`: at 390 the chip yielded to the sentence and broke its two words onto two lines. */
+          className={`${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`}
         >
           <RefreshCw size={ICON_SIZE.md} aria-hidden />
           {t('recheck')}
