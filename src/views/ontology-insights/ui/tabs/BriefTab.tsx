@@ -78,15 +78,15 @@ export function BriefTab({ brief }: { brief: InsightsBrief }) {
       </div>
       <div className="grid grid-cols-1 gap-[var(--card-gap)] md:grid-cols-2 xl:grid-cols-4">
         {cores.map((core) => (
-          <BriefCoreCard key={core.core} core={core} details={brief.details} />
+          <BriefCoreCard key={core.core} core={core} details={brief.details} nowMs={brief.nowMs} />
         ))}
       </div>
-      <BriefSinceList rows={brief.since} total={brief.sinceTotal} />
+      <BriefSinceList rows={brief.since} total={brief.sinceTotal} nowMs={brief.nowMs} />
     </section>
   );
 }
 
-function BriefCoreCard({ core, details }: { core: BriefCore; details: InsightsBrief['details'] }) {
+function BriefCoreCard({ core, details, nowMs }: { core: BriefCore; details: InsightsBrief['details']; nowMs: number }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const [c1, c2, c3] = COLUMNS[core.core];
   const lines = visibleLines(core);
@@ -110,7 +110,7 @@ function BriefCoreCard({ core, details }: { core: BriefCore; details: InsightsBr
           <li className="text-body text-[color:var(--color-text-tertiary)]">{t('quiet')}</li>
         ) : null}
         {lines.map((line) => (
-          <BriefLineRow key={line.id} line={line} details={details.get(line.id) ?? EMPTY_DETAILS} />
+          <BriefLineRow key={line.id} line={line} details={details.get(line.id) ?? EMPTY_DETAILS} nowMs={nowMs} />
         ))}
       </ul>
     </CensusTile>
@@ -126,7 +126,7 @@ const DETAIL_ROWS = 5;
  * rests on. A count whose only destination is another screen counting something else is
  * the falsifier this decision wrote down for itself (PO evidence seat, 2026-09-19).
  */
-function BriefLineRow({ line, details }: { line: BriefLine; details: readonly BriefLineDetail[] }) {
+function BriefLineRow({ line, details, nowMs }: { line: BriefLine; details: readonly BriefLineDetail[]; nowMs: number }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const format = useFormatter();
   const href = LINE_HREF[line.id];
@@ -148,8 +148,8 @@ function BriefLineRow({ line, details }: { line: BriefLine; details: readonly Br
                   <span className="text-label text-[color:var(--color-text-quaternary)]">
                     {row.at
                       ? t('detailMoved', {
-                          moved: format.relativeTime(new Date(row.at)),
-                          doc: row.docAt ? format.relativeTime(new Date(row.docAt)) : t('detailDocUnknown'),
+                          moved: format.relativeTime(new Date(row.at), nowMs),
+                          doc: row.docAt ? format.relativeTime(new Date(row.docAt), nowMs) : t('detailDocUnknown'),
                         })
                       : t('detailGone')}
                   </span>
@@ -191,7 +191,7 @@ const CORE_MARK: Record<SinceRow['core'], string> = {
  * The cards count; this names. Everything that happened after the anchor, newest first,
  * from the dates the folder already carries — no list is invented and none is copied.
  */
-function BriefSinceList({ rows, total }: { rows: readonly SinceRow[]; total: number }) {
+function BriefSinceList({ rows, total, nowMs }: { rows: readonly SinceRow[]; total: number; nowMs: number }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const format = useFormatter();
   if (total === 0) return null;
@@ -210,7 +210,7 @@ function BriefSinceList({ rows, total }: { rows: readonly SinceRow[]; total: num
               {row.label}
             </span>
             <time dateTime={row.at} className="font-mono tabular-nums text-label text-[color:var(--color-text-quaternary)]">
-              {format.relativeTime(new Date(row.at))}
+              {format.relativeTime(new Date(row.at), nowMs)}
             </time>
             {row.href ? (
               <Link href={row.href} className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>

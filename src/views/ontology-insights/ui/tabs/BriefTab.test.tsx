@@ -28,6 +28,7 @@ function brief(overrides: Partial<InsightsBrief> = {}): InsightsBrief {
   return {
     anchor: { anchorMs: Date.parse("2026-09-17T00:00:00Z"), isDefaultWindow: false },
     sinceDays: 2,
+    nowMs: Date.parse("2026-09-19T00:00:00Z"),
     markSeen: vi.fn(),
     ontology: core({
       core: "ontology",

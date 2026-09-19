@@ -31,6 +31,13 @@ export interface InsightsBrief {
   anchor: BriefAnchor;
   /** Whole days between the anchor and the last read, for the heading. */
   sinceDays: number;
+  /**
+   * The instant the counts were read. Every relative time on the screen is measured against
+   * this one value: `relativeTime` without it falls back to the render clock, which differs
+   * between the server render and the first client frame and makes the same row say two
+   * things (next-intl ENVIRONMENT_FALLBACK, observed 2026-09-19).
+   */
+  nowMs: number;
   markSeen: () => void;
   ontology: BriefCore;
   wiki: BriefCore;
@@ -320,7 +327,7 @@ export function useInsightsBrief({
     [docs, log, harnessReport, mode, vault.agentActivityLog, anchor.anchorMs],
   );
 
-  return { anchor, sinceDays, markSeen, ontology, wiki, harness, agent, since: sinceList.rows, sinceTotal: sinceList.total, details };
+  return { anchor, sinceDays, nowMs, markSeen, ontology, wiki, harness, agent, since: sinceList.rows, sinceTotal: sinceList.total, details };
 }
 
 async function readWikiLog(handle: FileSystemDirectoryHandle): Promise<string> {
