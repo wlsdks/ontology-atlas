@@ -1,6 +1,14 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
-import { nameEquals, nameIncludes, nameStartsWith, normalizeForMatch } from "@/shared/lib/node-name-match";
+import { hangulIncludes, hangulStartsWith } from "@/shared/lib/hangul-match";
+import {
+  nameEquals,
+  nameHangulIncludes,
+  nameHangulStartsWith,
+  nameIncludes,
+  nameStartsWith,
+  normalizeForMatch,
+} from "@/shared/lib/node-name-match";
 
 /**
  * N12 (persona-ux-2026-07 report) — element nodes are often titled after the
@@ -52,14 +60,23 @@ export interface MatchOntologyOptions {
  * Ontology node search.
  *
  * Scores (lower is a weaker match):
- *   5 — exact name match. Someone who typed a name in full is looking for the node
+ *   7 — exact name match. Someone who typed a name in full is looking for the node
  *       with that name; tied with a prefix match, the recency tie-break sinks the
  *       exact match (measured 2026-08-13: "order" landed 6th, below five others)
- *   4 — name prefix match
- *   3 — name substring match
+ *   6 — name prefix match
+ *   5 — name substring match
+ *   4 — Hangul-aware name prefix — consonant initials alone, or the half-typed
+ *       syllable an IME passes through. `shared/lib/hangul-match` owns the rule.
+ *   3 — Hangul-aware name substring
  *   2 — summary substring match
  *   1 — id substring match (for searching a kebab-case slug directly)
  *   0 — no match (excluded)
+ *
+ * The Hangul tiers sit **between** the literal name tiers and the summary tier.
+ * Below the literal ones because a name that really contains what was typed is
+ * the better answer; above the summary because what a Korean typist half-typed is
+ * still a name, and burying it under a body-text graze is the failure the display-name
+ * rule above already fixed once.
  *
  * "Name" means the canonical `title` **and** every display name on screen
  * (`display` plus all `display_<locale>`) — `shared/lib/node-name-match` is the
@@ -121,9 +138,11 @@ export function matchOntologyNodes(
     const id = normalizeForMatch(node.id);
 
     let score = 0;
-    if (nameEquals(node, trimmed)) score = 5;
-    else if (nameStartsWith(node, trimmed)) score = 4;
-    else if (nameIncludes(node, trimmed)) score = 3;
+    if (nameEquals(node, trimmed)) score = 7;
+    else if (nameStartsWith(node, trimmed)) score = 6;
+    else if (nameIncludes(node, trimmed)) score = 5;
+    else if (nameHangulStartsWith(node, trimmed)) score = 4;
+    else if (nameHangulIncludes(node, trimmed)) score = 3;
     else if (summary.includes(trimmed)) score = 2;
     else if (id.includes(trimmed)) score = 1;
 
@@ -151,11 +170,13 @@ export interface ProjectSearchResult {
 /**
  * Project search.
  *
- * Scores:
- *   5 — exact name / nameEn match (same reason as the node matcher — so the recency
+ * Scores — one ladder with the node matcher, so a mixed result list ranks on one scale:
+ *   7 — exact name / nameEn match (same reason as the node matcher — so the recency
  *       tie-break cannot sink an exact match)
- *   4 — name / nameEn prefix match
- *   3 — name / nameEn substring match
+ *   6 — name / nameEn prefix match
+ *   5 — name / nameEn substring match
+ *   4 — Hangul-aware name prefix (chosung, or a syllable still being typed)
+ *   3 — Hangul-aware name substring
  *   2 — description / tags / category substring match
  *   1 — slug substring match (searching kebab-case directly)
  *   0 — no match (excluded)
@@ -191,9 +212,37 @@ export function matchProjects(
     const slug = project.slug.toLowerCase();
 
     let score = 0;
-    if (name === trimmed || nameEn === trimmed || displays.includes(trimmed)) score = 5;
-    else if (name.startsWith(trimmed) || nameEn.startsWith(trimmed)) score = 4;
-    else if (name.includes(trimmed) || nameEn.includes(trimmed)) score = 3;
+    /*
+     * A `display_<locale>` is a name the screen shows, so it matches exactly where `name` and
+     * `nameEn` do — including the Hangul rungs, since a Korean display name is the one a person
+     * types jamo into. Merged 2026-09-20 from the Korean-keyboard ladder and the display-name
+     * change, which arrived at this block from either side.
+     */
+    if (name === trimmed || nameEn === trimmed || displays.includes(trimmed)) score = 7;
+    else if (
+      name.startsWith(trimmed)
+      || nameEn.startsWith(trimmed)
+      || displays.some((display) => display.startsWith(trimmed))
+    )
+      score = 6;
+    else if (
+      name.includes(trimmed)
+      || nameEn.includes(trimmed)
+      || displays.some((display) => display.includes(trimmed))
+    )
+      score = 5;
+    else if (
+      hangulStartsWith(name, trimmed)
+      || hangulStartsWith(nameEn, trimmed)
+      || displays.some((display) => hangulStartsWith(display, trimmed))
+    )
+      score = 4;
+    else if (
+      hangulIncludes(name, trimmed)
+      || hangulIncludes(nameEn, trimmed)
+      || displays.some((display) => hangulIncludes(display, trimmed))
+    )
+      score = 3;
     else if (
       description.includes(trimmed)
       || tags.includes(trimmed)

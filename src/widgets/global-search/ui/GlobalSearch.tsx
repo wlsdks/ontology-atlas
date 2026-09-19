@@ -19,6 +19,7 @@ import {
   type MeaningfulOntologyKind,
 } from "@/entities/knowledge-graph";
 import { controlClass, HighlightedText } from "@/shared/ui";
+import { snippetAroundFirstMatch } from "@/shared/lib/highlight-match";
 import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match";
 import { focusMapCanvasWhenReady, MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 
@@ -516,8 +517,16 @@ export function GlobalSearch({
                       <HighlightedText text={label} query={isEmptyQuery ? undefined : query} />
                     </span>
                     {node.summary ? (
+                      // The summary is highlighted too, because it is often the only
+                      // reason the row is in the list: typing an English word the
+                      // Korean titles do not contain matched twenty rows whose names
+                      // showed no mark at all, so the list looked arbitrary (measured
+                      // live 2026-09-19, "shopper" on the Online Store sample).
                       <span className="hidden min-w-0 max-w-[14rem] truncate text-body text-[color:var(--color-text-tertiary)] md:block">
-                        {node.summary}
+                        <HighlightedText
+                          text={isEmptyQuery ? node.summary : snippetAroundFirstMatch(node.summary, query)}
+                          query={isEmptyQuery ? undefined : query}
+                        />
                       </span>
                     ) : null}
                   </Command.Item>
@@ -551,11 +560,18 @@ export function GlobalSearch({
                   <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-indigo-text-strong)]">
                     {project.isHub ? t('hub') : t('project')}
                   </span>
+                  {/* Marked like the concept rows above. The same project appears in
+                      both groups — as a concept and as a project — and only one of the
+                      two was showing why it was there (measured live 2026-09-19). */}
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
-                    {projectDisplayName(project, locale)}
+                    {/* The word this screen draws for the project, with the match still lit. */}
+                    <HighlightedText
+                      text={projectDisplayName(project, locale)}
+                      query={isEmptyQuery ? undefined : query}
+                    />
                   </span>
                   <span className="hidden shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)] md:inline">
-                    {project.slug}
+                    <HighlightedText text={project.slug} query={isEmptyQuery ? undefined : query} />
                   </span>
                   <span className="shrink-0 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">
                     {project.status}
