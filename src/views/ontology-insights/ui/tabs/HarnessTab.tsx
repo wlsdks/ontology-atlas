@@ -39,9 +39,23 @@ export function HarnessTab({ detail }: { detail: InsightsBrief['harnessDetail'] 
           ))}
         </dl>
         <p className="mt-3 text-body text-[color:var(--color-text-tertiary)]">{t(detail.availability === 'no-source' ? 'noSource' : detail.availability === 'reading' ? 'reading' : detail.availability === 'unreadable' ? 'unreadable' : 'appOnly')}</p>
-        <Link href={detail.availability === 'app-only' ? '/download/' : '/architecture/'} className={controlClass({ shape: 'link', className: 'mt-2 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]' })}>
-          {t(detail.availability === 'app-only' ? 'getApp' : 'open')}
-        </Link>
+        {/*
+          * ⚠️ **A panel that cannot count still has somewhere to send you.** In a browser this
+          * offered the app and nothing else, so a reader who wanted to know what guidance coverage
+          * even is had one door and it left the product (walkthrough, 2026-09-20). The Harness
+          * screen renders its approved structure, its roles and its rules in a browser perfectly
+          * well; only the counts need the app. The door that works now comes first.
+          */}
+        <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <Link href="/architecture/" className={controlClass({ shape: 'link', hoverInk: 'strong', className: 'atlas-touch-floor -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]' })}>
+            {t('open')}
+          </Link>
+          {detail.availability === 'app-only' ? (
+            <Link href="/download/" className={controlClass({ shape: 'link', hoverInk: 'strong', className: 'atlas-touch-floor -mx-2 min-h-7 px-2 text-[color:var(--color-text-tertiary)]' })}>
+              {t('getApp')}
+            </Link>
+          ) : null}
+        </p>
       </section>
     );
   }
