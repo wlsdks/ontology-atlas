@@ -150,6 +150,13 @@ export interface UseAcpSessionOptions {
    */
   autoDecide?: (request: AcpPermissionRequest) => string | { reject: string } | null;
   /**
+   * A paragraph the consumer appends after the vault handoff, for the rules that hold only on
+   * its own screen. The Library adds how an answer must cite so it can be filed as a page
+   * (2026-09-19): a free question typed into its composer went out with no citation rule, the
+   * agent answered in prose, and "Save answer" refused the answer as `no-cited-fact`.
+   */
+  systemPromptAppendix?: string | null;
+  /**
    * Whether opening this panel **continues where the folder left off** instead of starting a
    * blank conversation.
    *
@@ -369,6 +376,12 @@ function vaultHandoffPrompt(hasVaultMcp: boolean, locale: string): string {
   return rules.map((rule) => (rule === ANSWER_LANGUAGE_SLOT ? answerLanguageSentence(locale) : rule)).join(' ');
 }
 
+/** The consumer's own paragraph after the handoff, or the handoff alone when it has none. */
+function withAppendix(handoff: string, appendix: string | null): string {
+  const extra = appendix?.trim();
+  return extra ? `${handoff} ${extra}` : handoff;
+}
+
 /** The value before anything is known. "None" and "not offered" share one screen. */
 const EMPTY_CHOICES: AcpSessionChoices = {
   models: [],
@@ -398,6 +411,7 @@ export function useAcpSession({
   onTurnStarted,
   captureTaskBaseline,
   autoDecide,
+  systemPromptAppendix = null,
   resumeLatest = false,
 }: UseAcpSessionOptions) {
   /*
@@ -533,6 +547,7 @@ export function useAcpSession({
    */
   const startRef = useRef<(() => Promise<void>) | null>(null);
   const autoDecideRef = useRef<UseAcpSessionOptions['autoDecide']>(undefined);
+  const systemPromptAppendixRef = useRef<string | null>(systemPromptAppendix);
   const stopRef = useRef<(() => Promise<void>) | null>(null);
   const acpSessionRef = useRef<string | null>(null);
   const unlistenRef = useRef<(() => void) | null>(null);
@@ -1120,7 +1135,7 @@ export function useAcpSession({
             cwd: vaultRoot,
             mcpServers,
             // Resuming does not change the rules — same instructions as a new conversation.
-            appendSystemPrompt: vaultHandoffPrompt(hasVaultMcp, locale),
+            appendSystemPrompt: withAppendix(vaultHandoffPrompt(hasVaultMcp, locale), systemPromptAppendixRef.current),
           });
         } catch {
           keepDiagnostic('resume-failed');
@@ -1130,7 +1145,7 @@ export function useAcpSession({
       session ??= await client.newSession({
         cwd: vaultRoot,
         mcpServers,
-        appendSystemPrompt: vaultHandoffPrompt(hasVaultMcp, locale),
+        appendSystemPrompt: withAppendix(vaultHandoffPrompt(hasVaultMcp, locale), systemPromptAppendixRef.current),
       });
       sessionIdRef.current = session.sessionId;
 
@@ -1424,8 +1439,9 @@ export function useAcpSession({
   useEffect(() => {
     startRef.current = start;
     autoDecideRef.current = autoDecide;
+    systemPromptAppendixRef.current = systemPromptAppendix;
     stopRef.current = stop;
-  }, [start, stop, setStatusTracked, autoDecide]);
+  }, [start, stop, setStatusTracked, autoDecide, systemPromptAppendix]);
 
   useEffect(() => {
     disposedRef.current = false;

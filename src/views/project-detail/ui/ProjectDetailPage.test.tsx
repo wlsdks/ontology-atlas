@@ -50,6 +50,28 @@ vi.mock("@/widgets/shortcut-sheet", () => ({
 vi.mock("@/features/construction-review-local", () => ({
   useConstructionReviewSession: () => mocks.constructionReview,
 }));
+// The agent hook reaches the desktop bridge; the page is tested against the two routes it draws.
+vi.mock("../lib/use-project-agent", () => ({
+  useProjectAgent: () => mocks.agent,
+}));
+vi.mock("./parts/ProjectAgentDock", () => ({
+  ProjectAgentDock: ({ open, openingRequest }: { open: boolean; openingRequest: { text: string } | null }) => (
+    <div data-testid="project-agent-dock-frame" data-dock-state={open ? "open" : "empty"}>
+      {openingRequest?.text}
+    </div>
+  ),
+}));
+// The dock needs a native folder path, which only an installed-app handle carries (`rootPath`).
+vi.mock("@/entities/vault-session", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/entities/vault-session")>();
+  return {
+    ...actual,
+    useLocalVault: () => {
+      const vault = actual.useLocalVault();
+      return mocks.handle ? { ...vault, handle: mocks.handle as unknown as FileSystemDirectoryHandle } : vault;
+    },
+  };
+});
 function ontologyNode(
   id: string,
   kind: string,
@@ -149,6 +171,19 @@ const mocks = vi.hoisted(() => ({
   projects: [] as ReturnType<typeof baseProject>[],
   projectsMode: "static" as "static" | "local",
   vaultDocs: [] as unknown[],
+  handle: null as { rootPath: string } | null,
+  agent: {
+    route: "unavailable",
+    runtime: null,
+    runtimes: [],
+    runtimeId: null,
+    setRuntimeId: vi.fn(),
+    mcpServers: [],
+    open: false,
+    setOpen: vi.fn(),
+    openingRequest: null,
+    start: vi.fn(),
+  } as Record<string, unknown>,
   constructionReview: {
     status: "idle",
     review: null,
@@ -233,6 +268,19 @@ describe("ProjectDetailPage", () => {
     mocks.projects = [];
     mocks.projectsMode = "static";
     mocks.vaultDocs = [];
+    mocks.handle = null;
+    mocks.agent = {
+      route: "unavailable",
+      runtime: null,
+      runtimes: [],
+      runtimeId: null,
+      setRuntimeId: vi.fn(),
+      mcpServers: [],
+      open: false,
+      setOpen: vi.fn(),
+      openingRequest: null,
+      start: vi.fn(),
+    };
     mocks.constructionReview = {
       status: "idle",
       review: null,
@@ -301,6 +349,47 @@ describe("ProjectDetailPage", () => {
     expect(mapLink.compareDocumentPosition(picker)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(mapLink.querySelector("button")?.className).toContain("--color-indigo-brand");
     expect(screen.queryByText(/Documents\s+0/)).not.toBeInTheDocument();
+  });
+
+  it("hands the overview to the agent from the page when a guarded runtime is ready", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.vaultBody = "One paragraph.";
+    mocks.handle = { rootPath: "/vault" };
+    const start = vi.fn();
+    mocks.agent = {
+      route: "agent",
+      runtime: { id: "claude", label: "Claude" },
+      runtimes: [{ id: "claude", label: "Claude" }],
+      runtimeId: "claude",
+      setRuntimeId: vi.fn(),
+      mcpServers: [],
+      open: false,
+      setOpen: vi.fn(),
+      openingRequest: null,
+      start,
+    };
+    renderPage();
+
+    expect(screen.queryByTestId("project-detail-brief-ask-copy")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("project-detail-brief-ask-open"));
+    expect(start).toHaveBeenCalledTimes(1);
+    const seated = start.mock.calls[0][0] as string;
+    expect(seated).toContain(`get_concept("${SLUG}"`);
+    expect(seated).toContain("patch_concept");
+    // The dock is mounted beside the page only on this route.
+    expect(screen.getByTestId("project-agent-dock-frame")).toHaveAttribute("data-dock-state", "empty");
+  });
+
+  it("keeps the copy path and mounts no dock when no agent can be opened here", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.vaultBody = "One paragraph.";
+    renderPage();
+
+    expect(screen.getByTestId("project-detail-brief-ask-copy")).toBeInTheDocument();
+    expect(screen.queryByTestId("project-detail-brief-ask-open")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("project-agent-dock-frame")).not.toBeInTheDocument();
   });
 
   it("opens one local review result below the hero without persisting it", async () => {
@@ -594,10 +683,79 @@ describe("ProjectDetailPage", () => {
     mocks.vaultBody = "## Real project.md content\n\nThis is the actual markdown body.";
     renderPage();
 
-    const content = screen.getByTestId("project-detail-body-content");
+    // A `##` heading makes the body a brief: the heading is the block's title.
+    const content = screen.getByTestId("project-detail-brief");
     expect(content).toHaveTextContent("Real project.md content");
     expect(content).toHaveTextContent("This is the actual markdown body.");
     expect(screen.queryByTestId("project-detail-body-empty")).not.toBeInTheDocument();
+  });
+
+  it("draws a sectioned body as a brief: numbered blocks, a step strip, rows, and document doors", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.vaultBody = [
+      "## What it does",
+      "A store.",
+      "",
+      "## How work flows",
+      "1. **Browse.** The [[domains/catalog|catalog]] first.",
+      "2. **Buy.** Orders and payment.",
+      "",
+      "## Where it is uneven",
+      "- Loyalty is mostly a plan.",
+      "- Inventory is dense.",
+    ].join("\n");
+    renderPage();
+
+    const brief = screen.getByTestId("project-detail-brief");
+    expect(brief).toHaveAttribute("data-section-count", "3");
+    const sections = screen.getAllByTestId("project-detail-brief-section");
+    expect(sections.map((section) => section.querySelector("h3")?.textContent)).toEqual([
+      "What it does",
+      "How work flows",
+      "Where it is uneven",
+    ]);
+    expect(screen.getByTestId("project-detail-brief-steps").querySelectorAll("li")).toHaveLength(2);
+    expect(screen.getByTestId("project-detail-brief-rows").querySelectorAll("li")).toHaveLength(2);
+    const door = screen.getByTestId("project-detail-brief-doc-link");
+    expect(door).toHaveAttribute("href", "/docs/?slug=domains%2Fcatalog");
+    expect(door).toHaveTextContent("catalog");
+    expect(screen.queryByTestId("project-detail-body-content")).not.toBeInTheDocument();
+    expect(screen.getByTestId("project-detail-brief-ask")).toHaveAttribute("data-brief-state", "structured");
+  });
+
+  it("keeps an unsectioned body as prose and leads with the ask to lay it out", async () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.vaultBody = "One paragraph.\n\nAnother paragraph.";
+    mocks.vaultDocs = [
+      {
+        slug: "project",
+        path: "docs/ontology/project.md",
+        title: "ontology-atlas",
+        tags: [],
+        frontmatter: { kind: "project", slug: SLUG },
+        headings: [],
+        excerpt: "",
+        wordCount: 0,
+        updatedAt: "2026-01-02T00:00:00.000Z",
+        linksOut: [],
+      },
+    ];
+    renderPage();
+
+    expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent("Another paragraph.");
+    expect(screen.queryByTestId("project-detail-brief")).not.toBeInTheDocument();
+    const ask = screen.getByTestId("project-detail-brief-ask");
+    expect(ask).toHaveAttribute("data-brief-state", "unstructured");
+    const copy = screen.getByTestId("project-detail-brief-ask-copy");
+    expect(copy.className).toContain("--color-indigo-brand");
+    // The instructions name the document and the write guard, so the agent changes only the body.
+    const preview = ask.querySelector("pre")?.textContent ?? "";
+    expect(preview).toContain(`get_concept("${SLUG}"`);
+    expect(preview).toContain("docs/ontology/project.md");
+    expect(preview).toContain("expected_mtime");
+    expect(preview).toContain("patch_concept");
   });
 
   it("prefers the explicit frontmatter detail field over the vault body fallback when both exist", () => {
