@@ -4803,6 +4803,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                             copyAriaLabel: t("footprint.copyAriaLabel"),
                             copyCopiedAriaLabel: t("footprint.copyCopiedAriaLabel"),
                             clearLabel: t("footprint.clearLabel"),
+                            clearConfirmLabel: t("footprint.clearConfirmLabel"),
                             clearAriaLabel: t("footprint.clearAriaLabel"),
                             pastLinkLabel: t("footprint.pastLinkLabel", {
                               count: pastWalkRows.length,

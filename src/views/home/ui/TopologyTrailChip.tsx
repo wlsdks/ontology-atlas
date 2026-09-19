@@ -34,6 +34,8 @@ export interface TopologyTrailChipLabels {
   copyCopiedAriaLabel: string;
   /** Footer "clear". */
   clearLabel: string;
+  /** What the clear control says once armed — the second press is the one that discards. */
+  clearConfirmLabel: string;
   /** Chip ✕ aria — "clear the trail you walked". */
   clearAriaLabel: string;
   /** Level-1 header link — "past trails {count}". Shown only when something is archived. */
@@ -185,6 +187,16 @@ export function TopologyTrailChip({
   // Destructive and unrecoverable, so it goes through an inline two-step confirm
   // (a dialog is overkill at this size).
   const [clearAllArmed, setClearAllArmed] = useState(false);
+  /*
+   * The session trail is discarded, not archived (`onClear`), and a walk cannot
+   * be rebuilt — it is not in the URL. Measured 2026-09-20: one press on the
+   * 45px footer button erased a three-step walk with no confirm, no undo and no
+   * notice, while the more destructive control beside it (clear every past
+   * walk) already asked twice. Both clear controls now arm the popover and the
+   * second press discards, so the two destructive acts in one surface behave
+   * the same way.
+   */
+  const [clearArmed, setClearArmed] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const pastLinkRef = useRef<HTMLButtonElement | null>(null);
@@ -206,6 +218,7 @@ export function TopologyTrailChip({
     // make one trigger open a different screen each time.
     setShowPast(false);
     setClearAllArmed(false);
+    setClearArmed(false);
     if (returnFocus) triggerRef.current?.focus();
   }, []);
 
@@ -241,6 +254,22 @@ export function TopologyTrailChip({
     const timer = window.setTimeout(() => setClearAllArmed(false), CLEAR_ALL_CONFIRM_RESET_MS);
     return () => window.clearTimeout(timer);
   }, [clearAllArmed]);
+
+  useEffect(() => {
+    if (!clearArmed) return;
+    const timer = window.setTimeout(() => setClearArmed(false), CLEAR_ALL_CONFIRM_RESET_MS);
+    return () => window.clearTimeout(timer);
+  }, [clearArmed]);
+
+  /** First press arms the popover, second discards. Shared by the header ✕ and the footer. */
+  const handleClearPress = useCallback(() => {
+    if (!clearArmed) {
+      setClearArmed(true);
+      return;
+    }
+    setClearArmed(false);
+    onClear();
+  }, [clearArmed, onClear]);
 
   useEffect(() => {
     if (!open) return;
@@ -293,8 +322,8 @@ export function TopologyTrailChip({
         </button>
         <button
           type="button"
-          onClick={onClear}
-          aria-label={labels.clearAriaLabel}
+          onClick={handleClearPress}
+          aria-label={clearArmed ? labels.clearConfirmLabel : labels.clearAriaLabel}
           data-testid="topology-trail-chip-clear"
           className={controlClass({
             shape: "icon",
@@ -621,15 +650,16 @@ export function TopologyTrailChip({
             />
             <button
               type="button"
-              onClick={onClear}
+              onClick={handleClearPress}
               data-testid="topology-trail-clear-footer"
               className={controlClass({
                 shape: "segment",
-                tone: "muted",
-                className: "hover:text-[color:var(--color-text-primary)]",
+                tone: clearArmed ? "strong" : "muted",
+                // Hover belongs to the consumer — the ink wakes only before arming.
+                className: clearArmed ? undefined : "hover:text-[color:var(--color-text-primary)]",
               })}
             >
-              {labels.clearLabel}
+              {clearArmed ? labels.clearConfirmLabel : labels.clearLabel}
             </button>
           </div>
           </>

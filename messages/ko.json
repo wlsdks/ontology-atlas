@@ -2895,6 +2895,7 @@
       "copyAriaLabel": "걸어온 길을 복사해 AI에게 이어서 맡기기",
       "copyCopiedAriaLabel": "복사했어요. AI 채팅에 붙여넣으면 이어서 봐요",
       "clearLabel": "지우기",
+      "clearConfirmLabel": "한 번 더 누르면 지워요",
       "clearAriaLabel": "걸어온 길 지우기",
       "packetTitle": "걸어온 길 (탐색 경로)",
       "packetOrder": "방문 순서 (오래된 → 최근):",
