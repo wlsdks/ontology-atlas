@@ -208,7 +208,7 @@
         "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Agent or Codex and they show up here. The install guides are in the list below.",
         "webLabel": "A browser is not allowed to start programs on this computer",
-        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Pointing a tool you started yourself at this folder works right now, in “Share this folder” on the MCP tab.",
+        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Pointing a tool you started yourself at this folder works right now, in the “Share this folder” section on the MCP tab.",
         "state": {
           "ready": "Ready",
           "cli-missing": "Install needed",
@@ -786,7 +786,7 @@
       },
       "mcpTabs": {
         "title": "Two tabs, two jobs",
-        "body": "“Share this folder” hands a coding tool the config that points it here. “Connectors” is the outside servers that agent may also reach, and the number beside it counts the ones switched on."
+        "body": "“Agents” is the coding tools on this computer. “MCP” is the config that hands them this folder, and the outside servers that agent may also reach. The number beside it counts the connectors switched on."
       },
       "libraryWhat": {
         "title": "Library",
@@ -2436,6 +2436,7 @@
       "stepStateDone": "done",
       "stepListAriaLabel": "Three steps to connect",
       "troubleshootToggle": "Not working?",
+      "serverHintLabel": "How the server runs",
       "troubleshootAriaLabel": "What to check when the connection does not work",
       "groupFiles": "Connection file status",
       "groupHowAgentsUse": "How agents use this folder"
@@ -4740,6 +4741,7 @@
     "tablistAriaLabel": "MCP sections",
     "shareHeading": "Share this folder",
     "connectorsHeading": "Connectors",
+    "connectorsHeadingCount": "Connectors · {count} on",
     "connectorsCountTitle": "Connectors switched on"
   },
   "connectors": {

@@ -208,7 +208,7 @@
         "noneReady": "확인된 도구가 없어요",
         "noneReadyCaption": "Claude Agent나 Codex를 설치하면 여기에 나타나요. 설치 방법은 아래 목록에 있어요.",
         "webLabel": "브라우저는 이 컴퓨터의 프로그램을 띄울 권한이 없어요",
-        "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 직접 띄운 도구를 이 폴더에 붙이는 일은 에이전트 연결(MCP) 탭의 「이 폴더 내주기」에서 지금도 됩니다.",
+        "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 직접 띄운 도구를 이 폴더에 붙이는 일은 에이전트 연결(MCP) 탭의 「이 폴더 내주기」 칸에서 지금도 됩니다.",
         "state": {
           "ready": "준비됨",
           "cli-missing": "설치 필요",
@@ -786,7 +786,7 @@
       },
       "mcpTabs": {
         "title": "탭 둘, 하는 일 둘",
-        "body": "「이 폴더 내주기」는 코딩 도구에 이 폴더를 가리키는 설정을 건네줘요. 「연결 도구」는 그 에이전트가 함께 닿을 바깥 서버이고, 옆의 숫자는 켜 둔 개수예요."
+        "body": "「에이전트」는 이 컴퓨터의 코딩 도구예요. 「MCP」는 그 도구에 이 폴더를 내주는 설정과, 그 에이전트가 함께 닿을 바깥 서버예요. 옆의 숫자는 켜 둔 연결 도구 개수예요."
       },
       "libraryWhat": {
         "title": "자료실",
@@ -2436,6 +2436,7 @@
       "stepStateDone": "완료",
       "stepListAriaLabel": "연결 3단계",
       "troubleshootToggle": "잘 안 되나요?",
+      "serverHintLabel": "서버는 어떻게 도나요",
       "troubleshootAriaLabel": "연결이 안 될 때 볼 것",
       "groupFiles": "연결 파일 상태",
       "groupHowAgentsUse": "에이전트가 이 폴더를 쓰는 방식"
@@ -4740,6 +4741,7 @@
     "tablistAriaLabel": "MCP 구역",
     "shareHeading": "이 폴더 내주기",
     "connectorsHeading": "연결 도구",
+    "connectorsHeadingCount": "연결 도구 · 켜 둔 {count}개",
     "connectorsCountTitle": "켜 둔 연결 도구 수"
   },
   "connectors": {

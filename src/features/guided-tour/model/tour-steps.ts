@@ -152,7 +152,7 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
     { id: "mcp-what", anchor: null, persona: "all", copyKey: "mcpWhat" },
     {
       id: "mcp-tabs",
-      anchor: { type: "testid", value: "mcp-tabs" },
+      anchor: { type: "testid", value: "agents-tabs" },
       persona: "all",
       copyKey: "mcpTabs",
     },

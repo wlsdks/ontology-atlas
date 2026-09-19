@@ -1,18 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 
-import { AgentSetupSection } from '@/widgets/app-settings-menu';
+import { AgentSetupSection, SettingsGroupHeading } from '@/widgets/app-settings-menu';
 import { ConnectorsPanel, useVaultConnectors, type VaultConnectorsState } from '@/features/mcp-connectors';
 import { OpenVaultCta } from '@/features/docs-vault-local';
 import { useLocalVault } from '@/entities/vault-session';
 import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
-import { TabBar } from '@/shared/ui';
-import { useSwapHeight } from '@/shared/lib/use-presence';
 
-import { MCP_SECTION_PARAM, buildMcpTabHref, parseMcpTab, type McpTab } from '../lib/mcp-tab-state';
+import { MCP_SECTION_PARAM, parseMcpTab } from '../lib/mcp-tab-state';
 
 /**
  * The **MCP** tab of the Agents destination — the folder's own MCP connection, and the external
@@ -27,11 +25,18 @@ import { MCP_SECTION_PARAM, buildMcpTabHref, parseMcpTab, type McpTab } from '..
  * agents and MCP on one screen with a scroll — split them into tabs."* `/mcp/` still redirects
  * here with its section and `install` parameter, so the installed app's deep link resolves.
  *
+ * ## Two groups, not two more tabs
+ *
+ * The 2026-09-05 destination split its body into a Share tab and a Connectors tab because the
+ * share pane was several screens tall. On 2026-09-19 that pane became four rows, so the two are
+ * two settings groups under one strip — a tab strip inside a tab strip was the nested switch
+ * the 2026-09-17 dissent named. `?mcp=connectors` keeps resolving: it scrolls to the connectors
+ * group, and an arriving `?install=` opens the add dialog from inside it as before.
+ *
  * This view is the tab's **body only**: the page above draws the title, the one-line lede and
- * the strip, so a second heading here would name the same thing twice at the same eye level.
- * The app layer hands in the connectors store it already reads for the tab's count; a second
- * `useVaultConnectors` here would be a second reader of the same file that never learns about
- * the first one's writes.
+ * the strip. The app layer hands in the connectors store it already reads for the tab's count;
+ * a second `useVaultConnectors` here would be a second reader of the same file that never
+ * learns about the first one's writes.
  *
  * ## Why the whole tab is drawn on the web too
  *
@@ -62,94 +67,33 @@ export function McpPage({
   const enabledCount = connectors.connectors.filter((connector) => connector.enabled).length;
 
   const searchParams = useSearchParams();
-  const [tab, setTabState] = useState<McpTab>(() => parseMcpTab(searchParams?.get(MCP_SECTION_PARAM)));
-  /*
-   * The two panels are very different heights, and swapping them in one frame drops the page's
-   * scroll position somewhere unrelated. `useSwapHeight` is this repository's grammar for exactly
-   * that: measure before the change, transition the host's height on `--motion-base`, and stand
-   * aside under reduced motion.
-   */
-  const { hostRef: panelHostRef, capture: capturePanelHeight } = useSwapHeight(tab);
-
-  /*
-   * Back and forward have to move the section too. Without this the address bar says
-   * `?mcp=connectors` while the screen still draws the share section — the state and the URL
-   * disagreeing is exactly what putting the section in the URL was for.
-   */
+  const section = parseMcpTab(searchParams?.get(MCP_SECTION_PARAM));
   useEffect(() => {
-    const syncFromHistory = () => {
-      capturePanelHeight();
-      setTabState(parseMcpTab(new URL(window.location.href).searchParams.get(MCP_SECTION_PARAM)));
-    };
-    window.addEventListener('popstate', syncFromHistory);
-    return () => window.removeEventListener('popstate', syncFromHistory);
-  }, [capturePanelHeight]);
-
-  const selectTab = (next: string) => {
-    const nextTab = parseMcpTab(next);
-    capturePanelHeight();
-    setTabState(nextTab);
-    /*
-     * Only the query view of the same document changes. A router navigation moves focus to the
-     * document root in the WebView, which would throw away the tab strip's roving focus, so the
-     * URL is updated through native history in the same event instead.
-     */
-    window.history.replaceState(
-      window.history.state,
-      '',
-      buildMcpTabHref(nextTab, window.location.pathname),
-    );
-  };
+    if (section !== 'connectors') return;
+    document.getElementById('mcp-connectors')?.scrollIntoView({ block: 'start' });
+  }, [section]);
 
   return (
     <section
       id="agents-mcp"
       data-testid="mcp-page"
-      data-mcp-tab={tab}
+      data-mcp-section={section}
       aria-label={t('title')}
-      className="min-w-0"
+      className="flex min-w-0 flex-col gap-6"
     >
-      <div data-testid="mcp-tabs">
-        <TabBar
-          idPrefix="mcp"
-          ariaLabel={t('tablistAriaLabel')}
-          activeKey={tab}
-          onSelect={selectTab}
-          items={[
-            { key: 'share', label: t('shareHeading') },
-            {
-              key: 'connectors',
-              label: t('connectorsHeading'),
-              /*
-               * **How many are switched on**, not how many are written down. Everything starts
-               * off, and a list of five where none is on reaches an agent as nothing at all —
-               * the number that answers "is anything actually attached" is this one.
-               */
-              count: enabledCount,
-              countTitle: t('connectorsCountTitle'),
-            },
-          ]}
-        />
-      </div>
+      <AgentSetupSection />
 
-      {/*
-        **One panel element, and the section decides what is in it.** Only the selected
-        section's panel is rendered — drawing the other half into a hidden box pays for building
-        a model nobody is looking at, while `aria-controls` only has to resolve for the selected
-        tab. The `id` and `aria-labelledby` therefore follow the tab, keeping `TabBar`'s prefix
-        contract intact.
-      */}
-      <div
-        ref={panelHostRef}
-        role="tabpanel"
-        id={`mcp-tabpanel-${tab}`}
-        aria-labelledby={`mcp-tab-${tab}`}
-        data-testid="mcp-tabpanel"
-        className="mt-5 min-w-0"
-      >
-        {tab === 'share' ? (
-          <AgentSetupSection />
-        ) : (
+      <section id="mcp-connectors" aria-labelledby="mcp-connectors-heading" className="min-w-0">
+        <SettingsGroupHeading
+          id="mcp-connectors-heading"
+          /*
+           * **How many are switched on**, not how many are written down. Everything starts
+           * off, and a list of five where none is on reaches an agent as nothing at all —
+           * the number that answers "is anything actually attached" is this one.
+           */
+          label={t('connectorsHeadingCount', { count: enabledCount })}
+        />
+        <div className="mt-1.5">
           <ConnectorsPanel
             handle={handle}
             store={connectors}
@@ -167,8 +111,8 @@ export function McpPage({
               />
             }
           />
-        )}
-      </div>
+        </div>
+      </section>
     </section>
   );
 }

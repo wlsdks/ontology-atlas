@@ -405,13 +405,12 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
       // MCP is the Agents page's second tab since 2026-09-19: press it.
       await page.getByTestId("agents-tab-mcp").click();
       /*
-       * ⚠️ **Two presses further in since 2026-09-05.** Connectors are the second tab of the MCP
-       * destination, and this card moved into the "add a connector" dialog — finding what is
-       * already registered is what happens there, and a card about that step reads as a verdict on
-       * the whole panel when it stands outside it. The claim is unchanged; the address of the
-       * claim is not.
+       * ⚠️ **One press further in since 2026-09-05.** This card moved into the "add a connector"
+       * dialog — finding what is already registered is what happens there, and a card about that
+       * step reads as a verdict on the whole panel when it stands outside it. The claim is
+       * unchanged; the address of the claim is not. Connectors were a second tab of the MCP
+       * screen until 2026-09-19; they are its second group now, on the same tab.
        */
-      await page.getByRole("tab", { name: /연결 도구/ }).click();
       await page.getByTestId("connectors-panel").waitFor({ timeout: 15_000 });
       await page.getByTestId("connectors-add-open").click();
       /*

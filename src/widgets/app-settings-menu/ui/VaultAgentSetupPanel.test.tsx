@@ -96,9 +96,11 @@ function renderPanel(
       onOpenWorkflowGuide={vi.fn()}
     />,
   );
-  // C13 — the detailed verification, snippets and gate were demoted behind the
-  // "advanced" fold. It is expanded here so the existing assertions can see the
-  // content (the first screen's three steps stay exposed).
+  // 2026-09-19 — restart, check and the "not working?" fold live in the verification dialog;
+  // C13 (2026-08) had already demoted the detailed verification behind the fold. Both are
+  // opened here so the existing assertions can see the content (the tool rows stay exposed).
+  const verifyOpen = screen.queryByTestId('agent-setup-verify-open');
+  if (verifyOpen) fireEvent.click(verifyOpen);
   const advancedToggle = screen.queryByTestId('agent-setup-advanced-toggle');
   if (advancedToggle) fireEvent.click(advancedToggle);
   return localVault;
@@ -148,15 +150,14 @@ describe('VaultAgentSetupPanel', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('더 확인하려면')).toBeInTheDocument();
-    expect(
-      screen.getByRole('list', { name: '더 확인할 것' }),
-    ).not.toBeVisible();
+    // Inside the dialog (a framer surface whose opacity jsdom never animates), visibility is
+    // the `<details>` open state, not computed style.
+    const deeper = screen.getByText('더 확인하려면').closest('details');
+    expect(deeper).not.toHaveAttribute('open');
 
     fireEvent.click(screen.getByText('더 확인하려면'));
 
-    expect(
-      screen.getByRole('list', { name: '더 확인할 것' }),
-    ).toBeVisible();
+    expect(deeper).toHaveAttribute('open');
     // The first three (config files · restart · verify connection) were **promoted
     // into the three steps**, so only the three that follow remain here. This is the
     // cleanup of a screen that had four separate numbering systems.
@@ -169,8 +170,8 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByText('처음 고치기 전에 폴더 요약(workspace-brief · agent-brief)을 먼저 읽습니다.'),
     ).toBeInTheDocument();
-    // The promoted three did not disappear but moved up — the three steps exist by name.
-    expect(screen.getByTestId('agent-setup-step-1')).toBeInTheDocument();
+    // The tool rows stand on the page; restart and check stand in the dialog (open above).
+    expect(screen.getByTestId('agent-setup-steps')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-2')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-3')).toBeInTheDocument();
     expect(
@@ -253,8 +254,8 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByText('제품 코드 폴더에서 열면 상태 확인·수리·서버 확인 명령 모두 이 폴더의 절대경로를 적어야 합니다.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('.mcp.json')).toBeInTheDocument();
-    expect(screen.getByText('.codex/config.toml')).toBeInTheDocument();
+    expect(within(screen.getByTestId('agent-setup-inspection')).getByText('.mcp.json')).toBeInTheDocument();
+    expect(within(screen.getByTestId('agent-setup-inspection')).getByText('.codex/config.toml')).toBeInTheDocument();
     expect(screen.getByText(/\.mcp\.json\.example은 다른 폴더에서 쓸 본보기/)).toBeInTheDocument();
 
     fireEvent.click(
@@ -325,8 +326,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('.mcp.json.example은 다른 폴더에서 쓸 본보기라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.'),
     ).toBeInTheDocument();
 
-    // The per-tool «how do I check» is step 3's content — it appears when 「Check connection」 opens.
-    fireEvent.click(screen.getByTestId('agent-setup-step-3-toggle'));
+    // The per-tool «how do I check» is the check section's content, inside the dialog.
     const step3 = screen.getByTestId('agent-setup-step-3');
     expect(within(step3).getByText('/mcp로 확인')).toBeInTheDocument();
     expect(within(step3).getByText('codex mcp list로 확인')).toBeInTheDocument();
@@ -513,6 +513,7 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
+    fireEvent.click(screen.getByTestId('agent-setup-verify-open'));
     fireEvent.click(screen.getByTestId('agent-setup-advanced-toggle'));
     fireEvent.click(screen.getByRole('button', { name: '기능 문서 열기' }));
 
@@ -1102,10 +1103,8 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: '에이전트 연결(MCP)' });
-    fireEvent.click(
-      within(agentSetup).getByRole('button', { name: '확인 명령 복사' }),
-    );
+    // The verification dialog portals to `document.body`, outside the panel's region.
+    fireEvent.click(screen.getByRole('button', { name: '확인 명령 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -1132,10 +1131,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: '에이전트 연결(MCP)' });
-    fireEvent.click(
-      within(agentSetup).getByRole('button', { name: '맞추기 절차 복사' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: '맞추기 절차 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -1268,7 +1264,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('첫 화면은 3단계 + 원클릭 버튼을 보이고 상세 검증은 접혀 있다', () => {
+  it('첫 화면은 도구 행 넷이고, 확인과 상세 검증은 대화상자 뒤에 있다', () => {
     render(
       <VaultAgentSetupPanel
         canEditCurrent
@@ -1278,12 +1274,22 @@ describe('VaultAgentSetupPanel', () => {
         onOpenWorkflowGuide={vi.fn()}
       />,
     );
-    // The three step cards plus the client buttons are exposed on the first screen.
-    expect(screen.getByTestId('agent-setup-step-1')).toBeInTheDocument();
+    // One row per tool, each with its file and its own control (owner, 2026-09-19).
+    const rows = screen.getByTestId('agent-setup-steps');
+    expect(within(rows).getByTestId('agent-setup-row-claude-code')).toHaveTextContent('.mcp.json');
+    expect(within(rows).getByTestId('agent-setup-row-codex')).toHaveTextContent('.codex/config.toml');
+    expect(within(rows).getByTestId('agent-setup-row-cursor')).toBeInTheDocument();
+    expect(within(rows).getByTestId('agent-setup-row-antigravity')).toBeInTheDocument();
+    expect(screen.getByTestId('agent-client-claude-code')).toBeInTheDocument();
+    // The server-lifetime sentence is still drawn — in the hint beside the heading.
+    expect(screen.getByTestId('agent-connect-server-line')).toBeInTheDocument();
+    // Restart, check and the detailed verification wait behind one press.
+    expect(screen.queryByTestId('agent-setup-step-2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('agent-setup-step-3')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('agent-setup-verify-open'));
+    expect(screen.getByTestId('agent-setup-verify-dialog')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-2')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-3')).toBeInTheDocument();
-    expect(screen.getByTestId('agent-client-claude-code')).toBeInTheDocument();
-    expect(screen.getByTestId('agent-connect-server-line')).toBeInTheDocument();
     // The detailed verification (mode chooser and so on) is collapsed, so it is not visible.
     expect(screen.queryByTestId('agent-setup-advanced')).not.toBeInTheDocument();
     // Expanding reveals it.
@@ -1383,10 +1389,7 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
-    // With all three ready, step 1 is collapsed as 「Complete」 — open it to see the tool
-    // column. This one line is the proof that it was collapsed, not deleted.
-    fireEvent.click(screen.getByTestId('agent-setup-step-1-toggle'));
-
+    // With all three ready, the rows stay where they are and say so (2026-09-19: no fold).
     expect(screen.getByRole('status', { name: '.mcp.json 준비됨' })).toBeInTheDocument();
     expect(screen.getByRole('status', { name: 'Codex 설정 준비됨' })).toBeInTheDocument();
     expect(

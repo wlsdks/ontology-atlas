@@ -48,12 +48,6 @@ const CLIENT_TO_ID: Record<ClientId, AgentClientId> = {
 };
 
 /** The reverse direction, used to derive render order from `AGENT_CLIENTS`. */
-const ID_TO_CLIENT: Record<AgentClientId, ClientId> = {
-  "claude-code": "claudeCode",
-  cursor: "cursor",
-  antigravity: "antigravity",
-  codex: "codex",
-};
 type Feedback = "idle" | "busy" | "done" | "copied" | "failed";
 type AgentClientConfigState = "missing" | "invalid" | "ready";
 
@@ -109,7 +103,14 @@ export interface AgentClientButtonsProps {
   layout?: "stack" | "grid";
 }
 
-export function AgentClientButtons({
+/**
+ * **The per-client controls, without a layout.** One hook holds the write/copy/deeplink state
+ * machine for the four clients; `AgentClientButtons` lays the controls out as a grid or a stack
+ * (the map sheet), and the Agents destination's MCP tab lays them out as rows beside each tool's
+ * name and file (2026-09-19). Two layouts, one state machine — a second copy would be the two
+ * screens drifting on which button says "ready".
+ */
+export function useAgentClientControls({
   serverAvailability,
   onWriteConfigs,
   cursorDeeplink,
@@ -121,8 +122,7 @@ export function AgentClientButtons({
   codexConfigState = "missing",
   codexConfigSnippet,
   needsManualPath,
-  layout = "stack",
-}: AgentClientButtonsProps) {
+}: AgentClientControlsProps): AgentClientControls {
   const t = useTranslations("agentConnect");
   const toast = useToast();
   const [feedback, setFeedback] = useState<Record<ClientId, Feedback>>({
@@ -185,8 +185,11 @@ export function AgentClientButtons({
      * be automatic, and give somewhere to go. What changed is that the somewhere is now **here
      * too**, while the app (one button) remains the easier path.
      */
-    return (
-      <div className="flex flex-col gap-2" data-testid="agent-client-buttons">
+    return {
+      controls: null,
+      manualPathNote: null,
+      serverUnavailable: (
+        <>
         <div
           role="status"
           data-testid="agent-server-unavailable"
@@ -227,8 +230,9 @@ export function AgentClientButtons({
           </div>
         </div>
         <WebManualConnectPanel />
-      </div>
-    );
+        </>
+      ),
+    };
   }
 
   /**
@@ -393,6 +397,53 @@ export function AgentClientButtons({
       ),
   };
 
+  return {
+    serverUnavailable: null,
+    controls: {
+      "claude-code": clientRenderers.claudeCode(),
+      codex: clientRenderers.codex(),
+      cursor: clientRenderers.cursor(),
+      antigravity: clientRenderers.antigravity(),
+    },
+    manualPathNote: needsManualPath ? (
+      <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
+        {t("deeplinkWebNote")}{" "}
+        <Link
+          href="/download/"
+          data-testid="agent-client-app-cta"
+          className={controlClass({ shape: "link", tone: "accent", className: "font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]" })}
+        >
+          {t("deeplinkWebNoteCta")}
+        </Link>
+      </p>
+    ) : null,
+  };
+}
+
+export type AgentClientControlsProps = Omit<AgentClientButtonsProps, "layout">;
+
+export interface AgentClientControls {
+  /** The degradation card plus the by-hand panel, when no server can be launched; the controls are null then. */
+  serverUnavailable: React.ReactNode | null;
+  /** One control per client, in the client's own current state (write, copy, deeplink, or ready). */
+  controls: Record<AgentClientId, React.ReactNode> | null;
+  /** The web note under the controls — a deeplink needs a path a browser does not know. */
+  manualPathNote: React.ReactNode | null;
+}
+
+export function AgentClientButtons(props: AgentClientButtonsProps) {
+  const { layout = "stack" } = props;
+  const t = useTranslations("agentConnect");
+  const { serverUnavailable, controls, manualPathNote } = useAgentClientControls(props);
+
+  if (!controls) {
+    return (
+      <div className="flex flex-col gap-2" data-testid="agent-client-buttons">
+        {serverUnavailable}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2" data-testid="agent-client-buttons" data-layout={layout}>
       <div
@@ -401,22 +452,11 @@ export function AgentClientButtons({
         }
       >
         {AGENT_CLIENTS.map((client) => (
-          <Fragment key={client.id}>{clientRenderers[ID_TO_CLIENT[client.id]]()}</Fragment>
+          <Fragment key={client.id}>{controls[client.id]}</Fragment>
         ))}
       </div>
 
-      {needsManualPath ? (
-        <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
-          {t("deeplinkWebNote")}{" "}
-          <Link
-            href="/download/"
-            data-testid="agent-client-app-cta"
-            className={controlClass({ shape: "link", tone: "accent", className: "font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]" })}
-          >
-            {t("deeplinkWebNoteCta")}
-          </Link>
-        </p>
-      ) : null}
+      {manualPathNote}
 
       {/* The plain-language core line — stdio framed as a local-first advantage. */}
       <p
