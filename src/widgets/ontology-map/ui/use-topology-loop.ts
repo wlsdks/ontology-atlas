@@ -5169,7 +5169,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         for (const id of realmExpandChainRef.current.chain) withRealm.add(id);
         effectiveExpanded = withRealm;
       }
-      const clusterState = computeTopologyClusterState(world, effectiveExpanded);
+      // The focused node's neighbours held by another parent stay drawn inside
+      // that parent's fold, so the ego graph shows every relation the panel
+      // lists. Its own children are not held: a domain's fold is its chip's job.
+      let heldOpen: Set<string> | undefined;
+      {
+        const focusId = focusedSlugRef.current;
+        const neighbors = focusId ? world.neighborMap.get(focusId) : undefined;
+        if (focusId && neighbors) {
+          for (const id of neighbors) {
+            const parentId = world.nodeById.get(id)?.parentId ?? null;
+            if (parentId === focusId) continue;
+            (heldOpen ??= new Set<string>()).add(id);
+          }
+        }
+      }
+      const clusterState = computeTopologyClusterState(world, effectiveExpanded, heldOpen);
 
       // Selective ego: when a focused node has more neighbours than the batch
       // limit, keep the top (revealedBatches × limit) by DOI and collapse the
