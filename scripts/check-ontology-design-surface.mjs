@@ -229,8 +229,15 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   {
     id: "agents-product-design-gate",
     files: ["AGENTS.md"],
+    /*
+     * ⚠️ **The marker is the clause, not its opening word.** This pinned "Design gate after the
+     * PO pass" and went red twice when the row was reworded — once on 2026-09-13 and again when
+     * #1695 made it "Product design gate after the PO pass", which left `main` failing this gate
+     * with nothing wrong in the repository. What must exist is the routing clause; the adjective
+     * in front of it is prose.
+     */
     markers: [
-      "Design gate after the PO pass",
+      "gate after the PO pass",
       "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
       "/design-build",
       "pnpm design:route",

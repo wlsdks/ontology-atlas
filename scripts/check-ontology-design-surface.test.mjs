@@ -227,7 +227,7 @@ function writeCleanWorkbenchFixtures(root) {
     root,
     "AGENTS.md",
     [
-      "Design gate after the PO pass",
+      "gate after the PO pass",
       "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
       "/design-build",
       "pnpm design:route",
