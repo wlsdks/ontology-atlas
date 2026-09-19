@@ -228,6 +228,47 @@ describe("computeDensityGate", () => {
   });
 });
 
+describe("computeDensityGate — heldOpen (the focused node's cross-parent neighbours)", () => {
+  const kids = children("cap", DENSITY_GATE_THRESHOLD + 1); // 13 fold
+  const geo = new Map([["d", { x: 0, y: 0, angle: 0, ring: 100 }]]);
+
+  it("a held-open child is drawn, the chip claims one fewer, and the rest still fold", () => {
+    const result = computeDensityGate({
+      childrenByParent: new Map<string, readonly string[]>([["d", kids]]),
+      expandedParents: new Set(),
+      parentGeometry: geo,
+      heldOpen: new Set(["cap-3"]),
+    });
+    expect(result.clusteredIds.has("cap-3")).toBe(false);
+    expect(result.clusteredIds.size).toBe(kids.length - 1);
+    expect(result.chips).toHaveLength(1);
+    expect(result.chips[0].count).toBe(kids.length - 1);
+    expect(result.chips[0].expanded).toBe(false);
+  });
+
+  it("a held-open child's own children keep folding", () => {
+    const result = computeDensityGate({
+      childrenByParent: new Map<string, readonly string[]>([
+        ["d", kids],
+        ["cap-3", ["el-a", "el-b"]],
+      ]),
+      expandedParents: new Set(),
+      parentGeometry: geo,
+      heldOpen: new Set(["cap-3"]),
+    });
+    expect(result.clusteredIds.has("cap-3")).toBe(false);
+    expect(result.clusteredIds.has("el-a")).toBe(true);
+    expect(result.clusteredIds.has("el-b")).toBe(true);
+  });
+
+  it("without heldOpen nothing changes", () => {
+    const plain = computeDensityGate({ childrenByParent: new Map([["d", kids]]), expandedParents: new Set(), parentGeometry: geo });
+    const empty = computeDensityGate({ childrenByParent: new Map([["d", kids]]), expandedParents: new Set(), parentGeometry: geo, heldOpen: new Set() });
+    expect([...empty.clusteredIds]).toEqual([...plain.clusteredIds]);
+    expect(empty.chips).toEqual(plain.chips);
+  });
+});
+
 describe("chipAnchorRadius", () => {
   it("접힘=자식 링, 펼침=자식 링 + 여유", () => {
     expect(chipAnchorRadius(100, false)).toBe(100);

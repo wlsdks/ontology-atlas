@@ -263,7 +263,7 @@
     "projects": "프로젝트",
     "agents": "에이전트",
     "mcp": "MCP",
-    "git": "기록",
+    "git": "Git",
     "getApp": "앱 받기",
     "getAppTitle": "맥 앱을 받으면 폴더를 기억하고, 인터넷 없이 열고, 기록과 AI 연결까지 다룹니다. 윈도우는 준비 중이에요"
   },
@@ -814,7 +814,7 @@
       },
       "relations": {
         "title": "선은 관계예요",
-        "body": "실선은 이 안에 들어 있다는 뜻, 점선은 이것에 기대고 있다는 뜻이에요. 여기 범례가 항상 알려줘요."
+        "body": "실선은 이 안에 들어 있다는 뜻, 점선은 이것에 기대고 있다는 뜻이에요. ? 를 누르면 키보드 단축키 안내에서 다시 볼 수 있어요."
       },
       "tryClick": {
         "title": "직접 눌러보세요",
@@ -3613,10 +3613,10 @@
     "dismiss": "나중에"
   },
   "atlasGit": {
-    "tileLabel": "기록",
-    "tileTitleClean": "기록: 모두 커밋했어요",
-    "tileTitleDirty": "기록: 커밋하지 않은 변경 {count}건",
-    "title": "기록",
+    "tileLabel": "Git",
+    "tileTitleClean": "Git: 모두 커밋했어요",
+    "tileTitleDirty": "Git: 커밋하지 않은 변경 {count}건",
+    "title": "Git",
     "close": "닫기",
     "loading": "이 폴더의 변경을 확인하는 중…",
     "loadError": "이 폴더의 변경을 읽지 못했어요. 폴더가 그대로 있는지 확인한 뒤 다시 시도해 주세요.",
@@ -3790,11 +3790,28 @@
     "restoreDone": "{path}를 이 커밋 시점 내용으로 되돌렸어요. 커밋하지 않은 변경으로 남아 있어요.",
     "restoreDoneOthers": "이 커밋이 바꾼 다른 문서 {count}개는 그대로예요.",
     "restoreFailedSafe": "문서는 바뀌지 않았어요.",
+    "restoreAbsentDeleted": "이 걸음은 이 문서를 지웠어요. 되돌릴 내용은 아래 걸음들에 있어요",
     "restoreConceptDoc": "이 개념의 문서 {path}",
     "docHistoryTitle": "이 문서를 바꾼 다른 커밋",
     "docHistoryOnly": "이 문서를 바꾼 커밋은 이것뿐이에요",
     "docHistoryOlder": "더 오래된 커밋도 있어요. 왼쪽 목록에서 이전 커밋을 더 읽으면 보여요",
-    "docHistoryJumpHint": "누르면 그 커밋으로 건너뛰어요"
+    "docHistoryJumpHint": "누르면 그 커밋으로 건너뛰어요",
+    "changedDocsAria": "바뀐 문서 고르기",
+    "docReaderInfoBox": "정보칸",
+    "docReaderAddedLine": "추가된 줄:",
+    "docReaderRemovedLine": "지워진 줄:",
+    "docReaderNew": "새 문서",
+    "docReaderChanged": "고친 문서",
+    "docReaderDeleted": "지운 문서",
+    "docReaderRenamed": "이름 바꾼 문서",
+    "docReaderFileNew": "새 파일",
+    "docReaderFileChanged": "고친 파일",
+    "docReaderFileDeleted": "지운 파일",
+    "docReaderFileRenamed": "이름 바꾼 파일",
+    "docReaderRenamedFrom": "이전 이름 {path}",
+    "docReaderPartial": "문서 전체를 읽지 못해 바뀐 부분만 보여요",
+    "docReaderLong": "문서가 길어서 바뀐 부분만 보여요",
+    "docReaderInfoBoxUnchanged": "정보칸 · 바뀐 줄 없음"
   },
   "agentFiles": {
     "header": "에이전트 파일",
