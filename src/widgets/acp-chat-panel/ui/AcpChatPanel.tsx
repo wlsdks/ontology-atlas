@@ -888,9 +888,35 @@ export function AcpChatPanel({
   const prefillNonce = prefillRequest?.nonce ?? null;
   const prefillText = prefillRequest?.text ?? null;
   const [seenPrefillNonce, setSeenPrefillNonce] = useState<number | null>(null);
+  /**
+   * **The app-composed half of a seated request, held out of the box the person writes in.**
+   *
+   * ⚠️ Measured on the Insights dock (2026-09-19). Pressing 「ask the agent」 seated five lines in
+   * the composer, and the first thing in the box a person is meant to read and edit was
+   * `Use only Atlas MCP read tools. Do not call write tools, shell, files, source, or the web.`
+   * followed by a literal `query_ontology({operation:"maintenance_plan"})`. The box grew to about
+   * a quarter of the dock's height and the conversation above it became an empty void.
+   *
+   * The transcript already solved this: `splitAppRequest` stands the readable sentence and folds
+   * the machine block behind one disclosure. The composer was the one place the same request
+   * arrived whole — and it is the place where it matters most, because that text is also what the
+   * person is being asked to edit.
+   *
+   * ⚠️ **Nothing is dropped, and nothing is rewritten.** `full` is the exact string the caller
+   * seated; an unedited send transmits those bytes and not a re-joined copy of them, so a caller
+   * matching on its own request text (`presentationRequest`, `answerFold`) still matches. Only an
+   * edited lead is re-joined, which is the one case where the bytes had to change anyway.
+   */
+  const [seatedDetail, setSeatedDetail] = useState<
+    { lead: string; detail: string; full: string } | null
+  >(null);
   if (prefillNonce !== null && prefillText && prefillNonce !== seenPrefillNonce) {
     setSeenPrefillNonce(prefillNonce);
-    setDraft(prefillText);
+    const parts = splitAppRequest(prefillText);
+    setDraft(parts.lead);
+    setSeatedDetail(
+      parts.detail ? { lead: parts.lead, detail: parts.detail, full: prefillText } : null,
+    );
   }
   /*
    * There has to be something to draw while the exit animation runs — if the content
@@ -1062,13 +1088,22 @@ export function AcpChatPanel({
   }, [draft]);
 
   const submit = useCallback(() => {
-    const text = draft.trim();
-    if (!text || status === 'thinking') return;
+    const lead = draft.trim();
+    if (!lead || status === 'thinking') return;
+    /*
+     * The seated half travels with the sentence it was seated beside. Untouched, the caller's
+     * own bytes go out verbatim — a re-joined copy would differ by whatever whitespace the split
+     * trimmed, and a caller that recognises its own request by its text would stop recognising it.
+     */
+    const text = seatedDetail
+      ? (lead === seatedDetail.lead ? seatedDetail.full : `${lead}\n\n${seatedDetail.detail}`)
+      : lead;
     setPresentationOpen(false);
     onPresentationVisibilityChange?.(false);
     setDraft('');
+    setSeatedDetail(null);
     void send(text);
-  }, [draft, onPresentationVisibilityChange, send, setPresentationOpen, status]);
+  }, [draft, onPresentationVisibilityChange, seatedDetail, send, setPresentationOpen, setSeatedDetail, status]);
 
       {/*
         Pickers — **only what actually arrived is drawn.** Measured: codex offers 33
@@ -1928,6 +1963,28 @@ export function AcpChatPanel({
             })}
           </ul>
         ) : null}
+        {/*
+          **What the app added, standing where it can be read before it is sent.**
+
+          The seated sentence is the person's to edit; these are the instructions the caller
+          attached to it, verbatim and in one piece. They sit above the box rather than inside it,
+          for the same reason the transcript keeps the folded half outside the request bubble: a
+          control inside the box the person writes in would make the box stop being their words.
+        */}
+        {seatedDetail ? (
+          <Disclosure
+            className="mb-2"
+            summaryTestId="acp-chat-seated-detail"
+            summary={t('seatedDetail', { lines: seatedDetail.detail.split('\n').filter((line) => line.trim()).length })}
+          >
+            <p
+              data-testid="acp-chat-seated-detail-text"
+              className="mt-1.5 whitespace-pre-wrap break-words font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]"
+            >
+              {seatedDetail.detail}
+            </p>
+          </Disclosure>
+        ) : null}
         <div className="relative" data-acp-composer>
           <Textarea
             ref={inputRef}
@@ -1949,6 +2006,12 @@ export function AcpChatPanel({
             onBlur={() => setComposerFocused(false)}
             onChange={(e) => {
               setDraft(e.target.value);
+              /*
+               * Clearing the box clears the whole seated request. Keeping the folded half alive
+               * behind an empty composer would let the next Enter send instructions with no
+               * sentence in front of them — the person emptied the box to be rid of it.
+               */
+              if (!e.target.value.trim()) setSeatedDetail(null);
               // Typing again clears the hand-dismissed memory — otherwise the list
               // never opens for the rest of the session.
               setSlashDismissed(false);
