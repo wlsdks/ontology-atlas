@@ -5685,6 +5685,7 @@
         "allowAndSave": "Allow and save",
         "cancel": "Cancel",
         "saved": "{name} runs first at {time}.",
+        "savedRunningNow": "Running {name} once now; the next pass is at {time}.",
         "saveFailed": "Could not save the round: {reason}"
       },
       "name": {
