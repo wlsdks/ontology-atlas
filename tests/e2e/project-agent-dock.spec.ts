@@ -58,6 +58,8 @@ test.describe("project agent dock", () => {
     await expect(dock).toContainText("Online Store");
     await expect(dock).toHaveAttribute("data-agent-request-kind", "brief");
     await expect(dock.getByTestId("acp-chat-transcript")).toBeVisible({ timeout: 30_000 });
+    // The frame's width transition is the one motion here; the capture waits for it to end.
+    await frame.evaluate((el) => Promise.all(el.getAnimations().map((animation) => animation.finished)));
     await page.screenshot({ path: ".claude/shots-2026-09-19/41-project-agent-dock.png" });
 
     // Closing puts the conversation away; the frame stays mounted and inert.

@@ -68,7 +68,7 @@ vi.mock("@/entities/vault-session", async (importOriginal) => {
     ...actual,
     useLocalVault: () => {
       const vault = actual.useLocalVault();
-      return mocks.handle ? { ...vault, handle: mocks.handle as FileSystemDirectoryHandle } : vault;
+      return mocks.handle ? { ...vault, handle: mocks.handle as unknown as FileSystemDirectoryHandle } : vault;
     },
   };
 });
