@@ -202,7 +202,7 @@
         "mcpLink": "Share this folder with a tool you run yourself, or attach a connector, in the MCP section below (the agent connection)",
         "recheck": "Check again",
         "checking": "Looking…",
-        "readyHeading": "Found on this computer ({count})",
+        "readyHeading": "Tools on this computer · {count} confirmed",
         "othersHeading": "Show the other {count}",
         "othersHeadingEmpty": "{count} tools you can use",
         "noneReady": "Nothing found yet",

@@ -65,6 +65,18 @@ describe('에이전트 목적지', () => {
   });
 });
 
+describe('한 목록에 이름 하나', () => {
+  it('보이지 않는 구역 이름과 보이는 묶음 이름이 같은 말로 시작한다', () => {
+    // The region heading and the group label named the same list two different ways, and the
+    // count rode parentheses here while the MCP tab's rode a middot. One noun phrase, one
+    // count grammar, across both tabs.
+    const region = ko.agents.runtimesHeading;
+    expect(ko.nav.settingsMenu.runtimes.readyHeading.startsWith(region)).toBe(true);
+    expect(ko.nav.settingsMenu.runtimes.readyHeading).toContain('·');
+    expect(ko.mcp.connectorsHeadingCount).toContain('·');
+  });
+});
+
 describe('두 탭, 한 번에 하나', () => {
   it('기본은 에이전트 탭이고 MCP 탭의 몸통은 그리지 않는다', () => {
     renderPage(<div data-testid="mcp-body" />);
