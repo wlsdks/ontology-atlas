@@ -811,6 +811,10 @@ export function AcpChatPanel({
   /** Is the hand in the composer? The shortcut hint appears only then. */
   const [composerFocused, setComposerFocused] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
+  /** The column that holds the turns. It carries the bottom anchoring and it is what moves. */
+  const transcriptColumnRef = useRef<HTMLDivElement | null>(null);
+  /** Where the first turn stood on the previous render, so a shift can be animated rather than snapped. */
+  const columnTopRef = useRef<number | null>(null);
   /** Whether new transcript content should keep following the tail. Updated before content grows. */
   const transcriptPinnedToBottomRef = useRef(true);
   /**
@@ -1006,6 +1010,46 @@ export function AcpChatPanel({
    * Reduced motion needs nothing here: the global base-layer rule in `app/globals.css` sets
    * `scroll-behavior: auto !important`, which outranks this inline value in both directions.
    */
+  /**
+   * **Before it overflows, the conversation still has to travel.**
+   *
+   * ⚠️ Measured by the design council (2026-09-19) on the built direction: while the transcript is
+   * shorter than its own box, pressing Send moved every earlier line 141px upward **in a single
+   * frame**, and only once the conversation overflowed did the same gesture glide. The first four
+   * turns of every conversation — the whole of a first visit — were the hard cut this file's own
+   * 2026-09-06 rule calls 「the transcript reads as replaced rather than extended」, and the fifth
+   * turn silently switched to a different motion for the identical press.
+   *
+   * The scroll path cannot carry it: with nothing to scroll, `scrollTop` is zero and stays zero.
+   * The movement comes from the auto margin shrinking as content grows, which is a layout change
+   * and does not animate. So the column is put back where it stood and released — the same story
+   * the glide tells, on the same `--motion-base` ramp.
+   *
+   * Overflowing, this does nothing and the scroll below owns the movement; under reduced motion it
+   * does nothing at all. A transient overflow while the column sits low costs nothing visible:
+   * no scroller in this product draws a bar.
+   */
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const column = transcriptColumnRef.current;
+    const first = column?.firstElementChild as HTMLElement | null;
+    const top = first?.getBoundingClientRect().top ?? null;
+    const previous = columnTopRef.current;
+    columnTopRef.current = top;
+    if (!list || !column || top === null || previous === null || reducedMotion) return;
+    if (list.scrollHeight > list.clientHeight + 1) return;
+    const travelled = previous - top;
+    // Only a rise, and never further than one boxful — the same bound the glide keeps.
+    if (travelled <= 0 || travelled > list.clientHeight) return;
+    column.style.transition = 'none';
+    column.style.transform = `translateY(${travelled}px)`;
+    const frame = window.requestAnimationFrame(() => {
+      column.style.transition = 'transform var(--motion-base) var(--motion-ease)';
+      column.style.transform = '';
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [events, pending, reducedMotion, showPostTurnSuggestions, postTurnSuggestionKey]);
+
   useLayoutEffect(() => {
     const list = listRef.current;
     if (!list) return;
@@ -1428,11 +1472,26 @@ export function AcpChatPanel({
          * centre themselves (`m-auto`) on purpose — 「in the center of where records will
          * accumulate」 — and are the one thing on this screen that should not sit against the box.
          */
-        className={cn(
-          'atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto',
-          events.length > 0 && '[&>*:first-child]:mt-auto',
-        )}
+        className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col overflow-y-auto"
       >
+        {/*
+          ⚠️ **The anchoring belongs to a column of its own, not to whichever element happens to
+          render first** (design council, 2026-09-19). Written as `[&>*:first-child]:mt-auto` on the
+          box, any child later rendered ahead of the first turn — a date divider, a 「since you
+          left」 card, a status row moved in — silently takes the margin and the conversation
+          returns to the top, in a shape no gate would think to look at.
+
+          It is also the element that moves: a transform on the scroll box itself would fight the
+          scrolling, and on a single child it would leave the rest behind.
+        */}
+        <div
+          ref={transcriptColumnRef}
+          data-testid="acp-chat-transcript-column"
+          className={cn(
+            'flex flex-col gap-3',
+            events.length > 0 ? 'mt-auto' : 'min-h-0 flex-1',
+          )}
+        >
         {/*
           A 「Starting」 (starting) chip alone is not enough for the first download (owner's
           real machine, 2026-08-19). During the several minutes npx spends fetching tens
@@ -1679,6 +1738,7 @@ export function AcpChatPanel({
             onSelect={(suggestion) => chooseSuggestion(suggestion, false)}
           />
         </Surface>
+        </div>
       </div>
 
       {/*

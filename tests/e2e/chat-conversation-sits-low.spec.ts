@@ -106,3 +106,71 @@ test('a long conversation still scrolls, and its top is still reachable', async 
     'the first turn sits above the top of the box, out of reach',
   ).toBeGreaterThanOrEqual(-1);
 });
+
+/**
+ * **Before it overflows, the conversation still has to travel** (design council, 2026-09-19).
+ *
+ * The built direction moved every earlier line 141px upward **in a single frame** on each Send
+ * while the transcript was shorter than its own box, and only glided once it overflowed — so the
+ * first four turns of every conversation were a hard cut and the fifth silently switched to a
+ * different motion for the identical press. This file's own rule already calls that "the
+ * transcript reads as replaced rather than extended".
+ *
+ * ⚠️ Sampling is per animation frame, not per assertion. A rect read before and after proves only
+ * that the content ended up somewhere; it cannot tell a glide from a snap, which is exactly the
+ * failure the static gates above missed.
+ */
+async function framesWhile(page: Page, act: () => Promise<void>): Promise<number[]> {
+  await page.evaluate(() => {
+    const probe = window as unknown as { __tops?: number[]; __stop?: () => void };
+    probe.__tops = [];
+    let live = true;
+    const tick = () => {
+      if (!live) return;
+      const first = document
+        .querySelector('[data-testid="acp-chat-transcript-column"]')
+        ?.firstElementChild;
+      if (first) probe.__tops!.push(Math.round(first.getBoundingClientRect().top));
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    probe.__stop = () => { live = false; };
+  });
+  await act();
+  await page.waitForTimeout(600);
+  return page.evaluate(() => {
+    const probe = window as unknown as { __tops?: number[]; __stop?: () => void };
+    probe.__stop?.();
+    const seen = probe.__tops ?? [];
+    const steps: number[] = [];
+    for (const top of seen) if (steps.at(-1) !== top) steps.push(top);
+    return steps;
+  });
+}
+
+test('a send before the transcript overflows travels, it does not snap', async ({ page }) => {
+  const harness = await open(page);
+  const chat = page.getByTestId('acp-chat-panel');
+  await chat.getByRole('textbox').fill('First question, so there is something for the next one to move.');
+  await page.getByTestId('acp-chat-send').click();
+  await harness.answer(page, 'A short answer.');
+  await expect(chat).toHaveAttribute('data-acp-status', 'ready');
+  await page.waitForTimeout(400);
+
+  const steps = await framesWhile(page, async () => {
+    await chat.getByRole('textbox').fill('Second question, still nowhere near overflowing the box.');
+    await page.getByTestId('acp-chat-send').click();
+    await expect(chat).toHaveAttribute('data-acp-status', 'thinking');
+  });
+
+  const travelled = steps.length > 0 ? steps[0] - steps[steps.length - 1] : 0;
+  expect(travelled, 'the earlier turns did not move at all').toBeGreaterThan(20);
+  expect(
+    steps.length,
+    `the shift arrived in ${steps.length} step(s) — a hard cut, not a movement: ${steps.join(' → ')}`,
+  ).toBeGreaterThan(2);
+  expect(
+    await geometry(page).then((shape) => shape.overflowing),
+    'this case only means anything while the transcript is not scrolling yet',
+  ).toBe(false);
+});
