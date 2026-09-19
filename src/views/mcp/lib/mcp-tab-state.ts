@@ -26,17 +26,8 @@ export function parseMcpTab(raw: string | null | undefined): McpTab {
 }
 
 /**
- * The address for a tab. The default omits `?tab=` so the destination's plain URL stays the
- * one a person copies, and the locale-prefixed current pathname is passed in when only the
- * query of the current document changes.
+ * The query key that names the MCP tab's section. Its address builder left on 2026-09-19 with
+ * the section switch: the two sections are groups under one tab now, and the only writer of
+ * this key is the `/mcp/` redirect, which forwards the section it was given.
  */
-/**
- * MCP is the second tab of the Agents destination (2026-09-17), so its own section lives
- * under `?mcp=` beside the workspace's `?tab=mcp`. `/mcp/?tab=<section>` still resolves:
- * the retired route redirects here with the same section.
- */
-export function buildMcpTabHref(tab: McpTab, pathname = '/agents/'): string {
-  return tab === DEFAULT_MCP_TAB ? `${pathname}?tab=mcp` : `${pathname}?tab=mcp&mcp=${tab}`;
-}
-
 export const MCP_SECTION_PARAM = 'mcp';

@@ -1,6 +1,7 @@
 "use client";
 
 import { projectDomeEdgeControl } from '../model/dome-edge';
+import { refreshIndexDependentTokens } from "../tokens/read-map-tokens";
 
 /**
  * `OntologyMap`'s engine hook — owns the canvas/rAF/pointer wiring so the
@@ -1121,6 +1122,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const prevExpandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** Density gate — this frame's cluster chips (world-anchored). Hit-testing reads it. */
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
+  const lastTapRef = useRef<{ nodeId: string; at: number } | null>(null);
   /**
    * The nodes this frame did **not** draw: density-gate collapsed ones plus
    * neighbours hidden by selective ego. Pointer hit-testing reads it to exclude
@@ -2309,6 +2311,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
     /** The cheap half, called from inside a frame: backing size and viewport facts only. */
     const commitViewportSize = () => {
+      // The top and bottom lanes follow the viewport height; read them before
+      // the fit and the label cull consume the size that just changed.
+      refreshIndexDependentTokens();
       const pending = pendingViewportRef.current;
       if (!pending) return false;
       pendingViewportRef.current = null;
@@ -6160,6 +6165,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
+    lastTapRef,
     expandPrefRef,
     clusterBarLabelsRef,
     clusteredIdsRef,

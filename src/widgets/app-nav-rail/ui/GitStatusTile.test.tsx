@@ -15,9 +15,26 @@ vi.mock("@tauri-apps/api/core", () => ({
   isTauri: () => tauriApiMock.runtimeAvailable,
 }));
 
+/** The watcher's event channel: `listen` hands the handlers back so a test can play the watcher. */
+const tauriEventMock = vi.hoisted(() => ({
+  handlers: [] as Array<(event: { payload: unknown }) => void>,
+  listen: vi.fn(async (_name: string, handler: (event: { payload: unknown }) => void) => {
+    tauriEventMock.handlers.push(handler);
+    return () => {
+      tauriEventMock.handlers = tauriEventMock.handlers.filter((h) => h !== handler);
+    };
+  }),
+}));
+
+vi.mock("@tauri-apps/api/event", () => ({
+  listen: tauriEventMock.listen,
+}));
+
 afterEach(() => {
   tauriApiMock.runtimeAvailable = false;
   tauriApiMock.invoke.mockReset();
+  tauriEventMock.handlers = [];
+  tauriEventMock.listen.mockClear();
 });
 
 function renderTile(ui: React.ReactElement) {
@@ -118,5 +135,35 @@ describe("GitStatusTile — 데스크톱(Tauri)", () => {
     await waitFor(() => expect(tauriApiMock.invoke).toHaveBeenCalledTimes(1));
     // A git_status result (clean) wins over the sessionDirty fallback.
     expect(screen.queryByTestId("app-nav-rail-git-dot")).not.toBeInTheDocument();
+  });
+});
+
+describe("GitStatusTile — 폴더를 따라간다", () => {
+  it("vault-changed 가 오면 한 번 더 읽고, 그 밖에는 여전히 폴링하지 않는다", async () => {
+    tauriApiMock.runtimeAvailable = true;
+    tauriApiMock.invoke.mockResolvedValue({
+      initialized: true,
+      repoRoot: "/repo",
+      branch: "main",
+      upstream: null,
+      changedCount: 0,
+      stagedOutsideVault: [],
+    });
+    renderTile(<GitStatusTile onActivate={() => {}} vaultPath="/repo/vault" />);
+    await waitFor(() => expect(tauriApiMock.invoke).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(tauriEventMock.listen).toHaveBeenCalledWith("vault-changed", expect.any(Function)));
+
+    // A burst of three watcher emits is one read.
+    await act(async () => {
+      for (let i = 0; i < 3; i += 1) for (const handler of tauriEventMock.handlers) handler({ payload: null });
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 450));
+    });
+    expect(tauriApiMock.invoke).toHaveBeenCalledTimes(2);
+    expect(tauriApiMock.invoke.mock.calls.every(([command]) => command === "git_status")).toBe(true);
+  });
+
+  it("브라우저(브리지 없음)에서는 워처를 구독하지 않는다", () => {
+    renderTile(<GitStatusTile onActivate={() => {}} sessionDirty />);
+    expect(tauriEventMock.listen).not.toHaveBeenCalled();
   });
 });
