@@ -19,6 +19,21 @@ const agent = (id: string): AcpEvent => ({ kind: 'agent', id, text: `answer-${id
 const user = (id: string): AcpEvent => ({ kind: 'user', id, text: `question-${id}` });
 
 const kinds = (events: readonly AcpEvent[]) => groupEvents(events).map((item) => item.kind);
+/**
+ * Every event id in drawn order, *including* the ones inside a thinking disclosure.
+ *
+ * `ids` below reports a work group as its own id alone, which is the first thought's. That made
+ * it blind to the defect this file now gates: a second thought swallowed by an earlier group
+ * simply disappeared from the list instead of showing up in the wrong place.
+ */
+const drawnIds = (events: readonly AcpEvent[]) =>
+  groupEvents(events).flatMap((item) =>
+    item.kind === 'event'
+      ? [item.event.id]
+      : item.kind === 'toolRun'
+        ? item.rows.map((row) => row.event.id)
+        : item.events.map((event) => event.id),
+  );
 const ids = (events: readonly AcpEvent[]) =>
   groupEvents(events).flatMap((item) =>
     item.kind === 'event'
@@ -166,6 +181,37 @@ describe('groupEvents — a tool call stands where it happened', () => {
     ]);
   });
 
+  it('does not draw a thought above the call it actually followed', () => {
+    /*
+     * Measured in the rendered dock (2026-09-19): a turn that went think -> read -> think drew
+     * `STEP ONE`, `STEP THREE`, then the read. The disclosure reached backwards past the call
+     * and took the later thought with it, so the read looked like a consequence of both thoughts
+     * when it happened between them. Order is this column's whole claim about cause.
+     */
+    const turn = [user('u'), thought('one'), tool('read'), thought('three'), agent('m')];
+    expect(drawnIds(turn)).toEqual(['u', 'one', 'read', 'three', 'm']);
+    const groups = groupEvents(turn).filter((item) => item.kind === 'workGroup');
+    expect(groups).toHaveLength(2);
+    expect(groups.map((group) => (group.kind === 'workGroup' ? group.events.length : -1))).toEqual([
+      1, 1,
+    ]);
+  });
+
+  it('counts a disclosure by the thinking it actually holds', () => {
+    /* The header says "N steps"; N is the thoughts under that arrow, never the turn's total. */
+    const groups = groupEvents([
+      user('u'),
+      thought('one'),
+      thought('two'),
+      tool('read'),
+      thought('four'),
+      agent('m'),
+    ]).filter((item) => item.kind === 'workGroup');
+    expect(groups.map((group) => (group.kind === 'workGroup' ? group.events.length : -1))).toEqual([
+      2, 1,
+    ]);
+  });
+
   it('makes no thinking disclosure at all for a turn that only called tools', () => {
     expect(kinds([user('u'), tool('a'), agent('m')])).toEqual([
       'event',
@@ -176,12 +222,30 @@ describe('groupEvents — a tool call stands where it happened', () => {
 });
 
 describe('groupEvents — thinking stays separated from the answer', () => {
-  it('collects one turn of thinking into one disclosure', () => {
-    const out = groupEvents([user('u'), thought('a'), agent('m1'), thought('c'), agent('m2')]);
-    expect(out.map((item) => item.kind)).toEqual(['event', 'workGroup', 'event', 'event']);
+  it('collects one stretch of thinking into one disclosure', () => {
+    const out = groupEvents([user('u'), thought('a'), thought('b'), agent('m1')]);
+    expect(out.map((item) => item.kind)).toEqual(['event', 'workGroup', 'event']);
     expect(out[1].kind === 'workGroup' && out[1].events.map((event) => event.id)).toEqual([
       'a',
+      'b',
+    ]);
+  });
+
+  it('opens a second disclosure for thinking that resumes after an answer', () => {
+    const out = groupEvents([user('u'), thought('a'), agent('m1'), thought('c'), agent('m2')]);
+    expect(out.map((item) => item.kind)).toEqual([
+      'event',
+      'workGroup',
+      'event',
+      'workGroup',
+      'event',
+    ]);
+    expect(drawnIds([user('u'), thought('a'), agent('m1'), thought('c'), agent('m2')])).toEqual([
+      'u',
+      'a',
+      'm1',
       'c',
+      'm2',
     ]);
   });
 

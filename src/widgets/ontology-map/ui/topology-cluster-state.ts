@@ -20,6 +20,8 @@ import type { TopologyWorld } from "./topology-world";
 export function computeTopologyClusterState(
   world: Pick<TopologyWorld, "nodeById" | "childrenByParent" | "clusterMetaByParent">,
   expandedParents: ReadonlySet<string>,
+  /** The focused node's cross-parent neighbours, drawn inside folded parents (`DensityGateInput.heldOpen`). */
+  heldOpen?: ReadonlySet<string>,
 ): DensityGateResult {
   const parentGeometry = new Map<string, DensityGateParentGeometry>();
   for (const [parentId, meta] of world.clusterMetaByParent) {
@@ -38,5 +40,6 @@ export function computeTopologyClusterState(
     parentGeometry,
     // domain children (a project's skeleton) are exempt from the gate — the Part 0 domain-tier gate exemption.
     kindOf: (id) => world.nodeById.get(id)?.kind,
+    heldOpen,
   });
 }
