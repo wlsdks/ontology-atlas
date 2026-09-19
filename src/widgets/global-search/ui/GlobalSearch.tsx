@@ -19,8 +19,8 @@ import {
   type MeaningfulOntologyKind,
 } from "@/entities/knowledge-graph";
 import { controlClass, HighlightedText } from "@/shared/ui";
-import { snippetAroundFirstMatch } from "@/shared/lib/highlight-match";
 import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match";
+import { describeMatchReason } from "../lib/match-reason";
 import { focusMapCanvasWhenReady, MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 
 export interface GlobalSearchProps {
@@ -473,7 +473,7 @@ export function GlobalSearch({
                   same policy as cycle 16's cleanup of the old detail panel (now
                   FullDetailA1). If the same information is ever needed, cycle 6's
                   ontology→docs jump chip shows it more richly. */}
-              {ontologyResults.map(({ node }) => {
+              {ontologyResults.map(({ node, matched }) => {
                 // N12 (persona-ux-2026-07 report) — element titles that are
                 // literal file paths ("mcp/src/ontology-engine.mjs") read as
                 // body-text noise at full title weight next to plain-language
@@ -485,6 +485,13 @@ export function GlobalSearch({
                 // the name just read on screen has to re-check "is this that node".
                 const label = node.display ?? node.title;
                 const pathLike = node.kind === "element" && isPathLikeTitle(label);
+                // The trailing column is the row's reason for being in the list.
+                // A name match on the name already drawn needs no second copy, so the
+                // summary keeps that seat as context; every other match shows the text
+                // that actually earned the row — another of the node's names, the
+                // summary opened at the match, or the id's slug. Measured 2026-09-19:
+                // without this, 30.6% of rows over thirty queries carried no mark at all.
+                const reason = describeMatchReason({ matched, label, summary: node.summary, query });
                 return (
                   <Command.Item
                     key={`ontology:${node.id}`}
@@ -516,17 +523,20 @@ export function GlobalSearch({
                     >
                       <HighlightedText text={label} query={isEmptyQuery ? undefined : query} />
                     </span>
-                    {node.summary ? (
-                      // The summary is highlighted too, because it is often the only
-                      // reason the row is in the list: typing an English word the
-                      // Korean titles do not contain matched twenty rows whose names
-                      // showed no mark at all, so the list looked arbitrary (measured
-                      // live 2026-09-19, "shopper" on the Online Store sample).
-                      <span className="hidden min-w-0 max-w-[14rem] truncate text-body text-[color:var(--color-text-tertiary)] md:block">
-                        <HighlightedText
-                          text={isEmptyQuery ? node.summary : snippetAroundFirstMatch(node.summary, query)}
-                          query={isEmptyQuery ? undefined : query}
-                        />
+                    {reason ? (
+                      <span
+                        data-search-result-reason={reason.kind}
+                        // A fixed width, not a maximum: the column is one column, so
+                        // its text starts on one line. Measured 2026-09-19 with
+                        // `max-w`, four rows of "policy" began at four different x
+                        // (763-916, a 153px spread) because each short name was
+                        // pushed flush right by the label's `flex-1`.
+                        className={cn(
+                          "hidden w-[14rem] shrink-0 truncate text-body text-[color:var(--color-text-tertiary)] md:block",
+                          reason.kind === "id" && "font-mono text-caption",
+                        )}
+                      >
+                        <HighlightedText text={reason.text} query={reason.query} />
                       </span>
                     ) : null}
                   </Command.Item>
@@ -544,7 +554,9 @@ export function GlobalSearch({
                 </span>
               }
             >
-              {projectResults.map(({ project }) => (
+              {projectResults.map(({ project, matched }) => {
+                const reason = describeMatchReason({ matched, label: project.name, summary: project.slug, query });
+                return (
                 <Command.Item
                   key={`project:${project.slug}`}
                   value={`project:${project.slug}`}
@@ -566,14 +578,27 @@ export function GlobalSearch({
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
                     <HighlightedText text={project.name} query={isEmptyQuery ? undefined : query} />
                   </span>
-                  <span className="hidden shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)] md:inline">
-                    <HighlightedText text={project.slug} query={isEmptyQuery ? undefined : query} />
-                  </span>
+                  {/* Same seat, same job as the concept rows: the reason. It holds the
+                      slug until something else earned the row — the English name, or
+                      the description, tag or category that matched and which this row
+                      otherwise never shows. */}
+                  {reason ? (
+                    <span
+                      data-search-result-reason={reason.kind}
+                      className={cn(
+                        "hidden w-[14rem] shrink-0 truncate text-caption text-[color:var(--color-text-tertiary)] md:block",
+                        reason.kind !== "summary" && "font-mono",
+                      )}
+                    >
+                      <HighlightedText text={reason.text} query={reason.query} />
+                    </span>
+                  ) : null}
                   <span className="shrink-0 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">
                     {project.status}
                   </span>
                 </Command.Item>
-              ))}
+                );
+              })}
             </Command.Group>
           ) : null}
         </Command.List>
