@@ -183,13 +183,15 @@ export function matchProjects(
   for (const project of projects) {
     const name = project.name.toLowerCase();
     const nameEn = project.nameEn?.toLowerCase() ?? "";
+    // Every word a screen draws for the project (`display_<locale>`) matches like its name.
+    const displays = Object.values(project.displayNames ?? {}).map((value) => value.toLowerCase());
     const description = project.description?.toLowerCase() ?? "";
     const tags = project.tags.join(" ").toLowerCase();
     const category = (project.category ?? '').toLowerCase();
     const slug = project.slug.toLowerCase();
 
     let score = 0;
-    if (name === trimmed || nameEn === trimmed) score = 5;
+    if (name === trimmed || nameEn === trimmed || displays.includes(trimmed)) score = 5;
     else if (name.startsWith(trimmed) || nameEn.startsWith(trimmed)) score = 4;
     else if (name.includes(trimmed) || nameEn.includes(trimmed)) score = 3;
     else if (

@@ -12,7 +12,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { isGraphDrawnKind, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { buildProjectChips } from "../lib/project-chips";
-import type { Project } from "@/entities/project";
+import { projectDisplayName, type Project } from "@/entities/project";
 import { cn } from "@/shared/lib/cn";
 import {
   MEANINGFUL_ONTOLOGY_KINDS,
@@ -552,7 +552,7 @@ export function GlobalSearch({
                     {project.isHub ? t('hub') : t('project')}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
-                    {project.name}
+                    {projectDisplayName(project, locale)}
                   </span>
                   <span className="hidden shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)] md:inline">
                     {project.slug}
