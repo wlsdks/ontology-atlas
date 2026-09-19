@@ -163,3 +163,43 @@ describe('readToolFallbackTarget — a tool with no vault node still names what 
     expect(readToolFallbackTarget({ path: '   ' })).toBeNull();
   });
 });
+
+/*
+ * Measured in the rendered transcript (2026-09-20): a read reported flat named its file and the
+ * write beside it named nothing, because the adapter wraps a call to an MCP server as
+ * `{ server, tool, arguments }` and every key these readers look for was one level down. The row
+ * that lost its subject was the one that had just failed, and the wrapped shape is what this
+ * product's own vault server produces — so the common case was the blind one.
+ */
+describe('a call wrapped by the MCP envelope still names what it touched', () => {
+  const wrapped = (args: Record<string, unknown>) => ({
+    server: 'atlas-vault',
+    tool: 'write_wiki_file',
+    arguments: args,
+  });
+
+  it('reads the path out of the envelope', () => {
+    expect(readToolFallbackTarget(wrapped({ file_path: '/vault/wiki/architecture.md' }))).toEqual({
+      kind: 'path',
+      value: 'wiki/architecture.md',
+    });
+  });
+
+  it('reads a vault node out of the envelope too', () => {
+    expect(readToolTargets(wrapped({ slug: 'domains/order' }), new Set(['domains/order']))).toEqual([
+      'domains/order',
+    ]);
+  });
+
+  it('leaves a tool that merely takes an `arguments` parameter alone', () => {
+    // No `server`/`tool` beside it, so this is an ordinary argument and not an envelope.
+    expect(readToolFallbackTarget({ arguments: { file_path: 'inner.md' }, path: 'outer.md' })).toEqual({
+      kind: 'path',
+      value: 'outer.md',
+    });
+  });
+
+  it('falls back to the envelope itself when its arguments name nothing', () => {
+    expect(readToolFallbackTarget(wrapped({ limit: 10 }))).toBeNull();
+  });
+});
