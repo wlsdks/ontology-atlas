@@ -2508,6 +2508,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         return;
       }
     }
+    // Expand-all is a lens, and its frame is the lens fit. The overview fit
+    // below reserves the tool lane and the docking-chip row on top and the
+    // readout on the bottom, which is right for the spine but shrinks the
+    // expanded map from 75 % to 63 % of the height and moves it — pressing
+    // "fit" or "auto-arrange" after expand-all made the map jump to a second,
+    // smaller frame of the same nodes (measured 2026-09-19 at 1512×806). One
+    // lens, one frame: hand the fit to the lens while it is on.
+    if (overviewFitRef.current === "full" && spotlightIdsRef.current !== null && runSpotlightFitRef.current?.()) {
+      return;
+    }
     // Panel-aware: spring back to the overview centered in the VISIBLE area, not
     // behind the left ReaderLens panel (design guardian's camera rejection). Fits the
     // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same

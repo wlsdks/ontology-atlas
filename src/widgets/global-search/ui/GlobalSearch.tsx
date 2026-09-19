@@ -11,6 +11,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { isGraphDrawnKind, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
+import { buildProjectChips } from "../lib/project-chips";
 import type { Project } from "@/entities/project";
 import { cn } from "@/shared/lib/cn";
 import {
@@ -165,29 +166,7 @@ export function GlobalSearch({
   // A `@tanstack/react-virtual` horizontal virtualizer renders only the chips in the
   // viewport (~10–15) even in a large vault. The ontology-frequency weighting is kept
   // so the most relevant chips appear first on the initial screen.
-  const projectChipSource = useMemo<Array<{ slug: string; label: string }>>(() => {
-    const ontologyFreq = new Map<string, number>();
-    for (const node of nodes) {
-      for (const pid of node.projectIds) {
-        ontologyFreq.set(pid, (ontologyFreq.get(pid) ?? 0) + 1);
-      }
-    }
-
-    if (projects && projects.length > 0) {
-      return projects
-        .slice()
-        .sort((a, b) => {
-          const fa = ontologyFreq.get(a.slug) ?? 0;
-          const fb = ontologyFreq.get(b.slug) ?? 0;
-          if (fa !== fb) return fb - fa;
-          return a.name.localeCompare(b.name, "ko");
-        })
-        .map((p) => ({ slug: p.slug, label: p.name }));
-    }
-    return Array.from(ontologyFreq.keys())
-      .sort((a, b) => (ontologyFreq.get(b) ?? 0) - (ontologyFreq.get(a) ?? 0))
-      .map((slug) => ({ slug, label: slug }));
-  }, [projects, nodes]);
+  const projectChipSource = useMemo(() => buildProjectChips(projects, nodes), [projects, nodes]);
 
   // Horizontal virtualizer — chip widths vary because the labels are Korean.
   // estimateSize is an average (~110px including padding for a 10–16 character chip),
@@ -201,6 +180,21 @@ export function GlobalSearch({
     getScrollElement: () => projectScrollRef.current,
     estimateSize: () => 110,
   });
+  // The dialog's content mounts a render after `open` flips (Radix Presence),
+  // so the virtualizer first looked for its scroll element and found nothing —
+  // and nothing re-rendered until the person typed. Opened fresh, the row said
+  // "Project · 1" with no chip under it (2026-09-19). Measuring when the
+  // element arrives is the re-render that lets the virtualizer find it. The
+  // callback is stable and guarded, because an inline one runs every render
+  // and each measure is itself a render.
+  const attachProjectScroll = useCallback(
+    (element: HTMLDivElement | null) => {
+      if (projectScrollRef.current === element) return;
+      projectScrollRef.current = element;
+      if (element) projectVirtualizer.measure();
+    },
+    [projectVirtualizer],
+  );
 
   const closeAndClear = () => {
     onOpenChange(false);
@@ -401,7 +395,7 @@ export function GlobalSearch({
                   chips in the viewport (~10–15) even in a workspace of 1,979 projects.
                   The overflow-x-auto + relative + absolute-child pattern. */}
               <div
-                ref={projectScrollRef}
+                ref={attachProjectScroll}
                 className="relative flex-1 overflow-x-auto"
                 style={{ height: 24 }}
               >

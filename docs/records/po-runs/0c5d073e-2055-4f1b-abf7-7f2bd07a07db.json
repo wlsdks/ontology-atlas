@@ -1,0 +1,34 @@
+{
+  "date": "2026-09-19",
+  "decision": "The Record screen restores one document behind a confirm that names what is lost",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "correct",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "affected",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "affected"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-19",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "0c5d073e-2055-4f1b-abf7-7f2bd07a07db",
+  "recordedAt": "2026-09-19T08:33:51.597Z"
+}
