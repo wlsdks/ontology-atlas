@@ -2,7 +2,6 @@
 
 import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
-import { useSearchParams } from "next/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
 import { settleRouteViewTransition } from "@/shared/lib/route-view-transition";
@@ -155,18 +154,37 @@ function ShellColumn({ children }: { children: ReactNode }) {
    * rail's active marker must still read "agents" here (MCP has no tile), so the tab is read
    * from the address for the guide alone rather than by changing that resolution.
    */
-  const searchParams = useSearchParams();
   const mapPending = useMapNavigationPending();
 
-  // Which screens get a destination guide. The map is excluded because it owns its
-  // own eight-step journey, and projects gets one **only on the list** — the rail
-  // lights the same destination for `/project/<slug>`, but the guide's copy
-  // ("they stand as cards") does not describe that screen.
-  const guideDestination = resolveGuideDestination({
-    surface,
-    pathname,
-    tab: searchParams?.get("tab") ?? null,
-  });
+  /*
+   * Which screens get a destination guide. The map is excluded because it owns its own
+   * eight-step journey, and projects gets one **only on the list** — the rail lights the same
+   * destination for `/project/<slug>`, but the guide's copy ("they stand as cards") does not
+   * describe that screen.
+   *
+   * ⚠️ **`tab` is null here, and the shell may not make it anything else** (2026-09-20).
+   *
+   * The MCP tab still shows the Agents guide rather than its own, and the fix is not to read
+   * the query from this component. `useSearchParams` makes its caller bail out of
+   * prerendering; `next.config.ts` keeps `output: 'export'`, so every route is prerendered;
+   * and the layout renders this shell **above** each page's `Suspense`. Calling it here failed
+   * `pnpm build` on `/en/agents` **and** on `/en/ontology/edit` — a redirect page the change
+   * never touched — and took five Playwright shards red behind one broken artifact.
+   *
+   * Isolating the call in a leaf behind a boundary of its own does fix the build, and was
+   * rejected for a second reason: `route-blank-fallback.contract.test.ts` requires every
+   * `Suspense` under `app/` or `src/` to name one of three approved fallbacks and forbids an
+   * empty one, because a route boundary with nothing to show ships a deployed `index.html`
+   * with an empty body. That gate reads raw file text, so it cannot tell a route boundary from
+   * a leaf overlay — and weakening it to pass a first-visit card would trade a severe failure
+   * for a small one. (It also matches this comment if the forbidden spelling is written out,
+   * which is why it is described here rather than quoted.)
+   *
+   * So the MCP guide waits for a mechanism that does not read the address in the shell — the
+   * tab is already known inside the page, under a boundary that exists. `resolveGuideDestination`
+   * keeps the rule and its unit tests for when that arrives.
+   */
+  const guideDestination = resolveGuideDestination({ surface, pathname, tab: null });
 
   return (
     // **The shell owns the viewport.** The alternative — a `--app-viewport-h` token
