@@ -195,6 +195,11 @@ test.describe("하네스 탭", () => {
     await expect(loop).not.toContainText("아직 없음");
     await expect(anatomy).not.toContainText("%");
 
+    // ⚠️ The fixture's config names `block-npm-publish.sh` and the disk does not have it. Every
+    // count on this screen stays healthy while that guard is absent, so the absence is said out
+    // loud — the one warning this view draws.
+    await expect(page.getByTestId("harness-anatomy-silent")).toContainText("block-npm-publish.sh");
+
     // What the repository keeps out of sight is a gate, not a guide, and it keeps each product's
     // own file name.
     const blind = page.getByTestId("harness-anatomy-slot-blind");

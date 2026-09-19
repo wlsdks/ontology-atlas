@@ -258,6 +258,17 @@ export interface HarnessAnatomy {
   permissions: { allow: number; deny: number; ask: number } | null;
   /** Configs that gate execution behind an approval this app cannot read (Codex). */
   approvalGates: readonly string[];
+  /**
+   * Scripts a hook config names that are **not on disk**, and the commands we could not resolve to
+   * a path at all.
+   *
+   * The most dangerous state a harness can be in, and the one the counts above cannot show: a
+   * `settings.json` entry whose path does not resolve produces no block and no error — just a
+   * non-blocking status code — so the guard disappears in silence and every number on this screen
+   * still looks healthy. The rows count what is wired, which is the honest count; this is the
+   * sentence that keeps that count from reading as "nothing is missing".
+   */
+  silentGuards: { missing: readonly string[]; unresolved: readonly string[] };
 }
 
 /** Every slot in reading order — the order a turn meets them, not the order they were measured. */
@@ -351,12 +362,20 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
   const blocking: string[] = [];
   const watching: string[] = [];
   const approvalGates: string[] = [];
+  const missingScripts: string[] = [];
+  const unresolvedCommands: string[] = [];
   for (const group of report.hookGroups) {
     if (group.approvalGate) approvalGates.push(group.configPath);
     for (const hook of group.hooks) {
-      /* A hook whose script is missing is not a guard. It is counted nowhere and shown by the
-         guides view, which already says what silence costs. */
-      if (hook.status !== 'wired') continue;
+      if (hook.status !== 'wired') {
+        /* Not counted as a guard — it is not one — but not dropped either. A guard that fails in
+           silence is exactly what a reader of this screen needs told. */
+        const name = hook.ref.path ?? hook.ref.command;
+        (hook.status === 'missing' ? missingScripts : unresolvedCommands).push(
+          name.split('/').pop() ?? name,
+        );
+        continue;
+      }
       /*
        * The script's own name, so a guard mirrored into `.claude/hooks/` and `.codex/hooks/` is
        * counted once. Nine of this repository's hook scripts exist in both trees as real mirrored
@@ -443,5 +462,9 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
     alwaysBytes,
     permissions,
     approvalGates: uniqueSorted(approvalGates),
+    silentGuards: {
+      missing: uniqueSorted(missingScripts),
+      unresolved: uniqueSorted(unresolvedCommands),
+    },
   };
 }

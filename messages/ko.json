@@ -471,7 +471,7 @@
       },
       "blind": {
         "title": "에이전트 눈에서 빼둔 것",
-        "body": "에이전트가 보면 안 된다고 적어 둔 파일입니다. 이름은 도구마다 다릅니다 — Cursor 는 .cursorignore, Windsurf 는 .codeiumignore, Gemini Code Assist 는 .aiexclude, Gemini CLI 는 .geminiignore, JetBrains 는 .aiignore. 저장소는 적어 둘 뿐이고, 지키는지는 그 도구가 정합니다."
+        "body": "에이전트가 보면 안 된다고 적어 둔 파일입니다. 이름은 도구마다 다릅니다: Cursor `.cursorignore`, Windsurf `.codeiumignore`, Gemini Code Assist `.aiexclude`, Gemini 명령줄 도구(CLI) `.geminiignore`, JetBrains `.aiignore`. 저장소는 적어 둘 뿐이고, 지키는지는 그 도구가 정합니다."
       }
     },
     "anatomyUnits": {
@@ -496,7 +496,8 @@
     "anatomyFillCopyAria": "경로 복사: {path}",
     "anatomyAlwaysWeight": "매 턴 읽는 분량 {size}",
     "anatomyAlwaysWeightLabel": "이 분량이 왜 중요한가",
-    "anatomyAlwaysWeightHint": "이 파일들은 에이전트가 코드를 한 줄도 보기 전에 읽습니다. 매 턴, 매 세션, 어느 도구에서나 같은 값을 치릅니다. 문서 수는 이것을 말해주지 못합니다. 2 KB 문서 3개와 40 KB 문서 3개는 똑같이 「3개」이고, 그 차이가 하네스가 다루는 것입니다. Codex 에이전트는 뿌리 AGENTS.md 파일과 작업 경로의 하위 파일을 합쳐 읽다가 한도를 넘으면 말없이 잘라냅니다. 파일별 크기와 한도는 「지침」 보기에 있습니다."
+    "anatomyAlwaysWeightHint": "이 파일들은 에이전트가 코드를 한 줄도 보기 전에 읽습니다. 매 턴, 매 세션, 어느 도구에서나 같은 값을 치릅니다. 문서 수는 이것을 말해주지 못합니다. 2 KB 문서 3개와 40 KB 문서 3개는 똑같이 「3개」이고, 그 차이가 하네스가 다루는 것입니다. Codex 에이전트는 뿌리 AGENTS.md 파일과 작업 경로의 하위 파일을 합쳐 읽다가 한도를 넘으면 말없이 잘라냅니다. 파일별 크기와 한도는 「지침」 보기에 있습니다.",
+    "anatomySilentGuards": "설정이 이름을 부르는데 디스크에 없는 스크립트 {count}개: {scripts}. 이때는 오류도 안 나고 아무 일도 일어나지 않습니다. 막아줄 거라 믿은 자리가 조용히 비어 있습니다."
   },
   "architecture": {
     "eyebrow": "코드 아키텍처",

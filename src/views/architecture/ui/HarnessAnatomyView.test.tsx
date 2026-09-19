@@ -194,4 +194,34 @@ describe('HarnessAnatomyView', () => {
     mount(report());
     expect(screen.getByTestId('harness-anatomy-slot-always')).not.toHaveTextContent('매 턴');
   });
+
+  it('warns once, in the band that gates, about a guard the disk does not have', () => {
+    mount(
+      report({
+        hookGroups: [
+          {
+            configPath: '.claude/settings.json',
+            approvalGate: false,
+            hooks: [
+              {
+                events: 'PreToolUse',
+                ref: { path: '.claude/hooks/block-npm-publish.sh', command: 'x' },
+                status: 'missing',
+              },
+            ],
+          },
+        ] as never,
+      }),
+    );
+    const warning = screen.getByTestId('harness-anatomy-silent');
+    expect(warning).toHaveTextContent('block-npm-publish.sh');
+    expect(within(screen.getByTestId('harness-anatomy-band-gates')).getByTestId(
+      'harness-anatomy-silent',
+    )).toBe(warning);
+  });
+
+  it('shows no warning when nothing is missing', () => {
+    mount(report());
+    expect(screen.queryByTestId('harness-anatomy-silent')).toBeNull();
+  });
 });

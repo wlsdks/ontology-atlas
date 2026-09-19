@@ -496,7 +496,8 @@
     "anatomyFillCopyAria": "Copy path: {path}",
     "anatomyAlwaysWeight": "{size} read every turn",
     "anatomyAlwaysWeightLabel": "Why this size matters",
-    "anatomyAlwaysWeightHint": "These files are read before the agent has seen a line of code, on every turn, in every session, whatever the tool. A count cannot say it: three 2 KB documents and three 40 KB documents are both \"3\", and that difference is the subject. Codex merges the root AGENTS.md with the nested file on the working path and silently truncates past its cap. Per-file sizes against that cap are in the Guides view."
+    "anatomyAlwaysWeightHint": "These files are read before the agent has seen a line of code, on every turn, in every session, whatever the tool. A count cannot say it: three 2 KB documents and three 40 KB documents are both \"3\", and that difference is the subject. Codex merges the root AGENTS.md with the nested file on the working path and silently truncates past its cap. Per-file sizes against that cap are in the Guides view.",
+    "anatomySilentGuards": "{count, plural, one {# script this config names is not on disk} other {# scripts these configs name are not on disk}}: {scripts}. That produces no block and no error; the guard is simply absent."
   },
   "architecture": {
     "eyebrow": "CODE ARCHITECTURE",

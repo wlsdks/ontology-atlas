@@ -407,3 +407,44 @@ describe('what the repository keeps out of sight', () => {
   });
 });
 
+describe('a guard that fails in silence', () => {
+  it('keeps a missing script out of the count and names it anyway', () => {
+    /* A `settings.json` entry whose path does not resolve produces no block and no error. The
+       count of wired hooks stays honest; the absence is stated beside it rather than hidden. */
+    const anatomy = buildHarnessAnatomy(
+      report({
+        hookGroups: [
+          {
+            configPath: '.claude/settings.json',
+            approvalGate: false,
+            hooks: [
+              {
+                events: 'PreToolUse',
+                ref: { path: '.claude/hooks/block-publish.sh', command: 'x' },
+                status: 'wired',
+              },
+              {
+                events: 'PreToolUse',
+                ref: { path: '.claude/hooks/block-npm-publish.sh', command: 'x' },
+                status: 'missing',
+              },
+              {
+                events: 'Stop',
+                ref: { path: null, command: 'node -e "process.exit(0)"' },
+                status: 'unresolved',
+              },
+            ],
+          },
+        ] as never,
+      }),
+    );
+    expect(slotOf(anatomy, 'toolGates').count).toBe(1);
+    expect(anatomy.silentGuards.missing).toEqual(['block-npm-publish.sh']);
+    expect(anatomy.silentGuards.unresolved).toHaveLength(1);
+  });
+
+  it('says nothing when every script a config names is on disk', () => {
+    expect(buildHarnessAnatomy(report()).silentGuards.missing).toEqual([]);
+  });
+});
+

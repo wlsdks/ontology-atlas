@@ -35,6 +35,13 @@ import {
 
 const BAND_ORDER: readonly AnatomyBand[] = ['tells', 'gates', 'watches'];
 
+/**
+ * The amber pair this screen's one warning wears, taken from the guides view's `WARNING_BADGE` so
+ * the two sibling views mark an unresolved state the same way.
+ */
+const WARNING_TONE =
+  'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]';
+
 const BAND_HEAD: Readonly<Record<AnatomyBand, string>> = Object.freeze({
   tells: 'coverageColumnTold',
   gates: 'coverageColumnGated',
@@ -255,6 +262,29 @@ export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
                     }
                   />
                 ))}
+                {band === 'gates' && anatomy.silentGuards.missing.length > 0 ? (
+                  /*
+                    ⚠️ **The one line on this screen that is a warning.** Every count above says
+                    what is there; this says what a config promises and the disk does not have. A
+                    hook whose script is missing produces no block and no error — the guard is
+                    simply absent, and every number here still reads healthy. So it is amber, it
+                    names the scripts, and it sits under the rows rather than inside one, because
+                    it is not a part of the harness: it is a part that was asked for and is not
+                    there.
+                  */
+                  <li
+                    data-testid="harness-anatomy-silent"
+                    className={cn(
+                      'mt-2 rounded-chip border-t-0 px-2 py-1.5 text-caption',
+                      WARNING_TONE,
+                    )}
+                  >
+                    {t('anatomySilentGuards', {
+                      count: anatomy.silentGuards.missing.length,
+                      scripts: anatomy.silentGuards.missing.join(' · '),
+                    })}
+                  </li>
+                ) : null}
                 {band === 'gates' && anatomy.approvalGates.length > 0 ? (
                   /* The strongest gate on the screen is one no file records: Codex refuses a hook
                      it has not been trusted with, and that trust is session state. The band says so
