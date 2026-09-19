@@ -1893,13 +1893,14 @@ Rebuilt as a single-container 3-zone layout (`docs/prototypes` chrome), one
 level below `/projects`.
 
 #### Top bar
-- Breadcrumb: Home → Projects → `{Name|Slug}` · Source Vault link · copy-link button · global census (concepts/relations, md+)
+- Breadcrumb: Home → Projects → `{Name|Slug}` · documents door · copy-link button · global census (concepts/relations, md+). The documents door opens **this project's own Markdown file** (`/docs/?slug=<doc>`) when the file is found in the open folder or the loaded sample, and the vault root otherwise (2026-09-19 — the page had no door to the one file it is drawn from)
 
 #### Zone 1 — hero band
 - Project kind glyph + inline-editable name (`InlineEditable`, when `canManageProject`) + hero meta (Hub label or plain label · status) + updated date + inline-editable description. The heading's accessible name is the project name; the field label ("Project name") is only the input's label in edit mode and the button's description in editable view (2026-09-19 — an `aria-label` on the `h1` used to replace the name for screen readers). The description's cap is the reading-column box (`--measure-doc-column`), not a per-line `ch` count
 - "View topology" link + `ProjectQuickEditPanel` (quick-edit: name / description / owner / tags — the fast path; stack/links/dependencies/dates stay in the full editor). The action cluster stands beside the name only from `xl`; below that it takes its own row under the description (2026-09-19 — at 1024 the name column was 250px and at 768 80px while the four controls kept their width)
 - **Construction review** — `Open verification results` reads one local qualification envelope into React session state only and places a full-width review directly below the hero. The default depth keeps purpose, current/next decision, first blocker/diagnostic, red/unknown/conflict, human approval, and exact plan counts visible. `View rationale/diagnostics` expands the same artifact's CQs, source-bound witnesses and citations, examples/counterexamples, seven quality axes, diagnostics, exact review/write plans, and digest equality. The same disclosure also exposes a session-only expert draft for CQ wording, witness source references, and the exact plan; edits are visibly dirty, can be restored, never mutate the receipt/vault/localStorage, and require qualification again before any write. Malformed, wrong-project, digest-mismatched, or unequal-plan envelopes fail closed; post-write maintenance is shown separately and never rewrites the completed qualification verdict. Nothing is uploaded, remembered, or written to the vault.
-- **Engraved metric strip** — domains / capabilities / elements / documents / relations, derived from this project's own ontology nodes/edges (not the whole vault)
+- **Engraved metric strip** — domains / capabilities / elements / documents / relations, derived from this project's own ontology nodes/edges (not the whole vault). A zero document or relation count is not drawn (2026-09-19; "Documents 0" under a 125-concept census read as a contradiction)
+- **Action order** — "View topology" stands first and filled as the page's primary action; the construction-review picker is second in outline (2026-09-19; the picker used to be first and both were outline)
 #### Zone 2 — domain composition
 - Domain rows (one per domain, uniform height), only rendered when the project has domains (hidden entirely on 0 domains — "match 0 → hide" principle). Each row carries the shared capability:element ratio bar; clicking a row expands its full capability list in place, and the expanded panel links into topology focus for that domain. The former radial mini-map and card grid were retired 2026-08-13 (the map promised size-by-count it could not render — 4.7px between 17 and 6 — and the cards said the same numbers a third time)
 
@@ -1910,7 +1911,7 @@ level below `/projects`.
   - **Agent handoff** card — copyable MCP/CLI snippet for this exact project slug
 
 #### Footer
-- Slug + updated date, engraved mono caption
+- Slug + "file" + the Markdown path this page is drawn from, engraved mono caption (2026-09-19; the updated date, a second copy of the hero's, stands here only when no document is known)
 
 #### Mobile / narrow
 - `ProjectQuickEditPanel` doubles as the mobile quick-edit entry (hamburger menu context)
@@ -2211,8 +2212,14 @@ The screen layout splits into two stages. First, **is this screen even in a stat
 - Git's internal notation (`diff --git` · `index <sha>..<sha>` ·
   `@@ -a,b +c,d @@`) is not exposed on screen. However, a dashed line is **left** for skipped sections — hiding the fact that it was skipped makes that diff a lie
 
+#### Restoring one document (2026-09-19)
+The screen's own copy had promised that earlier content can be brought back (`atlasGit.notInitializedHint`) while no restore existed. Now one Tauri command, `git_restore_file(vault, path, source)`, puts **exactly one document** back to its content at `source` with `git restore --source --worktree --staged -- <path>`, and two doors on screen open it:
+- **Discard** (`source = HEAD`): on the chosen document in the uncommitted list, when it has ever been committed. The confirm says how many added and removed lines go away, that git holds no copy of them so this cannot be undone, and that the other N uncommitted documents stay as they are. A never-committed document gets no door, because discarding it would be deleting it; the Rust side refuses that too (`restore-untracked`).
+- **Restore this version** (`source = <hash>`): in a commit's detail, under the file list for the active file, and in the default concept lens for the focused concept's own document. The confirm names the document and the commit's time, says when the document's own uncommitted lines would go with it, that the result stays an uncommitted change the person can read line by line and discard, and which of the commit's other documents stay untouched.
+- The command refuses a path outside the vault (`restore-path-invalid`), a source without the document (`restore-source-missing`), and a source whose frontmatter identity differs from the file on disk in `uid`, `slug`, or by dropping `merged_uids` (`restore-identity-mismatch`), because neighbours link to the current identity and `git restore` is identity-blind. Every refusal on screen ends with the sentence that the document was not changed (`atlasGit.restoreFailedSafe`). Decision record: `docs/records/decisions/2026-09-19-record-screen-restores-one-document-*.md`.
+
 #### Nothing is written until the user clicks
-When the screen first opens, only read-only tools are called (`git_status` / `git_diff` / `git_history`). Tools that change something (`git_init` · `git_set_remote` · `git_snapshot`) are executed only when the user presses their button (`onClick`).
+When the screen first opens, only read-only tools are called (`git_status` / `git_diff` / `git_history`). Tools that change something (`git_init` · `git_set_remote` · `git_snapshot` · `git_restore_file`) are executed only when the user presses their button (`onClick`).
 
 ### `/agents` — Agent (new 2026-08-20, catalog 90)
 

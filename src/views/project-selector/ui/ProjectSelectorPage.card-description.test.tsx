@@ -39,6 +39,20 @@ vi.mock("@/features/project-data-source", () => ({
     error: null,
     mode: "static",
   }),
+  useVaultDocs: () => [
+    {
+      slug: "ontology-atlas",
+      path: "docs/ontology/project.md",
+      title: "ontology-atlas",
+      tags: [],
+      frontmatter: { kind: "project" },
+      headings: [],
+      excerpt: "정체성 (2026-07): agent-native, human-sovereign. 에이전트를 위한 메모리가 아니라...",
+      wordCount: 0,
+      updatedAt: "2026-07-17T00:00:00.000Z",
+      linksOut: [],
+    },
+  ],
 }));
 
 vi.mock("@/features/vault-ontology", () => ({
@@ -65,23 +79,6 @@ vi.mock("@/widgets/app-settings-menu", () => ({
 
 vi.mock("@/widgets/app-nav-rail", () => ({
   useNavRailSettingsSlot: () => {},
-}));
-
-vi.mock("../lib/use-vault-docs", () => ({
-  useVaultDocs: () => [
-    {
-      slug: "ontology-atlas",
-      path: "docs/ontology/project.md",
-      title: "ontology-atlas",
-      tags: [],
-      frontmatter: { kind: "project" },
-      headings: [],
-      excerpt: "정체성 (2026-07): agent-native, human-sovereign. 에이전트를 위한 메모리가 아니라...",
-      wordCount: 0,
-      updatedAt: "2026-07-17T00:00:00.000Z",
-      linksOut: [],
-    },
-  ],
 }));
 
 function renderPage() {

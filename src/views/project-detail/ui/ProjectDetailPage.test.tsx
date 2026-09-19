@@ -148,6 +148,7 @@ const mocks = vi.hoisted(() => ({
   vaultBody: null as string | null,
   projects: [] as ReturnType<typeof baseProject>[],
   projectsMode: "static" as "static" | "local",
+  vaultDocs: [] as unknown[],
   constructionReview: {
     status: "idle",
     review: null,
@@ -181,6 +182,7 @@ vi.mock("@/features/project-data-source", () => ({
     patchProject: vi.fn(),
   }),
   useProjectBody: () => ({ body: mocks.vaultBody }),
+  useVaultDocs: () => mocks.vaultDocs,
 }));
 
 function baseProject() {
@@ -230,6 +232,7 @@ describe("ProjectDetailPage", () => {
     mocks.vaultBody = null;
     mocks.projects = [];
     mocks.projectsMode = "static";
+    mocks.vaultDocs = [];
     mocks.constructionReview = {
       status: "idle",
       review: null,
@@ -252,6 +255,52 @@ describe("ProjectDetailPage", () => {
     expect(
       screen.queryByRole("heading", { name: "ontology-atlas" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("opens this project's own document and names its path when the file is known", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.vaultDocs = [
+      {
+        slug: "project",
+        path: "docs/ontology/project.md",
+        title: "ontology-atlas",
+        tags: [],
+        frontmatter: { kind: "project", slug: SLUG },
+        headings: [],
+        excerpt: "",
+        wordCount: 0,
+        updatedAt: "2026-01-02T00:00:00.000Z",
+        linksOut: [],
+      },
+    ];
+    renderPage();
+
+    const door = screen.getByTestId("project-detail-docs-vault-link");
+    expect(door).toHaveAttribute("href", "/docs/?slug=project");
+    expect(screen.getByTestId("project-detail-footer")).toHaveTextContent("file docs/ontology/project.md");
+  });
+
+  it("falls back to the vault root and the dated footer when no document is known", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    renderPage();
+
+    const door = screen.getByTestId("project-detail-docs-vault-link");
+    expect(door).toHaveAttribute("href", "/docs/");
+    expect(screen.getByTestId("project-detail-footer")).toHaveTextContent("Updated");
+  });
+
+  it("leads with the filled map action and draws no zero document count", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    renderPage();
+
+    const mapLink = screen.getByTestId("project-detail-topology-link");
+    const picker = screen.getByTestId("construction-review-ingress");
+    expect(mapLink.compareDocumentPosition(picker)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(mapLink.querySelector("button")?.className).toContain("--color-indigo-brand");
+    expect(screen.queryByText(/Documents\s+0/)).not.toBeInTheDocument();
   });
 
   it("opens one local review result below the hero without persisting it", async () => {

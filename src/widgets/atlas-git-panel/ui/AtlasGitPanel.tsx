@@ -53,6 +53,7 @@ import {
   type GitCommitInfo,
   type GitSnapshotResult,
   type GitStatusResult,
+  gitRestoreFile,
 } from "@/shared/lib/tauri-git";
 import { useNativeErrorLookup } from "@/shared/lib/use-native-error-lookup";
 import type { OntologyChangeset, KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
@@ -860,6 +861,45 @@ export function AtlasGitPanel({
   const [remoteBusy, setRemoteBusy] = useState<null | "fetch" | "pull" | "push">(null);
   const [remoteActionNotice, setRemoteActionNotice] = useState<string | null>(null);
   const [remoteActionError, setRemoteActionError] = useState<string | null>(null);
+  /**
+   * Put one document back — `HEAD` discards its uncommitted changes, a hash brings that
+   * commit's version back as an uncommitted change. **Called only from a confirm button.**
+   * The Rust side touches exactly the named path and refuses anything the vault's identity
+   * rules would not survive; this side only words the result and re-reads.
+   */
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const [restoreNotice, setRestoreNotice] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const restoreDocument = useCallback(
+    async (relativePath: string, source: string, others: number): Promise<boolean> => {
+      if (!vaultPath) return false;
+      setRestoreBusy(true);
+      setRestoreError(null);
+      setRestoreNotice(null);
+      try {
+        const result = await gitRestoreFile(vaultPath, relativePath, source);
+        const path = result?.path ?? relativePath;
+        const discard = source === "HEAD";
+        const done = discard ? t("discardDone", { path }) : t("restoreDone", { path });
+        const rest =
+          others > 0
+            ? ` ${discard ? t("discardConfirmOthers", { count: others }) : t("restoreDoneOthers", { count: others })}`
+            : "";
+        setRestoreNotice(`${done}${rest}`);
+        // A discarded document leaves the pending list; keeping it chosen would point at nothing.
+        if (discard) setSelectedPath(null);
+        await refresh();
+        return true;
+      } catch (err) {
+        setRestoreError(`${gitErrorMessage(err, nativeErrors)} ${t("restoreFailedSafe")}`);
+        return false;
+      } finally {
+        setRestoreBusy(false);
+      }
+    },
+    [vaultPath, t, refresh, nativeErrors],
+  );
+
   /*
    * **Follow the folder while the screen is open.** An editor, a coding agent or a terminal
    * writing into the vault used to leave this screen exactly as it was at arrival: the count
@@ -872,7 +912,7 @@ export function AtlasGitPanel({
    * remote action) the watcher's echo of that write is skipped: each of those paths already
    * re-reads when it finishes, and a read landing mid-commit would show a half state.
    */
-  const followBusy = snapshotting || initRunning || remoteRunning || remoteBusy !== null;
+  const followBusy = snapshotting || initRunning || remoteRunning || remoteBusy !== null || restoreBusy;
   const followVaultChange = useEffectEvent(() => {
     if (followBusy) return;
     void refresh();
@@ -1052,6 +1092,10 @@ export function AtlasGitPanel({
             historyHasMore={historyHasMore}
             historyMoreBusy={historyMoreBusy}
             onMoreHistory={loadMoreHistory}
+            onRestoreDocument={restoreDocument}
+            restoreBusy={restoreBusy}
+            restoreNotice={restoreNotice}
+            restoreError={restoreError}
             selectedPath={selectedPath}
             setSelectedPath={setSelectedPath}
             othersOpen={othersOpen}
@@ -1885,14 +1929,17 @@ function LocationLine({
 function RemoteResultLine({
   notice,
   error,
+  kind = "remote",
 }: {
   notice: string | null;
   error: string | null;
+  /** Which action the line reports; only the test id differs. */
+  kind?: "remote" | "restore";
 }) {
   if (!error && !notice) return null;
   return (
     <p
-      data-testid={error ? "atlas-git-remote-error" : "atlas-git-remote-notice"}
+      data-testid={error ? `atlas-git-${kind}-error` : `atlas-git-${kind}-notice`}
       className={cn(
         "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-prose",
         error
@@ -2158,6 +2205,8 @@ function ChangeList({
   othersOpen,
   setOthersOpen,
   stagedOutsideCount,
+  onDiscard,
+  discardBusy,
 }: {
   t: Translator;
   kindGroups: AtlasGitKindGroup<GitChangeEntry>[];
@@ -2169,7 +2218,16 @@ function ChangeList({
   othersOpen: boolean;
   setOthersOpen: (v: boolean) => void;
   stagedOutsideCount: number;
+  /** Discards the chosen document's uncommitted changes (restore to `HEAD`). */
+  onDiscard: (path: string, others: number) => Promise<boolean>;
+  discardBusy: boolean;
 }) {
+  const selectedEntry =
+    selectedPath === null
+      ? null
+      : ([...kindGroups.flatMap((group) => group.entries), ...otherChanges].find(
+          (entry) => entry.path === selectedPath,
+        ) ?? null);
   const summaryParts = [
     statusCounts.added > 0 ? t("statusAdded", { count: statusCounts.added }) : null,
     statusCounts.modified > 0 ? t("statusModified", { count: statusCounts.modified }) : null,
@@ -2278,6 +2336,111 @@ function ChangeList({
           </p>
         ) : null}
       </div>
+
+      {/*
+        The chosen document's one destructive door. A never-committed document has no
+        earlier content to go back to, so "discard" there would be "delete", and that door is
+        not offered — the Rust side refuses it too.
+      */}
+      {selectedEntry && selectedEntry.status !== "added" ? (
+        <DiscardDock
+          t={t}
+          path={selectedEntry.path}
+          status={selectedEntry.status}
+          delta={deltaByPath.get(selectedEntry.path) ?? null}
+          others={Math.max(0, statusCounts.total - 1)}
+          busy={discardBusy}
+          onDiscard={onDiscard}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Discard — the uncommitted changes of one document, gone. This confirm is worded apart
+ * from the restore-from-commit confirm on purpose (review, 2026-09-19): those lines were
+ * never committed, so git holds no copy and nothing on this screen can bring them back. The
+ * count comes from the same parsed diff the person is reading, not a second computation.
+ */
+function DiscardDock({
+  t,
+  path,
+  status,
+  delta,
+  others,
+  busy,
+  onDiscard,
+}: {
+  t: Translator;
+  path: string;
+  status: string;
+  delta: { added: number; removed: number } | null;
+  /** Uncommitted documents that stay untouched — the residue a person must know. */
+  others: number;
+  busy: boolean;
+  onDiscard: (path: string, others: number) => Promise<boolean>;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <div className="flex shrink-0 flex-col gap-2 pt-1" data-testid="atlas-git-discard-dock">
+      {confirming ? (
+        <div
+          className="git-fade-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
+          data-testid="atlas-git-discard-step"
+        >
+          <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
+            {status === "deleted"
+              ? t("discardConfirmDeleted")
+              : t("discardConfirmBody", { added: delta?.added ?? 0, removed: delta?.removed ?? 0 })}
+          </p>
+          <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
+            {t("discardConfirmOthers", { count: others })}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              data-testid="atlas-git-discard-confirm"
+              disabled={busy}
+              onClick={() => {
+                void onDiscard(path, others).then((ok) => {
+                  if (ok) setConfirming(false);
+                });
+              }}
+              className={controlClass({
+                tone: "danger",
+                className: "border-[color:var(--color-danger-text)]",
+              })}
+            >
+              {busy ? t("discardRunning") : t("discardButton")}
+            </button>
+            <button
+              type="button"
+              data-testid="atlas-git-discard-cancel"
+              disabled={busy}
+              onClick={() => setConfirming(false)}
+              className={controlClass({})}
+            >
+              {t("cancelButton")}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          data-testid="atlas-git-discard"
+          onClick={() => setConfirming(true)}
+          className={controlClass({
+            shape: "link",
+            size: "sm",
+            tone: "muted",
+            hoverInk: "strong",
+            className: "self-start text-label",
+          })}
+        >
+          {t("discardAction")}
+        </button>
+      )}
     </div>
   );
 }
@@ -2947,6 +3110,10 @@ function DesktopBody({
   historyHasMore,
   historyMoreBusy,
   onMoreHistory,
+  onRestoreDocument,
+  restoreBusy,
+  restoreNotice,
+  restoreError,
   selectedPath,
   setSelectedPath,
   othersOpen,
@@ -3011,6 +3178,11 @@ function DesktopBody({
   historyHasMore: boolean;
   historyMoreBusy: boolean;
   onMoreHistory: () => void;
+  /** Restores one document to `source` (`HEAD` or a hash); resolves true when git did it. */
+  onRestoreDocument: (relativePath: string, source: string, others: number) => Promise<boolean>;
+  restoreBusy: boolean;
+  restoreNotice: string | null;
+  restoreError: string | null;
   selectedPath: string | null;
   setSelectedPath: (v: string | null) => void;
   othersOpen: boolean;
@@ -3353,6 +3525,7 @@ function DesktopBody({
         <div className="ml-auto flex min-w-0 items-center gap-3">{locationLine}</div>
       </div>
       <RemoteResultLine notice={remoteActionNotice} error={remoteActionError} />
+      <RemoteResultLine kind="restore" notice={restoreNotice} error={restoreError} />
 
       {/* Body — down to the floor. The two columns are separated by a divider and scroll independently. */}
       <div
@@ -3433,6 +3606,8 @@ function DesktopBody({
                   othersOpen={othersOpen}
                   setOthersOpen={setOthersOpen}
                   stagedOutsideCount={status?.stagedOutsideVault.length ?? 0}
+                  onDiscard={(path, others) => onRestoreDocument(path, "HEAD", others)}
+                  discardBusy={restoreBusy}
                 />
                 {shownDiffFiles.length > 0 ? (
                   <DiffView
@@ -3463,6 +3638,9 @@ function DesktopBody({
                     headline={humanizeStepSubject(t, picked.subject)}
                     concepts={concepts.get(picked.hash) ?? []}
                     files={picked.files ?? []}
+                    pendingDelta={deltaByPath}
+                    onRestore={(path, others) => onRestoreDocument(path, picked.hash, others)}
+                    restoreBusy={restoreBusy}
                     focusedConceptId={focusedConceptId}
                     setFocusedConceptId={setFocusedConceptId}
                     egoFor={egoFor}

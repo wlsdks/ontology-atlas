@@ -229,6 +229,37 @@ export async function gitSetRemote(
   return invoke<GitSetRemoteResult>('git_set_remote', { vaultPath, url });
 }
 
+/** Rust `GitRestoreResult`. */
+export interface GitRestoreResult {
+  restored: boolean;
+  /** Vault-relative path of the one document touched. */
+  path: string;
+  /** `HEAD` or the commit hash the content came from. */
+  source: string;
+  /** What the document was before: `added` | `modified` | `deleted` | `renamed`, or `null` when it was clean. */
+  previousStatus: string | null;
+}
+
+/**
+ * Put one document back to the content it had at `source` (`HEAD` = the last
+ * commit, i.e. discard uncommitted changes; a hash = that commit's version).
+ *
+ * **Called only from a confirm button's onClick.** The Rust side touches exactly
+ * one path, refuses a path outside the vault, refuses to "restore" a never-committed
+ * file (that would delete it), and refuses a source whose frontmatter identity
+ * (uid · slug · merged_uids) differs from the file on disk. A restore from a commit
+ * lands as an uncommitted change; nothing is committed.
+ */
+export async function gitRestoreFile(
+  vaultPath: string,
+  relativePath: string,
+  source: string,
+): Promise<GitRestoreResult | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<GitRestoreResult>('git_restore_file', { vaultPath, relativePath, source });
+}
+
 /** Git status summary for the vault; `null` without the bridge (web degradation). */
 export async function gitStatus(vaultPath: string): Promise<GitStatusResult | null> {
   const invoke = getInvoke();
