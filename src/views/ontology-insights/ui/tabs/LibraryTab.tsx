@@ -53,6 +53,7 @@ export function LibraryTab({ detail }: { detail: InsightsBrief['library'] }) {
           <HiddenCountLine total={detail.unwrittenSources.length} shown={Math.min(ROWS, detail.unwrittenSources.length)} label={(hidden) => t('more', { count: hidden })} route={<Link href="/library/" className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>{t('open')}</Link>} className="mt-2" />
         </Card>
       </div>
+      <div className="grid grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-2">
       <Card title={t('check.title', { count: blocking.reduce((sum, finding) => sum + finding.count, 0) })} caption={t('check.caption', { pages: detail.pageCount, unmeasured: detail.unmeasured })}>
         {[...blocking, ...advisory].slice(0, ROWS).map((finding) => (
           <Row
@@ -77,6 +78,7 @@ export function LibraryTab({ detail }: { detail: InsightsBrief['library'] }) {
         ))}
         {detail.passes.length === 0 ? <Quiet text={t('rounds.none')} /> : null}
       </Card>
+      </div>
     </section>
   );
 }
