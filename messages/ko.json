@@ -2812,6 +2812,7 @@
       "brokenDocsAction": "온톨로지 문서 열기",
       "sourceUnboundLabel": "코드 폴더가 연결 안 된 프로젝트 {count}개",
       "sourceUnboundAction": "연결",
+      "tidyHeading": "정리할 것",
       "plainHint": "요소는 숨겨져 있어요. 지도의 점을 누르면 그 요소들이 보여요",
       "openedInsideLabel": "고른 프로젝트 안에 있는 지도 폴더를 열었어요.",
       "openedInsideDismiss": "알림 닫기"
@@ -3697,7 +3698,11 @@
     "restoreDone": "{path}를 이 커밋 시점 내용으로 되돌렸어요. 커밋하지 않은 변경으로 남아 있어요.",
     "restoreDoneOthers": "이 커밋이 바꾼 다른 문서 {count}개는 그대로예요.",
     "restoreFailedSafe": "문서는 바뀌지 않았어요.",
-    "restoreConceptDoc": "이 개념의 문서 {path}"
+    "restoreConceptDoc": "이 개념의 문서 {path}",
+    "docHistoryTitle": "이 문서를 바꾼 다른 커밋",
+    "docHistoryOnly": "이 문서를 바꾼 커밋은 이것뿐이에요",
+    "docHistoryOlder": "더 오래된 커밋도 있어요. 왼쪽 목록에서 이전 커밋을 더 읽으면 보여요",
+    "docHistoryJumpHint": "누르면 그 커밋으로 건너뛰어요"
   },
   "agentFiles": {
     "header": "에이전트 파일",
@@ -5693,6 +5698,7 @@
         "allowAndSave": "허용하고 저장",
         "cancel": "취소",
         "saved": "{name}이(가) {time}에 처음 돕니다.",
+        "savedRunningNow": "{name}을(를) 지금 한 번 돌립니다. 다음은 {time}입니다.",
         "saveFailed": "자동 점검을 저장하지 못했습니다: {reason}"
       },
       "name": {

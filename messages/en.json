@@ -2812,6 +2812,7 @@
       "brokenDocsAction": "Open Ontology documents",
       "sourceUnboundLabel": "{count} project(s) with no code folder",
       "sourceUnboundAction": "Connect",
+      "tidyHeading": "To tidy",
       "plainHint": "Elements are hidden: click a dot on the map to reveal its elements",
       "openedInsideLabel": "Opened the map folder found inside the project you picked.",
       "openedInsideDismiss": "Dismiss this notice"
@@ -3697,7 +3698,11 @@
     "restoreDone": "Restored {path} to this commit's content. It is an uncommitted change now.",
     "restoreDoneOthers": "The other {count} document(s) this commit changed stay as they are.",
     "restoreFailedSafe": "The document was not changed.",
-    "restoreConceptDoc": "This concept's document {path}"
+    "restoreConceptDoc": "This concept's document {path}",
+    "docHistoryTitle": "Other steps that changed this document",
+    "docHistoryOnly": "This is the only step that changed this document",
+    "docHistoryOlder": "Older steps exist too. Show older steps in the list on the left to reach them",
+    "docHistoryJumpHint": "Press to jump to that step"
   },
   "agentFiles": {
     "header": "Agent files",
@@ -5693,6 +5698,7 @@
         "allowAndSave": "Allow and save",
         "cancel": "Cancel",
         "saved": "{name} runs first at {time}.",
+        "savedRunningNow": "Running {name} once now; the next pass is at {time}.",
         "saveFailed": "Could not save the round: {reason}"
       },
       "name": {

@@ -1,30 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import {
-  connectorAcpServers,
-  isGuardedRuntime,
-  runtimeOwnsWriteGate,
-  vaultMcpServers,
-  vaultSelfReadSlot,
-} from "@/features/acp-session";
-import { useVaultConnectors } from "@/features/mcp-connectors";
 import { useLocalCompile } from "@/features/vault-agent";
-import { useAgentServer, useLocalVault } from "@/entities/vault-session";
 import {
   hostOfBaseUrl,
   isLocalEndpointReady,
   readLocalEndpoint,
   subscribeLocalEndpointChange,
 } from "@/shared/lib/local-endpoint";
-import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from "@/shared/lib/tauri-acp";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
+import { useVaultAgentRuntime } from "@/widgets/acp-chat-panel";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 
 import { resolveCompileBrain, useCompileBrainChoice } from "./compile-brain";
-import type { LibraryAgentOpeningRequest, LibraryAgentRuntime } from "../ui/parts/LibraryAgentDock";
+import type { LibraryAgentOpeningRequest } from "../ui/parts/LibraryAgentDock";
 
 /**
  * Whether the Library can start an in-app agent turn, and everything needed to start one.
@@ -76,8 +67,6 @@ import type { LibraryAgentOpeningRequest, LibraryAgentRuntime } from "../ui/part
  * naming a brain this machine no longer offers falls back **and stops being stored**.
  */
 
-const subscribeDesktopRuntime = () => () => undefined;
-const readServerDesktopRuntime = () => false;
 
 type LibraryAgentRoute = "checking" | "agent" | "local" | "unavailable";
 
@@ -118,16 +107,6 @@ function isLoopbackHost(host: string): boolean {
   );
 }
 
-function selectLibraryAgentRuntimes(
-  runtimes: readonly AcpRuntimeStatus[] | null | undefined,
-): LibraryAgentRuntime[] {
-  return (runtimes ?? [])
-    .filter(
-      (runtime) =>
-        runtime.state === "ready" && runtime.verified && isGuardedRuntime(runtime.id, runtime.isolated),
-    )
-    .map(({ id, label }) => ({ id, label }));
-}
 
 export function useLibraryAgent(
   vaultRoot: string | null,
@@ -139,16 +118,8 @@ export function useLibraryAgent(
   } = DEFAULT_COMPILE_LABELS,
   wikiTexts?: ReadonlyMap<string, string>,
 ) {
-  const localVault = useLocalVault();
-  const agentServer = useAgentServer();
-  const bridgeAvailable = useSyncExternalStore(
-    subscribeDesktopRuntime,
-    isAcpBridgeAvailable,
-    readServerDesktopRuntime,
-  );
-  const [runtimes, setRuntimes] = useState<LibraryAgentRuntime[]>([]);
-  const [runtimeId, setRuntimeId] = useState<string | null>(null);
-  const [runtimeCheckComplete, setRuntimeCheckComplete] = useState(false);
+  // Runtime, vault MCP server and connectors are read the one way every dock reads them.
+  const vaultAgent = useVaultAgentRuntime(vaultRoot);
   const [open, setOpen] = useState(false);
   const [openingRequest, setOpeningRequest] = useState<LibraryAgentOpeningRequest | null>(null);
   /*
@@ -185,63 +156,12 @@ export function useLibraryAgent(
     return subscribeLocalEndpointChange(read);
   }, []);
 
-  useEffect(() => {
-    // With no bridge there is nothing to detect, and `runtimesChecked` below reads that
-    // as complete without a state write — a setState here would be a cascading render
-    // saying only what `bridgeAvailable` already says.
-    if (!bridgeAvailable) return;
-    let cancelled = false;
-    const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
-      if (cancelled) return;
-      const usable = selectLibraryAgentRuntimes(list);
-      setRuntimes(usable);
-      setRuntimeId((current) =>
-        current && usable.some((runtime) => runtime.id === current) ? current : (usable[0]?.id ?? null),
-      );
-    };
-    void detectAcpRuntimes()
-      .then((fast) => {
-        apply(fast);
-        return detectAcpRuntimes({ probeLogin: true });
-      })
-      .then(apply)
-      .catch(() => apply(null))
-      .finally(() => {
-        if (!cancelled) setRuntimeCheckComplete(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [bridgeAvailable]);
 
-  const runtime = runtimes.find((candidate) => candidate.id === runtimeId) ?? null;
-  /* The same list the map reads, from the same file — one folder, one set of attached tools. */
-  const vaultConnectors = useVaultConnectors(localVault.handle);
-  const mcpServers = useMemo(() => {
-    const registration =
-      vaultSelfReadSlot(runtimeId) === "codex-config"
-        ? {
-            command: localVault.agentConfigStatus?.codexRegisteredCommand ?? null,
-            validForCurrentVault: localVault.agentConfigStatus?.codexConfigValid === true,
-          }
-        : null;
-    return [
-      ...vaultMcpServers(agentServer.launch, vaultRoot, registration, {
-        ownsWriteGate: runtimeOwnsWriteGate(runtimeId),
-      }),
-      ...connectorAcpServers(vaultConnectors.connectors, runtimeId),
-    ];
-  }, [
-    agentServer.launch,
-    localVault.agentConfigStatus?.codexConfigValid,
-    localVault.agentConfigStatus?.codexRegisteredCommand,
-    runtimeId,
-    vaultConnectors.connectors,
-    vaultRoot,
-  ]);
+  const { runtime, runtimes, runtimeId, setRuntimeId, mcpServers } = vaultAgent;
 
-  const runtimesChecked = !bridgeAvailable || runtimeCheckComplete;
-  const serverCheckComplete = agentServer.launch !== null || agentServer.reason !== null;
+  const runtimesChecked = !vaultAgent.bridgeAvailable || vaultAgent.runtimeCheckComplete;
+  const serverCheckComplete = vaultAgent.serverCheckComplete;
+  const bridgeAvailable = vaultAgent.bridgeAvailable;
   /*
    * A coding agent outranks the local model because it is the only one of the two that
    * can actually finish Compile — it opens the sources itself and its writes stop at a
@@ -254,8 +174,7 @@ export function useLibraryAgent(
    * present and the runtime scan is unfinished: naming a brain before the scan lands would
    * make the shelf change its mind under the reader.
    */
-  const agentAvailable =
-    bridgeAvailable && runtime !== null && vaultRoot !== null && agentServer.launch !== null;
+  const agentAvailable = vaultAgent.route === "agent";
   const localAvailable = localModel !== null;
   const { stored: storedBrain, choose: chooseBrain, forget: forgetBrain } = useCompileBrainChoice();
   const brainSettled = !bridgeAvailable || (runtimesChecked && serverCheckComplete);
