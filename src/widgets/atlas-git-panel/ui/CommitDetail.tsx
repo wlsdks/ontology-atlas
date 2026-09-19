@@ -5,7 +5,7 @@ import { cn } from "@/shared/lib/cn";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { controlClass } from "@/shared/ui";
-import { gitCommitDiff, type GitChangeEntry } from "@/shared/lib/tauri-git";
+import { gitCommitDiff, gitHistory, type GitChangeEntry, type GitCommitInfo } from "@/shared/lib/tauri-git";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { ConceptEgoCard } from "./ConceptEgoCard";
 
@@ -82,6 +82,9 @@ export function CommitDetail({
   pendingDelta,
   onRestore,
   restoreBusy,
+  onJumpToCommit,
+  whenOf,
+  headlineOf,
   focusedConceptId,
   setFocusedConceptId,
   egoFor,
@@ -107,6 +110,12 @@ export function CommitDetail({
   /** Restores one of this commit's files to this commit's content; resolves true when git did it. */
   onRestore: (path: string, others: number) => Promise<boolean>;
   restoreBusy: boolean;
+  /** Selects another step by hash. */
+  onJumpToCommit: (hash: string) => void;
+  /** Relative-time wording in the reader's language. */
+  whenOf: (isoTime: string) => string;
+  /** Human wording for an automatic subject, `null` when a person wrote it. */
+  headlineOf: (subject: string) => string | null;
   focusedConceptId: string | null;
   setFocusedConceptId: (id: string) => void;
   egoFor: (nodeId: string) => ConceptEgo | null;
@@ -266,6 +275,15 @@ export function CommitDetail({
                     busy={restoreBusy}
                     onRestore={onRestore}
                   />
+                  <DocumentHistory
+                    t={t}
+                    vaultPath={vaultPath}
+                    path={focusedFile.path}
+                    currentHash={hash}
+                    whenOf={whenOf}
+                    headlineOf={headlineOf}
+                    onJump={onJumpToCommit}
+                  />
                 </div>
               ) : null}
               {focused ? (
@@ -330,6 +348,15 @@ export function CommitDetail({
                   others={Math.max(0, files.length - 1)}
                   busy={restoreBusy}
                   onRestore={onRestore}
+                />
+                <DocumentHistory
+                  t={t}
+                  vaultPath={vaultPath}
+                  path={activeFile}
+                  currentHash={hash}
+                  whenOf={whenOf}
+                  headlineOf={headlineOf}
+                  onJump={onJumpToCommit}
                 />
               </div>
             ) : null}
@@ -463,6 +490,96 @@ function RestoreDock({
         </p>
       )}
     </div>
+  );
+}
+
+/** How many of a document's other steps are read; one more tells whether older ones exist. */
+const DOCUMENT_HISTORY_LIMIT = 12;
+
+/**
+ * The other steps that changed this one document — a meaning's own timeline, read from git
+ * scoped to the path. Each row jumps to that step. Without this, "when else did this concept
+ * change" meant scanning every row of the list for the concept's name.
+ */
+function DocumentHistory({
+  t,
+  vaultPath,
+  path,
+  currentHash,
+  whenOf,
+  headlineOf,
+  onJump,
+}: {
+  t: (key: string, values?: Record<string, string | number>) => string;
+  vaultPath: string | null;
+  path: string;
+  currentHash: string;
+  whenOf: (isoTime: string) => string;
+  headlineOf: (subject: string) => string | null;
+  onJump: (hash: string) => void;
+}) {
+  const [rows, setRows] = useState<GitCommitInfo[] | null>(null);
+  const [older, setOlder] = useState(false);
+  useEffect(() => {
+    if (!vaultPath) return;
+    let cancelled = false;
+    void gitHistory(vaultPath, DOCUMENT_HISTORY_LIMIT + 1, path)
+      .then((result) => {
+        if (cancelled) return;
+        const all = result ?? [];
+        setOlder(all.length > DOCUMENT_HISTORY_LIMIT);
+        setRows(all.slice(0, DOCUMENT_HISTORY_LIMIT));
+      })
+      // A failed read shows nothing rather than a wrong list; the main list still has every step.
+      .catch(() => {
+        if (!cancelled) setRows([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vaultPath, path]);
+
+  const others = useMemo(() => (rows ?? []).filter((commit) => commit.hash !== currentHash), [rows, currentHash]);
+  if (rows === null) return null;
+  return (
+    <section className="flex flex-col gap-1.5 pt-3" data-testid="atlas-git-document-history">
+      <h3 className="flex items-baseline gap-2 text-label text-[color:var(--color-text-tertiary)]">
+        {others.length > 0 ? t("docHistoryTitle") : t("docHistoryOnly")}
+        {others.length > 0 ? (
+          <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">{others.length}</b>
+        ) : null}
+      </h3>
+      {others.length > 0 ? (
+        <ul className="flex flex-col">
+          {others.map((commit) => (
+            <li key={commit.hash}>
+              <button
+                type="button"
+                data-testid="atlas-git-document-step"
+                title={t("docHistoryJumpHint")}
+                onClick={() => onJump(commit.hash)}
+                className={controlClass({
+                  shape: "row",
+                  size: "sm",
+                  tone: "secondary",
+                  hoverInk: "strong",
+                  hoverSurface: "lift",
+                  className: "grid w-full grid-cols-[6rem_minmax(0,1fr)] items-center gap-3 rounded-none px-0",
+                })}
+              >
+                <span className="truncate text-label tabular-nums text-[color:var(--color-text-tertiary)]">
+                  {whenOf(commit.isoTime)}
+                </span>
+                <span className="min-w-0 truncate text-label">{headlineOf(commit.subject) ?? commit.subject}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {older ? (
+        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">{t("docHistoryOlder")}</p>
+      ) : null}
+    </section>
   );
 }
 
