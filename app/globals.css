@@ -3523,6 +3523,13 @@
     /* Recent change spotlight rest alpha (council design 2026-07-23). product reason: when the "changes in last N days" lens is ON, sink nodes/edges outside the window to this alpha so change nodes (fresh channel) win by contrast — not "glowing" but "sinking" (prohibited glow/pulse per charter, fulfilling owner's 'at a glance' desire). Lighter than ego dim(0.15): in the full-map lens, remaining structure must remain readable as context (ego is local focus, so sinks deeper). state/layer:
        map lens. Responsive: value itself is width-agnostic (alpha scalar). Marker: lens state is deterministically reproducible via URL `?recent=`. */
     --map-spotlight-rest-alpha: 0.65;
+    /* The path lens's own rest. A path is two ends and a line, not a whole-map
+       lens that must keep its context readable: at the spotlight's 0.65 the
+       off-path domain rings measured 123 against 143 on the path and every
+       drawn name the same 185, so a still frame did not say which two the
+       person had asked about (2026-09-19). Deep enough that the path is the
+       only bright thing; the rest stays a legible outline. */
+    --map-path-rest-alpha: 0.3;
     /* Spotlight change-node ring dash rotation speed (px/ms) — owner directive
        2026-07-23 "only changed items rotate border": sinking alone doesn't make change nodes readable in element view (actual report Image #14), so during lens ON, rotate amberHub dashed ring on change nodes via lineDashOffset. glow/blur
        0 — charter prohibits rotation? No precedent: comet=always motion, agent focus ring =amberHub precedent. 0.012 ≈ one dash cycle (9px)/750ms — lens is a persistent mode kept ON *while reading the map*, so initial 500ms (2Hz) felt rushed on multiple rings (motion inspection 2026-07-23 frame evidence). HIG deference
