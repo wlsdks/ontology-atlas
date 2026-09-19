@@ -254,8 +254,21 @@ export function refuseLanding(pr) {
  * parsed is still a lock somebody took, and treating a shape we do not
  * understand as an open door is how a mutex becomes decoration. It becomes
  * takeable only once it is older than the lease.
+ *
+ * `unknown` is the same rule one layer down, and it was missing until the
+ * fleet proved it. The guard above covers a payload that arrived and made no
+ * sense; it does not cover a read that never arrived. Every tolerated read here
+ * returned the same `null` whether the ref was genuinely absent or the request
+ * failed, so on 2026-09-19, with the shared REST quota at 0/5000, `pnpm
+ * pr:queue` printed `nothing is landing` while #1728 held the lock and was
+ * refreshing it every minute. Nothing merged twice — `takeLock` creates the ref
+ * with POST and a POST over a ref that exists fails — but a status line stated
+ * a fact it had failed to fetch, which is the same defect class as an invented
+ * answer. A read that did not happen now has its own state and never renders as
+ * an open door.
  */
-export function classifyLock({ payload, nowMs, leaseMinutes = LEASE_MINUTES }) {
+export function classifyLock({ payload, unreadable = null, nowMs, leaseMinutes = LEASE_MINUTES }) {
+  if (unreadable) return { state: 'unknown', holder: null, ageMinutes: null, failure: unreadable };
   if (payload === null || payload === undefined) return { state: 'free', holder: null, ageMinutes: null };
   const acquiredMs = Date.parse(payload?.acquiredAt ?? '');
   if (!Number.isFinite(acquiredMs) || typeof payload?.pr !== 'number') {
@@ -273,6 +286,7 @@ export function classifyLock({ payload, nowMs, leaseMinutes = LEASE_MINUTES }) {
 
 export function describeLock(lock) {
   if (lock.state === 'free') return 'nothing is landing';
+  if (lock.state === 'unknown') return `the landing lock could not be read: ${lock.failure?.detail ?? 'the read failed'}`;
   if (lock.state === 'unreadable') {
     return `an unreadable lock (${JSON.stringify(lock.payload)}); it can be taken over once it is older than ${LEASE_MINUTES} minutes`;
   }
@@ -548,6 +562,9 @@ export function decideNext({
 
   const holdsLock = selfLock !== null && lock.state !== 'free' && lock.holder?.token === selfLock;
   if (!holdsLock) {
+    // A lock we could not read may be anyone's, including nobody's. Waiting costs a poll; taking
+    // it on a failed read is the one move that cannot be undone by the next poll.
+    if (lock.state === 'unknown') return { action: 'wait-lock', lock };
     if (lock.state === 'held') return { action: 'wait-lock', lock };
     if (lock.state === 'stale' || lock.state === 'unreadable') return { action: 'take-stale-lock', lock };
     return { action: 'take-lock', lock };
@@ -655,6 +672,45 @@ function gh(args, { allowFailure = false } = {}) {
   }
 }
 
+/**
+ * Why a tolerated read came back empty.
+ *
+ * A 404 is not a failure: it is the answer 「there is no such ref」, which is how this script asks
+ * whether a lock exists. Everything else is a read that did not happen, and the two must not share
+ * a return value — see `classifyLock`.
+ */
+export function describeReadFailure(output) {
+  const text = String(output ?? '');
+  if (/rate limit exceeded/i.test(text)) {
+    return {
+      reason: 'rate-limited',
+      detail: 'the shared GitHub REST quota is exhausted (`gh api rate_limit` says when it returns)',
+    };
+  }
+  const first = text.trim().split('\n').find((line) => line.trim().length > 0) ?? '';
+  return { reason: 'unreachable', detail: first.trim() || 'the request failed without a message' };
+}
+
+/**
+ * What a tolerated read came back with: `{ value }` when the repository answered — including the
+ * 404 that means 「there is no such ref」, which arrives as a null value — or `{ failure }` when the
+ * request did not happen at all.
+ */
+export function readOutcome(out) {
+  if (typeof out === 'string') {
+    try {
+      return { value: JSON.parse(out), failure: null };
+    } catch {
+      return { value: null, failure: { reason: 'unreadable', detail: 'the reply was not JSON' } };
+    }
+  }
+  const text = String(out?.output ?? '');
+  if (/HTTP 404|Not Found/i.test(text)) return { value: null, failure: null };
+  return { value: null, failure: describeReadFailure(text) };
+}
+
+const ghRead = (args) => readOutcome(gh(args, { allowFailure: true }));
+
 function ghJson(args, options) {
   const out = gh(args, options);
   if (out === null || typeof out === 'object') return null;
@@ -745,15 +801,18 @@ function mergeMainInto(slug, branch) {
 }
 
 function readLockPayload(slug) {
-  const ref = ghJson(['api', `repos/${slug}/git/ref/${LOCK_REF.replace('refs/', '')}`], { allowFailure: true });
-  if (!ref?.object?.sha) return { payload: null, sha: null };
-  const blob = ghJson(['api', `repos/${slug}/git/blobs/${ref.object.sha}`], { allowFailure: true });
-  if (!blob?.content) return { payload: {}, sha: ref.object.sha };
+  const ref = ghRead(['api', `repos/${slug}/git/ref/${LOCK_REF.replace('refs/', '')}`]);
+  if (ref.failure) return { payload: null, sha: null, unreadable: ref.failure };
+  const sha = ref.value?.object?.sha ?? null;
+  if (!sha) return { payload: null, sha: null, unreadable: null };
+  const blob = ghRead(['api', `repos/${slug}/git/blobs/${sha}`]);
+  if (blob.failure) return { payload: null, sha, unreadable: blob.failure };
+  if (!blob.value?.content) return { payload: {}, sha, unreadable: null };
   try {
-    const raw = Buffer.from(blob.content, blob.encoding === 'base64' ? 'base64' : 'utf8').toString('utf8');
-    return { payload: JSON.parse(raw), sha: ref.object.sha };
+    const encoding = blob.value.encoding === 'base64' ? 'base64' : 'utf8';
+    return { payload: JSON.parse(Buffer.from(blob.value.content, encoding).toString('utf8')), sha, unreadable: null };
   } catch {
-    return { payload: {}, sha: ref.object.sha };
+    return { payload: {}, sha, unreadable: null };
   }
 }
 
@@ -983,8 +1042,8 @@ function runLocalChecks({ worktree, pr, io }) {
 }
 
 function printQueue(slug, io = console) {
-  const { payload } = readLockPayload(slug);
-  const lock = classifyLock({ payload, nowMs: Date.now() });
+  const { payload, unreadable } = readLockPayload(slug);
+  const lock = classifyLock({ payload, unreadable, nowMs: Date.now() });
   io.log(`[pr-queue] landing now: ${describeLock(lock)}`);
   /*
    * The order, so a waiter can see its own place instead of guessing why it keeps losing. A
@@ -1084,8 +1143,13 @@ export function runPrLand(argv, io = console) {
   if (args.queue) return printQueue(slug, io);
 
   if (args.release) {
-    const { payload } = readLockPayload(slug);
-    const lock = classifyLock({ payload, nowMs: Date.now() });
+    const { payload, unreadable } = readLockPayload(slug);
+    const lock = classifyLock({ payload, unreadable, nowMs: Date.now() });
+    if (lock.state === 'unknown') {
+      // Forcing a delete over a lock we could not read would take out whoever is actually landing.
+      io.error(`[pr-land] ${describeLock(lock)}; not releasing a lock nobody can see`);
+      return 1;
+    }
     if (lock.state === 'free') {
       io.log('[pr-land] the landing lock is already free');
       return 0;
@@ -1183,8 +1247,8 @@ export function runPrLand(argv, io = console) {
   const parallelAttempts = new Set();
 
   while (Date.now() < deadline) {
-    const { payload } = readLockPayload(slug);
-    const lock = classifyLock({ payload, nowMs: Date.now() });
+    const { payload, unreadable } = readLockPayload(slug);
+    const lock = classifyLock({ payload, unreadable, nowMs: Date.now() });
     const behindBy = held ? readBehindBy(slug, pr.headRefOid) : 0;
     // Consecutive readings that found no run at all for this head. One of those is
     // the gap between a push and its run set appearing; two is a pull request with no
