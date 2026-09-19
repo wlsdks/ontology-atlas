@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState, useId } from 'react';
 import { useTranslations } from 'next-intl';
 import { MessageCircle, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react';
 import {
@@ -131,6 +131,19 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
   const store = useSavedConstellations(handle);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [listOpen, setListOpen] = useState(false);
+  /*
+   * A disclosure, not a dialog. The chip used to claim `aria-haspopup="dialog"`
+   * while what opened was an unnamed `div`: measured 2026-09-20, zero elements
+   * with `role="dialog"`, no `aria-controls`, no accessible name — a reader
+   * heard "expanded" and had nothing to move to. Giving it the dialog role
+   * instead would be a hand-assembled modal, which `dialog.tsx` owns and the
+   * adoption ratchet refuses, and it would be a lie besides: there is no scrim
+   * and no focus trap, focus stays on the chip, and the map behind stays live.
+   * So the honest shape is the one the behaviour already had — a button that
+   * expands a named region it points at.
+   */
+  const listId = useId();
+  const listHeadingId = useId();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -349,8 +362,8 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
           compact
           icon={<Sparkles size={ICON_SIZE.lg} />}
           aria-label={t('openLabel')}
-          aria-haspopup="dialog"
           aria-expanded={listOpen}
+          aria-controls={listId}
           active={listOpen}
           onClick={() => setListOpen((open) => !open)}
           data-testid="saved-constellations-open"
@@ -360,13 +373,16 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
       </Tooltip>
       <Surface
         open={listOpen}
+        as="section"
+        id={listId}
+        aria-labelledby={listHeadingId}
         origin="top right"
         className="fixed right-[var(--chrome-inset)] top-[calc(4.75rem+var(--chrome-tile-size)+0.5rem)] z-40 w-[min(20rem,calc(100vw-var(--chrome-inset)*2))] overflow-hidden rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-2)] [--topology-motion-panel-duration:var(--motion-fast)] md:absolute md:right-0 md:top-[calc(100%+0.5rem)] md:w-80"
       >
         <div className="flex items-start justify-between gap-3 border-b border-[color:var(--color-divider)] px-4 py-3">
           <div>
             <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">{t('eyebrow')}</p>
-            <h2 className="mt-1 text-title text-[color:var(--color-text-primary)]">{t('listTitle')}</h2>
+            <h2 id={listHeadingId} className="mt-1 text-title text-[color:var(--color-text-primary)]">{t('listTitle')}</h2>
           </div>
           <Button size="sm" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => openEditor(null)} disabled={store.status !== 'ready' || candidates.length === 0}>
             <Plus size={ICON_SIZE.sm} aria-hidden="true" />
