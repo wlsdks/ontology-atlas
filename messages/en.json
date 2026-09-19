@@ -2895,6 +2895,7 @@
       "copyAriaLabel": "Copy your trail to hand off to AI",
       "copyCopiedAriaLabel": "Copied: paste into your AI chat",
       "clearLabel": "Clear",
+      "clearConfirmLabel": "Press again to discard",
       "clearAriaLabel": "Clear trail",
       "packetTitle": "Exploration trail",
       "packetOrder": "Visited order (oldest → most recent):",
