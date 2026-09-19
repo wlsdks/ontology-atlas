@@ -3684,7 +3684,11 @@
     "restoreDone": "Restored {path} to this commit's content. It is an uncommitted change now.",
     "restoreDoneOthers": "The other {count} document(s) this commit changed stay as they are.",
     "restoreFailedSafe": "The document was not changed.",
-    "restoreConceptDoc": "This concept's document {path}"
+    "restoreConceptDoc": "This concept's document {path}",
+    "docHistoryTitle": "Other steps that changed this document",
+    "docHistoryOnly": "This is the only step that changed this document",
+    "docHistoryOlder": "Older steps exist too. Show older steps in the list on the left to reach them",
+    "docHistoryJumpHint": "Press to jump to that step"
   },
   "agentFiles": {
     "header": "Agent files",

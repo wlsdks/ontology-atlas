@@ -681,10 +681,22 @@ export function AtlasGitPanel({
   const loadMoreHistory = useCallback(() => {
     setHistoryLimit(historyLimit + HISTORY_PAGE);
   }, [historyLimit, setHistoryLimit]);
+  /**
+   * A step a document's history named that the list has not read yet. While set, each landed
+   * page is checked for it and the next page is read until it appears.
+   */
+  const [jumpHash, setJumpHash] = useState<string | null>(null);
   /** Lands a page on the memory **as it is then** — a status read that overlapped is kept. */
   const landHistoryPage = useEffectEvent((page: { history: GitCommitInfo[]; historyHasMore: boolean }) => {
     if (!workspace) return;
     rememberWorkspace({ read: { ...workspace.read, ...page }, referenceMs: Date.now() });
+    // A jump still looking for its step reads the next page; found, or no more pages, it ends.
+    if (jumpHash === null) return;
+    if (page.history.some((commit) => commit.hash === jumpHash) || !page.historyHasMore) {
+      setJumpHash(null);
+      return;
+    }
+    setHistoryLimit(historyLimit + HISTORY_PAGE);
   });
   const reportHistoryPageFailure = useEffectEvent((err: unknown) => {
     reportWorkspaceReadFailure(err);
@@ -710,6 +722,27 @@ export function AtlasGitPanel({
       cancelled = true;
     };
   }, [desktop, vaultPath, historyLimit, historyShort]);
+
+  /**
+   * Jump to a step named by a document's own history. The step is in the repository, but it
+   * may sit below the depth the list has read; then the list reads on, a page at a time,
+   * until the row exists — the person asked for that step, not for a blank right column.
+   */
+  const jumpToCommit = useCallback(
+    (hash: string) => {
+      setSelectionChoice({ kind: "commit", hash });
+      setFocusedConceptId(null);
+      const loaded = history.some((commit) => commit.hash === hash);
+      setJumpHash(loaded ? null : hash);
+      if (!loaded && historyHasMore && !historyShort) setHistoryLimit(historyLimit + HISTORY_PAGE);
+    },
+    [history, historyHasMore, historyShort, historyLimit, setHistoryLimit],
+  );
+  /** A plain selection from the list ends any jump still reading on. */
+  const selectStep = useCallback((next: WorkbenchSelection) => {
+    setSelectionChoice(next);
+    setJumpHash(null);
+  }, []);
 
   // Split what the user judges (concepts) from the files that ride along. What
   // they have to read here is "which of my concepts changed"; `.gitignore` and
@@ -1086,13 +1119,23 @@ export function AtlasGitPanel({
             confirmSnapshot={confirmSnapshot}
             onRetry={refresh}
             selection={selection}
-            setSelection={setSelectionChoice}
+            setSelection={selectStep}
             diffFiles={diffFiles}
             history={localizedHistory}
             historyHasMore={historyHasMore}
             historyMoreBusy={historyMoreBusy}
             onMoreHistory={loadMoreHistory}
             onRestoreDocument={restoreDocument}
+            onJumpToCommit={jumpToCommit}
+            whenOf={(isoTime: string) => {
+              const instant = new Date(isoTime);
+              if (Number.isNaN(instant.getTime())) return isoTime;
+              try {
+                return format.relativeTime(instant, historyNowMs);
+              } catch {
+                return isoTime;
+              }
+            }}
             restoreBusy={restoreBusy}
             restoreNotice={restoreNotice}
             restoreError={restoreError}
@@ -2625,6 +2668,14 @@ function StepList({
   upstream: string | null;
   onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
 }) {
+  /*
+   * A jump from a document's history can select a row far below the fold. The row is the
+   * proof that the selection landed, so it is brought into view; `nearest` never moves a row
+   * that is already visible, so an ordinary click does not scroll.
+   */
+  const revealSelectedRow = useCallback((node: HTMLButtonElement | null) => {
+    if (node && typeof node.scrollIntoView === "function") node.scrollIntoView({ block: "nearest" });
+  }, []);
   if (history.length === 0) {
     return (
       <div className="flex flex-col gap-1 px-4 py-3">
@@ -2757,6 +2808,7 @@ function StepList({
             <button
               type="button"
               data-testid="atlas-git-history-item"
+              ref={expanded ? revealSelectedRow : undefined}
               aria-expanded={expanded}
               title={t("stepSelectHint")}
               onClick={() => setSelection({ kind: "commit", hash: commit.hash })}
@@ -3111,6 +3163,8 @@ function DesktopBody({
   historyMoreBusy,
   onMoreHistory,
   onRestoreDocument,
+  onJumpToCommit,
+  whenOf,
   restoreBusy,
   restoreNotice,
   restoreError,
@@ -3180,6 +3234,10 @@ function DesktopBody({
   onMoreHistory: () => void;
   /** Restores one document to `source` (`HEAD` or a hash); resolves true when git did it. */
   onRestoreDocument: (relativePath: string, source: string, others: number) => Promise<boolean>;
+  /** Selects a step by hash, reading deeper into the list when it is not loaded yet. */
+  onJumpToCommit: (hash: string) => void;
+  /** The list's own relative-time wording for an ISO instant. */
+  whenOf: (isoTime: string) => string;
   restoreBusy: boolean;
   restoreNotice: string | null;
   restoreError: string | null;
@@ -3641,6 +3699,9 @@ function DesktopBody({
                     pendingDelta={deltaByPath}
                     onRestore={(path, others) => onRestoreDocument(path, picked.hash, others)}
                     restoreBusy={restoreBusy}
+                    onJumpToCommit={onJumpToCommit}
+                    whenOf={whenOf}
+                    headlineOf={(subject) => humanizeStepSubject(t, subject)}
                     focusedConceptId={focusedConceptId}
                     setFocusedConceptId={setFocusedConceptId}
                     egoFor={egoFor}
