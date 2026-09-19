@@ -64,7 +64,7 @@ import {
   FOOTPRINT_TONE_TOKEN,
 } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
-import { centerForInsets, computeClusterFitTarget, computeDomeFitCameraTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
+import { centerForInsets, computeClusterFitTarget, computeDomeFitCameraTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame, lastDrawnLabelBoxes, lastDrawnNodeCount, lastDrawnRelationCaptions } from "./topology-frame-draw";
 import { MOTION } from "@/shared/motion";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
@@ -2692,13 +2692,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           height,
           { ...cameraTokens(tokens), overviewEntryRatio: 1 },
         )
-      : fitWorldTarget(
-          focusBounds,
-          width,
-          height,
-          tokens.cameraScaleMax,
-          tokens.cameraScaleMin,
-        );
+      // Beside the panels, not on the raw viewport: the raw fit landed
+      // expand-all 116 px off the free centre (measured 2026-09-19).
+      : computeLensFitTarget(focusBounds, width, height, cameraTokens(tokens));
     if (constellationFocusId !== null && constellationCameraRef.current === null) {
       constellationCameraRef.current = {
         returnTarget: { ...cameraTargetRef.current },
@@ -4669,7 +4665,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             // A wheel/pan during coordinate return is newer intent than the
             // mode's saved camera. Otherwise restore the exact Flat view (or
             // the first-entry fit) only now that those bounds are real.
-            if (pending && pending.gestureRevision === cameraGestureRevisionRef.current) {
+            // A 3D view chosen on the same switch has already fitted its cone
+            // or strata (`domeFitPendingRef`); the Flat camera saved on the way
+            // into Galaxy belongs to the view that was left. Restoring it over
+            // the dome put the cone 286 px down with five nodes under the
+            // viewport (Flat → Galaxy → Cone at 1512×806, measured 2026-09-19).
+            if (pending && !view3dRef.current && pending.gestureRevision === cameraGestureRevisionRef.current) {
               overviewScaleRef.current = pending.overviewScale;
               cameraTargetRef.current = pending.target;
               // Preserve the authorship of the saved view. A later resize may

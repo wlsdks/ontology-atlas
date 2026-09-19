@@ -1,13 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
-import { waitForMapStill } from "./settle";
+import { waitForDomeAssembled, waitForFlatMap, waitForMapStill } from "./settle";
 
 type Camera = { x: number; y: number; scale: number };
 
 const camera = (page: Page) =>
   page.evaluate(() => window.__atlasMap?.camera() ?? null) as Promise<Camera | null>;
 
-async function choose(page: Page, choice: "flat" | "galaxy") {
+async function choose(page: Page, choice: "flat" | "galaxy" | "ownership") {
   await page.locator('[data-testid="topology-view-3d"]').click();
   await page.locator(`[data-testid="topology-view-3d-choice-${choice}"]`).click();
 }
@@ -80,4 +80,70 @@ test("Flat zoom survives a Galaxy round trip and a rapid reversal", async ({ pag
   await page.setViewportSize({ width: 1408, height: 865 });
   await waitForMapStill(page);
   expectSameCamera(await camera(page), zoomedFlat);
+});
+
+/**
+ * **Galaxy → Cone keeps the cone's own fit.** Leaving Galaxy queues the Flat
+ * camera saved on the way in and restores it once the stars have flown home —
+ * and when the view chosen on the same switch is 3D, that restore landed on top
+ * of the cone's fit. Measured 2026-09-19 at 1512×806, Flat → Galaxy → Cone: the
+ * cone stood 286 px down with five nodes under the viewport, at the Flat scale
+ * 0.477 instead of its fit 0.68. Flat → Cone, the same cone without the Galaxy
+ * detour, is the reference frame.
+ */
+test("Galaxy → Cone frames the cone, not the Flat camera saved before Galaxy", async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.addInitScript(() => {
+    window.localStorage.setItem("atlas.appearance.galaxy", "off");
+    window.localStorage.setItem("atlas.appearance.view3d", "off");
+  });
+  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await waitForMapStill(page);
+
+  // The cone keeps its attention spin, so "dome" and "layout" stillness never
+  // arrive on their own; the camera spring is the motion that ends.
+  const coneFrame = async () => {
+    await waitForDomeAssembled(page);
+    // The stars flying home from Galaxy are the motion the stale restore waits
+    // for, so measuring before it ends would pass on the frame the defect has
+    // not reached yet. The idle gate names that motion ("homing").
+    await page.waitForFunction(
+      () => {
+        const probe = window as unknown as { __atlasMap?: { idleDebug: () => { lastActive: { causes: string[] } | null } } };
+        const causes = probe.__atlasMap?.idleDebug().lastActive?.causes ?? [];
+        return !causes.includes("homing");
+      },
+      undefined,
+      { polling: "raf", timeout: 30_000 },
+    );
+    await waitForMapStill(page, { what: "camera" });
+    return page.evaluate(() => {
+      const probe = window.__atlasMap!;
+      const camera = probe.camera()!;
+      const nodes = probe.nodes().filter((node) => !node.hidden);
+      return {
+        scale: probe.cameraTarget?.()?.scale ?? camera.scale,
+        below: nodes.filter((node) => node.y > camera.height).length,
+        top: Math.min(...nodes.map((node) => node.y)),
+      };
+    });
+  };
+
+  await choose(page, "ownership");
+  const direct = await coneFrame();
+  expect(direct.below, "곧장 들어간 원뿔부터 화면 밖이면 기준이 없다").toBe(0);
+
+  await choose(page, "flat");
+  await waitForFlatMap(page);
+  await choose(page, "galaxy");
+  await waitForMapStill(page);
+  await choose(page, "ownership");
+  const detour = await coneFrame();
+
+  expect(detour.below, "갤럭시를 거쳐 온 원뿔이 화면 아래로 잘렸다").toBe(0);
+  expect(
+    Math.abs(detour.scale - direct.scale),
+    `갤럭시를 거친 원뿔 배율 ${detour.scale.toFixed(3)} 이 곧장 들어간 ${direct.scale.toFixed(3)} 과 다르다`,
+  ).toBeLessThan(0.05);
+  expect(Math.abs(detour.top - direct.top), "원뿔 꼭대기가 다른 높이에 섰다").toBeLessThan(40);
 });
