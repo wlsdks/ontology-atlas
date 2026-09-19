@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 
@@ -10,6 +10,7 @@ import {
   useStaticVaultSource,
   VaultSourceHydrationBoundary,
 } from '@/entities/vault-session';
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { Chip, EmptyState, InfoHint, Surface, TabBar } from '@/shared/ui';
 import { PAGE_TOP_PAD } from '@/shared/ui/page-frame';
 
@@ -89,6 +90,15 @@ import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
  */
 const PROGRESS_REVEAL_MS = 1000;
 
+/** The read never changes within a session, so nothing has to be watched. */
+const subscribeNever = () => () => {};
+
+/**
+ * The server's answer, which is the browser's: a static export is built with no desktop bridge, and
+ * the exported HTML is what a web visitor gets.
+ */
+const readHarnessSurfaceOnServer = () => false;
+
 const EMPTY_DOCS: Array<{
   slug: string;
   title: string;
@@ -113,7 +123,20 @@ function HarnessPageInner() {
    * URL with `replaceState`, which `useSearchParams` does not observe.
    */
   const [viewOverride, setViewOverride] = useState<HarnessView | null>(null);
-  const addressView = resolveAddressView(searchParams);
+  /*
+   * ⚠️ **The surface decides the arrival view, and a static export cannot know it on the server.**
+   * So the server snapshot is `false` — the browser's answer, and the one the exported HTML has to
+   * carry — while the client reads the real runtime. `useSyncExternalStore` rather than an effect
+   * plus state: the read never changes, the subscription is a no-op, and the first client render
+   * is already correct with no hydration mismatch (the same shape `FirstRunStarterModule` uses for
+   * the platform badge).
+   */
+  const canReadHarness = useSyncExternalStore(
+    subscribeNever,
+    isTauriVaultRuntime,
+    readHarnessSurfaceOnServer,
+  );
+  const addressView = resolveAddressView(searchParams, canReadHarness);
   const view = viewOverride ?? addressView;
   const [reloadNonce, setReloadNonce] = useState(0);
   const mode = useDataSourceMode();
@@ -160,7 +183,7 @@ function HarnessPageInner() {
        what putting the view in the URL was meant to prevent. */
     const onPopState = () => {
       const params = new URL(window.location.href).searchParams;
-      setViewOverride(resolveAddressView(params));
+      setViewOverride(resolveAddressView(params, isTauriVaultRuntime()));
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildHarnessViewHref,
   DEFAULT_HARNESS_VIEW,
+  defaultViewForSurface,
   HARNESS_VIEW_ORDER,
   parseHarnessView,
   resolveAddressView,
@@ -57,6 +58,22 @@ describe('resolveAddressView', () => {
     expect(resolveAddressView(new URLSearchParams(''))).toBe('structure');
     expect(resolveAddressView(new URLSearchParams('focus=main'))).toBe('structure');
     expect(resolveAddressView(null)).toBe('structure');
+  });
+
+  it('sends a surface that cannot read the harness to the view it can answer', () => {
+    /* The browser cannot see a dot directory at all, so the structure view is empty there and
+       arriving on it hands a web visitor a card about what this browser cannot do. */
+    expect(resolveAddressView(new URLSearchParams(''), false)).toBe('architecture');
+    expect(resolveAddressView(null, false)).toBe('architecture');
+    /* An address still wins, so a shared link opens what it names on either surface. */
+    expect(resolveAddressView(new URLSearchParams('view=structure'), false)).toBe('structure');
+  });
+});
+
+describe('defaultViewForSurface', () => {
+  it('gives the app the harness and the browser the blueprint', () => {
+    expect(defaultViewForSurface(true)).toBe('structure');
+    expect(defaultViewForSurface(false)).toBe('architecture');
   });
 });
 

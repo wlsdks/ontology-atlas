@@ -70,11 +70,33 @@ const BLUEPRINT_ONLY_PARAMS = ['role', 'stage'] as const;
  *
  * An explicit `?view=` always wins; `parseHarnessView` owns it, retired names and all.
  */
-export function resolveAddressView(params: URLSearchParams | null | undefined): HarnessView {
+export function resolveAddressView(
+  params: URLSearchParams | null | undefined,
+  /** Whether this surface can read the dot directories the structure view is about. */
+  canReadHarness = true,
+): HarnessView {
   const raw = params?.get('view');
   if (raw) return parseHarnessView(raw);
   if (params && BLUEPRINT_ONLY_PARAMS.some((name) => params.has(name))) return 'architecture';
-  return DEFAULT_HARNESS_VIEW;
+  return defaultViewForSurface(canReadHarness);
+}
+
+/**
+ * **The arrival view depends on which surface is asking, and it has to.**
+ *
+ * Almost the whole harness lives in dot directories — `.claude/`, `.agents/`, `.codex/` — and the
+ * browser's File System Access API cannot see a dot entry at all. So the structure view can only
+ * ever be empty on the web, and making it the destination's arrival sent every web visitor to a
+ * card explaining what this browser cannot read. CI caught it as a route that renders almost
+ * nothing inside `<main>`, which the accessibility ratchet refuses to score: zero violations on an
+ * empty screen is not a pass, it is a measurement that did not happen (2026-09-20).
+ *
+ * So the installed app arrives on the harness's own structure, which it can read, and the browser
+ * arrives on the blueprint, which is built from the bundled profile and answers there. Both keep
+ * the same four tabs, and an address that names a view always wins over this.
+ */
+export function defaultViewForSurface(canReadHarness: boolean): HarnessView {
+  return canReadHarness ? DEFAULT_HARNESS_VIEW : 'architecture';
 }
 
 /**

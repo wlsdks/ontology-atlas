@@ -7,6 +7,9 @@ import type { HarnessReport } from '@/entities/agent-files';
 
 const state = {
   mode: 'local' as 'local' | 'static',
+  /* Which surface the page thinks it is on. The arrival view depends on it: only a desktop bridge
+     can read the dot directories the structure view is about. */
+  bridge: true,
   report: null as null | {
     status: string;
     sourceRoot?: string;
@@ -20,6 +23,10 @@ vi.mock('@/entities/vault-session', () => ({
   useLocalVault: () => ({ status: 'loaded', handle: {}, manifest: { docs: [] } }),
   useStaticVaultSource: () => ({ manifest: { docs: [] } }),
   VaultSourceHydrationBoundary: ({ children }: { children: React.ReactNode }) => children,
+}));
+vi.mock('@/shared/lib/tauri-vault-fs', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/tauri-vault-fs')>()),
+  isTauriVaultRuntime: () => state.bridge,
 }));
 vi.mock('../model/use-harness-report', () => ({
   useHarnessReport: () => state.report ?? { status: 'unsupported' },
@@ -107,6 +114,7 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
 
 beforeEach(() => {
   state.mode = 'local';
+  state.bridge = true;
   state.report = null;
   /* Real timers by default; only the wait-screen tests fake them, and they must not leak into the
      count-up animation the arrival runs. */
@@ -143,6 +151,19 @@ describe('the destination identity', () => {
     mount();
     expect(screen.getByTestId('harness-anatomy')).toBeInTheDocument();
     expect(screen.queryByTestId('architecture-page')).toBeNull();
+  });
+
+  it('arrives on the blueprint in a browser, which is the view a browser can answer', () => {
+    /*
+     * Almost the whole harness lives in dot directories and the File System Access API cannot see
+     * one, so the structure view is empty on the web. Arriving there handed a web visitor a card
+     * about what this browser cannot do — and CI caught it as a route that draws almost nothing
+     * inside `main`, which the a11y ratchet refuses to score (2026-09-20).
+     */
+    state.bridge = false;
+    mount();
+    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('harness-anatomy')).toBeNull();
   });
 
   it('lets the rail through, which carries ?focus=main on every link', () => {
