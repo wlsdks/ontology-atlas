@@ -89,3 +89,35 @@ export function toolLabel(title: string, vaultServerName: string): ToolLabel {
 
   return { kind: 'raw', text: trimmed };
 }
+
+/**
+ * **A raw label stops repeating the path the row is already naming.**
+ *
+ * ## Why (measured in the rendered dock, 2026-09-19)
+ *
+ * A coding agent's own file tools title themselves with the path: the built-in write arrives
+ * as `Write /Users/me/Ontology Atlas/launch/wiki/architecture.md`. The row then drew that
+ * title in the label slot — capped at 45% of the row and therefore cut to
+ * `Write /Users/me/Ontology Atlas/laun…` — and drew the same file again, whole and readable,
+ * in the target slot beside it: `· wiki/architecture.md`. Measured at the dock's default
+ * width that is 204px of truncated absolute path standing next to 188px of the same fact.
+ *
+ * One of the two copies is unreadable and neither adds anything to the other, so the label
+ * keeps **only what the target slot cannot say** — the verb.
+ *
+ * ## It cuts on an exact match or not at all
+ *
+ * The comparison is against the path argument the adapter actually sent, and the label must
+ * *end* with it. A title that merely mentions a similar path, or that is the path alone with
+ * no verb in front of it, is left exactly as it arrived — a label this function emptied would
+ * be a row that lost its only verb.
+ */
+export function labelWithoutRepeatedPath(label: ToolLabel, path: string | null): ToolLabel {
+  if (label.kind !== 'raw' || !path) return label;
+  const text = label.text.trim();
+  const target = path.trim();
+  if (!target || !text.endsWith(target)) return label;
+  // A separator between the verb and the path is part of the repetition, not of the verb.
+  const head = text.slice(0, text.length - target.length).replace(/[\s:·\-–—]+$/u, '').trim();
+  return head ? { kind: 'raw', text: head } : label;
+}

@@ -65,6 +65,7 @@ import {
   linkSlugs,
   readToolFallbackTarget,
   readToolOutcome,
+  readToolPathArgument,
   readToolTargets,
   deriveAcpTurnActivity,
   type AcpTurnActivity,
@@ -86,7 +87,7 @@ import { AcpPermissionCard } from './AcpPermissionCard';
 import { AcpPresentationPanel } from './AcpPresentationPanel';
 import { groupEvents } from './group-events';
 import { splitAppRequest } from './request-parts';
-import { isVaultTool, toolLabel } from './tool-label';
+import { isVaultTool, labelWithoutRepeatedPath, toolLabel } from './tool-label';
 import { useTaskMeaningReview } from '../model/use-task-meaning-review';
 import { useMeaningTransitionCapture } from '../model/use-meaning-transition-capture';
 
@@ -2702,7 +2703,7 @@ function TranscriptEntry({
      * something plausible for the unknown makes the screen lie on the day it diverges
      * from what was actually done.
      */
-    const label = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
+    const rawLabel = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
     const outcome = readToolOutcome(
       event.rawOutput,
       event.status,
@@ -2718,6 +2719,14 @@ function TranscriptEntry({
      * marker — it names something the vault may not contain (`tool-targets.ts`).
      */
     const fallbackTarget = toolTargets.length === 0 ? readToolFallbackTarget(event.rawInput) : null;
+    /*
+     * Only when the path slot is the one actually drawn. With node names in the target slot the
+     * fallback lane is silent, and cutting the path out of the label there would delete the one
+     * place this row says which file was touched.
+     */
+    const label = fallbackTarget?.kind === 'path'
+      ? labelWithoutRepeatedPath(rawLabel, readToolPathArgument(event.rawInput))
+      : rawLabel;
     return (
       <p
         data-acp-entry="tool"
