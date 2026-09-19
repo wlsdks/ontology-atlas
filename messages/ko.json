@@ -5300,6 +5300,7 @@
       "open": "다음 할 일",
       "close": "닫기",
       "status": "{step} {state}",
+      "statusNotCompiled": "정리 전 {count}개",
       "statusWaiting": "{count}개 기다림",
       "statusOffTemplate": "서식 벗어남 {count}개",
       "statusReady": "원문이 모두 정리되었습니다",

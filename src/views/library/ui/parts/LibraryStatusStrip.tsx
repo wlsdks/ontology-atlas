@@ -57,17 +57,31 @@ export function LibraryStatusStrip({
     parts.push(t("stage.statusReady"));
   }
   /*
-   * **Two clauses that add up.** `needsCompileCount` includes the part-read sources, so
-   * printing it whole beside its own subset gave *2 waiting · 1 read in part* over a
-   * two-row list — a person counting three where the folder holds two. The waiting clause
-   * therefore names what is left after the subset, and disappears when the subset is all
-   * there is, which is exactly when "read in part" is the whole answer.
+   * **The same two numbers the home prints, in the same words** (2026-09-19).
+   *
+   * This strip summed what was waiting into one figure — *Compile next · 12 waiting* —
+   * while the home strip a press away said *10 sources changed* beside an index chip
+   * saying *not compiled 2*, and the how-to panel said *2 not written up yet · 10 source
+   * versions need review*. Twelve is the sum of two and ten, but a person reading the
+   * reader's header after the home's counts twelve where they just counted ten, and the
+   * word *waiting* names neither piece of work. So the clauses here are the home's own:
+   * the not-compiled count under the index chip's word, the changed count under the home
+   * strip's, and the part-read count in its own clause as before.
+   *
+   * `needsCompileCount` also counts a compiled source whose citing pages need review;
+   * that remainder keeps the old waiting word so the arithmetic still closes, and it is
+   * zero on every folder where the three states are the whole story.
    */
-  const plainlyWaiting = model.needsCompileCount - model.partialCount;
-  if (plainlyWaiting > 0) parts.push(t("stage.statusWaiting", { count: plainlyWaiting }));
+  if (model.notCompiledCount > 0) {
+    parts.push(t("stage.statusNotCompiled", { count: model.notCompiledCount }));
+  }
+  if (model.staleCount > 0) parts.push(t("home.staleClause", { count: model.staleCount }));
   if (model.partialCount > 0) {
     parts.push(t("stage.statusPartial", { count: model.partialCount }));
   }
+  const reviewOnly =
+    model.needsCompileCount - model.notCompiledCount - model.staleCount - model.partialCount;
+  if (reviewOnly > 0) parts.push(t("stage.statusWaiting", { count: reviewOnly }));
   /*
    * **The header counts what the rows draw, or it is a third opinion** (2026-09-07).
    *

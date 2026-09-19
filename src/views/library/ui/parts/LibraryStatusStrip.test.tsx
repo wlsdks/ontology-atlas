@@ -30,13 +30,18 @@ const verdict = (codes: readonly string[]): Verdict =>
   }) as unknown as Verdict;
 
 /** Only the fields the strip reads; a fuller fixture would be unverifiable against it. */
-const model = (verdicts: Record<string, readonly string[]>): LibraryUiModel =>
+const model = (
+  verdicts: Record<string, readonly string[]>,
+  counts: Partial<Pick<LibraryUiModel, "needsCompileCount" | "notCompiledCount" | "staleCount" | "partialCount">> = {},
+): LibraryUiModel =>
   ({
     sources: [{ state: "compiled" }],
     wikiPages: Object.keys(verdicts).map((slug) => ({ slug })),
     needsCompileCount: 0,
+    notCompiledCount: 0,
     partialCount: 0,
     staleCount: 0,
+    ...counts,
     verdicts: new Map(Object.entries(verdicts).map(([slug, codes]) => [slug, verdict(codes)])),
   }) as unknown as LibraryUiModel;
 
@@ -45,10 +50,13 @@ function Harness({ value }: { value: LibraryUiModel }) {
   return <LibraryStatusStrip model={value} t={t} />;
 }
 
-const strip = (verdicts: Record<string, readonly string[]>) => {
+const strip = (
+  verdicts: Record<string, readonly string[]>,
+  counts: Parameters<typeof model>[1] = {},
+) => {
   render(
     <NextIntlClientProvider locale="ko" messages={ko}>
-      <Harness value={model(verdicts)} />
+      <Harness value={model(verdicts, counts)} />
     </NextIntlClientProvider>,
   );
   return screen.getByTestId("library-status-strip").textContent ?? "";
@@ -101,5 +109,36 @@ describe("LibraryStatusStrip — the off-template clause still counts pages", ()
       "wiki/b": ["section-order"],
     });
     expect(text).toContain("서식 벗어남 2개");
+  });
+});
+
+/**
+ * **The reader's header counts what the home counts.**
+ *
+ * Measured 2026-09-19 on the small wiki fixture: the home strip said *10 sources changed*
+ * beside an index chip saying *not compiled 2*, and this strip, one press later, said
+ * *12 waiting*. The sum was right and the sentence was a third opinion.
+ */
+describe("LibraryStatusStrip — the waiting clauses are the home's own", () => {
+  it("prints not-compiled and changed apart, under the home's words, never their sum", () => {
+    const text = strip({ "wiki/a": [] }, { needsCompileCount: 12, notCompiledCount: 2, staleCount: 10 });
+    expect(text).toContain("정리 전 2개");
+    expect(text).toContain("원문 10개 달라짐");
+    expect(text).not.toContain("기다림");
+  });
+
+  it("keeps the part-read count in its own clause", () => {
+    const text = strip({ "wiki/a": [] }, { needsCompileCount: 3, staleCount: 2, partialCount: 1 });
+    expect(text).toContain("원문 2개 달라짐");
+    expect(text).toContain("일부만 읽음 1개");
+    expect(text).not.toContain("기다림");
+  });
+
+  it("names only the remainder the three states do not cover as waiting", () => {
+    // Four sources Compile acts on; two not compiled, one changed, one compiled with a page to review.
+    const text = strip({ "wiki/a": [] }, { needsCompileCount: 4, notCompiledCount: 2, staleCount: 1 });
+    expect(text).toContain("정리 전 2개");
+    expect(text).toContain("원문 1개 달라짐");
+    expect(text).toContain("1개 기다림");
   });
 });

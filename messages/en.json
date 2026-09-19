@@ -5300,6 +5300,7 @@
       "open": "What to do next",
       "close": "Close",
       "status": "{step} {state}",
+      "statusNotCompiled": "{count, plural, one {# not compiled} other {# not compiled}}",
       "statusWaiting": "{count, plural, one {# waiting} other {# waiting}}",
       "statusOffTemplate": "{count, plural, one {# off-template} other {# off-template}}",
       "statusReady": "Every source is written up",
