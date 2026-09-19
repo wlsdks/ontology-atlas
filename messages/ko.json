@@ -203,6 +203,7 @@
         "recheck": "다시 확인",
         "checking": "찾는 중이에요",
         "readyHeading": "이 컴퓨터의 도구 · 확인된 {count}개",
+        "heading": "이 컴퓨터의 도구",
         "othersHeading": "나머지 {count}개 보기",
         "othersHeadingEmpty": "쓸 수 있는 도구 {count}개",
         "noneReady": "확인된 도구가 없어요",

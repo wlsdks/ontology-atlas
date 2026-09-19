@@ -134,6 +134,40 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     );
   });
 
+  /*
+   * **The press stands with the group it re-scans** (2026-09-20).
+   *
+   * It used to sit on the intro row, level with the sentence about which tools can open a chat
+   * and a whole line above the heading counting what it would re-count. The MCP tab beside this
+   * one puts its own group press in its group heading, so the two tabs were asking to be read
+   * differently for no reason a person could name.
+   *
+   * Containment rather than coordinates: the chip sits inside the heading's own row, which
+   * stays true at every width and says the thing the layout is for.
+   */
+  it('「다시 확인」은 자기 묶음의 머리글 줄에 선다', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    const chip = screen.getByTestId('app-settings-runtimes-recheck');
+    // Every string here is its own key (see the `next-intl` mock at the top of this file).
+    const heading = screen.getByRole('heading', { name: 'readyHeading:{"count":1}' });
+    expect(heading.parentElement?.contains(chip)).toBe(true);
+  });
+
+  it('첫 탐색 중에도 묶음은 이름을 갖고, 그 줄에 「다시 확인」이 있다', async () => {
+    let settle: (value: unknown) => void = () => undefined;
+    bridge.detect.mockReturnValue(new Promise((resolve) => { settle = resolve; }));
+    render(<AcpRuntimeSettings embedded />);
+    const heading = screen.getByRole('heading', { name: 'heading' });
+    const chip = screen.getByTestId('app-settings-runtimes-recheck');
+    expect(heading.parentElement?.contains(chip)).toBe(true);
+    settle([makeRuntime({ id: 'claude-acp', isolated: true, verified: true })]);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+  });
+
   it('디스크에 무엇이 생기는지는 힌트 안에서 말한다 — 목록 위 문단이 아니라', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),

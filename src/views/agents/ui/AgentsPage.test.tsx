@@ -158,10 +158,14 @@ describe('한 목적지에 한 가지 일', () => {
     expect(screen.queryByTestId('connectors-panel')).toBeNull();
   });
 
+  /*
+   * The name, not the element that used to carry it. Until 2026-09-20 this panel was labelled
+   * twice — an `sr-only` heading here and, from that day, a visible group heading inside the
+   * runtime panel saying the same words. The heading went; the region's name is the invariant
+   * this test was always about, and it is what assistive tech announces on entry.
+   */
   it('남은 한 칸은 이름을 갖는다 — 훑을 수 있어야 한다', () => {
     renderPage();
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(
-      ko.agents.runtimesHeading,
-    );
+    expect(screen.getByRole('region', { name: ko.agents.runtimesHeading })).toBeInTheDocument();
   });
 });

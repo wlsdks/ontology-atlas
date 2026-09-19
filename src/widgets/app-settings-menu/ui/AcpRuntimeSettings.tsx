@@ -229,6 +229,34 @@ export function AcpRuntimeSettings({
 
   const ready = (runtimes ?? []).filter((r) => isRuntimeUsable(r.state));
   const others = (runtimes ?? []).filter((r) => !isRuntimeUsable(r.state));
+
+  /*
+   * **The re-scan press belongs to the group it re-scans** (2026-09-20).
+   *
+   * It used to sit on the intro row, level with the sentence about which tools can open a
+   * chat and a whole line above the heading that counts what it would re-count. The MCP tab
+   * beside this one puts its "add a connector" press in its group heading, so the two tabs
+   * asked to be read differently for no reason a person could name; the owner's own rule for
+   * this screen is that a group's controls stand with the group, filling the row's width.
+   *
+   * ⚠️ **Not while the first scan is still running.** `checking` covers a re-scan this button
+   * started; the very first detection, before any answer exists, left it live — so the row
+   * offered "check again" beside a list that says it is still looking, and a press started a
+   * second scan over the first. `runtimes` is null exactly until that first answer lands.
+   */
+  const recheck = (
+    <Chip
+      size="lg"
+      tone="secondary"
+      data-testid="app-settings-runtimes-recheck"
+      disabled={checking || runtimes === null}
+      onClick={() => void refresh()}
+      className={`${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`}
+    >
+      <RefreshCw size={ICON_SIZE.md} aria-hidden />
+      {t('recheck')}
+    </Chip>
+  );
   /*
    * The names inside the explanation — **not written by hand.** When more runners
    * become isolated the sentence follows on its own, and with none it branches to a
@@ -323,34 +351,23 @@ export function AcpRuntimeSettings({
             </InfoHint>
           ) : null}
         </div>
-        <Chip
-          size="lg"
-          tone="secondary"
-          data-testid="app-settings-runtimes-recheck"
-          /*
-           * **Not while the first scan is still running** (2026-09-20). `checking` covers a
-           * re-scan this button started; the very first detection, before any answer exists,
-           * left it live — so the row offered "check again" beside a list that says it is
-           * still looking, and a press started a second scan over the first. `runtimes` is
-           * null exactly until that first answer lands.
-           */
-          disabled={checking || runtimes === null}
-          onClick={() => void refresh()}
-          /* `shrink-0`: at 390 the chip yielded to the sentence and broke its two words onto two lines. */
-          className={`${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`}
-        >
-          <RefreshCw size={ICON_SIZE.md} aria-hidden />
-          {t('recheck')}
-        </Chip>
       </div>
 
       {runtimes === null ? (
-        <SettingsGroup>
+        /*
+         * **Named before it can be counted.** The group carries the plain name while the scan
+         * is still running and the name with the count the moment it answers — the same shape
+         * the MCP tab's connectors group uses, so the two tabs read alike. It matters here
+         * because the heading is where the re-scan press now lives: without a heading in this
+         * state the press would appear only after the first answer, and the guided tour
+         * anchors on it.
+         */
+        <SettingsGroup label={t('heading')} trailing={recheck}>
           <SettingsRow label={t('checking')} control={null} testId="app-settings-runtimes-loading" />
         </SettingsGroup>
       ) : (
         <>
-          <SettingsGroup label={t('readyHeading', { count: ready.length })}>
+          <SettingsGroup label={t('readyHeading', { count: ready.length })} trailing={recheck}>
             {ready.length === 0 ? (
               <SettingsRow label={t('noneReady')} caption={t('noneReadyCaption')} control={null} />
             ) : (

@@ -203,6 +203,7 @@
         "recheck": "Check again",
         "checking": "Looking…",
         "readyHeading": "Tools on this computer · {count} confirmed",
+        "heading": "Tools on this computer",
         "othersHeading": "Show the other {count}",
         "othersHeadingEmpty": "{count} tools you can use",
         "noneReady": "Nothing found yet",
