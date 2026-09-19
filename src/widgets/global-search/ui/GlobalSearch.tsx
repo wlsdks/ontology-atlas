@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Command } from "cmdk";
 import * as Dialog from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -209,6 +209,28 @@ export function GlobalSearch({
     [projectVirtualizer],
   );
 
+  /**
+   * Enter belongs to whichever control has focus.
+   *
+   * cmdk's root listens for Enter across the whole palette and turns it into "open
+   * the highlighted row", `preventDefault` included — so it also swallowed Enter
+   * pressed on a control. Measured 2026-09-19: tabbing to a kind filter chip and
+   * pressing Enter left the chip `aria-pressed="false"` and instead **closed the
+   * palette and flew the map to `capability:account-closure`**, whichever row
+   * happened to be highlighted. The close button did the same: Enter navigated
+   * instead of closing. Space was unaffected, so the two keys disagreed about what
+   * the focused control does.
+   *
+   * Stopping Enter at the control's own row (bubble phase, so the button still gets
+   * it) leaves cmdk's root handling only Enter from the search field, which is the
+   * one place "open the highlighted row" is what a person means.
+   */
+  const keepEnterOnTheFocusedControl = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter") return;
+    if (event.target === inputRef.current) return;
+    event.stopPropagation();
+  };
+
   const closeAndClear = () => {
     onOpenChange(false);
     setQuery("");
@@ -317,7 +339,10 @@ export function GlobalSearch({
             className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-hidden border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-2)] md:h-auto md:max-w-[var(--topology-search-sheet-floating-width)] md:rounded-sheet"
             onClick={(event) => event.stopPropagation()}
           >
-        <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-4 py-3">
+        <div
+          className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-4 py-3"
+          onKeyDown={keepEnterOnTheFocusedControl}
+        >
           <Search size={ICON_SIZE.md} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
           <Command.Input
             ref={inputRef}
@@ -352,6 +377,7 @@ export function GlobalSearch({
         <div
           className="flex flex-col gap-1 border-b border-[color:var(--color-border-soft)] px-3 py-2"
           aria-label={t('filterAriaLabel')}
+          onKeyDown={keepEnterOnTheFocusedControl}
         >
           <div className="flex items-center gap-2 overflow-x-auto">
             <span

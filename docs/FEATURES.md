@@ -2857,6 +2857,18 @@ matchers now return the page **and** the size of what was found, the heading use
 carries the real total. Below the limit nothing changes — a query with 11 matches
 still reads "11".
 
+**Enter belongs to whichever control has focus** (2026-09-19). cmdk's root listens
+for Enter across the whole palette and turns it into "open the highlighted row",
+`preventDefault` included, so it also swallowed Enter pressed on a control. Measured
+live: tabbing to a kind filter chip and pressing Enter left the chip
+`aria-pressed="false"` and instead closed the palette and flew the map to whichever
+concept happened to be highlighted; the close button did the same, navigating instead
+of closing. Space was unaffected, so the two keys disagreed about what the focused
+control does. Enter now stops at the control's own row in the bubble phase — the
+button still receives it — leaving cmdk's root only the Enter that comes from the
+search field, which is the one place "open the highlighted row" is what a person
+means.
+
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio
 - 2-column grid on sm+, focus trap, `Esc` closes
