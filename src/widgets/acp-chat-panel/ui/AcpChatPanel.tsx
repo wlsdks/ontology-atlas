@@ -1152,9 +1152,21 @@ export function AcpChatPanel({
          * width is 320. Without it the third one is simply clipped away by the dock's
          * `overflow-hidden`, which is the defect this whole row was rewritten for.
          */
+        /*
+         * ⚠️ **It is no longer `flex-1`** (measured across the drag range, 2026-09-19). A
+         * `basis-0 flex-1` slot is served *last*: the runtime name beside it took its full
+         * content width and this row got whatever remained. At the panel's own documented
+         * minimum the remainder was 48px — the picker's floor — and the mode's word was
+         * clipped to fourteen pixels while the name it shares the row with was never
+         * truncated by a single pixel, at any width.
+         *
+         * That is the wrong order. The name is a label with nothing to act on; the mode names
+         * the promise this screen is built on. Content-sized here, plus a name that absorbs the
+         * shortfall first, puts the yielding the right way round.
+         */
         <div
           data-testid="acp-chat-choices"
-          className="flex min-w-0 flex-1 items-center gap-0.5"
+          className="flex min-w-0 items-center gap-0.5"
         >
           {choices.modes.length > 0 ? (
             <Select
@@ -2133,9 +2145,31 @@ export function AcpChatPanel({
                 className={cn(PICKER_MIN_WIDTH_CLASS, PICKER_MAX_WIDTH_CLASS, 'shrink')}
               />
             ) : (
+              /*
+                ⚠️ **This name yields first, and below the width that holds both it leaves**
+                (measured 2026-09-19). `shrink-[99]` is the order, not a size: whatever the row
+                is short by comes out of this name before the mode picker gives up a pixel of
+                its word.
+
+                Order alone is not enough at the bottom of the drag range. Measured in Korean,
+                the name (67px) and the mode (94px) need 163px and the group has 111px at the
+                documented minimum — no division of that row shows both. So below the container
+                width that fits them the name stands down, because it is the only thing here a
+                person cannot act on, the panel's own accessible name still carries it, and the
+                Agents destination names it in full.
+
+                The threshold is the composer's own width, not the window's — the same screen
+                holds this box at 262px and at 968px — and it is a **content-box** measure,
+                because `container-type: inline-size` queries the content box. 286 is therefore
+                the narrowest composer at which the Korean mode name and this name both measured
+                unclipped; it lands at a 380px panel, and the app's own smallest window opens
+                this panel at 436. Above the threshold a longer adapter mode name takes its room
+                out of this name rather than out of its own word, which is what `shrink-[99]`
+                above is for.
+              */
               <span
                 data-testid="acp-chat-runtime-label"
-                className="min-w-0 shrink truncate text-label leading-label text-[color:var(--color-text-tertiary)]"
+                className="hidden min-w-0 shrink-[99] truncate text-label leading-label text-[color:var(--color-text-tertiary)] @min-[286px]/composer:inline"
               >
                 {toolPicker[0]?.label ?? runtimeLabel}
               </span>

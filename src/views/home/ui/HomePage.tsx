@@ -5516,6 +5516,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                     onSelect={(id) => handleSelect(id, { keepIndexOpen: true })}
                     onCollapse={handleIndexCollapse}
                     onStartTour={openGuidedTour}
+                    tourIndexSpotlit={tour.open && tour.step?.id === "index"}
+                    tourAgentSpotlit={tour.open && tour.step?.id === "agent"}
                     onEnablePlainMode={() => setAudiencePlain(true)}
                     // Gates the quiet hint row explaining why element rows are not
                     // visible. `treeResult` above has already removed them; the single

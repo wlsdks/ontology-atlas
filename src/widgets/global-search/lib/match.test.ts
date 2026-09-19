@@ -34,7 +34,7 @@ describe("matchOntologyNodes", () => {
     const r = matchOntologyNodes("세션", corpus);
     // "Session" matches the title character for character — an exact match.
     expect(r[0]?.node.id).toBe("session");
-    expect(r[0]?.score).toBe(5);
+    expect(r[0]?.score).toBe(7);
   });
 
   it("정확 일치는 더 최근에 승인된 prefix 매치보다 위다 (2026-08-13 실측 회귀)", () => {
@@ -50,8 +50,8 @@ describe("matchOntologyNodes", () => {
     ];
     const r = matchOntologyNodes("주문", vault);
     expect(r[0]?.node.id).toBe("domain-order");
-    expect(r[0]?.score).toBe(5);
-    expect(r[1]?.score).toBe(4);
+    expect(r[0]?.score).toBe(7);
+    expect(r[1]?.score).toBe(6);
   });
 
   it("summary 매치 (title 에 없음) — score 2", () => {
@@ -65,8 +65,8 @@ describe("matchOntologyNodes", () => {
     const r = matchOntologyNodes("logout", corpus);
     expect(r).toHaveLength(1);
     expect(r[0]?.node.id).toBe("auth-logout");
-    // Score 3 if the title contains 'logout', 1 for the id-only fallback. The title
-    // "Logout" has no English logout, so this is the id fallback.
+    // A title containing 'logout' would score in the name tier; 1 is the id-only
+    // fallback. The title "Logout" has no English logout, so this is that fallback.
     expect(r[0]?.score).toBe(1);
   });
 
@@ -79,7 +79,7 @@ describe("matchOntologyNodes", () => {
     ];
     const r = matchOntologyNodes("가능", same);
     expect(r).toHaveLength(2);
-    // Same score (both substring matches = score 3) — the more recent (alpha) comes first.
+    // Same score (both literal substring matches) — the more recent (alpha) comes first.
     expect(r[0]?.node.id).toBe("b");
     expect(r[1]?.node.id).toBe("a");
   });
@@ -105,19 +105,19 @@ describe("matchOntologyNodes", () => {
       const r = matchOntologyNodes("온톨로지 코어", [localized]);
       expect(r).toHaveLength(1);
       expect(r[0]?.node.id).toBe("ontology-core");
-    // The name visible on screen ranks with the title — an exact display-name match also scores 5.
-      expect(r[0]?.score).toBe(5);
+    // The name visible on screen ranks with the title — an exact display-name match scores the same.
+      expect(r[0]?.score).toBe(7);
     });
 
     it("표시 이름 부분 일치는 substring 점수", () => {
       const r = matchOntologyNodes("코어", [localized]);
-      expect(r[0]?.score).toBe(3);
+      expect(r[0]?.score).toBe(5);
     });
 
     it("원문 title 로도 그대로 찾힌다 (범위는 넓히기만 한다)", () => {
       const r = matchOntologyNodes("Ontology Core", [localized]);
       expect(r).toHaveLength(1);
-      expect(r[0]?.score).toBe(5);
+      expect(r[0]?.score).toBe(7);
     });
 
     it("한국어 화면에서도 다른 어권 이름으로 찾힌다", () => {
@@ -130,7 +130,7 @@ describe("matchOntologyNodes", () => {
       });
       const r = matchOntologyNodes("payments", [koScreen]);
       expect(r).toHaveLength(1);
-      expect(r[0]?.score).toBe(5);
+      expect(r[0]?.score).toBe(7);
     });
 
     it("자소 분리(NFD) 입력도 같은 결과", () => {
@@ -142,6 +142,71 @@ describe("matchOntologyNodes", () => {
       const bodyOnly = node({ id: "other", title: "Other", summary: "온톨로지 코어를 쓴다" });
       const r = matchOntologyNodes("온톨로지 코어", [bodyOnly, localized]);
       expect(r.map((m) => m.node.id)).toEqual(["ontology-core", "other"]);
+    });
+  });
+
+  // 2026-09-19 — measured against the bundled Online Store sample: every one of
+  // these returned 0 results, because the matcher only ever compared normalised
+  // substrings. The last two are not a convenience — a Hangul IME emits a syllable
+  // one jamo at a time, so every Korean word is typed through them.
+  describe("한글 자판이 실제로 만드는 질의", () => {
+    const shop: KnowledgeGraphNode[] = [
+      node({ id: "cap-cart", title: "장바구니" }),
+      node({ id: "cap-order", title: "주문서 작성" }),
+      node({ id: "cap-close", title: "회원 탈퇴" }),
+      node({ id: "cap-coupon", title: "쿠폰 발급" }),
+    ];
+
+    it("초성만 쳐도 찾는다", () => {
+      const r = matchOntologyNodes("ㅈㅂㄱㄴ", shop);
+      expect(r.map((m) => m.node.id)).toEqual(["cap-cart"]);
+      expect(r[0]?.score).toBe(4);
+    });
+
+    it("띄어쓰기 없이 친 초성이 두 낱말 이름을 찾는다", () => {
+      expect(matchOntologyNodes("ㅎㅇㅌㅌ", shop).map((m) => m.node.id)).toEqual(["cap-close"]);
+      expect(matchOntologyNodes("ㅈㅁㅅㅈㅅ", shop).map((m) => m.node.id)).toEqual(["cap-order"]);
+    });
+
+    it("초성이 이름 첫머리가 아니면 substring 점수", () => {
+      const r = matchOntologyNodes("ㅌㅌ", shop);
+      expect(r.map((m) => m.node.id)).toEqual(["cap-close"]);
+      expect(r[0]?.score).toBe(3);
+    });
+
+    it("조합 중인 음절도 이미 찾는다", () => {
+      // The half-typed syllable reaches one name at the front and another in the
+      // middle — both are names this typist is genuinely on the way to, and the one
+      // it starts ranks first.
+      expect(matchOntologyNodes("자", shop).map((m) => m.node.id)).toEqual([
+        "cap-cart",
+        "cap-order",
+      ]);
+      expect(matchOntologyNodes("장바ㄱ", shop).map((m) => m.node.id)).toEqual(["cap-cart"]);
+    });
+
+    it("글자 그대로 맞는 이름이 한글 추정 매치보다 위다", () => {
+      const both = [
+        node({ id: "literal", title: "자동 승인" }),
+        node({ id: "hangul", title: "장바구니" }),
+      ];
+      const r = matchOntologyNodes("자", both);
+      expect(r.map((m) => m.node.id)).toEqual(["literal", "hangul"]);
+      expect(r[0]?.score).toBe(6);
+      expect(r[1]?.score).toBe(4);
+    });
+
+    it("한글 이름 매치가 summary 매치보다 위다", () => {
+      const both = [
+        node({ id: "body", title: "Other", summary: "장바구니를 비운다" }),
+        node({ id: "name", title: "장바구니 담기" }),
+      ];
+      const r = matchOntologyNodes("ㅈㅂㄱㄴ", both);
+      expect(r.map((m) => m.node.id)).toEqual(["name"]);
+    });
+
+    it("초성이 안 맞으면 끌어오지 않는다", () => {
+      expect(matchOntologyNodes("ㅋㅋㅋ", shop)).toHaveLength(0);
     });
   });
 
@@ -269,13 +334,13 @@ describe("matchProjects", () => {
   it("name prefix > substring 우선", () => {
     const r = matchProjects("ia", corpus);
     expect(r[0]?.project.slug).toBe("demo-iam"); // an "IAM" prefix match
-    expect(r[0]?.score).toBe(4);
+    expect(r[0]?.score).toBe(6);
   });
 
-  it("name 정확 일치는 5 — 노드 매처와 같은 사다리", () => {
+  it("name 정확 일치는 최상단 — 노드 매처와 같은 사다리", () => {
     const r = matchProjects("iam", corpus);
     expect(r[0]?.project.slug).toBe("demo-iam");
-    expect(r[0]?.score).toBe(5);
+    expect(r[0]?.score).toBe(7);
   });
 
   it("description / tags / category 도 매치", () => {
@@ -287,6 +352,13 @@ describe("matchProjects", () => {
     const r = matchProjects("knowledge", corpus);
     const knowledge = r.find((m) => m.project.slug === "demo-knowledge");
     expect(knowledge).toBeDefined();
+  });
+
+  it("프로젝트 이름도 초성으로 찾는다 — 노드와 한 사다리", () => {
+    const shops = [project({ slug: "shop", name: "온라인 쇼핑몰" })];
+    const r = matchProjects("ㅇㄹㅇ", shops);
+    expect(r[0]?.project.slug).toBe("shop");
+    expect(r[0]?.score).toBe(4);
   });
 
   it("매치 0 — 빈 결과", () => {
