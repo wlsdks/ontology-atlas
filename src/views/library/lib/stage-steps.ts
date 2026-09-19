@@ -1,6 +1,6 @@
 import type { useTranslations } from "next-intl";
 
-import type { LibraryUiModel } from "./use-library-model";
+import type { LibraryUiModel } from "@/features/library";
 
 /**
  * **Where the folder stands, in the three words the shelf uses.**

@@ -143,6 +143,9 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     markers: [
       [
         "export const INSIGHTS_TABS = [",
+        '  "brief",',
+        '  "library",',
+        '  "harness",',
         '  "do-next",',
         '  "unmatched",',
         '  "composition",',
@@ -155,7 +158,11 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       'data-insights-surface="maintenance-board"',
       'data-insights-question-model="one-tab-one-question"',
       "TabBar",
-      'role="tabpanel"',
+      // The question row is the only real tab row, so its panel is a `tabpanel` named by the
+      // tab that opened it while the other three subjects draw a named region. Both shapes wear
+      // the panel marker, which is what the installed-app probe finds the panel by.
+      'role: "tabpanel"',
+      "data-insights-panel={tab}",
       '{tab === "flow" ? (',
       "<FlowTab",
       'request={flowRequest}',
@@ -171,7 +178,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "CopyAgentTextButton",
     ],
     reason:
-      "/ontology/insights must keep six measured maintenance tabs plus a rendered Flow panel with its visible request, person-owned prefill, browser copy fallback, and tab-scoped agent handoff.",
+      "/ontology/insights must keep the brief first, a row naming each core, six measured ontology tabs and a rendered Flow panel with its visible request, person-owned prefill, browser copy fallback, and tab-scoped agent handoff.",
   },
   {
     id: "product-design-operating-system",
@@ -222,8 +229,15 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   {
     id: "agents-product-design-gate",
     files: ["AGENTS.md"],
+    /*
+     * ⚠️ **The marker is the clause, not its opening word.** This pinned "Design gate after the
+     * PO pass" and went red twice when the row was reworded — once on 2026-09-13 and again when
+     * #1695 made it "Product design gate after the PO pass", which left `main` failing this gate
+     * with nothing wrong in the repository. What must exist is the routing clause; the adjective
+     * in front of it is prose.
+     */
     markers: [
-      "Product design gate",
+      "gate after the PO pass",
       "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
       "/design-build",
       "pnpm design:route",

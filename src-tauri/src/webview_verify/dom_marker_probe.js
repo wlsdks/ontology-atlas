@@ -15,11 +15,18 @@
                               const insightsSelectedTabs = insightsQuestionTabs.filter(
                                 (tab) => tab.getAttribute("aria-selected") === "true"
                               );
-                              const insightsSelectedPanelId =
-                                insightsSelectedTabs[0]?.getAttribute("aria-controls") || "";
-                              const insightsSelectedPanel = insightsSelectedPanelId
-                                ? document.getElementById(insightsSelectedPanelId)
-                                : null;
+                              // The first row names the subject and is a radiogroup, not a second
+                              // tab row. Three of the four subjects draw no question tabs at all,
+                              // so the panel is found by its own marker rather than through a tab.
+                              const insightsSubjectRadios = Array.from(
+                                insightsMaintenanceBoard?.querySelectorAll('[role="radio"]') || []
+                              );
+                              const insightsSelectedSubject =
+                                insightsSubjectRadios
+                                  .find((radio) => radio.getAttribute("aria-checked") === "true")
+                                  ?.getAttribute("data-testid") || "";
+                              const insightsSelectedPanel =
+                                insightsMaintenanceBoard?.querySelector("[data-insights-panel]") || null;
                               const insightsSelectedPanelRect =
                                 insightsSelectedPanel?.getBoundingClientRect();
                               const insightsSelectedPanelStyle = insightsSelectedPanel
@@ -1000,6 +1007,10 @@
                                   insightsMaintenanceBoard: Boolean(insightsMaintenanceBoard),
                                   insightsQuestionModel:
                                     insightsMaintenanceBoard?.getAttribute("data-insights-question-model") || "",
+                                  insightsSubjectCount: insightsSubjectRadios.length,
+                                  insightsSelectedSubject,
+                                  insightsSelectedPanelKey:
+                                    insightsSelectedPanel?.getAttribute("data-insights-panel") || "",
                                   insightsTabCount: insightsQuestionTabs.length,
                                   insightsSelectedTabCount: insightsSelectedTabs.length,
                                   insightsSelectedPanelVisible,

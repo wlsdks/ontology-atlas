@@ -3,7 +3,7 @@ import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { describe, expect, it } from "vitest";
 
 import ko from "../../../../../messages/ko.json";
-import type { LibraryUiModel } from "../../lib/use-library-model";
+import type { LibraryUiModel } from "@/features/library";
 import { LibraryStatusStrip } from "./LibraryStatusStrip";
 
 /**

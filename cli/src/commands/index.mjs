@@ -141,6 +141,20 @@ export async function runIndex(args) {
       errorFiles: validation.summary?.errorFiles ?? 0,
       warningFiles: validation.summary?.warningFiles ?? 0,
       pathDrift: validation.pathDrift?.drifts?.length ?? 0,
+      /*
+       * ⚠️ **`checked: false` is not zero drift.** When the walk cannot run — the vault is not
+       * inside a repository this process can read, no concept cites an implementation path —
+       * every count comes back 0, and reporting that as `evidenceStale: 0` told a reader
+       * "nothing you recorded has moved" when the truthful answer is "nothing was looked at".
+       * `null` is the one value that cannot be mistaken for a clean bill of health, and
+       * `evidenceChecked` carries the reason.
+       */
+      evidenceChecked: validation.evidenceDrift?.checked === true,
+      evidenceUncheckedReason: validation.evidenceDrift?.checked === true ? null : (validation.evidenceDrift?.reason ?? 'unknown'),
+      evidenceStale:
+        validation.evidenceDrift?.checked === true
+          ? (validation.evidenceDrift?.counts?.stale ?? 0) + (validation.evidenceDrift?.counts?.missing ?? 0)
+          : null,
     },
     meaningGate: summarizeMeaningGate(analyzeResult.meaningGate),
     next: {
@@ -372,13 +386,21 @@ function printPlan(payload) {
   process.stdout.write(
     `${COLORS.bold}index${COLORS.reset} ${COLORS.dim}repo=${payload.rootPath}\n      vault=${payload.vaultRoot}${COLORS.reset}\n\n` +
       `  ${COLORS.bold}plan${COLORS.reset}      ${payload.plan.concepts} concepts · ${payload.plan.suggestedRelations} suggested relations · ${payload.plan.importRelations} import review candidates\n` +
-      `  ${COLORS.bold}validate${COLORS.reset}  ${payload.validation.scanned} files · ${payload.validation.problemFiles} problem files · ${payload.validation.pathDrift} path drift\n\n` +
+      `  ${COLORS.bold}validate${COLORS.reset}  ${payload.validation.scanned} files · ${payload.validation.problemFiles} problem files · ${payload.validation.pathDrift} path drift · ${evidenceSentence(payload.validation)}\n\n` +
       `  ${COLORS.bold}meaning${COLORS.reset}   ${payload.meaningGate.businessOntology.domains} domains · ${payload.meaningGate.businessOntology.capabilities} capabilities · ${payload.meaningGate.businessOntology.evidence} business evidence rows · ${payload.meaningGate.implementationEvidence.elements} evidence elements · ${payload.meaningGate.implementationEvidence.reviewRequiredCapabilities} review-required capabilities\n` +
       `            report business/product domain + capability first; use code rows as implementation evidence\n\n` +
       evidenceBlock +
       reviewBlock +
       `${COLORS.dim}side effect 0: CLI index is review-only. Semantic writes require an exact qualified writePlan through the MCP lifecycle.${COLORS.reset}\n`,
   );
+}
+
+/** Says what was measured, and when nothing was, says that instead of printing a zero. */
+function evidenceSentence(validation) {
+  if (!validation.evidenceChecked) {
+    return `cited code not checked (${validation.evidenceUncheckedReason})`;
+  }
+  return `${validation.evidenceStale} concepts whose cited code moved or vanished`;
 }
 
 function printUsage(stream = process.stderr) {

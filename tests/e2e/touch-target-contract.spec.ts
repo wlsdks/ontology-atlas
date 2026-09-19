@@ -115,9 +115,30 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
   test("인사이트 탭 줄이 좁은 화면에서도 44px 연결 경계를 유지한다", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await seedFirstRunSeen(page);
-    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    /*
+     * ⚠️ **The address has to reach the row being measured.** This loaded the bare route, which
+     * drew the question row until the board gained a first row naming its subject: the default
+     * landing is now the brief, a single view with no tablist at all, so the gate spent 20
+     * seconds waiting for an element that correctly does not exist and went red without a single
+     * defect (design-interaction, 2026-09-20). The question row belongs to the concepts subject.
+     */
+    await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
     const strip = page.locator('[role="tablist"]').first();
     await expect(strip).toBeVisible({ timeout: 20_000 });
+
+    /*
+     * The subject row is the control a finger meets *before* the questions, and it exists on
+     * every landing. Measuring it here makes it a guarded subject rather than a hope.
+     */
+    const subjects = await page
+      .locator('[data-testid="insights-core-switch"] [role="radio"]')
+      .evaluateAll((elements, min) =>
+        elements.map((element) => {
+          const rect = element.getBoundingClientRect();
+          return { id: (element.textContent ?? "").trim().slice(0, 12), h: Math.round(rect.height), w: Math.round(rect.width) };
+        }).filter((box) => box.h < min),
+      MIN);
+    expect(subjects, "주제 행이 손가락 바닥을 지키지 않는다").toEqual([]);
 
     const measured = await strip.evaluate((element, min) => {
       const tabs = [...element.querySelectorAll('[role="tab"]')];

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { libraryCoverageCaption, libraryStepStates, libraryWaitingLine } from "./stage-steps";
-import type { LibraryUiModel } from "./use-library-model";
+import type { LibraryUiModel } from "@/features/library";
 
 /**
  * **A folder mid-measurement must not be reported as finished.**

@@ -21,7 +21,8 @@ vi.mock('@/entities/vault-session', () => ({
   useStaticVaultSource: () => ({ manifest: { docs: [] } }),
   VaultSourceHydrationBoundary: ({ children }: { children: React.ReactNode }) => children,
 }));
-vi.mock('../model/use-harness-report', () => ({
+vi.mock('@/features/harness-report', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/harness-report')>()),
   useHarnessReport: () => state.report ?? { status: 'unsupported' },
 }));
 /* The blueprint is a whole workbench with its own bridge reads; this file is about the shell. */

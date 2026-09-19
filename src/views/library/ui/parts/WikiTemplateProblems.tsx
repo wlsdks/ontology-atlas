@@ -14,7 +14,7 @@ import {
   type WikiProblemWords,
   type WikiTemplateProblem,
 } from "../../lib/describe-wiki-problem";
-import { isWikiFolderCode } from "../../lib/merge-wiki-verdict";
+import { isWikiFolderCode } from "@/features/library";
 
 export type { WikiTemplateProblem };
 

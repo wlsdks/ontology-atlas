@@ -53,7 +53,17 @@ import { describe, expect, it } from 'vitest';
  * the browser's, not a choice Atlas added" is not a fact that survives being reworded into
  * the passive.
  */
-const SURFACE_NAMED_CEILING = 23;
+/*
+ * 23 → 25 (2026-09-19): the analysis brief's two app-only lines. A card whose numbers a browser
+ * cannot produce says so on the card (`ontologyPages.insights.brief.appOnly`) and the guidance
+ * panel repeats it when it is the whole panel (`ontologyPages.insights.harnessTab.appOnly`).
+ * Both render only where `BriefCore.availability` is `app-only`, which is derived from the
+ * absence of the native bridge, so the installed app never reaches either string: inside the app
+ * the same cards say they are reading, that they could not read, or that no repository is bound.
+ * Naming the browser is the point — a reader must be able to tell "this session cannot look" from
+ * "there is nothing there". Gate: `BriefTab.test.tsx`, "says where a core cannot be measured".
+ */
+const SURFACE_NAMED_CEILING = 25;
 
 const NAMES_A_SURFACE = /브라우저|browser/i;
 

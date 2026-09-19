@@ -9,8 +9,8 @@ import { useRovingRows } from "@/shared/lib/use-roving-rows";
 import { useWindowedRows } from "@/shared/lib/use-windowed-rows";
 import { controlClass } from "@/shared/ui/control-class";
 import { spineFreshness, type SpineFreshness } from "../../lib/spine-shape";
-import type { LibraryUiModel } from "../../lib/use-library-model";
-import { isWikiFolderCode } from "../../lib/merge-wiki-verdict";
+import type { LibraryUiModel } from "@/features/library";
+import { isWikiFolderCode } from "@/features/library";
 import { writerLabel } from "../../lib/writer-label";
 
 /** A spine before it is measured: a one-line title over its caption, with the row's inset. */

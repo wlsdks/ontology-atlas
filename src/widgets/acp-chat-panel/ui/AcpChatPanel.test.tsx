@@ -1070,11 +1070,17 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 292, {
       slug: 'capabilities/refund', expected_mtime: 100, body: 'Refund only after capture.',
     }));
-    expect(await screen.findByTestId('acp-permission-allow')).toBeInTheDocument();
+    // Re-query rather than holding the first node: the panel re-renders as the replacement
+    // request settles, and under a loaded parallel run that node is detached by the time the
+    // matcher reads it (the same flake as the deferred-request test above).
+    await waitFor(() => expect(screen.getByTestId('acp-permission-allow')).toBeInTheDocument());
     expect(answerFor(292)).toBeUndefined();
     expect(answerFor(291)).toEqual({ outcome: 'selected', optionId: 'reject' });
-    fireEvent.click(screen.getByTestId('task-review-depth-details'));
-    expect(screen.getByTestId('acp-ontology-change-review')).toHaveTextContent('Refund only after capture.');
+    // The review card's own controls arrive with the card, not with the permission buttons.
+    fireEvent.click(await screen.findByTestId('task-review-depth-details'));
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-ontology-change-review')).toHaveTextContent('Refund only after capture.'),
+    );
     expect(screen.queryByTestId('task-review-meaning-accept')).not.toBeInTheDocument();
   });
 
@@ -1133,7 +1139,13 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 194, {
       slug: 'capabilities/refund', expected_mtime: 100, body: 'Replacement',
     }));
-    expect(await screen.findByTestId('acp-permission-allow')).toBeInTheDocument();
+    /*
+     * Re-query on every poll rather than holding the node `findBy` first resolved: the panel
+     * re-renders as the replacement request settles, and under a loaded parallel run the
+     * first node is detached by the time the matcher reads it — the assertion then failed on
+     * a live card (measured on this branch's pre-push, 2026-09-19, 364ms into the test).
+     */
+    await waitFor(() => expect(screen.getByTestId('acp-permission-allow')).toBeInTheDocument());
     expect(screen.queryByTestId('acp-permission-deferred')).not.toBeInTheDocument();
     expect(answerFor(194)).toBeUndefined();
   });

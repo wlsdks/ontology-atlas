@@ -1,8 +1,10 @@
-import { existsSync, realpathSync } from 'node:fs';
+import { existsSync, realpathSync, statSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const MAX_GIT_OUTPUT = 4 * 1024 * 1024;
+/** One screen paint asks about at most this many paths; documents are queued before code. */
+const MAX_WALK_PATHS = 512;
 const MAX_GIT_BATCH_OUTPUT = 64 * 1024 * 1024;
 const NODE_REVISION_CACHE_LIMIT = 8;
 const nodeRevisionCache = new Map();
@@ -570,4 +572,119 @@ function splitNodeRevision(text) {
     }
   }
   return { body, children: [...new Set(children)] };
+}
+
+/**
+ * When each path last changed, in one bounded walk. `repoPaths` are repository-relative
+ * (`path:` values); `vaultPaths` are vault-relative document paths resolved through the
+ * vault's own place in the repository. A path is an address, never an option or a way
+ * out: anything that could climb the tree or look like a flag is dropped, not escaped.
+ * Mirrors `git_paths_last_change` in the desktop app so the agent and the screen read
+ * the same fact from the same walk.
+ */
+export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], vaultPaths = [], maxCommits = 3000 }) {
+  const scope = resolveVaultGitScope({ repoRoot, vaultRoot, operation: 'path_last_changes' });
+  if (!scope.ok) return scope;
+  const { gitRoot, vaultRelative } = scope;
+  const prefix = vaultRelative === '.' ? '' : `${vaultRelative}/`;
+  /*
+   * A `path:` is written against the repository the caller named, which is not always the Git
+   * toplevel: a package inside a monorepo passes its own root. Resolving those against the
+   * toplevel made every cited file vanish and reported the whole vault as `missing` while
+   * `pathDrift` in the same response said the files were there.
+   */
+  const repoPrefix = (() => {
+    try {
+      const relative_ = relative(gitRoot, realpathSync(resolve(repoRoot)));
+      if (!relative_ || relative_ === '.') return '';
+      if (relative_ === '..' || relative_.startsWith(`..${sep}`)) return '';
+      return `${relative_.split(sep).join('/')}/`;
+    } catch {
+      return '';
+    }
+  })();
+  const wanted = [];
+  const seen = new Set();
+  const push = (key, resolved) => {
+    if (wanted.length >= MAX_WALK_PATHS || seen.has(key)) return;
+    seen.add(key);
+    wanted.push({ key, resolved });
+  };
+  /*
+   * Documents first. The cap is shared, and a vault citing more implementation paths than the
+   * cap used to consume all of it, leaving no concept document dated — which reads as "no
+   * commit in the window" rather than "the walk ran out of room".
+   */
+  for (const raw of vaultPaths) {
+    const clean = safeRelativePath(raw);
+    if (clean) push(raw, `${prefix}${clean}`);
+  }
+  for (const raw of repoPaths) {
+    const clean = safeRelativePath(raw);
+    if (clean) push(raw, `${repoPrefix}${clean}`);
+  }
+  const changes = new Map();
+  if (wanted.length === 0) return { operation: 'path_last_changes', ok: true, repoRoot: gitRoot, changes };
+  const REC = '\x1e';
+  const log = git(
+    gitRoot,
+    [
+      // Without this Git C-quotes any non-ASCII path, so a Korean folder or file name never
+      // matches the path we asked about and every concept under it degrades to `unknown`.
+      '-c',
+      'core.quotepath=false',
+      'log',
+      `--max-count=${Math.max(1, Math.min(maxCommits, 20000))}`,
+      `--pretty=format:${REC}%cI`,
+      '--name-only',
+      '--no-renames',
+      '--',
+      ...wanted.map((w) => w.resolved),
+    ],
+    { allowFailure: true },
+  );
+  const last = new Map();
+  if (log.ok) {
+    let currentTime = null;
+    for (const rawLine of log.stdout.split('\n')) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      if (line.startsWith(REC)) {
+        currentTime = line.slice(1).trim();
+        continue;
+      }
+      if (!currentTime) continue;
+      for (const { key, resolved } of wanted) {
+        if (last.has(key)) continue;
+        if (line === resolved || line.startsWith(`${resolved}/`)) last.set(key, currentTime);
+      }
+    }
+  }
+  for (const { key, resolved } of wanted) {
+    const onDisk = resolve(gitRoot, resolved);
+    let isDir = false;
+    try {
+      isDir = statSync(onDisk).isDirectory();
+    } catch {
+      isDir = false;
+    }
+    changes.set(key, { exists: existsSync(onDisk), isDir, lastChangedAt: last.get(key) ?? null });
+  }
+  return { operation: 'path_last_changes', ok: true, repoRoot: gitRoot, changes };
+}
+
+function safeRelativePath(raw) {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim().replace(/\/+$/, '');
+  if (
+    !trimmed ||
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('-') ||
+    trimmed.includes('\\') ||
+    trimmed.includes('\0') ||
+    trimmed.split('/').some((part) => part === '..')
+  ) {
+    return null;
+  }
+  return trimmed;
 }

@@ -33,6 +33,16 @@ export interface DoNextRow {
    * (`handoffPayload` already read that way while the screen did not say so).
    */
   evidenceOnly: boolean;
+  /**
+   * The concepts that point at this one, by name, for a row whose claim is "N places reference
+   * this" (promotion).
+   *
+   * ⚠️ **A count is not evidence a person can judge.** The row said "5 places reference this, worth
+   * promoting" and named none of them, so the reader had to open the map to see what the
+   * recommendation rested on — the product held the facts and the row handed over a summary
+   * instead (walkthrough, 2026-09-20). `degree` stays the true total; this names the first few.
+   */
+  referencedBy?: string[];
   /** The per-row agent handoff — a suggested order of MCP calls, for copying. */
   handoffPayload: string;
 }
@@ -55,6 +65,9 @@ export interface BuildDoNextQueueOptions {
   perKindLimit?: number;
   now?: Date;
 }
+
+/** How many referencing names a row prints before the count carries the rest. */
+const REFERENCED_BY_NAMES = 3;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -240,6 +253,20 @@ export function buildDoNextQueue(
     handoffPayload: buildOrphanHandoff(prose, nodeById.get(slug), slug),
   }));
 
+  /*
+   * Who points at whom, built once. The rows below name at most `REFERENCED_BY_NAMES` of them, so
+   * the pass is bounded by the edge list rather than by the queue's own limit.
+   */
+  const referencedBy = new Map<string, string[]>();
+  for (const edge of edges) {
+    const source = nodeById.get(edge.from);
+    if (!source) continue;
+    const names = referencedBy.get(edge.to);
+    const name = source.display ?? source.title;
+    if (!names) referencedBy.set(edge.to, [name]);
+    else if (names.length < REFERENCED_BY_NAMES && !names.includes(name)) names.push(name);
+  }
+
   const promotions: DoNextRow[] = signals.promotion.map(({ slug, name, fanIn }) => ({
     id: `promotion:${slug}`,
     rowKind: "promotion",
@@ -248,6 +275,7 @@ export function buildDoNextQueue(
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
     // The evidence for "why was this picked" — the incoming reference count, exposed verbatim as the row metric ("N references").
     degree: fanIn,
+    referencedBy: referencedBy.get(slug) ?? [],
     evidenceOnly: isEvidenceOnlyConcept(nodeById.get(slug)),
     handoffPayload: buildPromotionHandoff(prose, nodeById.get(slug), slug),
   }));

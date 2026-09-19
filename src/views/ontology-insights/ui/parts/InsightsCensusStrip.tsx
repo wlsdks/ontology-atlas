@@ -136,7 +136,17 @@ export function InsightsCensusStrip({
       // census would then hide the work it exists to frame. Two columns keep the tab bar and the
       // list title on the first screen at 390. The grid keeps every tile in a row at one height
       // whatever its copy length (dimensional regularity).
-      className="grid grid-cols-2 gap-[var(--card-gap)] @min-[1200px]/insights:grid-cols-4"
+      /*
+       * ⚠️ **1200 measured the wrong side of the rail.** The container is the shell's scroll slot,
+       * which is 64px narrower than the window above `lg`, so four columns arrived only at
+       * viewport 1264 — and the app's own enforced minimum window is 1040. The whole 1040-1263
+       * band, which holds that floor and most default windows, paid 344px for a strip that costs
+       * 202px one step earlier, pushing the first finding to y=671 of 720 (design-responsive,
+       * 2026-09-20). 960 is this container's existing step, already used by five grids in this
+       * view. Width never removes a tile: all four numbers stay drawn, and two-by-two is the
+       * shape only below 960, where the rail is gone.
+       */
+      className="grid grid-cols-2 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-4"
     >
       <CensusTile testId="insights-census-tile" label={labels.concepts}>
         <CensusBigNumber testId="insights-bignum" value={totalNodes} />

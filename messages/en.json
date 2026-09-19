@@ -1549,22 +1549,124 @@
       "subtitleSample": "The loaded sample at a glance. Every number is computed from that sample's documents.",
       "tabsAriaLabel": "Insights tabs",
       "tab": {
-        "do-next": "Do next",
-        "unmatched": "Not held",
+        "brief": "Brief",
+        "library": "Library",
+        "harness": "Harness",
+        "do-next": "To fix",
+        "unmatched": "Missing concepts",
         "composition": "Inventory",
-        "connections": "Connections",
-        "boundaries": "Boundaries",
-        "growth": "Growth",
+        "connections": "Relations",
+        "boundaries": "Domain boundaries",
+        "growth": "Accumulation",
         "freshness": "Recent changes",
         "structure": "Structure",
-        "flow": "Flow"
+        "flow": "Product flow"
+      },
+      "brief": {
+        "sinceSeen": "{days, plural, =0 {Since you looked today} one {Since you looked # day ago} other {Since you looked # days ago}}",
+        "sinceDefault": "The last 7 days",
+        "sinceGloss": "There is no score. Each line either opens to the things it counts or sends you where they live.",
+        "headline": "{stale, plural, one {# thing} other {# things}} to learn · {unknown, plural, one {# thing} other {# things}} not checked",
+        "unit": {
+          "ontology": "",
+          "wiki": "pages",
+          "harness": "files",
+          "agent": "calls"
+        },
+        "sinceTitle": "{count, plural, one {# thing} other {# things}} changed since",
+        "sinceHidden": "{count, plural, one {# more} other {# more}}.",
+        "sinceHiddenRoute": "See all in Records",
+        "since": {
+          "concept-doc": "concept",
+          "wiki-log": "wiki",
+          "guide-file": "guide file",
+          "agent-call": "agent"
+        },
+        "detailMoved": "changed {moved} · document {doc}",
+        "detailDocUnknown": "not recorded",
+        "detailGone": "the file is gone",
+        "detailHidden": "{count, plural, one {# more} other {# more}}",
+        "notMeasured": "not measured here",
+        "askAgent": "Ask the agent",
+        "copyRequest": "Copy request",
+        "copiedRequest": "Copied",
+        "getApp": "Get the app",
+        "empty": {
+          "ontology": "This folder holds no concepts yet.",
+          "wiki": "This folder holds no wiki pages yet. Write up a source and they are counted here.",
+          "harness": "This folder holds no agent guide files.",
+          "agent": "No agent has worked here yet. Connect one and what it read and wrote appears here."
+        },
+        "emptyAction": {
+          "ontology": "Open the map",
+          "wiki": "Open the library",
+          "harness": "Open the harness",
+          "agent": "Connect an agent"
+        },
+        "reading": "Reading the folder.",
+        "unreadable": "The guide files in this folder could not be read. Reopening the folder tries again.",
+        "noSource": "This folder is not bound to a code repository yet. Bind one and the guides and checks are counted here.",
+        "markSeen": "Seen up to here",
+        "markSeenDone": "Marked as seen. Counting from now.",
+        "core": {
+          "ontology": "Concepts",
+          "wiki": "Wiki",
+          "harness": "Guidance",
+          "agent": "Agents"
+        },
+        "col": {
+          "current": "Current",
+          "stale": "Stale",
+          "unknown": "Unknown",
+          "told": "Told",
+          "gated": "Gated",
+          "watched": "Watched",
+          "reads": "Reads",
+          "writes": "Writes",
+          "agents": "Agents"
+        },
+        "appOnly": "Measured in the app only. A browser cannot read the code beside the folder or its hidden folders.",
+        "noData": "Nothing to measure yet.",
+        "quiet": "Nothing new to learn since then.",
+        "open": "Open",
+        "line": {
+          "ontology-evidence-moved": "{count, plural, one {# concept whose} other {# concepts whose}} meaning stands while the code under it moved",
+          "ontology-evidence-missing": "{count, plural, one {# concept} other {# concepts}} whose cited code file is gone",
+          "ontology-evidence-folder-only": "{count, plural, one {# concept} other {# concepts}} whose only evidence is a folder that changed underneath",
+          "ontology-evidence-unchecked": "{count, plural, one {# concept} other {# concepts}} whose code could not be checked here",
+          "ontology-agent-unreviewed": "{count, plural, one {# concept} other {# concepts}} an agent wrote that no person has looked at",
+          "ontology-changed-since": "{count, plural, one {# concept} other {# concepts}} whose document changed since",
+          "ontology-repair": "{count, plural, one {# thing} other {# things}} to fix now",
+          "ontology-unmatched": "{count, plural, one {# name} other {# names}} an agent asked for that this folder does not hold",
+          "wiki-stale-pages": "{count, plural, one {# page} other {# pages}} whose source changed underneath",
+          "wiki-disagreements": "{count, plural, one {# disagreement or superseded fact} other {# disagreements or superseded facts}} the last check found",
+          "wiki-sources-unwritten": "{count, plural, one {# source} other {# sources}} not written up yet",
+          "wiki-orphan-pages": "{count, plural, one {# page} other {# pages}} nothing links to",
+          "wiki-dangling-links": "{count, plural, one {# link} other {# links}} to a page that does not exist",
+          "wiki-written-since": "{count, plural, one {# page} other {# pages}} an agent wrote since",
+          "wiki-redrafted-since": "{count, plural, one {# page} other {# pages}} the automatic check rewrote",
+          "wiki-passes-troubled-since": "{count, plural, one {# automatic check} other {# automatic checks}} refused or failed",
+          "harness-app-only": "Guide and check coverage is measured in the app",
+          "harness-untold-areas": "{count, plural, one {# domain} other {# domains}} no guide reaches",
+          "harness-ungated-areas": "{count, plural, one {# domain} other {# domains}} with no blocking rule",
+          "harness-unwatched-areas": "{count, plural, one {# domain} other {# domains}} no check watches",
+          "harness-mirror-drift": "{count, plural, one {# file} other {# files}} where the two agent trees disagree",
+          "harness-changed-since": "{count, plural, one {# guide file} other {# guide files}} changed since",
+          "agent-writes-waiting": "{count, plural, one {# write} other {# writes}} allowed and not finished",
+          "agent-writes-failed": "{count, plural, one {# write} other {# writes}} that failed",
+          "agent-writes-refused": "{count, plural, one {# write} other {# writes}} a person refused",
+          "agent-calls-since": "{count, plural, one {# agent call} other {# agent calls}} since",
+          "agent-writes-since": "{count, plural, one {# of them wrote} other {# of them wrote}} to the folder",
+          "agent-distinct-since": "{count, plural, one {# agent} other {# agents}} at work"
+        },
+        "markSeenUndo": "Undo"
       },
       "tabCountTitle": {
-        "do-next": "Items to fix",
-        "unmatched": "Names this folder does not hold",
+        "do-next": "Things to fix",
+        "unmatched": "Concepts a document points at that this folder does not hold",
         "composition": "Concepts",
         "connections": "Relations",
-        "boundaries": "Relations crossing domains"
+        "boundaries": "Relations that cross a domain"
       },
       "unmatched": {
         "title": "Asked for, not held",
@@ -1586,12 +1688,12 @@
       "emptyTitleLink": "Ontology documents",
       "emptyTitleAfter": ".",
       "handoffLabel": "Agent handoff",
-      "handoffCaption": "For AI agents",
+      "handoffCaption": "For agents",
       "handoffCopy": "Copy next action",
       "agentCopied": "Copied",
       "agentCopyFailed": "Copy failed: the clipboard was blocked",
-      "agentOpen": "Analyze this tab with AI",
-      "agentOpenAria": "Analyze the {tab} tab with AI",
+      "agentOpen": "Analyze this tab with the agent",
+      "agentOpenAria": "Analyze the {tab} tab with the agent",
       "agentContext": "Analysis · {tab}",
       "agentDraftHeld": "Your draft was left unchanged.",
       "agentReplaceDraft": "Use this tab's question",
@@ -1642,18 +1744,18 @@
       "impactRowAriaLabel": "{title}: {direct} direct, {total} including indirect · view on the map",
       "evidenceShow": "Show {count} names written down without a document",
       "evidenceHide": "Hide names written down without a document",
-      "impactEvidenceCaption": "Not risk: this counts the concepts that wrote this name down as evidence. A test file high here protects that much. Give it a document and it joins the list above, search, and AI tools.",
+      "impactEvidenceCaption": "Not risk: this counts the concepts that wrote this name down as evidence. A test file high here protects that much. Give it a document and it joins the list above, search, and agents.",
       "evidenceTruncated": "Top {shown} / {total} names without a document",
       "impactEvidenceRowAriaLabel": "{title}: {total} concepts wrote this name down as evidence · view on the map",
       "evidenceBadge": "No document",
-      "evidenceBadgeHint": "Another document wrote this name down as evidence. Give it a document and it shows up in the list, in search, and to AI tools.",
+      "evidenceBadgeHint": "Another document wrote this name down as evidence. Give it a document and it shows up in the list, in search, and to agents.",
       "freshnessEvidenceCaption": "These names have no writing of their own, so the date belongs to the document that wrote the name down: not to this concept. The small text on the right is where that document lives; give it a document and it joins the list above.",
       "impactEmpty": "No dependency declarations yet",
       "impactEmptyHint": "Review import evidence and the meaning of both concepts, then add only approved “leans on” relations on the map.",
       "domainCouplingTitle": "Domain coupling",
       "domainCouplingCountUnit": "cross relations",
       "domainCouplingBoundaryCountUnit": "domains",
-      "domainCouplingEmptyTitle": "Not enough coupling data yet",
+      "domainCouplingEmptyTitle": "Not enough connections to read coupling yet",
       "domainCouplingEmptyDescription": "Needs 2+ domains and a cross-domain relation between them to compute.",
       "domainCouplingEmptyAction": "Connect concepts on the map",
       "domainCouplingGridCaption": "Darker cells mean more relations. Rows send, columns receive. Dashed cells (the diagonal) count connections inside one domain: a different thing to count, so they use their own grey scale.",
@@ -1662,7 +1764,7 @@
       "domainCouplingGridHiddenCross": "{count} cross links outside the grid",
       "domainCouplingGridCellAria": "{count} links from {from} to {to}",
       "domainCouplingGridSelfAria": "{count} links inside {domain}",
-      "domainCouplingBoundaryTitle": "Boundary pressure",
+      "domainCouplingBoundaryTitle": "Cross-domain share",
       "domainCouplingSelfLabel": "self",
       "domainCouplingCrossLabel": "cross",
       "domainCouplingBoundaryCaption": "Self = connections within the same domain, cross = connections leaving or entering another domain. Bar length is the cross share; longer means a leakier domain boundary. Highest share first.",
@@ -1732,7 +1834,7 @@
         "openBuilder": "Edit on map",
         "handoffCopy": "Verify with agent",
         "emptyQueue": "Nothing needs attention: the graph is healthy.",
-        "moreCount": "+{count} more: full list via agent handoff",
+        "moreCount": "+{count} more",
         "group": {
           "blocked-document": "Documents the check stops",
           "island": "Disconnected groups",
@@ -1775,23 +1877,23 @@
         "touchUpWhyCycle": "{length} concepts point at each other, so there is no starting point",
         "touchUpWhyPromotion": "Referenced from {count} places: worth promoting to a parent concept",
         "rowMenuTrigger": "More actions",
-        "askAgent": "Ask the agent about this",
+        "askAgent": "Ask the agent",
         "reviewFallback": "Selected item",
         "reviewChecking": "Rechecking the {title} signal against the current folder.",
         "reviewActive": "The {title} signal is still there in the current folder.",
         "reviewCleared": "The {title} signal is gone from the current folder. Remaining items were reprioritized.",
         "reviewUnverified": "The current result cannot verify whether the {title} signal was cleared.",
         "openBuilderReadOnly": "view on map",
-        "handoffCopyIdle": "Copy this request to paste into an AI tool",
-        "handoffCopiedHint": "Copied: paste it into your AI tool or a teammate's terminal.",
+        "handoffCopyIdle": "Copy this request to paste into your agent",
+        "handoffCopiedHint": "Copied: paste it into your agent or a teammate's terminal.",
         "groupMeaningTitle": "You can fix these right now",
         "groupMeaningTitleReadOnly": "Open your own folder to fix these",
         "groupMeaningHint": "No code needed. Each one is settled by deciding a meaning, a home, or whether two names are the same thing.",
         "groupMeaningHintReadOnly": "This is the sample. Open your own folder and you can finish these right here: for now you can copy the command and hand it off.",
-        "groupCodeTitle": "Hand these to a developer or an AI",
-        "groupCodeHint": "These need a look at the code. Copy the request and hand it to an AI tool.",
+        "groupCodeTitle": "Hand these to a developer or an agent",
+        "groupCodeHint": "These need a look at the code. Copy the request and hand it to an agent.",
         "sectionMissingDefinition": "No meaning written down: add one sentence?",
-        "hintMissingDefinition": "Nothing anywhere says what this is. One sentence and the map, search, and your AI all read the same meaning.",
+        "hintMissingDefinition": "Nothing anywhere says what this is. One sentence and the map, search, and your agent all read the same meaning.",
         "sectionMissingDomain": "No area written down: pick one?",
         "hintMissingDomain": "Features and parts need an area written down so the map can put them in the right place.",
         "inlineWriteHere": "write it here",
@@ -1825,7 +1927,7 @@
         "whyMissingDomain": "No domain is written down. Just pick one.",
         "whyIsland": "It sits in a group that links to nothing else. One link puts it back on the map.",
         "whyContainment": "Its domain does not point back at it. Write the domain down.",
-        "whyBlockedDocument": "{reason} Your AI cannot read this document yet.",
+        "whyBlockedDocument": "{reason} Your agent cannot read this document yet.",
         "blockedReason": {
           "unclosed-frontmatter": "The information block at the top of the file is never closed.",
           "malformed-frontmatter-line": "A line in the information block at the top of the file cannot be read.",
@@ -1836,11 +1938,14 @@
           "invalid-merged-uids": "merged_uids is not in the right shape.",
           "duplicate-uid": "Another document claims the same uid.",
           "other": "Something is wrong in the information block at the top of the file."
-        }
+        },
+        "showAll": "Show all",
+        "whyPromotionNamed": "Pointed at by {names}. Worth promoting.",
+        "whyPromotionNamedMore": "Pointed at by {names} and others, {count} in all. Worth promoting."
       },
       "flow": {
-        "title": "Business flow",
-        "lead": "Have the agent explain what this product is and how it flows, from the vault alone. It does not read the source.",
+        "title": "Product flow",
+        "lead": "An agent reads only what this folder records and writes what the product is and how it moves. It does not read the source.",
         "action": "Explain the flow with ACP",
         "actionHint": "Puts this request in the conversation beside Analysis. You send it.",
         "checking": "Checking which local agent can open here.",
@@ -1851,7 +1956,20 @@
         "copied": "Copied",
         "noVaultTitle": "Open a folder first",
         "noVaultBody": "There is no vault to explain yet.",
-        "request": "Use only Atlas MCP read tools to explain this ontology's business flow. Never call shell, file, source, web, or other tools.\n\nReturn exactly six ### headings with one paragraph each:\n1) Why this product exists.\n2) Which domains own which responsibilities.\n3) How the main capabilities form a business flow.\n4) How those capabilities appear in elements or paths.\n5) Which declared dependencies explain impact, and what remains unknown.\n6) Which partial, visible-gap, stale, or unverified limits must be retained.\n\nRules:\n- Inspect the project map first and choose one representative meaning-to-implementation chain; do not enumerate every node.\n- Read at most 12 concepts with get_concept(body: full) or get_concepts(body: full).\n- Every paragraph names an exact full node slug whose complete body was read this turn.\n- Write a from --type--> to relation only when it exists in the current ontology.\n- Keep partial, visible-gap, and unknown qualifiers throughout.\n- A capability's excludes bound that capability only; do not widen them to project scope.\n- If the ontology cannot answer, say why instead of filling the gap from other knowledge."
+        "request": "Use only Atlas MCP read tools to explain this ontology's business flow. Never call shell, file, source, web, or other tools.\n\nReturn exactly six ### headings with one paragraph each:\n1) Why this product exists.\n2) Which domains own which responsibilities.\n3) How the main capabilities form a business flow.\n4) How those capabilities appear in elements or paths.\n5) Which declared dependencies explain impact, and what remains unknown.\n6) Which partial, visible-gap, stale, or unverified limits must be retained.\n\nRules:\n- Inspect the project map first and choose one representative meaning-to-implementation chain; do not enumerate every node.\n- Read at most 12 concepts with get_concept(body: full) or get_concepts(body: full).\n- Every paragraph names an exact full node slug whose complete body was read this turn.\n- Write a from --type--> to relation only when it exists in the current ontology.\n- Keep partial, visible-gap, and unknown qualifiers throughout.\n- A capability's excludes bound that capability only; do not widen them to project scope.\n- If the ontology cannot answer, say why instead of filling the gap from other knowledge.",
+        "writtenAt": "{when} · written by {writer}",
+        "standingCurrent": "the folder has not moved since",
+        "standingStale": "the folder moved after this was written",
+        "standingUnknown": "not checked against the folder as it stands",
+        "ungrounded": "the reads behind this answer could not be proven",
+        "changedTitle": "What changed since the last one",
+        "changeAdded": "new",
+        "changeRemoved": "gone",
+        "changeRewritten": "rewritten",
+        "noVersionTitle": "Nothing has been written yet",
+        "noVersionBody": "Ask an agent to read this folder once and say what the product is and how it moves. The answer stays here, and the next writing shows what changed.",
+        "rewrite": "Write it again",
+        "versionsLabel": "{count, number} kept."
       },
       "vaultHistory": {
         "title": "What the folder holds",
@@ -1874,6 +1992,94 @@
         "failedBody": "Something went wrong reading this folder’s Git history. It does not mean the folder has no commits. Reopening this usually reads it.",
         "noneTitle": "There is no history to show yet",
         "noneBody": "This folder has no commits. Atlas keeps no record of its own, so until there are commits there is no way to show earlier weeks. Drawing zeroes would say the folder was empty, which is not true."
+      },
+      "core": {
+        "brief": "Brief",
+        "ontology": "Concepts",
+        "library": "Wiki",
+        "harness": "Guidance"
+      },
+      "coreAriaLabel": "What to look at",
+      "libraryTab": {
+        "empty": "This folder holds no sources and no wiki pages yet. Add a source in the library and they are counted here.",
+        "open": "Open the library",
+        "more": "{count, number} more",
+        "stale": {
+          "title": "{count, number} pages whose source changed",
+          "caption": "The source a page cited changed after it was written. Do not trust those sentences until it is rewritten.",
+          "none": "Every page still stands on the source it cited."
+        },
+        "unwritten": {
+          "title": "{count, number} sources not written up",
+          "caption": "Files in the folder that no page has written up yet.",
+          "none": "Every source has been written up once."
+        },
+        "check": {
+          "title": "{count, number} findings in the format check",
+          "caption": "{pages, number} pages checked · {unmeasured, number} not read yet",
+          "none": "Nothing was flagged."
+        },
+        "rounds": {
+          "title": "{count, number} unattended passes",
+          "caption": "Passes that ran with nobody here. What each looked at and wrote is recorded as it happened.",
+          "none": "No pass has run yet."
+        },
+        "outcome": {
+          "held": "held",
+          "stale": "found stale",
+          "redrafted": "rewrote",
+          "refused": "refused",
+          "failed": "failed",
+          "asleep": "asleep"
+        },
+        "code": {
+          "orphan-page": "page nothing links to",
+          "dangling-wikilink": "link to a page that does not exist",
+          "uncited-fact": "sentence with no citation",
+          "shared-source-unlinked": "same source, pages not linked",
+          "citation-target-missing": "the cited place is gone",
+          "kind-present": "wiki page carries a kind",
+          "section-order": "sections out of order",
+          "bad-truncation-record": "partial-read record disagrees",
+          "bad-citation": "citation is malformed"
+        },
+        "about": {
+          "title": "What this panel answers",
+          "body": "Whether the wiki pages written from your sources still match those sources, which sources nobody wrote up, what the format check flagged, and what the unattended passes did while nobody was here."
+        }
+      },
+      "harnessTab": {
+        "open": "Open the harness",
+        "getApp": "Get the app",
+        "more": "{count, number} more domains",
+        "appOnly": "Measured in the app only. A browser cannot read hidden folders.",
+        "reading": "Reading the folder.",
+        "unreadable": "The guide files could not be read. Reopening the folder tries again.",
+        "noSource": "This folder is not bound to a code repository yet. Bind one and the guides and checks are counted here.",
+        "column": {
+          "area": "Domain",
+          "told": "Told",
+          "gated": "Gated",
+          "watched": "Watched"
+        },
+        "coverage": {
+          "title": "Harness coverage: {count, number} domains",
+          "caption": "{guides, number} guide files · {checks, number} checks, counted against each domain.",
+          "gaps": "No guide reaches {untold, number} · no rule gates {ungated, number} · no check watches {unwatched, number}",
+          "everywhere": "Reaching everything: told {told, number} · gated {gated, number} · watched {watched, number}"
+        },
+        "drift": {
+          "title": "{count, number} files where the two agent trees disagree",
+          "caption": "Two copies that should say the same thing do not.",
+          "none": "The two copies agree."
+        },
+        "about": {
+          "title": "What this panel answers",
+          "body": "How far the agent harness reaches into this folder's domains. The blanks its guidance and checks never touch are the answer: the places nothing tells, gates or watches.",
+          "told": "what an agent reads: AGENTS.md, CLAUDE.md, rule documents",
+          "gated": "what actually stops a bad change: hooks and gates",
+          "watched": "what reports after the fact: tests and linters"
+        }
       }
     }
   },
@@ -3704,7 +3910,12 @@
       "at-ref-missing": "An @referenced file was not found",
       "agents-md-over-codex-cap": "AGENTS.md exceeds the Codex 32 KiB project-doc cap",
       "skill-copy-diverged": "Duplicated skill copies diverged between .claude/skills and .agents/skills",
-      "skill-copy-file-missing": "A skill file exists in only one of the duplicated skill trees"
+      "skill-copy-file-missing": "A skill file exists in only one of the duplicated skill trees",
+      "agent-copy-diverged": "Duplicated agent briefs diverged between .claude/agents and .agents/agents",
+      "agent-copy-file-missing": "An agent brief exists in only one of the duplicated trees",
+      "non-english-agent-text": "An agent file carries non-English text, and its text is what a blocked or steered agent reads",
+      "mcp-config-unparseable": "An agent-connection (MCP) config file exists but declares no server, so every grant beside it is undeclared",
+      "undeclared-mcp-server": "An agent brief grants tools from an MCP server its config does not declare"
     }
   },
   "editProvenance": {
@@ -4740,10 +4951,29 @@
         "preview": "Reviewed preview",
         "decision": "Decision binding"
       },
-      "authority": { "observed": "Observed", "unavailable": "Unavailable", "unknown": "Unknown" },
-      "permission": { "pending": "Pending", "allowed": "Allowed", "rejected": "Rejected", "unknown": "Unknown" },
-      "execution": { "completed": "Completed", "failed": "Failed", "not_run": "Not run", "unknown": "Unknown" },
-      "readback": { "matched": "Exact bytes matched", "mismatched": "Bytes differed", "missing": "Missing", "unknown": "Unknown" }
+      "authority": {
+        "observed": "Observed",
+        "unavailable": "Unavailable",
+        "unknown": "Unknown"
+      },
+      "permission": {
+        "pending": "Pending",
+        "allowed": "Allowed",
+        "rejected": "Rejected",
+        "unknown": "Unknown"
+      },
+      "execution": {
+        "completed": "Completed",
+        "failed": "Failed",
+        "not_run": "Not run",
+        "unknown": "Unknown"
+      },
+      "readback": {
+        "matched": "Exact bytes matched",
+        "mismatched": "Bytes differed",
+        "missing": "Missing",
+        "unknown": "Unknown"
+      }
     }
   },
   "mcp": {
@@ -5546,7 +5776,11 @@
       "emptyDescription": "Switch the map to its Galaxy view, pick a few concepts and give them a name and a purpose; that set is kept here so you can return to the same scope. “Pick on the map” takes you there.",
       "memberCount": "{count, plural, one {# concept} other {# concepts}}",
       "referenceCount": "{count, plural, one {# reference} other {# references}}",
-      "shape": { "name": "Name", "members": "Concepts", "purpose": "Purpose" },
+      "shape": {
+        "name": "Name",
+        "members": "Concepts",
+        "purpose": "Purpose"
+      },
       "noPurpose": "No purpose added",
       "viewInGalaxy": "View on the map",
       "viewInGalaxyNamed": "View {name} on the map",
@@ -5576,7 +5810,11 @@
       "malformedTitle": "The rounds file needs attention",
       "malformedDescription": "Atlas could not read .ontology-atlas/rounds.json and left it unchanged. Fix or remove it, then read again.",
       "retry": "Read again",
-      "shape": { "name": "Name", "cadence": "Cadence", "next": "Next run" },
+      "shape": {
+        "name": "Name",
+        "cadence": "Cadence",
+        "next": "Next run"
+      },
       "emptyTitle": "Nothing runs on its own yet",
       "emptyDescription": "Register a round: every hour, check that every page still matches its sources; every morning, re-read what a service sent and redraft what changed.",
       "kind": {
