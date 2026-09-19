@@ -70,6 +70,14 @@ describe("computeLabelAlpha", () => {
    * superimpose, and this pins that a hovered domain resolves to exactly one
    * full-contrast label.
    */
+  it("a dimmed domain keeps the token's share of its name; a dimmed child keeps none", () => {
+    expect(computeLabelAlpha({ ...base, kind: "domain", egoState: "dim", dimLabelAlpha: 0.42 })).toBe(0.42);
+    expect(computeLabelAlpha({ ...base, kind: "project", egoState: "dim", dimLabelAlpha: 0.42 })).toBe(0.42);
+    expect(computeLabelAlpha({ ...base, kind: "capability", egoState: "dim", dimLabelAlpha: 0.42 })).toBe(0);
+    // Callers that do not pass the token get the old silence.
+    expect(computeLabelAlpha({ ...base, kind: "domain", egoState: "dim" })).toBe(0);
+  });
+
   it("a hovered domain resolves to one full label", () => {
     expect(computeLabelAlpha({ ...base, kind: "domain", isHovered: true })).toBe(1);
     expect(computeLabelAlpha({ ...base, kind: "domain", isHovered: true, revealAlpha: 0 })).toBe(1);
@@ -274,6 +282,7 @@ describe("label halo", () => {
 
   const tokens: LabelTokens = {
     labelProject: "#p", labelDomain: "#d", labelCapability: "#c", labelElement: "#e",
+    egoDimLabelAlpha: 0.42,
     amberHub: "#a", labelHalo: "#ground",
   };
 

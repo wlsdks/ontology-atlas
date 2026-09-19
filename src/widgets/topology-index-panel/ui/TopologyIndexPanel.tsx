@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useId,
   useMemo,
   useRef,
   useState,
@@ -48,6 +49,14 @@ export type IndexLens = "all" | "recent";
  * action for a built map missing its evidence link.
  */
 const UNBUILT_MAP_CONCEPT_CEILING = 8;
+
+/** One row grammar for every tidy row: a fact on the left, one indigo action word on the right. */
+const TIDY_ROW_CLASS = controlClass({
+  shape: "card",
+  size: "sm",
+  className:
+    "atlas-touch-floor w-full text-left border-[color:var(--map-panel-border)] hover:bg-[color:var(--map-panel-row-hover)]",
+});
 
 interface TopologyIndexPanelLabels {
   label: string;
@@ -106,6 +115,8 @@ interface TopologyIndexPanelLabels {
    * where the prescription lives. No folder is chosen here — the same action is
    * never placed in two spots. */
   sourceUnboundLabel: string;
+  /** The eyebrow over the list of things to tidy (uncataloged, dusty, broken, unbound rows). */
+  tidyHeading: string;
   /** Says the map inside the picked project was opened, so the substitution is never silent. */
   openedInsideLabel: string;
   /** Accessible name for the control that closes that notice once it has been read. */
@@ -134,6 +145,10 @@ export interface TopologyIndexPanelProps {
    * Omitting it makes the card render no CTA.
    */
   onStartTour?: () => void;
+  /** The guided tour is pointing at the INDEX: the first-run card gives way to the list it describes. */
+  tourIndexSpotlit?: boolean;
+  /** The guided tour is pointing at the first-run card's one-line command: its disclosure stands open. */
+  tourAgentSpotlit?: boolean;
   /** The first-run card's one-click "show it in plain words" toggle. The
    *  audiencePlain state is owned by HomePage (the same source as the `plainMode` prop). */
   onEnablePlainMode?: () => void;
@@ -277,6 +292,8 @@ export function TopologyIndexPanel({
   onDismissOpenedInside,
   onPromoteUncatalogedDocs = null,
   onStartTour,
+  tourIndexSpotlit = false,
+  tourAgentSpotlit = false,
   onEnablePlainMode,
   domainCensus = null,
   lens: lensProp,
@@ -423,6 +440,54 @@ export function TopologyIndexPanel({
     if (id && id !== activeRowId) setActiveRowId(id);
   };
 
+  // The things a person can tidy from here, in the order they were already
+  // shown. A row exists only while its condition holds (no success badges).
+  const tidyRows: Array<{
+    key: string;
+    testId: string;
+    label: string;
+    action: string;
+    href?: string;
+    onClick?: () => void;
+  }> = [];
+  if (vaultLoaded && uncatalogedDocCount && uncatalogedDocCount > 0 && onPromoteUncatalogedDocs) {
+    tidyRows.push({
+      key: "uncataloged",
+      testId: "topology-index-uncataloged-docs",
+      label: labels.uncatalogedDocsLabel,
+      action: labels.uncatalogedDocsAction,
+      onClick: onPromoteUncatalogedDocs,
+    });
+  }
+  if (vaultLoaded && dustyNodeCount && dustyNodeCount > 0) {
+    tidyRows.push({
+      key: "dusty",
+      testId: "topology-index-dusty-nodes",
+      label: labels.dustyNodesLabel,
+      action: labels.dustyNodesAction,
+      href: "/ontology/insights?tab=do-next",
+    });
+  }
+  if (vaultLoaded && brokenDocCount && brokenDocCount > 0) {
+    tidyRows.push({
+      key: "broken",
+      testId: "topology-index-broken-docs",
+      label: labels.brokenDocsLabel,
+      action: labels.brokenDocsAction,
+      href: "/docs/",
+    });
+  }
+  if (vaultLoaded && unboundProjectNodeId) {
+    const unboundId = unboundProjectNodeId;
+    tidyRows.push({
+      key: "unbound",
+      testId: "topology-index-source-unbound",
+      label: labels.sourceUnboundLabel,
+      action: labels.sourceUnboundAction,
+      onClick: () => onSelect(unboundId),
+    });
+  }
+  const tidyHeadingId = useId();
   return (
     <aside
       aria-label={labels.label}
@@ -450,6 +515,8 @@ export function TopologyIndexPanel({
         /* Selecting any node means the guidance card has done its job —
            see `FirstRunStarterModule`'s `nodeSelected` doc-block. */
         nodeSelected={selectedId !== null}
+        indexSpotlit={tourIndexSpotlit}
+        agentSpotlit={tourAgentSpotlit}
         /*
          * ⚠️ **Who the 「make a map from my code」 door is for** (owner correction, 2026-08-24).
          * A vault is open and nothing in it points at real code — the same fact the unbound-source
@@ -733,7 +800,7 @@ export function TopologyIndexPanel({
         // does not collapse to 0px in a short window once the first-run card has
         // switched to flexible shrinking (the card shrinks further instead and scrolls
         // internally).
-        className="min-h-24 flex-1 space-y-px overflow-y-auto"
+        className="min-h-24 shrink space-y-px overflow-y-auto"
         // At the bottom of the scroll list the last row was hard-clipped at
         // mid-height by the container boundary, so a "cut-off row" read as a defect. A
         // 12px bottom mask fade hides it smoothly and implies "there is more" (the top
@@ -769,77 +836,44 @@ export function TopologyIndexPanel({
         )}
       </div>
 
-      {/* The quiet "N documents not on the map" row. It takes
-          `bootstrapPlan.elements.length` (HomePage, `deriveBootstrapPlan` — a count
-          that already excludes documents with a kind) verbatim; nothing new is
-          derived. At 0, or with no promotion handler, the row itself is hidden. */}
-      {vaultLoaded && uncatalogedDocCount && uncatalogedDocCount > 0 && onPromoteUncatalogedDocs ? (
-        <button
-          type="button"
-          onClick={onPromoteUncatalogedDocs}
-          data-testid="topology-index-uncataloged-docs"
-          className={controlClass({
-            shape: "card",
-            size: "sm",
-            className:
-              "atlas-touch-floor mt-2 shrink-0 text-left border-[color:var(--map-panel-border)] hover:bg-[color:var(--map-panel-row-hover)]",
-          })}
-        >
-          <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-tertiary)]">
-            {labels.uncatalogedDocsLabel}
-          </span>
-          <span className="shrink-0 text-[color:var(--color-indigo-accent)]">
-            {labels.uncatalogedDocsAction}
-          </span>
-        </button>
-      ) : null}
-
-      {/* Living-map drift — the quiet "N dusty nodes" row. It takes only the count
-          from the dusty decision (HomePage `deriveDustySlugs`, the double condition of
-          the vault mtime median plus 30 days). At 0 the row does not exist (no success
-          badge). Neutral tone only — neglect is not a warning but a state of the map.
-          The destination is the to-do tab (the biggest friction item in the 2026-07-23
-          persona re-research) — the freshness tab is a per-domain recency heat strip,
-          so it read as the exact opposite picture ("everything updated today") to a
-          promise of "51 nodes long neglected". The actual list of old nodes
-          ("hubs unchanged for a long time" plus today's tidying) is what the to-do tab
-          answers. */}
-      {vaultLoaded && dustyNodeCount && dustyNodeCount > 0 ? (
-        <Link
-          href="/ontology/insights?tab=do-next"
-          data-testid="topology-index-dusty-nodes"
-          className={controlClass({ shape: "chip", size: "md", className: "mt-2 shrink-0 gap-2 rounded-[var(--chrome-radius-inner)] border-[color:var(--map-panel-border)] text-left hover:bg-[color:var(--map-panel-row-hover)]" })}
-        >
-          <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-tertiary)]">
-            {labels.dustyNodesLabel}
-          </span>
-          <span className="shrink-0 text-[color:var(--color-indigo-accent)]">
-            {labels.dustyNodesAction}
-          </span>
-        </Link>
-      ) : null}
-
-      {/* ⚠️ **The checks had nowhere to speak on the map** (census state 3, 2026-08-31). A
-          document whose `kind` is broken is dropped from the graph and one with an unreadable
-          frontmatter line quietly loses a field; either way the map drew a healthy node or no
-          node, and the only screen that could explain it was the document library, which somebody
-          has to already suspect a problem to open. This is one quiet row in the same grammar as
-          the two above it, and it does not diagnose here: the destination owns the per-document
-          sentence and the repair. Errors only — a warning is advice, not a fault. At 0 the row
-          does not exist (no success badge). */}
-      {vaultLoaded && brokenDocCount && brokenDocCount > 0 ? (
-        <Link
-          href="/docs/"
-          data-testid="topology-index-broken-docs"
-          className={controlClass({ shape: "chip", size: "md", className: "mt-2 shrink-0 gap-2 rounded-[var(--chrome-radius-inner)] border-[color:var(--map-panel-border)] text-left hover:bg-[color:var(--map-panel-row-hover)]" })}
-        >
-          <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-tertiary)]">
-            {labels.brokenDocsLabel}
-          </span>
-          <span className="shrink-0 text-[color:var(--color-indigo-accent)]">
-            {labels.brokenDocsAction}
-          </span>
-        </Link>
+      {/*
+        **One list of things to tidy, not four floating boxes.** The uncataloged,
+        dusty, broken and unbound rows used to stand as four separate cards of two
+        different shapes, pinned to the panel's floor by the tree above them
+        (`flex-1`), so on a seven-document vault they sat under 60 % of empty panel
+        and read as furniture rather than as the three things the person could do
+        next (owner screenshot, 2026-09-19). They are one titled list now, in one
+        row grammar — a fact and one indigo action word — placed right under the
+        tree, which shrinks and scrolls instead of growing to push them away. Each
+        row still exists only while its condition holds, and the list only while a
+        row does; nothing new is derived here.
+      */}
+      {tidyRows.length > 0 ? (
+        <section data-testid="topology-index-tidy" aria-labelledby={tidyHeadingId} className="mt-3 shrink-0">
+          <p
+            id={tidyHeadingId}
+            className="mb-1 px-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-quaternary)]"
+          >
+            {labels.tidyHeading}
+          </p>
+          <ul className="flex flex-col gap-1">
+            {tidyRows.map((row) => (
+              <li key={row.key}>
+                {row.href ? (
+                  <Link href={row.href} data-testid={row.testId} className={TIDY_ROW_CLASS}>
+                    <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-tertiary)]">{row.label}</span>
+                    <span className="shrink-0 text-[color:var(--color-indigo-accent)]">{row.action}</span>
+                  </Link>
+                ) : (
+                  <button type="button" onClick={row.onClick} data-testid={row.testId} className={TIDY_ROW_CLASS}>
+                    <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-tertiary)]">{row.label}</span>
+                    <span className="shrink-0 text-[color:var(--color-indigo-accent)]">{row.action}</span>
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {/*
@@ -883,33 +917,6 @@ export function TopologyIndexPanel({
         </div>
       ) : null}
 
-      {/* No code folder bound — **the same shape and the same weight** as the two rows
-          above. No new visual form is invented: one line of fact plus one indigo
-          action word, only while the condition holds. A folder picker is not opened
-          here because the prescription must live in exactly one place — this row makes
-          the diagnosis visible, and the opened project panel gives the prescription
-          (on the web it also states why, where, and what does work here). So this row
-          is never a dead CTA on any surface. */}
-      {vaultLoaded && unboundProjectNodeId ? (
-        <button
-          type="button"
-          onClick={() => onSelect(unboundProjectNodeId)}
-          data-testid="topology-index-source-unbound"
-          className={controlClass({
-            shape: "card",
-            size: "sm",
-            className:
-              "atlas-touch-floor mt-2 shrink-0 text-left border-[color:var(--map-panel-border)] hover:bg-[color:var(--map-panel-row-hover)]",
-          })}
-        >
-          <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-tertiary)]">
-            {labels.sourceUnboundLabel}
-          </span>
-          <span className="shrink-0 text-[color:var(--color-indigo-accent)]">
-            {labels.sourceUnboundAction}
-          </span>
-        </button>
-      ) : null}
 
       {/* 「Import nodes from another folder」 (import nodes from another folder) moved to
           **settings → workspace** (2026-08-02, owner: *"What is this? Why is this text here? Is it unnecessary?"* — what is this? why is this text here? is it

@@ -9,6 +9,14 @@ import {
   LOCK_REF,
   classifyLock,
   decideNext,
+  QUEUE_REF,
+  WAIT_LEASE_MINUTES,
+  describeWaitingLine,
+  joinWaitingLine,
+  leaveWaitingLine,
+  mayTakeLock,
+  pruneWaiters,
+  waitingLineHead,
   describeLock,
   isBrowserCommand,
   isCiOwnedCommand,
@@ -824,5 +832,80 @@ describe('optional parallel backlog CI', () => {
     const ready = { ...pr, isDraft: false };
     assert.equal(decideNext({ pr: ready, lock: myLock, requiredContexts: REQUIRED_CONTEXTS }).action, 'wait-lock');
     assert.equal(decideNext({ ...holding, pr: ready, behindBy: 1, ciRequested: true, localChecksPassed: true }).action, 'merge-main');
+  });
+});
+
+/**
+ * **The waiting line.**
+ *
+ * The lock is a compare-and-swap create and every waiter retried it on its own independent
+ * thirty-second phase, so the winner was whoever happened to be awake right after a release.
+ * Measured 2026-09-19: one pull request waited the full give-up window while ten landed past it,
+ * then exited with 「gave up after 180 minutes; the lock is released and nothing merged」. A second
+ * agent reported the same thing in its own words, independently.
+ *
+ * These are the rules that decide the order, and the fallbacks that keep a fairness layer from
+ * ever being the reason nothing lands.
+ */
+const at = (minutesAgo, nowMs) => new Date(nowMs - minutesAgo * 60_000).toISOString();
+
+describe('the landing waiting line', () => {
+  const now = Date.parse('2026-09-19T13:00:00.000Z');
+  const starved = { pr: 1694, token: 'a', holder: 'stark', host: 'mac', since: at(180, now), seenAt: at(1, now) };
+  const newcomer = { pr: 1720, token: 'b', holder: 'stark', host: 'mac', since: at(1, now), seenAt: at(0, now) };
+
+  it('names one ref of its own, so the mutex above is untouched', () => {
+    assert.equal(QUEUE_REF, 'refs/atlas/landing-queue');
+    assert.notEqual(QUEUE_REF, LOCK_REF);
+  });
+
+  it('gives the free lock to whoever asked first — the measured starvation, inverted', () => {
+    const line = [newcomer, starved];
+    assert.equal(waitingLineHead(line, now).pr, 1694);
+    assert.equal(mayTakeLock({ waiters: line, token: 'a', nowMs: now }), true);
+    assert.equal(mayTakeLock({ waiters: line, token: 'b', nowMs: now }), false);
+  });
+
+  it('never moves a waiter to the back for refreshing its place', () => {
+    const rejoined = joinWaitingLine([starved, newcomer], { pr: 1694, token: 'a' }, now);
+    const mine = rejoined.find((entry) => entry.token === 'a');
+    assert.equal(mine.since, starved.since, 'a refresh reset the wait it exists to protect');
+    assert.notEqual(mine.seenAt, starved.seenAt);
+    assert.equal(waitingLineHead(rejoined, now).pr, 1694);
+  });
+
+  it('drops a waiter nobody refreshed inside the lease, so a corpse cannot hold the line', () => {
+    const dead = { ...starved, token: 'c', pr: 1699, seenAt: at(WAIT_LEASE_MINUTES + 1, now) };
+    assert.deepEqual(pruneWaiters([dead], now), []);
+    assert.equal(waitingLineHead([dead, newcomer], now).pr, 1720);
+    assert.equal(mayTakeLock({ waiters: [dead, newcomer], token: 'b', nowMs: now }), true);
+  });
+
+  it('drops an entry it cannot read rather than trusting a shape it does not know', () => {
+    assert.deepEqual(pruneWaiters([null, {}, { pr: 1, token: 2 }, { token: 'x' }], now), []);
+    assert.deepEqual(pruneWaiters('not a line', now), []);
+  });
+
+  /*
+   * ⚠️ The fallbacks. A `pr:land` from before this line existed does not register and must not be
+   * blocked by it, and a waiter that cannot write its own place has to race rather than stop. A
+   * fairness layer that can stop a landing is worse than an unfair one.
+   */
+  it('lets an unlisted waiter race — the previous version of this script, and an unwritable queue', () => {
+    assert.equal(mayTakeLock({ waiters: [starved], token: 'older-client', nowMs: now }), true);
+    assert.equal(mayTakeLock({ waiters: [], token: 'a', nowMs: now }), true);
+    assert.equal(mayTakeLock({ waiters: undefined, token: 'a', nowMs: now }), true);
+  });
+
+  it('takes only this waiter out of the line', () => {
+    const left = leaveWaitingLine([starved, newcomer], 'a', now);
+    assert.deepEqual(left.map((entry) => entry.pr), [1720]);
+  });
+
+  it('says the order out loud, oldest first, so a waiter can see its own place', () => {
+    const line = describeWaitingLine([newcomer, starved], now);
+    assert.match(line, /1\. PR #1694 .*waiting 180 min/);
+    assert.match(line, /2\. PR #1720 .*waiting 1 min/);
+    assert.equal(describeWaitingLine([], now), 'nobody is queued');
   });
 });

@@ -1,7 +1,7 @@
 export { useVaultCreateFlow } from './model/use-vault-create-flow';
 export { useJustStartVault } from './model/use-just-start-vault';
 export { buildCursorMcpDeeplink } from './lib/mcp-deeplinks';
-export { AgentClientButtons } from './ui/AgentClientButtons';
+export { useAgentClientControls } from './ui/AgentClientButtons';
 export {
   buildOntologyStarterAgentVerifyPrompt,
   buildOntologyStarterJsonGateCommand,

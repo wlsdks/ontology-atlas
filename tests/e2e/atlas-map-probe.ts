@@ -41,6 +41,8 @@ export interface AtlasMapNode {
   /** Are these the two endpoints the contextual relation preview temporarily revealed past the density gate? */
   previewEndpoint: boolean;
   radius: number;
+  /** The alpha the last frame drew the node at; 0 is not on screen even when `hidden` is false. */
+  alpha?: number;
 }
 
 export interface AtlasMapProbe {
@@ -53,7 +55,21 @@ export interface AtlasMapProbe {
   cameraTarget?: () => { x: number; y: number; scale: number } | null;
   /** Live DOM-derived horizontal obstruction, before static camera safety tokens. */
   obstacleInsets: () => { left: number; right: number } | null;
+  /** The drawn edges: endpoints and the quadratic control point, in canvas CSS px. */
+  edges: () => Array<{
+    sourceId: string;
+    targetId: string;
+    kind: string;
+    ax: number;
+    ay: number;
+    bx: number;
+    by: number;
+    controlX: number;
+    controlY: number;
+  }>;
   selection: () => { nodeId: string | null; edge: unknown };
+  /** The name boxes the last frame drew, in canvas CSS px — how label collision is seen from outside. */
+  labels: () => Array<{ nodeId: string; text: string; minX: number; maxX: number; minY: number; maxY: number }>;
   nodes: () => AtlasMapNode[];
   /**
    * The node id this frame treated as hovered (null if none). The cursor on the canvas

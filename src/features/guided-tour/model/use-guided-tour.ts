@@ -118,6 +118,17 @@ export function useGuidedTour(args: UseGuidedTourArgs): UseGuidedTourResult {
   // not enough).
   const [resolveTick, setResolveTick] = useState(0);
 
+  // A step change moves the screen underneath the tour — the INDEX step folds
+  // the first-run card and the next step gives it back — and the anchors are
+  // resolved against the DOM at render time, before that commit. One re-check
+  // on the frame after the step commits keeps the dev branch's own anchor (the
+  // first-run card) resolvable at the step that offers it (2026-09-19).
+  useEffect(() => {
+    if (!open) return undefined;
+    const frame = window.requestAnimationFrame(() => setResolveTick((t) => t + 1));
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, stepId]);
+
   useEffect(() => {
     if (!open) return undefined;
     const bump = () => setResolveTick((t) => t + 1);

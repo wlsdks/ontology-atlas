@@ -24,7 +24,9 @@ import { projectDomeEdgeControl } from '../model/dome-edge';
 
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 
-import { lastDrawnNodeAlphas } from "./topology-frame-draw";
+import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "./topology-frame-draw";
+import type { Rect } from "../interaction/hover-card-placement";
+import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { clampPointToPanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
 import type { CameraTween } from "../model/camera-easing";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
@@ -75,6 +77,69 @@ import { radiusForKind, type TopologyWorld, type WorldEdge } from "./topology-wo
 const NODE_DRAG_HEAT_MS = 350;
 
 /** Active node-drag: which node is pinned + the world-space grab offset (respects where inside the node it was grabbed). */
+/** A drawn thing, in client coordinates, that a pointer-anchored card should not cover. */
+export type HoverAvoidRect = Rect;
+
+/** How far around the pointer drawn nodes and names are collected for the card to avoid. */
+const HOVER_AVOID_REACH_PX = 420;
+/**
+ * Two taps on one node inside this window are a double-click. The second tap
+ * then opens or folds that node's children (the `+N` chip's own act) and keeps
+ * the selection, instead of undoing the first tap. Measured before this existed
+ * (2026-09-19): a double-click on a domain selected it and deselected it again,
+ * leaving nothing selected and nothing opened.
+ */
+export const DOUBLE_TAP_WINDOW_MS = 350;
+/**
+ * Breathing room around each disc and name. "Clear" means visibly clear, not
+ * touching: without it the card's edge sat 1 px inside a disc's ring and the
+ * placement still counted the corner as free (measured 2026-09-19).
+ */
+const HOVER_AVOID_MARGIN_PX = 6;
+
+/**
+ * **What the edge hover card must not cover**: the discs and names the last
+ * frame drew near the pointer, in client coordinates. Read at hover time,
+ * from the same frame state the draw used, so the card judges the screen a
+ * person sees rather than a model of it. Nodes the frame did not draw
+ * (collapsed, or faded to nothing by the density gate) are not obstacles.
+ */
+function collectHoverAvoidRects(
+  world: TopologyWorld,
+  camera: CameraAxes,
+  width: number,
+  height: number,
+  tokens: OntologyMapTokens,
+  clustered: ReadonlySet<string> | null,
+  domeFrame: ReadonlyMap<string, DomeNodeFrame> | null,
+  canvasOrigin: { x: number; y: number },
+  pointer: { x: number; y: number },
+): HoverAvoidRect[] {
+  const out: HoverAvoidRect[] = [];
+  const alphas = lastDrawnNodeAlphas();
+  for (const node of world.nodes) {
+    if (clustered?.has(node.id)) continue;
+    if ((alphas.get(node.id) ?? 1) < 0.05) continue;
+    const off = domeFrame?.get(node.id);
+    const screen = worldToScreen(camera, width, height, node.x + (off?.dx ?? 0), node.y + (off?.dy ?? 0));
+    if (Math.abs(screen.x - pointer.x) > HOVER_AVOID_REACH_PX || Math.abs(screen.y - pointer.y) > HOVER_AVOID_REACH_PX) continue;
+    const r = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value * (off?.s ?? 1);
+    const rr = r + HOVER_AVOID_MARGIN_PX;
+    out.push({ x: canvasOrigin.x + screen.x - rr, y: canvasOrigin.y + screen.y - rr, w: 2 * rr, h: 2 * rr });
+  }
+  for (const box of lastDrawnLabelBoxes()) {
+    if (box.maxX < pointer.x - HOVER_AVOID_REACH_PX || box.minX > pointer.x + HOVER_AVOID_REACH_PX) continue;
+    if (box.maxY < pointer.y - HOVER_AVOID_REACH_PX || box.minY > pointer.y + HOVER_AVOID_REACH_PX) continue;
+    out.push({
+      x: canvasOrigin.x + box.minX - HOVER_AVOID_MARGIN_PX,
+      y: canvasOrigin.y + box.minY - HOVER_AVOID_MARGIN_PX,
+      w: box.maxX - box.minX + 2 * HOVER_AVOID_MARGIN_PX,
+      h: box.maxY - box.minY + 2 * HOVER_AVOID_MARGIN_PX,
+    });
+  }
+  return out;
+}
+
 export interface NodeDragState {
   nodeId: string;
   offset: WorldOffset;
@@ -210,6 +275,8 @@ export interface PointerHandlerRefs {
   selectedEdgeRef?: Ref<{ sourceId: string; targetId: string } | null>;
   /** Density gate — this frame's cluster chips (world anchors), for chip hit testing. */
   clusterChipsRef?: Ref<readonly ClusterChip[]>;
+  /** The last committed node tap, so the next one can be read as a double-click. */
+  lastTapRef?: Ref<{ nodeId: string; at: number } | null>;
   /**
    * S3 finishing polish (an S2 known gap) — the set of nodes not drawn this frame
    * (density-gate collapsed plus optionally hidden ego neighbours). Node and edge hit
@@ -279,7 +346,7 @@ export interface PointerHandlerRefs {
   visitedTrailRef?: Ref<readonly string[]>;
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
-    position: { x: number; y: number } | null,
+    position: { x: number; y: number; avoid: readonly HoverAvoidRect[] } | null,
   ) => void;
   onPaneClick?: () => void;
   /** Density gate — a cluster chip click toggles the parent's expansion (a URL round trip). */
@@ -402,6 +469,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
+    lastTapRef,
     clusteredIdsRef,
     hoveredClusterIdRef,
     expandPrefRef,
@@ -789,6 +857,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   };
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    // Only the primary button presses the map. A right press used to run the
+    // same press machine, so a right-click selected the node under it and
+    // reframed the camera while the menu stayed where the pointer was — 47 px
+    // (headless) to 268 px (14-inch, INDEX folding) away from the node it
+    // belongs to (measured 2026-09-19). The context menu is the whole of what
+    // a secondary button does here (`handleContextMenu`).
+    if (e.button !== undefined && e.button !== 0) return;
     const tokens = readOntologyMapTokensOrNull();
     const world = worldRef.current;
     if (!tokens || !world) return;
@@ -1161,7 +1236,26 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
             }
           : null;
         hoveredEdgeRef.current = payload;
-        onHoverEdge(payload, payload ? { x: e.clientX, y: e.clientY } : null);
+        onHoverEdge(
+          payload,
+          payload
+            ? {
+                x: e.clientX,
+                y: e.clientY,
+                avoid: collectHoverAvoidRects(
+                  world,
+                  cameraRef.current,
+                  viewportRef.current.width,
+                  viewportRef.current.height,
+                  tokens,
+                  clusteredIdsRef?.current ?? null,
+                  domeFrameNow(),
+                  { x: e.clientX - point.x, y: e.clientY - point.y },
+                  point,
+                ),
+              }
+            : null,
+        );
       }
     }
 
@@ -1431,6 +1525,24 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       return;
     }
 
+    // A double-click on a node opens its children and keeps it selected. A second
+    // quick tap on a leaf keeps the selection too: a repeated click is never an undo.
+    if (commitClick !== null && commitClick.nodeId !== null && lastTapRef) {
+      const now = performance.now();
+      const last = lastTapRef.current;
+      const nodeId = commitClick.nodeId;
+      if (last !== null && last.nodeId === nodeId && now - last.at <= DOUBLE_TAP_WINDOW_MS) {
+        lastTapRef.current = null;
+        if (focusedSlugRef.current !== nodeId) onSelect?.(nodeId);
+        const chip = clusterChipsRef?.current?.find((c) => c.parentId === nodeId);
+        if (chip && onToggleCluster) {
+          onToggleCluster(nodeId);
+          clearClusterHover();
+        }
+        return;
+      }
+      lastTapRef.current = { nodeId, at: now };
+    }
     const action = resolveClickAction(commitClick, focusedSlugRef.current);
     if (action.type === "select") {
       onSelect?.(action.nodeId);

@@ -63,7 +63,7 @@ a permission grant. Do not transplant another harness's model/tool aliases.
 |---|---|
 | Mechanical maintenance | Technical checks; `/po-pass` skips product review |
 | Product, UX, graph, MCP, CLI, workflow, or macOS change | `/po-pass`; `pnpm po:route` derives door/risk from facts; `/po-council` only for the returned review or an owner request |
-| UI, interaction, topology, responsive, motion, or macOS workbench | Design gate after the PO pass: `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` and `pnpm design:route`; `/design-build` implements the selected shape |
+| UI, interaction, topology, responsive, motion, or macOS workbench | Product design gate after the PO pass: `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` and `pnpm design:route`; `/design-build` implements the selected shape |
 | New structural design choice | `/design-directions` only when routed and no valid owner selection exists; `/design-council` only for routed structural commitments |
 | Rendered proof | `/design-audit`, `/responsive-sweep`, `/motion-verify`, `/map-perf`, and `/user-walkthrough` only at the requested or routed scope |
 | Design-system enforcement | `/design-system-audit`; new or changed gates also use `/gate-probe` |
