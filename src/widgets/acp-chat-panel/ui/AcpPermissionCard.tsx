@@ -729,16 +729,35 @@ export function AcpPermissionCard({
       ) : null}
       </div>
 
+      {/*
+       * **A status row is drawn only where there is a status.**
+       *
+       * ## What this was (measured on the rendered card, 2026-09-20)
+       *
+       * Four label/value pairs in a 2x2 grid, 41px directly above the decision buttons:
+       * meaning · code · merge · deployment. The value column came back with exactly **one
+       * distinct value across all four rows** — "unknown" — and three of them could never say
+       * anything else: `code`, `merge` and `deployment` were written as the literal `'unknown'`
+       * key. Only `meaning` had a value that moves (unknown / pending / accepted).
+       *
+       * So the grid read as four facts about this write and carried one, and the three constants
+       * were not "we do not know yet" but "this screen cannot know, and never could".
+       *
+       * ## The claim they were standing in for is already a sentence
+       *
+       * Right below, unfolded, `taskReview.allowScope` names all four and says what allowing does
+       * **not** grant. That is the true claim. "Unknown" is a different and weaker one: it says the state
+       * is unavailable, when the point is that allowing here does not touch it. Nothing is lost by
+       * drawing only the row that moves.
+       */}
       {changeSet && taskOrigin ? (
-        <div data-testid="task-review-authority" className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-1 border-t border-[color:var(--color-divider)] pt-2">
-            {(['meaning', 'code', 'merge', 'deployment'] as const).map((authority) => (
-            <div key={authority} data-testid={`task-review-authority-${authority}`} className="flex items-center justify-between gap-2 text-caption">
-              <span className="text-[color:var(--color-text-tertiary)]">{t(`taskReview.authority.${authority}`)}</span>
-              <span className="text-[color:var(--color-text-quaternary)]">
-                {t(`taskReview.authority.${authority === 'meaning' ? meaningAuthority : 'unknown'}`)}
-              </span>
-            </div>
-          ))}
+        <div data-testid="task-review-authority" className="grid shrink-0 gap-y-1 border-t border-[color:var(--color-divider)] pt-2">
+          <div data-testid="task-review-authority-meaning" className="flex items-center justify-between gap-2 text-caption">
+            <span className="text-[color:var(--color-text-tertiary)]">{t('taskReview.authority.meaning')}</span>
+            <span className="text-[color:var(--color-text-quaternary)]">
+              {t(`taskReview.authority.${meaningAuthority}`)}
+            </span>
+          </div>
         </div>
       ) : null}
 
