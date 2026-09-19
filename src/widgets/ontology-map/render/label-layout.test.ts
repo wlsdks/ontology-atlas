@@ -12,8 +12,7 @@ import {
   isSafeRectProtectedLabel,
   isWithinSafeRect,
   resolveLabelPriority,
-  type LabelCandidate,
-} from "./label-layout";
+  type LabelCandidate, floorFlipBaseline } from "./label-layout";
 
 const RECT = { left: 344, right: 880, top: 96, bottom: 704 };
 
@@ -299,5 +298,22 @@ describe("노드 도형 예약 — 라벨이 노드 위에 글자를 얹지 않�
 
   it("겹치지 않으면 통과", () => {
     expect(overlapsForeignReserved(box(200, 260), "other", 5, [disc])).toBe(false);
+  });
+});
+
+describe("floorFlipBaseline", () => {
+  const rect = { left: 0, right: 1448, top: 112, bottom: 806 - 72 };
+  it("a slot under the floor band moves above the node when that slot is safe", () => {
+    // Node at y 741, radius 19: below-slot baseline ~772, above-slot ~712.
+    expect(floorFlipBaseline(551, 772, 712, 741, rect, 806)).toBe(712);
+  });
+  it("leaves an in-band slot alone", () => {
+    expect(floorFlipBaseline(551, 700, 640, 660, rect, 806)).toBeNull();
+  });
+  it("does not rescue a node that is itself below the canvas", () => {
+    expect(floorFlipBaseline(551, 860, 800, 830, rect, 806)).toBeNull();
+  });
+  it("does not flip when the slot above is outside the safe rect either", () => {
+    expect(floorFlipBaseline(1500, 772, 712, 741, rect, 806)).toBeNull();
   });
 });

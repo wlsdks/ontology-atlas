@@ -65,6 +65,27 @@ export function isWithinSafeRect(x: number, y: number, rect: SafeRect): boolean 
  * beats silence.
  * `marginX`/`marginY` keep the text box itself inside the rect (width/2, font).
  */
+/**
+ * A label whose slot below the node falls under the floor band takes the slot
+ * above the node instead, when the node itself is on screen and that slot is
+ * inside the safe rect. The band is reserved for the readout in one corner,
+ * yet the anchor gate dropped every name under it: two domains drawn at
+ * y 741 of an 806-tall canvas stood nameless (measured 2026-09-20). Returns
+ * the baseline to use, or null when the ordinary gate should decide.
+ */
+export function floorFlipBaseline(
+  anchorX: number,
+  anchorY: number,
+  flippedBaselineY: number,
+  screenY: number,
+  rect: SafeRect,
+  viewportHeight: number,
+): number | null {
+  if (anchorY <= rect.bottom) return null;
+  if (screenY > viewportHeight) return null;
+  return isWithinSafeRect(anchorX, flippedBaselineY, rect) ? flippedBaselineY : null;
+}
+
 export function clampAnchorIntoSafeRect(
   x: number,
   y: number,
