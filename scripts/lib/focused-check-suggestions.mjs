@@ -724,6 +724,20 @@ const RULES = [
     ],
   },
   {
+    // The installed app's probe and its payload contract can drift away from this board in
+    // silence: nothing else runs them against real HTML, so the first sign is a failed
+    // verification eight minutes into a bundle build (measured 2026-09-20, when a pinned tab
+    // count became unreachable). This spec runs both over the rendered screen in seconds.
+    command: 'pnpm exec playwright test tests/e2e/insights-app-contract.spec.ts',
+    reason: 'the insights board, the app DOM probe, or the payload contract that judges it changed',
+    matches: [
+      /^src-tauri\/src\/webview_verify\/dom_marker_probe\.js$/,
+      /^scripts\/lib\/verify-macos\/payload-contract\.mjs$/,
+      /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
+      /^src\/views\/ontology-insights\/lib\/insights-tab-state\.ts$/,
+    ],
+  },
+  {
     command: 'pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts',
     reason: 'insights census rendering or its domain-capacity consumer changed',
     matches: [
