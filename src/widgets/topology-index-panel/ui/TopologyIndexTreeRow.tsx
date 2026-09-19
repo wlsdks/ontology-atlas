@@ -129,7 +129,11 @@ export function TopologyIndexTreeRow({
   const agentAttributed = agentAttributedNodeId !== null && agentAttributedNodeId === node.id;
   const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-08)]");
   const isDomain = node.kind === "domain";
-  const censusRow = isDomain ? (domainCensus?.get(node.id) ?? null) : null;
+  // Every kind reads its own census row, not domains alone: the badge is the same
+  // mark the map draws inside a node, and the map counts every kind from this
+  // census. While only domains were counted, a project row fell through to its
+  // direct children and stated 3 where its own node stated 16.
+  const censusRow = domainCensus?.get(node.id) ?? null;
   const subcounts = isDomain
     ? censusRow
       ? {
@@ -142,7 +146,7 @@ export function TopologyIndexTreeRow({
   const capacityRatio = subcounts
     ? computeCapacityRatio(subcounts.descendantCount, maxDomainDescendantCount)
     : 0;
-  const count = isDomain && subcounts ? subcounts.descendantCount : hasChildren ? children.length : null;
+  const count = censusRow ? censusRow.total : isDomain && subcounts ? subcounts.descendantCount : hasChildren ? children.length : null;
   // The lifetime of a child branch's expansion — the same hook as the app's shared list-row grammar.
   const {
     mounted: branchMounted,
@@ -280,6 +284,7 @@ export function TopologyIndexTreeRow({
         </div>
         {count !== null ? (
           <span
+            data-testid="topology-index-row-count"
             // Explain on the spot, to a user counting them up, why the domain badges
             // sum past the census total (multi-membership is counted more than once).
             // The scope word ("everything below N") leads, making explicit that this
@@ -289,7 +294,11 @@ export function TopologyIndexTreeRow({
                 ? labels.subtotalTitle
                   ? `${labels.subtotalTitle} ${count} · ${labels.domainCountTitle}`
                   : labels.domainCountTitle
-                : undefined
+                : // The multi-membership caveat belongs to domain badges, which can
+                  // sum past the census; the scope word applies to every badge.
+                  censusRow && labels.subtotalTitle
+                  ? `${labels.subtotalTitle} ${count}`
+                  : undefined
             }
             className="justify-self-end font-mono text-label text-[color:var(--map-numeral-face)] [text-shadow:0_1px_0_var(--map-numeral-shadow)]"
           >
