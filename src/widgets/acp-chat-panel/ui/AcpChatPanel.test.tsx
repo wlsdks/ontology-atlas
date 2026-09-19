@@ -3741,4 +3741,33 @@ describe('대화 패널 — 앉힌 요청은 읽을 문장만 서고, 붙은 지
     expect(screen.getByRole('textbox')).toHaveValue(plain);
     expect(screen.queryByTestId('acp-chat-seated-detail')).toBeNull();
   });
+
+  /*
+   * Measured on the Insights dock (2026-09-20): the screen had written the question and folded
+   * three instruction lines under it, and the empty transcript — 470px of panel above that box —
+   * still read "Ask anything about this folder." The biggest region on screen invited a blank
+   * start while the start was already written.
+   */
+  it('앉힌 요청이 기다리면 빈 대화는 백지에서 시작하라고 하지 않는다', async () => {
+    await seat();
+    const empty = screen.getByTestId('acp-chat-empty');
+    // This harness echoes message keys, so the key is the fact to check, not the sentence.
+    expect(empty.getAttribute('data-acp-empty')).toBe('seated');
+    expect(empty.textContent).toBe('emptySeatedHint');
+  });
+
+  it('상자를 비우면 정말로 백지이므로 원래 문장이 돌아온다', async () => {
+    await seat();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } });
+    const empty = screen.getByTestId('acp-chat-empty');
+    expect(empty.getAttribute('data-acp-empty')).toBe('open');
+    expect(empty.textContent).toBe('emptyHint');
+  });
+
+  it('아무것도 앉히지 않은 독은 열린 초대를 그대로 쓴다', async () => {
+    await bootSession({});
+    const empty = screen.getByTestId('acp-chat-empty');
+    expect(empty.getAttribute('data-acp-empty')).toBe('open');
+    expect(empty.textContent).toBe('emptyHint');
+  });
 });
