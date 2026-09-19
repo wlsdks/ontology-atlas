@@ -40,6 +40,8 @@ export interface InsightsBrief {
    */
   nowMs: number;
   markSeen: () => void;
+  /** Puts the anchor back where the last mark found it. Local to this browser, so no dialog. */
+  undoSeen: () => void;
   ontology: BriefCore;
   wiki: BriefCore;
   harness: BriefCore;
@@ -121,7 +123,7 @@ export function useInsightsBrief({
   const docs = manifest?.docs ?? EMPTY_DOCS;
   const nativeRootPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
 
-  const [seenAt, writeSeenAt] = useBriefSeenAt(identityScope);
+  const [seenAt, writeSeenAt, undoSeenAt] = useBriefSeenAt(identityScope);
   // Read once per load, inside the loader below, so no render calls the clock.
   const [nowMs, setNowMs] = useState(() => Date.now());
   const anchor = useMemo(() => resolveBriefAnchor(seenAt, nowMs), [seenAt, nowMs]);
@@ -136,6 +138,15 @@ export function useInsightsBrief({
     writeSeenAt(at);
     setNowMs(at + 1);
   }, [writeSeenAt]);
+  /*
+   * The same press, taken back. The read instant moves with it for the same reason it moves
+   * forward above: the restored anchor has to be in the past by the clock this render holds, or
+   * the sentences stay where the mark left them.
+   */
+  const undoSeen = useCallback(() => {
+    undoSeenAt();
+    setNowMs(Date.now());
+  }, [undoSeenAt]);
   const sinceDays = Math.max(0, Math.floor((nowMs - anchor.anchorMs) / 86_400_000));
 
   const library = useLibraryModel({
@@ -448,6 +459,7 @@ export function useInsightsBrief({
     sinceDays,
     nowMs,
     markSeen,
+    undoSeen,
     ontology,
     wiki,
     harness,

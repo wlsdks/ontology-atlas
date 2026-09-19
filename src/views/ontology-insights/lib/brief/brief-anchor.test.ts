@@ -3,8 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_BRIEF_WINDOW_MS,
   briefSeenKey,
+  canUndoBriefSeenAt,
   readBriefSeenAt,
   resolveBriefAnchor,
+  undoBriefSeenAt,
   useBriefSeenAt,
   writeBriefSeenAt,
 } from './brief-anchor';
@@ -75,5 +77,39 @@ describe('the recorded visit survives a browser that will not store it', () => {
       window.dispatchEvent(new Event('storage'));
     });
     expect(result.current[0]).toBe(now);
+  });
+});
+
+describe('the visit mark can be taken back', () => {
+  afterEach(() => window.localStorage.clear());
+
+  it('restores the value the mark found, and says when there is nothing to restore', () => {
+    const earlier = Date.parse('2026-09-15T00:00:00Z');
+    writeBriefSeenAt('vault-undo', earlier);
+    expect(canUndoBriefSeenAt('vault-undo')).toBe(true);
+
+    writeBriefSeenAt('vault-undo', now);
+    expect(readBriefSeenAt('vault-undo')).toBe(now);
+
+    undoBriefSeenAt('vault-undo');
+    expect(readBriefSeenAt('vault-undo')).toBe(earlier);
+    // One press back is the whole reversal; a second press has nothing to undo.
+    expect(canUndoBriefSeenAt('vault-undo')).toBe(false);
+    undoBriefSeenAt('vault-undo');
+    expect(readBriefSeenAt('vault-undo')).toBe(earlier);
+  });
+
+  it('returns a first visit to having no recorded mark at all', () => {
+    expect(readBriefSeenAt('vault-first')).toBeNull();
+    writeBriefSeenAt('vault-first', now);
+    undoBriefSeenAt('vault-first');
+    expect(readBriefSeenAt('vault-first')).toBeNull();
+    expect(window.localStorage.getItem(briefSeenKey('vault-first'))).toBeNull();
+  });
+
+  it('is a no-op for a folder that was never marked', () => {
+    expect(canUndoBriefSeenAt('vault-never')).toBe(false);
+    undoBriefSeenAt('vault-never');
+    expect(readBriefSeenAt('vault-never')).toBeNull();
   });
 });

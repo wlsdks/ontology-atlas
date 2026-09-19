@@ -30,6 +30,7 @@ function brief(overrides: Partial<InsightsBrief> = {}): InsightsBrief {
     sinceDays: 2,
     nowMs: Date.parse("2026-09-19T00:00:00Z"),
     markSeen: vi.fn(),
+    undoSeen: vi.fn(),
     ontology: core({
       core: "ontology",
       headline: 106,
@@ -269,5 +270,28 @@ describe("marking the visit", () => {
     // Pressing again re-anchors to now; the control must not become a dead end.
     fireEvent.click(screen.getByTestId("brief-mark-seen"));
     expect(markSeen).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("taking the visit mark back", () => {
+  it("offers one press back, inside the region that announced the mark", () => {
+    const undoSeen = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <BriefTab brief={brief({ undoSeen })} />
+      </NextIntlClientProvider>,
+    );
+    // Nothing to take back before the press.
+    expect(screen.queryByTestId("brief-mark-seen-undo")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("brief-mark-seen"));
+    const undo = screen.getByTestId("brief-mark-seen-undo");
+    // It lives inside the live region, so the reversal is announced with the thing it reverses.
+    expect(screen.getByTestId("brief-mark-seen-done").contains(undo)).toBe(true);
+
+    fireEvent.click(undo);
+    expect(undoSeen).toHaveBeenCalledTimes(1);
+    // One press back is the whole of it; the offer goes with it.
+    expect(screen.queryByTestId("brief-mark-seen-undo")).toBeNull();
   });
 });

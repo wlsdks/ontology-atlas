@@ -31,6 +31,16 @@ export function briefSeenKey(vaultScope: string): string {
 
 let snapshot = new Map<string, number | null>();
 
+/**
+ * The value each scope held before this session's last mark, so one press can be taken back.
+ *
+ * Marking the visit is the one press that redefines every "since" number on the screen, and it
+ * used to overwrite the previous anchor with nothing retaining it (design-interaction,
+ * 2026-09-20). It writes to this browser only, never to the folder, so the reversal owes no
+ * dialog and no confirmation — one press back is the whole of it.
+ */
+let priorAnchor = new Map<string, number | null>();
+
 export function readBriefSeenAt(vaultScope: string): number | null {
   if (!vaultScope || typeof window === 'undefined') return null;
   if (snapshot.has(vaultScope)) return snapshot.get(vaultScope) ?? null;
@@ -48,12 +58,37 @@ export function readBriefSeenAt(vaultScope: string): number | null {
 
 export function writeBriefSeenAt(vaultScope: string, atMs: number): void {
   if (!vaultScope || typeof window === 'undefined') return;
+  priorAnchor = new Map(priorAnchor).set(vaultScope, readBriefSeenAt(vaultScope));
   snapshot = new Map(snapshot);
   snapshot.set(vaultScope, atMs);
   try {
     window.localStorage.setItem(briefSeenKey(vaultScope), String(atMs));
   } catch {
     /* private mode — the value still holds for this session */
+  }
+  window.dispatchEvent(new Event(EVENT));
+}
+
+/** Whether a mark in this session can still be taken back for this folder. */
+export function canUndoBriefSeenAt(vaultScope: string): boolean {
+  return Boolean(vaultScope) && priorAnchor.has(vaultScope);
+}
+
+/**
+ * Put the anchor back where it was before this session's last mark. A no-op when there was no
+ * mark, so a caller never has to guard it.
+ */
+export function undoBriefSeenAt(vaultScope: string): void {
+  if (!vaultScope || typeof window === 'undefined' || !priorAnchor.has(vaultScope)) return;
+  const restored = priorAnchor.get(vaultScope) ?? null;
+  priorAnchor = new Map(priorAnchor);
+  priorAnchor.delete(vaultScope);
+  snapshot = new Map(snapshot).set(vaultScope, restored);
+  try {
+    if (restored == null) window.localStorage.removeItem(briefSeenKey(vaultScope));
+    else window.localStorage.setItem(briefSeenKey(vaultScope), String(restored));
+  } catch {
+    /* private mode — the restored value still holds for this session */
   }
   window.dispatchEvent(new Event(EVENT));
 }
@@ -91,7 +126,9 @@ function subscribe(onChange: () => void): () => void {
  * `markSeen` when the person leaves the brief (or on an explicit "seen" action), never on
  * mount — marking on mount would zero every count the moment it was drawn.
  */
-export function useBriefSeenAt(vaultScope: string): [number | null, (atMs?: number) => void] {
+export function useBriefSeenAt(
+  vaultScope: string,
+): [number | null, (atMs?: number) => void, () => void] {
   const value = useSyncExternalStore(
     subscribe,
     () => readBriefSeenAt(vaultScope),
@@ -101,5 +138,6 @@ export function useBriefSeenAt(vaultScope: string): [number | null, (atMs?: numb
     (atMs: number = Date.now()) => writeBriefSeenAt(vaultScope, atMs),
     [vaultScope],
   );
-  return [value, markSeen];
+  const undoSeen = useCallback(() => undoBriefSeenAt(vaultScope), [vaultScope]);
+  return [value, markSeen, undoSeen];
 }

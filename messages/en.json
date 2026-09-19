@@ -1657,7 +1657,8 @@
           "agent-calls-since": "{count, plural, one {# agent call} other {# agent calls}} since",
           "agent-writes-since": "{count, plural, one {# of them wrote} other {# of them wrote}} to the folder",
           "agent-distinct-since": "{count, plural, one {# agent} other {# agents}} at work"
-        }
+        },
+        "markSeenUndo": "Undo"
       },
       "tabCountTitle": {
         "do-next": "Things to fix",

@@ -110,7 +110,15 @@ export function BriefTab({
           <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             {brief.anchor.isDefaultWindow ? t('sinceDefault') : t('sinceSeen', { days: brief.sinceDays })}
           </p>
-          <h2 className="mt-1 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]" data-testid="brief-headline">
+          {/*
+            * **The line this screen exists for has to win.** It wore the same step as the page
+            * title 144px above it, same size and same weight, so the title read first and did no
+            * work (design-lead, 2026-09-20). `text-hero` is a registered step with its own
+            * leading pair; the seat also proposed demoting the title instead, but thirteen
+            * screens use that step for their h1 and two go larger, so shrinking this one alone
+            * would trade an attention problem for an inconsistency across the product.
+            */}
+          <h2 className="mt-1 text-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]" data-testid="brief-headline">
             {t('headline', { stale: totals.stale, unknown: totals.unknown })}
           </h2>
           <p className="mt-2 text-body text-[color:var(--color-text-tertiary)]">{t('sinceGloss')}</p>
@@ -118,10 +126,29 @@ export function BriefTab({
         <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
           <p
             role="status"
-            className="text-label text-[color:var(--color-text-tertiary)]"
+            className="flex flex-wrap items-center gap-x-2 text-label text-[color:var(--color-text-tertiary)]"
             data-testid="brief-mark-seen-done"
           >
-            {seenMarked ? t('markSeenDone') : ''}
+            {seenMarked ? (
+              <>
+                <span>{t('markSeenDone')}</span>
+                {/*
+                  * One press back, inside the same region that announced the press. It writes to
+                  * this browser only, never to the folder, so it owes no dialog and no scrim.
+                  */}
+                <button
+                  type="button"
+                  data-testid="brief-mark-seen-undo"
+                  onClick={() => {
+                    brief.undoSeen();
+                    setSeenMarked(false);
+                  }}
+                  className={controlClass({ shape: 'link', className: 'atlas-touch-floor text-[color:var(--color-indigo-text-strong)]' })}
+                >
+                  {t('markSeenUndo')}
+                </button>
+              </>
+            ) : null}
           </p>
           <Button
             variant="outline"

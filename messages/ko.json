@@ -1657,7 +1657,8 @@
           "agent-calls-since": "그 뒤로 에이전트 호출 {count}회",
           "agent-writes-since": "그중 폴더에 쓴 것 {count}회",
           "agent-distinct-since": "일한 에이전트 {count}개"
-        }
+        },
+        "markSeenUndo": "되돌리기"
       },
       "tabCountTitle": {
         "do-next": "고칠 항목 수",
