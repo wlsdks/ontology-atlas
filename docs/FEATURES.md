@@ -326,6 +326,11 @@ had become false).
 - **Shift-click 2 nodes** → highlight shortest path
 - **The trail you walked** → every node that takes focus is appended to a session trail. The map leaves footprints beside the relation lines actually crossed (offset along the line's own curve, never on it) and a step number beside each visited node; the top-centre **Trail** chip opens a newest-first mini timeline. Each row carries, under the title, how that step connects to the step before it: the relation word plus the reason recorded on that edge (`relation_notes`), the relation word alone when no reason is written, or "Not directly related" when the two share no edge. **Hand off to AI** copies the same per-step lines into the agent brief, so the argument the walk made travels with the names. Past trails are archived in the vault folder.
 - **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms).
+- **The INDEX tree states its own shape** (2026-09-20) → its rows are siblings in
+  the DOM, with the hierarchy drawn as a left margin, so each row carries
+  `aria-level` plus `aria-posinset`/`aria-setsize`. Before this a screen reader
+  announced the project and its nine domains as ten peers, and an expanded
+  domain's capabilities joined that same flat list.
 - **The chrome may not eat the map** (2026-09-20) → the camera's side insets are
   absolute pixels (350 for the INDEX panel, 120 for the tool rail), so they did
   not shrink with the window: on an 820-wide canvas they reserved 57% of it, and
