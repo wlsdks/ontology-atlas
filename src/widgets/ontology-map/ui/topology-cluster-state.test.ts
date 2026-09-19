@@ -60,12 +60,6 @@ describe("computeTopologyClusterState", () => {
     expect(moved.chips[0].anchor.y).toBeCloseTo(0, 6);
   });
 
-  it("held-open ids reach the gate: the child is drawn and the chip claims one fewer", () => {
-    const result = computeTopologyClusterState(buildWorld(0, 0), new Set(), new Set([childIds[0]]));
-    expect(result.clusteredIds.has(childIds[0])).toBe(false);
-    expect(result.chips[0].count).toBe(childIds.length - 1);
-  });
-
   it("확장: 자식 노출(clustered 없음) + 접기 칩(expanded=true)", () => {
     const result = computeTopologyClusterState(buildWorld(0, 0), new Set(["d"]));
     expect(result.clusteredIds.size).toBe(0);

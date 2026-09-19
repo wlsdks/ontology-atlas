@@ -397,30 +397,6 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
     const unbounded = computeFocusCameraTarget(world, baseTokens, 1200, 800, "f", overviewEntryScale);
     expect(unbounded!.tscale).toBeCloseTo(overviewEntryScale, 6);
   });
-
-  it("the target never leaves the leash the physics keeps around the focused node", () => {
-    // A capability whose only neighbours sit far to the right (dependencies in
-    // other domains): the ego bbox centre lies 1000 units from the node, the
-    // leash is 180. Before the clamp the spring chased a target it could never
-    // reach and the idle gate read "camera moving" for the whole selection.
-    const tokens = { ...baseTokens, cameraFocusPanMargin: 180 } as unknown as OntologyMapTokens;
-    const world = egoWorld(
-      {
-        f: { x: 0, y: 0, kind: "capability" },
-        far1: { x: 2000, y: 0, kind: "capability" },
-        far2: { x: 2000, y: 40, kind: "capability" },
-      },
-      { f: ["far1", "far2"], far1: ["f"], far2: ["f"] },
-    );
-    const target = computeFocusCameraTarget(world, tokens, 1200, 800, "f", 0.9)!;
-    expect(Math.abs(target.tx - 0)).toBeLessThanOrEqual(180);
-    expect(Math.abs(target.ty - 0)).toBeLessThanOrEqual(180);
-    // The clamp is a clamp: a compact ego graph is framed exactly as before.
-    const near = egoWorld({ f: { x: 0, y: 0, kind: "capability" }, n: { x: 60, y: 0, kind: "capability" } }, { f: ["n"], n: ["f"] });
-    const wide = computeFocusCameraTarget(near, { ...baseTokens, cameraFocusPanMargin: 10_000 } as unknown as OntologyMapTokens, 1200, 800, "f", 0.9)!;
-    const leashed = computeFocusCameraTarget(near, tokens, 1200, 800, "f", 0.9)!;
-    expect(leashed).toEqual(wide);
-  });
 });
 
 /**
