@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import type { HoverAvoidRect } from "./topology-pointer-handlers";
 import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
@@ -148,7 +149,7 @@ export interface OntologyMapProps {
   /** P3c — the edge hover microcard (fires on an identity change; null clears it). */
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null,
-    position: { x: number; y: number } | null,
+    position: { x: number; y: number; avoid: readonly HoverAvoidRect[] } | null,
   ) => void;
   /**
    * The connected-node slug the user is hovering in the detail panel's

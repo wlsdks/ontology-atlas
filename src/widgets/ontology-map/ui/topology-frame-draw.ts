@@ -85,7 +85,7 @@ import {
   type ReservedBox,
   type SafeRect,
 } from "../render/label-layout";
-import { draw as nodeShapesDraw, drawGalaxyNodeStar, drawNodeStar } from "../render/node-shapes";
+import { draw as nodeShapesDraw, drawGalaxyNodeStar, drawNodeStar, SPOTLIGHT_RING_OFFSET } from "../render/node-shapes";
 import { clusterChipOccupancyRect, drawClusterChip, clusterChipScale, type ClusterBarLabels } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
@@ -1151,8 +1151,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const pathLensActive = spotlightLensActive && mapLensKind === "path";
   const constellationLensActive = spotlightLensActive && mapLensKind === "constellation";
   const recentSpotlightActive = spotlightLensActive && mapLensKind === "recent";
+  // A path sinks its surroundings deeper than the whole-map lenses do: two
+  // ends and a line have no context to keep readable, and at the spotlight's
+  // rest the still frame did not say which two were asked about (2026-09-19).
+  const lensRestAlpha = pathLensActive ? tokens.pathRestAlpha : tokens.spotlightRestAlpha;
   const spotlightSink = (inSpotlight: boolean): number =>
-    spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - tokens.spotlightRestAlpha) : 1;
+    spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - lensRestAlpha) : 1;
 
   // Trail lens — active only while the trail popover is open. It swaps the ego
   // keep-set from "1-hop neighbours" to "visited nodes" (see `lensNodeEgoState`
@@ -2590,7 +2594,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // reserve the ring clearance too, because the selection ring and expand
     // badge sit just outside the disc.
     const attended = egoState === "center" || egoState === "neighbor" || node.id === hoveredNodeId;
-    const reservedHalf = attended ? screenRadius + EXPANDED_AURA_RING_OFFSET : screenRadius + 1;
+    // A changed node wears the recent-changes ring outside its disc; reserve it
+    // too, or a neighbour's name is laid across the ring (2026-09-19).
+    const wearsSpotlightRing = recentSpotlightActive && spotlightIds !== null && spotlightIds.has(node.id);
+    const reservedHalf = attended
+      ? screenRadius + EXPANDED_AURA_RING_OFFSET
+      : screenRadius + (wearsSpotlightRing ? SPOTLIGHT_RING_OFFSET + 1 : 1);
     nodeDiscReservations.push({
       ownerId: node.id,
       priority: NODE_DISC_LABEL_PRIORITY,
@@ -3313,6 +3322,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     isHovered: boolean;
     revealAlpha: number;
     emphasisAlpha: number;
+    /**
+     * The lens sink the name takes as a multiplier. It used to ride
+     * `revealAlpha`, which a project or domain name ignores by rule (always 1),
+     * so under the path lens every domain name stayed at full ink while the
+     * discs sank (measured 2026-09-19: 185 for every name, on or off the path).
+     */
+    lensSink: number;
     /** W6 agent visibility — this label's node matches the agent heartbeat's current focus. */
     agentFocus: boolean;
     /** This frame's normalised depth, 0 near … 1 far (always 0 in 2D) — the paint order. */
@@ -3466,6 +3482,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       kind: node.kind,
       egoState,
       isHovered,
+      dimLabelAlpha: tokens.egoDimLabelAlpha,
       revealAlpha: labelRevealAlpha,
     });
     // A saved set is an explicit reading scope. Its names use the existing
@@ -3640,6 +3657,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         egoState,
         isHovered,
         revealAlpha: labelRevealAlpha,
+        lensSink: pathLabelSink,
         emphasisAlpha: constellationKept ? spotlightRamp : 0,
         agentFocus,
         depthU: domeOn ? labelDome.u : 0,
@@ -3768,13 +3786,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         fontScale: labelScale,
         // A label is never brighter than its node's appear ramp — a node still
         // swelling in (new node, growth replay) must not be named before it is there.
-        presenceAlpha: presenceAlpha * (appearById ? Math.min(1, Math.max(0, appearById.get(payload.nodeId) ?? 1)) : 1),
+        presenceAlpha:
+          presenceAlpha *
+          payload.lensSink *
+          (appearById ? Math.min(1, Math.max(0, appearById.get(payload.nodeId) ?? 1)) : 1),
       },
       {
         labelProject: tokens.labelProject,
         labelDomain: tokens.labelDomain,
         labelCapability: tokens.labelCapability,
         labelElement: tokens.labelElement,
+        egoDimLabelAlpha: tokens.egoDimLabelAlpha,
         amberHub: tokens.amberHub,
         labelHalo: tokens.canvasBgNear,
       },
