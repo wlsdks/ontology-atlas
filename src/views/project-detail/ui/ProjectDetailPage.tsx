@@ -33,7 +33,8 @@ import {
   getTopologyProjectHref,
   type Project,
 } from "@/entities/project";
-import { useProjects, useProjectMutations, useProjectBody } from "@/features/project-data-source";
+import { useProjects, useProjectMutations, useProjectBody, useVaultDocs } from "@/features/project-data-source";
+import { buildDocsVaultHref, findProjectDocInList } from "@/entities/docs-vault";
 import { VaultConflictError } from "@/entities/vault-session";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { CopyProjectLinkButton } from "@/features/project-share";
@@ -100,10 +101,18 @@ function ProjectDetailTopBar({
   slug,
   projectName,
   census,
+  projectDocSlug,
 }: {
   slug?: string;
   projectName?: string | null;
   census?: { concepts: number; relations: number } | null;
+  /**
+   * The vault slug of this project's own Markdown document. When known, the documents door opens
+   * **that file** rather than the vault's root: the frontmatter of that one file is what this whole
+   * page is drawn from, and until 2026-09-19 the page had no door to it — "Ontology documents" led
+   * to the vault root and left the person to find the project's file by hand.
+   */
+  projectDocSlug?: string | null;
 }) {
   const t = useTranslations("projectPages.detail");
   /**
@@ -119,7 +128,8 @@ function ProjectDetailTopBar({
    */
   const workspaceHref = '/topology/';
   const projectsListHref = '/projects/';
-  const docsVaultHref = '/docs/';
+  // Same label either way: the door is the Ontology documents; when the file is known it opens on it.
+  const docsVaultHref = projectDocSlug ? buildDocsVaultHref({ slug: projectDocSlug }) : '/docs/';
   return (
     /* Without a size class the `▸` separator inherits the root 16px and renders 33–45% larger than
        the link beside it (12.5px) and the label (11px) — ink outweighing data. The whole breadcrumb
@@ -357,6 +367,7 @@ export function ProjectDetailPage({
   const insightEdges = insight?.edges ?? [];
 
   const handoffCopy = useCopyFeedback();
+  const vaultDocs = useVaultDocs();
 
   if (!slug) {
     return (
@@ -391,6 +402,8 @@ export function ProjectDetailPage({
       );
   }
 
+  // The one Markdown file this page is drawn from — the door in the top bar and the path in the footer.
+  const projectDoc = findProjectDocInList(vaultDocs, project.slug);
   const metrics = buildProjectOntologyMetrics(insightNodes, insightEdges, project.slug);
   const domainComposition = buildProjectDomainComposition(insightNodes, insightEdges, project.slug);
   const relatesGraphSlugs = findRelatesGraphProjectSlugs(insightNodes, insightEdges, project.slug);
@@ -478,10 +491,13 @@ export function ProjectDetailPage({
     { label: t("metricElements"), value: metrics.elements },
   ];
   // The meta figures are a different kind and have no reason to carry the same weight — demoted to plain text.
+  // A zero is not drawn (the "match 0 → hide" rule this page already applies to the domain rows):
+  // "Documents 0" under a header counting 125 concepts in a folder of 126 Markdown files read as a
+  // contradiction, when it only meant no `kind: document` node is linked to this project.
   const secondaryMetrics: Array<{ label: string; value: number }> = [
     { label: t("metricDocuments"), value: metrics.documents },
     { label: t("metricRelations"), value: metrics.relations },
-  ];
+  ].filter((item) => item.value > 0);
 
   const handleCopyHandoff = () => {
     void handoffCopy.copy(handoffSnippet);
@@ -499,6 +515,7 @@ export function ProjectDetailPage({
         slug={slug}
         projectName={project.name}
         census={{ concepts: insightNodes.length, relations: insightEdges.length }}
+        projectDocSlug={projectDoc?.slug ?? null}
       />
 
       {/* zone 1 — hero band: glyph, title, and description plus the engraved metric strip and the
@@ -557,6 +574,17 @@ export function ProjectDetailPage({
             {/* `flex-none` created horizontal overflow at a 390px viewport, the read-only badge and
                 its actions pushing the page out — allow shrinking with `min-w-0` and wrap instead. */}
             <div className="flex min-w-0 basis-full flex-wrap items-center gap-2 xl:ml-auto xl:basis-auto">
+              {/*
+                Order and weight follow what a person on this page does most: open the project on the
+                map. That is the one filled control; the review-envelope picker beside it is a
+                reviewer's tool and stands second in outline. Until 2026-09-19 the picker was first
+                and both were outline, so the page's primary action read as one of two equals.
+              */}
+              <Link href={getTopologyProjectHref(project.slug)} data-testid="project-detail-topology-link">
+                <Button type="button" variant="primary" size="sm">
+                  {t("topBarTopologyView")}
+                </Button>
+              </Link>
               <input
                 {...constructionReview.inputProps}
                 data-testid="construction-review-ingress"
@@ -575,11 +603,6 @@ export function ProjectDetailPage({
                   ? t("constructionReview.readingResult")
                   : t("constructionReview.openResult")}
               </Button>
-              <Link href={getTopologyProjectHref(project.slug)} data-testid="project-detail-topology-link">
-                <Button type="button" variant="outline" size="sm">
-                  {t("topBarTopologyView")}
-                </Button>
-              </Link>
               {canManageProject ? (
                 <ProjectQuickEditPanel project={project} settingsHref={projectFullEditHref} />
               ) : (
@@ -974,12 +997,27 @@ export function ProjectDetailPage({
       </section>
 
       <footer className="mt-[var(--section-gap)] border-t border-[color:var(--color-overlay-2)] pt-6 pb-[var(--page-bottom-breath)]">
-        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-          {t.rich("footerSummary", {
-            slug: project.slug,
-            date: formatDate(project.updatedAt),
-            value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
-          })}
+        {/*
+          The footer names the file: slug and the Markdown path this page is drawn from, the two
+          things a person types into an agent or a terminal next. The updated date used to stand
+          here as well, a second copy of the hero's; the path is what was missing (2026-09-19).
+          Without a known document the footer keeps the older slug-and-date form.
+        */}
+        <p
+          data-testid="project-detail-footer"
+          className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]"
+        >
+          {projectDoc
+            ? t.rich("footerSummaryDoc", {
+                slug: project.slug,
+                path: projectDoc.path,
+                value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
+              })
+            : t.rich("footerSummary", {
+                slug: project.slug,
+                date: formatDate(project.updatedAt),
+                value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
+              })}
         </p>
       </footer>
 
