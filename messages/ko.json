@@ -275,7 +275,8 @@
     "views": {
       "guides": "지침",
       "structure": "구조",
-      "coverage": "커버리지"
+      "coverage": "커버리지",
+      "architecture": "아키텍처"
     },
     "sentence": "이 저장소는 에이전트에게 문서 {documents}개로 말하고, 검사 {checks}개를 걸어두었습니다.",
     "checksBreakdown": "훅 스크립트 {hooks}개 · .githooks/ 파일 {gitHooks}개 · package.json 스크립트 {scripts}개",
@@ -401,7 +402,101 @@
     "coverageGapWatched": "어떤 검사도 부르지 않는 도메인",
     "coverageEverywhereStat": "모든 도메인에 닿는 것",
     "reachMirroredLabel": "선언된 짝의 Codex 사본",
-    "reachNamedDirectLabel": "지침이 직접 부른 것"
+    "reachNamedDirectLabel": "지침이 직접 부른 것",
+    "anatomyTitle": "하네스 구조",
+    "anatomyCaption": "에이전트가 이 저장소에서 한 번 일할 때 거치는 자리를, 거치는 순서대로 놓았습니다. 숫자는 이 폴더에서 읽은 파일 수이고, 점수나 등급은 매기지 않습니다.",
+    "anatomyProvenanceLabel": "이 구분은 어디서 왔나",
+    "anatomyProvenance": "부속을 나누는 말은 공개된 네 곳이 대체로 같게 씁니다. Fowler·Böckeler 「Harness engineering for coding agent users」가 알려주는 것(guides)과 지켜보는 것(sensors)을 나눴고, arXiv 2609.00006 「Harness Engineering: Anatomy, Architecture, and Evolution of Coding Agents」(CC BY 4.0)가 일곱 부속(루프·모델 연결·도구·기억과 맥락·안전과 권한·오케스트레이션·확장)을 셌습니다. OpenAI 「Harness engineering」과 Codex AGENTS.md 문서는 뿌리에서 아래로 합쳐 읽는 지침 사슬을, Anthropic 「Effective harnesses for long-running agents」는 맥락 창이 바뀌어도 일이 이어지게 하는 장치를 설명합니다. 일곱 중 다섯은 저장소 파일로 셀 수 있고, 루프와 모델은 셀 수 없습니다.",
+    "anatomyTellsCaption": "에이전트가 손대기 전에 읽거나 받는 것입니다.",
+    "anatomyGatesCaption": "말이 아니라 실제로 멈추게 하는 것입니다.",
+    "anatomyWatchesCaption": "하고 난 뒤에 도는 것입니다. 막지는 않습니다.",
+    "anatomyToolBand": "저장소가 정하지 않는 것",
+    "anatomyToolCaption": "하네스의 한가운데인데도 이 폴더의 파일로는 알 수 없는 자리입니다. 비어 있어서가 아니라, 답이 여기 없어서 비워 둡니다.",
+    "anatomyAbsent": "아직 없음",
+    "anatomyMore": "그 외 {count}개",
+    "anatomyPermissionSplit": "허용 {allow} · 물어봄 {ask} · 금지 {deny}",
+    "anatomyApprovalGate": "{config}의 훅은 도구 안에서 사람이 한 번 신뢰해야 돕니다. 그 승인은 파일에 남지 않아서 여기서는 읽을 수 없습니다.",
+    "anatomySlots": {
+      "always": {
+        "title": "항상 읽는 것",
+        "body": "일을 시작하기 전에 무조건 읽는 지침입니다. 여기 없는 말은 에이전트가 그때그때 찾아야 합니다."
+      },
+      "scoped": {
+        "title": "경로에 따라 붙는 것",
+        "body": "그 폴더의 파일을 건드릴 때만 따라붙는 지침입니다. 항상 읽는 쪽을 짧게 유지하는 방법입니다."
+      },
+      "tools": {
+        "title": "쓸 수 있는 도구",
+        "body": "이 저장소가 에이전트 연결(MCP)로 붙여 둔 서버입니다. 에이전트가 손을 뻗을 수 있는 범위입니다."
+      },
+      "toolGates": {
+        "title": "도구를 쓰기 전에 막는 것",
+        "body": "도구를 부르기 직전에 돌아서 거절할 수 있는 훅입니다. 스크립트가 디스크에 있다는 뜻이고, 실제로 막은 적이 있는지는 파일로 알 수 없습니다."
+      },
+      "permissions": {
+        "title": "아예 못 하게 해둔 것",
+        "body": "설정의 금지·확인 항목입니다. 경로를 풀 필요도 없이 먼저 걸리고, 훅보다 위에 있습니다."
+      },
+      "gitGates": {
+        "title": "커밋·푸시 때 걸리는 것",
+        "body": ".githooks/의 파일입니다. 사람이 손으로 하든 에이전트가 하든 같은 자리에서 걸립니다."
+      },
+      "watchers": {
+        "title": "하고 난 뒤 지켜보는 것",
+        "body": "도구를 쓴 뒤나 턴이 끝날 때 도는 훅입니다. 막지 않고 기록하거나 알려줍니다."
+      },
+      "checks": {
+        "title": "명령으로 도는 검사",
+        "body": "package.json의 lint·typecheck·test 스크립트입니다. 선언을 셀 뿐, 돌았는지는 모릅니다."
+      },
+      "discoveredTests": {
+        "title": "이름으로 찾아 도는 테스트",
+        "body": "어느 명령에도 이름이 적히지 않지만 러너가 스스로 찾아 도는 테스트 파일입니다."
+      },
+      "loop": {
+        "title": "에이전트 루프와 모델",
+        "body": "무엇을 먼저 읽을지, 언제 멈출지, 맥락이 꽉 차면 무엇을 버릴지, 어떤 모델을 쓸지는 에이전트 도구가 정합니다. 저장소를 아무리 읽어도 알 수 없고, 도구를 바꾸면 같은 지침으로도 결과가 달라집니다."
+      },
+      "pipeline": {
+        "title": "올린 뒤 도는 파이프라인",
+        "body": ".github/workflows/의 파일입니다. 여기 적힌 일은 코드가 올라간 뒤에 돌아서, 내 컴퓨터에서 지나간 것도 잡습니다."
+      },
+      "skills": {
+        "title": "부를 때 오는 스킬",
+        "body": "평소에는 이름만 보이고, 필요할 때 펼쳐지는 작업 설명서입니다. 항상 읽는 지침을 짧게 두고도 깊이 있게 만드는 방법입니다."
+      },
+      "subagents": {
+        "title": "따로 보내는 에이전트",
+        "body": "자기 맥락을 갖고 따로 도는 일꾼의 브리프입니다. 같은 이름의 Codex·Claude 사본은 한 번만 셉니다."
+      },
+      "blind": {
+        "title": "에이전트 눈에서 빼둔 것",
+        "body": "에이전트가 보면 안 된다고 적어 둔 파일입니다. 이름은 도구마다 다릅니다 — Cursor 는 .cursorignore, Windsurf 는 .codeiumignore, Gemini Code Assist 는 .aiexclude, Gemini CLI 는 .geminiignore, JetBrains 는 .aiignore. 저장소는 적어 둘 뿐이고, 지키는지는 그 도구가 정합니다."
+      }
+    },
+    "anatomyUnits": {
+      "always": "문서 {count}개",
+      "scoped": "문서 {count}개",
+      "tools": "서버 {count}개",
+      "toolGates": "훅 {count}개",
+      "permissions": "항목 {count}개",
+      "gitGates": "파일 {count}개",
+      "watchers": "훅 {count}개",
+      "checks": "스크립트 {count}개",
+      "discoveredTests": "파일 {count}개",
+      "loop": "{count}",
+      "pipeline": "워크플로 {count}개",
+      "skills": "스킬 {count}개",
+      "subagents": "브리프 {count}개",
+      "blind": "파일 {count}개"
+    },
+    "anatomyFillHere": "이런 것이 사는 자리",
+    "anatomyFillCopy": "경로 복사",
+    "anatomyFillCopied": "복사함",
+    "anatomyFillCopyAria": "경로 복사: {path}",
+    "anatomyAlwaysWeight": "매 턴 읽는 분량 {size}",
+    "anatomyAlwaysWeightLabel": "이 분량이 왜 중요한가",
+    "anatomyAlwaysWeightHint": "이 파일들은 에이전트가 코드를 한 줄도 보기 전에 읽습니다. 매 턴, 매 세션, 어느 도구에서나 같은 값을 치릅니다. 문서 수는 이것을 말해주지 못합니다. 2 KB 문서 3개와 40 KB 문서 3개는 똑같이 「3개」이고, 그 차이가 하네스가 다루는 것입니다. Codex 에이전트는 뿌리 AGENTS.md 파일과 작업 경로의 하위 파일을 합쳐 읽다가 한도를 넘으면 말없이 잘라냅니다. 파일별 크기와 한도는 「지침」 보기에 있습니다."
   },
   "architecture": {
     "eyebrow": "코드 아키텍처",
@@ -4740,10 +4835,29 @@
         "preview": "검토한 미리보기",
         "decision": "판단 결속"
       },
-      "authority": { "observed": "관측됨", "unavailable": "확인할 수 없음", "unknown": "미확인" },
-      "permission": { "pending": "대기 중", "allowed": "허용", "rejected": "거절", "unknown": "미확인" },
-      "execution": { "completed": "완료", "failed": "실패", "not_run": "실행 안 함", "unknown": "미확인" },
-      "readback": { "matched": "정확한 바이트 일치", "mismatched": "바이트가 다름", "missing": "누락", "unknown": "미확인" }
+      "authority": {
+        "observed": "관측됨",
+        "unavailable": "확인할 수 없음",
+        "unknown": "미확인"
+      },
+      "permission": {
+        "pending": "대기 중",
+        "allowed": "허용",
+        "rejected": "거절",
+        "unknown": "미확인"
+      },
+      "execution": {
+        "completed": "완료",
+        "failed": "실패",
+        "not_run": "실행 안 함",
+        "unknown": "미확인"
+      },
+      "readback": {
+        "matched": "정확한 바이트 일치",
+        "mismatched": "바이트가 다름",
+        "missing": "누락",
+        "unknown": "미확인"
+      }
     }
   },
   "mcp": {
@@ -5546,7 +5660,11 @@
       "emptyDescription": "지도를 갤럭시 보기로 바꾸고 개념 몇 개를 골라 이름과 목적을 붙이면, 그 묶음이 여기에 남아 같은 범위로 다시 돌아갈 수 있습니다. 「지도에서 고르기」가 그 자리로 데려갑니다.",
       "memberCount": "개념 {count, number}개",
       "referenceCount": "참고 자료 {count, number}개",
-      "shape": { "name": "이름", "members": "개념 수", "purpose": "남긴 목적" },
+      "shape": {
+        "name": "이름",
+        "members": "개념 수",
+        "purpose": "남긴 목적"
+      },
       "noPurpose": "남긴 목적이 없습니다",
       "viewInGalaxy": "지도에서 보기",
       "viewInGalaxyNamed": "{name} 지도에서 보기",
@@ -5576,7 +5694,11 @@
       "malformedTitle": "자동 점검 파일을 봐야 합니다",
       "malformedDescription": ".ontology-atlas/rounds.json을 읽지 못해 그대로 두었습니다. 고치거나 지운 뒤 다시 읽으세요.",
       "retry": "다시 읽기",
-      "shape": { "name": "이름", "cadence": "주기", "next": "다음 실행" },
+      "shape": {
+        "name": "이름",
+        "cadence": "주기",
+        "next": "다음 실행"
+      },
       "emptyTitle": "아직 스스로 도는 것이 없습니다",
       "emptyDescription": "자동 점검을 등록하세요. 한 시간마다 모든 문서가 원문과 여전히 맞는지 확인하고, 아침마다 서비스가 보낸 것을 다시 읽어 바뀐 문서를 다시 씁니다.",
       "kind": {
