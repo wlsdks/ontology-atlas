@@ -147,8 +147,12 @@ describe('i18n message catalog', () => {
     assert.match(en.download.trustPrivacyNote, /No Atlas account or backend/i);
     assert.match(en.download.trustPrivacyNote, /does not upload/i);
     assert.match(en.download.trustPrivacyNote, /coding agent.*provider/i);
-    assert.match(ko.download.trustPrivacyNote, /Atlas 계정도 백엔드도 없습니다/);
-    assert.match(ko.download.trustPrivacyNote, /Atlas가 업로드하지 않습니다/);
+    // The facts, not the sentence endings. Pinned to one register these broke the day the
+    // catalogue moved to a single voice (2026-09-19) — and a gate that fails when correct prose
+    // is reworded is the failure `documentation.md` names: check what a machine can derive,
+    // never the sentence a person wrote.
+    assert.match(ko.download.trustPrivacyNote, /Atlas 계정도 백엔드도 없/);
+    assert.match(ko.download.trustPrivacyNote, /Atlas가 업로드하지 않/);
     assert.match(ko.download.trustPrivacyNote, /코딩 에이전트.*제공자/);
     assert.doesNotMatch(en.download.trustPrivacyNote, /never transmitted|nothing sent/i);
     assert.doesNotMatch(ko.download.trustPrivacyNote, /어디로도 전송되지|아무것도 보내지/);
@@ -175,7 +179,7 @@ describe('i18n message catalog', () => {
     assert.match(ko.download.platformStatus, /Windows/);
     assert.match(en.download.windowsUnsignedWarning, /not code-signed/i);
     assert.match(en.download.windowsUnsignedWarning, /SmartScreen/i);
-    assert.match(ko.download.windowsUnsignedWarning, /코드 서명되지 않았습니다/);
+    assert.match(ko.download.windowsUnsignedWarning, /코드 서명되지 않았/);
     assert.match(ko.download.windowsUnsignedWarning, /SmartScreen/i);
 
     // A domain that does not resolve must not be cited as fact.
@@ -265,7 +269,7 @@ describe('i18n message catalog', () => {
     );
     assert.equal(
       ko.nav.settingsMenu.triggerTitle,
-      '화면, 언어, 작업공간, AI 에이전트 연결을 한 곳에서 조정합니다',
+      '화면, 언어, 작업공간, AI 에이전트 연결을 한 곳에서 조정해요',
     );
     assert.equal(ko.nav.settingsMenu.groupWorkspace, '작업공간');
     assert.equal(ko.nav.settingsMenu.workspaceFolderLabel, '작업공간 폴더');
@@ -424,7 +428,7 @@ describe('i18n message catalog', () => {
     );
     assert.match(ko.topology.controls.docsTooltip, /\(D\)$/);
     assert.match(ko.topology.controls.docsAriaLabel, /\(D\)$/);
-    assert.equal(ko.topology.controls.relayoutToast, '지도를 다시 정렬합니다');
+    assert.equal(ko.topology.controls.relayoutToast, '지도를 다시 정렬해요');
     assert.doesNotMatch(
       [
         ko.topology.analysis.overviewBriefCopyAriaLabel,
