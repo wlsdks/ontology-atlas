@@ -17,6 +17,8 @@ describe('buildHarnessBrief', () => {
     expect(reading.availability).toBe('reading');
     expect(reading.lines).toEqual([]);
     expect(buildHarnessBrief({ areas: null, state: 'unreadable', driftCount: null, fileTimes: null, guideFileCount: null, anchorMs }).availability).toBe('unreadable');
+    // The guide files live in a code repository, so an unbound vault has nothing to read.
+    expect(buildHarnessBrief({ areas: null, state: 'no-source', driftCount: null, fileTimes: null, guideFileCount: null, anchorMs }).availability).toBe('no-source');
   });
 
   it('counts the empty cells per column and rule files changed since the anchor', () => {

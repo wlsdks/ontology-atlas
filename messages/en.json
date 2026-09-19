@@ -1592,6 +1592,7 @@
         },
         "reading": "Reading the folder.",
         "unreadable": "The guide files in this folder could not be read. Reopening the folder tries again.",
+        "noSource": "This folder is not bound to a code repository yet. Bind one and the guides and checks are counted here.",
         "markSeen": "Seen up to here",
         "markSeenDone": "Counting from now",
         "core": { "ontology": "Ontology", "wiki": "Wiki", "harness": "Harness", "agent": "Agent activity" },

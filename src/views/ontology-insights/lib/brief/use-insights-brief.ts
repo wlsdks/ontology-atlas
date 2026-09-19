@@ -285,7 +285,9 @@ export function useInsightsBrief({
         ? 'reading'
         : harnessState.status === 'failed'
           ? 'unreadable'
-          : 'browser';
+          : harnessState.status === 'no-source'
+            ? 'no-source'
+            : 'browser';
       return buildHarnessBrief({ areas: null, state, driftCount: null, fileTimes: null, guideFileCount: null, anchorMs: anchor.anchorMs });
     }
     const matrix = buildCoverageMatrix(harnessReport.coverage, coverage.areas, harnessReport.testFiles);

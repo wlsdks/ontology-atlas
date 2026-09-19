@@ -20,11 +20,13 @@ type BriefCoreKey = 'ontology' | 'wiki' | 'harness' | 'agent';
  * means the browser cannot reach the input (dot folders, Git, code beside the vault) and
  * the installed app can; `no-data` means the input exists but is empty (no wiki, no agent
  * log yet), which is a different sentence from "cannot look"; `reading` means the app is
- * still walking the folder and `unreadable` means it tried and could not. Inside the app
+ * still walking the folder, `unreadable` means it tried and could not, and `no-source` means
+ * nothing is bound to read: the harness lives in a code repository this vault has not been
+ * connected to. Inside the app
  * those last two used to read "measured in the app only", which told a person standing in
  * the app to go and get the app (measured on this repository's own vault, 2026-09-19).
  */
-type BriefAvailability = 'measured' | 'app-only' | 'no-data' | 'reading' | 'unreadable';
+type BriefAvailability = 'measured' | 'app-only' | 'no-data' | 'reading' | 'unreadable' | 'no-source';
 
 export interface BriefLine {
   /** Message id under `brief.line.*`. Stable; screens and tests key on it. */

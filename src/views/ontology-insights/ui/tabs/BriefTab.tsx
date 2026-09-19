@@ -144,6 +144,14 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent }: { core: BriefCore; 
             {t(core.availability)}
           </li>
         ) : null}
+        {core.availability === 'no-source' ? (
+          <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-no-source-${core.core}`}>
+            <span className="min-w-0">{t('noSource')}</span>
+            <Link href={CORE_NEXT_HREF[core.core]} className={controlClass({ shape: 'link', className: LINE_LINK })}>
+              {t(`emptyAction.${core.core}`)}
+            </Link>
+          </li>
+        ) : null}
         {core.availability === 'app-only' ? (
           <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]">
             <span className="min-w-0">{t('appOnly')}</span>
