@@ -180,6 +180,21 @@ export function GlobalSearch({
     getScrollElement: () => projectScrollRef.current,
     estimateSize: () => 110,
   });
+  // The dialog's content mounts a render after `open` flips (Radix Presence),
+  // so the virtualizer first looked for its scroll element and found nothing —
+  // and nothing re-rendered until the person typed. Opened fresh, the row said
+  // "Project · 1" with no chip under it (2026-09-19). Measuring when the
+  // element arrives is the re-render that lets the virtualizer find it. The
+  // callback is stable and guarded, because an inline one runs every render
+  // and each measure is itself a render.
+  const attachProjectScroll = useCallback(
+    (element: HTMLDivElement | null) => {
+      if (projectScrollRef.current === element) return;
+      projectScrollRef.current = element;
+      if (element) projectVirtualizer.measure();
+    },
+    [projectVirtualizer],
+  );
 
   const closeAndClear = () => {
     onOpenChange(false);
@@ -380,7 +395,7 @@ export function GlobalSearch({
                   chips in the viewport (~10–15) even in a workspace of 1,979 projects.
                   The overflow-x-auto + relative + absolute-child pattern. */}
               <div
-                ref={projectScrollRef}
+                ref={attachProjectScroll}
                 className="relative flex-1 overflow-x-auto"
                 style={{ height: 24 }}
               >
