@@ -222,6 +222,21 @@ vi.mock("@/features/project-data-source", () => ({
   useVaultManifest: () => mocks.vaultManifest,
 }));
 
+function projectDoc(slug: string, projectSlug: string) {
+  return {
+    slug,
+    path: `docs/ontology/${slug}.md`,
+    title: projectSlug,
+    tags: [],
+    frontmatter: { kind: "project", slug: projectSlug },
+    headings: [],
+    excerpt: "",
+    wordCount: 0,
+    updatedAt: "2026-01-02T00:00:00.000Z",
+    linksOut: [],
+  };
+}
+
 function baseProject() {
   return {
     slug: SLUG,
@@ -601,11 +616,28 @@ describe("ProjectDetailPage", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
+    // The question is only asked of a folder that holds another project, so the empty state needs
+    // one to exist before it can be read.
+    mocks.vaultDocs = [projectDoc("project", SLUG), projectDoc("second", "second")];
     renderPage();
 
     const empty = screen.getByTestId("project-detail-connected-empty");
     expect(empty).toHaveTextContent("Not connected to any other project yet.");
     expect(empty.textContent).not.toMatch(/^0\b/);
+  });
+
+  // A folder with one project cannot answer "which other project is this tied to": connecting needs
+  // a second project to exist, so the card's empty state would sit at the top of the rail forever.
+  it("폴더에 프로젝트가 하나뿐이면 연결 카드를 아예 묻지 않는다", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    mocks.vaultDocs = [projectDoc("project", SLUG)];
+    renderPage();
+
+    expect(screen.queryByTestId("project-detail-connected-card")).toBeNull();
+    // The rail itself stays: the agent card below it is what now opens the column.
+    expect(screen.getByTestId("project-detail-connected")).toBeInTheDocument();
   });
 
   it("omits the status segment (no stray dash) when the project has no status field", () => {

@@ -77,6 +77,7 @@ export {
   findProjectVaultDoc,
   findProjectDocInList,
   resolveSoleProjectSlug,
+  hasSeveralProjectDocs,
 } from './lib/project-slug';
 export { extractProjectBody } from './lib/resolve-project-body';
 export type {

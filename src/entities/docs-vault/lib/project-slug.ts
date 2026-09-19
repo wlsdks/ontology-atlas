@@ -87,3 +87,23 @@ export function resolveSoleProjectSlug(docs: readonly VaultDoc[]): string | null
   }
   return only;
 }
+
+/**
+ * Whether the folder holds more than one project document.
+ *
+ * The connected-projects card asks "which other project is this one tied to", and a folder with a
+ * single project cannot answer it: connecting needs a second project to exist, so the card's empty
+ * state is permanent and sits at the top of the rail saying so forever. This walks once and stops
+ * at the second document, the same way `resolveSoleProjectSlug` does, because both run on every
+ * render of a project page.
+ */
+export function hasSeveralProjectDocs(docs: readonly VaultDoc[]): boolean {
+  let seen = 0;
+  for (const doc of docs) {
+    if (!isProjectVaultDoc(doc)) continue;
+    if (!computeProjectSlug(doc)) continue;
+    seen += 1;
+    if (seen > 1) return true;
+  }
+  return false;
+}

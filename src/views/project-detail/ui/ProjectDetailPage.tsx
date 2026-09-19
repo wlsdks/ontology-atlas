@@ -37,7 +37,7 @@ import {
   useVaultDocs,
   useVaultManifest,
 } from "@/features/project-data-source";
-import { buildDocsVaultHref, findProjectDocInList } from "@/entities/docs-vault";
+import { buildDocsVaultHref, findProjectDocInList, hasSeveralProjectDocs } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
@@ -439,6 +439,12 @@ export function ProjectDetailPage({
   });
   const relatesGraphSlugs = findRelatesGraphProjectSlugs(insightNodes, insightEdges, project.slug);
   const connectedProjects = buildConnectedProjects(project, related, relatesGraphSlugs);
+  // A card that cannot ever fill does not hold the top of the rail. With one project in the folder
+  // "connected projects" has no possible answer — connecting needs a second project to exist — so
+  // the question is not asked. The folder's own documents decide, the same fact the Projects door
+  // reads; `related` starts as every bundled project and would draw the card for one frame and
+  // then take it away.
+  const folderHasSeveralProjects = hasSeveralProjectDocs(vaultDocs);
   const handoffSnippet = buildAgentHandoffSnippet(project.slug);
 
   const canManageProject = projectMutations.canEdit;
@@ -898,7 +904,8 @@ export function ProjectDetailPage({
             projects" is the first surface of treating project-to-project relations as ontology, so it
             must not be hidden behind a tab. */}
         <aside data-testid="project-detail-connected" className="flex flex-col gap-[var(--card-gap)]">
-          <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
+          {connectedProjects.length > 0 || folderHasSeveralProjects ? (
+          <section data-testid="project-detail-connected-card" className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             <div className="mb-2.5 flex items-baseline gap-2">
               <OntologyMapTraceMark containment={false} />
               <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
@@ -969,6 +976,7 @@ export function ProjectDetailPage({
               </div>
             )}
           </section>
+          ) : null}
 
           <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             {/*

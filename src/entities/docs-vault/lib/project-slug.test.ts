@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { VaultDoc, VaultManifest } from "../model/types";
 import {
   resolveSoleProjectSlug,
+  hasSeveralProjectDocs,
   computeProjectSlug,
   findProjectDocInList,
   findProjectVaultDoc,
@@ -166,5 +167,32 @@ describe("resolveSoleProjectSlug", () => {
     expect(resolveSoleProjectSlug([])).toBeNull();
     expect(resolveSoleProjectSlug([makeDoc({ slug: "domains/order", frontmatter: { kind: "domain" } })])).toBeNull();
     expect(resolveSoleProjectSlug([projectDoc("projects/a"), projectDoc("projects/b")])).toBeNull();
+  });
+});
+
+describe("hasSeveralProjectDocs", () => {
+  const projectDoc = (slug: string): VaultDoc =>
+    makeDoc({ slug, frontmatter: { kind: "project", slug } });
+
+  it("is false for a folder with one project, which is the standard shape", () => {
+    expect(
+      hasSeveralProjectDocs([
+        makeDoc({ slug: "domains/order", frontmatter: { kind: "domain" } }),
+        projectDoc("atlas/project"),
+      ]),
+    ).toBe(false);
+  });
+
+  it("is false for a folder with no project at all", () => {
+    expect(hasSeveralProjectDocs([makeDoc({ slug: "notes", frontmatter: { kind: "document" } })])).toBe(false);
+  });
+
+  it("is true as soon as a second project exists", () => {
+    expect(hasSeveralProjectDocs([projectDoc("one"), projectDoc("two")])).toBe(true);
+  });
+
+  it("does not count a project document whose slug cannot be resolved", () => {
+    const unnamed = makeDoc({ slug: "", frontmatter: { kind: "project" } });
+    expect(hasSeveralProjectDocs([projectDoc("one"), unnamed])).toBe(false);
   });
 });
