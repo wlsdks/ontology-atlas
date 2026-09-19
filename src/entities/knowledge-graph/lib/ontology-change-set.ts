@@ -218,8 +218,19 @@ export function buildOntologyChangeSet(
         : destructive
           ? 'remove'
           : 'write';
-  const target = text(rawInput.slug) ?? text(rawInput.from) ?? text(rawInput.projectSlug);
-  const fields = fieldsFrom(rawInput, OMITTED_ARGUMENTS);
+  /*
+   * ⚠️ **The key that named the target is not one of the changed fields** (measured on the
+   * installed shape, 2026-09-19). `rename_concept({ slug, new_slug })` read as 「2 requested
+   * fields」 with `slug` counted among them, and `slug` is the document being changed, not a
+   * change to it. The two named branches above already omit their own target key; this one
+   * listed everything, so every generic tool over-reported by exactly one.
+   */
+  const targetKey = (['slug', 'from', 'projectSlug'] as const).find((key) => text(rawInput[key]));
+  const target = targetKey ? text(rawInput[targetKey]) : null;
+  const fields = fieldsFrom(
+    rawInput,
+    targetKey ? new Set([...OMITTED_ARGUMENTS, targetKey]) : OMITTED_ARGUMENTS,
+  );
   const exact = Object.keys(rawInput).length > 0;
   return withItems({
     toolName,
