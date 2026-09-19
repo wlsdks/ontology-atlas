@@ -42,6 +42,23 @@ vi.mock("@/features/project-data-source", () => ({
     error: null,
     mode: "static",
   }),
+  useVaultDocs: () => [
+    {
+      slug: "capabilities/mcp-server",
+      path: "docs/ontology/capabilities/mcp-server.md",
+      title: "MCP Server",
+      tags: [],
+      // Both production paths fill `doc.description` only from that frontmatter key — the no-excerpt rule
+      // reads frontmatter too.
+      frontmatter: { kind: "capability", description: "write 도구로 확장" },
+      headings: [],
+      excerpt: "",
+      description: "write 도구로 확장",
+      wordCount: 0,
+      updatedAt: "2026-07-18T09:00:00.000Z",
+      linksOut: [],
+    },
+  ],
 }));
 
 vi.mock("@/features/vault-ontology", () => ({
@@ -84,26 +101,6 @@ vi.mock("@/widgets/app-settings-menu", () => ({
 // tests.
 vi.mock("@/widgets/app-nav-rail", () => ({
   useNavRailSettingsSlot: () => {},
-}));
-
-vi.mock("../lib/use-vault-docs", () => ({
-  useVaultDocs: () => [
-    {
-      slug: "capabilities/mcp-server",
-      path: "docs/ontology/capabilities/mcp-server.md",
-      title: "MCP Server",
-      tags: [],
-      // Both production paths fill `doc.description` only from that frontmatter key — the no-excerpt rule
-      // reads frontmatter too.
-      frontmatter: { kind: "capability", description: "write 도구로 확장" },
-      headings: [],
-      excerpt: "",
-      description: "write 도구로 확장",
-      wordCount: 0,
-      updatedAt: "2026-07-18T09:00:00.000Z",
-      linksOut: [],
-    },
-  ],
 }));
 
 function node(id: string, kind: string, projectIds: string[], title?: string) {

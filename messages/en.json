@@ -1972,6 +1972,7 @@
       "handoffCopiedLabel": "Copied: paste into your AI chat",
       "handoffCopyErrorLabel": "Copy failed: try again",
       "footerSummary": "<value>{slug}</value> · Updated {date}",
+      "footerSummaryDoc": "<value>{slug}</value> · file <value>{path}</value>",
       "saveSuccessName": "Name saved",
       "saveSuccessDescription": "Description saved",
       "saveErrorGeneric": "Save failed",
