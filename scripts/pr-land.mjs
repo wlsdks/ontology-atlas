@@ -180,11 +180,20 @@ export function pruneWaiters(waiters, nowMs, leaseMinutes = WAIT_LEASE_MINUTES) 
  *
  * ⚠️ Rejoining never moves a waiter to the back. `since` is when it first asked, and a refresh
  * that reset it would punish exactly the waiter this whole mechanism exists for.
+ *
+ * ⚠️ **Which is what it did.** The first version recovered `since` only from the list it had just
+ * read, so when a concurrent last-write-wins blob dropped this entry there was no standing row to
+ * read it from and the waiter silently went to the back. Reported from another agent's session
+ * (2026-09-19) after its lander polled 25 minutes and the queue printed it as fifth, waiting 4 —
+ * and the asymmetry is the bad part: the longest waiter has the most polls in which to be dropped,
+ * so the ref punished the waiter it exists to protect. `entry.since` is the caller's own memory of
+ * when it first asked, and it outlives any blob. A lost entry now costs one poll of order, which
+ * is the trade this file already claimed to make.
  */
 export function joinWaitingLine(waiters, entry, nowMs) {
   const live = pruneWaiters(waiters, nowMs);
   const standing = live.find((waiter) => waiter.token === entry.token);
-  const since = standing?.since ?? new Date(nowMs).toISOString();
+  const since = standing?.since ?? entry.since ?? new Date(nowMs).toISOString();
   return [
     ...live.filter((waiter) => waiter.token !== entry.token),
     { ...entry, since, seenAt: new Date(nowMs).toISOString() },
@@ -1138,6 +1147,8 @@ export function runPrLand(argv, io = console) {
   let held = false;
   let standing = false;
   let lineWrittenAtMs = 0;
+  /** When this process first asked for the lock. Survives a queue entry being overwritten. */
+  let askedAtIso = null;
   /**
    * Take a place in the waiting line, or keep the one already held, and hand back the line as it
    * now stands. `null` means 「the order could not be established」 — an unwritable queue, which by
@@ -1150,7 +1161,9 @@ export function runPrLand(argv, io = console) {
   const standInLine = ({ force = false } = {}) => {
     const nowMs = Date.now();
     if (!force && standing && nowMs - lineWrittenAtMs < WAIT_REFRESH_SECONDS * 1000) return null;
-    const line = joinWaitingLine(readWaitingLine(slug), { pr: number, token, holder: lockBody({ pr: number, token }).holder, host: hostname() }, nowMs);
+    // Minted once, in this process. The ref can lose the entry; it cannot lose when we arrived.
+    askedAtIso ??= new Date(nowMs).toISOString();
+    const line = joinWaitingLine(readWaitingLine(slug), { pr: number, token, since: askedAtIso, holder: lockBody({ pr: number, token }).holder, host: hostname() }, nowMs);
     if (!writeWaitingLine(slug, line)) return null;
     standing = true;
     lineWrittenAtMs = nowMs;

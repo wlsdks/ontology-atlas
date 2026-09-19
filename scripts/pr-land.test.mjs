@@ -866,6 +866,28 @@ describe('the landing waiting line', () => {
     assert.equal(mayTakeLock({ waiters: line, token: 'b', nowMs: now }), false);
   });
 
+  /*
+   * ⚠️ The case that shipped broken. `writeWaitingLine` is last-write-wins, so a concurrent writer
+   * can drop this entry from the blob; the first version then recovered `since` only from the list
+   * it had just read, found nothing, and sent the waiter to the back. Reported from another
+   * session after its lander polled 25 minutes and the queue printed it fifth, waiting 4. The
+   * asymmetry is the bad part: the longest waiter has the most polls in which to be dropped.
+   *
+   * The existing refresh case below could not catch it, because there the entry is still standing.
+   */
+  it('keeps its place when the line lost the entry entirely — the reported failure', () => {
+    const dropped = joinWaitingLine([newcomer], { pr: 1694, token: 'a', since: starved.since }, now);
+    const mine = dropped.find((entry) => entry.token === 'a');
+    assert.equal(mine.since, starved.since, 'a dropped entry went to the back of the line');
+    assert.equal(waitingLineHead(dropped, now).pr, 1694);
+    assert.equal(mayTakeLock({ waiters: dropped, token: 'b', nowMs: now }), false);
+  });
+
+  it('mints a place only when the caller has none to offer', () => {
+    const fresh = joinWaitingLine([], { pr: 1720, token: 'b' }, now);
+    assert.equal(fresh[0].since, new Date(now).toISOString());
+  });
+
   it('never moves a waiter to the back for refreshing its place', () => {
     const rejoined = joinWaitingLine([starved, newcomer], { pr: 1694, token: 'a' }, now);
     const mine = rejoined.find((entry) => entry.token === 'a');
