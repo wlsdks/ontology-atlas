@@ -563,8 +563,23 @@ export function LibrarySection({
   };
   const hasSources = model.sources.length > 0;
   const hasWiki = model.wikiPages.length > 0;
-  /** Pages whose **own** shape misses the template — the rows that wear the amber pill. */
-  const offTemplateRows = libraryOffTemplateCount(model.verdicts);
+  /**
+   * Pages whose **own** shape misses the template — the rows that wear the amber pill.
+   *
+   * Counted among the rows on screen. Under a search the list is the matches, and a foot
+   * that still counted the whole folder said *400 pages miss the template* under a list of
+   * none (installed app, 3,000 files, 2026-09-19): a number about rows a person cannot see,
+   * standing where the list's own count belongs. The whole folder's figure stays with the
+   * header strip and the home clause, which are about the folder.
+   */
+  const offTemplateRows = libraryOffTemplateCount(
+    needle
+      ? new Map(visiblePages.flatMap((page) => {
+          const verdict = model.verdicts.get(page.slug);
+          return verdict ? [[page.slug, verdict] as const] : [];
+        }))
+      : model.verdicts,
+  );
   const newPagePreviewIsExample = newPageTitle.trim() === "";
   const newPagePreviewTitle = newPageTitle.trim() || t("wiki.newPageExampleTitle");
   const newPagePreviewPath = humanPageSlug(newPagePreviewTitle) + ".md";
