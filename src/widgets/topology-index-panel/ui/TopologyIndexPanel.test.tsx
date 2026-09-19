@@ -113,6 +113,7 @@ const labels = {
   openedInsideLabel: 'opened-inside',
   openedInsideDismiss: 'opened-inside-dismiss',
   sourceUnboundAction: "Connect",
+  tidyHeading: "To tidy",
 };
 
 function buildFixtureTree() {
@@ -682,6 +683,51 @@ describe("TopologyIndexPanel", () => {
 
     fireEvent.click(screen.getByTestId("topology-index-segment-recent"));
     expect(screen.getAllByTestId("topology-index-agent-badge")).toHaveLength(1);
+  });
+
+  it("the tidy rows are one titled list that exists only while a row does", () => {
+    const { rerender } = render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+        vaultLoaded
+      />,
+    );
+    expect(screen.queryByTestId("topology-index-tidy")).not.toBeInTheDocument();
+
+    rerender(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+        brokenDocCount={6}
+        uncatalogedDocCount={1}
+        onPromoteUncatalogedDocs={() => {}}
+        vaultLoaded
+      />,
+    );
+    const section = screen.getByTestId("topology-index-tidy");
+    expect(section).toHaveAccessibleName(labels.tidyHeading);
+    const rows = section.querySelectorAll("li");
+    expect(rows).toHaveLength(2);
+    expect(section.querySelector('[data-testid="topology-index-uncataloged-docs"]')).not.toBeNull();
+    expect(section.querySelector('[data-testid="topology-index-broken-docs"]')).not.toBeNull();
+    // One row grammar: every row wears the same classes.
+    const classes = new Set([...section.querySelectorAll("a, button")].map((el) => el.className));
+    expect(classes.size).toBe(1);
   });
 
   it("P4c: renders the uncataloged-docs row only when count > 0 and a handler is given", () => {

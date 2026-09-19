@@ -97,7 +97,7 @@ const ROOT = process.cwd();
  * declarations with its metric dashboard, then moved the project-name hover ink onto
  * `controlClass({ hoverInk: "strong" })`. Four hand declarations are now owned by the axis.
  */
-const CEILING = 295;
+const CEILING = 292;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
