@@ -1,10 +1,12 @@
 'use client';
 
-import { useFormatter, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { CensusSubStat, CensusTile } from '@/shared/ui/census-tile';
 import { controlClass } from '@/shared/ui/control-class';
 import { Button, Disclosure } from '@/shared/ui';
+import { CopyAgentTextButton } from '../parts/CopyAgentTextButton';
+import { buildDriftHandoff } from '../../lib/brief/drift-handoff';
 import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
 import type { SinceRow } from '../../lib/brief/since-list';
 import { cn } from '@/shared/lib/cn';
@@ -62,7 +64,14 @@ const STATE_MARK: Record<BriefState, string> = {
   unknown: 'mt-[7px] size-2 rounded-full border border-[color:var(--color-text-tertiary)] bg-transparent',
 };
 
-export function BriefTab({ brief }: { brief: InsightsBrief }) {
+export function BriefTab({
+  brief,
+  onAskAgent,
+}: {
+  brief: InsightsBrief;
+  /** Seats the request in the tab's own conversation without sending it. Absent in a browser. */
+  onAskAgent?: (request: string) => void;
+}) {
   const t = useTranslations('ontologyPages.insights.brief');
   const cores = [brief.ontology, brief.wiki, brief.harness, brief.agent] as const;
   const totals = briefTotals(cores);
@@ -84,7 +93,7 @@ export function BriefTab({ brief }: { brief: InsightsBrief }) {
       </div>
       <div className="grid grid-cols-1 gap-[var(--card-gap)] md:grid-cols-2 xl:grid-cols-4">
         {cores.map((core) => (
-          <BriefCoreCard key={core.core} core={core} details={brief.details} nowMs={brief.nowMs} />
+          <BriefCoreCard key={core.core} core={core} details={brief.details} nowMs={brief.nowMs} onAskAgent={onAskAgent} />
         ))}
       </div>
       <BriefSinceList rows={brief.since} total={brief.sinceTotal} nowMs={brief.nowMs} />
@@ -92,7 +101,7 @@ export function BriefTab({ brief }: { brief: InsightsBrief }) {
   );
 }
 
-function BriefCoreCard({ core, details, nowMs }: { core: BriefCore; details: InsightsBrief['details']; nowMs: number }) {
+function BriefCoreCard({ core, details, nowMs, onAskAgent }: { core: BriefCore; details: InsightsBrief['details']; nowMs: number; onAskAgent?: (request: string) => void }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const [c1, c2, c3] = COLUMNS[core.core];
   const lines = visibleLines(core);
@@ -125,7 +134,7 @@ function BriefCoreCard({ core, details, nowMs }: { core: BriefCore; details: Ins
           <li className="text-body text-[color:var(--color-text-tertiary)]">{t('quiet')}</li>
         ) : null}
         {lines.map((line) => (
-          <BriefLineRow key={line.id} line={line} details={details.get(line.id) ?? EMPTY_DETAILS} nowMs={nowMs} />
+          <BriefLineRow key={line.id} line={line} details={details.get(line.id) ?? EMPTY_DETAILS} nowMs={nowMs} onAskAgent={onAskAgent} />
         ))}
       </ul>
     </CensusTile>
@@ -149,12 +158,19 @@ const LINE_LINK = 'shrink-0 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-te
  * rests on. A count whose only destination is another screen counting something else is
  * the falsifier this decision wrote down for itself (PO evidence seat, 2026-09-19).
  */
-function BriefLineRow({ line, details, nowMs }: { line: BriefLine; details: readonly BriefLineDetail[]; nowMs: number }) {
+function BriefLineRow({ line, details, nowMs, onAskAgent }: { line: BriefLine; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const format = useFormatter();
+  const locale = useLocale();
   const href = LINE_HREF[line.id];
   const sentence = t(`line.${line.id}`, { count: line.count });
   const shown = details.slice(0, DETAIL_ROWS);
+  /*
+   * Judging whether a recorded meaning survived the code under it is reading work, which is
+   * what the coding agent beside this tab is for. The request names the same concepts, files
+   * and dates the rows show, asks for a judgement and a proposal, and never for a write.
+   */
+  const handoff = line.id === 'ontology-evidence-moved' ? buildDriftHandoff({ rows: details, locale }) : null;
   return (
     <li className="text-body text-[color:var(--color-text-primary)]" data-brief-line={line.id} data-brief-state={line.state}>
       <div className="flex items-start gap-2.5">
@@ -179,6 +195,16 @@ function BriefLineRow({ line, details, nowMs }: { line: BriefLine; details: read
                 </li>
               ))}
             </ul>
+            {handoff ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2 pl-3" data-testid={`brief-line-handoff-${line.id}`}>
+                {onAskAgent ? (
+                  <Button variant="outline" size="sm" onClick={() => onAskAgent(handoff)} data-testid="brief-ask-agent">
+                    {t('askAgent')}
+                  </Button>
+                ) : null}
+                <CopyAgentTextButton label={t('copyRequest')} copiedLabel={t('copiedRequest')} text={handoff} compact />
+              </div>
+            ) : null}
             <HiddenCountLine
               total={details.length}
               shown={shown.length}

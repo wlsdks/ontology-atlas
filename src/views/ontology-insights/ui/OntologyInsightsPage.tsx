@@ -235,6 +235,8 @@ const RECENT_UPDATES_EVIDENCE_LIMIT = 3;
  */
 const HANDOFF_PAYLOAD_KEY: Record<InsightsTab, keyof InsightsHandoffProse> = {
   // The brief draws no handoff row (see the row's condition); the key only satisfies the record.
+  // The brief seats its own request (the drifted concepts, by name); this key is the fallback
+  // for the generic tab handoff, which the brief does not draw.
   brief: "tabDoNext",
   "do-next": "tabDoNext",
   unmatched: "tabUnmatched",
@@ -1480,7 +1482,36 @@ export function OntologyInsightsPage() {
             aria-labelledby={`insights-tab-${tab}`}
             className="insights-tab-crossfade mt-[var(--section-gap)] flex flex-1 flex-col"
           >
-            {tab === "brief" ? <BriefTab brief={brief} /> : null}
+            {tab === "brief" ? (
+              <BriefTab
+                brief={brief}
+                onAskAgent={
+                  agentRoute === 'agent'
+                    ? (request) => {
+                        const plan = planInsightsAgentPrompt({
+                          current: agentPrefill,
+                          draftPresent: agentDraftPresent,
+                          kind: 'brief',
+                          text: request,
+                        });
+                        if (plan.action === 'open-current') {
+                          setAgentOpen(true);
+                          return;
+                        }
+                        if (plan.action === 'seat') {
+                          commitAgentPrefill(plan.request);
+                          return;
+                        }
+                        setAgentOpen(true);
+                        toast.show(t('agentDraftHeld'), 'info', {
+                          label: t('agentReplaceDraft'),
+                          onClick: () => commitAgentPrefill(plan.request),
+                        });
+                      }
+                    : undefined
+                }
+              />
+            ) : null}
             {tab === "do-next" ? (
               <DoNextTab
                 totalCount={insightsVerdict.total}

@@ -114,6 +114,28 @@ describe("BriefTab", () => {
     expect(screen.getByTestId("hidden-count-line")).toHaveAttribute("data-hidden-count", "3");
   });
 
+  it("hands the drifted concepts to the agent as one bounded request, and never asks for a write", () => {
+    const onAskAgent = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <BriefTab brief={brief()} onAskAgent={onAskAgent} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId("brief-ask-agent"));
+    expect(onAskAgent).toHaveBeenCalledTimes(1);
+    const request = onAskAgent.mock.calls[0]![0] as string;
+    expect(request).toContain("Payments");
+    expect(request).toContain("src/pay.ts");
+    expect(request).toContain("볼트를 직접 바꾸지 말고");
+    expect(request).not.toMatch(/patch_concept|add_concept/);
+  });
+
+  it("offers the same request to copy when no agent can be launched here", () => {
+    mount(brief());
+    expect(screen.queryByTestId("brief-ask-agent")).not.toBeInTheDocument();
+    expect(screen.getByTestId("brief-line-handoff-ontology-evidence-moved")).toBeInTheDocument();
+  });
+
   it("marks the visit only on the explicit action", () => {
     const value = brief();
     mount(value);
