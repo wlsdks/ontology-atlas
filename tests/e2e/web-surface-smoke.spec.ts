@@ -344,8 +344,8 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
       await page.getByTestId("vault-guide-pick-existing").click();
       await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
       await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
-      // MCP is the Agents page's last section since 2026-09-18, not a tab: scroll to it.
-      await page.getByTestId("mcp-page").scrollIntoViewIfNeeded();
+      // MCP is the Agents page's second tab since 2026-09-19: press it.
+      await page.getByTestId("agents-tab-mcp").click();
       await page.getByTestId("agent-setup-section").waitFor({ timeout: 15_000 });
     },
     needsVault: true,
@@ -402,8 +402,8 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
       await page.getByTestId("vault-guide-pick-existing").click();
       await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
       await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
-      // MCP is the Agents page's last section since 2026-09-18, not a tab: scroll to it.
-      await page.getByTestId("mcp-page").scrollIntoViewIfNeeded();
+      // MCP is the Agents page's second tab since 2026-09-19: press it.
+      await page.getByTestId("agents-tab-mcp").click();
       /*
        * ⚠️ **Two presses further in since 2026-09-05.** Connectors are the second tab of the MCP
        * destination, and this card moved into the "add a connector" dialog — finding what is
@@ -579,8 +579,8 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     await page.getByTestId("vault-guide-pick-existing").click();
     await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
     await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
-      // MCP is the Agents page's last section since 2026-09-18, not a tab: scroll to it.
-      await page.getByTestId("mcp-page").scrollIntoViewIfNeeded();
+    // MCP is the Agents page's second tab since 2026-09-19: press it.
+    await page.getByTestId("agents-tab-mcp").click();
     await page.getByTestId("agent-setup-section").waitFor({ timeout: 15_000 });
 
     const panel = page.getByTestId("web-manual-connect");
