@@ -173,7 +173,9 @@ for (const locale of ['en', 'ko'] as const) {
     const harness = await openDockAt(page, EVERY_WIDTH[0], locale);
     const chat = page.getByTestId('acp-chat-panel');
     await chat.getByRole('textbox').fill('Which pages went stale?');
-    await page.getByTestId('acp-chat-send').click();
+    const send = page.getByTestId('acp-chat-send');
+    await expect(send, 'waiting for send to be pressable').toBeEnabled();
+    await send.click();
     await expect(chat).toHaveAttribute('data-acp-status', 'thinking');
     await harness.read(page);
     await expect(page.getByTestId('acp-chat-stop')).toBeVisible();
