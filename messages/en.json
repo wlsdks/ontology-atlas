@@ -263,7 +263,7 @@
     "projects": "Projects",
     "agents": "Agents",
     "mcp": "MCP",
-    "git": "History",
+    "git": "Git",
     "getApp": "Get the app",
     "getAppTitle": "The Mac app remembers your folder, opens offline, and handles history and AI connections: Windows is in progress"
   },
@@ -710,7 +710,7 @@
       },
       "relations": {
         "title": "Lines are relationships",
-        "body": "A solid line means \"contained in\", a dashed line means \"depends on\". The legend here always reminds you."
+        "body": "A solid line means \"contained in\", a dashed line means \"depends on\". Press ? to see it again under Keyboard shortcuts."
       },
       "tryClick": {
         "title": "Try clicking one",
@@ -3509,10 +3509,10 @@
     "dismiss": "Not now"
   },
   "atlasGit": {
-    "tileLabel": "History",
-    "tileTitleClean": "History: everything saved",
-    "tileTitleDirty": "History: {count} unsaved change(s)",
-    "title": "History",
+    "tileLabel": "Git",
+    "tileTitleClean": "Git: everything committed",
+    "tileTitleDirty": "Git: {count} uncommitted change(s)",
+    "title": "Git",
     "close": "Close",
     "loading": "Checking this folder for changes…",
     "loadError": "Could not read this folder's changes. Make sure the folder is still there, then try again.",
@@ -3686,11 +3686,28 @@
     "restoreDone": "Restored {path} to this commit's content. It is an uncommitted change now.",
     "restoreDoneOthers": "The other {count} document(s) this commit changed stay as they are.",
     "restoreFailedSafe": "The document was not changed.",
+    "restoreAbsentDeleted": "This step deleted the document, so the content to restore is in the steps below",
     "restoreConceptDoc": "This concept's document {path}",
     "docHistoryTitle": "Other steps that changed this document",
     "docHistoryOnly": "This is the only step that changed this document",
     "docHistoryOlder": "Older steps exist too. Show older steps in the list on the left to reach them",
-    "docHistoryJumpHint": "Press to jump to that step"
+    "docHistoryJumpHint": "Press to jump to that step",
+    "changedDocsAria": "Choose a changed document",
+    "docReaderInfoBox": "Front matter",
+    "docReaderAddedLine": "Added line:",
+    "docReaderRemovedLine": "Removed line:",
+    "docReaderNew": "New document",
+    "docReaderChanged": "Edited document",
+    "docReaderDeleted": "Deleted document",
+    "docReaderRenamed": "Renamed document",
+    "docReaderFileNew": "New file",
+    "docReaderFileChanged": "Edited file",
+    "docReaderFileDeleted": "Deleted file",
+    "docReaderFileRenamed": "Renamed file",
+    "docReaderRenamedFrom": "was {path}",
+    "docReaderPartial": "The whole document could not be read; only the changed part is shown",
+    "docReaderLong": "The document is long, so only the changed part is shown",
+    "docReaderInfoBoxUnchanged": "Front matter · no lines changed"
   },
   "agentFiles": {
     "header": "Agent files",
