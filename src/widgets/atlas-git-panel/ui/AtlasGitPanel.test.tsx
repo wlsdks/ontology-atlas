@@ -1678,3 +1678,18 @@ describe("AtlasGitPanel — 목록은 키보드로 걷는다", () => {
     expect(rows[2]).toHaveAttribute("aria-expanded", "false");
   });
 });
+
+describe("AtlasGitPanel — 읽기 창은 한 번에 한 문서다", () => {
+  it("칩을 바꾸면 이전 문서의 읽기 창은 사라지고 새 문서 하나만 선다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-diff-pre");
+    const chips = screen.getAllByTestId("atlas-git-change-row");
+    fireEvent.click(chips.find((c) => c.getAttribute("title")?.includes("foo"))!);
+    await waitFor(() => expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/capabilities/foo.md"));
+    expect(screen.getAllByTestId("atlas-git-diff-pre")).toHaveLength(1);
+    fireEvent.click(chips.find((c) => c.getAttribute("title")?.includes("bar"))!);
+    await waitFor(() => expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/elements/bar.md"));
+    expect(screen.getAllByTestId("atlas-git-diff-pre")).toHaveLength(1);
+  });
+});

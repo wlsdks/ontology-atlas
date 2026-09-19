@@ -135,7 +135,7 @@ export function PendingDocumentPane({
           />
           {/* Keyed by document: an armed discard confirm must not survive a chip change and
               re-aim at another document (interaction seat, 2026-09-19). */}
-          <div key={shown.entry.path} className="flex-none px-5 pb-4">
+          <div key={`foot:${shown.entry.path}`} className="flex-none px-5 pb-4">
             {discard(shown)}
           </div>
         </div>
