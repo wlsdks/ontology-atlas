@@ -23,6 +23,11 @@ interface Props {
   project: Project;
   documentNewHref?: string | null;
   settingsHref?: string | null;
+  /**
+   * The closed trigger's weight. `ghost` on its own; a caller whose control row is already one
+   * filled primary plus outline siblings passes `outline` so the row reads as one group.
+   */
+  triggerVariant?: "ghost" | "outline";
 }
 
 interface QuickEditValues {
@@ -143,6 +148,7 @@ export function ProjectQuickEditPanel({
   project,
   documentNewHref,
   settingsHref,
+  triggerVariant = "ghost",
 }: Props) {
   const t = useTranslations("settings.quickEdit");
   const failureSentence = useFailureSentence();
@@ -259,7 +265,13 @@ export function ProjectQuickEditPanel({
     <>
       <Button
         type="button"
-        variant={open ? "outline" : "ghost"}
+        /*
+         * The hero's control row is one filled primary and outline siblings, so this trigger can
+         * be told to join them. Left to itself it is `ghost`, which beside a filled and an outline
+         * button made three weights in one row — the owner read the result as the page looking
+         * crooked (2026-09-19).
+         */
+        variant={open ? "outline" : triggerVariant}
         size="sm"
         data-testid="public-quick-edit-toggle"
         onClick={(event) => {

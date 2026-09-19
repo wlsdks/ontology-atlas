@@ -1868,6 +1868,9 @@ a navigation destination or a product screen.
 
 ### `/projects` — Project list (rebuilt 2026-07-18)
 
+**The door depends on the folder** (2026-09-19, decision "With one project, the Projects door opens that project"): with exactly one project the rail, its keyboard shortcut and the mobile tab bar open that project's page instead of a list of one row; with none or several they open this list. The list stays one press away as the breadcrumb at the top of every project page, and it is still where a project is created. One hook answers for all three doors (`useSoleProjectHref`), so the rail and the tab bar cannot disagree.
+
+
 The project index uses the shared page frame and compact rows so several project
 documents can be scanned by name and authored purpose. There is currently no
 in-page filtering.
@@ -1877,7 +1880,7 @@ in-page filtering.
 - The bundled example state is labelled as a loaded sample rather than presented as the user's folder
 
 #### Rows (one `<article>` per project, sorted by `updatedAt` desc)
-- Project name linked to its detail page
+- Project name linked to its detail page. The name is the locale's `display_<locale>` when the document carries one, the canonical `title`/`name` otherwise (`projectDisplayName`, 2026-09-19, decision "A project is drawn by its locale display name on every screen"): the map, the INDEX and the Library already drew the project by that word, and the list and the page said the canonical title beside them
 - One-line explicitly authored frontmatter description, with neutral fallback when missing
 - Relative last-updated time
 - Clearly labelled "View details" primary action and "View on map" secondary action
@@ -1887,28 +1890,35 @@ in-page filtering.
 
 ---
 
-### `/project/[slug]` — Project detail (3-zone rebuild, 2026-07-18)
+### `/project/[slug]` — Project detail (composition board, 2026-09-19)
 
-Rebuilt as a single-container 3-zone layout (`docs/prototypes` chrome), one
-level below `/projects`.
+One page, no tabs, one level below `/projects`: identity, then what this project
+has built on each Atlas surface, then the domains, then what its document says.
 
 #### Top bar
 - Breadcrumb: Home → Projects → `{Name|Slug}` · documents door · copy-link button · global census (concepts/relations, md+). The documents door opens **this project's own Markdown file** (`/docs/?slug=<doc>`) when the file is found in the open folder or the loaded sample, and the vault root otherwise (2026-09-19 — the page had no door to the one file it is drawn from)
 
 #### Zone 1 — hero band
-- Project kind glyph + inline-editable name (`InlineEditable`, when `canManageProject`) + hero meta (Hub label or plain label · status) + updated date + inline-editable description. The heading's accessible name is the project name; the field label ("Project name") is only the input's label in edit mode and the button's description in editable view (2026-09-19 — an `aria-label` on the `h1` used to replace the name for screen readers). The description's cap is the reading-column box (`--measure-doc-column`), not a per-line `ch` count
+- Project kind glyph + inline-editable name (`InlineEditable`, when `canManageProject`; the word shown is the locale's `display_<locale>` when present, and editing it in place edits that key, otherwise the canonical name with starter displays following) + hero meta (Hub label or plain label · status) + updated date + inline-editable description. The heading's accessible name is the project name; the field label ("Project name") is only the input's label in edit mode and the button's description in editable view (2026-09-19 — an `aria-label` on the `h1` used to replace the name for screen readers). The description's cap is the reading-column box (`--measure-doc-column`), not a per-line `ch` count
 - "View topology" link + `ProjectQuickEditPanel` (quick-edit: name / description / owner / tags — the fast path; stack/links/dependencies/dates stay in the full editor). The action cluster stands beside the name only when the hero band itself is at least 64rem wide (`@5xl` of the `project-hero` container); below that it takes its own row under the description (2026-09-19 — at 1024 the name column was 250px and at 768 80px while the four controls kept their width; a viewport breakpoint then failed the same way with the agent dock open at 1280)
 - **Construction review** — `Open verification results` reads one local qualification envelope into React session state only and places a full-width review directly below the hero. The default depth keeps purpose, current/next decision, first blocker/diagnostic, red/unknown/conflict, human approval, and exact plan counts visible. `View rationale/diagnostics` expands the same artifact's CQs, source-bound witnesses and citations, examples/counterexamples, seven quality axes, diagnostics, exact review/write plans, and digest equality. The same disclosure also exposes a session-only expert draft for CQ wording, witness source references, and the exact plan; edits are visibly dirty, can be restored, never mutate the receipt/vault/localStorage, and require qualification again before any write. Malformed, wrong-project, digest-mismatched, or unequal-plan envelopes fail closed; post-write maintenance is shown separately and never rewrites the completed qualification verdict. Nothing is uploaded, remembered, or written to the vault.
-- **Engraved metric strip** — domains / capabilities / elements / documents / relations, derived from this project's own ontology nodes/edges (not the whole vault). A zero document or relation count is not drawn (2026-09-19; "Documents 0" under a 125-concept census read as a contradiction)
-- **Action order** — "View topology" stands first and filled as the page's primary action; the construction-review picker is second in outline (2026-09-19; the picker used to be first and both were outline)
-#### Zone 2 — domain composition
-- Domain rows (one per domain, uniform height), only rendered when the project has domains (hidden entirely on 0 domains — "match 0 → hide" principle). Each row carries the shared capability:element ratio bar; clicking a row expands its full capability list in place, and the expanded panel links into topology focus for that domain. The former radial mini-map and card grid were retired 2026-08-13 (the map promised size-by-count it could not render — 4.7px between 17 and 6 — and the cards said the same numbers a third time)
+- **No figures in the hero** (2026-09-19) — the engraved metric strip left, because the composition board one block below said the same five numbers again. The hero keeps identity: glyph, name, kind, updated, definition
+- **Action order and weight** — "View topology" stands first and filled as the page's primary action; the construction-review picker and the quick-edit trigger follow in outline, so the row is one filled control and its outline siblings rather than three weights (2026-09-19; the quick-edit trigger was `ghost` and the row read as crooked)
+#### Composition board (2026-09-19, decision "The project page is a composition board, not a document reader")
+One cell per Atlas surface, in one band under the hero, replacing the hero's figure chips and the overview/composition tabs:
+- **Ontology** — this project's domains, capabilities and elements as figures; a note line saying how many relations it holds and how many domains name a capability but hold no element yet. Door: the map, focused on this project
+- **Library** — the folder's sources and wiki pages. A folder with neither says so instead of drawing two zeroes. Door: the Library
+- **Harness** — no figure: the harness is read from the source tree the folder belongs to, which needs a native path, so the cell names what the destination holds. Door: the Harness
+The caption beside the heading says that sources and wiki pages count the whole folder, because only the ontology half is scoped to this project. Cells are equal height with their doors on one line; three equal columns from `@3xl` of the page column and the ontology cell worth two of the others from `@5xl`.
 
-#### Zone 3 — body + summary rail
-- **Overview card** (left, flexible width) — `project.detail` markdown (or the project document's body), drawn as a **brief** (`ProjectBrief`, 2026-09-19, decision "The project overview is a brief the agent lays out and a person reviews"): each `##` section is a numbered block with its title on one start line, an ordered list a strip of steps read left to right, a bullet list rows, and `[[wikilinks]]` doors to the cited document in the Library. A body without `##` headings stays prose; no body shows the empty-state hint. Below either, an **ask row** hands an agent the exact instructions (read the project through `get_concept` and `query_ontology` `project_map`, write four sections, change only the body with `patch_concept` under `expected_mtime`) as copyable text with a preview; the page writes nothing itself, and the person reviews the file in the Library. In the installed app with a guarded ACP runtime ready, the same ask instead opens an **agent dock** beside the page (`ProjectAgentDock`, the Library's and Analysis's dock shape, `useProjectAgent` for the runtime, vault MCP server and connector wiring) and seats those instructions as the first turn; every file write still stops at the permission card. The button is filled while the body is unsectioned and outline once it is a brief. Inside the card the title and prose stand in one centred reading column: the measure spent at `--text-reading` (629px at the 16px root), the card's own padding as the gutter, no per-line `ch` cap (2026-09-19 — the body used to be a 14px, 550px run left-aligned in a 932px card at 1512, the shape the 2026-09-12 reading-column decision removed from the Library)
-- **Summary rail** (right, 400px on lg+):
-  - **Connected projects** card — dependency + `relates`-graph projects, dedup'd, first shown + "+N more" note; the connection-map mini-graph that used to sit above this card was retired (2026-07, demo-unreachable — dogfood's single-project vault always showed the map's empty state, and the same typed fact already lived here)
-  - **Agent handoff** card — copyable MCP/CLI snippet for this exact project slug
+#### Domain composition
+Domain rows (one per domain, uniform height), in a card in the left track beside the summary rail, no longer behind a tab. Each row carries the shared capability:element ratio bar; clicking a row expands its full capability list in place, and the expanded panel links into topology focus for that domain. The former radial mini-map and card grid were retired 2026-08-13 (the map promised size-by-count it could not render — 4.7px between 17 and 6 — and the cards said the same numbers a third time)
+
+#### Body + summary rail
+- **Overview card** (left, below the domain rows) — the project document's opening paragraph, a contents line naming its `##` section titles, and a door that keeps reading in the Ontology document. The whole body used to be poured out here; the owner's verdict on 2026-09-19 was that it is too long and does not need to be shown whole
+- **Summary rail** (right, 400px from `@5xl`):
+  - **Connected projects** card — dependency + `relates`-graph projects, dedup'd, first shown + "+N more" note
+  - **Continue with your AI** card — one place for agents on this page: the overview lay-out ask (which opens the in-page agent dock in the installed app with a guarded runtime, and copies the instructions everywhere else), then the copyable MCP/CLI snippet for this exact project slug
 
 #### Footer
 - Slug + "file" + the Markdown path this page is drawn from, engraved mono caption (2026-09-19; the updated date, a second copy of the hero's, stands here only when no document is known)

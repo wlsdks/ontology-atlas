@@ -66,3 +66,24 @@ export function findProjectDocInList(
   }
   return null;
 }
+
+/**
+ * The slug of the folder's **only** project, or null when it holds none or several.
+ *
+ * `<project>/atlas` is the standard folder shape, so most folders hold exactly one project and the
+ * Projects door has nothing to choose between: it opens that project rather than a list of one row
+ * above an empty screen (2026-09-19, decision "With one project, the Projects door opens that
+ * project"). Deriving the whole `Project[]` to learn that would map every document on every route
+ * the rail is drawn on, so this walks once and stops at the second.
+ */
+export function resolveSoleProjectSlug(docs: readonly VaultDoc[]): string | null {
+  let only: string | null = null;
+  for (const doc of docs) {
+    if (!isProjectVaultDoc(doc)) continue;
+    const slug = computeProjectSlug(doc);
+    if (!slug) continue;
+    if (only !== null) return null;
+    only = slug;
+  }
+  return only;
+}
