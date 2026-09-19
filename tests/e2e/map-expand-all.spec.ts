@@ -207,6 +207,20 @@ test("상단 전체 펼치기는 전 노드를 드러내고 자동으로 화면 
     `전체 펼치기가 패널 옆 빈 자리 가운데(${Math.round(centring!.expected)})가 아니라 ${Math.round(centring!.drawn)}에 놓였다`,
   ).toBeLessThan(24);
 
+  // One lens, one frame. "Auto-arrange", "fit" and the 0 key used to go through
+  // the spine overview fit, which reserves the tool lane and the chip row and
+  // shrank the expanded map from 75 % to 63 % of the height — pressing either
+  // after expand-all made the same nodes jump to a second, smaller frame
+  // (measured 2026-09-19 at 1512×806).
+  const scaleAfterExpand = await page.evaluate(() => window.__atlasMap?.camera()?.scale ?? 0);
+  await page.getByTestId("topology-auto-arrange").click();
+  await settleLayout(page);
+  const scaleAfterArrange = await page.evaluate(() => window.__atlasMap?.camera()?.scale ?? 0);
+  expect(
+    Math.abs(scaleAfterArrange - scaleAfterExpand),
+    `자동 정렬이 펼친 지도를 다른 배율(${scaleAfterArrange.toFixed(3)} vs ${scaleAfterExpand.toFixed(3)})로 다시 맞췄다`,
+  ).toBeLessThan(0.01);
+
   await action.click();
   await expect(page.getByTestId("ontology-map")).not.toHaveAttribute("data-map-lens");
 });
