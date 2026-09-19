@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { CensusSubStat, CensusTile } from '@/shared/ui/census-tile';
@@ -94,6 +95,14 @@ export function BriefTab({
   const t = useTranslations('ontologyPages.insights.brief');
   const cores = [brief.ontology, brief.wiki, brief.harness, brief.agent] as const;
   const totals = briefTotals(cores);
+  /*
+   * **Marking the visit has to say so.** The press moves the anchor, which changes one 12px
+   * eyebrow and nothing else on a screen where every other number can legitimately stay the
+   * same; a reader could not tell whether the button had worked (walkthrough, 2026-09-20). The
+   * confirmation is a live region, so it is announced rather than only drawn, and the button
+   * stays enabled because pressing again re-anchors to now, which is a real thing to want.
+   */
+  const [seenMarked, setSeenMarked] = useState(false);
   return (
     <section data-testid="brief-tab" className="flex flex-col gap-[var(--section-gap)]">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
@@ -106,9 +115,26 @@ export function BriefTab({
           </h2>
           <p className="mt-2 text-body text-[color:var(--color-text-tertiary)]">{t('sinceGloss')}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => brief.markSeen()} data-testid="brief-mark-seen">
-          {t('markSeen')}
-        </Button>
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+          <p
+            role="status"
+            className="text-label text-[color:var(--color-text-tertiary)]"
+            data-testid="brief-mark-seen-done"
+          >
+            {seenMarked ? t('markSeenDone') : ''}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              brief.markSeen();
+              setSeenMarked(true);
+            }}
+            data-testid="brief-mark-seen"
+          >
+            {t('markSeen')}
+          </Button>
+        </div>
       </div>
       <div className="grid grid-cols-1 gap-[var(--card-gap)] md:grid-cols-2 xl:grid-cols-4">
         {cores.map((core) => (

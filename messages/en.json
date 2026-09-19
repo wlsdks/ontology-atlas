@@ -1564,7 +1564,7 @@
       "brief": {
         "sinceSeen": "{days, plural, =0 {Since you looked today} one {Since you looked # day ago} other {Since you looked # days ago}}",
         "sinceDefault": "The last 7 days",
-        "sinceGloss": "The counts below are only what happened after that. There is no score; every line opens to what it counts.",
+        "sinceGloss": "There is no score. Each line either opens to the things it counts or sends you where they live.",
         "headline": "{stale, plural, one {# thing} other {# things}} to learn · {unknown, plural, one {# thing} other {# things}} not checked",
         "unit": {
           "ontology": "",
@@ -1606,7 +1606,7 @@
         "unreadable": "The guide files in this folder could not be read. Reopening the folder tries again.",
         "noSource": "This folder is not bound to a code repository yet. Bind one and the guides and checks are counted here.",
         "markSeen": "Seen up to here",
-        "markSeenDone": "Counting from now",
+        "markSeenDone": "Marked as seen. Counting from now.",
         "core": {
           "ontology": "Concepts",
           "wiki": "Wiki",

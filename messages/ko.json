@@ -1564,7 +1564,7 @@
       "brief": {
         "sinceSeen": "{days, plural, =0 {오늘 본 뒤로} one {# 일 전 본 뒤로} other {# 일 전 본 뒤로}}",
         "sinceDefault": "최근 7일 기준",
-        "sinceGloss": "아래 숫자는 그 뒤로 생긴 것만 셉니다. 점수는 없고, 줄마다 열어서 확인할 수 있어요.",
+        "sinceGloss": "점수는 없어요. 줄마다 무엇을 세는지 이름으로 펴 보거나, 그것이 사는 곳으로 갈 수 있어요.",
         "headline": "새로 알아야 할 것 {stale}개 · 확인 못 한 것 {unknown}개",
         "unit": {
           "ontology": "",
@@ -1606,7 +1606,7 @@
         "unreadable": "이 폴더의 지침 파일을 읽지 못했어요. 폴더를 다시 열면 다시 시도해요.",
         "noSource": "이 폴더는 아직 코드 저장소와 연결돼 있지 않아요. 연결하면 지침과 검사가 어디를 덮는지 여기서 세요.",
         "markSeen": "여기까지 봤음",
-        "markSeenDone": "지금부터 다시 셉니다",
+        "markSeenDone": "여기까지 봤다고 표시했어요. 지금부터 다시 셉니다.",
         "core": {
           "ontology": "개념",
           "wiki": "위키",

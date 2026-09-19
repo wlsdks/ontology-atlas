@@ -248,3 +248,26 @@ describe("a line that opens another question on this same board", () => {
     expect(click.defaultPrevented).toBe(false);
   });
 });
+
+describe("marking the visit", () => {
+  it("says so, in a live region, and keeps the button usable", () => {
+    const markSeen = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <BriefTab brief={brief({ markSeen })} />
+      </NextIntlClientProvider>,
+    );
+    const status = screen.getByTestId("brief-mark-seen-done");
+    // Before the press the region exists and is empty, so the announcement is a change.
+    expect(status.textContent).toBe("");
+    expect(status.getAttribute("role")).toBe("status");
+
+    fireEvent.click(screen.getByTestId("brief-mark-seen"));
+    expect(markSeen).toHaveBeenCalledTimes(1);
+    expect(status.textContent?.trim().length, "누른 뒤에도 화면이 아무 말을 하지 않는다").toBeGreaterThan(0);
+
+    // Pressing again re-anchors to now; the control must not become a dead end.
+    fireEvent.click(screen.getByTestId("brief-mark-seen"));
+    expect(markSeen).toHaveBeenCalledTimes(2);
+  });
+});
