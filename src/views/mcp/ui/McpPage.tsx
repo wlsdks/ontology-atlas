@@ -53,8 +53,6 @@ export function McpPage({
   connectors: providedConnectors,
   handle: providedHandle,
 }: {
-  /** Kept for the app layer's call site; the tab body has no other shape now. */
-  embedded?: boolean;
   connectors?: VaultConnectorsState;
   handle?: FileSystemDirectoryHandle | null;
 } = {}) {
