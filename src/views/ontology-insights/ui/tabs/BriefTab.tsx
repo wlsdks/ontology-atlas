@@ -118,19 +118,25 @@ export function BriefTab({
 
 function BriefCoreCard({ core, details, nowMs, onAskAgent }: { core: BriefCore; details: InsightsBrief['details']; nowMs: number; onAskAgent?: (request: string) => void }) {
   const t = useTranslations('ontologyPages.insights.brief');
+  // The card is already titled with the subject, so a unit that repeats it is ink for nothing.
+  const unit = t(`unit.${core.core}`);
   const [c1, c2, c3] = COLUMNS[core.core];
   const lines = visibleLines(core);
   const measured = core.availability === 'measured';
   return (
     <CensusTile label={t(`core.${core.core}`)} testId={`brief-core-${core.core}`} rowKey={core.core}>
       {core.headline == null ? (
-        <p className="text-label text-[color:var(--color-text-quaternary)]" data-testid="brief-core-unmeasured">
-          {t(`unit.${core.core}`)} · {t('notMeasured')}
-        </p>
+        // A card that cannot be measured already prints why, one line below; a second sentence
+        // saying the same thing twice is ink for nothing.
+        core.availability === 'measured' ? (
+          <p className="text-label text-[color:var(--color-text-quaternary)]" data-testid="brief-core-unmeasured">
+            {t('notMeasured')}
+          </p>
+        ) : null
       ) : (
         <p className="font-mono text-body-lg font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-primary)]">
           {core.headline}
-          <span className="ml-1.5 text-label text-[color:var(--color-text-quaternary)]">{t(`unit.${core.core}`)}</span>
+          {unit ? <span className="ml-1.5 text-label text-[color:var(--color-text-quaternary)]">{unit}</span> : null}
         </p>
       )}
       <div className="flex flex-wrap gap-x-4 gap-y-1" data-testid="brief-core-columns">

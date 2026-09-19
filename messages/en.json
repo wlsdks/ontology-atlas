@@ -1567,9 +1567,9 @@
         "sinceGloss": "The counts below are only what happened after that. There is no score; every line opens to what it counts.",
         "headline": "{stale, plural, one {# thing} other {# things}} to learn · {unknown, plural, one {# thing} other {# things}} not checked",
         "unit": {
-          "ontology": "concepts",
+          "ontology": "",
           "wiki": "pages",
-          "harness": "guide files",
+          "harness": "files",
           "agent": "calls"
         },
         "sinceTitle": "{count, plural, one {# thing} other {# things}} changed since",
@@ -1608,10 +1608,10 @@
         "markSeen": "Seen up to here",
         "markSeenDone": "Counting from now",
         "core": {
-          "ontology": "Ontology",
+          "ontology": "Concepts",
           "wiki": "Wiki",
-          "harness": "Harness",
-          "agent": "Agent activity"
+          "harness": "Guidance",
+          "agent": "Agents"
         },
         "col": {
           "current": "Current",
@@ -1750,10 +1750,10 @@
       "freshnessEvidenceCaption": "These names have no writing of their own, so the date belongs to the document that wrote the name down: not to this concept. The small text on the right is where that document lives; give it a document and it joins the list above.",
       "impactEmpty": "No dependency declarations yet",
       "impactEmptyHint": "Review import evidence and the meaning of both concepts, then add only approved “leans on” relations on the map.",
-      "domainCouplingTitle": "Domain coupling",
+      "domainCouplingTitle": "Where domains connect",
       "domainCouplingCountUnit": "cross relations",
       "domainCouplingBoundaryCountUnit": "domains",
-      "domainCouplingEmptyTitle": "Not enough coupling data yet",
+      "domainCouplingEmptyTitle": "Too few connections yet",
       "domainCouplingEmptyDescription": "Needs 2+ domains and a cross-domain relation between them to compute.",
       "domainCouplingEmptyAction": "Connect concepts on the map",
       "domainCouplingGridCaption": "Darker cells mean more relations. Rows send, columns receive. Dashed cells (the diagonal) count connections inside one domain: a different thing to count, so they use their own grey scale.",
@@ -1762,7 +1762,7 @@
       "domainCouplingGridHiddenCross": "{count} cross links outside the grid",
       "domainCouplingGridCellAria": "{count} links from {from} to {to}",
       "domainCouplingGridSelfAria": "{count} links inside {domain}",
-      "domainCouplingBoundaryTitle": "Boundary pressure",
+      "domainCouplingBoundaryTitle": "How much leaves the domain",
       "domainCouplingSelfLabel": "self",
       "domainCouplingCrossLabel": "cross",
       "domainCouplingBoundaryCaption": "Self = connections within the same domain, cross = connections leaving or entering another domain. Bar length is the cross share; longer means a leakier domain boundary. Highest share first.",
@@ -1939,8 +1939,8 @@
         }
       },
       "flow": {
-        "title": "Business flow",
-        "lead": "Have the agent explain what this product is and how it flows, from the vault alone. It does not read the source.",
+        "title": "Product flow",
+        "lead": "An agent reads only what this folder records and writes what the product is and how it moves. It does not read the source.",
         "action": "Explain the flow with ACP",
         "actionHint": "Puts this request in the conversation beside Analysis. You send it.",
         "checking": "Checking which local agent can open here.",
@@ -2037,6 +2037,10 @@
           "section-order": "sections out of order",
           "bad-truncation-record": "partial-read record disagrees",
           "bad-citation": "citation is malformed"
+        },
+        "about": {
+          "title": "What this panel answers",
+          "body": "Whether the wiki pages written from your sources still match those sources, which sources nobody wrote up, what the format check flagged, and what the unattended passes did while nobody was here."
         }
       },
       "harnessTab": {
@@ -2063,6 +2067,13 @@
           "title": "{count, number} files where the two agent trees disagree",
           "caption": "Two copies that should say the same thing do not.",
           "none": "The two copies agree."
+        },
+        "about": {
+          "title": "What this panel answers",
+          "body": "How far the guidance and checks you give agents reach into this folder's areas. The blanks are the answer — the places nothing tells, gates or watches.",
+          "told": "what an agent reads: AGENTS.md, CLAUDE.md, rule documents",
+          "gated": "what actually stops a bad change: hooks and gates",
+          "watched": "what reports after the fact: tests and linters"
         }
       }
     }

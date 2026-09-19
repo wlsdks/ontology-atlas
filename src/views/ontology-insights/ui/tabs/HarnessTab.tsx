@@ -21,9 +21,24 @@ const ROWS = 8;
 export function HarnessTab({ detail }: { detail: InsightsBrief['harnessDetail'] }) {
   const t = useTranslations('ontologyPages.insights.harnessTab');
   if (detail.availability !== 'measured') {
+    /*
+     * A panel that cannot measure still says what it is for. A reader who cannot see the numbers
+     * here — in a browser, or before a repository is bound — should still leave knowing what
+     * guidance coverage means, because understanding the product is the point of the screen.
+     */
     return (
       <section data-testid="harness-tab" className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-        <p className="text-body text-[color:var(--color-text-tertiary)]">{t(detail.availability === 'no-source' ? 'noSource' : detail.availability === 'reading' ? 'reading' : detail.availability === 'unreadable' ? 'unreadable' : 'appOnly')}</p>
+        <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">{t('about.title')}</h3>
+        <p className="mt-1 max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{t('about.body')}</p>
+        <dl className="mt-3 flex flex-col gap-1.5 text-body">
+          {(['told', 'gated', 'watched'] as const).map((column) => (
+            <div key={column} className="flex flex-wrap items-baseline gap-x-2">
+              <dt className="text-[color:var(--color-text-primary)]">{t(`column.${column}`)}</dt>
+              <dd className="min-w-0 text-label text-[color:var(--color-text-tertiary)]">{t(`about.${column}`)}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-3 text-body text-[color:var(--color-text-tertiary)]">{t(detail.availability === 'no-source' ? 'noSource' : detail.availability === 'reading' ? 'reading' : detail.availability === 'unreadable' ? 'unreadable' : 'appOnly')}</p>
         <Link href={detail.availability === 'app-only' ? '/download/' : '/architecture/'} className={controlClass({ shape: 'link', className: 'mt-2 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]' })}>
           {t(detail.availability === 'app-only' ? 'getApp' : 'open')}
         </Link>

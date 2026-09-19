@@ -1472,6 +1472,7 @@ export function OntologyInsightsPage() {
           * other three are single views and draw no second row at all.
           */}
         <nav className="mt-[var(--section-gap)] flex flex-col gap-2">
+          <div className="self-start">
           <SegmentedControl
             ariaLabel={t("coreAriaLabel")}
             value={coreOfTab(tab)}
@@ -1479,6 +1480,7 @@ export function OntologyInsightsPage() {
             options={INSIGHTS_CORES.map((key) => ({ value: key, label: t(`core.${key}`), testId: `insights-core-${key}` }))}
             testId="insights-core-switch"
           />
+          </div>
           {coreOfTab(tab) === "ontology" ? (
           <TabBar
             ariaLabel={t("tabsAriaLabel")}

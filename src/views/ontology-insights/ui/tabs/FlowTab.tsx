@@ -213,7 +213,7 @@ export function FlowTab({
         </div>
       )}
 
-      <Disclosure summary={labels.requestLabel} summaryTestId="flow-request-open" open={!latest}>
+      <Disclosure summary={labels.requestLabel} summaryTestId="flow-request-open">
         <div className="mt-2 flex flex-col gap-2">
           <div className="flex justify-end">
             <button

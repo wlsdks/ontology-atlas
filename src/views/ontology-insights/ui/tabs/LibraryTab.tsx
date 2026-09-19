@@ -23,7 +23,10 @@ export function LibraryTab({ detail }: { detail: InsightsBrief['library'] }) {
   if (detail.availability !== 'measured') {
     return (
       <section data-testid="library-tab" className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-        <p className="text-body text-[color:var(--color-text-tertiary)]">{t('empty')}</p>
+        {/* A panel with nothing to count still says what it is for. */}
+        <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">{t('about.title')}</h3>
+        <p className="mt-1 max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{t('about.body')}</p>
+        <p className="mt-3 text-body text-[color:var(--color-text-tertiary)]">{t('empty')}</p>
         <Link href="/library/" className={controlClass({ shape: 'link', className: 'mt-2 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]' })}>
           {t('open')}
         </Link>
