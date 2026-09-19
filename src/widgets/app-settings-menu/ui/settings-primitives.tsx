@@ -103,15 +103,48 @@ export const SETTINGS_SECTION_LABEL =
  * and on the right means one of them is wasted ink). A name is given only when one
  * pane holds more than one group.
  */
-export function SettingsGroup({ label, children }: { label?: string; children: ReactNode }) {
+/**
+ * A group's heading row: the eyebrow on the left and, when a group carries one, its own control
+ * on the right (a hint, an opener). Exported on its own for a group whose body is not the row
+ * container — the connectors card on the MCP tab draws its own frame.
+ */
+export function SettingsGroupHeading({
+  label,
+  trailing,
+  id,
+}: {
+  label: string;
+  trailing?: ReactNode;
+  id?: string;
+}) {
+  return (
+    <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1">
+      <h3 id={id} className={SETTINGS_SECTION_LABEL}>
+        {label}
+      </h3>
+      {trailing ? <div className="flex items-center gap-2">{trailing}</div> : null}
+    </div>
+  );
+}
+
+export function SettingsGroup({
+  label,
+  trailing,
+  children,
+  testId,
+}: {
+  label?: string;
+  /** Controls that belong to the whole group, on the heading's right (2026-09-19). */
+  trailing?: ReactNode;
+  children: ReactNode;
+  testId?: string;
+}) {
   // `min-w-0` on the section: as a grid item it would otherwise size to its widest caption —
   // a long folder path — and the group's `overflow-hidden` then clipped every control on
   // the right (installed app, 2026-09-06: the folder row's chips were off-screen).
   return (
-    <section aria-label={label} className="min-w-0">
-      {label ? (
-        <h3 className={`px-1 ${SETTINGS_SECTION_LABEL}`}>{label}</h3>
-      ) : null}
+    <section aria-label={label} className="min-w-0" data-testid={testId}>
+      {label ? <SettingsGroupHeading label={label} trailing={trailing} /> : null}
       <div className={`${label ? 'mt-1.5 ' : ''}divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]`}>
         {children}
       </div>

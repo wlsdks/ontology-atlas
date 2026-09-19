@@ -28,7 +28,7 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
 
   test("all 8 steps render a resolvable anchor + card", async ({ page }, testInfo) => {
     // The tour runs on the map — since 2026-07-30 `/` is the gateway.
-    await gotoAndSettle(page, "/en/topology/");
+    await gotoAndSettle(page, "/en/topology/?e2e=1");
 
     const tourButton = page.getByTestId("topology-tour-button");
     await expect(tourButton).toBeVisible({ timeout: 15_000 });
@@ -65,6 +65,23 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
     await expect(cutout).toBeVisible({ timeout: 5_000 });
     const cutoutBox = await cutout.boundingBox();
     expect(cutoutBox).not.toBeNull();
+    // The card asks the person to press the lit node; it must not sit on that
+    // node's name (2026-09-19: the card's top cut the hub's name in half).
+    const nameClearance = await page.evaluate(() => {
+      const probe = window.__atlasMap!;
+      const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+      const cut = document.querySelector('[data-testid="guided-tour-cutout"]')!.getBoundingClientRect();
+      const cx = cut.left + cut.width / 2 - canvas.left;
+      const cy = cut.top + cut.height / 2 - canvas.top;
+      const lit = probe.nodes().reduce((best, n) => (Math.hypot(n.x - cx, n.y - cy) < Math.hypot(best.x - cx, best.y - cy) ? n : best));
+      const name = probe.labels().find((l) => l.nodeId === lit.id);
+      const card = document.querySelector('[data-testid="guided-tour-card"]')!.getBoundingClientRect();
+      return { lit: lit.label, nameBottom: name ? canvas.top + name.maxY : null, cardTop: card.top, cardBelow: card.top > cut.top };
+    });
+    expect(nameClearance.nameBottom, `켜진 노드 ${nameClearance.lit} 의 이름이 안 그려졌다`).not.toBeNull();
+    if (nameClearance.cardBelow) {
+      expect(nameClearance.cardTop, `카드 위쪽(${Math.round(nameClearance.cardTop)})이 켜진 노드의 이름(${Math.round(nameClearance.nameBottom!)})을 덮는다`).toBeGreaterThanOrEqual(nameClearance.nameBottom!);
+    }
     if (cutoutBox) {
       await page.mouse.click(
         cutoutBox.x + cutoutBox.width / 2,

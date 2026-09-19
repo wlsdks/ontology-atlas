@@ -55,8 +55,9 @@ const FORM_MEMBERS = [
    * name on the left and the switch on the right. The frame file records the rule they generalise
    * to, so the next screen decides by direction of travel rather than by taste.
    */
+  // `McpPage` left this list on 2026-09-19: it is the Agents page's second tab body, drawn
+  // inside that page's frame, not a page of its own.
   "src/views/agents/ui/AgentsPage.tsx",
-  "src/views/mcp/ui/McpPage.tsx",
 ] as const;
 
 /** Screens that must own their horizontal inset (safe-area) — only the top spacing follows the spec. */
@@ -227,7 +228,8 @@ describe("페이지 틀 — 둘째 컬럼과 상단 여백 (2026-08-11)", () => 
   it("폼 컬럼은 좁고, 폭을 한 곳에서만 정한다", () => {
     expect(PAGE_FRAME_FORM).toContain("max-w-[960px]");
     expect(PAGE_FRAME_FORM).not.toContain("--page-max");
-    expect(FORM_MEMBERS.length, "폼 멤버가 비면 공회전이다").toBeGreaterThan(2);
+    // Two members since 2026-09-19 (the MCP tab body left the list); an empty list is idling.
+    expect(FORM_MEMBERS.length, "폼 멤버가 비면 공회전이다").toBeGreaterThanOrEqual(2);
     for (const member of FORM_MEMBERS) {
       const source = read(member);
       expect(source, `${member} 가 PAGE_FRAME_FORM 을 안 쓴다`).toContain("PAGE_FRAME_FORM");
