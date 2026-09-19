@@ -281,10 +281,11 @@ export function useInsightsBrief({
     () =>
       buildAgentBrief({
         entries: mode === 'local' ? vault.agentActivityLog : [],
+        receipts: mode === 'local' ? vault.acpWorkReceipts : [],
         isWriteTool: (tool) => atlasBareToolMode(tool) === 'write',
         anchorMs: anchor.anchorMs,
       }),
-    [mode, vault.agentActivityLog, anchor.anchorMs],
+    [mode, vault.agentActivityLog, vault.acpWorkReceipts, anchor.anchorMs],
   );
 
   /*

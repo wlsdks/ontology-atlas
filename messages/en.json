@@ -1625,6 +1625,9 @@
           "harness-unwatched-areas": "{count, plural, one {# area} other {# areas}} no check watches",
           "harness-mirror-drift": "{count, plural, one {# file} other {# files}} where the two agent trees disagree",
           "harness-changed-since": "{count, plural, one {# guide file} other {# guide files}} changed since",
+          "agent-writes-waiting": "{count, plural, one {# write} other {# writes}} allowed and not finished",
+          "agent-writes-failed": "{count, plural, one {# write} other {# writes}} that failed",
+          "agent-writes-refused": "{count, plural, one {# write} other {# writes}} a person refused",
           "agent-calls-since": "{count, plural, one {# agent call} other {# agent calls}} since",
           "agent-writes-since": "{count, plural, one {# of them wrote} other {# of them wrote}} to the folder",
           "agent-distinct-since": "{count, plural, one {# agent} other {# agents}} at work"

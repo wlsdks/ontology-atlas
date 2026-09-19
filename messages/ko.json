@@ -1625,6 +1625,9 @@
           "harness-unwatched-areas": "지켜보는 검사가 없는 영역 {count}곳",
           "harness-mirror-drift": "두 에이전트 트리가 어긋난 파일 {count}개",
           "harness-changed-since": "그 뒤로 바뀐 지침 파일 {count}개",
+          "agent-writes-waiting": "허락했지만 아직 안 끝난 쓰기 {count}건",
+          "agent-writes-failed": "실패한 쓰기 {count}건",
+          "agent-writes-refused": "사람이 거절한 쓰기 {count}건",
           "agent-calls-since": "그 뒤로 에이전트 호출 {count}회",
           "agent-writes-since": "그중 폴더에 쓴 것 {count}회",
           "agent-distinct-since": "일한 에이전트 {count}개"
