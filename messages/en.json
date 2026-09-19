@@ -1555,8 +1555,8 @@
         "unmatched": "Missing concepts",
         "composition": "Inventory",
         "connections": "Relations",
-        "boundaries": "Across domains",
-        "growth": "What has piled up",
+        "boundaries": "Domain boundaries",
+        "growth": "Accumulation",
         "freshness": "Recent changes",
         "structure": "Structure",
         "flow": "Product flow"
@@ -1750,10 +1750,10 @@
       "freshnessEvidenceCaption": "These names have no writing of their own, so the date belongs to the document that wrote the name down: not to this concept. The small text on the right is where that document lives; give it a document and it joins the list above.",
       "impactEmpty": "No dependency declarations yet",
       "impactEmptyHint": "Review import evidence and the meaning of both concepts, then add only approved “leans on” relations on the map.",
-      "domainCouplingTitle": "Where domains connect",
+      "domainCouplingTitle": "Domain coupling",
       "domainCouplingCountUnit": "cross relations",
       "domainCouplingBoundaryCountUnit": "domains",
-      "domainCouplingEmptyTitle": "Too few connections yet",
+      "domainCouplingEmptyTitle": "Not enough connections to read coupling yet",
       "domainCouplingEmptyDescription": "Needs 2+ domains and a cross-domain relation between them to compute.",
       "domainCouplingEmptyAction": "Connect concepts on the map",
       "domainCouplingGridCaption": "Darker cells mean more relations. Rows send, columns receive. Dashed cells (the diagonal) count connections inside one domain: a different thing to count, so they use their own grey scale.",
@@ -1762,7 +1762,7 @@
       "domainCouplingGridHiddenCross": "{count} cross links outside the grid",
       "domainCouplingGridCellAria": "{count} links from {from} to {to}",
       "domainCouplingGridSelfAria": "{count} links inside {domain}",
-      "domainCouplingBoundaryTitle": "How much leaves the domain",
+      "domainCouplingBoundaryTitle": "Cross-domain share",
       "domainCouplingSelfLabel": "self",
       "domainCouplingCrossLabel": "cross",
       "domainCouplingBoundaryCaption": "Self = connections within the same domain, cross = connections leaving or entering another domain. Bar length is the cross share; longer means a leakier domain boundary. Highest share first.",
@@ -2058,7 +2058,7 @@
           "watched": "Watched"
         },
         "coverage": {
-          "title": "{count, number} areas",
+          "title": "Harness coverage — {count, number} areas",
           "caption": "{guides, number} guide files · {checks, number} checks, counted against each area.",
           "gaps": "No guide reaches {untold, number} · no rule gates {ungated, number} · no check watches {unwatched, number}",
           "everywhere": "Reaching everything: told {told, number} · gated {gated, number} · watched {watched, number}"
@@ -2070,7 +2070,7 @@
         },
         "about": {
           "title": "What this panel answers",
-          "body": "How far the guidance and checks you give agents reach into this folder's areas. The blanks are the answer — the places nothing tells, gates or watches.",
+          "body": "The agent harness — how far its guidance and checks reach into this folder's areas. The blanks are the answer: the places nothing tells, gates or watches.",
           "told": "what an agent reads: AGENTS.md, CLAUDE.md, rule documents",
           "gated": "what actually stops a bad change: hooks and gates",
           "watched": "what reports after the fact: tests and linters"

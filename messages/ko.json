@@ -1555,8 +1555,8 @@
         "unmatched": "빠진 개념",
         "composition": "구성",
         "connections": "관계",
-        "boundaries": "도메인 사이",
-        "growth": "쌓인 것",
+        "boundaries": "도메인 경계",
+        "growth": "축적",
         "freshness": "최근 변화",
         "structure": "구조",
         "flow": "제품 흐름"
@@ -1750,10 +1750,10 @@
       "freshnessEvidenceCaption": "이 이름들은 자기 글이 없어서, 옆의 날짜는 이 이름을 적어 둔 문서를 고친 날이에요. 이 개념을 고친 날이 아니에요. 오른쪽 작은 글씨가 그 문서 위치고, 문서로 만들면 위 목록에 올라와요.",
       "impactEmpty": "아직 선언된 의존 관계가 없어요",
       "impactEmptyHint": "import 근거와 두 개념의 의미를 검토한 뒤, 승인한 「기대는」 관계만 지도에서 이어주세요.",
-      "domainCouplingTitle": "도메인끼리 이어진 곳",
+      "domainCouplingTitle": "도메인 결합",
       "domainCouplingCountUnit": "교차 관계",
       "domainCouplingBoundaryCountUnit": "도메인",
-      "domainCouplingEmptyTitle": "아직 이어진 것이 적어요",
+      "domainCouplingEmptyTitle": "아직 결합을 볼 만큼 이어지지 않았어요",
       "domainCouplingEmptyDescription": "도메인 2개 이상 · 서로 다른 도메인을 잇는 교차 관계가 있어야 계산할 수 있어요.",
       "domainCouplingEmptyAction": "지도에서 개념 잇기",
       "domainCouplingGridCaption": "칸이 진할수록 관계가 많아요. 가로줄이 나가는 쪽, 세로줄이 받는 쪽이에요. 파선 칸(대각선)은 같은 도메인 안 연결이라 세는 대상이 달라서, 색도 회색 척도를 따로 써요.",
@@ -1762,7 +1762,7 @@
       "domainCouplingGridHiddenCross": "격자 밖 교차 {count}건",
       "domainCouplingGridCellAria": "{from}에서 {to}로 나가는 교차 {count}건",
       "domainCouplingGridSelfAria": "{domain} 안쪽 연결 {count}건",
-      "domainCouplingBoundaryTitle": "바깥으로 나가는 비율",
+      "domainCouplingBoundaryTitle": "교차 연결 비율",
       "domainCouplingSelfLabel": "안쪽",
       "domainCouplingCrossLabel": "교차",
       "domainCouplingBoundaryCaption": "안쪽=같은 도메인 안 연결, 교차=다른 도메인으로 나가거나 들어오는 연결. 막대 길이가 곧 교차 비중이고, 길수록 도메인 경계가 새고 있다는 신호예요. 위에서부터 비중이 높은 순이에요.",
@@ -2058,7 +2058,7 @@
           "watched": "지켜봄"
         },
         "coverage": {
-          "title": "영역 {count, number}곳",
+          "title": "하네스 커버리지 — 영역 {count, number}곳",
           "caption": "지침 파일 {guides, number}개 · 검사 {checks, number}개를 영역에 맞춰 세요.",
           "gaps": "아무 지침도 안 닿는 곳 {untold, number} · 막는 규칙이 없는 곳 {ungated, number} · 지켜보는 검사가 없는 곳 {unwatched, number}",
           "everywhere": "어디에나 닿는 것: 알려줌 {told, number} · 막음 {gated, number} · 지켜봄 {watched, number}"
@@ -2070,7 +2070,7 @@
         },
         "about": {
           "title": "이 판이 답하는 것",
-          "body": "에이전트에게 주는 지침과 검사가 이 폴더의 어느 영역까지 닿는지 봅니다. 빈 칸이 곧 답이에요 — 아무도 알려주지 않고, 막지 않고, 지켜보지 않는 자리입니다.",
+          "body": "에이전트 하네스 — 지침과 검사가 이 폴더의 어느 영역까지 닿는지 봅니다. 빈 칸이 곧 답이에요 — 아무도 알려주지 않고, 막지 않고, 지켜보지 않는 자리입니다.",
           "told": "AGENTS.md·CLAUDE.md·규칙 문서처럼 에이전트가 읽는 글",
           "gated": "훅·검사처럼 잘못된 변경을 실제로 막는 것",
           "watched": "테스트·린트처럼 바뀐 뒤에 알려주는 것"
