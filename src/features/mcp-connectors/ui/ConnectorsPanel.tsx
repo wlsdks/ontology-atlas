@@ -34,6 +34,7 @@ import { CONNECTORS_RELATIVE_PATH, type ConnectorWriteResult } from '@/shared/li
 import {
   discoverMcpConnectors,
   isConnectorDiscoveryAvailable,
+  type ConnectorDiscoveryState,
   type DiscoveredConnector,
 } from '@/shared/lib/tauri-connectors';
 import {
@@ -189,12 +190,49 @@ export function ConnectorsPanel({
   const canDiscover = isConnectorDiscoveryAvailable();
   const canStoreSecrets = isConnectorSecretBridgeAvailable();
 
-  const [discovered, setDiscovered] = useState<DiscoveredConnector[] | null>(null);
+  /*
+   * ⚠️ **A scan that fails must stop claiming it is still running** (2026-09-20).
+   *
+   * This used to be one `DiscoveredConnector[] | null`, where `null` meant "has not answered
+   * yet" — and the call had no `catch`. `discover_mcp_connectors` reads four config files on
+   * this machine; when it rejects (an unreadable `~/.claude.json`, a denied home directory, a
+   * panic in the command) the state stays `null` for the life of the screen. Both places that
+   * render it then say "reading what is already registered on this computer" **forever**, the
+   * rejection goes unhandled, and `registeredNames` stays empty so the name-collision warning
+   * never fires with nothing on screen saying why.
+   *
+   * Three states, named, so neither consumer can spell one of them as the absence of another.
+   */
+  const [discovery, setDiscovery] = useState<ConnectorDiscoveryState>({ status: 'scanning' });
+  const discovered = discovery.status === 'done' ? discovery.connectors : null;
   useEffect(() => {
     let cancelled = false;
-    void discoverMcpConnectors(vaultPath).then((result) => {
-      if (!cancelled) setDiscovered(result?.connectors ?? null);
-    });
+    /*
+     * No synchronous reset to `scanning` here. `vaultPath` changing would ideally clear a
+     * previous folder's answer, but setting state in an effect body is what
+     * `react-hooks/set-state-in-effect` forbids, and the reset is not this slice's subject: the
+     * old code never cleared it either, and the values it carries (which names this *machine*
+     * registers) are about the computer, not the folder.
+     */
+    void discoverMcpConnectors(vaultPath)
+      .then((result) => {
+        if (cancelled) return;
+        /*
+         * **`done` means a list arrived**, not merely that the promise settled. A `null` result
+         * is the web path — the bridge is absent, so nothing was read; `canDiscover` is false
+         * there and neither sentence is drawn. A settled call carrying no list is a reply this
+         * screen cannot use, and calling that `done` would paint "nothing is registered on this
+         * computer" out of a malformed answer.
+         */
+        setDiscovery(
+          Array.isArray(result?.connectors)
+            ? { status: 'done', connectors: result.connectors }
+            : { status: 'failed' },
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setDiscovery({ status: 'failed' });
+      });
     return () => {
       cancelled = true;
     };
@@ -526,13 +564,21 @@ export function ConnectorsPanel({
         </p>
       ) : null}
 
-      {canDiscover && discovered === null && !isEmpty ? (
+      {canDiscover && !isEmpty && discovery.status !== 'done' ? (
         <p
           role="status"
-          data-testid={`${testIdPrefix}-scanning`}
-          className="mt-3 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+          data-testid={
+            discovery.status === 'failed'
+              ? `${testIdPrefix}-discovery-failed`
+              : `${testIdPrefix}-scanning`
+          }
+          className={`mt-3 break-keep text-label leading-prose ${
+            discovery.status === 'failed'
+              ? 'text-[color:var(--color-status-warning)]'
+              : 'text-[color:var(--color-text-quaternary)]'
+          }`}
         >
-          {t('scanning')}
+          {discovery.status === 'failed' ? t('discoveryFailed') : t('scanning')}
         </p>
       ) : null}
 
@@ -587,7 +633,7 @@ export function ConnectorsPanel({
       <AddConnectorDialog
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        discovered={discovered}
+        discovery={discovery}
         canDiscover={canDiscover}
         canStoreSecrets={canStoreSecrets}
         attachedNames={attachedNames}

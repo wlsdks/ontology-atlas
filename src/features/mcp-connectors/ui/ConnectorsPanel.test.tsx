@@ -9,6 +9,8 @@ const bridge = vi.hoisted(() => ({
   discoveryAvailable: true,
   secretsAvailable: true,
   discovered: null as unknown,
+  /** Set to make `discover_mcp_connectors` reject, the way an unreadable config file does. */
+  discoveryRejects: false,
   secretSets: [] as Array<{ ref: string; secret: string }>,
   secretDeletes: [] as string[],
   stored: new Map<string, string>(),
@@ -26,7 +28,10 @@ vi.mock('@/shared/lib/tauri-connectors', async () => {
   return {
     ...actual,
     isConnectorDiscoveryAvailable: () => bridge.discoveryAvailable,
-    discoverMcpConnectors: async () => bridge.discovered,
+    discoverMcpConnectors: async () => {
+      if (bridge.discoveryRejects) throw new Error('discover_mcp_connectors failed');
+      return bridge.discovered;
+    },
   };
 });
 
@@ -194,6 +199,7 @@ beforeEach(() => {
   bridge.secretsAvailable = true;
   bridge.discovered = null;
   bridge.secretSets = [];
+  bridge.discoveryRejects = false;
   bridge.secretDeletes = [];
   bridge.stored = new Map();
 });
@@ -213,6 +219,41 @@ afterEach(cleanup);
  * Both directions are asserted, because a prop that silences something is only worth having if
  * the something exists without it.
  */
+/**
+ * **A scan that failed must stop saying it is running** (2026-09-20).
+ *
+ * `discover_mcp_connectors` reads four config files on this machine, and the call had no
+ * `catch`: a rejection left the discovery state at "has not answered yet" for the life of the
+ * screen. Both places that draw it then read "reading what is already registered on this
+ * computer" forever — a wait with no end and no way to tell it from a slow disk.
+ *
+ * The failed sentence is also deliberately **not** "found none". An empty result is a claim
+ * about this computer; a read that failed has not earned it.
+ */
+describe('연결 도구 패널 — 실패한 훑기는 끝났다고 말한다', () => {
+  it('훑기가 실패하면 읽는 중이라고 하지 않고 실패를 말한다', async () => {
+    bridge.discoveryRejects = true;
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('connectors-discovery-failed')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('connectors-scanning')).toBeNull();
+  });
+
+  it('추가 대화상자도 같은 자리에서 실패를 말한다 — 「없음」이 아니다', async () => {
+    bridge.discoveryRejects = true;
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('connectors-add-open'));
+    const failed = await screen.findAllByTestId('connectors-discovery-failed');
+    expect(failed.length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('connectors-found-empty')).toBeNull();
+    expect(screen.queryByTestId('connectors-scanning')).toBeNull();
+  });
+});
+
 describe('연결 도구 패널 — 개수는 한 곳에서만 말한다', () => {
   it('머리글이 없으면 카드가 켜진 수를 말한다', async () => {
     const vault = fakeVault(seeded(stdioRecord));

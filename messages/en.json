@@ -4779,6 +4779,7 @@
     "noFolderBody": "Connectors are written into the folder you open. Open it, then attach one.",
     "loading": "Reading this folder’s connector list.",
     "scanning": "Reading what this computer already registers.",
+    "discoveryFailed": "Could not read what is already registered on this computer. You can still add one by hand, and a name already in use here cannot be flagged.",
     "onOfTotal": "{on} of {total} on",
     "on": "On",
     "off": "Off",
