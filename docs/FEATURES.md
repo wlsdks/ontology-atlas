@@ -2845,6 +2845,18 @@ compared the whole `kind:slug`. All three now call `findNameMatch` and `idSearch
 in `shared/lib/node-name-match`, which is the single contract; the palette's ranking
 stays its own, because only it ranks. `nameIncludes` retired with its last caller.
 
+**The palette says how many it found, not how many fitted** (2026-09-19). Each group
+draws at most 20 rows, and both the group heading and the footer counted the drawn
+array — so the limit stood in for the answer. The footer is the one place that names
+the scope it searched ("N matches · Online Store"), which makes its number read as a
+fact about that folder. Measured on the bundled sample: typing `the` showed "match ·
+20" and "21 matches" where 120 actually matched, and one common Hangul initial showed
+20 where 52 did. The
+matchers now return the page **and** the size of what was found, the heading uses the
+"shown / found" shape the empty state already used ("20 / 119"), and the footer
+carries the real total. Below the limit nothing changes — a query with 11 matches
+still reads "11".
+
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio
 - 2-column grid on sm+, focus trap, `Esc` closes

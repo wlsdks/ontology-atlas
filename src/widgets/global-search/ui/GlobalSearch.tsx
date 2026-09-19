@@ -23,6 +23,14 @@ import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match
 import { describeMatchReason } from "../lib/match-reason";
 import { focusMapCanvasWhenReady, MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 
+/**
+ * How many rows each group draws. The heading says "shown / found" whenever this
+ * binds, so the limit is visible rather than silently standing in for the answer.
+ */
+const RESULT_LIMIT = 20;
+
+const EMPTY_PROJECT_PAGE = { results: [], total: 0 } as const;
+
 export interface GlobalSearchProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -106,18 +114,20 @@ export function GlobalSearch({
   // "5 indexed" beside a census of 4 concepts (design audit 2026-09-04). The
   // predicate is the one the recent-changes lens uses, so the two agree.
   const drawnNodes = useMemo(() => nodes.filter((node) => isGraphDrawnKind(node.kind)), [nodes]);
-  const ontologyResults = useMemo(
+  const ontologyPage = useMemo(
     () =>
-      matchOntologyNodes(query, drawnNodes, 20, {
+      matchOntologyNodes(query, drawnNodes, RESULT_LIMIT, {
         kinds: selectedKinds,
         projectIds: selectedProjectIds,
       }),
     [query, drawnNodes, selectedKinds, selectedProjectIds],
   );
-  const projectResults = useMemo(
-    () => (projects ? matchProjects(query, projects, 20) : []),
+  const ontologyResults = ontologyPage.results;
+  const projectPage = useMemo(
+    () => (projects ? matchProjects(query, projects, RESULT_LIMIT) : EMPTY_PROJECT_PAGE),
     [query, projects],
   );
+  const projectResults = projectPage.results;
 
   const isEmptyQuery = query.trim() === "";
   const ontologySize = drawnNodes.length;
@@ -156,7 +166,9 @@ export function GlobalSearch({
     const localized = projectNode?.displayLocales?.[locale]?.trim();
     return localized || project.name.trim() || null;
   }, [projects, drawnNodes, locale]);
-  const totalMatches = ontologyResults.length + projectResults.length;
+  // The footer names the scope it searched, so its number is read as a fact about
+  // that folder — it has to be what was found, not what fitted (measured 2026-09-19).
+  const totalMatches = ontologyPage.total + projectPage.total;
   const hasFilter = selectedKinds.size > 0 || selectedProjectIds.size > 0;
 
   // The source for the workspace project chip row — the projects prop when present
@@ -464,7 +476,7 @@ export function GlobalSearch({
               heading={
                 <span className="px-2 pb-1 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                   {isEmptyQuery ? t('groupConceptRecent') : t('groupConceptMatch')} · {ontologyResults.length}
-                  {isEmptyQuery && ontologySize > ontologyResults.length ? ` / ${ontologySize}` : ""}
+                  {ontologyPage.total > ontologyResults.length ? ` / ${ontologyPage.total}` : ""}
                 </span>
               }
             >
@@ -550,7 +562,7 @@ export function GlobalSearch({
               heading={
                 <span className="px-2 pb-1 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                   {isEmptyQuery ? t('groupProjectRecent') : t('groupProjectMatch')} · {projectResults.length}
-                  {isEmptyQuery && projectSize > projectResults.length ? ` / ${projectSize}` : ""}
+                  {projectPage.total > projectResults.length ? ` / ${projectPage.total}` : ""}
                 </span>
               }
             >
