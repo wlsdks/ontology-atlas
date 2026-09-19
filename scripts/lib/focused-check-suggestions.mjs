@@ -738,6 +738,17 @@ const RULES = [
     ],
   },
   {
+    // The census strip is drawn for one subject only, so wherever it sits it can push the
+    // control a reader just clicked (measured 2026-09-20: 188px, at both 1512 and 1920).
+    command: 'pnpm exec playwright test tests/e2e/insights-board-stability.spec.ts',
+    reason: 'the insights subject row, its census strip, or the panel between them changed',
+    matches: [
+      /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
+      /^src\/views\/ontology-insights\/ui\/parts\/InsightsCensusStrip\.tsx$/,
+      /^src\/shared\/ui\/segmented-control\.tsx$/,
+    ],
+  },
+  {
     command: 'pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts',
     reason: 'insights census rendering or its domain-capacity consumer changed',
     matches: [

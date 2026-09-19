@@ -1422,42 +1422,6 @@ export function OntologyInsightsPage() {
           </div>
         </header>
         {/*
-         * **The census strip leads the board** (owner, 2026-09-06: "isn't analysis supposed to
-         * show indicators and flow?"). It sits above the tab bar because it answers the question
-         * a person arrives with — how big is this folder and is it in trouble — before they pick
-         * which of the seven questions to open. The audience banner that used to stand here
-         * ("this board is for the people and agents who tend the map") went with it: a sentence
-         * announcing who a screen is for is not a measurement, and the strip now occupies the one
-         * band a reader looks at first.
-         */}
-        {/*
-          * The strip counts the ontology, so it draws on the ontology's own tabs. Above the
-          * library or the harness panel it put four ontology numbers over a screen about
-          * something else, which is the confusion the first row exists to end.
-          */}
-        {insight && hasConcepts && coreOfTab(tab) === "ontology" ? (
-          <div className="mt-4">
-            <InsightsCensusStrip
-              totalNodes={totalNodes}
-              totalEdges={totalEdges}
-              health={health}
-              islandCount={healthRepair.islandCount}
-              verdict={insightsVerdict}
-              weeklyTotals={freshness.weeklyTotals}
-              kindsSummary={kindRows.map((row) => ({
-                key: row.kind,
-                label: kindLabel(row.kind),
-                count: row.count,
-              }))}
-              relationsSummary={edgeTypeSummary}
-              relationsTotal={edgeTypeRows.length}
-              onSeeAllRelations={() => setTab("connections")}
-              labels={censusStripLabels}
-            />
-          </div>
-        ) : null}
-
-        {/*
           * **Two rows, because one could not say what it was about.** The first names the thing —
           * the brief across all of them, the ontology, the library, the harness — and the second
           * carries the ontology's own questions. A reader looking at "relations" could not tell
@@ -1471,7 +1435,7 @@ export function OntologyInsightsPage() {
           * here (owner, 2026-09-19). The question row exists only for the concepts subject; the
           * other three are single views and draw no second row at all.
           */}
-        <nav className="mt-[var(--section-gap)] flex flex-col gap-2">
+        <div className="mt-[var(--section-gap)] flex flex-col gap-2">
           <div className="self-start">
           <SegmentedControl
             ariaLabel={t("coreAriaLabel")}
@@ -1481,6 +1445,44 @@ export function OntologyInsightsPage() {
             testId="insights-core-switch"
           />
           </div>
+          {/*
+           * **The census strip sits between the two rows** (owner, 2026-09-06: "isn't analysis
+           * supposed to show indicators and flow?"). It answers the question a person arrives
+           * with — how big is this folder and is it in trouble — before they pick which of the
+           * seven questions to open, which is what that decision asked for and is still true
+           * here. The audience banner that used to stand in this band went with it: a sentence
+           * announcing who a screen is for is not a measurement.
+           *
+           * ⚠️ **It may not lead the board any more, because the board gained a first row.** The
+           * strip is drawn for the concepts subject only, so standing above the subject control
+           * it pushed that control from y=104 to y=292 the moment a reader picked concepts — the
+           * control moved out from under the pointer that had just clicked it, and the screen
+           * stated 125 and 258 before naming whose numbers they were (design audit, 2026-09-20,
+           * identical at 1512 and 1920). Below the subject row the control never moves, and the
+           * decided clause — "four equal-height census tiles above the tab bar" — is still
+           * literally true, so that decision stands rather than being overturned.
+           */}
+          {insight && hasConcepts && coreOfTab(tab) === "ontology" ? (
+            <div className="my-2">
+              <InsightsCensusStrip
+                totalNodes={totalNodes}
+                totalEdges={totalEdges}
+                health={health}
+                islandCount={healthRepair.islandCount}
+                verdict={insightsVerdict}
+                weeklyTotals={freshness.weeklyTotals}
+                kindsSummary={kindRows.map((row) => ({
+                  key: row.kind,
+                  label: kindLabel(row.kind),
+                  count: row.count,
+                }))}
+                relationsSummary={edgeTypeSummary}
+                relationsTotal={edgeTypeRows.length}
+                onSeeAllRelations={() => setTab("connections")}
+                labels={censusStripLabels}
+              />
+            </div>
+          ) : null}
           {coreOfTab(tab) === "ontology" ? (
           <TabBar
             ariaLabel={t("tabsAriaLabel")}
@@ -1518,7 +1520,7 @@ export function OntologyInsightsPage() {
             }))}
           />
           ) : null}
-        </nav>
+        </div>
 
         {error ? (
           <div
