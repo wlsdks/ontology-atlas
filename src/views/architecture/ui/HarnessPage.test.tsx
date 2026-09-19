@@ -94,6 +94,7 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
       unnamedByFolder: [], excluded: [], truncated: false,
     },
     testFiles: [],
+    workflowFiles: [],
     times: [],
     contents: new Map(),
     checks: { wiredHooks: 20, gitHooks: 3, scripts: new Array(57).fill('x'), total: 80 },

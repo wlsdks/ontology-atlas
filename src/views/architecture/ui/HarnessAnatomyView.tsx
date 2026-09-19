@@ -124,19 +124,26 @@ export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
   const toolSlot = anatomy.slots.find((slot) => slot.band === 'tool');
 
   return (
-    <section data-testid="harness-anatomy" className="flex flex-col gap-5">
-      <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-x-2">
-          <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-            {t('anatomyTitle')}
-          </h2>
-          <InfoHint align="left" label={t('anatomyProvenanceLabel')}>
-            {t('anatomyProvenance')}
-          </InfoHint>
-        </div>
-        <p className="max-w-prose break-keep text-caption text-[color:var(--color-text-tertiary)]">
+    <section
+      data-testid="harness-anatomy"
+      aria-label={t('anatomyTitle')}
+      className="flex flex-col gap-4"
+    >
+      {/*
+        ⚠️ **One line, not a second masthead.** The shell above already prints the destination's
+        name, its explainer and the census sentence with its breakdown caption; a titled section
+        under that made a sixth stacked text block, and the tab that opens it is called Structure —
+        so "Harness structure" as a heading said the word twice and pushed the first card 78px
+        down (measured 1512×949, 2026-09-20). The name survives as the region's accessible label,
+        where it names the landmark without spending a row.
+      */}
+      <div className="flex flex-wrap items-baseline gap-x-2">
+        <p className="min-w-0 max-w-prose break-keep text-caption text-[color:var(--color-text-tertiary)]">
           {t('anatomyCaption')}
         </p>
+        <InfoHint align="left" label={t('anatomyProvenanceLabel')}>
+          {t('anatomyProvenance')}
+        </InfoHint>
       </div>
 
       {/*
@@ -203,19 +210,29 @@ export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
           data-testid="harness-anatomy-band-tool"
           className="rounded-card border border-dashed border-[color:var(--color-border-soft)] p-[var(--card-pad)]"
         >
-          <h2 className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
-            {t(BAND_HEAD.tool)}
-          </h2>
-          <p className="mt-1 max-w-prose break-keep text-caption text-[color:var(--color-text-tertiary)]">
-            {t(BAND_CAPTION.tool)}
-          </p>
-          <div className="mt-3" data-testid="harness-anatomy-slot-loop" data-status={toolSlot.status}>
-            <h3 className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
-              {t('anatomySlots.loop.title')}
-            </h3>
-            <p className="mt-1 max-w-prose break-keep text-caption text-[color:var(--color-text-tertiary)]">
-              {t('anatomySlots.loop.body')}
-            </p>
+          {/*
+            Two columns, because one prose column inside a full-width card left 930 of 1400px empty
+            and the band read as a card that had failed to load rather than as a deliberate blank
+            (measured 1512×949, 2026-09-20). The heading pair sits in the narrow column and the two
+            sentences in the wide one, so both texts start on one line and the card is used.
+          */}
+          <div className="grid gap-x-8 gap-y-2 md:grid-cols-[minmax(0,15rem)_1fr]">
+            <div data-testid="harness-anatomy-slot-loop" data-status={toolSlot.status}>
+              <h2 className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+                {t(BAND_HEAD.tool)}
+              </h2>
+              <h3 className="mt-1 break-keep text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
+                {t('anatomySlots.loop.title')}
+              </h3>
+            </div>
+            <div className="flex flex-col gap-1">
+              <p className="break-keep text-caption text-[color:var(--color-text-tertiary)]">
+                {t(BAND_CAPTION.tool)}
+              </p>
+              <p className="break-keep text-caption text-[color:var(--color-text-tertiary)]">
+                {t('anatomySlots.loop.body')}
+              </p>
+            </div>
           </div>
         </section>
       ) : null}

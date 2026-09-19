@@ -76,6 +76,7 @@ export type AnatomySlotId =
   | 'watchers'
   | 'checks'
   | 'discoveredTests'
+  | 'pipeline'
   | 'loop';
 
 /** How many names a slot prints before it starts counting the rest. */
@@ -202,6 +203,7 @@ export const ANATOMY_ORDER: readonly AnatomySlotId[] = [
   'watchers',
   'checks',
   'discoveredTests',
+  'pipeline',
   'loop',
 ];
 
@@ -307,6 +309,17 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
       'watches',
       uniqueSorted(report.testFiles.map((path) => topFolder(path, 3))),
       report.testFiles.length,
+    ),
+    /*
+     * The one phase the first build of this view had no row for. Fowler's lifecycle runs pre-commit
+     * → post-commit → pipeline → continuous monitoring, and a repository whose only gate is a
+     * pipeline was drawn here with nothing watching it at all. Names are the workflow file, which
+     * is what a reader opens; whether a job in it ever ran is a fact GitHub holds, not this folder.
+     */
+    slot(
+      'pipeline',
+      'watches',
+      uniqueSorted(report.workflowFiles.map((path) => path.replace('.github/workflows/', ''))),
     ),
     {
       id: 'loop',

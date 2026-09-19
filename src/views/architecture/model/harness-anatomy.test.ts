@@ -34,6 +34,7 @@ function report(partial: Partial<HarnessReport> = {}): HarnessReport {
     coverage: [],
     documentReach: { total: 0 } as never,
     testFiles: [],
+    workflowFiles: [],
     timesAreFileMtime: true,
     ...partial,
   } as HarnessReport;
@@ -249,5 +250,25 @@ describe('permissionCounts', () => {
       deny: 0,
       ask: 0,
     });
+  });
+});
+
+describe('the pipeline slot', () => {
+  it('names workflow files without their directory, and counts them from the scan', () => {
+    /* The phase the first build of this view had no row for at all: a repository whose only gate
+       is a pipeline was drawn with nothing watching it. */
+    const anatomy = buildHarnessAnatomy(
+      report({
+        workflowFiles: ['.github/workflows/ci.yml', '.github/workflows/release.yml'],
+      }),
+    );
+    const pipeline = slotOf(anatomy, 'pipeline');
+    expect(pipeline.band).toBe('watches');
+    expect(pipeline.items).toEqual(['ci.yml', 'release.yml']);
+    expect(pipeline.count).toBe(2);
+  });
+
+  it('says none yet when the repository has no workflows', () => {
+    expect(slotOf(buildHarnessAnatomy(report()), 'pipeline').status).toBe('absent');
   });
 });

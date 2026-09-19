@@ -162,6 +162,10 @@ test.describe("하네스 탭", () => {
       "허용 1 · 물어봄 0 · 금지 2",
     );
 
+    // The pipeline phase has its own row, so a repository guarded only by CI is not drawn as
+    // having nothing watching it. This fixture has no workflows, which the row states.
+    await expect(page.getByTestId("harness-anatomy-count-pipeline")).toHaveText("아직 없음");
+
     // Nothing here is a mark out of ten, and an absent part says so in words.
     await expect(page.getByTestId("harness-anatomy-count-tools")).toHaveText("아직 없음");
     const loop = page.getByTestId("harness-anatomy-slot-loop");

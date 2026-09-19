@@ -195,6 +195,15 @@ export interface HarnessReport {
    */
   testFiles: readonly string[];
   /**
+   * `.github/workflows/*` paths, independent of the coverage pass.
+   *
+   * The scan has always read these files; until 2026-09-19 they reached the screen only through
+   * `coverage`, which runs when the vault records implementation paths and not otherwise. The
+   * structure view needs them unconditionally, because a repository whose only gate is a pipeline
+   * would otherwise be drawn with nothing watching it at all.
+   */
+  workflowFiles: readonly string[];
+  /**
    * `true` always, and stated on screen: these timestamps are filesystem modification times, not
    * commit dates. A fresh clone or a new worktree stamps every file with the checkout time, so the
    * column answers "when did this file change **on this disk**" and nothing more.
@@ -556,6 +565,7 @@ export async function scanHarness(
     coverage,
     documentReach,
     testFiles: [...new Set(testFiles)].sort(),
+    workflowFiles: [...workflows.keys()].sort(),
     timesAreFileMtime: true,
   };
 }

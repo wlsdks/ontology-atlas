@@ -460,6 +460,10 @@
       "loop": {
         "title": "The agent loop and the model",
         "body": "What gets read first, when to stop, what to drop when the context fills, which model runs: the tool decides all of it. No amount of reading this repository reveals it, and the same guides give different results in a different tool."
+      },
+      "pipeline": {
+        "title": "Runs after it is pushed",
+        "body": "Files under .github/workflows/. They run after the code leaves this machine, so they catch what a local run let past."
       }
     },
     "anatomyUnits": {
@@ -473,7 +477,8 @@
       "watchers": "{count, plural, one {# hook} other {# hooks}}",
       "checks": "{count, plural, one {# script} other {# scripts}}",
       "discoveredTests": "{count, plural, one {# file} other {# files}}",
-      "loop": "{count}"
+      "loop": "{count}",
+      "pipeline": "{count, plural, one {# workflow} other {# workflows}}"
     }
   },
   "architecture": {
