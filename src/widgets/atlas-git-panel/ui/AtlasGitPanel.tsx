@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
 import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
@@ -236,6 +237,8 @@ type GitWorkspaceRead = {
   changes: GitChangeEntry[];
   diffText: string;
   history: GitCommitInfo[];
+  /** Whether git holds steps older than the ones read — the list says so instead of just stopping. */
+  historyHasMore: boolean;
 };
 
 /**
@@ -247,6 +250,20 @@ type GitWorkspaceMemory = {
   referenceMs: number;
 };
 
+/**
+ * Steps read per page. The first read asks for this many; "show older steps" asks for this
+ * many more. Ten is what the old fixed read asked for, and about what one column holds at
+ * the 14-inch height, so the first paint is unchanged.
+ */
+const HISTORY_PAGE = 10;
+
+/**
+ * How long after the watcher's last `vault-changed` the screen re-reads. The Rust watcher
+ * already coalesces file events over 500 ms; this only keeps a burst of its emits from
+ * queueing one read per emit.
+ */
+const FOLLOW_DEBOUNCE_MS = 300;
+
 /*
  * Stable empty values. Returning a fresh `[]` when nothing is remembered would give every
  * `useMemo` below a new dependency on every render, which turns a memoisation into a
@@ -255,17 +272,49 @@ type GitWorkspaceMemory = {
 const NO_CHANGES: readonly GitChangeEntry[] = [];
 const NO_HISTORY: readonly GitCommitInfo[] = [];
 
-async function readGitWorkspace(vaultPath: string): Promise<GitWorkspaceRead | null> {
+/**
+ * Reads one step past the limit so the list knows whether older steps exist, rather than
+ * guessing from a count that happens to equal the page size.
+ */
+async function readGitHistoryPage(
+  vaultPath: string,
+  limit: number,
+): Promise<{ history: GitCommitInfo[]; historyHasMore: boolean }> {
+  const rows = (await gitHistory(vaultPath, limit + 1)) ?? [];
+  return { history: rows.slice(0, limit), historyHasMore: rows.length > limit };
+}
+
+async function readGitWorkspace(
+  vaultPath: string,
+  historyLimit: number,
+): Promise<GitWorkspaceRead | null> {
   const status = await gitStatus(vaultPath);
   if (!status) return null;
-  if (!status.initialized) return { status, changes: [], diffText: "", history: [] };
-  const [diff, history] = await Promise.all([gitDiff(vaultPath), gitHistory(vaultPath, 10)]);
+  if (!status.initialized) return { status, changes: [], diffText: "", history: [], historyHasMore: false };
+  const [diff, page] = await Promise.all([gitDiff(vaultPath), readGitHistoryPage(vaultPath, historyLimit)]);
   return {
     status,
     changes: diff?.files ?? [],
     diffText: diff?.diff ?? "",
-    history: history ?? [],
+    ...page,
   };
+}
+
+/**
+ * The human wording of a step's subject: an automatic `ontology snapshot: …` subject becomes
+ * counts in the reader's language, and a subject a person wrote stays as written. `null`
+ * means the subject is already human language.
+ */
+function humanizeStepSubject(t: Translator, subject: string): string | null {
+  const summary = describeSnapshotSubject(subject);
+  if (!summary.matched) return null;
+  const parts = [
+    summary.added > 0 ? t("statusAdded", { count: summary.added }) : null,
+    summary.updated > 0 ? t("statusModified", { count: summary.updated }) : null,
+    summary.renamed > 0 ? t("statusRenamed", { count: summary.renamed }) : null,
+    summary.removed > 0 ? t("statusDeleted", { count: summary.removed }) : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : t("stepNoConcepts");
 }
 
 /**
@@ -383,6 +432,17 @@ export function AtlasGitPanel({
   const changes = workspace?.read.changes ?? NO_CHANGES;
   const diffText = workspace?.read.diffText ?? "";
   const history = workspace?.read.history ?? NO_HISTORY;
+  const historyHasMore = workspace?.read.historyHasMore ?? false;
+  /*
+   * How many steps the person has opened. Remembered per folder like the read itself, so a
+   * return trip keeps the depth rather than folding the list back to ten.
+   */
+  const [historyLimit, setHistoryLimit] = useArrivalMemory<number>(
+    vaultPath ? `atlas-git-history-limit:${vaultPath}` : null,
+    HISTORY_PAGE,
+  );
+  /** The depth to read at, as seen from an effect that must not re-run when it changes. */
+  const currentHistoryLimit = useEffectEvent(() => historyLimit);
   // The bridge's `relativeTime` is useful only as a compatibility fallback: it
   // is preformatted by git and can therefore arrive in a different language.
   // Capture one reference instant per successful workspace read. Unrelated
@@ -568,16 +628,26 @@ export function AtlasGitPanel({
     setLoadErrorText(gitErrorMessage(err, nativeErrors));
     setLoadState("error");
   }, [nativeErrors]);
+  /*
+   * Reads can now overlap — the watcher, a commit and a click may each start one — and
+   * git answers them in whatever order it likes. Only the newest read may land: a status from
+   * before a commit arriving after the commit's own read would put the old count back.
+   */
+  const readSeqRef = useRef(0);
   // Read-only queries (status/diff/history) only — a write (git_snapshot) never happens here.
   const refresh = useCallback(async () => {
     if (!vaultPath) return;
+    const seq = ++readSeqRef.current;
+    const limit = historyLimit;
     try {
-      const next = await readGitWorkspace(vaultPath);
+      const next = await readGitWorkspace(vaultPath, limit);
+      if (seq !== readSeqRef.current) return;
       if (next) applyWorkspaceRead(next);
     } catch (err) {
+      if (seq !== readSeqRef.current) return;
       reportWorkspaceReadFailure(err);
     }
-  }, [applyWorkspaceRead, reportWorkspaceReadFailure, vaultPath]);
+  }, [applyWorkspaceRead, historyLimit, reportWorkspaceReadFailure, vaultPath]);
   const applyInitialWorkspaceRead = useEffectEvent((next: GitWorkspaceRead) => {
     applyWorkspaceRead(next);
   });
@@ -588,17 +658,57 @@ export function AtlasGitPanel({
   useEffect(() => {
     if (!desktop || !vaultPath) return;
     let cancelled = false;
-    void readGitWorkspace(vaultPath)
+    const seq = ++readSeqRef.current;
+    const limit = currentHistoryLimit();
+    void readGitWorkspace(vaultPath, limit)
       .then((next) => {
-        if (!cancelled && next) applyInitialWorkspaceRead(next);
+        if (!cancelled && seq === readSeqRef.current && next) applyInitialWorkspaceRead(next);
       })
       .catch((err) => {
-        if (!cancelled) reportInitialWorkspaceReadFailure(err);
+        if (!cancelled && seq === readSeqRef.current) reportInitialWorkspaceReadFailure(err);
       });
     return () => {
       cancelled = true;
     };
   }, [desktop, vaultPath]);
+
+  /**
+   * Older steps, one page at a time. The click only raises the depth; the effect below reads
+   * the page. Only history is re-read — the status and the diff on screen are still true, and
+   * asking for them again would only give the list a reason to blink.
+   */
+  const loadMoreHistory = useCallback(() => {
+    setHistoryLimit(historyLimit + HISTORY_PAGE);
+  }, [historyLimit, setHistoryLimit]);
+  /** Lands a page on the memory **as it is then** — a status read that overlapped is kept. */
+  const landHistoryPage = useEffectEvent((page: { history: GitCommitInfo[]; historyHasMore: boolean }) => {
+    if (!workspace) return;
+    rememberWorkspace({ read: { ...workspace.read, ...page }, referenceMs: Date.now() });
+  });
+  const reportHistoryPageFailure = useEffectEvent((err: unknown) => {
+    reportWorkspaceReadFailure(err);
+  });
+  /*
+   * "The list is shorter than the depth asked for, and git has more" is exactly the window in
+   * which a page is being read — so it is also the button's busy state, with no second
+   * variable to fall out of step.
+   */
+  const historyShort = Boolean(workspace) && historyHasMore && history.length < historyLimit;
+  const historyMoreBusy = historyShort;
+  useEffect(() => {
+    if (!desktop || !vaultPath || !historyShort) return;
+    let cancelled = false;
+    void readGitHistoryPage(vaultPath, historyLimit)
+      .then((page) => {
+        if (!cancelled) landHistoryPage(page);
+      })
+      .catch((err) => {
+        if (!cancelled) reportHistoryPageFailure(err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [desktop, vaultPath, historyLimit, historyShort]);
 
   // Split what the user judges (concepts) from the files that ride along. What
   // they have to read here is "which of my concepts changed"; `.gitignore` and
@@ -750,6 +860,50 @@ export function AtlasGitPanel({
   const [remoteBusy, setRemoteBusy] = useState<null | "fetch" | "pull" | "push">(null);
   const [remoteActionNotice, setRemoteActionNotice] = useState<string | null>(null);
   const [remoteActionError, setRemoteActionError] = useState<string | null>(null);
+  /*
+   * **Follow the folder while the screen is open.** An editor, a coding agent or a terminal
+   * writing into the vault used to leave this screen exactly as it was at arrival: the count
+   * on the commit button and the preview line beside it described a folder that no longer
+   * existed, until the next visit. The Rust watcher already emits `vault-changed` for the
+   * loaded vault (started by `TauriVaultWatchBridge`); this only listens.
+   *
+   * Reads only — `refresh` is status/diff/history and nothing else, so the charter's zero
+   * automatic execution holds. While this side is itself writing (a commit, `git init`, a
+   * remote action) the watcher's echo of that write is skipped: each of those paths already
+   * re-reads when it finishes, and a read landing mid-commit would show a half state.
+   */
+  const followBusy = snapshotting || initRunning || remoteRunning || remoteBusy !== null;
+  const followVaultChange = useEffectEvent(() => {
+    if (followBusy) return;
+    void refresh();
+  });
+  useEffect(() => {
+    if (!desktop || !vaultPath) return;
+    let cancelled = false;
+    let unlisten: (() => void) | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    void listen("vault-changed", () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = undefined;
+        if (cancelled) return;
+        followVaultChange();
+      }, FOLLOW_DEBOUNCE_MS);
+    })
+      .then((un) => {
+        if (cancelled) un();
+        else unlisten = un;
+      })
+      .catch(() => {
+        /* No event channel — the next arrival re-reads, exactly as before. */
+      });
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      unlisten?.();
+    };
+  }, [desktop, vaultPath]);
+
   const runRemote = useCallback(
     async (kind: "fetch" | "pull" | "push") => {
       if (!vaultPath) return;
@@ -895,6 +1049,9 @@ export function AtlasGitPanel({
             setSelection={setSelectionChoice}
             diffFiles={diffFiles}
             history={localizedHistory}
+            historyHasMore={historyHasMore}
+            historyMoreBusy={historyMoreBusy}
+            onMoreHistory={loadMoreHistory}
             selectedPath={selectedPath}
             setSelectedPath={setSelectedPath}
             othersOpen={othersOpen}
@@ -2265,6 +2422,9 @@ const STEP_ROW =
 function StepList({
   t,
   history,
+  hasMore,
+  moreBusy,
+  onMore,
   concepts,
   settledHash,
   pendingCount,
@@ -2277,6 +2437,10 @@ function StepList({
 }: {
   t: Translator;
   history: GitCommitInfo[];
+  /** Older steps exist beyond the list — the list ends with a row that fetches them, never silently. */
+  hasMore: boolean;
+  moreBusy: boolean;
+  onMore: () => void;
   /**
    * Step hash → the **vault concepts** that step changed. Not a guess parsed from
    * the commit subject, but the kind/slug shipped by #842 matched against the graph.
@@ -2388,17 +2552,16 @@ function StepList({
       ) : null}
       {history.map((commit, index) => {
         const summary = describeSnapshotSubject(commit.subject);
-        const parts = [
-          summary.added > 0 ? t("statusAdded", { count: summary.added }) : null,
-          summary.updated > 0 ? t("statusModified", { count: summary.updated }) : null,
-          summary.renamed > 0 ? t("statusRenamed", { count: summary.renamed }) : null,
-          summary.removed > 0 ? t("statusDeleted", { count: summary.removed }) : null,
-        ].filter(Boolean);
-        const headline = summary.matched
-          ? parts.length > 0
-            ? parts.join(" · ")
-            : t("stepNoConcepts")
-          : commit.subject;
+        const human = humanizeStepSubject(t, commit.subject);
+        const headline = human ?? commit.subject;
+        /*
+         * The third column is **why**. A subject a person wrote is the why. An automatic
+         * subject has none — it is our own `ontology snapshot: …` string — so the column says
+         * so and gives the counts in the reader's language instead. Leaving the raw string here
+         * meant every automatic step on the real screen (the one with a graph, where the name
+         * column holds the concept) read `ontology snapshot: ~1 u…` (measured 2026-09-19).
+         */
+        const why = human ? t("stepAutoSubject", { summary: human }) : commit.subject;
         const stepConcepts = concepts.get(commit.hash) ?? [];
         const names = summary.slugs.join(", ");
         const trail = summary.overflow > 0 ? t("moreSlugs", { count: summary.overflow }) : "";
@@ -2481,9 +2644,12 @@ function StepList({
                   because a list's job is scanning, and with one row of three
                   columns time, name and reason align vertically so the eye runs
                   down each column (mockup row height measured at 36px). */}
-              <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
+              <span
+                className="truncate text-label text-[color:var(--color-text-tertiary)]"
+                title={stepConcepts.length > 0 ? why : undefined}
+              >
                 {stepConcepts.length > 0
-                  ? commit.subject
+                  ? why
                   : names && trail
                     ? `${names} · ${trail}`
                     : names || trail || " "}
@@ -2493,6 +2659,41 @@ function StepList({
           </Fragment>
         );
       })}
+      {/*
+        The list ends with a fact, never with a blank. Either older steps exist — then the last
+        row fetches the next page in place, so the reader stays where they were — or this is the
+        first step in the folder, and the list says so. Before this, ten steps were read and
+        drawn and the column simply stopped: a folder with forty steps kept thirty of them out of
+        reach with nothing on screen to say so.
+      */}
+      {hasMore ? (
+        <li className="grid grid-cols-[var(--git-when-w)_minmax(0,1fr)] items-center gap-3 border-b border-[color:var(--color-divider)] px-4 py-1.5">
+          <span aria-hidden />
+          <button
+            type="button"
+            data-testid="atlas-git-history-more"
+            disabled={moreBusy}
+            onClick={onMore}
+            className={controlClass({
+              shape: "row",
+              size: "sm",
+              tone: "muted",
+              hoverInk: "strong",
+              hoverSurface: "lift",
+              className: "justify-self-start -ml-2 text-[color:var(--color-text-tertiary)]",
+            })}
+          >
+            {moreBusy ? t("historyMoreBusy") : t("historyMore")}
+          </button>
+        </li>
+      ) : (
+        <li
+          data-testid="atlas-git-history-end"
+          className="px-4 pt-3 pb-2 text-caption text-[color:var(--color-text-quaternary)]"
+        >
+          {t("historyEnd")}
+        </li>
+      )}
     </ul>
   );
 }
@@ -2743,6 +2944,9 @@ function DesktopBody({
   setSelection,
   diffFiles,
   history,
+  historyHasMore,
+  historyMoreBusy,
+  onMoreHistory,
   selectedPath,
   setSelectedPath,
   othersOpen,
@@ -2803,6 +3007,10 @@ function DesktopBody({
   setSelection: (v: WorkbenchSelection) => void;
   diffFiles: AtlasGitDiffFile[];
   history: GitCommitInfo[];
+  /** Whether git holds steps older than `history` — drawn as one "show older steps" row. */
+  historyHasMore: boolean;
+  historyMoreBusy: boolean;
+  onMoreHistory: () => void;
   selectedPath: string | null;
   setSelectedPath: (v: string | null) => void;
   othersOpen: boolean;
@@ -3169,6 +3377,9 @@ function DesktopBody({
             <StepList
               t={t}
               history={history}
+              hasMore={historyHasMore}
+              moreBusy={historyMoreBusy}
+              onMore={onMoreHistory}
               concepts={concepts}
               settledHash={settledHash}
               pendingCount={statusCounts.total}
@@ -3249,6 +3460,7 @@ function DesktopBody({
                     isoTime={picked.isoTime}
                     relativeTime={picked.relativeTime}
                     subject={picked.subject}
+                    headline={humanizeStepSubject(t, picked.subject)}
                     concepts={concepts.get(picked.hash) ?? []}
                     files={picked.files ?? []}
                     focusedConceptId={focusedConceptId}

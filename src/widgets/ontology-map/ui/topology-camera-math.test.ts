@@ -6,6 +6,7 @@ import {
   computeEffectiveCameraScaleMax,
   computeEffectiveCameraScaleMin,
   computeFocusCameraTarget,
+  computeLensFitTarget,
   computeOverviewCameraTarget,
   computeOverviewFitScale,
   computeUnfocusedPanBounds,
@@ -155,6 +156,43 @@ describe("computeOverviewCameraTarget — panel-aware safe insets", () => {
  * `overviewEntryScale × maxZoomRatio`, constant in RATIO terms across every
  * viewport, and reach at least the element tier's `fullRatio` (2.85) + margin.
  */
+/**
+ * The lens fit (expand-all, recent-changes spotlight). Measured 2026-09-19 at
+ * 1512×806 with the INDEX panel open: the raw-viewport fit landed expand-all
+ * 116 px off the centre of the area beside the panel, and the next "fit" press
+ * moved it. The lens bounds already carry their own padding, so only the side
+ * panels are reserved — not the top and bottom lanes the overview fit keeps.
+ */
+describe("computeLensFitTarget — beside the panels, not on the raw viewport", () => {
+  const bounds = { minX: 0, minY: 0, maxX: 1000, maxY: 1000 };
+  const tokens = { cameraScaleMax: 2.6, cameraScaleMin: 0.24 };
+
+  it("with no insets is exactly the plain fit", () => {
+    expect(computeLensFitTarget(bounds, 1440, 802, tokens)).toEqual(
+      fitWorldTarget(bounds, 1440, 802, tokens.cameraScaleMax, tokens.cameraScaleMin),
+    );
+  });
+
+  it("lands the bounds centre at the midpoint of the width left beside the panels", () => {
+    const insets = { safeInsetLeft: 350, safeInsetRight: 120 };
+    const target = computeLensFitTarget(bounds, 1440, 802, { ...tokens, ...insets });
+    // Width-limited: 970 px of free width against 1000 world units, so the
+    // height (802) is the binding side.
+    expect(target.tscale).toBeCloseTo(802 / 1000, 6);
+    const camera = { x: { value: target.tx, velocity: 0 }, y: { value: target.ty, velocity: 0 }, scale: { value: target.tscale, velocity: 0 } };
+    const centre = worldToScreen(camera, 1440, 802, 500, 500);
+    expect(centre.x).toBeCloseTo(350 + (1440 - 350 - 120) / 2, 6);
+    expect(centre.y).toBeCloseTo(802 / 2, 6);
+  });
+
+  it("does not reserve the top and bottom lanes — the lens bounds carry their own padding", () => {
+    const wide = { minX: 0, minY: 0, maxX: 3000, maxY: 1000 };
+    const withBottom = computeLensFitTarget(wide, 1440, 802, { ...tokens, safeInsetTop: 148, safeInsetBottom: 96 });
+    const without = computeLensFitTarget(wide, 1440, 802, tokens);
+    expect(withBottom).toEqual(without);
+  });
+});
+
 describe("computeEffectiveCameraScaleMax", () => {
   const MAX_ZOOM_RATIO = 3.2; // --map-camera-max-zoom-ratio
   const ABSOLUTE_FALLBACK = 2.6; // --map-camera-scale-max
