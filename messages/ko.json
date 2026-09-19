@@ -468,6 +468,10 @@
       "subagents": {
         "title": "따로 보내는 에이전트",
         "body": "자기 맥락을 갖고 따로 도는 일꾼의 브리프입니다. 같은 이름의 Codex·Claude 사본은 한 번만 셉니다."
+      },
+      "blind": {
+        "title": "에이전트 눈에서 빼둔 것",
+        "body": "에이전트가 보면 안 된다고 적어 둔 파일입니다. 이름은 도구마다 다릅니다 — Cursor 는 .cursorignore, Windsurf 는 .codeiumignore, Gemini Code Assist 는 .aiexclude, Gemini CLI 는 .geminiignore, JetBrains 는 .aiignore. 저장소는 적어 둘 뿐이고, 지키는지는 그 도구가 정합니다."
       }
     },
     "anatomyUnits": {
@@ -483,7 +487,8 @@
       "loop": "{count}",
       "pipeline": "워크플로 {count}개",
       "skills": "스킬 {count}개",
-      "subagents": "브리프 {count}개"
+      "subagents": "브리프 {count}개",
+      "blind": "파일 {count}개"
     },
     "anatomyFillHere": "이런 것이 사는 자리",
     "anatomyFillCopy": "경로 복사",

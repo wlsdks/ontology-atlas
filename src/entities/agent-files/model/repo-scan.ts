@@ -49,6 +49,18 @@ const ROOT_FILES = Object.freeze([
   '.mcp.json',
   '.github/copilot-instructions.md',
   '.claude/settings.json',
+  /*
+   * ⚠️ **A rule that matches a path this list never asks for is a rule that never fires.** The
+   * classifier decides what a file *is*; this decides what gets looked for. The exclusion rules
+   * were written first and every repository would have shown an empty row until these five lines
+   * followed them (caught before writing the row, 2026-09-20).
+   */
+  '.cursorignore',
+  '.cursorindexingignore',
+  '.codeiumignore',
+  '.aiexclude',
+  '.aiignore',
+  '.geminiignore',
 ]);
 
 /** Directories walked recursively — the only dot directories this scan touches. */
@@ -130,7 +142,11 @@ export function isPairDrift(code: string): boolean {
  * enforcement layer and belong to the second number and the hooks section.
  */
 export function isGuideRecord(record: { kind: string }): boolean {
-  return record.kind !== 'config';
+  /* `exclusion` is not a guide either, and the reason is the sentence this number feeds: "this
+     repository speaks to agents through N documents". A file that says what an agent may not see
+     is the opposite of a thing the repository says, and counting it would move that number
+     without changing what anybody was told. */
+  return record.kind !== 'config' && record.kind !== 'exclusion';
 }
 
 /**

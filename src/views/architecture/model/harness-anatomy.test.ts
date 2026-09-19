@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { HarnessReport } from '@/entities/agent-files';
+import { isGuideRecord, type HarnessReport } from '@/entities/agent-files';
 
 import {
   ANATOMY_ORDER,
@@ -374,3 +374,36 @@ describe('the always-read weight', () => {
     expect(buildHarnessAnatomy(report()).alwaysBytes).toBe(0);
   });
 });
+
+describe('what the repository keeps out of sight', () => {
+  it('files an exclusion under what gates, with the name each product actually uses', () => {
+    /* `.aiexclude` is Gemini Code Assist's and `.geminiignore` is Gemini CLI's. Naming the wrong
+       product is the failure this row exists to avoid, so the classifier's mapping is asserted
+       here as well as in the cross-implementation contract. */
+    const anatomy = buildHarnessAnatomy(
+      report({
+        analysis: {
+          records: [
+            record({ path: '.cursorignore', kind: 'exclusion', ruleId: 'cursor-ignore' }),
+            record({ path: '.geminiignore', kind: 'exclusion', ruleId: 'gemini-ignore' }),
+          ],
+        } as never,
+      }),
+    );
+    const blind = slotOf(anatomy, 'blind');
+    expect(blind.band).toBe('gates');
+    expect(blind.items).toEqual(['.cursorignore', '.geminiignore']);
+  });
+
+  it('offers no address to fill it, because the right name depends on the tool', () => {
+    expect(slotOf(buildHarnessAnatomy(report()), 'blind').fillPath).toBeNull();
+  });
+
+  it('does not count an exclusion as a document the repository speaks through', () => {
+    /* `isGuideRecord` feeds the census sentence. A file that says what an agent may not see is the
+       opposite of a thing the repository says. */
+    expect(isGuideRecord({ kind: 'exclusion' })).toBe(false);
+    expect(isGuideRecord({ kind: 'instructions' })).toBe(true);
+  });
+});
+

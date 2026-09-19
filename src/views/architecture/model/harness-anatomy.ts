@@ -78,6 +78,7 @@ export type AnatomySlotId =
   | 'subagents'
   | 'tools'
   | 'toolGates'
+  | 'blind'
   | 'gitGates'
   | 'permissions'
   | 'watchers'
@@ -268,6 +269,7 @@ export const ANATOMY_ORDER: readonly AnatomySlotId[] = [
   'tools',
   'toolGates',
   'permissions',
+  'blind',
   'gitGates',
   'watchers',
   'checks',
@@ -282,6 +284,7 @@ export const ANATOMY_ORDER: readonly AnatomySlotId[] = [
  */
 export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
   const always: string[] = [];
+  const blind: string[] = [];
   let alwaysBytes = 0;
   const scoped: string[] = [];
   const skills: string[] = [];
@@ -289,6 +292,13 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
   const toolConfigs: string[] = [];
 
   for (const record of report.analysis.records) {
+    if (record.kind === 'exclusion') {
+      /* A gate, not a guide: it removes an ability rather than advising. What a repository cannot
+         say here is whether the tool honours the file — a March 2026 comparison found the products
+         differ widely — so the row's own words carry that limit, the same way the hook rows do. */
+      blind.push(record.path);
+      continue;
+    }
     if (record.kind === 'mcp-config') {
       toolConfigs.push(record.path);
       continue;
@@ -389,6 +399,7 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
          them beside a count reads as the whole policy. The count and the file are the claim. */
       status: permissions ? (permissions.deny + permissions.ask > 0 ? 'present' : 'absent') : 'absent',
     },
+    slot('blind', 'gates', uniqueSorted(blind)),
     slot('gitGates', 'gates', uniqueSorted(gitHookNames), report.checks.gitHooks),
     slot('watchers', 'watches', uniqueSorted(watching)),
     slot('checks', 'watches', uniqueSorted(report.checks.scripts)),

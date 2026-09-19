@@ -195,6 +195,15 @@ test.describe("하네스 탭", () => {
     await expect(loop).not.toContainText("아직 없음");
     await expect(anatomy).not.toContainText("%");
 
+    // What the repository keeps out of sight is a gate, not a guide, and it keeps each product's
+    // own file name.
+    const blind = page.getByTestId("harness-anatomy-slot-blind");
+    await expect(blind).toContainText(".cursorignore");
+    await expect(blind).toContainText(".geminiignore");
+    await expect(page.getByTestId("harness-anatomy-count-blind")).toHaveText("파일 2개");
+    // And it is not counted among the documents the repository speaks through.
+    await expect(page.getByTestId("harness-sentence")).toContainText("문서 10개");
+
     // What every turn costs, beside the count that cannot say it.
     await expect(page.getByTestId("harness-anatomy-slot-always")).toContainText("매 턴 읽는 분량");
 

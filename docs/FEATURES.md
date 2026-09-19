@@ -681,6 +681,19 @@ had never shown anywhere — and the files under `.githooks/`; Watched holds the
 record, the check scripts a command names, the test files a runner discovers by itself, and the
 workflows that run after a push.
 
+**What the repository keeps out of sight is a gate too** (2026-09-20). Gated carries the exclusion
+files, and the row prints the name each product actually uses rather than one word for all of them:
+`.cursorignore` and `.cursorindexingignore` (Cursor), `.codeiumignore` (Windsurf, not
+`.windsurfignore`), `.aiexclude` (Gemini **Code Assist**), `.geminiignore` (Gemini **CLI** — a
+different file for a different product), `.aiignore` (JetBrains AI, which also honours the first
+three at a repository root). Two names are deliberately absent: `.claudeignore` does not exist —
+Claude Code uses `.gitignore` for discovery and `permissions.deny` for the rest, which this view
+already prints — and `.agentignore` is a proposal rather than a standard. The row also carries the
+limit the hook rows carry: a repository can write the file, and whether the tool honours it is the
+tool's business. An exclusion file is **not** counted among the documents the census sentence says
+the repository speaks through, because a file saying what an agent may not see is the opposite of a
+thing the repository says.
+
 A fourth band under those three holds **the agent loop and the model**, which every public account
 of a harness puts at its centre and no checkout can answer: what is read first, when to stop, what
 to drop when the context fills, which model runs. It carries words rather than a zero, because a

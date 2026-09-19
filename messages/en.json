@@ -468,6 +468,10 @@
       "subagents": {
         "title": "Sub-agents sent out",
         "body": "Briefs for workers that run on their own context. A Codex and a Claude copy of one name count once."
+      },
+      "blind": {
+        "title": "Kept out of the agent’s view",
+        "body": "Files that say what an agent must not look at. The name differs per product: .cursorignore for Cursor, .codeiumignore for Windsurf, .aiexclude for Gemini Code Assist, .geminiignore for Gemini CLI, .aiignore for JetBrains. A repository can write one; whether the tool honours it is the tool’s business."
       }
     },
     "anatomyUnits": {
@@ -483,7 +487,8 @@
       "loop": "{count}",
       "pipeline": "{count, plural, one {# workflow} other {# workflows}}",
       "skills": "{count, plural, one {# skill} other {# skills}}",
-      "subagents": "{count, plural, one {# brief} other {# briefs}}"
+      "subagents": "{count, plural, one {# brief} other {# briefs}}",
+      "blind": "{count, plural, one {# file} other {# files}}"
     },
     "anatomyFillHere": "One of these lives at",
     "anatomyFillCopy": "Copy path",
