@@ -147,7 +147,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('밖의 도구를 잇는 자리예요')).toBeInTheDocument();
     expect(
       screen.getByText(
-        '이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. 폴더 밖을 건드리기 전에 먼저 묻는 앱 안 Claude Agent 대화는 별도 화면입니다.',
+        '이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. 폴더 밖을 건드리기 전에 먼저 묻는 앱 안 Claude Agent 대화는 별도 화면이에요.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('더 확인하려면')).toBeInTheDocument();
@@ -163,13 +163,13 @@ describe('VaultAgentSetupPanel', () => {
     // into the three steps**, so only the three that follow remain here. This is the
     // cleanup of a screen that had four separate numbering systems.
     expect(
-      screen.getByText('고치기 전에 확인 명령을 돌려 「되나」와 「빠른가」를 따로 봅니다.'),
+      screen.getByText('고치기 전에 확인 명령을 돌려 「되나」와 「빠른가」를 따로 봐요.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('에이전트를 연 폴더에서 mcp-verify를 돌려 현재 도구 목록이 맞는지 확인합니다.'),
+      screen.getByText('에이전트를 연 폴더에서 mcp-verify를 돌려 현재 도구 목록이 맞는지 확인해요.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('처음 고치기 전에 폴더 요약(workspace-brief · agent-brief)을 먼저 읽습니다.'),
+      screen.getByText('처음 고치기 전에 폴더 요약(workspace-brief · agent-brief)을 먼저 읽어요.'),
     ).toBeInTheDocument();
     // The tool rows stand on the page; restart and check stand in the dialog (open above).
     expect(screen.getByTestId('agent-setup-steps')).toBeInTheDocument();
@@ -202,7 +202,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('서버 연결')).toBeInTheDocument();
     expect(
-      screen.getByText('mcp-verify가 로컬 서버를 띄우고 현재 도구 목록을 확인한 뒤, 이 폴더를 실제로 읽어 봅니다.'),
+      screen.getByText('mcp-verify가 로컬 서버를 띄우고 현재 도구 목록을 확인한 뒤, 이 폴더를 실제로 읽어 봐요.'),
     ).toBeInTheDocument();
     expect(screen.getByText('확인 명령')).toBeInTheDocument();
     expect(
@@ -237,7 +237,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('코드를 고친 뒤')).toBeInTheDocument();
     expect(
       screen.getByText(
-        '도메인·역량·요소·관계가 새로 생기거나 이름이 바뀌었으면 끝내기 전에 이 폴더를 맞춰 주세요. 오타·주석·서식·설정·픽스처만 바뀐 변경은 건너뜁니다.',
+        '도메인·역량·요소·관계가 새로 생기거나 이름이 바뀌었으면 끝내기 전에 이 폴더를 맞춰 주세요. 오타·주석·서식·설정·픽스처만 바뀐 변경은 건너뛰어요.',
       ),
     ).toBeInTheDocument();
     expect(
@@ -249,11 +249,11 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByLabelText('어느 폴더에서 여느냐')).toBeInTheDocument();
     expect(screen.getByText('이 폴더에서')).toBeInTheDocument();
     expect(
-      screen.getByText('이 폴더 자체를 열면 확인·요약 명령이 현재 폴더(.)를 그대로 씁니다.'),
+      screen.getByText('이 폴더 자체를 열면 확인·요약 명령이 현재 폴더(.)를 그대로 써요.'),
     ).toBeInTheDocument();
     expect(screen.getByText('다른 코드 폴더에서')).toBeInTheDocument();
     expect(
-      screen.getByText('제품 코드 폴더에서 열면 상태 확인·수리·서버 확인 명령 모두 이 폴더의 절대경로를 적어야 합니다.'),
+      screen.getByText('제품 코드 폴더에서 열면 상태 확인·수리·서버 확인 명령 모두 이 폴더의 절대경로를 적어야 해요.'),
     ).toBeInTheDocument();
     expect(within(screen.getByTestId('agent-setup-inspection')).getByText('.mcp.json')).toBeInTheDocument();
     expect(within(screen.getByTestId('agent-setup-inspection')).getByText('.codex/config.toml')).toBeInTheDocument();
@@ -423,7 +423,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(
       within(validationGate).getByText(
-        '오류가 있으면 커밋(되돌릴 지점 남기기)이 거절돼요. 읽기와 고치기는 그대로 되지만, 되돌릴 자리를 못 만듭니다.',
+        '오류가 있으면 커밋(되돌릴 지점 남기기)이 거절돼요. 읽기와 고치기는 그대로 되지만, 되돌릴 자리를 못 만들어요.',
       ),
     ).toBeInTheDocument();
   });
@@ -1434,7 +1434,7 @@ describe('VaultAgentSetupPanel', () => {
     // false. The one thing a browser cannot do is **save it automatically** (ledger
     // 2026-08-01).
     const card = screen.getByTestId('agent-server-unavailable');
-    expect(card).toHaveTextContent('설정 파일을 대신 저장하지 못합니다');
+    expect(card).toHaveTextContent('설정 파일을 대신 저장하지 못해요');
     expect(card).not.toHaveTextContent('연결할 수 없어요');
     expect(screen.getByTestId('web-manual-connect')).toBeInTheDocument();
     expect(screen.queryByTestId('agent-setup-step-2')).not.toBeInTheDocument();

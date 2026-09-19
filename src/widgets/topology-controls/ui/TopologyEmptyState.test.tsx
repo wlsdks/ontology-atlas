@@ -82,12 +82,12 @@ describe("TopologyEmptyState", () => {
   it("관계가 없으면 저장·편집에서 관계를 만들라는 1차 행동을 먼저 제시한다", () => {
     renderEmpty(1, "no-relations");
     const panel = screen.getByRole("status", {
-      name: /아직 그릴 관계가 없습니다/,
+      name: /아직 그릴 관계가 없어요/,
     });
 
     expect(panel).toHaveTextContent("지도 · 개념 1개 · 관계 0개");
     expect(panel).toHaveTextContent(
-      "저장·편집에서 개념 사이 관계를 하나 저장하면 이 화면에 선이 나타납니다.",
+      "저장·편집에서 개념 사이 관계를 하나 저장하면 이 화면에 선이 나타나요.",
     );
     expect(screen.getByText("관계 만들기").closest("a")).toHaveAttribute(
       "href",

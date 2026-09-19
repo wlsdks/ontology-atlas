@@ -14,7 +14,7 @@ vi.mock("@/i18n/navigation", () => ({
 const LABELS = {
   kindCensusTitle: "종류 분포",
   domainCapacityTitle: "도메인 용량",
-  noDomains: "도메인 노드가 아직 없습니다.",
+  noDomains: "도메인 노드가 아직 없어요.",
   noDomainsBody: "도메인은 역량들을 묶는 영역이에요.",
   noDomainsAction: "지도에서 도메인 만들기",
   kindGlyphCaption: "글리프 = 지도의 노드 셰이프 그대로",

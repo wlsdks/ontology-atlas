@@ -227,7 +227,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
      * the same pixels and stops being a toll gate, which is what the 296px measurement was
      * really about.
      */
-    expect(screen.getByTestId('connectors-transfer')).toHaveTextContent('전송 기록에도 남지 않습니다');
+    expect(screen.getByTestId('connectors-transfer')).toHaveTextContent('전송 기록에도 남지 않아요');
     expect(screen.getByTestId('connectors-transfer').querySelectorAll('p')).toHaveLength(3);
     expect(screen.getByTestId('connectors-runtime-agents')).toHaveAttribute(
       'href',

@@ -58,7 +58,7 @@ const messages = {
       dependsOnCaption: "depends on",
       belongsToTitle: "속한 곳",
       belongsToCaption: "belongs to",
-      empty: "직접 연결이 없습니다.",
+      empty: "직접 연결이 없어요.",
       freshDotTitle: "최근 갱신",
     },
     reach: {
@@ -68,7 +68,7 @@ const messages = {
       afterSteps: "안에 닿는 개념",
       stepsAria: koMessages.fullDetailA1.reach.stepsAria,
       ofTotal: "{count} / {total}",
-      mostlyNone: "도달하는 개념이 없습니다.",
+      mostlyNone: "도달하는 개념이 없어요.",
       mostlyOne: "대부분 {a}({aCount})에 있다.",
       mostlyTwo: "대부분 {a}({aCount})와 {b}({bCount})에 있다.",
       selfDomainLabel: "도메인 내부",
@@ -88,7 +88,7 @@ const messages = {
     },
     body: {
       title: "본문",
-      empty: "작성된 본문이 없습니다.",
+      empty: "작성된 본문이 없어요.",
       edit: "본문 편집",
       save: "저장",
       cancel: "취소",
@@ -262,7 +262,7 @@ describe("FullDetailA1", () => {
 
   it("본문이 없으면 empty 문구", () => {
     renderFullDetail({ bodyMarkdown: null });
-    expect(screen.getByText("작성된 본문이 없습니다.")).toBeInTheDocument();
+    expect(screen.getByText("작성된 본문이 없어요.")).toBeInTheDocument();
   });
 
   it("explanationEdit 이 있으면 읽기↔편집 primitive 로 본문을 렌더", () => {

@@ -136,9 +136,9 @@ describe('DocsVaultEditor', () => {
     expect(screen.getByText('디스크 저장 아님 · 저장 버튼 또는 ⌘S 필요')).toBeInTheDocument();
     expect(await screen.findByText('임시저장됨')).toBeInTheDocument();
     expect(screen.getByText('임시 보관 중 · 최종 저장 필요')).toBeInTheDocument();
-    expect(screen.getByText('초안을 임시 보관합니다')).toBeInTheDocument();
+    expect(screen.getByText('초안을 임시 보관해요')).toBeInTheDocument();
     expect(screen.getByText('저장 전: 검증은 아직 디스크 기준')).toBeInTheDocument();
-    expect(screen.getByText('취소하면 임시 초안이 지워집니다')).toBeInTheDocument();
+    expect(screen.getByText('취소하면 임시 초안이 지워져요')).toBeInTheDocument();
     expect(window.localStorage.getItem(draftKey)).toContain('unsaved draft');
 
     fireEvent.change(editor, { target: { value: 'initial' } });
@@ -303,7 +303,7 @@ describe('DocsVaultEditor', () => {
     expect(screen.queryByText('저장됨')).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        '디스크에서 먼저 변경되어 저장하지 못했습니다. 편집 내용은 유지됩니다. 내용을 복사한 뒤 새로고침해 최신 파일에 다시 반영하세요.',
+        '디스크에서 먼저 변경되어 저장하지 못했어요. 편집 내용은 유지돼요. 내용을 복사한 뒤 새로고침해 최신 파일에 다시 반영하세요.',
       ),
     ).toBeInTheDocument();
 
@@ -337,7 +337,7 @@ describe('DocsVaultEditor', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalled());
     expect(
       screen.getByText(
-        '이 줄(uid)은 문서 이름이 바뀌어도 같은 문서임을 알아보게 하는 고유 번호라서 지우거나 바꿀 수 없어요. uid 줄을 원래대로 되돌리면 저장됩니다.',
+        '이 줄(uid)은 문서 이름이 바뀌어도 같은 문서임을 알아보게 하는 고유 번호라서 지우거나 바꿀 수 없어요. uid 줄을 원래대로 되돌리면 저장돼요.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/is immutable/)).not.toBeInTheDocument();

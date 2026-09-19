@@ -171,7 +171,7 @@ describe('AgentClientButtons — 웹 강등이 막다른 길이 아니다', () =
     const card = screen.getByTestId('agent-server-unavailable');
     expect(card.textContent).not.toMatch(/연결할 수 없어요/);
     // It names precisely one thing as impossible: saving the file automatically.
-    expect(card.textContent).toMatch(/설정 파일을 대신 저장하지 못합니다/);
+    expect(card.textContent).toMatch(/설정 파일을 대신 저장하지 못해요/);
     // The app remains the easier path — it simply no longer says the web is blocked.
     expect(screen.getByTestId('agent-connect-web-get-app')).toBeInTheDocument();
     // The primary path is this slot.

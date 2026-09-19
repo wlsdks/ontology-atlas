@@ -379,8 +379,8 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     fireEvent.click(screen.getByTestId('task-review-defer'));
     expect(onDefer).toHaveBeenCalledTimes(1);
     expect(resolve).not.toHaveBeenCalled();
-    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('자동으로 보내지 않습니다');
-    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('저장되지 않습니다');
+    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('자동으로 보내지 않아요');
+    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('저장되지 않아요');
   });
 });
 
@@ -627,7 +627,7 @@ describe('온톨로지 쓰기 — 여덟 문장을 사람이 읽는 카드', () 
     expect(
       document.getElementById('acp-permission-title')?.textContent,
       '제목이 모든 요청에 똑같이 참이면 아무것도 답해 주지 않는다',
-    ).toBe('ontology-atlas 문서에 연결 이유 8개를 적습니다');
+    ).toBe('ontology-atlas 문서에 연결 이유 8개를 적어요');
   });
 
   it('문장 여덟 개는 줄 여덟 개로 읽힌다 — JSON 을 읽으라고 하지 않는다', () => {
@@ -704,7 +704,7 @@ describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => 
     render(cardWithVerdict({ ok: true, problems: [] }));
     const block = screen.getByTestId('acp-permission-page-verdict');
     expect(block.getAttribute('data-ok')).toBe('true');
-    expect(block.textContent).toContain('문서 모양이 맞습니다');
+    expect(block.textContent).toContain('문서 모양이 맞아요');
     expect(screen.getByTestId('acp-permission-allow')).toBeTruthy();
     expect(screen.getByTestId('acp-permission-reject')).toBeTruthy();
   });

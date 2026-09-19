@@ -138,12 +138,12 @@ describe("the library graph section", () => {
   it("stops telling a person how to open the card they already have open", () => {
     renderGraph();
     const hint = () => screen.getByTestId("library-graph-hint").textContent ?? "";
-    expect(hint()).toContain("점을 누르면 그 옆에 카드가 열립니다");
+    expect(hint()).toContain("점을 누르면 그 옆에 카드가 열려요");
     expect(hint()).not.toContain("Escape");
 
     fireEvent.keyDown(canvas(), { key: "ArrowRight" });
     // Pointed at, nothing open: the line describes the mark and says what a press does.
-    expect(hint()).toContain("누르면 옆에 카드가 열립니다");
+    expect(hint()).toContain("누르면 옆에 카드가 열려요");
     fireEvent.keyDown(canvas(), { key: "Enter" });
     expect(screen.getByTestId("library-graph-card")).toBeTruthy();
     /*
@@ -151,12 +151,12 @@ describe("the library graph section", () => {
      * description while a mark is active — says the card is open and how to leave it. The
      * facts above it (what the lines from this mark mean) are unchanged: only the verb is.
      */
-    expect(hint()).not.toContain("누르면 옆에 카드가 열립니다");
+    expect(hint()).not.toContain("누르면 옆에 카드가 열려요");
     expect(hint()).toContain("Escape");
     expect(hint()).toContain("굵은 선은 이 원문으로 쓴 위키 문서로 이어지고");
 
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(hint()).toContain("누르면 옆에 카드가 열립니다");
+    expect(hint()).toContain("누르면 옆에 카드가 열려요");
     expect(hint()).not.toContain("Escape");
   });
 
@@ -204,7 +204,7 @@ describe("the library graph section", () => {
           { id: "source:sources/settlement-policy.md", label: "settlement-policy.md", state: "compiled" },
           { id: "source:sources/fee-schedule.csv", label: "fee-schedule.csv", state: "stale" },
         ],
-        refresh: { onRequest: null, reason: "연결된 코딩 에이전트가 없습니다" },
+        refresh: { onRequest: null, reason: "연결된 코딩 에이전트가 없어요" },
       }),
     });
     fireEvent.keyDown(canvas(), { key: "ArrowRight" });
@@ -223,7 +223,7 @@ describe("the library graph section", () => {
     // The drift has words **in the card**, beside the lines it is about — and the legend
     // below the canvas keeps teaching the marks while the card stands open.
     expect(screen.getByTestId("library-graph-card-flow").textContent).toContain(
-      "인용은 원문에서 이 문서로 흐릅니다",
+      "인용은 원문에서 이 문서로 흘러요",
     );
     // The slot below the canvas still belongs to the picture: here the keyboard is on a
     // mark, so it describes that mark, and with nothing pointed at it is the legend.
@@ -255,7 +255,7 @@ describe("the library graph section", () => {
   it("says the kind, the position and what Enter will do — a bare name says none of it", () => {
     renderGraph();
     fireEvent.keyDown(canvas(), { key: "ArrowRight" });
-    expect(screen.getByText("원문 plan.pdf, 3개 중 1번째. Enter를 누르면 무엇인지 보여 줍니다.")).toBeTruthy();
+    expect(screen.getByText("원문 plan.pdf, 3개 중 1번째. Enter를 누르면 무엇인지 보여 줘요.")).toBeTruthy();
   });
 
   /*
@@ -267,11 +267,11 @@ describe("the library graph section", () => {
   it("leaves for the map only from the concept's own door, never from the press", () => {
     const { onSelect } = renderGraph();
     fireEvent.keyDown(canvas(), { key: "ArrowLeft" });
-    expect(screen.getByText(/개념 checkout.*무엇인지 보여 줍니다\./)).toBeTruthy();
+    expect(screen.getByText(/개념 checkout.*무엇인지 보여 줘요\./)).toBeTruthy();
     fireEvent.keyDown(canvas(), { key: "Enter" });
     expect(routerPush).not.toHaveBeenCalled();
     expect(screen.getByTestId("library-graph-card").getAttribute("data-card-kind")).toBe("concept");
-    expect(screen.getByTestId("library-graph-card-sentence").textContent).toBe("지도의 개념입니다.");
+    expect(screen.getByTestId("library-graph-card-sentence").textContent).toBe("지도의 개념이에요.");
     expect(screen.queryByTestId("library-graph-card-open")).toBeNull();
     fireEvent.click(screen.getByTestId("library-graph-card-map"));
     expect(onSelect).not.toHaveBeenCalled();
@@ -304,7 +304,7 @@ describe("the library graph section", () => {
 
     renderGraph({ wikiPages: [], docs: [], sources: [] });
     expect(screen.queryByTestId("library-graph-canvas")).toBeNull();
-    expect(screen.getByTestId("library-graph-empty").textContent).toContain("아직 그릴 것이 없습니다");
+    expect(screen.getByTestId("library-graph-empty").textContent).toContain("아직 그릴 것이 없어요");
   });
 
   it("keeps the keyboard sentence out of the rendered line and inside the description", () => {

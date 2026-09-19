@@ -258,7 +258,7 @@ describe("summarizeVaultValidation", () => {
  */
 describe("파서가 못 읽은 줄은 문서의 문제로 함께 보고된다", () => {
   const malformed = [
-    { code: "malformed-frontmatter-line", message: "3행을 읽지 못했습니다" },
+    { code: "malformed-frontmatter-line", message: "3행을 읽지 못했어요" },
     { code: "malformed-quoted-scalar", message: "따옴표가 닫히지 않았습니다" },
   ];
 

@@ -94,7 +94,7 @@ describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", ()
     const scrollSpy = vi.fn();
     Element.prototype.scrollIntoView = scrollSpy;
     const onSubmit = vi.fn(async () => {
-      throw new Error("데모 모드에서는 저장할 수 없습니다. 먼저 폴더를 열어 주세요.");
+      throw new Error("데모 모드에서는 저장할 수 없어요. 먼저 폴더를 열어 주세요.");
     });
     renderEdit(onSubmit);
 
@@ -116,7 +116,7 @@ describe("ProjectForm — 저장 거절은 눌린 사람에게 도착한다", ()
      */
     expect(banner).toHaveTextContent(koMessages.settings.projectForm.validation.saveFailed);
     expect(banner.getAttribute("data-failure-detail")).toContain(
-      "데모 모드에서는 저장할 수 없습니다",
+      "데모 모드에서는 저장할 수 없어요",
     );
     expect(
       document.activeElement,

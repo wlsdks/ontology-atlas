@@ -117,7 +117,7 @@ describe('SavedConstellationsControl conflict recovery', () => {
     renderControl();
 
     await openEditedDraft();
-    expect(screen.getByRole('alert')).toHaveTextContent('초안은 그대로 있습니다');
+    expect(screen.getByRole('alert')).toHaveTextContent('초안은 그대로 있어요');
     expect(screen.getByRole('textbox', { name: '이름' })).toHaveValue('내 초안');
 
     fireEvent.click(screen.getByRole('button', { name: '변경 내용 확인' }));
@@ -150,12 +150,12 @@ describe('SavedConstellationsControl conflict recovery', () => {
     await openEditedDraft();
     fireEvent.click(screen.getByRole('button', { name: '변경 내용 확인' }));
     await screen.findByRole('button', { name: '변경 내용 확인' });
-    expect(screen.getByRole('alert')).toHaveTextContent('최신 저장 파일을 읽지 못했습니다');
+    expect(screen.getByRole('alert')).toHaveTextContent('최신 저장 파일을 읽지 못했어요');
     expect(screen.queryByRole('button', { name: '이 초안 적용' })).not.toBeInTheDocument();
     expect(mocks.save).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole('button', { name: '변경 내용 확인' }));
-    expect(await screen.findByTestId('saved-constellation-conflict-review')).toHaveTextContent('삭제되었습니다');
+    expect(await screen.findByTestId('saved-constellation-conflict-review')).toHaveTextContent('삭제되었어요');
     fireEvent.click(screen.getByRole('button', { name: '새 별자리로 저장' }));
     await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(2));
     expect(mocks.save.mock.calls[1]?.[0]).not.toHaveProperty('id');

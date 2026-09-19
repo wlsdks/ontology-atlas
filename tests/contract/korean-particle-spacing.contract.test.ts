@@ -84,7 +84,7 @@ describe("Korean particle spacing", () => {
   });
 
   it("leaves the determiner 이 alone", () => {
-    const determiner = "{name}을(를) 이 컴퓨터에서 숨깁니다";
+    const determiner = "{name}을(를) 이 컴퓨터에서 숨겨요";
     expect(DETERMINER_EXEMPTIONS.some((exempt) => determiner.includes(exempt))).toBe(true);
   });
 

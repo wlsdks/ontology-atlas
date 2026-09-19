@@ -67,7 +67,7 @@ describe('남의 제품 마크 판 — 예외를 예외로 유지한다', () => 
      */
     for (const token of TOKENS) {
       const parsed = rgb(tokenValue(token));
-      expect(parsed, `${token} 의 값을 읽지 못했습니다`).not.toBeNull();
+      expect(parsed, `${token} 의 값을 읽지 못했어요`).not.toBeNull();
       const [r, g, b] = parsed!;
       expect(
         Math.max(r, g, b) - Math.min(r, g, b),

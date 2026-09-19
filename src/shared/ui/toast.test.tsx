@@ -87,12 +87,12 @@ describe('useToast — 후속 동작 계약', () => {
 
   it('설명은 제목·액션과 분리된 보조 정보로 전달된다', () => {
     const onClick = vi.fn();
-    show('새 문서를 만들었습니다', 'success', { label: '되돌리기', onClick }, {
+    show('새 문서를 만들었어요', 'success', { label: '되돌리기', onClick }, {
       description: '결제 정산 정책.md',
     });
 
-    expect(sonnerToast.success).toHaveBeenCalledWith('새 문서를 만들었습니다', {
-      id: '["success","새 문서를 만들었습니다","결제 정산 정책.md"]',
+    expect(sonnerToast.success).toHaveBeenCalledWith('새 문서를 만들었어요', {
+      id: '["success","새 문서를 만들었어요","결제 정산 정책.md"]',
       action: { label: '되돌리기', onClick },
       description: '결제 정산 정책.md',
     });
@@ -100,7 +100,7 @@ describe('useToast — 후속 동작 계약', () => {
   });
 
   it('같은 결과라도 다른 문서는 따로 쌓고 같은 문서 반복은 갱신한다', () => {
-    const outcome = '새 문서를 만들었습니다';
+    const outcome = '새 문서를 만들었어요';
     show(outcome, 'success', undefined, { description: '결제 정책.md' });
     show(outcome, 'success', undefined, { description: '환불 정책.md' });
     show(outcome, 'success', undefined, { description: '결제 정책.md' });

@@ -356,7 +356,7 @@ describe('honest degradation', () => {
     window.history.replaceState(null, '', '/ko/architecture/?view=guides');
     state.report = { status: 'unsupported' };
     mount();
-    expect(screen.getByText('브라우저에서는 읽을 수 없습니다')).toBeInTheDocument();
+    expect(screen.getByText('브라우저에서는 읽을 수 없어요')).toBeInTheDocument();
     expect(screen.getByText(/점으로 시작하는 폴더/)).toBeInTheDocument();
   });
 
@@ -364,7 +364,7 @@ describe('honest degradation', () => {
     window.history.replaceState(null, '', '/ko/architecture/?view=guides');
     state.report = { status: 'no-source' };
     mount();
-    expect(screen.getByText('연결된 저장소가 없습니다')).toBeInTheDocument();
+    expect(screen.getByText('연결된 저장소가 없어요')).toBeInTheDocument();
   });
 });
 
@@ -378,7 +378,7 @@ describe('the coverage matrix', () => {
      */
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(screen.getByText('이 저장소에는 에이전트 파일은 있고 온톨로지는 아직 없습니다')).toBeInTheDocument();
+    expect(screen.getByText('이 저장소에는 에이전트 파일은 있고 온톨로지는 아직 없어요')).toBeInTheDocument();
     expect(screen.queryByRole('table')).toBeNull();
     expect(screen.getByTestId('harness-reach')).toBeInTheDocument();
   });
