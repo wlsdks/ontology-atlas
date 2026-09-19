@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useRef, useS
 import { listen } from "@tauri-apps/api/event";
 import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
 import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
+import { useRovingRows } from "@/shared/lib/use-roving-rows";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { useFormatter, useTranslations } from "next-intl";
 // `History as HistoryIcon` — usability review P0 (2026-07-23): under certain
@@ -2395,9 +2396,11 @@ function ChangeList({
       {/*
         The chosen document's one destructive door. A never-committed document has no
         earlier content to go back to, so "discard" there would be "delete", and that door is
-        not offered — the Rust side refuses it too.
+        not offered — the Rust side refuses it too. A renamed document is not offered either:
+        the last commit holds the old name, not this path, so the door would only open on a
+        refusal.
       */}
-      {selectedEntry && selectedEntry.status !== "added" ? (
+      {selectedEntry && selectedEntry.status !== "added" && selectedEntry.status !== "renamed" ? (
         <DiscardDock
           t={t}
           path={selectedEntry.path}
@@ -2688,6 +2691,25 @@ function StepList({
   const revealSelectedRow = useCallback((node: HTMLButtonElement | null) => {
     if (node && typeof node.scrollIntoView === "function") node.scrollIntoView({ block: "nearest" });
   }, []);
+  /*
+   * One tab stop, arrows between rows (2026-09-19). The list is a master-detail list, and
+   * before this every row was its own tab stop: reaching the fortieth step by keyboard meant
+   * forty presses. The same hook the Library's lists use; Enter or Space on a row is the
+   * row's own click, so selection stays a deliberate press.
+   */
+  const rowCount =
+    (behind && behind > 0 ? 1 : 0) + (pendingCount > 0 ? 1 : 0) + history.length + (hasMore ? 1 : 0);
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const roving = useRovingRows({ count: rowCount, listRef });
+  let rowIndex = 0;
+  const rowProps = () => {
+    const index = rowIndex++;
+    return {
+      "data-row-index": index,
+      tabIndex: roving.tabIndexOf(index),
+      onFocus: () => roving.onRowFocus(index),
+    };
+  };
   if (history.length === 0) {
     return (
       <div className="flex flex-col gap-1 px-4 py-3">
@@ -2717,12 +2739,13 @@ function StepList({
   const unpushed = Math.max(0, Math.min(ahead ?? 0, history.length));
 
   return (
-    <ul data-testid="atlas-git-steps" className="flex flex-col">
+    <ul data-testid="atlas-git-steps" className="flex flex-col" ref={listRef} onKeyDown={roving.onKeyDown}>
       {behind && behind > 0 ? (
         <li>
           <button
             type="button"
             data-testid="atlas-git-behind-row"
+            {...rowProps()}
             onClick={() => onRemoteAction("pull")}
             className={cn(STEP_ROW, "border-l-transparent")}
           >
@@ -2749,6 +2772,7 @@ function StepList({
           <button
             type="button"
             data-testid="atlas-git-pending-row"
+            {...rowProps()}
             /*
              * **`aria-current`, not `aria-pressed`** (2026-08-15 (8)). This row
              * points at "what I am currently looking at" in a master-detail list;
@@ -2820,6 +2844,7 @@ function StepList({
             <button
               type="button"
               data-testid="atlas-git-history-item"
+              {...rowProps()}
               ref={expanded ? revealSelectedRow : undefined}
               aria-expanded={expanded}
               title={t("stepSelectHint")}
@@ -2899,6 +2924,7 @@ function StepList({
           <button
             type="button"
             data-testid="atlas-git-history-more"
+            {...rowProps()}
             disabled={moreBusy}
             onClick={onMore}
             className={controlClass({

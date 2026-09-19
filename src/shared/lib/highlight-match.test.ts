@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { splitHighlightSegments } from "./highlight-match";
+import { snippetAroundFirstMatch, splitHighlightSegments } from "./highlight-match";
 
 describe("splitHighlightSegments", () => {
   it("빈 query → 전체 단일 비매치 세그먼트", () => {
@@ -133,5 +133,67 @@ describe("splitHighlightSegments", () => {
     const segs = splitHighlightSegments(text, "관계 타입");
     const matched = segs.filter((s) => s.match).map((s) => s.text);
     expect(matched).toEqual(["관계 타입"]);
+  });
+});
+
+describe('한글 자판 질의 하이라이트', () => {
+  it('초성 매치도 표시된다', () => {
+    expect(splitHighlightSegments('장바구니', 'ㅈㅂㄱㄴ')).toEqual([
+      { text: '장바구니', match: true },
+    ]);
+  });
+
+  it('이름 가운데 초성 매치의 앞뒤가 남는다', () => {
+    expect(splitHighlightSegments('신규 회원 탈퇴', 'ㅎㅇ')).toEqual([
+      { text: '신규 ', match: false },
+      { text: '회원', match: true },
+      { text: ' 탈퇴', match: false },
+    ]);
+  });
+
+  it('조합 중인 마지막 음절도 표시된다', () => {
+    expect(splitHighlightSegments('장바구니', '장바ㄱ')).toEqual([
+      { text: '장바구', match: true },
+      { text: '니', match: false },
+    ]);
+  });
+
+  it('글자 그대로 맞는 매치가 있으면 그쪽이 이긴다', () => {
+    expect(splitHighlightSegments('장바구니 담기', '장바')).toEqual([
+      { text: '장바', match: true },
+      { text: '구니 담기', match: false },
+    ]);
+  });
+
+  it('한글이 아닌 질의는 한글 경로를 타지 않는다', () => {
+    expect(splitHighlightSegments('장바구니', 'cart')).toEqual([
+      { text: '장바구니', match: false },
+    ]);
+  });
+});
+
+describe('snippetAroundFirstMatch', () => {
+  const sentence = 'Hands a packed parcel to the courier and keeps the tracking number';
+
+  it('매치가 앞쪽이면 문장을 그대로 둔다', () => {
+    expect(snippetAroundFirstMatch(sentence, 'Hands')).toBe(sentence);
+    expect(snippetAroundFirstMatch(sentence, 'packed')).toBe(sentence);
+  });
+
+  it('매치가 뒤쪽이면 말줄임과 함께 매치 근처에서 시작한다', () => {
+    const out = snippetAroundFirstMatch(sentence, 'tracking');
+    expect(out.startsWith('…')).toBe(true);
+    expect(out).toContain('tracking number');
+    expect(out).not.toContain('Hands');
+  });
+
+  it('낱말을 반으로 자르지 않는다', () => {
+    const out = snippetAroundFirstMatch(sentence, 'courier');
+    expect(out).toBe('…to the courier and keeps the tracking number');
+  });
+
+  it('매치가 없으면 그대로 둔다', () => {
+    expect(snippetAroundFirstMatch(sentence, 'zzz')).toBe(sentence);
+    expect(snippetAroundFirstMatch(sentence, '')).toBe(sentence);
   });
 });
