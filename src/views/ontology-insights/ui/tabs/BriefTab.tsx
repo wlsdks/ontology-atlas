@@ -2,11 +2,11 @@
 
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { CensusSubStat, CensusTile } from '@/shared/ui/census-tile';
+import { CensusBigNumber, CensusSubStat, CensusTile } from '@/shared/ui/census-tile';
 import { controlClass } from '@/shared/ui/control-class';
 import { Button } from '@/shared/ui';
 import { cn } from '@/shared/lib/cn';
-import { visibleLines, type BriefCore, type BriefLine, type BriefState } from '../../lib/brief/brief-model';
+import { briefTotals, visibleLines, type BriefCore, type BriefLine, type BriefState } from '../../lib/brief/brief-model';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 
 /**
@@ -15,6 +15,7 @@ import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
  */
 const LINE_HREF: Record<string, string> = {
   'ontology-evidence-moved': '/ontology/insights/?tab=growth',
+  'ontology-evidence-unchecked': '/download/',
   'ontology-agent-unreviewed': '/topology/',
   'ontology-changed-since': '/ontology/insights/?tab=growth',
   'ontology-repair': '/ontology/insights/?tab=do-next',
@@ -53,21 +54,26 @@ const STATE_MARK: Record<BriefState, string> = {
 
 export function BriefTab({ brief }: { brief: InsightsBrief }) {
   const t = useTranslations('ontologyPages.insights.brief');
+  const cores = [brief.ontology, brief.wiki, brief.harness, brief.agent] as const;
+  const totals = briefTotals(cores);
   return (
     <section data-testid="brief-tab" className="flex flex-col gap-[var(--section-gap)]">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
-          <h2 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+          <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             {brief.anchor.isDefaultWindow ? t('sinceDefault') : t('sinceSeen', { days: brief.sinceDays })}
+          </p>
+          <h2 className="mt-1 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]" data-testid="brief-headline">
+            {t('headline', { stale: totals.stale, unknown: totals.unknown })}
           </h2>
-          <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">{t('sinceGloss')}</p>
+          <p className="mt-2 text-body text-[color:var(--color-text-tertiary)]">{t('sinceGloss')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => brief.markSeen()} data-testid="brief-mark-seen">
           {t('markSeen')}
         </Button>
       </div>
       <div className="grid grid-cols-1 gap-[var(--card-gap)] md:grid-cols-2 xl:grid-cols-4">
-        {([brief.ontology, brief.wiki, brief.harness, brief.agent] as const).map((core) => (
+        {cores.map((core) => (
           <BriefCoreCard key={core.core} core={core} />
         ))}
       </div>
@@ -82,6 +88,7 @@ function BriefCoreCard({ core }: { core: BriefCore }) {
   const measured = core.availability === 'measured';
   return (
     <CensusTile label={t(`core.${core.core}`)} testId={`brief-core-${core.core}`} rowKey={core.core}>
+      <CensusBigNumber value={core.headline ?? '–'} unit={t(`unit.${core.core}`)} scale="section" />
       <div className="flex flex-wrap gap-x-4 gap-y-1" data-testid="brief-core-columns">
         <CensusSubStat label={t(`col.${c1}`)} value={measured && core.current != null ? core.current : '–'} />
         <CensusSubStat label={t(`col.${c2}`)} value={measured && core.stale != null ? core.stale : '–'} tone={core.stale ? 'warning' : 'numeral'} />

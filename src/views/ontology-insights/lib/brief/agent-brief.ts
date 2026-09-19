@@ -1,7 +1,7 @@
 import { isAfter, type BriefCore, type BriefLine } from './brief-model';
 
 /** The slice of `AgentActivityEntry` the brief reads. */
-export interface AgentBriefEntry {
+interface AgentBriefEntry {
   at: string;
   tool: string;
   agent: string | null;
@@ -31,6 +31,7 @@ export function buildAgentBrief(input: AgentBriefInput): BriefCore {
   return {
     core: 'agent',
     availability: input.entries.length === 0 ? 'no-data' : 'measured',
+    headline: since.length,
     current: since.length - writes,
     stale: writes,
     unknown: agents,

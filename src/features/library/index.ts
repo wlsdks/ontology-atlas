@@ -57,6 +57,4 @@ export {
   isWikiFolderCode,
   libraryDanglingLinkCount,
   libraryOffTemplateCount,
-  mergeWikiVerdict,
 } from "./model/merge-wiki-verdict";
-export type { WikiVerdictLike } from "./model/merge-wiki-verdict";

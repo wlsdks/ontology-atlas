@@ -175,13 +175,14 @@ export function useInsightsBrief({
 
   const harness = useMemo(() => {
     if (!harnessReport) {
-      return buildHarnessBrief({ areas: null, driftCount: null, fileTimes: null, anchorMs: anchor.anchorMs });
+      return buildHarnessBrief({ areas: null, driftCount: null, fileTimes: null, guideFileCount: null, anchorMs: anchor.anchorMs });
     }
     const matrix = buildCoverageMatrix(harnessReport.coverage, coverage.areas, harnessReport.testFiles);
     return buildHarnessBrief({
       areas: matrix.areas,
       driftCount: harnessReport.analysis.drift.length,
       fileTimes: harnessReport.times.map((time) => ({ path: time.path, mtimeMs: time.lastModified })),
+      guideFileCount: harnessReport.guideDocumentCount,
       anchorMs: anchor.anchorMs,
     });
   }, [harnessReport, coverage.areas, anchor.anchorMs]);

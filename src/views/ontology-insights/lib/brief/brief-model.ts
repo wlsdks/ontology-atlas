@@ -13,7 +13,7 @@
  */
 export type BriefState = 'current' | 'stale' | 'unknown';
 
-export type BriefCoreKey = 'ontology' | 'wiki' | 'harness' | 'agent';
+type BriefCoreKey = 'ontology' | 'wiki' | 'harness' | 'agent';
 
 /**
  * Why a core's numbers are what they are. `measured` means the counts are real; `app-only`
@@ -21,19 +21,28 @@ export type BriefCoreKey = 'ontology' | 'wiki' | 'harness' | 'agent';
  * the installed app can; `no-data` means the input exists but is empty (no wiki, no agent
  * log yet), which is a different sentence from "cannot look".
  */
-export type BriefAvailability = 'measured' | 'app-only' | 'no-data';
+type BriefAvailability = 'measured' | 'app-only' | 'no-data';
 
 export interface BriefLine {
   /** Message id under `brief.line.*`. Stable; screens and tests key on it. */
   id: string;
   count: number;
-  /** Which state this line's items are in. Drives the mark beside the sentence, never colour alone. */
+  /**
+   * What the line means for the reader. `stale`: something they believed is now wrong.
+   * `unknown`: something nobody has checked or that nothing reaches. `current`: something
+   * that happened, worth knowing, contradicting nothing. The headline sums the first two.
+   */
   state: BriefState;
 }
 
 export interface BriefCore {
   core: BriefCoreKey;
   availability: BriefAvailability;
+  /**
+   * The core's magnitude — concepts, pages, guide files, calls since the anchor — so the card
+   * says how big the thing is before it says what moved. `null` when this session cannot count it.
+   */
+  headline: number | null;
   /** Items in each state. `null` when this core cannot state that column here. */
   current: number | null;
   stale: number | null;
@@ -42,13 +51,30 @@ export interface BriefCore {
   lines: readonly BriefLine[];
 }
 
+/**
+ * The one line above the cards: what a reader now has to learn (items in the stale state)
+ * and what could not be checked (items in the unknown state). Two sums of named things,
+ * never combined into one, and never a score.
+ */
+export function briefTotals(cores: readonly BriefCore[]): { stale: number; unknown: number } {
+  let stale = 0;
+  let unknown = 0;
+  for (const core of cores) {
+    for (const line of core.lines) {
+      if (line.state === 'stale') stale += line.count;
+      else if (line.state === 'unknown') unknown += line.count;
+    }
+  }
+  return { stale, unknown };
+}
+
 /** Lines worth showing: nonzero counts, in the order the builder ranked them. */
 export function visibleLines(core: BriefCore): readonly BriefLine[] {
   return core.lines.filter((line) => line.count > 0);
 }
 
 /** ISO/epoch → ms, or null for anything unparseable. Ledger and log stamps are ISO-8601. */
-export function toMs(value: string | number | null | undefined): number | null {
+function toMs(value: string | number | null | undefined): number | null {
   if (value == null) return null;
   const ms = typeof value === 'number' ? value : Date.parse(value);
   return Number.isFinite(ms) ? ms : null;

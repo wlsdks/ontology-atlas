@@ -1372,7 +1372,7 @@ export function OntologyInsightsPage() {
          * announcing who a screen is for is not a measurement, and the strip now occupies the one
          * band a reader looks at first.
          */}
-        {insight && hasConcepts ? (
+        {insight && hasConcepts && tab !== "brief" ? (
           <div className="mt-4">
             <InsightsCensusStrip
               totalNodes={totalNodes}

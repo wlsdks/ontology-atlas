@@ -1,7 +1,7 @@
 import { isAfter, type BriefCore, type BriefLine } from './brief-model';
 
 /** One coverage row: a vault domain and what reaches its recorded paths. */
-export interface HarnessBriefArea {
+interface HarnessBriefArea {
   told: readonly unknown[];
   gated: readonly unknown[];
   watched: readonly unknown[];
@@ -14,6 +14,8 @@ export interface HarnessBriefInput {
   driftCount: number | null;
   /** Guide and rule file change times, so "a rule changed since you looked" is a count. */
   fileTimes: readonly { path: string; mtimeMs: number | null }[] | null;
+  /** Guide documents the scan found (AGENTS.md, rules, skills …). Null when nothing was scanned. */
+  guideFileCount: number | null;
   anchorMs: number;
 }
 
@@ -28,6 +30,7 @@ export function buildHarnessBrief(input: HarnessBriefInput): BriefCore {
     return {
       core: 'harness',
       availability: 'app-only',
+      headline: null,
       current: null,
       stale: null,
       unknown: null,
@@ -48,6 +51,7 @@ export function buildHarnessBrief(input: HarnessBriefInput): BriefCore {
   return {
     core: 'harness',
     availability: input.areas.length === 0 ? 'no-data' : 'measured',
+    headline: input.guideFileCount,
     current: input.areas.length - untold,
     stale: input.areas.length - ungated,
     unknown: input.areas.length - unwatched,

@@ -6,7 +6,7 @@ const anchorMs = Date.parse('2026-09-18T00:00:00Z');
 
 describe('buildHarnessBrief', () => {
   it('is app-only in the browser with one line saying so', () => {
-    const brief = buildHarnessBrief({ areas: null, driftCount: null, fileTimes: null, anchorMs });
+    const brief = buildHarnessBrief({ areas: null, driftCount: null, fileTimes: null, guideFileCount: null, anchorMs });
     expect(brief.availability).toBe('app-only');
     expect(brief.lines.map((line) => line.id)).toEqual(['harness-app-only']);
     expect(visibleLines(brief)).toEqual([]);
@@ -20,6 +20,7 @@ describe('buildHarnessBrief', () => {
         { told: [], gated: [], watched: ['c'] },
       ],
       driftCount: 2,
+      guideFileCount: 17,
       fileTimes: [
         { path: 'AGENTS.md', mtimeMs: anchorMs + 1000 },
         { path: '.claude/rules/git.md', mtimeMs: anchorMs - 1000 },
@@ -28,6 +29,7 @@ describe('buildHarnessBrief', () => {
       anchorMs,
     });
     expect(brief.availability).toBe('measured');
+    expect(brief.headline).toBe(17);
     expect({ told: brief.current, gated: brief.stale, watched: brief.unknown }).toEqual({ told: 2, gated: 1, watched: 2 });
     const byId = Object.fromEntries(brief.lines.map((line) => [line.id, line.count]));
     expect(byId).toEqual({

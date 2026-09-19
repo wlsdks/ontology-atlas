@@ -28,6 +28,7 @@ describe('buildOntologyBrief', () => {
     });
     const byId = Object.fromEntries(brief.lines.map((line) => [line.id, line.count]));
     expect(byId['ontology-evidence-moved']).toBe(0);
+    expect(byId['ontology-evidence-unchecked']).toBe(4);
     // The agent-written node a person reviewed is not counted; the project is not a concept.
     expect(byId['ontology-agent-unreviewed']).toBe(1);
     expect(byId['ontology-changed-since']).toBe(2);
@@ -50,6 +51,7 @@ describe('buildOntologyBrief', () => {
       unknown: 1,
     });
     expect(brief.lines.find((line) => line.id === 'ontology-evidence-moved')?.count).toBe(1);
+    expect(brief.lines.find((line) => line.id === 'ontology-evidence-unchecked')?.count).toBe(1);
     expect(brief.lines.find((line) => line.id === 'ontology-unmatched')?.count).toBe(3);
   });
 });

@@ -11,7 +11,7 @@ export interface OntologyBriefNode {
 }
 
 /** Per-doc facts from the vault manifest: who reviewed it, when it last changed. */
-export interface OntologyBriefDoc {
+interface OntologyBriefDoc {
   /** `reviewed_by`, verbatim; a person's mark. Absent when nobody judged the meaning. */
   reviewedBy?: string | null;
   /** ISO timestamp of the file's last change. */
@@ -23,7 +23,7 @@ export interface OntologyBriefDoc {
  * code beside the vault. `null` means this session could not check (browser, no Git):
  * every node with evidence is then `unknown`, never quietly `current`.
  */
-export interface OntologyEvidenceStates {
+interface OntologyEvidenceStates {
   current: ReadonlySet<string>;
   stale: ReadonlySet<string>;
 }
@@ -63,15 +63,19 @@ export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
 
   const lines: BriefLine[] = [
     { id: 'ontology-evidence-moved', count: input.evidence ? stale : 0, state: 'stale' },
+    // Without the Git bridge every concept is unchecked; in the app only pathless ones remain.
+    { id: 'ontology-evidence-unchecked', count: unknown, state: 'unknown' },
     { id: 'ontology-agent-unreviewed', count: agentUnreviewed, state: 'unknown' },
-    { id: 'ontology-changed-since', count: changedSince, state: 'current' },
-    { id: 'ontology-repair', count: input.repairCount, state: 'stale' },
     { id: 'ontology-unmatched', count: input.unmatchedCount, state: 'unknown' },
+    { id: 'ontology-changed-since', count: changedSince, state: 'current' },
+    // The repair queue is work already listed on its own tab, not a belief that went wrong.
+    { id: 'ontology-repair', count: input.repairCount, state: 'current' },
   ];
 
   return {
     core: 'ontology',
     availability: concepts.length === 0 ? 'no-data' : input.evidence ? 'measured' : 'app-only',
+    headline: concepts.length,
     current: input.evidence ? current : null,
     stale: input.evidence ? stale : null,
     unknown,

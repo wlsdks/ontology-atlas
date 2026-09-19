@@ -1,36 +1,36 @@
 import { isAfter, type BriefCore, type BriefLine } from './brief-model';
 
 /** The slice of `LibrarySourceRow` the brief reads. */
-export interface WikiBriefSource {
+interface WikiBriefSource {
   path: string;
   state: 'not-compiled' | 'compiled' | 'partial' | 'stale' | 'checking';
   citedBy: readonly string[];
 }
 
 /** The slice of `LibraryWikiPage` the brief reads. */
-export interface WikiBriefPage {
+interface WikiBriefPage {
   slug: string;
   sourcePaths: readonly string[];
 }
 
 /** Deterministic folder checks (`validateWikiFolder` codes), already counted by the caller. */
-export interface WikiFolderProblemCounts {
+interface WikiFolderProblemCounts {
   orphanPages: number;
   danglingLinks: number;
 }
 
 /** The last agent-judged check, parsed from the wiki log's JSON block. Null when none ran. */
-export interface WikiLintCounts {
+interface WikiLintCounts {
   disagreement: number;
   superseded: number;
 }
 
-export interface WikiBriefPass {
+interface WikiBriefPass {
   endedAt: string;
   outcome: 'held' | 'stale' | 'redrafted' | 'refused' | 'failed' | 'asleep';
 }
 
-export interface WikiBriefLogEntry {
+interface WikiBriefLogEntry {
   at: string;
   kind: string;
 }
@@ -102,13 +102,14 @@ export function buildWikiBrief(input: WikiBriefInput): BriefCore {
     { id: 'wiki-dangling-links', count: input.folderProblems?.danglingLinks ?? 0, state: 'stale' },
     { id: 'wiki-written-since', count: writtenSince, state: 'current' },
     { id: 'wiki-redrafted-since', count: redraftedSince, state: 'current' },
-    { id: 'wiki-passes-troubled-since', count: troubledSince, state: 'unknown' },
+    { id: 'wiki-passes-troubled-since', count: troubledSince, state: 'current' },
   ];
 
   const hasAnything = input.pages.length > 0 || input.sources.length > 0;
   return {
     core: 'wiki',
     availability: hasAnything ? 'measured' : 'no-data',
+    headline: input.pages.length,
     current,
     stale,
     unknown,
