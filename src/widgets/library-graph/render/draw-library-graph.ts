@@ -581,6 +581,83 @@ function drawIslands(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame, in
   ctx.globalAlpha = 1;
 }
 
+/** The gap between an island's rim (with its shore) and a name standing outside it. */
+const ISLAND_NAME_GAP_PX = 3;
+
+/**
+ * **A name stands beside its own island, never on a neighbour** (2026-09-19).
+ *
+ * Outside names were placed one way, under the island and centred, and the only thing
+ * they yielded to was another name. At 1040×720 on the 3,000-file fixture that put
+ * *Reporting · 12* across the Shipping island's marks and *Analytics · 11* on the Billing
+ * island's rim: the ground plate hid the dots, and the name read as the wrong island's.
+ * The design system's don'ts call that accepted overlap.
+ *
+ * So a name tries four seats in reading order — under, over, right, left — and takes the
+ * first that touches no other island's body and no name already placed. If every seat
+ * touches a body, it takes the one that reaches least into a neighbour, and only while that
+ * reach stays within the neighbour's shore (`ISLAND_NAME_REACH_MAX_PX`): a name may brush a
+ * rim, never stand on marks. Past that the island goes unnamed at rest and gains its name
+ * as the camera closes in and the seats widen — the same rule the page names follow.
+ *
+ * Measured on the 3,000-file fixture (24 islands): at 1512×901 the one seat under the
+ * island put 8 names on a neighbour; four seats put 4, none deeper than the shore. At
+ * 1040×720 the canvas is 616×518 and the islands sit 10 world px apart, so no seat is
+ * clear for 16 of them; those stay unnamed until zoomed. Room for names belongs to the
+ * layout's packing, which is where the next step lives.
+ */
+/** The most a name may reach into a neighbour's body: its shore and the gap, never a mark. */
+const ISLAND_NAME_REACH_MAX_PX = ISLAND_SHORE_PX + ISLAND_NAME_GAP_PX;
+function placeIslandName(
+  island: LibraryGraphIsland,
+  width: number,
+  height: number,
+  frame: LibraryGraphFrame,
+  placed: ReadonlyArray<{ x: number; y: number; width: number; height: number }>,
+): { x: number; y: number; width: number; height: number } | null {
+  const halfW = island.band ? island.band.width / 2 : island.r;
+  const halfH = island.band ? island.band.height / 2 : island.r;
+  const reach = ISLAND_SHORE_PX + ISLAND_NAME_GAP_PX;
+  const seats = [
+    { x: island.x - width / 2, y: island.y + halfH + reach, width, height },
+    { x: island.x - width / 2, y: island.y - halfH - reach - height, width, height },
+    { x: island.x + halfW + reach + 4, y: island.y - height / 2, width, height },
+    { x: island.x - halfW - reach - 4 - width, y: island.y - height / 2, width, height },
+  ];
+  const others = (frame.islands ?? []).filter((other) => other.id !== island.id);
+  let fallback: { seat: (typeof seats)[number]; cover: number } | null = null;
+  for (const seat of seats) {
+    if (seat.x < 2 || seat.x + seat.width > frame.width - 2 || seat.y < 2 || seat.y + seat.height > frame.height - 2) continue;
+    if (placed.some((other) => overlaps(seat, other))) continue;
+    const cover = others.reduce((sum, other) => sum + islandCover(seat, other), 0);
+    if (cover === 0) return seat;
+    if (!fallback || cover < fallback.cover) fallback = { seat, cover };
+  }
+  return fallback && fallback.cover <= ISLAND_NAME_REACH_MAX_PX ? fallback.seat : null;
+}
+
+/** How far a box reaches into an island's body with its shore, in px; 0 when it does not touch. */
+function islandCover(
+  box: { x: number; y: number; width: number; height: number },
+  island: LibraryGraphIsland,
+): number {
+  const reach = ISLAND_SHORE_PX;
+  if (island.band) {
+    const left = island.x - island.band.width / 2 - reach;
+    const right = island.x + island.band.width / 2 + reach;
+    const top = island.y - island.band.height / 2 - reach;
+    const bottom = island.y + island.band.height / 2 + reach;
+    const dx = Math.min(box.x + box.width, right) - Math.max(box.x, left);
+    const dy = Math.min(box.y + box.height, bottom) - Math.max(box.y, top);
+    return dx > 0 && dy > 0 ? Math.min(dx, dy) : 0;
+  }
+  // The closest point of the box to the disc's centre; inside the disc means they touch.
+  const nearestX = Math.max(box.x, Math.min(island.x, box.x + box.width));
+  const nearestY = Math.max(box.y, Math.min(island.y, box.y + box.height));
+  const distance = Math.hypot(nearestX - island.x, nearestY - island.y);
+  return Math.max(0, island.r + reach - distance);
+}
+
 /**
  * The islands' names, painted after the marks so a name inside an island stands on its
  * dots rather than under them. Largest first, so the biggest topics keep their names when
@@ -602,23 +679,29 @@ function drawIslandNames(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame
     const text = `${island.label} · ${count.toLocaleString(frame.locale)}`;
     const width = ctx.measureText(text).width;
     const across = island.band ? island.band.width : island.r * 2;
-    const inside = across >= Math.max(ISLAND_LABEL_INSIDE_MIN_PX, width + 12);
+    // Inside when the name and its plate fit across the body: the plate reaches 4px past
+    // the text each side (below), so 8 is the whole allowance. It was 12 until 2026-09-19,
+    // which at 1040×720 kept the largest island's name (70px across a 78px disc) outside,
+    // where no seat was clear, and the map's biggest topic went unnamed.
+    const inside = across >= Math.max(ISLAND_LABEL_INSIDE_MIN_PX, width + 8);
     const box = inside
       ? { x: island.x - width / 2, y: island.y - lineHeight / 2, width, height: lineHeight }
-      : { x: island.x - width / 2, y: island.y + island.r + 3, width, height: lineHeight };
+      : placeIslandName(island, width, lineHeight, frame, placed);
+    if (!box) continue;
     if (box.x < 2 || box.x + box.width > frame.width - 2 || box.y < 2 || box.y + box.height > frame.height - 2) continue;
     if (placed.some((other) => overlaps(box, other))) continue;
     placed.push(box);
     frame.islandReport?.push(island.id);
-    // A ground plate under every name: inside, it stands on the dots; under, it can stand
-    // on a neighbour's rim. Either way the name is read off the ground, not off the texture.
+    // A ground plate under every name: inside, it stands on the dots; outside, it stands
+    // beside its own island and never on a neighbour's marks (`placeIslandName`). Either
+    // way the name is read off the ground, not off the texture.
     const presence = (1 - dim * 0.5) * easeMotion(island.arrival ?? 1);
     ctx.fillStyle = ink.ground;
     ctx.globalAlpha = presence * 0.78;
     ctx.fillRect(box.x - 4, box.y, box.width + 8, box.height);
     ctx.globalAlpha = presence;
     ctx.fillStyle = inside ? ink.labelInk : ink.sourceLabel;
-    ctx.fillText(text, island.x, box.y + box.height / 2);
+    ctx.fillText(text, box.x + box.width / 2, box.y + box.height / 2);
   }
   ctx.textAlign = "start";
   ctx.textBaseline = "alphabetic";
