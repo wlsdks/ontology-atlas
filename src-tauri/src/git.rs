@@ -1719,6 +1719,9 @@ pub struct PathLastChange {
     path: String,
     /// Whether the path exists on disk now — a file or a folder that moved reads `false`.
     exists: bool,
+    /// Whether the path is a folder. A folder changes whenever anything under it does, so a
+    /// caller treats its change time as weaker evidence than a file's.
+    is_dir: bool,
     /// ISO time of the newest commit in the walk window touching the path or anything under
     /// it. `None` when no commit in the window did: uncommitted, or older than the window.
     last_changed_at: Option<String>,
@@ -1824,10 +1827,14 @@ pub fn git_paths_last_change(
     Ok(wanted
         .iter()
         .enumerate()
-        .map(|(index, (key, resolved))| PathLastChange {
-            path: key.clone(),
-            exists: repo_root.join(resolved).exists(),
-            last_changed_at: last.get(&index).cloned(),
+        .map(|(index, (key, resolved))| {
+            let on_disk = repo_root.join(resolved);
+            PathLastChange {
+                path: key.clone(),
+                exists: on_disk.exists(),
+                is_dir: on_disk.is_dir(),
+                last_changed_at: last.get(&index).cloned(),
+            }
         })
         .collect())
 }

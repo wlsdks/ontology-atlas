@@ -10,6 +10,8 @@ const changes = new Map([
   ['src/ship.ts', { exists: true, lastChangedAt: '2026-09-01T00:00:00Z' }],
   ['src/ship-ui.tsx', { exists: true, lastChangedAt: '2026-09-02T00:00:00Z' }],
   ['src/removed.ts', { exists: false, lastChangedAt: '2026-09-01T00:00:00Z' }],
+  ['src/widgets/cart', { exists: true, isDir: true, lastChangedAt: '2026-09-15T00:00:00Z' }],
+  ['capabilities/cart.md', { exists: true, lastChangedAt: '2026-09-10T00:00:00Z' }],
 ]);
 
 describe('resolveEvidenceStates', () => {
@@ -22,12 +24,15 @@ describe('resolveEvidenceStates', () => {
         { id: 'old', docPath: 'capabilities/old.md', evidencePaths: ['src/ship.ts'] },
         { id: 'free', docPath: 'capabilities/free.md', evidencePaths: [] },
         { id: 'unwalked', docPath: 'capabilities/ship.md', evidencePaths: ['src/not-asked.ts'] },
+        { id: 'cart', docPath: 'capabilities/cart.md', evidencePaths: ['src/widgets/cart'] },
+        { id: 'cart-file', docPath: 'capabilities/cart.md', evidencePaths: ['src/widgets/cart', 'src/pay.ts'] },
       ],
       changes,
     );
-    expect([...states.stale]).toEqual(['pay']);
+    expect([...states.stale]).toEqual(['pay', 'cart-file']);
     expect([...states.current]).toEqual(['ship']);
     expect([...states.missing]).toEqual(['gone']);
-    expect([...states.unknown].sort()).toEqual(['free', 'old', 'unwalked']);
+    expect([...states.unknown].sort()).toEqual(['cart', 'free', 'old', 'unwalked']);
+    expect([...states.folderOnly]).toEqual(['cart']);
   });
 });

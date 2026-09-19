@@ -39,7 +39,7 @@ describe('buildOntologyBrief', () => {
     const brief = buildOntologyBrief({
       nodes,
       docs,
-      evidence: { current: new Set(['capabilities/ship']), stale: new Set(['capabilities/pay']), missing: new Set(['domains/orders']) },
+      evidence: { current: new Set(['capabilities/ship']), stale: new Set(['capabilities/pay']), missing: new Set(['domains/orders']), folderOnly: new Set(['elements/cart']) },
       repairCount: 0,
       unmatchedCount: 3,
       anchorMs,
@@ -52,6 +52,7 @@ describe('buildOntologyBrief', () => {
     });
     expect(brief.lines.find((line) => line.id === 'ontology-evidence-moved')?.count).toBe(1);
     expect(brief.lines.find((line) => line.id === 'ontology-evidence-missing')?.count).toBe(1);
+    expect(brief.lines.find((line) => line.id === 'ontology-evidence-folder-only')?.count).toBe(1);
     expect(brief.lines.find((line) => line.id === 'ontology-evidence-unchecked')?.count).toBe(1);
     expect(brief.lines.find((line) => line.id === 'ontology-unmatched')?.count).toBe(3);
   });

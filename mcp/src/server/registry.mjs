@@ -2404,7 +2404,7 @@ const TOOLS = [
       `8 issue codes — ${VAULT_ISSUE_CODE_DESCRIPTION}. ` +
       'Returns `{ scanned, problems: [{slug, issues: [{code, severity, message}]}], summary: { problemFiles, errorFiles, warningFiles, byCode: { code: { severity, count, files } } } }`. ' +
       'Also returns `pathDrift`: frontmatter `path:` / `elements:` source paths that no longer exist on disk (vault→code drift), resolved against `repoRoot` (default: the active resolved repository root from connection_info). Ontology-slug references are never flagged. Fix via `patch_concept` or remove the stale entry. ' +
-      'Also returns `evidenceDrift`: one Git walk dates every cited path and every concept document, and each concept is `current` (cited code unchanged since the document), `stale` (cited code changed after the document — read it before trusting the recorded meaning), `missing` (cited path gone) or `unknown` (nothing cited, or no commit in the window). `checked: false` names why nothing was dated; it never means nothing moved. ' +
+      'Also returns `evidenceDrift`: one Git walk dates every cited path and every concept document, and each concept is `current` (cited code unchanged since the document), `stale` (a cited file changed after the document — read it before trusting the recorded meaning), `missing` (cited path gone) or `unknown` (nothing cited, no commit in the window, or only a folder-level path moved — listed under `folderOnly`, because a folder changes on almost any commit). `checked: false` names why nothing was dated; it never means nothing moved. ' +
       'side effect 0. Use when an agent needs the *whole-vault* health view: first-contact before writes, before / after a batch write, or surfacing issues to the user.',
     inputSchema: {
       type: 'object',
@@ -2562,8 +2562,9 @@ const TOOLS = [
                 stale: { type: 'integer', minimum: 0 },
                 missing: { type: 'integer', minimum: 0 },
                 unknown: { type: 'integer', minimum: 0 },
+                folderOnly: { type: 'integer', minimum: 0, description: 'Unknown rows whose only moved evidence is a folder path.' },
               },
-              required: ['current', 'stale', 'missing', 'unknown'],
+              required: ['current', 'stale', 'missing', 'unknown', 'folderOnly'],
               additionalProperties: false,
             },
             stale: {
@@ -2601,9 +2602,32 @@ const TOOLS = [
                 additionalProperties: false,
               },
             },
+            folderOnly: {
+              type: 'array',
+              description: 'Concepts whose only evidence that moved is a folder: something under it changed, which is not yet a verdict on the meaning.',
+              items: {
+                type: 'object',
+                properties: {
+                  slug: { type: 'string' },
+                  kind: { type: 'string' },
+                  docChangedAt: { type: ['string', 'null'] },
+                  folders: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: { path: { type: 'string' }, changedAt: { type: 'string' } },
+                      required: ['path', 'changedAt'],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ['slug', 'kind', 'docChangedAt', 'folders'],
+                additionalProperties: false,
+              },
+            },
             hint: { type: 'string' },
           },
-          required: ['checked', 'counts', 'stale', 'missing', 'hint'],
+          required: ['checked', 'counts', 'stale', 'missing', 'folderOnly', 'hint'],
           additionalProperties: false,
         },
       },

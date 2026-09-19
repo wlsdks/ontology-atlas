@@ -1,4 +1,4 @@
-import { existsSync, realpathSync } from 'node:fs';
+import { existsSync, realpathSync, statSync } from 'node:fs';
 import { relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
@@ -626,7 +626,14 @@ export function collectPathLastChanges({ repoRoot, vaultRoot, repoPaths = [], va
     }
   }
   for (const { key, resolved } of wanted) {
-    changes.set(key, { exists: existsSync(resolve(gitRoot, resolved)), lastChangedAt: last.get(key) ?? null });
+    const onDisk = resolve(gitRoot, resolved);
+    let isDir = false;
+    try {
+      isDir = statSync(onDisk).isDirectory();
+    } catch {
+      isDir = false;
+    }
+    changes.set(key, { exists: existsSync(onDisk), isDir, lastChangedAt: last.get(key) ?? null });
   }
   return { operation: 'path_last_changes', ok: true, repoRoot: gitRoot, changes };
 }

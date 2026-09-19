@@ -11,6 +11,8 @@ export interface EvidenceConceptInput {
 
 export interface EvidenceChange {
   exists: boolean;
+  /** A folder path. Its change time says only that something under it moved. */
+  isDir?: boolean;
   lastChangedAt: string | null;
 }
 
@@ -23,6 +25,12 @@ export interface EvidenceStates {
   missing: ReadonlySet<string>;
   /** No evidence recorded, or a change time the walk could not supply. */
   unknown: ReadonlySet<string>;
+  /**
+   * Only folder-level evidence moved. A folder changes on almost any commit, so this says
+   * "something under it moved", not "the meaning stands on moved ground"; it is counted as
+   * unknown and named on its own line rather than inflating stale.
+   */
+  folderOnly: ReadonlySet<string>;
 }
 
 /**
@@ -38,6 +46,7 @@ export function resolveEvidenceStates(
   const stale = new Set<string>();
   const missing = new Set<string>();
   const unknown = new Set<string>();
+  const folderOnly = new Set<string>();
   for (const concept of concepts) {
     if (concept.evidencePaths.length === 0 || !concept.docPath) {
       unknown.add(concept.id);
@@ -46,6 +55,8 @@ export function resolveEvidenceStates(
     const doc = changes.get(concept.docPath);
     const docMs = toMs(doc?.lastChangedAt ?? null);
     let verdict: 'current' | 'stale' | 'missing' | 'unknown' = 'current';
+    let fileMoved = false;
+    let folderMoved = false;
     for (const path of concept.evidencePaths) {
       const change = changes.get(path);
       if (!change) {
@@ -60,12 +71,20 @@ export function resolveEvidenceStates(
         verdict = 'unknown';
         continue;
       }
-      if (isAfter(change.lastChangedAt, docMs)) verdict = 'stale';
+      if (isAfter(change.lastChangedAt, docMs)) {
+        if (change.isDir) folderMoved = true;
+        else fileMoved = true;
+      }
     }
-    if (verdict === 'current') current.add(concept.id);
-    else if (verdict === 'stale') stale.add(concept.id);
+    if (verdict === 'current' && fileMoved) verdict = 'stale';
+    if (verdict === 'current') {
+      if (folderMoved) {
+        folderOnly.add(concept.id);
+        unknown.add(concept.id);
+      } else current.add(concept.id);
+    } else if (verdict === 'stale') stale.add(concept.id);
     else if (verdict === 'missing') missing.add(concept.id);
     else unknown.add(concept.id);
   }
-  return { current, stale, missing, unknown };
+  return { current, stale, missing, unknown, folderOnly };
 }

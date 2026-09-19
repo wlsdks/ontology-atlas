@@ -356,6 +356,8 @@ export interface GitPathLastChange {
   /** The key exactly as passed — a `path:` value or a vault-relative document path. */
   path: string;
   exists: boolean;
+  /** A folder changes whenever anything under it does: weaker evidence than a file. */
+  isDir: boolean;
   /** ISO time of the newest commit touching the path in the walk window, else null. */
   lastChangedAt: string | null;
 }

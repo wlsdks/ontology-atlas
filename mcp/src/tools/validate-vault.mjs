@@ -268,7 +268,7 @@ function validateVaultTool({ repoRoot } = {}) {
 }
 
 const EVIDENCE_ROW_LIMIT = 50;
-const ZERO_EVIDENCE_COUNTS = Object.freeze({ current: 0, stale: 0, missing: 0, unknown: 0 });
+const ZERO_EVIDENCE_COUNTS = Object.freeze({ current: 0, stale: 0, missing: 0, unknown: 0, folderOnly: 0 });
 
 /**
  * Does the meaning still stand on the code it cites? One Git walk dates every cited
@@ -286,6 +286,7 @@ function buildEvidenceDrift(docs, repoRoot, vaultRoot) {
     counts: { ...ZERO_EVIDENCE_COUNTS },
     stale: [],
     missing: [],
+    folderOnly: [],
     hint,
   });
   if (!repoRoot) {
@@ -307,15 +308,17 @@ function buildEvidenceDrift(docs, repoRoot, vaultRoot) {
     );
   }
   const states = resolveEvidenceStates(concepts, walk.changes);
+  const folderOnly = states.unknown.filter((row) => row.reason === 'folder-only').length;
   const counts = {
     current: states.current.length,
     stale: states.stale.length,
     missing: states.missing.length,
     unknown: states.unknown.length,
+    folderOnly,
   };
   const hint =
     counts.stale + counts.missing > 0
-      ? `${counts.stale} concept(s) have code that changed after their document was last touched and ${counts.missing} cite a path that is gone: read those files before trusting the recorded meaning, then update the document (patch_concept) or the path.`
+      ? `${counts.stale} concept(s) have a cited file that changed after their document was last touched and ${counts.missing} cite a path that is gone: read those files before trusting the recorded meaning, then update the document (patch_concept) or the path. ${counts.folderOnly} more cite only a folder that changed underneath (unknown, not stale): name a file in path: to make them checkable.`
       : counts.current > 0
         ? `all ${counts.current} dated concept(s) still stand on unchanged code; ${counts.unknown} could not be dated (no evidence path, or no commit in the walk window).`
         : `no concept could be dated (${counts.unknown} unknown): commits may be missing or older than the walk window.`;
@@ -325,6 +328,7 @@ function buildEvidenceDrift(docs, repoRoot, vaultRoot) {
     counts,
     stale: states.stale.slice(0, EVIDENCE_ROW_LIMIT),
     missing: states.missing.slice(0, EVIDENCE_ROW_LIMIT),
+    folderOnly: states.unknown.filter((row) => row.reason === 'folder-only').slice(0, EVIDENCE_ROW_LIMIT).map((row) => ({ slug: row.slug, kind: row.kind, docChangedAt: row.docChangedAt ?? null, folders: row.folders ?? [] })),
     hint,
   };
 }

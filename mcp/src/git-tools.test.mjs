@@ -449,8 +449,10 @@ test('collectPathLastChanges dates repo paths and vault documents in one walk an
     assert.equal(doc.exists, true);
     assert.ok(Date.parse(pay.lastChangedAt) > Date.parse(doc.lastChangedAt));
     assert.equal(result.changes.get('src').lastChangedAt, pay.lastChangedAt);
-    assert.deepEqual(result.changes.get('src/gone.ts'), { exists: false, lastChangedAt: null });
-    assert.deepEqual(result.changes.get('never.md'), { exists: false, lastChangedAt: null });
+    assert.equal(result.changes.get('src').isDir, true);
+    assert.equal(pay.isDir, false);
+    assert.deepEqual(result.changes.get('src/gone.ts'), { exists: false, isDir: false, lastChangedAt: null });
+    assert.deepEqual(result.changes.get('never.md'), { exists: false, isDir: false, lastChangedAt: null });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

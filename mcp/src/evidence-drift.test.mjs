@@ -27,6 +27,11 @@ test('resolveEvidenceStates states current, stale, missing and unknown from chan
     ['src/legacy/pay.js', { exists: true, lastChangedAt: '2026-09-01T00:00:00Z' }],
   ]);
   const states = resolveEvidenceStates(concepts, changes);
+  changes.set('src/pay-ui.tsx', { exists: true, isDir: true, lastChangedAt: '2026-09-15T00:00:00Z' });
+  const folderOnly = resolveEvidenceStates(concepts, changes).unknown.find((row) => row.slug === 'elements/pay-ui');
+  assert.equal(folderOnly?.reason, 'folder-only');
+  assert.deepEqual(folderOnly?.folders, [{ path: 'src/pay-ui.tsx', changedAt: '2026-09-15T00:00:00Z' }]);
+  changes.set('src/pay-ui.tsx', { exists: true, lastChangedAt: '2026-09-01T00:00:00Z' });
   assert.deepEqual(states.stale.map((row) => row.slug), ['capabilities/pay']);
   assert.deepEqual(states.stale[0].moved, [{ path: 'src/pay.ts', changedAt: '2026-09-12T00:00:00Z' }]);
   assert.deepEqual(states.current.map((row) => row.slug), ['elements/pay-ui']);

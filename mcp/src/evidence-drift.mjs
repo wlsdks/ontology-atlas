@@ -55,8 +55,11 @@ function toMs(value) {
 
 /**
  * Per concept: `current` (every cited path exists and none changed after the document),
- * `stale` (a cited path changed after the document), `missing` (a cited path is gone),
- * `unknown` (nothing cited, or a change time the walk could not supply).
+ * `stale` (a cited file changed after the document), `missing` (a cited path is gone),
+ * `unknown` (nothing cited, a change time the walk could not supply, or only a folder-level
+ * path moved — a folder changes on almost any commit, so that says "something under it
+ * moved", never "the meaning stands on moved ground"; such rows carry `reason:
+ * 'folder-only'` and the folders that moved).
  */
 export function resolveEvidenceStates(concepts, changes) {
   const states = { current: [], stale: [], missing: [], unknown: [] };
@@ -69,6 +72,7 @@ export function resolveEvidenceStates(concepts, changes) {
     const docMs = toMs(doc?.lastChangedAt ?? null);
     let verdict = 'current';
     const moved = [];
+    const folders = [];
     const gone = [];
     for (const path of concept.evidencePaths) {
       const change = changes.get(path);
@@ -85,7 +89,10 @@ export function resolveEvidenceStates(concepts, changes) {
         continue;
       }
       const changeMs = toMs(change.lastChangedAt);
-      if (changeMs != null && changeMs > docMs) moved.push({ path, changedAt: change.lastChangedAt });
+      if (changeMs != null && changeMs > docMs) {
+        if (change.isDir) folders.push({ path, changedAt: change.lastChangedAt });
+        else moved.push({ path, changedAt: change.lastChangedAt });
+      }
     }
     if (gone.length) verdict = 'missing';
     else if (moved.length) verdict = 'stale';
@@ -93,6 +100,7 @@ export function resolveEvidenceStates(concepts, changes) {
     if (verdict === 'stale') states.stale.push({ ...row, docChangedAt: doc?.lastChangedAt ?? null, moved });
     else if (verdict === 'missing') states.missing.push({ ...row, gone });
     else if (verdict === 'unknown') states.unknown.push({ ...row, reason: docMs == null ? 'document-time-unknown' : 'path-time-unknown' });
+    else if (folders.length) states.unknown.push({ ...row, reason: 'folder-only', docChangedAt: doc?.lastChangedAt ?? null, folders });
     else states.current.push(row);
   }
   return states;
