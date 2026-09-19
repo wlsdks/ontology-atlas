@@ -195,6 +195,9 @@ test.describe("하네스 탭", () => {
     await expect(loop).not.toContainText("아직 없음");
     await expect(anatomy).not.toContainText("%");
 
+    // The half the rows cannot do: handing the reading to an agent without retyping it.
+    await expect(page.getByTestId("harness-anatomy-brief")).toBeVisible();
+
     // The chain: a turn inside a governed folder pays the always-read set plus that folder's file,
     // which is the mechanic the tool documents and a flat per-repository number cannot express.
     await expect(page.getByTestId("harness-anatomy-slot-scoped")).toContainText("가장 깊은 사슬");

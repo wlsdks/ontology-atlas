@@ -12,6 +12,7 @@ import {
   type AnatomyBand,
   type AnatomySlot,
 } from '../model/harness-anatomy';
+import { buildHarnessBrief } from '../model/harness-brief';
 
 /**
  * **What this repository hands an agent, in the order the agent meets it.**
@@ -34,6 +35,9 @@ import {
  */
 
 const BAND_ORDER: readonly AnatomyBand[] = ['tells', 'gates', 'watches'];
+
+/** The copied-acknowledgement key for the handover, which is not one of the slots. */
+const BRIEF_ID = '__brief__';
 
 /**
  * The amber pair this screen's one warning wears, taken from the guides view's `WARNING_BADGE` so
@@ -196,13 +200,29 @@ function formatKb(bytes: number): string {
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
-export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
+export function HarnessAnatomyView({
+  report,
+  sourceRoot,
+}: {
+  report: HarnessReport;
+  /** The repository this reading is about. It belongs in the handover, not only in the footer. */
+  sourceRoot: string;
+}) {
   const t = useTranslations('harness');
   const anatomy = useMemo(() => buildHarnessAnatomy(report), [report]);
   const toolSlot = anatomy.slots.find((slot) => slot.band === 'tool');
   /* One id, not a set: a second copy replaces the first acknowledgement rather than leaving a
      column of green checks behind, which is what the other copy affordances in this product do. */
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const copyBrief = useCallback(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    void navigator.clipboard
+      ?.writeText(buildHarnessBrief(anatomy, report, sourceRoot, today))
+      .then(
+        () => setCopiedId(BRIEF_ID),
+        () => undefined,
+      );
+  }, [anatomy, report, sourceRoot]);
   const copy = useCallback((slot: AnatomySlot) => {
     if (!slot.fillPath) return;
     void navigator.clipboard?.writeText(slot.fillPath).then(
@@ -233,6 +253,21 @@ export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
         <InfoHint align="left" label={t('anatomyProvenanceLabel')}>
           {t('anatomyProvenance')}
         </InfoHint>
+        {/*
+          **The half the rows cannot do.** The screen shows what is here and offers the address for
+          what is not, and then the person has to retype all of it into whatever agent they use.
+          This hands it over once and correctly — as a description, in English, carrying its own
+          limits, because an agent given "5 gates" with no qualifier will tell its user the
+          repository is protected.
+        */}
+        <CompactCopyButton
+          data-testid="harness-anatomy-brief"
+          copied={copiedId === BRIEF_ID}
+          label={copiedId === BRIEF_ID ? t('anatomyBriefCopied') : t('anatomyBrief')}
+          ariaLabel={t('anatomyBriefAria')}
+          onClick={copyBrief}
+          className="ml-auto"
+        />
       </div>
 
       {/*

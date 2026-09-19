@@ -38,7 +38,7 @@ function report(partial: Partial<HarnessReport> = {}): HarnessReport {
 function mount(value: HarnessReport) {
   return render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
-      <HarnessAnatomyView report={value} />
+      <HarnessAnatomyView report={value} sourceRoot="/repo" />
     </NextIntlClientProvider>,
   );
 }

@@ -368,7 +368,10 @@ function HarnessPageInner() {
               <div className="architecture-result-arrive">
                 {view === 'structure' ? (
                   <>
-                    <HarnessAnatomyView report={reportState.report} />
+                    <HarnessAnatomyView
+                      report={reportState.report}
+                      sourceRoot={reportState.sourceRoot}
+                    />
                     <p className="mt-6 font-mono text-caption text-[color:var(--color-text-quaternary)]">
                       {t('sourceRoot', { path: reportState.sourceRoot })}
                     </p>

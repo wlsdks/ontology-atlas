@@ -502,7 +502,10 @@
     "anatomySilentGuards": "{count, plural, one {# script this config names is not on disk} other {# scripts these configs name are not on disk}}: {scripts}. That produces no block and no error; the guard is simply absent.",
     "anatomyChainWeight": "the deepest chain, {path}, adds {size} for {total} a turn",
     "anatomyChainWeightLabel": "How the chain is merged",
-    "anatomyChainWeightHint": "A coding agent concatenates the AGENTS.md files it meets from the repository root down to the folder it is working in, at most one per directory, with the nearer file overriding what came before. So a turn does not have one cost per repository: it is the always-read set plus whatever that folder adds. The figure here is the deepest chain, which is the most expensive case; work in a shallower folder costs less."
+    "anatomyChainWeightHint": "A coding agent concatenates the AGENTS.md files it meets from the repository root down to the folder it is working in, at most one per directory, with the nearer file overriding what came before. So a turn does not have one cost per repository: it is the always-read set plus whatever that folder adds. The figure here is the deepest chain, which is the most expensive case; work in a shallower folder costs less.",
+    "anatomyBrief": "Hand to an agent",
+    "anatomyBriefCopied": "Copied",
+    "anatomyBriefAria": "Copy this reading as text for an agent"
   },
   "architecture": {
     "eyebrow": "CODE ARCHITECTURE",
