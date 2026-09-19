@@ -108,7 +108,7 @@ describe('LibraryConstellations', () => {
     fireEvent.click(screen.getByTestId('library-constellation-member-44444444-4444-4444-8444-444444444444'));
     expect(mocks.push).toHaveBeenLastCalledWith('/library/?tab=ontology&slug=capabilities%2Fcheckout');
 
-    fireEvent.click(screen.getByRole('button', { name: 'View Ontology write review in Galaxy' }));
+    fireEvent.click(screen.getByRole('button', { name: 'View Ontology write review on the map' }));
     expect(mocks.push).toHaveBeenLastCalledWith(
       '/topology/?constellation=33333333-3333-4333-8333-333333333333',
     );
@@ -125,7 +125,7 @@ describe('LibraryConstellations', () => {
     });
 
     renderView([]);
-    fireEvent.click(screen.getByRole('button', { name: 'Create in Galaxy' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pick on the map' }));
 
     expect(mocks.useSavedConstellations).toHaveBeenCalledWith(HANDLE);
     expect(mocks.push).toHaveBeenCalledWith('/topology/?constellation=new');
