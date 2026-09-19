@@ -1356,6 +1356,197 @@ pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
     })
 }
 
+// ── restore one document ────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitRestoreResult {
+    /// Whether the working file was rewritten by this call.
+    restored: bool,
+    /// Vault-relative path of the one document touched.
+    path: String,
+    /// `HEAD` or the commit hash the content came from.
+    source: String,
+    /// What the document was before (`added` / `modified` / `deleted` / `renamed`), `None` when clean.
+    previous_status: Option<String>,
+}
+
+/// The three frontmatter lines that make a document *the same document* to the rest of the
+/// vault. `mcp/src/schema.mjs` owns them: `uid` is immutable and writer-minted, `slug` is what
+/// neighbours link to, and `merged_uids` records which documents were folded into this one.
+#[derive(Debug, Default, PartialEq, Eq)]
+struct DocumentIdentity {
+    uid: Option<String>,
+    slug: Option<String>,
+    merged_uids: bool,
+}
+
+/// Reads identity from a document's leading `---` block. Best-effort like `read_kind_slug`:
+/// a file without frontmatter has no identity, and two such files compare equal.
+fn read_identity(raw: &str) -> DocumentIdentity {
+    let mut identity = DocumentIdentity::default();
+    let mut lines = raw.lines();
+    if lines.next().map(|l| l.trim_end()) != Some("---") {
+        return identity;
+    }
+    for line in lines {
+        let trimmed = line.trim_end();
+        if trimmed == "---" {
+            break;
+        }
+        if let Some(rest) = line.strip_prefix("uid:") {
+            let value = unquote(rest.trim());
+            if !value.is_empty() {
+                identity.uid = Some(value);
+            }
+        } else if let Some(rest) = line.strip_prefix("slug:") {
+            let value = unquote(rest.trim());
+            if !value.is_empty() {
+                identity.slug = Some(value);
+            }
+        } else if line.starts_with("merged_uids:") {
+            identity.merged_uids = true;
+        }
+    }
+    identity
+}
+
+/// Names the first identity field that would change, in the words the error line carries.
+fn identity_difference(current: &DocumentIdentity, source: &DocumentIdentity) -> Option<String> {
+    if current.uid != source.uid {
+        return Some(format!(
+            "uid {} -> {}",
+            current.uid.as_deref().unwrap_or("(none)"),
+            source.uid.as_deref().unwrap_or("(none)")
+        ));
+    }
+    if current.slug != source.slug {
+        return Some(format!(
+            "slug {} -> {}",
+            current.slug.as_deref().unwrap_or("(none)"),
+            source.slug.as_deref().unwrap_or("(none)")
+        ));
+    }
+    if current.merged_uids && !source.merged_uids {
+        return Some("merged_uids would be dropped".into());
+    }
+    None
+}
+
+/// The document path the command may touch, **as the screen holds it**: repository-relative
+/// like every `ChangeEntry.path` from `git_status` and `git_history`. Relative, forward slashes,
+/// no `..`, no empty or dot segments, no backslashes, and inside the vault's pathspec.
+/// Anything else is refused before git sees it. Returns the normalized repo-relative path.
+fn vault_document_path(relative_path: &str, vault_spec: &str) -> Result<String, String> {
+    let trimmed = relative_path.trim();
+    if trimmed.is_empty() || trimmed.starts_with('/') || trimmed.contains('\\') || trimmed.contains('\0') {
+        return Err(coded("restore-path-invalid", ""));
+    }
+    let mut parts = Vec::new();
+    for segment in trimmed.split('/') {
+        if segment.is_empty() || segment == "." || segment == ".." {
+            return Err(coded("restore-path-invalid", ""));
+        }
+        parts.push(segment);
+    }
+    let normalized = parts.join("/");
+    let inside = vault_spec == "." || normalized.starts_with(&format!("{vault_spec}/"));
+    if !inside {
+        return Err(coded("restore-path-invalid", ""));
+    }
+    Ok(normalized)
+}
+
+/// `HEAD`, or an abbreviated-to-full hex hash. Refs, ranges and options never reach git.
+fn validate_restore_source(source: &str) -> Result<String, String> {
+    let trimmed = source.trim();
+    if trimmed == "HEAD" {
+        return Ok(trimmed.into());
+    }
+    let hex = trimmed.len() >= 7
+        && trimmed.len() <= 40
+        && trimmed.chars().all(|c| c.is_ascii_hexdigit());
+    if hex {
+        Ok(trimmed.to_ascii_lowercase())
+    } else {
+        Err(coded("restore-source-invalid", ""))
+    }
+}
+
+/// Put **one** document back to the content it had at `source` — `HEAD` discards its
+/// uncommitted changes, a hash brings that commit's version back as an uncommitted change.
+///
+/// This is the app's first write to a document's *content*, so it is narrower than git:
+/// - the path must resolve inside the vault (`vault_document_path`), and only that path is
+///   named to git;
+/// - a document git has never committed is not "restored" to `HEAD`, because that would
+///   delete it (`restore-untracked`);
+/// - a source that does not hold the document is refused (`restore-source-missing`);
+/// - a source whose `uid`, `slug` or `merged_uids` differs from the file on disk is refused
+///   (`restore-identity-mismatch`), because the rest of the vault links to the current identity
+///   and `git restore` is identity-blind (steward review, 2026-09-19).
+///
+/// Nothing is committed. **Called only from a confirm button** — the trust charter's zero
+/// automatic execution is the caller's to hold, and this command chains into nothing.
+#[tauri::command]
+pub fn git_restore_file(
+    vault_path: String,
+    relative_path: String,
+    source: String,
+) -> Result<GitRestoreResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let vault_spec = vault_pathspec(&repo_root, &vault_dir);
+    let repo_rel = vault_document_path(&relative_path, &vault_spec)?;
+    let src = validate_restore_source(&source)?;
+
+    let rows = get_porcelain_status(&repo_root, &repo_rel)?;
+    let row = rows.iter().find(|r| r.path == repo_rel);
+    let previous_status = row.map(|r| classify_change(r).to_string());
+    if src == "HEAD" {
+        if let Some(r) = row {
+            if (r.index == '?' && r.worktree == '?') || r.index == 'A' {
+                return Err(coded("restore-untracked", ""));
+            }
+        }
+    }
+
+    let show = run_git(&repo_root, &["show", &format!("{src}:{repo_rel}")])?;
+    if !show.success {
+        return Err(coded("restore-source-missing", ""));
+    }
+    if let Ok(current) = fs::read_to_string(repo_root.join(&repo_rel)) {
+        if let Some(difference) = identity_difference(&read_identity(&current), &read_identity(&show.stdout)) {
+            return Err(coded("restore-identity-mismatch", difference));
+        }
+    }
+
+    let run = run_git(
+        &repo_root,
+        &[
+            "restore",
+            &format!("--source={src}"),
+            "--worktree",
+            "--staged",
+            "--",
+            &repo_rel,
+        ],
+    )?;
+    if !run.success {
+        return Err(coded(
+            "git-restore-failed",
+            first_nonempty_line(&run.stderr).unwrap_or_default(),
+        ));
+    }
+
+    Ok(GitRestoreResult {
+        restored: true,
+        path: repo_rel,
+        source: src,
+        previous_status,
+    })
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitSetRemoteResult {
@@ -1750,6 +1941,60 @@ mod tests {
     fn validate_vault_dir_rejects_missing_path() {
         let err = validate_vault_dir("/path/does/not/exist/atlas").unwrap_err();
         assert!(!err.is_empty());
+    }
+
+    #[test]
+    fn restore_path_stays_inside_the_vault() {
+        assert_eq!(vault_document_path("domains/orders.md", ".").unwrap(), "domains/orders.md");
+        assert_eq!(vault_document_path(" domains/orders.md ", ".").unwrap(), "domains/orders.md");
+        assert_eq!(
+            vault_document_path("docs/ontology/domains/orders.md", "docs/ontology").unwrap(),
+            "docs/ontology/domains/orders.md"
+        );
+        for bad in ["", "/etc/passwd", "../outside.md", "a/../b.md", "a//b.md", "./a.md", "a\\b.md"] {
+            let err = vault_document_path(bad, ".").unwrap_err();
+            assert!(err.starts_with("restore-path-invalid"), "{bad}: {err}");
+        }
+        // A repository path outside the vault's folder is refused even though git could touch it.
+        for outside in ["README.md", "docs/other/x.md", "docs/ontologyx/a.md"] {
+            let err = vault_document_path(outside, "docs/ontology").unwrap_err();
+            assert!(err.starts_with("restore-path-invalid"), "{outside}: {err}");
+        }
+    }
+
+    #[test]
+    fn restore_source_is_head_or_a_hash() {
+        assert_eq!(validate_restore_source("HEAD").unwrap(), "HEAD");
+        assert_eq!(validate_restore_source("A1B2C3D").unwrap(), "a1b2c3d");
+        for bad in ["", "HEAD~1", "main", "abc", "--output=x", "a1b2c3d..a1b2c3e"] {
+            let err = validate_restore_source(bad).unwrap_err();
+            assert!(err.starts_with("restore-source-invalid"), "{bad}: {err}");
+        }
+    }
+
+    #[test]
+    fn identity_guard_names_the_field_that_would_change() {
+        let now = "---\nuid: 11111111\nslug: domains/orders\nmerged_uids: [22222222]\n---\n# Orders\n";
+        let same = "---\nuid: \"11111111\"\nslug: 'domains/orders'\nmerged_uids: [22222222]\n---\nolder body\n";
+        assert_eq!(identity_difference(&read_identity(now), &read_identity(same)), None);
+
+        let other_uid = "---\nuid: 99999999\nslug: domains/orders\nmerged_uids: [22222222]\n---\n";
+        assert_eq!(
+            identity_difference(&read_identity(now), &read_identity(other_uid)).as_deref(),
+            Some("uid 11111111 -> 99999999")
+        );
+        let renamed = "---\nuid: 11111111\nslug: domains/order\nmerged_uids: [22222222]\n---\n";
+        assert_eq!(
+            identity_difference(&read_identity(now), &read_identity(renamed)).as_deref(),
+            Some("slug domains/orders -> domains/order")
+        );
+        let pre_merge = "---\nuid: 11111111\nslug: domains/orders\n---\n";
+        assert_eq!(
+            identity_difference(&read_identity(now), &read_identity(pre_merge)).as_deref(),
+            Some("merged_uids would be dropped")
+        );
+        // A body-only file on both sides has no identity to disagree about.
+        assert_eq!(identity_difference(&read_identity("# a"), &read_identity("# b")), None);
     }
 
     #[test]
