@@ -1122,6 +1122,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const prevExpandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** Density gate — this frame's cluster chips (world-anchored). Hit-testing reads it. */
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
+  const lastTapRef = useRef<{ nodeId: string; at: number } | null>(null);
   /**
    * The nodes this frame did **not** draw: density-gate collapsed ones plus
    * neighbours hidden by selective ego. Pointer hit-testing reads it to exclude
@@ -6164,6 +6165,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
+    lastTapRef,
     expandPrefRef,
     clusterBarLabelsRef,
     clusteredIdsRef,
