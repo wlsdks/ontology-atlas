@@ -25,6 +25,14 @@ import { computeHoverShimmer } from "../model/hover-shimmer";
 import { drawStarEmission } from "@/shared/lib/star-emission";
 import { drawDiffractionSpike } from "@/shared/lib/diffraction-spike";
 
+/**
+ * How far outside the disc the recent-changes ring is drawn. The label placer
+ * reserves it too (`topology-frame-draw.ts`), so a name is not laid across a
+ * neighbour's ring: with the lens on, two names crossed rings on the fixture
+ * vault while the placer reserved only the disc (measured 2026-09-19).
+ */
+export const SPOTLIGHT_RING_OFFSET = 6;
+
 export interface Point {
   x: number;
   y: number;
@@ -1007,7 +1015,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   if (spotlightRing !== null && egoState !== "dim") {
     ctx.setLineDash([5, 4]);
     ctx.lineDashOffset = -spotlightRing.dashOffset;
-    strokeKindOutline(ctx, kind, x, y, r + 6, farT, tokens.recentChange, 1.2, spotlightRing.alpha);
+    strokeKindOutline(ctx, kind, x, y, r + SPOTLIGHT_RING_OFFSET, farT, tokens.recentChange, 1.2, spotlightRing.alpha);
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
   }
