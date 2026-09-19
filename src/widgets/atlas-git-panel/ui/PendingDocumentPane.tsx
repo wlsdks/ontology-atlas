@@ -171,7 +171,7 @@ function fileName(path: string): string {
  * as context). When that read is unavailable (the web, a stub, a failed read) the hunk
  * diff already on screen is drawn instead, so the pane never goes blank.
  */
-function DocumentChangeReader({
+export function DocumentChangeReader({
   t,
   vaultPath,
   document,

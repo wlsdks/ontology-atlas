@@ -546,8 +546,9 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     // Without this assertion, the next person could revert the parser unnoticed.
     expect(patch.textContent).not.toContain("diff --git");
     expect(patch.textContent).not.toContain("index 05d74bf");
-    // The file name is carried by **the list above** — the patch box does not repeat it.
-    expect(patch.textContent).not.toContain("docs/capabilities/foo.md");
+    // The files lens reads the file with the same document reader the uncommitted pane
+    // uses (2026-09-19): one header names the document once, then its lines in prose.
+    expect(patch).toHaveTextContent("추가된 줄:");
   });
 
   it("새 걸음으로 바뀐 뒤 늦은 이전 git show 응답을 버린다", async () => {
