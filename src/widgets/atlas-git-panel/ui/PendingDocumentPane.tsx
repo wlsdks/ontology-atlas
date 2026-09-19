@@ -223,9 +223,17 @@ export function DocumentChangeReader({
    */
   const longDocument = tooLarge && fallback !== null;
   const partial = !longDocument && (whole === null || !vaultPath) && fallback !== null;
+  /*
+   * Only a concept document is prose. A file that rides along in the commit — an ignore
+   * file, a config — is characters, and reading it as Markdown misnames them: an ignore
+   * file's first line is a comment (`# Serena MCP project cache`), and the prose reader drew
+   * it as the document's title. Such a file has no front matter either; its leading `---`,
+   * if any, is three hyphens.
+   */
+  const isDocument = kind !== null;
   const { frontmatter, body, lines, frontmatterChanged, firstHeadingIndex } = useMemo(() => {
     const all = file?.lines ?? [];
-    const split = splitFrontmatter(all);
+    const split = isDocument ? splitFrontmatter(all) : { frontmatter: [] as Line[], body: [...all] };
     // The body's first heading repeats the header's name; drawn twice at the same size,
     // 280px apart, it was the pane's second mass (lead seat).
     const firstHeading = split.body.findIndex((line) => /^#{1,3}\s+/.test(line.text));
@@ -235,7 +243,7 @@ export function DocumentChangeReader({
       frontmatterChanged: split.frontmatter.some((line) => line.kind !== "context"),
       firstHeadingIndex: firstHeading,
     };
-  }, [file]);
+  }, [file, isDocument]);
   const added = file?.added ?? 0;
   const removed = file?.removed ?? 0;
 
@@ -313,9 +321,13 @@ export function DocumentChangeReader({
       ) : null}
 
       <div className="flex flex-col">
-        {body.map((line, index) => (
-          <ProseLine key={index} t={t} line={line} hideHeadingText={index === firstHeadingIndex ? label : null} />
-        ))}
+        {body.map((line, index) =>
+          isDocument ? (
+            <ProseLine key={index} t={t} line={line} hideHeadingText={index === firstHeadingIndex ? label : null} />
+          ) : (
+            <FileLine key={index} t={t} line={line} />
+          ),
+        )}
       </div>
       </div>
     </article>
@@ -352,6 +364,35 @@ function MarkLabel({ t, kind }: { t: Translator; kind: Line["kind"] }) {
   return null;
 }
 
+/** A stretch the diff left out, drawn rather than left as blank space: hiding the cut
+ *  would make the reading a lie. */
+function SkipRule({ t }: { t: Translator }) {
+  return (
+    <p className="my-1 flex items-center gap-2 text-caption text-[color:var(--color-text-quaternary)]">
+      <span aria-hidden className="flex-1 border-t border-dashed border-[color:var(--color-border-strong)]" />
+      <span aria-hidden>⋯</span>
+      <span aria-hidden className="flex-1 border-t border-dashed border-[color:var(--color-border-strong)]" />
+      <span className="sr-only">{t("diffSkippedHint")}</span>
+    </p>
+  );
+}
+
+/** One line of a file that is not a document: its own characters, in the file face. */
+function FileLine({ t, line }: { t: Translator; line: Line }) {
+  if (line.kind === "skip") return <SkipRule t={t} />;
+  return (
+    <p
+      className={cn(
+        "-mx-2 px-2 font-mono text-caption leading-label break-all whitespace-pre-wrap text-[color:var(--color-text-tertiary)]",
+        markClass(line.kind),
+      )}
+    >
+      <MarkLabel t={t} kind={line.kind} />
+      {line.text === "" ? " " : line.text}
+    </p>
+  );
+}
+
 /** One source line as the block Markdown would make of it. */
 function ProseLine({
   t,
@@ -364,16 +405,7 @@ function ProseLine({
   hideHeadingText?: string | null;
 }) {
   const mark = markClass(line.kind);
-  if (line.kind === "skip") {
-    return (
-      <p className="my-1 flex items-center gap-2 text-caption text-[color:var(--color-text-quaternary)]">
-        <span aria-hidden className="flex-1 border-t border-dashed border-[color:var(--color-border-strong)]" />
-        <span aria-hidden>⋯</span>
-        <span aria-hidden className="flex-1 border-t border-dashed border-[color:var(--color-border-strong)]" />
-        <span className="sr-only">{t("diffSkippedHint")}</span>
-      </p>
-    );
-  }
+  if (line.kind === "skip") return <SkipRule t={t} />;
   const text = line.text;
   if (text.trim() === "") {
     // A blank line is rhythm; an added or removed blank line is still a change and keeps its tint.

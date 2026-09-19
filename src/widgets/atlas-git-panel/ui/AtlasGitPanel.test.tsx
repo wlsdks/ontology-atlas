@@ -1759,3 +1759,31 @@ describe("AtlasGitPanel — 읽기 창은 그리는 것을 사실대로 말한�
     expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("unchanged body line");
   });
 });
+
+describe("AtlasGitPanel — 개념이 아닌 파일은 산문이 아니다", () => {
+  it("무시 파일의 주석 줄을 문서 제목으로 그리지 않는다", async () => {
+    installDesktopGit({
+      diff: {
+        count: 1,
+        files: [
+          { path: ".ontology-atlasignore", status: "modified", kind: null, slug: ".ontology-atlasignore", renamedFrom: null },
+        ],
+        diff: "",
+      },
+      documentDiff: () => ({
+        path: ".ontology-atlasignore",
+        diff: "diff --git a/.ontology-atlasignore b/.ontology-atlasignore\n@@ -1,2 +1,3 @@\n # cache files, not a heading\n+build/\n",
+        untracked: false,
+        tooLarge: false,
+      }),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-pending-row"));
+    const reader = await screen.findByTestId("atlas-git-diff-pre");
+    await waitFor(() => expect(reader).toHaveTextContent("cache files, not a heading"));
+    // The file's own characters, not Markdown: the comment stays a line, and only the
+    // document's name is a heading on this pane.
+    expect(reader.querySelectorAll("h3, h4")).toHaveLength(0);
+    expect(reader).toHaveTextContent("build/");
+  });
+});
