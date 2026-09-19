@@ -2301,7 +2301,7 @@
       "connectionReady": "file ready",
       "connectionNeedsReview": "review",
       "connectionCheckReady": "The connection files are ready. Restart the agent and it starts reading this folder.",
-      "connectionCheckPending": "{ready}/{total} connection files ready. Fill in the rest in step 1.",
+      "connectionCheckPending": "{ready}/{total} connection files ready. The connect button on a tool's row writes the rest.",
       "connectionHint": ".mcp.json.example is a template for another folder, so it is not counted as a connection file. This screen checks the launch shape and folder path; restart the agent and confirm the live connection inside each tool.",
       "boundaryTitle": "This is where outside tools get wired in",
       "boundaryDesc": "This panel connects Claude Code, Codex and Cursor for use in their own app or terminal; it does not open a chat here. The in-app Claude Agent chat, which asks first before touching anything outside the folder, is its own screen.",
