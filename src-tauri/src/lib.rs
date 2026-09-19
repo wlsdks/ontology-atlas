@@ -2834,8 +2834,7 @@ fn read_library_collections(root_path: String) -> Result<Option<String>, String>
     {
         let root = canonical_root(&root_path)?;
         let root_handle = agent_setup::open_absolute_directory_no_follow(&root)?;
-        let Some(parent) =
-            agent_setup::open_relative_directory(&root_handle, Path::new(DIRECTORY))?
+        let Some(parent) = agent_setup::open_relative_directory(&root_handle, Path::new(DIRECTORY))?
         else {
             return Ok(None);
         };
@@ -2970,11 +2969,14 @@ mod library_collections_write_tests {
         assert!(read_library_collections(root_path.clone())
             .unwrap_err()
             .contains("1 MiB"));
-        let write_error =
-            match write_library_collections(root_path, None, "x".repeat(1024 * 1024 + 1)) {
-                Err(error) => error,
-                Ok(_) => panic!("oversized collection preferences were accepted"),
-            };
+        let write_error = match write_library_collections(
+            root_path,
+            None,
+            "x".repeat(1024 * 1024 + 1),
+        ) {
+            Err(error) => error,
+            Ok(_) => panic!("oversized collection preferences were accepted"),
+        };
         assert!(write_error.contains("1 MiB"));
         std::fs::remove_dir_all(root).unwrap();
     }
@@ -4272,7 +4274,6 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-
     #[test]
     fn a_logged_line_is_trimmed_and_capped() {
         assert_eq!(
