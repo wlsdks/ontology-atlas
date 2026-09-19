@@ -695,6 +695,25 @@ export function AcpChatPanel({
    * stderr (measured 2026-08-19).
    */
   const trouble = error ? readAcpTrouble(error, diagnostics) : null;
+  /**
+   * ⚠️ **The card must not name an action it does not offer** (owner, installed app, 2026-08-24:
+   * *"if this is normal I still would not know what to do"*). That rule is why Retry moved into
+   * this card, and the usage-limit sentence had quietly broken it again: it ended 「until then pick
+   * another tool below and carry on」 while the footer showed the tool's **name**, not a picker.
+   *
+   * Measured 2026-09-19 with one tool installed — the ordinary case, and the one that hits a usage
+   * limit: no runtime picker, no mode picker, and a disabled composer. The only controls on screen
+   * were Retry, the connection check, New chat and Send. There was no other tool to pick, and
+   * nothing said so.
+   *
+   * A second tool is exactly what `runtimes`/`onRuntimeChange` already decide the footer picker by,
+   * so the sentence is chosen by the same fact the control is. Nothing is added to the screen; one
+   * of the two is simply true.
+   */
+  const canChooseAnotherTool = runtimes.length > 1 && Boolean(onRuntimeChange);
+  const troubleHintKey = trouble?.kind === 'limit' && !canChooseAnotherTool
+    ? 'trouble.limit.hintOnlyTool'
+    : `trouble.${trouble?.kind ?? 'unknown'}.hint`;
   const doctor = useAgentDoctor(runtimeId);
   const showDoctor = Boolean(runtimeId) && isAgentDoctorAvailable();
   const [draft, setDraft] = useState('');
@@ -1680,7 +1699,7 @@ export function AcpChatPanel({
               {t(`trouble.${trouble?.kind ?? 'unknown'}.title`)}
             </p>
             <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
-              {t(`trouble.${trouble?.kind ?? 'unknown'}.hint`)}
+              {t(troubleHintKey)}
             </p>
           </div>
           {/*
