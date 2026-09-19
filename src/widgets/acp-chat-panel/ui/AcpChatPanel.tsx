@@ -27,6 +27,7 @@ import {
 import { useTranslations } from 'next-intl';
 
 import { Chip, Disclosure, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
+import { copyText } from '@/shared/lib/copy-text';
 import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
 import { Button } from '@/shared/ui/button';
 import { formatDate } from '@/shared/lib/format-date';
@@ -2616,6 +2617,60 @@ function slugMarkComponents(
   return out;
 }
 
+/**
+ * **A command in an answer is something to run, so it has to be gettable whole.**
+ *
+ * ## Measured at the panel's own minimum (2026-09-20)
+ *
+ * With the dock at its documented floor the answer column is 260px, and
+ * `pnpm atlas compile --page wiki/architecture.md --force --locale ko` lays out at 456px.
+ * **196 of those pixels — 43% of the command — were unreachable**, behind `overflow-x: auto`
+ * and a **2px** scrollbar: nothing a trackpad offers to grab and nothing an eye reads as an
+ * affordance. There was no copy control either, so the one actionable line in the answer could
+ * be neither read nor taken.
+ *
+ * ## Why copy rather than wrap
+ *
+ * Wrapping would make it readable and lie about it: a wrapped line looks like two lines, and a
+ * person retyping from a wrapped shell command types the break. Scrolling stays — it is how you
+ * *read* the rest — and copying is how you *use* it, which is why the command is in the answer.
+ *
+ * ## Why it is always drawn
+ *
+ * Not on hover: there is no hover on a touch screen, and this repository already forbids
+ * discovery that only exists under a pointer. Not only when the block overflows either — an
+ * affordance that comes and going by width teaches people it might not be there.
+ */
+function ChatCodeBlock({ children, ...rest }: { children?: ReactNode }) {
+  const t = useTranslations('acpChat');
+  const preRef = useRef<HTMLPreElement>(null);
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+  return (
+    <div data-testid="acp-chat-code-block" className="my-2 grid gap-1 justify-items-start">
+      <pre ref={preRef} {...rest} className="atlas-scroll-quiet w-full">
+        {children}
+      </pre>
+      <Chip
+        data-testid="acp-chat-code-copy"
+        size="sm"
+        tone="muted"
+        hoverInk="strong"
+        onClick={() => {
+          // The DOM text, not the markdown source: what is copied is exactly what is shown.
+          void copyText(preRef.current?.textContent ?? '').then((ok) => setCopied(ok));
+        }}
+      >
+        {t(copied ? 'codeCopied' : 'codeCopy')}
+      </Chip>
+    </div>
+  );
+}
+
 /** The GFM table in the conversation has its own scroll to prevent columns from squishing in the narrow dock. */
 function chatMarkdownComponents(
   known: ReadonlySet<string> | undefined,
@@ -2624,6 +2679,7 @@ function chatMarkdownComponents(
   const marked = slugMarkComponents(known, onHoverSlug) ?? {};
   return {
     ...marked,
+    pre: ({ node: _node, ...props }) => <ChatCodeBlock {...props} />,
     table: ({ node: _node, ...props }) => (
       <div
         data-testid="acp-chat-markdown-table"
