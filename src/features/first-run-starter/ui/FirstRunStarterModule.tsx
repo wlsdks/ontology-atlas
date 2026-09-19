@@ -99,6 +99,14 @@ export interface FirstRunStarterModuleProps {
    */
   indexSpotlit?: boolean;
   /**
+   * The guided tour's developer step is pointing at this card's one-line
+   * command. The step says "the one line in the start card" while that line
+   * sat behind a closed disclosure, so the person saw a folded row (2026-09-19).
+   * The disclosure stands open for that step and follows the person's own
+   * toggle again after.
+   */
+  agentSpotlit?: boolean;
+  /**
    * **This vault has no map built from code yet** — nothing in it points at a real repository.
    *
    * ⚠️ Deliberately *not* "has never opened a folder" (owner correction, 2026-08-24). That is the
@@ -165,6 +173,7 @@ export function FirstRunStarterModule({
   lensActive = false,
   nodeSelected = false,
   indexSpotlit = false,
+  agentSpotlit = false,
   mapUnbuilt = false,
   agentAvailable = false,
   children,
@@ -207,6 +216,18 @@ export function FirstRunStarterModule({
   // disclosure that is collapsed by default, so only developers expand it.
   // Session state until the card remounts.
   const [cliOpen, setCliOpen] = useState(false);
+  // Derived, not stored: open while the tour points at the command, the
+  // person's own toggle otherwise.
+  const cliShown = cliOpen || agentSpotlit;
+  // The command sits at the foot of a card that scrolls; opened by the tour it
+  // ended 32 px below the card's edge, half a line showing (measured
+  // 2026-09-19). Bring it into the visible part of the card for that step.
+  const cliBridgeRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!agentSpotlit) return;
+    // Optional call: the test DOM has no scrollIntoView.
+    cliBridgeRef.current?.scrollIntoView?.({ block: "nearest" });
+  }, [agentSpotlit]);
   // The folder CTA used to go straight to the OS picker with zero explanation,
   // so a first-time user did not know what to choose. Both CTAs now pass through
   // a guidance sheet first (this card renders only for a new user with no vault,
@@ -839,7 +860,7 @@ export function FirstRunStarterModule({
         <button
           type="button"
           onClick={() => setCliOpen((open) => !open)}
-          aria-expanded={cliOpen}
+          aria-expanded={cliShown}
           aria-controls="first-run-starter-cli-bridge"
           data-testid="first-run-starter-cli-toggle"
           className={controlClass({
@@ -854,18 +875,19 @@ export function FirstRunStarterModule({
             size={ICON_SIZE.sm}
             aria-hidden
             className={`transition-transform motion-reduce:transition-none ${
-              cliOpen ? "rotate-90" : ""
+              cliShown ? "rotate-90" : ""
             }`}
           />
           {t("cliBridgeToggle")}
         </button>
-        {cliOpen ? (
+        {cliShown ? (
           /* Owner report 2026-07-23 — the label, command, and copy button split
              one row three ways, truncating the command mid-word
              ("npx ontology-atlas i…"). Split into a header row (label plus copy)
              and a full-width code line that wraps at word boundaries, so the full
              command is always visible. */
           <div
+            ref={cliBridgeRef}
             id="first-run-starter-cli-bridge"
             data-testid="first-run-starter-cli-bridge"
             className="mt-2 rounded-chip border border-[color:var(--map-panel-divider)] bg-[color:var(--map-panel-recess-a35)] px-2.5 py-2"
