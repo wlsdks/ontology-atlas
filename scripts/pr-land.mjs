@@ -138,6 +138,15 @@ export const POLL_SECONDS = 30;
  *
  * The line is read only when the lock is observed **free**, which is the rare poll, so the common
  * case costs nothing beyond the one lock read it already did.
+ *
+ * **These two refs are the whole REST cost of waiting, and that is not where anyone looks first.**
+ * Measured on 2026-09-20 against `gh api rate_limit` either side of each call: `gh pr view --json`
+ * and `gh pr checks` cost **0** — they are GraphQL, which has its own budget — while the branch
+ * protection read costs 2 and a lock read (ref plus blob) costs 2. So a waiting poll spends
+ * roughly 4 to 6 REST every 30 seconds, about 480 to 720 an hour, and the 5,000/hour account
+ * ceiling is therefore **about eight concurrent landers**. Twenty-six of them exhausted it
+ * completely that night. Anyone making polling cheaper should widen `POLL_SECONDS` or back off by
+ * queue position, not touch the pull-request reads, which are already free.
  */
 export const QUEUE_REF = 'refs/atlas/landing-queue';
 
