@@ -2295,7 +2295,7 @@
       "rootSummaryReady": "This folder's connection files already point at the folder itself",
       "rootSummaryMissing": "Set up relative to this folder · opening from another code folder needs an absolute path",
       "connectionAriaLabel": "Connection file status per tool",
-      "connectionClaudeCursor": "Claude Code · Cursor",
+      "connectionClaudeCursor": "Claude Code",
       "connectionClaudeCursorCheck": "check with /mcp",
       "connectionCodex": "Codex",
       "connectionCodexCheck": "check with codex mcp list",

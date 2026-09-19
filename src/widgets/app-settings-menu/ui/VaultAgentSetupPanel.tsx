@@ -575,6 +575,14 @@ export function VaultAgentSetupPanel({
   ] as const;
   const agentSetupConnections = [
     {
+      /*
+       * ⚠️ **`.mcp.json` is Claude Code's file, and only its** (2026-09-20). This row read
+       * "Claude Code · Cursor" and credited both to the same check, but Cursor's project scope
+       * is `.cursor/mcp.json` — the repo's own 2026-07-30 research, and what `AGENT_CLIENTS`
+       * writes for it. Atlas reads two files, this one and Codex's; the other two it writes and
+       * never reads back, which `connectionHint` already tells the reader to confirm inside the
+       * tool. Naming Cursor here said Atlas had checked something it had not looked at.
+       */
       key: 'claudeCursor',
       file: agentSetupFiles[0],
       label: t('agentSetup.connectionClaudeCursor'),

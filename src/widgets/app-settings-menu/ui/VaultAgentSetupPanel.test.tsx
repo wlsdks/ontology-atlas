@@ -319,7 +319,10 @@ describe('VaultAgentSetupPanel', () => {
     const connections = screen.getByRole('list', {
       name: '도구별 연결 파일 상태',
     });
-    expect(within(connections).getByText('Claude Code · Cursor')).toBeInTheDocument();
+    // Only the two files Atlas reads are named here; Cursor's own scope is .cursor/mcp.json,
+    // which this screen writes and never reads back.
+    expect(within(connections).getByText('Claude Code')).toBeInTheDocument();
+    expect(within(connections).queryByText(/Cursor/)).toBeNull();
     expect(within(connections).getByText('.mcp.json')).toBeInTheDocument();
     expect(within(connections).getByText('Codex')).toBeInTheDocument();
     expect(within(connections).getByText('.codex/config.toml')).toBeInTheDocument();

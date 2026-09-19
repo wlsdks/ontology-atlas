@@ -2295,7 +2295,7 @@
       "rootSummaryReady": "이 폴더의 연결 파일은 폴더 자신을 가리키도록 준비됐어요",
       "rootSummaryMissing": "이 폴더 기준으로 설정돼요 · 다른 코드 폴더에서 열려면 절대경로가 필요해요",
       "connectionAriaLabel": "도구별 연결 파일 상태",
-      "connectionClaudeCursor": "Claude Code · Cursor",
+      "connectionClaudeCursor": "Claude Code",
       "connectionClaudeCursorCheck": "/mcp로 확인",
       "connectionCodex": "Codex",
       "connectionCodexCheck": "codex mcp list로 확인",
