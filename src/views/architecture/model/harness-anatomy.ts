@@ -237,6 +237,22 @@ export function permissionCounts(
 
 export interface HarnessAnatomy {
   slots: readonly AnatomySlot[];
+  /**
+   * Bytes in the always-read set — the root instruction files plus every rule with no path scope.
+   *
+   * **The one number harness engineering is actually about.** Every source this view borrows from
+   * says the same thing in its own words: context is the scarce resource, and what a repository
+   * spends before the agent has read a single line of code is spent on every turn, in every
+   * session, by every tool. OpenAI's guidance is that AGENTS.md should be a table of contents
+   * rather than an encyclopedia; Codex truncates the merge past its cap without saying so; a
+   * Claude session pays it as resident context.
+   *
+   * The count beside it cannot carry this: three documents of 2 KB and three of 40 KB are the same
+   * "3", and the difference is the whole subject. The guides table shows per-file sizes against a
+   * cap, which answers "is this one file too big"; this answers "what does a turn cost here", and
+   * they are different questions.
+   */
+  alwaysBytes: number;
   /** `permissions.deny` / `ask` counts, or `null` when no settings file parsed. */
   permissions: { allow: number; deny: number; ask: number } | null;
   /** Configs that gate execution behind an approval this app cannot read (Codex). */
@@ -266,6 +282,7 @@ export const ANATOMY_ORDER: readonly AnatomySlotId[] = [
  */
 export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
   const always: string[] = [];
+  let alwaysBytes = 0;
   const scoped: string[] = [];
   const skills: string[] = [];
   const subagents: string[] = [];
@@ -303,12 +320,17 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
        * paths, so a repository with no ontology would have every conditional rule silently promoted
        * to always-loaded — the one reading this row must never produce.
        */
-      if (declaresPathScope(report.contents.get(record.path))) scoped.push(record.path);
-      else always.push(record.path);
+      if (declaresPathScope(report.contents.get(record.path))) {
+        scoped.push(record.path);
+      } else {
+        always.push(record.path);
+        alwaysBytes += record.bytes;
+      }
       continue;
     }
     /* Root instruction files: CLAUDE.md, AGENTS.md, GEMINI.md, copilot-instructions. */
     always.push(record.path);
+    alwaysBytes += record.bytes;
   }
 
   const servers = toolConfigs.flatMap((path) => mcpServerNames(report.contents.get(path)) ?? []);
@@ -407,6 +429,7 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
   const byId = new Map(slots.map((entry) => [entry.id, entry]));
   return {
     slots: ANATOMY_ORDER.map((id) => byId.get(id)!),
+    alwaysBytes,
     permissions,
     approvalGates: uniqueSorted(approvalGates),
   };

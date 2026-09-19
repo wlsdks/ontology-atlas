@@ -134,6 +134,17 @@ test.describe("하네스 탭", () => {
      * about the two readings it must never allow — a grade, and a zero where the answer is simply
      * not in the checkout.
      */
+    /*
+     * ⚠️ The console is part of this assertion. An `InfoHint` placed inside a `<p>` renders a
+     * `div` in a paragraph, which React reports as a hydration error and the dev overlay counts
+     * silently in the corner — the screen looked perfectly correct while doing it (2026-09-20).
+     */
+    const consoleErrors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") consoleErrors.push(message.text());
+    });
+    page.on("pageerror", (error) => consoleErrors.push(error.message));
+
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/");
     const anatomy = page.getByTestId("harness-anatomy");
@@ -183,6 +194,11 @@ test.describe("하네스 탭", () => {
     await expect(loop).toHaveAttribute("data-status", "tool-owned");
     await expect(loop).not.toContainText("아직 없음");
     await expect(anatomy).not.toContainText("%");
+
+    // What every turn costs, beside the count that cannot say it.
+    await expect(page.getByTestId("harness-anatomy-slot-always")).toContainText("매 턴 읽는 분량");
+
+    expect(consoleErrors, "the structure view logged to the console").toEqual([]);
 
     // And the ladder is one press away, under its own name.
     await page.getByRole("tab", { name: "아키텍처" }).click();

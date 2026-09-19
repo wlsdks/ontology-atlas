@@ -488,7 +488,10 @@
     "anatomyFillHere": "One of these lives at",
     "anatomyFillCopy": "Copy path",
     "anatomyFillCopied": "Copied",
-    "anatomyFillCopyAria": "Copy path: {path}"
+    "anatomyFillCopyAria": "Copy path: {path}",
+    "anatomyAlwaysWeight": "{size} read every turn",
+    "anatomyAlwaysWeightLabel": "Why this size matters",
+    "anatomyAlwaysWeightHint": "These files are read before the agent has seen a line of code, on every turn, in every session, whatever the tool. A count cannot say it: three 2 KB documents and three 40 KB documents are both \"3\", and that difference is the subject. Codex merges the root AGENTS.md with the nested file on the working path and silently truncates past its cap. Per-file sizes against that cap are in the Guides view."
   },
   "architecture": {
     "eyebrow": "CODE ARCHITECTURE",

@@ -57,11 +57,14 @@ function SlotRow({
   extra,
   copied,
   onCopy,
+  extraHint,
 }: {
   slot: AnatomySlot;
   t: TranslateFn;
-  /** One line a specific slot earns — the permission split, and nothing else so far. */
+  /** One line a specific slot earns — the permission split and the always-read weight. */
   extra?: string | null;
+  /** The hint that line needs when the number is one a reader will want to argue with. */
+  extraHint?: string | null;
   copied: boolean;
   onCopy: (slot: AnatomySlot) => void;
 }) {
@@ -106,9 +109,17 @@ function SlotRow({
         {t(`anatomySlots.${slot.id}.body`)}
       </p>
       {extra ? (
-        <p className="mt-1 text-caption tabular-nums text-[color:var(--color-text-tertiary)]">
-          {extra}
-        </p>
+        /* ⚠️ A `div`, not a `p`. `InfoHint` renders its panel as a `div`, and a `div` inside a `p`
+           is invalid HTML that React reports as a hydration error — which is exactly what the
+           dev overlay's issue counter was showing after this line was added (2026-09-20). */
+        <div className="mt-1 flex flex-wrap items-center gap-x-1 text-caption tabular-nums text-[color:var(--color-text-tertiary)]">
+          <span>{extra}</span>
+          {extraHint ? (
+            <InfoHint align="left" label={t('anatomyAlwaysWeightLabel')}>
+              {extraHint}
+            </InfoHint>
+          ) : null}
+        </div>
       ) : null}
       {slot.items.length > 0 ? (
         /* The names are the citation: a reader who doubts the count opens one of them. Monospace,
@@ -148,6 +159,14 @@ function SlotRow({
       ) : null}
     </li>
   );
+}
+
+/**
+ * KB with one decimal, the same shape the guides table prints sizes in. One formatter, because two
+ * screens rounding the same bytes differently is a defect a reader cannot resolve.
+ */
+function formatKb(bytes: number): string {
+  return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
 export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
@@ -217,6 +236,7 @@ export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
                     t={t}
                     copied={copiedId === slot.id}
                     onCopy={copy}
+                    extraHint={slot.id === 'always' ? t('anatomyAlwaysWeightHint') : null}
                     extra={
                       slot.id === 'permissions' && anatomy.permissions
                         ? t('anatomyPermissionSplit', {
@@ -224,7 +244,14 @@ export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
                             ask: anatomy.permissions.ask,
                             deny: anatomy.permissions.deny,
                           })
-                        : null
+                        : slot.id === 'always' && anatomy.alwaysBytes > 0
+                          ? /*
+                              The turn's standing cost, beside the count that cannot carry it:
+                              three documents of 2 KB and three of 40 KB are the same "3", and the
+                              difference is what harness engineering is about.
+                            */
+                            t('anatomyAlwaysWeight', { size: formatKb(anatomy.alwaysBytes) })
+                          : null
                     }
                   />
                 ))}

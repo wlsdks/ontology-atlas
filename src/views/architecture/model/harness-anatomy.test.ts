@@ -334,3 +334,43 @@ describe('the pipeline slot', () => {
     expect(slotOf(buildHarnessAnatomy(report()), 'pipeline').status).toBe('absent');
   });
 });
+
+describe('the always-read weight', () => {
+  it('sums only what every turn pays, not the conditional guides', () => {
+    /* The number a count cannot carry: three 2 KB documents and three 40 KB documents are both
+       "3", and the difference is the standing cost of a turn in this repository. */
+    const anatomy = buildHarnessAnatomy(
+      report({
+        analysis: {
+          records: [
+            record({ path: 'AGENTS.md', kind: 'instructions', bytes: 20_480 }),
+            record({ path: 'CLAUDE.md', kind: 'instructions', bytes: 5_120 }),
+            record({
+              path: '.claude/rules/forbidden.md',
+              kind: 'rules',
+              ruleId: 'claude-rules',
+              bytes: 4_096,
+            }),
+            record({
+              path: '.claude/rules/design.md',
+              kind: 'rules',
+              ruleId: 'claude-rules',
+              bytes: 60_000,
+            }),
+            /* Attached by path, so it is not part of what every turn pays. */
+            record({ path: 'src/AGENTS.md', kind: 'instructions', ruleId: 'nested-agents-md', bytes: 9_000 }),
+          ],
+        } as never,
+        contents: new Map([
+          ['.claude/rules/design.md', '---\npaths:\n  - src/**\n---\n'],
+          ['.claude/rules/forbidden.md', '# Forbidden\n'],
+        ]),
+      }),
+    );
+    expect(anatomy.alwaysBytes).toBe(20_480 + 5_120 + 4_096);
+  });
+
+  it('is zero when nothing is read unconditionally', () => {
+    expect(buildHarnessAnatomy(report()).alwaysBytes).toBe(0);
+  });
+});

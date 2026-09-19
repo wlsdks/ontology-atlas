@@ -488,7 +488,10 @@
     "anatomyFillHere": "이런 것이 사는 자리",
     "anatomyFillCopy": "경로 복사",
     "anatomyFillCopied": "복사함",
-    "anatomyFillCopyAria": "경로 복사: {path}"
+    "anatomyFillCopyAria": "경로 복사: {path}",
+    "anatomyAlwaysWeight": "매 턴 읽는 분량 {size}",
+    "anatomyAlwaysWeightLabel": "이 분량이 왜 중요한가",
+    "anatomyAlwaysWeightHint": "이 파일들은 에이전트가 코드를 한 줄도 보기 전에 읽습니다. 매 턴, 매 세션, 어느 도구에서나 같은 값을 치릅니다. 문서 수는 이것을 말해주지 못합니다. 2 KB 문서 3개와 40 KB 문서 3개는 똑같이 「3개」이고, 그 차이가 하네스가 다루는 것입니다. Codex 에이전트는 뿌리 AGENTS.md 파일과 작업 경로의 하위 파일을 합쳐 읽다가 한도를 넘으면 말없이 잘라냅니다. 파일별 크기와 한도는 「지침」 보기에 있습니다."
   },
   "architecture": {
     "eyebrow": "코드 아키텍처",

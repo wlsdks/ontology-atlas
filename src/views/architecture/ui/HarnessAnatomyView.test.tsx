@@ -173,4 +173,25 @@ describe('HarnessAnatomyView', () => {
     expect(writeText).toHaveBeenCalledWith('.mcp.json');
     expect(await screen.findByText('복사함')).toBeInTheDocument();
   });
+
+  it('prints what a turn costs beside the count that cannot say it', () => {
+    mount(
+      report({
+        analysis: {
+          records: [
+            { path: 'AGENTS.md', kind: 'instructions', ruleId: 'agents-md', tools: [], bytes: 30_720, drift: [] },
+          ],
+        } as never,
+      }),
+    );
+    const always = screen.getByTestId('harness-anatomy-slot-always');
+    expect(always).toHaveTextContent('매 턴 읽는 분량 30.0 KB');
+    /* And the number carries its own argument rather than standing bare. */
+    expect(within(always).getByRole('button', { name: '이 분량이 왜 중요한가' })).toBeInTheDocument();
+  });
+
+  it('says nothing about weight when nothing is read unconditionally', () => {
+    mount(report());
+    expect(screen.getByTestId('harness-anatomy-slot-always')).not.toHaveTextContent('매 턴');
+  });
 });
