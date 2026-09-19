@@ -4221,11 +4221,23 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
 
   // Single source for domain size (a graph BFS), so INDEX tree rows, `/projects`, and
   // insights all state the same number.
+  // Project rows are counted too, not only domains: the badge column in the INDEX
+  // tree is the same mark as the badge drawn inside a map node, and the map reads
+  // this census for every kind (`../lib/map-adapter.ts`). Counted only for domains,
+  // a project row fell back to its number of direct children and the one project
+  // said 3 on the list while its node said 16 on the canvas.
   const indexDomainCensus = useMemo(
     () =>
       ontologyInsight
-        ? domainCensusById(computeDomainCensusRows(ontologyInsight.nodes, ontologyInsight.edges, ["domain"]))
+        ? domainCensusById(
+            computeDomainCensusRows(ontologyInsight.nodes, ontologyInsight.edges, ["domain", "project"]),
+          )
         : null,
+    [ontologyInsight],
+  );
+  /** Domain ids, so the capacity meter keeps measuring domains against domains. */
+  const indexDomainIds = useMemo(
+    () => new Set((ontologyInsight?.nodes ?? []).filter((n) => n.kind === "domain").map((n) => n.id)),
     [ontologyInsight],
   );
   // Single source for the meter denominator: the largest domain-census BFS total. It
@@ -4234,9 +4246,15 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const indexMaxDomainDescendantCount = useMemo(() => {
     if (!indexDomainCensus || indexDomainCensus.size === 0) return 0;
     let max = 0;
-    for (const row of indexDomainCensus.values()) if (row.total > max) max = row.total;
+    // Domains only — a project's total contains every domain's, so letting it in
+    // would make each domain's meter read against the whole map instead of its
+    // widest sibling.
+    for (const row of indexDomainCensus.values()) {
+      if (!indexDomainIds.has(row.id)) continue;
+      if (row.total > max) max = row.total;
+    }
     return max;
-  }, [indexDomainCensus]);
+  }, [indexDomainCensus, indexDomainIds]);
   // Derivations for the realm ledger: what the left panel shows when a realm is
   // active and it presents only this node's world instead of the global content. All
   // of it comes from the graph and tree through a pure lib
