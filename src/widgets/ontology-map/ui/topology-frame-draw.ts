@@ -1151,8 +1151,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const pathLensActive = spotlightLensActive && mapLensKind === "path";
   const constellationLensActive = spotlightLensActive && mapLensKind === "constellation";
   const recentSpotlightActive = spotlightLensActive && mapLensKind === "recent";
+  // A path sinks its surroundings deeper than the whole-map lenses do: two
+  // ends and a line have no context to keep readable, and at the spotlight's
+  // rest the still frame did not say which two were asked about (2026-09-19).
+  const lensRestAlpha = pathLensActive ? tokens.pathRestAlpha : tokens.spotlightRestAlpha;
   const spotlightSink = (inSpotlight: boolean): number =>
-    spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - tokens.spotlightRestAlpha) : 1;
+    spotlightLensActive && !inSpotlight ? 1 - spotlightRamp * (1 - lensRestAlpha) : 1;
 
   // Trail lens — active only while the trail popover is open. It swaps the ego
   // keep-set from "1-hop neighbours" to "visited nodes" (see `lensNodeEgoState`
@@ -3313,6 +3317,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     isHovered: boolean;
     revealAlpha: number;
     emphasisAlpha: number;
+    /**
+     * The lens sink the name takes as a multiplier. It used to ride
+     * `revealAlpha`, which a project or domain name ignores by rule (always 1),
+     * so under the path lens every domain name stayed at full ink while the
+     * discs sank (measured 2026-09-19: 185 for every name, on or off the path).
+     */
+    lensSink: number;
     /** W6 agent visibility — this label's node matches the agent heartbeat's current focus. */
     agentFocus: boolean;
     /** This frame's normalised depth, 0 near … 1 far (always 0 in 2D) — the paint order. */
@@ -3640,6 +3651,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         egoState,
         isHovered,
         revealAlpha: labelRevealAlpha,
+        lensSink: pathLabelSink,
         emphasisAlpha: constellationKept ? spotlightRamp : 0,
         agentFocus,
         depthU: domeOn ? labelDome.u : 0,
@@ -3768,7 +3780,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         fontScale: labelScale,
         // A label is never brighter than its node's appear ramp — a node still
         // swelling in (new node, growth replay) must not be named before it is there.
-        presenceAlpha: presenceAlpha * (appearById ? Math.min(1, Math.max(0, appearById.get(payload.nodeId) ?? 1)) : 1),
+        presenceAlpha:
+          presenceAlpha *
+          payload.lensSink *
+          (appearById ? Math.min(1, Math.max(0, appearById.get(payload.nodeId) ?? 1)) : 1),
       },
       {
         labelProject: tokens.labelProject,

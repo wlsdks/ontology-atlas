@@ -134,6 +134,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--map-trail-reduced-fade-ms": "240",
   "--map-cluster-reveal-tau": "0.17",
   "--map-spotlight-rest-alpha": "0.35",
+  "--map-path-rest-alpha": "0.2",
   "--map-spotlight-ring-speed": "0.012",
   "--map-ripple-stagger-ms": "55",
   "--map-breathe-amplitude": "0.04",

@@ -54,6 +54,8 @@ export interface AtlasMapProbe {
   /** Live DOM-derived horizontal obstruction, before static camera safety tokens. */
   obstacleInsets: () => { left: number; right: number } | null;
   selection: () => { nodeId: string | null; edge: unknown };
+  /** The name boxes the last frame drew, in canvas CSS px — how label collision is seen from outside. */
+  labels: () => Array<{ nodeId: string; text: string; minX: number; maxX: number; minY: number; maxY: number }>;
   nodes: () => AtlasMapNode[];
   /**
    * The node id this frame treated as hovered (null if none). The cursor on the canvas

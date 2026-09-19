@@ -224,6 +224,8 @@ export interface OntologyMapTokens {
    * ramp (zero new easings).
    */
   spotlightRestAlpha: number;
+  /** `--map-path-rest-alpha` — the rest alpha off the path while the path lens is ON; deeper than the spotlight's, a path being two ends and a line rather than a whole-map lens. */
+  pathRestAlpha: number;
   /** `--map-spotlight-ring-speed` — rotation speed of the dashed ring on a changed node (px/ms). */
   spotlightRingSpeed: number;
   rippleStaggerMs: number;
@@ -417,6 +419,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "focusDimTau", cssVar: "--map-focus-dim-tau", kind: "number" },
   { key: "trailReducedFadeMs", cssVar: "--map-trail-reduced-fade-ms", kind: "number" },
   { key: "spotlightRestAlpha", cssVar: "--map-spotlight-rest-alpha", kind: "number" },
+  { key: "pathRestAlpha", cssVar: "--map-path-rest-alpha", kind: "number" },
   { key: "spotlightRingSpeed", cssVar: "--map-spotlight-ring-speed", kind: "number" },
   { key: "clusterRevealTau", cssVar: "--map-cluster-reveal-tau", kind: "number" },
   { key: "rippleStaggerMs", cssVar: "--map-ripple-stagger-ms", kind: "number" },
