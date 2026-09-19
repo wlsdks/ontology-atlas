@@ -84,10 +84,18 @@ function foldRepeats(events: readonly AcpToolEvent[]): TranscriptToolRow[] {
  * Separates the answer from the agent's work stream — and separates that stream into its
  * two halves, which are not the same thing.
  *
- * **Thinking is folded.** One user message starts one turn; every thought chunk in that
- * turn is collected into one disclosure at the position where thinking first appeared. It
- * is multi-paragraph markdown, and standing it would let the middle of the work outweigh
- * the conclusion — the failure this function was written to prevent.
+ * **Thinking is folded.** A stretch of consecutive thought chunks is collected into one
+ * disclosure where that stretch began. It is multi-paragraph markdown, and standing it would
+ * let the middle of the work outweigh the conclusion — the failure this function was written
+ * to prevent.
+ *
+ * **A disclosure ends where the thinking stops** (2026-09-20). It used to collect *every*
+ * thought of the turn, reaching backwards past whatever had happened in between, so a turn
+ * that went think → read → think drew both thoughts above the read: the second one appeared
+ * to have come first, and the read appeared to have followed a decision it actually preceded.
+ * Order is the only thing this column has to say about cause, so anything that is not a
+ * thought — a tool call, an answer — closes the open disclosure and the next thought opens a
+ * new one. The fold survives; its reach does not.
  *
  * **Tool calls stand** (2026-09-05). A tool call is one dim line naming what was touched
  * and what came back, and it is the only thing on screen that can tell you *why* an answer
@@ -141,6 +149,7 @@ export function groupEvents(events: readonly AcpEvent[]): TranscriptItem[] {
     }
 
     if (event.kind === 'tool') {
+      workGroup = null;
       if (!toolRun) {
         const item: Extract<TranscriptItem, { kind: 'toolRun' }> = {
           kind: 'toolRun',
@@ -155,6 +164,7 @@ export function groupEvents(events: readonly AcpEvent[]): TranscriptItem[] {
       continue;
     }
 
+    workGroup = null;
     closeRun();
     out.push({ kind: 'event', event });
   }
