@@ -919,8 +919,20 @@ export function AtlasGitPanel({
             ? ` ${discard ? t("discardConfirmOthers", { count: others }) : t("restoreDoneOthers", { count: others })}`
             : "";
         setRestoreNotice(`${done}${rest}`);
-        // A discarded document leaves the pending list; keeping it chosen would point at nothing.
-        if (discard) setSelectedPath(null);
+        if (discard) {
+          // A discarded document leaves the pending list; keeping it chosen would point at nothing.
+          setSelectedPath(null);
+        } else {
+          /*
+           * A restore from a commit lands as an uncommitted change, and the diff of that
+           * change is the result of what the person just did. The same rule as after a
+           * commit: show the result. The "now" row is selected with this document chosen,
+           * so the right column reads the restored lines at once.
+           */
+          setSelectionChoice({ kind: "pending" });
+          setSelectedPath(path);
+          setJumpHash(null);
+        }
         await refresh();
         return true;
       } catch (err) {

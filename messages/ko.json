@@ -208,7 +208,7 @@
         "noneReady": "확인된 도구가 없어요",
         "noneReadyCaption": "Claude Agent나 Codex를 설치하면 여기에 나타나요. 설치 방법은 아래 목록에 있어요.",
         "webLabel": "브라우저는 이 컴퓨터의 프로그램을 띄울 권한이 없어요",
-        "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 직접 띄운 도구를 이 폴더에 붙이는 일은 아래 에이전트 연결(MCP)의 「이 폴더 내주기」 칸에서 지금도 됩니다.",
+        "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 직접 띄운 도구를 이 폴더에 붙이는 일은 에이전트 연결(MCP) 탭의 「이 폴더 내주기」 칸에서 지금도 됩니다.",
         "state": {
           "ready": "준비됨",
           "cli-missing": "설치 필요",
@@ -219,8 +219,8 @@
           "login-needed": "로그인 필요",
           "login-unknown": "로그인 확인 못 함"
         },
-        "guardedExplainer": "Atlas가 온톨로지 쓰기를 멈춰 보여 주고 폴더 밖 접근도 대신 물어봐 줄 수 있는 건 지금 {names}예요. 나머지 도구는 연결 설정만 할 수 있고 앱 안 대화는 열리지 않아요.",
-        "guardedExplainerNone": "쓰기 전에 검토받고 폴더 밖을 건드리기 전에 먼저 묻는 것까지 확인된 도구가 아직 없어요. 감지된 도구는 연결 설정에만 쓸 수 있어요.",
+        "guardedExplainer": "앱 안 대화는 지금 {names}에서만 열려요. 나머지 도구는 연결 설정만 돼요.",
+        "guardedExplainerNone": "앱 안 대화를 열 수 있는 도구가 아직 없어요. 감지된 도구는 연결 설정에만 쓸 수 있어요.",
         "unknownExplainer": "「확인 못 함」은 도구가 없다는 뜻이 아니라 Atlas가 이 컴퓨터에서 찾아낼 방법을 아직 모른다는 뜻이에요. 설치 안내를 쓰거나 MCP로 연결할 수 있지만, 앱 안 대화는 쓰기 전에 먼저 묻는 것이 확인된 도구에서만 열려요.",
         "installGuide": "설치 방법",
         "openChat": "이 도구로 대화 열기",
@@ -232,7 +232,8 @@
         "othersSearchLabel": "검색",
         "othersSearchPlaceholder": "이름, 또는 어떤 도구인지",
         "othersNoneForSearch": "“{query}”와 맞는 도구가 없어요.",
-        "othersClose": "닫기"
+        "othersClose": "닫기",
+        "hintLabel": "대화를 열면 무엇이 만들어지는지"
       },
       "appUpdate": {
         "intro": "이 앱의 새 판이 나오면 우하단에 알려 드려요. 지금 바로 확인할 수도 있어요.",
@@ -785,7 +786,7 @@
       },
       "mcpTabs": {
         "title": "탭 둘, 하는 일 둘",
-        "body": "「이 폴더 내주기」는 코딩 도구에 이 폴더를 가리키는 설정을 건네줘요. 「연결 도구」는 그 에이전트가 함께 닿을 바깥 서버이고, 옆의 숫자는 켜 둔 개수예요."
+        "body": "「에이전트」는 이 컴퓨터의 코딩 도구예요. 「MCP」는 그 도구에 이 폴더를 내주는 설정과, 그 에이전트가 함께 닿을 바깥 서버예요. 옆의 숫자는 켜 둔 연결 도구 개수예요."
       },
       "libraryWhat": {
         "title": "자료실",
@@ -2302,7 +2303,7 @@
       "connectionReady": "파일 준비됨",
       "connectionNeedsReview": "점검",
       "connectionCheckReady": "연결 파일이 준비됐어요. 에이전트를 다시 켜면 이 폴더를 읽기 시작해요.",
-      "connectionCheckPending": "연결 파일 {ready}/{total}개 준비됨. 1단계에서 나머지를 채우세요.",
+      "connectionCheckPending": "연결 파일 {ready}/{total}개 준비됨. 나머지는 도구 행의 연결 버튼으로 만들어요.",
       "connectionHint": ".mcp.json.example은 다른 폴더에서 쓸 본보기라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.",
       "boundaryTitle": "밖의 도구를 잇는 자리예요",
       "boundaryDesc": "이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. 폴더 밖을 건드리기 전에 먼저 묻는 앱 안 Claude Agent 대화는 별도 화면입니다.",
@@ -2437,6 +2438,7 @@
       "stepStateDone": "완료",
       "stepListAriaLabel": "연결 3단계",
       "troubleshootToggle": "잘 안 되나요?",
+      "serverHintLabel": "서버는 어떻게 도나요",
       "troubleshootAriaLabel": "연결이 안 될 때 볼 것",
       "groupFiles": "연결 파일 상태",
       "groupHowAgentsUse": "에이전트가 이 폴더를 쓰는 방식"
@@ -4162,10 +4164,13 @@
         "summary": "요약",
         "compare": "비교",
         "details": "상세",
-        "scope": "{target} 대상 {operation} 제안 · {items}개 중 {selected}번 항목 · 요청 필드 {fields}개",
-        "relationScope": "관계 제안 {from} → {type} → {to} · {items}개 중 {selected}번 항목",
+        "scopeRelation": "{from} → {type} → {to}",
+        "scopeItem": "묶음 {items, number}개 중 {selected, number}번 항목",
+        "scopeFields": "요청 필드 {count, number}개",
         "batchRemaining": "이 요약 밖에 묶음 항목 {count}개가 더 있습니다.",
         "incomplete": "의미 검토 미완료 · 기록된 의미 단위 {total}개 중 {inspected}개 표시 · 생략 {omitted}개. 상세에서 요청 전체를 확인하세요.",
+        "coverageNone": "이 요청에는 기록된 의미 문장이 없습니다. 상세에서 요청 전체를 확인하세요.",
+        "coverageAll": "기록된 의미 단위 {total, number}개를 모두 보여 줍니다. 상세에서 요청 전체를 확인하세요.",
         "beforeUnavailable": "신뢰할 수 있는 과거 온톨로지 스냅샷이 없습니다. 이전 값을 지어내지 않고 현재 요청값만 표시합니다.",
         "beforeUnknown": "이전 · 확인할 수 없음",
         "before": "이전",
@@ -4496,9 +4501,7 @@
     },
     "title": "에이전트",
     "lede": "Atlas가 이 컴퓨터에 이미 있는 코딩 도구를 찾습니다.",
-    "runtimesHeading": "이 컴퓨터의 도구",
-    "ledeMore": "이 화면이 하는 일",
-    "ledeDetail": "그중 앱 안에서 안전하게 열리는 것이 무엇인지 보여 주고, 지원하는 도구가 없으면 여기서 설치하고, 고른 도구로 대화를 엽니다. API 키와 폴더는 여기서 정하지 않습니다."
+    "runtimesHeading": "이 컴퓨터의 도구"
   },
   "nativeErrors": {
     "unsupported-provider": "이 앱이 아는 제공자가 아니에요. Anthropic, OpenAI, Gemini 중에서 고르거나, 주소를 적어서 이 컴퓨터의 러너에 연결해 주세요.",
@@ -4744,10 +4747,11 @@
   },
   "mcp": {
     "title": "MCP",
-    "lede": "MCP(에이전트가 이 폴더를 읽고 쓰는 연결)는 AI 코딩 에이전트가 쓰는 선입니다. 한쪽 끝은 이 폴더에 닿고, 다른 쪽 끝은 붙여 둔 서비스에 닿습니다. 양쪽 끝이 이 화면에 있습니다.",
+    "lede": "에이전트 연결(MCP)은 코딩 에이전트가 이 폴더를 읽고 쓰는 선입니다. 바깥 서비스도 여기서 붙입니다.",
     "tablistAriaLabel": "MCP 구역",
     "shareHeading": "이 폴더 내주기",
     "connectorsHeading": "연결 도구",
+    "connectorsHeadingCount": "연결 도구 · 켜 둔 {count}개",
     "connectorsCountTitle": "켜 둔 연결 도구 수"
   },
   "connectors": {
@@ -5685,6 +5689,7 @@
         "allowAndSave": "허용하고 저장",
         "cancel": "취소",
         "saved": "{name}이(가) {time}에 처음 돕니다.",
+        "savedRunningNow": "{name}을(를) 지금 한 번 돌립니다. 다음은 {time}입니다.",
         "saveFailed": "자동 점검을 저장하지 못했습니다: {reason}"
       },
       "name": {
