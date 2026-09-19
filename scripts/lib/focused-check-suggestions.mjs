@@ -738,6 +738,23 @@ const RULES = [
     ],
   },
   {
+    /*
+     * A control that exists on one subject only is invisible to a gate that loads the bare
+     * route. The touch-target contract waited 20 seconds for a tab row the brief correctly does
+     * not draw and went red with no defect behind it (2026-09-20), and nothing recommended it
+     * for a change to this board.
+     */
+    command: 'pnpm exec playwright test tests/e2e/touch-target-contract.spec.ts',
+    reason: 'a control on the insights board, the census strip, or a shared control primitive changed',
+    matches: [
+      /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
+      /^src\/views\/ontology-insights\/ui\/tabs\/BriefTab\.tsx$/,
+      /^src\/views\/ontology-insights\/ui\/parts\/InsightsCensusStrip\.tsx$/,
+      /^src\/shared\/ui\/tab-bar\.tsx$/,
+      /^src\/shared\/ui\/segmented-control\.tsx$/,
+    ],
+  },
+  {
     // The census strip is drawn for one subject only, so wherever it sits it can push the
     // control a reader just clicked (measured 2026-09-20: 188px, at both 1512 and 1920).
     command: 'pnpm exec playwright test tests/e2e/insights-board-stability.spec.ts',

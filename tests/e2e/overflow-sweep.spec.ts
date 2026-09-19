@@ -19,6 +19,16 @@ const VIEWPORTS = [
   { label: "mobile-390", w: 390, h: 844 },
   { label: "mobile-360", w: 360, h: 780 },
   { label: "tablet-768", w: 768, h: 1024 },
+  /*
+   * ⚠️ **The app's own floor was not in this list.** `src-tauri/tauri.conf.json` enforces a
+   * 1040x720 minimum window, and the band from there to 1263 behaves differently from both
+   * neighbours: above `lg` the rail takes 64px, so a container query written against the scroll
+   * slot fires later than its number suggests. A census strip measured only at 1280 and up read
+   * 172px there and 344px at the app floor (design-responsive, 2026-09-20). 1024x768 is the
+   * landscape tablet in the same band, under a finger.
+   */
+  { label: "tablet-1024", w: 1024, h: 768 },
+  { label: "app-floor-1040", w: 1040, h: 720 },
   { label: "desktop-1280", w: 1280, h: 800 },
   { label: "desktop-1440", w: 1440, h: 900 },
   { label: "desktop-1512", w: 1512, h: 949 },

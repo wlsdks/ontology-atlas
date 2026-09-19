@@ -91,3 +91,42 @@ test.describe("분석 브리핑 — 「열기」는 같은 화면 안에서 그 
     await expect(page).toHaveURL(/guides=off/);
   });
 });
+
+/**
+ * **The app's floor must show an answer, not only numbers.**
+ *
+ * The board is used in a window the app itself will not let get smaller than 1040x720. Measured
+ * 2026-09-20 at that size: two control rows plus a census strip that reflowed two-by-two left the
+ * first finding at y=671 of 720, flush against the bottom edge, so the person who pressed a
+ * question scrolled before reading anything. Every question panel starts at the same height, so
+ * one number pins all seven.
+ */
+test.describe("분석 보드 — 앱 최소 창에서 첫 답이 화면 안에 있다", () => {
+  test.use({ viewport: { width: 1040, height: 720 } });
+
+  for (const tab of ["do-next", "unmatched", "composition"] as const) {
+    test(`${tab} 판의 첫 줄이 접히는 선 위에 있다`, async ({ page }) => {
+      await page.goto(`/ko/ontology/insights/?guides=off&tab=${tab}`, { waitUntil: "domcontentloaded" });
+      await expect(page.locator(`[data-insights-panel="${tab}"]`)).toBeVisible({ timeout: 20_000 });
+
+      const seen = await page.evaluate(() => {
+        const panel = document.querySelector("[data-insights-panel]");
+        const box = panel?.getBoundingClientRect();
+        return {
+          panelTop: box ? Math.round(box.top) : null,
+          viewport: window.innerHeight,
+          overflow: document.documentElement.scrollWidth - window.innerWidth,
+        };
+      });
+
+      expect(seen.overflow, "가로로 넘친다").toBe(0);
+      expect(seen.panelTop, "판이 시작되기도 전에 창을 다 쓴다").not.toBeNull();
+      // The chrome above the answer may take at most two thirds of the window. Measured after the
+      // census strip moved to this container's own 960 step: 442 of 720, or 61%.
+      expect(
+        seen.panelTop! / seen.viewport,
+        `판이 y=${seen.panelTop} 에서 시작한다 (창 ${seen.viewport})`,
+      ).toBeLessThan(0.67);
+    });
+  }
+});

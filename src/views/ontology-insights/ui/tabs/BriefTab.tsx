@@ -126,6 +126,7 @@ export function BriefTab({
           <Button
             variant="outline"
             size="sm"
+            className="atlas-touch-floor"
             onClick={() => {
               brief.markSeen();
               setSeenMarked(true);
@@ -239,7 +240,13 @@ const DETAIL_ROWS = 5;
  * at that distance and rejected them (`app/globals.css`, 2026-08-05). The negative margin
  * keeps the text on the same right edge it had before the padding.
  */
-const LINE_LINK = 'shrink-0 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]';
+/*
+ * `atlas-touch-floor` lands only under a coarse pointer, so the fine value stays `min-h-7`
+ * (28px) while a finger gets the 44px floor. Measured at 390 with a real coarse pointer on
+ * 2026-09-20: six links on this tab were 28px tall, the same escape the tab strip had in
+ * September, and `controlClass({ shape: 'link' })` carries no height of its own.
+ */
+const LINE_LINK = 'atlas-touch-floor shrink-0 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]';
 
 /**
  * A destination link that knows when it is not leaving.
