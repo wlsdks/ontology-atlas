@@ -12,7 +12,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { cn } from '@/shared/lib/cn';
 import { useArrivalMemory } from '@/shared/lib/route-arrival-memory';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip, Dialog } from '@/shared/ui';
+import { Chip, Dialog, InfoHint } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
@@ -242,47 +242,78 @@ export function AcpRuntimeSettings({
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-runtimes">
       {/*
-        ⚠️ **The destination does not draw this intro** (2026-08-20, caught in an
-        installed-app capture). The page has already said the same thing in its own
-        lede, and overlapping the two stands near-identical sentences one above the
-        other — the "duplicate sentence" defect this screen already went through
-        once, and the council's prescription was "explanatory paragraphs 3 → 1".
+        **One row above the list: what the list means, and the way to re-read it** (owner,
+        2026-09-19: *"there is so much useless text here — tooltips if it is really needed"*).
+        Three paragraphs used to stand between the page title and the first tool. What they
+        said still matters at exactly two moments — *why does this tool open a chat and that
+        one not*, and *what does starting a chat write to disk* — so the first is one sentence
+        that names the tools it is about, and the second waits in a hint beside it. Nothing is
+        dropped: the credential-link disclosure is still drawn
+        (`tests/contract/acp-disk-disclosure.contract.test.ts`), one press away instead of in
+        the way.
 
-        In the sheet there is no title, so this line takes that place. So it is not
-        deleted; **the caller decides.**
-      */}
-      {/*
-        ⚠️ **The installed app had no way to `/mcp` from here** (PO council, 2026-09-05).
-        `DESTINATION_HREF.mcp` had exactly two production consumers: the rail tile, and one link
-        in the branch above — which only renders when the ACP bridge is **absent**, i.e. in a
-        browser. So on the surface where this screen matters most, three sentences named MCP setup
-        (`intro`, `guardedExplainer`, `unknownExplainer`) and none of them could be followed. A
-        name with no way there is the dead pointer `.claude/rules/surfaces.md` forbids in a
-        degradation card, and it is no better outside one.
+        In the sheet there is no title, so the intro line takes that place; **the caller
+        decides**, as before.
 
-        The link is quiet and always drawn, so the row has a left slot in both shapes: on the
-        destination (`embedded`) the intro is the page's own lede and is not repeated, and the
-        link stands alone; in the sheet it sits under the intro.
+        The link to the MCP tab that used to stand here left with the tabs (2026-09-19): the
+        tab is on the same strip, a press away, and a sentence pointing at it was the dead
+        pointer `.claude/rules/surfaces.md` forbids the moment the strip is visible.
       */}
       <div className="flex items-start justify-between gap-3 px-1">
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           {embedded ? null : (
             <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
               {t('intro')}
             </p>
           )}
-          <Link
-            href={DESTINATION_HREF.mcp}
-            data-testid="app-settings-runtimes-mcp-link"
-            className={controlClass({
-              shape: 'link',
-              tone: 'muted',
-              hoverInk: 'strong',
-              className: `text-label ${embedded ? '' : 'mt-1'}`,
-            })}
-          >
-            {t('mcpLink')}
-          </Link>
+          {embedded ? null : (
+            <Link
+              href={DESTINATION_HREF.mcp}
+              data-testid="app-settings-runtimes-mcp-link"
+              className={controlClass({
+                shape: 'link',
+                tone: 'muted',
+                hoverInk: 'strong',
+                className: 'text-label',
+              })}
+            >
+              {t('mcpLink')}
+            </Link>
+          )}
+          {runtimes !== null && ready.some((r) => !isGuardedRuntime(r.id, r.isolated)) ? (
+            <p
+              data-testid="app-settings-runtimes-guard-note"
+              data-guarded-count={guardedNames.length}
+              className="break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
+            >
+              {guardedNames.length > 0
+                ? t('guardedExplainer', { names: guardedNames.join(' · ') })
+                : t('guardedExplainerNone')}
+            </p>
+          ) : null}
+          {/*
+            Say what appears on disk (2026-08-17).
+
+            When a conversation starts, Rust creates a config folder for that tool inside the
+            app's data directory and **symlinks the user's real credential files** into it
+            (`link_credentials` in `src-tauri/src/acp.rs`). Isolating them breaks login, and
+            copying secrets into the app folder is something the charter forbids, so a link is
+            the answer in between — that is right. What was wrong is that **no screen said so.**
+            Since 2026-09-19 it is said in the hint beside the list rather than as a paragraph
+            above it: the sentence matters at the moment of pressing "open a chat", and a hint
+            is one press from that button without standing between the title and the tools.
+            Gate: `tests/contract/acp-disk-disclosure.contract.test.ts`.
+          */}
+          {runtimes !== null ? (
+            <InfoHint label={t('hintLabel')} align="left">
+              <p
+                data-testid="app-settings-runtimes-disk-note"
+                className="break-keep text-label leading-prose text-[color:var(--color-text-secondary)]"
+              >
+                {t('diskNote')}
+              </p>
+            </InfoHint>
+          ) : null}
         </div>
         <Chip
           size="lg"
@@ -303,39 +334,6 @@ export function AcpRuntimeSettings({
         </SettingsGroup>
       ) : (
         <>
-          {ready.some((r) => !isGuardedRuntime(r.id, r.isolated)) ? (
-            <p
-              data-testid="app-settings-runtimes-guard-note"
-              data-guarded-count={guardedNames.length}
-              className="break-keep px-1 text-label leading-label text-[color:var(--color-text-tertiary)]"
-            >
-              {guardedNames.length > 0
-                ? t('guardedExplainer', { names: guardedNames.join(' · ') })
-                : t('guardedExplainerNone')}
-            </p>
-          ) : null}
-          {/*
-            Say what appears on disk (2026-08-17).
-
-            When a conversation starts, Rust creates a config folder for that tool
-            inside the app's data directory and **symlinks the user's real
-            credential files** into it (`link_credentials` in
-            `src-tauri/src/acp.rs`). Isolating them breaks login, and copying
-            secrets into the app folder is something the charter forbids, so a link
-            is the answer in between — that is right. What was wrong is that
-            **no screen said so.**
-
-            The API key pane right beside this explains in two sentences how the key
-            is stored. This side, which touches real credential files, staying
-            silent does not add up. Gate:
-            `tests/contract/acp-disk-disclosure.contract.test.ts`.
-          */}
-          <p
-            data-testid="app-settings-runtimes-disk-note"
-            className="break-keep px-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
-          >
-            {t('diskNote')}
-          </p>
           <SettingsGroup label={t('readyHeading', { count: ready.length })}>
             {ready.length === 0 ? (
               <SettingsRow label={t('noneReady')} caption={t('noneReadyCaption')} control={null} />
