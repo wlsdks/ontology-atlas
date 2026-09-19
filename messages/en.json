@@ -262,7 +262,7 @@
     "projects": "Projects",
     "agents": "Agents",
     "mcp": "MCP",
-    "git": "History",
+    "git": "Git",
     "getApp": "Get the app",
     "getAppTitle": "The Mac app remembers your folder, opens offline, and handles history and AI connections: Windows is in progress"
   },
@@ -3497,10 +3497,10 @@
     "dismiss": "Not now"
   },
   "atlasGit": {
-    "tileLabel": "History",
-    "tileTitleClean": "History: everything saved",
-    "tileTitleDirty": "History: {count} unsaved change(s)",
-    "title": "History",
+    "tileLabel": "Git",
+    "tileTitleClean": "Git: everything committed",
+    "tileTitleDirty": "Git: {count} uncommitted change(s)",
+    "title": "Git",
     "close": "Close",
     "loading": "Checking this folder for changes…",
     "loadError": "Could not read this folder's changes. Make sure the folder is still there, then try again.",

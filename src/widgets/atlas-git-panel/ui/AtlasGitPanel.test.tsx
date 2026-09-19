@@ -649,7 +649,9 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     // elsewhere on the rail.
     expect(screen.queryByTestId("atlas-git-close")).not.toBeInTheDocument();
     // An h1, not an 11px mono eyebrow — measured, that was far too small for a page title.
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("기록");
+    // The destination is named for what it is (owner, 2026-09-19): "Git", in both locales.
+    // Git's trademark policy permits naming the software a feature operates on.
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Git");
   });
 });
 

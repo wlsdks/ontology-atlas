@@ -262,7 +262,7 @@
     "projects": "프로젝트",
     "agents": "에이전트",
     "mcp": "MCP",
-    "git": "기록",
+    "git": "Git",
     "getApp": "앱 받기",
     "getAppTitle": "맥 앱을 받으면 폴더를 기억하고, 인터넷 없이 열고, 기록과 AI 연결까지 다룹니다. 윈도우는 준비 중이에요"
   },
@@ -3497,10 +3497,10 @@
     "dismiss": "나중에"
   },
   "atlasGit": {
-    "tileLabel": "기록",
-    "tileTitleClean": "기록: 모두 커밋했어요",
-    "tileTitleDirty": "기록: 커밋하지 않은 변경 {count}건",
-    "title": "기록",
+    "tileLabel": "Git",
+    "tileTitleClean": "Git: 모두 커밋했어요",
+    "tileTitleDirty": "Git: 커밋하지 않은 변경 {count}건",
+    "title": "Git",
     "close": "닫기",
     "loading": "이 폴더의 변경을 확인하는 중…",
     "loadError": "이 폴더의 변경을 읽지 못했어요. 폴더가 그대로 있는지 확인한 뒤 다시 시도해 주세요.",

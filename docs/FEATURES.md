@@ -2175,7 +2175,9 @@ reads the folder, so a teammate who pulls it sees the same thing. A wiki without
 on `/library`. Settings › Workspace carries an add-only row, "This folder holds", whose one
 chip writes the missing part's starter files; the tabs follow the files.
 
-### `/git` — Record (primary desktop destination; redesigned 2026-07-27)
+### `/git` — Git (primary desktop destination; redesigned 2026-07-27; named "Git" in both locales since 2026-09-19)
+
+The rail tile (`navRail.git`), the page headline (`atlasGit.title`) and the tile's title (`atlasGit.tileTitle*`) say **Git** in Korean and English; until 2026-09-19 the Korean said the plain word for "record" and the English said "History". The owner asked why the screen hid the word: Atlas keeps no history of its own — durable history, restore and discard are git's — so the plain name is the honest one. Git's trademark policy (Software Freedom Conservancy, U.S. reg. 4680534) permits factual reference to the Git software and identifying it as a component of a product; only portmanteaus, implied affiliation and the logo need permission. Sentences that describe the act (`initButton`, `scopeNotice`, `stepStart`) keep their verb.
 
 Architecture was added without replacing this destination. Git keeps its primary
 desktop rail tile, uncommitted-change badge, `G G` shortcut, and contextual
