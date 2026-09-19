@@ -2818,6 +2818,24 @@ outside its own box went from 1-2 per English query to 0. The per-node name inde
 built once and kept (`WeakMap`), which also took a plain query over 12,000 nodes from
 243 ms to 29.8 ms; `node-name-match.perf.test.ts` holds the ratio.
 
+**Every result row says what it matched** (2026-09-19). Matching deliberately looks
+wider than the row draws — every one of a concept's names (the canonical `title` and
+each `display_<locale>`), the summary, and the id — but the row drew only the
+localised name and the summary, so a match on anything else arrived with nothing to
+see. Measured on the bundled sample over thirty English queries: **97 of 317 rows
+(30.6%) carried no highlight at all.** Two changes close it. The id now matches on its
+slug and not its `kind:` prefix, because typing "element" returned twenty rows that
+were all just the kind — which the filter chips already select, properly; a query
+containing a colon is someone pasting a real id, and for that the whole id still
+answers. And the trailing column became the row's evidence: the summary when the name
+on screen carried the match, that other name when a name the screen is not showing
+did, the summary opened at the match when the description did, and the id's slug in
+mono when the id did. A mark therefore means exactly one thing — *this is what you
+typed* — which is why the context summary is drawn plain. Project rows use the same
+seat for the same job. Re-measured over the same thirty queries plus three Hangul
+ones: **0 of 276 rows unexplained, 0 marks clipped**, and the column has one text
+start line (`w-[14rem]`, after four rows of "policy" began at four different x).
+
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio
 - 2-column grid on sm+, focus trap, `Esc` closes
