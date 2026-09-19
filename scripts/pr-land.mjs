@@ -27,6 +27,13 @@
  *
  * **What one landing does.**
  *
+ *   0. **Take a place in line.** `refs/atlas/landing-queue` records who asked and when, and a
+ *      waiter takes a free lock only when it is the oldest live entry. The create below is a
+ *      mutex, not a queue: without this, the winner is whoever happens to be awake in the instant
+ *      after a release, and a waiter whose poll phase never lands there waits until it gives up.
+ *      Measured on 2026-09-19 — one pull request waited the full `--timeout` while ten landed past
+ *      it. The line is advisory and every failure falls back to the old race; `QUEUE_REF` carries
+ *      the rules.
  *   1. **Lock.** `refs/atlas/landing-lock` is created through the Git refs API,
  *      whose create is a server-side compare-and-swap: a second creator gets
  *      `422 Reference already exists`. That is the mutex, and while it is held
@@ -54,7 +61,7 @@
  *      **No worktree is removed** unless `--cleanup <path>` asks for one:
  *      `--worktree` only says where step 3 runs. See `worktreeToRemove`.
  *
- * One landing, in order: **lock, merge main, local checks, ready, one CI run,
+ * One landing, in order: **take a place, lock, merge main, local checks, ready, one CI run,
  * merge, clean.**
  *
  * **Required is not the same as "what matters"** (2026-09-13). Step 5 waited on the
@@ -103,6 +110,111 @@ export const LOCK_REF = 'refs/atlas/landing-lock';
 export const LEASE_MINUTES = 45;
 
 export const POLL_SECONDS = 30;
+
+/**
+ * **The waiting line**, and why the mutex above needed one.
+ *
+ * ⚠️ Measured on 2026-09-19. `refs/atlas/landing-lock` is a compare-and-swap create, and every
+ * waiter retried it on its own independent `POLL_SECONDS` phase. There is no order in that: the
+ * process that happens to be awake in the instant after a release wins, and a process whose phase
+ * never lands in that instant can wait forever. One pull request waited the full
+ * `GIVE_UP_MINUTES` while ten others landed past it and then exited with
+ * 「gave up after 180 minutes; the lock is released and nothing merged」. A second agent reported
+ * the same thing independently, in its own words: it kept losing the thirty-second race.
+ *
+ * So arrival order is written down. `refs/atlas/landing-queue` holds the waiters; a waiter takes
+ * the free lock only when it is the oldest live entry, and otherwise yields one poll.
+ *
+ * **It is advisory on purpose, and every failure falls back to the old race.**
+ *
+ * - A `pr:land` running the previous version of this file does not know the queue exists and
+ *   still races. That is fine and is why the line is advisory: an unlisted waiter never blocks
+ *   anyone, so the worst case is exactly today's behaviour, and the fleet converges on order as
+ *   sessions restart.
+ * - An unreadable or unwritable queue means the waiter races immediately. A fairness layer that
+ *   can stop a landing is worse than an unfair one.
+ * - A waiter that dies without leaving the line is pruned after `WAIT_LEASE_MINUTES`, which is the
+ *   longest anyone can be held up by a corpse.
+ *
+ * The line is read only when the lock is observed **free**, which is the rare poll, so the common
+ * case costs nothing beyond the one lock read it already did.
+ */
+export const QUEUE_REF = 'refs/atlas/landing-queue';
+
+/**
+ * How long a waiting-line entry survives without a refresh. Short, because a dead waiter at the
+ * head of the line delays everyone behind it for exactly this long, and nothing else is at stake:
+ * a live waiter rewrites its entry every `WAIT_REFRESH_SECONDS`, which is well inside it.
+ */
+export const WAIT_LEASE_MINUTES = 4;
+
+/** How often a waiter rewrites its own entry while it waits. */
+export const WAIT_REFRESH_SECONDS = 60;
+
+/** Drop the entries nobody has refreshed inside the lease. */
+export function pruneWaiters(waiters, nowMs, leaseMinutes = WAIT_LEASE_MINUTES) {
+  if (!Array.isArray(waiters)) return [];
+  return waiters.filter((entry) => {
+    if (!entry || typeof entry.token !== 'string' || typeof entry.pr !== 'number') return false;
+    const seen = Date.parse(entry.seenAt ?? entry.since ?? '');
+    if (!Number.isFinite(seen)) return false;
+    return nowMs - seen <= leaseMinutes * 60_000;
+  });
+}
+
+/**
+ * Put this waiter in the line, or refresh where it already stands.
+ *
+ * ⚠️ Rejoining never moves a waiter to the back. `since` is when it first asked, and a refresh
+ * that reset it would punish exactly the waiter this whole mechanism exists for.
+ */
+export function joinWaitingLine(waiters, entry, nowMs) {
+  const live = pruneWaiters(waiters, nowMs);
+  const standing = live.find((waiter) => waiter.token === entry.token);
+  const since = standing?.since ?? new Date(nowMs).toISOString();
+  return [
+    ...live.filter((waiter) => waiter.token !== entry.token),
+    { ...entry, since, seenAt: new Date(nowMs).toISOString() },
+  ];
+}
+
+export function leaveWaitingLine(waiters, token, nowMs) {
+  return pruneWaiters(waiters, nowMs).filter((waiter) => waiter.token !== token);
+}
+
+/** Who asked first among the live waiters. */
+export function waitingLineHead(waiters, nowMs) {
+  const live = pruneWaiters(waiters, nowMs);
+  if (live.length === 0) return null;
+  return [...live].sort((a, b) => Date.parse(a.since) - Date.parse(b.since) || a.pr - b.pr)[0];
+}
+
+/**
+ * May this waiter take a lock it has just seen free?
+ *
+ * Yes unless somebody live asked earlier. An empty, unreadable or unknown line is a yes — see the
+ * fallback rule on `QUEUE_REF`.
+ */
+export function mayTakeLock({ waiters, token, nowMs }) {
+  const head = waitingLineHead(waiters, nowMs);
+  if (!head) return true;
+  if (head.token === token) return true;
+  // Not listed at all: this waiter predates the queue or could not write to it. It races.
+  return !pruneWaiters(waiters, nowMs).some((waiter) => waiter.token === token);
+}
+
+export function describeWaitingLine(waiters, nowMs) {
+  const live = pruneWaiters(waiters, nowMs);
+  if (live.length === 0) return 'nobody is queued';
+  return live
+    .slice()
+    .sort((a, b) => Date.parse(a.since) - Date.parse(b.since) || a.pr - b.pr)
+    .map((waiter, index) => {
+      const minutes = Math.max(0, Math.round((nowMs - Date.parse(waiter.since)) / 60_000));
+      return `${index + 1}. PR #${waiter.pr} (${waiter.holder ?? 'unknown'}@${waiter.host ?? 'unknown'}, waiting ${minutes} min)`;
+    })
+    .join('\n           ');
+}
 
 export const CONFLICT_INSTRUCTION =
   'conflicts with main, and only its author can resolve that:\n'
@@ -636,6 +748,45 @@ function readLockPayload(slug) {
   }
 }
 
+/**
+ * The waiting line as the repository currently holds it.
+ *
+ * A missing ref is an empty line. Anything unreadable is also an empty line — see the fallback
+ * rule on `QUEUE_REF`: a waiter that cannot read the order races, it does not stop.
+ */
+function readWaitingLine(slug) {
+  const ref = ghJson(['api', `repos/${slug}/git/ref/${QUEUE_REF.replace('refs/', '')}`], { allowFailure: true });
+  if (!ref?.object?.sha) return [];
+  const blob = ghJson(['api', `repos/${slug}/git/blobs/${ref.object.sha}`], { allowFailure: true });
+  if (!blob?.content) return [];
+  try {
+    const raw = Buffer.from(blob.content, blob.encoding === 'base64' ? 'base64' : 'utf8').toString('utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed?.waiters) ? parsed.waiters : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Write the line back. Last write wins on purpose: two waiters can lose each other's entry here,
+ * and the loser simply rejoins on its next poll keeping its original `since`. A lost entry costs
+ * one poll of order, never a landing — which is the trade this ref is allowed to make.
+ */
+function writeWaitingLine(slug, waiters) {
+  const sha = writeLockBlob(slug, { waiters });
+  if (!sha) return false;
+  const created = gh(['api', '-X', 'POST', `repos/${slug}/git/refs`, '-f', `ref=${QUEUE_REF}`, '-f', `sha=${sha}`], {
+    allowFailure: true,
+  });
+  if (typeof created === 'string') return true;
+  const patched = gh(
+    ['api', '-X', 'PATCH', `repos/${slug}/git/${QUEUE_REF}`, '-f', `sha=${sha}`, '-F', 'force=true'],
+    { allowFailure: true },
+  );
+  return typeof patched === 'string';
+}
+
 function writeLockBlob(slug, body) {
   return ghJson([
     'api',
@@ -826,6 +977,12 @@ function printQueue(slug, io = console) {
   const { payload } = readLockPayload(slug);
   const lock = classifyLock({ payload, nowMs: Date.now() });
   io.log(`[pr-queue] landing now: ${describeLock(lock)}`);
+  /*
+   * The order, so a waiter can see its own place instead of guessing why it keeps losing. A
+   * `pr:land` older than the waiting line does not appear here; that is the honest reading, since
+   * it is also not yielding to anyone.
+   */
+  io.log(`[pr-queue] waiting line: ${describeWaitingLine(readWaitingLine(slug), Date.now())}`);
   const open = ghJson([
     'pr',
     'list',
@@ -966,7 +1123,33 @@ export function runPrLand(argv, io = console) {
 
   const token = `${hostname()}-${process.pid}-${Date.now()}`;
   let held = false;
+  let standing = false;
+  let lineWrittenAtMs = 0;
+  /**
+   * Take a place in the waiting line, or keep the one already held, and hand back the line as it
+   * now stands. `null` means 「the order could not be established」 — an unwritable queue, which by
+   * the fallback rule on `QUEUE_REF` means this waiter races rather than stops.
+   *
+   * Throttled, because a poll that only waits does not need a fresh write: the entry has to stay
+   * inside `WAIT_LEASE_MINUTES`, not be rewritten every thirty seconds by every waiter. The one
+   * caller that needs it current — the decision on a free lock — asks for `{ force: true }`.
+   */
+  const standInLine = ({ force = false } = {}) => {
+    const nowMs = Date.now();
+    if (!force && standing && nowMs - lineWrittenAtMs < WAIT_REFRESH_SECONDS * 1000) return null;
+    const line = joinWaitingLine(readWaitingLine(slug), { pr: number, token, holder: lockBody({ pr: number, token }).holder, host: hostname() }, nowMs);
+    if (!writeWaitingLine(slug, line)) return null;
+    standing = true;
+    lineWrittenAtMs = nowMs;
+    return line;
+  };
+  const stepOutOfLine = () => {
+    if (!standing) return;
+    standing = false;
+    writeWaitingLine(slug, leaveWaitingLine(readWaitingLine(slug), token, Date.now()));
+  };
   const release = () => {
+    stepOutOfLine();
     if (!held) return;
     held = false;
     releaseLock(slug);
@@ -1032,6 +1215,7 @@ export function runPrLand(argv, io = console) {
           pr = readPr(number);
         } else log('parallel CI scope not proven; keeping the ordinary queue');
       }
+      standInLine();
       log(`waiting for the landing ahead: ${describeLock(step.lock)} (retry in ${POLL_SECONDS}s)`);
       sleep(POLL_SECONDS);
       pr = readPr(number);
@@ -1042,6 +1226,20 @@ export function runPrLand(argv, io = console) {
       if (step.action === 'take-stale-lock') {
         log(`taking over a lock nobody refreshed: ${describeLock(step.lock)}`);
       }
+      /*
+       * ⚠️ **Order is checked here, at the one moment it costs anything.** The line is read only
+       * on a free lock, which is the rare poll; every other poll pays nothing for it. A waiter
+       * that is not the oldest yields exactly one poll — it does not give up its place, and it
+       * never yields to an entry nobody has refreshed.
+       */
+      const line = standInLine({ force: true });
+      if (line && !mayTakeLock({ waiters: line, token, nowMs: Date.now() })) {
+        const head = waitingLineHead(line, Date.now());
+        log(`PR #${head.pr} asked first; waiting one more turn (retry in ${POLL_SECONDS}s)`);
+        sleep(POLL_SECONDS);
+        pr = readPr(number);
+        continue;
+      }
       held = takeLock(slug, lockBody({ pr: number, token }), { force: step.action === 'take-stale-lock' });
       if (!held) {
         log('another agent took the lock first; waiting');
@@ -1050,6 +1248,7 @@ export function runPrLand(argv, io = console) {
         continue;
       }
       log('landing lock acquired; main cannot move until this landing finishes');
+      stepOutOfLine();
       continue;
     }
 
