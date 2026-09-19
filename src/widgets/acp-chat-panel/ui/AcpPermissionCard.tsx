@@ -228,6 +228,23 @@ export function AcpPermissionCard({
   const meaningUnits = proposedMeaningUnits(activeReviewItem);
   const visibleMeaningUnits = meaningUnits.slice(0, MEANING_SUMMARY_LIMIT);
   const omittedMeaningUnits = Math.max(0, meaningUnits.length - visibleMeaningUnits.length);
+  /*
+   * ⚠️ **A coverage line states what is missing, so with nothing missing it has to say that**
+   * (measured, 2026-09-19). One sentence served all three cases and produced 「Meaning review
+   * incomplete · 0 of 0 recorded meaning units shown · 0 omitted」 on an ordinary request that
+   * carries no prose sections at all — a warning assembled entirely out of zeroes, which is the
+   * same defect this repository records as 「a gate with no subjects prints a pass」 turned inside
+   * out. The one case that genuinely hides something keeps the original wording.
+   */
+  const coverageLine = meaningUnits.length === 0
+    ? t('taskReview.coverageNone')
+    : omittedMeaningUnits === 0
+      ? t('taskReview.coverageAll', { total: meaningUnits.length })
+      : t('taskReview.incomplete', {
+          inspected: visibleMeaningUnits.length,
+          total: meaningUnits.length,
+          omitted: omittedMeaningUnits,
+        });
   const proposalGuards = ['confirm', 'expected_mtime', 'expected_into_mtime']
     .filter((key) => request.rawInput[key] !== undefined)
     .map((key) => ({ key, value: request.rawInput[key] }));
@@ -425,22 +442,44 @@ export function AcpPermissionCard({
 
           {reviewDepth === 'summary' ? (
           <div data-testid="task-review-summary" className="grid gap-2">
-              <p className="text-label leading-label text-[color:var(--color-text-secondary)]">
-                {activeReviewItem?.relation
-                  ? t('taskReview.relationScope', {
-                      from: activeReviewItem.relation.from,
-                      type: activeReviewItem.relation.type,
-                      to: activeReviewItem.relation.to,
-                      selected: (activeItemIndex ?? 0) + 1,
-                      items: changeSet.itemCount,
-                    })
-                  : t('taskReview.scope', {
-                      operation: tChange(`operation.${changeSet.operation}`),
-                      target: activeReviewItem?.target ?? t('unknownTarget'),
-                      selected: (activeItemIndex ?? 0) + 1,
-                      items: changeSet.itemCount,
-                      fields: activeReviewItem?.fields.length ?? 0,
-                    })}
+              {/*
+                ⚠️ **A strip of facts, not a sentence with holes in it** (measured in the
+                installed shape, 2026-09-19). It was one template —
+                `Proposed {operation} for {target} · selected item {selected} of {items} ·
+                {fields} requested fields` — and every slot it could not fill it filled anyway:
+                the missing target took `unknownTarget`, which is worded as a statement about
+                intent, so the line read 「Proposed Change your folder for Cannot tell what it
+                wants to do」. A single item still announced 「selected item 1 of 1」 and a request
+                that changes nothing still announced 「0 requested fields」.
+
+                So each clause is now **present only when it carries a fact**, joined by the
+                separator this screen already uses. Nothing is invented and nothing is lost: the
+                headline above already owns the admission that the document is unnamed (its own
+                `NoTarget` variant), so the strip simply says less rather than saying something
+                untrue.
+              */}
+              <p data-testid="task-review-scope" className="text-label leading-label text-[color:var(--color-text-secondary)]">
+                {[
+                  tChange(`operation.${changeSet.operation}`),
+                  activeReviewItem?.relation
+                    ? t('taskReview.scopeRelation', {
+                        from: activeReviewItem.relation.from,
+                        type: activeReviewItem.relation.type,
+                        to: activeReviewItem.relation.to,
+                      })
+                    : activeReviewItem?.target ?? null,
+                  changeSet.itemCount > 1
+                    ? t('taskReview.scopeItem', {
+                        selected: (activeItemIndex ?? 0) + 1,
+                        items: changeSet.itemCount,
+                      })
+                    : null,
+                  !activeReviewItem?.relation && (activeReviewItem?.fields.length ?? 0) > 0
+                    ? t('taskReview.scopeFields', { count: activeReviewItem?.fields.length ?? 0 })
+                    : null,
+                ]
+                  .filter((part): part is string => Boolean(part))
+                  .join(' · ')}
               </p>
               {visibleMeaningUnits.length > 0 ? (
                 <div className="grid gap-1.5">
@@ -455,7 +494,7 @@ export function AcpPermissionCard({
                 </div>
               ) : null}
               <p data-testid="task-review-coverage" className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-                {t('taskReview.incomplete', { inspected: visibleMeaningUnits.length, total: meaningUnits.length, omitted: omittedMeaningUnits })}
+                {coverageLine}
               </p>
               {changeSet.itemCount > 1 ? (
                 <p data-testid="task-review-batch-remaining" className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
@@ -510,7 +549,7 @@ export function AcpPermissionCard({
                 </div>
               ))}
               <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-                {t('taskReview.incomplete', { inspected: visibleMeaningUnits.length, total: meaningUnits.length, omitted: omittedMeaningUnits })}
+                {coverageLine}
               </p>
             </div>
           ) : (
