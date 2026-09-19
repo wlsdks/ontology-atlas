@@ -117,3 +117,49 @@ test("the top bar draws controls of one size, and the folder total is not among 
   // And it ends on the same right rail the controls do, so the page has one edge rather than two.
   expect(measured.censusRight).toBe(measured.controlsRight);
 });
+
+/**
+ * The state fact beside those controls, measured for the reason the row exists.
+ *
+ * "View only: open a folder to edit" is a `<span>` and cannot be pressed, but it wore the outline
+ * button's own surface — `--color-overlay-1`, a border and the chip radius — so the row drew four
+ * boxes of which one did nothing, and the difference was a border colour. A reader cannot tell a
+ * fact from a door by looking. The page already draws a fact as a fact: the folder total over the
+ * composition board is engraved text with no box.
+ */
+test("the view-only state is drawn as a fact, not as a fourth control", async ({ page }) => {
+  await page.goto("/en/project/fallback/?slug=storefront&guides=off");
+
+  const badge = page.getByTestId("project-detail-readonly-badge");
+  await expect(badge).toBeVisible({ timeout: 30_000 });
+
+  const measured = await page.evaluate(() => {
+    const read = (element: Element | null) => {
+      if (!element) return null;
+      const style = getComputedStyle(element);
+      return {
+        borderWidth: parseFloat(style.borderTopWidth),
+        background: style.backgroundColor,
+        radius: parseFloat(style.borderTopLeftRadius),
+      };
+    };
+    const sibling = document.querySelector('[data-testid="project-detail-open-vault"]');
+    return {
+      badge: read(document.querySelector('[data-testid="project-detail-readonly-badge"]')),
+      door: read(sibling instanceof HTMLElement ? (sibling.querySelector("button") ?? sibling) : null),
+    };
+  });
+
+  // The fact carries no control surface at all: no border, no plane, no chip radius.
+  expect(measured.badge, "the badge is on the page").not.toBeNull();
+  expect(measured.badge!.borderWidth, `badge: ${JSON.stringify(measured.badge)}`).toBe(0);
+  expect(measured.badge!.radius, `badge: ${JSON.stringify(measured.badge)}`).toBe(0);
+  expect(
+    /rgba\([^)]*,\s*0\)$/.test(measured.badge!.background) || measured.badge!.background === "transparent",
+    `badge background: ${measured.badge!.background}`,
+  ).toBe(true);
+  // And the real door beside it still has one, so the row still distinguishes them.
+  if (measured.door) {
+    expect(measured.door.borderWidth, `door: ${JSON.stringify(measured.door)}`).toBeGreaterThan(0);
+  }
+});

@@ -446,12 +446,20 @@ describe("ProjectDetailPage", () => {
     mocks.canEdit = false;
     renderPage();
 
-    // domains=1, capabilities=1, elements=2. The figure stands before its label, so the label's
-    // previous sibling is the value.
+    // domains=1, capabilities=1, elements=2. Read as a description list pairs them — the term and
+    // the description it belongs to — rather than as running text, whose order is a drawing
+    // decision: the row is reversed visually so the figure reads "1 Domains" on screen while the
+    // document names the term first, which is the order a description list requires.
     const cell = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="ontology"]')!;
-    expect(cell).toHaveTextContent(/1\s*Domains/);
-    expect(cell).toHaveTextContent(/1\s*Capabilities/);
-    expect(cell).toHaveTextContent(/2\s*Elements/);
+    const figures = [...cell.querySelectorAll("dt")].map((term) => [
+      term.textContent,
+      term.parentElement?.querySelector("dd")?.textContent,
+    ]);
+    expect(figures).toEqual([
+      ["Domains", "1"],
+      ["Capabilities", "1"],
+      ["Elements", "2"],
+    ]);
   });
 
   it("names the three Atlas surfaces, each with its own door", () => {
