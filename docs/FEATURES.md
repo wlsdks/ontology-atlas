@@ -332,6 +332,12 @@ had become false).
   the label now and the action stays in the accessible name. The glyph sat in JSX
   between two expressions, the one shape the label-decoration gate's two scans
   cannot see; a measured sweep of `src` and `app` found this was the only one.
+- **A path names both of its ends** (2026-09-20) → the path lens keeps its nodes
+  at full ink, but their labels ranked as ordinary concepts, so an endpoint
+  inside an expanded domain disc lost its slot to that domain and the project.
+  Asking how one concept reaches another drew the answer with one end named and
+  the other anonymous. A lens's own nodes now take the top label band, the same
+  one the constellation lens already had.
 - **Expand all** → the top action opens every containment parent in one step and
   fits every rendered node inside the map. It is a temporary overview, not a
   saved default; pressing it again collapses the batch. A route arriving with

@@ -143,6 +143,15 @@ export interface LabelPriorityInput {
   isSelected: boolean;
   isHovered: boolean;
   isHub: boolean;
+  /**
+   * The node is what a lens was opened to show — a path's own nodes, or a
+   * constellation's members. It takes the top band because it is the answer to
+   * the question the person asked. Measured 2026-09-20: a path's destination
+   * capability sat inside an expanded domain disc, and the greedy placer handed
+   * the space to that domain (3) and the project (2) first, so the map drew the
+   * path with one end named and the other anonymous.
+   */
+  isLensSubject?: boolean;
 }
 
 /**
@@ -153,6 +162,7 @@ export interface LabelPriorityInput {
  * attending to (selected or hovered) must never lose to a passive one.
  */
 export function resolveLabelPriority(input: LabelPriorityInput): number {
+  if (input.isLensSubject) return 0;
   if (input.isSelected) return 0;
   if (input.isHovered) return 1;
   if (input.kind === "project" || input.isHub) return 2;
