@@ -1,4 +1,5 @@
 import { isAfter, type BriefCore, type BriefLine } from './brief-model';
+import { isCanonicalConcept } from '@/entities/knowledge-graph';
 
 /** The slice of `KnowledgeGraphNode` the brief reads. */
 export interface OntologyBriefNode {
@@ -45,14 +46,20 @@ export interface OntologyBriefInput {
   anchorMs: number;
 }
 
-const CONCEPT_KINDS = new Set(['domain', 'capability', 'element']);
+/*
+ * ⚠️ **One word, one number.** This used to count `domain | capability | element`, while the
+ * census strip 100px above it counts every node that is not the vault readme. Both are labelled
+ * "concept", so on the sample folder the card read 124 and the strip read 125, one click apart,
+ * and a reader had no way to reconcile them (walkthrough, 2026-09-20). `canonical-census.ts` states the
+ * rule this broke: every count that uses the word "concept" goes through it.
+ */
 
 function isAgentWritten(createdBy: string | null | undefined): boolean {
   return typeof createdBy === 'string' && (createdBy.startsWith('agent:') || createdBy.startsWith('model:'));
 }
 
 export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
-  const concepts = input.nodes.filter((node) => CONCEPT_KINDS.has(node.kind));
+  const concepts = input.nodes.filter(isCanonicalConcept);
   let current = 0;
   let stale = 0;
   let unknown = 0;
