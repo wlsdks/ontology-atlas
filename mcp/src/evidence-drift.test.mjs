@@ -17,6 +17,20 @@ test('evidenceConceptsFromDocs collects own path, element paths and bare source 
   assert.deepEqual(concepts[2].evidencePaths, []);
 });
 
+test('resolveEvidenceStates sorts rows by slug so two runtimes report one order', () => {
+  const shuffled = [...evidenceConceptsFromDocs(docs)].reverse();
+  const changes = new Map([
+    ['capabilities/pay.md', { exists: true, lastChangedAt: '2026-09-10T00:00:00Z' }],
+    ['elements/pay-ui.md', { exists: true, lastChangedAt: '2026-09-10T00:00:00Z' }],
+    ['domains/orders.md', { exists: true, lastChangedAt: '2026-09-10T00:00:00Z' }],
+    ['src/pay.ts', { exists: true, lastChangedAt: '2026-09-12T00:00:00Z' }],
+    ['src/pay-ui.tsx', { exists: true, lastChangedAt: '2026-09-12T00:00:00Z' }],
+    ['src/legacy/pay.js', { exists: true, lastChangedAt: '2026-09-01T00:00:00Z' }],
+  ]);
+  const states = resolveEvidenceStates(shuffled, changes);
+  assert.deepEqual(states.stale.map((row) => row.slug), ['capabilities/pay', 'elements/pay-ui']);
+});
+
 test('resolveEvidenceStates states current, stale, missing and unknown from change times', () => {
   const concepts = evidenceConceptsFromDocs(docs);
   const changes = new Map([

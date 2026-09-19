@@ -63,6 +63,11 @@ function toMs(value) {
  */
 export function resolveEvidenceStates(concepts, changes) {
   const states = { current: [], stale: [], missing: [], unknown: [] };
+  /*
+   * Rows are sorted by slug before returning. Vault documents arrive in whatever order the
+   * filesystem walk produced, which differs between Node and the bundled runtime, and a report
+   * whose rows reshuffle per runtime fails the source/bundled parity check for no real reason.
+   */
   for (const concept of concepts) {
     if (!concept.evidencePaths?.length || !concept.docPath) {
       states.unknown.push({ slug: concept.slug, kind: concept.kind, reason: 'no-evidence' });
@@ -103,5 +108,7 @@ export function resolveEvidenceStates(concepts, changes) {
     else if (folders.length) states.unknown.push({ ...row, reason: 'folder-only', docChangedAt: doc?.lastChangedAt ?? null, folders });
     else states.current.push(row);
   }
+  const bySlug = (a, b) => a.slug.localeCompare(b.slug);
+  for (const key of ['current', 'stale', 'missing', 'unknown']) states[key].sort(bySlug);
   return states;
 }
