@@ -21,7 +21,7 @@ import {
   filesForClient,
 } from '@/entities/vault-session';
 import {
-  AgentClientButtons,
+  useAgentClientControls,
   buildCursorMcpDeeplink,
   buildOntologyStarterAgentVerifyPrompt,
   buildOntologyStarterJsonGateCommand,
@@ -29,13 +29,14 @@ import {
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
 } from '@/features/docs-vault-local';
-import { SETTINGS_SECTION_LABEL } from './settings-primitives';
+import { SETTINGS_SECTION_LABEL, SettingsGroup, SettingsRow } from './settings-primitives';
 import { formatAgentPostChangeSyncPacket } from '@/entities/knowledge-graph';
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { AgentClientId } from '@/entities/vault-session';
 import { copyText } from '@/shared/lib/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';
+import { Dialog, InfoHint } from '@/shared/ui';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
@@ -46,7 +47,6 @@ import {
   vaultPathForPacket,
 } from '@/shared/config/cli-invocation';
 
-import { AgentSetupStep, type AgentSetupStepState } from './AgentSetupStep';
 import { McpProofPacket } from './McpProofPacket';
 
 /**
@@ -338,6 +338,7 @@ export function VaultAgentSetupPanel({
   // The one-click button and the three-step copy reuse the same source as the map
   // sheet (`agentConnect`), so the two surfaces cannot diverge.
   const tc = useTranslations('agentConnect');
+  const tMcp = useTranslations('mcp');
   const [advancedOpen, setAdvancedOpen] = useState(false);
   /**
    * The 「Having trouble?」 (having trouble?) drawer — in-flow collapsing, so it uses
@@ -361,7 +362,8 @@ export function VaultAgentSetupPanel({
    * the connection is finished. So «follow (null)» and «the user chose (a number)»
    * are distinguished — `0` means «all three collapsed».
    */
-  const [openStepOverride, setOpenStepOverride] = useState<number | null>(null);
+  /** The verification dialog (2026-09-19): restart, check, and "not working?" behind one press. */
+  const [verifyOpen, setVerifyOpen] = useState(false);
   const [agentSetupBusy, setAgentSetupBusy] = useState(false);
   const [agentSetupError, setAgentSetupError] = useState<string | null>(null);
   const [agentPromptCopyState, setAgentPromptCopyState] = useState<
@@ -504,10 +506,42 @@ export function VaultAgentSetupPanel({
     setAgentCodexCliCopyState(copied ? 'copied' : 'failed');
   }
 
-  if (localVault.status !== 'loaded' || !agentStatus) return null;
-
   // Do we know how to launch the server? This one thing decides whether one-click is possible.
   const publicPackagesReady = serverAvailability.launch !== null;
+  const mcpJsonState = !agentStatus?.mcpJson
+    ? 'missing'
+    : agentStatus.mcpJsonValid === false
+      ? 'invalid'
+      : 'ready';
+  const codexConfigState = !agentStatus?.codexConfig
+    ? 'missing'
+    : agentStatus.codexConfigValid === false
+      ? 'invalid'
+      : 'ready';
+  /*
+   * The per-client controls — one state machine shared with the map sheet's button column
+   * (`useAgentClientControls`). Called before the early return below because it holds hooks;
+   * with no loaded folder its output is simply never drawn.
+   */
+  const clientControls = useAgentClientControls({
+    serverAvailability,
+    /* Pass the tool through — `() => void handleEnsureAgentConfigs()` swallows the argument,
+       so whichever button was pressed, the same files went out. The promise is **returned**,
+       not voided: the button awaits it to decide between "written" and "failed". */
+    onWriteConfigs:
+      publicPackagesReady && canEditCurrent ? (client) => handleEnsureAgentConfigs(client) : null,
+    cursorDeeplink,
+    mcpJsonSnippet: buildMcpConfigJson(vaultNameForConfig, vaultRootPath),
+    replacementMcpJsonSnippet: buildMcpConfigJson(vaultNameForConfig, '.'),
+    codexCommand: buildCodexMcpAddCommandTemplate(vaultNameForConfig, vaultRootPath),
+    mcpJsonState,
+    codexConfigState,
+    codexConfigSnippet: buildCodexConfigTomlTemplate(vaultNameForConfig, '.'),
+    needsManualPath: vaultRootPath === null,
+  });
+
+  if (localVault.status !== 'loaded' || !agentStatus) return null;
+
   const agentSetupReady = Boolean(
     publicPackagesReady &&
       agentStatus.mcpJson &&
@@ -515,16 +549,6 @@ export function VaultAgentSetupPanel({
       agentStatus.mcpJsonValid !== false &&
       agentStatus.codexConfigValid !== false,
   );
-  const mcpJsonState = !agentStatus.mcpJson
-    ? 'missing'
-    : agentStatus.mcpJsonValid === false
-      ? 'invalid'
-      : 'ready';
-  const codexConfigState = !agentStatus.codexConfig
-    ? 'missing'
-    : agentStatus.codexConfigValid === false
-      ? 'invalid'
-      : 'ready';
   /**
    * The file set — **the role label was removed** (2026-08-04). 「Claude Code ·
    * Cursor Connection File」 was a fourth statement of what the tool name beside it, the
@@ -795,174 +819,160 @@ export function VaultAgentSetupPanel({
   } --timeout-ms 15000`;
   const agentJsonGatePreview = buildOntologyStarterJsonGateCommand(vaultRootPath);
 
-  /**
-   * There is one thing to do now — decided **only from what the app actually knows.**
-   *
-   * Step 1 (config files) is known by looking at disk. Steps 2 (restart) and 3
-   * (verify connection) are unknowable in principle — Atlas does not connect to the
-   * agent (`connectionHint` already says so). So those two **never complete
-   * automatically**, and the user can open them directly instead. Rather than
-   * pretending to know what it does not, it guides the order only.
-   */
-  const stepOneDone = agentSetupReadyCount === agentSetupFiles.length;
-  const currentStep = stepOneDone ? 2 : 1;
-  const openStep = openStepOverride ?? currentStep;
-  const toggleStep = (n: number) => setOpenStepOverride(openStep === n ? 0 : n);
-  const stepState = (n: number): AgentSetupStepState => {
-    if (n === 1) return stepOneDone ? 'done' : 'now';
-    return n === currentStep ? 'now' : 'todo';
+
+  const clientRows = clientControls.controls;
+  const closeVerify = () => {
+    setVerifyOpen(false);
+    setAdvancedOpen(false);
   };
 
   return (
-    <section aria-label={t('agentSetup.ariaLabel')} className="min-w-0">
-      {/*
-        **The head is two lines** (2026-08-04). There used to be another `<h3>` title
-        here, while the left LNB was already naming this pane at the same eye level —
-        the same name is written once instead of twice. The name survives as the
-        region's accessible name, so it is not lost to assistive technology.
-
-        ⚠️ That LNB name changed to 「MCP」 on 2026-08-16, and the accessible name moved
-        with it — otherwise the name on screen and the name a screen reader speaks
-        diverge, and that mismatch is invisible forever to anyone looking at the screen.
-      */}
-      <p className="break-keep text-body text-[color:var(--color-text-tertiary)]">
-        {publicPackagesReady
-          ? t('agentSetup.statusSummary', {
-              ready: agentSetupReadyCount,
-              total: agentSetupFiles.length,
-            })
-          : t('agentSetup.serverStatusSummary')}
-        {publicPackagesReady && nextMissingAgentConfig ? (
-          /*
-           * ⚠️ **No `font-mono` here** (2026-09-05). This is a whole sentence that happens to
-           * contain a path, and it used to be set in monospace end to end. In Korean that face
-           * has no metrics to align and buys nothing but a harder read; monospace belongs on a
-           * command or an address, not on the words around one. The amber still marks it as the
-           * line that needs attention.
-           */
-          <span className="text-[color:var(--color-amber-source-text-a95)]">
-            {' · '}
-            {agentStatus[nextMissingAgentConfig.key]
-              ? t('agentSetup.nextInvalid', { path: nextMissingAgentConfig.path })
-              : t('agentSetup.nextMissing', { path: nextMissingAgentConfig.path })}
-          </span>
-        ) : null}
-      </p>
-      <p className="mt-1 break-keep text-label text-[color:var(--color-text-quaternary)]">
-        {publicPackagesReady
-          ? agentSetupReady
-            ? t('agentSetup.rootSummaryReady')
-            : t('agentSetup.rootSummaryMissing')
-          : t('agentSetup.rootSummaryBlocked')}
-      </p>
+    <section
+      aria-label={t('agentSetup.ariaLabel')}
+      className="min-w-0"
+      data-testid="vault-agent-setup-panel"
+    >
       {/*
         ⚠️ **The diagnosis that existed and was never drawn** (census state 5d, 2026-08-31).
         `agent_setup.rs` composes a `reason` for a bundled server it cannot find, its own doc
         comment says the UI shows it verbatim, and `AgentServerAvailability.reason` repeats the
-        promise — yet no component in `src/` read the field. So an installed app whose MCP server
-        binary is missing quietly dropped the connect option and explained nothing.
-
-        It renders only when there is a real diagnosis: a web session sets no reason (not being
-        the installed app is the ordinary state, and the line above already says it), so this is
-        the installed app's row alone.
+        promise — yet no component in `src/` read the field. It renders only when there is a real
+        diagnosis: a web session sets no reason, so this is the installed app's row alone.
       */}
       {!publicPackagesReady && serverAvailability.reason ? (
         <p
           role="status"
           data-testid="agent-setup-server-reason"
-          className="mt-1 break-keep text-label leading-prose text-[color:var(--color-amber-source-text-a95)]"
+          className="mb-3 break-keep text-label leading-prose text-[color:var(--color-amber-source-text-a95)]"
         >
           {t('agentSetup.serverMissingReason', { reason: serverAvailability.reason })}
         </p>
       ) : null}
 
       {/*
-        ── Three steps ─────────────────────────────────────────────────
-        Only one expands at a time. On the web (where we do not know how to launch a
-        server), step 1 *is* the degradation card, so steps 2 and 3 do not exist —
-        showing a step that is not there, greyed out, is a dead end rather than guidance.
+        ── One row per tool (2026-09-19) ──────────────────────────────────
+        The owner, on the three-step accordion this replaced: *"this design is poor — make it
+        properly; a popup, say."* The step list buried the only decision a person makes here
+        (which tool) under a status sentence, a numbered title and a paragraph, and hid what
+        Atlas already knows (which file exists) behind a fold. Now the tab reads like the tool
+        list beside it: one row per tool — its mark, its name, the file it writes — and on the
+        right the one control in that tool's own state (connect, copy, or ready). What Atlas
+        cannot know on its own (did you restart, did it attach) opens as a dialog from the
+        heading, together with everything that used to sit under "not working?".
+
+        The server-lifetime sentence and the folder-root note stand in the hint beside the
+        heading: both are answers to a question a person asks once, not a paragraph to pass
+        every time.
       */}
-      <ol
-        aria-label={t('agentSetup.stepListAriaLabel')}
-        data-testid="agent-setup-steps"
-        className="mt-3 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
+      <SettingsGroup
+        label={tMcp('shareHeading')}
+        testId="agent-setup-steps"
+        trailing={
+          publicPackagesReady ? (
+            <>
+              <InfoHint label={t('agentSetup.serverHintLabel')} align="right">
+                <p
+                  data-testid="agent-connect-server-line"
+                  className="break-keep text-label leading-prose text-[color:var(--color-text-secondary)]"
+                >
+                  {tc('serverLine')}
+                </p>
+                <p className="mt-2 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+                  {agentSetupReady
+                    ? t('agentSetup.rootSummaryReady')
+                    : t('agentSetup.rootSummaryMissing')}
+                </p>
+              </InfoHint>
+              <Chip
+                size="sm"
+                tone="secondary"
+                data-testid="agent-setup-verify-open"
+                onClick={() => setVerifyOpen(true)}
+                className={NEUTRAL_COPY_CHIP}
+              >
+                <CheckCircle2 size={ICON_SIZE.sm} aria-hidden />
+                {tc('step3Title')}
+              </Chip>
+            </>
+          ) : null
+        }
       >
-        <AgentSetupStep
-          n={1}
-          testId="agent-setup-step-1"
-          title={tc('step1Title')}
-          desc={publicPackagesReady ? tc('step1Desc') : undefined}
-          state={publicPackagesReady ? stepState(1) : 'now'}
-          trailing={
-            publicPackagesReady && stepOneDone ? t('agentSetup.stepStateDone') : undefined
-          }
-          open={publicPackagesReady ? openStep === 1 : true}
-          onToggle={() => toggleStep(1)}
-        >
-          <AgentClientButtons
-            serverAvailability={serverAvailability}
-            /* Pass the tool through — `() => void handleEnsureAgentConfigs()` swallows
-               the argument, so whichever button was pressed, the same files went out. */
-            onWriteConfigs={
-              publicPackagesReady && canEditCurrent
-                ? /* The promise is **returned**, not voided: the button awaits it to decide
-                     between "written" and "failed", and voiding it made every failed write draw
-                     the success tick. */
-                  (client) => handleEnsureAgentConfigs(client)
-                : null
-            }
-            /* The four are **pick one**, not «one right answer» — four full-width rows
-               each read as a large decision (owner report, 2026-08-04). Two columns
-               read as one set and turn 152px of height into 76px. */
-            layout="grid"
-            cursorDeeplink={cursorDeeplink}
-            mcpJsonSnippet={buildMcpConfigJson(vaultNameForConfig, vaultRootPath)}
-            replacementMcpJsonSnippet={buildMcpConfigJson(vaultNameForConfig, '.')}
-            codexCommand={buildCodexMcpAddCommandTemplate(vaultNameForConfig, vaultRootPath)}
-            mcpJsonState={mcpJsonState}
-            codexConfigState={codexConfigState}
-            codexConfigSnippet={buildCodexConfigTomlTemplate(vaultNameForConfig, '.')}
-            needsManualPath={vaultRootPath === null}
-          />
-        </AgentSetupStep>
-        {publicPackagesReady ? (
-          <>
-            <AgentSetupStep
-              n={2}
-              testId="agent-setup-step-2"
-              title={tc('step2Title')}
-              desc={tc('step2Desc')}
-              state={stepState(2)}
-              open={openStep === 2}
-              onToggle={() => toggleStep(2)}
+        {clientRows ? (
+          AGENT_CLIENTS.map((client) => (
+            <SettingsRow
+              key={client.id}
+              testId={`agent-setup-row-${client.id}`}
+              icon={client.icon}
+              iconInk={client.brandInk}
+              label={client.name}
+              /* The file this row writes, so "ready" and "connect" both say which file they mean. */
+              caption={client.files.join(' · ')}
+              /* One column: every control is `w-full` inside the same fixed slot, so the four
+                 buttons share a left edge instead of a ragged one (owner detail rule, 2026-09-12:
+                 a group of controls fills a grid). The slot fits the longest label. */
+              control={<span className="flex w-52 max-w-full">{clientRows[client.id]}</span>}
             />
-            {/*
-              **`step3Desc` is not used here** (2026-08-02, design council). That
-              sentence reads "Once an agent starts reading this map it will show here",
-              but the
-              heartbeat signal that keeps that promise belongs **only to the map
-              sheet** (`use-agent-connect-model.ts`). What this screen knows stops at
-              the config files' validity, so leaving the sentence would make it a
-              promise we do not keep. It gives **what this screen actually knows**
-              (file status) and a way for the person to verify directly (the per-tool
-              check command) instead.
-            */}
-            <AgentSetupStep
-              n={3}
-              testId="agent-setup-step-3"
-              title={tc('step3Title')}
-              state={stepState(3)}
-              open={openStep === 3}
-              onToggle={() => toggleStep(3)}
-            >
-              {/*
-                One step = one box. With the status line and the per-tool check method
-                floating separately, "what is this step" reads as two lumps — the very
-                flatness this screen set out to fix. They are bound into one and split
-                inside by a hairline. (The check method used to live only inside the
-                advanced fold. It *is* the content of the "Check Connection" step, so this is
-                its home.)
-              */}
+          ))
+        ) : (
+          /* No launchable server (a browser): the degradation card and the by-hand panel are
+             the group's whole body — there is no per-tool button to put on a row. */
+          <div className="flex flex-col gap-2 p-3">{clientControls.serverUnavailable}</div>
+        )}
+      </SettingsGroup>
+      {clientControls.manualPathNote ? (
+        <div className="mt-2 px-1">{clientControls.manualPathNote}</div>
+      ) : null}
+
+      {/*
+        ── Check the connection (dialog) ─────────────────────────────────
+        Steps 2 and 3 of the old list are unknowable in principle — Atlas does not connect to
+        the agent — so they never completed on their own and only ever guided the order. They
+        keep doing that, one press away, with the proof packet ending the step whose job is
+        proving it (2026-09-05) and the former "not working?" fold under them.
+      */}
+      {publicPackagesReady ? (
+        <Dialog
+          open={verifyOpen}
+          onClose={closeVerify}
+          size="md"
+          labelledBy="agent-setup-verify-title"
+          testId="agent-setup-verify-dialog"
+          className="max-h-[min(80vh,var(--dialog-max-h))] overflow-y-auto"
+        >
+          <h2
+            id="agent-setup-verify-title"
+            className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+          >
+            {tc('step3Title')}
+          </h2>
+          <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+            {t('agentSetup.statusSummary', {
+              ready: agentSetupReadyCount,
+              total: agentSetupFiles.length,
+            })}
+            {nextMissingAgentConfig ? (
+              <span className="text-[color:var(--color-amber-source-text-a95)]">
+                {' · '}
+                {agentStatus[nextMissingAgentConfig.key]
+                  ? t('agentSetup.nextInvalid', { path: nextMissingAgentConfig.path })
+                  : t('agentSetup.nextMissing', { path: nextMissingAgentConfig.path })}
+              </span>
+            ) : null}
+          </p>
+
+          <section data-testid="agent-setup-step-2" className="mt-4">
+            <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+              {tc('step2Title')}
+            </h3>
+            <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+              {tc('step2Desc')}
+            </p>
+          </section>
+
+          <section data-testid="agent-setup-step-3" className="mt-4 flex flex-col gap-2">
+            <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+              {tc('step3Title')}
+            </h3>
               <div className="divide-y divide-[color:var(--color-divider)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)]">
                 <div className="flex items-center gap-2 px-2.5 py-2">
                   <span
@@ -1011,44 +1021,35 @@ export function VaultAgentSetupPanel({
                 vaultName={vaultNameForConfig}
                 vaultPath={vaultRootPath}
               />
-            </AgentSetupStep>
-          </>
-        ) : null}
-      </ol>
+          </section>
 
-      {/*
-        ── Having trouble? ──────────────────────────────────────────────
-        Advanced, verification, CLI and connecting from another folder all sit behind
-        this. It is **collapsed, not deleted**, so everything collapsed must remain
-        reachable.
-      */}
-      {publicPackagesReady ? (
-        <button
-          type="button"
-          onClick={() => setAdvancedOpen((v) => !v)}
-          aria-expanded={advancedOpen}
-          aria-controls="agent-setup-advanced"
-          data-testid="agent-setup-advanced-toggle"
-          className={controlClass({
-            shape: 'link',
-            size: 'md',
-            tone: 'muted',
-            className: 'touch-hit-expand mt-3 hover:text-[color:var(--color-text-secondary)]',
-          })}
-        >
-          <ChevronDown
-            size={ICON_SIZE.sm}
-            aria-hidden
-            className="transition-transform"
-            style={{ transform: advancedOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
-          />
-          {t('agentSetup.troubleshootToggle')}
-        </button>
-      ) : null}
-      {/* The box is always drawn (the transition's starting height) — only the content
-          drops out of the collapse. The `id` lives on the box so the toggle's
-          `aria-controls` target exists even mid-collapse, and the testid lives on the
-          content so the "absent when collapsed" contract holds. */}
+          {/*
+            ── Having trouble? ──────────────────────────────────────────────
+            Advanced, verification, CLI and connecting from another folder all sit behind
+            this. It is **collapsed, not deleted**, so everything collapsed must remain
+            reachable.
+          */}
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen((v) => !v)}
+            aria-expanded={advancedOpen}
+            aria-controls="agent-setup-advanced"
+            data-testid="agent-setup-advanced-toggle"
+            className={controlClass({
+              shape: 'link',
+              size: 'md',
+              tone: 'muted',
+              className: 'touch-hit-expand mt-4 hover:text-[color:var(--color-text-secondary)]',
+            })}
+          >
+            <ChevronDown
+              size={ICON_SIZE.sm}
+              aria-hidden
+              className="transition-transform"
+              style={{ transform: advancedOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+            />
+            {t('agentSetup.troubleshootToggle')}
+          </button>
       <section
         ref={advancedBoxRef}
         id="agent-setup-advanced"
@@ -1543,6 +1544,13 @@ export function VaultAgentSetupPanel({
           </div>
         ) : null}
       </section>
+          <div className="mt-4 flex justify-end">
+            <Chip size="lg" tone="secondary" onClick={closeVerify} className={NEUTRAL_COPY_CHIP}>
+              {tc('close')}
+            </Chip>
+          </div>
+        </Dialog>
+      ) : null}
       {agentSetupError ? (
         <p role="alert" className="mt-2 text-label text-[color:var(--color-status-danger)]">
           {agentSetupError}
