@@ -4764,6 +4764,7 @@
     "shareHeading": "이 폴더 내주기",
     "connectorsHeading": "연결 도구",
     "connectorsHeadingCount": "연결 도구 · 켜 둔 {count}개",
+    "connectorsNeedFolder": "연결 도구는 폴더 안에 적힙니다. 위에서 폴더를 열면 여기에 나타나요.",
     "connectorsCountTitle": "켜 둔 연결 도구 수"
   },
   "connectors": {

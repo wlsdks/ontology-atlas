@@ -74,6 +74,7 @@ export function McpPage({
    * until the store answers; the number the moment it does.
    */
   const countKnown = connectors.status === 'ready';
+  const noFolder = connectors.status === 'unavailable';
 
   /*
    * The "add a connector" press lives in the group heading, beside the count, where the share
@@ -175,6 +176,22 @@ export function McpPage({
             ) : null
           }
         />
+        {noFolder ? (
+          /*
+           * **One ask, not two** (2026-09-19). With no folder open the share group above already
+           * says so and carries the button, and the connectors card said it again in its own
+           * words with a second button of its own — the same request twice on one tab. The
+           * heading stays, because a person should still learn this screen holds connectors;
+           * what goes is the duplicate card. The panel keeps its own no-folder state for every
+           * other caller, and its component test still owns it.
+           */
+          <p
+            data-testid="mcp-connectors-need-folder"
+            className="mt-1.5 max-w-2xl break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+          >
+            {t('connectorsNeedFolder')}
+          </p>
+        ) : (
         <div className="mt-1.5">
           <ConnectorsPanel
             handle={handle}
@@ -196,6 +213,7 @@ export function McpPage({
             }
           />
         </div>
+        )}
       </section>
     </section>
   );

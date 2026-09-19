@@ -4764,6 +4764,7 @@
     "shareHeading": "Share this folder",
     "connectorsHeading": "Connectors",
     "connectorsHeadingCount": "Connectors · {count} on",
+    "connectorsNeedFolder": "Connectors are written inside the folder. Open one above and they appear here.",
     "connectorsCountTitle": "Connectors switched on"
   },
   "connectors": {

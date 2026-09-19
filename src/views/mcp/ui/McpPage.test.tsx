@@ -41,6 +41,21 @@ function draw(next: Partial<VaultConnectorsState>) {
   );
 }
 
+describe('MCP 탭 — 폴더는 한 번만 청한다', () => {
+  it('폴더가 없으면 연결 도구 칸은 카드 대신 한 줄로, 두 번째 버튼 없이', () => {
+    draw({ status: 'unavailable' });
+    expect(screen.getByTestId('mcp-connectors-need-folder')).toBeInTheDocument();
+    // The share group above already asks and carries the button; the panel is not drawn at all.
+    expect(screen.queryByTestId('connectors-panel')).toBeNull();
+  });
+
+  it('폴더가 있으면 연결 도구 판을 그대로 그린다', () => {
+    draw({ status: 'ready' });
+    expect(screen.getByTestId('connectors-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('mcp-connectors-need-folder')).toBeNull();
+  });
+});
+
 describe('MCP 탭 — 아직 모르는 수를 말하지 않는다', () => {
   it('폴더를 읽는 중에는 머리글이 개수를 주장하지 않는다', () => {
     draw({ status: 'loading' });
