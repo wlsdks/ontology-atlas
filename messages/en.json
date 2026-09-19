@@ -471,7 +471,9 @@
       },
       "blind": {
         "title": "Kept out of the agent’s view",
-        "body": "Files that say what an agent must not look at. The name differs per product: .cursorignore for Cursor, .codeiumignore for Windsurf, .aiexclude for Gemini Code Assist, .geminiignore for Gemini CLI, .aiignore for JetBrains. A repository can write one; whether the tool honours it is the tool’s business."
+        "body": "Files that say what an agent must not look at. A repository can write one; whether the tool honours it is the tool’s business.",
+        "hintLabel": "Each product uses a different file name",
+        "hint": "Cursor reads `.cursorignore` and `.cursorindexingignore`, Windsurf `.codeiumignore`, Gemini Code Assist `.aiexclude`, the Gemini command-line tool (CLI) `.geminiignore`, JetBrains `.aiignore`. JetBrains also honours the first three at a repository root. There is no `.claudeignore`: Claude Code uses `.gitignore` for discovery and its settings’ deny list for the rest. `.agentignore` is a proposal, not a standard."
       }
     },
     "anatomyUnits": {

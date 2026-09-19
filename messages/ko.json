@@ -471,7 +471,9 @@
       },
       "blind": {
         "title": "에이전트 눈에서 빼둔 것",
-        "body": "에이전트가 보면 안 된다고 적어 둔 파일입니다. 이름은 도구마다 다릅니다: Cursor `.cursorignore`, Windsurf `.codeiumignore`, Gemini Code Assist `.aiexclude`, Gemini 명령줄 도구(CLI) `.geminiignore`, JetBrains `.aiignore`. 저장소는 적어 둘 뿐이고, 지키는지는 그 도구가 정합니다."
+        "body": "에이전트가 보면 안 된다고 적어 둔 파일입니다. 저장소는 적어 둘 뿐이고, 지키는지는 그 도구가 정합니다.",
+        "hintLabel": "도구마다 파일 이름이 다릅니다",
+        "hint": "도구별로 읽는 파일: Cursor `.cursorignore`, `.cursorindexingignore` · Windsurf `.codeiumignore` · Gemini Code Assist `.aiexclude` · Gemini 명령줄 도구(CLI) `.geminiignore` · JetBrains `.aiignore`. JetBrains 제품은 앞의 셋도 뿌리에 있으면 같이 지킵니다. `.claudeignore` 라는 파일은 없습니다. Claude Code 제품은 파일 탐색에 `.gitignore` 파일을 쓰고, 나머지는 설정의 금지 항목으로 막습니다. `.agentignore` 파일은 아직 제안이라 표준이 아닙니다."
       }
     },
     "anatomyUnits": {

@@ -65,6 +65,7 @@ function SlotRow({
   copied,
   onCopy,
   extraHint,
+  bodyHint,
 }: {
   slot: AnatomySlot;
   t: TranslateFn;
@@ -72,6 +73,8 @@ function SlotRow({
   extra?: string | null;
   /** The hint that line needs when the number is one a reader will want to argue with. */
   extraHint?: string | null;
+  /** Detail a row's one sentence should not carry, behind this destination's usual hint. */
+  bodyHint?: string | null;
   copied: boolean;
   onCopy: (slot: AnatomySlot) => void;
 }) {
@@ -112,9 +115,23 @@ function SlotRow({
             : t(`anatomyUnits.${slot.id}`, { count: slot.count })}
         </span>
       </div>
-      <p className="mt-1 max-w-prose break-keep text-caption text-[color:var(--color-text-tertiary)]">
-        {t(`anatomySlots.${slot.id}.body`)}
-      </p>
+      <div className="mt-1 flex max-w-prose flex-wrap items-baseline gap-x-1">
+        <p className="min-w-0 break-keep text-caption text-[color:var(--color-text-tertiary)]">
+          {t(`anatomySlots.${slot.id}.body`)}
+        </p>
+        {/*
+          ⚠️ **A row's body is one sentence, and a row that needed five product names was four
+          lines long** while every other row was one or two (measured 1512×949, 2026-09-20). The
+          list is a real fact and it is not the row's claim, so it moves behind the same hint the
+          rest of this destination uses for "here is the working behind that". The sentence keeps
+          the limit that matters — the repository writes the file, the tool decides.
+        */}
+        {bodyHint ? (
+          <InfoHint align="left" label={t(`anatomySlots.${slot.id}.hintLabel`)}>
+            {bodyHint}
+          </InfoHint>
+        ) : null}
+      </div>
       {extra ? (
         /* ⚠️ A `div`, not a `p`. `InfoHint` renders its panel as a `div`, and a `div` inside a `p`
            is invalid HTML that React reports as a hydration error — which is exactly what the
@@ -244,6 +261,7 @@ export function HarnessAnatomyView({ report }: { report: HarnessReport }) {
                     copied={copiedId === slot.id}
                     onCopy={copy}
                     extraHint={slot.id === 'always' ? t('anatomyAlwaysWeightHint') : null}
+                    bodyHint={slot.id === 'blind' ? t('anatomySlots.blind.hint') : null}
                     extra={
                       slot.id === 'permissions' && anatomy.permissions
                         ? t('anatomyPermissionSplit', {
