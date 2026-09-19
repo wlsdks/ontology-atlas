@@ -207,6 +207,18 @@ const DUPLICATE_DISCLOSURE_LIMIT = 24;
  * group can show before its own remainder line takes over.
  */
 const DO_NEXT_PER_KIND_LIMIT = 5;
+
+/**
+ * What a group's own "show all" raises that limit to.
+ *
+ * ⚠️ **The rows have to exist before a control can reveal them.** The remainder line used to be a
+ * sentence with no control, naming rows a person could not reach; a button inside the group could
+ * not have produced them either, because the queue itself is built five per kind and the sixth row
+ * was never made (measured 2026-09-20). Raising the supply is what makes the control honest. It is
+ * a bound rather than "all": the group head keeps stating the true count, and the remainder line
+ * still appears for anything past this.
+ */
+const DO_NEXT_SHOW_ALL_LIMIT = 50;
 /**
  * The validation codes that have a plain sentence of their own. An unlisted code falls back to
  * `blockedReason.other`, so a blocked row always says something rather than nothing.
@@ -666,9 +678,14 @@ export function OntologyInsightsPage() {
    * the single verdict.
    */
   const vaultValidation = useVaultValidationSummary();
+
+  /** Raised once, by a group asking for its whole list. Kinds share one supply, so all groups gain. */
+  const [doNextShowAllRows, setDoNextShowAllRows] = useState(false);
+  const doNextPerKindLimit = doNextShowAllRows ? DO_NEXT_SHOW_ALL_LIMIT : DO_NEXT_PER_KIND_LIMIT;
+
   const blockedDocuments = useMemo(
-    () => buildBlockedDocumentRows(vaultValidation, DO_NEXT_PER_KIND_LIMIT),
-    [vaultValidation],
+    () => buildBlockedDocumentRows(vaultValidation, doNextPerKindLimit),
+    [vaultValidation, doNextPerKindLimit],
   );
   const blockedDocumentCount = useMemo(
     () => countBlockedDocuments(vaultValidation),
@@ -830,10 +847,10 @@ export function OntologyInsightsPage() {
   const doNextQueue = useMemo(
     () =>
       buildDoNextQueue(nodes, edges, docFreshnessIndex, {
-        perKindLimit: DO_NEXT_PER_KIND_LIMIT,
+        perKindLimit: doNextPerKindLimit,
         prose: handoffProse,
       }),
-    [nodes, edges, docFreshnessIndex, handoffProse],
+    [nodes, edges, docFreshnessIndex, handoffProse, doNextPerKindLimit],
   );
 
   // What this session can actually do right now — the only input to the "mine first"
@@ -862,10 +879,10 @@ export function OntologyInsightsPage() {
   const meaningGapResult = useMemo(
     () =>
       buildMeaningGapRows(nodes, conceptFacts, {
-        perKindLimit: DO_NEXT_PER_KIND_LIMIT,
+        perKindLimit: doNextPerKindLimit,
         prose: handoffProse,
       }),
-    [nodes, conceptFacts, handoffProse],
+    [nodes, conceptFacts, handoffProse, doNextPerKindLimit],
   );
   const domainChoices = useMemo(() => buildDomainChoices(nodes), [nodes]);
 
@@ -1254,6 +1271,7 @@ export function OntologyInsightsPage() {
   const doNextLabels = {
     listTitle: (count: number) => t("doNext.listTitle", { count }),
     moreCount: (count: number) => t("doNext.moreCount", { count }),
+    showAll: t("doNext.showAll"),
     // One name per finding group. The sentence the rows inside repeat is said once, here.
     groupName: (group: DoNextGroupKey) => t(`doNext.group.${group}`),
     groupToggle: (name: string, count: number) =>
@@ -1647,6 +1665,7 @@ export function OntologyInsightsPage() {
             ) : null}
             {tab === "do-next" ? (
               <DoNextTab
+                onShowAllRows={() => setDoNextShowAllRows(true)}
                 totalCount={insightsVerdict.total}
                 queue={doNextQueue}
                 groupCounts={doNextGroupCounts}

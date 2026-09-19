@@ -192,3 +192,60 @@ test.describe("분석 브리핑 — 제자리 전환이 초점과 낱말을 흘�
     expect(ambiguous, `같은 낱말이 서로 다른 결과로 보낸다: ${ambiguous.join(", ")}`).toEqual([]);
   });
 });
+
+/**
+ * **Leaving a row has to claim it, or coming back cannot restore it.**
+ *
+ * The restoration machinery was real and only the overflow menu reached it: the visible chips
+ * carried the review id in their own href but never wrote it to this board's address, so pressing
+ * the one visible way out and then pressing Back returned to a collapsed group with nothing to
+ * restore from (design-interaction, 2026-09-20).
+ */
+test.describe("고칠 것 — 줄을 떠나면 그 줄을 붙잡는다", () => {
+  test.use({ viewport: { width: 1512, height: 900 } });
+
+  test("보이는 칩으로 나갔다 돌아오면 그 줄이 살아 있다", async ({ page }) => {
+    await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
+    const view = page.getByTestId("do-next-item-view").first();
+    await expect(view, "고칠 것에 보이는 칩이 없다 — 이 시험이 공회전한다").toBeVisible({ timeout: 20_000 });
+
+    await view.click();
+    await expect(page).toHaveURL(/\/topology\//);
+
+    await page.goBack();
+    await expect(page.locator('[data-insights-panel="do-next"]')).toBeVisible();
+    // The address carries the claim, and the screen shows it.
+    await expect(page).toHaveURL(/review=/);
+    await expect(page.getByTestId("do-next-review-status")).toBeVisible();
+  });
+});
+
+/**
+ * **A remainder that names rows has to be able to show them.**
+ *
+ * The line read "2 more: check the full list with the agent" and carried no control, on a surface
+ * where that agent is not rendered at all. A button alone would not have been enough either: the
+ * queue is built five per kind, so the sixth row did not exist until the supply was raised
+ * (measured 2026-09-20).
+ */
+test.describe("고칠 것 — 남은 줄에 문이 있다", () => {
+  test.use({ viewport: { width: 1512, height: 900 } });
+
+  test("「모두 보기」가 이름만 있던 줄을 실제로 연다", async ({ page }) => {
+    await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("do-next-list")).toBeVisible({ timeout: 20_000 });
+
+    const group = page.locator('[data-testid="do-next-group"][data-group-kind="promotion"]');
+    await group.getByTestId("do-next-group-toggle").click();
+    await expect(group).toHaveAttribute("data-group-open", "true");
+
+    const rows = () => group.getByTestId("do-next-item-view").count();
+    const before = await rows();
+    // Idling guard: without a remainder there is no door and this test proves nothing.
+    await expect(group.getByTestId("do-next-group-truncated")).toBeVisible();
+
+    await group.getByTestId("do-next-group-show-all").click();
+    await expect(group.getByTestId("do-next-group-truncated")).toHaveCount(0);
+    expect(await rows(), "문을 열었는데 줄이 늘지 않았다").toBeGreaterThan(before);
+  });
+});

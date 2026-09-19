@@ -1832,7 +1832,7 @@
         "openBuilder": "지도에서 수정",
         "handoffCopy": "에이전트로 검증",
         "emptyQueue": "지금은 고칠 것이 없어요. 그래프가 건강합니다.",
-        "moreCount": "외 {count}개: 전체는 AI에게 이어서 확인",
+        "moreCount": "외 {count}개",
         "group": {
           "blocked-document": "검사에 막힌 문서",
           "island": "따로 떨어진 무리",
@@ -1936,7 +1936,8 @@
           "invalid-merged-uids": "merged_uids 형식이 맞지 않아요.",
           "duplicate-uid": "다른 문서와 uid가 겹쳐요.",
           "other": "파일 맨 위 정보칸에 문제가 있어요."
-        }
+        },
+        "showAll": "모두 보기"
       },
       "flow": {
         "title": "제품 흐름",

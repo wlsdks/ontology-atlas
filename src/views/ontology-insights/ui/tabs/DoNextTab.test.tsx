@@ -49,6 +49,7 @@ const NO_COUNTS: DoNextGroupCounts = {
 const labels: DoNextTabLabels = {
   listTitle: (count) => `${count} things to fix`,
   moreCount: (count) => `+${count} more`,
+  showAll: 'Show all',
   groupName: (group) => GROUP_NAMES[group],
   groupToggle: (name, count) => `${name}, ${count} items`,
   emptyQueue: "Nothing needs attention.",

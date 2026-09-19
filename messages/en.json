@@ -1832,7 +1832,7 @@
         "openBuilder": "Edit on map",
         "handoffCopy": "Verify with agent",
         "emptyQueue": "Nothing needs attention: the graph is healthy.",
-        "moreCount": "+{count} more: full list via agent handoff",
+        "moreCount": "+{count} more",
         "group": {
           "blocked-document": "Documents the check stops",
           "island": "Disconnected groups",
@@ -1936,7 +1936,8 @@
           "invalid-merged-uids": "merged_uids is not in the right shape.",
           "duplicate-uid": "Another document claims the same uid.",
           "other": "Something is wrong in the information block at the top of the file."
-        }
+        },
+        "showAll": "Show all"
       },
       "flow": {
         "title": "Product flow",
