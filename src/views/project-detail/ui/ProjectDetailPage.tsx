@@ -96,7 +96,9 @@ function ProjectDetailShell({ children, dock = null }: { children: ReactNode; do
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={MOTION.base}
-          className="mx-auto w-full max-w-[var(--page-max)]"
+          // The page column is a named container: with the agent dock open the column is
+          // narrower than the viewport says, and the two-track zone below reads the column.
+          className="@container/project-page mx-auto w-full max-w-[var(--page-max)]"
         >
           {children}
         </motion.div>
@@ -568,16 +570,20 @@ export function ProjectDetailPage({
       {/* zone 1 — hero band: glyph, title, and description plus the engraved metric strip and the
           topology/edit actions. **The right column is deliberately empty** — see the comment below
           about removing the radial map. */}
-      <header className="mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[18px_20px] shadow-[inset_0_1px_0_var(--color-overlay-1)] lg:p-[18px_26px]">
+      <header className="@container/project-hero mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[18px_20px] shadow-[inset_0_1px_0_var(--color-overlay-1)] lg:p-[18px_26px]">
         <div className="flex min-w-0 flex-1 flex-col">
           {/*
-            The action cluster stands beside the name only from `xl`. Below that it takes a row
-            of its own: with `sm:flex-nowrap` the four controls kept their full width and the
-            name column took what was left — 250px at 1024 and 80px at 768, where "Online Store"
-            broke in two and the definition ran nine lines (measured 2026-09-19). A name and its
-            definition outrank four buttons, so the buttons are the ones that move.
+            The action cluster stands beside the name only when the hero band itself is wide
+            enough (`@5xl`, 64rem of the `project-hero` container). Below that it takes a row of
+            its own: with `sm:flex-nowrap` the four controls kept their full width and the name
+            column took what was left — 250px at 1024 and 80px at 768, where "Online Store" broke
+            in two and the definition ran nine lines (measured 2026-09-19). A viewport breakpoint
+            (`xl:`) fixed those widths and then failed the same way with the agent dock open at
+            1280, where the band is 600px wide under an `xl` viewport (captured the same day). The
+            band's own width is the fact; a name and its definition outrank four buttons, so the
+            buttons are the ones that move.
           */}
-          <div className="flex flex-wrap items-start gap-3.5 xl:flex-nowrap">
+          <div className="flex flex-wrap items-start gap-3.5 @5xl/project-hero:flex-nowrap">
             <OntologyMapKindGlyph kind="project" size={30} className="mt-1 shrink-0" />
             <div className="min-w-0 flex-1">
               <InlineEditable
@@ -620,7 +626,7 @@ export function ProjectDetailPage({
             </div>
             {/* `flex-none` created horizontal overflow at a 390px viewport, the read-only badge and
                 its actions pushing the page out — allow shrinking with `min-w-0` and wrap instead. */}
-            <div className="flex min-w-0 basis-full flex-wrap items-center gap-2 xl:ml-auto xl:basis-auto">
+            <div className="flex min-w-0 basis-full flex-wrap items-center gap-2 @5xl/project-hero:ml-auto @5xl/project-hero:basis-auto">
               {/*
                 Order and weight follow what a person on this page does most: open the project on the
                 map. That is the one filled control; the review-envelope picker beside it is a
@@ -801,7 +807,12 @@ export function ProjectDetailPage({
           "connected projects" in particular is the first surface of treating project-to-project
           relations as ontology, so it must not be hidden behind a tab (the same grammar as the
           left/right split of the history destination). */}
-      <section className="mt-[var(--section-gap)] grid grid-cols-1 items-start gap-[var(--card-gap)] lg:grid-cols-[minmax(0,1fr)_400px]">
+      {/*
+        Two tracks from `@3xl` (48rem) of the page column, not from the `lg` viewport: with the
+        agent dock open at 1280 the column is about 600px under an `xl` viewport, and the viewport
+        rule squeezed the overview card to 170px beside a 400px rail (captured 2026-09-19).
+      */}
+      <section className="mt-[var(--section-gap)] grid grid-cols-1 items-start gap-[var(--card-gap)] @3xl/project-page:grid-cols-[minmax(0,1fr)_400px]">
         {/* The left column is **the tab body**. Putting composition in its own section and hiding it
             with `hidden` made the grid's first track vanish under `display:none`, pulling the 400px
             right rail into the 1fr track and stretching it (a measured defect). If the left **always
