@@ -265,6 +265,7 @@ export function CommitDetail({
               </div>
               {focusedFile ? (
                 <div className="px-5 pt-3">
+                  {focusedFile.status !== "deleted" ? (
                   <RestoreDock
                     t={t}
                     path={focusedFile.path}
@@ -275,6 +276,7 @@ export function CommitDetail({
                     busy={restoreBusy}
                     onRestore={onRestore}
                   />
+                  ) : null}
                   <DocumentHistory
                     t={t}
                     vaultPath={vaultPath}
@@ -337,8 +339,12 @@ export function CommitDetail({
               ))}
             </ul>
 
+            {/* A file this commit deleted has no content at this commit to restore; the door
+                would only open on a refusal, so it is not drawn. The document's own history
+                still lists the steps that hold its content. */}
             {activeFile ? (
               <div className="px-5 pt-3">
+                {files.find((file) => file.path === activeFile)?.status !== "deleted" ? (
                 <RestoreDock
                   t={t}
                   path={activeFile}
@@ -349,6 +355,7 @@ export function CommitDetail({
                   busy={restoreBusy}
                   onRestore={onRestore}
                 />
+                ) : null}
                 <DocumentHistory
                   t={t}
                   vaultPath={vaultPath}

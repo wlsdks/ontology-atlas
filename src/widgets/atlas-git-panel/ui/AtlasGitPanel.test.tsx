@@ -1599,3 +1599,78 @@ describe("AtlasGitPanel — 문서 하나의 이력", () => {
     expect(screen.queryByTestId("atlas-git-document-step")).toBeNull();
   });
 });
+
+describe("AtlasGitPanel — 열리지 않을 문은 그리지 않는다", () => {
+  it("커밋이 지운 파일에는 되돌리기 문이 없다 — 그 시점에 내용이 없으니까", async () => {
+    installDesktopGit({
+      history: [
+        {
+          shortHash: "del1234",
+          hash: "del1234def5678",
+          subject: "chore: retire the foo capability",
+          relativeTime: "2 hours ago",
+          isoTime: "2026-09-19T06:00:00.000Z",
+          files: [
+            { path: "docs/capabilities/foo.md", status: "deleted", kind: "capability", slug: "capabilities/foo", renamedFrom: null },
+          ],
+        },
+      ],
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+    await screen.findByTestId("atlas-git-commit-file");
+    expect(screen.queryByTestId("atlas-git-restore")).toBeNull();
+  });
+
+  it("이름을 바꾼 미커밋 문서에는 버리기 문이 없다 — 마지막 커밋은 옛 이름을 갖고 있으니까", async () => {
+    installDesktopGit({
+      diff: {
+        count: 1,
+        files: [
+          { path: "docs/elements/baz.md", status: "renamed", kind: "element", slug: "elements/baz", renamedFrom: "docs/elements/bar.md" },
+        ],
+        diff: "",
+      },
+      status: { ...STATUS_WITH_CHANGES, changedCount: 1 },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    // A rename has no diff lines, so the screen opens on the latest commit; open the "now" row.
+    fireEvent.click(await screen.findByTestId("atlas-git-pending-row"));
+    await screen.findByTestId("atlas-git-change-groups");
+    fireEvent.click(screen.getAllByTestId("atlas-git-change-row")[0]);
+    await waitFor(() => expect(screen.getByTestId("atlas-git-change-groups")).toHaveTextContent("baz"));
+    expect(screen.queryByTestId("atlas-git-discard")).toBeNull();
+  });
+});
+
+describe("AtlasGitPanel — 목록은 키보드로 걷는다", () => {
+  it("화살표가 행 사이를 옮기고, 탭 정지는 하나뿐이다", async () => {
+    const steps = Array.from({ length: 3 }, (_, i) => ({
+      shortHash: `k${i}000000`,
+      hash: `k${i}${"0".repeat(38)}`,
+      subject: `docs: step ${i}`,
+      relativeTime: `${i + 1} hours ago`,
+      isoTime: new Date(Date.parse("2026-09-19T08:00:00Z") - (i + 1) * 3_600_000).toISOString(),
+      files: [],
+    }));
+    installDesktopGit({ history: steps });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const rows = await screen.findAllByTestId("atlas-git-history-item");
+    expect(rows).toHaveLength(3);
+
+    const list = screen.getByTestId("atlas-git-steps");
+    const stops = Array.from(list.querySelectorAll("button")).filter((b) => b.tabIndex === 0);
+    expect(stops).toHaveLength(1);
+
+    rows[0].focus();
+    fireEvent.focus(rows[0]);
+    fireEvent.keyDown(rows[0], { key: "ArrowDown" });
+    await waitFor(() => expect(document.activeElement).toBe(rows[1]));
+    fireEvent.keyDown(rows[1], { key: "End" });
+    await waitFor(() => expect(document.activeElement).toBe(rows[2]));
+    // A press is still the deliberate act: moving focus selected nothing.
+    expect(rows[2]).toHaveAttribute("aria-expanded", "false");
+  });
+});
