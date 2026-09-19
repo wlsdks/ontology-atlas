@@ -92,6 +92,13 @@ export interface FirstRunStarterModuleProps {
    */
   nodeSelected?: boolean;
   /**
+   * The guided tour is pointing at the INDEX. The tour's INDEX step lit this
+   * card instead of the list it was describing — a first-run person starts the
+   * tour from this very card, so the card was always still open at that step
+   * (2026-09-19). The card folds for that step and returns when it is left.
+   */
+  indexSpotlit?: boolean;
+  /**
    * **This vault has no map built from code yet** — nothing in it points at a real repository.
    *
    * ⚠️ Deliberately *not* "has never opened a folder" (owner correction, 2026-08-24). That is the
@@ -157,6 +164,7 @@ export function FirstRunStarterModule({
   audiencePlain = false,
   lensActive = false,
   nodeSelected = false,
+  indexSpotlit = false,
   mapUnbuilt = false,
   agentAvailable = false,
   children,
@@ -386,7 +394,13 @@ export function FirstRunStarterModule({
       </>
     );
   // The guide was closed or collapsed — the single "back" row plus the INDEX.
-  if (!visible || collapsed) {
+  // The tour's INDEX step shows the list, not this card — derived, not stored:
+  // the card folds while the tour points at the list and is back the moment
+  // the step is left, because the dev persona's last step points at this very
+  // card (`first-run-starter`) and a card that stayed folded made that step
+  // unresolvable, ending the tour a page early (measured 2026-09-19). A card
+  // the person had already folded stays folded.
+  if (!visible || collapsed || indexSpotlit) {
     return (
       <>
         {reopenRow}
