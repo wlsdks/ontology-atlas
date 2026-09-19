@@ -241,17 +241,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: Run the workflow contracts above, inspect all eight required statuses on a narrow PR, then confirm the main push comparison and an exhaustive manual run
 **Fix**: update `scripts/classify-change.mjs`'s path-to-check rules so the new or moved path is classified instead of falling through as unknown.
 
-**Read the plan before landing.** `node scripts/classify-change.mjs --base=origin/main` prints
-the lanes in a second (`gates=true unit=full …`). It is worth asking, because the focused local
-lanes are not the CI plan: the full gates lane runs `pnpm lint` over the whole repository at
-`--max-warnings 0`, so once a branch is planned `full` it inherits every warning in the tree,
-including ones in files it never touched. Changing the impact authority itself — the planner,
-`run-ci-lane.mjs`, the workflow, or `lib/focused-check-suggestions.mjs` — forces that plan by
-design ("exhaustive self-verification"); touching `tests/e2e/**` alone does not. Measured
-2026-09-20: one unused declaration left behind on main failed a landing whose own diff was
-clean, because that branch had edited the advisor two commits earlier. When the plan prints
-`gates=true`, run `pnpm lint` locally before landing, not only `pnpm checks:changed`.
-
 ### Landing a pull request
 
 **Run**: `pnpm test:pr:land`
