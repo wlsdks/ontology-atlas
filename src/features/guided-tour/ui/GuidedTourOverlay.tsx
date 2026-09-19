@@ -14,6 +14,15 @@ import { GuidedTourCard } from "./GuidedTourCard";
 
 /** Slack between step 4's funnel hole and the probe — absorbs momentary error against the visual node. */
 const TOUR_HOLE_PADDING = 16;
+/** The card's distance from its anchor (the placement function's own default). */
+const TOUR_CARD_GAP = 12;
+/**
+ * The name a canvas node wears under its disc: `LABEL_OFFSET` (project 20) plus
+ * one line of the map's label type, less the ring the anchor already adds.
+ * Measured 2026-09-19 at step 4: the hub's name ran 465–484 while the anchor
+ * ended at 462, and the card at the plain gap started at 474.
+ */
+const TOUR_NODE_NAME_BAND = 28;
 
 interface AnchorMeasurements {
   key: string;
@@ -188,6 +197,8 @@ export function GuidedTourOverlay({
     cardHeight,
     viewportWidth: viewport.width,
     viewportHeight: viewport.height,
+    // A canvas node's name hangs under its disc; the card below must clear it.
+    belowGap: step.anchor?.type === "canvas-node" ? TOUR_CARD_GAP + TOUR_NODE_NAME_BAND : TOUR_CARD_GAP,
   });
 
   const isInteractive = Boolean(step.interactive);

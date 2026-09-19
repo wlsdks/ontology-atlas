@@ -1505,6 +1505,12 @@ describe("AtlasGitPanel — 문서 하나를 되돌린다", () => {
       source: "abc1234def5678",
     });
     expect(await screen.findByTestId("atlas-git-restore-notice")).toHaveTextContent("되돌렸어요");
+    // The result of what was just done is on screen: the "now" row is selected with this
+    // document chosen, so the restored lines are what the right column reads.
+    await waitFor(() =>
+      expect(screen.getByTestId("atlas-git-pending-row")).toHaveAttribute("aria-current", "true"),
+    );
+    expect(screen.getByTestId("atlas-git-change-groups")).toHaveTextContent("docs/capabilities/foo.md");
   });
 
   it("신원이 다른 시점은 거부되고, 문서가 그대로라는 말이 같이 선다", async () => {
