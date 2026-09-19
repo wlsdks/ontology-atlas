@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   layoutTierLegendRows,
+  tierLegendRowsAlign,
+  tierLegendWorstOffset,
   STRATA_SILHOUETTE_ASPECT,
   TIER_LEGEND_RAIL_COLUMN_PX,
   tierLegendPlacement,
@@ -76,6 +78,43 @@ describe("layoutTierLegendRows", () => {
  * **Which placement the four names get** — the predicate the fit and the legend
  * both read, so the reserved column and the drawn legend cannot disagree.
  */
+describe("tierLegendRowsAlign", () => {
+  const anchors = [
+    { kind: "project", y: 124 },
+    { kind: "domain", y: 316 },
+    { kind: "capability", y: 507 },
+    { kind: "element", y: 614 },
+  ];
+
+  it("a plane above the band costs the row its plane, and says so", () => {
+    // Strata at 1512x982, the sample folder expanded: the rail begins under the
+    // last utility tile, so the project's plane at 124 is out of reach.
+    const rows = layoutTierLegendRows(anchors, 320, 640, 20)!;
+    expect(rows).not.toBeNull();
+    expect(Math.round(tierLegendWorstOffset(rows, anchors, 320, 20))).toBe(206);
+    expect(tierLegendRowsAlign(rows, anchors, 320, 20)).toBe(false);
+  });
+
+  it("a band that reaches every plane keeps them all", () => {
+    const rows = layoutTierLegendRows(anchors, 100, 700, 20)!;
+    expect(tierLegendWorstOffset(rows, anchors, 100, 20)).toBe(0);
+    expect(tierLegendRowsAlign(rows, anchors, 100, 20)).toBe(true);
+  });
+
+  it("the tolerance is the row's own height, not a number of its own", () => {
+    const rows = layoutTierLegendRows(anchors, 100, 700, 20)!;
+    const nudged = anchors.map((a, i) => ({ ...a, y: a.y + (i === 2 ? 20 : 0) }));
+    expect(tierLegendRowsAlign(rows, nudged, 100, 20)).toBe(true);
+    const past = anchors.map((a, i) => ({ ...a, y: a.y + (i === 2 ? 21 : 0) }));
+    expect(tierLegendRowsAlign(rows, past, 100, 20)).toBe(false);
+  });
+
+  it("a mismatched row count is never called aligned", () => {
+    const rows = layoutTierLegendRows(anchors, 100, 700, 20)!;
+    expect(tierLegendRowsAlign(rows.slice(1), anchors, 100, 20)).toBe(false);
+  });
+});
+
 describe("tierLegendPlacement", () => {
   it("keeps the rail where the fit is bound by height and the column goes unused", () => {
     // 1512x982, index panel measured at 324: free box 1116 x 846, silhouette 1.08.

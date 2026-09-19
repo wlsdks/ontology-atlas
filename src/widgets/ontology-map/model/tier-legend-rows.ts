@@ -93,6 +93,50 @@ export interface TierLegendRow {
  * where the rail begins in those same coordinates, so the returned `top` values
  * are relative to the rail.
  */
+/**
+ * **A rail that cannot sit beside the plane it names is not a rail.**
+ *
+ * The rail's whole claim is that a row's height answers "which ring is this name
+ * for" without the reader counting rings. Its band starts under the last utility
+ * tile, so a plane projected above that tile is out of reach and
+ * `layoutTierLegendRows` clamps the row to the top of the band — where it no
+ * longer names anything, and pushes its neighbour down with it. Measured in
+ * Strata at 1512x982 with the sample folder expanded: rows landed at 330, 350,
+ * 531 and 704 while the planes sat at 124, 316, 507 and 614, so the project's
+ * name stood 206 px from the only project node and the top two rows touched at
+ * exactly one row's spacing while the others were about 175 px apart.
+ *
+ * This reports whether every row kept its plane. The caller uses the corner
+ * stack when it did not: the corner gives up per-plane alignment out loud, which
+ * is honest, where a misaligned rail is a rail that lies.
+ *
+ * The tolerance is the row's own height — a name within one row of its ring
+ * still reads as that ring's — so this invents no number of its own.
+ */
+export function tierLegendWorstOffset(
+  rows: readonly TierLegendRow[],
+  anchors: readonly TierLegendAnchor[],
+  containerTop: number,
+  rowHeight: number,
+): number {
+  if (rows.length !== anchors.length) return Number.POSITIVE_INFINITY;
+  let worst = 0;
+  for (const [index, row] of rows.entries()) {
+    worst = Math.max(worst, Math.abs(containerTop + row.top + rowHeight / 2 - anchors[index].y));
+  }
+  return worst;
+}
+
+export function tierLegendRowsAlign(
+  rows: readonly TierLegendRow[],
+  anchors: readonly TierLegendAnchor[],
+  containerTop: number,
+  rowHeight: number,
+  tolerance: number = rowHeight,
+): boolean {
+  return tierLegendWorstOffset(rows, anchors, containerTop, rowHeight) <= tolerance;
+}
+
 export function layoutTierLegendRows(
   anchors: readonly TierLegendAnchor[],
   containerTop: number,
