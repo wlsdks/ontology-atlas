@@ -4360,7 +4360,7 @@
       },
       "launch": {
         "title": "The tool could not be started",
-        "hint": "Open the Agents destination on the left to see this tool's state."
+        "hint": "Agents shows what state this tool is in. The button below opens it.", "door": "Open Agents"
       },
       "network": {
         "title": "No connection to the outside",
