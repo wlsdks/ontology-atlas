@@ -23,6 +23,8 @@ describe('brief seen storage', () => {
   afterEach(() => window.localStorage.clear());
   it('is scoped per vault and refuses an empty scope', () => {
     writeBriefSeenAt('vault-a', now);
+    // The literal key, so the scope registry can prove this slot carries a vault suffix.
+    expect(briefSeenKey('vault-a')).toBe('atlas.insights.briefSeenAt:vault-a');
     expect(readBriefSeenAt('vault-a')).toBe(now);
     expect(readBriefSeenAt('vault-b')).toBeNull();
     writeBriefSeenAt('', now);

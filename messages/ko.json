@@ -1646,9 +1646,9 @@
           "wiki-redrafted-since": "자동 점검이 다시 쓴 페이지 {count}개",
           "wiki-passes-troubled-since": "거절되거나 실패한 자동 점검 {count}회",
           "harness-app-only": "지침·검사 커버리지는 앱에서 잽니다",
-          "harness-untold-areas": "아무 지침도 안 닿는 영역 {count}곳",
-          "harness-ungated-areas": "막는 규칙이 없는 영역 {count}곳",
-          "harness-unwatched-areas": "지켜보는 검사가 없는 영역 {count}곳",
+          "harness-untold-areas": "아무 지침도 안 닿는 도메인 {count}곳",
+          "harness-ungated-areas": "막는 규칙이 없는 도메인 {count}곳",
+          "harness-unwatched-areas": "지켜보는 검사가 없는 도메인 {count}곳",
           "harness-mirror-drift": "두 에이전트 트리가 어긋난 파일 {count}개",
           "harness-changed-since": "그 뒤로 바뀐 지침 파일 {count}개",
           "agent-writes-waiting": "허락했지만 아직 안 끝난 쓰기 {count}건",
@@ -2046,21 +2046,21 @@
       "harnessTab": {
         "open": "하네스 열기",
         "getApp": "앱 받기",
-        "more": "{count, number}개 더",
+        "more": "도메인 {count, number}곳 더",
         "appOnly": "앱에서만 잴 수 있어요. 브라우저는 숨김 폴더를 읽지 못해요.",
         "reading": "지금 폴더를 읽고 있어요.",
         "unreadable": "지침 파일을 읽지 못했어요. 폴더를 다시 열면 다시 시도해요.",
         "noSource": "이 폴더는 아직 코드 저장소와 연결돼 있지 않아요. 연결하면 지침과 검사가 어디를 덮는지 여기서 세요.",
         "column": {
-          "area": "영역",
+          "area": "도메인",
           "told": "알려줌",
           "gated": "막음",
           "watched": "지켜봄"
         },
         "coverage": {
-          "title": "하네스 커버리지 — 영역 {count, number}곳",
-          "caption": "지침 파일 {guides, number}개 · 검사 {checks, number}개를 영역에 맞춰 세요.",
-          "gaps": "아무 지침도 안 닿는 곳 {untold, number} · 막는 규칙이 없는 곳 {ungated, number} · 지켜보는 검사가 없는 곳 {unwatched, number}",
+          "title": "하네스 커버리지: 도메인 {count, number}곳",
+          "caption": "지침 파일 {guides, number}개 · 검사 {checks, number}개를 도메인에 맞춰 세요.",
+          "gaps": "아무 지침도 안 닿는 도메인 {untold, number} · 막는 규칙이 없는 도메인 {ungated, number} · 지켜보는 검사가 없는 도메인 {unwatched, number}",
           "everywhere": "어디에나 닿는 것: 알려줌 {told, number} · 막음 {gated, number} · 지켜봄 {watched, number}"
         },
         "drift": {
@@ -2070,7 +2070,7 @@
         },
         "about": {
           "title": "이 판이 답하는 것",
-          "body": "에이전트 하네스 — 지침과 검사가 이 폴더의 어느 영역까지 닿는지 봅니다. 빈 칸이 곧 답이에요 — 아무도 알려주지 않고, 막지 않고, 지켜보지 않는 자리입니다.",
+          "body": "에이전트 하네스가 이 폴더의 어느 도메인까지 닿는지 봅니다. 지침과 검사가 닿지 않는 빈 칸이 곧 답이에요. 아무도 알려주지 않고, 막지 않고, 지켜보지 않는 자리입니다.",
           "told": "AGENTS.md·CLAUDE.md·규칙 문서처럼 에이전트가 읽는 글",
           "gated": "훅·검사처럼 잘못된 변경을 실제로 막는 것",
           "watched": "테스트·린트처럼 바뀐 뒤에 알려주는 것"

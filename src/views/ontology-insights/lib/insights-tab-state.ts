@@ -6,7 +6,8 @@
  * **Two levels, because one row could not say what it was about.** The screen answers questions
  * about three different things — the ontology, the wiki, and the harness — and a single row of
  * names like "connections" or "boundaries" left a reader unable to tell which of the three a tab
- * counted (owner, 2026-09-19: "온톨로지 연결인지 자료실 연결인지 하네스인지 뭔지 구분이 안되거든?").
+ * counted — the owner could not tell whether a tab meant the ontology, the library or the
+ * harness (2026-09-19).
  * The first row now names the thing: the brief across all of them, then the ontology, the library,
  * the harness. The ontology's own questions sit in a second row, **one question per tab**: a single
  * tab holding several questions made a person scroll past two screens of unrelated material to
