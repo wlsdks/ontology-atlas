@@ -20,6 +20,26 @@ describe('InlineEditable — readonly', () => {
     expect(container.querySelector('textarea')).toBeNull();
   });
 
+  it('readonly heading keeps its content as the accessible name; the field label is not a name', () => {
+    render(
+      <InlineEditable as="h1" value="Online Store" editable={false} onSave={() => {}} ariaLabel="프로젝트 이름" />,
+    );
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toHaveAccessibleName('Online Store');
+    expect(heading).not.toHaveAttribute('aria-label');
+    expect(heading).not.toHaveAttribute('aria-description');
+  });
+
+  it('editable view names the button by its content and describes it by the field', () => {
+    render(
+      <InlineEditable as="h1" value="Online Store" editable onSave={() => {}} ariaLabel="프로젝트 이름" />,
+    );
+    const button = screen.getByRole('button');
+    expect(button).toHaveAccessibleName('Online Store');
+    expect(button).toHaveAttribute('aria-description', '프로젝트 이름');
+    expect(button).not.toHaveAttribute('aria-label');
+  });
+
   it('readonly empty value uses placeholder', () => {
     render(
       <InlineEditable value="" editable={false} onSave={() => {}} placeholder="클릭해서 추가" />,

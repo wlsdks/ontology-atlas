@@ -456,13 +456,17 @@ export function ProjectDetailPage({
     is the cheap answer under a neutrals-plus-one-indigo charter, and a new ramp step would incur
     `TYPE_RAMP_STEPS` registration debt. Every value used here is inside the existing ramp.
 
-    The measure (`--measure-prose`) is the upper bound on a line the eye can follow. It read
-    `70ch` until 2026-09-11, which measured **583.8px = 90.8 English characters** on this card —
-    `ch` is the advance of `0`, not of a letter. At `60ch` the same card reads 500.4px ≈ 78
-    characters; the card itself did not change width, only the line inside it.
+    The body is set at `--text-reading` and stands in the reading column (`--measure-doc-column`):
+    the measure spent at the size the body is set in, plus a gutter each side, centred in the
+    card. Until 2026-09-19 the body was 14px under a `--measure-prose` cap, which resolved at
+    that size to a 550px run left-aligned inside a 932px card at 1512 (1180px at 1920) — the
+    "empty space to the right of the text" the owner named on 2026-09-12 when the Library's
+    column was widened and centred (`docs/DECISIONS.md`, "The reading column is worth more of
+    its pane than the measure was buying"). The card keeps its track; the column inside it is
+    the same box the Library's open page reads.
   */
   const storyMarkdownClassName =
-    "text-body-lg leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[var(--font-weight-strong)] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[var(--font-weight-strong)] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[var(--font-weight-strong)] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
+    "text-reading leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[var(--font-weight-strong)] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[var(--font-weight-strong)] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[var(--font-weight-strong)] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
   const projectFullEditHref = getProjectEditHref(project.slug, {
     returnTo: getProjectRuntimeDetailHref(project.slug),
   });
@@ -502,7 +506,14 @@ export function ProjectDetailPage({
           about removing the radial map. */}
       <header className="mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[18px_20px] shadow-[inset_0_1px_0_var(--color-overlay-1)] lg:p-[18px_26px]">
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex flex-wrap items-start gap-3.5 sm:flex-nowrap">
+          {/*
+            The action cluster stands beside the name only from `xl`. Below that it takes a row
+            of its own: with `sm:flex-nowrap` the four controls kept their full width and the
+            name column took what was left — 250px at 1024 and 80px at 768, where "Online Store"
+            broke in two and the definition ran nine lines (measured 2026-09-19). A name and its
+            definition outrank four buttons, so the buttons are the ones that move.
+          */}
+          <div className="flex flex-wrap items-start gap-3.5 xl:flex-nowrap">
             <OntologyMapKindGlyph kind="project" size={30} className="mt-1 shrink-0" />
             <div className="min-w-0 flex-1">
               <InlineEditable
@@ -537,12 +548,15 @@ export function ProjectDetailPage({
                 dataTestId="project-detail-description"
                 // `break-keep` — this description broke mid-word as 「a|hop」 at 576px (measured
                 // 2026-08-15 by the korean-word-break instrument).
-                className="mt-2.5 max-w-[64ch] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
+                // The cap is the column box, not a per-line `ch` count: `64ch` resolved at this
+                // element's own 14px to 534px inside a 1350px band (2026-09-19), the same three-
+                // right-edges defect the Library removed on 2026-09-19 (#1667).
+                className="mt-2.5 max-w-[var(--measure-doc-column)] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]"
               />
             </div>
             {/* `flex-none` created horizontal overflow at a 390px viewport, the read-only badge and
                 its actions pushing the page out — allow shrinking with `min-w-0` and wrap instead. */}
-            <div className="ml-auto flex min-w-0 flex-wrap items-center gap-2">
+            <div className="flex min-w-0 basis-full flex-wrap items-center gap-2 xl:ml-auto xl:basis-auto">
               <input
                 {...constructionReview.inputProps}
                 data-testid="construction-review-ingress"
@@ -799,6 +813,17 @@ export function ProjectDetailPage({
           tabIndex={0}
           className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
         >
+          {/*
+            One reading column, centred: the measure spent at `--text-reading` (the doc column
+            minus its two gutters — the card's own padding is the gutter here), and the title
+            stands on the same start line as the prose. The card keeps the grid track; what
+            changed on 2026-09-19 is that the line inside it is the column, not a 14px `ch` cap
+            left-aligned in a card twice its width. See `storyMarkdownClassName`.
+          */}
+          <div
+            data-testid="project-detail-body-column"
+            className="mx-auto w-full max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))]"
+          >
           <div className="mb-2.5 flex items-baseline gap-2">
             <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t("bodyCardTitle")}
@@ -808,11 +833,11 @@ export function ProjectDetailPage({
             </span>
           </div>
           {bodyContent ? (
-            // The body is limited to a readable measure.
+            // The column above is the line; no per-line cap here.
             // `break-keep` — the Korean body broke mid-word as 「jangba|gi」 at 584px (measured
             // 2026-08-12). `word-break` inherits, so this one wrapper covers every markdown paragraph.
             <div
-              className={`${storyMarkdownClassName} max-w-[var(--measure-prose)] break-keep`}
+              className={`${storyMarkdownClassName} break-keep`}
               data-testid="project-detail-body-content"
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{dedupedBodyContent}</ReactMarkdown>
@@ -826,6 +851,7 @@ export function ProjectDetailPage({
               />
             </div>
           )}
+          </div>
         </article>
         )}
 
