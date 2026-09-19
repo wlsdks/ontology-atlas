@@ -58,8 +58,14 @@ async function openDockAt(page: Page, width: number, locale: 'en' | 'ko') {
   /*
    * ⚠️ **Each step waits by name.** `playwright.config.ts` sets a 60s test budget and no
    * `actionTimeout`, so a bare `.click()` on an element that never arrives waits out the whole
-   * test and reports nothing about which step hung — which is exactly what the one-minute
-   * failures in CI looked like. A visibility expectation first fails in 15s and says where.
+   * test — sixty seconds of a shard for one step, which is what the one-minute failures in CI
+   * were. A visibility expectation first spends fifteen.
+   *
+   * It is **not** true that the bare press says nothing: Playwright's call log already names the
+   * locator it waited for (`- waiting for getByTestId(...)`), as this repository's own CI output
+   * shows. What the explicit wait buys is the cost and a sentence in the project's words — which
+   * door this was — rather than a test-timeout stack. Corrected after main-6-a8 probed it both
+   * ways; the first version of this comment claimed the failure was silent, and it is not.
    */
   await page.goto(`/${locale}/docs/`);
   const openFolder = page.getByRole('button', { name: /Open my folder|내 폴더 열기/i });
