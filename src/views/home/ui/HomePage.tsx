@@ -562,6 +562,21 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   useLayoutEffect(() => { workbenchOpenRef.current = { agent: acpDockFrameOpen, meaning: meaningWorkbenchOpen }; }, [acpDockFrameOpen, meaningWorkbenchOpen]);
   const requestWorkbenchSection = useCallback((tab: 'meaning' | 'history' | 'conversation') => setWorkbenchSectionRequest((current) => ({ tab, nonce: current.nonce + 1 })), []);
   const openMeaningWorkbench = useCallback(() => { setVaultAgentOpen(false); setMeaningWorkbenchOpen(true); requestWorkbenchSection('meaning'); }, [requestWorkbenchSection]);
+  /*
+   * The chip wears the active tone while the panel is open, and the rule beside
+   * `growthReplaying` says a control may wear that tone and `aria-pressed` for
+   * exactly as long as the thing it names is on. This one wore the tone, said
+   * nothing, and only ever opened: measured 2026-09-20, three presses on the lit
+   * chip left the panel present and the canvas at 928 px. A lit control that
+   * ignores a press is not a control, so the press closes what it opened.
+   */
+  const toggleMeaningWorkbench = useCallback(() => {
+    if (meaningWorkbenchOpen) {
+      setMeaningWorkbenchOpen(false);
+      return;
+    }
+    openMeaningWorkbench();
+  }, [meaningWorkbenchOpen, openMeaningWorkbench]);
   const [analysisFindings, setAnalysisFindings] = useState<readonly AnalysisFinding[]>([]);
   /**
    * Whether the dock starts open — true only in the installed app with a key
@@ -4886,9 +4901,10 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                       aria-label={tWorkbench('meaningTitle')}
                       title={tWorkbench('meaningTitle')}
                       active={meaningWorkbenchOpen}
+                      aria-pressed={meaningWorkbenchOpen}
                       compact={topologyUtilityChromeCompact || searchLaneCrowded}
                       data-testid="topology-meaning-workbench-toggle"
-                      onClick={openMeaningWorkbench}
+                      onClick={toggleMeaningWorkbench}
                     >{tWorkbench('meaningTitle')}</ChromeChip>
                     {/* 「Agent」 — This button's spot is the moment you go from viewing a map to saying "fix this."
                         It uses the same chip spec as the existing utility lane without creating a rail destination or new route (zero surface addition).
