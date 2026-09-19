@@ -32,7 +32,10 @@ const DESTINATIONS = [
   // Its Ontology section preserves the former Docs journey without inventing a removed rail tile.
   { id: "library", url: /\/library\//, section: "ontology" },
   { id: "insights", url: /\/ontology\/insights\// },
-  { id: "projects", url: /\/projects\// },
+  // The bundled sample holds exactly one project, so since 2026-09-19 this door opens that
+  // project rather than a list of one row. The spec measures the indicator's geometry; the URL
+  // is only its arrival signal.
+  { id: "projects", url: /\/project\/fallback\/\?slug=/ },
   { id: "map", url: /\/topology\// },
 ] as const;
 

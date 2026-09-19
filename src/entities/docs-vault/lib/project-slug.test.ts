@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { VaultDoc, VaultManifest } from "../model/types";
 import {
+  resolveSoleProjectSlug,
   computeProjectSlug,
   findProjectDocInList,
   findProjectVaultDoc,
@@ -145,5 +146,25 @@ describe("findProjectDocInList", () => {
     ];
     expect(findProjectDocInList(docs, "ontology-atlas")?.slug).toBe("ontology/project");
     expect(findProjectDocInList(docs, "ontology/project")).toBeNull();
+  });
+});
+
+describe("resolveSoleProjectSlug", () => {
+  const projectDoc = (slug: string, frontmatterSlug?: string): VaultDoc =>
+    makeDoc({ slug, frontmatter: { kind: "project", ...(frontmatterSlug ? { slug: frontmatterSlug } : {}) } });
+
+  it("names the folder's only project", () => {
+    expect(
+      resolveSoleProjectSlug([
+        makeDoc({ slug: "domains/order", frontmatter: { kind: "domain" } }),
+        projectDoc("atlas/project", "storefront"),
+      ]),
+    ).toBe("storefront");
+  });
+
+  it("is null for a folder with none, and for one with a second", () => {
+    expect(resolveSoleProjectSlug([])).toBeNull();
+    expect(resolveSoleProjectSlug([makeDoc({ slug: "domains/order", frontmatter: { kind: "domain" } })])).toBeNull();
+    expect(resolveSoleProjectSlug([projectDoc("projects/a"), projectDoc("projects/b")])).toBeNull();
   });
 });

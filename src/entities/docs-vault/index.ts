@@ -76,6 +76,7 @@ export { deriveBundledProjects, bundledProjectSlugs } from './lib/bundled-projec
 export {
   findProjectVaultDoc,
   findProjectDocInList,
+  resolveSoleProjectSlug,
 } from './lib/project-slug';
 export { extractProjectBody } from './lib/resolve-project-body';
 export type {
