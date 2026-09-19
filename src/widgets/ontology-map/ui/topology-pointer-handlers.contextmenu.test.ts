@@ -143,3 +143,47 @@ describe("createTopologyPointerHandlers — 빈 캔버스 우클릭 (2026-08-03)
     expect(event.preventDefault).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * A right press used to run the same press machine as a left one, so a
+ * right-click selected the node under it and reframed the camera while the
+ * menu stayed at the pointer — 268 px from the node it belongs to on a 14-inch
+ * window (measured 2026-09-19). The secondary button opens the menu and does
+ * nothing else.
+ */
+describe("createTopologyPointerHandlers — a secondary press does not press the map", () => {
+  function fakeCanvas() {
+    return {
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }),
+      setPointerCapture: vi.fn(),
+      releasePointerCapture: vi.fn(),
+      hasPointerCapture: vi.fn(() => false),
+      style: {} as CSSStyleDeclaration,
+    };
+  }
+  function press(canvas: ReturnType<typeof fakeCanvas>, button: number) {
+    return {
+      pointerId: 1,
+      button,
+      buttons: button === 0 ? 1 : 2,
+      clientX: 120,
+      clientY: 240,
+      currentTarget: canvas,
+      preventDefault: vi.fn(),
+    } as unknown as Parameters<ReturnType<typeof createTopologyPointerHandlers>["handlePointerDown"]>[0];
+  }
+
+  it("leaves the press machine idle on a right press, and arms it on a left press", () => {
+    vi.mocked(hitTestWorld).mockReturnValue(null);
+    const right = buildRefs();
+    const canvasRight = fakeCanvas();
+    createTopologyPointerHandlers(right).handlePointerDown(press(canvasRight, 2));
+    expect((right.pointerMachineRef.current as { phase: string }).phase).toBe("idle");
+    expect(canvasRight.setPointerCapture).not.toHaveBeenCalled();
+
+    const left = buildRefs();
+    const canvasLeft = fakeCanvas();
+    createTopologyPointerHandlers(left).handlePointerDown(press(canvasLeft, 0));
+    expect((left.pointerMachineRef.current as { phase: string }).phase).not.toBe("idle");
+  });
+});

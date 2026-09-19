@@ -10,7 +10,7 @@ import { type NativeErrorLookup, nativeErrorMessage } from './native-error';
  *   `initialized: false`, not an error
  * - `git_snapshot(vault_path, message?, push?)` → `GitSnapshotResult` — with no
  *   changes, `committed: false` / `reason: "no-changes"`
- * - `git_history(vault_path, limit?)` → `GitCommitInfo[]` — empty array when
+ * - `git_history(vault_path, limit?, path?)` → `GitCommitInfo[]` — empty array when
  *   there are no commits
  * - `git_diff(vault_path)` → `GitDiffResult`
  * - `git_pull(vault_path)` → `GitPullResult`
@@ -289,10 +289,12 @@ export async function gitSnapshot(
 export async function gitHistory(
   vaultPath: string,
   limit = 10,
+  /** Repository-relative document path (as `GitChangeEntry.path`) to scope the log to one document. */
+  path?: string,
 ): Promise<GitCommitInfo[] | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<GitCommitInfo[]>('git_history', { vaultPath, limit });
+  return invoke<GitCommitInfo[]>('git_history', { vaultPath, limit, path: path ?? null });
 }
 
 /** File list plus text diff for uncommitted changes within the vault. */
