@@ -37,11 +37,18 @@ describe('resolveEvidenceStates', () => {
     // Every non-current concept carries what moved, so a screen can name the file and the date.
     expect(states.rows.find((row) => row.id === 'pay')).toEqual({
       id: 'pay',
+      verdict: 'stale',
+      reason: null,
       docChangedAt: '2026-09-10T00:00:00Z',
       moved: [{ path: 'src/pay.ts', changedAt: '2026-09-12T00:00:00Z' }],
       gone: [],
       folders: [],
     });
+    // The row states its own verdict, so a screen lists exactly the concepts a line counted
+    // rather than inferring the verdict back out of the arrays.
+    expect(states.rows.find((row) => row.id === 'gone')?.verdict).toBe('missing');
+    expect(states.rows.find((row) => row.id === 'cart')?.reason).toBe('folder-only');
+    expect(states.rows.find((row) => row.id === 'unwalked')?.verdict).toBe('unknown');
     expect(states.rows.find((row) => row.id === 'gone')?.gone).toEqual(['src/removed.ts']);
     expect(states.rows.find((row) => row.id === 'cart')?.folders).toEqual([
       { path: 'src/widgets/cart', changedAt: '2026-09-15T00:00:00Z' },

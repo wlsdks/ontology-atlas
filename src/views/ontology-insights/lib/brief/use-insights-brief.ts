@@ -20,6 +20,7 @@ import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from
 import { resolveEvidenceStates, type EvidenceConceptInput } from './evidence-states';
 import type { BriefLineDetail } from './brief-model';
 import { resolveBriefAnchor, useBriefSeenAt, type BriefAnchor } from './brief-anchor';
+import { buildEvidenceDetails } from './evidence-details';
 import { buildAgentBrief } from './agent-brief';
 import { buildHarnessBrief } from './harness-brief';
 import { buildOntologyBrief, type OntologyBriefNode } from './ontology-brief';
@@ -414,34 +415,16 @@ export function useInsightsBrief({
    * date sends a reader back to the agent's summary — the failure this tab exists to end
    * (PO evidence seat, 2026-09-19).
    */
-  const details = useMemo(() => {
-    const map = new Map<string, BriefLineDetail[]>();
-    if (!evidence) return map;
-    const titleById = new Map(nodes.map((node) => [node.id, node.title ?? node.id] as const));
-    const moved: BriefLineDetail[] = [];
-    const gone: BriefLineDetail[] = [];
-    const folderOnly: BriefLineDetail[] = [];
-    for (const row of evidence.rows) {
-      const name = titleById.get(row.id) ?? row.id;
-      const href = `/topology/?p=${encodeURIComponent(row.id)}`;
-      for (const file of row.moved) {
-        moved.push({ name, path: file.path, at: file.changedAt, docAt: row.docChangedAt, href });
-      }
-      for (const path of row.gone) {
-        gone.push({ name, path, at: null, docAt: row.docChangedAt, href });
-      }
-      if (row.moved.length === 0 && row.gone.length === 0) {
-        for (const folder of row.folders) {
-          folderOnly.push({ name, path: folder.path, at: folder.changedAt, docAt: row.docChangedAt, href });
-        }
-      }
-    }
-    const byNewest = (a: BriefLineDetail, b: BriefLineDetail) => (Date.parse(b.at ?? '') || 0) - (Date.parse(a.at ?? '') || 0);
-    map.set('ontology-evidence-moved', moved.sort(byNewest));
-    map.set('ontology-evidence-missing', gone);
-    map.set('ontology-evidence-folder-only', folderOnly.sort(byNewest));
-    return map;
-  }, [evidence, nodes]);
+  const details = useMemo(
+    () =>
+      evidence
+        ? buildEvidenceDetails({
+            rows: evidence.rows,
+            titleById: new Map(nodes.map((node) => [node.id, node.title ?? node.id] as const)),
+          })
+        : new Map<string, BriefLineDetail[]>(),
+    [evidence, nodes],
+  );
 
   const sinceList = useMemo(
     () =>

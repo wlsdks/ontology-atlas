@@ -22,8 +22,12 @@ describe('buildAgentBrief', () => {
       anchorMs,
     });
     const byId = Object.fromEntries(brief.lines.map((line) => [line.id, line.count]));
-    // What a person decided, counted only after the anchor.
-    expect(byId['agent-writes-waiting']).toBe(1);
+    /*
+     * The receipt lines state what is open, not what happened in the window: the older pending
+     * write is still allowed and unfinished, so it is still waiting for the person. Their
+     * sentences carry no "since", unlike the three call/write/agent lines below.
+     */
+    expect(byId['agent-writes-waiting']).toBe(2);
     expect(byId['agent-writes-refused']).toBe(1);
     expect(byId['agent-writes-failed']).toBe(1);
     expect(brief.availability).toBe('measured');
@@ -32,5 +36,18 @@ describe('buildAgentBrief', () => {
 
   it('says no-data when the folder has no activity log at all', () => {
     expect(buildAgentBrief({ entries: [], isWriteTool: () => false, anchorMs }).availability).toBe('no-data');
+  });
+
+  it('is measured when the only receipts are older than the anchor', () => {
+    // "Nothing recorded here" is a fact about the folder. Deciding it from the window made the
+    // card claim no agent had ever worked in a folder whose every receipt predates the visit.
+    const brief = buildAgentBrief({
+      entries: [],
+      isWriteTool: () => false,
+      receipts: [{ at: '2026-09-01T00:00:00Z', decision: 'allowed', result: 'pending' }],
+      anchorMs,
+    });
+    expect(brief.availability).toBe('measured');
+    expect(brief.lines.find((line) => line.id === 'agent-writes-waiting')?.count).toBe(1);
   });
 });

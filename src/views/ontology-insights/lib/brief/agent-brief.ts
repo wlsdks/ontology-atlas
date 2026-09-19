@@ -38,7 +38,15 @@ export function buildAgentBrief(input: AgentBriefInput): BriefCore {
    * one a person can act on — the pending row is work waiting for them (reference survey,
    * 2026-09-19: CodeRabbit measures the proposal funnel rather than lines generated).
    */
-  const receipts = (input.receipts ?? []).filter((receipt) => isAfter(receipt.at, input.anchorMs));
+  /*
+   * ⚠️ **The receipt lines are not "since you left".** A write that is allowed and unfinished is
+   * still waiting for the person; it does not stop waiting because they looked at this screen.
+   * Their three sentences say so — "allowed and not finished", "that failed", "a person refused"
+   * — while the three activity sentences below say "since". The anchor filter belonged to the
+   * activity lines only, and applying it here emptied the pending row the moment the visit was
+   * marked (2026-09-20).
+   */
+  const receipts = input.receipts ?? [];
   const waiting = receipts.filter((receipt) => receipt.decision === 'allowed' && receipt.result === 'pending').length;
   const refused = receipts.filter((receipt) => receipt.decision === 'rejected').length;
   const failed = receipts.filter((receipt) => receipt.result === 'failed').length;
@@ -52,6 +60,8 @@ export function buildAgentBrief(input: AgentBriefInput): BriefCore {
   ];
   return {
     core: 'agent',
+    // Both halves are the unfiltered inputs: "this folder has never recorded agent work" is a
+    // fact about the folder, not about the window the counts are measured over.
     availability: input.entries.length === 0 && receipts.length === 0 ? 'no-data' : 'measured',
     headline: since.length,
     current: since.length - writes,

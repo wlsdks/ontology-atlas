@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_BRIEF_WINDOW_MS,
   briefSeenKey,
   readBriefSeenAt,
   resolveBriefAnchor,
+  useBriefSeenAt,
   writeBriefSeenAt,
 } from './brief-anchor';
 
@@ -43,5 +45,35 @@ describe('marking the visit is visible in the same frame', () => {
     expect(resolveBriefAnchor(at, at + 1)).toEqual({ anchorMs: at, isDefaultWindow: false });
     // Without that advance the value is not yet in the past and the sentence would not change.
     expect(resolveBriefAnchor(at, at).isDefaultWindow).toBe(true);
+  });
+});
+
+describe('the recorded visit survives a browser that will not store it', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.localStorage.clear();
+  });
+
+  it('still reads as recorded when writing to storage throws', () => {
+    // Private windows, blocked site data, and a full quota all throw here. The visit then holds
+    // for this session only — but it must hold, or the brief keeps counting from the old anchor
+    // and the person's "I have seen this" does nothing.
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('storage is disabled');
+    });
+    const { result } = renderHook(() => useBriefSeenAt('vault-private'));
+    expect(result.current[0]).toBeNull();
+    act(() => result.current[1](now));
+    expect(result.current[0]).toBe(now);
+  });
+
+  it('re-reads storage when another tab records the visit', () => {
+    const { result } = renderHook(() => useBriefSeenAt('vault-shared'));
+    expect(result.current[0]).toBeNull();
+    window.localStorage.setItem(briefSeenKey('vault-shared'), String(now));
+    act(() => {
+      window.dispatchEvent(new Event('storage'));
+    });
+    expect(result.current[0]).toBe(now);
   });
 });

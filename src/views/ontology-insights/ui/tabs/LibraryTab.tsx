@@ -17,7 +17,14 @@ const ROWS = 6;
  * nobody wrote up, what the last check found, what the unattended rounds did — and every row
  * opens the Library to act. Nothing here writes, and no list is a second copy of a store.
  */
-export function LibraryTab({ detail }: { detail: InsightsBrief['library'] }) {
+/*
+ * `nowMs` is passed in rather than read from the clock here. `useFormatter().relativeTime`
+ * without an explicit reference point falls back to the environment's own `Date.now()`, which
+ * next-intl reports as an ENVIRONMENT_FALLBACK error and which makes the server and client
+ * markup disagree. The brief already captures one instant for the whole screen; every relative
+ * time on it is measured from that same instant.
+ */
+export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']; nowMs: number }) {
   const t = useTranslations('ontologyPages.insights.libraryTab');
   const format = useFormatter();
   if (detail.availability !== 'measured') {
@@ -71,7 +78,7 @@ export function LibraryTab({ detail }: { detail: InsightsBrief['library'] }) {
           <Row
             key={`${pass.endedAt}-${pass.outcome}`}
             name={t(`outcome.${pass.outcome}` as never, { defaultValue: pass.outcome } as never)}
-            detail={`${format.relativeTime(new Date(pass.endedAt))} · ${pass.summary}`}
+            detail={`${format.relativeTime(new Date(pass.endedAt), nowMs)} · ${pass.summary}`}
             href="/library/?tab=rounds"
             openLabel={t('open')}
           />

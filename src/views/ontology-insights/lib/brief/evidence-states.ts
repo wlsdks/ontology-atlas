@@ -17,8 +17,17 @@ export interface EvidenceChange {
 }
 
 /** What moved under one concept, so a screen can name the file and the date, not just a count. */
-interface EvidenceRow {
+export interface EvidenceRow {
   id: string;
+  /**
+   * The concept's own verdict, carried so a screen lists exactly the concepts a line counted.
+   * Without it the screen had to guess from the arrays — and a concept whose path is gone can
+   * *also* have another path that moved, so it appeared under both the missing line and the
+   * moved line while only one of them had counted it (2026-09-20).
+   */
+  verdict: 'stale' | 'missing' | 'unknown';
+  /** Why, for the unknown verdicts: `folder-only` is the one the brief names on its own line. */
+  reason: string | null;
   /** ISO time of the concept document's own newest commit, when the walk supplied one. */
   docChangedAt: string | null;
   /** Files cited by this concept that changed after the document. */
@@ -83,7 +92,15 @@ export function resolveEvidenceStates(
       unknown.add(concept.id);
     }
     if (verdict !== 'current') {
-      rows.push({ id: concept.id, docChangedAt: doc?.lastChangedAt ?? null, moved, gone, folders });
+      rows.push({
+        id: concept.id,
+        verdict,
+        reason: reason ?? null,
+        docChangedAt: doc?.lastChangedAt ?? null,
+        moved,
+        gone,
+        folders,
+      });
     }
   }
   return { current, stale, missing, unknown, folderOnly, rows };

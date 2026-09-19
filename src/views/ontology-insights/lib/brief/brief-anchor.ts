@@ -64,16 +64,25 @@ export function resolveBriefAnchor(seenAtMs: number | null, nowMs: number): Brie
   return { anchorMs: nowMs - DEFAULT_BRIEF_WINDOW_MS, isDefaultWindow: true };
 }
 
+/*
+ * ⚠️ **The two events are not the same event.** `EVENT` is dispatched by this module's own
+ * write, which has *already* put the new value in `snapshot`; clearing the cache there threw
+ * that value away and re-read it from `localStorage`. Where the write had thrown — private
+ * mode, blocked site data — the re-read found nothing, so the visit silently did not stick and
+ * "since you left" kept counting from the old anchor. The `storage` event is the cross-tab one:
+ * another tab wrote, this cache is stale, and it must be dropped.
+ */
 function subscribe(onChange: () => void): () => void {
-  const handle = () => {
+  const handleOwnWrite = () => onChange();
+  const handleOtherTab = () => {
     snapshot = new Map();
     onChange();
   };
-  window.addEventListener(EVENT, handle);
-  window.addEventListener('storage', handle);
+  window.addEventListener(EVENT, handleOwnWrite);
+  window.addEventListener('storage', handleOtherTab);
   return () => {
-    window.removeEventListener(EVENT, handle);
-    window.removeEventListener('storage', handle);
+    window.removeEventListener(EVENT, handleOwnWrite);
+    window.removeEventListener('storage', handleOtherTab);
   };
 }
 
