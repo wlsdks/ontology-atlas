@@ -1299,6 +1299,23 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByTestId('agent-setup-row-claude-code')).not.toHaveTextContent('점검:');
   });
 
+  it('서버 조회가 답하기 전에는 아무 주장도 그리지 않는다', () => {
+    // `launch: null` alone cannot tell a browser from the app still asking, so this panel used
+    // to open on the browser's degradation card inside the installed app.
+    const { container } = render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault()}
+        serverAvailability={{ ...agentServerUnavailable(null), pending: true }}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByTestId('agent-server-unavailable')).toBeNull();
+    expect(screen.queryByTestId('agent-setup-steps')).toBeNull();
+  });
+
   it('첫 화면은 도구 행 넷이고, 확인과 상세 검증은 대화상자 뒤에 있다', () => {
     render(
       <VaultAgentSetupPanel

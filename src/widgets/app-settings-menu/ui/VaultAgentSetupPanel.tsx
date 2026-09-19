@@ -541,6 +541,13 @@ export function VaultAgentSetupPanel({
   });
 
   if (localVault.status !== 'loaded' || !agentStatus) return null;
+  /*
+   * **Nothing until the server lookup answers.** `launch: null` alone cannot tell "a browser,
+   * which cannot launch anything" from "the app, still asking", so this panel opened on the
+   * browser's degradation card inside the installed app — telling someone running the app to
+   * download it. One empty frame is honest; that sentence is not.
+   */
+  if (serverAvailability.pending) return null;
 
   const agentSetupReady = Boolean(
     publicPackagesReady &&
