@@ -1,5 +1,6 @@
-import { act, render, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import type { ComponentProps, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
@@ -13,10 +14,14 @@ vi.mock("@/widgets/acp-chat-panel", () => ({
     sessionEnabled,
     resumeLatest,
     onTerminalToolObservation,
+    systemPromptAppendix,
+    beforeComposer,
   }: {
     sessionEnabled?: boolean;
     resumeLatest?: boolean;
     onTerminalToolObservation?: unknown;
+    systemPromptAppendix?: string | null;
+    beforeComposer?: ReactNode;
   }) => {
     sessionEnabledSeen.push(sessionEnabled === true);
     terminalToolCallbacks.push(onTerminalToolObservation);
@@ -25,7 +30,10 @@ vi.mock("@/widgets/acp-chat-panel", () => ({
         data-testid="chat-panel"
         data-session-enabled={sessionEnabled ? "true" : "false"}
         data-resume-latest={resumeLatest ? "true" : "false"}
-      />
+        data-system-prompt-appendix={systemPromptAppendix ?? ""}
+      >
+        {beforeComposer}
+      </div>
     );
   },
   AcpChatResizeHandle: () => null,
@@ -35,10 +43,15 @@ vi.mock("@/widgets/acp-chat-panel", () => ({
 
 const RUNTIME = { id: "claude-acp", label: "Claude Agent" };
 
-function dock(open: boolean, onTerminalToolObservation?: () => void) {
+function dock(
+  open: boolean,
+  onTerminalToolObservation?: () => void,
+  extra: Partial<ComponentProps<typeof LibraryAgentDock>> = {},
+) {
   return (
     <NextIntlClientProvider locale="en" messages={enMessages}>
       <LibraryAgentDock
+        {...extra}
         chatWidth={{ width: 420, setWidth: () => {}, commitWidth: () => {} }}
         open={open}
         runtime={RUNTIME}
@@ -205,5 +218,34 @@ describe("closing the dock puts the conversation away", () => {
     const view = mount("narrow");
     await act(async () => {});
     expect(view.getByTestId("chat-panel").getAttribute("data-resume-latest")).toBe("true");
+  });
+});
+
+/**
+ * **A free question can be filed** (installed app, 2026-09-19): the composer's text went out
+ * with no citation rule, so "Save answer" refused the answer as `no-cited-fact`. The rule now
+ * rides on the session, and a refusal stays under the chip instead of leaving with a toast.
+ */
+describe("the Library's own paragraph and the filing refusal", () => {
+  it("hands the citation rule to the session with every conversation", () => {
+    mount("wide");
+    render(dock(true));
+    // Earlier cases leave their panels mounted; the one this case rendered is the last.
+    const appendix = screen.getAllByTestId("chat-panel").at(-1)?.getAttribute("data-system-prompt-appendix") ?? "";
+    expect(appendix).toMatch(/\[\[src:sources\/<file>#p<page>\]\]/);
+    expect(appendix).toMatch(/read_source/);
+  });
+
+  it("keeps the last refusal under the save chip", () => {
+    mount("wide");
+    render(dock(true, undefined, { onFileAnswer: () => {}, fileAnswerNote: "Not saved: no cited fact." }));
+    expect(screen.getAllByTestId("library-file-answer").at(-1)).toBeInTheDocument();
+    expect(screen.getAllByTestId("library-file-answer-note").at(-1)).toHaveTextContent("Not saved: no cited fact.");
+  });
+
+  it("shows no note when nothing was refused", () => {
+    mount("wide");
+    render(dock(true, undefined, { onFileAnswer: () => {} }));
+    expect(screen.queryByTestId("library-file-answer-note")).toBeNull();
   });
 });
