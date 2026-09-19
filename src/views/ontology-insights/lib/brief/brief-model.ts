@@ -80,6 +80,8 @@ export function briefTotals(cores: readonly BriefCore[]): { stale: number; unkno
  */
 export interface BriefLineDetail {
   name: string;
+  /** The concept's vault document slug — what `get_concept` takes. `null` when it owns no document. */
+  slug: string | null;
   path: string;
   /** When the path moved. `null` for a path that is simply gone. */
   at: string | null;

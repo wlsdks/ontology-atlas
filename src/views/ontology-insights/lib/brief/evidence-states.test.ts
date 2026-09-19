@@ -26,12 +26,14 @@ describe('resolveEvidenceStates', () => {
         { id: 'unwalked', docPath: 'capabilities/ship.md', evidencePaths: ['src/not-asked.ts'] },
         { id: 'cart', docPath: 'capabilities/cart.md', evidencePaths: ['src/widgets/cart'] },
         { id: 'cart-file', docPath: 'capabilities/cart.md', evidencePaths: ['src/widgets/cart', 'src/pay.ts'] },
+        // Written down only as another document's evidence, so it owns no document and has no slug.
+        { id: 'loose', docPath: null, evidencePaths: ['src/removed.ts'] },
       ],
       changes,
     );
     expect([...states.stale]).toEqual(['pay', 'cart-file']);
     expect([...states.current]).toEqual(['ship']);
-    expect([...states.missing]).toEqual(['gone']);
+    expect([...states.missing]).toEqual(['gone', 'loose']);
     expect([...states.unknown].sort()).toEqual(['cart', 'free', 'old', 'unwalked']);
     expect([...states.folderOnly]).toEqual(['cart']);
     // Every non-current concept carries what moved, so a screen can name the file and the date.
@@ -39,6 +41,8 @@ describe('resolveEvidenceStates', () => {
       id: 'pay',
       verdict: 'stale',
       reason: null,
+      // The slug the walk already knew, so a handoff can call `get_concept` instead of searching.
+      slug: 'capabilities/pay',
       docChangedAt: '2026-09-10T00:00:00Z',
       moved: [{ path: 'src/pay.ts', changedAt: '2026-09-12T00:00:00Z' }],
       gone: [],
@@ -49,6 +53,9 @@ describe('resolveEvidenceStates', () => {
     expect(states.rows.find((row) => row.id === 'gone')?.verdict).toBe('missing');
     expect(states.rows.find((row) => row.id === 'cart')?.reason).toBe('folder-only');
     expect(states.rows.find((row) => row.id === 'unwalked')?.verdict).toBe('unknown');
+    // A concept with no document of its own carries no slug rather than a guessed one.
+    expect(states.rows.find((row) => row.id === 'loose')?.slug).toBeNull();
+    expect(states.rows.find((row) => row.id === 'free')?.slug).toBe('capabilities/free');
     expect(states.rows.find((row) => row.id === 'gone')?.gone).toEqual(['src/removed.ts']);
     expect(states.rows.find((row) => row.id === 'cart')?.folders).toEqual([
       { path: 'src/widgets/cart', changedAt: '2026-09-15T00:00:00Z' },

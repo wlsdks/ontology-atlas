@@ -32,13 +32,13 @@ export function buildEvidenceDetails(input: {
     const href = hrefOf(row.id);
     if (row.verdict === 'missing') {
       const path = row.gone[0];
-      if (path) gone.push({ name, path, at: null, docAt: row.docChangedAt, href });
+      if (path) gone.push({ name, slug: row.slug, path, at: null, docAt: row.docChangedAt, href });
     } else if (row.verdict === 'stale') {
       const file = newest(row.moved);
-      if (file) moved.push({ name, path: file.path, at: file.changedAt, docAt: row.docChangedAt, href });
+      if (file) moved.push({ name, slug: row.slug, path: file.path, at: file.changedAt, docAt: row.docChangedAt, href });
     } else if (row.reason === 'folder-only') {
       const folder = newest(row.folders);
-      if (folder) folderOnly.push({ name, path: folder.path, at: folder.changedAt, docAt: row.docChangedAt, href });
+      if (folder) folderOnly.push({ name, slug: row.slug, path: folder.path, at: folder.changedAt, docAt: row.docChangedAt, href });
     }
   }
   const map = new Map<string, BriefLineDetail[]>();

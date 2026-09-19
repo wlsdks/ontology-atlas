@@ -73,8 +73,8 @@ function brief(overrides: Partial<InsightsBrief> = {}): InsightsBrief {
       [
         "ontology-evidence-moved",
         [
-          { name: "Payments", path: "src/pay.ts", at: "2026-09-18T02:00:00Z", docAt: "2026-09-10T00:00:00Z", href: "/topology/?p=capabilities%2Fpay" },
-          { name: "Shipping", path: "src/ship.ts", at: "2026-09-17T02:00:00Z", docAt: "2026-09-09T00:00:00Z", href: "/topology/?p=capabilities%2Fship" },
+          { name: "Payments", slug: "capabilities/pay", path: "src/pay.ts", at: "2026-09-18T02:00:00Z", docAt: "2026-09-10T00:00:00Z", href: "/topology/?p=capabilities%2Fpay" },
+          { name: "Shipping", slug: "capabilities/ship", path: "src/ship.ts", at: "2026-09-17T02:00:00Z", docAt: "2026-09-09T00:00:00Z", href: "/topology/?p=capabilities%2Fship" },
         ],
       ],
     ]),

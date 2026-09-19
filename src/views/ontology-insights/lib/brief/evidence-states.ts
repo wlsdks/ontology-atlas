@@ -28,6 +28,14 @@ export interface EvidenceRow {
   verdict: 'stale' | 'missing' | 'unknown';
   /** Why, for the unknown verdicts: `folder-only` is the one the brief names on its own line. */
   reason: string | null;
+  /**
+   * The concept's vault document slug, which is what `get_concept` takes.
+   *
+   * The screen shows a concept's display title, and an agent handed that title has to search for
+   * the document before it can read anything. Carrying the slug the walk already knew turns the
+   * request into calls the agent can make (2026-09-20).
+   */
+  slug: string | null;
   /** ISO time of the concept document's own newest commit, when the walk supplied one. */
   docChangedAt: string | null;
   /** Files cited by this concept that changed after the document. */
@@ -94,6 +102,7 @@ export function resolveEvidenceStates(
     if (verdict !== 'current') {
       rows.push({
         id: concept.id,
+        slug: concept.docPath ? concept.docPath.replace(/\.md$/, '') : null,
         verdict,
         reason: reason ?? null,
         docChangedAt: doc?.lastChangedAt ?? null,

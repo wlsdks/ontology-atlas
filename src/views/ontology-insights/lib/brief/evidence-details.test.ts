@@ -7,7 +7,7 @@ import type { EvidenceRow } from './evidence-states';
 const titleById = new Map([['pay', 'Payment'], ['cart', 'Cart']]);
 
 function row(partial: Partial<EvidenceRow> & Pick<EvidenceRow, 'id' | 'verdict'>): EvidenceRow {
-  return { reason: null, docChangedAt: '2026-09-01T00:00:00Z', moved: [], gone: [], folders: [], ...partial };
+  return { reason: null, slug: `capabilities/${partial.id}`, docChangedAt: '2026-09-01T00:00:00Z', moved: [], gone: [], folders: [], ...partial };
 }
 
 describe('buildEvidenceDetails', () => {
