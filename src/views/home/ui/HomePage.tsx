@@ -6755,6 +6755,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         <ShortcutSheet
           open={!createNodeOpen && shortcutsOpen}
           onClose={() => setShortcutsOpen(false)}
+          returnFocusSelector={'[data-testid="topology-shortcuts-help-button"]'}
         />
         <DocsQuickDrawer
           open={!createNodeOpen && docsDrawerOpen}
