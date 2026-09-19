@@ -4313,8 +4313,6 @@
       "openHint": "온톨로지만 읽은 답을 {count}개 장면으로 따라갑니다.",
       "blocked": "이 답은 아직 발표로 만들 수 없어요. {reason}",
       "blockReason": {
-        "intent_inactive": "발표 요청이 아닙니다.",
-        "turn_incomplete": "답변이 아직 끝나지 않았습니다.",
         "no_answer": "완료된 설명이 없습니다.",
         "source_hidden_unproven": "온톨로지만 읽었다는 것을 도구 기록으로 확인할 수 없습니다.",
         "no_full_body_reads": "본문 전체를 읽은 개념이 없습니다.",
