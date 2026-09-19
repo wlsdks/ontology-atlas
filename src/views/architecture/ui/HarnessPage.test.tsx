@@ -236,6 +236,22 @@ describe('the segmented control', () => {
     expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
   });
 
+  it('keeps the census off the structure view, where the bands count differently', () => {
+    /*
+     * The sentence counts declarations in one bucket and a mirrored guard twice; the bands below
+     * split gates from watchers and count a mirrored guard once. Printing both put a reader in
+     * front of one screen arguing with itself.
+     */
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+    mount();
+    expect(screen.queryByTestId('harness-sentence')).toBeNull();
+
+    act(() => {
+      fireEvent.click(document.querySelector('#harness-tab-coverage')!);
+    });
+    expect(screen.getByTestId('harness-sentence')).toBeInTheDocument();
+  });
+
   it('opens the blueprint for an address that carries a role but names no view', () => {
     /* `?role=` is written by the blueprint's own deep links and exists on no other view. Those
        links were meaningful with no `?view=` beside them while the blueprint was the default, and

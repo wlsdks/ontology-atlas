@@ -213,8 +213,10 @@ test.describe("하네스 탭", () => {
     await expect(blind).toContainText(".cursorignore");
     await expect(blind).toContainText(".geminiignore");
     await expect(page.getByTestId("harness-anatomy-count-blind")).toHaveText("파일 2개");
-    // And it is not counted among the documents the repository speaks through.
-    await expect(page.getByTestId("harness-sentence")).toContainText("문서 10개");
+    // And it is not counted among the documents the repository speaks through — read on the
+    // coverage view, because the census sentence and these bands count by different rules and
+    // this view does not print both.
+    await expect(page.getByTestId("harness-sentence")).toHaveCount(0);
 
     // What every turn costs, beside the count that cannot say it.
     await expect(page.getByTestId("harness-anatomy-slot-always")).toContainText("매 턴 읽는 분량");
@@ -533,6 +535,11 @@ test.describe("하네스 탭", () => {
     await expect(sentence).toBeVisible({ timeout: 30_000 });
     await expect(sentence).toContainText("문서");
     await expect(sentence).toContainText("검사");
+    /* ⚠️ The fixture holds two exclusion files (`.cursorignore`, `.geminiignore`), and this number
+       must not move for them: a file that says what an agent may not see is the opposite of a
+       document the repository speaks through. The structure view proves the rows; this proves the
+       census they are kept out of. */
+    await expect(sentence).toContainText("문서 10개");
     /* The two numbers here are file counts. The coverage claim has its own denominator and its own
        kind of statement, so it is not folded in beside them. */
     await expect(sentence.locator("p").first()).not.toContainText("영역");

@@ -362,7 +362,20 @@ function HarnessPageInner() {
               <p className="max-w-prose text-body-lg text-[color:var(--color-text-tertiary)]">
                 {t('explainer')}
               </p>
-              {sentence}
+              {/*
+                ⚠️ **Not on the structure view, because it contradicts it.** The census counts
+                declarations in one bucket — "N checks in place" is wired hooks plus `.githooks/`
+                files plus `package.json` scripts, and a guard mirrored for Claude Code and Codex
+                counts twice. The view below splits exactly that bucket into what gates and what
+                watches, and counts a mirrored guard **once**, which is the distinction the two
+                files carry. So a reader met "80 checks" over rows adding to 77 under a different
+                definition, one screen arguing with itself (2026-09-20). The bands *are* the
+                census there, and they say it in the vocabulary the rest of the view uses.
+
+                It stays on the coverage and guides views, where the matrix and the table use the
+                same counting rule it does.
+              */}
+              {view === 'structure' ? null : sentence}
             </div>
             {reportState.status === 'ready' ? (
               <div className="architecture-result-arrive">
