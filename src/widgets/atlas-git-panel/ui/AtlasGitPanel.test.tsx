@@ -226,12 +226,16 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
+    // The pane reads documents (owner direction B, 2026-09-19): one line of totals, then a
+    // chip per changed document named by its concept — no kind label over a single row.
     const groups = await screen.findByTestId("atlas-git-change-groups");
-    expect(groups).toHaveTextContent("capability");
     expect(groups).toHaveTextContent("추가 1");
-    expect(groups).toHaveTextContent("element");
     expect(groups).toHaveTextContent("수정 1");
-    expect(groups).toHaveTextContent("capabilities/foo");
+    expect(groups).toHaveTextContent("foo");
+    expect(groups).toHaveTextContent("bar");
+    expect(groups).not.toHaveTextContent("capability");
+    // The document with changed lines opens by default, whole, with its path named once.
+    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/elements/bar.md");
 
     // #85 — history is the evidence pane's second tab (left: what to record, right: evidence).
     const step = screen.getByTestId("atlas-git-history-item");
@@ -505,7 +509,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
+    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("new line");
     // The uncommitted row is at the top of the list and is the one selected.
     const pending = screen.getByTestId("atlas-git-pending-row");
     // 2026-08-15 (8) — this row is "what I am looking at", not a pressed button.
@@ -1221,7 +1225,7 @@ describe("AtlasGitPanel — 2단 작업대의 선택", () => {
     await screen.findByTestId("atlas-git-history-detail");
 
     fireEvent.click(screen.getByTestId("atlas-git-pending-row"));
-    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
+    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("new line");
     expect(screen.queryByTestId("atlas-git-history-detail")).toBeNull();
   });
 
@@ -1510,7 +1514,7 @@ describe("AtlasGitPanel — 문서 하나를 되돌린다", () => {
     await waitFor(() =>
       expect(screen.getByTestId("atlas-git-pending-row")).toHaveAttribute("aria-current", "true"),
     );
-    expect(screen.getByTestId("atlas-git-change-groups")).toHaveTextContent("docs/capabilities/foo.md");
+    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/capabilities/foo.md");
   });
 
   it("신원이 다른 시점은 거부되고, 문서가 그대로라는 말이 같이 선다", async () => {

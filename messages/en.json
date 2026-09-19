@@ -3678,7 +3678,17 @@
     "docHistoryTitle": "Other steps that changed this document",
     "docHistoryOnly": "This is the only step that changed this document",
     "docHistoryOlder": "Older steps exist too. Show older steps in the list on the left to reach them",
-    "docHistoryJumpHint": "Press to jump to that step"
+    "docHistoryJumpHint": "Press to jump to that step",
+    "changedDocsAria": "Choose a changed document",
+    "docReaderInfoBox": "Front matter",
+    "docReaderAddedLine": "Added line:",
+    "docReaderRemovedLine": "Removed line:",
+    "docReaderNew": "New document",
+    "docReaderChanged": "Edited document",
+    "docReaderDeleted": "Deleted document",
+    "docReaderRenamed": "Renamed document",
+    "docReaderPartial": "The whole document could not be read; only the changed part is shown",
+    "docReaderInfoBoxUnchanged": "Front matter · no lines changed"
   },
   "agentFiles": {
     "header": "Agent files",

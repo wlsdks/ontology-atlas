@@ -130,6 +130,8 @@ export async function installDesktopRailRuntime(
             return slow(commits);
           case "git_diff":
             return slow({ count: pending.length, files: pending, diff, truncated: false });
+          case "git_document_diff":
+            return slow({ path: args.relativePath, diff, untracked: false });
           case "git_commit_diff":
             return slow({ count: 1, files: commits[0] ? (commits[0] as { files: unknown[] }).files : [], diff, truncated: false });
           case "pick_vault_directory":

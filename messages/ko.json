@@ -3678,7 +3678,17 @@
     "docHistoryTitle": "이 문서를 바꾼 다른 커밋",
     "docHistoryOnly": "이 문서를 바꾼 커밋은 이것뿐이에요",
     "docHistoryOlder": "더 오래된 커밋도 있어요. 왼쪽 목록에서 이전 커밋을 더 읽으면 보여요",
-    "docHistoryJumpHint": "누르면 그 커밋으로 건너뛰어요"
+    "docHistoryJumpHint": "누르면 그 커밋으로 건너뛰어요",
+    "changedDocsAria": "바뀐 문서 고르기",
+    "docReaderInfoBox": "정보칸",
+    "docReaderAddedLine": "추가된 줄:",
+    "docReaderRemovedLine": "지워진 줄:",
+    "docReaderNew": "새 문서",
+    "docReaderChanged": "고친 문서",
+    "docReaderDeleted": "지운 문서",
+    "docReaderRenamed": "이름 바꾼 문서",
+    "docReaderPartial": "문서 전체를 읽지 못해 바뀐 부분만 보여요",
+    "docReaderInfoBoxUnchanged": "정보칸 · 바뀐 줄 없음"
   },
   "agentFiles": {
     "header": "에이전트 파일",

@@ -1366,6 +1366,76 @@ pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
     })
 }
 
+// ── one document, whole, with its changes ───────────────────────────────────
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitDocumentDiffResult {
+    /// Repository-relative path, as given.
+    path: String,
+    /// A unified diff with the **whole document as context**, so the reader can draw the
+    /// document and mark what changed, rather than hunks with three lines around them.
+    diff: String,
+    /// `true` when git has never seen the document: the diff then lists every line as added.
+    untracked: bool,
+}
+
+/// One document's changes with the whole document around them.
+///
+/// `source` absent: the working file against `HEAD` (what the person has not committed).
+/// `source` a hash: what that commit did to the document, against its parent.
+/// The reader on the Record screen draws the document as prose and marks the changed lines;
+/// it needs every line, so the context is the file length (`-U` with a large count).
+#[tauri::command]
+pub fn git_document_diff(
+    vault_path: String,
+    relative_path: String,
+    source: Option<String>,
+) -> Result<GitDocumentDiffResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let vault_spec = vault_pathspec(&repo_root, &vault_dir);
+    let repo_rel = vault_document_path(&relative_path, &vault_spec)?;
+    const WHOLE: &str = "-U1000000";
+
+    if let Some(hash) = source.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        let src = validate_restore_source(hash)?;
+        let out = run_git(
+            &repo_root,
+            &["show", WHOLE, "--no-color", "--format=", &src, "--", &repo_rel],
+        )?;
+        if !out.success {
+            return Err(coded("restore-source-missing", ""));
+        }
+        return Ok(GitDocumentDiffResult { path: repo_rel, diff: out.stdout, untracked: false });
+    }
+
+    let rows = get_porcelain_status(&repo_root, &repo_rel)?;
+    let untracked = rows
+        .iter()
+        .any(|r| r.path == repo_rel && r.index == '?' && r.worktree == '?');
+    if untracked {
+        // git has nothing to diff against; the whole file is the addition.
+        let raw = fs::read_to_string(repo_root.join(&repo_rel)).unwrap_or_default();
+        let mut diff = format!("diff --git a/{repo_rel} b/{repo_rel}\n--- /dev/null\n+++ b/{repo_rel}\n@@ -0,0 +1 @@\n");
+        for line in raw.lines() {
+            diff.push('+');
+            diff.push_str(line);
+            diff.push('\n');
+        }
+        return Ok(GitDocumentDiffResult { path: repo_rel, diff, untracked: true });
+    }
+    let out = run_git(&repo_root, &["diff", WHOLE, "--no-color", "HEAD", "--", &repo_rel])?;
+    let diff = if out.success {
+        out.stdout
+    } else {
+        run_git(&repo_root, &["diff", WHOLE, "--no-color", "--", &repo_rel])
+            .map(|o| o.stdout)
+            .unwrap_or_default()
+    };
+    Ok(GitDocumentDiffResult { path: repo_rel, diff, untracked: false })
+}
+
 // ── restore one document ────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize)]
