@@ -417,6 +417,68 @@ test('inspectVaultGit preserves unicode and spaces as usable paths', () => {
   }
 });
 
+test('collectPathLastChanges resolves cited paths against the caller\'s repoRoot, not the Git toplevel', () => {
+  const { root } = makeRepo();
+  try {
+    // A package inside a repository: its vault and its `path:` values are its own, not the toplevel's.
+    const pkg = join(root, 'packages', 'app');
+    mkdirSync(join(pkg, 'src'), { recursive: true });
+    const vault = join(pkg, 'vault');
+    mkdirSync(vault);
+    writeFileSync(join(pkg, 'src', 'pay.ts'), 'export const pay = 1;\n');
+    writeFileSync(join(vault, 'pay.md'), '---\nkind: capability\nslug: pay\npath: src/pay.ts\n---\n');
+    git(root, 'add', '.');
+    execFileSync('git', ['-C', root, 'commit', '-m', 'package'], {
+      encoding: 'utf8',
+      env: { ...process.env, GIT_AUTHOR_DATE: '2026-09-11T00:00:00Z', GIT_COMMITTER_DATE: '2026-09-11T00:00:00Z' },
+    });
+
+    const result = collectPathLastChanges({
+      repoRoot: pkg,
+      vaultRoot: vault,
+      repoPaths: ['src/pay.ts'],
+      vaultPaths: ['pay.md'],
+    });
+    assert.equal(result.ok, true);
+    const pay = result.changes.get('src/pay.ts');
+    assert.equal(pay.exists, true, 'a cited path must resolve against the repository the caller named');
+    assert.ok(pay.lastChangedAt, 'and it must be dated rather than reported as gone');
+    assert.equal(result.changes.get('pay.md').exists, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collectPathLastChanges keeps every concept document when the cited paths would fill the walk', () => {
+  const { root, vault } = makeRepo();
+  try {
+    mkdirSync(join(root, 'src'));
+    for (let index = 0; index < 600; index += 1) {
+      writeFileSync(join(root, 'src', `unit-${index}.ts`), `export const unit = ${index};\n`);
+    }
+    writeFileSync(join(vault, 'subject.md'), '---\nkind: capability\nslug: subject\n---\n');
+    git(root, 'add', '.');
+    execFileSync('git', ['-C', root, 'commit', '-m', 'many units'], {
+      encoding: 'utf8',
+      env: { ...process.env, GIT_AUTHOR_DATE: '2026-09-11T00:00:00Z', GIT_COMMITTER_DATE: '2026-09-11T00:00:00Z' },
+    });
+
+    const result = collectPathLastChanges({
+      repoRoot: root,
+      vaultRoot: vault,
+      repoPaths: Array.from({ length: 600 }, (_unused, index) => `src/unit-${index}.ts`),
+      vaultPaths: ['subject.md'],
+    });
+    assert.equal(result.ok, true);
+    assert.ok(
+      result.changes.get('subject.md')?.lastChangedAt,
+      'the document must survive the cap: undated documents read as "no commit in the window"',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('collectPathLastChanges dates repo paths and vault documents in one walk and refuses escapes', () => {
   const { root, vault } = makeRepo();
   try {

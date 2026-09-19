@@ -1766,14 +1766,17 @@ pub fn git_paths_last_change(
         }
         wanted.push((key.to_string(), resolved));
     };
-    for raw in &repo_paths {
-        if let Some(clean) = safe_relative_path(raw) {
-            push(raw, clean);
-        }
-    }
+    // Documents first: the cap is shared, and a vault citing more implementation paths than it
+    // allows used to consume the whole walk, leaving no concept document dated — which reads as
+    // "no commit in the window" rather than "the walk ran out of room".
     for raw in &vault_paths {
         if let Some(clean) = safe_relative_path(raw) {
             push(raw, format!("{prefix}{clean}"));
+        }
+    }
+    for raw in &repo_paths {
+        if let Some(clean) = safe_relative_path(raw) {
+            push(raw, clean);
         }
     }
     if wanted.is_empty() {
@@ -1783,6 +1786,10 @@ pub fn git_paths_last_change(
     const REC: char = '\x1e';
     let format = format!("--pretty=format:{REC}%cI");
     let mut args: Vec<&str> = vec![
+        // Without this Git C-quotes any non-ASCII path, so a Korean file or folder name never
+        // matches the path we asked about and every concept under it degrades to `unknown`.
+        "-c",
+        "core.quotepath=false",
         "log",
         EVIDENCE_WALK_COMMITS,
         &format,
