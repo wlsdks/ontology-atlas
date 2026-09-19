@@ -224,7 +224,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     id: "agents-product-design-gate",
     files: ["AGENTS.md"],
     markers: [
-      "Product design gate",
+      "Design gate after the PO pass",
       "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
       "/design-build",
       "pnpm design:route",
