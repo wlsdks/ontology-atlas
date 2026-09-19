@@ -111,6 +111,27 @@ describe("buildOntologyTree — happy path", () => {
   });
 });
 
+describe("buildOntologyTree — siblings sort by the name the row shows", () => {
+  it("orders by display when present, even where the canonical titles would order the other way", () => {
+    // English titles: Members < Payments. Korean names: the Payments name sorts first.
+    const members: KnowledgeGraphNode = { ...makeNode("d-members", "domain", "Members"), display: "회원" };
+    const payments: KnowledgeGraphNode = { ...makeNode("d-payments", "domain", "Payments"), display: "결제" };
+    const result = buildOntologyTree(
+      [makeNode("p", "project"), members, payments],
+      [makeEdge("e1", "p", "d-members", "contains"), makeEdge("e2", "p", "d-payments", "contains")],
+    );
+    expect(result.roots[0].children.map((child) => child.node.id)).toEqual(["d-payments", "d-members"]);
+  });
+
+  it("falls back to title for nodes without a display name", () => {
+    const result = buildOntologyTree(
+      [makeNode("p", "project"), makeNode("d-b", "domain", "Beta"), makeNode("d-a", "domain", "Alpha")],
+      [makeEdge("e1", "p", "d-b", "contains"), makeEdge("e2", "p", "d-a", "contains")],
+    );
+    expect(result.roots[0].children.map((child) => child.node.id)).toEqual(["d-a", "d-b"]);
+  });
+});
+
 describe("buildOntologyTree — belongs_to is reverse of contains", () => {
   it("treats belongs_to from→to as child→parent", () => {
     const nodes = [

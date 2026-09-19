@@ -79,6 +79,9 @@ export function CommitDetail({
   headline = null,
   concepts,
   files,
+  pendingDelta,
+  onRestore,
+  restoreBusy,
   focusedConceptId,
   setFocusedConceptId,
   egoFor,
@@ -99,6 +102,11 @@ export function CommitDetail({
   headline?: string | null;
   concepts: readonly CommitConcept[];
   files: readonly GitChangeEntry[];
+  /** Uncommitted +/- line counts per path, from the diff the person can already read. */
+  pendingDelta: ReadonlyMap<string, { added: number; removed: number }>;
+  /** Restores one of this commit's files to this commit's content; resolves true when git did it. */
+  onRestore: (path: string, others: number) => Promise<boolean>;
+  restoreBusy: boolean;
   focusedConceptId: string | null;
   setFocusedConceptId: (id: string) => void;
   egoFor: (nodeId: string) => ConceptEgo | null;
@@ -156,6 +164,16 @@ export function CommitDetail({
   const perFile = useMemo(() => splitDiffByFile(diff ?? ""), [diff]);
   const activeFile = openFile ?? files[0]?.path ?? null;
   const activePatch = activeFile ? findPatch(perFile, activeFile) : null;
+  /*
+   * The focused concept's own document in this commit. The concept lens is the default lens
+   * (review, 2026-09-19: an action that lives only under "files" may never be found), so the
+   * restore door opens here too, for the document that carries the concept.
+   */
+  const focusedFile = useMemo(() => {
+    if (!focused) return null;
+    const tail = focused.split(":").pop() ?? focused;
+    return files.find((file) => (file.slug.split("/").pop() ?? file.slug) === tail) ?? null;
+  }, [files, focused]);
 
   return (
     <div
@@ -236,6 +254,20 @@ export function CommitDetail({
                   ))}
                 </div>
               </div>
+              {focusedFile ? (
+                <div className="px-5 pt-3">
+                  <RestoreDock
+                    t={t}
+                    path={focusedFile.path}
+                    label={t("restoreConceptDoc", { path: focusedFile.path })}
+                    when={relativeTime}
+                    pending={pendingDelta.get(focusedFile.path) ?? null}
+                    others={Math.max(0, files.length - 1)}
+                    busy={restoreBusy}
+                    onRestore={onRestore}
+                  />
+                </div>
+              ) : null}
               {focused ? (
                 <Section label={t("egoHeading")} note={t("egoHint")}>
                   <ConceptEgoCard
@@ -287,6 +319,21 @@ export function CommitDetail({
               ))}
             </ul>
 
+            {activeFile ? (
+              <div className="px-5 pt-3">
+                <RestoreDock
+                  t={t}
+                  path={activeFile}
+                  label={null}
+                  when={relativeTime}
+                  pending={pendingDelta.get(activeFile) ?? null}
+                  others={Math.max(0, files.length - 1)}
+                  busy={restoreBusy}
+                  onRestore={onRestore}
+                />
+              </div>
+            ) : null}
+
             <div className="flex min-h-0 flex-1 flex-col gap-2.5 px-5 py-4">
               <h3 className="flex-none text-label text-[color:var(--color-text-tertiary)]">
                 {t("changedLines")}
@@ -321,6 +368,104 @@ export function CommitDetail({
 }
 
 /** One-character file status — the letter carries the meaning, not the colour. */
+/**
+ * Restore — this commit's content for one document, landing as an uncommitted change. Worded
+ * apart from discard (review, 2026-09-19): this one is reversible from the same screen, and
+ * the confirm says so; it also says when the document's own uncommitted lines would go with
+ * it, and which of this commit's other documents stay as they are.
+ */
+function RestoreDock({
+  t,
+  path,
+  label,
+  when,
+  pending,
+  others,
+  busy,
+  onRestore,
+}: {
+  t: (key: string, values?: Record<string, string | number>) => string;
+  path: string;
+  /** A lead-in naming whose document this is, or `null` when the file list already says. */
+  label: string | null;
+  when: string;
+  pending: { added: number; removed: number } | null;
+  others: number;
+  busy: boolean;
+  onRestore: (path: string, others: number) => Promise<boolean>;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <div className="flex flex-col gap-2" data-testid="atlas-git-restore-dock">
+      {confirming ? (
+        <div
+          className="git-fade-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
+          data-testid="atlas-git-restore-step"
+        >
+          <p className="text-label leading-prose text-[color:var(--color-text-secondary)]">
+            {t("restoreConfirmBody", { path, when })}
+          </p>
+          {pending && pending.added + pending.removed > 0 ? (
+            <p className="text-label leading-prose text-[color:var(--color-danger-text)]">
+              {t("restoreConfirmPending", { added: pending.added, removed: pending.removed })}
+            </p>
+          ) : null}
+          <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
+            {t("restoreConfirmLands")}
+            {others > 0 ? ` ${t("restoreConfirmOthers", { count: others })}` : ""}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              data-testid="atlas-git-restore-confirm"
+              disabled={busy}
+              onClick={() => {
+                void onRestore(path, others).then((ok) => {
+                  if (ok) setConfirming(false);
+                });
+              }}
+              className={controlClass({ tone: "onAccent" })}
+            >
+              {busy ? t("restoreRunning") : t("restoreButton")}
+            </button>
+            <button
+              type="button"
+              data-testid="atlas-git-restore-cancel"
+              disabled={busy}
+              onClick={() => setConfirming(false)}
+              className={controlClass({})}
+            >
+              {t("cancelButton")}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          {label ? (
+            <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+              {label}
+            </span>
+          ) : null}
+          <button
+            type="button"
+            data-testid="atlas-git-restore"
+            onClick={() => setConfirming(true)}
+            className={controlClass({
+              shape: "link",
+              size: "sm",
+              tone: "muted",
+              hoverInk: "strong",
+              className: "text-label",
+            })}
+          >
+            {t("restoreAction")}
+          </button>
+        </p>
+      )}
+    </div>
+  );
+}
+
 function statusMark(status: string): string {
   switch (status) {
     case "added":

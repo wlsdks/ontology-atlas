@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { findProjectDocInList } from "@/entities/docs-vault";
 import { getProjectRuntimeDetailHref, getTopologyProjectHref, type Project } from "@/entities/project";
 import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault } from "@/entities/vault-session";
-import { useProjects } from "@/features/project-data-source";
 import { Link } from "@/i18n/navigation";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { controlClass } from "@/shared/ui/control-class";
@@ -14,7 +13,7 @@ import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { resolveAuthoredDescription } from "../lib/authored-description";
 import { resolveRecentActivityAgo, type RecentActivityAgo } from "../lib/recent-activity";
-import { useVaultDocs } from "../lib/use-vault-docs";
+import { useProjects, useVaultDocs } from "@/features/project-data-source";
 
 type SelectorTranslator = ReturnType<typeof useTranslations<"projectPages.selector">>;
 

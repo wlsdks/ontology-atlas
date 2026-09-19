@@ -30,11 +30,17 @@ const KIND_SORT_ORDER: Record<string, number> = {
   'vault-readme': 5,
 };
 
+/**
+ * Siblings sort by the name the row shows (`display ?? title`, the same
+ * expression every render surface uses), not by the canonical `title`. Sorted
+ * on `title`, the Korean INDEX listed its domains in the alphabet of English
+ * names nobody on that screen could see (2026-09-19).
+ */
 function compareNodes(a: KnowledgeGraphNode, b: KnowledgeGraphNode): number {
   const ka = KIND_SORT_ORDER[a.kind] ?? 99;
   const kb = KIND_SORT_ORDER[b.kind] ?? 99;
   if (ka !== kb) return ka - kb;
-  return a.title.localeCompare(b.title);
+  return (a.display ?? a.title).localeCompare(b.display ?? b.title);
 }
 
 export function buildOntologyTree(

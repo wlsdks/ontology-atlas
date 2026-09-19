@@ -10,8 +10,6 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, FileText, FolderSearch, Layers, Waypoints } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
@@ -33,7 +31,8 @@ import {
   getTopologyProjectHref,
   type Project,
 } from "@/entities/project";
-import { useProjects, useProjectMutations, useProjectBody } from "@/features/project-data-source";
+import { useProjects, useProjectMutations, useProjectBody, useVaultDocs } from "@/features/project-data-source";
+import { buildDocsVaultHref, findProjectDocInList } from "@/entities/docs-vault";
 import { VaultConflictError } from "@/entities/vault-session";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { CopyProjectLinkButton } from "@/features/project-share";
@@ -50,6 +49,8 @@ import { buildProjectDomainComposition } from "../model/domain-composition";
 import { buildConnectedProjects, findRelatesGraphProjectSlugs } from "../model/connected-projects";
 import { buildAgentHandoffSnippet } from "../model/agent-handoff-snippet";
 import { DomainCompositionRows } from "./DomainCompositionRows";
+import { ProjectBrief } from "./ProjectBrief";
+import { splitProjectBrief } from "../model/project-brief";
 import { ConstructionReviewPanel } from "./construction-review/ConstructionReviewPanel";
 import { TabBar } from "@/shared/ui/tab-bar";
 import {
@@ -100,10 +101,18 @@ function ProjectDetailTopBar({
   slug,
   projectName,
   census,
+  projectDocSlug,
 }: {
   slug?: string;
   projectName?: string | null;
   census?: { concepts: number; relations: number } | null;
+  /**
+   * The vault slug of this project's own Markdown document. When known, the documents door opens
+   * **that file** rather than the vault's root: the frontmatter of that one file is what this whole
+   * page is drawn from, and until 2026-09-19 the page had no door to it — "Ontology documents" led
+   * to the vault root and left the person to find the project's file by hand.
+   */
+  projectDocSlug?: string | null;
 }) {
   const t = useTranslations("projectPages.detail");
   /**
@@ -119,7 +128,8 @@ function ProjectDetailTopBar({
    */
   const workspaceHref = '/topology/';
   const projectsListHref = '/projects/';
-  const docsVaultHref = '/docs/';
+  // Same label either way: the door is the Ontology documents; when the file is known it opens on it.
+  const docsVaultHref = projectDocSlug ? buildDocsVaultHref({ slug: projectDocSlug }) : '/docs/';
   return (
     /* Without a size class the `▸` separator inherits the root 16px and renders 33–45% larger than
        the link beside it (12.5px) and the label (11px) — ink outweighing data. The whole breadcrumb
@@ -357,6 +367,8 @@ export function ProjectDetailPage({
   const insightEdges = insight?.edges ?? [];
 
   const handoffCopy = useCopyFeedback();
+  const briefCopy = useCopyFeedback();
+  const vaultDocs = useVaultDocs();
 
   if (!slug) {
     return (
@@ -391,6 +403,8 @@ export function ProjectDetailPage({
       );
   }
 
+  // The one Markdown file this page is drawn from — the door in the top bar and the path in the footer.
+  const projectDoc = findProjectDocInList(vaultDocs, project.slug);
   const metrics = buildProjectOntologyMetrics(insightNodes, insightEdges, project.slug);
   const domainComposition = buildProjectDomainComposition(insightNodes, insightEdges, project.slug);
   const relatesGraphSlugs = findRelatesGraphProjectSlugs(insightNodes, insightEdges, project.slug);
@@ -478,10 +492,13 @@ export function ProjectDetailPage({
     { label: t("metricElements"), value: metrics.elements },
   ];
   // The meta figures are a different kind and have no reason to carry the same weight — demoted to plain text.
+  // A zero is not drawn (the "match 0 → hide" rule this page already applies to the domain rows):
+  // "Documents 0" under a header counting 125 concepts in a folder of 126 Markdown files read as a
+  // contradiction, when it only meant no `kind: document` node is linked to this project.
   const secondaryMetrics: Array<{ label: string; value: number }> = [
     { label: t("metricDocuments"), value: metrics.documents },
     { label: t("metricRelations"), value: metrics.relations },
-  ];
+  ].filter((item) => item.value > 0);
 
   const handleCopyHandoff = () => {
     void handoffCopy.copy(handoffSnippet);
@@ -492,6 +509,14 @@ export function ProjectDetailPage({
       : handoffCopy.state === "failed"
         ? t("handoffCopyErrorLabel")
         : t("handoffCopyLabel");
+  const briefIsStructured = splitProjectBrief(dedupedBodyContent).sections.length > 0;
+  const briefPrompt = t("briefPrompt", { slug: project.slug, doc: projectDoc?.path ?? `${project.slug}.md` });
+  const briefCopyLabel =
+    briefCopy.state === "copied"
+      ? t("briefAskCopied")
+      : briefCopy.state === "failed"
+        ? t("briefAskCopyError")
+        : t("briefAskCopy");
 
   return (
     <ProjectDetailShell>
@@ -499,6 +524,7 @@ export function ProjectDetailPage({
         slug={slug}
         projectName={project.name}
         census={{ concepts: insightNodes.length, relations: insightEdges.length }}
+        projectDocSlug={projectDoc?.slug ?? null}
       />
 
       {/* zone 1 — hero band: glyph, title, and description plus the engraved metric strip and the
@@ -557,6 +583,17 @@ export function ProjectDetailPage({
             {/* `flex-none` created horizontal overflow at a 390px viewport, the read-only badge and
                 its actions pushing the page out — allow shrinking with `min-w-0` and wrap instead. */}
             <div className="flex min-w-0 basis-full flex-wrap items-center gap-2 xl:ml-auto xl:basis-auto">
+              {/*
+                Order and weight follow what a person on this page does most: open the project on the
+                map. That is the one filled control; the review-envelope picker beside it is a
+                reviewer's tool and stands second in outline. Until 2026-09-19 the picker was first
+                and both were outline, so the page's primary action read as one of two equals.
+              */}
+              <Link href={getTopologyProjectHref(project.slug)} data-testid="project-detail-topology-link">
+                <Button type="button" variant="primary" size="sm">
+                  {t("topBarTopologyView")}
+                </Button>
+              </Link>
               <input
                 {...constructionReview.inputProps}
                 data-testid="construction-review-ingress"
@@ -575,11 +612,6 @@ export function ProjectDetailPage({
                   ? t("constructionReview.readingResult")
                   : t("constructionReview.openResult")}
               </Button>
-              <Link href={getTopologyProjectHref(project.slug)} data-testid="project-detail-topology-link">
-                <Button type="button" variant="outline" size="sm">
-                  {t("topBarTopologyView")}
-                </Button>
-              </Link>
               {canManageProject ? (
                 <ProjectQuickEditPanel project={project} settingsHref={projectFullEditHref} />
               ) : (
@@ -833,15 +865,10 @@ export function ProjectDetailPage({
             </span>
           </div>
           {bodyContent ? (
-            // The column above is the line; no per-line cap here.
-            // `break-keep` — the Korean body broke mid-word as 「jangba|gi」 at 584px (measured
-            // 2026-08-12). `word-break` inherits, so this one wrapper covers every markdown paragraph.
-            <div
-              className={`${storyMarkdownClassName} break-keep`}
-              data-testid="project-detail-body-content"
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{dedupedBodyContent}</ReactMarkdown>
-            </div>
+            // The column above is the line; no per-line cap here. `ProjectBrief` draws the body's
+            // `##` sections as blocks and falls back to prose (with `break-keep`, which covers every
+            // markdown paragraph: the Korean body broke mid-word as 「jangba|gi」 at 584px, 2026-08-12).
+            <ProjectBrief body={dedupedBodyContent ?? bodyContent} proseClassName={storyMarkdownClassName} />
           ) : (
             <div data-testid="project-detail-body-empty">
               <EmptyState
@@ -851,6 +878,42 @@ export function ProjectDetailPage({
               />
             </div>
           )}
+          {/*
+            The ask (owner, 2026-09-19): this is the place the agent should analyse and lay out. The
+            page cannot start a turn itself yet (the Library's dock is where turns run), so it hands
+            over the exact instructions: read the map through MCP, write four sections, change only
+            the body with `patch_concept` under `expected_mtime`. The person reviews the file in the
+            Library; nothing is written from here.
+          */}
+          <div
+            data-testid="project-detail-brief-ask"
+            data-brief-state={briefIsStructured ? "structured" : "unstructured"}
+            className="mt-6 border-t border-[color:var(--color-divider)] pt-4"
+          >
+            <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+              {t("briefAskTitle")}
+            </span>
+            <p className="mt-1 mb-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+              {briefIsStructured ? t("briefAskStructured") : t("briefAskUnstructured")}
+            </p>
+            <Button
+              type="button"
+              variant={briefIsStructured ? "outline" : "primary"}
+              size="sm"
+              onClick={() => void briefCopy.copy(briefPrompt)}
+              data-testid="project-detail-brief-ask-copy"
+            >
+              {briefCopyLabel}
+            </Button>
+            <details className="mt-3">
+              <summary className="select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                {t("handoffHumanCaption")}
+              </summary>
+              <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap break-keep text-[color:var(--color-text-quaternary)]">
+                {briefPrompt}
+              </pre>
+            </details>
+          </div>
           </div>
         </article>
         )}
@@ -974,12 +1037,27 @@ export function ProjectDetailPage({
       </section>
 
       <footer className="mt-[var(--section-gap)] border-t border-[color:var(--color-overlay-2)] pt-6 pb-[var(--page-bottom-breath)]">
-        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-          {t.rich("footerSummary", {
-            slug: project.slug,
-            date: formatDate(project.updatedAt),
-            value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
-          })}
+        {/*
+          The footer names the file: slug and the Markdown path this page is drawn from, the two
+          things a person types into an agent or a terminal next. The updated date used to stand
+          here as well, a second copy of the hero's; the path is what was missing (2026-09-19).
+          Without a known document the footer keeps the older slug-and-date form.
+        */}
+        <p
+          data-testid="project-detail-footer"
+          className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]"
+        >
+          {projectDoc
+            ? t.rich("footerSummaryDoc", {
+                slug: project.slug,
+                path: projectDoc.path,
+                value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
+              })
+            : t.rich("footerSummary", {
+                slug: project.slug,
+                date: formatDate(project.updatedAt),
+                value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
+              })}
         </p>
       </footer>
 
