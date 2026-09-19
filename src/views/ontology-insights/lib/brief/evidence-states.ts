@@ -1,4 +1,4 @@
-import { isAfter, toMs } from './brief-model';
+import { judgeEvidence } from '@/shared/lib/evidence-verdict.mjs';
 
 /** One concept and where its evidence lives, as the resolver needs it. */
 export interface EvidenceConceptInput {
@@ -53,6 +53,12 @@ export interface EvidenceStates {
  * experiment (2026-09-13) found worth the most — "meaning unchanged, files underneath moved" —
  * stated per concept from Git alone. A missing time is `unknown`, never `current`.
  */
+/**
+ * Compare each concept's document with the code it cites, through the one rule the MCP
+ * server uses (`shared/lib/evidence-verdict.mjs`). This is the line the cognitive-diff
+ * experiment (2026-09-13) found worth the most — "meaning unchanged, files underneath
+ * moved" — and the screen and an agent must never answer it two ways.
+ */
 export function resolveEvidenceStates(
   concepts: readonly EvidenceConceptInput[],
   changes: ReadonlyMap<string, EvidenceChange>,
@@ -64,53 +70,19 @@ export function resolveEvidenceStates(
   const folderOnly = new Set<string>();
   const rows: EvidenceRow[] = [];
   for (const concept of concepts) {
-    if (concept.evidencePaths.length === 0 || !concept.docPath) {
-      unknown.add(concept.id);
-      continue;
-    }
-    const doc = changes.get(concept.docPath);
-    const docMs = toMs(doc?.lastChangedAt ?? null);
-    let verdict: 'current' | 'stale' | 'missing' | 'unknown' = 'current';
-    let fileMoved = false;
-    let folderMoved = false;
-    const moved: { path: string; changedAt: string }[] = [];
-    const folders: { path: string; changedAt: string }[] = [];
-    const gone: string[] = [];
-    for (const path of concept.evidencePaths) {
-      const change = changes.get(path);
-      if (!change) {
-        verdict = 'unknown';
-        break;
-      }
-      if (!change.exists) {
-        verdict = 'missing';
-        gone.push(path);
-        continue;
-      }
-      if (docMs == null || change.lastChangedAt == null) {
-        verdict = 'unknown';
-        continue;
-      }
-      if (isAfter(change.lastChangedAt, docMs) && change.lastChangedAt) {
-        if (change.isDir) {
-          folderMoved = true;
-          folders.push({ path, changedAt: change.lastChangedAt });
-        } else {
-          fileMoved = true;
-          moved.push({ path, changedAt: change.lastChangedAt });
-        }
-      }
-    }
-    if (verdict === 'current' && fileMoved) verdict = 'stale';
-    if (verdict === 'current') {
-      if (folderMoved) {
-        folderOnly.add(concept.id);
-        unknown.add(concept.id);
-      } else current.add(concept.id);
-    } else if (verdict === 'stale') stale.add(concept.id);
+    const doc = concept.docPath ? changes.get(concept.docPath) : undefined;
+    const { verdict, reason, moved, folders, gone } = judgeEvidence({
+      docChangedAt: concept.docPath ? (doc?.lastChangedAt ?? null) : null,
+      entries: concept.evidencePaths.map((path) => ({ path, change: changes.get(path) ?? null })),
+    });
+    if (verdict === 'current') current.add(concept.id);
+    else if (verdict === 'stale') stale.add(concept.id);
     else if (verdict === 'missing') missing.add(concept.id);
-    else unknown.add(concept.id);
-    if (verdict !== 'current' || folderMoved) {
+    else {
+      if (reason === 'folder-only') folderOnly.add(concept.id);
+      unknown.add(concept.id);
+    }
+    if (verdict !== 'current') {
       rows.push({ id: concept.id, docChangedAt: doc?.lastChangedAt ?? null, moved, gone, folders });
     }
   }

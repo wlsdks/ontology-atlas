@@ -7,6 +7,8 @@
 // same four words the desktop app uses, so an agent asking `validate_vault` and a person on
 // the analysis brief read the same verdicts. A missing time is unknown, never current.
 
+import { judgeEvidence } from './evidence-verdict.mjs';
+
 const CONCEPT_KINDS = new Set(['domain', 'capability', 'element']);
 const ONTOLOGY_SLUG_PREFIXES = ['capabilities/', 'domains/', 'elements/', 'documents/'];
 
@@ -47,66 +49,24 @@ export function evidenceConceptsFromDocs(docs = []) {
   return out;
 }
 
-function toMs(value) {
-  if (!value) return null;
-  const ms = Date.parse(value);
-  return Number.isFinite(ms) ? ms : null;
-}
-
-/**
- * Per concept: `current` (every cited path exists and none changed after the document),
- * `stale` (a cited file changed after the document), `missing` (a cited path is gone),
- * `unknown` (nothing cited, a change time the walk could not supply, or only a folder-level
- * path moved — a folder changes on almost any commit, so that says "something under it
- * moved", never "the meaning stands on moved ground"; such rows carry `reason:
- * 'folder-only'` and the folders that moved).
- */
 export function resolveEvidenceStates(concepts, changes) {
   const states = { current: [], stale: [], missing: [], unknown: [] };
-  /*
-   * Rows are sorted by slug before returning. Vault documents arrive in whatever order the
-   * filesystem walk produced, which differs between Node and the bundled runtime, and a report
-   * whose rows reshuffle per runtime fails the source/bundled parity check for no real reason.
-   */
   for (const concept of concepts) {
-    if (!concept.evidencePaths?.length || !concept.docPath) {
-      states.unknown.push({ slug: concept.slug, kind: concept.kind, reason: 'no-evidence' });
-      continue;
-    }
     const doc = changes.get(concept.docPath);
-    const docMs = toMs(doc?.lastChangedAt ?? null);
-    let verdict = 'current';
-    const moved = [];
-    const folders = [];
-    const gone = [];
-    for (const path of concept.evidencePaths) {
-      const change = changes.get(path);
-      if (!change) {
-        verdict = 'unknown';
-        break;
-      }
-      if (!change.exists) {
-        gone.push(path);
-        continue;
-      }
-      if (docMs == null || !change.lastChangedAt) {
-        if (verdict === 'current') verdict = 'unknown';
-        continue;
-      }
-      const changeMs = toMs(change.lastChangedAt);
-      if (changeMs != null && changeMs > docMs) {
-        if (change.isDir) folders.push({ path, changedAt: change.lastChangedAt });
-        else moved.push({ path, changedAt: change.lastChangedAt });
-      }
-    }
-    if (gone.length) verdict = 'missing';
-    else if (moved.length) verdict = 'stale';
+    const { verdict, reason, moved, folders, gone } = judgeEvidence({
+      docChangedAt: concept.docPath ? (doc?.lastChangedAt ?? null) : null,
+      entries: (concept.evidencePaths ?? []).map((path) => ({ path, change: changes.get(path) ?? null })),
+    });
     const row = { slug: concept.slug, kind: concept.kind };
     if (verdict === 'stale') states.stale.push({ ...row, docChangedAt: doc?.lastChangedAt ?? null, moved });
     else if (verdict === 'missing') states.missing.push({ ...row, gone });
-    else if (verdict === 'unknown') states.unknown.push({ ...row, reason: docMs == null ? 'document-time-unknown' : 'path-time-unknown' });
-    else if (folders.length) states.unknown.push({ ...row, reason: 'folder-only', docChangedAt: doc?.lastChangedAt ?? null, folders });
-    else states.current.push(row);
+    else if (verdict === 'unknown') {
+      states.unknown.push(
+        reason === 'folder-only'
+          ? { ...row, reason, docChangedAt: doc?.lastChangedAt ?? null, folders }
+          : { ...row, reason },
+      );
+    } else states.current.push(row);
   }
   const bySlug = (a, b) => a.slug.localeCompare(b.slug);
   for (const key of ['current', 'stale', 'missing', 'unknown']) states[key].sort(bySlug);
