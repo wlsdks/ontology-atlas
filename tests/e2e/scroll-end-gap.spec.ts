@@ -498,6 +498,11 @@ const VAULT_ROUTES = [
   "/ko/agents/?tab=mcp&mcp=connectors",
   "/ko/agents/",
   "/ko/ontology/insights/",
+  // The board's default landing is the brief, which is four cards and ends well above the fold.
+  // Its tallest documents are the concept questions: with a folder open, composition, relations
+  // and growth all run past the window (1063-1357px measured at 1512x900 on 2026-09-20), so the
+  // scroll end this reservation protects is only reachable through one of them.
+  "/ko/ontology/insights/?tab=composition",
   "/ko/projects/",
   // Docs joined on 2026-09-05: with a folder open its sidebar grew two capped lists above
   // the tree, so the column's own scroll end is a thing that can now be reached and cut.

@@ -36,7 +36,14 @@ const ROUTES = [
   // Only the user-facing surfaces still alive after R10 (auth and cloud surfaces permanently removed).
   "/en/topology/",
   "/en/ontology/",
-  "/en/ontology/insights/",
+  // The analysis board is four screens, not one. Its default landing is the brief, so the plain
+  // route above stopped sweeping the panels it used to reach when the board gained a first row
+  // naming its subject (2026-09-19). Each subject draws different chrome: the brief a four-card
+  // row, the wiki and the harness their own panels, and a question tab the census strip plus a
+  // second control row, which is the widest arrangement on this screen.
+  "/en/ontology/insights/?tab=library&guides=off",
+  "/en/ontology/insights/?tab=harness&guides=off",
+  "/en/ontology/insights/?tab=composition&guides=off",
   ONTOLOGY_LIBRARY_ROUTE,
   "/en/download/",
 ];
