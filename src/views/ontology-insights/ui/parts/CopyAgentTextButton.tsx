@@ -54,7 +54,11 @@ export function CopyAgentTextButton({
           shape: "chip",
           size: "md",
           className: [
-            "shrink-0 justify-center font-mono text-caption transition-[background-color,border-color,color,transform] duration-[var(--motion-base)] ease-[var(--motion-ease)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none",
+            // `text-label`, not `text-caption`: the smallest step is reserved for one uppercase
+            // eyebrow (`design.md`, the settings-sheet dialect), and this is a button a person
+            // presses. The design audit measured it among nine 9.5px interactive labels on this
+            // screen, the smallest type here used for something clickable (2026-09-20).
+            "shrink-0 justify-center font-mono text-label transition-[background-color,border-color,color,transform] duration-[var(--motion-base)] ease-[var(--motion-ease)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none",
             toneClass,
             compact ? "min-h-8 px-2.5 py-1.5" : "min-h-9 px-3 py-2",
           ].join(" "),
