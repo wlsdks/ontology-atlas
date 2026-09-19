@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
@@ -33,7 +33,12 @@ import {
 } from "@/entities/project";
 import { useProjects, useProjectMutations, useProjectBody, useVaultDocs } from "@/features/project-data-source";
 import { buildDocsVaultHref, findProjectDocInList } from "@/entities/docs-vault";
-import { VaultConflictError } from "@/entities/vault-session";
+import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
+import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
+import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
+import { useChatWidth } from "@/widgets/acp-chat-panel";
+import { useProjectAgent } from "../lib/use-project-agent";
+import { ProjectAgentDock } from "./parts/ProjectAgentDock";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { CopyProjectLinkButton } from "@/features/project-share";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
@@ -75,9 +80,12 @@ interface Props {
   initialRelated?: Project[];
 }
 
-function ProjectDetailShell({ children }: { children: ReactNode }) {
+function ProjectDetailShell({ children, dock = null }: { children: ReactNode; dock?: ReactNode }) {
   return (
-    <div className="flex min-h-full w-full">
+    // `relative` because the agent dock below `xl` is absolutely positioned against this row; at
+    // `xl` it is a sibling of `main` and takes its width from the row, the placement the Library
+    // measured on 2026-09-05 (a frame whose only child is absolute collapses inside a column).
+    <div className="relative flex min-h-full w-full">
       {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
       {/* The bottom reserve is a base `pb` plus an `lg:` override — `max-lg:pb-[...]` is emitted
           before `md:py-14` in the stylesheet and silently lost between 768 and 1023, leaving the
@@ -93,6 +101,7 @@ function ProjectDetailShell({ children }: { children: ReactNode }) {
           {children}
         </motion.div>
       </main>
+      {dock}
     </div>
   );
 }
@@ -365,6 +374,17 @@ export function ProjectDetailPage({
   const { insight } = useOntologyInsight();
   const insightNodes = insight?.nodes ?? [];
   const insightEdges = insight?.edges ?? [];
+  // The agent that can lay the overview out from this page: only the installed app knows a
+  // native folder path, and only a guarded runtime may open the dock (`useProjectAgent`).
+  const localVault = useLocalVault();
+  const nativeVaultRootPath = localVault.handle ? (getTauriVaultRootPath(localVault.handle) ?? null) : null;
+  const agent = useProjectAgent(nativeVaultRootPath);
+  const chatWidth = useChatWidth();
+  const insightNodeList = insight?.nodes;
+  const agentKnownSlugs = useMemo(
+    () => new Set((insightNodeList ?? []).map((node) => resolveNodeAgentTarget(node).ref ?? node.id)),
+    [insightNodeList],
+  );
 
   const handoffCopy = useCopyFeedback();
   const briefCopy = useCopyFeedback();
@@ -519,7 +539,25 @@ export function ProjectDetailPage({
         : t("briefAskCopy");
 
   return (
-    <ProjectDetailShell>
+    <ProjectDetailShell
+      dock={
+        agent.route === "agent" && agent.runtime && nativeVaultRootPath ? (
+          <ProjectAgentDock
+            open={agent.open}
+            projectName={project.name}
+            runtime={agent.runtime}
+            runtimes={agent.runtimes}
+            onRuntimeChange={agent.setRuntimeId}
+            vaultRoot={nativeVaultRootPath}
+            mcpServers={agent.mcpServers}
+            openingRequest={agent.openingRequest}
+            knownSlugs={agentKnownSlugs}
+            onClose={() => agent.setOpen(false)}
+            chatWidth={chatWidth}
+          />
+        ) : null
+      }
+    >
       <ProjectDetailTopBar
         slug={slug}
         projectName={project.name}
@@ -894,17 +932,38 @@ export function ProjectDetailPage({
               {t("briefAskTitle")}
             </span>
             <p className="mt-1 mb-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-              {briefIsStructured ? t("briefAskStructured") : t("briefAskUnstructured")}
+              {agent.route === "agent"
+                ? t("briefAskAgent")
+                : briefIsStructured
+                  ? t("briefAskStructured")
+                  : t("briefAskUnstructured")}
             </p>
-            <Button
-              type="button"
-              variant={briefIsStructured ? "outline" : "primary"}
-              size="sm"
-              onClick={() => void briefCopy.copy(briefPrompt)}
-              data-testid="project-detail-brief-ask-copy"
-            >
-              {briefCopyLabel}
-            </Button>
+            {/*
+              In the installed app with a guarded runtime ready, the ask opens the dock beside this
+              page and seats the same instructions as the first turn; the person still decides every
+              file write at the permission card. Everywhere else the instructions are copied.
+            */}
+            {agent.route === "agent" ? (
+              <Button
+                type="button"
+                variant={briefIsStructured ? "outline" : "primary"}
+                size="sm"
+                onClick={() => agent.start(briefPrompt)}
+                data-testid="project-detail-brief-ask-open"
+              >
+                {t("briefAskOpen")}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant={briefIsStructured ? "outline" : "primary"}
+                size="sm"
+                onClick={() => void briefCopy.copy(briefPrompt)}
+                data-testid="project-detail-brief-ask-copy"
+              >
+                {briefCopyLabel}
+              </Button>
+            )}
             <details className="mt-3">
               <summary className="select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {t("handoffHumanCaption")}
