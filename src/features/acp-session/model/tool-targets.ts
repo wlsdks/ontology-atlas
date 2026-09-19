@@ -140,6 +140,20 @@ function clamp(value: string): string {
   return `${compact.slice(0, FALLBACK_TARGET_LIMIT - 1).trimEnd()}…`;
 }
 
+/**
+ * **The exact path argument this call carried**, untouched — not the shortened tail the row
+ * draws.
+ *
+ * It exists so a caller can ask 「is the label already saying this path?」 and get a
+ * comparison against the value the adapter actually sent, rather than against a value this
+ * file has already shortened. A tail comparison would match `wiki/architecture.md` inside an
+ * unrelated absolute path and silently cut a label that was saying something else.
+ */
+export function readToolPathArgument(rawInput: unknown): string | null {
+  if (!rawInput || typeof rawInput !== 'object' || Array.isArray(rawInput)) return null;
+  return firstString(rawInput as Record<string, unknown>, PATH_ARG_KEYS);
+}
+
 export function readToolFallbackTarget(rawInput: unknown): ToolFallbackTarget | null {
   if (!rawInput || typeof rawInput !== 'object' || Array.isArray(rawInput)) return null;
   const input = rawInput as Record<string, unknown>;
