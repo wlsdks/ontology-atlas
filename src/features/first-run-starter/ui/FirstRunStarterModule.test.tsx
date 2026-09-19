@@ -709,6 +709,17 @@ describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘�
     expect(screen.queryByTestId('index-body'), 'the step was left and the card did not come back').toBeNull();
   });
 
+  it("the tour pointing at the command opens the disclosure for that step, and the person's toggle rules after", () => {
+    const { rerender } = render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    expect(screen.getByTestId('first-run-starter-cli-toggle')).toHaveAttribute('aria-expanded', 'false');
+
+    rerender(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentSpotlit />);
+    expect(screen.getByTestId('first-run-starter-cli-toggle'), 'the tour lit the command and the disclosure stayed shut').toHaveAttribute('aria-expanded', 'true');
+
+    rerender(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    expect(screen.getByTestId('first-run-starter-cli-toggle')).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('렌즈를 꺼도 다시 펼치지 않는다 — 보던 트리를 뺏지 않는다', () => {
     const { rerender } = render(
       <FirstRunStarterModule concepts={1} relations={1} domains={1} lensActive>
