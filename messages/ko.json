@@ -1549,26 +1549,38 @@
       "tabsAriaLabel": "분석 탭",
       "tab": {
         "brief": "브리핑",
-        "do-next": "할 일",
-        "unmatched": "없는 이름",
+        "library": "자료실",
+        "harness": "하네스",
+        "do-next": "고칠 것",
+        "unmatched": "빠진 개념",
         "composition": "구성",
-        "connections": "연결",
-        "boundaries": "경계",
-        "growth": "성장",
+        "connections": "관계",
+        "boundaries": "도메인 사이",
+        "growth": "쌓인 것",
         "freshness": "최근 변화",
         "structure": "구조",
-        "flow": "흐름"
+        "flow": "제품 흐름"
       },
       "brief": {
         "sinceSeen": "{days, plural, =0 {오늘 본 뒤로} one {# 일 전 본 뒤로} other {# 일 전 본 뒤로}}",
         "sinceDefault": "최근 7일 기준",
         "sinceGloss": "아래 숫자는 그 뒤로 생긴 것만 셉니다. 점수는 없고, 줄마다 열어서 확인할 수 있어요.",
         "headline": "새로 알아야 할 것 {stale}개 · 확인 못 한 것 {unknown}개",
-        "unit": { "ontology": "개념", "wiki": "페이지", "harness": "지침 파일", "agent": "호출" },
+        "unit": {
+          "ontology": "개념",
+          "wiki": "페이지",
+          "harness": "지침 파일",
+          "agent": "호출"
+        },
         "sinceTitle": "그 뒤로 바뀐 것 {count, number}건",
         "sinceHidden": "{count, number}건 더 있어요.",
         "sinceHiddenRoute": "기록에서 전부 보기",
-        "since": { "concept-doc": "개념 문서", "wiki-log": "위키", "guide-file": "지침 파일", "agent-call": "에이전트" },
+        "since": {
+          "concept-doc": "개념 문서",
+          "wiki-log": "위키",
+          "guide-file": "지침 파일",
+          "agent-call": "에이전트"
+        },
         "detailMoved": "{moved}에 바뀜 · 문서는 {doc}",
         "detailDocUnknown": "기록 없음",
         "detailGone": "파일이 없어요",
@@ -1595,11 +1607,22 @@
         "noSource": "이 폴더는 아직 코드 저장소와 연결돼 있지 않아요. 연결하면 지침과 검사가 어디를 덮는지 여기서 세요.",
         "markSeen": "여기까지 봤음",
         "markSeenDone": "지금부터 다시 셉니다",
-        "core": { "ontology": "온톨로지", "wiki": "위키", "harness": "하네스", "agent": "에이전트 활동" },
+        "core": {
+          "ontology": "온톨로지",
+          "wiki": "위키",
+          "harness": "하네스",
+          "agent": "에이전트 활동"
+        },
         "col": {
-          "current": "현재", "stale": "낡음", "unknown": "모름",
-          "told": "알려줌", "gated": "막음", "watched": "지켜봄",
-          "reads": "읽기", "writes": "쓰기", "agents": "에이전트"
+          "current": "현재",
+          "stale": "낡음",
+          "unknown": "모름",
+          "told": "알려줌",
+          "gated": "막음",
+          "watched": "지켜봄",
+          "reads": "읽기",
+          "writes": "쓰기",
+          "agents": "에이전트"
         },
         "appOnly": "앱에서만 잴 수 있어요. 브라우저는 폴더 옆의 코드와 숨김 폴더를 읽지 못해요.",
         "noData": "아직 잴 것이 없어요.",
@@ -1637,8 +1660,8 @@
         }
       },
       "tabCountTitle": {
-        "do-next": "손볼 항목 수",
-        "unmatched": "이 폴더에 없는 이름 수",
+        "do-next": "고칠 항목 수",
+        "unmatched": "문서가 가리키는데 이 폴더에 없는 개념 수",
         "composition": "개념 수",
         "connections": "관계 수",
         "boundaries": "도메인을 넘나드는 관계 수"
@@ -1951,6 +1974,83 @@
         "failedBody": "폴더의 Git 이력을 읽는 중에 오류가 났습니다. 폴더에 커밋이 없다는 뜻은 아닙니다. 다시 열어 보면 대개 읽힙니다.",
         "noneTitle": "아직 볼 이력이 없습니다",
         "noneBody": "이 폴더에는 커밋이 없습니다. Atlas는 자체 기록을 쌓지 않으므로 커밋이 생기기 전에는 지난 주를 보여 줄 방법이 없습니다. 0으로 그리면 폴더가 비어 있었다는 뜻이 되어 사실이 아닙니다."
+      },
+      "core": {
+        "brief": "브리핑",
+        "ontology": "온톨로지",
+        "library": "자료실",
+        "harness": "하네스"
+      },
+      "coreAriaLabel": "분석에서 볼 것",
+      "libraryTab": {
+        "empty": "이 폴더엔 아직 원문도 위키 페이지도 없어요. 자료실에서 원문을 넣으면 여기서 세요.",
+        "open": "자료실 열기",
+        "more": "{count, number}개 더",
+        "stale": {
+          "title": "원문이 바뀐 페이지 {count, number}개",
+          "caption": "페이지가 인용한 원문이 그 뒤에 바뀌었어요. 다시 쓰기 전엔 그 문장을 믿지 마세요.",
+          "none": "모든 페이지가 인용한 원문 그대로예요."
+        },
+        "unwritten": {
+          "title": "아직 정리 안 된 원문 {count, number}개",
+          "caption": "폴더엔 있는데 아직 어떤 페이지도 쓰지 않은 원문이에요.",
+          "none": "모든 원문이 한 번은 정리됐어요."
+        },
+        "check": {
+          "title": "서식 점검에서 걸린 것 {count, number}건",
+          "caption": "페이지 {pages, number}개 검사 · 아직 못 읽은 페이지 {unmeasured, number}개",
+          "none": "걸린 것이 없어요."
+        },
+        "rounds": {
+          "title": "자동 점검 회차 {count, number}회",
+          "caption": "사람이 없을 때 돈 회차예요. 무엇을 보고 무엇을 썼는지 그대로 적습니다.",
+          "none": "아직 돈 회차가 없어요."
+        },
+        "outcome": {
+          "held": "그대로 둠",
+          "stale": "낡은 것 발견",
+          "redrafted": "다시 씀",
+          "refused": "거절됨",
+          "failed": "실패",
+          "asleep": "쉬는 중"
+        },
+        "code": {
+          "orphan-page": "아무 데서도 안 잇는 페이지",
+          "dangling-wikilink": "없는 페이지로 가는 링크",
+          "uncited-fact": "인용 없는 문장",
+          "shared-source-unlinked": "같은 원문을 쓰는데 서로 안 이어짐",
+          "citation-target-missing": "인용한 곳이 없어짐",
+          "kind-present": "위키 페이지에 kind가 붙음",
+          "section-order": "절 순서가 다름",
+          "bad-truncation-record": "일부만 읽은 기록이 어긋남",
+          "bad-citation": "인용 꼴이 어긋남"
+        }
+      },
+      "harnessTab": {
+        "open": "하네스 열기",
+        "getApp": "앱 받기",
+        "more": "{count, number}개 더",
+        "appOnly": "앱에서만 잴 수 있어요. 브라우저는 숨김 폴더를 읽지 못해요.",
+        "reading": "지금 폴더를 읽고 있어요.",
+        "unreadable": "지침 파일을 읽지 못했어요. 폴더를 다시 열면 다시 시도해요.",
+        "noSource": "이 폴더는 아직 코드 저장소와 연결돼 있지 않아요. 연결하면 지침과 검사가 어디를 덮는지 여기서 세요.",
+        "column": {
+          "area": "영역",
+          "told": "알려줌",
+          "gated": "막음",
+          "watched": "지켜봄"
+        },
+        "coverage": {
+          "title": "영역 {count, number}곳",
+          "caption": "지침 파일 {guides, number}개 · 검사 {checks, number}개를 영역에 맞춰 세요.",
+          "gaps": "아무 지침도 안 닿는 곳 {untold, number} · 막는 규칙이 없는 곳 {ungated, number} · 지켜보는 검사가 없는 곳 {unwatched, number}",
+          "everywhere": "어디에나 닿는 것: 알려줌 {told, number} · 막음 {gated, number} · 지켜봄 {watched, number}"
+        },
+        "drift": {
+          "title": "두 에이전트 트리가 어긋난 파일 {count, number}개",
+          "caption": "같은 내용이어야 하는 두 벌이 서로 달라요.",
+          "none": "두 벌이 서로 같아요."
+        }
       }
     }
   },
@@ -4807,10 +4907,29 @@
         "preview": "검토한 미리보기",
         "decision": "판단 결속"
       },
-      "authority": { "observed": "관측됨", "unavailable": "확인할 수 없음", "unknown": "미확인" },
-      "permission": { "pending": "대기 중", "allowed": "허용", "rejected": "거절", "unknown": "미확인" },
-      "execution": { "completed": "완료", "failed": "실패", "not_run": "실행 안 함", "unknown": "미확인" },
-      "readback": { "matched": "정확한 바이트 일치", "mismatched": "바이트가 다름", "missing": "누락", "unknown": "미확인" }
+      "authority": {
+        "observed": "관측됨",
+        "unavailable": "확인할 수 없음",
+        "unknown": "미확인"
+      },
+      "permission": {
+        "pending": "대기 중",
+        "allowed": "허용",
+        "rejected": "거절",
+        "unknown": "미확인"
+      },
+      "execution": {
+        "completed": "완료",
+        "failed": "실패",
+        "not_run": "실행 안 함",
+        "unknown": "미확인"
+      },
+      "readback": {
+        "matched": "정확한 바이트 일치",
+        "mismatched": "바이트가 다름",
+        "missing": "누락",
+        "unknown": "미확인"
+      }
     }
   },
   "mcp": {
@@ -5612,7 +5731,11 @@
       "emptyDescription": "실제 온톨로지 개념으로 별자리를 만들면, 같은 이름과 범위로 여기에서 다시 돌아갈 수 있습니다.",
       "memberCount": "개념 {count, number}개",
       "referenceCount": "참고 자료 {count, number}개",
-      "shape": { "name": "이름", "members": "개념 수", "purpose": "남긴 목적" },
+      "shape": {
+        "name": "이름",
+        "members": "개념 수",
+        "purpose": "남긴 목적"
+      },
       "noPurpose": "남긴 목적이 없습니다",
       "viewInGalaxy": "갤럭시에서 보기",
       "viewInGalaxyNamed": "{name} 갤럭시에서 보기",
@@ -5642,7 +5765,11 @@
       "malformedTitle": "자동 점검 파일을 봐야 합니다",
       "malformedDescription": ".ontology-atlas/rounds.json을 읽지 못해 그대로 두었습니다. 고치거나 지운 뒤 다시 읽으세요.",
       "retry": "다시 읽기",
-      "shape": { "name": "이름", "cadence": "주기", "next": "다음 실행" },
+      "shape": {
+        "name": "이름",
+        "cadence": "주기",
+        "next": "다음 실행"
+      },
       "emptyTitle": "아직 스스로 도는 것이 없습니다",
       "emptyDescription": "자동 점검을 등록하세요. 한 시간마다 모든 문서가 원문과 여전히 맞는지 확인하고, 아침마다 서비스가 보낸 것을 다시 읽어 바뀐 문서를 다시 씁니다.",
       "kind": {

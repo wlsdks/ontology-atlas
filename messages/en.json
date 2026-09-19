@@ -1549,26 +1549,38 @@
       "tabsAriaLabel": "Insights tabs",
       "tab": {
         "brief": "Brief",
-        "do-next": "Do next",
-        "unmatched": "Not held",
+        "library": "Library",
+        "harness": "Harness",
+        "do-next": "To fix",
+        "unmatched": "Missing concepts",
         "composition": "Inventory",
-        "connections": "Connections",
-        "boundaries": "Boundaries",
-        "growth": "Growth",
+        "connections": "Relations",
+        "boundaries": "Across domains",
+        "growth": "What has piled up",
         "freshness": "Recent changes",
         "structure": "Structure",
-        "flow": "Flow"
+        "flow": "Product flow"
       },
       "brief": {
         "sinceSeen": "{days, plural, =0 {Since you looked today} one {Since you looked # day ago} other {Since you looked # days ago}}",
         "sinceDefault": "The last 7 days",
         "sinceGloss": "The counts below are only what happened after that. There is no score; every line opens to what it counts.",
         "headline": "{stale, plural, one {# thing} other {# things}} to learn · {unknown, plural, one {# thing} other {# things}} not checked",
-        "unit": { "ontology": "concepts", "wiki": "pages", "harness": "guide files", "agent": "calls" },
+        "unit": {
+          "ontology": "concepts",
+          "wiki": "pages",
+          "harness": "guide files",
+          "agent": "calls"
+        },
         "sinceTitle": "{count, plural, one {# thing} other {# things}} changed since",
         "sinceHidden": "{count, plural, one {# more} other {# more}}.",
         "sinceHiddenRoute": "See all in Records",
-        "since": { "concept-doc": "concept", "wiki-log": "wiki", "guide-file": "guide file", "agent-call": "agent" },
+        "since": {
+          "concept-doc": "concept",
+          "wiki-log": "wiki",
+          "guide-file": "guide file",
+          "agent-call": "agent"
+        },
         "detailMoved": "changed {moved} · document {doc}",
         "detailDocUnknown": "not recorded",
         "detailGone": "the file is gone",
@@ -1595,11 +1607,22 @@
         "noSource": "This folder is not bound to a code repository yet. Bind one and the guides and checks are counted here.",
         "markSeen": "Seen up to here",
         "markSeenDone": "Counting from now",
-        "core": { "ontology": "Ontology", "wiki": "Wiki", "harness": "Harness", "agent": "Agent activity" },
+        "core": {
+          "ontology": "Ontology",
+          "wiki": "Wiki",
+          "harness": "Harness",
+          "agent": "Agent activity"
+        },
         "col": {
-          "current": "Current", "stale": "Stale", "unknown": "Unknown",
-          "told": "Told", "gated": "Gated", "watched": "Watched",
-          "reads": "Reads", "writes": "Writes", "agents": "Agents"
+          "current": "Current",
+          "stale": "Stale",
+          "unknown": "Unknown",
+          "told": "Told",
+          "gated": "Gated",
+          "watched": "Watched",
+          "reads": "Reads",
+          "writes": "Writes",
+          "agents": "Agents"
         },
         "appOnly": "Measured in the app only. A browser cannot read the code beside the folder or its hidden folders.",
         "noData": "Nothing to measure yet.",
@@ -1637,11 +1660,11 @@
         }
       },
       "tabCountTitle": {
-        "do-next": "Items to fix",
-        "unmatched": "Names this folder does not hold",
+        "do-next": "Things to fix",
+        "unmatched": "Concepts a document points at that this folder does not hold",
         "composition": "Concepts",
         "connections": "Relations",
-        "boundaries": "Relations crossing domains"
+        "boundaries": "Relations that cross a domain"
       },
       "unmatched": {
         "title": "Asked for, not held",
@@ -1951,6 +1974,83 @@
         "failedBody": "Something went wrong reading this folder’s Git history. It does not mean the folder has no commits. Reopening this usually reads it.",
         "noneTitle": "There is no history to show yet",
         "noneBody": "This folder has no commits. Atlas keeps no record of its own, so until there are commits there is no way to show earlier weeks. Drawing zeroes would say the folder was empty, which is not true."
+      },
+      "core": {
+        "brief": "Brief",
+        "ontology": "Ontology",
+        "library": "Library",
+        "harness": "Harness"
+      },
+      "coreAriaLabel": "What to look at",
+      "libraryTab": {
+        "empty": "This folder holds no sources and no wiki pages yet. Add a source in the library and they are counted here.",
+        "open": "Open the library",
+        "more": "{count, number} more",
+        "stale": {
+          "title": "{count, number} pages whose source changed",
+          "caption": "The source a page cited changed after it was written. Do not trust those sentences until it is rewritten.",
+          "none": "Every page still stands on the source it cited."
+        },
+        "unwritten": {
+          "title": "{count, number} sources not written up",
+          "caption": "Files in the folder that no page has written up yet.",
+          "none": "Every source has been written up once."
+        },
+        "check": {
+          "title": "{count, number} findings in the format check",
+          "caption": "{pages, number} pages checked · {unmeasured, number} not read yet",
+          "none": "Nothing was flagged."
+        },
+        "rounds": {
+          "title": "{count, number} unattended passes",
+          "caption": "Passes that ran with nobody here. What each looked at and wrote is recorded as it happened.",
+          "none": "No pass has run yet."
+        },
+        "outcome": {
+          "held": "held",
+          "stale": "found stale",
+          "redrafted": "rewrote",
+          "refused": "refused",
+          "failed": "failed",
+          "asleep": "asleep"
+        },
+        "code": {
+          "orphan-page": "page nothing links to",
+          "dangling-wikilink": "link to a page that does not exist",
+          "uncited-fact": "sentence with no citation",
+          "shared-source-unlinked": "same source, pages not linked",
+          "citation-target-missing": "the cited place is gone",
+          "kind-present": "wiki page carries a kind",
+          "section-order": "sections out of order",
+          "bad-truncation-record": "partial-read record disagrees",
+          "bad-citation": "citation is malformed"
+        }
+      },
+      "harnessTab": {
+        "open": "Open the harness",
+        "getApp": "Get the app",
+        "more": "{count, number} more",
+        "appOnly": "Measured in the app only. A browser cannot read hidden folders.",
+        "reading": "Reading the folder.",
+        "unreadable": "The guide files could not be read. Reopening the folder tries again.",
+        "noSource": "This folder is not bound to a code repository yet. Bind one and the guides and checks are counted here.",
+        "column": {
+          "area": "Area",
+          "told": "Told",
+          "gated": "Gated",
+          "watched": "Watched"
+        },
+        "coverage": {
+          "title": "{count, number} areas",
+          "caption": "{guides, number} guide files · {checks, number} checks, counted against each area.",
+          "gaps": "No guide reaches {untold, number} · no rule gates {ungated, number} · no check watches {unwatched, number}",
+          "everywhere": "Reaching everything: told {told, number} · gated {gated, number} · watched {watched, number}"
+        },
+        "drift": {
+          "title": "{count, number} files where the two agent trees disagree",
+          "caption": "Two copies that should say the same thing do not.",
+          "none": "The two copies agree."
+        }
       }
     }
   },
@@ -4807,10 +4907,29 @@
         "preview": "Reviewed preview",
         "decision": "Decision binding"
       },
-      "authority": { "observed": "Observed", "unavailable": "Unavailable", "unknown": "Unknown" },
-      "permission": { "pending": "Pending", "allowed": "Allowed", "rejected": "Rejected", "unknown": "Unknown" },
-      "execution": { "completed": "Completed", "failed": "Failed", "not_run": "Not run", "unknown": "Unknown" },
-      "readback": { "matched": "Exact bytes matched", "mismatched": "Bytes differed", "missing": "Missing", "unknown": "Unknown" }
+      "authority": {
+        "observed": "Observed",
+        "unavailable": "Unavailable",
+        "unknown": "Unknown"
+      },
+      "permission": {
+        "pending": "Pending",
+        "allowed": "Allowed",
+        "rejected": "Rejected",
+        "unknown": "Unknown"
+      },
+      "execution": {
+        "completed": "Completed",
+        "failed": "Failed",
+        "not_run": "Not run",
+        "unknown": "Unknown"
+      },
+      "readback": {
+        "matched": "Exact bytes matched",
+        "mismatched": "Bytes differed",
+        "missing": "Missing",
+        "unknown": "Unknown"
+      }
     }
   },
   "mcp": {
@@ -5612,7 +5731,11 @@
       "emptyDescription": "Create a constellation from real ontology concepts, then return to the same named scope here.",
       "memberCount": "{count, plural, one {# concept} other {# concepts}}",
       "referenceCount": "{count, plural, one {# reference} other {# references}}",
-      "shape": { "name": "Name", "members": "Concepts", "purpose": "Purpose" },
+      "shape": {
+        "name": "Name",
+        "members": "Concepts",
+        "purpose": "Purpose"
+      },
       "noPurpose": "No purpose added",
       "viewInGalaxy": "View in Galaxy",
       "viewInGalaxyNamed": "View {name} in Galaxy",
@@ -5642,7 +5765,11 @@
       "malformedTitle": "The rounds file needs attention",
       "malformedDescription": "Atlas could not read .ontology-atlas/rounds.json and left it unchanged. Fix or remove it, then read again.",
       "retry": "Read again",
-      "shape": { "name": "Name", "cadence": "Cadence", "next": "Next run" },
+      "shape": {
+        "name": "Name",
+        "cadence": "Cadence",
+        "next": "Next run"
+      },
       "emptyTitle": "Nothing runs on its own yet",
       "emptyDescription": "Register a round: every hour, check that every page still matches its sources; every morning, re-read what a service sent and redraft what changed.",
       "kind": {

@@ -50,6 +50,24 @@ function brief(overrides: Partial<InsightsBrief> = {}): InsightsBrief {
       { core: "agent", at: "2026-09-18T06:00:00Z", kind: "agent-call", label: "add_concept · capabilities/refund", href: "/agents/" },
     ],
     sinceTotal: 5,
+    library: {
+      availability: "no-data",
+      pageCount: 0,
+      sourceCount: 0,
+      stalePages: [],
+      unwrittenSources: [],
+      findings: [],
+      unmeasured: 0,
+      passes: [],
+    },
+    harnessDetail: {
+      availability: "app-only",
+      areas: [],
+      everywhere: { told: 0, gated: 0, watched: 0 },
+      drift: [],
+      guideFiles: 0,
+      checks: 0,
+    },
     details: new Map([
       [
         "ontology-evidence-moved",

@@ -48,9 +48,13 @@ import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { Button, EmptyState, TabBar, useToast } from "@/shared/ui";
 import {
   DEFAULT_INSIGHTS_TAB,
-  INSIGHTS_TABS,
+  INSIGHTS_CORES,
+  ONTOLOGY_TABS,
   buildInsightsTabHref,
+  coreOfTab,
   parseInsightsTab,
+  tabOfCore,
+  type InsightsCore,
   type InsightsTab,
 } from "../lib/insights-tab-state";
 import { buildUnmatchedBoard } from "../lib/unmatched-board";
@@ -97,6 +101,8 @@ import {
 } from "./parts/InsightsCensusStrip";
 import { DoNextTab } from "./tabs/DoNextTab";
 import { BriefTab } from "./tabs/BriefTab";
+import { LibraryTab } from "./tabs/LibraryTab";
+import { HarnessTab } from "./tabs/HarnessTab";
 import { useInsightsBrief } from "../lib/brief/use-insights-brief";
 import { buildDoNextGroupCounts, type DoNextGroupKey } from "../lib/do-next-groups";
 import {
@@ -235,9 +241,11 @@ const RECENT_UPDATES_EVIDENCE_LIMIT = 3;
  */
 const HANDOFF_PAYLOAD_KEY: Record<InsightsTab, keyof InsightsHandoffProse> = {
   // The brief draws no handoff row (see the row's condition); the key only satisfies the record.
-  // The brief seats its own request (the drifted concepts, by name); this key is the fallback
-  // for the generic tab handoff, which the brief does not draw.
+  // The brief, the library and the harness seat their own requests or none at all; these keys
+  // are the fallback for the generic tab handoff row, which those three do not draw.
   brief: "tabDoNext",
+  library: "tabDoNext",
+  harness: "tabDoNext",
   "do-next": "tabDoNext",
   unmatched: "tabUnmatched",
   composition: "tabComposition",
@@ -272,8 +280,11 @@ const INSIGHTS_TAB_BADGE: Record<
   InsightsTab,
   (input: InsightsBadgeInput) => string | number | undefined
 > = {
-  // The brief is sentences across three cores; no single count is its scale.
+  // The brief is sentences across three cores; no single count is its scale. The library and
+  // the harness carry their own counts inside their panels.
   brief: () => undefined,
+  library: () => undefined,
+  harness: () => undefined,
   "do-next": (i) => i.verdictTotal,
   unmatched: (i) => i.unmatchedTotal,
   composition: (i) => i.totalNodes,
@@ -1048,7 +1059,8 @@ export function OntologyInsightsPage() {
     nodes: briefNodes,
     repairCount: insightsVerdict.total,
     unmatchedCount: unmatchedBoard.totalCount,
-    enabled: tab === "brief",
+    // The library and harness panels read the same model, so the work runs for those tabs too.
+    enabled: tab === "brief" || tab === "library" || tab === "harness",
   });
   /**
    * The scale of each finding group — the **same** `InsightsSignalCounts` the verdict is built
@@ -1375,7 +1387,12 @@ export function OntologyInsightsPage() {
          * announcing who a screen is for is not a measurement, and the strip now occupies the one
          * band a reader looks at first.
          */}
-        {insight && hasConcepts && tab !== "brief" ? (
+        {/*
+          * The strip counts the ontology, so it draws on the ontology's own tabs. Above the
+          * library or the harness panel it put four ontology numbers over a screen about
+          * something else, which is the confusion the first row exists to end.
+          */}
+        {insight && hasConcepts && coreOfTab(tab) === "ontology" ? (
           <div className="mt-4">
             <InsightsCensusStrip
               totalNodes={totalNodes}
@@ -1397,12 +1414,25 @@ export function OntologyInsightsPage() {
           </div>
         ) : null}
 
-        <nav className="mt-[var(--section-gap)]">
+        {/*
+          * **Two rows, because one could not say what it was about.** The first names the thing —
+          * the brief across all of them, the ontology, the library, the harness — and the second
+          * carries the ontology's own questions. A reader looking at "relations" could not tell
+          * which of the three it counted (owner, 2026-09-19).
+          */}
+        <nav className="mt-[var(--section-gap)] flex flex-col gap-1">
+          <TabBar
+            ariaLabel={t("coreAriaLabel")}
+            activeKey={coreOfTab(tab)}
+            onSelect={(key) => setTab(tabOfCore(key as InsightsCore))}
+            items={INSIGHTS_CORES.map((key) => ({ key, label: t(`core.${key}`) }))}
+          />
+          {coreOfTab(tab) === "ontology" ? (
           <TabBar
             ariaLabel={t("tabsAriaLabel")}
             activeKey={tab}
             onSelect={setTab}
-            items={INSIGHTS_TABS.map((key) => ({
+            items={ONTOLOGY_TABS.map((key) => ({
               key,
               label: t(`tab.${key}`),
               // A badge is the scale of the question that tab answers, so each tab counts
@@ -1430,11 +1460,10 @@ export function OntologyInsightsPage() {
                 : 0,
               // What an unlabelled number counts — one line, surfaced only on hover and to assistive tech.
               countTitle:
-                key === "growth" || key === "flow" || key === "brief"
-                  ? undefined
-                  : t(`tabCountTitle.${key}`),
+                key === "growth" || key === "flow" ? undefined : t(`tabCountTitle.${key}`),
             }))}
           />
+          ) : null}
         </nav>
 
         {error ? (
@@ -1482,6 +1511,8 @@ export function OntologyInsightsPage() {
             aria-labelledby={`insights-tab-${tab}`}
             className="insights-tab-crossfade mt-[var(--section-gap)] flex flex-1 flex-col"
           >
+            {tab === "library" ? <LibraryTab detail={brief.library} /> : null}
+            {tab === "harness" ? <HarnessTab detail={brief.harnessDetail} /> : null}
             {tab === "brief" ? (
               <BriefTab
                 brief={brief}
@@ -1727,7 +1758,7 @@ export function OntologyInsightsPage() {
           * at 1040×720, sits over the long Flow request. It returns when the dock closes and remains
           * the browser/copy-only path.
           */}
-        {tab === "do-next" || tab === "brief" || agentOpen ? null : (
+        {coreOfTab(tab) !== "ontology" || tab === "do-next" || agentOpen ? null : (
         <InsightsHandoffRow
           label={t("handoffLabel")}
           caption={t("handoffCaption")}

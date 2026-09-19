@@ -3,23 +3,19 @@
  * link must open the same tab, so parsing and serialization are pure functions rather than
  * component-local state.
  *
- * There are eight tabs, **one per question**: brief (the default) · to do · unmatched · composition ·
- * connections · boundaries · growth · flow. Flow is the only one whose answer is written by an agent rather
- * than computed from the graph: its question is "what is this product and how does it move", and
- * that is prose a person reads once on first contact, not a measurement. When one tab holds several questions, a user has to scroll past two
- * screens of unrelated material to answer their own — the former `structure` tab really did stack
- * "what exists / what is central / is the boundary healthy" into one column and grew to 2.2× the
- * viewport. One question per tab also removes any room for the scroll to grow long again.
- */
-/*
- * `unmatched` is the second work question and sits deliberately beside the first: what did
- * an agent ask this folder for that it does not hold. A count of names nothing answers to
- * is repair work, not inventory, so it reads next to the repair queue rather than after
- * the measurement tabs. The literal below is pinned character for character by
- * `scripts/check-ontology-design-surface.mjs`, so nothing may be written inside it.
+ * **Two levels, because one row could not say what it was about.** The screen answers questions
+ * about three different things — the ontology, the wiki, and the harness — and a single row of
+ * names like "connections" or "boundaries" left a reader unable to tell which of the three a tab
+ * counted (owner, 2026-09-19: "온톨로지 연결인지 자료실 연결인지 하네스인지 뭔지 구분이 안되거든?").
+ * The first row now names the thing: the brief across all of them, then the ontology, the library,
+ * the harness. The ontology's own questions sit in a second row, **one question per tab**: a single
+ * tab holding several questions made a person scroll past two screens of unrelated material to
+ * answer their own, which is why the former `structure` tab was split.
  */
 export const INSIGHTS_TABS = [
   "brief",
+  "library",
+  "harness",
   "do-next",
   "unmatched",
   "composition",
@@ -28,6 +24,36 @@ export const INSIGHTS_TABS = [
   "growth",
   "flow",
 ] as const;
+
+/** The first row: the thing a tab is about. `ontology` opens the question row underneath. */
+export const INSIGHTS_CORES = ["brief", "ontology", "library", "harness"] as const;
+
+export type InsightsCore = (typeof INSIGHTS_CORES)[number];
+
+/** The ontology's own questions, in reading order, for the second row. */
+export const ONTOLOGY_TABS = [
+  "do-next",
+  "unmatched",
+  "composition",
+  "connections",
+  "boundaries",
+  "growth",
+  "flow",
+] as const satisfies readonly InsightsTab[];
+
+/** Which row-one entry a tab belongs to. Every ontology question answers to `ontology`. */
+export function coreOfTab(tab: InsightsTab): InsightsCore {
+  if (tab === "brief" || tab === "library" || tab === "harness") return tab;
+  return "ontology";
+}
+
+/**
+ * The tab a row-one entry opens. Picking the ontology lands on its first question rather than on
+ * an empty shelf; the address then carries that question, so a shared link reopens it exactly.
+ */
+export function tabOfCore(core: InsightsCore): InsightsTab {
+  return core === "ontology" ? ONTOLOGY_TABS[0] : core;
+}
 
 export type InsightsTab = (typeof INSIGHTS_TABS)[number];
 

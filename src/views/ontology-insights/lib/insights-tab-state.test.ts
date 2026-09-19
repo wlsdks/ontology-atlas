@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_INSIGHTS_TAB,
+  INSIGHTS_CORES,
   INSIGHTS_TABS,
+  ONTOLOGY_TABS,
   buildInsightsTabHref,
+  coreOfTab,
   parseInsightsTab,
+  tabOfCore,
 } from "./insights-tab-state";
 
 describe("parseInsightsTab", () => {
@@ -17,6 +21,9 @@ describe("parseInsightsTab", () => {
     expect(INSIGHTS_TABS).toEqual([
       // What in this reader's understanding has to change — across all three cores.
       "brief",
+      // The two cores that answer for themselves; the rest are the ontology's questions.
+      "library",
+      "harness",
       "do-next",
       "unmatched",
       "composition",
@@ -57,6 +64,24 @@ describe("the freshness rename", () => {
    */
   it("still lands an old ?tab=freshness link on the tab that replaced it", () => {
     expect(parseInsightsTab("freshness")).toBe("growth");
+  });
+});
+
+describe("the first row names the thing a tab is about", () => {
+  it("puts every ontology question under the ontology, and the other three under themselves", () => {
+    expect(INSIGHTS_CORES).toEqual(["brief", "ontology", "library", "harness"]);
+    for (const tab of ONTOLOGY_TABS) expect(coreOfTab(tab)).toBe("ontology");
+    expect(coreOfTab("brief")).toBe("brief");
+    expect(coreOfTab("library")).toBe("library");
+    expect(coreOfTab("harness")).toBe("harness");
+  });
+
+  it("opens the ontology on its first question rather than on an empty shelf", () => {
+    expect(tabOfCore("ontology")).toBe("do-next");
+    expect(tabOfCore("brief")).toBe("brief");
+    expect(tabOfCore("library")).toBe("library");
+    // Every core's landing tab is a real tab, so the address always names something drawable.
+    for (const core of INSIGHTS_CORES) expect(INSIGHTS_TABS).toContain(tabOfCore(core));
   });
 });
 

@@ -51,6 +51,26 @@ export interface InsightsBrief {
    * line id, so a count and the rows under it can never come from different calculations.
    */
   details: ReadonlyMap<string, readonly BriefLineDetail[]>;
+  /** What the library panel lists: the same model the Library screen renders from. */
+  library: {
+    availability: BriefCore['availability'];
+    pageCount: number;
+    sourceCount: number;
+    stalePages: { slug: string; sources: string[] }[];
+    unwrittenSources: string[];
+    findings: { code: string; advisory: boolean; count: number; pages: string[] }[];
+    unmeasured: number;
+    passes: { endedAt: string; outcome: string; checked: number; written: number; summary: string }[];
+  };
+  /** What the harness panel lists: the coverage table's own rows and the mirror findings. */
+  harnessDetail: {
+    availability: BriefCore['availability'];
+    areas: { slug: string; title: string; told: number; gated: number; watched: number }[];
+    everywhere: { told: number; gated: number; watched: number };
+    drift: { path: string; message: string }[];
+    guideFiles: number;
+    checks: number;
+  };
 }
 
 const EMPTY_DOCS: readonly VaultDoc[] = [];
@@ -265,6 +285,46 @@ export function useInsightsBrief({
     [nodes, docFacts, evidence, repairCount, unmatchedCount, anchor.anchorMs],
   );
 
+  const libraryDetail = useMemo(() => {
+    const byPath = new Map(library.sources.map((source) => [source.path, source] as const));
+    const stalePages = library.wikiPages
+      .map((page) => ({
+        slug: page.slug,
+        sources: page.sourcePaths.filter((path) => {
+          const state = byPath.get(path)?.state;
+          return state === 'stale' || state === 'partial';
+        }),
+      }))
+      .filter((row) => row.sources.length > 0);
+    return {
+      availability: (library.wikiPages.length === 0 && library.sources.length === 0
+        ? 'no-data'
+        : 'measured') as BriefCore['availability'],
+      pageCount: library.wikiPages.length,
+      sourceCount: library.sources.length,
+      stalePages,
+      unwrittenSources: library.sources.filter((source) => source.state === 'not-compiled').map((source) => source.path),
+      findings: library.structural.groups.map((group) => ({
+        code: group.code,
+        advisory: group.advisory,
+        count: group.count,
+        pages: group.pages,
+      })),
+      unmeasured: library.structural.unmeasured.length,
+      passes: ledger
+        .filter((entry) => entry.outcome !== 'asleep')
+        .slice(-6)
+        .reverse()
+        .map((entry) => ({
+          endedAt: entry.endedAt,
+          outcome: entry.outcome,
+          checked: entry.checked,
+          written: entry.written.length,
+          summary: entry.summary,
+        })),
+    };
+  }, [library.sources, library.wikiPages, library.structural, ledger]);
+
   const wiki = useMemo(() => {
     const orphan = library.structural.groups.find((group) => group.code === 'orphan-page');
     const dangling = library.structural.groups.find((group) => group.code === 'dangling-wikilink');
@@ -299,6 +359,44 @@ export function useInsightsBrief({
       anchorMs: anchor.anchorMs,
     });
   }, [harnessReport, harnessState.status, coverage.areas, anchor.anchorMs]);
+
+  const harnessDetail = useMemo(() => {
+    if (!harnessReport) {
+      return {
+        availability: (harnessState.status === 'loading'
+          ? 'reading'
+          : harnessState.status === 'failed'
+            ? 'unreadable'
+            : harnessState.status === 'no-source'
+              ? 'no-source'
+              : 'app-only') as BriefCore['availability'],
+        areas: [],
+        everywhere: { told: 0, gated: 0, watched: 0 },
+        drift: [],
+        guideFiles: 0,
+        checks: 0,
+      };
+    }
+    const matrix = buildCoverageMatrix(harnessReport.coverage, coverage.areas, harnessReport.testFiles);
+    return {
+      availability: 'measured' as BriefCore['availability'],
+      areas: matrix.areas.map((area) => ({
+        slug: area.slug,
+        title: area.title,
+        told: area.told.length,
+        gated: area.gated.length,
+        watched: area.watched.length,
+      })),
+      everywhere: {
+        told: matrix.everywhere.told.length,
+        gated: matrix.everywhere.gated.length,
+        watched: matrix.everywhere.watched.length,
+      },
+      drift: harnessReport.analysis.drift.map((finding) => ({ path: finding.path, message: finding.message })),
+      guideFiles: harnessReport.guideDocumentCount,
+      checks: harnessReport.checks.total,
+    };
+  }, [harnessReport, harnessState.status, coverage.areas]);
 
   const agent = useMemo(
     () =>
@@ -362,7 +460,21 @@ export function useInsightsBrief({
     [docs, docChangedAt, log, harnessReport, mode, vault.agentActivityLog, anchor.anchorMs],
   );
 
-  return { anchor, sinceDays, nowMs, markSeen, ontology, wiki, harness, agent, since: sinceList.rows, sinceTotal: sinceList.total, details };
+  return {
+    anchor,
+    sinceDays,
+    nowMs,
+    markSeen,
+    ontology,
+    wiki,
+    harness,
+    agent,
+    since: sinceList.rows,
+    sinceTotal: sinceList.total,
+    details,
+    library: libraryDetail,
+    harnessDetail,
+  };
 }
 
 async function readWikiLog(handle: FileSystemDirectoryHandle): Promise<string> {
