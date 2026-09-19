@@ -846,6 +846,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   };
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    // Only the primary button presses the map. A right press used to run the
+    // same press machine, so a right-click selected the node under it and
+    // reframed the camera while the menu stayed where the pointer was — 47 px
+    // (headless) to 268 px (14-inch, INDEX folding) away from the node it
+    // belongs to (measured 2026-09-19). The context menu is the whole of what
+    // a secondary button does here (`handleContextMenu`).
+    if (e.button !== undefined && e.button !== 0) return;
     const tokens = readOntologyMapTokensOrNull();
     const world = worldRef.current;
     if (!tokens || !world) return;
