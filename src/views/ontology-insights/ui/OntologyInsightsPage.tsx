@@ -1035,7 +1035,13 @@ export function OntologyInsightsPage() {
     (candidate: { id: string; title: string }) => {
       setReviewId(candidate.id);
       const next = new URL(window.location.href);
-      next.searchParams.delete("tab");
+      /*
+       * ⚠️ **Keep the tab.** This used to delete `tab`, which was right while the to-do question
+       * was the default and an absent `tab` meant this very screen. The board now opens on the
+       * brief, so deleting it made the address say "the brief" while a review was open on the
+       * to-do question: a reload or a shared link landed somewhere the reader had not been
+       * (walkthrough, 2026-09-20).
+       */
       next.searchParams.set("review", candidate.id);
       window.history.replaceState(
         window.history.state,
@@ -1580,6 +1586,7 @@ export function OntologyInsightsPage() {
             {tab === "brief" ? (
               <BriefTab
                 brief={brief}
+                onOpenTab={setTab}
                 onAskAgent={
                   agentRoute === 'agent'
                     ? (request) => {

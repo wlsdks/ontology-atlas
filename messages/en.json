@@ -3901,7 +3901,7 @@
       "agent-copy-diverged": "Duplicated agent briefs diverged between .claude/agents and .agents/agents",
       "agent-copy-file-missing": "An agent brief exists in only one of the duplicated trees",
       "non-english-agent-text": "An agent file carries non-English text, and its text is what a blocked or steered agent reads",
-      "mcp-config-unparseable": "An MCP config file exists but declares no server, so every grant beside it is undeclared",
+      "mcp-config-unparseable": "An agent-connection (MCP) config file exists but declares no server, so every grant beside it is undeclared",
       "undeclared-mcp-server": "An agent brief grants tools from an MCP server its config does not declare"
     }
   },

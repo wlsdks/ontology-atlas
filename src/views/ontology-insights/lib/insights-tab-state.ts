@@ -58,6 +58,27 @@ export function tabOfCore(core: InsightsCore): InsightsTab {
 
 export type InsightsTab = (typeof INSIGHTS_TABS)[number];
 
+/** The path every in-screen destination on this board shares, without its locale prefix. */
+const INSIGHTS_PATH = "/ontology/insights/";
+
+/**
+ * The tab an href opens **on this same board**, or `null` when it leads somewhere else.
+ *
+ * ⚠️ **A link to this board is not a navigation.** The screen holds its tab in component state
+ * and writes the address with `history.replaceState`, because a router navigation moves focus to
+ * the document root in the WebView. A Next `<Link>` to `?tab=do-next` therefore changed the
+ * address and left the screen where it was: the brief's only "go fix it" link did nothing, and a
+ * hard reload of the same address worked, which is what made it look like a routing bug
+ * (walkthrough, 2026-09-20). Links that land here are intercepted and answered by the same
+ * `setTab` the controls use; every other href stays an ordinary navigation.
+ */
+export function parseInsightsTabHref(href: string): InsightsTab | null {
+  if (!href.startsWith(INSIGHTS_PATH)) return null;
+  const query = href.slice(INSIGHTS_PATH.length);
+  if (!query.startsWith("?")) return query === "" ? DEFAULT_INSIGHTS_TAB : null;
+  return parseInsightsTab(new URLSearchParams(query.slice(1)).get("tab"));
+}
+
 /*
  * The brief opens first (2026-09-19). A person who delegated work and came back asks "what in
  * my understanding has to change", and that is one screen across the ontology, the wiki and the

@@ -194,3 +194,57 @@ describe("BriefTab", () => {
     expect(value.markSeen).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("a line that opens another question on this same board", () => {
+  /*
+   * The board keeps its tab in component state and writes the address itself, so a plain link to
+   * `?tab=do-next` changed the address and left the reader on the brief: the landing's only "go
+   * fix it" action did nothing (walkthrough, 2026-09-20). The link stays a link — the address is
+   * right, middle-click still opens a tab — and the plain click is answered in place.
+   */
+  it("answers the click in place instead of navigating", () => {
+    const onOpenTab = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <BriefTab brief={brief()} onOpenTab={onOpenTab} />
+      </NextIntlClientProvider>,
+    );
+    const repair = screen.getByTestId("brief-tab").querySelector('[data-brief-destination="do-next"]');
+    expect(repair, "the repair line has no destination on this board").not.toBeNull();
+
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true });
+    fireEvent(repair as Element, click);
+    expect(onOpenTab).toHaveBeenCalledWith("do-next");
+    expect(click.defaultPrevented, "the browser would navigate and the screen would not follow").toBe(true);
+  });
+
+  it("leaves a destination on another screen alone", () => {
+    const onOpenTab = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <BriefTab brief={brief()} onOpenTab={onOpenTab} />
+      </NextIntlClientProvider>,
+    );
+    const away = screen.getByTestId("brief-tab").querySelector('[data-brief-destination="away"]');
+    expect(away, "every card links somewhere; this test is watching nothing").not.toBeNull();
+
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true });
+    fireEvent(away as Element, click);
+    expect(onOpenTab).not.toHaveBeenCalled();
+    expect(click.defaultPrevented).toBe(false);
+  });
+
+  it("lets a modified click open a second window", () => {
+    const onOpenTab = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <BriefTab brief={brief()} onOpenTab={onOpenTab} />
+      </NextIntlClientProvider>,
+    );
+    const repair = screen.getByTestId("brief-tab").querySelector('[data-brief-destination="do-next"]');
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true, metaKey: true });
+    fireEvent(repair as Element, click);
+    expect(onOpenTab).not.toHaveBeenCalled();
+    expect(click.defaultPrevented).toBe(false);
+  });
+});

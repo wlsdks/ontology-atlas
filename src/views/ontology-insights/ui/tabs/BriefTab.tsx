@@ -10,6 +10,7 @@ import { buildDriftHandoff } from '../../lib/brief/drift-handoff';
 import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
 import type { SinceRow } from '../../lib/brief/since-list';
 import { cn } from '@/shared/lib/cn';
+import { parseInsightsTabHref, type InsightsTab } from '../../lib/insights-tab-state';
 import { briefTotals, visibleLines, type BriefCore, type BriefLine, type BriefLineDetail, type BriefState } from '../../lib/brief/brief-model';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 
@@ -82,10 +83,13 @@ const STATE_MARK: Record<BriefState, string> = {
 export function BriefTab({
   brief,
   onAskAgent,
+  onOpenTab,
 }: {
   brief: InsightsBrief;
   /** Seats the request in the tab's own conversation without sending it. Absent in a browser. */
   onAskAgent?: (request: string) => void;
+  /** Opens another question on this same board in place. See `DestinationLink`. */
+  onOpenTab?: (tab: InsightsTab) => void;
 }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const cores = [brief.ontology, brief.wiki, brief.harness, brief.agent] as const;
@@ -108,7 +112,7 @@ export function BriefTab({
       </div>
       <div className="grid grid-cols-1 gap-[var(--card-gap)] md:grid-cols-2 xl:grid-cols-4">
         {cores.map((core) => (
-          <BriefCoreCard key={core.core} core={core} details={brief.details} nowMs={brief.nowMs} onAskAgent={onAskAgent} />
+          <BriefCoreCard key={core.core} core={core} details={brief.details} nowMs={brief.nowMs} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
         ))}
       </div>
       <BriefSinceList rows={brief.since} total={brief.sinceTotal} nowMs={brief.nowMs} />
@@ -116,7 +120,7 @@ export function BriefTab({
   );
 }
 
-function BriefCoreCard({ core, details, nowMs, onAskAgent }: { core: BriefCore; details: InsightsBrief['details']; nowMs: number; onAskAgent?: (request: string) => void }) {
+function BriefCoreCard({ core, details, nowMs, onAskAgent, onOpenTab }: { core: BriefCore; details: InsightsBrief['details']; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
   const t = useTranslations('ontologyPages.insights.brief');
   // The card is already titled with the subject, so a unit that repeats it is ink for nothing.
   const unit = t(`unit.${core.core}`);
@@ -168,32 +172,32 @@ function BriefCoreCard({ core, details, nowMs, onAskAgent }: { core: BriefCore; 
         {core.availability === 'no-source' ? (
           <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-no-source-${core.core}`}>
             <span className="min-w-0">{t('noSource')}</span>
-            <Link href={CORE_NEXT_HREF[core.core]} className={controlClass({ shape: 'link', className: LINE_LINK })}>
+            <DestinationLink href={CORE_NEXT_HREF[core.core]} className={LINE_LINK} onOpenTab={onOpenTab}>
               {t(`emptyAction.${core.core}`)}
-            </Link>
+            </DestinationLink>
           </li>
         ) : null}
         {core.availability === 'app-only' ? (
           <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]">
             <span className="min-w-0">{t('appOnly')}</span>
-            <Link href="/download/" className={controlClass({ shape: 'link', className: LINE_LINK })}>
+            <DestinationLink href="/download/" className={LINE_LINK} onOpenTab={onOpenTab}>
               {t('getApp')}
-            </Link>
+            </DestinationLink>
           </li>
         ) : null}
         {core.availability === 'no-data' ? (
           <li className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-tertiary)]" data-testid={`brief-core-empty-${core.core}`}>
             <span className="min-w-0">{t(`empty.${core.core}`)}</span>
-            <Link href={CORE_NEXT_HREF[core.core]} className={controlClass({ shape: 'link', className: LINE_LINK })}>
+            <DestinationLink href={CORE_NEXT_HREF[core.core]} className={LINE_LINK} onOpenTab={onOpenTab}>
               {t(`emptyAction.${core.core}`)}
-            </Link>
+            </DestinationLink>
           </li>
         ) : null}
         {core.availability === 'measured' && lines.length === 0 ? (
           <li className="text-body text-[color:var(--color-text-tertiary)]">{t('quiet')}</li>
         ) : null}
         {lines.map((line) => (
-          <BriefLineRow key={line.id} line={line} details={details.get(line.id) ?? EMPTY_DETAILS} nowMs={nowMs} onAskAgent={onAskAgent} />
+          <BriefLineRow key={line.id} line={line} details={details.get(line.id) ?? EMPTY_DETAILS} nowMs={nowMs} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
         ))}
       </ul>
     </CensusTile>
@@ -212,12 +216,55 @@ const DETAIL_ROWS = 5;
 const LINE_LINK = 'shrink-0 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]';
 
 /**
+ * A destination link that knows when it is not leaving.
+ *
+ * Half of these lines open another question on this same board, and this board keeps its tab in
+ * component state rather than in the router, so a plain `<Link>` changed the address and left the
+ * screen on the brief: the landing's only "go fix it" action did nothing at all (walkthrough,
+ * 2026-09-20). It stays a real link, so the address is right, middle-click still opens a tab and
+ * assistive technology still reads a destination; the click is answered in place.
+ */
+function DestinationLink({
+  href,
+  className,
+  onOpenTab,
+  children,
+}: {
+  href: string;
+  /** Placement only; the link shape is applied here so every destination passes one value layer. */
+  className?: string;
+  onOpenTab?: (tab: InsightsTab) => void;
+  children: React.ReactNode;
+}) {
+  const sameBoard = onOpenTab ? parseInsightsTabHref(href) : null;
+  return (
+    <Link
+      href={href}
+      className={controlClass({ shape: 'link', className })}
+      data-brief-destination={sameBoard ?? 'away'}
+      onClick={
+        sameBoard
+          ? (event) => {
+              // A modified click is the reader asking for a second window; leave it alone.
+              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+              event.preventDefault();
+              onOpenTab?.(sameBoard);
+            }
+          : undefined
+      }
+    >
+      {children}
+    </Link>
+  );
+}
+
+/**
  * One line of the brief. When the line's own calculation produced named rows, the line
  * expands in place to show them — concept, the exact path, and the two dates the verdict
  * rests on. A count whose only destination is another screen counting something else is
  * the falsifier this decision wrote down for itself (PO evidence seat, 2026-09-19).
  */
-function BriefLineRow({ line, details, nowMs, onAskAgent }: { line: BriefLine; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void }) {
+function BriefLineRow({ line, details, nowMs, onAskAgent, onOpenTab }: { line: BriefLine; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const format = useFormatter();
   const locale = useLocale();
@@ -268,7 +315,7 @@ function BriefLineRow({ line, details, nowMs, onAskAgent }: { line: BriefLine; d
               total={details.length}
               shown={shown.length}
               label={(hidden) => t('detailHidden', { count: hidden })}
-              route={href ? <Link href={href} className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>{t('open')}</Link> : null}
+              route={href ? <DestinationLink href={href} className="text-[color:var(--color-indigo-text-strong)]" onOpenTab={onOpenTab}>{t('open')}</DestinationLink> : null}
               className="mt-2 pl-3"
               data-testid={`brief-line-hidden-${line.id}`}
             />
@@ -277,9 +324,9 @@ function BriefLineRow({ line, details, nowMs, onAskAgent }: { line: BriefLine; d
           <>
             <span className="min-w-0 flex-1 break-keep">{sentence}</span>
             {href ? (
-              <Link href={href} className={controlClass({ shape: 'link', className: LINE_LINK })}>
+              <DestinationLink href={href} className={LINE_LINK} onOpenTab={onOpenTab}>
                 {t('open')}
-              </Link>
+              </DestinationLink>
             ) : null}
           </>
         )}

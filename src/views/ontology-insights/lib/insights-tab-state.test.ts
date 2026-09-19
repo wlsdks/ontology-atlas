@@ -7,6 +7,7 @@ import {
   buildInsightsTabHref,
   coreOfTab,
   parseInsightsTab,
+  parseInsightsTabHref,
   tabOfCore,
 } from "./insights-tab-state";
 
@@ -133,5 +134,25 @@ describe("switching tabs keeps the rest of the address", () => {
     expect(buildInsightsTabHref("flow", "/ontology/insights/", "?tab=growth")).toBe(
       "/ontology/insights/?tab=flow",
     );
+  });
+});
+
+describe("parseInsightsTabHref", () => {
+  it("answers with the tab for a destination on this same board", () => {
+    expect(parseInsightsTabHref("/ontology/insights/?tab=do-next")).toBe("do-next");
+    expect(parseInsightsTabHref("/ontology/insights/?tab=growth")).toBe("growth");
+    // No query is the default tab, and a retired name still resolves through the aliases.
+    expect(parseInsightsTabHref("/ontology/insights/")).toBe("brief");
+    expect(parseInsightsTabHref("/ontology/insights/?tab=freshness")).toBe("growth");
+  });
+
+  it("leaves every other destination alone", () => {
+    expect(parseInsightsTabHref("/library/")).toBeNull();
+    expect(parseInsightsTabHref("/library/?tab=rounds")).toBeNull();
+    expect(parseInsightsTabHref("/architecture/?view=coverage")).toBeNull();
+    expect(parseInsightsTabHref("/download/")).toBeNull();
+    expect(parseInsightsTabHref("/topology/")).toBeNull();
+    // A different screen whose path merely starts with the same words is not this board.
+    expect(parseInsightsTabHref("/ontology/insights-archive/")).toBeNull();
   });
 });

@@ -64,3 +64,30 @@ for (const [width, height] of [
     });
   });
 }
+
+/**
+ * **The landing's action has to act.**
+ *
+ * The board holds its tab in component state and writes the address itself, so a link to
+ * `?tab=do-next` changed the address and left the reader on the brief. A hard load of the same
+ * address worked, which is what made it read as a routing problem rather than a dead control
+ * (walkthrough, 2026-09-20). This is the click a person actually makes.
+ */
+test.describe("분석 브리핑 — 「열기」는 같은 화면 안에서 그 질문을 연다", () => {
+  test.use({ viewport: { width: 1512, height: 900 } });
+
+  test("고칠 것으로 보내는 줄을 누르면 주제와 판이 따라온다", async ({ page }) => {
+    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("insights-core-switch")).toBeVisible({ timeout: 20_000 });
+
+    const repair = page.locator('[data-brief-destination="do-next"]').first();
+    await expect(repair, "브리핑에 같은 화면으로 보내는 줄이 없다 — 이 시험이 공회전한다").toBeVisible();
+    await repair.click();
+
+    await expect(page.getByTestId("insights-core-ontology")).toHaveAttribute("aria-checked", "true");
+    await expect(page.locator('[data-insights-panel="do-next"]')).toBeVisible();
+    // The address follows, and the flags that were already on it survive.
+    await expect(page).toHaveURL(/tab=do-next/);
+    await expect(page).toHaveURL(/guides=off/);
+  });
+});
