@@ -173,17 +173,32 @@ export async function installLibraryWorkHarness(
         update({ sessionUpdate: "tool_call_update", toolCallId: "read-architecture", status: "completed", rawInput: { file_path: "sources/architecture.docx" }, rawOutput: { text: "Architecture evidence" } });
         phase = "waiting";
         const targetPath = initialScenario === "successful-write" ? `${vaultRoot}/${permissionFile ?? 'wiki/architecture.md'}` : `${vaultRoot}/outside/unknown.md`;
+        /*
+         * ⚠️ **`permissionText` reaches both kinds.** It used to be read only on the wiki branch, so
+         * a caller asking for an ontology patch with a body of its own was silently given this
+         * fixed one — measured 2026-09-19, when a probe written to grow the review card until it
+         * scrolled produced a card of exactly the same height every time and proved nothing.
+         */
         const rawInput = permissionKind === 'ontology-patch'
           ? {
               slug: 'capabilities/task-review',
               expected_mtime: 1_727_000_000_000,
-              body: '## Definition\n\nReview the selected proposal.\n\n## Includes\n\n- Only the exact current request and selected item are under review.\n\n## Excludes\n\n- Allow once does not accept meaning.\n',
+              body: permissionText ?? '## Definition\n\nReview the selected proposal.\n\n## Includes\n\n- Only the exact current request and selected item are under review.\n\n## Excludes\n\n- Allow once does not accept meaning.\n',
             }
           : { file_path: targetPath, content: permissionText ?? architecturePage };
         const title = permissionKind === 'ontology-patch'
           ? 'mcp__atlas-vault__patch_concept'
           : filePermission ? `Write ${targetPath}` : 'mcp__atlas-vault__write_wiki_file';
-        update({ sessionUpdate: "tool_call", toolCallId: "write-architecture", title, kind: "edit", status: "pending", _meta: { is_mcp_tool_call: !filePermission }, rawInput: filePermission ? rawInput : { server: "atlas-vault", tool: "write_wiki_file", arguments: rawInput } });
+        /*
+         * ⚠️ **The correlated tool name follows `permissionKind`.** It was hardcoded to the wiki
+         * tool while the title said `patch_concept`, and `toPermissionRequest` derives the tool
+         * name from this correlation rather than the title — so a test asking for an ontology
+         * patch handed the card a `write_wiki_file` request and the card classified it through the
+         * generic branch. The mode existed and drove the wrong thing, which is worse than not
+         * existing: every assertion written against it passed for the wrong reason.
+         */
+        const mcpTool = permissionKind === 'ontology-patch' ? 'patch_concept' : 'write_wiki_file';
+        update({ sessionUpdate: "tool_call", toolCallId: "write-architecture", title, kind: "edit", status: "pending", _meta: { is_mcp_tool_call: !filePermission }, rawInput: filePermission ? rawInput : { server: "atlas-vault", tool: mcpTool, arguments: rawInput } });
         permissionId = 902;
         acp({ jsonrpc: "2.0", id: permissionId, method: "session/request_permission", params: { sessionId, _meta: { is_mcp_tool_approval: !filePermission }, options: [{ kind: "reject_once", optionId: "reject", name: "Reject" }, { kind: "allow_once", optionId: "allow", name: "Allow once" }], toolCall: { toolCallId: "write-architecture", title, kind: "edit", rawInput } } });
       };
@@ -355,7 +370,15 @@ export async function installLibraryWorkHarness(
   };
 }
 
-export async function openLibraryWorkScenario(page: Page, options: { scenario?: LibraryWorkScenario; permissionKind?: 'wiki' | 'ontology-patch' } = {}): Promise<LibraryWorkHarness> {
+/**
+ * ⚠️ It takes the **same options** the harness does, rather than a hand-picked two. Narrowed to
+ * `scenario` and `permissionKind`, every other option was unavailable through this door without
+ * saying so, which is the same silence that let `permissionText` be dropped inside the harness.
+ */
+export async function openLibraryWorkScenario(
+  page: Page,
+  options: Parameters<typeof installLibraryWorkHarness>[1] = {},
+): Promise<LibraryWorkHarness> {
   await seedFirstRunSeen(page);
   const harness = await installLibraryWorkHarness(page, options);
   await page.goto("/en/docs/");
