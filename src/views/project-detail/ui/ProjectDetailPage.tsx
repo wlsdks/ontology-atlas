@@ -937,6 +937,7 @@ export function ProjectDetailPage({
           <div
             data-testid="project-detail-brief-ask"
             data-brief-state={briefIsStructured ? "structured" : "unstructured"}
+            data-agent-route={agent.route}
             className="mt-6 border-t border-[color:var(--color-divider)] pt-4"
           >
             <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">

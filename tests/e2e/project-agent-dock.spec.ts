@@ -41,6 +41,7 @@ test.describe("project agent dock", () => {
     await expect(ask).toBeVisible({ timeout: 30_000 });
 
     // The runtime probe answers after the page paints, so the copy button may stand first.
+    await expect(ask).toHaveAttribute("data-agent-route", "agent", { timeout: 30_000 });
     const open = page.getByTestId("project-detail-brief-ask-open");
     await expect(open).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("project-detail-brief-ask-copy")).toHaveCount(0);
