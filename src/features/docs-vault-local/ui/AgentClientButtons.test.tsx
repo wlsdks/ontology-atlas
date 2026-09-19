@@ -1,15 +1,14 @@
-// The tool-button render order contract — blocking a recurrence of "one list, two truths".
+// The per-client control state machine — write, copy, deeplink, ready, and a refused write.
 //
-// Measured 2026-07-30: this component hardcoded the tool buttons in JSX as Claude Code → Cursor →
-// Antigravity → Codex, while the global scope tab in the same sheet used `AGENT_CLIENTS`
-// (Claude Code → Codex → Cursor → Antigravity) — one list with two orders inside one sheet. The
-// repair is to derive render order from that array, and this test locks that derivation as still
-// true: change the array order and the screen order must follow, and a screen that ignores the array
-// turns this red.
+// Until 2026-09-19 this file also rendered the tool buttons as a column and locked their order
+// to `AGENT_CLIENTS` ("one list, two truths", measured 2026-07-30). The column left with the
+// three-step accordion: the Agents destination's MCP tab lays the same controls out as rows, so
+// the order contract now lives beside those rows (`VaultAgentSetupPanel.test.tsx`), and this
+// file measures the hook through the smallest harness that draws every control it returns.
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { AgentClientButtons } from "./AgentClientButtons";
+import { useAgentClientControls, type AgentClientControlsProps } from "./AgentClientButtons";
 import { AGENT_CLIENTS } from "@/entities/vault-session";
 import ko from "../../../../messages/ko.json";
 
@@ -20,10 +19,23 @@ const CLIENT_TESTID: Record<string, string> = {
   antigravity: "agent-client-antigravity",
 };
 
+function Harness(props: AgentClientControlsProps) {
+  const { serverUnavailable, controls, manualPathNote } = useAgentClientControls(props);
+  return (
+    <div data-testid="agent-client-buttons">
+      {serverUnavailable}
+      {controls
+        ? AGENT_CLIENTS.map((client) => <span key={client.id}>{controls[client.id]}</span>)
+        : null}
+      {manualPathNote}
+    </div>
+  );
+}
+
 function renderButtons() {
   return render(
     <NextIntlClientProvider locale="ko" messages={ko}>
-      <AgentClientButtons
+      <Harness
         serverAvailability={{
           kind: "app-bundled",
           launch: { kind: "app-bundled", command: "/bundle/ontology-atlas-mcp", args: [] },
@@ -39,28 +51,6 @@ function renderButtons() {
     </NextIntlClientProvider>,
   );
 }
-
-describe("AgentClientButtons — 렌더 순서는 AGENT_CLIENTS 에서 파생된다", () => {
-  it("renders one control per client, in AGENT_CLIENTS order", () => {
-    renderButtons();
-    const container = screen.getByTestId("agent-client-buttons");
-    const controls = [...container.querySelectorAll("[data-testid^='agent-client-']")].filter(
-      (el) => el.getAttribute("data-testid") !== "agent-client-app-cta",
-    );
-    const renderedIds = controls.map((el) => el.getAttribute("data-testid"));
-    const expectedIds = AGENT_CLIENTS.map((client) => CLIENT_TESTID[client.id]);
-    // Equality including order — the same set in a different order is still a defect.
-    expect(renderedIds).toEqual(expectedIds);
-  });
-
-  it("probe: the expected order really comes from the array, not a copy", () => {
-    // Proves for itself that the expectation follows the array automatically — duplicating the
-    // expectation as a literal would make this test a second truth.
-    const expectedIds = AGENT_CLIENTS.map((client) => CLIENT_TESTID[client.id]);
-    expect(expectedIds).toHaveLength(AGENT_CLIENTS.length);
-    expect(new Set(expectedIds).size).toBe(AGENT_CLIENTS.length);
-  });
-});
 
 /**
  * The four are **equal options** (2026-08-02, design council).
@@ -111,7 +101,7 @@ describe("AgentClientButtons — 쓰지 못한 write 는 성공처럼 보이지 
   function renderWithWriter(onWriteConfigs: () => Promise<void>) {
     return render(
       <NextIntlClientProvider locale="ko" messages={ko}>
-        <AgentClientButtons
+        <Harness
           serverAvailability={{
             kind: "app-bundled",
             launch: { kind: "app-bundled", command: "/bundle/ontology-atlas-mcp", args: [] },

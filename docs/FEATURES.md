@@ -325,7 +325,7 @@ had become false).
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
 - **The trail you walked** → every node that takes focus is appended to a session trail. The map leaves footprints beside the relation lines actually crossed (offset along the line's own curve, never on it) and a step number beside each visited node; the top-centre **Trail** chip opens a newest-first mini timeline. Each row carries, under the title, how that step connects to the step before it: the relation word plus the reason recorded on that edge (`relation_notes`), the relation word alone when no reason is written, or "Not directly related" when the two share no edge. **Hand off to AI** copies the same per-step lines into the agent brief, so the argument the walk made travels with the names. Past trails are archived in the vault folder.
-- **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded.
+- **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms).
 - **Expand all** → the top action opens every containment parent in one step and
   fits every rendered node inside the map. It is a temporary overview, not a
   saved default; pressing it again collapses the batch. A route arriving with
@@ -2204,7 +2204,9 @@ The screen layout splits into two stages. First, **is this screen even in a stat
 - Does not split into 2 columns. A single-screen view where **the previous commit list is the body** (`--git-single-measure`)
 - What's in one commit line: how recent · simple summary (`Added 3 · Modified 2`) · author · short hash. Expanding shows full hash · ISO format time · **original commit title** (record needed for later tracking)
 - The primary button position remains inactive (`All left`). If the button disappears entirely based on state, users have to figure out what to press next every time
+- The list is one tab stop; arrows, Page Up/Down, Home and End move between its rows and Enter presses one (2026-09-19, the Library lists' roving hook). Doors that could only open on a refusal are not drawn: no restore door on a file the commit deleted, no discard door on a never-committed or renamed document.
 - The list reads ten steps at a time and **ends with a fact, never a blank** (2026-09-19): while git holds older steps, the last row is `Show older steps` and fetches the next ten in place; once the first step is on screen, a quiet last line says so. Before this, ten were read and the column simply stopped, so a folder with forty steps kept thirty out of reach with nothing on screen to say it. The depth a person opened is remembered with the read, so returning to the folder keeps it
+- **The rail's Record dot follows the folder too** (2026-09-19): it used to re-read only on mount and on window focus, so after a commit or a restore the Record screen could say "all committed" while the rail still showed the dot until the window lost and regained focus. It now also re-reads once per `vault-changed` the watcher reports (coalesced, still no polling).
 - **The screen follows the folder while it is open** (2026-09-19): the app's file watcher already emits `vault-changed` for the loaded vault; this screen now listens and re-reads status, diff and history (read-only, debounced) so the count on the commit button and the preview line describe the folder as it is now, not as it was on arrival. While this screen is itself writing (a commit, `git init`, a remote action) the watcher's echo of that write is skipped because each of those paths re-reads when it finishes
 
 #### Only simple language on screen
@@ -2216,7 +2218,11 @@ The screen layout splits into two stages. First, **is this screen even in a stat
 The screen's own copy had promised that earlier content can be brought back (`atlasGit.notInitializedHint`) while no restore existed. Now one Tauri command, `git_restore_file(vault, path, source)`, puts **exactly one document** back to its content at `source` with `git restore --source --worktree --staged -- <path>`, and two doors on screen open it:
 - **Discard** (`source = HEAD`): on the chosen document in the uncommitted list, when it has ever been committed. The confirm says how many added and removed lines go away, that git holds no copy of them so this cannot be undone, and that the other N uncommitted documents stay as they are. A never-committed document gets no door, because discarding it would be deleting it; the Rust side refuses that too (`restore-untracked`).
 - **Restore this version** (`source = <hash>`): in a commit's detail, under the file list for the active file, and in the default concept lens for the focused concept's own document. The confirm names the document and the commit's time, says when the document's own uncommitted lines would go with it, that the result stays an uncommitted change the person can read line by line and discard, and which of the commit's other documents stay untouched.
+- After a restore from a commit the screen shows the result: the "now" row is selected with that document chosen, so the restored lines are what the right column reads, the same rule as after a commit. After a discard the document simply leaves the list.
 - The command refuses a path outside the vault (`restore-path-invalid`), a source without the document (`restore-source-missing`), and a source whose frontmatter identity differs from the file on disk in `uid`, `slug`, or by dropping `merged_uids` (`restore-identity-mismatch`), because neighbours link to the current identity and `git restore` is identity-blind. Every refusal on screen ends with the sentence that the document was not changed (`atlasGit.restoreFailedSafe`). Decision record: `docs/records/decisions/2026-09-19-record-screen-restores-one-document-*.md`.
+
+#### One document's own timeline (2026-09-19)
+A commit's detail lists **the other steps that changed the focused document** — under the restore door in the concept lens and under the file list in the files lens — read from `git_history` scoped to that path (its optional `path` argument, bounded to the vault like every path the screen hands back). Twelve are read plus one more, so the list can say when older steps exist. Pressing a row jumps to that step; when the step lies below the depth the list has read, the list reads on a page at a time until the row exists, then selects it and scrolls it into view. Before this, "when else did this concept change" meant scanning every row for the concept's name.
 
 #### Nothing is written until the user clicks
 When the screen first opens, only read-only tools are called (`git_status` / `git_diff` / `git_history`). Tools that change something (`git_init` · `git_set_remote` · `git_snapshot` · `git_restore_file`) are executed only when the user presses their button (`onClick`).
@@ -2795,6 +2801,23 @@ The phone tabs and the `G` keys read the same verdict.
 - **`⌘K` `SearchPalette`** — projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
 - **`⇧⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized)
 - Both palettes share keyboard: `↑↓` navigate · `↵` select · `Esc` close
+
+**The palette reads a Korean keyboard** (2026-09-19). Matching used to be normalised
+substrings only, so the two things a Korean typist does first found nothing on the
+bundled Online Store sample: initials alone (the four consonants of a four-syllable
+capability), and any name mid-syllable — which every Korean word passes through,
+because the IME emits one jamo at a time, so the list blinked empty on most
+keystrokes. `shared/lib/hangul-match` adds exactly two rules, no general fuzziness:
+consonant initials matched in order with spaces ignored on both sides, and a trailing
+partial syllable whose jamo must prefix the syllable it lands on, with compound
+medials and final clusters split into the keys that type them. These rank **below**
+every literal name tier and above a description match, so a name that really contains
+what was typed still wins. The match is marked in the row, including when it spans a
+space, and a description match now opens at the match with a leading ellipsis rather
+than highlighting past the truncation — measured live: rows whose mark rendered
+outside its own box went from 1-2 per English query to 0. The per-node name index is
+built once and kept (`WeakMap`), which also took a plain query over 12,000 nodes from
+243 ms to 29.8 ms; `node-name-match.perf.test.ts` holds the ratio.
 
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio

@@ -3,6 +3,7 @@ import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TURN_SILENCE_LIMIT_MS } from '@/features/acp-session/model/turn-liveness';
+import { READ_ONLY_TOOL_INSTRUCTION } from '@/features/acp-session';
 import type { TaskBaselineCaptureResult } from '@/features/acp-session';
 
 /**
@@ -253,15 +254,33 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     );
 
     const choices = screen.getByTestId('acp-chat-choices');
-    // Equal slots decide the width, so a long option label cannot widen one picker past the
-    // other or push the send button off the composer row.
-    expect(choices).toHaveClass('flex', 'min-w-0', 'flex-1');
+    /*
+     * ⚠️ **Not `flex-1`** (2026-09-19). A `basis-0 flex-1` slot is served last, so the runtime
+     * name beside it took its full content width and this row got the remainder — 48px, the
+     * picker's floor, with the mode's word clipped to fourteen pixels while that name was never
+     * truncated at any width. Content-sized here serves the control first.
+     *
+     * It still cannot push send off the row: `min-w-0` plus the default shrink means this row
+     * yields once the name has nothing left to give, and the picker inside keeps its own cap.
+     * The rendered proof across the drag range is `agent-composer-footer-width.spec.ts`.
+     */
+    expect(choices).toHaveClass('flex', 'min-w-0');
+    expect(choices).not.toHaveClass('flex-1');
     expect(choices).not.toHaveClass('shrink-0');
     // `className` lands on the Select's own wrapper; the trigger inside it is `w-full`.
     // A quiet picker is content-sized with a floor, never an equal slot that could swell.
     const modeWrapper = screen.getByTestId('acp-chat-mode').closest('.relative')!;
     expect(modeWrapper.className).toContain('min-w-[3rem]');
     expect(modeWrapper.className).toContain('shrink');
+    expect(modeWrapper.className).toContain('max-w-[16rem]');
+    /*
+     * The name is the elastic one, and below the width that holds both it leaves. The class
+     * carries both halves of that rule; which width it lands at is measured in the rendered
+     * sweep, not here — jsdom has no layout.
+     */
+    const runtimeName = screen.getByTestId('acp-chat-runtime-label');
+    expect(runtimeName.className).toContain('shrink-[99]');
+    expect(runtimeName.className).toContain('@min-[286px]/composer:inline');
     // One tool, one model: nothing to choose, so the tool's name carries the model as text
     // instead of a one-entry picker (owner, 2026-09-07: the model is the tool's own entry).
     expect(screen.queryByTestId('acp-chat-runtime')).toBeNull();
@@ -3699,5 +3718,74 @@ describe('reopening the panel — the folder\'s latest conversation, not a blank
     // The automatic resume steps aside: no list is consulted and no old conversation is loaded.
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
     expect(bridge.sent.some((m) => m.method === 'session/load')).toBe(false);
+  });
+});
+
+/**
+ * **A request the app seats is still the person's to read, edit or drop.**
+ *
+ * Measured on the Insights dock (2026-09-19): pressing the agent door seated five lines in the
+ * composer, opening the person's own text box on `Use only Atlas MCP read tools…` and a literal
+ * `query_ontology({operation:"maintenance_plan"})`. The transcript already stands the readable
+ * sentence and folds the machine block; the composer was the one place the request arrived whole.
+ */
+describe('대화 패널 — 앉힌 요청은 읽을 문장만 서고, 붙은 지시는 그대로 따라간다', () => {
+  const LEAD = 'Explain this Analysis tab from the current ontology evidence only.';
+  const DETAIL = [
+    READ_ONLY_TOOL_INSTRUCTION.en,
+    '',
+    'query_ontology({operation:"maintenance_plan"}) → explain the top three priorities',
+    '',
+    'Explain what a person should judge first and what the ontology cannot confirm.',
+  ].join('\n');
+  const SEATED = `${LEAD}\n${DETAIL}`;
+
+  const seat = () => bootSession({ prefillRequest: { text: SEATED, nonce: 1 } });
+
+  it('상자에는 읽을 문장만 앉고, 붙은 지시는 한 번 펼쳐 그대로 보인다', async () => {
+    await seat();
+    expect(screen.getByRole('textbox')).toHaveValue(LEAD);
+    const summary = screen.getByTestId('acp-chat-seated-detail');
+    expect(summary).toBeInTheDocument();
+    fireEvent.click(summary);
+    expect(screen.getByTestId('acp-chat-seated-detail-text')).toHaveTextContent('query_ontology');
+    expect(screen.getByTestId('acp-chat-seated-detail-text').textContent).toBe(DETAIL.trim());
+  });
+
+  it('손대지 않고 보내면 호출자가 앉힌 바이트 그대로 나간다', async () => {
+    await seat();
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+    const prompt = bridge.sent.filter((m) => m.method === 'session/prompt').at(-1)!;
+    const params = prompt.params as { prompt: Array<{ text?: string }> };
+    // Byte-identical, not a re-joined copy: a caller that recognises its own request by its text
+    // (`presentationRequest`, `answerFold`) has to keep recognising it.
+    expect(params.prompt[0].text).toBe(SEATED);
+    expect(screen.queryByTestId('acp-chat-seated-detail')).toBeNull();
+  });
+
+  it('문장을 고쳐 보내면 붙은 지시가 고친 문장 뒤에 그대로 따라간다', async () => {
+    await seat();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Explain the top two only.' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+    const prompt = bridge.sent.filter((m) => m.method === 'session/prompt').at(-1)!;
+    const params = prompt.params as { prompt: Array<{ text?: string }> };
+    expect(params.prompt[0].text).toBe(`Explain the top two only.\n\n${DETAIL.trim()}`);
+  });
+
+  it('상자를 비우면 붙은 지시도 함께 사라진다 — 문장 없는 지시만 보내지지 않게', async () => {
+    await seat();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } });
+    expect(screen.queryByTestId('acp-chat-seated-detail')).toBeNull();
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+  });
+
+  it('접힐 기계 반쪽이 없는 짧은 요청은 예전 그대로 통째로 앉는다', async () => {
+    const plain = 'Draw the business flow of this folder.';
+    await bootSession({ prefillRequest: { text: plain, nonce: 1 } });
+    expect(screen.getByRole('textbox')).toHaveValue(plain);
+    expect(screen.queryByTestId('acp-chat-seated-detail')).toBeNull();
   });
 });
