@@ -130,3 +130,65 @@ test.describe("분석 보드 — 앱 최소 창에서 첫 답이 화면 안에 �
     });
   }
 });
+
+/**
+ * **A switch that happens in place still has to hand focus somewhere.**
+ *
+ * The link a reader pressed leaves the DOM with the old panel, so focus fell to `<body>`: they
+ * had neither the link nor the answer, and the next Tab restarted inside the new panel by luck
+ * (design-interaction, 2026-09-20). Focus moves for this path only; the question row keeps its
+ * own roving focus.
+ *
+ * **One word, one outcome.** The unchecked-evidence line leaves the product for the download
+ * page and printed the same word as the line above it, which stays on this board.
+ */
+test.describe("분석 브리핑 — 제자리 전환이 초점과 낱말을 흘리지 않는다", () => {
+  test.use({ viewport: { width: 1512, height: 900 } });
+
+  test("Enter 로 연 질문 판에 초점이 남는다", async ({ page }) => {
+    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    const repair = page.locator('[data-brief-destination="do-next"]').first();
+    await expect(repair).toBeVisible({ timeout: 20_000 });
+
+    await repair.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator('[data-insights-panel="do-next"]')).toBeVisible();
+
+    const landed = await page.evaluate(() => {
+      const active = document.activeElement;
+      const panel = document.querySelector('[data-insights-panel]');
+      return {
+        onBody: active === document.body,
+        insidePanel: Boolean(active && panel && (active === panel || panel.contains(active))),
+        panelKey: panel?.getAttribute("data-insights-panel") ?? null,
+      };
+    });
+    expect(landed.panelKey, "판이 바뀌지 않았다 — 이 시험이 공회전한다").toBe("do-next");
+    expect(landed.onBody, "초점이 문서 바닥으로 떨어졌다").toBe(false);
+    expect(landed.insidePanel, "초점이 새 판 안에 없다").toBe(true);
+  });
+
+  test("한 카드 안에서 같은 낱말이 두 곳으로 보내지 않는다", async ({ page }) => {
+    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("brief-tab")).toBeVisible({ timeout: 20_000 });
+
+    const pairs = await page.locator("[data-brief-destination]").evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        label: (node.textContent ?? "").trim(),
+        away: node.getAttribute("data-brief-destination") === "away",
+        href: node.getAttribute("href") ?? "",
+      })),
+    );
+    expect(pairs.length, "브리핑에 목적지가 없다 — 이 시험이 공회전한다").toBeGreaterThan(2);
+
+    // One label may not carry two kinds of outcome anywhere on this tab.
+    const kindsByLabel = new Map<string, Set<string>>();
+    for (const pair of pairs) {
+      const kind = pair.away ? (pair.href.includes("/download/") ? "download" : "away") : "same-board";
+      if (!kindsByLabel.has(pair.label)) kindsByLabel.set(pair.label, new Set());
+      kindsByLabel.get(pair.label)!.add(kind);
+    }
+    const ambiguous = [...kindsByLabel].filter(([, kinds]) => kinds.size > 1).map(([label]) => label);
+    expect(ambiguous, `같은 낱말이 서로 다른 결과로 보낸다: ${ambiguous.join(", ")}`).toEqual([]);
+  });
+});

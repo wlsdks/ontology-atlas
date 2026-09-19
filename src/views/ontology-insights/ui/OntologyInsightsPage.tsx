@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSwapHeight } from "@/shared/lib/use-presence";
@@ -327,6 +327,9 @@ export function OntologyInsightsPage() {
     parseInsightsTab(searchParams.get("tab")),
   );
   const { hostRef: insightsSwapHostRef, capture: captureInsightsHeight } = useSwapHeight(tab);
+  const insightsPanelRef = useRef<HTMLDivElement>(null);
+  /** Set only by a brief destination, so the question row's roving focus is never disturbed. */
+  const focusPanelAfterSwitch = useRef(false);
   const [reviewId, setReviewId] = useState<string | null>(() =>
     parseInsightsTab(searchParams.get("tab")) === "do-next"
       ? searchParams.get("review")
@@ -973,7 +976,9 @@ export function OntologyInsightsPage() {
     );
   };
 
-  const setTab = (next: string) => {
+  // Wrapped because a brief destination now composes on top of it; an identity that changed every
+  // render would rebuild that callback, and the panel-focus effect keyed off it, on every render.
+  const setTab = useCallback((next: string) => {
     // Only the query view of the same document changes. A Next router navigation moves
     // focus to the document root in the WebView, so the URL state is updated through
     // native history integration instead. Screen state and URL are aligned in the same
@@ -988,7 +993,23 @@ export function OntologyInsightsPage() {
       "",
       buildInsightsTabHref(nextTab, window.location.pathname),
     );
-  };
+  }, [captureInsightsHeight]);
+
+  /**
+   * Open another question from a brief line, and take focus with you.
+   *
+   * The panel is re-keyed on every switch, so this runs after the new one has mounted.
+   */
+  const openTabFromBrief = useCallback((next: InsightsTab) => {
+    focusPanelAfterSwitch.current = true;
+    setTab(next);
+  }, [setTab]);
+
+  useLayoutEffect(() => {
+    if (!focusPanelAfterSwitch.current) return;
+    focusPanelAfterSwitch.current = false;
+    insightsPanelRef.current?.focus();
+  }, [tab]);
 
   const activeReviewIds = useMemo(
     () =>
@@ -1568,6 +1589,16 @@ export function OntologyInsightsPage() {
           <div ref={insightsSwapHostRef} className="flex flex-1 flex-col">
           <div
             key={tab}
+            ref={insightsPanelRef}
+            /*
+             * ⚠️ **`tabIndex={-1}` so a switch can land here.** Pressing a brief line's destination
+             * changes the panel in place rather than navigating, and the link it was pressed on
+             * leaves the DOM with the old panel, so focus fell to `<body>`: the reader had
+             * neither the link nor the answer, and the next Tab restarted inside the new panel by
+             * luck rather than by design (design-interaction, 2026-09-20). Focus is moved only
+             * for that path; the question row keeps its own roving focus.
+             */
+            tabIndex={-1}
             /*
              * The question row draws real tabs, so its panel is a `tabpanel` named by the tab that
              * opened it. The other three subjects have no tab — the subject row is a radiogroup —
@@ -1586,7 +1617,7 @@ export function OntologyInsightsPage() {
             {tab === "brief" ? (
               <BriefTab
                 brief={brief}
-                onOpenTab={setTab}
+                onOpenTab={openTabFromBrief}
                 onAskAgent={
                   agentRoute === 'agent'
                     ? (request) => {

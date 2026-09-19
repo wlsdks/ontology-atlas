@@ -246,6 +246,19 @@ const DETAIL_ROWS = 5;
  * 2026-09-20: six links on this tab were 28px tall, the same escape the tab strip had in
  * September, and `controlClass({ shape: 'link' })` carries no height of its own.
  */
+/**
+ * The word a destination wears.
+ *
+ * ⚠️ **Two identical labels with incompatible outcomes.** The unchecked-evidence line sends a
+ * browser reader to the download page, and it printed the same "open" word forty pixels under
+ * another one that stays on this board — same ink, same size, same box (design-interaction, 2026-09-20). The
+ * app page gets the card's own word for it, which that card already says two lines up: a repeated
+ * true label costs a glance, two identical labels with different outcomes cost a navigation.
+ */
+function destinationLabel(href: string, t: (key: string) => string): string {
+  return href === '/download/' ? t('getApp') : t('open');
+}
+
 const LINE_LINK = 'atlas-touch-floor shrink-0 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]';
 
 /**
@@ -356,7 +369,7 @@ function BriefLineRow({ line, details, nowMs, onAskAgent, onOpenTab }: { line: B
               total={details.length}
               shown={shown.length}
               label={(hidden) => t('detailHidden', { count: hidden })}
-              route={href ? <DestinationLink href={href} className="text-[color:var(--color-indigo-text-strong)]" onOpenTab={onOpenTab}>{t('open')}</DestinationLink> : null}
+              route={href ? <DestinationLink href={href} className="text-[color:var(--color-indigo-text-strong)]" onOpenTab={onOpenTab}>{destinationLabel(href, t)}</DestinationLink> : null}
               className="mt-2 pl-3"
               data-testid={`brief-line-hidden-${line.id}`}
             />
@@ -366,7 +379,7 @@ function BriefLineRow({ line, details, nowMs, onAskAgent, onOpenTab }: { line: B
             <span className="min-w-0 flex-1 break-keep">{sentence}</span>
             {href ? (
               <DestinationLink href={href} className={LINE_LINK} onOpenTab={onOpenTab}>
-                {t('open')}
+                {destinationLabel(href, t)}
               </DestinationLink>
             ) : null}
           </>
