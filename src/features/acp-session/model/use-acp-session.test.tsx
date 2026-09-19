@@ -710,6 +710,28 @@ describe('세션 지시문 — 실측으로 얻은 네 줄이 실제로 실린�
    * pins is **whether those four instructions actually go out with the session** — without that, the
    * table above means nothing.
    */
+  it("carries the screen's own paragraph after the handoff, and the handoff still goes out whole", async () => {
+    const { result } = renderHook(() =>
+      useAcpSession({
+        runtimeId: 'claude-acp',
+        vaultRoot: '/vault',
+        mcpServers: [{ name: 'atlas-vault' }],
+        systemPromptAppendix: 'PROBE-APPENDIX: cite as [[src:sources/<file>#l<line>]].',
+      }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+    const call = bridge.sent.find((m) => m.method === 'session/new');
+    const meta = (call?.params as Record<string, unknown>)?._meta as { systemPrompt?: { append?: string } } | undefined;
+    const prompt = meta?.systemPrompt?.append ?? '';
+    expect(prompt).toMatch(/Do not shell out/);
+    expect(prompt.endsWith('PROBE-APPENDIX: cite as [[src:sources/<file>#l<line>]].')).toBe(true);
+  });
+
   it('순서 · 중복 확인 · 애매하면 묻기 · 손으로 읽지 않기 가 전부 실린다', async () => {
     const { result } = renderHook(() =>
       useAcpSession({

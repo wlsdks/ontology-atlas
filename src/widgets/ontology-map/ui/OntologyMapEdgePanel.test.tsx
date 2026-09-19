@@ -71,6 +71,17 @@ describe("OntologyMapEdgePanel — focus contract (H3 P1)", () => {
   });
 });
 
+describe("OntologyMapEdgePanel — the two end nodes wear their kind", () => {
+  it("each endpoint row carries the kind glyph before the name, like the node panel's rows", () => {
+    renderPanel();
+    const rows = [screen.getByRole("button", { name: /^A$/ }), screen.getByRole("button", { name: /^B$/ })];
+    for (const row of rows) {
+      expect(row.querySelector("svg"), `${row.textContent} 행에 종류 글리프가 없다`).not.toBeNull();
+      expect(row.querySelector("svg")!.compareDocumentPosition(row.querySelector("span")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+});
+
 describe("OntologyMapEdgePanel — 공방 편집 딥링크 (Slice 6)", () => {
   it("renders the '고치기' action pointing at the deep-link when editable", () => {
     renderPanel("/ontology/studio/?node=capability%3Aa&edit=dependsOn:capability%3Ab");

@@ -62,6 +62,16 @@ describe("computeCardPlacement", () => {
     expect(placement.top).toBeGreaterThan(100 + 80);
   });
 
+  it("keeps the 'below' card clear of a name the target wears under itself", () => {
+    const targetRect = { top: 383, left: 810, width: 79, height: 79 };
+    const plain = computeCardPlacement({ targetRect, cardWidth: 360, cardHeight: 250, viewportWidth: 1512, viewportHeight: 806 });
+    const withBand = computeCardPlacement({ targetRect, cardWidth: 360, cardHeight: 250, viewportWidth: 1512, viewportHeight: 806, belowGap: 40 });
+    expect(plain.side).toBe("below");
+    expect(withBand.side).toBe("below");
+    expect(withBand.top).toBe(383 + 79 + 40);
+    expect(withBand.top - plain.top).toBe(28);
+  });
+
   it("falls back to 'above' when there is no room below", () => {
     const placement = computeCardPlacement({
       targetRect: { top: 850, left: 600, width: 80, height: 40 },
