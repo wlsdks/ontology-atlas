@@ -628,11 +628,20 @@ function RuntimeRow({
                 size="lg"
                 tone="accentOnTint"
                 data-testid={`app-settings-runtime-chat-${runtime.id}`}
+                /*
+                 * **The verb alone, and the sentence as the name** (2026-09-19). The row already
+                 * carries this tool's mark and its name, so "open a chat with this tool" says
+                 * "this tool" a second time — and three of these sentences stacked down the
+                 * column were what pushed the names to 0px at 390. A screen reader moving from
+                 * control to control does not see the row beside it, so the accessible name
+                 * keeps the whole sentence; the same split the MCP tab's rows use.
+                 */
+                aria-label={t('openChat')}
                 onClick={() => onOpenChat(runtime.id)}
                 className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
               >
                 <MessageSquare size={ICON_SIZE.md} aria-hidden />
-                {t('openChat')}
+                {t('openChatShort')}
               </Chip>
             ) : null}
             {/*
