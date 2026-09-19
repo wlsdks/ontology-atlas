@@ -107,13 +107,21 @@ export async function installLibraryWorkHarness(
     filePermission?: boolean;
     runtimeId?: LibraryWorkRuntimeId;
     localResponses?: string[];
+    /**
+     * Make `acp_start` refuse, with this exact message.
+     *
+     * The panel reads a failing start through `readAcpTrouble`, so the message decides which
+     * trouble card is drawn: `spawn npx ENOENT` is the `launch` kind, the one that offers no
+     * retry. Without this there was no way to render any of the seven error cards at all.
+     */
+    startError?: string;
     permissionKind?: 'wiki' | 'ontology-patch';
   } = {},
 ): Promise<LibraryWorkHarness> {
   const scenario = options.scenario ?? "successful-write";
   const runtime = options.runtimeId ? ACP_RUNTIMES[options.runtimeId] : RUNTIME;
   await page.addInitScript(
-    ({ initialFiles, initialScenario, vaultRoot, runtime, architecturePage, permissionFile, permissionText, permissionKind, writeMode, filePermission, mcpBinary, localResponses }) => {
+    ({ initialFiles, initialScenario, vaultRoot, runtime, architecturePage, permissionFile, permissionText, permissionKind, writeMode, filePermission, mcpBinary, localResponses, startError }) => {
       const fixtureWindow = window as unknown as HarnessWindow;
       const record = (value: unknown): JsonRecord | null => typeof value === "object" && value !== null && !Array.isArray(value)
         ? value as JsonRecord
@@ -292,7 +300,7 @@ export async function installLibraryWorkHarness(
           return Promise.resolve({ status: 200, body, host: "127.0.0.1:11434", durationMs: 1, loggedAt: new Date().toISOString() });
         }
         if (command === "secret_status") return Promise.resolve({ provider: args.provider, stored: false, last4: null });
-        if (command === "acp_start") return Promise.resolve(sessionId);
+        if (command === "acp_start") return startError ? Promise.reject(new Error(startError)) : Promise.resolve(sessionId);
         if (command === "acp_stop" || command === "start_vault_watch" || command === "ensure_vault_directory") return Promise.resolve(null);
         if (command === "acp_send") { try { const message: unknown = JSON.parse(String(args.line ?? "")); const parsed = record(message); if (parsed) handleClientMessage(parsed); } catch {} return Promise.resolve(null); }
         if (command === "acp_permission_verdict") return Promise.resolve("ask");
@@ -331,7 +339,7 @@ export async function installLibraryWorkHarness(
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
       fixtureWindow.__atlasLibraryWorkHarness = { emitRead, emitWait, emitWrite, finish, answer, mutateSource: write, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
-    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtime, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses },
+    { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtime, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, startError: options.startError },
   );
   const call = (currentPage: Page, method: "emitRead" | "emitWait" | "emitWrite" | "finish") => currentPage.evaluate((name) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.[name](), method);
   return { snapshot: (currentPage) => currentPage.evaluate(() => {
