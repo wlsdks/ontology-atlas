@@ -85,10 +85,15 @@ export function McpPage({
    */
   const addOpenerRef = useRef<HTMLButtonElement | null>(null);
   const [addOpenRequest, setAddOpenRequest] = useState(0);
+  /*
+   * **The press appears once the folder has answered.** `ready` is the only status where a
+   * write can land: while the store is `loading` the list is empty because nothing has been
+   * read yet, and the previous condition let the chip through on that emptiness — offering to
+   * add a connector to a file still being opened. `malformed` and `unavailable` cannot take a
+   * write at all, and the panel says why in each case.
+   */
   const connectorsListed =
-    handle !== null &&
-    connectors.status !== 'unavailable' &&
-    !(connectors.status !== 'loading' && connectors.connectors.length === 0);
+    handle !== null && connectors.status === 'ready' && connectors.connectors.length > 0;
 
   const searchParams = useSearchParams();
   const section = parseMcpTab(searchParams?.get(MCP_SECTION_PARAM));

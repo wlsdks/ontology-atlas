@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
@@ -12,7 +13,12 @@ vi.mock('next/navigation', async (importOriginal) => ({
 }));
 vi.mock('@/widgets/app-settings-menu', () => ({
   AgentSetupSection: () => <div data-testid="agent-setup-section" />,
-  SettingsGroupHeading: ({ label }: { label: string }) => <h3>{label}</h3>,
+  SettingsGroupHeading: ({ label, trailing }: { label: string; trailing?: ReactNode }) => (
+    <div>
+      <h3>{label}</h3>
+      {trailing}
+    </div>
+  ),
 }));
 vi.mock('@/features/mcp-connectors', () => ({
   ConnectorsPanel: () => <div data-testid="connectors-panel" />,
@@ -23,7 +29,9 @@ vi.mock('@/entities/vault-session', () => ({ useLocalVault: () => ({ status: 'id
 
 let store: VaultConnectorsState;
 
-function draw(next: Partial<VaultConnectorsState>) {
+const FAKE_HANDLE = { name: 'vault' } as unknown as FileSystemDirectoryHandle;
+
+function draw(next: Partial<VaultConnectorsState>, handle: FileSystemDirectoryHandle | null = FAKE_HANDLE) {
   store = {
     status: 'loading',
     connectors: [],
@@ -36,14 +44,36 @@ function draw(next: Partial<VaultConnectorsState>) {
   } as VaultConnectorsState;
   return render(
     <NextIntlClientProvider locale="ko" messages={ko}>
-      <McpPage connectors={store} handle={null} />
+      <McpPage connectors={store} handle={handle} />
     </NextIntlClientProvider>,
   );
 }
 
+describe('MCP 탭 — 답하기 전에는 쓰라고 하지 않는다', () => {
+  it('폴더를 읽는 중에는 추가 버튼을 내지 않는다', () => {
+    draw({ status: 'loading' });
+    expect(screen.queryByTestId('connectors-add-open')).toBeNull();
+  });
+
+  it('파일이 우리 것이 아니면 추가 버튼을 내지 않는다 — 쓸 수 없는 상태다', () => {
+    draw({ status: 'malformed' });
+    expect(screen.queryByTestId('connectors-add-open')).toBeNull();
+  });
+
+  it('스토어가 답하면 추가 버튼이 선다', () => {
+    draw({
+      status: 'ready',
+      connectors: [
+        { id: 'a', name: 'one', transport: 'http', url: 'https://x', args: [], env: [], headers: [], enabled: true },
+      ] as VaultConnectorsState['connectors'],
+    });
+    expect(screen.getByTestId('connectors-add-open')).toBeInTheDocument();
+  });
+});
+
 describe('MCP 탭 — 폴더는 한 번만 청한다', () => {
   it('폴더가 없으면 연결 도구 칸은 카드 대신 한 줄로, 두 번째 버튼 없이', () => {
-    draw({ status: 'unavailable' });
+    draw({ status: 'unavailable' }, null);
     expect(screen.getByTestId('mcp-connectors-need-folder')).toBeInTheDocument();
     // The share group above already asks and carries the button; the panel is not drawn at all.
     expect(screen.queryByTestId('connectors-panel')).toBeNull();
