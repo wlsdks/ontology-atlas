@@ -57,3 +57,63 @@ test("the hero's controls are one filled action and outline siblings, on one lin
 
   await page.screenshot({ path: ".claude/shots-2026-09-19/81-hero-row-editable.png" });
 });
+
+/**
+ * The row above the hero, measured for the same reason.
+ *
+ * It held three type sizes at once: a 16px text door, a 14px label inside a pill forced to 40px by
+ * a one-off height class, and an 11px folder total. The folder total was also the only number on
+ * the page that does not describe this project, so it now rides the composition board's scope
+ * sentence instead of the control row.
+ */
+test("the top bar draws controls of one size, and the folder total is not among them", async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await mountDesktopVault(page);
+  await page.goto("/en/project/fallback/?slug=storefront&guides=off");
+
+  const census = page.getByTestId("project-detail-global-census");
+  await expect(census).toBeVisible({ timeout: 30_000 });
+
+  const measured = await page.evaluate(() => {
+    const controls = [
+      document.querySelector('[data-testid="project-detail-docs-vault-link"] button'),
+      document.querySelector('[data-testid="project-detail-copy-link"]'),
+    ].filter((element): element is HTMLElement => element instanceof HTMLElement);
+    const censusNode = document.querySelector('[data-testid="project-detail-global-census"]');
+    const board = document.querySelector('[data-testid="project-detail-composition"]');
+    return {
+      controls: controls.map((element) => {
+        const box = element.getBoundingClientRect();
+        return {
+          label: (element.textContent ?? "").trim().slice(0, 24),
+          height: Math.round(box.height),
+          top: Math.round(box.top),
+          fontSize: getComputedStyle(element).fontSize,
+        };
+      }),
+      censusInsideBoard: Boolean(board && censusNode && board.contains(censusNode)),
+      censusRight: censusNode ? Math.round(censusNode.getBoundingClientRect().right) : null,
+      controlsRight: controls.length
+        ? Math.round(controls[controls.length - 1]!.getBoundingClientRect().right)
+        : null,
+    };
+  });
+
+  expect(measured.controls.length, "both doors are drawn").toBe(2);
+  expect(
+    new Set(measured.controls.map((control) => control.height)).size,
+    `heights: ${JSON.stringify(measured.controls)}`,
+  ).toBe(1);
+  expect(
+    new Set(measured.controls.map((control) => control.top)).size,
+    `tops: ${JSON.stringify(measured.controls)}`,
+  ).toBe(1);
+  expect(
+    new Set(measured.controls.map((control) => control.fontSize)).size,
+    `font sizes: ${JSON.stringify(measured.controls)}`,
+  ).toBe(1);
+  // The folder total belongs to the scope sentence over the board, not to the control row.
+  expect(measured.censusInsideBoard, "the folder total sits with the composition board").toBe(true);
+  // And it ends on the same right rail the controls do, so the page has one edge rather than two.
+  expect(measured.censusRight).toBe(measured.controlsRight);
+});
