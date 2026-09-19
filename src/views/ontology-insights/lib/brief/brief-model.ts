@@ -68,6 +68,21 @@ export function briefTotals(cores: readonly BriefCore[]): { stale: number; unkno
   return { stale, unknown };
 }
 
+/**
+ * One named thing under a line: which concept, which path, when it moved, and when the
+ * concept's own document last moved. The screen renders these instead of sending a reader
+ * to another screen that counts something else.
+ */
+export interface BriefLineDetail {
+  name: string;
+  path: string;
+  /** When the path moved. `null` for a path that is simply gone. */
+  at: string | null;
+  /** When the concept document last moved, for the comparison the verdict rests on. */
+  docAt: string | null;
+  href: string;
+}
+
 /** Lines worth showing: nonzero counts, in the order the builder ranked them. */
 export function visibleLines(core: BriefCore): readonly BriefLine[] {
   return core.lines.filter((line) => line.count > 0);

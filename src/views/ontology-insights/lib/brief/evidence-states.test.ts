@@ -34,5 +34,18 @@ describe('resolveEvidenceStates', () => {
     expect([...states.missing]).toEqual(['gone']);
     expect([...states.unknown].sort()).toEqual(['cart', 'free', 'old', 'unwalked']);
     expect([...states.folderOnly]).toEqual(['cart']);
+    // Every non-current concept carries what moved, so a screen can name the file and the date.
+    expect(states.rows.find((row) => row.id === 'pay')).toEqual({
+      id: 'pay',
+      docChangedAt: '2026-09-10T00:00:00Z',
+      moved: [{ path: 'src/pay.ts', changedAt: '2026-09-12T00:00:00Z' }],
+      gone: [],
+      folders: [],
+    });
+    expect(states.rows.find((row) => row.id === 'gone')?.gone).toEqual(['src/removed.ts']);
+    expect(states.rows.find((row) => row.id === 'cart')?.folders).toEqual([
+      { path: 'src/widgets/cart', changedAt: '2026-09-15T00:00:00Z' },
+    ]);
+    expect(states.rows.some((row) => row.id === 'ship')).toBe(false);
   });
 });

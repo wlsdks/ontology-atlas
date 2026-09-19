@@ -49,6 +49,15 @@ function brief(overrides: Partial<InsightsBrief> = {}): InsightsBrief {
       { core: "agent", at: "2026-09-18T06:00:00Z", kind: "agent-call", label: "add_concept · capabilities/refund", href: "/agents/" },
     ],
     sinceTotal: 5,
+    details: new Map([
+      [
+        "ontology-evidence-moved",
+        [
+          { name: "Payments", path: "src/pay.ts", at: "2026-09-18T02:00:00Z", docAt: "2026-09-10T00:00:00Z", href: "/topology/?p=capabilities%2Fpay" },
+          { name: "Shipping", path: "src/ship.ts", at: "2026-09-17T02:00:00Z", docAt: "2026-09-09T00:00:00Z", href: "/topology/?p=capabilities%2Fship" },
+        ],
+      ],
+    ]),
     ...overrides,
   };
 }
@@ -79,6 +88,12 @@ describe("BriefTab", () => {
     ]);
     expect(lines[0]).toHaveAttribute("data-brief-state", "stale");
     expect(ontology.querySelector('a[href="/ontology/insights/?tab=do-next"]')).not.toBeNull();
+    // The stale line names what it counts: concept, the file, and both dates — never a bare number.
+    const rows = ontology.querySelectorAll('[data-testid="brief-line-rows-ontology-evidence-moved"] li');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent("Payments");
+    expect(rows[0]).toHaveTextContent("src/pay.ts");
+    expect(ontology.querySelector('a[href="/topology/?p=capabilities%2Fpay"]')).not.toBeNull();
     expect(screen.getByTestId("brief-core-wiki").querySelectorAll("[data-brief-line]")).toHaveLength(0);
   });
 

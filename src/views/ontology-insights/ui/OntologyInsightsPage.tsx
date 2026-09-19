@@ -1036,6 +1036,7 @@ export function OntologyInsightsPage() {
       (insight?.nodes ?? []).map((node) => ({
         id: node.id,
         kind: node.kind,
+        title: node.title,
         createdBy: node.createdBy ?? null,
         docSlug: node.evidenceIds[0] ?? null,
       })),

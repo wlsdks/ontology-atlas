@@ -4,6 +4,8 @@ import { isAfter, type BriefCore, type BriefLine } from './brief-model';
 export interface OntologyBriefNode {
   id: string;
   kind: string;
+  /** The concept's display name, for the rows a line names. */
+  title?: string;
   /** `created_by`, verbatim. Absent defaults to human, as the schema says. */
   createdBy?: string | null;
   /** `evidenceIds[0]` — the vault doc slug this node was derived from, when it owns one. */

@@ -4,11 +4,11 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { CensusBigNumber, CensusSubStat, CensusTile } from '@/shared/ui/census-tile';
 import { controlClass } from '@/shared/ui/control-class';
-import { Button } from '@/shared/ui';
+import { Button, Disclosure } from '@/shared/ui';
 import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
 import type { SinceRow } from '../../lib/brief/since-list';
 import { cn } from '@/shared/lib/cn';
-import { briefTotals, visibleLines, type BriefCore, type BriefLine, type BriefState } from '../../lib/brief/brief-model';
+import { briefTotals, visibleLines, type BriefCore, type BriefLine, type BriefLineDetail, type BriefState } from '../../lib/brief/brief-model';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 
 /**
@@ -78,7 +78,7 @@ export function BriefTab({ brief }: { brief: InsightsBrief }) {
       </div>
       <div className="grid grid-cols-1 gap-[var(--card-gap)] md:grid-cols-2 xl:grid-cols-4">
         {cores.map((core) => (
-          <BriefCoreCard key={core.core} core={core} />
+          <BriefCoreCard key={core.core} core={core} details={brief.details} />
         ))}
       </div>
       <BriefSinceList rows={brief.since} total={brief.sinceTotal} />
@@ -86,7 +86,7 @@ export function BriefTab({ brief }: { brief: InsightsBrief }) {
   );
 }
 
-function BriefCoreCard({ core }: { core: BriefCore }) {
+function BriefCoreCard({ core, details }: { core: BriefCore; details: InsightsBrief['details'] }) {
   const t = useTranslations('ontologyPages.insights.brief');
   const [c1, c2, c3] = COLUMNS[core.core];
   const lines = visibleLines(core);
@@ -110,25 +110,72 @@ function BriefCoreCard({ core }: { core: BriefCore }) {
           <li className="text-body text-[color:var(--color-text-tertiary)]">{t('quiet')}</li>
         ) : null}
         {lines.map((line) => (
-          <BriefLineRow key={line.id} line={line} />
+          <BriefLineRow key={line.id} line={line} details={details.get(line.id) ?? EMPTY_DETAILS} />
         ))}
       </ul>
     </CensusTile>
   );
 }
 
-function BriefLineRow({ line }: { line: BriefLine }) {
+const EMPTY_DETAILS: readonly BriefLineDetail[] = [];
+const DETAIL_ROWS = 5;
+
+/**
+ * One line of the brief. When the line's own calculation produced named rows, the line
+ * expands in place to show them — concept, the exact path, and the two dates the verdict
+ * rests on. A count whose only destination is another screen counting something else is
+ * the falsifier this decision wrote down for itself (PO evidence seat, 2026-09-19).
+ */
+function BriefLineRow({ line, details }: { line: BriefLine; details: readonly BriefLineDetail[] }) {
   const t = useTranslations('ontologyPages.insights.brief');
+  const format = useFormatter();
   const href = LINE_HREF[line.id];
+  const sentence = t(`line.${line.id}`, { count: line.count });
+  const shown = details.slice(0, DETAIL_ROWS);
   return (
-    <li className="flex items-start gap-2.5 text-body text-[color:var(--color-text-primary)]" data-brief-line={line.id} data-brief-state={line.state}>
-      <span aria-hidden="true" className={cn('mt-[7px] size-2 shrink-0 rounded-full', STATE_MARK[line.state])} />
-      <span className="min-w-0 flex-1 break-keep">{t(`line.${line.id}`, { count: line.count })}</span>
-      {href ? (
-        <Link href={href} className={controlClass({ shape: 'link', className: 'shrink-0 text-[color:var(--color-indigo-text-strong)]' })}>
-          {t('open')}
-        </Link>
-      ) : null}
+    <li className="text-body text-[color:var(--color-text-primary)]" data-brief-line={line.id} data-brief-state={line.state}>
+      <div className="flex items-start gap-2.5">
+        <span aria-hidden="true" className={cn('mt-[7px] size-2 shrink-0 rounded-full', STATE_MARK[line.state])} />
+        {shown.length > 0 ? (
+          <Disclosure className="min-w-0 flex-1" summary={sentence} summaryTestId={`brief-line-open-${line.id}`}>
+            <ul className="mt-2 flex flex-col gap-1.5 border-l border-[color:var(--color-divider)] pl-3" data-testid={`brief-line-rows-${line.id}`}>
+              {shown.map((row, index) => (
+                <li key={`${row.name}-${row.path}-${index}`} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <Link href={row.href} className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>
+                    {row.name}
+                  </Link>
+                  <code className="min-w-0 break-all font-mono text-label text-[color:var(--color-text-tertiary)]">{row.path}</code>
+                  <span className="text-label text-[color:var(--color-text-quaternary)]">
+                    {row.at
+                      ? t('detailMoved', {
+                          moved: format.relativeTime(new Date(row.at)),
+                          doc: row.docAt ? format.relativeTime(new Date(row.docAt)) : t('detailDocUnknown'),
+                        })
+                      : t('detailGone')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <HiddenCountLine
+              total={details.length}
+              shown={shown.length}
+              label={(hidden) => t('detailHidden', { count: hidden })}
+              route={href ? <Link href={href} className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>{t('open')}</Link> : null}
+              className="mt-2 pl-3"
+              data-testid={`brief-line-hidden-${line.id}`}
+            />
+          </Disclosure>
+        ) : (
+          <>
+            <span className="min-w-0 flex-1 break-keep">{sentence}</span>
+            {href ? (
+              <Link href={href} className={controlClass({ shape: 'link', className: 'shrink-0 text-[color:var(--color-indigo-text-strong)]' })}>
+                {t('open')}
+              </Link>
+            ) : null}
+          </>
+        )}
+      </div>
     </li>
   );
 }

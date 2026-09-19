@@ -18,6 +18,7 @@ import { selectOpenVaultHandle } from '@/shared/lib/select-open-vault-handle';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/tauri-git';
 import { resolveEvidenceStates, type EvidenceConceptInput } from './evidence-states';
+import type { BriefLineDetail } from './brief-model';
 import { resolveBriefAnchor, useBriefSeenAt, type BriefAnchor } from './brief-anchor';
 import { buildAgentBrief } from './agent-brief';
 import { buildHarnessBrief } from './harness-brief';
@@ -38,6 +39,11 @@ export interface InsightsBrief {
   /** What happened after the anchor, newest first, bounded; `sinceTotal` is the whole count. */
   since: readonly SinceRow[];
   sinceTotal: number;
+  /**
+   * What a line counts, by name: concept, the exact path that moved, and when. Keyed by the
+   * line id, so a count and the rows under it can never come from different calculations.
+   */
+  details: ReadonlyMap<string, readonly BriefLineDetail[]>;
 }
 
 const EMPTY_DOCS: readonly VaultDoc[] = [];
@@ -263,6 +269,40 @@ export function useInsightsBrief({
     [mode, vault.agentActivityLog, anchor.anchorMs],
   );
 
+  /*
+   * The evidence lines name what they count. A count with no way to reach the file and the
+   * date sends a reader back to the agent's summary — the failure this tab exists to end
+   * (PO evidence seat, 2026-09-19).
+   */
+  const details = useMemo(() => {
+    const map = new Map<string, BriefLineDetail[]>();
+    if (!evidence) return map;
+    const titleById = new Map(nodes.map((node) => [node.id, node.title ?? node.id] as const));
+    const moved: BriefLineDetail[] = [];
+    const gone: BriefLineDetail[] = [];
+    const folderOnly: BriefLineDetail[] = [];
+    for (const row of evidence.rows) {
+      const name = titleById.get(row.id) ?? row.id;
+      const href = `/topology/?p=${encodeURIComponent(row.id)}`;
+      for (const file of row.moved) {
+        moved.push({ name, path: file.path, at: file.changedAt, docAt: row.docChangedAt, href });
+      }
+      for (const path of row.gone) {
+        gone.push({ name, path, at: null, docAt: row.docChangedAt, href });
+      }
+      if (row.moved.length === 0 && row.gone.length === 0) {
+        for (const folder of row.folders) {
+          folderOnly.push({ name, path: folder.path, at: folder.changedAt, docAt: row.docChangedAt, href });
+        }
+      }
+    }
+    const byNewest = (a: BriefLineDetail, b: BriefLineDetail) => (Date.parse(b.at ?? '') || 0) - (Date.parse(a.at ?? '') || 0);
+    map.set('ontology-evidence-moved', moved.sort(byNewest));
+    map.set('ontology-evidence-missing', gone);
+    map.set('ontology-evidence-folder-only', folderOnly.sort(byNewest));
+    return map;
+  }, [evidence, nodes]);
+
   const sinceList = useMemo(
     () =>
       buildSinceList({
@@ -280,7 +320,7 @@ export function useInsightsBrief({
     [docs, log, harnessReport, mode, vault.agentActivityLog, anchor.anchorMs],
   );
 
-  return { anchor, sinceDays, markSeen, ontology, wiki, harness, agent, since: sinceList.rows, sinceTotal: sinceList.total };
+  return { anchor, sinceDays, markSeen, ontology, wiki, harness, agent, since: sinceList.rows, sinceTotal: sinceList.total, details };
 }
 
 async function readWikiLog(handle: FileSystemDirectoryHandle): Promise<string> {
