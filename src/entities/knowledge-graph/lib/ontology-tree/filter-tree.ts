@@ -1,22 +1,28 @@
-import { nameIncludes, normalizeForMatch } from "@/shared/lib/node-name-match";
+import { findNameMatch, idSearchText, normalizeForMatch } from "@/shared/lib/node-name-match";
 import type { KnowledgeGraphNode } from "../../model";
 import type { OntologyTreeNode } from "./types";
 
 /**
- * Does a node match the search text — canonical/display-name containment or
- * `id` (kind:slug) containment. `query` is expected to be normalised with
- * `normalizeForMatch`. Single source so tree filtering/counting and orphan
- * filtering share one rule.
+ * Does a node match the search text — any of its names, or its id's slug. `query` is
+ * expected to be normalised with `normalizeForMatch`. Single source so tree
+ * filtering/counting and orphan filtering share one rule.
+ *
+ * **It is the palette's rule, not a second one** (2026-09-19). The map draws INDEX
+ * and the `⌘K` palette on the same screen, and they disagreed twice: INDEX answered
+ * "no matching concept" to a chosung query and to a half-typed syllable that the
+ * palette resolved on the same vault, and it pulled every element for the word
+ * "element" because it compared the whole `kind:slug`. Two boxes on one screen must
+ * answer the same typing the same way, so both now call `findNameMatch` and
+ * `idSearchText`.
  */
 export function knowledgeNodeMatchesQuery(
   node: KnowledgeGraphNode,
   normalizedQuery: string,
 ): boolean {
   if (normalizedQuery === "") return false;
-  return (
-    nameIncludes(node, normalizedQuery)
-    || normalizeForMatch(node.id).includes(normalizedQuery)
-  );
+  if (findNameMatch(node, normalizedQuery)) return true;
+  const id = idSearchText(node.id, normalizedQuery);
+  return id !== null && normalizeForMatch(id).includes(normalizedQuery);
 }
 
 /**

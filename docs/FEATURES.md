@@ -2836,6 +2836,15 @@ seat for the same job. Re-measured over the same thirty queries plus three Hangu
 ones: **0 of 276 rows unexplained, 0 marks clipped**, and the column has one text
 start line (`w-[14rem]`, after four rows of "policy" began at four different x).
 
+**One answer to the same typing, in every box** (2026-09-19). The map draws INDEX
+and the `⌘K` palette on the same screen, and the docs tree has a third field; each
+kept its own match rule. Measured on the bundled sample: INDEX answered "no matching
+concept" to a chosung query and to a half-typed syllable that the palette resolved
+against the same vault, and it pulled every element for the word "element" because it
+compared the whole `kind:slug`. All three now call `findNameMatch` and `idSearchText`
+in `shared/lib/node-name-match`, which is the single contract; the palette's ranking
+stays its own, because only it ranks. `nameIncludes` retired with its last caller.
+
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio
 - 2-column grid on sm+, focus trap, `Esc` closes

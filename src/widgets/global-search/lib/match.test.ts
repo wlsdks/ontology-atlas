@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
-import { idSearchText, isPathLikeTitle, matchOntologyNodes, matchProjects } from "./match";
+import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "./match";
 
 const APPROVED_AT = new Date("2026-04-27T00:00:00Z");
 
@@ -271,12 +271,6 @@ describe("matchOntologyNodes", () => {
       expect(r[0]?.matched).toEqual({ field: "id", text: "capability:cart" });
     });
 
-    it("콜론이 없는 id 는 통째로 본다", () => {
-      expect(idSearchText("auth-logout", "logout")).toBe("auth-logout");
-      expect(idSearchText("element:order-number", "order")).toBe("order-number");
-      expect(idSearchText("element:order-number", "element:order")).toBe("element:order-number");
-      expect(idSearchText("element:", "x")).toBeNull();
-    });
   });
 
   it("limit 적용", () => {
