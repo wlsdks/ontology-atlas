@@ -63,13 +63,23 @@ export function ProjectBriefSummary({
   );
 }
 
-/** The body's first prose paragraph — headings, lists and fences are not the definition. */
+/**
+ * The body's first prose paragraph — a heading, a list or a fence is not the definition.
+ *
+ * A document that opens with a list has no such paragraph, and a card that then says nothing
+ * about the document is worse than one that shows the list: the second pass takes the first block
+ * of any kind, so the summary always carries the document's own opening.
+ */
 function firstParagraph(markdown: string): string {
-  for (const block of markdown.split(/\n{2,}/)) {
-    const trimmed = block.trim();
-    if (!trimmed) continue;
-    if (/^(#{1,6}\s|[-*+]\s|\d+\.\s|>|```|~~~|\|)/.test(trimmed)) continue;
-    return trimmed;
-  }
-  return "";
+  const blocks = markdown
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+  const prose = blocks.find(
+    (block) => !/^(#{1,6}\s|[-*+]\s|\d+\.\s|>|```|~~~|\|)/.test(block),
+  );
+  if (prose) return prose;
+  // Nothing here is a paragraph. Show the opening block itself rather than nothing — a heading
+  // is the one exception, because the contents line beside this already carries the headings.
+  return blocks.find((block) => !/^#{1,6}\s/.test(block)) ?? "";
 }

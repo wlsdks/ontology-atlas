@@ -171,6 +171,7 @@ const mocks = vi.hoisted(() => ({
   projects: [] as ReturnType<typeof baseProject>[],
   projectsMode: "static" as "static" | "local",
   vaultDocs: [] as unknown[],
+  vaultManifest: null as { docs: unknown[]; sources: unknown[] } | null,
   handle: null as { rootPath: string } | null,
   agent: {
     route: "unavailable",
@@ -218,6 +219,7 @@ vi.mock("@/features/project-data-source", () => ({
   }),
   useProjectBody: () => ({ body: mocks.vaultBody }),
   useVaultDocs: () => mocks.vaultDocs,
+  useVaultManifest: () => mocks.vaultManifest,
 }));
 
 function baseProject() {
@@ -268,6 +270,7 @@ describe("ProjectDetailPage", () => {
     mocks.projects = [];
     mocks.projectsMode = "static";
     mocks.vaultDocs = [];
+    mocks.vaultManifest = null;
     mocks.handle = null;
     mocks.agent = {
       route: "unavailable",
@@ -464,6 +467,25 @@ describe("ProjectDetailPage", () => {
       "/library/",
       "/architecture/",
     ]);
+  });
+
+  // The Library cell once counted wiki pages out of the chosen sample while counting sources out
+  // of the open local folder, so every reader without a folder open — the web, and any sample —
+  // was told the folder held no sources whatever it held. One manifest answers both now.
+  it("자료실 칸은 폴더를 열지 않아도 그 표본의 원본 수를 센다", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.projectsMode = "static";
+    mocks.handle = null;
+    mocks.vaultManifest = { docs: [], sources: [{ path: "sources/a.md" }, { path: "sources/b.md" }] };
+    renderPage();
+
+    const library = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="library"]')!;
+    const figures = [...library.querySelectorAll("dt")].map((node, index) => [
+      node.textContent,
+      library.querySelectorAll("dd")[index]?.textContent,
+    ]);
+    expect(figures).toContainEqual(["sources", "2"]);
   });
 
   it("the harness cell shows no figure, because this surface cannot count from here", () => {
@@ -716,6 +738,19 @@ describe("ProjectDetailPage", () => {
     expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent("A store.");
     expect(screen.getByTestId("project-detail-body-continue")).toBeInTheDocument();
     expect(screen.getByTestId("project-detail-brief-ask")).toHaveAttribute("data-brief-state", "structured");
+  });
+
+  // A body can open with a list. The summary used to look for a paragraph, find none, and draw
+  // nothing at all about the document — the one thing this card exists to carry.
+  it("목록으로 시작하는 본문도 그 첫 블록을 보여준다", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.vaultBody = "- A storefront that sells one thing\n- Built in the open";
+    renderPage();
+
+    expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent(
+      "A storefront that sells one thing",
+    );
   });
 
   it("keeps an unsectioned body as prose and leads with the ask to lay it out", async () => {

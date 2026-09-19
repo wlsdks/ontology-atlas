@@ -5,4 +5,5 @@ export type {
 export { useProjects } from './model/use-projects';
 export { useProjectBody } from './model/use-project-body';
 export { useVaultDocs } from './model/use-vault-docs';
+export { useVaultManifest } from './model/use-vault-manifest';
 export { useSoleProjectHref } from './model/use-sole-project-href';

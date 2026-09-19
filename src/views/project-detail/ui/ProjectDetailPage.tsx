@@ -30,7 +30,13 @@ import {
   projectHasDisplayName,
   type Project,
 } from "@/entities/project";
-import { useProjects, useProjectMutations, useProjectBody, useVaultDocs } from "@/features/project-data-source";
+import {
+  useProjects,
+  useProjectMutations,
+  useProjectBody,
+  useVaultDocs,
+  useVaultManifest,
+} from "@/features/project-data-source";
 import { buildDocsVaultHref, findProjectDocInList } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
@@ -105,12 +111,10 @@ function ProjectDetailShell({ children, dock = null }: { children: ReactNode; do
 function ProjectDetailTopBar({
   slug,
   projectName,
-  census,
   projectDocSlug,
 }: {
   slug?: string;
   projectName?: string | null;
-  census?: { concepts: number; relations: number } | null;
   /**
    * The vault slug of this project's own Markdown document. When known, the documents door opens
    * **that file** rather than the vault's root: the frontmatter of that one file is what this whole
@@ -177,15 +181,7 @@ function ProjectDetailTopBar({
           </Button>
         </Link>
         {slug ? (
-          <CopyProjectLinkButton slug={slug} testId="project-detail-copy-link" className="h-10 justify-center" />
-        ) : null}
-        {census ? (
-          <span
-            data-testid="project-detail-global-census"
-            className="hidden font-mono text-label tracking-[var(--tracking-caps-08)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] md:inline"
-          >
-            {t("globalCensus", { concepts: census.concepts, relations: census.relations })}
-          </span>
+          <CopyProjectLinkButton slug={slug} testId="project-detail-copy-link" className="justify-center" />
         ) : null}
       </div>
     </nav>
@@ -374,6 +370,9 @@ export function ProjectDetailPage({
   const handoffCopy = useCopyFeedback();
   const briefCopy = useCopyFeedback();
   const vaultDocs = useVaultDocs();
+  // The same manifest those docs come from: the Library cell counts sources and wiki pages
+  // out of one folder, not the open folder's sources beside the chosen sample's pages.
+  const vaultManifest = useVaultManifest();
 
   if (!slug) {
     return (
@@ -418,7 +417,7 @@ export function ProjectDetailPage({
   const surfaceCells = buildSurfaceComposition({
     metrics,
     domains: domainComposition.domains,
-    manifest: localVault.manifest,
+    manifest: vaultManifest,
     docs: vaultDocs,
     labels: {
       domains: t("metricDomains"),
@@ -561,7 +560,6 @@ export function ProjectDetailPage({
       <ProjectDetailTopBar
         slug={slug}
         projectName={displayName ?? project.name}
-        census={{ concepts: insightNodes.length, relations: insightEdges.length }}
         projectDocSlug={projectDoc?.slug ?? null}
       />
 
@@ -757,6 +755,15 @@ export function ProjectDetailPage({
               told that the second number counts the folder. */}
           <span className="text-label text-[color:var(--color-text-quaternary)]">
             {t("surfaceFolderScope")}
+          </span>
+          {/* The folder's own totals belong to this sentence, not to the top bar: they are the
+              only number on the page that is not this project's, and beside the controls they
+              read as a third control size. */}
+          <span
+            data-testid="project-detail-global-census"
+            className="ml-auto hidden font-mono text-label tracking-[var(--tracking-caps-08)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] md:inline"
+          >
+            {t("globalCensus", { concepts: insightNodes.length, relations: insightEdges.length })}
           </span>
         </div>
         <SurfaceCompositionBoard
