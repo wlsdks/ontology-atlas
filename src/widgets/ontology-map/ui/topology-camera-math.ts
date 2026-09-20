@@ -556,6 +556,56 @@ export function computeEffectiveCameraScaleMin(
  * itself), capped at the ratio-based effective max (the degenerate tiny-ego
  * case, where the raw fit would zoom in far past readable).
  */
+/**
+ * The focused node stays at least this far inside the free area's edge under
+ * any pan: room for its ring and its name.
+ */
+export const FOCUS_LEASH_EDGE_PAD_PX = 120;
+
+/** The focus leash in screen pixels, per axis. */
+export interface FocusLeashPx {
+  x: number;
+  y: number;
+}
+
+/**
+ * How far, in screen pixels, the camera centre may sit from the focused node
+ * on each axis: half of the free extent (the canvas minus its panels and bars)
+ * less the edge pad. A leash sized to the screen keeps the promise the leash
+ * exists for — the subject never leaves the frame — while letting a wide ego
+ * graph be centred in the free area. The fixed token alone (180 world units,
+ * 157 px at the overview scale) held the camera so close that a capability's
+ * neighbours in other domains landed under the detail panel (measured
+ * 2026-09-19 at 1512×806: neighbours at x 1349 and 1369, panel from 1128).
+ */
+export function focusLeashPx(
+  viewportWidth: number,
+  viewportHeight: number,
+  insets: { left: number; right: number; top: number; bottom: number },
+): FocusLeashPx {
+  const freeHalfX = Math.max(0, viewportWidth - insets.left - insets.right) / 2;
+  const freeHalfY = Math.max(0, viewportHeight - insets.top - insets.bottom) / 2;
+  return { x: Math.max(0, freeHalfX - FOCUS_LEASH_EDGE_PAD_PX), y: Math.max(0, freeHalfY - FOCUS_LEASH_EDGE_PAD_PX) };
+}
+
+/** The leash in world units at `scale`: the screen leash, never tighter than the token. */
+export function focusLeashWorld(leashPx: number, scale: number, tokenMargin: number): number {
+  const floor = Number.isFinite(tokenMargin) ? tokenMargin : 0;
+  return scale > 0 ? Math.max(floor, leashPx / scale) : floor;
+}
+
+/** The pan box the physics holds a focused camera in: the leash on each axis around the node. */
+export function focusPanBounds(
+  anchor: { x: number; y: number },
+  leashPx: FocusLeashPx | null,
+  scale: number,
+  tokenMargin: number,
+): PanBounds {
+  const mx = focusLeashWorld(leashPx?.x ?? 0, scale, tokenMargin);
+  const my = focusLeashWorld(leashPx?.y ?? 0, scale, tokenMargin);
+  return { minX: anchor.x - mx, maxX: anchor.x + mx, minY: anchor.y - my, maxY: anchor.y + my };
+}
+
 export function computeFocusCameraTarget(
   world: TopologyWorld,
   tokens: OntologyMapTokens,
@@ -614,7 +664,37 @@ export function computeFocusCameraTarget(
   const insets = readSafeInsets(tokens);
   const effW = Math.max(1, viewportWidth - insets.left - insets.right);
   const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
-  const fitScale = Math.min(effW / w, effH / h);
+  // The leash is a box around the viewport centre, not the free centre, so a
+  // fit that only divides the free extent by the bbox can still leave the far
+  // side of the ego graph under a panel once the leash stops the centring.
+  // With the focus held at most `leash` px from the centre, the far edge
+  // reaches at most `leash + (edge − focus) × scale` past it; the scale that
+  // keeps that inside the free area is the tighter bound.
+  const leashPx = focusLeashPx(viewportWidth, viewportHeight, insets);
+  const focus = world.nodeById.get(focusedSlug);
+  const leashFit = (lead: number, trail: number, free: { lo: number; hi: number }, centre: number, leash: number): number => {
+    const toHi = trail > 0 ? (free.hi - centre + leash) / trail : Number.POSITIVE_INFINITY;
+    const toLo = lead > 0 ? (centre - free.lo + leash) / lead : Number.POSITIVE_INFINITY;
+    return Math.min(toHi, toLo);
+  };
+  const leashFitScale = focus
+    ? Math.min(
+        leashFit(focus.x - (centerX - w / 2), centerX + w / 2 - focus.x, { lo: insets.left, hi: viewportWidth - insets.right }, viewportWidth / 2, leashPx.x),
+        leashFit(focus.y - (centerY - h / 2), centerY + h / 2 - focus.y, { lo: insets.top, hi: viewportHeight - insets.bottom }, viewportHeight / 2, leashPx.y),
+      )
+    : Number.POSITIVE_INFINITY;
+  // The physics holds the focus leash only while the camera is zoomed in past
+  // the overview scale; at or below it the wider unfocused leash applies. So a
+  // fit that would land inside the focus leash zooms out until the leash fits,
+  // but never past the overview scale — below it the leash no longer binds.
+  // (`overviewEntryScale` is `overviewScale × overviewEntryRatio`.)
+  const overviewScale = overviewEntryScale / Math.max(tokens.overviewEntryRatio || 1, 1e-6);
+  let fitScale = Math.min(effW / w, effH / h);
+  if (fitScale > overviewScale && leashFitScale < fitScale) {
+    // A hair under the overview scale, so the `>` the physics uses reads the
+    // same on both sides after floating error.
+    fitScale = Math.max(leashFitScale, overviewScale * (1 - 1e-6));
+  }
   const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
   // Owner report (2026-07-24) — with neighbours hidden (spotlight and the like) the
   // ego bbox is small and the fit shoots up into a microscope zoom. Zooming in for
@@ -637,12 +717,13 @@ export function computeFocusCameraTarget(
   // domains far to the right: target 370 world units from the node, leash 180,
   // camera jittering by 0.01 at 120 frames per second indefinitely.
   const centred = centerForInsets(centerX, centerY, insets, scale);
-  const focusNode = world.nodeById.get(focusedSlug);
-  if (!focusNode) return { ...centred, tscale: scale };
-  const leash = computePanBounds(
-    { minX: focusNode.x, minY: focusNode.y, maxX: focusNode.x, maxY: focusNode.y },
-    tokens.cameraFocusPanMargin,
-  );
+  if (!focus) return { ...centred, tscale: scale };
+  // The same rule as `topology-physics-step`: the focus leash past the overview
+  // scale, the unfocused leash otherwise.
+  const leash =
+    scale > overviewScale
+      ? focusPanBounds(focus, leashPx, scale, tokens.cameraFocusPanMargin)
+      : computeUnfocusedPanBounds(overviewBounds, scale, tokens);
   const clamped = clampPointToPanBounds(centred.tx, centred.ty, leash);
   return { tx: clamped.x, ty: clamped.y, tscale: scale };
 }

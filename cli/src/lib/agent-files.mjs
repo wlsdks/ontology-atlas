@@ -71,6 +71,17 @@ export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'claude-settings', kind: 'config', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/settings\.json$/ }),
   Object.freeze({ id: 'codex-dir', kind: 'config', tools: Object.freeze(['codex']), pattern: /^\.codex\/.+/ }),
   Object.freeze({ id: 'mcp-json', kind: 'mcp-config', tools: Object.freeze(['claude-code', 'cursor']), pattern: /^\.mcp\.json$/ }),
+  // Exclusion files — what the repository asks a tool not to look at. Each name belongs to exactly
+  // one product: `.cursorignore`/`.cursorindexingignore` (Cursor), `.codeiumignore` (Windsurf),
+  // `.aiexclude` (Gemini **Code Assist**, not Gemini CLI, which reads `.geminiignore`), `.aiignore`
+  // (JetBrains AI). `.claudeignore` does not exist and `.agentignore` is a proposal; neither is
+  // listed. Kept byte-for-byte in step with the web twin — see the block comment there.
+  Object.freeze({ id: 'cursor-ignore', kind: 'exclusion', tools: Object.freeze(['cursor']), pattern: /^\.cursorignore$/ }),
+  Object.freeze({ id: 'cursor-indexing-ignore', kind: 'exclusion', tools: Object.freeze(['cursor']), pattern: /^\.cursorindexingignore$/ }),
+  Object.freeze({ id: 'codeium-ignore', kind: 'exclusion', tools: Object.freeze([]), pattern: /^\.codeiumignore$/ }),
+  Object.freeze({ id: 'ai-exclude', kind: 'exclusion', tools: Object.freeze([]), pattern: /^\.aiexclude$/ }),
+  Object.freeze({ id: 'ai-ignore', kind: 'exclusion', tools: Object.freeze([]), pattern: /^\.aiignore$/ }),
+  Object.freeze({ id: 'gemini-ignore', kind: 'exclusion', tools: Object.freeze(['gemini-cli']), pattern: /^\.geminiignore$/ }),
 ]);
 
 /** Classify a repo-root-relative path. Returns null for non-agent files. */

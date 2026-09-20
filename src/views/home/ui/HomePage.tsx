@@ -5992,11 +5992,21 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               `}</style>
               {/* The four utilities stay fixed square controls. Their shared tooltip
                   carries the full name on pointer hover and keyboard focus without
-                  changing the rail's width or taking canvas drag space. */}
+                  changing the rail's width or taking canvas drag space.
+
+                  They step aside on `selectedEdgeOwnsRightRail`, the state the relation
+                  card itself opens under. They used to read `selectedRelationActive`,
+                  which nothing ever sets to `true`, so with a relation card up all four
+                  kept drawing under it: measured at 1512x982 with the card at
+                  [1180, 32, 300, 335], `elementFromPoint` returned the card at the
+                  centre of 4 of 4 tiles while each one still had opacity 1 and
+                  `pointer-events: auto`. A tile a person can see and cannot press is
+                  worse than one that stepped aside, which is what the neighbouring
+                  right-rail tiles already do (`inspectorOwnsRightRail`). */}
               <div className="contents" data-testid="topology-utility-rail">
               {createNodeOpen ||
               topologyBlockingOverlayActive ||
-              selectedRelationActive ||
+              selectedEdgeOwnsRightRail ||
               (selectedNodeFocusActive && (!view3d || !nodePopoverDismissed)) ? null : (
                 <TopologyFitControl
                   mobileObscured={renderedIndexState === "expanded"}
@@ -6012,7 +6022,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                   visibility branch — the tour is `md`+ only by design
                   (`hidden md:flex`). */}
               {createNodeOpen ||
-              selectedRelationActive ||
+              selectedEdgeOwnsRightRail ||
               topologyBlockingOverlayActive ||
               selectedNodeFocusActive ? null : (
                 <Tooltip content={t('controls.tourTooltip')} side="left">
@@ -6031,7 +6041,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                   the tour tile. On phones it appears only in overview and focus, where it
                   cannot collide with the primary read rail (path/health). */}
               {createNodeOpen ||
-              selectedRelationActive ||
+              selectedEdgeOwnsRightRail ||
               topologyBlockingOverlayActive ||
               selectedNodeFocusActive ? null : (
                 <Tooltip content={t('controls.shortcutsTooltip')} side="left">
@@ -6088,7 +6098,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                   (`ontology-map/model/growth-replay.ts`); desktop only like the tour. A
                   `ChromeTile`, not a hand-written button — the control ratchet only falls. */}
               {createNodeOpen ||
-              selectedRelationActive ||
+              selectedEdgeOwnsRightRail ||
               topologyBlockingOverlayActive ||
               selectedNodeFocusActive ? null : (
                 <div
