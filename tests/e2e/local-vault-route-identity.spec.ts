@@ -167,7 +167,11 @@ test('선택한 로컬 볼트의 LNB 전환은 번들 샘플을 한 프레임도
   await expectLocalOnlyTransition(page, 'library', 'Local Only Capability', 'ontology');
   await expect(page.getByTestId('docs-missing-slug-banner')).toHaveCount(0);
   await expectLocalOnlyTransition(page, 'insights', '로컬 전용 역량');
-  await expectLocalOnlyTransition(page, 'projects', 'Local Only Project');
+  // The Korean display name, like the Insights marker above it: on a Korean screen every
+  // destination draws a concept by its `display_<locale>`, and since 2026-09-19 the projects
+  // list draws a project the same way (decision "A project is drawn by its locale display
+  // name on every screen"). The canonical `title` stays what identifies the document.
+  await expectLocalOnlyTransition(page, 'projects', '로컬 전용 프로젝트');
 });
 
 test('설치 셸의 목적지 프리렌더는 hydration 전에도 번들 sample을 넣지 않는다', async ({ page }) => {

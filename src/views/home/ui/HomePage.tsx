@@ -3978,8 +3978,9 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         slug: pathSourceSlug,
         projectBySlug,
         ontologyNodes: ontologyInsight?.nodes,
+        locale: activeLocale,
       }),
-    [pathSourceSlug, projectBySlug, ontologyInsight?.nodes],
+    [pathSourceSlug, projectBySlug, ontologyInsight?.nodes, activeLocale],
   );
   const pathTargetTitle = useMemo(
     () =>
@@ -3987,8 +3988,9 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         slug: pathTargetSlug,
         projectBySlug,
         ontologyNodes: ontologyInsight?.nodes,
+        locale: activeLocale,
       }),
-    [pathTargetSlug, projectBySlug, ontologyInsight?.nodes],
+    [pathTargetSlug, projectBySlug, ontologyInsight?.nodes, activeLocale],
   );
   // Calculates not just the hop count but also the exact order of nodes/authored edges to draw on the map.
 // Passes the canvas node list as a boundary to prevent invisible paths passing through reader/document nodes from being the answer.

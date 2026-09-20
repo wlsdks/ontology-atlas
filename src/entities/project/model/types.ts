@@ -42,8 +42,14 @@ export interface ProjectPosition {
  */
 export interface Project {
   slug: string;
+  /** The canonical name: frontmatter `name`/`title`. What identifies the document. */
   name: string;
   nameEn?: string;
+  /**
+   * `display_<locale>` frontmatter keys, by locale, when the document carries any. The word a
+   * screen draws for the project (`projectDisplayName`); the map already draws nodes by it.
+   */
+  displayNames?: Record<string, string>;
   /** From vault frontmatter `category:`; undefined when absent. */
   category?: ProjectCategory;
   /** From vault frontmatter `status:`; undefined when absent. */
