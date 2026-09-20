@@ -702,7 +702,7 @@ describe('온톨로지 쓰기 — 여덟 문장을 사람이 읽는 카드', () 
     expect(
       document.getElementById('acp-permission-title')?.textContent,
       '제목이 모든 요청에 똑같이 참이면 아무것도 답해 주지 않는다',
-    ).toBe('ontology-atlas 문서에 연결 이유 8개를 적습니다');
+    ).toBe('ontology-atlas 문서에 연결 이유 8개를 적어요');
   });
 
   it('문장 여덟 개는 줄 여덟 개로 읽힌다 — JSON 을 읽으라고 하지 않는다', () => {
