@@ -692,3 +692,57 @@ test.describe("터치 타깃 계약 (터치 되는 넓은 화면)", () => {
     ).toEqual([]);
   });
 });
+
+/**
+ * **A 44px control inside a 24px box still measures 44px.**
+ *
+ * Every case above reads the target's own rect, which is why none of them could have
+ * caught this: the search palette's project chip *was* 44px tall under a coarse
+ * pointer — the floor reached it — while the virtualiser's scroller around it was a
+ * hardcoded `height: 24`. `overflow-x: auto` clips the other axis too, so the chip
+ * lost its bottom 20px and the finger got 24 (measured 2026-09-19 at 390x844).
+ * Occlusion is not geometry: the only instrument that sees it is asking the document
+ * what is actually at the control's top and bottom edge.
+ */
+test.describe("팔레트 필터 칩 (pointer: coarse, 390)", () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+
+  test("프로젝트 칩은 조상에게 잘리지 않는다 — 44px 이 실제로 눌린다", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem("demo:sample-source:v1", "storefront");
+      window.sessionStorage.setItem("demo:first-run-starter-dismissed:v1", "1");
+    });
+    await page.goto("/ko/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+
+    // The map's own search chip is part of the toolbar, which a phone width folds
+    // away, so the palette is opened the way a phone keyboard opens it. Waiting for
+    // the canvas first is what makes that shortcut land: it is registered by the map.
+    await expect(page.getByTestId("ontology-map-canvas")).toBeVisible({ timeout: 30_000 });
+    await page.keyboard.press("Meta+k");
+
+    const palette = page.getByRole("dialog", { name: "이 지도에서 검색" });
+    await expect(palette).toBeVisible({ timeout: 20_000 });
+    const chip = palette.getByRole("button", { name: /쇼핑몰/ });
+    await expect(chip).toBeVisible({ timeout: 20_000 });
+
+    const measured = await chip.evaluate((target) => {
+      const rect = target.getBoundingClientRect();
+      const x = rect.x + rect.width / 2;
+      const atEdge = (y: number) => document.elementFromPoint(x, y)?.closest("button") === target;
+      return {
+        height: Math.round(rect.height),
+        topEdgeHitsIt: atEdge(rect.y + 2),
+        bottomEdgeHitsIt: atEdge(rect.bottom - 2),
+        coarse: window.matchMedia("(pointer: coarse)").matches,
+      };
+    });
+
+    expect(measured.coarse, "터치가 붙은 기기로 에뮬레이션되지 않았다").toBe(true);
+    expect(measured.height, `칩이 ${measured.height}px — 44px 바닥에 못 미친다`).toBeGreaterThanOrEqual(MIN);
+    expect(
+      [measured.topEdgeHitsIt, measured.bottomEdgeHitsIt],
+      "칩의 위/아래 끝이 자기 자신에게 닿지 않는다 — 조상이 잘라내고 있다",
+    ).toEqual([true, true]);
+  });
+});

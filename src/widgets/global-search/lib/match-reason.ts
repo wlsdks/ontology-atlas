@@ -65,3 +65,27 @@ export function describeMatchReason(input: {
 
   return { kind: "id", text: matched.text, query };
 }
+
+/**
+ * Where the reason sits, which is a different question at each width.
+ *
+ * From `md` up it is a column beside the name: a **fixed** width, not a maximum, so
+ * one column has one text start line (with `max-w`, four rows of the same query began
+ * at four different x across a 153px spread, because each short reason was pushed
+ * flush right by the name's `flex-1`).
+ *
+ * Below `md` there is no room for a column, and the class that hid it took the whole
+ * answer with it — measured 2026-09-19 at 390x844 on the bundled sample: `policy`
+ * showed 4 rows with **0** marks, `order` and `shopper` 20 rows with 0, while on the
+ * desktop layout every one of them was explained. So a reason that **carries a mark**
+ * drops to a line of its own under the name there.
+ *
+ * A reason with no mark is the summary standing in as context, and the name it would
+ * sit under is already the answer. Giving that a second line would make every row on
+ * a phone twice as tall to repeat something the row is not there for, so it stays a
+ * `md`-and-up column.
+ */
+export function reasonLineClass(reason: MatchReason): string {
+  const shared = "min-w-0 truncate text-body text-[color:var(--color-text-tertiary)] md:w-[14rem] md:shrink-0";
+  return reason.query ? `block ${shared}` : `hidden md:block ${shared}`;
+}

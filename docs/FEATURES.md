@@ -2921,6 +2921,44 @@ compared the whole `kind:slug`. All three now call `findNameMatch` and `idSearch
 in `shared/lib/node-name-match`, which is the single contract; the palette's ranking
 stays its own, because only it ranks. `nameIncludes` retired with its last caller.
 
+**The palette says how many it found, not how many fitted** (2026-09-19). Each group
+draws at most 20 rows, and both the group heading and the footer counted the drawn
+array — so the limit stood in for the answer. The footer is the one place that names
+the scope it searched ("N matches · Online Store"), which makes its number read as a
+fact about that folder. Measured on the bundled sample: typing `the` showed "match ·
+20" and "21 matches" where 120 actually matched, and one common Hangul initial showed
+20 where 52 did. The
+matchers now return the page **and** the size of what was found, the heading uses the
+"shown / found" shape the empty state already used ("20 / 119"), and the footer
+carries the real total. Below the limit nothing changes — a query with 11 matches
+still reads "11".
+
+**Enter belongs to whichever control has focus** (2026-09-19). cmdk's root listens
+for Enter across the whole palette and turns it into "open the highlighted row",
+`preventDefault` included, so it also swallowed Enter pressed on a control. Measured
+live: tabbing to a kind filter chip and pressing Enter left the chip
+`aria-pressed="false"` and instead closed the palette and flew the map to whichever
+concept happened to be highlighted; the close button did the same, navigating instead
+of closing. Space was unaffected, so the two keys disagreed about what the focused
+control does. Enter now stops at the control's own row in the bubble phase — the
+button still receives it — leaving cmdk's root only the Enter that comes from the
+search field, which is the one place "open the highlighted row" is what a person
+means.
+
+**The reason survives a phone** (2026-09-19). The reason column was `md:`-only, so
+below that breakpoint the class that hid it took the whole answer with it — measured
+at 390x844 on the bundled sample: `policy` showed 4 rows with **0** marks, `order` and
+`shopper` 20 rows with 0, while the desktop layout explained every one of them. A
+reason that **carries a mark** now drops to a line of its own under the name there
+(rows grow 44 → 58px, and only those rows do); a reason with no mark is the summary
+standing in as context, and giving that a second line would double every phone row to
+repeat something the row is not there for, so it stays a `md`-and-up column. From `md`
+up nothing moved: one fixed-width column, one text start line. The same pass fixed the
+project chip's scroller, a hardcoded `height: 24` around a chip that the touch floor
+makes 44px tall — `overflow-x: auto` clips the other axis too, so the finger got 24.
+The box now reads `--control-h-sm`, and the gate for it asks the document what is at
+the chip's top and bottom edge, because a clipped control still measures full size.
+
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio
 - 2-column grid on sm+, focus trap, `Esc` closes

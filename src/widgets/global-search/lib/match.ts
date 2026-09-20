@@ -41,6 +41,23 @@ export interface SearchMatchEvidence {
 }
 
 /**
+ * One page of results plus the size of what was found.
+ *
+ * **The number on screen has to be the answer, not the page.** The palette showed
+ * its limit as if it were the count: typing a common letter put "match · 20" in the
+ * heading and "21 matches" in the footer when the vault held far more, and the footer
+ * is the one place that names the scope it searched — so the sentence read as a fact
+ * about the folder. The empty state already did this correctly ("20 / 125"), which is
+ * the shape the query state now uses too (measured 2026-09-19).
+ */
+export interface OntologySearchPage {
+  /** The results to draw, already cut to the limit. */
+  results: OntologySearchResult[];
+  /** How many matched in all, before the cut. */
+  total: number;
+}
+
+/**
  * One search result — an ontology approved node source.
  */
 export interface OntologySearchResult {
@@ -146,7 +163,7 @@ export function matchOntologyNodes(
   nodes: readonly KnowledgeGraphNode[],
   limit = 30,
   options?: MatchOntologyOptions,
-): OntologySearchResult[] {
+): OntologySearchPage {
   const kinds = options?.kinds;
   const projectIds = options?.projectIds;
   const hasKindFilter = kinds && kinds.size > 0;
@@ -164,12 +181,15 @@ export function matchOntologyNodes(
 
   const trimmed = normalizeForMatch(query);
   if (trimmed === "") {
-    return nodes
-      .filter(passesFilter)
-      .slice()
-      .sort((a, b) => b.lastApprovedAt.getTime() - a.lastApprovedAt.getTime())
-      .slice(0, limit)
-      .map((node) => ({ node, score: 0 }));
+    const candidates = nodes.filter(passesFilter);
+    return {
+      total: candidates.length,
+      results: candidates
+        .slice()
+        .sort((a, b) => b.lastApprovedAt.getTime() - a.lastApprovedAt.getTime())
+        .slice(0, limit)
+        .map((node) => ({ node, score: 0 })),
+    };
   }
 
   const matches: OntologySearchResult[] = [];
@@ -204,7 +224,13 @@ export function matchOntologyNodes(
     return b.node.lastApprovedAt.getTime() - a.node.lastApprovedAt.getTime();
   });
 
-  return matches.slice(0, limit);
+  return { results: matches.slice(0, limit), total: matches.length };
+}
+
+/** One page of project results plus how many matched in all. */
+export interface ProjectSearchPage {
+  results: ProjectSearchResult[];
+  total: number;
 }
 
 /**
@@ -241,14 +267,17 @@ export function matchProjects(
   query: string,
   projects: readonly Project[],
   limit = 30,
-): ProjectSearchResult[] {
+): ProjectSearchPage {
   const trimmed = query.trim().toLowerCase();
   if (trimmed === "") {
-    return projects
-      .slice()
-      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
-      .slice(0, limit)
-      .map((project) => ({ project, score: 0 }));
+    return {
+      total: projects.length,
+      results: projects
+        .slice()
+        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+        .slice(0, limit)
+        .map((project) => ({ project, score: 0 })),
+    };
   }
 
   const matches: ProjectSearchResult[] = [];
@@ -268,18 +297,9 @@ export function matchProjects(
       if (hangulIncludes(candidate, trimmed)) return 3;
       return 0;
     };
-    /*
-     * A `display_<locale>` is a name a screen draws for this project, so it is a candidate on the
-     * same ladder as `name` and `nameEn` — including the Hangul rungs, since the Korean display
-     * name is the one a person types jamo into. It enters as a *candidate* rather than as extra
-     * score, so a row that matched on the Korean word shows the Korean word: the point of the
-     * display name is that the screen and the search agree about what this project is called.
-     */
-    const displays = Object.values(project.displayNames ?? {});
     const named: ReadonlyArray<readonly [number, string]> = [
       [nameTier(name), project.name],
       [nameTier(nameEn), project.nameEn ?? ""],
-      ...displays.map((display) => [nameTier(display.toLowerCase()), display] as const),
     ];
     const bestName = named.reduce((best, entry) => (entry[0] > best[0] ? entry : best));
 
@@ -305,5 +325,5 @@ export function matchProjects(
     return b.project.updatedAt.getTime() - a.project.updatedAt.getTime();
   });
 
-  return matches.slice(0, limit);
+  return { results: matches.slice(0, limit), total: matches.length };
 }
