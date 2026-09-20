@@ -4495,7 +4495,8 @@
     "trouble": {
       "limit": {
         "title": "This tool has hit its usage limit",
-        "hint": "Not the app: the tool's own plan is out of room. If Details names when it resets, press Retry then; until then pick another tool below and carry on."
+        "hint": "Not the app: the tool's own plan is out of room. If Details names when it resets, press Retry then; until then pick another tool below and carry on.",
+      "hintOnlyTool": "Not the app: the tool's own plan is out of room, and it is the only tool set up here. If Details names when it resets, press Retry then. Connecting a second tool on the Agents screen is what gives you somewhere to carry on."
       },
       "auth": {
         "title": "An old app-scoped sign-in is getting in the way",
