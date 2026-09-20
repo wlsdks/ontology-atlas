@@ -36,6 +36,15 @@ const APP_SHELL_BODY_TEXT = "Atlas\n지도\n문서함\n공방\n인사이트\n프
 type Markers = Record<string, unknown>;
 
 async function collectMarkers(page: import("@playwright/test").Page): Promise<Markers> {
+  /*
+   * ⚠️ **Let the panel finish arriving.** The panel crossfades in, so it starts at opacity 0 and
+   * the probe's own visibility test — which the packaged app applies after a nine-second hold —
+   * reads it as not visible. Locally the fade is over before the probe runs and this passed; on a
+   * CI runner it did not, three times (2026-09-20). Measure settled, or measure nothing.
+   */
+  await page.locator("[data-insights-panel]").first().evaluate(async (node) => {
+    await Promise.all(node.getAnimations({ subtree: true }).map((a) => a.finished.catch(() => undefined)));
+  });
   const raw = await page.evaluate(PROBE_SOURCE);
   const payload = JSON.parse(String(raw)) as { markers?: Markers };
   expect(payload.markers?.markerScriptError, "probe threw while collecting markers").toBeUndefined();
