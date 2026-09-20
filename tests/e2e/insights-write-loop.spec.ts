@@ -110,7 +110,7 @@ test("인사이트의 「여기서 적기」가 내 폴더의 파일을 바꾼�
     timeout: 30_000,
   });
 
-  await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+  await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
 
   /*
    * "Write it here" must exist — this screen's value is letting the next action happen
@@ -238,7 +238,7 @@ test("「한 번에 고치기」가 고른 것만 도메인 문서에 적는다"
     timeout: 30_000,
   });
 
-  await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+  await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
 
   const batch = page.getByTestId("do-next-group-batch");
   await expect(batch, "되가리키지 않는 도메인 묶음에 한 번에 고치는 길이 없다").toBeVisible({
