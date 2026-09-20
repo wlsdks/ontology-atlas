@@ -374,8 +374,15 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
   /** `SettingsRow` is the single source for the inset — change it and the contract above loses its basis. */
   it("오른쪽 칸 행의 인셋이 LNB 가 맞춘 그 값이다", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
-    // The horizontal inset lives **unconditionally** in the shared part — that is the value the LNB matched.
-    expect(primitives).toMatch(/flex items-center justify-between gap-3 px-3/);
+    /*
+     * The horizontal inset lives **unconditionally** in the shared part — that is the value the
+     * LNB matched. What the row does with its two blocks is not this gate's subject and changed
+     * on 2026-09-19 (they wrap at phone width instead of sharing one line), so the assertion
+     * names the inset and the gap rather than the whole class string, which had pinned a layout
+     * decision this contract never meant to own.
+     */
+    expect(primitives).toMatch(/\bflex\b[^"']*\bpx-3\b/);
+    expect(primitives).toMatch(/\bgap(?:-x)?-3\b/);
     // An ordinary row's vertical dimension is unchanged.
     expect(primitives).toMatch(/\bmin-h-12 py-2\b/);
   });
