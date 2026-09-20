@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
+import enMessages from '../../../../messages/en.json';
 import { AcpPermissionCard } from './AcpPermissionCard';
 import type { TaskMeaningReviewController } from '../model/use-task-meaning-review';
 
@@ -261,14 +262,47 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     expect(document.activeElement).not.toBe(screen.getByTestId('acp-permission-allow'));
   });
 
-  it('비교는 신뢰할 이전 값이 없다고 하고 제안값은 그대로 보인다', () => {
+  /*
+   * Measured on the rendered tab (2026-09-20): with no comparison basis it stated the same fact
+   * five times — the standing sentence, the reason, and `Before · unavailable` once per meaning
+   * unit. Three copies of an unchanging line pushed apart the three proposed values a person came
+   * here to read, and the tab overflowed by 54px because of them.
+   */
+  it('비교할 이전 값이 없다는 말은 한 번만 하고, 제안값 사이에 끼어들지 않는다', () => {
     const { view } = taskCard();
     render(view);
     fireEvent.click(screen.getByTestId('task-review-depth-compare'));
     const compare = screen.getByTestId('task-review-compare');
-    expect(compare).toHaveTextContent(koMessages.acpChat.permission.taskReview.beforeUnavailable);
+    const taskReview = koMessages.acpChat.permission.taskReview;
+
+    // Said once, at the top, as the promise it is.
+    expect(compare).toHaveTextContent(taskReview.beforeUnavailable);
+    expect(compare.textContent!.split(taskReview.beforeUnavailable).length - 1).toBe(1);
+    // Never again beside each unit.
+    expect(compare).not.toHaveTextContent(taskReview.beforeUnknown);
+
+    // Every proposed value is still here, and still marked as proposed rather than current.
     expect(compare).toHaveTextContent('Refund only after capture.');
-    expect(compare).toHaveTextContent(koMessages.acpChat.permission.taskReview.beforeUnknown);
+    expect(compare.textContent!.split(taskReview.after).length - 1).toBeGreaterThan(1);
+  });
+
+  it('서 있는 문장은 원인을 대지 않는다 — 원인은 아는 쪽이 말한다', () => {
+    /*
+     * The standing sentence used to assert a missing historical snapshot while the reason list,
+     * rendered right under it, said the request shape is not comparable. Two causes for one
+     * absence, and only the specific one was true. The sentence now carries the half that always
+     * holds — values are not invented — and leaves the cause to `taskReview.reason.*`.
+     *
+     * ⚠️ That the reason line is drawn is not checked here: this card's fixture reports no
+     * `unavailable` reasons, so the list is empty in jsdom. It is in the rendered evidence
+     * (`unsupported_request`, compare tab, 2026-09-20).
+     */
+    for (const locale of [koMessages, enMessages]) {
+      const sentence = locale.acpChat.permission.taskReview.beforeUnavailable;
+      for (const cause of ['스냅샷', 'snapshot']) {
+        expect(sentence, 'the standing sentence names a cause it cannot know').not.toContain(cause);
+      }
+    }
   });
 
   it('상세에서 전체 요청과 쓰기 조건·숫자 요청 id를 보존한다', () => {
