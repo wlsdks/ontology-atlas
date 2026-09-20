@@ -790,7 +790,22 @@ export function AcpPermissionCard({
               </Button>
             ) : null}
             <Button ref={rejectRef} className="atlas-touch-floor" variant="ghost" size="sm" data-testid="acp-permission-reject" onClick={() => resolve(rejectOnce?.optionId ?? null)}>{t('reject')}</Button>
-            <Button className="atlas-touch-floor" variant="outline" size="sm" data-testid="acp-permission-allow" disabled={!allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked} onClick={() => resolve(allowOnce?.optionId ?? null)}>{t('allowOnce')}</Button>
+            {/*
+             * **The one button that writes may not look like the one that refuses.**
+             *
+             * Measured on the rendered card, both locales (2026-09-20): with the review open this
+             * row draws four buttons of exactly 210x32, and `Reject and edit` and `Allow once`
+             * came back byte-identical in paint — background `rgba(255,255,255,0.02)`, border
+             * `rgba(255,255,255,0.1)`, same ink, same weight. One of those refuses the write; the
+             * other performs it on the person's own files and cannot be undone from here.
+             *
+             * `primary` was already the allow in the two-button branch below; the review branch
+             * had quietly demoted it to `outline`, which is the variant `Reject and edit` wears.
+             * Promoting it back leaves exactly one filled control in the row, and it is the
+             * irreversible one. The safeguard is unchanged: focus still opens on reject, so the
+             * fill invites the eye without moving the keyboard.
+             */}
+            <Button className="atlas-touch-floor" variant="primary" size="sm" data-testid="acp-permission-allow" disabled={!allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked} onClick={() => resolve(allowOnce?.optionId ?? null)}>{t('allowOnce')}</Button>
           </div>
         </div>
       ) : (
