@@ -4152,6 +4152,7 @@
       "starting": "연결 중",
       "ready": "준비됨",
       "thinking": "생각 중",
+      "awaiting": "답 기다리는 중",
       "error": "문제 있음",
       "exited": "끝남"
     },

@@ -1210,16 +1210,33 @@ export function AcpChatPanel({
 
   const busy = status === 'thinking';
   /*
+   * ⚠️ **A turn blocked on a permission request is not thinking, and this footer said it was.**
+   * Measured in the rendered panel with the card on screen, in both catalogues: the word read
+   * `Thinking` and its clock kept counting, beside a Stop button, while the agent had produced
+   * nothing since it asked and could produce nothing until the person answered. The panel was
+   * reporting its own wait as the agent's work, and the only thing the turn was blocked on was
+   * the reader.
+   *
+   * The protocol state is untouched — `data-acp-status` stays `thinking`, because that is what
+   * the session is — and only the word a person reads changes.
+   */
+  const awaitingAnswer = busy && pending !== null;
+  /*
    * A clock beside the status word (owner, 2026-09-06). "thinking" alone cannot show that
    * time passes; a person watching a long turn wants to know whether it is 20 seconds or
    * 4 minutes in. The start is the moment the panel entered `thinking`; it ticks once a
    * second and disappears with the word.
+   *
+   * It restarts when the word changes, because a clock belongs to the sentence it sits in. A
+   * number carried over from `Thinking` would make 「waiting for you · 4m」 out of a turn that
+   * thought for four minutes and asked one second ago.
    */
+  const clockPhase = !busy ? null : awaitingAnswer ? 'awaiting' : 'thinking';
   const [turnClock, setTurnClock] = useState<{ startedAt: number; nowMs: number } | null>(null);
   useEffect(() => {
     // State moves only from timers, never synchronously inside the effect: the first tick
     // lands a frame later and the clock reads 0s, which is the truth at that moment.
-    if (!busy) {
+    if (!clockPhase) {
       const clear = window.setTimeout(() => setTurnClock(null), 0);
       return () => window.clearTimeout(clear);
     }
@@ -1228,9 +1245,9 @@ export function AcpChatPanel({
     const first = window.setTimeout(tick, 0);
     const timer = window.setInterval(tick, 1000);
     return () => { window.clearTimeout(first); window.clearInterval(timer); };
-  }, [busy]);
+  }, [clockPhase]);
   const turnElapsedLabel = (() => {
-    if (!busy || !turnClock) return null;
+    if (!clockPhase || !turnClock) return null;
     const { hours, minutes, seconds } = elapsedParts(turnClock.nowMs - turnClock.startedAt);
     if (hours > 0) return t('elapsedHours', { hours, minutes });
     if (minutes > 0) return t('elapsedMinutes', { minutes, seconds });
@@ -1292,6 +1309,8 @@ export function AcpChatPanel({
   // the process effect has not yet started,
   // so the actual state is idle. While this panel is open, the user sees 「Waiting for Connection」 — we project only the screen state as starting without touching the protocol state. As long as sessionEnabled=true, 「Off」 does not flash during render cycles.
   const displayStatus = status === 'idle' ? 'starting' : status;
+  /** What the footer says out loud. The panel's own `data-acp-status` keeps the session's word. */
+  const footerStatus = awaitingAnswer ? 'awaiting' : displayStatus;
   const presentationResult = useMemo(
     () => buildAcpPresentationTrace({
       intent: presentationIntent,
@@ -2198,7 +2217,7 @@ export function AcpChatPanel({
               character carries startup motion once; this footer keeps the status in words.
             */}
             <span
-              data-acp-status-badge={displayStatus}
+              data-acp-status-badge={footerStatus}
               aria-live="polite"
               /*
                 On the two-row footer this word and its clock are the row's left half, so the
@@ -2207,7 +2226,7 @@ export function AcpChatPanel({
               */
               className="flex shrink-0 items-center gap-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
             >
-              {t(`status.${displayStatus}`)}
+              {t(`status.${footerStatus}`)}
               {turnElapsedLabel ? <span data-testid="acp-turn-elapsed" className="tabular-nums">· {turnElapsedLabel}</span> : null}
             </span>
             <TooltipProvider delayDuration={200}>
