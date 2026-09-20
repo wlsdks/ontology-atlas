@@ -54,11 +54,18 @@ export function SurfaceCompositionBoard({
             {cell.figures.length > 0 ? (
               <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
                 {cell.figures.map((figure) => (
-                  <div key={figure.label} className="flex items-baseline gap-1.5">
+                  /*
+                   * `dt` before `dd` in the document, drawn the other way round. A description
+                   * list groups a term with its description in that order — reversed, "9" is a
+                   * description whose term has not been read yet, and a screen reader pairs them
+                   * wrongly. The figure still reads "9 domains" on screen, because the row is
+                   * reversed visually rather than in the markup.
+                   */
+                  <div key={figure.label} className="flex flex-row-reverse items-baseline justify-end gap-1.5">
+                    <dt className="text-body text-[color:var(--color-text-tertiary)]">{figure.label}</dt>
                     <dd className="font-mono text-title tabular-nums text-[color:var(--color-text-primary)]">
                       {figure.value}
                     </dd>
-                    <dt className="text-body text-[color:var(--color-text-tertiary)]">{figure.label}</dt>
                   </div>
                 ))}
               </dl>
@@ -76,7 +83,15 @@ export function SurfaceCompositionBoard({
             href={cell.href}
             prefetch={false}
             data-testid="project-detail-surface-open"
-            className={controlClass({ shape: "link", tone: "accent", className: "self-end" })}
+            /*
+             * The door is the cell's whole point — read the figures, then choose where to go — and
+             * as a text link it has no height token, so it measured 24px on a phone against the
+             * 44px touch contract. `touch-hit-expand` widens the hit area only under
+             * `pointer: coarse` and changes nothing visible, which is the remedy `globals.css`
+             * wrote for text-shaped controls. Safe here because each cell holds one door and the
+             * cards sit a card gap apart, so no two expanded areas can meet.
+             */
+            className={controlClass({ shape: "link", tone: "accent", className: "touch-hit-expand self-end" })}
           >
             {openLabels[cell.id]}
           </Link>

@@ -570,7 +570,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
   },
   {
     file: 'src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx',
-    count: 4,
+    count: 3,
     claim: 'chrome-token',
     proof: '--git-row-h',
     why:
@@ -698,7 +698,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
  * directions. Raising the registered count requires editing this number **by
  * hand**, and that diff is where the "why" goes.
  */
-const BASELINE_REGISTERED = 26;
+const BASELINE_REGISTERED = 25;
 
 /**
  * **Only this number may fall.** The total (108) minus registered (30) minus
@@ -767,7 +767,7 @@ const NO_BASIS: readonly NoBasisEntry[] = [
   },
   {
     file: 'src/views/home/ui/HomePage.tsx',
-    count: 3,
+    count: 2,
     family: 'button',
     claim: 'click-surface',
     proof: 'data-backdrop-contract',
@@ -820,7 +820,7 @@ const NO_BASIS_ANCHORS = NO_BASIS.filter((e) => e.family === 'anchor');
  * screen) and **zero** ramp-owned properties (placement plus one background
  * layer, nothing to apply a spec to).
  */
-const BASELINE_NO_BASIS = 5;
+const BASELINE_NO_BASIS = 4;
 const BASELINE_ANCHOR_NO_BASIS = 0;
 
 /**

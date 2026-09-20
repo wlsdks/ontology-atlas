@@ -675,7 +675,12 @@ export function ProjectDetailPage({
                     data-testid="project-detail-readonly-badge"
                     // `flex-none` created horizontal page overflow at 390px (an overflow-sweep
                     // regression) — when narrow, the badge text wraps instead.
-                    className="inline-flex min-w-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-tertiary)]"
+                    // 2026-09-20: it wore the outline button's own surface — `--color-overlay-1`,
+                    // a border and the chip radius (`button.tsx`, the `outline` variant) — so the row
+                    // drew four boxes of which one could not be pressed, and the difference was a
+                    // border colour. A state fact is drawn as a fact here: the folder census over the
+                    // composition board is engraved text with no box, and so is this.
+                    className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-mono text-label text-[color:var(--color-text-tertiary)]"
                   >
                     {t("readOnlyBadge")}
                   </span>

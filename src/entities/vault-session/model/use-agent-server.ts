@@ -11,15 +11,19 @@ import { useEffect, useState } from 'react';
 
 import {
   agentServerFromBundle,
+  agentServerPending,
   agentServerUnavailable,
   type AgentServerAvailability,
 } from '@/shared/config';
 import { readBundledMcpServer } from '@/shared/lib/tauri-agent-setup';
 
 export function useAgentServer(): AgentServerAvailability {
-  const [availability, setAvailability] = useState<AgentServerAvailability>(() =>
-    agentServerUnavailable(null),
-  );
+  /*
+   * **Pending, not "no"** — the first render happens before the lookup answers, and starting
+   * at the answered-unavailable value made the installed app draw the browser's degradation
+   * card until it came back.
+   */
+  const [availability, setAvailability] = useState<AgentServerAvailability>(agentServerPending);
 
   useEffect(() => {
     let cancelled = false;

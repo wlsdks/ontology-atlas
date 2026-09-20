@@ -1,4 +1,4 @@
-import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
+import { countWikiPages, type VaultDoc, type VaultManifest } from "@/entities/docs-vault";
 
 import type { DomainCompositionRow } from "./domain-composition";
 import type { ProjectOntologyMetrics } from "./project-ontology-metrics";
@@ -60,13 +60,6 @@ export interface SurfaceCompositionLabels {
   ontologyEmpty: string;
   libraryEmpty: string;
   harnessHolds: string;
-}
-
-/** Wiki pages are the folder's `wiki/` documents; the Library counts them the same way. */
-export function countWikiPages(docs: readonly VaultDoc[]): number {
-  let count = 0;
-  for (const doc of docs) if (doc.slug.startsWith("wiki/")) count += 1;
-  return count;
 }
 
 /** Domains that name at least one capability and hold no element: named, not yet evidenced. */

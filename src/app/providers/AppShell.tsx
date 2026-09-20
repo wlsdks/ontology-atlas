@@ -25,7 +25,11 @@ import {
 } from "@/features/guided-tour";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
-import { isGatewaySurface, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
+import {
+  isGatewaySurface,
+  resolveActiveNavDestination,
+  resolveGuideDestination,
+} from "@/shared/lib/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { useSoleProjectHref } from "@/features/project-data-source";
@@ -144,18 +148,44 @@ function useGuideOverride(): void {
 function ShellColumn({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   const surface = resolveActiveNavDestination(pathname);
+  /*
+   * **The MCP tab keeps its own guide** (2026-09-20). MCP folded into `/agents` as a tab, and
+   * `/mcp` became a redirect — so `resolveActiveNavDestination` answers "agents" for both tabs
+   * and the "mcp" guide, whose two pages describe exactly this tab, could never appear. The
+   * rail's active marker must still read "agents" here (MCP has no tile), so the tab is read
+   * from the address for the guide alone rather than by changing that resolution.
+   */
   const mapPending = useMapNavigationPending();
 
-  // Which screens get a destination guide. The map is excluded because it owns its
-  // own eight-step journey, and projects gets one **only on the list** — the rail
-  // lights the same destination for `/project/<slug>`, but the guide's copy
-  // ("they stand as cards") does not describe that screen.
-  const guideDestination =
-    !surface || surface === "map"
-      ? null
-      : surface === "projects" && !resolveIsProjectListPath(pathname)
-        ? null
-        : surface;
+  /*
+   * Which screens get a destination guide. The map is excluded because it owns its own
+   * eight-step journey, and projects gets one **only on the list** — the rail lights the same
+   * destination for `/project/<slug>`, but the guide's copy ("they stand as cards") does not
+   * describe that screen.
+   *
+   * ⚠️ **`tab` is null here, and the shell may not make it anything else** (2026-09-20).
+   *
+   * The MCP tab still shows the Agents guide rather than its own, and the fix is not to read
+   * the query from this component. `useSearchParams` makes its caller bail out of
+   * prerendering; `next.config.ts` keeps `output: 'export'`, so every route is prerendered;
+   * and the layout renders this shell **above** each page's `Suspense`. Calling it here failed
+   * `pnpm build` on `/en/agents` **and** on `/en/ontology/edit` — a redirect page the change
+   * never touched — and took five Playwright shards red behind one broken artifact.
+   *
+   * Isolating the call in a leaf behind a boundary of its own does fix the build, and was
+   * rejected for a second reason: `route-blank-fallback.contract.test.ts` requires every
+   * `Suspense` under `app/` or `src/` to name one of three approved fallbacks and forbids an
+   * empty one, because a route boundary with nothing to show ships a deployed `index.html`
+   * with an empty body. That gate reads raw file text, so it cannot tell a route boundary from
+   * a leaf overlay — and weakening it to pass a first-visit card would trade a severe failure
+   * for a small one. (It also matches this comment if the forbidden spelling is written out,
+   * which is why it is described here rather than quoted.)
+   *
+   * So the MCP guide waits for a mechanism that does not read the address in the shell — the
+   * tab is already known inside the page, under a boundary that exists. `resolveGuideDestination`
+   * keeps the rule and its unit tests for when that arrives.
+   */
+  const guideDestination = resolveGuideDestination({ surface, pathname, tab: null });
 
   return (
     // **The shell owns the viewport.** The alternative — a `--app-viewport-h` token
@@ -329,10 +359,6 @@ function VaultRouteIdentityBoundary({
   return children;
 }
 
-/** Is this the project **list** screen? `/project/<slug>` detail and edit are not. */
-function resolveIsProjectListPath(pathname: string): boolean {
-  return pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "").startsWith("/projects");
-}
 
 function AppNavRailSlot() {
   const { settingsSlot, hidden, contextHrefs } = useNavRailShellValue();

@@ -30,6 +30,13 @@ const CLAUDE_AGENTS_PREFIX = '.claude/agents/';
 const AGENTS_AGENTS_PREFIX = '.agents/agents/';
 
 type AgentFileKind =
+  /**
+   * A file that tells an agent what it may **not** see. Neither a guide nor a config the agent
+   * reads as instructions, which is why it has a kind of its own: counting it as a guide would put
+   * it in the census sentence's "speaks to agents through N documents", and an exclusion file is
+   * the opposite of a thing a repository says.
+   */
+  | 'exclusion'
   | 'instructions'
   | 'rules'
   | 'skill'
@@ -118,6 +125,32 @@ export const AGENT_FILE_RULES: readonly AgentFileRule[] = Object.freeze([
   { id: 'claude-settings', kind: 'config', tools: ['claude-code'], pattern: /^\.claude\/settings\.json$/ },
   { id: 'codex-dir', kind: 'config', tools: ['codex'], pattern: /^\.codex\/.+/ },
   { id: 'mcp-json', kind: 'mcp-config', tools: ['claude-code', 'cursor'], pattern: /^\.mcp\.json$/ },
+  /*
+   * **What the repository asks a tool not to look at.** Each name belongs to exactly one product
+   * and they are not interchangeable, which is the whole reason this list is written out rather
+   * than guessed at (sources read 2026-09-20, `guide-citations.ts`):
+   *
+   * - `.cursorignore` / `.cursorindexingignore` — Cursor.
+   * - `.codeiumignore` — Windsurf. Not `.windsurfignore`, which does not exist.
+   * - `.aiexclude` — Gemini **Code Assist**, the IDE extension, and *not* Gemini CLI, which reads
+   *   `.geminiignore` instead. Attaching `.aiexclude` to `gemini-cli` would name the wrong product
+   *   on screen.
+   * - `.aiignore` — JetBrains AI Assistant, which also honours the three above at a repo root.
+   *
+   * Two names are deliberately absent. `.claudeignore` **does not exist**: Claude Code uses
+   * `.gitignore` for discovery and `permissions.deny` in `.claude/settings.json` for the rest, and
+   * the structure view already prints that. `.agentignore` is a proposal, not a standard.
+   *
+   * `tools` is empty where the product has no member in `AgentTool`: inventing one would put a
+   * tool nothing else in this product knows into the guides table's "read by" column. The screen
+   * names those products in prose, with the citation beside it.
+   */
+  { id: 'cursor-ignore', kind: 'exclusion', tools: ['cursor'], pattern: /^\.cursorignore$/ },
+  { id: 'cursor-indexing-ignore', kind: 'exclusion', tools: ['cursor'], pattern: /^\.cursorindexingignore$/ },
+  { id: 'codeium-ignore', kind: 'exclusion', tools: [], pattern: /^\.codeiumignore$/ },
+  { id: 'ai-exclude', kind: 'exclusion', tools: [], pattern: /^\.aiexclude$/ },
+  { id: 'ai-ignore', kind: 'exclusion', tools: [], pattern: /^\.aiignore$/ },
+  { id: 'gemini-ignore', kind: 'exclusion', tools: ['gemini-cli'], pattern: /^\.geminiignore$/ },
 ] satisfies AgentFileRule[]);
 
 export interface AgentFileEntry {

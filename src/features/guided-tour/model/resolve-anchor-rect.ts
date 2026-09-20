@@ -91,6 +91,8 @@ export interface CardPlacementInput {
   viewportHeight: number;
   /** The gap between card and target. Defaults to 12px. */
   gap?: number;
+  /** The gap used for the "below" side only — room for a name the target wears under itself. Defaults to `gap`. */
+  belowGap?: number;
   /** The minimum margin from the viewport edge. Defaults to 16px. */
   edgeMargin?: number;
 }
@@ -108,6 +110,12 @@ export interface CardPlacement {
  */
 export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
   const gap = input.gap ?? 12;
+  // A canvas node wears its name under the disc, outside the anchor rect. A
+  // card placed "below" at the plain gap sat on that name: at step 4 the card's
+  // top (474) cut the hub's name (465–484) in half while the card asked the
+  // person to press that very node (measured 2026-09-19). The band is only
+  // for the side that meets the name.
+  const belowGap = input.belowGap ?? gap;
   const edgeMargin = input.edgeMargin ?? 16;
   const { targetRect, cardWidth, cardHeight, viewportWidth, viewportHeight } = input;
 
@@ -125,10 +133,10 @@ export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
   const candidates: Array<{ side: CardPlacementSide; top: number; left: number; fits: boolean }> = [
     {
       side: "below",
-      top: targetRect.top + targetRect.height + gap,
+      top: targetRect.top + targetRect.height + belowGap,
       left: centerX,
       fits:
-        targetRect.top + targetRect.height + gap + cardHeight <= viewportHeight - edgeMargin,
+        targetRect.top + targetRect.height + belowGap + cardHeight <= viewportHeight - edgeMargin,
     },
     {
       side: "above",

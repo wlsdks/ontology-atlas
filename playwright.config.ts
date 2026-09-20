@@ -52,6 +52,23 @@ export default defineConfig({
   outputDir: 'output/playwright/test-results',
   use: {
     baseURL,
+    /*
+     * A press that never lands fails in 15 seconds naming what it waited for, rather than
+     * spending the whole test budget and saying nothing.
+     *
+     * Without this, the action timeout is 0, which Playwright reads as unlimited: a bare
+     * `click()` on an element that never arrives waits out `timeout` (60s) and then reports a
+     * test timeout, which names no step. Measured on 2026-09-20: one spec's boot sequence hung
+     * this way case after case, each costing a minute, and pushed a shard from its usual 11
+     * minutes past the workflow's 30-minute ceiling — three landings died with every assertion
+     * passing, on three different branches.
+     *
+     * 15 seconds is `expect.timeout`, deliberately: an explicit wait and an implicit one should
+     * give the page the same patience, and that value already absorbs on-demand compilation
+     * locally (it failed sporadically at 10). A step that genuinely needs longer says so at its
+     * call site, which is also how a reader learns it is slow.
+     */
+    actionTimeout: 15_000,
     headless: true,
     trace: 'off',
     video: 'off',

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildLibraryModel,
   countSourceFormats,
+  countWikiPages,
   newestWikiPage,
   selectWikiPages,
 } from './vault-library';
@@ -385,5 +386,34 @@ describe('the shipped template is not a page', () => {
       wiki('wiki/a', { created_by: 'agent:claude' }),
     ]);
     expect(pages.map((page) => page.slug)).toEqual(['wiki/a']);
+  });
+});
+
+/**
+ * The count and the list must answer the same question. The project page counted every `wiki/`
+ * slug of its own instead, so it reported the template `init` writes, and any ontology node
+ * misfiled under `wiki/`, as pages — a larger number than the Library listed for one folder.
+ */
+describe('countWikiPages', () => {
+  it('counts what the Wiki list draws', () => {
+    const docs = [
+      wiki('wiki/a', {}),
+      wiki('wiki/b', {}),
+      { ...wiki('domains/order', {}), slug: 'domains/order' },
+    ];
+    expect(countWikiPages(docs)).toBe(2);
+    expect(countWikiPages(docs)).toBe(selectWikiPages(docs).length);
+  });
+
+  it('does not count the template `init` writes, or any other furniture', () => {
+    const docs = [wiki('wiki/a', {}), wiki('wiki/_template', {}), wiki('wiki/_log', {})];
+    expect(countWikiPages(docs)).toBe(1);
+    expect(countWikiPages(docs)).toBe(selectWikiPages(docs).length);
+  });
+
+  it('does not count an ontology node filed under wiki/', () => {
+    const docs = [wiki('wiki/a', {}), wiki('wiki/order', { kind: 'domain' })];
+    expect(countWikiPages(docs)).toBe(1);
+    expect(countWikiPages(docs)).toBe(selectWikiPages(docs).length);
   });
 });

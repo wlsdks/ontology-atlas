@@ -10,7 +10,7 @@ import { type NativeErrorLookup, nativeErrorMessage } from './native-error';
  *   `initialized: false`, not an error
  * - `git_snapshot(vault_path, message?, push?)` → `GitSnapshotResult` — with no
  *   changes, `committed: false` / `reason: "no-changes"`
- * - `git_history(vault_path, limit?)` → `GitCommitInfo[]` — empty array when
+ * - `git_history(vault_path, limit?, path?)` → `GitCommitInfo[]` — empty array when
  *   there are no commits
  * - `git_diff(vault_path)` → `GitDiffResult`
  * - `git_pull(vault_path)` → `GitPullResult`
@@ -229,6 +229,37 @@ export async function gitSetRemote(
   return invoke<GitSetRemoteResult>('git_set_remote', { vaultPath, url });
 }
 
+/** Rust `GitDocumentDiffResult`. */
+export interface GitDocumentDiffResult {
+  path: string;
+  /** Unified diff with the whole document as context; empty when `tooLarge`. */
+  diff: string;
+  untracked: boolean;
+  /** `true` when the document is too long to send whole; the caller falls back to its hunks. */
+  tooLarge: boolean;
+}
+
+/**
+ * One document with the whole of it around its changes — the working file against `HEAD`,
+ * or, with `source`, what that commit did to it. Read-only.
+ */
+export async function gitDocumentDiff(
+  vaultPath: string,
+  relativePath: string,
+  source?: string,
+  /** The name the document had, when it was just renamed, so git can pair the two. */
+  previousPath?: string | null,
+): Promise<GitDocumentDiffResult | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<GitDocumentDiffResult>('git_document_diff', {
+    vaultPath,
+    relativePath,
+    source: source ?? null,
+    previousPath: previousPath ?? null,
+  });
+}
+
 /** Rust `GitRestoreResult`. */
 export interface GitRestoreResult {
   restored: boolean;
@@ -289,10 +320,12 @@ export async function gitSnapshot(
 export async function gitHistory(
   vaultPath: string,
   limit = 10,
+  /** Repository-relative document path (as `GitChangeEntry.path`) to scope the log to one document. */
+  path?: string,
 ): Promise<GitCommitInfo[] | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<GitCommitInfo[]>('git_history', { vaultPath, limit });
+  return invoke<GitCommitInfo[]>('git_history', { vaultPath, limit, path: path ?? null });
 }
 
 /** File list plus text diff for uncommitted changes within the vault. */

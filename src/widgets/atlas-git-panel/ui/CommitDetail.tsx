@@ -5,7 +5,9 @@ import { cn } from "@/shared/lib/cn";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { controlClass } from "@/shared/ui";
-import { gitCommitDiff, type GitChangeEntry } from "@/shared/lib/tauri-git";
+import { gitCommitDiff, gitHistory, type GitChangeEntry, type GitCommitInfo } from "@/shared/lib/tauri-git";
+import { parseUnifiedDiff } from "@/shared/lib/atlas-git-record";
+import { DocumentChangeReader, type ChangedDocument } from "./PendingDocumentPane";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { ConceptEgoCard } from "./ConceptEgoCard";
 
@@ -82,6 +84,9 @@ export function CommitDetail({
   pendingDelta,
   onRestore,
   restoreBusy,
+  onJumpToCommit,
+  whenOf,
+  headlineOf,
   focusedConceptId,
   setFocusedConceptId,
   egoFor,
@@ -107,6 +112,12 @@ export function CommitDetail({
   /** Restores one of this commit's files to this commit's content; resolves true when git did it. */
   onRestore: (path: string, others: number) => Promise<boolean>;
   restoreBusy: boolean;
+  /** Selects another step by hash. */
+  onJumpToCommit: (hash: string) => void;
+  /** Relative-time wording in the reader's language. */
+  whenOf: (isoTime: string) => string;
+  /** Human wording for an automatic subject, `null` when a person wrote it. */
+  headlineOf: (subject: string) => string | null;
   focusedConceptId: string | null;
   setFocusedConceptId: (id: string) => void;
   egoFor: (nodeId: string) => ConceptEgo | null;
@@ -161,9 +172,43 @@ export function CommitDetail({
     };
   }, [vaultPath, hash]);
 
-  const perFile = useMemo(() => splitDiffByFile(diff ?? ""), [diff]);
+  /*
+   * The commit's own patch, parsed once: it is the reader's fallback when the whole
+   * document cannot be read at this commit (the web, a stub, a refused `git show`).
+   */
+  const perFile = useMemo(() => parseUnifiedDiff(diff ?? ""), [diff]);
   const activeFile = openFile ?? files[0]?.path ?? null;
-  const activePatch = activeFile ? findPatch(perFile, activeFile) : null;
+  const activeEntry = activeFile ? files.find((file) => file.path === activeFile) ?? null : null;
+  /*
+   * The document the files lens reads, named the way the concept lens names it: the concept
+   * whose id tail matches the file's slug tail, else the file name. The same reader the
+   * uncommitted pane uses (owner direction B, 2026-09-19) draws it whole at this commit,
+   * so a step's change and an uncommitted change read the same way.
+   */
+  const activeDocument = useMemo<ChangedDocument | null>(() => {
+    if (!activeEntry) return null;
+    const tail = activeEntry.slug.split("/").pop() ?? activeEntry.slug;
+    const concept = concepts.find((c) => (c.id.split(":").pop() ?? c.id) === tail);
+    return {
+      entry: activeEntry,
+      // A document without a matching concept is named by its file, minus the `.md` the
+      // uncommitted pane's chips also drop; a config file keeps its full name.
+      label:
+        concept?.label ??
+        (activeEntry.kind
+          ? (activeEntry.path.split("/").pop() ?? activeEntry.path).replace(/\.md$/i, "")
+          : (activeEntry.path.split("/").pop() ?? activeEntry.path)),
+      kind: activeEntry.kind,
+    };
+  }, [activeEntry, concepts]);
+  const activeFallback = useMemo(() => {
+    if (!activeFile) return null;
+    return (
+      perFile.find((file) => file.path === activeFile) ??
+      perFile.find((file) => file.path.endsWith(activeFile) || activeFile.endsWith(file.path)) ??
+      null
+    );
+  }, [perFile, activeFile]);
   /*
    * The focused concept's own document in this commit. The concept lens is the default lens
    * (review, 2026-09-19: an action that lives only under "files" may never be found), so the
@@ -256,6 +301,20 @@ export function CommitDetail({
               </div>
               {focusedFile ? (
                 <div className="px-5 pt-3">
+                  {/* A step that deleted the document holds no content to put back, so the
+                      door is not drawn — but its absence is said, not left silent: the person
+                      is looking at a concept and would otherwise read the missing door as a
+                      missing feature (installed-app walk, 2026-09-19). The document's own
+                      steps below still hold its content. */}
+                  {focusedFile.status === "deleted" ? (
+                    <p
+                      data-testid="atlas-git-restore-absent"
+                      className="text-caption leading-label text-[color:var(--color-text-quaternary)]"
+                    >
+                      {t("restoreAbsentDeleted")}
+                    </p>
+                  ) : null}
+                  {focusedFile.status !== "deleted" ? (
                   <RestoreDock
                     t={t}
                     path={focusedFile.path}
@@ -265,6 +324,16 @@ export function CommitDetail({
                     others={Math.max(0, files.length - 1)}
                     busy={restoreBusy}
                     onRestore={onRestore}
+                  />
+                  ) : null}
+                  <DocumentHistory
+                    t={t}
+                    vaultPath={vaultPath}
+                    path={focusedFile.path}
+                    currentHash={hash}
+                    whenOf={whenOf}
+                    headlineOf={headlineOf}
+                    onJump={onJumpToCommit}
                   />
                 </div>
               ) : null}
@@ -319,8 +388,12 @@ export function CommitDetail({
               ))}
             </ul>
 
+            {/* A file this commit deleted has no content at this commit to restore; the door
+                would only open on a refusal, so it is not drawn. The document's own history
+                still lists the steps that hold its content. */}
             {activeFile ? (
               <div className="px-5 pt-3">
+                {files.find((file) => file.path === activeFile)?.status !== "deleted" ? (
                 <RestoreDock
                   t={t}
                   path={activeFile}
@@ -331,35 +404,40 @@ export function CommitDetail({
                   busy={restoreBusy}
                   onRestore={onRestore}
                 />
+                ) : null}
+                <DocumentHistory
+                  t={t}
+                  vaultPath={vaultPath}
+                  path={activeFile}
+                  currentHash={hash}
+                  whenOf={whenOf}
+                  headlineOf={headlineOf}
+                  onJump={onJumpToCommit}
+                />
               </div>
             ) : null}
 
-            <div className="flex min-h-0 flex-1 flex-col gap-2.5 px-5 py-4">
-              <h3 className="flex-none text-label text-[color:var(--color-text-tertiary)]">
-                {t("changedLines")}
-              </h3>
-              {diff === null ? (
-                <p className="text-caption text-[color:var(--color-text-quaternary)]">
-                  {t("diffLoading")}
-                </p>
-              ) : !activePatch || activePatch.length === 0 ? (
-                <p className="text-caption text-[color:var(--color-text-quaternary)]">
-                  {t("diffEmpty")}
-                </p>
-              ) : (
-                <div
-                  key={activeFile}
-                  data-testid="atlas-git-commit-diff"
-                  className="git-fade-in min-h-0 flex-1 overflow-auto rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-1.5 font-mono text-caption leading-label"
-                >
-                  {activePatch.map((row, index) => (
-                    <p key={index} className={diffRowClass(row.kind)}>
-                      {row.text === "" ? " " : row.text}
-                    </p>
-                  ))}
-                </div>
-              )}
-            </div>
+            {activeDocument ? (
+              /*
+               * Keyed by hash and path: a new step or a new file is a new document, so the
+               * reader starts over rather than showing one document's lines under another's
+               * name while the read is in flight. `diff` in the key means a later commit
+               * patch replaces an earlier one's fallback rather than layering on it.
+               */
+              <div
+                key={`${hash}:${activeDocument.entry.path}:${diff === null ? "reading" : "read"}`}
+                data-testid="atlas-git-commit-diff"
+                className="flex min-h-0 flex-1 flex-col"
+              >
+                <DocumentChangeReader
+                  t={t}
+                  vaultPath={vaultPath}
+                  document={activeDocument}
+                  fallback={activeFallback}
+                  source={hash}
+                />
+              </div>
+            ) : null}
           </>
         )}
       </div>
@@ -450,12 +528,30 @@ function RestoreDock({
             type="button"
             data-testid="atlas-git-restore"
             onClick={() => setConfirming(true)}
+            /*
+             * The screen's two doors share one grammar. Measured 2026-09-20: this door
+             * resolved to `--color-text-quaternary` (#82828a) and sat between a caption on
+             * the same token and a heading on `--color-text-tertiary` (#8a8f98) — a 3%
+             * luminance spread, so at rest nothing told the only control that writes to
+             * disk apart from the sentences around it. The chip shape carries the
+             * affordance (padding, a border on hover) exactly as the discard door does;
+             * `secondary` carries legibility. Neither adds a colour.
+             */
             className={controlClass({
-              shape: "link",
+              shape: "chip",
               size: "sm",
-              tone: "muted",
+              tone: "secondary",
               hoverInk: "strong",
-              className: "text-label",
+              hoverBorder: "strong",
+              /*
+               * The chip's own `px-2` would start this label 9px right of everything
+               * else in the column — the section heading, the timeline rows and the
+               * document name all begin on one line, and a control that breaks it
+               * reads as an indent rather than as an affordance. The negative inline
+               * start margin puts the label back on that line while the chip keeps
+               * its padding to draw a hover border around.
+               */
+              className: "-ml-2 self-start border-transparent",
             })}
           >
             {t("restoreAction")}
@@ -463,6 +559,96 @@ function RestoreDock({
         </p>
       )}
     </div>
+  );
+}
+
+/** How many of a document's other steps are read; one more tells whether older ones exist. */
+const DOCUMENT_HISTORY_LIMIT = 12;
+
+/**
+ * The other steps that changed this one document — a meaning's own timeline, read from git
+ * scoped to the path. Each row jumps to that step. Without this, "when else did this concept
+ * change" meant scanning every row of the list for the concept's name.
+ */
+function DocumentHistory({
+  t,
+  vaultPath,
+  path,
+  currentHash,
+  whenOf,
+  headlineOf,
+  onJump,
+}: {
+  t: (key: string, values?: Record<string, string | number>) => string;
+  vaultPath: string | null;
+  path: string;
+  currentHash: string;
+  whenOf: (isoTime: string) => string;
+  headlineOf: (subject: string) => string | null;
+  onJump: (hash: string) => void;
+}) {
+  const [rows, setRows] = useState<GitCommitInfo[] | null>(null);
+  const [older, setOlder] = useState(false);
+  useEffect(() => {
+    if (!vaultPath) return;
+    let cancelled = false;
+    void gitHistory(vaultPath, DOCUMENT_HISTORY_LIMIT + 1, path)
+      .then((result) => {
+        if (cancelled) return;
+        const all = result ?? [];
+        setOlder(all.length > DOCUMENT_HISTORY_LIMIT);
+        setRows(all.slice(0, DOCUMENT_HISTORY_LIMIT));
+      })
+      // A failed read shows nothing rather than a wrong list; the main list still has every step.
+      .catch(() => {
+        if (!cancelled) setRows([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vaultPath, path]);
+
+  const others = useMemo(() => (rows ?? []).filter((commit) => commit.hash !== currentHash), [rows, currentHash]);
+  if (rows === null) return null;
+  return (
+    <section className="flex flex-col gap-1.5 pt-3" data-testid="atlas-git-document-history">
+      <h3 className="flex items-baseline gap-2 text-label text-[color:var(--color-text-tertiary)]">
+        {others.length > 0 ? t("docHistoryTitle") : t("docHistoryOnly")}
+        {others.length > 0 ? (
+          <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">{others.length}</b>
+        ) : null}
+      </h3>
+      {others.length > 0 ? (
+        <ul className="flex flex-col">
+          {others.map((commit) => (
+            <li key={commit.hash}>
+              <button
+                type="button"
+                data-testid="atlas-git-document-step"
+                title={t("docHistoryJumpHint")}
+                onClick={() => onJump(commit.hash)}
+                className={controlClass({
+                  shape: "row",
+                  size: "sm",
+                  tone: "secondary",
+                  hoverInk: "strong",
+                  hoverSurface: "lift",
+                  className: "grid w-full grid-cols-[6rem_minmax(0,1fr)] items-center gap-3 rounded-none px-0",
+                })}
+              >
+                <span className="truncate text-label tabular-nums text-[color:var(--color-text-tertiary)]">
+                  {whenOf(commit.isoTime)}
+                </span>
+                <span className="min-w-0 truncate text-label">{headlineOf(commit.subject) ?? commit.subject}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {older ? (
+        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">{t("docHistoryOlder")}</p>
+      ) : null}
+    </section>
   );
 }
 
@@ -479,7 +665,6 @@ function statusMark(status: string): string {
   }
 }
 
-type DiffRow = { kind: "hunk" | "add" | "del" | "ctx"; text: string };
 
 /**
  * Raw patch → rows grouped **per file**.
@@ -492,40 +677,6 @@ type DiffRow = { kind: "hunk" | "add" | "del" | "ctx"; text: string };
  * Colour is the **second** channel: the leading +/- sign stays, so a
  * colour-blind reader gets the same distinction.
  */
-function splitDiffByFile(patch: string): { path: string; rows: DiffRow[] }[] {
-  const blocks: { path: string; rows: DiffRow[] }[] = [];
-  let current: { path: string; rows: DiffRow[] } | null = null;
-  for (const line of patch.split("\n")) {
-    if (line.startsWith("diff --git ")) {
-      const to = line.slice(line.indexOf(" b/") + 3);
-      current = { path: to || line, rows: [] };
-      blocks.push(current);
-      continue;
-    }
-    if (
-      line.startsWith("index ") ||
-      line.startsWith("--- ") ||
-      line.startsWith("+++ ") ||
-      line.startsWith("new file mode") ||
-      line.startsWith("deleted file mode") ||
-      line.startsWith("similarity index") ||
-      line.startsWith("rename ")
-    ) {
-      continue;
-    }
-    if (!current) continue;
-    if (line.startsWith("@@")) current.rows.push({ kind: "hunk", text: line });
-    else if (line.startsWith("+")) current.rows.push({ kind: "add", text: line });
-    else if (line.startsWith("-")) current.rows.push({ kind: "del", text: line });
-    else current.rows.push({ kind: "ctx", text: line });
-  }
-  for (const block of blocks) {
-    while (block.rows.length > 0 && block.rows[block.rows.length - 1].text.trim() === "") {
-      block.rows.pop();
-    }
-  }
-  return blocks;
-}
 
 /**
  * Find a patch by file path. It also matches on the **path tail**, because the
@@ -533,27 +684,4 @@ function splitDiffByFile(patch: string): { path: string; rows: DiffRow[] }[] {
  * relative, so they differ at the front whenever the vault is a subfolder.
  * Exact match first, tail match second.
  */
-function findPatch(
-  blocks: { path: string; rows: DiffRow[] }[],
-  path: string,
-): DiffRow[] | null {
-  const exact = blocks.find((b) => b.path === path);
-  if (exact) return exact.rows;
-  const tail = blocks.find((b) => b.path.endsWith(path) || path.endsWith(b.path));
-  return tail?.rows ?? null;
-}
 
-function diffRowClass(kind: DiffRow["kind"]): string {
-  const base = "px-3 whitespace-pre-wrap break-all";
-  if (kind === "hunk") return cn(base, "mt-1 text-[color:var(--color-text-quaternary)]");
-  if (kind === "add") {
-    return cn(
-      base,
-      "bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]",
-    );
-  }
-  if (kind === "del") {
-    return cn(base, "bg-[color:var(--color-danger-a10)] text-[color:var(--color-danger-text)]");
-  }
-  return cn(base, "text-[color:var(--color-text-tertiary)]");
-}
