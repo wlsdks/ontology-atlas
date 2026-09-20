@@ -1407,6 +1407,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       ...tokens,
       safeInsetLeft: Math.max(tokens.safeInsetLeft, measured.left),
       safeInsetRight: Math.max(tokens.safeInsetRight, measured.right),
+      // What a panel really covers, so a narrow window may shrink the
+      // reservation without sliding the graph under it (`clampFitInsets`).
+      obstacleInsetLeft: measured.left,
+      obstacleInsetRight: measured.right,
     };
   }, []);
 
