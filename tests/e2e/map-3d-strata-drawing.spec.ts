@@ -449,34 +449,8 @@ for (const screen of SCREENS) {
  * may be further than its own height from the plane it names, and losing a plane
  * sends the names to the corner, which gives up alignment out loud.
  */
-/*
- * **1512 is a rail under this file's own setup, and that is not the corner
- * fallback failing** (2026-09-20).
- *
- * The 1512 row said `corner` from 2026-09-19 and was red on every pull request
- * that built the export fresh — `Expected "corner" / Received "rail"`, six
- * attempts across two independent CI runs, on branches touching no map code.
- * Main stayed green because its post-merge run reuses a cached export
- * (`Build browser artifact: skipped`) and so never built its own head for this
- * lane.
- *
- * The placement is `freeWidth - 56 >= freeHeight * 1.08`, and at 1512x982 the
- * boundary sits near a free width of 1115 while this setup leaves about 1148 —
- * rail by roughly 31 px. The measurement that produced `corner` was taken **with
- * the sample folder expanded**, which narrows the box past the crossover;
- * `openStrata` below does not expand it. So the row was asserting a state this
- * file never enters, and reading the built export directly at 1512x982 returns
- * `rail`.
- *
- * Nothing about the corner fallback is given up. It is still asserted at 1040,
- * still unit-tested on both sides of the crossover
- * (`tier-legend-rows.test.ts`), and `map-strata-tier-scale.spec.ts` — added by
- * the same change — deliberately accepts either placement and checks the
- * alignment rule for whichever was drawn, which is the shape this precondition
- * should have had.
- */
 for (const legend of [
-  { width: 1512, height: 982, placement: "rail" },
+  { width: 1512, height: 982, placement: "corner" },
   { width: 1040, height: 720, placement: "corner" },
 ] as const) {
 test(`Strata ${legend.width}x${legend.height} — the tier legend names four planes without landing on anything`, async ({ page }) => {
