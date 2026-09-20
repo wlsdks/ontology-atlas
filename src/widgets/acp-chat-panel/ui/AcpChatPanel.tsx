@@ -2646,6 +2646,77 @@ function slugMarkComponents(
   return out;
 }
 
+/**
+ * **Content wider than the panel says so on the edge that is hiding something.**
+ *
+ * ⚠️ Measured in the rendered dock, 2026-09-19. A fenced command in a Korean answer drew as
+ * `pnpm atlas compile --page wiki/archite` at a 320px panel — cut flush at the right edge, with
+ * no fade, no rule and no resting scrollbar, because a WebView's overlay scrollbars appear only
+ * while the pointer is moving. A truncated sentence is a sentence somebody can tell is truncated.
+ * A truncated **command** looks complete, and copying it runs the wrong thing.
+ *
+ * This is the affordance this repository already uses for exactly this fact — the
+ * `--tabbar-edge-fade` mask the tab strips, the transcript's own top edge and the past-conversation
+ * list all wear. No new token, no new width, and the same four states: both edges, either, neither.
+ *
+ * ⚠️ **Only while something is actually hidden.** Painted unconditionally the mask would blur the
+ * end of a command that fits, which states the opposite of the fact it exists to state — the same
+ * rule the transcript's top fade keeps.
+ *
+ * (There are now four hand-rolled copies of this four-state arithmetic in the app — `TabBar`,
+ * `LibraryPage`, the history list above, and this. A shared hook is the right home for it and is
+ * its own change, not a rider on a defect fix.)
+ */
+function useHorizontalOverflowEdges<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [edge, setEdge] = useState({ start: false, end: false });
+  const measure = useCallback(() => {
+    const element = ref.current;
+    if (!element) return;
+    const start = element.scrollLeft > 1;
+    const end = element.scrollLeft < element.scrollWidth - element.clientWidth - 1;
+    setEdge((previous) =>
+      previous.start === start && previous.end === end ? previous : { start, end },
+    );
+  }, []);
+  useLayoutEffect(() => {
+    measure();
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    // The panel is dragged, so the same block is inside 320px and 968px on one screen.
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [measure]);
+  const fade = 'var(--tabbar-edge-fade)';
+  const mask =
+    edge.start && edge.end
+      ? `linear-gradient(to right, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`
+      : edge.end
+        ? `linear-gradient(to right, black calc(100% - ${fade}), transparent 100%)`
+        : edge.start
+          ? `linear-gradient(to right, transparent 0, black ${fade})`
+          : undefined;
+  return {
+    ref,
+    onScroll: measure,
+    'data-edge-overflow': edge.start && edge.end
+      ? 'both'
+      : edge.end
+        ? 'end'
+        : edge.start
+          ? 'start'
+          : undefined,
+    style: mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined,
+  };
+}
+
+/** A fenced block in the conversation. It scrolls, and it says when it is hiding the rest. */
+function ChatCodeBlock({ node: _node, ...props }: { node?: unknown; children?: ReactNode }) {
+  const edges = useHorizontalOverflowEdges<HTMLPreElement>();
+  return <pre data-testid="acp-chat-code-block" {...props} {...edges} />;
+}
+
 /** The GFM table in the conversation has its own scroll to prevent columns from squishing in the narrow dock. */
 function chatMarkdownComponents(
   known: ReadonlySet<string> | undefined,
@@ -2654,18 +2725,30 @@ function chatMarkdownComponents(
   const marked = slugMarkComponents(known, onHoverSlug) ?? {};
   return {
     ...marked,
+    pre: ChatCodeBlock,
     table: ({ node: _node, ...props }) => (
-      <div
-        data-testid="acp-chat-markdown-table"
-        className="my-2 max-w-full overflow-x-auto rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
-      >
+      <ChatTableFrame>
         <table
           {...props}
           className="w-max min-w-full border-collapse text-left text-label leading-label [&_thead]:bg-[color:var(--color-overlay-2)] [&_tr]:border-b [&_tr]:border-[color:var(--color-divider)] [&_tbody_tr:last-child]:border-b-0 [&_th]:px-2.5 [&_th]:py-2 [&_th]:font-[var(--font-weight-emphasis)] [&_th]:text-[color:var(--color-text-primary)] [&_td]:px-2.5 [&_td]:py-2 [&_td]:align-top [&_td]:text-[color:var(--color-text-secondary)]"
         />
-      </div>
+      </ChatTableFrame>
     ),
   };
+}
+
+/** The table's own scroller, wearing the same edge fade as a fenced block. */
+function ChatTableFrame({ children }: { children?: ReactNode }) {
+  const edges = useHorizontalOverflowEdges<HTMLDivElement>();
+  return (
+    <div
+      data-testid="acp-chat-markdown-table"
+      className="my-2 max-w-full overflow-x-auto rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
+      {...edges}
+    >
+      {children}
+    </div>
+  );
 }
 
 function TranscriptEntry({
