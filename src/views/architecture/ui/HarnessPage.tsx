@@ -131,13 +131,11 @@ function HarnessPageInner() {
    * is already correct with no hydration mismatch (the same shape `FirstRunStarterModule` uses for
    * the platform badge).
    */
-  const canReadHarness = useSyncExternalStore(
+  const surfaceHasBridge = useSyncExternalStore(
     subscribeNever,
     isTauriVaultRuntime,
     readHarnessSurfaceOnServer,
   );
-  const addressView = resolveAddressView(searchParams, canReadHarness);
-  const view = viewOverride ?? addressView;
   const [reloadNonce, setReloadNonce] = useState(0);
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
@@ -189,14 +187,37 @@ function HarnessPageInner() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
+  /*
+   * ⚠️ **The read is not gated on the view any more, and it cannot be.** The arrival view is chosen
+   * from whether this surface can actually produce a harness reading, so gating the reading on the
+   * view would have each waiting for the other. It costs nothing where it cannot run: without the
+   * bridge the hook returns `unsupported` without a round trip.
+   */
   const reportState = useHarnessReport(
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     projectSlugs,
-    view !== 'architecture',
+    surfaceHasBridge,
     coverage.capabilityPaths,
     reloadNonce,
   );
   const report = reportState.status === 'ready' ? reportState.report : null;
+  /*
+   * ⚠️ **A bridge is not a harness.** The first version of this asked only whether the desktop
+   * bridge existed, and CI found the gap: a browser session that mounts a local folder through a
+   * Tauri-shaped stub has the bridge and no connected project source, so the destination opened the
+   * structure view and drew "this browser cannot read dot directories" over a repository whose
+   * architecture profile was right there to show (`local-vault-route-identity`, 2026-09-20).
+   *
+   * So the question is the one that matters: can a reading be produced here at all? `unsupported`
+   * and `no-source` are the two answers that mean no, and both send the arrival to the blueprint,
+   * which answers from the profile. A named `?view=` still wins over this, so a shared link opens
+   * what it says on either surface.
+   */
+  const harnessUnavailable =
+    reportState.status === 'unsupported' || reportState.status === 'no-source';
+  const addressView = resolveAddressView(searchParams, surfaceHasBridge && !harnessUnavailable);
+  /* A press wins over the address until the next history move; see `setView`. */
+  const view = viewOverride ?? addressView;
 
   /*
    * The wait screen is held back rather than the read being slowed down. `loading` flips identity on

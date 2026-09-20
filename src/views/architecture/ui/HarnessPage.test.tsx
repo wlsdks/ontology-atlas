@@ -166,6 +166,31 @@ describe('the destination identity', () => {
     expect(screen.queryByTestId('harness-anatomy')).toBeNull();
   });
 
+  it('arrives on the blueprint when a bridge exists but no harness can be read', () => {
+    /*
+     * ⚠️ The gap CI found and the unit tests did not: a browser session that mounts a local folder
+     * through a Tauri-shaped stub **has** the bridge and no connected project source, so asking
+     * only "is there a bridge" opened the structure view and drew "this browser cannot read dot
+     * directories" over a repository whose architecture profile was right there
+     * (`local-vault-route-identity`, 2026-09-20). The question is whether a reading can be
+     * produced, not whether a bridge is present.
+     */
+    state.bridge = true;
+    state.report = { status: 'no-source' };
+    mount();
+    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('harness-anatomy')).toBeNull();
+  });
+
+  it('still opens the structure view when an address names it, source or not', () => {
+    /* A shared link opens what it says; the fallback moves the arrival, never the address. */
+    state.bridge = true;
+    state.report = { status: 'no-source' };
+    window.history.replaceState(null, '', '/ko/architecture/?view=structure');
+    mount();
+    expect(screen.queryByTestId('architecture-page')).toBeNull();
+  });
+
   it('lets the rail through, which carries ?focus=main on every link', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     window.history.replaceState(null, '', '/ko/architecture/?focus=main');
