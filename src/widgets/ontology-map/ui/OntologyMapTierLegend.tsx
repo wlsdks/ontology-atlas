@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import {
   layoutTierLegendRows,
@@ -123,7 +123,13 @@ export function OntologyMapTierLegend({ anchors, labels, onRaise, onFitChange, p
     }
   }, []);
 
-  useEffect(() => {
+  /*
+   * **Measured before the first paint**, not after it. As a passive effect this
+   * ran one frame late, so the rail's first frame had no band, laid no rows, and
+   * the legend painted a shape it was about to abandon. The fallback below reads
+   * the band, so measuring late would make that fallback flash.
+   */
+  useLayoutEffect(() => {
     measure();
     const el = railRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
@@ -149,13 +155,30 @@ export function OntologyMapTierLegend({ anchors, labels, onRaise, onFitChange, p
    */
   const railOffset =
     railRows === null ? null : tierLegendWorstOffset(railRows, anchors, band?.top ?? 0, TIER_LEGEND_ROW_PX);
+  /*
+   * **A rail with nothing to draw takes the corner, not the rims** (CI, 2026-09-20).
+   *
+   * `layoutTierLegendRows` answers `null` when the band it was given cannot hold
+   * one row per plane. Until now that answer fell through every branch here: the
+   * placement stayed `rail`, `rows` stayed null, `fits` went false, and the names
+   * went back to the plane rims — the very failure the rail was built to end. It
+   * is not a rare corner either; it is what CI drew at 1512x982, where the legend
+   * reported the rail placement with zero rows in it.
+   *
+   * The corner stack has no band to run out of, so it is always the better answer
+   * than the rims. `anchors.length` keeps the honesty in the other direction: with
+   * no planes to name there is nothing to place, and `fits` must not claim there
+   * is.
+   */
+  const railHasNoRows = placement === "rail" && anchors.length > 0 && railRows === null;
   const corner =
     placement === "corner" ||
+    railHasNoRows ||
     (railRows !== null && !tierLegendRowsAlign(railRows, anchors, band?.top ?? 0, TIER_LEGEND_ROW_PX));
   const rows = corner ? null : railRows;
   // The corner stack owns a corner nothing else draws in, so it always places its
-  // rows; only the rail can run out of band and hand the names back to the rims.
-  const fits = corner || rows !== null;
+  // rows once there are planes to name.
+  const fits = (corner && anchors.length > 0) || rows !== null;
 
   useEffect(() => {
     onFitChange(fits);
