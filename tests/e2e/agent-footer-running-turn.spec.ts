@@ -42,7 +42,9 @@ async function startTurn(page: Page, harness: Awaited<ReturnType<typeof installL
   await page.getByTestId('acp-chat-send').click();
   await expect(chat).toHaveAttribute('data-acp-status', 'thinking');
   await harness.read(page);
-  await page.waitForTimeout(900);
+  // A fixed sleep is forbidden (`.claude/rules/testing.md`) and 900ms is not a settle under CI
+  // load either. The tool row the read produces is the condition this actually waited for.
+  await expect(chat.locator('[data-acp-entry="tool"]').first()).toBeVisible();
 }
 
 /** Every visible piece of the footer, and what is actually painted on top of it. */
@@ -65,12 +67,23 @@ const covered = (page: Page) => page.evaluate(() => {
     });
 });
 
-const modeWordIsWhole = (page: Page) => page.evaluate(() => {
+/*
+ * ⚠️ **Wait for the font before measuring text.** This read `scrollWidth` against `clientWidth`
+ * while the page could still be laying the row out in a fallback face. Latin fallback metrics sit
+ * close to Pretendard's, Korean fallback metrics do not — so on a CI runner with a cold font cache
+ * the Korean case overflowed a row the real font fits, and only the Korean case, on the first run
+ * and both retries. The asymmetry between the two locales is what named the cause; identical
+ * output across three attempts is what ruled out flakiness.
+ */
+const modeWordIsWhole = async (page: Page) => {
+  await page.evaluate(() => document.fonts.ready);
+  return page.evaluate(() => {
   const trigger = document.querySelector('[data-testid="acp-chat-mode"]');
   if (!trigger) return null;
   const label = [...trigger.querySelectorAll('span')].find((span) => span.scrollWidth > 0);
-  return label ? label.scrollWidth <= label.clientWidth + 1 : null;
-});
+    return label ? label.scrollWidth <= label.clientWidth + 1 : null;
+  });
+};
 
 for (const locale of ['en', 'ko'] as const) {
   for (const width of [MIN, BELOW_FIT]) {
@@ -88,24 +101,12 @@ for (const locale of ['en', 'ko'] as const) {
     });
   }
 
-  /*
-   * ⚠️ **Whole or absent — never a cut word.** The first version of this asserted the mode is
-   * *visible* at 400 and whole there, and 400 was a width measured on macOS. On the CI runner the
-   * same Korean words lay out wider, so the picker stayed on the row and clipped, and the case
-   * failed on its first run and both retries — deterministic, not flaky, and pointing at a real
-   * guarantee dressed up as a pixel. The guarantee is that a person never reads a truncated mode
-   * name; which side of the threshold a given width falls on is a layout decision, not a promise.
-   */
-  test(`the mode is whole or stands down, never clipped, while a turn runs (${locale})`, async ({ page }) => {
+  test(`the mode keeps its whole word while a turn runs once the row fits it (${locale})`, async ({ page }) => {
     const harness = await open(page, FITS, locale);
     await startTurn(page, harness);
     expect(await covered(page)).toEqual([]);
-    const mode = page.getByTestId('acp-chat-mode');
-    if (await mode.isVisible()) {
-      expect(await modeWordIsWhole(page), 'the mode showed a cut word instead of standing down').toBe(true);
-    } else {
-      await expect(page.getByTestId('acp-chat-stop'), 'the mode stood down, so the stop control has the row').toBeVisible();
-    }
+    await expect(page.getByTestId('acp-chat-mode')).toBeVisible();
+    expect(await modeWordIsWhole(page), 'the mode showed a cut word instead of standing down').toBe(true);
   });
 
   test(`the mode is there at the minimum width while nothing is running, and comes back when the turn ends (${locale})`, async ({ page }) => {
