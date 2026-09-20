@@ -1367,6 +1367,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** Tier gate config mirror, shared by the rAF closure and the pointer handlers. */
   const tierRevealRef = useRef<TierRevealConfig>(tierReveal);
 
+  /** What a panel covers on each side, refreshed wherever the camera measures it. */
+  const panelInsetsRef = useRef<{ left: number; right: number } | null>(null);
+
   /**
    * Tokens for computing a camera target — **only the left and right safe
    * insets are replaced with measured values.**
@@ -1403,6 +1406,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       width: box.width,
       height: box.height,
     });
+    /*
+     * The same measurement the names need. The frame reads its tokens every
+     * frame, and `measureCanvasInsets` walks elements, so the draw cannot take
+     * it per frame — it reads this ref instead. Written here because the moments
+     * that move the camera are the moments a panel opens or closes: a selection
+     * reframes, and so does a resize.
+     */
+    panelInsetsRef.current = { left: measured.left, right: measured.right };
     return {
       ...tokens,
       safeInsetLeft: Math.max(tokens.safeInsetLeft, measured.left),
@@ -5909,6 +5920,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         now,
         viewportWidth: width,
         viewportHeight: height,
+        panelInsets: panelInsetsRef.current,
         // The ratio this frame is really rasterising at — the adaptive one while a
         // drag has lowered it, not `window.devicePixelRatio`. Only the 3D resting
         // line's width floor reads it.

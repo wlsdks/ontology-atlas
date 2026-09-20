@@ -677,6 +677,21 @@ export interface FrameDrawParams {
   viewportWidth: number;
   viewportHeight: number;
   /**
+   * What a panel actually covers on each side, in CSS px, measured rather than
+   * assumed. `safeInsetLeft`/`safeInsetRight` are static tokens, so the label
+   * cull believed the right edge was 120 px away while the open inspector was
+   * 352 px wide from x=1128: measured at 1512x982 on the sample folder, two of
+   * five selections painted a concept's name underneath that panel, where it
+   * cannot be read and where it still spent one of the limited label slots.
+   * The camera has taken the larger of token and measurement since 2026-08-10
+   * (`use-topology-loop.ts#cameraTokens`); this gives the names the same truth.
+   *
+   * Left and right only, for the reason that note gives: the top inset is the
+   * tool lane and the bottom one is a label reservation, and both are layout
+   * promises rather than something covering the canvas.
+   */
+  panelInsets?: { left: number; right: number } | null;
+  /**
    * The ratio `ctx` is transformed by, so a length in CSS px can be converted to
    * device pixels. Only the 3D resting relation line's width floor reads it
    * (`domeEdgeMinWidthPx`); everything else on this canvas is a CSS quantity by
@@ -1068,6 +1083,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     now,
     viewportWidth,
     viewportHeight,
+    panelInsets = null,
     devicePixelRatio: canvasDpr = 1,
     gridPattern,
     dustPoints,
@@ -3308,8 +3324,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // word-boundary-ellipsize long titles, then greedily place by priority so no
   // two boxes overlap.
   const safeRect: SafeRect = {
-    left: tokens.safeInsetLeft,
-    right: viewportWidth - tokens.safeInsetRight,
+    left: Math.max(tokens.safeInsetLeft, panelInsets?.left ?? 0),
+    right: viewportWidth - Math.max(tokens.safeInsetRight, panelInsets?.right ?? 0),
     top: tokens.safeInsetTop,
     bottom: viewportHeight - tokens.safeInsetBottom,
   };
