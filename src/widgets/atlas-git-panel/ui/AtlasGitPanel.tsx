@@ -971,10 +971,25 @@ export function AtlasGitPanel({
    * re-reads when it finishes, and a read landing mid-commit would show a half state.
    */
   const followBusy = snapshotting || initRunning || remoteRunning || remoteBusy !== null || restoreBusy;
+  /*
+   * A notification whose debounce elapses mid-write is **deferred, not dropped**. The write
+   * path's own re-read reports its own result, and the editor's save that arrived while it ran
+   * is not in it — so throwing the notice away left exactly the stale screen this listener
+   * exists to prevent, until the next visit.
+   */
+  const missedWhileBusy = useRef(false);
   const followVaultChange = useEffectEvent(() => {
-    if (followBusy) return;
+    if (followBusy) {
+      missedWhileBusy.current = true;
+      return;
+    }
+    missedWhileBusy.current = false;
     void refresh();
   });
+  useEffect(() => {
+    if (followBusy || !missedWhileBusy.current) return;
+    followVaultChange();
+  }, [followBusy]);
   useEffect(() => {
     if (!desktop || !vaultPath) return;
     let cancelled = false;
@@ -2136,7 +2151,7 @@ function DiscardDock({
 }) {
   const [confirming, setConfirming] = useState(false);
   return (
-    <div className="flex shrink-0 flex-col gap-2 pt-1" data-testid="atlas-git-discard-dock">
+    <div className="flex shrink-0 flex-col gap-2" data-testid="atlas-git-discard-dock">
       {confirming ? (
         <div
           className="git-fade-in flex flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
@@ -2183,10 +2198,17 @@ function DiscardDock({
           type="button"
           data-testid="atlas-git-discard"
           onClick={() => setConfirming(true)}
+          /*
+           * A **quiet control, not a footnote.** At `size: 'sm'` it drew 9.5px type in
+           * quaternary ink at the ramp's 24px floor, which under a finger is below the
+           * touch floor and to the eye is not a control at all (2026-09-21). `md` is the
+           * ramp's measured mode: 11px on the shared 32px height, and `shape: 'chip'`
+           * carries `atlas-touch-floor`, so a finger still gets 44px. Quiet is now the
+           * transparent border and tertiary ink, not small type.
+           */
           className={controlClass({
             shape: "chip",
-            size: "sm",
-            tone: "muted",
+            size: "md",
             hoverInk: "strong",
             hoverBorder: "strong",
             className: "self-start border-transparent",

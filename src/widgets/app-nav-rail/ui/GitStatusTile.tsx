@@ -46,8 +46,15 @@ export function GitStatusTile({
   className,
 }: GitStatusTileProps) {
   const t = useTranslations("atlasGit");
-  // null = no git_status result yet (the web included) → fall back to sessionDirty.
-  const [gitChangedCount, setGitChangedCount] = useState<number | null>(null);
+  /*
+   * The count is held **with the folder it was read from**. Another folder is another
+   * answer: a count carried over from the folder that was open before would put the previous
+   * folder's dot on a clean one, and keep it there for good once the folder was closed.
+   * Storing the pair makes a stale count simply not apply, with nothing to remember to clear.
+   */
+  const [read, setRead] = useState<{ path: string; count: number } | null>(null);
+  // null = no git_status result for *this* folder yet (the web included) → fall back to sessionDirty.
+  const gitChangedCount = read && read.path === vaultPath ? read.count : null;
 
   useEffect(() => {
     if (!vaultPath) return;
@@ -57,7 +64,7 @@ export function GitStatusTile({
       try {
         const status = await gitStatus(vaultPath);
         if (!cancelled && status) {
-          setGitChangedCount(status.initialized ? status.changedCount : 0);
+          setRead({ path: vaultPath, count: status.initialized ? status.changedCount : 0 });
         }
       } catch {
         // A failed read stays silent — the tile is only a signal surface; the panel reports errors.

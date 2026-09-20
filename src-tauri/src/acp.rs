@@ -1327,9 +1327,31 @@ fn clear_shadowing_credentials(config_dir: &Path, cli: Option<&Path>, path_env: 
 ///
 /// If it cannot be launched or exceeds the limit, `None` — meaning **unknown**, not "failed".
 pub(crate) fn bounded_output(
-    mut command: std::process::Command,
+    command: std::process::Command,
     limit: std::time::Duration,
 ) -> Option<String> {
+    bounded_run(command, limit).map(|(_, stdout)| stdout)
+}
+
+/// Did the command **finish successfully** inside the limit?
+///
+/// `bounded_output` answers "what did it print", which is the wrong question for a command
+/// that prints nothing when it works. `security add-generic-password` is exactly that: a
+/// locked or denied keychain makes it exit non-zero with empty stdout, which as an
+/// `Option<String>` is indistinguishable from a successful write. Reading that as success
+/// once cost the whole login — the mirror was declared done, and the symlink to the
+/// terminal's real credentials plus the legacy keychain item were deleted behind it.
+pub(crate) fn bounded_success(command: std::process::Command, limit: std::time::Duration) -> bool {
+    bounded_run(command, limit)
+        .map(|(success, _)| success)
+        .unwrap_or(false)
+}
+
+/// Shared body: exit success plus stdout, or `None` when it never finished.
+fn bounded_run(
+    mut command: std::process::Command,
+    limit: std::time::Duration,
+) -> Option<(bool, String)> {
     use std::io::Read;
     use std::process::Stdio;
 
@@ -1341,9 +1363,9 @@ pub(crate) fn bounded_output(
         .ok()?;
 
     let deadline = std::time::Instant::now() + limit;
-    loop {
+    let status = loop {
         match child.try_wait() {
-            Ok(Some(_)) => break,
+            Ok(Some(status)) => break status,
             Ok(None) => {
                 if std::time::Instant::now() >= deadline {
                     let _ = child.kill();
@@ -1354,11 +1376,11 @@ pub(crate) fn bounded_output(
             }
             Err(_) => return None,
         }
-    }
+    };
 
     let mut out = String::new();
     child.stdout.take()?.read_to_string(&mut out).ok()?;
-    Some(out)
+    Some((status.success(), out))
 }
 
 /// Deletes the keychain item registered against that folder **unconditionally**.
@@ -1776,12 +1798,20 @@ fn mirror_terminal_login(config_dir: &Path, home: &Path) -> bool {
                     "-w",
                     &secrets[chosen],
                 ]);
-                if bounded_output(write, KEYCHAIN_PROBE_TIMEOUT).is_some() {
+                // Only the **exit status** proves the item was written. `security` prints
+                // nothing on success, so "it produced output" cannot tell a locked or denied
+                // keychain from a stored secret — and a false yes here takes down the symlink
+                // to the terminal's real credentials on the next few lines.
+                if bounded_success(write, KEYCHAIN_PROBE_TIMEOUT) {
                     log::info!(
                         "acp login mirrored from {} into the app-scoped keychain item for {account}",
                         carrier.label
                     );
                     mirrored = true;
+                } else {
+                    log::warn!(
+                        "acp login not mirrored: writing the app-scoped keychain item for {account} failed"
+                    );
                 }
             }
             if mirrored && account != LEGACY_MIRROR_ACCOUNT {
@@ -3581,6 +3611,35 @@ mod tests {
         // failing to launch and hitting the upper bound yield the same value.
         let cmd = std::process::Command::new("oatlas-no-such-program-anywhere");
         assert!(bounded_output(cmd, std::time::Duration::from_secs(5)).is_none());
+    }
+
+    #[test]
+    fn bounded_success_separates_a_failed_command_from_a_silent_one() {
+        // The keychain mirror writes with a command that prints nothing when it works, so
+        // stdout cannot decide it. A non-zero exit with empty output must not read as done.
+        assert!(bounded_success(
+            node_command("process.exit(0)"),
+            std::time::Duration::from_secs(20),
+        ));
+        assert!(!bounded_success(
+            node_command("process.exit(1)"),
+            std::time::Duration::from_secs(20),
+        ));
+        assert_eq!(
+            bounded_output(
+                node_command("process.exit(1)"),
+                std::time::Duration::from_secs(20),
+            )
+            .as_deref(),
+            Some(""),
+            "stdout alone cannot tell the two apart — which is why the status is read"
+        );
+    }
+
+    #[test]
+    fn bounded_success_is_false_when_the_program_does_not_exist() {
+        let cmd = std::process::Command::new("oatlas-no-such-program-anywhere");
+        assert!(!bounded_success(cmd, std::time::Duration::from_secs(5)));
     }
 
     #[test]

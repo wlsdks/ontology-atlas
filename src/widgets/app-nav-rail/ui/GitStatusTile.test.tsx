@@ -162,6 +162,64 @@ describe("GitStatusTile — 폴더를 따라간다", () => {
     expect(tauriApiMock.invoke.mock.calls.every(([command]) => command === "git_status")).toBe(true);
   });
 
+  it("폴더를 바꾸면 앞 폴더의 점을 물려주지 않는다", async () => {
+    // The dot says "this folder has unrecorded changes". Carried across a folder switch it
+    // says it about a folder it was never read from — and a clean folder wears it.
+    tauriApiMock.runtimeAvailable = true;
+    let finishCleanRead = (_: unknown) => {};
+    const cleanRead = new Promise((resolve) => {
+      finishCleanRead = resolve;
+    });
+    tauriApiMock.invoke.mockImplementation(
+      async (_command: string, args?: Record<string, unknown>) => {
+        if (args?.vaultPath === "/repo/dirty") {
+          return {
+            initialized: true,
+            repoRoot: "/repo",
+            branch: "main",
+            upstream: null,
+            changedCount: 3,
+            stagedOutsideVault: [],
+          };
+        }
+        // The new folder's read is still in flight — which is the whole window in which the
+        // previous folder's answer could be shown as this one's.
+        return cleanRead;
+      },
+    );
+
+    const { rerender } = renderTile(
+      <GitStatusTile onActivate={() => {}} vaultPath="/repo/dirty" />,
+    );
+    expect(await screen.findByTestId("app-nav-rail-git-dot")).toBeInTheDocument();
+
+    // The clean folder's own read has not landed yet at this point — the dot must already
+    // be gone, because the count on screen is not this folder's.
+    await act(async () => {
+      rerender(
+        <NextIntlClientProvider locale="ko" messages={koMessages}>
+          <GitStatusTile onActivate={() => {}} vaultPath="/repo/clean" />
+        </NextIntlClientProvider>,
+      );
+    });
+    expect(screen.queryByTestId("app-nav-rail-git-dot")).not.toBeInTheDocument();
+    expect(tauriApiMock.invoke).toHaveBeenCalledWith("git_status", { vaultPath: "/repo/clean" });
+
+    // And the folder's own answer, when it lands, keeps it that way.
+    await act(async () => {
+      finishCleanRead({
+        initialized: true,
+        repoRoot: "/repo",
+        branch: "main",
+        upstream: null,
+        changedCount: 0,
+        stagedOutsideVault: [],
+      });
+      await cleanRead;
+    });
+    expect(screen.queryByTestId("app-nav-rail-git-dot")).not.toBeInTheDocument();
+  });
+
   it("브라우저(브리지 없음)에서는 워처를 구독하지 않는다", () => {
     renderTile(<GitStatusTile onActivate={() => {}} sessionDirty />);
     expect(tauriEventMock.listen).not.toHaveBeenCalled();

@@ -1445,6 +1445,46 @@ describe("AtlasGitPanel — 열려 있는 동안 폴더를 따라간다", () => 
     expect(tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_init")).toHaveLength(0);
   });
 
+  it("쓰는 중에 온 알림은 버려지지 않고, 쓰기가 끝나면 한 번 따라간다", async () => {
+    /*
+     * A commit that is still running holds the follow back, because a read landing mid-write
+     * shows a half state. But the commit's own re-read reports the commit, not the save an
+     * editor made while it ran — so the notice has to be answered once the write is over.
+     */
+    let finishSnapshot = (_: unknown) => {};
+    const pending = new Promise((resolve) => {
+      finishSnapshot = resolve;
+    });
+    installDesktopGit({ snapshot: pending });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-workbench");
+    await waitFor(() =>
+      expect(tauriEventMock.listen).toHaveBeenCalledWith("vault-changed", expect.any(Function)),
+    );
+
+    fireEvent.click(await screen.findByTestId("atlas-git-snapshot-button"));
+    fireEvent.click(await screen.findByTestId("atlas-git-confirm-button"));
+    await waitFor(() => expect(snapshotInvokeCalls()).toHaveLength(1));
+
+    const statusCalls = () =>
+      tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_status").length;
+    const before = statusCalls();
+    await act(async () => {
+      for (const handler of tauriEventMock.handlers) handler({ payload: null });
+      // The debounce window itself (FOLLOW_DEBOUNCE_MS), measured rather than waited on:
+      // the point is that it elapses *while the commit is still running*.
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    });
+    expect(statusCalls(), "쓰는 중에는 읽지 않는다").toBe(before);
+
+    await act(async () => {
+      finishSnapshot({ committed: true, subject: "s", summary: "s", push: null });
+      await pending;
+    });
+    // The commit's own re-read is one; the deferred notice is the second.
+    await waitFor(() => expect(statusCalls()).toBeGreaterThanOrEqual(before + 2));
+  });
+
   it("브라우저 강등에서는 워처를 구독하지 않는다", async () => {
     renderPanel(<AtlasGitPanel vaultPath={null} />);
     await screen.findByTestId("atlas-git-web-get-app");
@@ -1488,6 +1528,28 @@ describe("AtlasGitPanel — 문서 하나를 되돌린다", () => {
     });
     expect(await screen.findByTestId("atlas-git-restore-notice")).toHaveTextContent("버렸어요");
     expect(snapshotInvokeCalls()).toHaveLength(0);
+  });
+
+  it("버리기 문은 문서 머리줄에 서고, 읽히는 크기와 손가락 바닥을 갖는다", async () => {
+    // It used to sit under the whole document at 9.5px in the faintest ink, below the
+    // touch floor: a footnote where a control belongs (2026-09-21).
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-change-groups");
+    const rows = screen.getAllByTestId("atlas-git-change-row");
+    fireEvent.click(rows.find((row) => row.textContent?.includes("bar"))!);
+
+    const discard = await screen.findByTestId("atlas-git-discard");
+    expect(discard.className).toContain("text-label");
+    expect(discard.className).not.toContain("text-caption");
+    expect(discard.className).toContain("atlas-touch-floor");
+    // In the reader's header, beside the path and the +/− counts.
+    const reader = screen.getByTestId("atlas-git-diff-pre");
+    expect(reader.contains(discard), "버리기 문이 문서 읽는 자리 밖에 있다").toBe(true);
+    expect(
+      reader.querySelector("header")?.contains(discard),
+      "버리기 문이 머리줄이 아니라 본문 아래에 있다",
+    ).toBe(true);
   });
 
   it("한 번도 커밋하지 않은 문서에는 버리기 문이 없다 — 버리기가 곧 삭제가 되니까", async () => {
@@ -1547,6 +1609,106 @@ describe("AtlasGitPanel — 문서 하나를 되돌린다", () => {
     expect(error).toHaveTextContent("문서는 바뀌지 않았어요");
     // The confirm step stays open: the person can read why and choose again.
     expect(screen.getByTestId("atlas-git-restore-step")).toBeInTheDocument();
+  });
+
+  /*
+   * Two documents in one step whose file names differ only by folder. A node id is
+   * `<kind>:<slug tail>` (`matchNodeId`), so the tail alone answers for either of them —
+   * and the door that puts a document back must not be able to reach the other one.
+   */
+  const SAME_TAIL_GRAPH = {
+    nodes: [
+      {
+        id: "domain:orders",
+        title: "Orders domain",
+        display: "주문 영역",
+        kind: "domain",
+        projectIds: [],
+        evidenceIds: ["domains/orders"],
+        hasOwnDocument: true,
+        agentSlug: "domains/orders",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: null,
+      },
+      {
+        id: "capability:orders",
+        title: "Orders capability",
+        display: "주문 받기",
+        kind: "capability",
+        projectIds: [],
+        evidenceIds: ["capabilities/orders"],
+        hasOwnDocument: true,
+        agentSlug: "capabilities/orders",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: null,
+      },
+    ],
+    edges: [],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+
+  const SAME_TAIL_HISTORY = [
+    {
+      shortHash: "abc1234",
+      hash: "abc1234def5678",
+      subject: "ontology snapshot: 2 concepts",
+      relativeTime: "2 hours ago",
+      isoTime: "2026-07-23T10:00:00+09:00",
+      files: [
+        {
+          path: "docs/domains/orders.md",
+          status: "modified",
+          kind: "domain",
+          slug: "domains/orders",
+          renamedFrom: null,
+        },
+        {
+          path: "docs/capabilities/orders.md",
+          status: "modified",
+          kind: "capability",
+          slug: "capabilities/orders",
+          renamedFrom: null,
+        },
+      ],
+    },
+  ];
+
+  it("이름 끝이 같은 두 문서 — 고른 개념의 문서를 되돌린다", async () => {
+    installDesktopGit({ history: SAME_TAIL_HISTORY });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={SAME_TAIL_GRAPH} />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    await screen.findByTestId("atlas-git-history-detail");
+
+    const chips = await screen.findAllByTestId("atlas-git-concept-chip");
+    expect(chips).toHaveLength(2);
+    fireEvent.click(chips[1]!);
+
+    fireEvent.click(await screen.findByTestId("atlas-git-restore"));
+    expect(await screen.findByTestId("atlas-git-restore-step")).toHaveTextContent(
+      "docs/capabilities/orders.md",
+    );
+    fireEvent.click(screen.getByTestId("atlas-git-restore-confirm"));
+    await waitFor(() => expect(restoreCalls()).toHaveLength(1));
+    expect(restoreCalls()[0][1]).toMatchObject({
+      relativePath: "docs/capabilities/orders.md",
+    });
+  });
+
+  it("이름 끝이 같은 두 문서 — 파일 목록에서 고른 쪽의 개념 이름을 단다", async () => {
+    installDesktopGit({ history: SAME_TAIL_HISTORY });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={SAME_TAIL_GRAPH} />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+
+    const rows = await screen.findAllByTestId("atlas-git-commit-file");
+    fireEvent.click(rows[1]!);
+    const reader = await screen.findByTestId("atlas-git-commit-diff");
+    expect(reader).toHaveTextContent("주문 받기");
+    expect(reader).not.toHaveTextContent("주문 영역");
   });
 });
 

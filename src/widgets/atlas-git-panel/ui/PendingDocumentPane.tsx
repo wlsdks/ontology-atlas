@@ -126,18 +126,22 @@ export function PendingDocumentPane({
 
       {shown ? (
         <div className="flex min-h-0 flex-1 flex-col">
+          {/*
+           * The door rides in the reader's header, beside the path and the +/− counts.
+           * Under the whole document it sat where nobody looks and read as a footnote
+           * rather than a control (2026-09-21); the header is where the eye already is,
+           * and it names the same document the counts do. Keyed by document, because an
+           * armed confirm must not survive a chip change and re-aim at another document
+           * (interaction seat, 2026-09-19).
+           */}
           <DocumentChangeReader
             key={shown.entry.path}
             t={t}
             vaultPath={vaultPath}
             document={shown}
             fallback={hunks.find((h) => h.path === shown.entry.path) ?? null}
+            action={discard(shown)}
           />
-          {/* Keyed by document: an armed discard confirm must not survive a chip change and
-              re-aim at another document (interaction seat, 2026-09-19). */}
-          <div key={`foot:${shown.entry.path}`} className="flex-none px-5 pb-4">
-            {discard(shown)}
-          </div>
         </div>
       ) : null}
     </div>
@@ -177,6 +181,7 @@ export function DocumentChangeReader({
   document,
   fallback,
   source,
+  action = null,
 }: {
   t: Translator;
   vaultPath: string | null;
@@ -184,6 +189,8 @@ export function DocumentChangeReader({
   fallback: AtlasGitDiffFile | null;
   /** A commit hash to read that commit's change of the document; absent = uncommitted. */
   source?: string;
+  /** This document's own door, drawn in the header beside its path and counts. */
+  action?: React.ReactNode;
 }) {
   const { entry, label, kind } = document;
   /*
@@ -266,7 +273,10 @@ export function DocumentChangeReader({
           {kind ? <OntologyMapKindGlyph kind={kind} size={16} /> : null}
           <span className="min-w-0 truncate">{label}</span>
         </h2>
-        <p className="flex flex-wrap items-baseline gap-x-2 font-mono text-caption text-[color:var(--color-text-quaternary)]">
+        {/* The metadata line and this document's door share one row: the door acts on the
+            document these counts describe, so it stands where they do. */}
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
+        <p className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 font-mono text-caption text-[color:var(--color-text-quaternary)]">
           {/* The path, unless it is the name already shown above it — a file at the folder's
               root would otherwise read its own name twice, at two sizes, in two lines. */}
           {entry.path === label ? null : <span className="min-w-0 break-all">{entry.path}</span>}
@@ -283,6 +293,8 @@ export function DocumentChangeReader({
           </span>
 
         </p>
+        {action ? <div className="flex-none">{action}</div> : null}
+        </div>
       </header>
 
       {lines.length === 0 ? (

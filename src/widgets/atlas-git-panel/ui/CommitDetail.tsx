@@ -46,6 +46,20 @@ export interface CommitConcept {
 
 type Lens = "concepts" | "files";
 
+/**
+ * Does this changed file carry that concept? `matchNodeId` builds a node id as
+ * `<kind>:<slug tail>`, so the **tail alone is ambiguous**: `domains/orders.md` and
+ * `capabilities/orders.md` share it, and either would answer for the other — naming one
+ * document after the other's concept, and opening the restore door onto the wrong file.
+ * The kind is the half that tells them apart, so both halves are compared here, exactly as
+ * the forward match compares them.
+ */
+function fileCarriesNode(file: { slug: string; kind: string | null }, nodeId: string): boolean {
+  if (!file.kind) return false;
+  const tail = file.slug.split("/").pop() ?? file.slug;
+  return nodeId === `${file.kind}:${tail}`;
+}
+
 /** One section — label (plus count or hint) above, content below. */
 function Section({
   label,
@@ -181,14 +195,13 @@ export function CommitDetail({
   const activeEntry = activeFile ? files.find((file) => file.path === activeFile) ?? null : null;
   /*
    * The document the files lens reads, named the way the concept lens names it: the concept
-   * whose id tail matches the file's slug tail, else the file name. The same reader the
+   * this file carries (`fileCarriesNode`), else the file name. The same reader the
    * uncommitted pane uses (owner direction B, 2026-09-19) draws it whole at this commit,
    * so a step's change and an uncommitted change read the same way.
    */
   const activeDocument = useMemo<ChangedDocument | null>(() => {
     if (!activeEntry) return null;
-    const tail = activeEntry.slug.split("/").pop() ?? activeEntry.slug;
-    const concept = concepts.find((c) => (c.id.split(":").pop() ?? c.id) === tail);
+    const concept = concepts.find((c) => fileCarriesNode(activeEntry, c.id));
     return {
       entry: activeEntry,
       // A document without a matching concept is named by its file, minus the `.md` the
@@ -216,8 +229,7 @@ export function CommitDetail({
    */
   const focusedFile = useMemo(() => {
     if (!focused) return null;
-    const tail = focused.split(":").pop() ?? focused;
-    return files.find((file) => (file.slug.split("/").pop() ?? file.slug) === tail) ?? null;
+    return files.find((file) => fileCarriesNode(file, focused)) ?? null;
   }, [files, focused]);
 
   return (

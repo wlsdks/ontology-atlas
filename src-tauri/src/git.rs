@@ -1401,9 +1401,19 @@ const MAX_DOCUMENT_DIFF_LINES: usize = 3_000;
 /// document read as the whole one is a lie the screen cannot see through.
 fn cap_document_diff(path: String, diff: String, untracked: bool) -> GitDocumentDiffResult {
     if diff.lines().count() > MAX_DOCUMENT_DIFF_LINES {
-        return GitDocumentDiffResult { path, diff: String::new(), untracked, too_large: true };
+        return GitDocumentDiffResult {
+            path,
+            diff: String::new(),
+            untracked,
+            too_large: true,
+        };
     }
-    GitDocumentDiffResult { path, diff, untracked, too_large: false }
+    GitDocumentDiffResult {
+        path,
+        diff,
+        untracked,
+        too_large: false,
+    }
 }
 
 #[tauri::command]
@@ -1423,7 +1433,11 @@ pub fn git_document_diff(
      * exist and reports **every line as added** — a rename drawn as a brand-new document
      * (measured 2026-09-19: 45 lines "added" for a file whose bytes never changed).
      */
-    let previous_rel = match previous_path.as_deref().map(str::trim).filter(|p| !p.is_empty()) {
+    let previous_rel = match previous_path
+        .as_deref()
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+    {
         Some(previous) => Some(vault_document_path(previous, &vault_spec)?),
         None => None,
     };
@@ -1433,7 +1447,15 @@ pub fn git_document_diff(
         let src = validate_restore_source(hash)?;
         let out = run_git(
             &repo_root,
-            &["show", WHOLE, "--no-color", "--format=", &src, "--", &repo_rel],
+            &[
+                "show",
+                WHOLE,
+                "--no-color",
+                "--format=",
+                &src,
+                "--",
+                &repo_rel,
+            ],
         )?;
         if !out.success {
             return Err(coded("restore-source-missing", ""));
@@ -1468,7 +1490,9 @@ pub fn git_document_diff(
         if let Some(previous) = previous_rel.as_deref() {
             staged.push(previous);
         }
-        run_git(&repo_root, &staged).map(|o| o.stdout).unwrap_or_default()
+        run_git(&repo_root, &staged)
+            .map(|o| o.stdout)
+            .unwrap_or_default()
     };
     /*
      * A pure rename has no content lines at all (`similarity index 100%`), so there would be
@@ -1477,7 +1501,11 @@ pub fn git_document_diff(
      * itself is the answer here: its lines, unmarked, under a header that already says the
      * name changed.
      */
-    if previous_rel.is_some() && !diff.lines().any(|line| line.starts_with('+') || line.starts_with('-')) {
+    if previous_rel.is_some()
+        && !diff
+            .lines()
+            .any(|line| line.starts_with('+') || line.starts_with('-'))
+    {
         let raw = fs::read_to_string(repo_root.join(&repo_rel)).unwrap_or_default();
         let mut context = format!("diff --git a/{repo_rel} b/{repo_rel}\n@@ -1,1 +1,1 @@\n");
         for line in raw.lines() {
@@ -1621,7 +1649,10 @@ fn validate_restore_source(source: &str) -> Result<String, String> {
 /// - a source that does not hold the document is refused (`restore-source-missing`);
 /// - a source whose `uid`, `slug` or `merged_uids` differs from the file on disk is refused
 ///   (`restore-identity-mismatch`), because the rest of the vault links to the current identity
-///   and `git restore` is identity-blind (steward review, 2026-09-19).
+///   and `git restore` is identity-blind (steward review, 2026-09-19);
+/// - a document on disk that cannot be read at all is refused too
+///   (`restore-identity-check-failed`), because a guard that could not run is not a guard
+///   that passed.
 ///
 /// Nothing is committed. **Called only from a confirm button** — the trust charter's zero
 /// automatic execution is the caller's to hold, and this command chains into nothing.
@@ -1652,12 +1683,24 @@ pub fn git_restore_file(
     if !show.success {
         return Err(coded("restore-source-missing", ""));
     }
-    if let Ok(current) = fs::read_to_string(repo_root.join(&repo_rel)) {
-        if let Some(difference) =
-            identity_difference(&read_identity(&current), &read_identity(&show.stdout))
-        {
-            return Err(coded("restore-identity-mismatch", difference));
+    match fs::read_to_string(repo_root.join(&repo_rel)) {
+        Ok(current) => {
+            if let Some(difference) =
+                identity_difference(&read_identity(&current), &read_identity(&show.stdout))
+            {
+                return Err(coded("restore-identity-mismatch", difference));
+            }
         }
+        // A deleted document has no identity on disk to disagree with, and bringing it back
+        // is exactly what this call is for.
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
+        /*
+         * Any other read failure — non-UTF-8 bytes, a permission refusal — means the identity
+         * guard **did not run**. Restoring anyway would overwrite a document whose `uid` and
+         * `slug` were never read, which is the one thing the guard exists to prevent, so an
+         * unreadable file stops the write instead of skipping the check.
+         */
+        Err(err) => return Err(coded("restore-identity-check-failed", err)),
     }
 
     let run = run_git(
@@ -2260,7 +2303,9 @@ mod tests {
         assert!(!short.too_large);
         assert_eq!(short.diff, "+one\n+two\n");
 
-        let long: String = (0..MAX_DOCUMENT_DIFF_LINES + 1).map(|i| format!(" line {i}\n")).collect();
+        let long: String = (0..MAX_DOCUMENT_DIFF_LINES + 1)
+            .map(|i| format!(" line {i}\n"))
+            .collect();
         let capped = cap_document_diff("a.md".into(), long, false);
         assert!(capped.too_large);
         assert_eq!(capped.diff, "");
@@ -2413,6 +2458,61 @@ mod tests {
         let (kind, slug) = read_kind_slug(&file);
         assert_eq!(kind.as_deref(), Some("capability"));
         assert_eq!(slug.as_deref(), Some("my-cap"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_document_that_cannot_be_read_stops_the_restore() {
+        // The identity guard compares the uid and slug on disk with the ones in the commit.
+        // When that read fails for any reason other than "not there", the comparison never
+        // happened, and restoring anyway is the identity-blind overwrite the guard exists
+        // to refuse.
+        let dir = std::env::temp_dir().join(format!("atlas-restore-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let git = |args: &[&str]| {
+            let out = std::process::Command::new("git")
+                .args(args)
+                .current_dir(&dir)
+                .output()
+                .unwrap();
+            assert!(
+                out.status.success(),
+                "git {args:?}: {}",
+                String::from_utf8_lossy(&out.stderr)
+            );
+        };
+        git(&["init", "-q"]);
+        git(&["config", "user.email", "test@example.invalid"]);
+        git(&["config", "user.name", "atlas test"]);
+        git(&["config", "commit.gpgsign", "false"]);
+        let file = dir.join("orders.md");
+        let committed = "---\nuid: 11111111\nslug: domains/orders\n---\n# Orders\n";
+        fs::write(&file, committed).unwrap();
+        git(&["add", "orders.md"]);
+        git(&["commit", "-qm", "seed"]);
+
+        // 0xff never appears in valid UTF-8, so the working file is unreadable as text.
+        let unreadable = [0xffu8, 0xfe, 0xff];
+        fs::write(&file, unreadable).unwrap();
+        let vault = dir.to_string_lossy().into_owned();
+        let err = git_restore_file(vault.clone(), "orders.md".into(), "HEAD".into()).unwrap_err();
+        assert!(err.starts_with("restore-identity-check-failed"), "{err}");
+        assert_eq!(
+            fs::read(&file).unwrap(),
+            unreadable,
+            "a refusal must leave the document alone"
+        );
+
+        // Readable again, the same call restores as before.
+        fs::write(
+            &file,
+            "---\nuid: 11111111\nslug: domains/orders\n---\n# Changed\n",
+        )
+        .unwrap();
+        let done = git_restore_file(vault, "orders.md".into(), "HEAD".into()).unwrap();
+        assert!(done.restored);
+        assert_eq!(fs::read_to_string(&file).unwrap(), committed);
         let _ = fs::remove_dir_all(&dir);
     }
 }
