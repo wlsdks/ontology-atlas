@@ -37,3 +37,4 @@ export { getTopologyFocusHref, getTopologyProjectHref } from "./lib/topology-hre
 export { ProjectCard } from "./ui/ProjectCard";
 export { ProjectMetaGrid } from "./ui/ProjectMetaGrid";
 export { projectToInput } from "./model/to-input";
+export { projectDisplayName, projectHasDisplayName, readDisplayNames } from "./lib/display-name";

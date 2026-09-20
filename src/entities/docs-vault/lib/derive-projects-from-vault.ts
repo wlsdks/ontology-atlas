@@ -1,4 +1,4 @@
-import type { Project } from '@/entities/project';
+import { readDisplayNames, type Project } from '@/entities/project';
 import type { VaultDoc, VaultManifest } from '../model/types';
 import { computeProjectSlug, isProjectVaultDoc } from './project-slug';
 
@@ -68,6 +68,7 @@ function mapVaultDocToProject(doc: VaultDoc): Project | null {
   return {
     slug,
     name,
+    displayNames: readDisplayNames(fm),
     category,
     status,
     description,

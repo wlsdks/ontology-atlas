@@ -13,6 +13,8 @@ import type { ProjectInput } from '@/entities/project';
 
 export interface ProjectFrontmatterPatch {
   name?: string;
+  /** One `display_<locale>` key: the word a screen in that locale draws for the project. */
+  displayName?: { locale: string; value: string };
   description?: string | null;
   owner?: string | null;
   tags?: string[] | null;
@@ -153,6 +155,11 @@ export function useProjectMutations(): ProjectMutations {
         // the ko/en map and INDEX do not keep showing the starter name after the project
         // is renamed. Customized display names are left untouched.
         Object.assign(updates, buildStarterDisplaySync(existing.frontmatter, patch.name));
+      }
+      if (patch.displayName !== undefined) {
+        // The heading edits the word the person is looking at; on a screen whose locale has a
+        // display name that word is the display key, not the canonical title (2026-09-19).
+        updates[`display_${patch.displayName.locale}`] = patch.displayName.value;
       }
       if (patch.description !== undefined) {
         updates.description = patch.description;
