@@ -937,6 +937,14 @@ export function AcpChatPanel({
       parts.detail ? { lead: parts.lead, detail: parts.detail, full: prefillText } : null,
     );
   }
+  /**
+   * A request this screen wrote is sitting unsent in the composer.
+   *
+   * `seenPrefillNonce` says a seat was consumed; the draft says it is still there. Both are
+   * needed: a seat the person cleared is a blank start again, and a draft the person typed
+   * themselves was never staged by anything.
+   */
+  const seatedRequestWaiting = seenPrefillNonce !== null && draft.trim().length > 0;
   /*
    * There has to be something to draw while the exit animation runs — if the content
    * disappeared the moment `pending` went null, an **empty box** would be the thing
@@ -1572,11 +1580,26 @@ export function AcpChatPanel({
         {events.length === 0 && status !== 'starting' ? (
           // Place the empty conversation guide **in the center of where records will accumulate**. If placed at the top, it reads like the first speech bubble, and the actual place where the conversation starts appears empty.
           <div className="m-auto grid max-w-[34ch] gap-3">
+            {/*
+             * **The invitation matches what is actually in the box** (2026-09-20).
+             *
+             * Measured in the Insights dock: the screen had already written the question —
+             * "Explain this Analysis tab from the current ontology evidence only", with three
+             * instruction lines folded under it — and the transcript, 470px of empty panel above
+             * that box, still read "Ask anything about this folder." The largest region told the
+             * start from nothing while their start was already written, and nothing said the
+             * staged request was there to edit or send. The Library dock seats nothing, so it
+             * keeps the open invitation; the seated docks say what is waiting.
+             *
+             * The condition is the draft, not the seat alone: clearing the box really does put
+             * the person back at a blank start, and the sentence goes back with them.
+             */}
             <p
               data-testid="acp-chat-empty"
+              data-acp-empty={seatedRequestWaiting ? 'seated' : 'open'}
               className="break-keep text-center text-label leading-prose text-[color:var(--color-text-quaternary)]"
             >
-              {t('emptyHint')}
+              {t(seatedRequestWaiting ? 'emptySeatedHint' : 'emptyHint')}
             </p>
             {/*
               The answer to 「What Should I Ask」 (what should I ask) comes from **this

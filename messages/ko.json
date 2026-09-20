@@ -4258,6 +4258,7 @@
   "acpChat": {
     "ariaLabel": "{runtime} 대화",
     "emptyHint": "이 폴더에 대해 무엇이든 물어보세요.",
+    "emptySeatedHint": "이 화면이 질문을 하나 써 뒀어요. 아래에서 고치거나 그대로 보내세요.",
     "composerLabel": "무엇을 시킬지 적어요",
     "send": "보내기",
     "stop": "그만",
