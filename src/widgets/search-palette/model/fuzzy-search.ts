@@ -30,6 +30,8 @@ export function searchProjects(projects: Project[], rawQuery: string): SearchRes
   for (const project of projects) {
     const name = project.name.toLowerCase();
     const nameEn = (project.nameEn ?? '').toLowerCase();
+    // Every word a screen draws for the project (`display_<locale>`) matches like its name.
+    const displays = Object.values(project.displayNames ?? {}).map((value) => value.toLowerCase());
     const slug = project.slug.toLowerCase();
     const description = project.description.toLowerCase();
     const tags = project.tags.map((t) => t.toLowerCase());
@@ -45,9 +47,9 @@ export function searchProjects(projects: Project[], rawQuery: string): SearchRes
       }
     };
 
-    if (name === query) considered(100, 'name');
-    else if (name.startsWith(query)) considered(80, 'name');
-    else if (name.includes(query)) considered(60, 'name');
+    if (name === query || displays.includes(query)) considered(100, 'name');
+    else if (name.startsWith(query) || displays.some((value) => value.startsWith(query))) considered(80, 'name');
+    else if (name.includes(query) || displays.some((value) => value.includes(query))) considered(60, 'name');
 
     if (nameEn && nameEn.includes(query)) considered(55, 'nameEn');
     if (slug.includes(query)) considered(50, 'slug');

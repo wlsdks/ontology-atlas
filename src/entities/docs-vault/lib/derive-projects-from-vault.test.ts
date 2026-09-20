@@ -75,6 +75,25 @@ describe("deriveProjectsFromVault — slug & name", () => {
     expect(projects[0]!.slug).toBe("custom-slug");
   });
 
+  it("carries every display_<locale> key as displayNames, and none when the file has none", () => {
+    const [withDisplays] = deriveProjectsFromVault(
+      makeManifest([
+        makeDoc({
+          slug: "projects/foo",
+          frontmatter: { kind: "project", title: "Online Store", display_ko: "온라인 쇼핑몰", display_en: "Online Store" },
+          title: "Online Store",
+        }),
+      ]),
+    );
+    expect(withDisplays!.name).toBe("Online Store");
+    expect(withDisplays!.displayNames).toEqual({ ko: "온라인 쇼핑몰", en: "Online Store" });
+
+    const [without] = deriveProjectsFromVault(
+      makeManifest([makeDoc({ slug: "projects/foo", frontmatter: { kind: "project" }, title: "Doc Title" })]),
+    );
+    expect(without!.displayNames).toBeUndefined();
+  });
+
   it("name fallback chain: fm.name > fm.title > doc.title > fileSlug", () => {
     const projects = deriveProjectsFromVault(
       makeManifest([
