@@ -4466,8 +4466,6 @@
       "openHint": "Follow this ontology-only answer through {count} scenes.",
       "blocked": "This answer is not ready to present yet. {reason}",
       "blockReason": {
-        "intent_inactive": "It was not requested as a presentation.",
-        "turn_incomplete": "The answer has not finished.",
         "no_answer": "There is no completed explanation.",
         "source_hidden_unproven": "The tool record does not prove an ontology-only read.",
         "no_full_body_reads": "No concept body was read in full.",
