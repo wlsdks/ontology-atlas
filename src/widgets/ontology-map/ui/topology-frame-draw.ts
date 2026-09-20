@@ -10,7 +10,7 @@ import { collectDomeAncestry, domeAncestryEdgeKey } from "../model/dome-ancestry
 import { buildTrailGlintLegs, trailGlintLocalPhase } from "../model/footprint-steps";
 import { bodyPresence, filamentPresence, galaxyAppearance, galaxyMeteorPhase, galaxySelectionInk, galaxyTemperatureKey, galaxyTwinkle, starLuminance } from "../model/galaxy";
 import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
-import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, trailNodeInkStrength, type EdgeEgoState, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
+import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, trailNodeInkStrength, type EdgeEgoState, type EdgePairFocus, type NodeEgoState, egoRestSink } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { backgroundParallaxOrigin, resolveBackgroundOrigin } from "../model/background-parallax";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
@@ -1648,6 +1648,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // edge path.
     const returnAlpha = realmOutsideReturnAlphaById?.get(node.id);
     let outAlpha = returnAlpha !== undefined ? baseAlpha * returnAlpha : baseAlpha;
+    // What the ego focus dims recedes: the node, and through this map its
+    // lines, chip and name. Lenses keep their own sink (`spotlightSink`).
+    if ((focusedNodeId !== null || selectedEdge !== null) && !isEgoMember && !trailLensActive) {
+      outAlpha *= egoRestSink(focusRampById.get(node.id) ?? 0, tokens.egoRestAlpha);
+    }
     // 3D — on the dome **every tier takes part in the form**: capabilities and
     // elements the semantic-zoom condition hides still rise on their tier's
     // assembly ramp. At ramp 0 the value is unchanged (2D), at ramp 1 fully
@@ -3482,7 +3487,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       kind: node.kind,
       egoState,
       isHovered,
-      dimLabelAlpha: tokens.egoDimLabelAlpha,
       revealAlpha: labelRevealAlpha,
     });
     // A saved set is an explicit reading scope. Its names use the existing
@@ -3796,7 +3800,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         labelDomain: tokens.labelDomain,
         labelCapability: tokens.labelCapability,
         labelElement: tokens.labelElement,
-        egoDimLabelAlpha: tokens.egoDimLabelAlpha,
         amberHub: tokens.amberHub,
         labelHalo: tokens.canvasBgNear,
       },

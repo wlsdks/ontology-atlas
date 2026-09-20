@@ -17,8 +17,7 @@ import {
   selectiveEgoNeighbors,
   stepEmphasis,
   stepFocusRamp,
-  type EgoNeighborRankEntry,
-} from "./focus-state";
+  type EgoNeighborRankEntry, egoRestSink } from "./focus-state";
 
 describe("resolveNodeEgoState", () => {
   it("is normal for every node when there is no focus", () => {
@@ -323,5 +322,15 @@ describe("clusterMoreChipId / parseClusterMoreChipId (고팬아웃 배치-공개
 
   it("빈 부모 id 도 접두어만으로 왕복(경계)", () => {
     expect(parseClusterMoreChipId(clusterMoreChipId(""))).toBe("");
+  });
+});
+
+describe("egoRestSink", () => {
+  it("rides the focus ramp from 1 down to the rest alpha, clamped", () => {
+    expect(egoRestSink(0, 0.42)).toBe(1);
+    expect(egoRestSink(1, 0.42)).toBeCloseTo(0.42, 9);
+    expect(egoRestSink(0.5, 0.42)).toBeCloseTo(0.71, 9);
+    expect(egoRestSink(-1, 0.42)).toBe(1);
+    expect(egoRestSink(3, 0.42)).toBeCloseTo(0.42, 9);
   });
 });

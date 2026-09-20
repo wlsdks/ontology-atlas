@@ -314,14 +314,14 @@ had become false).
   project/domain/hub structure and bounded ForceAtlas2 settling: the read-first
   decision surface.
 - Focus/path/health are **not separate canvases**:
-  - **Focus** — enters via node click on the map (selection state); `mode=focus` deep links preserved
+  - **Focus** — enters via node click on the map (selection state); `mode=focus` deep links preserved What the focus dims recedes to `--map-ego-rest-alpha` (0.42): the node, its lines, its chip and, for a project or domain, its name, on one number (2026-09-20; before, the dim was a colour ramp of 1.37:1 and dimmed siblings drew as bright nameless circles)
   - **Path** — enters via shift-click of 2 nodes or `mode=path` deep links
   - **Health** — enters via the maintenance queue count chip on the view rail; `mode=health` deep links preserved
 
 #### Canvas (`ontology-map` — custom canvas-2D engine + Graphology ForceAtlas2 physics)
 - **Click node** → right-side panel opens (`ProjectDrawer` for project nodes, the 352px node datasheet for domain/capability/element nodes — see "Node datasheet" below)
 - **Drag node** → reposition (releases back to physics)
-- **Double-click node** → "local graph" mode (2-hop neighbors only, breadcrumb: `Local · Root · slugA · slugB`, click to backtrack, Esc to exit)
+- **Double-click node** → opens or folds its children, the same act as its `+N` chip, and keeps it selected (the "local graph" mode this line once described does not exist; 2026-09-19)
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
 - **The trail you walked** → every node that takes focus is appended to a session trail. The map leaves footprints beside the relation lines actually crossed (offset along the line's own curve, never on it) and a step number beside each visited node; the top-centre **Trail** chip opens a newest-first mini timeline. Each row carries, under the title, how that step connects to the step before it: the relation word plus the reason recorded on that edge (`relation_notes`), the relation word alone when no reason is written, or "Not directly related" when the two share no edge. **Hand off to AI** copies the same per-step lines into the agent brief, so the argument the walk made travels with the names. Past trails are archived in the vault folder.
