@@ -27,6 +27,9 @@ import {
 import { useTranslations } from 'next-intl';
 
 import { Chip, Disclosure, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
+import { copyText } from '@/shared/lib/copy-text';
+import { Link } from '@/i18n/navigation';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
 import { Button } from '@/shared/ui/button';
 import { formatDate } from '@/shared/lib/format-date';
@@ -373,13 +376,19 @@ export function AcpChatPanel({
   /**
    * Answers a file permission itself when the screen's own contract says the write fits:
    * the request lands without a card and the transcript notes it. Null asks the person.
+   *
+   * ⚠️ **A rejection is an answer too, and this type used to forbid it** (2026-09-20). The
+   * session it feeds has always accepted `{ reject }` and pushes an `auto-refused` notice for
+   * it — `use-rounds-runner` answers that way on every write outside a round's scope — but the
+   * panel's own prop said `string | null`, so the case could not be written down here and the
+   * notice fell through the transcript's chain to the unrelated `notice.gateOff`.
    */
   autoDecide?: (request: {
     filePath: string | null;
     rawInput: Record<string, unknown>;
     toolKind: string | null;
     toolName: string | null;
-  }) => string | null;
+  }) => string | { reject: string } | null;
   /**
    * The answer to 「What should I ask?」 (what should I ask) — drawn from **this folder's
    * current state** (`useChatSuggestions`). It appears in the empty conversation and,
@@ -695,6 +704,25 @@ export function AcpChatPanel({
    * stderr (measured 2026-08-19).
    */
   const trouble = error ? readAcpTrouble(error, diagnostics) : null;
+  /**
+   * ⚠️ **The card must not name an action it does not offer** (owner, installed app, 2026-08-24:
+   * *"if this is normal I still would not know what to do"*). That rule is why Retry moved into
+   * this card, and the usage-limit sentence had quietly broken it again: it ended 「until then pick
+   * another tool below and carry on」 while the footer showed the tool's **name**, not a picker.
+   *
+   * Measured 2026-09-19 with one tool installed — the ordinary case, and the one that hits a usage
+   * limit: no runtime picker, no mode picker, and a disabled composer. The only controls on screen
+   * were Retry, the connection check, New chat and Send. There was no other tool to pick, and
+   * nothing said so.
+   *
+   * A second tool is exactly what `runtimes`/`onRuntimeChange` already decide the footer picker by,
+   * so the sentence is chosen by the same fact the control is. Nothing is added to the screen; one
+   * of the two is simply true.
+   */
+  const canChooseAnotherTool = runtimes.length > 1 && Boolean(onRuntimeChange);
+  const troubleHintKey = trouble?.kind === 'limit' && !canChooseAnotherTool
+    ? 'trouble.limit.hintOnlyTool'
+    : `trouble.${trouble?.kind ?? 'unknown'}.hint`;
   const doctor = useAgentDoctor(runtimeId);
   const showDoctor = Boolean(runtimeId) && isAgentDoctorAvailable();
   const [draft, setDraft] = useState('');
@@ -918,6 +946,14 @@ export function AcpChatPanel({
       parts.detail ? { lead: parts.lead, detail: parts.detail, full: prefillText } : null,
     );
   }
+  /**
+   * A request this screen wrote is sitting unsent in the composer.
+   *
+   * `seenPrefillNonce` says a seat was consumed; the draft says it is still there. Both are
+   * needed: a seat the person cleared is a blank start again, and a draft the person typed
+   * themselves was never staged by anything.
+   */
+  const seatedRequestWaiting = seenPrefillNonce !== null && draft.trim().length > 0;
   /*
    * There has to be something to draw while the exit animation runs — if the content
    * disappeared the moment `pending` went null, an **empty box** would be the thing
@@ -1127,6 +1163,7 @@ export function AcpChatPanel({
   const toolPickerValue =
     choices.models.length > 0 ? (choices.currentModelId ? `model:${choices.currentModelId}` : '') : `runtime:${runtimeId}`;
 
+  const busy = status === 'thinking';
   const choicesRow =
     choices.models.length > 0 || choices.modes.length > 0 ? (
         /*
@@ -1164,9 +1201,33 @@ export function AcpChatPanel({
          * the promise this screen is built on. Content-sized here, plus a name that absorbs the
          * shortfall first, puts the yielding the right way round.
          */
+        /*
+         * ⚠️ **While a turn runs, this row stands down at the widths that cannot hold it.**
+         *
+         * Measured on the rendered footer with a live turn (2026-09-19). A running turn puts the
+         * Stop chip on the right-hand group, which takes it to 215 of the 228 pixels this footer
+         * has at the panel's documented minimum. The row was left with **nine**, and the picker
+         * inside it does not shrink below its floor, so it drew **on top of the status word**:
+         * three of five probe points over 「Thinking · 1s」 came back as the picker or its chevron.
+         * The footer's own `scrollWidth` was equal to its `clientWidth` throughout, so nothing
+         * measuring rectangles would ever have seen it — occlusion is not geometry.
+         *
+         * From 320 to 380 the same squeeze also clipped the picker's word, which is the promise
+         * the runtime name already yields to keep. The name's own rule decides this one too: a
+         * control that names its choice and then hides it is worse than one that never claimed to.
+         *
+         * So the mode is the thing that yields here, and only here. During a turn it is the one
+         * control on the row that cannot act — the mode was fixed when the turn started — while
+         * the status and its clock are live, and Stop is the way out. It comes back the moment the
+         * turn ends. 308 is the footer width at which the Korean mode name and the running group
+         * both measured whole; Korean decides, as it did for the name.
+         */
         <div
           data-testid="acp-chat-choices"
-          className="flex min-w-0 items-center gap-0.5"
+          className={cn(
+            'min-w-0 items-center gap-0.5',
+            busy ? 'hidden @min-[308px]/composer:flex' : 'flex',
+          )}
         >
           {choices.modes.length > 0 ? (
             <Select
@@ -1202,24 +1263,50 @@ export function AcpChatPanel({
               })}
               data-testid="acp-chat-mode"
               quiet
-              className={cn(PICKER_MIN_WIDTH_CLASS, PICKER_MAX_WIDTH_CLASS, 'shrink')}
+              /*
+               * ⚠️ **It does not shrink below its own word.** Measured on the CI runner: with a
+               * turn running and the composer at 342px, the Korean mode name needed 63px and its
+               * label was given 59 — the container had grown 80px wider than the idle case that
+               * fits, and the label's box had *narrowed*, because the Stop chip took the row. So
+               * `@min-[308px]/composer` saw 342, concluded there was room, and rendered a cut
+               * word. A container query cannot measure text; this is the half of that seam the
+               * picker itself can close. It now keeps its content width, and the query decides
+               * only whether the row appears at all.
+               */
+              className={cn(PICKER_MIN_WIDTH_CLASS, PICKER_MAX_WIDTH_CLASS, 'shrink-0')}
             />
           ) : null}
         </div>
       ) : null;
 
-  const busy = status === 'thinking';
+  /*
+   * ⚠️ **A turn blocked on a permission request is not thinking, and this footer said it was.**
+   * Measured in the rendered panel with the card on screen, in both catalogues: the word read
+   * `Thinking` and its clock kept counting, beside a Stop button, while the agent had produced
+   * nothing since it asked and could produce nothing until the person answered. The panel was
+   * reporting its own wait as the agent's work, and the only thing the turn was blocked on was
+   * the reader.
+   *
+   * The protocol state is untouched — `data-acp-status` stays `thinking`, because that is what
+   * the session is — and only the word a person reads changes.
+   */
+  const awaitingAnswer = busy && pending !== null;
   /*
    * A clock beside the status word (owner, 2026-09-06). "thinking" alone cannot show that
    * time passes; a person watching a long turn wants to know whether it is 20 seconds or
    * 4 minutes in. The start is the moment the panel entered `thinking`; it ticks once a
    * second and disappears with the word.
+   *
+   * It restarts when the word changes, because a clock belongs to the sentence it sits in. A
+   * number carried over from `Thinking` would make 「waiting for you · 4m」 out of a turn that
+   * thought for four minutes and asked one second ago.
    */
+  const clockPhase = !busy ? null : awaitingAnswer ? 'awaiting' : 'thinking';
   const [turnClock, setTurnClock] = useState<{ startedAt: number; nowMs: number } | null>(null);
   useEffect(() => {
     // State moves only from timers, never synchronously inside the effect: the first tick
     // lands a frame later and the clock reads 0s, which is the truth at that moment.
-    if (!busy) {
+    if (!clockPhase) {
       const clear = window.setTimeout(() => setTurnClock(null), 0);
       return () => window.clearTimeout(clear);
     }
@@ -1228,9 +1315,9 @@ export function AcpChatPanel({
     const first = window.setTimeout(tick, 0);
     const timer = window.setInterval(tick, 1000);
     return () => { window.clearTimeout(first); window.clearInterval(timer); };
-  }, [busy]);
+  }, [clockPhase]);
   const turnElapsedLabel = (() => {
-    if (!busy || !turnClock) return null;
+    if (!clockPhase || !turnClock) return null;
     const { hours, minutes, seconds } = elapsedParts(turnClock.nowMs - turnClock.startedAt);
     if (hours > 0) return t('elapsedHours', { hours, minutes });
     if (minutes > 0) return t('elapsedMinutes', { minutes, seconds });
@@ -1292,6 +1379,8 @@ export function AcpChatPanel({
   // the process effect has not yet started,
   // so the actual state is idle. While this panel is open, the user sees 「Waiting for Connection」 — we project only the screen state as starting without touching the protocol state. As long as sessionEnabled=true, 「Off」 does not flash during render cycles.
   const displayStatus = status === 'idle' ? 'starting' : status;
+  /** What the footer says out loud. The panel's own `data-acp-status` keeps the session's word. */
+  const footerStatus = awaitingAnswer ? 'awaiting' : displayStatus;
   const presentationResult = useMemo(
     () => buildAcpPresentationTrace({
       intent: presentationIntent,
@@ -1529,11 +1618,26 @@ export function AcpChatPanel({
         {events.length === 0 && status !== 'starting' ? (
           // Place the empty conversation guide **in the center of where records will accumulate**. If placed at the top, it reads like the first speech bubble, and the actual place where the conversation starts appears empty.
           <div className="m-auto grid max-w-[34ch] gap-3">
+            {/*
+             * **The invitation matches what is actually in the box** (2026-09-20).
+             *
+             * Measured in the Insights dock: the screen had already written the question —
+             * "Explain this Analysis tab from the current ontology evidence only", with three
+             * instruction lines folded under it — and the transcript, 470px of empty panel above
+             * that box, still read "Ask anything about this folder." The largest region told the
+             * start from nothing while their start was already written, and nothing said the
+             * staged request was there to edit or send. The Library dock seats nothing, so it
+             * keeps the open invitation; the seated docks say what is waiting.
+             *
+             * The condition is the draft, not the seat alone: clearing the box really does put
+             * the person back at a blank start, and the sentence goes back with them.
+             */}
             <p
               data-testid="acp-chat-empty"
+              data-acp-empty={seatedRequestWaiting ? 'seated' : 'open'}
               className="break-keep text-center text-label leading-prose text-[color:var(--color-text-quaternary)]"
             >
-              {t('emptyHint')}
+              {t(seatedRequestWaiting ? 'emptySeatedHint' : 'emptyHint')}
             </p>
             {/*
               The answer to 「What Should I Ask」 (what should I ask) comes from **this
@@ -1753,7 +1857,7 @@ export function AcpChatPanel({
               {t(`trouble.${trouble?.kind ?? 'unknown'}.title`)}
             </p>
             <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
-              {t(`trouble.${trouble?.kind ?? 'unknown'}.hint`)}
+              {t(troubleHintKey)}
             </p>
           </div>
           {/*
@@ -1772,7 +1876,42 @@ export function AcpChatPanel({
             know cannot work would teach people to distrust it.
           */}
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            {trouble?.kind === 'launch' ? null : (
+            {/*
+             * **The one card with no retry now has the door its own sentence names**
+             * (2026-09-20). Rendered for the first time this round: the `launch` card told the
+             * reader to check this tool's state on the Agents screen "on the left", and offered
+             * exactly one control — the connection check, which the comment above calls the
+             * row's *second* action. So the only action on the card was not the one the sentence
+             * asked for, and the screen it named had to be found by hand. That is the dead end
+             * the retry was added to close for the other six kinds.
+             *
+             * It is a link rather than a retry because the diagnosis is right: another attempt
+             * at a start we know cannot work would teach people to distrust the button. The
+             * sentence also stopped naming a direction — the rail that holds Agents is hidden
+             * below `lg`, so "on the left" was a guess about the reader's window, and it is not
+             * needed now that the destination is on the card.
+             */}
+            {trouble?.kind === 'launch' ? (
+              <Link
+                href={DESTINATION_HREF.agents}
+                data-testid="acp-chat-error-agents"
+                /*
+                 * The hover comes from the axis, not from a hand-written class: the retry beside
+                 * it predates `hoverSurface` and is carried by the adoption ratchet, and copying
+                 * its literal would have raised that count rather than left it alone.
+                 */
+                className={controlClass({
+                  shape: 'chip',
+                  size: 'lg',
+                  tone: 'accentOnTint',
+                  hoverSurface: 'lift',
+                  className:
+                    'shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)]',
+                })}
+              >
+                {t('trouble.launch.door')}
+              </Link>
+            ) : (
               <Chip
                 size="lg"
                 tone="accentOnTint"
@@ -2224,7 +2363,7 @@ export function AcpChatPanel({
               character carries startup motion once; this footer keeps the status in words.
             */}
             <span
-              data-acp-status-badge={displayStatus}
+              data-acp-status-badge={footerStatus}
               aria-live="polite"
               /*
                 On the two-row footer this word and its clock are the row's left half, so the
@@ -2233,7 +2372,7 @@ export function AcpChatPanel({
               */
               className="flex shrink-0 items-center gap-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
             >
-              {t(`status.${displayStatus}`)}
+              {t(`status.${footerStatus}`)}
               {turnElapsedLabel ? <span data-testid="acp-turn-elapsed" className="tabular-nums">· {turnElapsedLabel}</span> : null}
             </span>
             <TooltipProvider delayDuration={200}>
@@ -2646,6 +2785,133 @@ function slugMarkComponents(
   return out;
 }
 
+/**
+ * **Content wider than the panel says so on the edge that is hiding something.**
+ *
+ * ⚠️ Measured in the rendered dock, 2026-09-19. A fenced command in a Korean answer drew as
+ * `pnpm atlas compile --page wiki/archite` at a 320px panel — cut flush at the right edge, with
+ * no fade, no rule and no resting scrollbar, because a WebView's overlay scrollbars appear only
+ * while the pointer is moving. A truncated sentence is a sentence somebody can tell is truncated.
+ * A truncated **command** looks complete, and copying it runs the wrong thing.
+ *
+ * This is the affordance this repository already uses for exactly this fact — the
+ * `--tabbar-edge-fade` mask the tab strips, the transcript's own top edge and the past-conversation
+ * list all wear. No new token, no new width, and the same four states: both edges, either, neither.
+ *
+ * ⚠️ **Only while something is actually hidden.** Painted unconditionally the mask would blur the
+ * end of a command that fits, which states the opposite of the fact it exists to state — the same
+ * rule the transcript's top fade keeps.
+ *
+ * (There are now four hand-rolled copies of this four-state arithmetic in the app — `TabBar`,
+ * `LibraryPage`, the history list above, and this. A shared hook is the right home for it and is
+ * its own change, not a rider on a defect fix.)
+ */
+
+function useHorizontalOverflowEdges<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [edge, setEdge] = useState({ start: false, end: false });
+  const measure = useCallback(() => {
+    const element = ref.current;
+    if (!element) return;
+    const start = element.scrollLeft > 1;
+    const end = element.scrollLeft < element.scrollWidth - element.clientWidth - 1;
+    setEdge((previous) =>
+      previous.start === start && previous.end === end ? previous : { start, end },
+    );
+  }, []);
+  useLayoutEffect(() => {
+    measure();
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    // The panel is dragged, so the same block is inside 320px and 968px on one screen.
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [measure]);
+  const fade = 'var(--tabbar-edge-fade)';
+  const mask =
+    edge.start && edge.end
+      ? `linear-gradient(to right, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`
+      : edge.end
+        ? `linear-gradient(to right, black calc(100% - ${fade}), transparent 100%)`
+        : edge.start
+          ? `linear-gradient(to right, transparent 0, black ${fade})`
+          : undefined;
+  return {
+    ref,
+    onScroll: measure,
+    'data-edge-overflow': edge.start && edge.end
+      ? 'both'
+      : edge.end
+        ? 'end'
+        : edge.start
+          ? 'start'
+          : undefined,
+    style: mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined,
+  };
+}
+
+/**
+ * **A command in an answer is something to read *and* something to run.**
+ *
+ * Two rounds found the same defect from opposite ends and this block keeps both answers,
+ * because they fix different halves of it.
+ *
+ * ## What was measured
+ *
+ * At the dock's documented floor the answer column is 260px and
+ * `pnpm atlas compile --page wiki/architecture.md --force --locale ko` lays out at 456px, so
+ * **196 pixels — 43% of the command — sat behind `overflow-x: auto` and a 2px scrollbar**.
+ * Worse, it was cut flush at the right edge with no fade and no resting scrollbar, because a
+ * WebView's overlay scrollbars appear only while the pointer is moving. A truncated sentence is
+ * visibly truncated; a truncated **command** looks complete, and copying it runs the wrong thing.
+ *
+ * ## The two halves
+ *
+ * The edge mask says the rest is there — the same `--tabbar-edge-fade` affordance the tab strips,
+ * the transcript's top edge and the past-conversation list already wear, so no new token and no
+ * new width. Scrolling is how you *read* the rest.
+ *
+ * The copy chip is how you *use* it, which is why the command is in the answer at all. Wrapping
+ * would have made it readable and lied about it: a wrapped line looks like two, and somebody
+ * retyping a wrapped shell command types the break.
+ *
+ * It is always drawn — not on hover, because a touch screen has none and this repository already
+ * forbids discovery that exists only under a pointer, and not only when the block overflows,
+ * because an affordance that comes and goes by width teaches people it might not be there.
+ */
+function ChatCodeBlock({ children, ...rest }: { node?: unknown; children?: ReactNode }) {
+  const t = useTranslations('acpChat');
+  const [copied, setCopied] = useState(false);
+  const edges = useHorizontalOverflowEdges<HTMLPreElement>();
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+  return (
+    <div className="my-2 grid gap-1 justify-items-start">
+      {/* The testid stays on the `pre`: that is the element carrying `data-edge-overflow`, which
+          is what `chat-answer-overflow-edge.spec.ts` reads off it. */}
+      <pre data-testid="acp-chat-code-block" {...rest} {...edges} className="atlas-scroll-quiet w-full">
+        {children}
+      </pre>
+      <Chip
+        data-testid="acp-chat-code-copy"
+        size="sm"
+        tone="muted"
+        hoverInk="strong"
+        onClick={() => {
+          // The DOM text, not the markdown source: what is copied is exactly what is shown.
+          void copyText(edges.ref.current?.textContent ?? '').then((ok) => setCopied(ok));
+        }}
+      >
+        {t(copied ? 'codeCopied' : 'codeCopy')}
+      </Chip>
+    </div>
+  );
+}
+
 /** The GFM table in the conversation has its own scroll to prevent columns from squishing in the narrow dock. */
 function chatMarkdownComponents(
   known: ReadonlySet<string> | undefined,
@@ -2654,18 +2920,30 @@ function chatMarkdownComponents(
   const marked = slugMarkComponents(known, onHoverSlug) ?? {};
   return {
     ...marked,
+    pre: ({ node: _node, ...props }) => <ChatCodeBlock {...props} />,
     table: ({ node: _node, ...props }) => (
-      <div
-        data-testid="acp-chat-markdown-table"
-        className="my-2 max-w-full overflow-x-auto rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
-      >
+      <ChatTableFrame>
         <table
           {...props}
           className="w-max min-w-full border-collapse text-left text-label leading-label [&_thead]:bg-[color:var(--color-overlay-2)] [&_tr]:border-b [&_tr]:border-[color:var(--color-divider)] [&_tbody_tr:last-child]:border-b-0 [&_th]:px-2.5 [&_th]:py-2 [&_th]:font-[var(--font-weight-emphasis)] [&_th]:text-[color:var(--color-text-primary)] [&_td]:px-2.5 [&_td]:py-2 [&_td]:align-top [&_td]:text-[color:var(--color-text-secondary)]"
         />
-      </div>
+      </ChatTableFrame>
     ),
   };
+}
+
+/** The table's own scroller, wearing the same edge fade as a fenced block. */
+function ChatTableFrame({ children }: { children?: ReactNode }) {
+  const edges = useHorizontalOverflowEdges<HTMLDivElement>();
+  return (
+    <div
+      data-testid="acp-chat-markdown-table"
+      className="my-2 max-w-full overflow-x-auto rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
+      {...edges}
+    >
+      {children}
+    </div>
+  );
 }
 
 function TranscriptEntry({
@@ -3042,13 +3320,27 @@ function TranscriptEntry({
       data-notice={event.text}
       className="break-keep rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-label leading-prose text-[color:var(--color-text-secondary)]"
     >
+      {/*
+       * ⚠️ **Every notice kind needs its own arm, because the last one is an `else`.**
+       *
+       * `auto-refused` had none (found 2026-09-20). The session pushes it whenever `autoDecide`
+       * answers with a rejection — which `use-rounds-runner` does on every write outside a round's
+       * scope — and it fell through this chain to `notice.gateOff`, a sentence saying Atlas
+       * *cannot* ask before a file outside the folder is touched. The opposite of what happened:
+       * Atlas had decided, and refused. The subject it refused (`detail`) was dropped with it.
+       *
+       * There was no `notice.autoRefused` string either, so the branch could not have been
+       * written without writing the sentence first.
+       */}
       {event.text === 'mode-moved'
         ? t(event.serverGate ? 'notice.modeMovedServerGate' : 'notice.modeMoved', {
             mode: event.mode ?? '',
           })
         : event.text === 'auto-allowed'
           ? t('notice.autoAllowed', { detail: event.detail ?? '' })
-          : t(event.text === 'died-mid-turn' ? 'notice.diedMidTurn' : 'notice.gateOff')}
+          : event.text === 'auto-refused'
+            ? t('notice.autoRefused', { detail: event.detail ?? '' })
+            : t(event.text === 'died-mid-turn' ? 'notice.diedMidTurn' : 'notice.gateOff')}
       {event.text === 'auto-allowed' && noticeActions && event.detail ? (
         /*
          * The receipt carries its two doors: the page that landed, and the switch to being
@@ -3056,13 +3348,29 @@ function TranscriptEntry({
          * list was a dead receipt at the one moment the consequence was on screen
          * (design-interaction, council 2026-09-07). The second door writes the same
          * setting Settings owns; it is a way back, not a second place to change the mode.
+         *
+         * ⚠️ **Both doors were below the touch floor** (measured 2026-09-20, `(pointer: coarse)`
+         * matching): `Open` came back **16x24** and `Ask next time` **43x24**, against the 44px
+         * `--touch-target-min` this repository applies through `.atlas-touch-floor`. A sixteen
+         * pixel wide target is not reachable by a finger, and this is the receipt for a file that
+         * was written **without being asked about** — the one notice where the way back matters.
+         *
+         * `touch-target-contract.spec.ts` sweeps real controls and would have caught it; it never
+         * saw these two, because no test could reach this notice at all until this round. The
+         * floor is applied here and the reachability is now gated beside it.
          */
         <span className="ml-2 inline-flex flex-wrap items-center gap-x-2 align-baseline">
           <button
             type="button"
             data-testid="acp-notice-open-page"
             onClick={() => noticeActions.openPage(event.detail ?? '')}
-            className={controlClass({ shape: 'link', size: 'sm', tone: 'accent', hoverInk: 'strong' })}
+            className={controlClass({
+              shape: 'link',
+              size: 'sm',
+              tone: 'accent',
+              hoverInk: 'strong',
+              className: 'atlas-touch-floor atlas-touch-floor-wide',
+            })}
           >
             {t('notice.openPage')}
           </button>
@@ -3070,7 +3378,13 @@ function TranscriptEntry({
             type="button"
             data-testid="acp-notice-ask-next"
             onClick={noticeActions.askNext}
-            className={controlClass({ shape: 'link', size: 'sm', tone: 'muted', hoverInk: 'strong' })}
+            className={controlClass({
+              shape: 'link',
+              size: 'sm',
+              tone: 'muted',
+              hoverInk: 'strong',
+              className: 'atlas-touch-floor atlas-touch-floor-wide',
+            })}
           >
             {t('notice.askNext')}
           </button>

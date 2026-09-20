@@ -423,6 +423,15 @@ export function stepEmphasis(
  * @param dt elapsed seconds since the last step
  * @param tau `--map-focus-dim-tau` (≈0.16s)
  */
+/**
+ * What the ego focus dims sinks toward `restAlpha` on the node's own focus
+ * ramp — the same ramp the dim colour rides, so ink and presence move as one.
+ */
+export function egoRestSink(focusRamp: number, restAlpha: number): number {
+  const ramp = Math.min(1, Math.max(0, focusRamp));
+  return 1 - ramp * (1 - restAlpha);
+}
+
 export function stepFocusRamp(current: number, focusActive: boolean, dt: number, tau: number): number {
   const target = focusActive ? 1 : 0;
   return current + (target - current) * (1 - Math.exp(-dt / tau));

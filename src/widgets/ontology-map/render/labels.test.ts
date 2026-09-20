@@ -70,12 +70,10 @@ describe("computeLabelAlpha", () => {
    * superimpose, and this pins that a hovered domain resolves to exactly one
    * full-contrast label.
    */
-  it("a dimmed domain keeps the token's share of its name; a dimmed child keeps none", () => {
-    expect(computeLabelAlpha({ ...base, kind: "domain", egoState: "dim", dimLabelAlpha: 0.42 })).toBe(0.42);
-    expect(computeLabelAlpha({ ...base, kind: "project", egoState: "dim", dimLabelAlpha: 0.42 })).toBe(0.42);
-    expect(computeLabelAlpha({ ...base, kind: "capability", egoState: "dim", dimLabelAlpha: 0.42 })).toBe(0);
-    // Callers that do not pass the token get the old silence.
-    expect(computeLabelAlpha({ ...base, kind: "domain", egoState: "dim" })).toBe(0);
+  it("a dimmed domain keeps its name at the node's own (sunk) alpha; a dimmed child keeps none", () => {
+    expect(computeLabelAlpha({ ...base, kind: "domain", egoState: "dim" })).toBe(1);
+    expect(computeLabelAlpha({ ...base, kind: "project", egoState: "dim" })).toBe(1);
+    expect(computeLabelAlpha({ ...base, kind: "capability", egoState: "dim" })).toBe(0);
   });
 
   it("a hovered domain resolves to one full label", () => {
@@ -107,9 +105,9 @@ describe("computeLabelAlpha", () => {
     expect(computeLabelAlpha({ ...base, kind: "element", revealAlpha: 1 })).toBe(1);
   });
 
-  it("is 0 whenever the node is dim, regardless of kind/farT/revealAlpha/hover", () => {
-    expect(computeLabelAlpha({ ...base, kind: "project", egoState: "dim" })).toBe(0);
-    expect(computeLabelAlpha({ ...base, kind: "domain", egoState: "dim" })).toBe(0);
+  it("a dimmed child is 0 regardless of farT/revealAlpha/hover; a dimmed project or domain follows its node's alpha", () => {
+    expect(computeLabelAlpha({ ...base, kind: "project", egoState: "dim", revealAlpha: 0.42 })).toBe(0.42);
+    expect(computeLabelAlpha({ ...base, kind: "domain", egoState: "dim", revealAlpha: 0.42 })).toBe(0.42);
     expect(computeLabelAlpha({ ...base, kind: "capability", egoState: "dim", revealAlpha: 1 })).toBe(0);
     expect(computeLabelAlpha({ ...base, kind: "capability", egoState: "dim", isHovered: true })).toBe(0);
   });
@@ -282,7 +280,6 @@ describe("label halo", () => {
 
   const tokens: LabelTokens = {
     labelProject: "#p", labelDomain: "#d", labelCapability: "#c", labelElement: "#e",
-    egoDimLabelAlpha: 0.42,
     amberHub: "#a", labelHalo: "#ground",
   };
 

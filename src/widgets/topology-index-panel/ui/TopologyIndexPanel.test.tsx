@@ -412,6 +412,65 @@ describe("TopologyIndexPanel", () => {
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
   });
 
+  /**
+   * **A flat tree must say its own shape** (map round, 2026-09-20).
+   *
+   * The rows are siblings in the DOM — there is no nested `role="group"`, and
+   * the hierarchy is drawn with a left margin of `depth * 16`. WAI-ARIA then
+   * requires each `treeitem` to carry `aria-level`, and `aria-posinset` /
+   * `aria-setsize` for its place among its siblings. Measured before the fix on
+   * the sample map: 10 rows, 0 groups, and not one level — a screen reader
+   * announced a project and its nine domains as ten peers, and an expanded
+   * domain's capabilities joined the same flat list.
+   */
+  it("every row states its level and its place among its siblings", () => {
+    const treeResult = buildFixtureTree();
+    render(
+      <TopologyIndexPanel
+        treeResult={treeResult}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+
+    const rowOf = (text: string) => screen.getByText(text).closest('[role="treeitem"]')!;
+    const root = rowOf("ontology-atlas");
+    expect(root.getAttribute("aria-level"), "root level").toBe("1");
+    expect(root.getAttribute("aria-posinset")).toBe("1");
+    expect(root.getAttribute("aria-setsize")).toBe("1");
+
+    const withinSet = (row: Element, label: string) => {
+      const pos = Number(row.getAttribute("aria-posinset"));
+      const size = Number(row.getAttribute("aria-setsize"));
+      expect(Number.isInteger(pos) && pos >= 1, `${label} position`).toBe(true);
+      expect(pos, `${label} position within its set`).toBeLessThanOrEqual(size);
+    };
+
+    const domain = rowOf("Onboarding & UX");
+    expect(domain.getAttribute("aria-level"), "a domain is one level in").toBe("2");
+    withinSet(domain, "domain");
+
+    fireEvent.click(domain.querySelector("button")!);
+    const capability = rowOf("MCP Server");
+    expect(capability.getAttribute("aria-level"), "a capability is two levels in").toBe("3");
+    withinSet(capability, "capability");
+
+    // No row is left silent about where it sits.
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[role="treeitem"]'));
+    expect(rows.length).toBeGreaterThan(2);
+    for (const row of rows) {
+      const label = row.textContent?.slice(0, 16) ?? "";
+      expect(Number(row.getAttribute("aria-level")), `level for ${label}`).toBeGreaterThanOrEqual(1);
+      withinSet(row, label);
+    }
+  });
+
   it("INDEX tree is a single Tab stop — roving tabindex + Arrow/Home/End move the roving focus (P0)", () => {
     // Regression (accessibility audit P0): every treeitem used to carry tabIndex=0,
     // so expanding a domain added +N Tab stops and a keyboard user had to Tab

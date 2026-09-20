@@ -18,6 +18,7 @@ const LABELS: TopologyTrailChipLabels = {
   copyAriaLabel: "걸어온 길을 복사해 AI에게 이어서 맡기기",
   copyCopiedAriaLabel: "복사했어요",
   clearLabel: "지우기",
+  clearConfirmLabel: "한 번 더 누르면 지워요",
   clearAriaLabel: "걸어온 길 지우기",
   pastLinkLabel: "지난 길 2",
   pastHeading: "지난 길",
@@ -170,19 +171,48 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
     expect(props.onFocusEntry).toHaveBeenCalledWith("domain:core");
   });
 
-  it("복사 · 지우기 액션이 콜백을 부른다", () => {
+  it("복사는 한 번에, 지우기는 두 번에 — 걸음을 한 번의 실수로 잃지 않는다", () => {
     const props = renderChip();
     fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
     fireEvent.click(screen.getByTestId("topology-trail-copy-packet"));
     expect(props.onCopyPacket).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByTestId("topology-trail-clear-footer"));
+
+    const footer = screen.getByTestId("topology-trail-clear-footer");
+    fireEvent.click(footer);
+    expect(props.onClear, "첫 press 가 바로 지웠다").not.toHaveBeenCalled();
+    expect(footer).toHaveTextContent("한 번 더 누르면 지워요");
+    fireEvent.click(footer);
     expect(props.onClear).toHaveBeenCalledTimes(1);
   });
 
-  it("칩 ✕ 도 세션 트레일을 소거한다", () => {
+  it("칩 ✕ 도 같은 두 단계를 쓰고, 두 컨트롤이 한 상태를 공유한다", () => {
     const props = renderChip();
+    const x = screen.getByTestId("topology-trail-chip-clear");
+    fireEvent.click(x);
+    expect(props.onClear).not.toHaveBeenCalled();
+    // Arming the popover, not the button: the footer says it too.
+    fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+    expect(screen.getByTestId("topology-trail-clear-footer")).toHaveTextContent("한 번 더 누르면 지워요");
     fireEvent.click(screen.getByTestId("topology-trail-chip-clear"));
     expect(props.onClear).toHaveBeenCalledTimes(1);
+  });
+
+  it("세션 트레일의 2단 확인도 4초 뒤 스스로 풀린다", () => {
+    vi.useFakeTimers();
+    try {
+      const props = renderChip();
+      fireEvent.click(screen.getByTestId("topology-trail-chip-trigger"));
+      const footer = screen.getByTestId("topology-trail-clear-footer");
+      fireEvent.click(footer);
+      act(() => {
+        vi.advanceTimersByTime(4000);
+      });
+      expect(footer).toHaveTextContent("지우기");
+      fireEvent.click(footer);
+      expect(props.onClear).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   describe("걸어온 길 렌즈 — 팝오버 열림이 곧 렌즈", () => {

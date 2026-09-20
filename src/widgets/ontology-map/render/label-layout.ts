@@ -65,6 +65,27 @@ export function isWithinSafeRect(x: number, y: number, rect: SafeRect): boolean 
  * beats silence.
  * `marginX`/`marginY` keep the text box itself inside the rect (width/2, font).
  */
+/**
+ * A label whose slot below the node falls under the floor band takes the slot
+ * above the node instead, when the node itself is on screen and that slot is
+ * inside the safe rect. The band is reserved for the readout in one corner,
+ * yet the anchor gate dropped every name under it: two domains drawn at
+ * y 741 of an 806-tall canvas stood nameless (measured 2026-09-20). Returns
+ * the baseline to use, or null when the ordinary gate should decide.
+ */
+export function floorFlipBaseline(
+  anchorX: number,
+  anchorY: number,
+  flippedBaselineY: number,
+  screenY: number,
+  rect: SafeRect,
+  viewportHeight: number,
+): number | null {
+  if (anchorY <= rect.bottom) return null;
+  if (screenY > viewportHeight) return null;
+  return isWithinSafeRect(anchorX, flippedBaselineY, rect) ? flippedBaselineY : null;
+}
+
 export function clampAnchorIntoSafeRect(
   x: number,
   y: number,
@@ -135,6 +156,18 @@ export interface LabelCandidate<T> {
    * suppress itself.
    */
   ownerId?: string;
+  /**
+   * A second box to try when `bbox` is taken — the slot above the node.
+   *
+   * Without it the placer drops a name outright the moment a higher-priority
+   * label occupies its slot, however much room sits beside it. Measured
+   * 2026-09-20 on a folder of 20 concepts at 1512x982, with the map using 49%
+   * of the canvas width: one capability lost its name to a neighbour 49 px
+   * away while its own slot above was clear.
+   */
+  altBbox?: LabelBBox;
+  /** Set by `greedyPlaceLabels` when it fell back to `altBbox`. */
+  usedAlt?: boolean;
   payload: T;
 }
 
@@ -143,6 +176,15 @@ export interface LabelPriorityInput {
   isSelected: boolean;
   isHovered: boolean;
   isHub: boolean;
+  /**
+   * The node is what a lens was opened to show — a path's own nodes, or a
+   * constellation's members. It takes the top band because it is the answer to
+   * the question the person asked. Measured 2026-09-20: a path's destination
+   * capability sat inside an expanded domain disc, and the greedy placer handed
+   * the space to that domain (3) and the project (2) first, so the map drew the
+   * path with one end named and the other anonymous.
+   */
+  isLensSubject?: boolean;
 }
 
 /**
@@ -153,6 +195,7 @@ export interface LabelPriorityInput {
  * attending to (selected or hovered) must never lose to a passive one.
  */
 export function resolveLabelPriority(input: LabelPriorityInput): number {
+  if (input.isLensSubject) return 0;
   if (input.isSelected) return 0;
   if (input.isHovered) return 1;
   if (input.kind === "project" || input.isHub) return 2;
@@ -263,14 +306,18 @@ export function greedyPlaceLabels<T>(
     return a.order - b.order;
   });
   const placed: LabelCandidate<T>[] = [];
+  const free = (box: LabelBBox, candidate: LabelCandidate<T>): boolean =>
+    !overlapsForeignReserved(box, candidate.ownerId, candidate.priority, reserved) &&
+    !placed.some((p) => bboxesOverlap(p.bbox, box));
   for (const candidate of sorted) {
-    if (
-      overlapsForeignReserved(candidate.bbox, candidate.ownerId, candidate.priority, reserved)
-    ) {
+    if (free(candidate.bbox, candidate)) {
+      placed.push(candidate);
       continue;
     }
-    if (placed.some((p) => bboxesOverlap(p.bbox, candidate.bbox))) continue;
-    placed.push(candidate);
+    // The preferred slot is taken; the one above the node may not be.
+    if (candidate.altBbox && free(candidate.altBbox, candidate)) {
+      placed.push({ ...candidate, bbox: candidate.altBbox, usedAlt: true });
+    }
   }
   return placed;
 }

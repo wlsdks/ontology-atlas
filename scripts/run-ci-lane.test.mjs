@@ -27,7 +27,7 @@ test('affected unit lane uses the module graph and keeps filesystem contracts se
   assert.ok(commands.includes('pnpm knip'));
   assert.ok(
     commands.includes(
-      "pnpm exec vitest run --changed='abc123' --exclude='tests/contract/**' --passWithNoTests --shard=1/3",
+      "pnpm exec vitest run --changed='abc123' --exclude='tests/contract/**' --project=contract-node --project=jsdom --passWithNoTests --shard=1/3",
     ),
   );
   assert.ok(commands.includes('pnpm exec vitest run tests/contract --shard=1/3'));
@@ -59,12 +59,52 @@ test('sharding the unit lane splits the file sweeps and keeps whole-graph checks
 
   const full = buildImpactPlan({ files: [], forceFull: true });
   assert.deepEqual(commandsForLane({ lane: 'unit', plan: full, shard: '2/3' }), [
-    'pnpm exec vitest run --shard=2/3',
+    'pnpm exec vitest run --project=contract-node --project=jsdom --shard=2/3',
   ]);
   assert.deepEqual(commandsForLane({ lane: 'unit', plan: full, shard: '1/3' }), [
     'pnpm knip',
-    'pnpm exec vitest run --shard=1/3',
+    'pnpm exec vitest run --project=contract-node --project=jsdom --shard=1/3',
+    'pnpm test:perf',
   ]);
+});
+
+/*
+ * ⚠️ **A measurement must not ride a shard.** Vitest shards by file, so a ratio gate's verdict
+ * otherwise depends on which other files land beside it — and only the cached half of a
+ * cached-against-naive ratio pays for that company. `node-name-match.perf.test.ts` read 6.73,
+ * 9.20 and 9.20 against a bar of 10 on branches that never touched it. This pins the shape that
+ * fixed it rather than the strings: every sweep names the two non-measurement projects, and the
+ * measurement files run once, alone, on the shard that already carries whole-graph work.
+ */
+test('the measurement files never ride a shard, and run once on their own', () => {
+  const plans = [
+    buildImpactPlan({ files: ['src/shared/lib/node-name-match.ts'] }),
+    buildImpactPlan({ files: [], forceFull: true }),
+  ];
+  for (const plan of plans) {
+    const all = [];
+    for (const shard of ['1/3', '2/3', '3/3']) {
+      const commands = commandsForLane({ lane: 'unit', plan, base: 'abc123', shard });
+      for (const command of commands) {
+        if (command.startsWith('pnpm exec vitest run') && command.includes('--shard=')) {
+          assert.ok(
+            command.includes('--project=contract-node --project=jsdom'),
+            `a sharded sweep may not pick up measurement files: ${command}`,
+          );
+        }
+      }
+      all.push(...commands);
+    }
+    assert.equal(
+      all.filter((command) => command === 'pnpm test:perf').length,
+      1,
+      'the measurement lane runs exactly once across the three shards',
+    );
+    assert.ok(
+      commandsForLane({ lane: 'unit', plan, base: 'abc123', shard: '1/3' }).includes('pnpm test:perf'),
+      'it runs on the shard that already carries whole-graph work',
+    );
+  }
 });
 
 test('a focused contract list is not split three ways', () => {
@@ -123,7 +163,7 @@ test('comparison refs remain one shell argument and malformed shards fail closed
   });
   assert.ok(
     commands.includes(
-      "pnpm exec vitest run --changed='origin/main'\"'\"'; echo injected; '\"'\"'' --exclude='tests/contract/**' --passWithNoTests --shard=1/3",
+      "pnpm exec vitest run --changed='origin/main'\"'\"'; echo injected; '\"'\"'' --exclude='tests/contract/**' --project=contract-node --project=jsdom --passWithNoTests --shard=1/3",
     ),
   );
 

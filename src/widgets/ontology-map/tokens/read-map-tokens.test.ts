@@ -25,7 +25,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--map-node-stroke-element": "#34343b",
   "--map-node-fill-dim": "#1a1a1e",
   "--map-node-stroke-dim": "#2b2b2f",
-  "--map-ego-dim-label-alpha": "0.42",
+  "--map-ego-rest-alpha": "0.42",
   "--map-node-fill-stale": "#141418",
   "--map-node-stroke-stale": "#454549",
   "--map-node-hole-fill": "#0c0c10",

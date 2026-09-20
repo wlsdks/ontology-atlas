@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Eye, GitCompareArrows, ShieldAlert } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 
 import { permissionIntent, permissionScope, permissionLocality } from '@/features/acp-session';
 import {
@@ -19,6 +19,7 @@ import { Button, Checkbox, Textarea } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { describeWikiProblem, type WikiTemplateProblem } from '@/features/library';
 import type { PendingPermission } from '@/features/acp-session';
 import type { TaskMeaningReviewController } from '../model/use-task-meaning-review';
 
@@ -104,6 +105,14 @@ function proposedMeaningUnits(item: OntologyChangeSet['items'][number] | null) {
  * as the other two, people pick the easiest one. So it drops to a text button and
  * says what it means.
  */
+/**
+ * How many findings the card lists before it counts the rest.
+ *
+ * Four is what fits beside the buttons without the decision leaving the first screen. The
+ * number is only a budget: whatever it hides is stated as a count, never dropped.
+ */
+const VERDICT_ROWS = 4;
+
 export function AcpPermissionCard({
   pending,
   changeSet: providedChangeSet,
@@ -121,7 +130,7 @@ export function AcpPermissionCard({
    * contract by the screen that owns the folder (the Library). Null when the write is not a
    * wiki page or its text cannot be known; then nothing is drawn, rather than a guess.
    */
-  writeVerdict?: { ok: boolean; problems: ReadonlyArray<{ code: string; message: string; line?: number }> } | null;
+  writeVerdict?: { ok: boolean; problems: ReadonlyArray<WikiTemplateProblem> } | null;
   taskReview?: TaskMeaningReviewController;
   onRequestCorrection?: () => void;
   onDefer?: () => void;
@@ -133,6 +142,14 @@ export function AcpPermissionCard({
   onActiveItemChange?: (index: number) => void;
 }) {
   const t = useTranslations('acpChat.permission');
+  /*
+   * The Library's own namespace, for one reason: `describeWikiProblem` rebuilds a finding's
+   * sentence from `library.wiki.problem.<key>`, and those sentences are written once for
+   * every surface that shows a finding. Copying them under `acpChat` would be a second
+   * place to fix the same sentence and one place to forget.
+   */
+  const libraryT = useTranslations('library');
+  const format = useFormatter();
   const tChange = useTranslations('ontologyChangeReview');
   const { request, resolve } = pending;
   const reviewStateKey = `${typeof request.requestId}:${String(request.requestId)}:${request.toolCallId ?? ''}`;
@@ -245,9 +262,39 @@ export function AcpPermissionCard({
           total: meaningUnits.length,
           omitted: omittedMeaningUnits,
         });
+  /**
+   * **A write condition a person can check against the file in front of them.**
+   *
+   * Measured in the rendered Details tab (2026-09-20), directly under the row that reports the
+   * write guard as unknown:
+   *
+   * ```
+   * expected_mtime   1727000000000
+   * ```
+   *
+   * That number **is** the write condition — the file is written only if it has not changed since
+   * that moment — and thirteen digits answer nothing a person came here to ask. The question this
+   * row exists for is "is that the version I am looking at?", and a date answers it.
+   *
+   * The exact value is not replaced, only led: it stays on the row's `title`, so an agent or a
+   * terminal reader who needs the epoch still has it to the millisecond.
+   */
   const proposalGuards = ['confirm', 'expected_mtime', 'expected_into_mtime']
     .filter((key) => request.rawInput[key] !== undefined)
-    .map((key) => ({ key, value: request.rawInput[key] }));
+    .map((key) => {
+      const value = request.rawInput[key];
+      const epoch = key.endsWith('_mtime') && typeof value === 'number' && Number.isFinite(value)
+        ? value
+        : null;
+      return {
+        key,
+        value,
+        shown: epoch === null
+          ? formatReviewValue(value)
+          : format.dateTime(new Date(epoch), { dateStyle: 'medium', timeStyle: 'short' }),
+        exact: epoch === null ? undefined : String(epoch),
+      };
+    });
   const meaningAuthority = taskReview?.status === 'ready'
     ? taskReview.meaningStatus === 'accepted' ? 'accepted' : 'pending'
     : 'unknown';
@@ -529,6 +576,22 @@ export function AcpPermissionCard({
               ))}
             </div>
           ) : reviewDepth === 'compare' ? (
+            /*
+             * **"There is no before" is said once, and the reason it is missing is the card's.**
+             *
+             * Measured on this tab (2026-09-20): with no comparison basis it stated the same fact
+             * five times on one screen — a sentence claiming no trusted snapshot, a reason line
+             * saying the request shape cannot be compared yet, and `Before · unavailable` once per
+             * meaning unit, three times. The three proposed values a person came here to read were
+             * pushed apart by three copies of a line that never changes.
+             *
+             * Worse than repetition, the first two disagreed about **why**. The generic sentence
+             * asserted a missing snapshot; the reason said the request shape is not comparable.
+             * Only one of those was true, and it was the specific one. So the standing sentence
+             * keeps the half that is always true — values are not invented — and the cause is left
+             * to the reason list, which knows it. The per-unit line goes: `After` still prefixes
+             * every value, so each one is still marked as proposed rather than current.
+             */
             <div data-testid="task-review-compare" className="grid gap-2">
               <p className="text-caption leading-caption text-[color:var(--color-text-quaternary)]">
                 {t('taskReview.beforeUnavailable')}
@@ -541,7 +604,6 @@ export function AcpPermissionCard({
               {visibleMeaningUnits.map((unit) => (
                 <div key={unit.id} className="grid gap-1 border-t border-[color:var(--color-divider)] pt-2 first:border-t-0 first:pt-0">
                   <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">{unit.label}</span>
-                  <p className="text-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.beforeUnknown')}</p>
                   <p className="whitespace-pre-wrap break-words text-body leading-prose text-[color:var(--color-text-primary)]">
                     <span className="mr-1.5 text-caption text-[color:var(--color-text-quaternary)]">{t('taskReview.after')}</span>
                     {unit.displayText}
@@ -611,7 +673,7 @@ export function AcpPermissionCard({
                   <dt>{t('taskReview.generation')}</dt><dd>{taskOrigin.sessionGeneration}</dd>
                   {taskReview ? <><dt>{t('taskReview.guardStatus')}</dt><dd>{t(`taskReview.guard.${taskReview.guardStatus}`)}</dd></> : null}
                   {proposalGuards.map((guard) => (
-                    <Fragment key={guard.key}><dt>{guard.key}</dt><dd>{formatReviewValue(guard.value)}</dd></Fragment>
+                    <Fragment key={guard.key}><dt>{guard.key}</dt><dd title={guard.exact}>{guard.shown}</dd></Fragment>
                   ))}
                 </dl>
               </details>
@@ -682,8 +744,18 @@ export function AcpPermissionCard({
        * rejected" and nothing rejected it; the codes showed up in the Wiki list after the
        * page had landed. Here they show before Allow, on the same card, so the person
        * decides with them in view. A fitting page says so in one quiet line; a failing one
-       * lists its codes, first message included, and leaves both buttons where they are —
-       * the gate is the person, not the validator.
+       * lists its findings and leaves both buttons where they are — the gate is the person,
+       * not the validator.
+       *
+       * **Each row says what is wrong, in the reader's language** (2026-09-20). Measured on
+       * the rendered card: the header said 8 problems, four rows followed, and nothing said
+       * the other four existed. Of those four rows only the first carried a sentence, and
+       * that sentence was the validator's English — `` `title:` is missing. The page name a
+       * person reads. `` — printed whole into a Korean card, above three bare machine codes.
+       * `describeWikiProblem` already owned the localised retelling for the Library's own
+       * surfaces; the verdict simply never carried `detail` far enough for this one to ask.
+       * The count of what is not shown is now its own line, because a header that says eight
+       * above a list of four is a header a reader stops believing.
        */}
       {writeVerdict ? (
         <div
@@ -700,17 +772,24 @@ export function AcpPermissionCard({
           ) : (
             <>
               <p className="break-keep">{t('pageFails', { count: writeVerdict.problems.length })}</p>
-              <ul className="mt-1 flex flex-col gap-0.5">
-                {writeVerdict.problems.slice(0, 4).map((problem, index) => (
-                  <li key={`${problem.code}-${problem.line ?? index}`} className="flex min-w-0 gap-2">
-                    <code className="flex-none font-mono text-[color:var(--color-text-primary)]">
+              <ul className="mt-1 flex flex-col gap-1">
+                {writeVerdict.problems.slice(0, VERDICT_ROWS).map((problem, index) => (
+                  <li key={`${problem.code}-${problem.line ?? index}`} className="flex min-w-0 flex-col">
+                    <span className="min-w-0 break-keep text-[color:var(--color-text-primary)]">
+                      {describeWikiProblem(problem, libraryT).sentence}
+                    </span>
+                    <code className="min-w-0 truncate font-mono text-[color:var(--color-text-quaternary)]">
                       {problem.code}
                       {problem.line ? `:${problem.line}` : ''}
                     </code>
-                    {index === 0 ? <span className="min-w-0 break-keep">{problem.message}</span> : null}
                   </li>
                 ))}
               </ul>
+              {writeVerdict.problems.length > VERDICT_ROWS ? (
+                <p className="mt-1 break-keep text-[color:var(--color-text-quaternary)]">
+                  {t('pageFailsRest', { count: writeVerdict.problems.length - VERDICT_ROWS })}
+                </p>
+              ) : null}
             </>
           )}
         </div>
@@ -729,16 +808,35 @@ export function AcpPermissionCard({
       ) : null}
       </div>
 
+      {/*
+       * **A status row is drawn only where there is a status.**
+       *
+       * ## What this was (measured on the rendered card, 2026-09-20)
+       *
+       * Four label/value pairs in a 2x2 grid, 41px directly above the decision buttons:
+       * meaning · code · merge · deployment. The value column came back with exactly **one
+       * distinct value across all four rows** — "unknown" — and three of them could never say
+       * anything else: `code`, `merge` and `deployment` were written as the literal `'unknown'`
+       * key. Only `meaning` had a value that moves (unknown / pending / accepted).
+       *
+       * So the grid read as four facts about this write and carried one, and the three constants
+       * were not "we do not know yet" but "this screen cannot know, and never could".
+       *
+       * ## The claim they were standing in for is already a sentence
+       *
+       * Right below, unfolded, `taskReview.allowScope` names all four and says what allowing does
+       * **not** grant. That is the true claim. "Unknown" is a different and weaker one: it says the state
+       * is unavailable, when the point is that allowing here does not touch it. Nothing is lost by
+       * drawing only the row that moves.
+       */}
       {changeSet && taskOrigin ? (
-        <div data-testid="task-review-authority" className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-1 border-t border-[color:var(--color-divider)] pt-2">
-            {(['meaning', 'code', 'merge', 'deployment'] as const).map((authority) => (
-            <div key={authority} data-testid={`task-review-authority-${authority}`} className="flex items-center justify-between gap-2 text-caption">
-              <span className="text-[color:var(--color-text-tertiary)]">{t(`taskReview.authority.${authority}`)}</span>
-              <span className="text-[color:var(--color-text-quaternary)]">
-                {t(`taskReview.authority.${authority === 'meaning' ? meaningAuthority : 'unknown'}`)}
-              </span>
-            </div>
-          ))}
+        <div data-testid="task-review-authority" className="grid shrink-0 gap-y-1 border-t border-[color:var(--color-divider)] pt-2">
+          <div data-testid="task-review-authority-meaning" className="flex items-center justify-between gap-2 text-caption">
+            <span className="text-[color:var(--color-text-tertiary)]">{t('taskReview.authority.meaning')}</span>
+            <span className="text-[color:var(--color-text-quaternary)]">
+              {t(`taskReview.authority.${meaningAuthority}`)}
+            </span>
+          </div>
         </div>
       ) : null}
 
@@ -757,7 +855,22 @@ export function AcpPermissionCard({
               </Button>
             ) : null}
             <Button ref={rejectRef} className="atlas-touch-floor" variant="ghost" size="sm" data-testid="acp-permission-reject" onClick={() => resolve(rejectOnce?.optionId ?? null)}>{t('reject')}</Button>
-            <Button className="atlas-touch-floor" variant="outline" size="sm" data-testid="acp-permission-allow" disabled={!allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked} onClick={() => resolve(allowOnce?.optionId ?? null)}>{t('allowOnce')}</Button>
+            {/*
+             * **The one button that writes may not look like the one that refuses.**
+             *
+             * Measured on the rendered card, both locales (2026-09-20): with the review open this
+             * row draws four buttons of exactly 210x32, and `Reject and edit` and `Allow once`
+             * came back byte-identical in paint — background `rgba(255,255,255,0.02)`, border
+             * `rgba(255,255,255,0.1)`, same ink, same weight. One of those refuses the write; the
+             * other performs it on the person's own files and cannot be undone from here.
+             *
+             * `primary` was already the allow in the two-button branch below; the review branch
+             * had quietly demoted it to `outline`, which is the variant `Reject and edit` wears.
+             * Promoting it back leaves exactly one filled control in the row, and it is the
+             * irreversible one. The safeguard is unchanged: focus still opens on reject, so the
+             * fill invites the eye without moving the keyboard.
+             */}
+            <Button className="atlas-touch-floor" variant="primary" size="sm" data-testid="acp-permission-allow" disabled={!allowOnce || acceptingMeaning || taskReview?.status === 'loading' || taskReview?.executionBlocked} onClick={() => resolve(allowOnce?.optionId ?? null)}>{t('allowOnce')}</Button>
           </div>
         </div>
       ) : (
