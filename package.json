@@ -215,6 +215,7 @@
     "test:check:tokens": "node --test scripts/check-no-raw-color.test.mjs",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:perf": "vitest run --project=perf",
     "e2e": "playwright test",
     "design:toc": "node scripts/build-design-system-toc.mjs",
     "design:toc:check": "node scripts/build-design-system-toc.mjs --check",
