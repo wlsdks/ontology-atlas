@@ -102,7 +102,18 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
    * fall but never rise is the honest shape for a word that has both a right and a wrong use.
    */
   it('「프로젝트」 사용이 늘지 않는다 — 종류를 말할 때만 쓴다', () => {
-    const PROJECT_BASELINE = 143;
+    /*
+     * 143 → 144 on 2026-09-20. The map's search palette labelled its project filter
+     * row with the English `Project · {count}` while all 26 of its other strings were
+     * Korean, so the Korean screen showed `Kind` and `Project · 1` above chips that
+     * carried the four kind names and the project's own name. Translating it adds one
+     * occurrence of exactly the use this gate's note above calls legitimate — a
+     * filter, and a count of projects — and removes an untranslated label rather
+     * than spreading the word to mean "anything on the map", which is what the
+     * ratchet exists to stop. The number moves for a translation, never for a new
+     * sentence that reaches for the kind's name.
+     */
+    const PROJECT_BASELINE = 144;
     const current = hits('프로젝트').length;
     expect(
       current,

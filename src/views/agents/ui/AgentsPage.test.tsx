@@ -65,6 +65,18 @@ describe('에이전트 목적지', () => {
   });
 });
 
+describe('한 목록에 이름 하나', () => {
+  it('보이지 않는 구역 이름과 보이는 묶음 이름이 같은 말로 시작한다', () => {
+    // The region heading and the group label named the same list two different ways, and the
+    // count rode parentheses here while the MCP tab's rode a middot. One noun phrase, one
+    // count grammar, across both tabs.
+    const region = ko.agents.runtimesHeading;
+    expect(ko.nav.settingsMenu.runtimes.readyHeading.startsWith(region)).toBe(true);
+    expect(ko.nav.settingsMenu.runtimes.readyHeading).toContain('·');
+    expect(ko.mcp.connectorsHeadingCount).toContain('·');
+  });
+});
+
 describe('두 탭, 한 번에 하나', () => {
   it('기본은 에이전트 탭이고 MCP 탭의 몸통은 그리지 않는다', () => {
     renderPage(<div data-testid="mcp-body" />);
@@ -146,10 +158,14 @@ describe('한 목적지에 한 가지 일', () => {
     expect(screen.queryByTestId('connectors-panel')).toBeNull();
   });
 
+  /*
+   * The name, not the element that used to carry it. Until 2026-09-20 this panel was labelled
+   * twice — an `sr-only` heading here and, from that day, a visible group heading inside the
+   * runtime panel saying the same words. The heading went; the region's name is the invariant
+   * this test was always about, and it is what assistive tech announces on entry.
+   */
   it('남은 한 칸은 이름을 갖는다 — 훑을 수 있어야 한다', () => {
     renderPage();
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(
-      ko.agents.runtimesHeading,
-    );
+    expect(screen.getByRole('region', { name: ko.agents.runtimesHeading })).toBeInTheDocument();
   });
 });

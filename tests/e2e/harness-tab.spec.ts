@@ -42,10 +42,10 @@ test.describe("하네스 탭", () => {
     expect(new URL(page.url()).pathname).toBe("/ko/architecture/");
   });
 
-  test("기본 보기는 청사진이고, 세그먼트가 보기를 주소에 적는다", async ({ page }) => {
+  test("기본 보기는 하네스 구조이고, 세그먼트가 보기를 주소에 적는다", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/");
-    await expect(page.getByTestId("architecture-flow-panel")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("harness-anatomy")).toBeVisible({ timeout: 30_000 });
 
     await page.locator("#harness-tab-guides").click();
     await expect(page).toHaveURL(/\?view=guides$/);
@@ -68,14 +68,20 @@ test.describe("하네스 탭", () => {
     /*
      * The sensors view named this exact question — which checks cover each domain's paths, and
      * where nobody is watching — and said it was not built. It is built now, so that address opens
-     * the answer. The plain address and the shell-wide `?focus=main` that every left-rail link
-     * carries both open the blueprint, which is what they have always meant.
+     * the answer. The shell-wide `?focus=main` that every left-rail link carries names no view, so
+     * it opens the destination's own arrival screen — the harness structure, since 2026-09-19.
      */
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/?view=sensors");
     await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
 
     await page.goto("/ko/architecture/?focus=main");
+    await expect(page.getByTestId("harness-anatomy")).toBeVisible({ timeout: 30_000 });
+
+    /* A blueprint deep link keeps working with no `?view=` on it: `?role=` and `?stage=` exist on
+       no other view, so an address carrying one names the blueprint by itself. Every link written
+       while the blueprint was the default would otherwise land on a screen with no roles. */
+    await page.goto("/ko/architecture/?role=widgets");
     await expect(page.getByTestId("architecture-flow-panel")).toBeVisible({ timeout: 30_000 });
   });
 
@@ -118,6 +124,109 @@ test.describe("하네스 탭", () => {
       return hits;
     }, panelId);
     expect(covered, `설명 말풍선이 아래 본문에 덮였다: ${covered.join(" | ")}`).toEqual([]);
+  });
+
+  test("구조 보기가 저장소가 알려주는 것·막는 것·지켜보는 것을 부속별로 세고, 도구가 가진 자리는 숫자로 세지 않는다", async ({ page }) => {
+    /*
+     * The tab is named Harness and its first screen used to be the product's layer ladder. The
+     * owner named the mismatch on 2026-09-19: that ladder is architecture, which a harness
+     * regulates, not a part of the harness. This is what took its place, and the assertions are
+     * about the two readings it must never allow — a grade, and a zero where the answer is simply
+     * not in the checkout.
+     */
+    /*
+     * ⚠️ The console is part of this assertion. An `InfoHint` placed inside a `<p>` renders a
+     * `div` in a paragraph, which React reports as a hydration error and the dev overlay counts
+     * silently in the corner — the screen looked perfectly correct while doing it (2026-09-20).
+     */
+    const consoleErrors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") consoleErrors.push(message.text());
+    });
+    page.on("pageerror", (error) => consoleErrors.push(error.message));
+
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/");
+    const anatomy = page.getByTestId("harness-anatomy");
+    await expect(anatomy).toBeVisible({ timeout: 30_000 });
+
+    // Same three words as the coverage matrix: one destination, one vocabulary.
+    await expect(page.getByTestId("harness-anatomy-band-tells")).toContainText("말해둔 것");
+    await expect(page.getByTestId("harness-anatomy-band-gates")).toContainText("막는 것");
+    await expect(page.getByTestId("harness-anatomy-band-watches")).toContainText("지켜보는 것");
+
+    // A rule with no `paths:` is read every time; one with `paths:` joins only for its folder.
+    await expect(page.getByTestId("harness-anatomy-slot-always")).toContainText(
+      ".claude/rules/forbidden.md",
+    );
+    await expect(page.getByTestId("harness-anatomy-slot-scoped")).toContainText(
+      ".claude/rules/cart.md",
+    );
+    // Nested AGENTS.md files attach by path, which is the whole reason they exist.
+    await expect(page.getByTestId("harness-anatomy-slot-scoped")).toContainText("src/AGENTS.md");
+
+    // A hook that can refuse is not the same fact as a hook that only records, and the fixture's
+    // Claude and Codex copies of one guard are one name: the script's own.
+    await expect(page.getByTestId("harness-anatomy-slot-toolGates")).toContainText(
+      "block-unsafe-git.sh",
+    );
+    await expect(page.getByTestId("harness-anatomy-count-toolGates")).toHaveText("훅 1개");
+    await expect(page.getByTestId("harness-anatomy-slot-permissions")).toContainText(
+      "허용 1 · 물어봄 0 · 금지 2",
+    );
+
+    // The pipeline phase has its own row, so a repository guarded only by CI is not drawn as
+    // having nothing watching it. This fixture has no workflows, which the row states.
+    await expect(page.getByTestId("harness-anatomy-count-pipeline")).toHaveText("아직 없음");
+
+    // An empty part is visible *and addable*: the conventional address, copyable, never advice.
+    const emptyTools = page.getByTestId("harness-anatomy-slot-tools");
+    await expect(emptyTools).toContainText("이런 것이 사는 자리");
+    await expect(emptyTools).toContainText(".mcp.json");
+    // And a part that is there is not told where it could have been.
+    await expect(page.getByTestId("harness-anatomy-slot-always")).not.toContainText(
+      "이런 것이 사는 자리",
+    );
+
+    // Nothing here is a mark out of ten, and an absent part says so in words.
+    await expect(page.getByTestId("harness-anatomy-count-tools")).toHaveText("아직 없음");
+    const loop = page.getByTestId("harness-anatomy-slot-loop");
+    await expect(loop).toHaveAttribute("data-status", "tool-owned");
+    await expect(loop).not.toContainText("아직 없음");
+    await expect(anatomy).not.toContainText("%");
+
+    // The half the rows cannot do: handing the reading to an agent without retyping it.
+    await expect(page.getByTestId("harness-anatomy-brief")).toBeVisible();
+
+    // The chain: a turn inside a governed folder pays the always-read set plus that folder's file,
+    // which is the mechanic the tool documents and a flat per-repository number cannot express.
+    await expect(page.getByTestId("harness-anatomy-slot-scoped")).toContainText("가장 깊은 사슬");
+
+    // ⚠️ The fixture's config names `block-npm-publish.sh` and the disk does not have it. Every
+    // count on this screen stays healthy while that guard is absent, so the absence is said out
+    // loud — the one warning this view draws.
+    await expect(page.getByTestId("harness-anatomy-silent")).toContainText("block-npm-publish.sh");
+
+    // What the repository keeps out of sight is a gate, not a guide, and it keeps each product's
+    // own file name.
+    const blind = page.getByTestId("harness-anatomy-slot-blind");
+    await expect(blind).toContainText(".cursorignore");
+    await expect(blind).toContainText(".geminiignore");
+    await expect(page.getByTestId("harness-anatomy-count-blind")).toHaveText("파일 2개");
+    // And it is not counted among the documents the repository speaks through — read on the
+    // coverage view, because the census sentence and these bands count by different rules and
+    // this view does not print both.
+    await expect(page.getByTestId("harness-sentence")).toHaveCount(0);
+
+    // What every turn costs, beside the count that cannot say it.
+    await expect(page.getByTestId("harness-anatomy-slot-always")).toContainText("매 턴 읽는 분량");
+
+    expect(consoleErrors, "the structure view logged to the console").toEqual([]);
+
+    // And the ladder is one press away, under its own name.
+    await page.getByRole("tab", { name: "아키텍처" }).click();
+    await expect(page.getByTestId("architecture-flow-panel")).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(/\?view=architecture$/);
   });
 
   test("커버리지 표가 영역마다 말해둔 것·막는 것·지켜보는 것을 말하고, 빈 칸은 문장으로 말한다", async ({ page }) => {
@@ -426,12 +535,17 @@ test.describe("하네스 탭", () => {
     await expect(sentence).toBeVisible({ timeout: 30_000 });
     await expect(sentence).toContainText("문서");
     await expect(sentence).toContainText("검사");
+    /* ⚠️ The fixture holds two exclusion files (`.cursorignore`, `.geminiignore`), and this number
+       must not move for them: a file that says what an agent may not see is the opposite of a
+       document the repository speaks through. The structure view proves the rows; this proves the
+       census they are kept out of. */
+    await expect(sentence).toContainText("문서 10개");
     /* The two numbers here are file counts. The coverage claim has its own denominator and its own
        kind of statement, so it is not folded in beside them. */
     await expect(sentence.locator("p").first()).not.toContainText("영역");
   });
 
-  test("구조 보기는 카드 폭을 쓰고, 일곱 문장이 끝까지 나온다", async ({ page }) => {
+  test("아키텍처 보기는 카드 폭을 쓰고, 일곱 문장이 끝까지 나온다", async ({ page }) => {
     /*
      * Inspection 122, S8. Before this slice the ladder held its 280/72/240 faces whatever the
      * card's width, so at 1512 the drawn band was 592px inside a 1448px card (41 %), sat 124px
@@ -439,7 +553,7 @@ test.describe("하네스 탭", () => {
      * card stood empty. The owner's standing priority is a finished sentence over box symmetry.
      */
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/?view=structure");
+    await page.goto("/ko/architecture/?view=architecture");
     await expect(page.getByTestId("architecture-graph-box-views")).toBeVisible({ timeout: 30_000 });
 
     const measured = await page.evaluate(() => {
@@ -480,9 +594,9 @@ test.describe("하네스 탭", () => {
     await page.setViewportSize({ width: 1512, height: 949 });
     await installProfilelessHarnessRuntime(page);
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/?view=structure");
+    await page.goto("/ko/architecture/?view=architecture");
     await expect(page.getByRole("tablist")).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByRole("tab")).toHaveCount(3);
+    await expect(page.getByRole("tab")).toHaveCount(4);
     // And the tab the open panel names actually exists, so `aria-labelledby` does not dangle.
     const labelledBy = await page
       .locator('[role="tabpanel"]')
