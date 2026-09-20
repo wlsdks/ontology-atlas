@@ -42,6 +42,7 @@ const QUIET: AnswerObservation = {
   missing: [],
   unmeasured: [],
   added: [],
+  rewritten: [],
 };
 
 /**

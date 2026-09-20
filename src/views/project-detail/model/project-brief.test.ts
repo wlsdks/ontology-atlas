@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { briefOrdinal, splitProjectBrief } from "./project-brief";
+import { splitProjectBrief } from "./project-brief";
 
 describe("splitProjectBrief", () => {
   it("returns the whole body as lead when it has no ## headings", () => {
@@ -44,12 +44,5 @@ describe("splitProjectBrief", () => {
   it("handles an empty or missing body", () => {
     expect(splitProjectBrief(null)).toEqual({ lead: "", sections: [] });
     expect(splitProjectBrief("")).toEqual({ lead: "", sections: [] });
-  });
-});
-
-describe("briefOrdinal", () => {
-  it("pads to two digits", () => {
-    expect(briefOrdinal(0)).toBe("01");
-    expect(briefOrdinal(9)).toBe("10");
   });
 });

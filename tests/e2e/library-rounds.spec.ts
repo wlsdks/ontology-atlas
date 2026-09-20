@@ -265,6 +265,10 @@ test.describe("Library rounds", () => {
     });
     expect(covered).toBe(true);
 
+    // The sentence above the controls says what will happen, and follows every press.
+    const readback = page.getByTestId("library-rounds-readback");
+    await expect(readback).toHaveText("Every hour, check that every page still matches its originals, and rewrite a page that has gone stale. It runs once as soon as you save.");
+
     const scope = page.getByTestId("library-rounds-scope");
     await expect(scope).toContainText("read this folder and its map");
     await expect(scope).toContainText("write pages under wiki/");
@@ -273,6 +277,7 @@ test.describe("Library rounds", () => {
 
     // Mark only: no write at all, and the cost line says so.
     await page.getByTestId("library-rounds-on-stale").getByRole("radio", { name: "Mark it" }).click();
+    await expect(readback).toContainText("and only mark a page that has gone stale");
     await expect(scope).not.toContainText("write pages under wiki/");
     await expect(page.getByTestId("library-rounds-cost")).toContainText("No agent turn");
 
@@ -283,6 +288,8 @@ test.describe("Library rounds", () => {
     await expect(page.getByTestId("library-rounds-cost")).toContainText("about 24 a day");
     await page.getByTestId("library-rounds-cadence").getByRole("radio", { name: "Weekdays" }).click();
     await expect(page.getByTestId("library-rounds-time")).toBeVisible();
+    await expect(readback).toContainText("On weekdays at 09:00, read what Confluence sent again");
+    await page.screenshot({ path: ".claude/shots-2026-09-20/rounds-sheet-readback.png" });
     await expect(page.getByTestId("library-rounds-cost")).toContainText("about 1 a day");
 
     await page.getByTestId("library-rounds-allow").click();
