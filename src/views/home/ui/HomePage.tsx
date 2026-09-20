@@ -4946,10 +4946,25 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                     {llmBridgeAvailable ? (
                       <Tooltip content={tAgent('title')} side="bottom" withProvider={false}>
                         <ChromeChip
-                          onClick={() =>
-                            (agentDockTouchedRef.current = true,
-                            openVaultAgent())
-                          }
+                          /*
+                           * The press closes what it opened. It used to call
+                           * `openVaultAgent` only, so a chip wearing the active
+                           * tone and reporting `aria-expanded="true"` ignored
+                           * every press after the first: measured 2026-09-20
+                           * with a folder open at 1512, the second and third
+                           * presses left the state true and the map's canvas at
+                           * 1055 of 1448. The dock keeps its own close button;
+                           * this is the one a person reaches for after opening
+                           * it here, and it matches the review chip beside it.
+                           */
+                          onClick={() => {
+                            agentDockTouchedRef.current = true;
+                            if (agentDockOpen) {
+                              closeVaultAgent();
+                              return;
+                            }
+                            openVaultAgent();
+                          }}
                           aria-label={tAgent('title')}
                           aria-expanded={agentDockOpen}
                           data-testid="topology-vault-agent-toggle"
