@@ -302,6 +302,7 @@ describe("노드 도형 예약 — 라벨이 노드 위에 글자를 얹지 않�
 });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 describe("floorFlipBaseline", () => {
   const rect = { left: 0, right: 1448, top: 112, bottom: 806 - 72 };
   it("a slot under the floor band moves above the node when that slot is safe", () => {
@@ -339,5 +340,43 @@ describe("resolveLabelPriority — a lens subject wins the slot", () => {
     expect(resolveLabelPriority({ ...cap, kind: "element" })).toBe(5);
     expect(resolveLabelPriority({ ...cap, isLensSubject: false })).toBe(4);
 >>>>>>> origin/loop/map-iteration-18
+=======
+describe("greedyPlaceLabels — a blocked name tries the slot above", () => {
+  const box = (minY: number) => ({ minX: 0, maxX: 40, minY, maxY: minY + 12 });
+  const make = (id: string, priority: number, bbox: ReturnType<typeof box>, altBbox?: ReturnType<typeof box>) => ({
+    priority, order: 0, bbox, altBbox, ownerId: id, payload: { id },
+  });
+
+  it("falls back to the alternate box instead of dropping the name", () => {
+    const winner = make("a", 0, box(100));
+    const blocked = make("b", 1, box(104), box(40));
+    const placed = greedyPlaceLabels([winner, blocked]);
+    expect(placed.map((p) => p.payload.id)).toEqual(["a", "b"]);
+    const moved = placed.find((p) => p.payload.id === "b")!;
+    expect(moved.bbox).toEqual(box(40));
+    expect(moved.usedAlt).toBe(true);
+  });
+
+  it("still drops the name when the alternate is taken too", () => {
+    const first = make("a", 0, box(100));
+    const second = make("b", 0, box(40));
+    const blocked = make("c", 1, box(104), box(44));
+    expect(greedyPlaceLabels([first, second, blocked]).map((p) => p.payload.id)).toEqual(["a", "b"]);
+  });
+
+  it("leaves a candidate with no alternate exactly as before", () => {
+    const winner = make("a", 0, box(100));
+    const blocked = make("b", 1, box(104));
+    const placed = greedyPlaceLabels([winner, blocked]);
+    expect(placed.map((p) => p.payload.id)).toEqual(["a"]);
+    expect(placed[0].usedAlt).toBeUndefined();
+  });
+
+  it("prefers the first slot when it is free — the alternate never pre-empts it", () => {
+    const only = make("a", 0, box(100), box(40));
+    const placed = greedyPlaceLabels([only]);
+    expect(placed[0].bbox).toEqual(box(100));
+    expect(placed[0].usedAlt).toBeUndefined();
+>>>>>>> origin/loop/map-iteration-26
   });
 });

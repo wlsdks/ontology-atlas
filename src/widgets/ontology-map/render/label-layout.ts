@@ -156,6 +156,18 @@ export interface LabelCandidate<T> {
    * suppress itself.
    */
   ownerId?: string;
+  /**
+   * A second box to try when `bbox` is taken — the slot above the node.
+   *
+   * Without it the placer drops a name outright the moment a higher-priority
+   * label occupies its slot, however much room sits beside it. Measured
+   * 2026-09-20 on a folder of 20 concepts at 1512x982, with the map using 49%
+   * of the canvas width: one capability lost its name to a neighbour 49 px
+   * away while its own slot above was clear.
+   */
+  altBbox?: LabelBBox;
+  /** Set by `greedyPlaceLabels` when it fell back to `altBbox`. */
+  usedAlt?: boolean;
   payload: T;
 }
 
@@ -294,14 +306,18 @@ export function greedyPlaceLabels<T>(
     return a.order - b.order;
   });
   const placed: LabelCandidate<T>[] = [];
+  const free = (box: LabelBBox, candidate: LabelCandidate<T>): boolean =>
+    !overlapsForeignReserved(box, candidate.ownerId, candidate.priority, reserved) &&
+    !placed.some((p) => bboxesOverlap(p.bbox, box));
   for (const candidate of sorted) {
-    if (
-      overlapsForeignReserved(candidate.bbox, candidate.ownerId, candidate.priority, reserved)
-    ) {
+    if (free(candidate.bbox, candidate)) {
+      placed.push(candidate);
       continue;
     }
-    if (placed.some((p) => bboxesOverlap(p.bbox, candidate.bbox))) continue;
-    placed.push(candidate);
+    // The preferred slot is taken; the one above the node may not be.
+    if (candidate.altBbox && free(candidate.altBbox, candidate)) {
+      placed.push({ ...candidate, bbox: candidate.altBbox, usedAlt: true });
+    }
   }
   return placed;
 }

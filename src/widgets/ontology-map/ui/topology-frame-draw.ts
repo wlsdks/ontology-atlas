@@ -3643,8 +3643,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ascent: vertical.ascent,
       descent: vertical.descent,
     });
+    const flipSlot = labelFlipSlots.get(node.id);
     labelCandidates.push({
       priority,
+      // The slot above the node, offered to the placer for when the one below
+      // is taken (`LabelCandidate.altBbox`).
+      altBbox: flipSlot
+        ? { minX: candidateBbox.minX, maxX: candidateBbox.maxX, minY: flipSlot.baselineY - flipSlot.ascent, maxY: flipSlot.baselineY + flipSlot.descent }
+        : undefined,
       /*
        * **Nearer wins the slot.** Within one priority band the placer settles ties
        * by `order`, so in the cone that order is depth: a node at the front of the
@@ -3727,6 +3733,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // discs are reserved together, and labels avoid both.
     [...chipReservations, ...nodeDiscReservations],
   );
+  // A name the placer moved to its upper slot has to be drawn there too.
+  for (const candidate of placedResult) {
+    if (!candidate.usedAlt) continue;
+    const slot = labelFlipSlots.get(candidate.payload.nodeId);
+    if (slot === undefined) continue;
+    candidate.payload.baselineY = slot.baselineY;
+    labelBboxById.set(candidate.payload.nodeId, candidate.bbox);
+  }
   const placedIds = new Set<string>(placedResult.map((c) => c.payload.nodeId));
 
   // LOD presence ramp. Each on-screen candidate fades linearly toward placed (1)
