@@ -2733,6 +2733,72 @@ function slugMarkComponents(
 }
 
 /**
+ * **Content wider than the panel says so on the edge that is hiding something.**
+ *
+ * ⚠️ Measured in the rendered dock, 2026-09-19. A fenced command in a Korean answer drew as
+ * `pnpm atlas compile --page wiki/archite` at a 320px panel — cut flush at the right edge, with
+ * no fade, no rule and no resting scrollbar, because a WebView's overlay scrollbars appear only
+ * while the pointer is moving. A truncated sentence is a sentence somebody can tell is truncated.
+ * A truncated **command** looks complete, and copying it runs the wrong thing.
+ *
+ * This is the affordance this repository already uses for exactly this fact — the
+ * `--tabbar-edge-fade` mask the tab strips, the transcript's own top edge and the past-conversation
+ * list all wear. No new token, no new width, and the same four states: both edges, either, neither.
+ *
+ * ⚠️ **Only while something is actually hidden.** Painted unconditionally the mask would blur the
+ * end of a command that fits, which states the opposite of the fact it exists to state — the same
+ * rule the transcript's top fade keeps.
+ *
+ * (There are now four hand-rolled copies of this four-state arithmetic in the app — `TabBar`,
+ * `LibraryPage`, the history list above, and this. A shared hook is the right home for it and is
+ * its own change, not a rider on a defect fix.)
+ */
+
+function useHorizontalOverflowEdges<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [edge, setEdge] = useState({ start: false, end: false });
+  const measure = useCallback(() => {
+    const element = ref.current;
+    if (!element) return;
+    const start = element.scrollLeft > 1;
+    const end = element.scrollLeft < element.scrollWidth - element.clientWidth - 1;
+    setEdge((previous) =>
+      previous.start === start && previous.end === end ? previous : { start, end },
+    );
+  }, []);
+  useLayoutEffect(() => {
+    measure();
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    // The panel is dragged, so the same block is inside 320px and 968px on one screen.
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [measure]);
+  const fade = 'var(--tabbar-edge-fade)';
+  const mask =
+    edge.start && edge.end
+      ? `linear-gradient(to right, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`
+      : edge.end
+        ? `linear-gradient(to right, black calc(100% - ${fade}), transparent 100%)`
+        : edge.start
+          ? `linear-gradient(to right, transparent 0, black ${fade})`
+          : undefined;
+  return {
+    ref,
+    onScroll: measure,
+    'data-edge-overflow': edge.start && edge.end
+      ? 'both'
+      : edge.end
+        ? 'end'
+        : edge.start
+          ? 'start'
+          : undefined,
+    style: mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined,
+  };
+}
+
+/**
  * **A command in an answer is something to read *and* something to run.**
  *
  * Two rounds found the same defect from opposite ends and this block keeps both answers,
