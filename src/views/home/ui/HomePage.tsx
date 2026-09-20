@@ -4288,7 +4288,16 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     }));
     return {
       rootKind: subtree.node.kind,
-      rootTitle: subtree.node.title,
+      /*
+       * The reader's name for the root, not the canonical one. Measured
+       * 2026-09-20 on the sample map: the chip, the chip's title and the node on
+       * the canvas all read the vault's `display_ko` while this header reached
+       * past it to `title` ("Payments"), so one screen called the same domain by
+       * two names in two languages. The ledger's boundary rows and subtree were
+       * already localized; only the header was not. `display ?? title` is the
+       * idiom the rest of this file uses.
+       */
+      rootTitle: subtree.node.display ?? subtree.node.title,
       census,
       subtree,
       boundaryRows,
