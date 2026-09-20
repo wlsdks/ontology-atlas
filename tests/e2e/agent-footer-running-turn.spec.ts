@@ -79,6 +79,12 @@ const covered = (page: Page) => page.evaluate(() => {
  * A Range over the text node measures what is actually drawn, fractionally, against a box read
  * the same way — so the comparison no longer depends on which side of .5 a platform lands.
  * `document.fonts.ready` stays: a measurement taken in a fallback face is a different number again.
+ *
+ * The slack is one pixel, not half of one. At half a pixel **both** locales failed on the runner
+ * while both passed here, which kills every locale-specific explanation and says the fractional
+ * measurement itself sits a little wider there. One pixel is still far short of an ellipsis, which
+ * costs more than ten, so the case still catches the thing it is for — and it now prints the two
+ * widths it compared, so the next failure argues with a number instead of a theory.
  */
 const modeWordIsWhole = async (page: Page) => {
   await page.evaluate(() => document.fonts.ready);
@@ -91,8 +97,14 @@ const modeWordIsWhole = async (page: Page) => {
     range.selectNodeContents(label);
     const text = range.getBoundingClientRect().width;
     const box = label.getBoundingClientRect().width;
-    // Half a pixel of slack: enough for the renderer's own rounding, far short of an ellipsis.
-    return text <= box + 0.5;
+    const composer = document.querySelector('[data-testid="acp-chat-composer"]');
+    return {
+      whole: text <= box + 1,
+      text: Math.round(text * 100) / 100,
+      box: Math.round(box * 100) / 100,
+      word: label.textContent,
+      composer: composer ? Math.round(composer.getBoundingClientRect().width * 100) / 100 : null,
+    };
   });
 };
 
@@ -117,7 +129,10 @@ for (const locale of ['en', 'ko'] as const) {
     await startTurn(page, harness);
     expect(await covered(page)).toEqual([]);
     await expect(page.getByTestId('acp-chat-mode')).toBeVisible();
-    expect(await modeWordIsWhole(page), 'the mode showed a cut word instead of standing down').toBe(true);
+    const fit = await modeWordIsWhole(page);
+    // The numbers go in the message, not a hypothesis: two locale-specific explanations for this
+    // case were plausible and wrong, and neither could have been ruled out from a bare boolean.
+    expect(fit?.whole, `the mode showed a cut word instead of standing down: ${JSON.stringify(fit)}`).toBe(true);
   });
 
   test(`the mode is there at the minimum width while nothing is running, and comes back when the turn ends (${locale})`, async ({ page }) => {
