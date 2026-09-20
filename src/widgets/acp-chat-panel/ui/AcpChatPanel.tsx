@@ -27,6 +27,7 @@ import {
 import { useTranslations } from 'next-intl';
 
 import { Chip, Disclosure, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
+import { copyText } from '@/shared/lib/copy-text';
 import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
 import { Button } from '@/shared/ui/button';
 import { formatDate } from '@/shared/lib/format-date';
@@ -2732,74 +2733,64 @@ function slugMarkComponents(
 }
 
 /**
- * **Content wider than the panel says so on the edge that is hiding something.**
+ * **A command in an answer is something to read *and* something to run.**
  *
- * ⚠️ Measured in the rendered dock, 2026-09-19. A fenced command in a Korean answer drew as
- * `pnpm atlas compile --page wiki/archite` at a 320px panel — cut flush at the right edge, with
- * no fade, no rule and no resting scrollbar, because a WebView's overlay scrollbars appear only
- * while the pointer is moving. A truncated sentence is a sentence somebody can tell is truncated.
- * A truncated **command** looks complete, and copying it runs the wrong thing.
+ * Two rounds found the same defect from opposite ends and this block keeps both answers,
+ * because they fix different halves of it.
  *
- * This is the affordance this repository already uses for exactly this fact — the
- * `--tabbar-edge-fade` mask the tab strips, the transcript's own top edge and the past-conversation
- * list all wear. No new token, no new width, and the same four states: both edges, either, neither.
+ * ## What was measured
  *
- * ⚠️ **Only while something is actually hidden.** Painted unconditionally the mask would blur the
- * end of a command that fits, which states the opposite of the fact it exists to state — the same
- * rule the transcript's top fade keeps.
+ * At the dock's documented floor the answer column is 260px and
+ * `pnpm atlas compile --page wiki/architecture.md --force --locale ko` lays out at 456px, so
+ * **196 pixels — 43% of the command — sat behind `overflow-x: auto` and a 2px scrollbar**.
+ * Worse, it was cut flush at the right edge with no fade and no resting scrollbar, because a
+ * WebView's overlay scrollbars appear only while the pointer is moving. A truncated sentence is
+ * visibly truncated; a truncated **command** looks complete, and copying it runs the wrong thing.
  *
- * (There are now four hand-rolled copies of this four-state arithmetic in the app — `TabBar`,
- * `LibraryPage`, the history list above, and this. A shared hook is the right home for it and is
- * its own change, not a rider on a defect fix.)
+ * ## The two halves
+ *
+ * The edge mask says the rest is there — the same `--tabbar-edge-fade` affordance the tab strips,
+ * the transcript's top edge and the past-conversation list already wear, so no new token and no
+ * new width. Scrolling is how you *read* the rest.
+ *
+ * The copy chip is how you *use* it, which is why the command is in the answer at all. Wrapping
+ * would have made it readable and lied about it: a wrapped line looks like two, and somebody
+ * retyping a wrapped shell command types the break.
+ *
+ * It is always drawn — not on hover, because a touch screen has none and this repository already
+ * forbids discovery that exists only under a pointer, and not only when the block overflows,
+ * because an affordance that comes and goes by width teaches people it might not be there.
  */
-function useHorizontalOverflowEdges<T extends HTMLElement>() {
-  const ref = useRef<T | null>(null);
-  const [edge, setEdge] = useState({ start: false, end: false });
-  const measure = useCallback(() => {
-    const element = ref.current;
-    if (!element) return;
-    const start = element.scrollLeft > 1;
-    const end = element.scrollLeft < element.scrollWidth - element.clientWidth - 1;
-    setEdge((previous) =>
-      previous.start === start && previous.end === end ? previous : { start, end },
-    );
-  }, []);
-  useLayoutEffect(() => {
-    measure();
-    const element = ref.current;
-    if (!element || typeof ResizeObserver === 'undefined') return;
-    // The panel is dragged, so the same block is inside 320px and 968px on one screen.
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [measure]);
-  const fade = 'var(--tabbar-edge-fade)';
-  const mask =
-    edge.start && edge.end
-      ? `linear-gradient(to right, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`
-      : edge.end
-        ? `linear-gradient(to right, black calc(100% - ${fade}), transparent 100%)`
-        : edge.start
-          ? `linear-gradient(to right, transparent 0, black ${fade})`
-          : undefined;
-  return {
-    ref,
-    onScroll: measure,
-    'data-edge-overflow': edge.start && edge.end
-      ? 'both'
-      : edge.end
-        ? 'end'
-        : edge.start
-          ? 'start'
-          : undefined,
-    style: mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined,
-  };
-}
-
-/** A fenced block in the conversation. It scrolls, and it says when it is hiding the rest. */
-function ChatCodeBlock({ node: _node, ...props }: { node?: unknown; children?: ReactNode }) {
+function ChatCodeBlock({ children, ...rest }: { node?: unknown; children?: ReactNode }) {
+  const t = useTranslations('acpChat');
+  const [copied, setCopied] = useState(false);
   const edges = useHorizontalOverflowEdges<HTMLPreElement>();
-  return <pre data-testid="acp-chat-code-block" {...props} {...edges} />;
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+  return (
+    <div className="my-2 grid gap-1 justify-items-start">
+      {/* The testid stays on the `pre`: that is the element carrying `data-edge-overflow`, which
+          is what `chat-answer-overflow-edge.spec.ts` reads off it. */}
+      <pre data-testid="acp-chat-code-block" {...rest} {...edges} className="atlas-scroll-quiet w-full">
+        {children}
+      </pre>
+      <Chip
+        data-testid="acp-chat-code-copy"
+        size="sm"
+        tone="muted"
+        hoverInk="strong"
+        onClick={() => {
+          // The DOM text, not the markdown source: what is copied is exactly what is shown.
+          void copyText(edges.ref.current?.textContent ?? '').then((ok) => setCopied(ok));
+        }}
+      >
+        {t(copied ? 'codeCopied' : 'codeCopy')}
+      </Chip>
+    </div>
+  );
 }
 
 /** The GFM table in the conversation has its own scroll to prevent columns from squishing in the narrow dock. */
@@ -2810,7 +2801,7 @@ function chatMarkdownComponents(
   const marked = slugMarkComponents(known, onHoverSlug) ?? {};
   return {
     ...marked,
-    pre: ChatCodeBlock,
+    pre: ({ node: _node, ...props }) => <ChatCodeBlock {...props} />,
     table: ({ node: _node, ...props }) => (
       <ChatTableFrame>
         <table
