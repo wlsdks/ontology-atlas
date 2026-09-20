@@ -150,10 +150,36 @@ describe('quiet scrollers', () => {
     expect(CSS).toMatch(
       /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,400}scroll-behavior:\s*auto\s*!important/,
     );
-    // The follow effect itself must not read the preference: an `!important` base rule already
-    // wins, and a second opinion here is a branch that can only disagree with it.
-    const follow = /useLayoutEffect\(\(\) => \{\n\s+const list = listRef\.current;[\s\S]*?\}, \[events/.exec(panel)?.[0] ?? '';
-    expect(follow).toContain('scrollBehavior');
+    /*
+     * The follow effect itself must not read the preference: an `!important` base rule already
+     * wins, and a second opinion here is a branch that can only disagree with it.
+     *
+     * ⚠️ Anchored on `transcriptPinnedToBottomRef`, which only this effect touches. It used to be
+     * anchored on the two opening lines, and a second effect that legitimately begins the same way
+     * silently became the one under test (2026-09-19).
+     */
+    const effectHolding = (marker: string) =>
+      panel.split('useLayoutEffect(').find((body) => body.includes(marker)) ?? '';
+    const follow = effectHolding('if (!transcriptPinnedToBottomRef.current) return;');
+    expect(follow, 'the follow effect was not found — the anchor drifted').toContain('scrollBehavior');
     expect(follow).not.toMatch(/reducedMotion|prefersReducedMotion/);
+
+    /*
+     * ⚠️ **And the one that moves the column must read it.** The base-layer override is
+     * `scroll-behavior`, which reaches the scroll above and nothing else; a `transform` transition
+     * is not covered by it, so the only place the preference can be honoured is here. The two
+     * effects therefore have opposite obligations, and stating only the first one was how a
+     * transform could have shipped animating under reduced motion.
+     */
+    const column = effectHolding('const column = transcriptColumnRef.current;');
+    expect(column, 'the column-movement effect was not found — the anchor drifted').toContain('transform');
+    /*
+     * ⚠️ The **guard**, not a mention. Written as `toMatch(/reducedMotion/)` this passed with the
+     * check deleted, because the name still stood in the dependency array — a gate satisfied by a
+     * word that does nothing.
+     */
+    expect(column, 'a transform is not covered by the scroll-behavior override').toMatch(
+      /reducedMotion\)\s*return/,
+    );
   });
 });
