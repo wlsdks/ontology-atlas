@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, UNIX_EPOCH};
+use std::time::{Duration, Instant, UNIX_EPOCH};
 #[cfg(target_os = "macos")]
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
@@ -1035,8 +1035,34 @@ fn acp_start(
     let stdout = child.stdout.take().ok_or("stdout-unavailable")?;
     let stderr = child.stderr.take().ok_or("stderr-unavailable")?;
 
-    spawn_acp_line_pump(app.clone(), session_id.clone(), stdout, "acp://message");
-    spawn_acp_line_pump(app.clone(), session_id.clone(), stderr, "acp://stderr");
+    /*
+     * **A session that dies on arrival must say what it printed** (measured 2026-09-20 on the
+     * installed app: every press logged `exited with code Some(0)` within a second, the screen
+     * guessed at a stale login, and the child's own words existed only in the webview of a
+     * conversation nobody could read any more). The child's first stderr lines are kept here
+     * and written to the log when the session ends, at most three of them and none longer than
+     * `DEAD_SESSION_LOG_CHARS`; a child that printed nothing and left inside
+     * `DEAD_SESSION_WINDOW` gets that said instead, because "it said nothing" is itself the
+     * clue when a press does nothing. The first measurement was written for a ten-second
+     * window and missed the real case: the session lived forty-five seconds, printed, and only
+     * then exited with code 0.
+     */
+    let early_stderr: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+    let started_at = Instant::now();
+    spawn_acp_line_pump(
+        app.clone(),
+        session_id.clone(),
+        stdout,
+        "acp://message",
+        None,
+    );
+    spawn_acp_line_pump(
+        app.clone(),
+        session_id.clone(),
+        stderr,
+        "acp://stderr",
+        Some(early_stderr.clone()),
+    );
 
     // ⚠️ **Registration must come first** (caught in 2026-08-16 review).
     //
@@ -1054,6 +1080,19 @@ fn acp_start(
         std::thread::spawn(move || {
             let code = child.wait().ok().and_then(|status| status.code());
             log::info!("acp session {session_id} exited with code {code:?}");
+            let said = early_stderr
+                .lock()
+                .map(|held| held.clone())
+                .unwrap_or_default();
+            for (index, line) in said.iter().enumerate() {
+                log::info!("acp session {session_id} said [{index}]: {line}");
+            }
+            if said.is_empty() && started_at.elapsed() < DEAD_SESSION_WINDOW {
+                log::info!(
+                    "acp session {session_id} ended within {}s and printed nothing",
+                    DEAD_SESSION_WINDOW.as_secs()
+                );
+            }
             if let Some(state) = app.try_state::<AcpSessions>() {
                 let _ = state.remove(&session_id);
             }
@@ -1149,6 +1188,28 @@ fn acp_start(
     Ok(session_id)
 }
 
+/// How soon an exit with nothing printed is worth saying so about.
+const DEAD_SESSION_WINDOW: Duration = Duration::from_secs(10);
+/// How many of the child's first stderr lines are kept for the log it leaves on exit.
+const DEAD_SESSION_LOG_LINES: usize = 3;
+/// The most of one line that reaches the log.
+const DEAD_SESSION_LOG_CHARS: usize = 200;
+
+/// One stderr line, trimmed and shortened for the log.
+///
+/// The cap is the whole discipline: a child may print a token-bearing URL or a stack that runs
+/// for pages, and neither belongs in a log a person may paste into an issue. Three lines of two
+/// hundred characters are enough to name a cause — "command not found", "invalid API key",
+/// "ENOENT" — and short enough to read.
+fn clip_for_log(line: &str) -> String {
+    let trimmed = line.trim();
+    if trimmed.chars().count() <= DEAD_SESSION_LOG_CHARS {
+        return trimmed.to_string();
+    }
+    let kept: String = trimmed.chars().take(DEAD_SESSION_LOG_CHARS).collect();
+    format!("{kept}…")
+}
+
 /// Stream a child's single stream to the screen line by line.
 ///
 /// Lines exceeding the upper limit are **dropped and reported**. If we truncate them, half-JSON enters the parser,
@@ -1158,6 +1219,9 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
     session_id: String,
     stream: R,
     event: &'static str,
+    // The screen is the only reader of these lines, and a child that dies on arrival leaves
+    // nothing behind: `early_lines` keeps its first few words so the exit can quote them.
+    early_lines: Option<Arc<Mutex<Vec<String>>>>,
 ) {
     std::thread::spawn(move || {
         let mut reader = std::io::BufReader::new(stream);
@@ -1165,6 +1229,13 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
             match acp::read_bounded_line(&mut reader, acp::MAX_LINE_BYTES) {
                 Ok(Some(bytes)) => {
                     let line = String::from_utf8_lossy(&bytes).to_string();
+                    if let Some(sink) = early_lines.as_ref() {
+                        if let Ok(mut held) = sink.lock() {
+                            if held.len() < DEAD_SESSION_LOG_LINES {
+                                held.push(clip_for_log(&line));
+                            }
+                        }
+                    }
                     let _ = app.emit(
                         event,
                         AcpLineEvent {
@@ -1242,6 +1313,14 @@ fn acp_send(
 /// End the session and everything it spawned.
 #[tauri::command]
 fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), String> {
+    /*
+     * **Who ended it, and when.** A session whose stdin closes takes its adapter with it: the
+     * child prints nothing and exits 0 (measured by hand 2026-09-20 — the adapter exits the
+     * moment stdin closes and never idles out). The log said only that the session had ended,
+     * so an end the screen asked for and an end the child chose read the same. This line
+     * separates them.
+     */
+    log::info!("acp session {session_id} stop requested by the screen");
     let pid = sessions.take_pid(&session_id)?;
     match pid {
         Some(pid) => acp::terminate_tree(pid),
@@ -1255,6 +1334,7 @@ fn acp_stop(sessions: State<'_, AcpSessions>, session_id: String) -> Result<(), 
 /// Without this, closing the window leaves the adapter and its grandchildren
 /// running. The user believes the app is off while the machine keeps working.
 fn terminate_all_acp_sessions(app: &AppHandle) {
+    log::info!("acp sessions ending because the app is shutting down");
     let Some(state) = app.try_state::<AcpSessions>() else {
         return;
     };
@@ -4204,6 +4284,17 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_logged_line_is_trimmed_and_capped() {
+        assert_eq!(
+            super::clip_for_log("  npx: command not found  "),
+            "npx: command not found"
+        );
+        let long = "x".repeat(super::DEAD_SESSION_LOG_CHARS + 50);
+        let clipped = super::clip_for_log(&long);
+        assert_eq!(clipped.chars().count(), super::DEAD_SESSION_LOG_CHARS + 1);
+        assert!(clipped.ends_with('…'));
+    }
     #[cfg(target_os = "macos")]
     #[test]
     fn native_tray_labels_follow_the_system_language_hint() {
