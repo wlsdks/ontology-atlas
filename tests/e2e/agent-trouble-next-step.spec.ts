@@ -32,6 +32,14 @@ async function openDockWithFailingStart(page: Page, startError: string) {
   await installLibraryWorkHarness(page, { startError });
   await page.goto('/en/docs/');
   await page.getByRole('button', { name: /Open my folder/i }).click();
+  /*
+   * ⚠️ **Opening a folder lands on the map, and the walk has to wait for it.** Navigating
+   * straight to the Library raced the vault opening: on the static export the goto won often
+   * enough that this spec failed in CI on a first-run gateway screen, three retries deep, with an
+   * error naming `library-workspace-wiki` — an element that was never going to appear, because the
+   * folder was not open yet. `library-compile-dock.spec.ts` already walks it this way.
+   */
+  await page.getByRole('heading', { name: 'Map', level: 1 }).waitFor({ timeout: 30_000 });
   await page.goto('/en/library/?guides=off&e2e=1');
   await page.getByTestId('library-workspace-wiki').click();
   await page.getByTestId('library-open-conversation').click();
