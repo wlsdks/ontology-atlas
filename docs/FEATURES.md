@@ -617,19 +617,33 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 
 **The map has weight, a press, and light** (2026-09-08, after the expression bans were lifted). A node's mass is its number of relations: let go of a hub after a drag and it carries the hand's speed a step past the drop point, overshoots once and takes longer to sit, while a leaf snaps home; its neighbours spring back on their own mass. Hovering a node swells it on an underdamped step, so a hover reads as a press that gives. Selecting a node lays an indigo ground halo under its neighbourhood, sized by its farthest neighbour, blooms the node and glows its relation lines, all on the focus ramp, so the light arrives with the dive and leaves with the deselect. Nothing at rest glows or moves, the idle canvas still draws zero frames, and under `prefers-reduced-motion` every end state lands with no ring. Measured on the sample vault at 1512: a dragged domain carried 14 px past its drop and settled by 300 ms; a hovered domain went 28.1 px to 34.7 and sat at 34.2. The pieces are pure modules under `src/widgets/ontology-map/expressive/` (`mass-spring`, `release-offsets`, `ego-light`) with a README naming their tokens and how to remove them.
 
-### `/architecture` — Harness: coverage, guides, structure
+### `/architecture` — Harness: structure, coverage, guides, architecture
 
 **The tab is Harness (`harness.title`) and it answers "how are agents set up to work in this repository"**
 (2026-09-13, `docs/records/decisions/2026-09-13-architecture-tab-becomes-harness-3a63ada4-031c-41af-8b9d-6d6f7f2a5138.md`). The route is unchanged, the label moved: the destination
 already held one half of the answer (the reviewed structure) and nothing at all of the other
 (what the agents were told, and what catches them). Under the title one line says what the tab
-is for, and a segmented control picks one of three views on `?view=`; the default is
-`coverage`. Two older addresses keep their meaning: `?view=sensors` — the view that named exactly
-this question and said it was not built — opens the matrix that answers it, and a `?role=` link
-with no `?view=` opens the structure ladder, the only view that can show a role. The shell-wide
-`?focus=main` skip anchor every left-rail link carries is deliberately not a deep link: keying the
-carve-out on it made one rail click open the ladder and left the default unreachable from the rail
-(measured in the installed app, 2026-09-13).
+is for, and a tab set picks one of **four** views on `?view=`.
+
+**The layer ladder became its own tab on 2026-09-19** (owner). It had been living under the name
+Structure inside a destination called Harness, and it is the product's **architecture** — which,
+in the vocabulary this tab borrows, is one of the three things a harness *regulates*
+(maintainability · architecture fitness · behaviour) rather than a part of the harness itself. So
+`?view=architecture` holds the ladder under its own name and `?view=structure` holds the harness's
+own anatomy. Nothing redirects between them: an old `?view=structure` link opens a real view of the
+same repository, one press from the ladder, where mapping it across would leave the tab a person
+presses and the tab a link opens disagreeing forever.
+
+**The arrival depends on the surface, because one of the views cannot answer on the web.** Almost
+the whole harness lives in dot directories and a browser's folder permission cannot see a dot entry
+at all, so the installed app arrives on the harness structure and a browser arrives on the
+blueprint, which is built from the bundled profile and answers there. Both surfaces keep all four
+tabs, and an address that names a view always wins. Three addresses keep their meaning: `?view=sensors`
+— the view that named exactly this question and said it was not built — opens the matrix that
+answers it, and `?role=` or `?stage=` with no `?view=` opens the ladder, the only view with either.
+The shell-wide `?focus=main` skip anchor every left-rail link carries is deliberately not a deep
+link: keying the carve-out on it made one rail click open the ladder and left the default
+unreachable from the rail (measured in the installed app, 2026-09-13).
 
 **One sentence at the top, computed from files only**: how many guide documents this repository
 speaks to agents through, and how many checks it has in place. Both numbers print their working
@@ -655,6 +669,57 @@ produces no error at all, and the Codex group carries its approval requirement (
 fact instead of a green, since `/hooks` trust lives in no file. Measured on this repository:
 98 guide documents in 9 groups, 85 checks (20 + 6 + 59), `AGENTS.md` 12,142 B merging to
 13,090 of 32,768, both declared pairs matching, 20 of 20 hook scripts wired.
+
+**Structure (`harness.views.structure`)** — the harness's own anatomy, read from this repository's
+files (2026-09-19). Its three bands are the coverage matrix's three columns — **Told**, **Gated**,
+**Watched** — deliberately, so one destination teaches one vocabulary: the matrix asks those
+questions of each **area** of the product, this asks them of each **part** of the harness. Told
+holds what is read every turn, what attaches by path, the skills and the sub-agent briefs, and the
+servers wired over the agent connection; Gated holds the hooks that can refuse a tool call, the
+`permissions.deny`/`ask` rules — the only gate that cannot be talked around, and one this product
+had never shown anywhere — and the files under `.githooks/`; Watched holds the hooks that only
+record, the check scripts a command names, the test files a runner discovers by itself, and the
+workflows that run after a push.
+
+**What the repository keeps out of sight is a gate too** (2026-09-20). Gated carries the exclusion
+files, and the row prints the name each product actually uses rather than one word for all of them:
+`.cursorignore` and `.cursorindexingignore` (Cursor), `.codeiumignore` (Windsurf, not
+`.windsurfignore`), `.aiexclude` (Gemini **Code Assist**), `.geminiignore` (Gemini **CLI** — a
+different file for a different product), `.aiignore` (JetBrains AI, which also honours the first
+three at a repository root). Two names are deliberately absent: `.claudeignore` does not exist —
+Claude Code uses `.gitignore` for discovery and `permissions.deny` for the rest, which this view
+already prints — and `.agentignore` is a proposal rather than a standard. The row also carries the
+limit the hook rows carry: a repository can write the file, and whether the tool honours it is the
+tool's business. An exclusion file is **not** counted among the documents the census sentence says
+the repository speaks through, because a file saying what an agent may not see is the opposite of a
+thing the repository says.
+
+A fourth band under those three holds **the agent loop and the model**, which every public account
+of a harness puts at its centre and no checkout can answer: what is read first, when to stop, what
+to drop when the context fills, which model runs. It carries words rather than a zero, because a
+count there would be a lie with a number on it. The part names come from four public sources —
+Fowler and Böckeler's guides and sensors, arXiv 2609.00006 (CC BY 4.0) on harness anatomy, OpenAI's
+instruction chain, Anthropic on long-running harnesses — and the screen prints that provenance
+behind a hint rather than asserting the taxonomy as its own.
+
+**What a turn costs, beside the count that cannot say it.** The always-read row prints the sum of
+its files' bytes: three 2 KB documents and three 40 KB documents are both "3", and that difference
+is the subject — those files are read before the agent has seen a line of code, on every turn, in
+every session, whatever the tool. Conditional guides are excluded on purpose; they are paid by the
+turns that touch their folder. Measured on this repository: 25.6 KB read every turn across 5
+documents, 14 more attached by path, 18 skills, 15 briefs, 2 servers, 5 hooks that can refuse
+(the mirrored Claude and Codex copies of one guard counted **once**, as the coverage view already
+counts them), 10 denied permissions, 6 files under `.githooks/`, 6 hooks that watch, 60 check
+scripts, 1,471 discovered test files and 7 workflows.
+
+**An empty part says where one would live.** A row with nothing in it carries the conventional
+address for that part — `.mcp.json`, `hooks.PostToolUse`, `.github/workflows/checks.yml` — copyable,
+taken from each tool's own documentation. It is an address and never advice: plenty of repositories
+rightly have no sub-agents and no MCP servers, and a screen that turns every blank into a to-do is
+the maturity score this destination refuses, wearing a different hat. Atlas writes nothing into a
+source repository; the person pasting the path into their editor is the step where they decide. Two
+rows get no address at all — the agent loop, which is not the repository's to hold, and where a test
+file should live, which has no one answer worth a screen asserting.
 
 **Coverage (`harness.views.coverage`)** — the tab's spine and its default view
 (2026-09-13, `docs/records/decisions/2026-09-13-harness-spine-is-a-coverage-matrix-b9dba267-d755-4ad5-b854-6f930c7e5922.md`).
@@ -717,8 +782,9 @@ six numerals count up from zero.
 
 The whole reading goes through the installed app's bridge (`entities/agent-files`, the same
 classifier the docs sidebar and `ontology-atlas agent-files` use — one store, not a second). A
-browser's folder permission cannot see a dot entry at all, so on the web the view names what it
-cannot reach instead of drawing a shorter list and calling it the inventory.
+browser's folder permission cannot see a dot entry at all, so on the web these views name what they
+cannot reach instead of drawing a shorter list and calling it the inventory — and the destination
+opens on the blueprint there rather than on a card about what this browser cannot read.
 
 - Architecture is separate from the Ontology Map and from the public five-kind
   ontology schema. A non-kind `architecture-profile/v1` Markdown document keeps
