@@ -24,6 +24,8 @@ describe("retired Skills product surface", () => {
       "architecture",
       // Library now contains Sources, Wiki, and the former Docs ontology workbench.
       "library",
+      // Automations owns schedule management; Map and Library remain execution contexts.
+      "automations",
       "insights",
       "projects",
       "agents",
@@ -40,6 +42,7 @@ describe("retired Skills product surface", () => {
     expect(resolveActiveNavDestination("/mcp")).toBe("mcp");
     expect(resolveActiveNavDestination("/library")).toBe("library");
     expect(resolveActiveNavDestination("/ko/library/")).toBe("library");
+    expect(resolveActiveNavDestination("/automations")).toBe("automations");
     // `/docs` remains a route alias, and highlights the one destination it now enters.
     expect(resolveActiveNavDestination("/docs")).toBe("library");
   });

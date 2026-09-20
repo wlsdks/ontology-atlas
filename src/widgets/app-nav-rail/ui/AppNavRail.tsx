@@ -18,6 +18,7 @@ import { useTranslations } from "next-intl";
 import {
   Blocks,
   Bot,
+  CalendarClock,
   Download,
   FolderKanban,
   // `History as HistoryIcon` — under certain HMR/bundle states the bare `History`
@@ -139,8 +140,8 @@ function rememberRailRouteFocus(
 /**
  * The 64px left nav rail (feat/chrome-system,
  * `docs/prototypes/chrome-rail-combined.html`, final owner approval) — permanent
- * chrome owning the global destinations (map · docs vault · library · studio ·
- * insights · projects · trail) plus the agent status and settings tiles at the bottom. #375
+ * chrome owning the global destinations (map · architecture · library · automations ·
+ * insights · projects · agents · history) plus the settings tile at the bottom. #375
  * mounted it on the topology (HomePage) only, and feat/rail-rollout (#377) extended
  * it to every other page (docs vault, studio, insights, project list/detail/edit,
  * download), consolidating three navigation systems (the `OperationsNav` top tabs,
@@ -256,6 +257,7 @@ export function AppNavRail({
     { id: "map", href: DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
     { id: "architecture", href: DESTINATION_HREF.architecture, label: t("architecture"), Icon: Blocks },
     { id: "library", href: contextHrefs?.docs ?? DESTINATION_HREF.library, label: t("library"), Icon: Library },
+    { id: "automations", href: DESTINATION_HREF.automations, label: t("automations"), Icon: CalendarClock },
     /*
      * Why the icon is `LineChart` and not `BarChart3` (owner, 2026-09-08: *"these two icons
      * are too alike to tell apart"*). The note above chose `Library` against the tile **above**

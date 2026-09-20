@@ -79,6 +79,7 @@ describe("AppNavRail", () => {
     expect(screen.getByTestId("app-nav-rail-item-architecture")).toBeInTheDocument();
     expect(screen.queryByTestId("app-nav-rail-item-docs")).not.toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-library")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-automations")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-insights")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
@@ -93,8 +94,9 @@ describe("AppNavRail", () => {
   it("draws only the destinations the folder's shape earns", () => {
     // A wiki without a map (owner direction 2026-09-06): no empty map, reading, analysis
     // or project doors; the wiki, the agent, MCP and history stay.
-    renderRail(<AppNavRail visibleDestinations={new Set(["library", "agents", "git"])} />);
+    renderRail(<AppNavRail visibleDestinations={new Set(["library", "automations", "agents", "git"])} />);
     expect(screen.getByTestId("app-nav-rail-item-library")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-automations")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
     for (const hidden of ["map", "architecture", "docs", "insights", "projects"]) {

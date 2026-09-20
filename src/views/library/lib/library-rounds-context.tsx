@@ -2,7 +2,8 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 
-import { type RoundsRunnerValue, useRoundsRunner } from "./use-rounds-runner";
+import { useRoundsRunner } from "./use-rounds-runner";
+import type { RoundsRunnerValue } from "@/features/library-rounds";
 
 /**
  * One clock for the whole app.

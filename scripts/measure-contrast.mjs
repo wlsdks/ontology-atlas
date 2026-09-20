@@ -69,6 +69,7 @@ export const DEFAULT_ROUTES = [
   // `/agents` into their own destination.
   "/ko/agents/?tab=mcp",
   "/ko/library/",
+  "/ko/automations/",
   // 404 is **two pages** — with and without a locale prefix. This is exactly where
   // the AA shortfall of 4.42:1 hid on 2026-08-03, and neither ratchet had ever looked
   // here. Including only one blocks half of that incident.

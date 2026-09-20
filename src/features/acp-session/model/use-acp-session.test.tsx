@@ -34,6 +34,8 @@ const bridge = vi.hoisted(() => ({
   failSetMode: false,
   /** The `modes` block `session/new` answers with. Null means the adapter advertised none. */
   sessionModes: null as unknown,
+  /** The Rust path verdict used by the direct read auto-allow branch. */
+  permissionVerdict: 'ask' as 'ask' | 'allow-inside-vault',
   stopped: [] as string[],
   /** The requests we sent — the only window onto "what did we put on the wire". */
   sent: [] as Array<{ id?: number; method?: string; params?: unknown }>,
@@ -86,7 +88,7 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
   stopAcpSession: async (id: string) => {
     bridge.stopped.push(id);
   },
-  acpPermissionVerdict: async () => 'ask',
+  acpPermissionVerdict: async () => bridge.permissionVerdict,
   listenToAcpSession: async (
     id: string,
     handlers: {
@@ -154,6 +156,7 @@ afterEach(() => {
   bridge.exits.clear();
   bridge.failSetMode = false;
   bridge.sessionModes = null;
+  bridge.permissionVerdict = 'ask';
   bridge.stopped = [];
   bridge.sent = [];
   bridge.holdPrompt = false;
@@ -515,6 +518,10 @@ describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
     ]);
     const meta = params._meta as { systemPrompt?: { append?: string } } | undefined;
     expect(meta?.systemPrompt?.append).toContain('atlas-vault');
+    expect(meta?.systemPrompt?.append).toContain('use the construction lifecycle');
+    expect(meta?.systemPrompt?.append).toContain('reviewPlan');
+    expect(meta?.systemPrompt?.append).toContain('writeEligibility');
+    expect(meta?.systemPrompt?.append).toContain('pass those rows unchanged to the batch writers');
 
     await act(async () => {
       await result.current.stop();
@@ -536,6 +543,7 @@ describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
     const params = call?.params as Record<string, unknown>;
     const meta = params._meta as { systemPrompt?: { append?: string } } | undefined;
     expect(meta?.systemPrompt?.append).not.toContain('atlas-vault');
+    expect(meta?.systemPrompt?.append).not.toContain('use the construction lifecycle');
     // The remaining rules (write the why, do not leave the folder) stay as they are.
     expect(meta?.systemPrompt?.append).toContain('`why`');
 
@@ -1328,6 +1336,53 @@ describe('autoDecide — the screen answers a permission it can judge', () => {
     await act(async () => { bridge.listener?.(permissionRequest(202, '/vault/notes.md')); });
     await waitFor(() => expect(result.current.pending?.request.filePath).toBe('/vault/notes.md'));
     await act(async () => { result.current.pending?.resolve('reject'); });
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('records a direct vault read auto-allow for an active unattended round', async () => {
+    const { result } = renderHook(() =>
+      useAcpSession({
+        runtimeId: 'claude-acp',
+        vaultRoot: '/vault',
+        mcpServers: [{ name: 'atlas-vault' }],
+        autoDecide: (request) => (
+          request.toolName === 'mcp__atlas-vault__get_concept'
+            ? 'call mcp__atlas-vault__get_concept'
+            : { reject: 'unexpected-tool' }
+        ),
+      }),
+    );
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => { bridge.release?.(); await starting; });
+
+    await act(async () => {
+      bridge.listener?.(JSON.stringify({
+        jsonrpc: '2.0',
+        id: 203,
+        method: 'session/request_permission',
+        params: {
+          sessionId: 's-1',
+          options: [
+            { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+            { kind: 'allow_once', name: 'Allow', optionId: 'allow' },
+          ],
+          toolCall: {
+            toolCallId: 'read-203',
+            title: 'mcp__atlas-vault__get_concept',
+            kind: 'read',
+            rawInput: { slug: 'capabilities/acp-runtime' },
+          },
+        },
+      }));
+    });
+    await waitFor(() => expect(bridge.sent.some((message) => message.id === 203 && 'result' in message)).toBe(true));
+    expect(result.current.events).toContainEqual(expect.objectContaining({
+      kind: 'notice',
+      text: 'auto-allowed',
+      detail: 'call mcp__atlas-vault__get_concept',
+    }));
+
     await act(async () => { await result.current.stop(); });
   });
 });

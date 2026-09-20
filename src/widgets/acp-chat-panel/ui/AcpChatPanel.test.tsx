@@ -1417,6 +1417,30 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     expect(screen.getByTestId('task-review-batch-remaining')).toHaveTextContent('1');
   });
 
+  it('대량 온톨로지 구축은 모든 개념 제안을 보여 준 뒤에만 한 번에 허용한다', async () => {
+    await bootSession();
+    await startUserTurn('저장소 온톨로지를 구축해줘');
+    emit(
+      mcpPermissionRequest('mcp__atlas-vault__add_concepts', 91, {
+        concepts: [
+          { slug: 'domains/orders', kind: 'domain', title: 'Orders' },
+          { slug: 'capabilities/create-order', kind: 'capability', title: 'Create Order', domain: 'domains/orders' },
+        ],
+      }),
+    );
+
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    expect(answerFor(91), '전체 제안이 검토되기 전에 ACP가 계속 실행되면 안 된다').toBeUndefined();
+    fireEvent.click(screen.getByTestId('task-review-depth-details'));
+    const rows = screen.getAllByTestId('acp-ontology-change-item');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent('domains/orders');
+    expect(rows[1]).toHaveTextContent('capabilities/create-order');
+
+    fireEvent.click(screen.getByTestId('acp-permission-allow'));
+    await waitFor(() => expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'allow' }));
+  });
+
   it('우리가 꽂아 준 볼트의 읽기 도구는 경로가 없어도 막지 않는다', async () => {
     await bootSession();
     emit(mcpPermissionRequest('mcp__atlas-vault__list_concepts'));

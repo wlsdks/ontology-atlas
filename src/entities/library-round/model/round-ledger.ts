@@ -19,6 +19,7 @@ export const ROUNDS_LEDGER_CAP = 500;
 
 export type RoundPassOutcome =
   | 'held'
+  | 'reviewed'
   | 'stale'
   | 'redrafted'
   | 'refused'
@@ -31,7 +32,7 @@ export interface RoundPassEntry {
   /** Absent for an `asleep` gap, which belongs to no round. */
   roundId?: string;
   roundName?: string;
-  kind?: 'consistency' | 'service';
+  kind?: 'consistency' | 'service' | 'ontology';
   startedAt: string;
   endedAt: string;
   outcome: RoundPassOutcome;
@@ -59,7 +60,7 @@ export interface RoundPassEntry {
   note?: 'no-agent';
 }
 
-const OUTCOMES: readonly RoundPassOutcome[] = ['held', 'stale', 'redrafted', 'refused', 'failed', 'asleep'];
+const OUTCOMES: readonly RoundPassOutcome[] = ['held', 'reviewed', 'stale', 'redrafted', 'refused', 'failed', 'asleep'];
 
 function stringList(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
@@ -94,7 +95,7 @@ export function parseRoundPassEntry(line: string): RoundPassEntry | null {
   };
   if (typeof record.roundId === 'string') entry.roundId = record.roundId;
   if (typeof record.roundName === 'string') entry.roundName = record.roundName;
-  if (record.kind === 'consistency' || record.kind === 'service') entry.kind = record.kind;
+  if (record.kind === 'consistency' || record.kind === 'service' || record.kind === 'ontology') entry.kind = record.kind;
   if (record.note === 'no-agent') entry.note = record.note;
   return entry;
 }

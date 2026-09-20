@@ -61,7 +61,7 @@ import { describeVaultShape } from "@/shared/lib/vault-shape";
 import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` avoids colliding with the global DOM `History`
 // constructor (same aliasing as `AtlasGitPanel`).
-import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, ScanSearch, X, Play } from "lucide-react";
+import { CalendarClock, Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, ScanSearch, X, Play } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
@@ -4951,6 +4951,16 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                       data-testid="topology-meaning-workbench-toggle"
                       onClick={toggleMeaningWorkbench}
                     >{tWorkbench('meaningTitle')}</ChromeChip>
+                    {gitVaultPath && llmBridgeAvailable ? (
+                      <ChromeChip
+                        icon={<CalendarClock />}
+                        aria-label={t('controls.automationsAriaLabel')}
+                        title={t('controls.automationsTooltip')}
+                        data-testid="topology-automations-toggle"
+                        compact={topologyUtilityChromeCompact}
+                        onClick={() => router.push(`${DESTINATION_HREF.automations}?kind=ontology`)}
+                      >{t('controls.automationsLabel')}</ChromeChip>
+                    ) : null}
                     {/* 「Agent」 — This button's spot is the moment you go from viewing a map to saying "fix this."
                         It uses the same chip spec as the existing utility lane without creating a rail destination or new route (zero surface addition).
                         The name is defined in **only one place**: `vaultAgentPanel.title` —

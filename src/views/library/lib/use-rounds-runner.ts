@@ -32,6 +32,7 @@ import {
   TICK_MS,
   afterPass,
   buildServiceRoundBrief,
+  buildOntologyRoundBrief,
   judgeRoundScope,
   planTick,
   runConsistencyPass,
@@ -39,6 +40,7 @@ import {
   triggerFor,
   type ScopeRequest,
 } from "@/features/library-rounds";
+import type { RoundsRunnerValue, RoundsStoreStatus } from "@/features/library-rounds";
 import { useVaultConnectors } from "@/features/mcp-connectors";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { getTauriVaultRootPath, nativeVaultFileHashes, readTauriVaultText } from "@/shared/lib/tauri-vault-fs";
@@ -69,37 +71,6 @@ import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
  * carry all four across the bridge, and it would only buy running with the window closed, which
  * this slice does not promise (§5, "only while open").
  */
-
-type RoundsStoreStatus = "no-vault" | "loading" | "ok" | "missing" | "malformed" | "unavailable";
-
-interface RoundsRunning {
-  roundId: string;
-  roundName: string;
-  startedAt: string;
-  phase: "checking" | "agent";
-}
-
-export interface RoundsRunnerValue {
-  /** Native folder only. `no-vault` in the browser and before a folder is open. */
-  storeStatus: RoundsStoreStatus;
-  state: RoundState | null;
-  rounds: RoundRecord[];
-  ledger: RoundPassEntry[];
-  running: RoundsRunning | null;
-  /** A guarded coding agent is ready to take a turn; without it a redraft or a service pass cannot run. */
-  agentReady: boolean;
-  agentLabel: string | null;
-  /** Names of connectors switched on for this folder, so the sheet can offer them. */
-  connectors: { id: string; name: string; enabled: boolean }[];
-  lastTickAt: string | null;
-  /** Bumps on every ledger or state write, so a screen can re-read without a folder watcher. */
-  revision: number;
-  save(round: RoundRecord): Promise<boolean>;
-  remove(id: string): Promise<boolean>;
-  setEnabled(id: string, enabled: boolean): Promise<boolean>;
-  runNow(id: string): void;
-  refresh(): Promise<void>;
-}
 
 const PASS_TIMEOUT_MS = 20 * 60_000;
 const READY_POLL_MS = 250;
@@ -132,10 +103,12 @@ function outcomeOf(input: {
   written: string[];
   refused: string[];
   stale: string[];
+  reviewed?: boolean;
 }): RoundPassOutcome {
   if (input.failed) return "failed";
   if (input.written.length > 0) return "redrafted";
   if (input.refused.length > 0) return "refused";
+  if (input.reviewed) return "reviewed";
   if (input.stale.length > 0) return "stale";
   return "held";
 }
@@ -151,12 +124,12 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const [storeStatus, setStoreStatus] = useState<RoundsStoreStatus>("no-vault");
   const [state, setState] = useState<RoundState | null>(null);
   const [entries, setEntries] = useState<RoundPassEntry[]>([]);
-  const [running, setRunning] = useState<RoundsRunning | null>(null);
+  const [running, setRunning] = useState<RoundsRunnerValue['running']>(null);
   const [lastTickAt, setLastTickAt] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
 
   const stateRef = useRef<RoundState | null>(null);
-  const runningRef = useRef<RoundsRunning | null>(null);
+  const runningRef = useRef<RoundsRunnerValue['running']>(null);
   const lastTickRef = useRef<Date | null>(null);
   const manifestRef = useRef(vault.manifest);
   useEffect(() => {
@@ -285,7 +258,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
   }, [session]);
 
   /** Open a session, send one brief, wait for the turn, close. Returns what the turn did. */
-  const agentTurn = useCallback(async (brief: string): Promise<{ failed: boolean; written: string[]; refused: string[]; called: string[] }> => {
+  const agentTurn = useCallback(async (brief: string): Promise<{ failed: boolean; written: string[]; refused: string[]; called: string[]; answer: string | null }> => {
     const current = sessionRef.current;
     const done = new Promise<AcpTurnCompletion | null>((resolve) => {
       completionRef.current = resolve;
@@ -322,6 +295,12 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const written: string[] = [];
     const refused: string[] = [];
     const called: string[] = [];
+    const answer = [...(completion?.events ?? [])]
+      .reverse()
+      .find((event) => event.kind === "agent")?.text
+      ?.replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 280) ?? null;
     for (const event of completion?.events ?? []) {
       if (event.kind !== "notice") continue;
       if (event.text === "auto-allowed" && event.detail) {
@@ -336,6 +315,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       written: [...new Set(written)],
       refused: [...new Set(refused)],
       called: [...new Set(called)],
+      answer,
     };
   }, []);
 
@@ -363,21 +343,28 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const runPass = useCallback(async (round: RoundRecord, trigger: RoundPassEntry["trigger"]) => {
     if (!store || !ledger || !rootPath || runningRef.current) return;
     const startedAt = new Date();
-    const mark = (phase: RoundsRunning["phase"]) => {
-      const next = { roundId: round.id, roundName: round.name, startedAt: startedAt.toISOString(), phase };
+    const mark = (phase: NonNullable<RoundsRunnerValue['running']>['phase']) => {
+      const next: NonNullable<RoundsRunnerValue['running']> = { roundId: round.id, roundName: round.name, startedAt: startedAt.toISOString(), phase };
       runningRef.current = next;
       setRunning(next);
     };
     mark("checking");
     let entry: RoundPassEntry;
     try {
-      const data = await readPassData();
+      const data = round.kind === "ontology"
+        ? { sources: [], docs: [], hashes: new Map<string, string>(), pageTexts: new Map<string, string>() }
+        : await readPassData();
       if (!data) throw new Error("no-manifest");
-      const check = runConsistencyPass(data);
-      const model = buildLibraryModel({ sources: data.sources, docs: data.docs, hashes: data.hashes });
+      const check = round.kind === "ontology"
+        ? { checked: 0, staleSources: [] as string[], stalePages: [] as string[] }
+        : runConsistencyPass(data);
+      const model = round.kind === "ontology"
+        ? null
+        : buildLibraryModel({ sources: data.sources, docs: data.docs, hashes: data.hashes });
       let written: string[] = [];
       let refused: string[] = [];
       let called: string[] = [];
+      let answer: string | null = null;
       let failed = false;
       let agentTurns: 0 | 1 = 0;
       let note: RoundPassEntry["note"];
@@ -390,8 +377,8 @@ export function useRoundsRunner(): RoundsRunnerValue {
           mark("agent");
           agentTurns = 1;
           const brief = buildCompileBrief({
-            sources: model.sources.filter((row) => check.staleSources.includes(row.path)),
-            existingPages: model.wikiPages,
+            sources: model!.sources.filter((row) => check.staleSources.includes(row.path)),
+            existingPages: model!.wikiPages,
             locale,
             execution: "acp",
             writerId: `agent:${runtimeId}`,
@@ -399,9 +386,9 @@ export function useRoundsRunner(): RoundsRunnerValue {
             hashes: data.hashes,
             now: new Date(),
           });
-          ({ failed, written, refused, called } = await agentTurn(brief));
+          ({ failed, written, refused, called, answer } = await agentTurn(brief));
         }
-      } else {
+      } else if (round.kind === "service") {
         if (!agentReady || !runtimeId) {
           failed = true;
           note = "no-agent";
@@ -427,8 +414,8 @@ export function useRoundsRunner(): RoundsRunnerValue {
             query: round.query ?? "",
             limit: round.limit,
             compileBrief: buildCompileBrief({
-              sources: model.sources,
-              existingPages: model.wikiPages,
+            sources: model!.sources,
+            existingPages: model!.wikiPages,
               locale,
               execution: "acp",
               writerId: `agent:${runtimeId}`,
@@ -438,7 +425,21 @@ export function useRoundsRunner(): RoundsRunnerValue {
             }),
             now: new Date(),
           });
-          ({ failed, written, refused, called } = await agentTurn(brief));
+          ({ failed, written, refused, called, answer } = await agentTurn(brief));
+        }
+      } else {
+        if (!agentReady || !runtimeId) {
+          failed = true;
+          note = "no-agent";
+        } else {
+          activeRef.current = { round, data: { sources: [], docs: [], hashes: new Map(), pageTexts: new Map() } };
+          mark("agent");
+          agentTurns = 1;
+          ({ failed, written, refused, called, answer } = await agentTurn(buildOntologyRoundBrief({
+            vaultRoot: rootPath,
+            locale,
+            focus: round.query,
+          })));
         }
       }
       const stale = check.stalePages;
@@ -450,14 +451,14 @@ export function useRoundsRunner(): RoundsRunnerValue {
         kind: round.kind,
         startedAt: startedAt.toISOString(),
         endedAt: new Date().toISOString(),
-        outcome: outcomeOf({ failed, written, refused, stale }),
+        outcome: outcomeOf({ failed, written, refused, stale, reviewed: round.kind === "ontology" && !failed }),
         checked: check.checked,
         stale,
         written,
         refused,
         called,
         agentTurns,
-        summary: "",
+        summary: round.kind === "ontology" ? answer ?? "Read-only refinement review completed." : "",
         trigger,
       };
       if (note) entry.note = note;

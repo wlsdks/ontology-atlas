@@ -78,6 +78,11 @@ export interface InsightsBrief {
 
 const EMPTY_DOCS: readonly VaultDoc[] = [];
 const EMPTY_LEDGER: readonly RoundPassEntry[] = [];
+type WikiRoundPass = RoundPassEntry & { outcome: Exclude<RoundPassEntry['outcome'], 'reviewed'> };
+
+function isWikiRoundPass(entry: RoundPassEntry): entry is WikiRoundPass {
+  return entry.kind !== 'ontology' && entry.outcome !== 'reviewed';
+}
 const EMPTY_LOG: readonly WikiLogEntry[] = [];
 
 /** `disagreement 3 · superseded 1 · …` — the log line `describeLintTurn` writes, in every locale. */
@@ -324,7 +329,8 @@ export function useInsightsBrief({
       })),
       unmeasured: library.structural.unmeasured.length,
       passes: ledger
-        .filter((entry) => entry.outcome !== 'asleep')
+        // Ontology reviews share the sidecar ledger but do not belong to the Documents lane.
+        .filter((entry) => entry.kind !== 'ontology' && entry.outcome !== 'asleep')
         .slice(-6)
         .reverse()
         .map((entry) => ({
@@ -345,7 +351,9 @@ export function useInsightsBrief({
       pages: library.wikiPages,
       folderProblems: { orphanPages: orphan?.count ?? 0, danglingLinks: dangling?.count ?? 0 },
       lint: lintCountsFromSummary(library.log.lastLint?.summary),
-      passes: ledger,
+      // `reviewed` is the ontology lane's read-only outcome; the wiki brief only accepts
+      // document-round outcomes. Old entries have no kind and remain valid wiki passes.
+      passes: ledger.filter(isWikiRoundPass),
       log,
       anchorMs: anchor.anchorMs,
     });

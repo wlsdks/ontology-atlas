@@ -127,6 +127,13 @@ export function judgeRoundScope({
     return { decision: 'reject', reason: relative };
   }
 
+  // Ontology refinement rounds are unattended read-only reviews. The map's writer gate is
+  // deliberately still owned by the foreground ACP session; a scheduled review may inspect
+  // source evidence, but it cannot edit any vault file or turn a proposal into meaning.
+  if (round.kind === 'ontology') {
+    return { decision: 'reject', reason: relative || request.toolName || 'ontology review is read-only' };
+  }
+
   if (relative.startsWith('wiki/') && relative.endsWith('.md')) {
     if (relative.startsWith('wiki/answers/') || relative.startsWith('wiki/_')) {
       return { decision: 'reject', reason: relative };

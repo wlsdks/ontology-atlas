@@ -309,8 +309,11 @@ const BASELINE_HARD_CUTS = 0;
  * `agent-setup-verify-open`, drawn only with a launchable server and an open folder,
  * which the static OPENERS fixture cannot synthesize; `VaultAgentSetupPanel.test.tsx`
  * owns its open path.
+ * 52 -> 53 (2026-09-20): Automations mounts the existing Library `NewRoundSheet` from its
+ * Documents lane. The sheet has its own app-vault opener and is covered by the Automations
+ * page test plus the Library sheet contract; the web no-vault route correctly keeps it closed.
  */
-const BASELINE_APPEARING_SURFACES = 52;
+const BASELINE_APPEARING_SURFACES = 53;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

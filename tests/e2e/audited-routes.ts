@@ -101,6 +101,10 @@ export const AUDITED_ROUTES = [
   // and also what a first-time visitor meets: one centred stage naming the two kinds of
   // file this folder keeps, and the door that opens one.
   "/ko/library/",
+  // Automations (added 2026-09-20). The browser cannot run the local clock without a native
+  // folder root, so this audits the honest no-folder state: both lanes are discoverable and the
+  // page explains why registration waits for the installed app.
+  "/ko/automations/",
   "/ko/download/",
   "/ko/guide/",
   "/ko/guide/what-is-atlas/",

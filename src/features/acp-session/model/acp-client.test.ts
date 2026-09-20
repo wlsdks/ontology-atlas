@@ -217,13 +217,15 @@ describe('ACP 클라이언트 — 권한 정책', () => {
   it('볼트 안 **읽기**는 앱이 대신 허용한다 (매번 물으면 대화가 성립하지 않는다)', async () => {
     const t = fakeTransport();
     const askUser = vi.fn(async () => null);
-    createAcpClient(t.transport, { verdict: insideVault, askUser });
+    const autoAllowed = vi.fn();
+    createAcpClient(t.transport, { verdict: insideVault, askUser, onAutoAllowed: autoAllowed });
 
     t.emit(permissionRequest('/vault/notes.md', 7, 'read'));
     await vi.waitFor(() => expect(outcomeOf(t.sent, 7)).toBeTruthy());
 
     expect(outcomeOf(t.sent, 7)).toEqual({ outcome: 'selected', optionId: 'allow' });
     expect(askUser).not.toHaveBeenCalled();
+    expect(autoAllowed).toHaveBeenCalledWith(expect.objectContaining({ filePath: '/vault/notes.md' }));
   });
 
   it('우리 서버의 읽기가 볼트 상대 경로를 들고 오면 앱이 대신 허용한다 — `read_source` 는 `sources/…` 로 부른다', async () => {
@@ -231,7 +233,8 @@ describe('ACP 클라이언트 — 권한 정책', () => {
     // came back `ask` and the first read_source call stopped at a card titled "outside this folder".
     const t = fakeTransport();
     const askUser = vi.fn(async () => null);
-    createAcpClient(t.transport, { vaultMcpServerName: 'atlas-vault', verdict: alwaysAsk, askUser });
+    const autoAllowed = vi.fn();
+    createAcpClient(t.transport, { vaultMcpServerName: 'atlas-vault', verdict: alwaysAsk, askUser, onAutoAllowed: autoAllowed });
 
     const request = permissionRequest('sources/change-request-CR3.docx', 7, 'read');
     (request.params as Record<string, unknown>).toolCall = { toolCallId: 'tool-1', title: 'read_source', kind: 'read', rawInput: { path: 'sources/change-request-CR3.docx' } };
@@ -242,6 +245,10 @@ describe('ACP 클라이언트 — 권한 정책', () => {
     await vi.waitFor(() => expect(outcomeOf(t.sent, 7)).toBeTruthy());
     expect(outcomeOf(t.sent, 7)).toEqual({ outcome: 'selected', optionId: 'allow' });
     expect(askUser).not.toHaveBeenCalled();
+    expect(autoAllowed).toHaveBeenCalledWith(expect.objectContaining({
+      toolName: 'mcp__atlas-vault__read_source',
+      filePath: 'sources/change-request-CR3.docx',
+    }));
 
     // A relative path that climbs out is not "inside by construction": it asks.
     const climb = permissionRequest('../secrets.env', 8, 'read');

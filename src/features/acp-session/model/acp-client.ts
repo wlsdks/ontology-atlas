@@ -252,6 +252,13 @@ export interface AcpClientHandlers {
   /** Streaming updates — text chunks, tool calls, plans. */
   onUpdate?: (update: Record<string, unknown>, context: { sessionId: string | null }) => void;
   /**
+   * Reports a read that this client allowed without asking the screen. The caller needs this
+   * because the direct auto-allow path deliberately does not enter `askUser`, where unattended
+   * rounds normally record their standing scope. Without this callback a scheduled pass can finish
+   * successfully while its ledger says it reached no vault tool.
+   */
+  onAutoAllowed?: (request: AcpPermissionRequest) => void;
+  /**
    * The name of the vault MCP server we wired into the session. Only that server's read tools are
    * auto-allowed; its write tools go through the person's change review. Not passing it turns this
    * classification off — we do not pretend something exists.
@@ -538,6 +545,7 @@ export function createAcpClient(
       allowOnce &&
       (request.filePath === null || vaultRelativeAtlasPath || verdict === 'allow-inside-vault')
     ) {
+      handlers.onAutoAllowed?.(request);
       write({ jsonrpc: '2.0', id, result: selected(allowOnce.optionId) });
       return;
     }
@@ -551,6 +559,7 @@ export function createAcpClient(
      */
     const readOnlyKind = request.toolKind === 'read' || request.toolKind === 'search';
     if (atlasMode === null && readOnlyKind && verdict === 'allow-inside-vault' && allowOnce) {
+      handlers.onAutoAllowed?.(request);
       write({ jsonrpc: '2.0', id, result: selected(allowOnce.optionId) });
       return;
     }

@@ -84,6 +84,12 @@ describe('round ledger', () => {
     expect(parseRoundPassEntry(JSON.stringify({ ...pass(), note: 'sunspots' }))?.note).toBeUndefined();
   });
 
+  it('round-trips an ontology review outcome and kind', () => {
+    const entry = parseRoundPassEntry(JSON.stringify(pass({ kind: 'ontology', outcome: 'reviewed', summary: 'Review only' })));
+    expect(entry?.kind).toBe('ontology');
+    expect(entry?.outcome).toBe('reviewed');
+  });
+
   it('rejects an entry with an outcome it does not know', () => {
     expect(parseRoundPassEntry(JSON.stringify(pass({ outcome: 'exploded' as RoundPassEntry['outcome'] })))).toBeNull();
   });
