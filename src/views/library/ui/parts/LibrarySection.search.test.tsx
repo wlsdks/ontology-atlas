@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
 import { writeLibraryIndexQuery } from "@/shared/lib/appearance-preferences";
-import type { LibraryUiModel } from "../../lib/use-library-model";
+import type { LibraryUiModel } from "@/features/library";
 import { LibrarySection } from "./LibrarySection";
 
 /**

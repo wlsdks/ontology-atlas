@@ -23,12 +23,24 @@ export interface CanonicalCensus {
   relationCount: number;
 }
 
+/**
+ * Whether this node is one of the concepts the census counts.
+ *
+ * Exported because the rule above is about the **word**, not about this one function: a surface
+ * that counts a subset of the same nodes and still says "concept" has to start from the same
+ * membership. The analysis brief did not, and its card read 124 beside a strip reading 125 on the
+ * same screen, one click apart, because it left the project node out (walkthrough, 2026-09-20).
+ */
+export function isCanonicalConcept(node: Pick<KnowledgeGraphNode, 'kind'>): boolean {
+  return node.kind !== 'vault-readme';
+}
+
 export function computeCanonicalCensus(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
 ): CanonicalCensus {
   return {
-    conceptCount: nodes.filter((node) => node.kind !== 'vault-readme').length,
+    conceptCount: nodes.filter(isCanonicalConcept).length,
     relationCount: edges.length,
   };
 }

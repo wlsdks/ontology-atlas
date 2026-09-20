@@ -35,7 +35,9 @@ import { seedFirstRunSeen } from "./first-run-seed";
  */
 
 const ROUTES = [
-  "/ko/ontology/insights/",
+  // The to-do question, because the board lands on the brief and the group toggles this spec
+  // measures live under the concepts subject (2026-09-20).
+  "/ko/ontology/insights/?tab=do-next",
   "/ko/architecture/",
   "/ko/agents/",
   "/ko/projects/",

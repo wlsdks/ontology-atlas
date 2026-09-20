@@ -241,7 +241,9 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
    */
   test("그 길은 실제로 폴더 선택기를 부른다", async ({ page, context }) => {
     const SITES = [
-      { route: "/ko/ontology/insights/", testId: "do-next-open-vault" },
+      // The open-folder call to action lives on the to-do question, and the board lands on the
+      // brief since it gained a first row naming its subject (2026-09-20).
+      { route: "/ko/ontology/insights/?tab=do-next", testId: "do-next-open-vault" },
       { route: "/ko/project/storefront/", testId: "project-detail-open-vault" },
       { route: "/ko/project/new/", testId: "project-write-disabled-open-folder" },
     ];
@@ -258,13 +260,16 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     });
 
     for (const site of SITES) {
-      await page.goto(`${site.route}?guides=off`, { waitUntil: "domcontentloaded" });
+      // A site may already carry a query — the insights board needs `?tab=` to reach the question
+      // its call to action lives on — so the guide flag joins rather than starting a second query.
+      const url = `${site.route}${site.route.includes("?") ? "&" : "?"}guides=off`;
+      await page.goto(url, { waitUntil: "domcontentloaded" });
       await page.evaluate(() => document.fonts.ready);
       // The assertion just below waits on its own — the fixed wait was waste (audit
       // 2026-08-17).
 
       const cta = paintedTestId(page, site.testId);
-      await expect(cta, `${site.route}: 폴더 여는 길이 안 보인다`).toBeVisible();
+      await expect(cta, `${url}: 폴더 여는 길이 안 보인다`).toBeVisible();
       await expect(
         cta,
         `${site.route}: FSA 를 지원하는데 내려받기로 강등됐다 — 능력 판정이 틀렸다`,
@@ -335,7 +340,7 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     await context.addInitScript(() => {
       delete (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker;
     });
-    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => document.fonts.ready);
     // The assertion just below waits on its own — the fixed wait was waste (audit
       // 2026-08-17).

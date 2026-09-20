@@ -236,7 +236,9 @@ pub(crate) fn open_relative_directory(
 ) -> Result<Option<fs::File>, String> {
     use std::os::fd::{AsRawFd, FromRawFd};
 
-    let mut current = root.try_clone().map_err(|error| err_str(error.to_string()))?;
+    let mut current = root
+        .try_clone()
+        .map_err(|error| err_str(error.to_string()))?;
     for component in relative_path.components() {
         let std::path::Component::Normal(part) = component else {
             return Err(err_str("directory target must be a normal relative path"));
@@ -246,15 +248,14 @@ pub(crate) fn open_relative_directory(
             libc::openat(
                 current.as_raw_fd(),
                 name.as_ptr(),
-                libc::O_RDONLY
-                    | libc::O_DIRECTORY
-                    | libc::O_CLOEXEC
-                    | libc::O_NOFOLLOW,
+                libc::O_RDONLY | libc::O_DIRECTORY | libc::O_CLOEXEC | libc::O_NOFOLLOW,
             )
         };
         if fd < 0 {
             let error = std::io::Error::last_os_error();
-            if error.kind() == std::io::ErrorKind::NotFound { return Ok(None); }
+            if error.kind() == std::io::ErrorKind::NotFound {
+                return Ok(None);
+            }
             return Err(err_str(error.to_string()));
         }
         current = unsafe { fs::File::from_raw_fd(fd) };
@@ -334,7 +335,9 @@ pub(crate) fn read_entry_text(
         .metadata()
         .map_err(|error| err_str(error.to_string()))?;
     if !metadata.is_file() {
-        return Err(err_str("collection preferences target is not a regular file"));
+        return Err(err_str(
+            "collection preferences target is not a regular file",
+        ));
     }
     if metadata.len() > 1024 * 1024 {
         return Err(err_str("collection preferences exceed the 1 MiB limit"));
@@ -427,7 +430,9 @@ pub(crate) fn create_entry_atomically(
     }
     let published = result.map_err(|error| err_str(error.to_string()))?;
     if published {
-        parent.sync_all().map_err(|error| err_str(error.to_string()))?;
+        parent
+            .sync_all()
+            .map_err(|error| err_str(error.to_string()))?;
     }
     Ok(published)
 }

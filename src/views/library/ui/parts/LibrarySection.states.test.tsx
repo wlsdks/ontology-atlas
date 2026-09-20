@@ -3,7 +3,7 @@ import { NextIntlClientProvider, useTranslations } from "next-intl";
 import { afterEach, describe, expect, it } from "vitest";
 
 import enMessages from "../../../../../messages/en.json";
-import type { LibraryUiModel } from "../../lib/use-library-model";
+import type { LibraryUiModel } from "@/features/library";
 import { LibrarySection } from "./LibrarySection";
 
 /**

@@ -21,8 +21,8 @@ import {
   resolveAddressView,
   type HarnessView,
 } from '../lib/harness-view-state';
-import { deriveCoverageAreas } from '../model/coverage-areas';
-import { useHarnessReport } from '../model/use-harness-report';
+import { deriveCoverageAreas } from '@/features/harness-report';
+import { useHarnessReport } from '@/features/harness-report';
 import { ArchitecturePage } from './ArchitecturePage';
 import { HarnessAnatomyView } from './HarnessAnatomyView';
 import { HarnessCoverageView } from './HarnessCoverageView';

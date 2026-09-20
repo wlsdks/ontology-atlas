@@ -11,6 +11,7 @@ import {
   inspectVaultGit,
   inspectVaultGitHistory,
   snapshotVaultGit,
+  collectPathLastChanges,
 } from './git-tools.mjs';
 
 function git(root, ...args) {
@@ -411,6 +412,109 @@ test('inspectVaultGit preserves unicode and spaces as usable paths', () => {
     assert.equal(status.vaultPathspec, '온톨로지 vault');
     assert.deepEqual(status.files.map((row) => row.path), ['온톨로지 vault/새 노드.md']);
     assert.deepEqual(status.stagedOutsideVault, ['외부 note.txt']);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collectPathLastChanges resolves cited paths against the caller\'s repoRoot, not the Git toplevel', () => {
+  const { root } = makeRepo();
+  try {
+    // A package inside a repository: its vault and its `path:` values are its own, not the toplevel's.
+    const pkg = join(root, 'packages', 'app');
+    mkdirSync(join(pkg, 'src'), { recursive: true });
+    const vault = join(pkg, 'vault');
+    mkdirSync(vault);
+    writeFileSync(join(pkg, 'src', 'pay.ts'), 'export const pay = 1;\n');
+    writeFileSync(join(vault, 'pay.md'), '---\nkind: capability\nslug: pay\npath: src/pay.ts\n---\n');
+    git(root, 'add', '.');
+    execFileSync('git', ['-C', root, 'commit', '-m', 'package'], {
+      encoding: 'utf8',
+      env: { ...process.env, GIT_AUTHOR_DATE: '2026-09-11T00:00:00Z', GIT_COMMITTER_DATE: '2026-09-11T00:00:00Z' },
+    });
+
+    const result = collectPathLastChanges({
+      repoRoot: pkg,
+      vaultRoot: vault,
+      repoPaths: ['src/pay.ts'],
+      vaultPaths: ['pay.md'],
+    });
+    assert.equal(result.ok, true);
+    const pay = result.changes.get('src/pay.ts');
+    assert.equal(pay.exists, true, 'a cited path must resolve against the repository the caller named');
+    assert.ok(pay.lastChangedAt, 'and it must be dated rather than reported as gone');
+    assert.equal(result.changes.get('pay.md').exists, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collectPathLastChanges keeps every concept document when the cited paths would fill the walk', () => {
+  const { root, vault } = makeRepo();
+  try {
+    mkdirSync(join(root, 'src'));
+    for (let index = 0; index < 600; index += 1) {
+      writeFileSync(join(root, 'src', `unit-${index}.ts`), `export const unit = ${index};\n`);
+    }
+    writeFileSync(join(vault, 'subject.md'), '---\nkind: capability\nslug: subject\n---\n');
+    git(root, 'add', '.');
+    execFileSync('git', ['-C', root, 'commit', '-m', 'many units'], {
+      encoding: 'utf8',
+      env: { ...process.env, GIT_AUTHOR_DATE: '2026-09-11T00:00:00Z', GIT_COMMITTER_DATE: '2026-09-11T00:00:00Z' },
+    });
+
+    const result = collectPathLastChanges({
+      repoRoot: root,
+      vaultRoot: vault,
+      repoPaths: Array.from({ length: 600 }, (_unused, index) => `src/unit-${index}.ts`),
+      vaultPaths: ['subject.md'],
+    });
+    assert.equal(result.ok, true);
+    assert.ok(
+      result.changes.get('subject.md')?.lastChangedAt,
+      'the document must survive the cap: undated documents read as "no commit in the window"',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collectPathLastChanges dates repo paths and vault documents in one walk and refuses escapes', () => {
+  const { root, vault } = makeRepo();
+  try {
+    mkdirSync(join(root, 'src'));
+    writeFileSync(join(root, 'src', 'pay.ts'), 'export const pay = 1;\n');
+    writeFileSync(join(vault, 'pay.md'), '---\nkind: capability\nslug: pay\npath: src/pay.ts\n---\n');
+    const commitAt = (when, message) =>
+      execFileSync('git', ['-C', root, 'commit', '-m', message], {
+        encoding: 'utf8',
+        env: { ...process.env, GIT_AUTHOR_DATE: when, GIT_COMMITTER_DATE: when },
+      });
+    git(root, 'add', '.');
+    commitAt('2026-09-10T00:00:00Z', 'meaning');
+    writeFileSync(join(root, 'src', 'pay.ts'), 'export const pay = 2;\n');
+    git(root, 'add', '.');
+    commitAt('2026-09-12T00:00:00Z', 'code moved');
+
+    const result = collectPathLastChanges({
+      repoRoot: root,
+      vaultRoot: vault,
+      repoPaths: ['src/pay.ts', 'src', 'src/gone.ts', '../outside.txt', '--flag'],
+      vaultPaths: ['pay.md', 'never.md'],
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.changes.has('../outside.txt'), false);
+    assert.equal(result.changes.has('--flag'), false);
+    const pay = result.changes.get('src/pay.ts');
+    const doc = result.changes.get('pay.md');
+    assert.equal(pay.exists, true);
+    assert.equal(doc.exists, true);
+    assert.ok(Date.parse(pay.lastChangedAt) > Date.parse(doc.lastChangedAt));
+    assert.equal(result.changes.get('src').lastChangedAt, pay.lastChangedAt);
+    assert.equal(result.changes.get('src').isDir, true);
+    assert.equal(pay.isDir, false);
+    assert.deepEqual(result.changes.get('src/gone.ts'), { exists: false, isDir: false, lastChangedAt: null });
+    assert.deepEqual(result.changes.get('never.md'), { exists: false, isDir: false, lastChangedAt: null });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

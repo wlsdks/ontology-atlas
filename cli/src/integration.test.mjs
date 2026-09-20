@@ -9877,6 +9877,17 @@ await test('index --json — analyzes and verifies a repo without mutating the v
     assert.equal(data.meaningGate.implementationEvidence.reviewRequiredCapabilities, 2);
     assert.match(data.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(data.validation.problemFiles, 0);
+    /*
+     * A fixture repository with no concept citing an implementation path dates nothing. The
+     * readout must say that rather than report a zero, which reads as "nothing you recorded has
+     * moved" — the opposite of the truth.
+     */
+    assert.equal(data.validation.evidenceChecked, false);
+    assert.equal(data.validation.evidenceStale, null);
+    assert.ok(typeof data.validation.evidenceUncheckedReason === 'string' && data.validation.evidenceUncheckedReason.length > 0);
+    const human = await run(['index', repo, '--vault', vault]);
+    assert.match(human.stdout, /cited code not checked/);
+    assert.doesNotMatch(human.stdout, /0 concepts whose cited code/);
     assert.equal(existsSyncTest(join(vault, 'bs-app.md')), false);
     assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), false);
   } finally {

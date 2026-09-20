@@ -101,6 +101,31 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
    * The ratchet counts rather than forbids: the kind legitimately appears, and a number that may
    * fall but never rise is the honest shape for a word that has both a right and a wrong use.
    */
+  /*
+   * ⚠️ The actor that reads this folder had four names on one screen: the agent word, "AI", "AI
+   * agent" and "AI tool", with the brief's own card titled with the agent word while the button
+   * beside it said AI (walkthrough, 2026-09-20). They are one thing, the coding agent connected to
+   * this folder, and the rail, the brief and the activity log already use the agent word.
+   *
+   * A ratchet rather than a ban, for the same reason as the project-kind rule below: "AI" is
+   * honest where it names the *category* rather than this folder's agent, as the product's own
+   * tagline does. What must not happen is the count climbing back.
+   */
+  it('「AI」 사용이 늘지 않는다 — 이 폴더의 에이전트는 「에이전트」다', () => {
+    /*
+     * 82 after merging main on 2026-09-20: the entries that arrived name the category rather than
+     * this folder's agent, which is the use this ratchet allows. The number moves only with a
+     * measurement beside it.
+     */
+    const AI_BASELINE = 82;
+    const current = hits('AI').length;
+    expect(
+      current,
+      `「AI」가 ${AI_BASELINE} → ${current} 로 늘었다. 이 폴더에 연결된 그것을 가리킨다면 ` +
+        `「에이전트」를 써라 — 상한을 올리는 것은 래칫을 푸는 것이다.`,
+    ).toBeLessThanOrEqual(AI_BASELINE);
+  });
+
   it('「프로젝트」 사용이 늘지 않는다 — 종류를 말할 때만 쓴다', () => {
     /*
      * 143 → 144 on 2026-09-20. The map's search palette labelled its project filter

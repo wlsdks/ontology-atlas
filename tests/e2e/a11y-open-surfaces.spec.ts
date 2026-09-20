@@ -183,7 +183,14 @@ const OPENERS: readonly Opener[] = [
   },
   {
     name: "다음 할 일 행 메뉴",
-    route: "/ko/ontology/insights/",
+    /*
+     * ⚠️ **The row menu lives on one question, and the board no longer lands there.** The bare
+     * route used to draw the to-do list; since the board gained a first row naming its subject it
+     * opens on the brief, which is a single view with no rows and no kebab. The trigger then waits
+     * eight seconds for an element that correctly does not exist (2026-09-20). The address has to
+     * name the question whose surface is being audited.
+     */
+    route: "/ko/ontology/insights/?tab=do-next",
     trigger: "do-next-row-menu",
     surface: '[data-testid="do-next-row-menu-popover"]',
   },

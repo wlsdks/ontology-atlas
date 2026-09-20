@@ -248,6 +248,23 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "같은 탭 안에서 숨김 변경을 알리는 이벤트 — 저장 키가 아니다",
   },
   {
+    // When this reader last looked at the brief. A reader fact, never the folder's, and per
+    // vault for the same reason as the dismissal slot above.
+    key: "atlas.insights.briefSeenAt:",
+    kind: "storage",
+    scope: "vault-scoped",
+    scopedBy: "useVaultIdentityScope",
+    file: "src/views/ontology-insights/lib/brief/brief-anchor.ts",
+    provenBy: "src/views/ontology-insights/lib/brief/brief-anchor.test.ts",
+    note: "브리핑을 마지막으로 본 시각 — 「그 뒤로」를 재는 기준, 폴더별",
+  },
+  {
+    key: "ontology-atlas:insights-brief-seen-change",
+    kind: "event",
+    scope: "global",
+    note: "같은 탭 안에서 기준 시각 변경을 알리는 이벤트 — 저장 키가 아니다",
+  },
+  {
     key: "atlas.agentActivity.readAt:",
     kind: "storage",
     scope: "vault-scoped",

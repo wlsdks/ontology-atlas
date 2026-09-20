@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { useLibraryModel } from "@/views/library/lib/use-library-model";
+import { useLibraryModel } from "./use-library-model";
 
 function doc(slug: string, frontmatter: Record<string, unknown>, mtime = 1) {
   return { slug, title: slug, frontmatter, body: "", mtime, headings: [], description: "", tags: [], outLinks: [], backlinks: [] } as never;

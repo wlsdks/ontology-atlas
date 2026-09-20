@@ -112,3 +112,28 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
     expect(queue.activeRowIds).toContain("orphan:element:o7");
   });
 });
+
+describe('a promotion row names what it counts', () => {
+  it('carries the concepts that point at it, capped, with the count still whole', () => {
+    /*
+     * The row claimed "N places reference this" and named none of them, so the reader had to open
+     * the map to see what the recommendation rested on (walkthrough, 2026-09-20). The count stays
+     * the true total; the names are the first few behind it.
+     */
+    const hub = n("element:core", "element", "elements/core", "Core");
+    const spokes = Array.from({ length: 5 }, (_, i) =>
+      n(`element:s${i}`, "element", `elements/s${i}`, `Spoke ${i}`),
+    );
+    const edges = spokes.map((spoke) => e(spoke.id, hub.id));
+    const queue = buildDoNextQueue([hub, ...spokes], edges, new Map(), { now: NOW, prose: PROSE });
+    const row = queue.rows.find((candidate) => candidate.rowKind === "promotion" && candidate.nodeId === hub.id);
+
+    expect(row, "the fixture produced no promotion row — this test is watching nothing").toBeDefined();
+    expect(row?.degree, "the count must stay the whole total").toBe(5);
+    expect(row?.referencedBy?.length, "a row may not print an unbounded list of names").toBe(3);
+    // Every name is a real concept that points at this one, and none is repeated.
+    const pointing = new Set(spokes.map((spoke) => spoke.title));
+    for (const name of row?.referencedBy ?? []) expect(pointing.has(name)).toBe(true);
+    expect(new Set(row?.referencedBy).size).toBe(row?.referencedBy?.length);
+  });
+});

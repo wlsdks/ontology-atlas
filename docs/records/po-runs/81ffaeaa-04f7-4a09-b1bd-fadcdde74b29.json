@@ -1,0 +1,35 @@
+{
+  "date": "2026-09-19",
+  "decision": "The analysis opens on a brief across the ontology, the wiki and the harness, and every drift line names the file and the two dates it compared",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "orient",
+  "changes": [
+    "surface-inventory",
+    "substantial-investment"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "affected"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "evidence-bounded",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-19",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "81ffaeaa-04f7-4a09-b1bd-fadcdde74b29",
+  "recordedAt": "2026-09-19T12:20:36.667Z"
+}
