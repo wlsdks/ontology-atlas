@@ -105,6 +105,15 @@ export interface DensityGateInput {
    * Omit it and every child is eligible, as before.
    */
   kindOf?: (nodeId: string) => string | undefined;
+  /**
+   * Ids that stay drawn even inside a collapsed parent's subtree — the focused
+   * node's 1-hop neighbours held by **another** parent. Selecting a capability
+   * whose dependencies live in folded domains used to draw an ego graph with
+   * those lines missing while the panel listed them (measured 2026-09-19: 1 of
+   * 3 relations on the map). A held-open node's own children still fold, and a
+   * folded parent's chip claims only what still folds.
+   */
+  heldOpen?: ReadonlySet<string>;
 }
 
 export interface DensityGateResult {
@@ -125,6 +134,7 @@ export interface DensityGateResult {
 export function computeDensityGate(input: DensityGateInput): DensityGateResult {
   const threshold = input.threshold ?? DENSITY_GATE_THRESHOLD;
   const { childrenByParent, expandedParents, parentGeometry, kindOf } = input;
+  const heldOpen = input.heldOpen ?? null;
 
   // Domain children are exempt (they are the spine). Without kindOf, none are.
   const isExempt = (id: string): boolean => kindOf?.(id) === "domain";
@@ -152,7 +162,8 @@ export function computeDensityGate(input: DensityGateInput): DensityGateResult {
     while (stack.length > 0) {
       const id = stack.pop() as string;
       if (clusteredIds.has(id) || isExempt(id)) continue;
-      clusteredIds.add(id);
+      // A held-open node is drawn, but its subtree folds like the rest.
+      if (!heldOpen?.has(id)) clusteredIds.add(id);
       const grandChildren = childrenByParent.get(id);
       if (grandChildren) stack.push(...grandChildren);
     }
@@ -171,17 +182,20 @@ export function computeDensityGate(input: DensityGateInput): DensityGateResult {
     if (!geometry) continue;
     const ring = geometry.ring ?? DEFAULT_CHIP_RING;
     const expanded = expandedParents.has(parentId);
+    // The chip claims the children that actually fold; a held-open child is drawn.
+    const folded = heldOpen ? gated.filter((c) => !heldOpen.has(c)) : gated;
+    if (folded.length === 0 && !expanded) continue;
     // Expanded chips stand outside the child disc so they never overlap it.
     const anchorRadius = chipAnchorRadius(ring, expanded);
     chips.push({
       parentId,
-      count: gated.length,
+      count: folded.length,
       expanded,
       anchor: {
         x: geometry.x + Math.cos(geometry.angle) * anchorRadius,
         y: geometry.y + Math.sin(geometry.angle) * anchorRadius,
       },
-      childKind: kindOf?.(gated[0]),
+      childKind: kindOf?.(folded[0] ?? gated[0]),
     });
   }
 

@@ -39,7 +39,7 @@ export function AgentsWorkspace() {
   // and the scroll-end gate measured the slot as never scrolling (CI, 2026-09-18).
   return (
     <AgentsPage mcpCount={mcpCount}>
-      <McpPage embedded connectors={connectors} handle={handle} />
+      <McpPage connectors={connectors} handle={handle} />
     </AgentsPage>
   );
 }

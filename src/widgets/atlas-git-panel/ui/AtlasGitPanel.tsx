@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useRef, useS
 import { listen } from "@tauri-apps/api/event";
 import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
 import { useArrivalMemory } from "@/shared/lib/route-arrival-memory";
+import { useRovingRows } from "@/shared/lib/use-roving-rows";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { useFormatter, useTranslations } from "next-intl";
 // `History as HistoryIcon` — usability review P0 (2026-07-23): under certain
@@ -13,7 +14,6 @@ import { useFormatter, useTranslations } from "next-intl";
 // alias can never collide with a global.
 import {
   Check,
-  ChevronRight,
   Download,
   FolderOpen,
   History as HistoryIcon,
@@ -27,8 +27,6 @@ import { Link } from "@/i18n/navigation";
 import {
   countChangesByStatus,
   formatSnapshotSummary,
-  groupChangesByKind,
-  type AtlasGitKindGroup,
 } from "@/shared/lib/atlas-git-changes";
 import {
   describeChangePath,
@@ -62,6 +60,7 @@ import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import { Checkbox, controlClass } from "@/shared/ui";
 import { buildConceptEgo, matchNodeId, type ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
+import { PendingDocumentPane, type ChangedDocument } from "./PendingDocumentPane";
 import { cn } from "@/shared/lib/cn";
 
 /**
@@ -606,8 +605,6 @@ export function AtlasGitPanel({
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   /** The remote input — opened only from the location line's button; it never sits there as a card. */
   const [remoteOpen, setRemoteOpen] = useState(false);
-  /** Non-concept files, collapsed by default. Recorded along with the rest, but not what the user judges. */
-  const [othersOpen, setOthersOpen] = useState(false);
 
   // State for S1 (start recording) and S4 (register a remote).
   const [initRunning, setInitRunning] = useState(false);
@@ -749,7 +746,23 @@ export function AtlasGitPanel({
   // `package.json` are recorded too but are not for reading. The commit formula
   // still covers **everything**.
   const { concepts, others } = useMemo(() => splitConceptChanges(changes), [changes]);
-  const kindGroups = useMemo(() => groupChangesByKind(concepts), [concepts]);
+  /*
+   * Each changed document with the concept it carries, named the way the map names it.
+   * The pane reads documents, not kinds: the kind is the glyph on the chip, not a group
+   * label over a single row.
+   */
+  const documents = useMemo<ChangedDocument[]>(() => {
+    const nodes = graph?.nodes ?? [];
+    return concepts.map((entry) => {
+      const id = matchNodeId(entry, nodes);
+      const node = id ? nodes.find((n) => n.id === id) : null;
+      return {
+        entry,
+        label: node ? node.display || node.title : describeChangePath(entry.slug, { isConcept: true }).name,
+        kind: entry.kind,
+      };
+    });
+  }, [concepts, graph]);
   const statusCounts = useMemo(() => countChangesByStatus(changes), [changes]);
   const predictedSubject = useMemo(() => formatSnapshotSummary(changes), [changes]);
   const hasChanges = changes.length > 0;
@@ -1115,7 +1128,7 @@ export function AtlasGitPanel({
             stage={stage}
             loadErrorText={loadErrorText}
             status={status}
-            kindGroups={kindGroups}
+            documents={documents}
             otherChanges={others}
             statusCounts={statusCounts}
             changeCount={changes.length}
@@ -1153,8 +1166,6 @@ export function AtlasGitPanel({
             restoreError={restoreError}
             selectedPath={selectedPath}
             setSelectedPath={setSelectedPath}
-            othersOpen={othersOpen}
-            setOthersOpen={setOthersOpen}
             initRunning={initRunning}
             initError={initError}
             initCopyState={initCopyState}
@@ -1994,6 +2005,7 @@ function RemoteResultLine({
   if (!error && !notice) return null;
   return (
     <p
+      role="status"
       data-testid={error ? `atlas-git-${kind}-error` : `atlas-git-${kind}-notice`}
       className={cn(
         "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-prose",
@@ -2098,320 +2110,6 @@ function staggerStyle(index: number): React.CSSProperties {
   return { "--git-row-index": Math.min(index, MAX_STAGGER_INDEX) } as React.CSSProperties;
 }
 
-const STATUS_GLYPH: Record<string, string> = {
-  added: "+",
-  modified: "~",
-  deleted: "−",
-  renamed: "→",
-};
-
-const STATUS_HINT_KEY = {
-  added: "markAddedHint",
-  modified: "markModifiedHint",
-  deleted: "markDeletedHint",
-  renamed: "markRenamedHint",
-} as const;
-
-/**
- * Status is carried by **luminance** — newly created is brightest, deleted
- * faintest.
- *
- * Two reasons not to use colour: ① the charter (neutrals plus a single indigo),
- * and ② splitting add from delete along green/red is the axis red-green colour
- * blindness (about 8% of men) separates worst, while here colour would be
- * **duplicate ink** for what the glyphs (`+ ~ − →`) already carry.
- */
-const STATUS_TONE: Record<string, string> = {
-  added: "text-[color:var(--color-text-primary)]",
-  modified: "text-[color:var(--color-text-secondary)]",
-  renamed: "text-[color:var(--color-text-tertiary)]",
-  deleted: "text-[color:var(--color-text-quaternary)]",
-};
-
-function StatusMark({ t, status }: { t: Translator; status: string }) {
-  const hintKey = STATUS_HINT_KEY[status as keyof typeof STATUS_HINT_KEY] ?? "markModifiedHint";
-  return (
-    <span
-      className={cn(
-        "w-3 shrink-0 text-center font-mono text-label",
-        STATUS_TONE[status] ?? STATUS_TONE.modified,
-      )}
-    >
-      <span aria-hidden>{STATUS_GLYPH[status] ?? "~"}</span>
-      <span className="sr-only">{t(hintKey)}</span>
-    </span>
-  );
-}
-
-/**
- * A change row — where defect ③ of the old screen is fixed.
- *
- * It used to be one line of `capability · added 1 · edited 2` with a list of mono
- * slugs beneath it, repeated per kind. With no hierarchy and no items it read as
- * a **build log**, and above all it **could not be pressed** — fourteen things had
- * changed and the screen offered no way to see the evidence for any one of them.
- *
- * So a row is an item, and pressing it brings that document's changed lines into
- * the evidence column. The path was not removed but **split**: the location
- * (`capabilities/`) is quaternary and the name (`git-record`) is primary — the
- * same string gains hierarchy (the slug an agent needs for handoff has to stay on
- * screen).
- *
- * Dimension regularity: height is fixed at `--git-row-h`, the name clamps, and
- * line counts sit in a fixed right column that holds its place even with no
- * value. Content length never decides the grid's rhythm.
- */
-function ChangeRow({
-  t,
-  status,
-  slug,
-  path,
-  index,
-  selected,
-  onSelect,
-  delta,
-  muted = false,
-}: {
-  t: Translator;
-  status: string;
-  slug: string;
-  path: string;
-  index: number;
-  selected: boolean;
-  onSelect: (path: string | null) => void;
-  delta: { added: number; removed: number } | null;
-  /** Non-concept files — same grammar, one step lower in weight. */
-  muted?: boolean;
-}) {
-  const { name, place } = describeChangePath(slug, { isConcept: !muted });
-  return (
-    <li className="git-fade-in" style={staggerStyle(index)}>
-      <button
-        type="button"
-        data-testid="atlas-git-change-row"
-        data-selected={selected ? "true" : undefined}
-        aria-pressed={selected}
-        title={t("rowSelectHint")}
-        onClick={() => onSelect(selected ? null : path)}
-        className={cn(
-          "flex h-[var(--git-row-h)] w-full items-center gap-2 rounded-[var(--radius-chip)] border-l-2 pr-1.5 pl-1.5 text-left transition-colors",
-          selected
-            ? "border-l-[color:var(--color-indigo-brand)] bg-[color:var(--color-overlay-2)]"
-            : "border-l-transparent hover:bg-[color:var(--color-overlay-1)]",
-        )}
-      >
-        <StatusMark t={t} status={status} />
-        <span className="min-w-0 flex-1 truncate font-mono text-label">
-          {/*
-           * tertiary, not quaternary — **text on a pressable row cannot use the
-           * flat token** (measured 2026-08-02 against alpha compositing, and
-           * re-measured 2026-08-03 after quaternary was raised to #82828a).
-           * quaternary (#82828a) clears 5.00:1 on `--color-panel` and 4.81:1 on
-           * hover (composited with `--color-overlay-1`), but on selection
-           * (composited with `--color-overlay-2`) it is **4.36:1, still below the
-           * threshold**. Raising the value only got four static surfaces through;
-           * this rule did not change. tertiary (#8a8f98) has room on the same two
-           * backgrounds at 5.64 and 5.12.
-           */}
-          {place ? (
-            <span className="text-[color:var(--color-text-tertiary)]">{place}/</span>
-          ) : null}
-          <span
-            className={
-              muted
-                ? "text-[color:var(--color-text-tertiary)]"
-                : "text-[color:var(--color-text-primary)]"
-            }
-          >
-            {name}
-          </span>
-        </span>
-        <span
-          className="shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)]"
-          title={delta ? t("numHint", { added: delta.added, removed: delta.removed }) : undefined}
-        >
-          {delta ? `+${delta.added} −${delta.removed}` : ""}
-        </span>
-      </button>
-    </li>
-  );
-}
-
-/**
- * The change list. **Concepts first, grouped by kind, as items.** Other files
- * collapse.
- *
- * Owner: *"what the user has to judge is which of my concepts changed, not a file list"* (what the user has to judge is which of my concepts changed, not a file list). `.codex/config.toml` and `.gitignore` are recorded along with the rest
- * but are not for reading, so they collapse by default and the collapsed row
- * states the count — nothing is hidden.
- *
- * Each number appears on screen **exactly once**: per-status totals in the section
- * head, item counts in the kind group head, line counts in the row. The same
- * number in two places forces the user to decide which one is true.
- */
-function ChangeList({
-  t,
-  kindGroups,
-  otherChanges,
-  statusCounts,
-  deltaByPath,
-  selectedPath,
-  setSelectedPath,
-  othersOpen,
-  setOthersOpen,
-  stagedOutsideCount,
-  onDiscard,
-  discardBusy,
-}: {
-  t: Translator;
-  kindGroups: AtlasGitKindGroup<GitChangeEntry>[];
-  otherChanges: readonly GitChangeEntry[];
-  statusCounts: ReturnType<typeof countChangesByStatus>;
-  deltaByPath: Map<string, { added: number; removed: number }>;
-  selectedPath: string | null;
-  setSelectedPath: (v: string | null) => void;
-  othersOpen: boolean;
-  setOthersOpen: (v: boolean) => void;
-  stagedOutsideCount: number;
-  /** Discards the chosen document's uncommitted changes (restore to `HEAD`). */
-  onDiscard: (path: string, others: number) => Promise<boolean>;
-  discardBusy: boolean;
-}) {
-  const selectedEntry =
-    selectedPath === null
-      ? null
-      : ([...kindGroups.flatMap((group) => group.entries), ...otherChanges].find(
-          (entry) => entry.path === selectedPath,
-        ) ?? null);
-  const summaryParts = [
-    statusCounts.added > 0 ? t("statusAdded", { count: statusCounts.added }) : null,
-    statusCounts.modified > 0 ? t("statusModified", { count: statusCounts.modified }) : null,
-    statusCounts.deleted > 0 ? t("statusDeleted", { count: statusCounts.deleted }) : null,
-    statusCounts.renamed > 0 ? t("statusRenamed", { count: statusCounts.renamed }) : null,
-  ].filter(Boolean);
-
-  let rowIndex = 0;
-
-  return (
-    <div data-testid="atlas-git-change-groups" className="flex min-w-0 shrink-0 flex-col gap-2">
-      {/* This line is this block's **only** title. The evidence column head
-          carried the same `changesTitle`, so the identical string appeared twice
-          32px apart — three times counting the "now" row on the left timeline —
-          and the user had to decide which was true. The chosen document's path
-          was folded into this line's right end. */}
-      <div className="flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <SectionLabel>{t("changesTitle")}</SectionLabel>
-        <span className="text-label text-[color:var(--color-text-secondary)]">
-          {summaryParts.join(" · ")}
-        </span>
-        <span className="ml-auto min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-          {selectedPath ?? t("diffAllLabel")}
-        </span>
-      </div>
-
-      <div>
-        {kindGroups.length > 0 ? (
-          <ul className="flex flex-col">
-            {kindGroups.map((group) => (
-              <li key={group.kind ?? "__other"} className="flex flex-col">
-                <p className="flex h-[var(--git-row-h)] shrink-0 items-center gap-1.5 pl-1.5 text-label text-[color:var(--color-text-quaternary)]">
-                  <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)]">
-                    {group.kind ?? t("kindOther")}
-                  </span>
-                  <span aria-hidden>{group.counts.total}</span>
-                  <span className="sr-only">
-                    {t("conceptsCount", { count: group.counts.total })}
-                  </span>
-                </p>
-                <ul className="flex flex-col">
-                  {group.entries.map((entry) => (
-                    <ChangeRow
-                      key={entry.path}
-                      t={t}
-                      status={entry.status}
-                      slug={entry.slug}
-                      path={entry.path}
-                      index={rowIndex++}
-                      selected={selectedPath === entry.path}
-                      onSelect={setSelectedPath}
-                      delta={deltaByPath.get(entry.path) ?? null}
-                    />
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-
-        {otherChanges.length > 0 ? (
-          <div className="flex flex-col">
-            <button
-              type="button"
-              data-testid="atlas-git-others-toggle"
-              aria-expanded={othersOpen}
-              onClick={() => setOthersOpen(!othersOpen)}
-              className="flex h-[var(--git-row-h)] shrink-0 items-center gap-1 rounded-[var(--radius-chip)] pr-2 pl-0.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
-            >
-              <ChevronRight
-                size={ICON_SIZE.sm}
-                aria-hidden
-                className={cn("shrink-0 transition-transform", othersOpen && "rotate-90")}
-              />
-              {t("othersTitle", { count: otherChanges.length })}
-            </button>
-            {othersOpen ? (
-              <div className="git-fade-in flex flex-col gap-1 pb-1">
-                <p className="pl-4 text-caption leading-label text-[color:var(--color-text-quaternary)]">
-                  {t("othersHint")}
-                </p>
-                <ul className="flex flex-col">
-                  {otherChanges.map((entry, index) => (
-                    <ChangeRow
-                      key={entry.path}
-                      t={t}
-                      status={entry.status}
-                      slug={entry.slug}
-                      path={entry.path}
-                      index={index}
-                      selected={selectedPath === entry.path}
-                      onSelect={setSelectedPath}
-                      delta={deltaByPath.get(entry.path) ?? null}
-                      muted
-                    />
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
-        {stagedOutsideCount > 0 ? (
-          <p className="pt-1 pl-1.5 text-caption text-[color:var(--color-text-quaternary)]">
-            {t("stagedOutsideNotice", { count: stagedOutsideCount })}
-          </p>
-        ) : null}
-      </div>
-
-      {/*
-        The chosen document's one destructive door. A never-committed document has no
-        earlier content to go back to, so "discard" there would be "delete", and that door is
-        not offered — the Rust side refuses it too.
-      */}
-      {selectedEntry && selectedEntry.status !== "added" ? (
-        <DiscardDock
-          t={t}
-          path={selectedEntry.path}
-          status={selectedEntry.status}
-          delta={deltaByPath.get(selectedEntry.path) ?? null}
-          others={Math.max(0, statusCounts.total - 1)}
-          busy={discardBusy}
-          onDiscard={onDiscard}
-        />
-      ) : null}
-    </div>
-  );
-}
-
 /**
  * Discard — the uncommitted changes of one document, gone. This confirm is worded apart
  * from the restore-from-commit confirm on purpose (review, 2026-09-19): those lines were
@@ -2486,11 +2184,12 @@ function DiscardDock({
           data-testid="atlas-git-discard"
           onClick={() => setConfirming(true)}
           className={controlClass({
-            shape: "link",
+            shape: "chip",
             size: "sm",
             tone: "muted",
             hoverInk: "strong",
-            className: "self-start text-label",
+            hoverBorder: "strong",
+            className: "self-start border-transparent",
           })}
         >
           {t("discardAction")}
@@ -2500,127 +2199,6 @@ function DiscardDock({
   );
 }
 
-/**
- * Changed lines — evidence with the git plumbing removed.
- *
- * The old screen dumped raw `git diff` into a `<pre>`: `diff --git a/… b/…`,
- * `index 4a1c0de..8b71f92 100644`, `--- a/…`, `+++ b/…`, `@@ -12,6 +12,9 @@`. Of
- * that, only **the added and removed lines** are what a person judges by; the rest
- * is a tool talking to a tool, and the file's identity was already stated by the
- * list row.
- *
- * `@@` is not discarded but turned into **a single dashed line** — the user has to
- * know there are lines in between that are not shown (hiding the elision makes the
- * diff lie), but not its coordinates.
- */
-function DiffView({
-  t,
-  files,
-  showFileHeads,
-}: {
-  t: Translator;
-  files: AtlasGitDiffFile[];
-  showFileHeads: boolean;
-}) {
-  return (
-    <div
-      data-testid="atlas-git-diff-pre"
-      // Below `xl` evidence stacks under the list, so it scrolls inside its own
-      // cap. At `xl` the **evidence column is the single scroll owner**, so
-      // nothing is clipped again here (clipping would silently swallow rows — the
-      // measured accident described in the column comment above).
-      className="git-fade-in flex shrink-0 flex-col gap-3 pr-1 max-xl:max-h-[var(--git-evidence-stack-max)] max-xl:overflow-auto"
-    >
-      {files.map((file) => {
-        const { name, place } = describeChangePath(file.path, { isConcept: true });
-        return (
-          <div key={file.path} className="flex flex-col gap-1">
-            {showFileHeads ? (
-              <p className="flex items-baseline gap-2 font-mono text-caption">
-                <span className="min-w-0 truncate">
-                  <span className="text-[color:var(--color-text-quaternary)]">
-                    {place ? `${place}/` : ""}
-                  </span>
-                  <span className="text-[color:var(--color-text-secondary)]">{name}</span>
-                </span>
-                <span
-                  className="shrink-0 text-[color:var(--color-text-quaternary)]"
-                  title={t("numHint", { added: file.added, removed: file.removed })}
-                >
-                  {`+${file.added} −${file.removed}`}
-                </span>
-              </p>
-            ) : null}
-            <ol className="flex flex-col">
-              {file.lines.map((line, index) =>
-                line.kind === "skip" ? (
-                  <li
-                    key={`skip-${String(index)}`}
-                    className="flex h-[var(--git-row-h)] shrink-0 items-center px-1"
-                  >
-                    <span
-                      aria-hidden
-                      className="w-full border-t border-dashed border-[color:var(--color-border-soft)]"
-                    />
-                    <span className="sr-only">{t("diffSkippedHint")}</span>
-                  </li>
-                ) : (
-                  <li
-                    key={`${line.kind}-${String(index)}`}
-                    className={cn(
-                      "flex items-start gap-1.5 border-l-2 pr-1.5 pl-1 font-mono text-label leading-prose",
-                      line.kind === "added"
-                        ? "border-l-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
-                        : line.kind === "removed"
-                          ? // A deleted row is faintest but **must stay
-                            // readable** — measured 4.37:1 (quaternary on
-                            // overlay-1) fails AA, so it was raised to tertiary
-                            // (5.86:1). The luminance order (added > modified >
-                            // renamed > deleted) still holds.
-                            "border-l-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)]"
-                          : "border-l-transparent text-[color:var(--color-text-tertiary)]",
-                    )}
-                  >
-                    <span aria-hidden className="w-2 shrink-0 text-center select-none">
-                      {line.kind === "added" ? "+" : line.kind === "removed" ? "−" : ""}
-                    </span>
-                    <span className="min-w-0 break-words whitespace-pre-wrap">
-                      {line.text === "" ? " " : line.text}
-                    </span>
-                  </li>
-                ),
-              )}
-            </ol>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
- * Past steps — "when did which meaning change".
- *
- * The old screen drew commit subjects raw: `ontology snapshot: +3 concepts,
- * ~2 updated (capabilities/map-label-budget, domains/topology, …)`. But that
- * string is **ours**, and letting it be read raw on a Korean screen means we did
- * not translate a string we wrote ourselves. Human commits and other tools'
- * commits are left untouched, because there the raw text *is* the person's words
- * (`matched:false`).
- *
- * The raw text does not disappear — it stays in the expanded detail with the full
- * hash and timestamp. That is the audit trail, and the string the user will meet
- * again in the terminal.
- *
- * Dimension regularity: the time is a fixed-width column, the summary and names
- * each clamp to one line, and a step with no names still holds that line's place
- * (height `--git-step-h`).
- */
-/**
- * How many names one step row shows. **A fixed count plus a remainder caption** —
- * "as many as fit" would let content length set a repeated set's rhythm
- * (dimension regularity).
- */
 const STEP_CONCEPT_SLOTS = 2;
 
 /**
@@ -2688,6 +2266,25 @@ function StepList({
   const revealSelectedRow = useCallback((node: HTMLButtonElement | null) => {
     if (node && typeof node.scrollIntoView === "function") node.scrollIntoView({ block: "nearest" });
   }, []);
+  /*
+   * One tab stop, arrows between rows (2026-09-19). The list is a master-detail list, and
+   * before this every row was its own tab stop: reaching the fortieth step by keyboard meant
+   * forty presses. The same hook the Library's lists use; Enter or Space on a row is the
+   * row's own click, so selection stays a deliberate press.
+   */
+  const rowCount =
+    (behind && behind > 0 ? 1 : 0) + (pendingCount > 0 ? 1 : 0) + history.length + (hasMore ? 1 : 0);
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const roving = useRovingRows({ count: rowCount, listRef });
+  let rowIndex = 0;
+  const rowProps = () => {
+    const index = rowIndex++;
+    return {
+      "data-row-index": index,
+      tabIndex: roving.tabIndexOf(index),
+      onFocus: () => roving.onRowFocus(index),
+    };
+  };
   if (history.length === 0) {
     return (
       <div className="flex flex-col gap-1 px-4 py-3">
@@ -2717,12 +2314,13 @@ function StepList({
   const unpushed = Math.max(0, Math.min(ahead ?? 0, history.length));
 
   return (
-    <ul data-testid="atlas-git-steps" className="flex flex-col">
+    <ul data-testid="atlas-git-steps" className="flex flex-col" ref={listRef} onKeyDown={roving.onKeyDown}>
       {behind && behind > 0 ? (
         <li>
           <button
             type="button"
             data-testid="atlas-git-behind-row"
+            {...rowProps()}
             onClick={() => onRemoteAction("pull")}
             className={cn(STEP_ROW, "border-l-transparent")}
           >
@@ -2749,6 +2347,7 @@ function StepList({
           <button
             type="button"
             data-testid="atlas-git-pending-row"
+            {...rowProps()}
             /*
              * **`aria-current`, not `aria-pressed`** (2026-08-15 (8)). This row
              * points at "what I am currently looking at" in a master-detail list;
@@ -2820,6 +2419,7 @@ function StepList({
             <button
               type="button"
               data-testid="atlas-git-history-item"
+              {...rowProps()}
               ref={expanded ? revealSelectedRow : undefined}
               aria-expanded={expanded}
               title={t("stepSelectHint")}
@@ -2899,6 +2499,7 @@ function StepList({
           <button
             type="button"
             data-testid="atlas-git-history-more"
+            {...rowProps()}
             disabled={moreBusy}
             onClick={onMore}
             className={controlClass({
@@ -3152,7 +2753,7 @@ function DesktopBody({
   onRecheckGit,
   loadErrorText,
   status,
-  kindGroups,
+  documents,
   otherChanges,
   statusCounts,
   changeCount,
@@ -3182,8 +2783,6 @@ function DesktopBody({
   restoreError,
   selectedPath,
   setSelectedPath,
-  othersOpen,
-  setOthersOpen,
   initRunning,
   initError,
   initCopyState,
@@ -3221,7 +2820,7 @@ function DesktopBody({
   stage: Extract<GitStage, "loading" | "not-installed" | "error" | "not-initialized" | "workbench">;
   loadErrorText: string | null;
   status: GitStatusResult | null;
-  kindGroups: AtlasGitKindGroup<GitChangeEntry>[];
+  documents: ChangedDocument[];
   otherChanges: GitChangeEntry[];
   statusCounts: ReturnType<typeof countChangesByStatus>;
   changeCount: number;
@@ -3255,8 +2854,6 @@ function DesktopBody({
   restoreError: string | null;
   selectedPath: string | null;
   setSelectedPath: (v: string | null) => void;
-  othersOpen: boolean;
-  setOthersOpen: (v: boolean) => void;
   initRunning: boolean;
   initError: string | null;
   initCopyState: CopyFeedbackState;
@@ -3486,9 +3083,6 @@ function DesktopBody({
   const deltaByPath = new Map(
     diffFiles.map((file) => [file.path, { added: file.added, removed: file.removed }]),
   );
-  const shownDiffFiles = selectedPath
-    ? diffFiles.filter((file) => file.path === selectedPath)
-    : diffFiles;
 
   const locationLine = (
     <LocationLine
@@ -3655,7 +3249,13 @@ function DesktopBody({
              * A silent clip is worse than a gap (the user cannot tell which rows
              * they lost). One column, one scroll, and there is nowhere to clip.
              */
-            className="flex min-w-0 flex-col xl:min-h-0 xl:overflow-y-auto"
+            /*
+             * Below `xl` the columns stack; without a cap the whole document became page
+             * length and the discard door rode its bottom (responsive seat, 2026-09-19). The
+             * cap the old patch carried moves to the column, so header, reader and foot all
+             * stay inside it.
+             */
+            className="flex min-w-0 flex-col max-xl:max-h-[var(--git-evidence-stack-max)] max-xl:overflow-y-auto xl:min-h-0 xl:overflow-y-auto"
           >
             {/*
               The right side draws **the one thing chosen on the left**. Selection,
@@ -3663,35 +3263,37 @@ function DesktopBody({
               looking at" by itself, so no tab label has to be read to find out.
             */}
             {selection.kind === "pending" ? (
-              <>
-                <div className="flex flex-col gap-2 px-5 py-4">
-                <ChangeList
-                  t={t}
-                  kindGroups={kindGroups}
-                  otherChanges={otherChanges}
-                  statusCounts={statusCounts}
-                  deltaByPath={deltaByPath}
-                  selectedPath={selectedPath}
-                  setSelectedPath={setSelectedPath}
-                  othersOpen={othersOpen}
-                  setOthersOpen={setOthersOpen}
-                  stagedOutsideCount={status?.stagedOutsideVault.length ?? 0}
-                  onDiscard={(path, others) => onRestoreDocument(path, "HEAD", others)}
-                  discardBusy={restoreBusy}
-                />
-                {shownDiffFiles.length > 0 ? (
-                  <DiffView
-                    t={t}
-                    files={shownDiffFiles}
-                    showFileHeads={!selectedPath && shownDiffFiles.length > 1}
-                  />
-                ) : (
-                  <p className="git-fade-in text-label leading-prose text-[color:var(--color-text-quaternary)]">
-                    {t("diffEmpty")}
-                  </p>
-                )}
-                </div>
-              </>
+              <PendingDocumentPane
+                t={t}
+                vaultPath={vaultPath}
+                documents={documents}
+                others={otherChanges}
+                summary={[
+                  statusCounts.added > 0 ? t("statusAdded", { count: statusCounts.added }) : null,
+                  statusCounts.modified > 0 ? t("statusModified", { count: statusCounts.modified }) : null,
+                  statusCounts.deleted > 0 ? t("statusDeleted", { count: statusCounts.deleted }) : null,
+                  statusCounts.renamed > 0 ? t("statusRenamed", { count: statusCounts.renamed }) : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                hunks={diffFiles}
+                selectedPath={selectedPath}
+                setSelectedPath={setSelectedPath}
+                stagedOutsideCount={status?.stagedOutsideVault.length ?? 0}
+                discard={(doc) =>
+                  doc.entry.status !== "added" && doc.entry.status !== "renamed" ? (
+                    <DiscardDock
+                      t={t}
+                      path={doc.entry.path}
+                      status={doc.entry.status}
+                      delta={deltaByPath.get(doc.entry.path) ?? null}
+                      others={Math.max(0, statusCounts.total - 1)}
+                      busy={restoreBusy}
+                      onDiscard={(path, others) => onRestoreDocument(path, "HEAD", others)}
+                    />
+                  ) : null
+                }
+              />
             ) : (
               (() => {
                 const picked = history.find((c) => c.hash === selection.hash);

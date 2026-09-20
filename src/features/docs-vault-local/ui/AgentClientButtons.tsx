@@ -49,6 +49,19 @@ const CLIENT_TO_ID: Record<ClientId, AgentClientId> = {
 
 /** The reverse direction, used to derive render order from `AGENT_CLIENTS`. */
 type Feedback = "idle" | "busy" | "done" | "copied" | "failed";
+
+/**
+ * **What the control says, and what it is called** (2026-09-19).
+ *
+ * Each control now sits on a row that already carries the tool's mark, its name and the file it
+ * writes, so a button reading "Connect to Claude Code" states the tool's name a second time and
+ * ".mcp.json ready" states the file a second time — the duplicate-statement defect this screen
+ * has been through before, and at 390 it was also what pushed the label column to 60px. The
+ * visible word is therefore the verb and the state alone. The **accessible** name keeps the long
+ * sentence: a screen reader moving control to control does not see the row beside it, and four
+ * buttons all called "Connect" would be four buttons nobody can tell apart.
+ */
+type Wording = { full: string; short: string };
 type AgentClientConfigState = "missing" | "invalid" | "ready";
 
 export interface AgentClientControlsProps {
@@ -123,6 +136,7 @@ export function useAgentClientControls({
   needsManualPath,
 }: AgentClientControlsProps): AgentClientControls {
   const t = useTranslations("agentConnect");
+  const ts = useTranslations("agentConnect.short");
   const toast = useToast();
   const [feedback, setFeedback] = useState<Record<ClientId, Feedback>>({
     claudeCode: "idle",
@@ -259,15 +273,15 @@ export function useAgentClientControls({
       mcpJsonIsReady ? (
         <ClientStatus
           testId="agent-client-claude-code"
-          label={t("claudeCodeReady")}
+          label={{ full: t("claudeCodeReady"), short: ts("ready") }}
         />
       ) : resolvedMcpJsonState === "invalid" ? (
         <ClientAction
           testId="agent-client-claude-code"
           icon={<Copy size={ICON_SIZE.md} aria-hidden />}
-          label={t("replaceClaudeCodeConfig")}
+          label={{ full: t("replaceClaudeCodeConfig"), short: ts("copyCorrect") }}
           feedback={feedback.claudeCode}
-          copiedLabel={t("replaceClaudeCodeConfigDone")}
+          copiedLabel={{ full: t("replaceClaudeCodeConfigDone"), short: ts("copied") }}
           onClick={() =>
             void copyAndConfirm(
               "claudeCode",
@@ -278,19 +292,19 @@ export function useAgentClientControls({
       ) : onWriteConfigs ? (
         <ClientAction
           testId="agent-client-claude-code"
-          label={t("connectClaudeCode")}
+          label={{ full: t("connectClaudeCode"), short: ts("connect") }}
           feedback={feedback.claudeCode}
-          doneLabel={t("claudeCodeDone")}
-          busyLabel={t("connecting")}
+          doneLabel={{ full: t("claudeCodeDone"), short: ts("created") }}
+          busyLabel={{ full: t("connecting"), short: ts("connecting") }}
           onClick={() => void writeAndConfirm("claudeCode")}
         />
       ) : (
         <ClientAction
           testId="agent-client-claude-code"
           icon={<Copy size={ICON_SIZE.md} aria-hidden />}
-          label={t("copyClaudeCodeConfig")}
+          label={{ full: t("copyClaudeCodeConfig"), short: ts("copyConfig") }}
           feedback={feedback.claudeCode}
-          copiedLabel={t("copyClaudeCodeConfigDone")}
+          copiedLabel={{ full: t("copyClaudeCodeConfigDone"), short: ts("copied") }}
           onClick={() => void copyAndConfirm("claudeCode", mcpJsonSnippet)}
         />
       ),
@@ -303,26 +317,26 @@ export function useAgentClientControls({
       onWriteConfigs ? (
         <ClientAction
           testId="agent-client-cursor"
-          label={t("connectCursor")}
+          label={{ full: t("connectCursor"), short: ts("connect") }}
           feedback={feedback.cursor}
-          doneLabel={t("cursorDone")}
-          busyLabel={t("connecting")}
+          doneLabel={{ full: t("cursorDone"), short: ts("created") }}
+          busyLabel={{ full: t("connecting"), short: ts("connecting") }}
           onClick={() => void writeAndConfirm("cursor")}
         />
       ) : cursorDeeplink ? (
         <ClientLink
           testId="agent-client-cursor"
           icon={<ArrowUpRight size={ICON_SIZE.md} aria-hidden />}
-          label={t("connectCursor")}
+          label={{ full: t("connectCursor"), short: ts("connect") }}
           href={cursorDeeplink}
         />
       ) : (
         <ClientAction
           testId="agent-client-cursor"
           icon={<Copy size={ICON_SIZE.md} aria-hidden />}
-          label={t("copyCursorConfig")}
+          label={{ full: t("copyCursorConfig"), short: ts("copyConfig") }}
           feedback={feedback.cursor}
-          copiedLabel={t("copyConfigDone")}
+          copiedLabel={{ full: t("copyConfigDone"), short: ts("copied") }}
           onClick={() => void copyAndConfirm("cursor", mcpJsonSnippet)}
         />
       ),
@@ -337,19 +351,19 @@ export function useAgentClientControls({
       onWriteConfigs ? (
         <ClientAction
           testId="agent-client-antigravity"
-          label={t("connectAntigravity")}
+          label={{ full: t("connectAntigravity"), short: ts("connect") }}
           feedback={feedback.antigravity}
-          doneLabel={t("antigravityDone")}
-          busyLabel={t("connecting")}
+          doneLabel={{ full: t("antigravityDone"), short: ts("created") }}
+          busyLabel={{ full: t("connecting"), short: ts("connecting") }}
           onClick={() => void writeAndConfirm("antigravity")}
         />
       ) : (
         <ClientAction
           testId="agent-client-antigravity"
           icon={<Copy size={ICON_SIZE.md} aria-hidden />}
-          label={t("copyAntigravityConfig")}
+          label={{ full: t("copyAntigravityConfig"), short: ts("copyConfig") }}
           feedback={feedback.antigravity}
-          copiedLabel={t("copyConfigDone")}
+          copiedLabel={{ full: t("copyConfigDone"), short: ts("copied") }}
           onClick={() => void copyAndConfirm("antigravity", mcpJsonSnippet)}
         />
       ),
@@ -359,15 +373,15 @@ export function useAgentClientControls({
       codexConfigIsReady ? (
         <ClientStatus
           testId="agent-client-codex"
-          label={t("codexReady")}
+          label={{ full: t("codexReady"), short: ts("ready") }}
         />
       ) : codexConfigState === "invalid" ? (
         <ClientAction
           testId="agent-client-codex"
           icon={<Copy size={ICON_SIZE.md} aria-hidden />}
-          label={t("replaceCodexConfig")}
+          label={{ full: t("replaceCodexConfig"), short: ts("copyCorrect") }}
           feedback={feedback.codex}
-          copiedLabel={t("replaceCodexConfigDone")}
+          copiedLabel={{ full: t("replaceCodexConfigDone"), short: ts("copied") }}
           onClick={() =>
             void copyAndConfirm(
               "codex",
@@ -378,19 +392,19 @@ export function useAgentClientControls({
       ) : onWriteConfigs ? (
         <ClientAction
           testId="agent-client-codex"
-          label={t("connectCodex")}
+          label={{ full: t("connectCodex"), short: ts("connect") }}
           feedback={feedback.codex}
-          doneLabel={t("codexDone")}
-          busyLabel={t("connecting")}
+          doneLabel={{ full: t("codexDone"), short: ts("created") }}
+          busyLabel={{ full: t("connecting"), short: ts("connecting") }}
           onClick={() => void writeAndConfirm("codex")}
         />
       ) : (
         <ClientAction
           testId="agent-client-codex"
           icon={<Copy size={ICON_SIZE.md} aria-hidden />}
-          label={t("copyCodexCommand")}
+          label={{ full: t("copyCodexCommand"), short: ts("copyCommand") }}
           feedback={feedback.codex}
-          copiedLabel={t("copyCodexCommandDone")}
+          copiedLabel={{ full: t("copyCodexCommandDone"), short: ts("copied") }}
           onClick={() => void copyAndConfirm("codex", codexCommand)}
         />
       ),
@@ -455,12 +469,12 @@ function ClientStatus({
   label,
 }: {
   testId: string;
-  label: string;
+  label: Wording;
 }) {
   return (
     <div
       role="status"
-      aria-label={label}
+      aria-label={label.full}
       data-testid={testId}
       data-state="ready"
       // A status is not pressable — only the primitive's press affordance is reverted.
@@ -471,7 +485,7 @@ function ClientStatus({
         aria-hidden
         className="text-[color:var(--color-status-success)]"
       />
-      {label}
+      {label.short}
     </div>
   );
 }
@@ -489,14 +503,15 @@ function ClientAction({
   testId: string;
   /** Only a glyph that carries state is passed — decoration with no state gets no space. */
   icon?: React.ReactNode;
-  label: string;
+  label: Wording;
   feedback: Feedback;
-  doneLabel?: string;
-  copiedLabel?: string;
-  busyLabel?: string;
+  doneLabel?: Wording;
+  copiedLabel?: Wording;
+  busyLabel?: Wording;
   onClick: () => void;
 }) {
   const t = useTranslations("agentConnect");
+  const ts = useTranslations("agentConnect.short");
   const isDone = feedback === "done";
   const isCopied = feedback === "copied";
   const isBusy = feedback === "busy";
@@ -515,14 +530,14 @@ function ClientAction({
   ) : (
     icon
   );
-  const shownLabel = isBusy
+  const shownLabel: Wording = isBusy
     ? (busyLabel ?? label)
     : isDone
       ? (doneLabel ?? label)
       : isCopied
         ? (copiedLabel ?? label)
         : isFailed
-          ? t("actionFailed")
+          ? { full: t("actionFailed"), short: ts("failed") }
           : label;
   return (
     <Button
@@ -533,10 +548,13 @@ function ClientAction({
       data-state={feedback}
       onClick={onClick}
       disabled={isBusy}
+      /* The row beside this button already names the tool and its file, so only the verb is
+         drawn; the sentence stays as the accessible name (see `Wording`). */
+      aria-label={shownLabel.full}
       className={clientControlClass()}
     >
       {shownIcon}
-      {shownLabel}
+      {shownLabel.short}
     </Button>
   );
 }
@@ -549,7 +567,7 @@ function ClientLink({
 }: {
   testId: string;
   icon: React.ReactNode;
-  label: string;
+  label: Wording;
   href: string;
 }) {
   // A deeplink uses a custom URL scheme, so this is a plain anchor rather than a next Link. The
@@ -558,10 +576,11 @@ function ClientLink({
     <a
       href={href}
       data-testid={testId}
+      aria-label={label.full}
       className={clientControlClass()}
     >
       {icon}
-      {label}
+      {label.short}
     </a>
   );
 }

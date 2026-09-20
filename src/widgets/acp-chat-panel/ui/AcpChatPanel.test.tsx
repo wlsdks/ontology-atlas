@@ -3,6 +3,7 @@ import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TURN_SILENCE_LIMIT_MS } from '@/features/acp-session/model/turn-liveness';
+import { READ_ONLY_TOOL_INSTRUCTION } from '@/features/acp-session';
 import type { TaskBaselineCaptureResult } from '@/features/acp-session';
 
 /**
@@ -511,6 +512,8 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
 
   it('says how much came back, using the number the tool itself reported', async () => {
     await bootSession();
+    // A tool call only ever arrives inside a live turn, and a row reads 「running」 only there.
+    await startUserTurn('go');
     emit({
       jsonrpc: '2.0',
       method: 'session/update',
@@ -581,6 +584,8 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
 
   it('marks only a running call, and says the outcome in words on the rest', async () => {
     await bootSession();
+    // A tool call only ever arrives inside a live turn, and a row reads 「running」 only there.
+    await startUserTurn('go');
     emit({
       jsonrpc: '2.0',
       method: 'session/update',
@@ -614,6 +619,49 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     await waitFor(() =>
       expect(document.querySelector('[data-acp-entry="tool"] [data-tool-running]')).toBeNull(),
     );
+  });
+
+  /**
+   * ⚠️ Measured in the rendered dock, 2026-09-19. Press Stop while a read is in flight and the row
+   * kept the word 「running」 and its pulsing ring for the rest of the conversation, with the
+   * session back at Ready and the composer open — the panel claiming work that had already
+   * stopped. Nothing on the wire says otherwise: a cancelled adapter simply stops reporting.
+   *
+   * It is also the promise `stoppedWithoutAnswer` already leans on. That rule stays quiet when a
+   * tool ran, because 「a tool that was mid-flight carries its own *stopped* on its row」, and the
+   * row was carrying the opposite word.
+   */
+  it('중지한 턴의 열린 도구 줄은 진행 중이라고 우기지 않는다', async () => {
+    await bootSession();
+    await startUserTurn('go');
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-open',
+          title: 'mcp__atlas-vault__list_concepts',
+          kind: 'read',
+          status: 'pending',
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"] [data-tool-running]')).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByTestId('acp-chat-stop'));
+    act(() => replyTo('session/prompt', { stopReason: 'cancelled' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+    const row = document.querySelector('[data-acp-entry="tool"]')!;
+    expect(row.querySelector('[data-tool-running]')).toBeNull();
+    expect(row.getAttribute('data-tool-outcome')).toBe('unfinished');
+    // Translations are stubbed to their keys here, so the row's own word is the assertion.
+    expect(row).toHaveTextContent('toolOutcome.unfinished');
+    expect(row).not.toHaveTextContent('toolOutcome.running');
   });
 
   it('reports the number our server gave, and zero is a number', async () => {
@@ -3670,5 +3718,74 @@ describe('reopening the panel — the folder\'s latest conversation, not a blank
     // The automatic resume steps aside: no list is consulted and no old conversation is loaded.
     await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
     expect(bridge.sent.some((m) => m.method === 'session/load')).toBe(false);
+  });
+});
+
+/**
+ * **A request the app seats is still the person's to read, edit or drop.**
+ *
+ * Measured on the Insights dock (2026-09-19): pressing the agent door seated five lines in the
+ * composer, opening the person's own text box on `Use only Atlas MCP read tools…` and a literal
+ * `query_ontology({operation:"maintenance_plan"})`. The transcript already stands the readable
+ * sentence and folds the machine block; the composer was the one place the request arrived whole.
+ */
+describe('대화 패널 — 앉힌 요청은 읽을 문장만 서고, 붙은 지시는 그대로 따라간다', () => {
+  const LEAD = 'Explain this Analysis tab from the current ontology evidence only.';
+  const DETAIL = [
+    READ_ONLY_TOOL_INSTRUCTION.en,
+    '',
+    'query_ontology({operation:"maintenance_plan"}) → explain the top three priorities',
+    '',
+    'Explain what a person should judge first and what the ontology cannot confirm.',
+  ].join('\n');
+  const SEATED = `${LEAD}\n${DETAIL}`;
+
+  const seat = () => bootSession({ prefillRequest: { text: SEATED, nonce: 1 } });
+
+  it('상자에는 읽을 문장만 앉고, 붙은 지시는 한 번 펼쳐 그대로 보인다', async () => {
+    await seat();
+    expect(screen.getByRole('textbox')).toHaveValue(LEAD);
+    const summary = screen.getByTestId('acp-chat-seated-detail');
+    expect(summary).toBeInTheDocument();
+    fireEvent.click(summary);
+    expect(screen.getByTestId('acp-chat-seated-detail-text')).toHaveTextContent('query_ontology');
+    expect(screen.getByTestId('acp-chat-seated-detail-text').textContent).toBe(DETAIL.trim());
+  });
+
+  it('손대지 않고 보내면 호출자가 앉힌 바이트 그대로 나간다', async () => {
+    await seat();
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+    const prompt = bridge.sent.filter((m) => m.method === 'session/prompt').at(-1)!;
+    const params = prompt.params as { prompt: Array<{ text?: string }> };
+    // Byte-identical, not a re-joined copy: a caller that recognises its own request by its text
+    // (`presentationRequest`, `answerFold`) has to keep recognising it.
+    expect(params.prompt[0].text).toBe(SEATED);
+    expect(screen.queryByTestId('acp-chat-seated-detail')).toBeNull();
+  });
+
+  it('문장을 고쳐 보내면 붙은 지시가 고친 문장 뒤에 그대로 따라간다', async () => {
+    await seat();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Explain the top two only.' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(true));
+    const prompt = bridge.sent.filter((m) => m.method === 'session/prompt').at(-1)!;
+    const params = prompt.params as { prompt: Array<{ text?: string }> };
+    expect(params.prompt[0].text).toBe(`Explain the top two only.\n\n${DETAIL.trim()}`);
+  });
+
+  it('상자를 비우면 붙은 지시도 함께 사라진다 — 문장 없는 지시만 보내지지 않게', async () => {
+    await seat();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } });
+    expect(screen.queryByTestId('acp-chat-seated-detail')).toBeNull();
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    expect(bridge.sent.some((m) => m.method === 'session/prompt')).toBe(false);
+  });
+
+  it('접힐 기계 반쪽이 없는 짧은 요청은 예전 그대로 통째로 앉는다', async () => {
+    const plain = 'Draw the business flow of this folder.';
+    await bootSession({ prefillRequest: { text: plain, nonce: 1 } });
+    expect(screen.getByRole('textbox')).toHaveValue(plain);
+    expect(screen.queryByTestId('acp-chat-seated-detail')).toBeNull();
   });
 });

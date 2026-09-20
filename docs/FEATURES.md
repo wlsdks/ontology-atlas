@@ -325,7 +325,7 @@ had become false).
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
 - **The trail you walked** → every node that takes focus is appended to a session trail. The map leaves footprints beside the relation lines actually crossed (offset along the line's own curve, never on it) and a step number beside each visited node; the top-centre **Trail** chip opens a newest-first mini timeline. Each row carries, under the title, how that step connects to the step before it: the relation word plus the reason recorded on that edge (`relation_notes`), the relation word alone when no reason is written, or "Not directly related" when the two share no edge. **Hand off to AI** copies the same per-step lines into the agent brief, so the argument the walk made travels with the names. Past trails are archived in the vault folder.
-- **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms).
+- **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms). Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. That leash is sized to the screen (2026-09-20): half of the free extent beside the open panels less a 120px edge pad, on each axis, with `--map-camera-focus-pan-margin` as its floor, and the fit scale respects it, so a wide ego graph is centred in the free area instead of its far side landing under the detail panel (measured at 1512: two dependencies at x 1349 and 1369 behind a panel from 1128; after, both left of it).
 - **Expand all** → the top action opens every containment parent in one step and
   fits every rendered node inside the map. It is a temporary overview, not a
   saved default; pressing it again collapses the batch. A route arriving with
@@ -617,19 +617,33 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 
 **The map has weight, a press, and light** (2026-09-08, after the expression bans were lifted). A node's mass is its number of relations: let go of a hub after a drag and it carries the hand's speed a step past the drop point, overshoots once and takes longer to sit, while a leaf snaps home; its neighbours spring back on their own mass. Hovering a node swells it on an underdamped step, so a hover reads as a press that gives. Selecting a node lays an indigo ground halo under its neighbourhood, sized by its farthest neighbour, blooms the node and glows its relation lines, all on the focus ramp, so the light arrives with the dive and leaves with the deselect. Nothing at rest glows or moves, the idle canvas still draws zero frames, and under `prefers-reduced-motion` every end state lands with no ring. Measured on the sample vault at 1512: a dragged domain carried 14 px past its drop and settled by 300 ms; a hovered domain went 28.1 px to 34.7 and sat at 34.2. The pieces are pure modules under `src/widgets/ontology-map/expressive/` (`mass-spring`, `release-offsets`, `ego-light`) with a README naming their tokens and how to remove them.
 
-### `/architecture` — Harness: coverage, guides, structure
+### `/architecture` — Harness: structure, coverage, guides, architecture
 
 **The tab is Harness (`harness.title`) and it answers "how are agents set up to work in this repository"**
 (2026-09-13, `docs/records/decisions/2026-09-13-architecture-tab-becomes-harness-3a63ada4-031c-41af-8b9d-6d6f7f2a5138.md`). The route is unchanged, the label moved: the destination
 already held one half of the answer (the reviewed structure) and nothing at all of the other
 (what the agents were told, and what catches them). Under the title one line says what the tab
-is for, and a segmented control picks one of three views on `?view=`; the default is
-`coverage`. Two older addresses keep their meaning: `?view=sensors` — the view that named exactly
-this question and said it was not built — opens the matrix that answers it, and a `?role=` link
-with no `?view=` opens the structure ladder, the only view that can show a role. The shell-wide
-`?focus=main` skip anchor every left-rail link carries is deliberately not a deep link: keying the
-carve-out on it made one rail click open the ladder and left the default unreachable from the rail
-(measured in the installed app, 2026-09-13).
+is for, and a tab set picks one of **four** views on `?view=`.
+
+**The layer ladder became its own tab on 2026-09-19** (owner). It had been living under the name
+Structure inside a destination called Harness, and it is the product's **architecture** — which,
+in the vocabulary this tab borrows, is one of the three things a harness *regulates*
+(maintainability · architecture fitness · behaviour) rather than a part of the harness itself. So
+`?view=architecture` holds the ladder under its own name and `?view=structure` holds the harness's
+own anatomy. Nothing redirects between them: an old `?view=structure` link opens a real view of the
+same repository, one press from the ladder, where mapping it across would leave the tab a person
+presses and the tab a link opens disagreeing forever.
+
+**The arrival depends on the surface, because one of the views cannot answer on the web.** Almost
+the whole harness lives in dot directories and a browser's folder permission cannot see a dot entry
+at all, so the installed app arrives on the harness structure and a browser arrives on the
+blueprint, which is built from the bundled profile and answers there. Both surfaces keep all four
+tabs, and an address that names a view always wins. Three addresses keep their meaning: `?view=sensors`
+— the view that named exactly this question and said it was not built — opens the matrix that
+answers it, and `?role=` or `?stage=` with no `?view=` opens the ladder, the only view with either.
+The shell-wide `?focus=main` skip anchor every left-rail link carries is deliberately not a deep
+link: keying the carve-out on it made one rail click open the ladder and left the default
+unreachable from the rail (measured in the installed app, 2026-09-13).
 
 **One sentence at the top, computed from files only**: how many guide documents this repository
 speaks to agents through, and how many checks it has in place. Both numbers print their working
@@ -655,6 +669,57 @@ produces no error at all, and the Codex group carries its approval requirement (
 fact instead of a green, since `/hooks` trust lives in no file. Measured on this repository:
 98 guide documents in 9 groups, 85 checks (20 + 6 + 59), `AGENTS.md` 12,142 B merging to
 13,090 of 32,768, both declared pairs matching, 20 of 20 hook scripts wired.
+
+**Structure (`harness.views.structure`)** — the harness's own anatomy, read from this repository's
+files (2026-09-19). Its three bands are the coverage matrix's three columns — **Told**, **Gated**,
+**Watched** — deliberately, so one destination teaches one vocabulary: the matrix asks those
+questions of each **area** of the product, this asks them of each **part** of the harness. Told
+holds what is read every turn, what attaches by path, the skills and the sub-agent briefs, and the
+servers wired over the agent connection; Gated holds the hooks that can refuse a tool call, the
+`permissions.deny`/`ask` rules — the only gate that cannot be talked around, and one this product
+had never shown anywhere — and the files under `.githooks/`; Watched holds the hooks that only
+record, the check scripts a command names, the test files a runner discovers by itself, and the
+workflows that run after a push.
+
+**What the repository keeps out of sight is a gate too** (2026-09-20). Gated carries the exclusion
+files, and the row prints the name each product actually uses rather than one word for all of them:
+`.cursorignore` and `.cursorindexingignore` (Cursor), `.codeiumignore` (Windsurf, not
+`.windsurfignore`), `.aiexclude` (Gemini **Code Assist**), `.geminiignore` (Gemini **CLI** — a
+different file for a different product), `.aiignore` (JetBrains AI, which also honours the first
+three at a repository root). Two names are deliberately absent: `.claudeignore` does not exist —
+Claude Code uses `.gitignore` for discovery and `permissions.deny` for the rest, which this view
+already prints — and `.agentignore` is a proposal rather than a standard. The row also carries the
+limit the hook rows carry: a repository can write the file, and whether the tool honours it is the
+tool's business. An exclusion file is **not** counted among the documents the census sentence says
+the repository speaks through, because a file saying what an agent may not see is the opposite of a
+thing the repository says.
+
+A fourth band under those three holds **the agent loop and the model**, which every public account
+of a harness puts at its centre and no checkout can answer: what is read first, when to stop, what
+to drop when the context fills, which model runs. It carries words rather than a zero, because a
+count there would be a lie with a number on it. The part names come from four public sources —
+Fowler and Böckeler's guides and sensors, arXiv 2609.00006 (CC BY 4.0) on harness anatomy, OpenAI's
+instruction chain, Anthropic on long-running harnesses — and the screen prints that provenance
+behind a hint rather than asserting the taxonomy as its own.
+
+**What a turn costs, beside the count that cannot say it.** The always-read row prints the sum of
+its files' bytes: three 2 KB documents and three 40 KB documents are both "3", and that difference
+is the subject — those files are read before the agent has seen a line of code, on every turn, in
+every session, whatever the tool. Conditional guides are excluded on purpose; they are paid by the
+turns that touch their folder. Measured on this repository: 25.6 KB read every turn across 5
+documents, 14 more attached by path, 18 skills, 15 briefs, 2 servers, 5 hooks that can refuse
+(the mirrored Claude and Codex copies of one guard counted **once**, as the coverage view already
+counts them), 10 denied permissions, 6 files under `.githooks/`, 6 hooks that watch, 60 check
+scripts, 1,471 discovered test files and 7 workflows.
+
+**An empty part says where one would live.** A row with nothing in it carries the conventional
+address for that part — `.mcp.json`, `hooks.PostToolUse`, `.github/workflows/checks.yml` — copyable,
+taken from each tool's own documentation. It is an address and never advice: plenty of repositories
+rightly have no sub-agents and no MCP servers, and a screen that turns every blank into a to-do is
+the maturity score this destination refuses, wearing a different hat. Atlas writes nothing into a
+source repository; the person pasting the path into their editor is the step where they decide. Two
+rows get no address at all — the agent loop, which is not the repository's to hold, and where a test
+file should live, which has no one answer worth a screen asserting.
 
 **Coverage (`harness.views.coverage`)** — the tab's spine and its default view
 (2026-09-13, `docs/records/decisions/2026-09-13-harness-spine-is-a-coverage-matrix-b9dba267-d755-4ad5-b854-6f930c7e5922.md`).
@@ -717,8 +782,9 @@ six numerals count up from zero.
 
 The whole reading goes through the installed app's bridge (`entities/agent-files`, the same
 classifier the docs sidebar and `ontology-atlas agent-files` use — one store, not a second). A
-browser's folder permission cannot see a dot entry at all, so on the web the view names what it
-cannot reach instead of drawing a shorter list and calling it the inventory.
+browser's folder permission cannot see a dot entry at all, so on the web these views name what they
+cannot reach instead of drawing a shorter list and calling it the inventory — and the destination
+opens on the blueprint there rather than on a card about what this browser cannot read.
 
 - Architecture is separate from the Ontology Map and from the public five-kind
   ontology schema. A non-kind `architecture-profile/v1` Markdown document keeps
@@ -2175,7 +2241,9 @@ reads the folder, so a teammate who pulls it sees the same thing. A wiki without
 on `/library`. Settings › Workspace carries an add-only row, "This folder holds", whose one
 chip writes the missing part's starter files; the tabs follow the files.
 
-### `/git` — Record (primary desktop destination; redesigned 2026-07-27)
+### `/git` — Git (primary desktop destination; redesigned 2026-07-27; named "Git" in both locales since 2026-09-19)
+
+The rail tile (`navRail.git`), the page headline (`atlasGit.title`) and the tile's title (`atlasGit.tileTitle*`) say **Git** in Korean and English; until 2026-09-19 the Korean said the plain word for "record" and the English said "History". The owner asked why the screen hid the word: Atlas keeps no history of its own — durable history, restore and discard are git's — so the plain name is the honest one. Git's trademark policy (Software Freedom Conservancy, U.S. reg. 4680534) permits factual reference to the Git software and identifying it as a component of a product; only portmanteaus, implied affiliation and the logo need permission. Sentences that describe the act (`initButton`, `scopeNotice`, `stepStart`) keep their verb.
 
 Architecture was added without replacing this destination. Git keeps its primary
 desktop rail tile, uncommitted-change badge, `G G` shortcut, and contextual
@@ -2193,17 +2261,17 @@ The screen layout splits into two stages. First, **is this screen even in a stat
 - In the browser, `Get App` is the primary button, and copying CLI commands for terminal use is secondary
 
 #### State with uncommitted changes (`decide`)
-- Left: One line of status totals at the top, then **file rows grouped by kind**
-  (status symbols `+ ~ − →` · folder names larger · how many lines added/removed). Clicking a row shows changed lines from that document on the right
-- Non-concept files (`.gitignore`, etc.) are **collapsed by default** — they go into the commit but aren't things humans need to judge. The number of collapsed lines is shown numerically so it's not hidden
-- Bottom fixed bar: Indigo-filled `Leave N items` button → confirmation step (preview of the actual commit title line + whether to push remotely, default off). Text explaining what is being recorded is also here — because files are actually written here
-- Right: Area showing evidence — `Changed lines` (file-by-file +/- lines with git internal notation removed) and `Previous steps` (previous commits). **Drawn only when there is content to show**
+- Left: the timeline — the "now" row for uncommitted changes, then the past steps. Clicking the "now" row opens the uncommitted changes on the right
+- Right, **read as documents** (owner direction B, 2026-09-19 — "the design itself is poor", chosen from three sketched directions): one line of totals (`1 added · 2 edited`), then a chip per changed document named by its concept with its status mark and kind glyph (non-concept files such as `.gitignore` are chips too, in the file face, after the documents), then the chosen document **whole, in the reading face**, with the changed lines marked where they are — an added line on the success tint, a removed line on the danger tint and struck through, still readable. The leading `---` block is kept apart as the front matter box (`atlasGit.docReaderInfoBox`) in the mono face; headings and list items keep their shape. No `+`, no `-`, no terminal face for prose, no kind label over a single row, no header repeating the left row. The whole document comes from `git_document_diff` (the file with every line as context; an untracked file is all added lines); when that read is unavailable the hunk diff from `git_diff` is drawn instead and the header says so
+- The document with changed lines opens by default; a newly created document opens on its own chip. The document's one destructive door, discard, sits at the foot of the document
+- Bottom fixed bar (left column): Indigo-filled `Leave N items` button → confirmation step (editable commit title, whether to push, default off). Text explaining what is being recorded is also here — because files are actually written here
 - The width for splitting into 2 columns is `xl` (1280). Making it 2 columns at 1024 compresses the list and cuts off concept names
 
 #### State with nothing to leave (`recall`)
 - Does not split into 2 columns. A single-screen view where **the previous commit list is the body** (`--git-single-measure`)
 - What's in one commit line: how recent · simple summary (`Added 3 · Modified 2`) · author · short hash. Expanding shows full hash · ISO format time · **original commit title** (record needed for later tracking)
 - The primary button position remains inactive (`All left`). If the button disappears entirely based on state, users have to figure out what to press next every time
+- The list is one tab stop; arrows, Page Up/Down, Home and End move between its rows and Enter presses one (2026-09-19, the Library lists' roving hook). Doors that could only open on a refusal are not drawn: no restore door on a file the commit deleted, no discard door on a never-committed or renamed document.
 - The list reads ten steps at a time and **ends with a fact, never a blank** (2026-09-19): while git holds older steps, the last row is `Show older steps` and fetches the next ten in place; once the first step is on screen, a quiet last line says so. Before this, ten were read and the column simply stopped, so a folder with forty steps kept thirty out of reach with nothing on screen to say it. The depth a person opened is remembered with the read, so returning to the folder keeps it
 - **The rail's Record dot follows the folder too** (2026-09-19): it used to re-read only on mount and on window focus, so after a commit or a restore the Record screen could say "all committed" while the rail still showed the dot until the window lost and regained focus. It now also re-reads once per `vault-changed` the watcher reports (coalesced, still no polling).
 - **The screen follows the folder while it is open** (2026-09-19): the app's file watcher already emits `vault-changed` for the loaded vault; this screen now listens and re-reads status, diff and history (read-only, debounced) so the count on the commit button and the preview line describe the folder as it is now, not as it was on arrival. While this screen is itself writing (a commit, `git init`, a remote action) the watcher's echo of that write is skipped because each of those paths re-reads when it finishes
@@ -2240,7 +2308,7 @@ Opening a conversation preserves the selected runner across the quick detection 
 
 **Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **API Keys and workspaces remain in settings** — the former has a "Path Freezing" decision on 2026-08-16 (promoting destination is itself an emphasis), and the latter's axis answered by vault is different.
 
-**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01). That row names the place and links to it, because since 2026-09-05 the place is `/mcp` and not a section of this screen.
+**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01). That row names the place: since 2026-09-19 it is the MCP tab on the same strip, one press away, so the sentence no longer carries a link (the settings sheet, which has no strip, still does).
 
 **2026-09-06**: the screen wears `PAGE_FRAME_FORM` (960px) like `/mcp`, and the frame carries the desktop bottom breath itself.
 
@@ -2248,23 +2316,31 @@ Opening a conversation preserves the selected runner across the quick detection 
 
 **What changed on 2026-09-07**: only the tools Atlas confirmed on this machine are listed inline. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product. Nothing left the list; a fold of 36 rows had nowhere to put a search.
 
-### `/agents?tab=mcp` — MCP (new 2026-09-05; a section of the Agents page since 2026-09-18)
+### `/agents?tab=mcp` — MCP (new 2026-09-05; the Agents page's second tab since 2026-09-19)
 
 **One sentence on what this screen does**: everything MCP — the folder's own server
 (share this folder with a coding tool) and the external connectors an in-app agent may
-reach — as the last section of the Agents page, with its own two sections on `?mcp=`.
+reach — as the second tab of the Agents page, in two groups stacked under one strip.
 The owner folded the two rail destinations into one on 2026-09-17 ("merge these two,
-split them as tabs inside"), then on 2026-09-18 took the header tab strip away too ("this
-way of showing them at the top is very bad… it should be folded in here"): the strip spent
-a 56px chrome band on two words and left the rest empty, and the two were one subject.
-`?tab=mcp` scrolls to the section; `/mcp/` and `/mcp/?tab=connectors` redirect into it with
-every parameter kept, so the installed app's `ontology-atlas://mcp?install=…` deep link
-still opens the connectors dialog. The rail lost its MCP tile; `g c` still lands here.
+split them as tabs inside"), took the header tab strip away on 2026-09-18 ("this way of
+showing them at the top is very bad… it should be folded in here": it spent a 56px chrome
+band on two words), and on 2026-09-19 rejected the stack that replaced it ("I don't want
+agents and MCP on one screen with a scroll — split them into tabs"). Both objections hold
+at once when the strip is the page's own, under the title: no chrome band, one question on
+screen at a time. `?tab=mcp` selects the tab and `?mcp=connectors` scrolls to the
+connectors group; `/mcp/` and `/mcp/?tab=connectors` redirect in with every parameter
+kept, so the installed app's `ontology-atlas://mcp?install=…` deep link still opens the
+connectors dialog. The rail lost its MCP tile; `g c` still lands here.
 
-- **Share this folder** — the three steps that put a ready config in front of each tool,
-  the connection status those files add up to, the first-contact proof packet an agent
-  pastes to prove it attached, and a collapsed "Not working?" fold holding file status,
-  CLI verification, and connecting from another code folder.
+- **Share this folder** — one row per tool since 2026-09-19 ("this design is poor — make it
+  properly; a popup, say"): the tool's mark, its name, the file it writes, and on the right
+  the one control in that tool's own state (connect, copy, or ready). A row whose file exists
+  but belongs to another tool says so in warning tone instead of its path. What Atlas cannot
+  know on its own — did you restart it, did it attach — opens from the group heading as one
+  dialog holding the restart step, the connection status those files add up to, the
+  first-contact proof packet an agent pastes to prove it attached, and the former
+  "Not working?" fold (file status, CLI verification, connecting from another code folder).
+  The server-lifetime sentence and the folder-root note wait in a hint beside the heading.
 - **Connectors** — the attached list: one line per connector carrying the service mark, the name,
   what will actually run, the switch, and one more-actions button; that button's dialog holds the
   keychain fields and removal, and removal confirms first because forgetting a token cannot be
@@ -2817,6 +2893,33 @@ than highlighting past the truncation — measured live: rows whose mark rendere
 outside its own box went from 1-2 per English query to 0. The per-node name index is
 built once and kept (`WeakMap`), which also took a plain query over 12,000 nodes from
 243 ms to 29.8 ms; `node-name-match.perf.test.ts` holds the ratio.
+
+**Every result row says what it matched** (2026-09-19). Matching deliberately looks
+wider than the row draws — every one of a concept's names (the canonical `title` and
+each `display_<locale>`), the summary, and the id — but the row drew only the
+localised name and the summary, so a match on anything else arrived with nothing to
+see. Measured on the bundled sample over thirty English queries: **97 of 317 rows
+(30.6%) carried no highlight at all.** Two changes close it. The id now matches on its
+slug and not its `kind:` prefix, because typing "element" returned twenty rows that
+were all just the kind — which the filter chips already select, properly; a query
+containing a colon is someone pasting a real id, and for that the whole id still
+answers. And the trailing column became the row's evidence: the summary when the name
+on screen carried the match, that other name when a name the screen is not showing
+did, the summary opened at the match when the description did, and the id's slug in
+mono when the id did. A mark therefore means exactly one thing — *this is what you
+typed* — which is why the context summary is drawn plain. Project rows use the same
+seat for the same job. Re-measured over the same thirty queries plus three Hangul
+ones: **0 of 276 rows unexplained, 0 marks clipped**, and the column has one text
+start line (`w-[14rem]`, after four rows of "policy" began at four different x).
+
+**One answer to the same typing, in every box** (2026-09-19). The map draws INDEX
+and the `⌘K` palette on the same screen, and the docs tree has a third field; each
+kept its own match rule. Measured on the bundled sample: INDEX answered "no matching
+concept" to a chosung query and to a half-typed syllable that the palette resolved
+against the same vault, and it pulled every element for the word "element" because it
+compared the whole `kind:slug`. All three now call `findNameMatch` and `idSearchText`
+in `shared/lib/node-name-match`, which is the single contract; the palette's ranking
+stays its own, because only it ranks. `nameIncludes` retired with its last caller.
 
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio

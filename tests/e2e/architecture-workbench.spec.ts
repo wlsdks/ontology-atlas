@@ -10,7 +10,7 @@ test('핵심 행동만 남고 에이전트 작업 버튼은 하단 탭에 가리
   await seedFirstRunSeen(page);
   await useDogfoodSample(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/ko/architecture/?view=structure&guides=off');
+  await page.goto('/ko/architecture/?view=architecture&guides=off');
 
   await expect(page.getByText('Atlas Web Workbench').first()).toBeVisible();
   await expect(page.getByTestId('architecture-graph-run')).toHaveCount(0);
@@ -61,7 +61,7 @@ test('the agent task chooser offers a re-check and an improvement search beside 
     });
   });
   await page.setViewportSize({ width: 1512, height: 945 });
-  await page.goto('/ko/architecture/?view=structure&guides=off');
+  await page.goto('/ko/architecture/?view=architecture&guides=off');
   await expect(page.getByTestId('architecture-graph')).toBeVisible();
 
   const trigger = page.getByTestId('architecture-agent-task-menu');
@@ -102,7 +102,7 @@ test('the agent task chooser offers a re-check and an improvement search beside 
 });
 
 test('obsolete workflow-stage links do not resurrect the removed prose panels', async ({ page }) => {
-  await page.goto('/ko/architecture/?view=structure&stage=plan');
+  await page.goto('/ko/architecture/?view=architecture&stage=plan');
   await expect(page.getByTestId('architecture-graph')).toBeVisible();
   await expect(page.getByRole('radio')).toHaveCount(0);
   await expect(page.locator('[data-architecture-stage]')).toHaveCount(0);
@@ -116,7 +116,7 @@ test('obsolete workflow-stage links do not resurrect the removed prose panels', 
 
 test('keyboard opens, closes, restores focus, and reopens the selected role', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 945 });
-  await page.goto('/ko/architecture/?view=structure&guides=off');
+  await page.goto('/ko/architecture/?view=architecture&guides=off');
 
   const evidence = page.getByTestId('architecture-evidence-rail');
   await evidence.focus();
@@ -167,7 +167,7 @@ test('keyboard opens, closes, restores focus, and reopens the selected role', as
 
 test('a real viewport resize may reflow the chain without losing the selected role', async ({ page }) => {
   await page.setViewportSize({ width: 834, height: 1112 });
-  await page.goto('/ko/architecture/?view=structure&guides=off');
+  await page.goto('/ko/architecture/?view=architecture&guides=off');
   const graph = page.getByTestId('architecture-graph');
   await expect(graph).toHaveAttribute('data-architecture-axis', 'down');
 
@@ -198,7 +198,7 @@ test('320px and a 200%-equivalent viewport keep controls and evidence inside the
 }) => {
   for (const width of [320, 384]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto('/ko/architecture/?view=structure&guides=off');
+    await page.goto('/ko/architecture/?view=architecture&guides=off');
     await expect(page.getByTestId('architecture-graph')).toBeVisible();
     const before = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -249,7 +249,7 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
   /* A window that holds the whole chain: below this the canvas pans, and panning to a box is a
      different subject than the address this test is about (2026-08-30). */
   await page.setViewportSize({ width: 1512, height: 945 });
-  await page.goto('/ko/architecture/?view=structure');
+  await page.goto('/ko/architecture/?view=architecture');
 
   await page.getByTestId('architecture-graph-box-application').click();
   expect(new URL(page.url()).searchParams.get('role')).toBe('application');
@@ -283,7 +283,7 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
    * default now (2026-08-30): a bare address is a canvas with no panel at all, a bad role opens
    * the panel and is refused in it, a real role opens the panel and is answered in it.
    */
-  await page.goto('/ko/architecture/?view=structure');
+  await page.goto('/ko/architecture/?view=architecture');
   await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
     'data-architecture-inspector',
     'none',
@@ -333,7 +333,7 @@ test('a chain is never cut in silence — it turns, or it says what is hidden', 
     [390, 844],
   ] as const;
 
-  await page.goto('/ko/architecture/?view=structure');
+  await page.goto('/ko/architecture/?view=architecture');
   // Vault-backed routes prerender the neutral identity boundary now. Wait for hydration to replace
   // that boundary before measuring the canvas; querying the layout during the fallback measures no
   // product at all and used to throw on a null scroller.
@@ -442,7 +442,7 @@ test('a chain is never cut in silence — it turns, or it says what is hidden', 
  */
 test('a role sentence stays inside the drawn box, including a stadium cap', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 945 });
-  await page.goto('/en/architecture/?view=structure&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await page.goto('/en/architecture/?view=architecture&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
   await expect(page.getByTestId('architecture-graph')).toBeVisible({ timeout: 60_000 });
   await page.evaluate(() => document.fonts.ready);
 
@@ -490,7 +490,7 @@ test('a role sentence stays inside the drawn box, including a stadium cap', asyn
  */
 test('every drawn stroke says its sentence, and no sentence touches anything', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 945 });
-  await page.goto('/en/architecture/?view=structure&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await page.goto('/en/architecture/?view=architecture&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
   await expect(page.getByTestId('architecture-graph')).toBeVisible({ timeout: 60_000 });
   await page.evaluate(() => document.fonts.ready);
 
@@ -526,7 +526,7 @@ test('the ladder tightens its rows rather than hiding the seventh role at 1280x8
   await seedFirstRunSeen(page);
   await useDogfoodSample(page);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/ko/architecture/?view=structure&guides=off', { waitUntil: 'domcontentloaded' });
+  await page.goto('/ko/architecture/?view=architecture&guides=off', { waitUntil: 'domcontentloaded' });
   const graph = page.getByTestId('architecture-graph');
   await expect(graph).toBeVisible({ timeout: 60_000 });
   await page.evaluate(() => document.fonts.ready);
@@ -587,7 +587,7 @@ for (const locale of ['ko', 'en'] as const) {
     await seedFirstRunSeen(page);
     await useDogfoodSample(page);
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto(`/${locale}/architecture/?view=structure&guides=off`);
+    await page.goto(`/${locale}/architecture/?view=architecture&guides=off`);
     await expect(page.getByTestId('architecture-graph-box-views')).toBeVisible({ timeout: 30_000 });
     /* The sketch sizes itself from its container, so a rect read before that settles reports the
        SVG's pre-layout scale — measured at 0.245 of the final one. */
