@@ -119,8 +119,27 @@ function readHashMap(value: unknown): Map<string, string> {
  * first page a person reads (installed app, 2026-09-06, on a folder with five real
  * pages). The validators already skip it; the list does too, for the same reason.
  */
+/** A wiki page the Wiki list draws: under `wiki/`, carrying no `kind:`, and not furniture. */
+function isListedWikiPage(doc: VaultDoc): boolean {
+  return isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug);
+}
+
+/**
+ * How many wiki pages the folder holds, by the same rule the Wiki list draws.
+ *
+ * The project page's Library cell counted every `wiki/` slug instead, so it reported the
+ * template `init` writes and any ontology node misfiled under `wiki/` as pages, and told a
+ * reader a larger number than the Library screen listed for the same folder. Two screens
+ * contradicting each other about one folder is the defect this entity exists to prevent.
+ */
+export function countWikiPages(docs: readonly VaultDoc[]): number {
+  let count = 0;
+  for (const doc of docs) if (isListedWikiPage(doc)) count += 1;
+  return count;
+}
+
 export function selectWikiPages(docs: readonly VaultDoc[]): LibraryWikiPage[] {
-  return docs.filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug)).map((doc) => ({
+  return docs.filter(isListedWikiPage).map((doc) => ({
     slug: doc.slug,
     title: doc.title,
     sourcePaths: readStringArray(doc.frontmatter.sources),

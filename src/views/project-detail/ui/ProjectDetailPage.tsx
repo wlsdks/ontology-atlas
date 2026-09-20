@@ -4,13 +4,10 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
-// `useSearchParams` is locale-agnostic, so it comes from raw next/navigation
-// (`.claude/rules/architecture.md`, the i18n routing guard).
-import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, FileText, FolderSearch, Layers, Waypoints } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -29,9 +26,17 @@ import {
   getProjectEditHref,
   getProjectRuntimeDetailHref,
   getTopologyProjectHref,
+  projectDisplayName,
+  projectHasDisplayName,
   type Project,
 } from "@/entities/project";
-import { useProjects, useProjectMutations, useProjectBody, useVaultDocs } from "@/features/project-data-source";
+import {
+  useProjects,
+  useProjectMutations,
+  useProjectBody,
+  useVaultDocs,
+  useVaultManifest,
+} from "@/features/project-data-source";
 import { buildDocsVaultHref, findProjectDocInList } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
@@ -51,19 +56,14 @@ import { resolveProjectTagline } from "../model/project-tagline";
 import { stripDuplicateHeading } from "../model/strip-duplicate-heading";
 import { buildProjectOntologyMetrics } from "../model/project-ontology-metrics";
 import { buildProjectDomainComposition } from "../model/domain-composition";
+import { buildSurfaceComposition } from "../model/surface-composition";
 import { buildConnectedProjects, findRelatesGraphProjectSlugs } from "../model/connected-projects";
 import { buildAgentHandoffSnippet } from "../model/agent-handoff-snippet";
 import { DomainCompositionRows } from "./DomainCompositionRows";
-import { ProjectBrief } from "./ProjectBrief";
+import { ProjectBriefSummary } from "./ProjectBriefSummary";
+import { SurfaceCompositionBoard } from "./SurfaceCompositionBoard";
 import { splitProjectBrief } from "../model/project-brief";
 import { ConstructionReviewPanel } from "./construction-review/ConstructionReviewPanel";
-import { TabBar } from "@/shared/ui/tab-bar";
-import {
-  compositionTabCount,
-  parseProjectDetailTab,
-  serializeProjectDetailTab,
-  type ProjectDetailTab,
-} from "../lib/project-detail-tab";
 
 const SearchPalette = dynamic(
   () => import("@/widgets/search-palette").then((m) => m.SearchPalette),
@@ -111,12 +111,10 @@ function ProjectDetailShell({ children, dock = null }: { children: ReactNode; do
 function ProjectDetailTopBar({
   slug,
   projectName,
-  census,
   projectDocSlug,
 }: {
   slug?: string;
   projectName?: string | null;
-  census?: { concepts: number; relations: number } | null;
   /**
    * The vault slug of this project's own Markdown document. When known, the documents door opens
    * **that file** rather than the vault's root: the frontmatter of that one file is what this whole
@@ -183,15 +181,7 @@ function ProjectDetailTopBar({
           </Button>
         </Link>
         {slug ? (
-          <CopyProjectLinkButton slug={slug} testId="project-detail-copy-link" className="h-10 justify-center" />
-        ) : null}
-        {census ? (
-          <span
-            data-testid="project-detail-global-census"
-            className="hidden font-mono text-label tracking-[var(--tracking-caps-08)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] md:inline"
-          >
-            {t("globalCensus", { concepts: census.concepts, relations: census.relations })}
-          </span>
+          <CopyProjectLinkButton slug={slug} testId="project-detail-copy-link" className="justify-center" />
         ) : null}
       </div>
     </nav>
@@ -258,22 +248,6 @@ export function ProjectDetailPage({
   const failureSentence = useFailureSentence();
   const router = useRouter();
   const constructionReview = useConstructionReviewSession(slug);
-  // The tab lives in the URL — it has to be shareable and reproducible by an agent. Left as hidden
-  // state, "which tab they were on" disappears from the handoff packet.
-  const searchParams = useSearchParams();
-  const activeTab = parseProjectDetailTab(searchParams.get("tab"));
-  const selectTab = useCallback(
-    (key: string) => {
-      const next = serializeProjectDetailTab(key as ProjectDetailTab);
-      const params = new URLSearchParams(searchParams.toString());
-      if (next) params.set("tab", next);
-      else params.delete("tab");
-      const query = params.toString();
-      // `replace` — switching tabs is not a move worth a back-history entry.
-      router.replace(query ? `?${query}` : "?", { scroll: false });
-    },
-    [router, searchParams],
-  );
   const { show: showToast } = useToast();
   const [project, setProject] = useState<Project | null>(
     initialProject,
@@ -315,10 +289,15 @@ export function ProjectDetailPage({
 
   // Client-side dynamic title. Static export metadata is prebuilt per slug, but user context
   // (project.name) exists only on the client.
+  // The word this screen draws for the project: `display_<locale>` when the document carries
+  // one, the canonical name otherwise. The map, the INDEX and the Library already read it that
+  // way; the page and the list said the canonical title beside them (2026-09-19).
+  const locale = useLocale();
+  const displayName = project ? projectDisplayName(project, locale) : undefined;
   useDocumentTitle(
     Array.from(
       new Set(
-        [project?.name, t("documentTitleSuffix")].filter(
+        [displayName, t("documentTitleSuffix")].filter(
           (value): value is string => Boolean(value),
         ),
       ),
@@ -391,6 +370,9 @@ export function ProjectDetailPage({
   const handoffCopy = useCopyFeedback();
   const briefCopy = useCopyFeedback();
   const vaultDocs = useVaultDocs();
+  // The same manifest those docs come from: the Library cell counts sources and wiki pages
+  // out of one folder, not the open folder's sources beside the chosen sample's pages.
+  const vaultManifest = useVaultManifest();
 
   if (!slug) {
     return (
@@ -429,6 +411,32 @@ export function ProjectDetailPage({
   const projectDoc = findProjectDocInList(vaultDocs, project.slug);
   const metrics = buildProjectOntologyMetrics(insightNodes, insightEdges, project.slug);
   const domainComposition = buildProjectDomainComposition(insightNodes, insightEdges, project.slug);
+  // What this project has on each Atlas surface — the page's first block. Ontology figures are
+  // this project's; sources and wiki pages are the folder's, and the caption beside the board
+  // says so rather than letting a reader compare two scopes as one.
+  const surfaceCells = buildSurfaceComposition({
+    metrics,
+    domains: domainComposition.domains,
+    manifest: vaultManifest,
+    docs: vaultDocs,
+    labels: {
+      domains: t("metricDomains"),
+      capabilities: t("metricCapabilities"),
+      elements: t("metricElements"),
+      sources: t("surfaceSources"),
+      wikiPages: t("surfaceWikiPages"),
+      planOnlyDomains: (count) => t("surfacePlanOnly", { count }),
+      relations: (count) => t("surfaceRelations", { count }),
+      ontologyEmpty: t("surfaceOntologyEmpty"),
+      libraryEmpty: t("surfaceLibraryEmpty"),
+      harnessHolds: t("surfaceHarnessHolds"),
+    },
+    hrefs: {
+      ontology: getTopologyProjectHref(project.slug),
+      library: "/library/",
+      harness: "/architecture/",
+    },
+  });
   const relatesGraphSlugs = findRelatesGraphProjectSlugs(insightNodes, insightEdges, project.slug);
   const connectedProjects = buildConnectedProjects(project, related, relatesGraphSlugs);
   const handoffSnippet = buildAgentHandoffSnippet(project.slug);
@@ -452,10 +460,14 @@ export function ProjectDetailPage({
   ) => {
     if (!project || !canManageProject) return;
     try {
+      // The heading edits the word the person is looking at: the locale's display key when the
+      // document carries one, the canonical name otherwise (starter displays follow a rename).
       await projectMutations.patchProject(
         project.slug,
         field === "name"
-          ? { name: next }
+          ? projectHasDisplayName(project, locale)
+            ? { displayName: { locale, value: next } }
+            : { name: next }
           : { description: next.trim() ? next : null },
       );
       showToast(field === "name" ? t("saveSuccessName") : t("saveSuccessDescription"), "success");
@@ -507,21 +519,6 @@ export function ProjectDetailPage({
     returnTo: getProjectRuntimeDetailHref(project.slug),
   });
 
-  // Only the ontology's own hierarchy (domain ⊃ capability ⊃ element) becomes chips.
-  const primaryMetrics: Array<{ label: string; value: number }> = [
-    { label: t("metricDomains"), value: metrics.domains },
-    { label: t("metricCapabilities"), value: metrics.capabilities },
-    { label: t("metricElements"), value: metrics.elements },
-  ];
-  // The meta figures are a different kind and have no reason to carry the same weight — demoted to plain text.
-  // A zero is not drawn (the "match 0 → hide" rule this page already applies to the domain rows):
-  // "Documents 0" under a header counting 125 concepts in a folder of 126 Markdown files read as a
-  // contradiction, when it only meant no `kind: document` node is linked to this project.
-  const secondaryMetrics: Array<{ label: string; value: number }> = [
-    { label: t("metricDocuments"), value: metrics.documents },
-    { label: t("metricRelations"), value: metrics.relations },
-  ].filter((item) => item.value > 0);
-
   const handleCopyHandoff = () => {
     void handoffCopy.copy(handoffSnippet);
   };
@@ -546,7 +543,7 @@ export function ProjectDetailPage({
         agent.route === "agent" && agent.runtime && nativeVaultRootPath ? (
           <ProjectAgentDock
             open={agent.open}
-            projectName={project.name}
+            projectName={displayName ?? project.name}
             runtime={agent.runtime}
             runtimes={agent.runtimes}
             onRuntimeChange={agent.setRuntimeId}
@@ -562,8 +559,7 @@ export function ProjectDetailPage({
     >
       <ProjectDetailTopBar
         slug={slug}
-        projectName={project.name}
-        census={{ concepts: insightNodes.length, relations: insightEdges.length }}
+        projectName={displayName ?? project.name}
         projectDocSlug={projectDoc?.slug ?? null}
       />
 
@@ -588,7 +584,7 @@ export function ProjectDetailPage({
             <div className="min-w-0 flex-1">
               <InlineEditable
                 as="h1"
-                value={project.name}
+                value={displayName ?? project.name}
                 editable={canManageProject}
                 onSave={(next) => saveProjectField("name", next)}
                 ariaLabel={t("inlineNameAria")}
@@ -657,7 +653,7 @@ export function ProjectDetailPage({
                   : t("constructionReview.openResult")}
               </Button>
               {canManageProject ? (
-                <ProjectQuickEditPanel project={project} settingsHref={projectFullEditHref} />
+                <ProjectQuickEditPanel project={project} settingsHref={projectFullEditHref} triggerVariant="outline" />
               ) : (
                 // With no vault chosen (static/dogfood) there was no edit entry point at all and
                 // nothing explaining why — this badge states the reason and the next action in one
@@ -673,7 +669,12 @@ export function ProjectDetailPage({
                     data-testid="project-detail-readonly-badge"
                     // `flex-none` created horizontal page overflow at 390px (an overflow-sweep
                     // regression) — when narrow, the badge text wraps instead.
-                    className="inline-flex min-w-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-tertiary)]"
+                    // 2026-09-20: it wore the outline button's own surface — `--color-overlay-1`,
+                    // a border and the chip radius (`button.tsx`, the `outline` variant) — so the row
+                    // drew four boxes of which one could not be pressed, and the difference was a
+                    // border colour. A state fact is drawn as a fact here: the folder census over the
+                    // composition board is engraved text with no box, and so is this.
+                    className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-mono text-label text-[color:var(--color-text-tertiary)]"
                   >
                     {t("readOnlyBadge")}
                   </span>
@@ -684,44 +685,11 @@ export function ProjectDetailPage({
           </div>
 
           {/*
-            Statistics are quiet chips rather than huge numbers — easy to scan without stealing
-            attention from the title. But five at the same weight reads as "everything matters, so
-            nothing does". The ontology's own hierarchy (domain ⊃ capability ⊃ element) and the meta
-            figures (documents, relations) are different kinds, so only the first three stay chips and
-            the last two are demoted to plain text.
-
-            The scope caption at the front breaks the confusion with the census at the top (the whole
-            vault) — 440 and 453 on one screen reads as one of them being wrong, when in fact only the
-            scope differs.
-
-            `pb-5` is the breathing room between the description block and this rule — it used to be
-            0px, with the line sitting directly under the text.
+            **The figures left the hero on 2026-09-19.** They were five quiet chips here and then the
+            same five numbers again in the composition board one block below, which is the "said
+            twice" defect this page has removed twice before. The hero keeps identity — glyph, name,
+            kind, updated, definition — and the board keeps the counting.
           */}
-          <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-[color:var(--color-border-soft)] pt-3.5">
-            <span className="text-caption uppercase tracking-caption text-[color:var(--color-text-quaternary)]">
-              {t("heroScopeCaption")}
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {primaryMetrics.map((item) => (
-                <span
-                  key={item.label}
-                  className="inline-flex items-baseline gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1"
-                >
-                  <span className="text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-                    {item.label}
-                  </span>
-                  <span className="font-mono text-label tabular-nums text-[color:var(--color-text-secondary)]">
-                    {item.value}
-                  </span>
-                </span>
-              ))}
-            </div>
-            <span className="ml-auto font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]">
-              {secondaryMetrics
-                .map((item) => `${item.label} ${item.value}`)
-                .join(" · ")}
-            </span>
-          </div>
         </div>
 
         {/*
@@ -774,69 +742,76 @@ export function ProjectDetailPage({
         </section>
       ) : null}
 
-      {/* Tabs split by **the question they answer**, not by "kind of information": overview = what is
-          this (the body), composition = what is it made of. The project.md body runs to thousands of
-          px in the dogfood vault, so keeping both in one scroll left no way to scan "what is it made
-          of" (owner: "you don't have to show everything by scrolling").
-
-          The component reuses the app's single tab bar (`shared/ui/tab-bar`) — the same grammar as the
-          insights and history evidence panes, so no new idiom appears. */}
-      <div className="mt-[var(--section-gap)]">
-        <TabBar
-          /* This tab bar is **shared** with insights. Without a prefix, `aria-controls` points at
-             insights' panel ids, which do not resolve here — a measured violation (axe
-             `aria-valid-attr-value`). The two panels below draw `role="tabpanel"` under this prefix. */
-          idPrefix="project-detail"
-          ariaLabel={t("tabs.ariaLabel")}
-          activeKey={activeTab}
-          onSelect={selectTab}
-          items={[
-            { key: "overview", label: t("tabs.overview") },
-            {
-              key: "composition",
-              label: t("tabs.composition"),
-              count: compositionTabCount(domainComposition.domains.length),
-            },
-          ]}
-        />
-      </div>
-
-      {/* zone 3 — left: the body (overview tab only) / right: connected projects plus the agent
-          handoff.
-          **The right rail sits outside the tabs** — it is cross-tab context valid from any tab, and
-          "connected projects" in particular is the first surface of treating project-to-project
-          relations as ontology, so it must not be hidden behind a tab (the same grammar as the
-          left/right split of the history destination). */}
       {/*
-        Two tracks from `@3xl` (48rem) of the page column, not from the `lg` viewport: with the
-        agent dock open at 1280 the column is about 600px under an `xl` viewport, and the viewport
-        rule squeezed the overview card to 170px beside a 400px rail (captured 2026-09-19).
+        **The composition board is the page's first answer** (owner, 2026-09-19): a project page
+        exists so somebody can see how much ontology, library and harness is built in here, read
+        it fast, and choose where to go. It used to open with the whole document instead, and the
+        two tabs split "what is this" from "what is it made of" — which made the second question
+        cost a press, when it is the question the page is for. The tabs are gone; the board
+        answers across Atlas's surfaces and the domain rows under it carry the detail.
       */}
-      <section className="mt-[var(--section-gap)] grid grid-cols-1 items-start gap-[var(--card-gap)] @3xl/project-page:grid-cols-[minmax(0,1fr)_400px]">
-        {/* The left column is **the tab body**. Putting composition in its own section and hiding it
-            with `hidden` made the grid's first track vanish under `display:none`, pulling the 400px
-            right rail into the 1fr track and stretching it (a measured defect). If the left **always
-            draws something**, the track cannot collapse. */}
-        {activeTab === "composition" ? (
-          <section
-            data-tab-panel="composition"
-            id="project-detail-tabpanel-composition"
-            role="tabpanel"
-            aria-labelledby="project-detail-tab-composition"
-            tabIndex={0}
-            className="min-w-0"
+      <section data-testid="project-detail-composition" className="mt-[var(--section-gap)]">
+        <div className="mb-2.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+          <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+            {t("compositionHeading")}
+          </h2>
+          {/* The scope caption belongs beside the figures, not inside a cell: only the ontology
+              half is this project's, and a reader comparing 8 domains with 12 sources has to be
+              told that the second number counts the folder. */}
+          <span className="text-label text-[color:var(--color-text-quaternary)]">
+            {t("surfaceFolderScope")}
+          </span>
+          {/* The folder's own totals belong to this sentence, not to the top bar: they are the
+              only number on the page that is not this project's, and beside the controls they
+              read as a third control size. */}
+          <span
+            data-testid="project-detail-global-census"
+            className="ml-auto hidden font-mono text-label tracking-[var(--tracking-caps-08)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] md:inline"
           >
-            {domainComposition.domains.length > 0 ? (
-              /*
-                The section header ("domain composition · contains · 6") was removed. The tab label
-                already reads "composition 6", so both the title and the count were duplicates, and a
-                33px header on the left alone misaligned the starting edge against the right rail's
-                first card, making the whole grid look crooked.
+            {t("globalCensus", { concepts: insightNodes.length, relations: insightEdges.length })}
+          </span>
+        </div>
+        <SurfaceCompositionBoard
+          cells={surfaceCells}
+          titles={{
+            ontology: t("surfaceOntology"),
+            library: t("surfaceLibrary"),
+            harness: t("surfaceHarness"),
+          }}
+          openLabels={{
+            ontology: t("surfaceOpenOntology"),
+            library: t("surfaceOpenLibrary"),
+            harness: t("surfaceOpenHarness"),
+          }}
+        />
+      </section>
 
-                The footnote (`domainOverlapNote`) was pulled out of here too and gathered in one place
-                under the hero row — that sentence explains "the hero chip sum ≠ the row sum", and the
-                hero is where both numbers are visible together.
-              */
+      {/* zone 3 — left: what the project is made of and what is written about it; right: the
+          cross-project context and the agent handoff.
+          Two tracks from `@3xl` (48rem) of the page column, not from the `lg` viewport: with the
+          agent dock open at 1280 the column is about 600px under an `xl` viewport, and the
+          viewport rule squeezed the left card to 170px beside a 400px rail (captured 2026-09-19).
+          **64rem, not 48rem**: at 1024 the split left the domain card 420px, where every row broke
+          its number column onto a third line (measured 2026-09-19). The rows want the column.
+          **Both columns are cards now.** The domain rows used to sit bare in a tab panel while the
+          right rail drew cards, so the two columns started on different lines and the grid read as
+          crooked — the owner's word for it on 2026-09-19, and the reason a section header was
+          already deleted here once. */}
+      <section className="mt-[var(--section-gap)] grid grid-cols-1 items-start gap-[var(--card-gap)] @5xl/project-page:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="flex min-w-0 flex-col gap-[var(--card-gap)]">
+          <section
+            data-testid="project-detail-domains"
+            className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
+          >
+            <div className="mb-2.5 flex items-baseline gap-2">
+              <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                {t("domainsCardTitle")}
+              </span>
+              <span className="font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                {domainComposition.domains.length}
+              </span>
+            </div>
+            {domainComposition.domains.length > 0 ? (
               <DomainCompositionRows
                 domains={domainComposition.domains}
                 labels={{
@@ -857,16 +832,15 @@ export function ProjectDetailPage({
                 }}
               />
             ) : (
-              // The tab remains even at zero domains (spatial memory) — instead, the next step is offered here.
               <div data-testid="project-detail-composition-empty">
                 <EmptyState
                   size="compact"
                   icon={<Layers size={ICON_SIZE.lg} aria-hidden />}
                   title={t("domainEmptyTitle")}
                   description={t("domainEmptyHint")}
-                  /* The hint said where to do it — "connect a domain on the
-                     map" — and then made the reader go find the map. One door,
-                     the same address the insights empty states use. */
+                  /* The hint said where to do it — "connect a domain on the map" — and then made
+                     the reader go find the map. One door, the same address the insights empty
+                     states use. */
                   action={
                     <Link
                       href="/topology/?workbench=create"
@@ -885,109 +859,45 @@ export function ProjectDetailPage({
               </div>
             )}
           </section>
-        ) : (
-        <article
-          data-tab-panel="overview"
-          id="project-detail-tabpanel-overview"
-          role="tabpanel"
-          aria-labelledby="project-detail-tab-overview"
-          tabIndex={0}
-          className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
-        >
-          {/*
-            One reading column, centred: the measure spent at `--text-reading` (the doc column
-            minus its two gutters — the card's own padding is the gutter here), and the title
-            stands on the same start line as the prose. The card keeps the grid track; what
-            changed on 2026-09-19 is that the line inside it is the column, not a 14px `ch` cap
-            left-aligned in a card twice its width. See `storyMarkdownClassName`.
-          */}
-          <div
-            data-testid="project-detail-body-column"
-            className="mx-auto w-full max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))]"
+
+          <article
+            data-testid="project-detail-body"
+            className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
           >
-          <div className="mb-2.5 flex items-baseline gap-2">
-            <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-              {t("bodyCardTitle")}
-            </span>
-            <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
-              {t("bodyCardGcap")}
-            </span>
-          </div>
-          {bodyContent ? (
-            // The column above is the line; no per-line cap here. `ProjectBrief` draws the body's
-            // `##` sections as blocks and falls back to prose (with `break-keep`, which covers every
-            // markdown paragraph: the Korean body broke mid-word as 「jangba|gi」 at 584px, 2026-08-12).
-            <ProjectBrief body={dedupedBodyContent ?? bodyContent} proseClassName={storyMarkdownClassName} />
-          ) : (
-            <div data-testid="project-detail-body-empty">
-              <EmptyState
-                size="compact"
-                icon={<FileText size={ICON_SIZE.lg} aria-hidden />}
-                title={t("bodyEmptyHint")}
-              />
+            <div className="mb-2.5 flex items-baseline gap-2">
+              <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                {t("bodyCardTitle")}
+              </span>
             </div>
-          )}
-          {/*
-            The ask (owner, 2026-09-19): this is the place the agent should analyse and lay out. The
-            page cannot start a turn itself yet (the Library's dock is where turns run), so it hands
-            over the exact instructions: read the map through MCP, write four sections, change only
-            the body with `patch_concept` under `expected_mtime`. The person reviews the file in the
-            Library; nothing is written from here.
-          */}
-          <div
-            data-testid="project-detail-brief-ask"
-            data-brief-state={briefIsStructured ? "structured" : "unstructured"}
-            data-agent-route={agent.route}
-            className="mt-6 border-t border-[color:var(--color-divider)] pt-4"
-          >
-            <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-              {t("briefAskTitle")}
-            </span>
-            <p className="mt-1 mb-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-              {agent.route === "agent"
-                ? t("briefAskAgent")
-                : briefIsStructured
-                  ? t("briefAskStructured")
-                  : t("briefAskUnstructured")}
-            </p>
-            {/*
-              In the installed app with a guarded runtime ready, the ask opens the dock beside this
-              page and seats the same instructions as the first turn; the person still decides every
-              file write at the permission card. Everywhere else the instructions are copied.
-            */}
-            {agent.route === "agent" ? (
-              <Button
-                type="button"
-                variant={briefIsStructured ? "outline" : "primary"}
-                size="sm"
-                onClick={() => agent.start(briefPrompt)}
-                data-testid="project-detail-brief-ask-open"
-              >
-                {t("briefAskOpen")}
-              </Button>
+            {bodyContent ? (
+              <>
+                <ProjectBriefSummary
+                  body={dedupedBodyContent ?? bodyContent}
+                  // The line is the column (`docs/DECISIONS.md`, 2026-09-12): the measure spent at
+                  // the reading size. Left-aligned rather than centred, because heading, prose,
+                  // contents line and door all start on one line inside a card.
+                  proseClassName={`${storyMarkdownClassName} max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))]`}
+                  coversLabel={t("bodyCovers")}
+                />
+                <Link
+                  href={projectDoc ? buildDocsVaultHref({ slug: projectDoc.slug }) : "/docs/"}
+                  data-testid="project-detail-body-continue"
+                  className={controlClass({ shape: "link", tone: "accent", className: "mt-4" })}
+                >
+                  {t("bodyContinue")}
+                </Link>
+              </>
             ) : (
-              <Button
-                type="button"
-                variant={briefIsStructured ? "outline" : "primary"}
-                size="sm"
-                onClick={() => void briefCopy.copy(briefPrompt)}
-                data-testid="project-detail-brief-ask-copy"
-              >
-                {briefCopyLabel}
-              </Button>
+              <div data-testid="project-detail-body-empty">
+                <EmptyState
+                  size="compact"
+                  icon={<FileText size={ICON_SIZE.lg} aria-hidden />}
+                  title={t("bodyEmptyHint")}
+                />
+              </div>
             )}
-            <details className="mt-3">
-              <summary className="select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-                {t("handoffHumanCaption")}
-              </summary>
-              <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap break-keep text-[color:var(--color-text-quaternary)]">
-                {briefPrompt}
-              </pre>
-            </details>
-          </div>
-          </div>
-        </article>
-        )}
+          </article>
+        </div>
 
         {/* The right rail sits **outside the tabs** — it is context valid from any tab, and "connected
             projects" is the first surface of treating project-to-project relations as ontology, so it
@@ -1076,10 +986,59 @@ export function ProjectDetailPage({
               The order is now explanation → button → (collapsed) preview. Say what it does first, and
               let whoever wants the code expand it.
             */}
+            {/*
+              **One place for agents on this page** (2026-09-19). The overview's "hand it to an
+              agent" ask stood in the body card while this card stood in the rail, so the page had
+              two agent hand-offs with near-identical names a column apart. They are one card now:
+              the specific job first, the general "read this project's map" snippet under it.
+            */}
             <div className="mb-2">
               <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {t("handoffTitle")}
               </span>
+            </div>
+            <div
+              data-testid="project-detail-brief-ask"
+              data-brief-state={briefIsStructured ? "structured" : "unstructured"}
+              data-agent-route={agent.route}
+              className="mb-4 border-b border-[color:var(--color-divider)] pb-4"
+            >
+              <p className="mb-3 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+                {agent.route === "agent"
+                  ? t("briefAskAgent")
+                  : briefIsStructured
+                    ? t("briefAskStructured")
+                    : t("briefAskUnstructured")}
+              </p>
+              {agent.route === "agent" ? (
+                <Button
+                  type="button"
+                  variant={briefIsStructured ? "outline" : "primary"}
+                  size="sm"
+                  onClick={() => agent.start(briefPrompt)}
+                  data-testid="project-detail-brief-ask-open"
+                >
+                  {t("briefAskOpen")}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant={briefIsStructured ? "outline" : "primary"}
+                  size="sm"
+                  onClick={() => void briefCopy.copy(briefPrompt)}
+                  data-testid="project-detail-brief-ask-copy"
+                >
+                  {briefCopyLabel}
+                </Button>
+              )}
+              <details className="mt-3">
+                <summary className="select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                  {t("handoffHumanCaption")}
+                </summary>
+                <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap break-keep text-[color:var(--color-text-quaternary)]">
+                  {briefPrompt}
+                </pre>
+              </details>
             </div>
             {/*
              * `break-keep` — **Korean trips the reader when it breaks mid-word** (measured 2026-08-12).
