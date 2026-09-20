@@ -7,6 +7,7 @@ import { ChevronRight } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { DomainCensusRow, OntologyTreeNode } from "@/entities/knowledge-graph";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { HighlightedText } from "@/shared/ui";
 import {
   computeCapacityRatio,
   computeDomainSubcounts,
@@ -72,6 +73,15 @@ export interface TopologyIndexTreeRowProps {
    */
   domainCensus?: ReadonlyMap<string, DomainCensusRow> | null;
   labels: TopologyIndexTreeRowLabels;
+  /**
+   * What the panel's own search field holds, when it holds anything.
+   *
+   * The row is what the filter left behind, so it has to show **where** the query
+   * landed. Measured 2026-09-19: INDEX filtered 125 concepts down to two and marked
+   * nothing in either — the reader was left to find the word themselves, on an 11px
+   * label. The palette beside it on the same screen has marked its rows for months.
+   */
+  query?: string;
 }
 
 /**
@@ -106,6 +116,7 @@ export function TopologyIndexTreeRow({
   maxDomainDescendantCount,
   domainCensus = null,
   labels,
+  query,
 }: TopologyIndexTreeRowProps) {
   const { node, children } = entry;
   const hasChildren = children.length > 0;
@@ -224,7 +235,9 @@ export function TopologyIndexTreeRow({
         <OntologyMapKindGlyph kind={node.kind} size={13} className="justify-self-center" />
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-1.5">
-            <span className="min-w-0 flex-1 truncate">{node.display ?? node.title}</span>
+            <span className="min-w-0 flex-1 truncate">
+              <HighlightedText text={node.display ?? node.title} query={query} />
+            </span>
             {agentAttributed && labels.agentBadge ? (
               <span
                 data-testid="topology-index-agent-badge"
@@ -324,6 +337,7 @@ export function TopologyIndexTreeRow({
               maxDomainDescendantCount={maxDomainDescendantCount}
               domainCensus={domainCensus}
               labels={labels}
+              query={query}
             />
           ))}
           </div>

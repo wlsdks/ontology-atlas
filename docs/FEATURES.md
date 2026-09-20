@@ -2921,6 +2921,17 @@ compared the whole `kind:slug`. All three now call `findNameMatch` and `idSearch
 in `shared/lib/node-name-match`, which is the single contract; the palette's ranking
 stays its own, because only it ranks. `nameIncludes` retired with its last caller.
 
+**INDEX marks where the query landed** (2026-09-19). The panel's own search field
+filtered 125 concepts down to two and marked nothing in either, on an 11px label,
+while the palette on the same screen had been marking its rows for months — the
+filter said which rows survived, nothing said where. Both index panels now hand their
+trimmed query to `TopologyIndexTreeRow`, which draws the name through
+`HighlightedText`, so a chosung query marks there too (`shared/lib/highlight-match`
+already reads a Hangul keyboard). Measured on the map panel's own surface: the mark's
+ink clears **8.59:1** against its composited background. Rows kept only as the path to
+a match stay unmarked, which is what they are; telling a match apart from the path it
+sits on is a separate open question.
+
 **The palette says how many it found, not how many fitted** (2026-09-19). Each group
 draws at most 20 rows, and both the group heading and the footer counted the drawn
 array — so the limit stood in for the answer. The footer is the one place that names
