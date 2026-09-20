@@ -5,7 +5,7 @@ import { DESTINATION_IDS, destinationsForVaultShape } from './destinations';
 describe('destinationsForVaultShape', () => {
   it('hides the map group for a wiki without a map, keeping agents, MCP and history', () => {
     expect([...destinationsForVaultShape({ map: false, wiki: true })].sort()).toEqual(
-      ['agents', 'git', 'library'].sort(),
+      ['agents', 'automations', 'git', 'library'].sort(),
     );
   });
 
