@@ -12,7 +12,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { isGraphDrawnKind, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { buildProjectChips } from "../lib/project-chips";
-import type { Project } from "@/entities/project";
+import { projectDisplayName, type Project } from "@/entities/project";
 import { cn } from "@/shared/lib/cn";
 import {
   MEANINGFUL_ONTOLOGY_KINDS,
@@ -377,6 +377,7 @@ export function GlobalSearch({
         <div
           className="flex flex-col gap-1 border-b border-[color:var(--color-border-soft)] px-3 py-2"
           aria-label={t('filterAriaLabel')}
+          data-testid="global-search-filter-row"
           onKeyDown={keepEnterOnTheFocusedControl}
         >
           <div className="flex items-center gap-2 overflow-x-auto">
@@ -624,7 +625,11 @@ export function GlobalSearch({
                       otherwise never shows. */}
                   <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-2">
                     <span className="min-w-0 truncate text-[color:var(--color-text-primary)] md:flex-1">
-                      <HighlightedText text={project.name} query={isEmptyQuery ? undefined : query} />
+                      {/* The word this screen draws for the project, with the match still lit. */}
+                      <HighlightedText
+                        text={projectDisplayName(project, locale)}
+                        query={isEmptyQuery ? undefined : query}
+                      />
                     </span>
                     {reason ? (
                       <span
