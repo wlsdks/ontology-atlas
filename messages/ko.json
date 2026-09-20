@@ -202,7 +202,8 @@
         "mcpLink": "직접 띄운 도구에 이 폴더를 내주거나 연결 도구를 붙이는 일은 아래 에이전트 연결(MCP) 칸에서 합니다",
         "recheck": "다시 확인",
         "checking": "찾는 중이에요",
-        "readyHeading": "이 컴퓨터에서 확인됐어요 ({count})",
+        "readyHeading": "이 컴퓨터의 도구 · 확인된 {count}개",
+        "heading": "이 컴퓨터의 도구",
         "othersHeading": "나머지 {count}개 보기",
         "othersHeadingEmpty": "쓸 수 있는 도구 {count}개",
         "noneReady": "확인된 도구가 없어요",
@@ -224,6 +225,7 @@
         "unknownExplainer": "「확인 못 함」은 도구가 없다는 뜻이 아니라 Atlas가 이 컴퓨터에서 찾아낼 방법을 아직 모른다는 뜻이에요. 설치 안내를 쓰거나 MCP로 연결할 수 있지만, 앱 안 대화는 쓰기 전에 먼저 묻는 것이 확인된 도구에서만 열려요.",
         "installGuide": "설치 방법",
         "openChat": "이 도구로 대화 열기",
+        "openChatShort": "대화 열기",
         "loginHint": "이 도구에 로그인이 안 돼 있어요. 터미널에서 한 번 실행해 로그인하면 여기에 나타나요.",
         "loginUnknownHint": "이 도구에 로그인돼 있는지 물었지만 답을 받지 못했어요. 도구는 그대로 있어서 대화는 열립니다. 열다가 거절당하면 터미널에서 한 번 로그인하세요.",
         "diskNote": "대화를 시작하면 Atlas가 그 도구용 설정 폴더를 앱 안에 따로 만들어요. 당신이 그 도구에 해 둔 설정은 건드리지 않아요. 이미 해 둔 로그인은 복사하지 않고 링크만 걸어서, 다시 로그인하지 않아도 되게 해요. 원본은 그대로 한 곳에 있어요.",
@@ -263,7 +265,7 @@
     "projects": "프로젝트",
     "agents": "에이전트",
     "mcp": "MCP",
-    "git": "기록",
+    "git": "Git",
     "getApp": "앱 받기",
     "getAppTitle": "맥 앱을 받으면 폴더를 기억하고, 인터넷 없이 열고, 기록과 AI 연결까지 다룹니다. 윈도우는 준비 중이에요"
   },
@@ -275,7 +277,8 @@
     "views": {
       "guides": "지침",
       "structure": "구조",
-      "coverage": "커버리지"
+      "coverage": "커버리지",
+      "architecture": "아키텍처"
     },
     "sentence": "이 저장소는 에이전트에게 문서 {documents}개로 말하고, 검사 {checks}개를 걸어두었습니다.",
     "checksBreakdown": "훅 스크립트 {hooks}개 · .githooks/ 파일 {gitHooks}개 · package.json 스크립트 {scripts}개",
@@ -401,7 +404,110 @@
     "coverageGapWatched": "어떤 검사도 부르지 않는 도메인",
     "coverageEverywhereStat": "모든 도메인에 닿는 것",
     "reachMirroredLabel": "선언된 짝의 Codex 사본",
-    "reachNamedDirectLabel": "지침이 직접 부른 것"
+    "reachNamedDirectLabel": "지침이 직접 부른 것",
+    "anatomyTitle": "하네스 구조",
+    "anatomyCaption": "에이전트가 이 저장소에서 한 번 일할 때 거치는 자리를, 거치는 순서대로 놓았습니다. 숫자는 이 폴더에서 읽은 파일 수이고, 점수나 등급은 매기지 않습니다.",
+    "anatomyProvenanceLabel": "이 구분은 어디서 왔나",
+    "anatomyProvenance": "부속을 나누는 말은 공개된 네 곳이 대체로 같게 씁니다. Fowler·Böckeler 「Harness engineering for coding agent users」가 알려주는 것(guides)과 지켜보는 것(sensors)을 나눴고, arXiv 2609.00006 「Harness Engineering: Anatomy, Architecture, and Evolution of Coding Agents」(CC BY 4.0)가 일곱 부속(루프·모델 연결·도구·기억과 맥락·안전과 권한·오케스트레이션·확장)을 셌습니다. OpenAI 「Harness engineering」과 Codex AGENTS.md 문서는 뿌리에서 아래로 합쳐 읽는 지침 사슬을, Anthropic 「Effective harnesses for long-running agents」는 맥락 창이 바뀌어도 일이 이어지게 하는 장치를 설명합니다. 일곱 중 다섯은 저장소 파일로 셀 수 있고, 루프와 모델은 셀 수 없습니다.",
+    "anatomyTellsCaption": "에이전트가 손대기 전에 읽거나 받는 것입니다.",
+    "anatomyGatesCaption": "말이 아니라 실제로 멈추게 하는 것입니다.",
+    "anatomyWatchesCaption": "하고 난 뒤에 도는 것입니다. 막지는 않습니다.",
+    "anatomyToolBand": "저장소가 정하지 않는 것",
+    "anatomyToolCaption": "하네스의 한가운데인데도 이 폴더의 파일로는 알 수 없는 자리입니다. 비어 있어서가 아니라, 답이 여기 없어서 비워 둡니다.",
+    "anatomyAbsent": "아직 없음",
+    "anatomyMore": "그 외 {count}개",
+    "anatomyPermissionSplit": "허용 {allow} · 물어봄 {ask} · 금지 {deny}",
+    "anatomyApprovalGate": "{config}의 훅은 도구 안에서 사람이 한 번 신뢰해야 돕니다. 그 승인은 파일에 남지 않아서 여기서는 읽을 수 없습니다.",
+    "anatomySlots": {
+      "always": {
+        "title": "항상 읽는 것",
+        "body": "일을 시작하기 전에 무조건 읽는 지침입니다. 여기 없는 말은 에이전트가 그때그때 찾아야 합니다."
+      },
+      "scoped": {
+        "title": "경로에 따라 붙는 것",
+        "body": "그 폴더의 파일을 건드릴 때만 따라붙는 지침입니다. 항상 읽는 쪽을 짧게 유지하는 방법입니다."
+      },
+      "tools": {
+        "title": "쓸 수 있는 도구",
+        "body": "이 저장소가 에이전트 연결(MCP)로 붙여 둔 서버입니다. 에이전트가 손을 뻗을 수 있는 범위입니다."
+      },
+      "toolGates": {
+        "title": "도구를 쓰기 전에 막는 것",
+        "body": "도구를 부르기 직전에 돌아서 거절할 수 있는 훅입니다. 스크립트가 디스크에 있다는 뜻이고, 실제로 막은 적이 있는지는 파일로 알 수 없습니다."
+      },
+      "permissions": {
+        "title": "아예 못 하게 해둔 것",
+        "body": "설정의 금지·확인 항목입니다. 경로를 풀 필요도 없이 먼저 걸리고, 훅보다 위에 있습니다."
+      },
+      "gitGates": {
+        "title": "커밋·푸시 때 걸리는 것",
+        "body": ".githooks/의 파일입니다. 사람이 손으로 하든 에이전트가 하든 같은 자리에서 걸립니다."
+      },
+      "watchers": {
+        "title": "하고 난 뒤 지켜보는 것",
+        "body": "도구를 쓴 뒤나 턴이 끝날 때 도는 훅입니다. 막지 않고 기록하거나 알려줍니다."
+      },
+      "checks": {
+        "title": "명령으로 도는 검사",
+        "body": "package.json의 lint·typecheck·test 스크립트입니다. 선언을 셀 뿐, 돌았는지는 모릅니다."
+      },
+      "discoveredTests": {
+        "title": "이름으로 찾아 도는 테스트",
+        "body": "어느 명령에도 이름이 적히지 않지만 러너가 스스로 찾아 도는 테스트 파일입니다."
+      },
+      "loop": {
+        "title": "에이전트 루프와 모델",
+        "body": "무엇을 먼저 읽을지, 언제 멈출지, 맥락이 꽉 차면 무엇을 버릴지, 어떤 모델을 쓸지는 에이전트 도구가 정합니다. 저장소를 아무리 읽어도 알 수 없고, 도구를 바꾸면 같은 지침으로도 결과가 달라집니다."
+      },
+      "pipeline": {
+        "title": "올린 뒤 도는 파이프라인",
+        "body": ".github/workflows/의 파일입니다. 여기 적힌 일은 코드가 올라간 뒤에 돌아서, 내 컴퓨터에서 지나간 것도 잡습니다."
+      },
+      "skills": {
+        "title": "부를 때 오는 스킬",
+        "body": "평소에는 이름만 보이고, 필요할 때 펼쳐지는 작업 설명서입니다. 항상 읽는 지침을 짧게 두고도 깊이 있게 만드는 방법입니다."
+      },
+      "subagents": {
+        "title": "따로 보내는 에이전트",
+        "body": "자기 맥락을 갖고 따로 도는 일꾼의 브리프입니다. 같은 이름의 Codex·Claude 사본은 한 번만 셉니다."
+      },
+      "blind": {
+        "title": "에이전트 눈에서 빼둔 것",
+        "body": "에이전트가 보면 안 된다고 적어 둔 파일입니다. 저장소는 적어 둘 뿐이고, 지키는지는 그 도구가 정합니다.",
+        "hintLabel": "도구마다 파일 이름이 다릅니다",
+        "hint": "도구별로 읽는 파일: Cursor `.cursorignore`, `.cursorindexingignore` · Windsurf `.codeiumignore` · Gemini Code Assist `.aiexclude` · Gemini 명령줄 도구(CLI) `.geminiignore` · JetBrains `.aiignore`. JetBrains 제품은 앞의 셋도 뿌리에 있으면 같이 지킵니다. `.claudeignore` 라는 파일은 없습니다. Claude Code 제품은 파일 탐색에 `.gitignore` 파일을 쓰고, 나머지는 설정의 금지 항목으로 막습니다. `.agentignore` 파일은 아직 제안이라 표준이 아닙니다."
+      }
+    },
+    "anatomyUnits": {
+      "always": "문서 {count}개",
+      "scoped": "문서 {count}개",
+      "tools": "서버 {count}개",
+      "toolGates": "훅 {count}개",
+      "permissions": "항목 {count}개",
+      "gitGates": "파일 {count}개",
+      "watchers": "훅 {count}개",
+      "checks": "스크립트 {count}개",
+      "discoveredTests": "파일 {count}개",
+      "loop": "{count}",
+      "pipeline": "워크플로 {count}개",
+      "skills": "스킬 {count}개",
+      "subagents": "브리프 {count}개",
+      "blind": "파일 {count}개"
+    },
+    "anatomyFillHere": "이런 것이 사는 자리",
+    "anatomyFillCopy": "경로 복사",
+    "anatomyFillCopied": "복사함",
+    "anatomyFillCopyAria": "경로 복사: {path}",
+    "anatomyAlwaysWeight": "매 턴 읽는 분량 {size}",
+    "anatomyAlwaysWeightLabel": "이 분량이 왜 중요한가",
+    "anatomyAlwaysWeightHint": "이 파일들은 에이전트가 코드를 한 줄도 보기 전에 읽습니다. 매 턴, 매 세션, 어느 도구에서나 같은 값을 치릅니다. 문서 수는 이것을 말해주지 못합니다. 2 KB 문서 3개와 40 KB 문서 3개는 똑같이 「3개」이고, 그 차이가 하네스가 다루는 것입니다. Codex 에이전트는 뿌리 AGENTS.md 파일과 작업 경로의 하위 파일을 합쳐 읽다가 한도를 넘으면 말없이 잘라냅니다. 파일별 크기와 한도는 「지침」 보기에 있습니다.",
+    "anatomySilentGuards": "설정이 이름을 부르는데 디스크에 없는 스크립트 {count}개: {scripts}. 이때는 오류도 안 나고 아무 일도 일어나지 않습니다. 막아줄 거라 믿은 자리가 조용히 비어 있습니다.",
+    "anatomyChainWeight": "가장 깊은 사슬에서 더 읽는 분량 {size}, 매 턴 합계 {total}: {path}",
+    "anatomyChainWeightLabel": "사슬이 어떻게 합쳐지나",
+    "anatomyChainWeightHint": "에이전트 도구는 저장소 뿌리의 AGENTS.md 파일부터 지금 일하는 폴더까지 내려오면서 만나는 파일을 순서대로 이어 붙여 읽습니다. 디렉터리마다 한 파일까지이고, 가까운 파일이 앞의 내용을 덮습니다. 그래서 한 턴의 값은 저장소 하나에 하나가 아니라, 항상 읽는 분량에 그 폴더가 더하는 만큼입니다. 여기 적은 값은 가장 깊은 사슬 기준이라 가장 비싼 경우이고, 다른 폴더에서 일하면 그보다 적습니다.",
+    "anatomyBrief": "에이전트에게 넘기기",
+    "anatomyBriefCopied": "복사함",
+    "anatomyBriefAria": "이 화면을 에이전트에게 넘길 글로 복사"
   },
   "architecture": {
     "eyebrow": "코드 아키텍처",
@@ -710,7 +816,7 @@
       },
       "relations": {
         "title": "선은 관계예요",
-        "body": "실선은 이 안에 들어 있다는 뜻, 점선은 이것에 기대고 있다는 뜻이에요. 여기 범례가 항상 알려줘요."
+        "body": "실선은 이 안에 들어 있다는 뜻, 점선은 이것에 기대고 있다는 뜻이에요. ? 를 누르면 키보드 단축키 안내에서 다시 볼 수 있어요."
       },
       "tryClick": {
         "title": "직접 눌러보세요",
@@ -1002,8 +1108,8 @@
       "placeholderWithProjects": "개념 · 프로젝트 검색: 한·영 혼합 OK",
       "placeholderOntologyOnly": "개념 검색: 한·영 혼합 OK",
       "filterAriaLabel": "온톨로지 필터",
-      "kindLabel": "Kind",
-      "projectLabel": "Project · {count}",
+      "kindLabel": "종류",
+      "projectLabel": "프로젝트 · {count}",
       "clearFilter": "필터 해제",
       "emptyNoCorpus": "아직 색인된 개념·글이 없어요. 글 머리말에 적거나 여기서 저장·편집해 첫 개념을 만들면 여기로 자라요.",
       "emptyIndexed": "{count}개 항목이 색인되어 있어요. 한·영 모두 OK.",
@@ -1885,7 +1991,7 @@
       "projectCount": "프로젝트 {count}개",
       "ctaNewProject": "새 프로젝트",
       "lede": "프로젝트를 골라 목적, 구성, 구축 상세를 살펴보세요.",
-      "sampleScopeNote": "지금 열어 둔 샘플 하나만 셉니다. 다른 샘플은 지도 첫 화면 카드에서 바꿀 수 있습니다.",
+      "sampleScopeNote": "이 개수는 지금 열어 둔 샘플 하나만 센 거예요. 다른 샘플은 지도 첫 화면 카드에서 바꿀 수 있어요.",
       "activityHeading": "최근 활동",
       "activityCaption": "최근 7일 · 마지막으로 고친 때",
       "activityAgoToday": "오늘",
@@ -1906,7 +2012,7 @@
       "footUpdated": "갱신 {date} · {path}",
       "nextSlotTitle": "다음 프로젝트 추가",
       "nextSlotSub": "폴더에 프로젝트 문서를 추가하면 같은 카드로 즉시 나타납니다.",
-      "nextSlotHumanLead": "가장 쉬운 방법은 위 「새 프로젝트」 버튼이에요. 아래 두 줄은 터미널·AI 에이전트로 바로 만드는 선택 방법입니다.",
+      "nextSlotHumanLead": "가장 쉬운 방법은 위 「새 프로젝트」 버튼이에요. 아래 두 줄은 터미널·AI 에이전트로 바로 만드는 선택 방법이에요.",
       "nextSlotCodeChipsCaption": "개발자·에이전트용 선택 경로",
       "nextSlotCliLabel": "CLI",
       "nextSlotCliCommand": "node $ATLAS/cli/src/index.mjs add --kind project",
@@ -1958,7 +2064,7 @@
       "domainOverlapNote": "여러 도메인에 속한 개념은 도메인마다 한 번씩 세어져요. 행의 합이 위 역량·요소 수보다 클 수 있어요.",
       "bodyCardTitle": "개요",
       "bodyCardGcap": "",
-      "bodyEmptyHint": "아직 작성된 본문이 없습니다.",
+      "bodyEmptyHint": "아직 작성된 본문이 없어요.",
       "briefAskTitle": "에이전트에게 정리 맡기기",
       "briefAskUnstructured": "이 본문은 아직 정리되지 않았어요. 에이전트가 지도를 읽고 네 단락(무엇을 하는가 · 일이 어떻게 흐르는가 · 어디가 고르지 않은가 · 다음에 볼 곳)으로 다시 쓰게 맡길 수 있어요. 결과는 자료실에서 검토한 뒤에 남아요.",
       "briefAskStructured": "다시 정리하려면 같은 안내를 에이전트에게 주세요. 결과는 자료실에서 검토한 뒤에 남아요.",
@@ -1970,12 +2076,12 @@
       "briefPrompt": "{slug}의 개요를 정리해 줘. 먼저 get_concept(\"{slug}\", body: \"full\")와 query_ontology('{'operation: \"project_map\", project: \"{slug}\"'}')로 지도를 읽고, 도메인·역량·요소 문서에서 근거를 확인해. 그다음 {doc}의 본문을 ## 제목 네 개로 다시 써 줘: 1) 무엇을 하는가 (두세 문장), 2) 일이 어떻게 흐르는가 (번호 목록, 각 단계에 해당 도메인을 [[domains/…]] 위키링크로), 3) 어디가 고르지 않은가 (글머리, 역량은 많은데 요소가 적은 곳과 그 반대), 4) 다음에 볼 곳 (글머리, 항목마다 근거 문서 위키링크). 지도에 없는 사실은 쓰지 마. 쓰기 전에 get_concept이 준 mtime을 expected_mtime으로 넘겨 patch_concept으로 본문만 바꿔. 내가 자료실에서 검토할게.",
       "connectedTitle": "연결된 프로젝트",
       "connectedRelation": "서로 연결",
-      "connectedEmpty": "아직 다른 프로젝트와 연결되지 않았습니다.",
+      "connectedEmpty": "아직 다른 프로젝트와 연결되지 않았어요.",
       "connectedEmptyAction": "프로젝트 목록 열기",
-      "connectedEmptyHint": "두 번째 프로젝트 문서를 만들어 서로 연결하면 여기 나타납니다.",
+      "connectedEmptyHint": "두 번째 프로젝트 문서를 만들어 서로 연결하면 여기 나타나요.",
       "connectedMoreNote": "그 외 연결 {count}개 더",
       "handoffTitle": "AI에게 이어서 맡기기",
-      "handoffDesc": "복사한 내용을 Claude·Cursor 같은 AI 도구에 붙여넣으면, AI가 이 프로젝트의 지도를 이어서 읽고 시작합니다.",
+      "handoffDesc": "복사한 내용을 Claude·Cursor 같은 AI 도구에 붙여넣으면, AI가 이 프로젝트의 지도를 이어서 읽고 시작해요.",
       "heroScopeCaption": "이 프로젝트",
       "handoffHumanCaption": "복사되는 내용 미리 보기",
       "handoffCopyLabel": "AI에게 줄 안내 복사",
@@ -2293,8 +2399,8 @@
       "statusSummary": "연결 파일 {ready}/{total}개 준비됨",
       "rootSummaryReady": "이 폴더의 연결 파일은 폴더 자신을 가리키도록 준비됐어요",
       "rootSummaryMissing": "이 폴더 기준으로 설정돼요 · 다른 코드 폴더에서 열려면 절대경로가 필요해요",
-      "connectionAriaLabel": "도구별 연결 파일 상태",
-      "connectionClaudeCursor": "Claude Code · Cursor",
+      "connectionStatusHeading": "도구별 연결 파일 상태",
+      "connectionClaudeCursor": "Claude Code",
       "connectionClaudeCursorCheck": "/mcp로 확인",
       "connectionCodex": "Codex",
       "connectionCodexCheck": "codex mcp list로 확인",
@@ -2303,7 +2409,7 @@
       "connectionReady": "파일 준비됨",
       "connectionNeedsReview": "점검",
       "connectionCheckReady": "연결 파일이 준비됐어요. 에이전트를 다시 켜면 이 폴더를 읽기 시작해요.",
-      "connectionCheckPending": "연결 파일 {ready}/{total}개 준비됨. 나머지는 도구 행의 연결 버튼으로 만들어요.",
+      "connectionCheckPending": "나머지는 도구 행의 연결 버튼으로 만들어요.",
       "connectionHint": ".mcp.json.example은 다른 폴더에서 쓸 본보기라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.",
       "boundaryTitle": "밖의 도구를 잇는 자리예요",
       "boundaryDesc": "이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. 폴더 밖을 건드리기 전에 먼저 묻는 앱 안 Claude Agent 대화는 별도 화면입니다.",
@@ -3436,12 +3542,23 @@
     "step1TitleManual": "연결 설정 만들기",
     "step1Desc": "쓰는 도구의 버튼을 누르면 이 폴더를 함께 읽고 쓸 준비가 돼요.",
     "step2Title": "에이전트 다시 시작",
-    "step2Desc": "Claude Code·Codex·Cursor·Antigravity를 껐다 켜면 연결이 반영돼요.",
+    "step2Desc": "방금 연결한 도구를 껐다 켜면 반영돼요. 나머지는 그대로 둬도 됩니다.",
     "step3Title": "연결 확인",
     "step3Desc": "에이전트가 이 지도를 읽기 시작하면 여기에 표시돼요.",
     "advancedToggle": "고급 · 자세한 검증",
     "connecting": "연결 중…",
     "actionFailed": "안 됐어요. 다시 눌러 주세요.",
+    "short": {
+      "connect": "연결",
+      "created": "만들었어요",
+      "ready": "준비됨",
+      "copyConfig": "설정 복사",
+      "copyCommand": "명령 복사",
+      "copyCorrect": "교체본 복사",
+      "copied": "복사됨",
+      "connecting": "연결 중…",
+      "failed": "안 됐어요"
+    },
     "connectClaudeCode": "Claude Code에 연결",
     "claudeCodeDone": "이 폴더에 .mcp.json을 만들었어요",
     "claudeCodeReady": ".mcp.json 준비됨",
@@ -3509,10 +3626,10 @@
     "dismiss": "나중에"
   },
   "atlasGit": {
-    "tileLabel": "기록",
-    "tileTitleClean": "기록: 모두 커밋했어요",
-    "tileTitleDirty": "기록: 커밋하지 않은 변경 {count}건",
-    "title": "기록",
+    "tileLabel": "Git",
+    "tileTitleClean": "Git: 모두 커밋했어요",
+    "tileTitleDirty": "Git: 커밋하지 않은 변경 {count}건",
+    "title": "Git",
     "close": "닫기",
     "loading": "이 폴더의 변경을 확인하는 중…",
     "loadError": "이 폴더의 변경을 읽지 못했어요. 폴더가 그대로 있는지 확인한 뒤 다시 시도해 주세요.",
@@ -3686,11 +3803,28 @@
     "restoreDone": "{path}를 이 커밋 시점 내용으로 되돌렸어요. 커밋하지 않은 변경으로 남아 있어요.",
     "restoreDoneOthers": "이 커밋이 바꾼 다른 문서 {count}개는 그대로예요.",
     "restoreFailedSafe": "문서는 바뀌지 않았어요.",
+    "restoreAbsentDeleted": "이 걸음은 이 문서를 지웠어요. 되돌릴 내용은 아래 걸음들에 있어요",
     "restoreConceptDoc": "이 개념의 문서 {path}",
     "docHistoryTitle": "이 문서를 바꾼 다른 커밋",
     "docHistoryOnly": "이 문서를 바꾼 커밋은 이것뿐이에요",
     "docHistoryOlder": "더 오래된 커밋도 있어요. 왼쪽 목록에서 이전 커밋을 더 읽으면 보여요",
-    "docHistoryJumpHint": "누르면 그 커밋으로 건너뛰어요"
+    "docHistoryJumpHint": "누르면 그 커밋으로 건너뛰어요",
+    "changedDocsAria": "바뀐 문서 고르기",
+    "docReaderInfoBox": "정보칸",
+    "docReaderAddedLine": "추가된 줄:",
+    "docReaderRemovedLine": "지워진 줄:",
+    "docReaderNew": "새 문서",
+    "docReaderChanged": "고친 문서",
+    "docReaderDeleted": "지운 문서",
+    "docReaderRenamed": "이름 바꾼 문서",
+    "docReaderFileNew": "새 파일",
+    "docReaderFileChanged": "고친 파일",
+    "docReaderFileDeleted": "지운 파일",
+    "docReaderFileRenamed": "이름 바꾼 파일",
+    "docReaderRenamedFrom": "이전 이름 {path}",
+    "docReaderPartial": "문서 전체를 읽지 못해 바뀐 부분만 보여요",
+    "docReaderLong": "문서가 길어서 바뀐 부분만 보여요",
+    "docReaderInfoBoxUnchanged": "정보칸 · 바뀐 줄 없음"
   },
   "agentFiles": {
     "header": "에이전트 파일",
@@ -4498,7 +4632,7 @@
       "aria": "에이전트 · 에이전트 연결(MCP) 보기",
       "agents": "에이전트",
       "mcp": "MCP",
-      "mcpCount": "켜진 커넥터"
+      "mcpCount": "켜 둔 연결 도구 수"
     },
     "title": "에이전트",
     "lede": "Atlas가 이 컴퓨터에 이미 있는 코딩 도구를 찾습니다.",
@@ -4740,10 +4874,29 @@
         "preview": "검토한 미리보기",
         "decision": "판단 결속"
       },
-      "authority": { "observed": "관측됨", "unavailable": "확인할 수 없음", "unknown": "미확인" },
-      "permission": { "pending": "대기 중", "allowed": "허용", "rejected": "거절", "unknown": "미확인" },
-      "execution": { "completed": "완료", "failed": "실패", "not_run": "실행 안 함", "unknown": "미확인" },
-      "readback": { "matched": "정확한 바이트 일치", "mismatched": "바이트가 다름", "missing": "누락", "unknown": "미확인" }
+      "authority": {
+        "observed": "관측됨",
+        "unavailable": "확인할 수 없음",
+        "unknown": "미확인"
+      },
+      "permission": {
+        "pending": "대기 중",
+        "allowed": "허용",
+        "rejected": "거절",
+        "unknown": "미확인"
+      },
+      "execution": {
+        "completed": "완료",
+        "failed": "실패",
+        "not_run": "실행 안 함",
+        "unknown": "미확인"
+      },
+      "readback": {
+        "matched": "정확한 바이트 일치",
+        "mismatched": "바이트가 다름",
+        "missing": "누락",
+        "unknown": "미확인"
+      }
     }
   },
   "mcp": {
@@ -4752,7 +4905,8 @@
     "tablistAriaLabel": "MCP 구역",
     "shareHeading": "이 폴더 내주기",
     "connectorsHeading": "연결 도구",
-    "connectorsHeadingCount": "연결 도구 · 켜 둔 {count}개",
+    "connectorsHeadingCount": "연결 도구 · {total}개 중 {on}개 켜짐",
+    "connectorsNeedFolder": "연결 도구는 폴더 안에 적힙니다. 위에서 폴더를 열면 여기에 나타나요.",
     "connectorsCountTitle": "켜 둔 연결 도구 수"
   },
   "connectors": {
@@ -4766,6 +4920,7 @@
     "noFolderBody": "연결 도구는 열어 둔 폴더 안에 적힙니다. 폴더를 열고 나서 붙이세요.",
     "loading": "이 폴더의 연결 도구 목록을 읽는 중입니다.",
     "scanning": "이 컴퓨터에 이미 등록된 것을 읽는 중입니다.",
+    "discoveryFailed": "이 컴퓨터에 이미 등록된 것을 읽지 못했습니다. 직접 적어서 붙일 수는 있고, 다른 곳에서 쓰는 이름과 겹쳐도 알려 주지 못합니다.",
     "onOfTotal": "{total}개 중 {on}개 켜짐",
     "on": "켬",
     "off": "끔",
@@ -5546,7 +5701,11 @@
       "emptyDescription": "지도를 갤럭시 보기로 바꾸고 개념 몇 개를 골라 이름과 목적을 붙이면, 그 묶음이 여기에 남아 같은 범위로 다시 돌아갈 수 있습니다. 「지도에서 고르기」가 그 자리로 데려갑니다.",
       "memberCount": "개념 {count, number}개",
       "referenceCount": "참고 자료 {count, number}개",
-      "shape": { "name": "이름", "members": "개념 수", "purpose": "남긴 목적" },
+      "shape": {
+        "name": "이름",
+        "members": "개념 수",
+        "purpose": "남긴 목적"
+      },
       "noPurpose": "남긴 목적이 없습니다",
       "viewInGalaxy": "지도에서 보기",
       "viewInGalaxyNamed": "{name} 지도에서 보기",
@@ -5576,7 +5735,11 @@
       "malformedTitle": "자동 점검 파일을 봐야 합니다",
       "malformedDescription": ".ontology-atlas/rounds.json을 읽지 못해 그대로 두었습니다. 고치거나 지운 뒤 다시 읽으세요.",
       "retry": "다시 읽기",
-      "shape": { "name": "이름", "cadence": "주기", "next": "다음 실행" },
+      "shape": {
+        "name": "이름",
+        "cadence": "주기",
+        "next": "다음 실행"
+      },
       "emptyTitle": "아직 스스로 도는 것이 없습니다",
       "emptyDescription": "자동 점검을 등록하세요. 한 시간마다 모든 문서가 원문과 여전히 맞는지 확인하고, 아침마다 서비스가 보낸 것을 다시 읽어 바뀐 문서를 다시 씁니다.",
       "kind": {

@@ -771,6 +771,41 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('points the Agents destination at the three e2e specs that drive it', () => {
+    /*
+     * Probe for the 2026-09-19 rule. Before it, every one of these files suggested **no**
+     * Playwright spec, while `mcp-connector-add.spec.ts` is what proves the installed app's
+     * `install=` deep link still opens the connectors dialog — the named falsifier of the
+     * decision that made MCP a tab of this page. Delete the rule and this goes red.
+     */
+    const command =
+      'pnpm exec playwright test tests/e2e/mcp-connector-add.spec.ts ' +
+      'tests/e2e/agent-connect-panel-census.spec.ts tests/e2e/web-surface-smoke.spec.ts';
+    for (const path of [
+      'src/views/agents/ui/AgentsPage.tsx',
+      'src/views/mcp/ui/McpPage.tsx',
+      'src/views/mcp-redirect/ui/McpRedirectPage.tsx',
+      'src/app/agents-workspace/index.tsx',
+      'src/features/mcp-connectors/ui/ConnectorsPanel.tsx',
+      'src/widgets/app-settings-menu/ui/AgentSetupSection.tsx',
+    ]) {
+      assert.ok(
+        domainCommands(suggestFocusedChecks([path])).includes(command),
+        `${path} suggested no e2e for the Agents destination`,
+      );
+    }
+  });
+
+  it('points the runtime list only at the spec that measures it', () => {
+    // Naming the connectors specs here would be a mapping that does not measure this file:
+    // only the web smoke registers the card a browser draws instead of the runtime list.
+    const commands = domainCommands(
+      suggestFocusedChecks(['src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx']),
+    );
+    assert.ok(commands.includes('pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts'));
+    assert.ok(!commands.some((command) => command.includes('mcp-connector-add')));
+  });
+
   it('suggests the web surface smoke when a desktop capability bridge changes', () => {
     const result = suggestFocusedChecks(['src/shared/lib/tauri-secrets.ts']);
 
@@ -810,6 +845,33 @@ describe('focused check suggestions', () => {
       'pnpm exec tsc --noEmit',
       'pnpm build',
     ]);
+  });
+
+  /*
+   * The shell renders above every page's `Suspense` boundary, so a hook that defers to the
+   * client there breaks the prerender of routes it never touched. On 2026-09-20 `AppShell`
+   * gained a `useSearchParams` call and `pnpm build` failed on `/en/agents` and on
+   * `/en/ontology/edit`, a redirect page the change had nothing to do with; five Playwright
+   * shards went red behind that one broken build. Nothing in the changed-path list asked for a
+   * build, because the unit, contract and e2e lanes all run against a dev server where it
+   * never fails, and the existing build rule watches the export's *configuration* rather than
+   * the code that has to survive it.
+   *
+   * Both directions, because a rule that recommends the slowest command in the advisor has to
+   * be narrow: the shell asks for a build, an ordinary page does not.
+   */
+  it('suggests a real export when the app shell changes, and not for an ordinary page', () => {
+    const shell = suggestFocusedChecks(['src/app/providers/AppShell.tsx']);
+    assert.ok(
+      shell.commands.some((row) => row.command === 'pnpm build'),
+      'a shell change must ask for a real static export',
+    );
+
+    const page = suggestFocusedChecks(['src/views/agents/ui/AgentsPage.tsx']);
+    assert.ok(
+      !page.commands.some((row) => row.command === 'pnpm build'),
+      'an ordinary page must not drag the slowest command in the advisor with it',
+    );
   });
 
   it('suggests lint, contracts, and the a11y ratchets for Next app route entries', () => {
