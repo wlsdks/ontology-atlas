@@ -139,7 +139,8 @@ for (const locale of ['en', 'ko'] as const) {
     const harness = await open(page, MIN, locale);
     // The promise the runtime name already yields to keep: idle, the picker says its whole word.
     await expect(page.getByTestId('acp-chat-mode')).toBeVisible();
-    expect(await modeWordIsWhole(page)).toBe(true);
+    const idleFit = await modeWordIsWhole(page);
+    expect(idleFit?.whole, `the idle mode showed a cut word: ${JSON.stringify(idleFit)}`).toBe(true);
 
     await startTurn(page, harness);
     await expect(page.getByTestId('acp-chat-mode')).toBeHidden();
@@ -147,6 +148,7 @@ for (const locale of ['en', 'ko'] as const) {
     await harness.answer(page, 'Only the architecture page is stale.');
     await expect(page.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready');
     await expect(page.getByTestId('acp-chat-mode')).toBeVisible();
-    expect(await modeWordIsWhole(page), 'it came back cut').toBe(true);
+    const backFit = await modeWordIsWhole(page);
+    expect(backFit?.whole, `it came back cut: ${JSON.stringify(backFit)}`).toBe(true);
   });
 }

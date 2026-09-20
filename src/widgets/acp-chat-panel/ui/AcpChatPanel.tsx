@@ -1263,7 +1263,17 @@ export function AcpChatPanel({
               })}
               data-testid="acp-chat-mode"
               quiet
-              className={cn(PICKER_MIN_WIDTH_CLASS, PICKER_MAX_WIDTH_CLASS, 'shrink')}
+              /*
+               * ⚠️ **It does not shrink below its own word.** Measured on the CI runner: with a
+               * turn running and the composer at 342px, the Korean mode name needed 63px and its
+               * label was given 59 — the container had grown 80px wider than the idle case that
+               * fits, and the label's box had *narrowed*, because the Stop chip took the row. So
+               * `@min-[308px]/composer` saw 342, concluded there was room, and rendered a cut
+               * word. A container query cannot measure text; this is the half of that seam the
+               * picker itself can close. It now keeps its content width, and the query decides
+               * only whether the row appears at all.
+               */
+              className={cn(PICKER_MIN_WIDTH_CLASS, PICKER_MAX_WIDTH_CLASS, 'shrink-0')}
             />
           ) : null}
         </div>
