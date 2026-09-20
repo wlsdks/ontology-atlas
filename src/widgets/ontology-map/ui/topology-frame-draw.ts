@@ -3597,15 +3597,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         (egoState === "neighbor" && isEgoNeighborLabelExempt(node.id, egoNeighborLabelEligibleIds));
       labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
     }
-    const priority = constellationKept
-      ? 0
-      : galaxyOn && (node.kind === "project" || node.kind === "domain")
+    const priority =
+      galaxyOn && (node.kind === "project" || node.kind === "domain") && !pathKept && !constellationKept
         ? 1
         : resolveLabelPriority({
             kind: node.kind,
             isSelected: egoState === "center",
             isHovered,
             isHub: node.isHub,
+            // A lens was opened to show these; they win the slot (`resolveLabelPriority`).
+            isLensSubject: pathKept || constellationKept,
           });
     // The vertical extent is **measured from the font**. The old approximation
     // (`ascent = fontSize`, `descent = 2` constant) overshot above and undershot

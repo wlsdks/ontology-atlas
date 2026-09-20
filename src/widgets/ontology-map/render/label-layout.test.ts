@@ -301,6 +301,7 @@ describe("노드 도형 예약 — 라벨이 노드 위에 글자를 얹지 않�
   });
 });
 
+<<<<<<< HEAD
 describe("floorFlipBaseline", () => {
   const rect = { left: 0, right: 1448, top: 112, bottom: 806 - 72 };
   it("a slot under the floor band moves above the node when that slot is safe", () => {
@@ -315,5 +316,28 @@ describe("floorFlipBaseline", () => {
   });
   it("does not flip when the slot above is outside the safe rect either", () => {
     expect(floorFlipBaseline(1500, 772, 712, 741, rect, 806)).toBeNull();
+=======
+describe("resolveLabelPriority — a lens subject wins the slot", () => {
+  const cap = { kind: "capability" as const, isSelected: false, isHovered: false, isHub: false };
+
+  it("puts a path or constellation node in the top band, above a domain and the project", () => {
+    expect(resolveLabelPriority({ ...cap, isLensSubject: true })).toBe(0);
+    expect(resolveLabelPriority({ ...cap, isLensSubject: true })).toBeLessThan(
+      resolveLabelPriority({ ...cap, kind: "domain" }),
+    );
+    expect(resolveLabelPriority({ ...cap, isLensSubject: true })).toBeLessThan(
+      resolveLabelPriority({ ...cap, kind: "project" }),
+    );
+  });
+
+  it("leaves every other ranking where it was", () => {
+    expect(resolveLabelPriority(cap)).toBe(4);
+    expect(resolveLabelPriority({ ...cap, isSelected: true })).toBe(0);
+    expect(resolveLabelPriority({ ...cap, isHovered: true })).toBe(1);
+    expect(resolveLabelPriority({ ...cap, isHub: true })).toBe(2);
+    expect(resolveLabelPriority({ ...cap, kind: "domain" })).toBe(3);
+    expect(resolveLabelPriority({ ...cap, kind: "element" })).toBe(5);
+    expect(resolveLabelPriority({ ...cap, isLensSubject: false })).toBe(4);
+>>>>>>> origin/loop/map-iteration-18
   });
 });

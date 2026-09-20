@@ -175,12 +175,22 @@ export function OntologyMapEdgePanel({
             {labels.declaredByLabel}
             {updatedAtLabel ? ` · ${updatedAtLabel}` : ""}
           </span>
+          {/*
+            The label is the document's name and nothing else. It used to read
+            `{slug}.md → {openDoc}`, an arrow between a name and an action inside
+            a link that navigates within the app — the decoration `forbidden.md`
+            refuses, and the one shape the label-decoration gate's two scans
+            cannot see (they look for an arrow followed by a tag, or alone in an
+            element). The action stays in the accessible name so a reader still
+            hears what pressing it does.
+          */}
           <Link
             href={declaredBy.href}
+            aria-label={`${declaredBy.slug}.md · ${labels.openDoc}`}
             data-testid="map-edge-declared-by"
             className={controlClass({ shape: "link", className: "truncate font-mono text-label text-[color:var(--map-panel-text-secondary)] hover:text-[color:var(--map-panel-text-primary)]" })}
           >
-            {declaredBy.slug}.md → {labels.openDoc}
+            {declaredBy.slug}.md
           </Link>
         </div>
       ) : null}
