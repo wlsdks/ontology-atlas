@@ -131,3 +131,37 @@ export function isGatewaySurface(pathname: string, ctx: GatewayContext): boolean
 export function stripLocalePrefix(pathname: string): string {
   return pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "") || "/";
 }
+
+/**
+ * Which first-visit guide a screen gets, which is **not** the same question as which rail tile
+ * lights (2026-09-20).
+ *
+ * Three screens answer differently from their destination. The map owns an eight-step journey
+ * with canvas anchors, so the shell draws none. `/project/<slug>` lights the projects tile, but
+ * the projects guide describes the list ("they stand as cards"), so only the list gets it. And
+ * MCP folded into `/agents` as a tab while `/mcp` became a redirect, so the destination is
+ * "agents" on both tabs — the `mcp` guide, whose two pages describe exactly that tab, would
+ * never appear unless the tab is read from the address here.
+ */
+export function resolveGuideDestination({
+  surface,
+  pathname,
+  tab,
+}: {
+  surface: AppNavDestinationId | null;
+  pathname: string;
+  tab: string | null;
+  /*
+   * "map" is excluded in the type, not only at runtime: the guided tour's own id union has no
+   * `map` (that journey is the map view's), and this file may not import a feature's type to
+   * say so. Narrowing here is what lets the shell pass the result straight through.
+   */
+}): Exclude<AppNavDestinationId, 'map'> | null {
+  if (!surface || surface === 'map') return null;
+  if (surface === 'projects') {
+    return stripLocalePrefix(pathname).startsWith('/projects') ? surface : null;
+  }
+  if (surface === 'agents' && tab === 'mcp') return 'mcp';
+  return surface;
+}
+
