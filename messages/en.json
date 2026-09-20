@@ -277,7 +277,8 @@
     "views": {
       "guides": "Guides",
       "structure": "Structure",
-      "coverage": "Coverage"
+      "coverage": "Coverage",
+      "architecture": "Architecture"
     },
     "sentence": "This repository speaks to agents through {documents, plural, one {# document} other {# documents}} and has {checks, plural, one {# check} other {# checks}} in place.",
     "checksBreakdown": "{hooks, plural, one {# hook script} other {# hook scripts}} · {gitHooks, plural, one {# file under .githooks/} other {# files under .githooks/}} · {scripts, plural, one {# package.json script} other {# package.json scripts}}",
@@ -403,7 +404,110 @@
     "coverageGapWatched": "domains no check names",
     "coverageEverywhereStat": "reaches every domain",
     "reachMirroredLabel": "the Codex copy of a declared pair",
-    "reachNamedDirectLabel": "named by a guide directly"
+    "reachNamedDirectLabel": "named by a guide directly",
+    "anatomyTitle": "Harness structure",
+    "anatomyCaption": "The parts an agent meets when it works in this repository, in the order it meets them. Each number is files read from this folder. No score, no grade.",
+    "anatomyProvenanceLabel": "Where these parts come from",
+    "anatomyProvenance": "Four public sources name roughly the same parts. Fowler and Böckeler, “Harness engineering for coding agent users”, split guides from sensors. arXiv 2609.00006, “Harness Engineering: Anatomy, Architecture, and Evolution of Coding Agents” (CC BY 4.0), counts seven subsystems: agent loop, model integration, tools, memory and context, safety and permissions, orchestration, extensibility. OpenAI’s “Harness engineering” and the Codex AGENTS.md guide describe the instruction chain merged root-down, and Anthropic’s “Effective harnesses for long-running agents” describes what carries work across context windows. Five of the seven are countable from a checkout. The loop and the model are not.",
+    "anatomyTellsCaption": "What an agent reads or is handed before it touches anything.",
+    "anatomyGatesCaption": "What actually stops it, rather than asking it to behave.",
+    "anatomyWatchesCaption": "What runs afterwards. None of it blocks.",
+    "anatomyToolBand": "Not decided by this repository",
+    "anatomyToolCaption": "The centre of a harness, and unreadable from this folder. Left blank because the answer is elsewhere, not because nothing is there.",
+    "anatomyAbsent": "None yet",
+    "anatomyMore": "{count} more",
+    "anatomyPermissionSplit": "{allow} allowed · {ask} ask first · {deny} denied",
+    "anatomyApprovalGate": "Hooks in {config} run only once a person has trusted them inside the tool. That approval lives in no file, so it cannot be read here.",
+    "anatomySlots": {
+      "always": {
+        "title": "Read every time",
+        "body": "Guides an agent reads before it starts. Anything not here, it has to go and find."
+      },
+      "scoped": {
+        "title": "Attached by path",
+        "body": "Guides that join only when a file in their folder is touched. This is how the always-read set stays short."
+      },
+      "tools": {
+        "title": "Tools it can reach",
+        "body": "Servers this repository wires up over the agent connection (MCP). This is the reach an agent has."
+      },
+      "toolGates": {
+        "title": "Refuses a tool call",
+        "body": "Hooks that run just before a tool call and can refuse it. It says the script is on disk; whether it ever blocked anything is not readable from files."
+      },
+      "permissions": {
+        "title": "Not allowed at all",
+        "body": "Deny and ask rules in settings. They bite before a path is even resolved, and they outrank every hook."
+      },
+      "gitGates": {
+        "title": "Caught at commit or push",
+        "body": "Files under .githooks/. The same gate whether a person or an agent typed the commit."
+      },
+      "watchers": {
+        "title": "Watches after the fact",
+        "body": "Hooks that run after a tool call or at the end of a turn. They record or warn; they do not block."
+      },
+      "checks": {
+        "title": "Checks a command runs",
+        "body": "package.json lint, typecheck and test scripts. Declarations counted, not runs observed."
+      },
+      "discoveredTests": {
+        "title": "Tests found by name",
+        "body": "Test files no command names, which the runner discovers and runs anyway."
+      },
+      "loop": {
+        "title": "The agent loop and the model",
+        "body": "What gets read first, when to stop, what to drop when the context fills, which model runs: the tool decides all of it. No amount of reading this repository reveals it, and the same guides give different results in a different tool."
+      },
+      "pipeline": {
+        "title": "Runs after it is pushed",
+        "body": "Files under .github/workflows/. They run after the code leaves this machine, so they catch what a local run let past."
+      },
+      "skills": {
+        "title": "Skills, fetched when called",
+        "body": "Task write-ups that stay as names until something needs them. This is how the always-read set stays short without being shallow."
+      },
+      "subagents": {
+        "title": "Sub-agents sent out",
+        "body": "Briefs for workers that run on their own context. A Codex and a Claude copy of one name count once."
+      },
+      "blind": {
+        "title": "Kept out of the agent’s view",
+        "body": "Files that say what an agent must not look at. A repository can write one; whether the tool honours it is the tool’s business.",
+        "hintLabel": "Each product uses a different file name",
+        "hint": "Cursor reads `.cursorignore` and `.cursorindexingignore`, Windsurf `.codeiumignore`, Gemini Code Assist `.aiexclude`, the Gemini command-line tool (CLI) `.geminiignore`, JetBrains `.aiignore`. JetBrains also honours the first three at a repository root. There is no `.claudeignore`: Claude Code uses `.gitignore` for discovery and its settings’ deny list for the rest. `.agentignore` is a proposal, not a standard."
+      }
+    },
+    "anatomyUnits": {
+      "always": "{count, plural, one {# document} other {# documents}}",
+      "scoped": "{count, plural, one {# document} other {# documents}}",
+      "tools": "{count, plural, one {# server} other {# servers}}",
+      "toolGates": "{count, plural, one {# hook} other {# hooks}}",
+      "permissions": "{count, plural, one {# rule} other {# rules}}",
+      "gitGates": "{count, plural, one {# file} other {# files}}",
+      "watchers": "{count, plural, one {# hook} other {# hooks}}",
+      "checks": "{count, plural, one {# script} other {# scripts}}",
+      "discoveredTests": "{count, plural, one {# file} other {# files}}",
+      "loop": "{count}",
+      "pipeline": "{count, plural, one {# workflow} other {# workflows}}",
+      "skills": "{count, plural, one {# skill} other {# skills}}",
+      "subagents": "{count, plural, one {# brief} other {# briefs}}",
+      "blind": "{count, plural, one {# file} other {# files}}"
+    },
+    "anatomyFillHere": "One of these lives at",
+    "anatomyFillCopy": "Copy path",
+    "anatomyFillCopied": "Copied",
+    "anatomyFillCopyAria": "Copy path: {path}",
+    "anatomyAlwaysWeight": "{size} read every turn",
+    "anatomyAlwaysWeightLabel": "Why this size matters",
+    "anatomyAlwaysWeightHint": "These files are read before the agent has seen a line of code, on every turn, in every session, whatever the tool. A count cannot say it: three 2 KB documents and three 40 KB documents are both \"3\", and that difference is the subject. Codex merges the root AGENTS.md with the nested file on the working path and silently truncates past its cap. Per-file sizes against that cap are in the Guides view.",
+    "anatomySilentGuards": "{count, plural, one {# script this config names is not on disk} other {# scripts these configs name are not on disk}}: {scripts}. That produces no block and no error; the guard is simply absent.",
+    "anatomyChainWeight": "the deepest chain, {path}, adds {size} for {total} a turn",
+    "anatomyChainWeightLabel": "How the chain is merged",
+    "anatomyChainWeightHint": "A coding agent concatenates the AGENTS.md files it meets from the repository root down to the folder it is working in, at most one per directory, with the nearer file overriding what came before. So a turn does not have one cost per repository: it is the always-read set plus whatever that folder adds. The figure here is the deepest chain, which is the most expensive case; work in a shallower folder costs less.",
+    "anatomyBrief": "Hand to an agent",
+    "anatomyBriefCopied": "Copied",
+    "anatomyBriefAria": "Copy this reading as text for an agent"
   },
   "architecture": {
     "eyebrow": "CODE ARCHITECTURE",
@@ -4770,10 +4874,29 @@
         "preview": "Reviewed preview",
         "decision": "Decision binding"
       },
-      "authority": { "observed": "Observed", "unavailable": "Unavailable", "unknown": "Unknown" },
-      "permission": { "pending": "Pending", "allowed": "Allowed", "rejected": "Rejected", "unknown": "Unknown" },
-      "execution": { "completed": "Completed", "failed": "Failed", "not_run": "Not run", "unknown": "Unknown" },
-      "readback": { "matched": "Exact bytes matched", "mismatched": "Bytes differed", "missing": "Missing", "unknown": "Unknown" }
+      "authority": {
+        "observed": "Observed",
+        "unavailable": "Unavailable",
+        "unknown": "Unknown"
+      },
+      "permission": {
+        "pending": "Pending",
+        "allowed": "Allowed",
+        "rejected": "Rejected",
+        "unknown": "Unknown"
+      },
+      "execution": {
+        "completed": "Completed",
+        "failed": "Failed",
+        "not_run": "Not run",
+        "unknown": "Unknown"
+      },
+      "readback": {
+        "matched": "Exact bytes matched",
+        "mismatched": "Bytes differed",
+        "missing": "Missing",
+        "unknown": "Unknown"
+      }
     }
   },
   "mcp": {
@@ -5578,7 +5701,11 @@
       "emptyDescription": "Switch the map to its Galaxy view, pick a few concepts and give them a name and a purpose; that set is kept here so you can return to the same scope. “Pick on the map” takes you there.",
       "memberCount": "{count, plural, one {# concept} other {# concepts}}",
       "referenceCount": "{count, plural, one {# reference} other {# references}}",
-      "shape": { "name": "Name", "members": "Concepts", "purpose": "Purpose" },
+      "shape": {
+        "name": "Name",
+        "members": "Concepts",
+        "purpose": "Purpose"
+      },
       "noPurpose": "No purpose added",
       "viewInGalaxy": "View on the map",
       "viewInGalaxyNamed": "View {name} on the map",
@@ -5608,7 +5735,11 @@
       "malformedTitle": "The rounds file needs attention",
       "malformedDescription": "Atlas could not read .ontology-atlas/rounds.json and left it unchanged. Fix or remove it, then read again.",
       "retry": "Read again",
-      "shape": { "name": "Name", "cadence": "Cadence", "next": "Next run" },
+      "shape": {
+        "name": "Name",
+        "cadence": "Cadence",
+        "next": "Next run"
+      },
       "emptyTitle": "Nothing runs on its own yet",
       "emptyDescription": "Register a round: every hour, check that every page still matches its sources; every morning, re-read what a service sent and redraft what changed.",
       "kind": {

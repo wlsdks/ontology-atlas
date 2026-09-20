@@ -202,14 +202,14 @@ const OPENERS: readonly Opener[] = [
   {
     name: "Architecture analysis history",
     // The blueprint is a view of the Harness destination, not its default (2026-09-13).
-    route: "/ko/architecture/?view=structure",
+    route: "/ko/architecture/?view=architecture",
     trigger: "architecture-review-open",
     surface: '[data-testid="analysis-workbench"]',
     dogfood: true,
   },
   {
     name: "아키텍처 근거 흐름",
-    route: "/ko/architecture/?view=structure",
+    route: "/ko/architecture/?view=architecture",
     trigger: "architecture-evidence-rail",
     surface: '[data-testid="architecture-evidence-dock"]',
     dogfood: true,
@@ -253,9 +253,9 @@ async function openAndAudit(page: Page, o: Opener) {
       window.localStorage.setItem("demo:sample-source:v1", "dogfood");
     });
   }
-  /* A route may already carry a query — `/ko/architecture/` needs `?view=structure` now that the
+  /* A route may already carry a query — `/ko/architecture/` needs `?view=architecture` now that the
      blueprint is a view rather than the destination's default — so the separator is chosen rather
-     than assumed. Appending a second `?` made `view=structure?guides=off`, which parses as no view
+     than assumed. Appending a second `?` made `view=architecture?guides=off`, which parses as no view
      at all and opened the coverage matrix instead (measured 2026-09-13). */
   if (!o.libraryWorkReceipt) {
     const separator = o.route.includes("?") ? "&" : "?";
