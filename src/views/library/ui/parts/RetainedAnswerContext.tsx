@@ -84,7 +84,7 @@ export function RetainedAnswerContext({ observation, phase, historyState, older,
 }) {
   const working = phase === 'preparing' || phase === 'running' || phase === 'saving';
   const refusable = onRefresh !== null && !historyBlocked;
-  const paths = (['changed', 'missing', 'added'] as const).filter((kind) => observation[kind].length);
+  const paths = (['changed', 'missing', 'added', 'rewritten'] as const).filter((kind) => observation[kind].length);
   return (
     /*
      * The column is the line. `--measure-doc-column` is the prose measure spent at the reading

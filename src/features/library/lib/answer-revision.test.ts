@@ -46,6 +46,30 @@ describe('retained answer evidence', () => {
     expect(answerObservation({ ...fm, answer_scope_sources: [source] }, new Set([source, 'sources/amendment.md']), new Map([[source, oldHash]]))).toMatchObject({ state: 'new-sources', added: ['sources/amendment.md'] });
   });
 
+  /*
+   * Measured in the installed app on 2026-09-20. A lint turn found the answer's figure
+   * superseded, the fix door rewrote the page from the new source and put the old figure
+   * under the new one, and the reader still offered "ask for a fresh draft" while the wiki
+   * row beside it said the confirmed version was unchanged. The observation is immutable by
+   * design, so the page's own `source_hash` is the only thing that can say it caught up.
+   */
+  it('reads a page rewritten from the new bytes as caught up, not as drifted', () => {
+    const fm = {
+      sources: [source],
+      answer_source_observations: { [source]: oldHash },
+      source_hash: { [source]: newHash },
+    };
+    expect(answerObservation(fm, new Set([source]), new Map([[source, newHash]]))).toMatchObject({
+      state: 'rewritten', changed: [], rewritten: [source],
+    });
+    // A page whose recorded hash is still the observed one has not caught up.
+    expect(answerObservation({ ...fm, source_hash: { [source]: oldHash } }, new Set([source]), new Map([[source, newHash]]))).toMatchObject({ state: 'changed', changed: [source] });
+    // `unmeasured` is what a filed answer starts with, and it never means caught up.
+    expect(answerObservation({ ...fm, source_hash: { [source]: 'unmeasured' } }, new Set([source]), new Map([[source, newHash]]))).toMatchObject({ state: 'changed', changed: [source] });
+    // A source that never moved stays the quiet state it already was.
+    expect(answerObservation(fm, new Set([source]), new Map([[source, oldHash]]))).toMatchObject({ state: 'unchanged', rewritten: [] });
+  });
+
   it('preserves cited uncertainty and human sections instead of classifying every citation as a fact', () => {
     const result = buildAnswerRevision(input());
     expect(result.problems).toEqual([]);

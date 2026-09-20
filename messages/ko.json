@@ -5635,6 +5635,7 @@
         "changed": "인용한 원문이 바뀌었습니다",
         "missing": "인용한 원문이 없습니다",
         "new-sources": "새 자료를 검토해 주세요",
+        "rewritten": "인용한 원문이 바뀌었고, 이 답은 그 판본으로 다시 쓰였습니다",
         "unmeasured": "원문 버전이 확인되지 않았습니다",
         "unchanged": "출처 관찰 이후 변경 없음"
       },
@@ -5678,7 +5679,8 @@
       "paths": {
         "changed": "바뀐 원문",
         "missing": "없는 원문",
-        "added": "검토할 새 원문"
+        "added": "검토할 새 원문",
+        "rewritten": "다시 쓴 원문"
       },
       "version": {
         "head": "최근 초안",
