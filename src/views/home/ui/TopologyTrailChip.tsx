@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, Sparkles, X } from "lucide-react";
+import { ChevronLeft, Sparkles, Trash2, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 import {
@@ -320,19 +320,30 @@ export function TopologyTrailChip({
         >
           {label}
         </button>
+        {/* The armed state wears the same two changes as the footer sibling: the tone steps up
+            and the glyph swaps. It carried only the `aria-label` before, so a sighted person's
+            first press moved nothing on screen — the popover that says so may be shut — and the
+            second press was the discard the two-step design exists to prevent. The ✕ becomes a
+            bin because the shape, not the tone, is what says "this press deletes". */}
         <button
           type="button"
           onClick={handleClearPress}
           aria-label={clearArmed ? labels.clearConfirmLabel : labels.clearAriaLabel}
           data-testid="topology-trail-chip-clear"
+          data-armed={clearArmed ? "true" : undefined}
           className={controlClass({
             shape: "icon",
             size: "sm",
-            tone: "muted",
-            className: "-mr-1 hover:text-[color:var(--color-text-primary)]",
+            tone: clearArmed ? "strong" : "muted",
+            // Hover belongs to the consumer — the ink wakes only before arming.
+            className: clearArmed ? "-mr-1" : "-mr-1 hover:text-[color:var(--color-text-primary)]",
           })}
         >
-          <X size={ICON_SIZE.md} aria-hidden />
+          {clearArmed ? (
+            <Trash2 size={ICON_SIZE.md} aria-hidden />
+          ) : (
+            <X size={ICON_SIZE.md} aria-hidden />
+          )}
         </button>
       </div>
       {/* Hangs off the chip's bottom-right corner, and grows out of that corner. */}

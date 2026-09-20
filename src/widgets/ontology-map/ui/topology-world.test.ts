@@ -108,6 +108,47 @@ describe("buildTopologyWorld — homeX/homeY", () => {
     expect(domainNode.homeY).toBe(originalHomeY);
     expect(domainNode.x).not.toBe(domainNode.homeX);
   });
+
+  it("keeps the last containment parent inside a domain, and yields to the spine across domains", () => {
+    // `element:shared` is declared by `capability:c1` (domain A) and by domain B. Drawing
+    // it under B put it outside the domain the INDEX and the census hold it in, so domain
+    // A's node was engraved one more than its chip could open. `element:local` is declared
+    // twice inside domain A, where the later parent only changes depth, so the domain keeps
+    // its fan.
+    const nodes: OntologyMapNode[] = [
+      inputNode({ id: "p", kind: "project" }),
+      inputNode({ id: "domain:a", kind: "domain" }),
+      inputNode({ id: "domain:b", kind: "domain" }),
+      inputNode({ id: "capability:c1", kind: "capability" }),
+      inputNode({ id: "element:shared", kind: "element" }),
+      inputNode({ id: "element:local", kind: "element" }),
+    ];
+    const contains = (source: string, target: string): OntologyMapEdge => ({
+      source,
+      target,
+      relationType: "contains",
+      relationQuality: null,
+      evidenceCount: 0,
+      kind: "contains",
+      declaredBySlug: null,
+    });
+    const world = buildTopologyWorld(
+      nodes,
+      [
+        contains("p", "domain:a"),
+        contains("p", "domain:b"),
+        contains("domain:a", "capability:c1"),
+        contains("capability:c1", "element:shared"),
+        contains("capability:c1", "element:local"),
+        contains("domain:b", "element:shared"),
+        contains("domain:a", "element:local"),
+      ],
+      fullTokens,
+    );
+    expect(world.nodeById.get("element:shared")!.parentId).toBe("capability:c1");
+    expect(world.nodeById.get("element:local")!.parentId).toBe("domain:a");
+    expect(world.childrenByParent.get("domain:b") ?? []).toEqual([]);
+  });
 });
 
 describe("isSpineNode", () => {

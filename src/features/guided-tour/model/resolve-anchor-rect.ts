@@ -95,6 +95,22 @@ export interface CardPlacementInput {
   belowGap?: number;
   /** The minimum margin from the viewport edge. Defaults to 16px. */
   edgeMargin?: number;
+  /**
+   * **The card must not sit on the target itself.** Set for a canvas-node anchor.
+   *
+   * A DOM anchor is a box the card stands beside; a canvas node is a thing the copy asks the
+   * person to *look at and press*, and the step that does the asking is the one that must not
+   * cover it. Measured at 1200×863: the try-click card occupied x 420–780, y 307–555 while the
+   * lit node sat inside that rectangle, so the sentence "press the lit dot" pointed underneath
+   * the card saying it.
+   *
+   * With this set the sides are tried roomiest-first — the two horizontal ones before the two
+   * vertical ones, because a card beside the node leaves the node *and* the name under it
+   * uncovered, while a card above or below has only the gap to work with — and a side is taken
+   * only when the placed card, **after** the viewport clamp, still clears the padded target. The
+   * clamp is where an unchecked "it fits" turns back into an overlap.
+   */
+  avoidTarget?: boolean;
 }
 
 export interface CardPlacement {
@@ -107,6 +123,9 @@ export interface CardPlacement {
  * Placement adjacent to the cutout — the first candidate that fits the viewport is
  * chosen in the order below → above → right → left, and if none fits completely the
  * first candidate (below) is clamped into the viewport.
+ *
+ * With `avoidTarget` the order is roomiest-first (horizontal sides before vertical ones) and
+ * a side counts only when the *placed* card clears the padded target; see that field's note.
  */
 export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
   const gap = input.gap ?? 12;
@@ -159,13 +178,52 @@ export function computeCardPlacement(input: CardPlacementInput): CardPlacement {
     },
   ];
 
-  const chosen = candidates.find((c) => c.fits) ?? candidates[0];
+  const place = (candidate: { side: CardPlacementSide; top: number; left: number }): CardPlacement => ({
+    top: clamp(candidate.top, edgeMargin, Math.max(edgeMargin, viewportHeight - cardHeight - edgeMargin)),
+    left: clamp(candidate.left, edgeMargin, Math.max(edgeMargin, viewportWidth - cardWidth - edgeMargin)),
+    side: candidate.side,
+  });
 
-  return {
-    top: clamp(chosen.top, edgeMargin, Math.max(edgeMargin, viewportHeight - cardHeight - edgeMargin)),
-    left: clamp(chosen.left, edgeMargin, Math.max(edgeMargin, viewportWidth - cardWidth - edgeMargin)),
-    side: chosen.side,
-  };
+  if (input.avoidTarget) {
+    // The target plus the room it needs around it: the plain gap on three sides, and the
+    // name band under it on the fourth. This is the rectangle the card may not enter.
+    const forbidden = {
+      top: targetRect.top - gap,
+      left: targetRect.left - gap,
+      right: targetRect.left + targetRect.width + gap,
+      bottom: targetRect.top + targetRect.height + belowGap,
+    };
+    // How much usable width or height each side has once the edge inset is taken off.
+    const room = {
+      right: viewportWidth - edgeMargin - forbidden.right,
+      left: forbidden.left - edgeMargin,
+      below: viewportHeight - edgeMargin - forbidden.bottom,
+      above: forbidden.top - edgeMargin,
+    };
+    const order: CardPlacementSide[] = [
+      ...(room.right >= room.left ? ["right", "left"] : ["left", "right"]),
+      ...(room.below >= room.above ? ["below", "above"] : ["above", "below"]),
+    ] as CardPlacementSide[];
+    for (const side of order) {
+      const candidate = candidates.find((c) => c.side === side);
+      if (!candidate) continue;
+      const placed = place(candidate);
+      const overlaps =
+        placed.left < forbidden.right &&
+        placed.left + cardWidth > forbidden.left &&
+        placed.top < forbidden.bottom &&
+        placed.top + cardHeight > forbidden.top;
+      if (!overlaps) return placed;
+    }
+    // Nothing clears: the target is wider or taller than every remaining strip, which is a
+    // camera state (a node zoomed past the window) rather than a layout the card can answer.
+    // Falling through keeps the historical placement rather than inventing a worse one, and
+    // the overlay's own fallbacks — the full scrim and the card's "open that dot" button —
+    // are what carry the step there.
+  }
+
+  const chosen = candidates.find((c) => c.fits) ?? candidates[0];
+  return place(chosen);
 }
 
 function clamp(value: number, min: number, max: number): number {

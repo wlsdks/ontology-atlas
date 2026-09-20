@@ -346,6 +346,22 @@ export function computeLabelAlpha(input: LabelAlphaInput): number {
 }
 
 /**
+ * The same opacity **under a lens**: the per-kind formula on the node's own reveal alpha,
+ * then the lens sink as one multiplier.
+ *
+ * ⚠️ The sink is a multiplier and **not** part of `revealAlpha`. Folding it in before this
+ * formula charges it twice, and unevenly: a project or domain name ignores `revealAlpha`, so
+ * it sank once, while a capability or element ran the sunk value through the child ramp's
+ * smoothstep and then took the multiplier as well. Measured 2026-09-21 at the path lens's
+ * rest (0.3): an off-path child name landed at 0.08 where the off-path domain beside it
+ * rested at 0.3 — the two kinds disagreed about what "dimmed" means.
+ */
+export function computeLensLabelAlpha(input: LabelAlphaInput & { lensSink: number }): number {
+  const sink = Math.min(1, Math.max(0, input.lensSink));
+  return computeLabelAlpha(input) * sink;
+}
+
+/**
  * W6 agent visibility — activity-mark dot radius + gap past the label
  * text's own measured width. Exported so `ui/topology-frame-draw.ts`'s
  * label-candidate bbox can reserve the extra width for greedy-suppression

@@ -272,3 +272,58 @@ describe('이미 project 문서가 있을 때', () => {
     expect(plan.projectTitle).toBe('My project');
   });
 });
+
+/**
+ * **The Library's own files are not uncataloged documents** (measured 2026-09-20).
+ *
+ * A dogfood folder whose only kind-less files were six raw sources under `sources/` and the
+ * wiki's pages showed an INDEX row offering to add seven documents to the map, and one press
+ * would have stamped `kind: element` into each of them. A raw source is a copy of someone else's
+ * document — frontmatter written into it breaks the verbatim promise and invalidates the
+ * citation hashes recorded against its bytes — and a wiki page is a statement *about* sources
+ * that the next Compile run rewrites in place.
+ */
+describe('자료실 파일(sources/·wiki/)은 후보에 넣지 않는다', () => {
+  it('원문과 위키만 있는 폴더는 후보가 0이고, 몇 개를 뺐는지 센다', () => {
+    const plan = deriveBootstrapPlan(
+      [
+        doc('sources/quarter-plan', '분기 계획'),
+        doc('sources/handbook', 'Handbook'),
+        doc('wiki/quarter-plan', '분기 계획'),
+        doc('wiki/handbook', 'Handbook'),
+        doc('wiki/_template', '<문서 이름>'),
+        doc('wiki/_log', '기록'),
+        doc('.ontology-atlas/connectors', 'connectors'),
+      ],
+      'my-vault',
+    );
+    expect(plan.elements, '자료실 파일에 kind 를 찍을 후보가 만들어졌다').toEqual([]);
+    expect(plan.domains, '자료실 폴더가 도메인 후보로 올라왔다').toEqual([]);
+    expect(plan.librarySkipped, '왜 비었는지 화면이 말할 수 있어야 한다').toBe(7);
+  });
+
+  it('사람이 쓴 문서는 그대로 후보다 — 자료실 규칙이 삼키지 않는다', () => {
+    const plan = deriveBootstrapPlan(
+      [doc('sources/quarter-plan', '분기 계획'), doc('wiki/quarter-plan', '분기 계획'), doc('notes/plan', '계획')],
+      'my-vault',
+    );
+    expect(plan.elements).toEqual([{ slug: 'notes/plan', title: '계획', domain: 'notes' }]);
+    expect(plan.domains).toEqual([{ name: 'notes', docCount: 1 }]);
+    expect(plan.librarySkipped).toBe(2);
+  });
+
+  it('규칙은 볼트 루트에 붙는다 — 내 폴더 안의 wiki/ 는 내 문서다', () => {
+    const plan = deriveBootstrapPlan(
+      [doc('notes/wiki/plan', '계획'), doc('notes/sources/raw', '원문 메모')],
+      'my-vault',
+    );
+    expect(plan.elements.map((e) => e.slug).sort()).toEqual(['notes/sources/raw', 'notes/wiki/plan']);
+    expect(plan.librarySkipped).toBe(0);
+  });
+
+  it('wiki/ 아래라도 kind 가 있으면 그래프 노드다 — 이 규칙이 가로채지 않는다', () => {
+    const plan = deriveBootstrapPlan([doc('wiki/orders', '주문', { kind: 'domain' })], 'my-vault');
+    expect(plan.librarySkipped).toBe(0);
+    expect(plan.alreadyTypedCount).toBe(1);
+  });
+});

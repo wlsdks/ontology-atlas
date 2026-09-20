@@ -67,7 +67,18 @@ export interface DensityGateParentGeometry {
 export interface ClusterChip {
   /** Node id of the collapsed (or expanded) parent. */
   parentId: string;
-  /** Direct child count — engraved on the chip as `+N`. */
+  /**
+   * How many nodes this chip holds — engraved as `+N`.
+   *
+   * The whole folded subtree, not the direct children: collapsing a parent hides
+   * its grandchildren too (`clusteredIds` below), so a chip that counted only the
+   * first rank promised less than it was holding. The domain "AI Agent
+   * Integration" was engraved 18 by the node badge and `+17` by its chip, and
+   * opening it produced neither number honestly. `+N` is now the same quantity the
+   * badge and the INDEX row state: every capability and element the containment
+   * spine places under this parent. Domains stay visible and are excluded, and a
+   * held-open node is drawn rather than held.
+   */
   count: number;
   /** True while this parent is expanded — the chip then affords collapsing (`− N`). */
   expanded: boolean;
@@ -142,6 +153,28 @@ export function computeDensityGate(input: DensityGateInput): DensityGateResult {
   const gatedChildrenOf = (children: readonly string[]): readonly string[] =>
     kindOf ? children.filter((c) => !isExempt(c)) : children;
 
+  /**
+   * Everything folding under `parentId` — grandchildren included, exempt domains
+   * skipped without descending into them, and a held-open node drawn rather than
+   * folded although its own subtree still folds. Both the hidden set and the
+   * chip's `+N` read this one walk, so the number on the chip is by construction
+   * the number of nodes it hides.
+   */
+  const foldedSubtreeOf = (parentId: string): string[] => {
+    const folded: string[] = [];
+    const seen = new Set<string>();
+    const stack = [...(childrenByParent.get(parentId) ?? [])];
+    while (stack.length > 0) {
+      const id = stack.pop() as string;
+      if (seen.has(id) || isExempt(id)) continue;
+      seen.add(id);
+      if (!heldOpen?.has(id)) folded.push(id);
+      const grandChildren = childrenByParent.get(id);
+      if (grandChildren) stack.push(...grandChildren);
+    }
+    return folded;
+  };
+
   // Crowded parent = countable children > threshold; collapsed = crowded and
   // not expanded.
   const collapsedParents = new Set<string>();
@@ -158,21 +191,13 @@ export function computeDensityGate(input: DensityGateInput): DensityGateResult {
   // judged only by its own child count.
   const clusteredIds = new Set<string>();
   for (const parentId of collapsedParents) {
-    const stack = [...(childrenByParent.get(parentId) ?? [])];
-    while (stack.length > 0) {
-      const id = stack.pop() as string;
-      if (clusteredIds.has(id) || isExempt(id)) continue;
-      // A held-open node is drawn, but its subtree folds like the rest.
-      if (!heldOpen?.has(id)) clusteredIds.add(id);
-      const grandChildren = childrenByParent.get(id);
-      if (grandChildren) stack.push(...grandChildren);
-    }
+    for (const id of foldedSubtreeOf(parentId)) clusteredIds.add(id);
   }
 
   // A chip is emitted for every crowded parent that is itself visible. A nested
   // crowded parent inside a collapsed one gets none — expand the outer one first
-  // and its chip appears. The count is the number of children that actually
-  // fold; exempt domain children stay visible and so are excluded from `+N`.
+  // and its chip appears. The count is the whole subtree the chip holds; exempt
+  // domain children stay visible and so are excluded from `+N`.
   const chips: ClusterChip[] = [];
   for (const [parentId, children] of childrenByParent) {
     const gated = gatedChildrenOf(children);
@@ -182,9 +207,11 @@ export function computeDensityGate(input: DensityGateInput): DensityGateResult {
     if (!geometry) continue;
     const ring = geometry.ring ?? DEFAULT_CHIP_RING;
     const expanded = expandedParents.has(parentId);
-    // The chip claims the children that actually fold; a held-open child is drawn.
-    const folded = heldOpen ? gated.filter((c) => !heldOpen.has(c)) : gated;
-    if (folded.length === 0 && !expanded) continue;
+    // The chip claims everything it holds; a held-open node is drawn, not held.
+    const folded = foldedSubtreeOf(parentId);
+    // The glyph names the rank the chip sits on, so it reads the direct children.
+    const foldedChildren = heldOpen ? gated.filter((c) => !heldOpen.has(c)) : gated;
+    if (foldedChildren.length === 0 && !expanded) continue;
     // Expanded chips stand outside the child disc so they never overlap it.
     const anchorRadius = chipAnchorRadius(ring, expanded);
     chips.push({
@@ -195,7 +222,7 @@ export function computeDensityGate(input: DensityGateInput): DensityGateResult {
         x: geometry.x + Math.cos(geometry.angle) * anchorRadius,
         y: geometry.y + Math.sin(geometry.angle) * anchorRadius,
       },
-      childKind: kindOf?.(folded[0] ?? gated[0]),
+      childKind: kindOf?.(foldedChildren[0] ?? gated[0]),
     });
   }
 

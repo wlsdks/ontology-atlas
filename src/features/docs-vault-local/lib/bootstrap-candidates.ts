@@ -14,6 +14,9 @@
  * - every other `.md` → element candidate, with `domain:` set to its own top-level folder
  * - a root-level `.md` (README excepted) → an element with no domain, linked directly by
  *   project.md's `elements:` array (derive-ontology's elements[] rule)
+ * - files somebody else owns are never candidates and are tallied instead, so the screen can say
+ *   why they are missing: runtime-owned `SKILL.md`, agent pointer documents, and the Library's
+ *   own `sources/`, `wiki/` and `.ontology-atlas/` folders (each has its own note below)
  *
  * Graph-linking contract (consistent with derive-ontology-from-vault.ts):
  * - an element's `domain: <name>` → a `domain:slugifyName(name)` stub node plus a domain→element
@@ -23,6 +26,8 @@
  */
 
 import { generateNodeUid, slugifyName } from '@/entities/docs-vault';
+import { VAULT_SIDECAR_DIR } from '@/shared/lib/vault-sidecar';
+import { WIKI_DIR, WIKI_SOURCES_DIR } from '@/shared/lib/wiki-page-schema';
 
 export interface BootstrapDocInput {
   slug: string;
@@ -61,6 +66,8 @@ export interface BootstrapPlan {
   runtimeOwnedSkipped: number;
   /** How many were excluded as agent pointer documents (`AGENTS.md`, `CLAUDE.md`, `.claude/**` …). */
   agentPointerSkipped: number;
+  /** How many were excluded as the Library's own files (`sources/`, `wiki/`, `.ontology-atlas/`). */
+  librarySkipped: number;
 }
 
 function hasOwnKind(fm: Record<string, unknown>): boolean {
@@ -133,6 +140,39 @@ function isAgentPointerDoc(slug: string): boolean {
 }
 
 /**
+ * **Is this document the Library's own, rather than a concept somebody wrote?**
+ *
+ * The vault shape the starter writes is one folder holding `sources/` (raw documents kept
+ * verbatim, never edited by us) and `wiki/` (what Compile made of them, plus the
+ * `_template.md`/`_log.md` furniture). Neither carries a `kind:`, so every one of them
+ * counted as an "uncataloged document": measured 2026-09-20 on a dogfood folder, the INDEX
+ * row offered to add seven documents to the map when the only kind-less files were six raw
+ * sources and the wiki's pages.
+ *
+ * One press would have stamped `kind: element` onto them. That is wrong twice over. A raw
+ * source is a copy of somebody else's document — writing frontmatter into it breaks the
+ * verbatim promise the Library is built on, and the citation hashes recorded against it no
+ * longer match the bytes. A wiki page is a *statement about* sources, already addressed by
+ * the Library's own screens and rewritten in place by the next Compile run — the same
+ * "the owner rewrites the file" failure mode as the runtime-owned `SKILL.md` above.
+ *
+ * The sidecar joins them because `.ontology-atlas/` is Atlas's own runtime state (activity
+ * log, connectors, ledgers), not the ontology. The browser walk prunes dotfiles before the
+ * manifest, so it never arrives from there today; naming it here keeps that true for any
+ * other walk that does not.
+ *
+ * The rule is anchored at the vault root exactly as the walk anchors it
+ * (`build-local-manifest.ts`): `notes/wiki/plan.md` is a person's own document and stays a
+ * candidate, because "everything under this one top-level name" is the rule a person can
+ * hold in their head.
+ */
+const LIBRARY_OWNED_DIRS = [WIKI_SOURCES_DIR, WIKI_DIR, VAULT_SIDECAR_DIR];
+
+function isLibraryOwnedDoc(slug: string): boolean {
+  return LIBRARY_OWNED_DIRS.some((dir) => slug.startsWith(`${dir}/`));
+}
+
+/**
  * Manifest document list → a bootstrap plan. Safe even when the input already contains documents
  * with ontology nodes (those drop out of the candidates and are only tallied into
  * `alreadyTypedCount`).
@@ -149,6 +189,7 @@ export function deriveBootstrapPlan(
   let alreadyTypedCount = 0;
   let runtimeOwnedSkipped = 0;
   let agentPointerSkipped = 0;
+  let librarySkipped = 0;
   const domainCounts = new Map<string, number>();
   const elements: BootstrapElementCandidate[] = [];
 
@@ -165,6 +206,11 @@ export function deriveBootstrapPlan(
     if (isAgentPointerDoc(doc.slug)) {
       // The starter's own instruction files — excluded, and counted so the screen can say how many.
       agentPointerSkipped += 1;
+      continue;
+    }
+    if (isLibraryOwnedDoc(doc.slug)) {
+      // The Library's raw sources and wiki pages — excluded, and counted so the screen can say how many.
+      librarySkipped += 1;
       continue;
     }
     if (isRootReadme(doc.slug)) {
@@ -196,6 +242,7 @@ export function deriveBootstrapPlan(
     alreadyTypedCount,
     runtimeOwnedSkipped,
     agentPointerSkipped,
+    librarySkipped,
   };
 }
 

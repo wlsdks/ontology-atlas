@@ -172,13 +172,24 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
       copyKey: "librarySources",
     },
   ],
+  /*
+   * Insights — the second page points at the headline the screen opens on. Twice now the
+   * anchor has named something that was not on the arriving screen: first `do-next-touchups`,
+   * a grouping the 2026-09-06 "one list, one total" round removed, then `do-next-list`, which
+   * moved behind a tab when #1704 made the brief the landing tab. Either way the anchor
+   * resolved nowhere and the guide silently folded to one page (`computeVisibleSteps`).
+   * `brief-headline` is what a person actually arrives at.
+   * `tests/contract/tour-anchor-testids.contract.test.ts` fails when an anchor names a testid
+   * no screen carries, but it cannot see which tab is open, so an anchor here belongs to the
+   * landing tab by hand.
+   */
   insights: [
     { id: "insights-what", anchor: null, persona: "all", copyKey: "insightsWhat" },
     {
-      id: "insights-today",
-      anchor: { type: "testid", value: "do-next-touchups" },
+      id: "insights-headline",
+      anchor: { type: "testid", value: "brief-headline" },
       persona: "all",
-      copyKey: "insightsToday",
+      copyKey: "insightsHeadline",
     },
   ],
   projects: [

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/tier-visibility";
 import {
   computeLabelAlpha,
+  computeLensLabelAlpha,
   measureLabelVerticalMetrics,
   resolveLabelBaselineY,
   resolveFlippedLabelBaselineY,
@@ -131,6 +132,42 @@ describe("computeLabelAlpha", () => {
   it.todo(
     "light-mode label color contrast (labelDomain/labelCapability/labelElement tokens) — design doc §2.2 explicitly defers exact light values to a P3 Design Guardian pass",
   );
+});
+
+/**
+ * **One sink, one meaning of dimmed.** Under the path and constellation lenses everything
+ * outside the asked-for set sinks to the lens's rest alpha. The sink used to be folded into
+ * `revealAlpha` *and* applied again as a multiplier: a domain name, which ignores
+ * `revealAlpha`, sank once, while a capability name ran the sunk value through the child
+ * ramp first and sank again — 0.08 against the domain's 0.3 at the path lens's rest
+ * (`--map-path-rest-alpha`), so two kinds of "dimmed" sat side by side.
+ */
+describe("computeLensLabelAlpha", () => {
+  const base = { egoState: "normal" as const, isHovered: false, revealAlpha: 1 };
+  const PATH_REST_ALPHA = 0.3;
+
+  it("sinks every kind to the same rest alpha", () => {
+    const sunk = (kind: "project" | "domain" | "capability" | "element") =>
+      computeLensLabelAlpha({ ...base, kind, lensSink: PATH_REST_ALPHA });
+    for (const kind of ["project", "domain", "capability", "element"] as const) {
+      expect(sunk(kind), kind).toBeCloseTo(PATH_REST_ALPHA, 6);
+    }
+  });
+
+  it("leaves the per-kind formula alone when no lens is on", () => {
+    for (const kind of ["project", "domain", "capability", "element"] as const) {
+      expect(computeLensLabelAlpha({ ...base, kind, lensSink: 1 })).toBe(
+        computeLabelAlpha({ ...base, kind }),
+      );
+    }
+  });
+
+  it("keeps the child ramp under the sink — a barely revealed child is still fainter than a fully revealed one", () => {
+    const half = computeLensLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.4, lensSink: PATH_REST_ALPHA });
+    const full = computeLensLabelAlpha({ ...base, kind: "capability", revealAlpha: 1, lensSink: PATH_REST_ALPHA });
+    expect(half).toBeGreaterThan(0);
+    expect(half).toBeLessThan(full);
+  });
 });
 
 describe("resolveLabelBaselineY — 라벨이 자기 도형선에 닿지 않는다 (진입 검수 E-4)", () => {

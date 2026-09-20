@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 import { cn } from "@/shared/lib/cn";
 import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
 import type { UseGuidedTourResult } from "../model/use-guided-tour";
@@ -28,6 +28,28 @@ interface AnchorMeasurements {
   key: string;
   testidRect: AnchorBox | null;
   canvasRect: AnchorBox | null;
+}
+
+/**
+ * The probe's box as it stands right now, viewport-tested the same way the rAF tick tests it.
+ *
+ * Used to seed a canvas-node step at the moment it opens. The tick that follows the node every
+ * frame is an effect, so it first runs *after* the step's opening paint — and for that paint
+ * `canvasRect` was null, which is the placement function's "no target" case: a card centred on
+ * the window. Measured at 1200×863, that is exactly the reported rectangle (x 420–780,
+ * y 307–555) sitting on the node the copy asks the person to press, and it jumped aside one
+ * frame later. The probe div is shared and already carries the last frame the map wrote, so
+ * reading it here costs one `getBoundingClientRect` and removes the frame.
+ */
+function readCanvasAnchorBox(ref: RefObject<HTMLDivElement | null> | undefined): AnchorBox | null {
+  const el = ref?.current;
+  if (!el || typeof window === "undefined") return null;
+  const r = el.getBoundingClientRect();
+  return visibleAnchorBox(
+    { top: r.top, left: r.left, width: r.width, height: r.height },
+    window.innerWidth,
+    window.innerHeight,
+  );
 }
 
 export interface GuidedTourOverlayProps {
@@ -110,6 +132,18 @@ export function GuidedTourOverlay({
   if (measurements.key !== anchorKey) {
     setMeasurements({ key: anchorKey, testidRect: null, canvasRect: null });
   }
+
+  // Seed a canvas-node step from the probe **before the step's first paint** — see
+  // `readCanvasAnchorBox` for what that frame looked like without it. A layout effect, not the
+  // rAF tick below, because only a layout effect is guaranteed to run before the browser paints.
+  useLayoutEffect(() => {
+    if (!open || !step || step.anchor?.type !== "canvas-node" || !canvasAnchorRef) return;
+    const box = readCanvasAnchorBox(canvasAnchorRef);
+    if (!box) return;
+    setMeasurements((current) =>
+      current.key === anchorKey && current.canvasRect === null ? { ...current, canvasRect: box } : current,
+    );
+  }, [anchorKey, open, step, canvasAnchorRef]);
 
   // testid anchors use a static rect, fixed once layout settles. Recomputed only
   // on step change and resize — moving the cutout is handled by a CSS
@@ -199,6 +233,9 @@ export function GuidedTourOverlay({
     viewportHeight: viewport.height,
     // A canvas node's name hangs under its disc; the card below must clear it.
     belowGap: step.anchor?.type === "canvas-node" ? TOUR_CARD_GAP + TOUR_NODE_NAME_BAND : TOUR_CARD_GAP,
+    // And the card must clear the node itself, not only its name: this step asks the person to
+    // look at that dot and press it.
+    avoidTarget: step.anchor?.type === "canvas-node",
   });
 
   const isInteractive = Boolean(step.interactive);

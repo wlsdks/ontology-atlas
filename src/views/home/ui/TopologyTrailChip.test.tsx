@@ -197,6 +197,23 @@ describe("TopologyTrailChip — 걸어온 길 트레일 칩", () => {
     expect(props.onClear).toHaveBeenCalledTimes(1);
   });
 
+  /*
+   * The armed state is a real state of the control, so it has to be visible on the control a
+   * reader is looking at. The ✕ changed only its `aria-label`: a sighted person pressed it, saw
+   * nothing move — the popover it arms may not even be open — and pressed again, which is the
+   * discard the two-press design exists to prevent.
+   */
+  it("칩 ✕ 는 장전된 것을 눈으로도 말한다 — aria-label 만이 아니라", () => {
+    renderChip();
+    const x = screen.getByTestId("topology-trail-chip-clear");
+    const resting = x.className;
+    const restingGlyph = x.querySelector("svg")?.getAttribute("class");
+    fireEvent.click(x);
+    expect(x.dataset.armed).toBe("true");
+    expect(x.className, "장전 전후 클래스가 같다").not.toBe(resting);
+    expect(x.querySelector("svg")?.getAttribute("class"), "글리프가 그대로다").not.toBe(restingGlyph);
+  });
+
   it("세션 트레일의 2단 확인도 4초 뒤 스스로 풀린다", () => {
     vi.useFakeTimers();
     try {

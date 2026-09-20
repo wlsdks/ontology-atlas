@@ -36,6 +36,7 @@ export interface OntologyBootstrapFormLabels {
   alreadyTyped: (count: number) => string;
   runtimeSkills: (count: number) => string;
   agentPointers: (count: number) => string;
+  libraryFiles: (count: number) => string;
   confirm: string;
   cancel: string;
   errorPrefix: string;
@@ -211,6 +212,18 @@ export function OntologyBootstrapForm({
               className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]"
             >
               {labels.agentPointers(plan.agentPointerSkipped)}
+            </p>
+          ) : null}
+          {/* Same reason again, and the commonest one on a folder that already uses the Library:
+              `sources/` is somebody else's document kept verbatim and `wiki/` is what Atlas wrote
+              about it. Neither is a concept, and both would otherwise vanish from this list with
+              no explanation. */}
+          {plan.librarySkipped > 0 ? (
+            <p
+              data-testid="ontology-bootstrap-library-files"
+              className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]"
+            >
+              {labels.libraryFiles(plan.librarySkipped)}
             </p>
           ) : null}
         </div>

@@ -153,3 +153,97 @@ describe("visibleAnchorBox", () => {
     });
   });
 });
+
+/**
+ * **The card may not sit on the node the step asks the person to press.**
+ *
+ * Reported at 1200×863: the try-click card occupied x 420–780, y 307–555 with the lit node
+ * inside it. `belowGap` (2026-09-19) had already lifted the card off the node's *name*; this is
+ * the node itself, and the guarantee is now structural — `avoidTarget` accepts a side only when
+ * the card, **after** the viewport clamp, clears the target plus its gap and name band.
+ */
+describe("computeCardPlacement · avoidTarget (the card clears the lit node)", () => {
+  const CARD = { cardWidth: 360, cardHeight: 250, gap: 12, belowGap: 40 } as const;
+
+  /** The card box the placement produces, in the same coordinates as the target. */
+  const cardBox = (placement: { top: number; left: number }) => ({
+    top: placement.top,
+    left: placement.left,
+    right: placement.left + CARD.cardWidth,
+    bottom: placement.top + CARD.cardHeight,
+  });
+
+  const intersects = (
+    card: { top: number; left: number; right: number; bottom: number },
+    target: { top: number; left: number; width: number; height: number },
+  ) =>
+    card.left < target.left + target.width &&
+    card.right > target.left &&
+    card.top < target.top + target.height &&
+    card.bottom > target.top;
+
+  /** A node disc of `size` centred in the viewport — where the tour parks the project node. */
+  const centredNode = (viewportWidth: number, viewportHeight: number, size = 80) => ({
+    top: viewportHeight / 2 - size / 2,
+    left: viewportWidth / 2 - size / 2,
+    width: size,
+    height: size,
+  });
+
+  for (const [viewportWidth, viewportHeight] of [
+    [1200, 863],
+    [1512, 982],
+  ] as const) {
+    it(`${viewportWidth}×${viewportHeight}: the card never overlaps a node at the viewport centre`, () => {
+      const targetRect = centredNode(viewportWidth, viewportHeight);
+      const placement = computeCardPlacement({ targetRect, viewportWidth, viewportHeight, avoidTarget: true, ...CARD });
+      const card = cardBox(placement);
+      expect(
+        intersects(card, targetRect),
+        `카드(${JSON.stringify(card)})가 켜진 노드(${JSON.stringify(targetRect)})를 덮는다`,
+      ).toBe(false);
+      // The name band under the disc stays clear too, which is what `belowGap` bought.
+      expect(intersects(card, { ...targetRect, height: targetRect.height + CARD.belowGap })).toBe(false);
+      // Both viewports have room to either side, and a card beside the node leaves the node and
+      // its name fully readable — which is why the horizontal sides are tried first.
+      expect(placement.side).toBe("right");
+      expect(placement.left).toBeGreaterThanOrEqual(targetRect.left + targetRect.width + CARD.gap);
+      expect(placement.left + CARD.cardWidth).toBeLessThanOrEqual(viewportWidth - 16);
+    });
+  }
+
+  it("takes the roomier horizontal side when the node is off-centre", () => {
+    const targetRect = { top: 400, left: 980, width: 80, height: 80 };
+    const placement = computeCardPlacement({ targetRect, viewportWidth: 1200, viewportHeight: 863, avoidTarget: true, ...CARD });
+    // 1200 − 16 − (1060 + 12) = 112 on the right; 968 − 16 = 952 on the left.
+    expect(placement.side).toBe("left");
+    expect(placement.left + CARD.cardWidth).toBeLessThanOrEqual(targetRect.left - CARD.gap);
+  });
+
+  it("drops to a vertical side when neither horizontal side can hold the card", () => {
+    // A narrow window: 360 of card does not fit beside an 80px node either way.
+    const targetRect = { top: 200, left: 340, width: 80, height: 80 };
+    const placement = computeCardPlacement({ targetRect, viewportWidth: 760, viewportHeight: 863, avoidTarget: true, ...CARD });
+    expect(placement.side).toBe("below");
+    expect(placement.top).toBeGreaterThanOrEqual(targetRect.top + targetRect.height + CARD.belowGap);
+    expect(intersects(cardBox(placement), targetRect)).toBe(false);
+  });
+
+  it("rejects the roomiest side when the viewport clamp would push its card back onto the node", () => {
+    // Right is the roomier horizontal side (352px against 300px), so it is tried first — but 352
+    // is less than the card, and the clamp would slide it back across the node's gap. Testing the
+    // *unclamped* candidate is exactly where an "it fits" turns into an overlap, so the placement
+    // walks on: left is narrower still, and the card lands above, the roomier vertical side.
+    const targetRect = { top: 380, left: 328, width: 80, height: 80 };
+    const placement = computeCardPlacement({ targetRect, viewportWidth: 788, viewportHeight: 863, avoidTarget: true, ...CARD });
+    expect(placement.side).toBe("above");
+    expect(intersects(cardBox(placement), targetRect)).toBe(false);
+    expect(intersects(cardBox(placement), { ...targetRect, height: targetRect.height + CARD.belowGap })).toBe(false);
+  });
+
+  it("leaves a DOM anchor's placement alone — only a canvas node asks to be pressed", () => {
+    const targetRect = { top: 100, left: 600, width: 80, height: 80 };
+    const withoutFlag = computeCardPlacement({ targetRect, viewportWidth: 1200, viewportHeight: 863, ...CARD });
+    expect(withoutFlag.side).toBe("below");
+  });
+});

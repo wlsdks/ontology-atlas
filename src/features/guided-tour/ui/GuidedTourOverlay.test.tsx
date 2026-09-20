@@ -286,3 +286,68 @@ describe("GuidedTourOverlay", () => {
     expect(seen.length, `걸은 단계: ${seen.join(" → ")}`).toBeGreaterThanOrEqual(4);
   });
 });
+
+/**
+ * **The card must not open on top of the node it lights.**
+ *
+ * Measured at 1200×863: entering the interactive step painted the card at x 420–780,
+ * y 307–555 — the placement function's "no target" case, a card centred on the window — with
+ * the lit node inside that rectangle, and it moved aside only on the next animation frame.
+ * The rAF tick that follows the node is an effect, so the step's *first* paint had no rect at
+ * all; the probe already carried the map's last frame, so there was one to read.
+ *
+ * Two properties are locked here, and they are the same defect from both ends: the opening
+ * paint reads the probe, and the placement it produces clears the node.
+ */
+describe("GuidedTourOverlay · the interactive card opens clear of the lit node", () => {
+  /** The map's probe div, projected onto a node at the centre of a 1200×863 window. */
+  const LIT_NODE = { top: 391, left: 560, width: 80, height: 80 };
+
+  function stubProbe() {
+    const probe = screen.getByTestId("test-canvas-anchor");
+    probe.getBoundingClientRect = () =>
+      ({
+        top: LIT_NODE.top,
+        left: LIT_NODE.left,
+        width: LIT_NODE.width,
+        height: LIT_NODE.height,
+        right: LIT_NODE.left + LIT_NODE.width,
+        bottom: LIT_NODE.top + LIT_NODE.height,
+        x: LIT_NODE.left,
+        y: LIT_NODE.top,
+        toJSON: () => ({}),
+      }) as DOMRect;
+  }
+
+  it("places the opening card off the node instead of centring it on the window", () => {
+    Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1200 });
+    Object.defineProperty(window, "innerHeight", { writable: true, configurable: true, value: 863 });
+    render(<Harness />);
+    act(() => screen.getByTestId("test-start").click());
+    // The map writes the probe from the moment the first canvas-node step lights a node, so it
+    // is already projected when the interactive step opens. Stub it before walking in.
+    stubProbe();
+    act(() => screen.getByTestId("guided-tour-next").click());
+    act(() => screen.getByTestId("guided-tour-next").click());
+    act(() => screen.getByTestId("guided-tour-next").click());
+    expect(screen.getByTestId("guided-tour-overlay")).toHaveAttribute("data-tour-step", "try-click");
+
+    // No frame is advanced: this is the step's opening paint.
+    const card = screen.getByTestId("guided-tour-card");
+    const left = Number.parseFloat(card.style.left);
+    const top = Number.parseFloat(card.style.top);
+    const width = 360;
+    const height = 250;
+    const overlaps =
+      left < LIT_NODE.left + LIT_NODE.width &&
+      left + width > LIT_NODE.left &&
+      top < LIT_NODE.top + LIT_NODE.height &&
+      top + height > LIT_NODE.top;
+    expect(
+      overlaps,
+      `첫 프레임 카드(${left},${top})가 켜진 노드(${JSON.stringify(LIT_NODE)})를 덮는다`,
+    ).toBe(false);
+    // The centred fallback is the exact rectangle that was reported; it must not be what opens.
+    expect(left).not.toBeCloseTo((1200 - width) / 2, 0);
+  });
+});

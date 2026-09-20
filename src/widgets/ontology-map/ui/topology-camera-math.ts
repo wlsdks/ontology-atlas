@@ -870,7 +870,26 @@ export function computeClusterFitTarget(
   const centerY = (disc.minY + disc.maxY) / 2;
   const w = Math.max(1, (disc.maxX - disc.minX) * marginRatio);
   const h = Math.max(1, (disc.maxY - disc.minY) * marginRatio);
-  const fitScale = Math.min(viewportWidth / w, viewportHeight / h);
+  /*
+   * **The fan is fitted into the region a person can see, not into the window**
+   * (2026-09-21). This branch measured against the raw viewport and centred on the raw
+   * centre, so it was the only fit in this file that did not know about the INDEX panel,
+   * the inspector or a popover; its caller was also the only camera move that did not
+   * go through `cameraTokens`, so even a measured inset never reached it. Measured at
+   * 1000×700 with the inspector open: the visible strip was 236 px of a 995 px canvas
+   * and thirteen of seventeen opened children sat under the panel. Every other fit
+   * already goes through `readSafeInsets` + `centerForInsets`, which fold in the live
+   * obstacle insets, so this one now does too.
+   *
+   * What this cannot do by itself: a double-click both selects and expands, and the
+   * selection dive runs a frame later (`use-topology-loop`, the focus effect's
+   * `requestAnimationFrame`), so it lands last and this target is overwritten. This is
+   * the camera a chip press moves on its own.
+   */
+  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight);
+  const effW = Math.max(1, viewportWidth - insets.left - insets.right);
+  const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
+  const fitScale = Math.min(effW / w, effH / h);
   const effectiveMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
   // Owner report (2026-07-24) — with neighbours hidden (spotlight and the like) the
   // ego bbox is small and the fit shoots up into a microscope zoom. Zooming in for
@@ -878,8 +897,30 @@ export function computeClusterFitTarget(
   // members are tier-exempt so they are all visible even at that zoom, and fitting
   // in the zoom-out direction is not limited.
   const focusZoomInCeiling = overviewEntryScale * (tokens.focusMaxZoomRatio ?? Number.POSITIVE_INFINITY);
-  const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(overviewEntryScale, fitScale));
-  return { tx: centerX, ty: centerY, tscale: scale };
+  /*
+   * A dive used to be floored at `overviewEntryScale` — "a dive never zooms out past
+   * the overview". That floor is what made the promise breakable: a fan wider than the
+   * visible region at that altitude simply hung outside it. Containing what the press
+   * just opened is the older promise of the two, so the floor gives way to the camera's
+   * own minimum and the fan is held instead of half-shown.
+   */
+  const scaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+  const scale = Math.min(effectiveMax, focusZoomInCeiling, Math.max(scaleMin, fitScale));
+  const target = { ...centerForInsets(centerX, centerY, insets, scale), tscale: scale };
+  /*
+   * The focus leash (#1728) keeps a focused camera within `cameraFocusPanMargin` of its
+   * subject, and a target outside that envelope is pulled back after the tween arrives —
+   * the fan would slide out of frame the moment it landed. The parent is the subject
+   * here, and the disc is drawn around it, so the clamp only ever shortens a reach the
+   * leash would have undone anyway.
+   */
+  const parent = world.nodeById.get(parentId);
+  if (parent && tokens.cameraFocusPanMargin > 0) {
+    const m = tokens.cameraFocusPanMargin;
+    target.tx = Math.min(parent.x + m, Math.max(parent.x - m, target.tx));
+    target.ty = Math.min(parent.y + m, Math.max(parent.y - m, target.ty));
+  }
+  return target;
 }
 
 /**

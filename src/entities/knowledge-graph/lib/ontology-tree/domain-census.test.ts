@@ -29,10 +29,11 @@ describe("computeDomainCensusRows (Guardian I-1 — 도메인 크기 단일 진�
     ]);
   });
 
-  it("다중 부모 노드도 도메인마다 한 번씩 — 트리 단일-부모 유실이 없다", () => {
-    // `e1` is contained by both `c1` (in domain A) and domain B. The tree
-    // assigned it to one side and lost the other's count — the cause of the
-    // 96-vs-106 disagreement between two screens.
+  it("여러 도메인이 함께 쓰는 개념은 붙잡은 도메인에서 한 번만 센다", () => {
+    // `e1` is contained by both `c1` (in domain A) and domain B. The map can draw
+    // it in only one place, so counting it for both made a domain state a number
+    // its own chip could never open. The first containment parent wins, the same
+    // tie-break `buildOntologyTree` uses, so A holds it and B does not.
     const nodes = [
       node("a", "domain"),
       node("b", "domain"),
@@ -47,7 +48,30 @@ describe("computeDomainCensusRows (Guardian I-1 — 도메인 크기 단일 진�
     const rows = computeDomainCensusRows(nodes, edges, ["domain"]);
     const byId = domainCensusById(rows);
     expect(byId.get("a")).toMatchObject({ capabilityCount: 1, elementCount: 1 });
-    expect(byId.get("b")).toMatchObject({ capabilityCount: 0, elementCount: 1 });
+    expect(byId.get("b")).toMatchObject({ capabilityCount: 0, elementCount: 0 });
+  });
+
+  it("도메인 합계가 그 도메인들을 담은 project 합계를 넘지 않는다", () => {
+    // The arithmetic that exposed the double count: eight dogfood domains summed
+    // to 103 inside a project of 99. Every concept has one owner, so the domains
+    // can only partition what the project holds.
+    const nodes = [
+      node("p", "project"),
+      node("a", "domain"),
+      node("b", "domain"),
+      node("c1", "capability"),
+      node("e1", "element"),
+    ];
+    const edges = [
+      edge("p", "a", "contains"),
+      edge("p", "b", "contains"),
+      edge("a", "c1", "contains"),
+      edge("c1", "e1", "contains"),
+      edge("b", "e1", "contains"),
+    ];
+    const byId = domainCensusById(computeDomainCensusRows(nodes, edges));
+    const domainSum = byId.get("a")!.total + byId.get("b")!.total;
+    expect(domainSum).toBe(byId.get("p")!.total);
   });
 
   it("사이클이 있어도 종료하고 이중 가산하지 않는다", () => {

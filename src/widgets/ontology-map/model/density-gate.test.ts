@@ -280,3 +280,70 @@ describe("chipAnchorRadius", () => {
     }
   });
 });
+
+describe("computeDensityGate — the chip claims what it hides", () => {
+  const geo = new Map([["domain:a", { x: 0, y: 0, angle: 0, ring: 100 }]]);
+  // Domain A holds 13 capabilities, so it folds. One of those capabilities holds
+  // an element whose own `domain:` names domain B — the dogfood shape where
+  // `capability:mcp-server` (domain "AI Agent Integration") holds
+  // `element:saved-constellation-sidecar`, whose `domain:` is local vault
+  // management. The containment spine gives that element one owner, so it hangs
+  // under domain A and domain A's chip is holding it.
+  const capabilities = children("cap", DENSITY_GATE_THRESHOLD + 1);
+  const childrenByParent = new Map<string, readonly string[]>([
+    ["domain:a", capabilities],
+    ["cap-1", ["element:shared"]],
+  ]);
+  const kindOf = (id: string) =>
+    id.startsWith("domain:") ? "domain" : id.startsWith("element:") ? "element" : "capability";
+
+  it("counts the grandchild it folds away, so `+N` equals the node badge", () => {
+    const result = computeDensityGate({
+      childrenByParent,
+      expandedParents: new Set(),
+      parentGeometry: geo,
+      kindOf,
+    });
+    expect(result.clusteredIds.has("element:shared")).toBe(true);
+    expect(result.chips).toHaveLength(1);
+    // 13 capabilities + the element reached through one of them.
+    expect(result.chips[0].count).toBe(capabilities.length + 1);
+    expect(result.chips[0].count).toBe(result.clusteredIds.size);
+  });
+
+  it("counts a shared concept once, however many paths reach it", () => {
+    const result = computeDensityGate({
+      childrenByParent: new Map<string, readonly string[]>([
+        ["domain:a", capabilities],
+        ["cap-1", ["element:shared"]],
+        ["cap-2", ["element:shared"]],
+      ]),
+      expandedParents: new Set(),
+      parentGeometry: geo,
+      kindOf,
+    });
+    expect(result.chips[0].count).toBe(capabilities.length + 1);
+  });
+
+  it("the glyph still names the rank the chip sits on, not the grandchild", () => {
+    const result = computeDensityGate({
+      childrenByParent,
+      expandedParents: new Set(),
+      parentGeometry: geo,
+      kindOf,
+    });
+    expect(result.chips[0].childKind).toBe("capability");
+  });
+
+  it("expanding the parent reveals everything the chip claimed", () => {
+    const result = computeDensityGate({
+      childrenByParent,
+      expandedParents: new Set(["domain:a"]),
+      parentGeometry: geo,
+      kindOf,
+    });
+    expect(result.clusteredIds.size).toBe(0);
+    expect(result.chips[0].expanded).toBe(true);
+    expect(result.chips[0].count).toBe(capabilities.length + 1);
+  });
+});

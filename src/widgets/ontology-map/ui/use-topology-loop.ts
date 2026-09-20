@@ -1894,7 +1894,14 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       );
       batchRestrict = new Set<string>([newlyExpanded, ...ranked.slice(0, batchSize)]);
     }
-    const target = computeClusterFitTarget(world, tokens, width, height, newlyExpanded, overviewEntryScale, batchRestrict);
+    /*
+     * Through `cameraTokens`, like every other camera move. The cluster dive was the
+     * one that took the raw tokens, so it framed the fan against the whole window while
+     * the INDEX panel or an inspector covered part of it — measured 2026-09-21 at
+     * 1000×700 with the inspector open: thirteen of seventeen opened children landed
+     * under the panel, and the camera reported a successful frame.
+     */
+    const target = computeClusterFitTarget(world, cameraTokens(tokens), width, height, newlyExpanded, overviewEntryScale, batchRestrict);
     if (!target) return;
     dampingRef.current = tokens.cameraDampingDefault;
     cameraTargetRef.current = target;
@@ -1904,7 +1911,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // with once the tween ends or is interrupted.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(target);
-  }, [expandedParents, beginCameraTween]);
+  }, [expandedParents, beginCameraTween, cameraTokens]);
 
   useEffect(() => {
     panelEmphasisNodeIdRef.current = emphasizedNeighborSlug;
@@ -6971,13 +6978,28 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const world = worldRef.current;
         const clustered = clusteredIdsRef.current;
         return clusterChipsRef.current.map((chip) => {
-          const children = world?.childrenByParent.get(chip.parentId) ?? [];
+          // The chip claims its whole folded subtree, so reality has to be read
+          // over the same span: counting the first rank alone reported 10 against
+          // a claim of 18 and would have called an honest chip a liar.
+          const seen = new Set<string>();
+          const stack = [...(world?.childrenByParent.get(chip.parentId) ?? [])];
+          let shown = 0;
+          while (stack.length > 0) {
+            const id = stack.pop() as string;
+            if (seen.has(id)) continue;
+            // Domains are exempt from folding, so they are not the chip's to show.
+            if (world?.nodeById.get(id)?.kind === "domain") continue;
+            seen.add(id);
+            if (!clustered.has(id)) shown += 1;
+            const grandChildren = world?.childrenByParent.get(id);
+            if (grandChildren) stack.push(...grandChildren);
+          }
           return {
             parentId: chip.parentId,
             claimedCount: chip.count,
             expanded: chip.expanded,
-            /** Direct children that are not collapsed, i.e. can be drawn. */
-            shownChildren: children.filter((id) => !clustered.has(id)).length,
+            /** Descendants of this parent that are not collapsed, i.e. can be drawn. */
+            shownChildren: shown,
           };
         });
       },

@@ -58,7 +58,7 @@ import { DEPTH_DOT_LAYERS, draw as gridDraw, lerpColorHex, type CanvasBackground
 import {
   ACTIVITY_MARK_GAP,
   ACTIVITY_MARK_RADIUS,
-  computeLabelAlpha,
+  computeLensLabelAlpha,
   draw as labelsDraw,
   drawInstrumentCaption,
   resolveLabelBaselineY,
@@ -3347,6 +3347,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
      * `revealAlpha`, which a project or domain name ignores by rule (always 1),
      * so under the path lens every domain name stayed at full ink while the
      * discs sank (measured 2026-09-19: 185 for every name, on or off the path).
+     *
+     * It is a multiplier **only**: `revealAlpha` here is the node's own, exactly as the
+     * node pass drew it. Carrying the sink in both fields charged it twice to a capability
+     * or element, whose alpha does read `revealAlpha` (`computeLensLabelAlpha`).
      */
     lensSink: number;
     /** W6 agent visibility — this label's node matches the agent heartbeat's current focus. */
@@ -3497,12 +3501,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const pathLabelSink = pathLensActive || constellationLensActive
       ? spotlightSink(pathKept || constellationKept || isHovered || previewEndpoint)
       : 1;
-    const labelRevealAlpha = revealAlpha * pathLabelSink;
-    const baseCompactAlpha = computeLabelAlpha({
+    // The sink multiplies the finished per-kind alpha and never rides `revealAlpha` into it
+    // (`computeLensLabelAlpha`): the draw below applies it once more through `presenceAlpha`,
+    // and a value already carrying it would be charged twice.
+    const baseCompactAlpha = computeLensLabelAlpha({
       kind: node.kind,
       egoState,
       isHovered,
-      revealAlpha: labelRevealAlpha,
+      revealAlpha,
+      lensSink: pathLabelSink,
     });
     // A saved set is an explicit reading scope. Its names use the existing
     // foreground alpha as the lens settles, while the surrounding map keeps
@@ -3690,7 +3697,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenRadius,
         egoState,
         isHovered,
-        revealAlpha: labelRevealAlpha,
+        revealAlpha,
         lensSink: pathLabelSink,
         emphasisAlpha: constellationKept ? spotlightRamp : 0,
         agentFocus,

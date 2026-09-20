@@ -59,3 +59,91 @@ test("off the path, a domain's name is at most half as bright as one on it", asy
   const offMax = Math.max(...reading.off);
   expect(offMax / onMin, `경로 밖 이름(${Math.round(offMax)})이 경로 위 이름(${Math.round(onMin)})의 절반보다 밝다`).toBeLessThanOrEqual(0.5);
 });
+
+/**
+ * **One sink, one meaning of dimmed** (2026-09-21).
+ *
+ * The lens sink used to be folded into a label's `revealAlpha` *and* applied again as a
+ * multiplier at the draw. A domain name ignores `revealAlpha`, so it sank once; a capability
+ * or element name ran the sunk value through the child ramp's smoothstep first and sank
+ * again, landing near the square of the rest alpha. Off the path the two kinds therefore
+ * disagreed about what dimmed means.
+ *
+ * Measured as **each name against itself**: the same camera and the same open folder, once
+ * with the lens and once without. Comparing a name to its own unsunk self cancels the
+ * per-kind ink token, which is what makes a capability's sink comparable to a domain's.
+ *
+ * Two choices that come from measurement (2026-09-21):
+ *
+ * - **`open=domain:inventory`.** Children are anonymous dots at this altitude otherwise. Of
+ *   the seven folders tried, this one's three names — one capability, two elements — are the
+ *   ones the placer keeps in *both* frames, and a name missing from one frame cannot be
+ *   compared to itself.
+ * - **The 90th percentile of the box, not its brightest pixel.** A child's label box also
+ *   holds its disc, which is far brighter than the glyphs and saturates the maximum: the
+ *   brightest pixel read 52 against 52 for the defect and the repair alike. The p90 tracks
+ *   the glyphs: off-path children measured 0.19, 0.19 and 0.25 of their own unsunk selves
+ *   with the sink charged twice, 0.35, 0.42 and 0.44 with it charged once, against 0.31–0.37
+ *   for the domains beside them.
+ */
+const LENS_URL =
+  "/ko/topology/?e2e=1&guides=off&open=domain:inventory&mode=path&pathFrom=domain:order&pathTo=domain:fulfillment";
+const PLAIN_URL = "/ko/topology/?e2e=1&guides=off&open=domain:inventory";
+
+async function namePresencePerNode(page: import("@playwright/test").Page, url: string) {
+  await page.goto(url, { waitUntil: "domcontentloaded" });
+  await page.evaluate(() => document.fonts.ready);
+  await waitForMapStill(page);
+  // The sink ramps on its own clock; wait for the frame it has arrived in.
+  await page.waitForTimeout(600);
+  return page.evaluate(() => {
+    const probe = window.__atlasMap!;
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="ontology-map-canvas"]')!;
+    const ctx = canvas.getContext("2d")!;
+    const dpr = window.devicePixelRatio;
+    const reading: Record<string, number> = {};
+    for (const label of probe.labels()) {
+      const x = Math.round(label.minX * dpr);
+      const y = Math.round(label.minY * dpr);
+      const w = Math.max(1, Math.round((label.maxX - label.minX) * dpr));
+      const h = Math.max(1, Math.round((label.maxY - label.minY) * dpr));
+      const data = ctx.getImageData(x, y, w, h).data;
+      const lum: number[] = [];
+      for (let i = 0; i < data.length; i += 4) lum.push(0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]);
+      lum.sort((a, b) => a - b);
+      reading[label.nodeId] = lum[Math.floor(lum.length * 0.9)]!;
+    }
+    return reading;
+  });
+}
+
+test("the lens sinks a capability or element name no further than a domain name", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1512, height: 806 });
+  await seedFirstRunSeen(page);
+  const lens = await namePresencePerNode(page, LENS_URL);
+  const plain = await namePresencePerNode(page, PLAIN_URL);
+
+  const sunk = new Map<"domain" | "child", number[]>();
+  for (const [nodeId, lit] of Object.entries(lens)) {
+    const rest = plain[nodeId];
+    if (rest === undefined || rest <= 0) continue;
+    const kind = nodeId.split(":")[0];
+    const of = kind === "capability" || kind === "element" ? "child" : kind === "domain" ? "domain" : null;
+    if (of === null) continue;
+    sunk.set(of, [...(sunk.get(of) ?? []), lit / rest]);
+  }
+
+  const domains = sunk.get("domain") ?? [];
+  const children = sunk.get("child") ?? [];
+  expect(domains.length, "두 프레임에 모두 선 도메인 이름이 없으면 비교할 게 없다").toBeGreaterThan(2);
+  expect(children.length, "두 프레임에 모두 선 자식 이름이 없으면 잴 게 없다").toBeGreaterThan(1);
+  const deepestDomain = Math.min(...domains);
+  const deepestChild = Math.min(...children);
+  // The case only says something while the lens really is sinking names.
+  expect(deepestDomain, "렌즈가 도메인 이름을 전혀 안 가라앉혔다 — 이 프레임은 아무것도 증명하지 않는다").toBeLessThan(0.6);
+  expect(
+    deepestChild,
+    `자식 이름(${deepestChild.toFixed(2)})이 도메인 이름(${deepestDomain.toFixed(2)})보다 더 가라앉았다 — 가라앉히기가 두 번 먹었다`,
+  ).toBeGreaterThan(deepestDomain * 0.75);
+});

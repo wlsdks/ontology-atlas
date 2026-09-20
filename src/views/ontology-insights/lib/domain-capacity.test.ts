@@ -53,7 +53,10 @@ describe("computeDomainCapacityRows", () => {
     expect(computeDomainCapacityRows([node("project:atlas", "project")], [])).toEqual([]);
   });
 
-  it("다중 부모 노드도 도메인마다 집계된다 (트리 단일-부모 유실 회귀)", () => {
+  it("여러 도메인이 함께 쓰는 개념은 붙잡은 도메인 한 쪽에서만 집계된다", () => {
+    // The containment spine hangs a concept in one place, so the bars have to add up
+    // to what the project holds rather than counting a shared element twice
+    // (`domain-census.ts`, "One owner per concept").
     const nodes = [
       node("domain:a", "domain", "A"),
       node("domain:b", "domain", "B"),
@@ -68,7 +71,7 @@ describe("computeDomainCapacityRows", () => {
     const rows = computeDomainCapacityRows(nodes, edges);
     expect(rows).toEqual([
       { id: "domain:a", title: "A", capabilityCount: 1, elementCount: 1, total: 2 },
-      { id: "domain:b", title: "B", capabilityCount: 0, elementCount: 1, total: 1 },
+      { id: "domain:b", title: "B", capabilityCount: 0, elementCount: 0, total: 0 },
     ]);
   });
 

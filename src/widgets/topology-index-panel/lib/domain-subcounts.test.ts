@@ -64,6 +64,39 @@ describe("computeDomainSubcounts", () => {
     expect(subcounts.descendantCount).toBe(3);
   });
 
+  it("counts an element reached through a capability once, in the domain that holds it", () => {
+    // The dogfood shape: `element:shared` is declared by `capability:c1` (domain A)
+    // and by domain B. The spine gives it one owner, so domain A states it and
+    // domain B does not — the two numbers stay openable, and the sum over the
+    // domains stays equal to what the project holds.
+    const nodes = [
+      makeNode("project:root", "project"),
+      makeNode("domain:a", "domain"),
+      makeNode("domain:b", "domain"),
+      makeNode("capability:c1", "capability"),
+      makeNode("element:shared", "element"),
+    ];
+    const edges = [
+      makeEdge("e1", "project:root", "domain:a"),
+      makeEdge("e2", "project:root", "domain:b"),
+      makeEdge("e3", "domain:a", "capability:c1"),
+      makeEdge("e4", "capability:c1", "element:shared"),
+      makeEdge("e5", "domain:b", "element:shared"),
+    ];
+    const { roots } = buildOntologyTree(nodes, edges);
+
+    expect(computeDomainSubcounts(findDomain(roots, "domain:a"))).toEqual({
+      descendantCount: 2,
+      capabilityCount: 1,
+      elementCount: 1,
+    });
+    expect(computeDomainSubcounts(findDomain(roots, "domain:b"))).toEqual({
+      descendantCount: 0,
+      capabilityCount: 0,
+      elementCount: 0,
+    });
+  });
+
   it("returns zero counts for a domain with no children", () => {
     const nodes = [makeNode("project:root", "project"), makeNode("domain:empty", "domain")];
     const edges = [makeEdge("e1", "project:root", "domain:empty")];

@@ -3,7 +3,24 @@ import type {
   KnowledgeGraphEdge,
   KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
+import { buildTopologyWorld } from "@/widgets/ontology-map/ui/topology-world";
 import { buildOntologyMapGraph } from "./map-adapter";
+
+/** Only the values `buildTopologyWorld` reads to place and ring the nodes. */
+const MAP_TOKENS = {
+  layoutRingDomain: 250,
+  layoutRingCapability: 145,
+  layoutRingElement: 90,
+  radiusProject: 30,
+  radiusDomain: 17,
+  radiusCapability: 11,
+  radiusElement: 7,
+  edgeBowContains: 70,
+  edgeBowDepends: 92,
+  edgeBlendContains: 0.46,
+  edgeBlendDepends: 0.62,
+  starCount: 2,
+} as unknown as Parameters<typeof buildTopologyWorld>[2];
 
 function node(extra: Partial<KnowledgeGraphNode> = {}): KnowledgeGraphNode {
   return {
@@ -106,6 +123,50 @@ describe("buildOntologyMapGraph — regression: OntologyMap must not be mounted 
     expect(degreeById.get("a")).toBe(2);
     expect(degreeById.get("b")).toBe(1);
     expect(degreeById.get("c")).toBe(1);
+  });
+
+  it("engraves on a domain exactly what the map holds under it, across a shared concept", () => {
+    /*
+     * The regression this pins (2026-09-21): `element:shared` is declared by a capability
+     * in domain A and by domain B's own frontmatter. The census counted it for A while the
+     * map drew it under B, so A's node said 2 and opening it produced 1. The number and the
+     * subtree are computed here by two different modules, which is the point — a test that
+     * asked one of them twice would have passed throughout.
+     */
+    const nodes = [
+      node({ id: "proj", kind: "project" }),
+      node({ id: "domain:a", kind: "domain" }),
+      node({ id: "domain:b", kind: "domain" }),
+      node({ id: "cap", kind: "capability" }),
+      node({ id: "element:shared", kind: "element" }),
+    ];
+    const edges = [
+      edge({ id: "e1", from: "proj", to: "domain:a", type: "contains" }),
+      edge({ id: "e2", from: "proj", to: "domain:b", type: "contains" }),
+      edge({ id: "e3", from: "domain:a", to: "cap", type: "contains" }),
+      edge({ id: "e4", from: "cap", to: "element:shared", type: "contains" }),
+      edge({ id: "e5", from: "domain:b", to: "element:shared", type: "contains" }),
+    ];
+
+    const graph = buildOntologyMapGraph(nodes, edges);
+    const world = buildTopologyWorld(graph.nodes, graph.edges, MAP_TOKENS);
+    const subtreeOf = (id: string): number => {
+      const seen = new Set<string>();
+      const stack = [...(world.childrenByParent.get(id) ?? [])];
+      while (stack.length > 0) {
+        const next = stack.pop() as string;
+        if (seen.has(next) || world.nodeById.get(next)?.kind === "domain") continue;
+        seen.add(next);
+        stack.push(...(world.childrenByParent.get(next) ?? []));
+      }
+      return seen.size;
+    };
+    const countById = new Map(graph.nodes.map((n) => [n.id, n.descendantCount]));
+
+    expect(countById.get("domain:a")).toBe(subtreeOf("domain:a"));
+    expect(countById.get("domain:b")).toBe(subtreeOf("domain:b"));
+    expect(countById.get("domain:a")).toBe(2);
+    expect(countById.get("domain:b")).toBe(0);
   });
 
   it("threads a transitive descendantCount (project counts its whole subtree; a leaf counts zero)", () => {

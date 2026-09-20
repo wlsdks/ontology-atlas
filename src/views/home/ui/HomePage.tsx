@@ -458,7 +458,11 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const kindCountsTitle = useMemo(
     () =>
       `${tGlossary('capabilityTerm')}: ${tGlossary('capabilityDefinition')} · ` +
-      `${tGlossary('elementTerm')}: ${tGlossary('elementDefinition')}`,
+      `${tGlossary('elementTerm')}: ${tGlossary('elementDefinition')} · ` +
+      // The subcounts follow the containment spine, which holds a concept in one
+      // place, so the caption has to say where a concept two domains reference
+      // was counted — otherwise the two rows look like they disagree.
+      `${tGlossary('sharedConceptNote')}`,
     [tGlossary],
   );
   const tTopologyKeyboardWalk = useTranslations('topologyWidgets.keyboardWalk');
@@ -5305,6 +5309,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                       alreadyTyped: (count) => t("bootstrap.alreadyTyped", { count }),
                       runtimeSkills: (count) => t("bootstrap.runtimeSkills", { count }),
                       agentPointers: (count) => t("bootstrap.agentPointers", { count }),
+                      libraryFiles: (count) => t("bootstrap.libraryFiles", { count }),
                       confirm: t("bootstrap.confirm"),
                       cancel: t("bootstrap.cancel"),
                       errorPrefix: t("bootstrap.errorPrefix"),
