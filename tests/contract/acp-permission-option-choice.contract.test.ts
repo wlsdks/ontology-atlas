@@ -369,7 +369,11 @@ describe('permission options — the app picks the one that ends with this call'
 // `options.js` adds only the `defaultToNo` decline-first sort represented above; option ids and
 // kinds do not change. SHA-256: shared f3268e6d…, shell 102de11e…, tools fa0736e3…,
 // filesystem a4c5f1cb…, and the changed options.js f3e16436….
-const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.77.0';
+// 0.79.0 (2026-09-20): `dist/permissions/options/` is byte-identical to 0.77.0 and every digest
+// above is unchanged, `optionId` still appears in no `dist/**/*.js` outside that directory, and
+// the only file that moved under `dist/permissions/` is `presentation.js` — it stops compacting a
+// Bash or PowerShell title, which is the request's wording, not its option set.
+const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.79.0';
 
 describe('transcribed adapter version', () => {
   it('reads the option builders from the version the app actually launches', () => {

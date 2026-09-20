@@ -1934,6 +1934,9 @@ a navigation destination or a product screen.
 
 ### `/projects` — Project list (rebuilt 2026-07-18)
 
+**The door depends on the folder** (2026-09-19, decision "With one project, the Projects door opens that project"): with exactly one project the rail, its keyboard shortcut and the mobile tab bar open that project's page instead of a list of one row; with none or several they open this list. The list stays one press away as the breadcrumb at the top of every project page, and it is still where a project is created. One hook answers for all three doors (`useSoleProjectHref`), so the rail and the tab bar cannot disagree.
+
+
 The project index uses the shared page frame and compact rows so several project
 documents can be scanned by name and authored purpose. There is currently no
 in-page filtering.

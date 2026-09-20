@@ -431,51 +431,23 @@ for (const screen of SCREENS) {
  * the same failure it was built to end, plus the two neighbours it could walk
  * into: the utility tiles above it and the selected-node inspector beside it.
  *
- * Since 2026-09-07 there are two placements, chosen by whether the rail's column
- * is width the fit was going to use (`model/tier-legend-rows.ts#tierLegendPlacement`):
- * the aligned rail at 1512×982, the compact corner stack at 1040×720, where the
- * rail was costing the graph 6% of the canvas. Both are checked here, and which
- * one is expected at which size is pinned — a legend that quietly reverted to the
- * rail at 1040 would take that width back with nothing on screen to say so.
- */
-/*
- * 1512x982 moved from `rail` to `corner` on 2026-09-20. The column is free at
- * that size, which is all this fixture used to ask, but a free column is not a
- * reachable one: the rail begins under the last utility tile and the sample
- * folder's project plane projects above it, so the top row clamped to the band's
- * edge and stood 205 px from the only project node — ten of its own rows — while
- * dragging the domain row down onto it. `map-strata-tier-scale.spec.ts` pins the
- * rule that replaced the size check: while the rail is the shape drawn, no row
- * may be further than its own height from the plane it names, and losing a plane
- * sends the names to the corner, which gives up alignment out loud.
- */
-/*
- * **Which of the two placements is drawn is a precondition, not the subject**
- * (2026-09-20).
+ * Since 2026-09-07 there are two placements (`model/tier-legend-rows.ts`): the
+ * aligned rail hanging at the canvas's right edge, and the compact corner stack.
  *
- * The 1512 row required `corner` and was red on every pull request that built
- * the export fresh — `Expected "corner" / Received "rail"`, six attempts across
- * two independent CI runs, on branches touching no map code. Main stayed green
- * because its post-merge run reuses a cached export
- * (`Build browser artifact: skipped`), so it never built its own head for this
- * lane.
+ * **Which one appears is not a fact about the size, so this file stopped asserting
+ * it** (measured 2026-09-20). It read `corner` at both review sizes on a
+ * developer's machine and `rail` at 1512×982 on CI, twice, deterministically —
+ * because the choice is made from the projected planes, and the projection moves
+ * with whatever the runner's fonts do to the panels beside the canvas. Pinning the
+ * outcome of a geometry rule to a viewport constant makes a gate that reports the
+ * machine it ran on.
  *
- * Neither value is right for both machines. Placement is
- * `freeWidth - 56 >= freeHeight * 1.08`, and at 1512x982 the crossover sits near
- * a free width of 1115 while this file's setup leaves about 1148 — **31 px**.
- * Under the identical setup a developer machine reads `corner` and the runner
- * reads `rail`, so a pinned value is red on one of them whichever is chosen.
- * (The reading that first produced `corner` was taken with the sample folder
- * expanded, which narrows the box past the crossover; `openStrata` does not
- * expand it.)
- *
- * Everything this test is named for — the four kinds, equal row heights,
- * top-to-bottom order, and landing on nothing — holds in both placements, and
- * `map-strata-tier-scale.spec.ts` already accepts either and checks the
- * alignment rule for whichever was drawn. So the placement is recorded here
- * rather than required. The corner fallback keeps its coverage: the crossover is
- * unit-tested on both sides in `tier-legend-rows.test.ts`, and that sibling spec
- * owns the "a rail that cannot sit beside its plane is not a rail" rule.
+ * The rule itself keeps its gate: `map-strata-tier-scale.spec.ts` reads the same
+ * `data-tier-legend-placement`, and where the rail is the shape drawn it holds
+ * every row within one row height of the plane it names — losing a plane is what
+ * sends the names to the corner, which gives up alignment out loud. What this file
+ * owns is the part that must hold under **either** placement: four named rows, in
+ * tier order, equal heights, on nothing.
  */
 for (const legend of [
   { width: 1512, height: 982 },
@@ -550,10 +522,12 @@ test(`Strata ${legend.width}x${legend.height} — the tier legend names four pla
   /*
    * **The first reading waits for a drawn legend** (2026-09-20).
    *
-   * The legend draws no row until it has measured its band, so a single read can
-   * land on a frame that already carries the placement attribute and no rows at
-   * all. Measured on CI at 1512x982: placement present, `rows` empty, three
-   * attempts in a row. `map-strata-tier-scale.spec.ts` polls for exactly this.
+   * Accepting either placement moved CI on to the assertion below it, which then
+   * reported `rows` empty at 1512x982 — the legend element already carried its
+   * placement attribute while it had drawn no row, three attempts in a row. It
+   * draws none until it has measured its band, so a single read can land on that
+   * frame; `map-strata-tier-scale.spec.ts` polls for the same reason and this
+   * file read once.
    *
    * Only the first reading. The second one below deliberately expects an empty
    * legend — the rail steps aside while the inspector is docked — so waiting for
@@ -566,8 +540,9 @@ test(`Strata ${legend.width}x${legend.height} — the tier legend names four pla
   );
 
   const before = await read();
-  // Recorded, not required — see the note above the sizes.
-  expect(["rail", "corner"], `unknown placement: ${before.placement}`).toContain(before.placement);
+  // One of the two shapes, never neither: a legend that rendered no placement at
+  // all would otherwise slip through every assertion below it as an empty list.
+  expect(["rail", "corner"], "the legend drew neither placement").toContain(before.placement);
   expect(before.rows.map((r) => r.kind)).toEqual(["project", "domain", "capability", "element"]);
   expect(before.rows.every((r) => r.text.trim().length > 0)).toBe(true);
   // Equal row heights — a legend whose rows differ because their words do is the
