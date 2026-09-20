@@ -2063,6 +2063,24 @@
       "domainRowCapabilitiesEmpty": "담긴 역량이 아직 없어요. 요소만 있어요.",
       "domainOverlapNote": "여러 도메인에 속한 개념은 도메인마다 한 번씩 세어져요. 행의 합이 위 역량·요소 수보다 클 수 있어요.",
       "bodyCardTitle": "개요",
+      "domainsCardTitle": "도메인 구성",
+      "surfaceOntology": "온톨로지",
+      "surfaceLibrary": "자료실",
+      "surfaceHarness": "하네스",
+      "surfaceOpenOntology": "지도에서 열기",
+      "surfaceOpenLibrary": "자료실 열기",
+      "surfaceOpenHarness": "하네스 열기",
+      "surfaceSources": "원문",
+      "surfaceWikiPages": "위키",
+      "surfacePlanOnly": "요소가 아직 없는 도메인 {count}개",
+      "surfaceRelations": "관계 {count}개",
+      "surfaceOntologyEmpty": "아직 도메인도 역량도 없습니다. 지도에서 첫 도메인을 만들어 보세요.",
+      "surfaceLibraryEmpty": "이 폴더에 원문도 위키 페이지도 없습니다.",
+      "surfaceHarnessHolds": "에이전트가 따르는 지침·구조·센서. 폴더의 소스 트리에서 읽어 맥 앱에서 보입니다.",
+      "surfaceFolderScope": "원문과 위키는 폴더 전체를 셉니다",
+      "compositionHeading": "구성",
+      "bodyCovers": "이 문서가 다루는 것",
+      "bodyContinue": "온톨로지 문서에서 계속 읽기",
       "bodyCardGcap": "",
       "bodyEmptyHint": "아직 작성된 본문이 없어요.",
       "briefAskTitle": "에이전트에게 정리 맡기기",
@@ -5636,6 +5654,7 @@
         "changed": "인용한 원문이 바뀌었습니다",
         "missing": "인용한 원문이 없습니다",
         "new-sources": "새 자료를 검토해 주세요",
+        "rewritten": "인용한 원문이 바뀌었고, 이 답은 그 판본으로 다시 쓰였습니다",
         "unmeasured": "원문 버전이 확인되지 않았습니다",
         "unchanged": "출처 관찰 이후 변경 없음"
       },
@@ -5679,7 +5698,8 @@
       "paths": {
         "changed": "바뀐 원문",
         "missing": "없는 원문",
-        "added": "검토할 새 원문"
+        "added": "검토할 새 원문",
+        "rewritten": "다시 쓴 원문"
       },
       "version": {
         "head": "최근 초안",
@@ -5843,6 +5863,14 @@
         "noAgent": "이 맥에 준비된 코딩 에이전트가 없어 다시 쓰지 못했습니다. 에이전트 화면에서 로그인한 뒤 자동 점검을 다시 돌리세요."
       },
       "sheet": {
+        "readbackConsistency": "{cadence} 문서가 원문과 여전히 맞는지 확인하고, 낡은 문서는 {onStale}. 저장하면 바로 한 번 돕니다.",
+        "readbackService": "{cadence} {service}에서 온 문서를 다시 읽고, 새 것을 가져오고, 바뀐 문서를 다시 씁니다. 실행마다 에이전트 턴 하나.",
+        "readbackRedraft": "다시 씁니다",
+        "readbackMark": "노랗게 표시만 합니다",
+        "readbackHour": "한 시간마다",
+        "readback6h": "여섯 시간마다",
+        "readbackDaily": "매일 {time}에",
+        "readbackWeekdays": "평일 {time}에",
         "title": "새 자동 점검",
         "what": "무엇을 확인할지",
         "how": "얼마나 자주",

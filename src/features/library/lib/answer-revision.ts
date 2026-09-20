@@ -32,11 +32,16 @@ function observationMap(value: unknown): Record<string, unknown> {
 }
 
 export interface AnswerObservation {
-  state: 'changed' | 'missing' | 'new-sources' | 'unmeasured' | 'unchanged';
+  state: 'changed' | 'missing' | 'new-sources' | 'rewritten' | 'unmeasured' | 'unchanged';
   changed: string[];
   missing: string[];
   unmeasured: string[];
   added: string[];
+  /**
+   * Sources whose bytes moved on from what this answer observed, and which the page has
+   * since been written from anyway — its own `source_hash` records the current bytes.
+   */
+  rewritten: string[];
 }
 
 /** Byte observations describe change since an event, never what an answer read or proved. */
@@ -46,17 +51,42 @@ export function answerObservation(
   hashes: ReadonlyMap<string, string>,
 ): AnswerObservation {
   const before = observationMap(frontmatter.answer_source_observations);
+  /*
+   * **What the page was last written from, which the observation cannot say** (installed app,
+   * 2026-09-20). The observation is the immutable record of the bytes the answer read, so once
+   * a source moves it reads *changed* for good — including right after a fix turn rewrote the
+   * page from the new bytes and put the old figure under the new one. The reader then offered
+   * "ask for a fresh draft" for work that had just been done, while the wiki row beside it said
+   * the confirmed version was unchanged, because that row reads `source_hash`. `source_hash` is
+   * defined for every writer as the sha256 of the bytes it read, so it is the evidence for "this
+   * page is already written from this version" and both surfaces can now say one thing.
+   */
+  const written = observationMap(frontmatter.source_hash);
   const paths = sourceList(frontmatter);
-  const changed: string[] = [], missing: string[] = [], unmeasured: string[] = [];
+  const changed: string[] = [], missing: string[] = [], unmeasured: string[] = [], rewritten: string[] = [];
   const scope = Array.isArray(frontmatter.answer_scope_sources) ? new Set(frontmatter.answer_scope_sources) : null;
   const added = scope ? [...knownSources].filter((path) => !scope.has(path)) : [];
   for (const path of paths) {
     const old = before[path], current = hashes.get(path);
     if (!knownSources.has(path)) missing.push(path);
     else if (typeof old !== 'string' || !SHA256.test(old) || !current || !SHA256.test(current)) unmeasured.push(path);
-    else if (old.toLowerCase() !== current.toLowerCase()) changed.push(path);
+    else if (old.toLowerCase() === current.toLowerCase()) continue;
+    else if (matchesCurrent(written[path], current)) rewritten.push(path);
+    else changed.push(path);
   }
-  return { state: missing.length ? 'missing' : changed.length ? 'changed' : added.length ? 'new-sources' : unmeasured.length || !paths.length ? 'unmeasured' : 'unchanged', changed, missing, unmeasured, added };
+  const state = missing.length ? 'missing'
+    : changed.length ? 'changed'
+    : added.length ? 'new-sources'
+    : unmeasured.length || !paths.length ? 'unmeasured'
+    : rewritten.length ? 'rewritten'
+    : 'unchanged';
+  return { state, changed, missing, unmeasured, added, rewritten };
+}
+
+/** Does a page's own recorded hash for one source name the bytes on disk today? */
+function matchesCurrent(recorded: unknown, current: string): boolean {
+  return typeof recorded === 'string' && SHA256.test(recorded)
+    && recorded.toLowerCase() === current.toLowerCase();
 }
 
 /**

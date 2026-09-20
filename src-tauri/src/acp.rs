@@ -1195,12 +1195,28 @@ pub(crate) fn prepare_isolated_config(
     }
 
     if let Some(home) = home {
-        if spec.id == "claude-acp" {
-            mirror_terminal_login(&dir, home);
-        }
+        let mirrored = spec.id == "claude-acp" && mirror_terminal_login(&dir, home);
         let source = home.join(spec.user_config_dir).join(spec.credentials_file);
         let link = dir.join(spec.credentials_file);
-        if source.exists() {
+        if mirrored {
+            /*
+             * **The link is taken down once the keychain carries the login** (measured
+             * 2026-09-20). Claude Code migrates a `.credentials.json` it finds into the
+             * keychain and deletes the file — following the symlink's contents, filing them
+             * under its own account, over the mirror written a moment earlier. On the owner's
+             * machine that file was a leftover the terminal had stopped writing: its access
+             * token had expired and its refresh token was already spent, so every start
+             * re-poisoned the app folder with a dead login while the terminal's own was fine.
+             * Only a symlink is removed; a real file in the app folder is never this app's to
+             * delete.
+             */
+            if std::fs::symlink_metadata(&link)
+                .map(|meta| meta.file_type().is_symlink())
+                .unwrap_or(false)
+            {
+                let _ = std::fs::remove_file(&link);
+            }
+        } else if source.exists() {
             link_credentials(&source, &link)?;
             // Only clear the shadow after the link is actually in place — if there is no
             // original to link, the app-side entry may be the only credential, and deleting
@@ -1484,6 +1500,10 @@ pub(crate) struct CredentialCarrier {
     /// When the carrier was last written, as a sortable UTC `YYYYMMDDhhmmss` stamp. `None`
     /// when the carrier cannot say.
     pub(crate) written: Option<String>,
+    /// The keychain account (`acct`) the item is filed under, which is **the half of a
+    /// keychain item's name that decides whether Claude Code ever reads it**. `None` for a
+    /// file carrier, which has no account.
+    pub(crate) account: Option<String>,
 }
 
 /// Picks which carrier holds the login the terminal is actually using, or `None`.
@@ -1562,6 +1582,26 @@ pub(crate) fn parse_keychain_written(attributes: &str) -> Option<String> {
     (stamp.len() == 14).then_some(stamp)
 }
 
+/// Reads the `acct` (account) attribute out of `security find-generic-password` output.
+///
+/// The line looks like `"acct"<blob>="jinan"`, and the value is the last quoted field.
+///
+/// ## Why this is read at all (measured 2026-09-20)
+///
+/// A keychain item is named by **two** strings, service and account, and `security` will
+/// happily keep one item per account under one service. Claude Code files its credential
+/// under the macOS user name; this app mirrored its copy under the literal `claude`. Both
+/// items existed for the app's config folder, `security -s <service> -w` returned whichever
+/// came first, and Claude Code read only its own — so the mirror had never once been read.
+/// The app-folder item Claude Code did read was the one it had migrated out of the linked
+/// `.credentials.json`, whose `expiresAt` was `0`, which is why the screen said the login had
+/// expired while the very same bytes worked in the terminal.
+pub(crate) fn parse_keychain_account(attributes: &str) -> Option<String> {
+    let line = attributes.lines().find(|line| line.contains("\"acct\""))?;
+    let account = line.rsplit('"').nth(1)?.trim();
+    (!account.is_empty()).then(|| account.to_string())
+}
+
 /// The same sortable UTC stamp for a file, so a file and a keychain item compare directly.
 fn file_written(path: &Path) -> Option<String> {
     let modified = std::fs::metadata(path).ok()?.modified().ok()?;
@@ -1631,9 +1671,33 @@ pub(crate) fn merge_oauth_account(
 /// through one `security` argument list, as it does when Claude Code writes it, and only its
 /// digest is ever compared or logged. Failure is silent: with nothing to mirror the link
 /// below still stands, and the doctor's own repair is unchanged.
-fn mirror_terminal_login(config_dir: &Path, home: &Path) {
+///
+/// ## Which account, and why the link comes down (measured 2026-09-20)
+///
+/// A keychain item is named by service **and** account, and the two versions of this function
+/// before today filed the copy under the literal `claude` while Claude Code reads the macOS
+/// login name. Two items therefore lived under the app folder's service, Claude Code read
+/// only its own, and the mirror was never once read in the weeks it had been running. The
+/// item Claude Code did read was the one it had migrated out of the linked
+/// `.credentials.json` — a leftover whose access token had expired and whose refresh token
+/// was spent — so the screen said the login had expired while the same bytes worked in the
+/// terminal. `mirror_account` takes the account from the carrier instead of naming it, and a
+/// successful mirror takes the link down so the migration cannot overwrite it again.
+///
+/// Returns whether the app-scoped keychain item now carries the terminal's login.
+fn mirror_terminal_login(config_dir: &Path, home: &Path) -> bool {
+    #[allow(unused_mut)]
+    let mut mirrored = false;
     #[cfg(target_os = "macos")]
     {
+        // **Only the real home has a terminal login.** Every test hands in a synthetic home,
+        // and reaching into the login keychain from there proves nothing while leaving one
+        // item behind per run — which is how thousands of `Claude Code-credentials-…` items
+        // accumulated on the owner's machine.
+        if std::env::var_os("HOME").map(PathBuf::from).as_deref() != Some(home) {
+            return false;
+        }
+
         let app_service = claude_credentials_service(config_dir);
 
         // Every place the terminal's login could be, gathered before anything is chosen. The
@@ -1653,13 +1717,14 @@ fn mirror_terminal_login(config_dir: &Path, home: &Path) {
             }
             let mut show = std::process::Command::new("security");
             show.args(["find-generic-password", "-s", &service]);
-            let written = bounded_output(show, KEYCHAIN_PROBE_TIMEOUT)
-                .as_deref()
-                .and_then(parse_keychain_written);
+            let attributes = bounded_output(show, KEYCHAIN_PROBE_TIMEOUT);
+            let written = attributes.as_deref().and_then(parse_keychain_written);
+            let account = attributes.as_deref().and_then(parse_keychain_account);
             carriers.push(CredentialCarrier {
                 label: service,
                 digest: credential_digest(&secret),
                 written,
+                account,
             });
             secrets.push(secret);
         }
@@ -1671,6 +1736,7 @@ fn mirror_terminal_login(config_dir: &Path, home: &Path) {
                     label: terminal_file.to_string_lossy().to_string(),
                     digest: credential_digest(&secret),
                     written: file_written(&terminal_file),
+                    account: None,
                 });
                 secrets.push(secret);
             }
@@ -1678,14 +1744,26 @@ fn mirror_terminal_login(config_dir: &Path, home: &Path) {
 
         if let Some(chosen) = choose_terminal_credential(&carriers) {
             let carrier = &carriers[chosen];
+            let account = mirror_account(&carriers, home);
             // Nothing to do when the app scope already holds those exact bytes. Skipping the
-            // write keeps a locked keychain from being prompted for no reason.
+            // write keeps a locked keychain from being prompted for no reason. The read is
+            // account-qualified for the same reason the write is: an unqualified read answers
+            // with whichever item `security` reaches first, which is how a copy nobody read
+            // could look installed.
             let mut read_app = std::process::Command::new("security");
-            read_app.args(["find-generic-password", "-s", &app_service, "-w"]);
+            read_app.args([
+                "find-generic-password",
+                "-s",
+                &app_service,
+                "-a",
+                &account,
+                "-w",
+            ]);
             let installed = bounded_output(read_app, KEYCHAIN_PROBE_TIMEOUT)
                 .map(|secret| credential_digest(secret.trim_end_matches(['\n', '\r'])));
             if installed.as_deref() == Some(carrier.digest.as_str()) {
                 log::info!("acp login already matches {}", carrier.label);
+                mirrored = true;
             } else {
                 let mut write = std::process::Command::new("security");
                 write.args([
@@ -1694,16 +1772,30 @@ fn mirror_terminal_login(config_dir: &Path, home: &Path) {
                     "-s",
                     &app_service,
                     "-a",
-                    "claude",
+                    &account,
                     "-w",
                     &secrets[chosen],
                 ]);
                 if bounded_output(write, KEYCHAIN_PROBE_TIMEOUT).is_some() {
                     log::info!(
-                        "acp login mirrored from {} into the app-scoped keychain item",
+                        "acp login mirrored from {} into the app-scoped keychain item for {account}",
                         carrier.label
                     );
+                    mirrored = true;
                 }
+            }
+            if mirrored && account != LEGACY_MIRROR_ACCOUNT {
+                // The copy written under the old account name is litter: Claude Code never
+                // read it, and leaving it there makes every later unqualified read ambiguous.
+                let _ = std::process::Command::new("security")
+                    .args([
+                        "delete-generic-password",
+                        "-s",
+                        &app_service,
+                        "-a",
+                        LEGACY_MIRROR_ACCOUNT,
+                    ])
+                    .output();
             }
         } else if !carriers.is_empty() {
             // Disagreeing carriers with nothing to break the tie. Installing a guess here is
@@ -1733,6 +1825,29 @@ fn mirror_terminal_login(config_dir: &Path, home: &Path) {
     {
         let _ = (config_dir, home);
     }
+    mirrored
+}
+
+/// The literal account the mirror was filed under until 2026-09-20. Kept only so the copy
+/// nobody ever read can be cleared away.
+const LEGACY_MIRROR_ACCOUNT: &str = "claude";
+
+/// **Which keychain account the mirror must be filed under.**
+///
+/// Claude Code reads one account, and it is the one it writes: on macOS the login name. The
+/// carriers gathered from the terminal already say it, so the app copies the account from the
+/// evidence rather than naming it — `Claude Code-credentials` is filed under exactly the
+/// account whose item Claude Code reads. A file carrier has no account, so the last resort is
+/// the home folder's own name, which is that login name.
+fn mirror_account(carriers: &[CredentialCarrier], home: &Path) -> String {
+    carriers
+        .iter()
+        .find_map(|carrier| carrier.account.clone())
+        .or_else(|| {
+            home.file_name()
+                .map(|name| name.to_string_lossy().to_string())
+        })
+        .unwrap_or_else(|| LEGACY_MIRROR_ACCOUNT.to_string())
 }
 
 fn link_credentials(source: &Path, link: &Path) -> Result<(), String> {
@@ -3607,6 +3722,7 @@ mod tests {
             label: label.to_string(),
             digest: digest.to_string(),
             written: written.map(str::to_string),
+            account: None,
         }
     }
 
@@ -3717,6 +3833,49 @@ mod tests {
         // Output with no such attribute leaves the carrier unable to say, which the chooser
         // then refuses to guess past.
         assert_eq!(parse_keychain_written("keychain: \"login\"\n"), None);
+    }
+
+    #[test]
+    fn the_mirror_is_filed_under_the_account_claude_code_itself_reads() {
+        // Verbatim from `security find-generic-password -s "Claude Code-credentials"` on the
+        // owner's machine, 2026-09-20. The account is the macOS login name, and it is the
+        // only account Claude Code looks under.
+        let attributes = concat!(
+            "keychain: \"/Users/probe/Library/Keychains/login.keychain-db\"\n",
+            "    \"acct\"<blob>=\"probe\"\n",
+            "    \"mdat\"<timedate>=0x32303236303931393136353335395A00  \"20260919165359Z\\000\"\n",
+            "    \"svce\"<blob>=\"Claude Code-credentials\"\n",
+        );
+        assert_eq!(parse_keychain_account(attributes).as_deref(), Some("probe"));
+        assert_eq!(parse_keychain_account("keychain: \"login\"\n"), None);
+
+        // What the app used to write: the literal `claude`. Claude Code read its own account,
+        // found the copy it had migrated out of the linked file, and called the login expired
+        // while the mirror sat beside it unread.
+        let keychain = CredentialCarrier {
+            label: "Claude Code-credentials".to_string(),
+            digest: "369750".to_string(),
+            written: Some("20260919165359".to_string()),
+            account: Some("probe".to_string()),
+        };
+        let file = CredentialCarrier {
+            label: "/Users/probe/.claude/.credentials.json".to_string(),
+            digest: "811a39".to_string(),
+            written: Some("20260919091918".to_string()),
+            account: None,
+        };
+        let home = Path::new("/Users/probe");
+        assert_eq!(
+            mirror_account(&[keychain.clone(), file.clone()], home),
+            "probe",
+            "the account comes from the evidence, not from a literal"
+        );
+        assert_eq!(
+            mirror_account(&[file], home),
+            "probe",
+            "a file carrier has no account, so the home folder's own name stands in"
+        );
+        assert_ne!(mirror_account(&[keychain], home), LEGACY_MIRROR_ACCOUNT);
     }
 
     #[test]

@@ -431,27 +431,27 @@ for (const screen of SCREENS) {
  * the same failure it was built to end, plus the two neighbours it could walk
  * into: the utility tiles above it and the selected-node inspector beside it.
  *
- * Since 2026-09-07 there are two placements, chosen by whether the rail's column
- * is width the fit was going to use (`model/tier-legend-rows.ts#tierLegendPlacement`):
- * the aligned rail at 1512×982, the compact corner stack at 1040×720, where the
- * rail was costing the graph 6% of the canvas. Both are checked here, and which
- * one is expected at which size is pinned — a legend that quietly reverted to the
- * rail at 1040 would take that width back with nothing on screen to say so.
- */
-/*
- * 1512x982 moved from `rail` to `corner` on 2026-09-20. The column is free at
- * that size, which is all this fixture used to ask, but a free column is not a
- * reachable one: the rail begins under the last utility tile and the sample
- * folder's project plane projects above it, so the top row clamped to the band's
- * edge and stood 205 px from the only project node — ten of its own rows — while
- * dragging the domain row down onto it. `map-strata-tier-scale.spec.ts` pins the
- * rule that replaced the size check: while the rail is the shape drawn, no row
- * may be further than its own height from the plane it names, and losing a plane
- * sends the names to the corner, which gives up alignment out loud.
+ * Since 2026-09-07 there are two placements (`model/tier-legend-rows.ts`): the
+ * aligned rail hanging at the canvas's right edge, and the compact corner stack.
+ *
+ * **Which one appears is not a fact about the size, so this file stopped asserting
+ * it** (measured 2026-09-20). It read `corner` at both review sizes on a
+ * developer's machine and `rail` at 1512×982 on CI, twice, deterministically —
+ * because the choice is made from the projected planes, and the projection moves
+ * with whatever the runner's fonts do to the panels beside the canvas. Pinning the
+ * outcome of a geometry rule to a viewport constant makes a gate that reports the
+ * machine it ran on.
+ *
+ * The rule itself keeps its gate: `map-strata-tier-scale.spec.ts` reads the same
+ * `data-tier-legend-placement`, and where the rail is the shape drawn it holds
+ * every row within one row height of the plane it names — losing a plane is what
+ * sends the names to the corner, which gives up alignment out loud. What this file
+ * owns is the part that must hold under **either** placement: four named rows, in
+ * tier order, equal heights, on nothing.
  */
 for (const legend of [
-  { width: 1512, height: 982, placement: "corner" },
-  { width: 1040, height: 720, placement: "corner" },
+  { width: 1512, height: 982 },
+  { width: 1040, height: 720 },
 ] as const) {
 test(`Strata ${legend.width}x${legend.height} — the tier legend names four planes without landing on anything`, async ({ page }) => {
   test.setTimeout(120_000);
@@ -520,7 +520,9 @@ test(`Strata ${legend.width}x${legend.height} — the tier legend names four pla
     });
 
   const before = await read();
-  expect(before.placement, "the legend chose the other placement for this size").toBe(legend.placement);
+  // One of the two shapes, never neither: a legend that rendered no placement at
+  // all would otherwise slip through every assertion below it as an empty list.
+  expect(["rail", "corner"], "the legend drew neither placement").toContain(before.placement);
   expect(before.rows.map((r) => r.kind)).toEqual(["project", "domain", "capability", "element"]);
   expect(before.rows.every((r) => r.text.trim().length > 0)).toBe(true);
   // Equal row heights — a legend whose rows differ because their words do is the
