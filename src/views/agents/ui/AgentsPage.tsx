@@ -207,8 +207,13 @@ export function AgentsPage({
         className="mt-5 min-w-0"
       >
         {tab === 'agents' ? (
+          /*
+            The section keeps its label for assistive tech and for the tests that find this
+            panel by region, but it no longer repeats it as an `sr-only` heading: since
+            2026-09-20 the tool group inside draws that name **visibly**, so the heading was a
+            screen reader hearing the same words twice before the rows it introduces.
+          */
           <section className="min-w-0" aria-label={t('runtimesHeading')}>
-            <h2 className="sr-only">{t('runtimesHeading')}</h2>
             <AcpRuntimeSettings embedded onOpenChat={openChatOnMap} />
           </section>
         ) : (

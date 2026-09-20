@@ -3,22 +3,28 @@ import { describe, expect, it } from 'vitest';
 import {
   buildHarnessViewHref,
   DEFAULT_HARNESS_VIEW,
+  defaultViewForSurface,
   HARNESS_VIEW_ORDER,
   parseHarnessView,
+  resolveAddressView,
 } from './harness-view-state';
 
 describe('parseHarnessView', () => {
-  it('reads the three views', () => {
+  it('reads the four views', () => {
     expect(parseHarnessView('coverage')).toBe('coverage');
     expect(parseHarnessView('guides')).toBe('guides');
     expect(parseHarnessView('structure')).toBe('structure');
+    expect(parseHarnessView('architecture')).toBe('architecture');
   });
 
-  it('opens the blueprint for an unknown or missing value, where every older link points', () => {
+  it('opens the harness structure for an unknown or missing value', () => {
+    /* The destination is named Harness, so its arrival screen is the harness's own anatomy. The
+       layer ladder it used to be is the product's architecture, under its own name and its own
+       address since 2026-09-19 (owner). */
     expect(parseHarnessView(null)).toBe('structure');
     expect(parseHarnessView(undefined)).toBe('structure');
     expect(parseHarnessView('')).toBe('structure');
-    expect(parseHarnessView('architecture')).toBe('structure');
+    expect(parseHarnessView('not-a-view')).toBe('structure');
     expect(DEFAULT_HARNESS_VIEW).toBe('structure');
   });
 
@@ -29,8 +35,45 @@ describe('parseHarnessView', () => {
     expect(parseHarnessView('sensors')).toBe('coverage');
   });
 
-  it('puts the blueprint first, so the tab order is the reading order', () => {
+  it('puts the harness structure first, so the tab order is the reading order', () => {
     expect(HARNESS_VIEW_ORDER[0]).toBe('structure');
+    expect([...HARNESS_VIEW_ORDER]).toEqual(['structure', 'coverage', 'guides', 'architecture']);
+  });
+});
+
+describe('resolveAddressView', () => {
+  it('reads the blueprint out of an address that carries only its own parameters', () => {
+    /* `?role=` and `?stage=` exist on no other view. Every deep link written while the blueprint
+       was the default carries one and no `?view=`, and would otherwise open a screen with no roles
+       on it. */
+    expect(resolveAddressView(new URLSearchParams('role=views'))).toBe('architecture');
+    expect(resolveAddressView(new URLSearchParams('stage=plan'))).toBe('architecture');
+  });
+
+  it('lets an explicit view win over that reading', () => {
+    expect(resolveAddressView(new URLSearchParams('view=coverage&role=views'))).toBe('coverage');
+  });
+
+  it('opens the arrival view for a plain address or none at all', () => {
+    expect(resolveAddressView(new URLSearchParams(''))).toBe('structure');
+    expect(resolveAddressView(new URLSearchParams('focus=main'))).toBe('structure');
+    expect(resolveAddressView(null)).toBe('structure');
+  });
+
+  it('sends a surface that cannot read the harness to the view it can answer', () => {
+    /* The browser cannot see a dot directory at all, so the structure view is empty there and
+       arriving on it hands a web visitor a card about what this browser cannot do. */
+    expect(resolveAddressView(new URLSearchParams(''), false)).toBe('architecture');
+    expect(resolveAddressView(null, false)).toBe('architecture');
+    /* An address still wins, so a shared link opens what it names on either surface. */
+    expect(resolveAddressView(new URLSearchParams('view=structure'), false)).toBe('structure');
+  });
+});
+
+describe('defaultViewForSurface', () => {
+  it('gives the app the harness and the browser the blueprint', () => {
+    expect(defaultViewForSurface(true)).toBe('structure');
+    expect(defaultViewForSurface(false)).toBe('architecture');
   });
 });
 
@@ -39,9 +82,10 @@ describe('buildHarnessViewHref', () => {
     expect(buildHarnessViewHref('structure')).toBe('/architecture/');
   });
 
-  it('names the other two views in the query', () => {
+  it('names the other three views in the query', () => {
     expect(buildHarnessViewHref('guides')).toBe('/architecture/?view=guides');
     expect(buildHarnessViewHref('coverage')).toBe('/architecture/?view=coverage');
+    expect(buildHarnessViewHref('architecture')).toBe('/architecture/?view=architecture');
   });
 
   it('keeps the locale-prefixed pathname it was given', () => {

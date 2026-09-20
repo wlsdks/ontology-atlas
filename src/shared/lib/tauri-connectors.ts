@@ -70,6 +70,22 @@ export interface ConnectorDiscovery {
   sources: DiscoverySource[];
 }
 
+/**
+ * **What a screen knows about the scan so far** — three states, because two of them used to be
+ * spelled as one (2026-09-20).
+ *
+ * The UI held `DiscoveredConnector[] | null` and read `null` as "has not answered yet". That
+ * erases the case where the command **answered badly**: `discover_mcp_connectors` reads four
+ * config files on this machine and can reject, and a rejected call left every reader saying the
+ * scan was still running, for as long as the screen stayed open. `failed` is not `[]` either —
+ * an empty list is the claim "you have nothing registered here", which a failed read has not
+ * earned.
+ */
+export type ConnectorDiscoveryState =
+  | { status: 'scanning' }
+  | { status: 'failed' }
+  | { status: 'done'; connectors: DiscoveredConnector[] };
+
 /** Whether the discovery IPC exists here — false means the browser, where these files are unreadable. */
 export function isConnectorDiscoveryAvailable(): boolean {
   return getInvoke() !== null;

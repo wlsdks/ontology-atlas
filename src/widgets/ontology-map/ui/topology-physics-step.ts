@@ -8,7 +8,7 @@
  * "live state, stepped every frame" contract (`engine/camera.ts`).
  */
 
-import { computePanBounds, stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera";
+import { stepCamera, type CameraAxes, type CameraTarget } from "../engine/camera";
 import { computeAltitudeBand, computeFarT } from "../model/altitude";
 import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis, stepFocusRamp } from "../model/focus-state";
 import { edgePairKey, selectEgoContainsComets, updateParticles } from "../render/edge-fireflies";
@@ -17,8 +17,7 @@ import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import {
   computeEffectiveCameraScaleMax,
   computeEffectiveCameraScaleMin,
-  computeUnfocusedPanBounds,
-} from "./topology-camera-math";
+  computeUnfocusedPanBounds, focusPanBounds, type FocusLeashPx } from "./topology-camera-math";
 import type { TopologyWorld } from "./topology-world";
 
 /** No focus → no ego contains comets. Reused so the no-focus path allocates nothing. */
@@ -82,6 +81,11 @@ export interface PhysicsStepInput {
    * null/omitted keeps the previous behaviour.
    */
   focusAnchorOverride?: { x: number; y: number } | null;
+  /**
+   * The focus leash in screen pixels (`focusLeashPx`), converted with the live
+   * scale each frame so a zoom-in tightens it. Null keeps the token alone.
+   */
+  focusLeashPx?: FocusLeashPx | null;
   /**
    * 3D dome view — overrides the camera's minimum zoom (`DomeRuntime.fitScale`). The
    * dome's projected bbox is wider than the 2D spine bbox, so its fit zoom can sit
@@ -232,6 +236,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     isDragging,
     worldBoundsOverride = null,
     focusAnchorOverride = null,
+    focusLeashPx = null,
     scaleMinOverride = null,
     reducedMotion,
     ambientFactor,
@@ -281,10 +286,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // replaces the spine-only special case too.
   const focusAnchor = focusNode ? (focusAnchorOverride ?? { x: focusNode.x, y: focusNode.y }) : null;
   const panBounds = focusAnchor
-    ? computePanBounds(
-        { minX: focusAnchor.x, minY: focusAnchor.y, maxX: focusAnchor.x, maxY: focusAnchor.y },
-        tokens.cameraFocusPanMargin,
-      )
+    ? focusPanBounds(focusAnchor, focusLeashPx, camera.scale.value, tokens.cameraFocusPanMargin)
     : computeUnfocusedPanBounds(
         worldBoundsOverride ?? (isSpineOnlyZoom(preStepZoomRatio, tierReveal) ? world.spineBounds : world.bounds),
         camera.scale.value,
