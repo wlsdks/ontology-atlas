@@ -28,6 +28,8 @@ import { useTranslations } from 'next-intl';
 
 import { Chip, Disclosure, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
 import { copyText } from '@/shared/lib/copy-text';
+import { Link } from '@/i18n/navigation';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
 import { Button } from '@/shared/ui/button';
 import { formatDate } from '@/shared/lib/format-date';
@@ -1858,7 +1860,42 @@ export function AcpChatPanel({
             know cannot work would teach people to distrust it.
           */}
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            {trouble?.kind === 'launch' ? null : (
+            {/*
+             * **The one card with no retry now has the door its own sentence names**
+             * (2026-09-20). Rendered for the first time this round: the `launch` card told the
+             * reader to check this tool's state on the Agents screen "on the left", and offered
+             * exactly one control — the connection check, which the comment above calls the
+             * row's *second* action. So the only action on the card was not the one the sentence
+             * asked for, and the screen it named had to be found by hand. That is the dead end
+             * the retry was added to close for the other six kinds.
+             *
+             * It is a link rather than a retry because the diagnosis is right: another attempt
+             * at a start we know cannot work would teach people to distrust the button. The
+             * sentence also stopped naming a direction — the rail that holds Agents is hidden
+             * below `lg`, so "on the left" was a guess about the reader's window, and it is not
+             * needed now that the destination is on the card.
+             */}
+            {trouble?.kind === 'launch' ? (
+              <Link
+                href={DESTINATION_HREF.agents}
+                data-testid="acp-chat-error-agents"
+                /*
+                 * The hover comes from the axis, not from a hand-written class: the retry beside
+                 * it predates `hoverSurface` and is carried by the adoption ratchet, and copying
+                 * its literal would have raised that count rather than left it alone.
+                 */
+                className={controlClass({
+                  shape: 'chip',
+                  size: 'lg',
+                  tone: 'accentOnTint',
+                  hoverSurface: 'lift',
+                  className:
+                    'shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)]',
+                })}
+              >
+                {t('trouble.launch.door')}
+              </Link>
+            ) : (
               <Chip
                 size="lg"
                 tone="accentOnTint"
