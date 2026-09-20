@@ -26,7 +26,7 @@ const DESTINATIONS = [
   { key: "i", path: "/ontology/insights" },
   { key: "p", path: "/projects" },
   { key: "a", path: "/agents" },
-  // MCP is a section of the Agents page since 2026-09-18; `G C` lands on that section.
+  // MCP is the Agents page's second tab since 2026-09-19; `G C` lands with that tab selected.
   { key: "c", path: "/agents/?tab=mcp" },
   { key: "g", path: "/git" },
 ] as const;
@@ -92,6 +92,21 @@ test.describe("목적지 이동 단축키", () => {
         }
       }
       await expect(page, `G ${key.toUpperCase()} 가 ${path} 로 가지 않았다`).toHaveURL(expected);
+
+      /*
+       * ⚠️ **The address is not the arrival** (2026-09-20). For `G C` the destination is a tab,
+       * and `?tab=mcp` only selects it if the page reads the query — which this spec never
+       * checked. A regression in that parse would leave the URL right, land the person on the
+       * tool list, and keep this test green. Assert the pair: the tab it names is selected and
+       * the other is not.
+       */
+      if (key === "c") {
+        await expect(page.getByTestId("agents-tab-mcp")).toHaveAttribute("aria-selected", "true");
+        await expect(page.getByTestId("agents-tab-agents")).toHaveAttribute(
+          "aria-selected",
+          "false",
+        );
+      }
     }
   });
 
