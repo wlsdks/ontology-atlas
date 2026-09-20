@@ -28,6 +28,7 @@ import { groupLedgerByDay, passDurationSeconds } from "../../lib/round-presentat
 
 const DOT: Record<Exclude<RoundPassOutcome, "asleep">, string> = {
   held: "h-1.5 w-1.5 bg-[color:var(--color-text-quaternary)]",
+  reviewed: "h-2 w-2 bg-[color:var(--color-indigo-text-soft)]",
   stale: "h-2 w-2 bg-[color:var(--color-status-warning)]",
   redrafted: "h-2 w-2 bg-[color:var(--color-indigo-text-soft)]",
   refused: "h-2 w-2 bg-[color:var(--color-status-danger)]",
@@ -35,6 +36,7 @@ const DOT: Record<Exclude<RoundPassOutcome, "asleep">, string> = {
 };
 
 const OUTCOME_BADGE: Record<Exclude<RoundPassOutcome, "asleep" | "held">, string> = {
+  reviewed: "border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] text-[color:var(--color-indigo-text-soft)]",
   stale: "border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]",
   redrafted: "border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] text-[color:var(--color-indigo-text-soft)]",
   refused: "border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a12)] text-[color:var(--color-danger-text)]",

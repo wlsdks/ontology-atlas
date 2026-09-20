@@ -1,0 +1,37 @@
+{
+  "recordedAt": "2026-09-20T07:36:51.000Z",
+  "date": "2026-09-20",
+  "decision": "build and verify",
+  "door": "one-way",
+  "route": "review",
+  "outcome": "correct",
+  "changes": [
+    "public-contract",
+    "surface-inventory",
+    "substantial-investment",
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "affected",
+    "transfer": "unchanged",
+    "agent-write": "affected",
+    "human-correction": "affected"
+  },
+  "risk": "meaning",
+  "firstTurns": 2,
+  "rebuttalTurns": 0,
+  "delta": "verification-strengthened",
+  "uniqueContributors": [
+    "po-evidence",
+    "po-steward"
+  ],
+  "initialUpdate": {
+    "date": "2026-09-20",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "139e90fb-74c2-49db-990c-e107a9e3032b"
+}

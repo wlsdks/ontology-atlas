@@ -31,6 +31,8 @@ tags: [architecture, infra, overview]
 │ ├─ /docs                   exact-document compatibility │
 │ ├─ /library                sources + wiki + ontology     │
 │ │                          + collections + rounds      │
+│ ├─ /automations            ontology reviews + document │
+│ │                          round scheduling            │
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
 │ ├─ /ontology/studio        compatibility → topology    │
@@ -391,6 +393,14 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   once in `AppShell`, above every route; `/library/?tab=rounds` only reads. No Rust
   change: hashing, the watcher and the ACP commands already existed. Spec:
   `docs/superpowers/specs/2026-09-17-library-rounds-design.md`.
+- **Automations (2026-09-20).** `src/views/automations/` is the schedule manager and
+  `src/app/automations-workspace/` composes it with the one `LibraryRoundsProvider` clock.
+  Its Ontology lane registers `kind: "ontology"` read-only ACP review rounds: the runner may
+  read `atlas-vault` and source evidence, records a bounded review summary, and refuses every
+  ontology/file write and `finalize_project_meaning`. Its Documents lane opens the existing
+  Library round registration and ledger. The map's contextual Automations chip opens the
+  Ontology lane; Library's round header opens the Documents lane. No scheduler runs while the
+  web build lacks a native folder root.
 - `src/entities/library-collection/` owns the compatible `v1` saved-constellation
   schema and UID-based member resolution. The selected vault sidecar is shared by
   Galaxy and Library; MCP and CLI mirror it for read-only recovery. The Galaxy
@@ -655,7 +665,8 @@ rather than guess, leaving the folder screen to own the launch. Decision:
 
 **One piece of code decides which nav item is active; each screen size shows a
 different list of buttons.** The desktop rail shows eight destinations: Map,
-Architecture, Library, Insights, Projects, Agents, MCP, and Git. The mobile bottom
+Architecture, Library, Automations, Insights, Projects, Agents, and Git. MCP is the
+second tab of Agents. The mobile bottom
 bar shows five persistent destinations: Map, Architecture, Library, Insights, and Projects;
 web adds Get App as a separate utility. Library contains Sources, Wiki, Ontology, and Collections;
 `/docs` remains an exact-document compatibility address for non-ontology files and resolves

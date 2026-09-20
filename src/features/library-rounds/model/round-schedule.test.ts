@@ -33,6 +33,14 @@ describe('plan tick', () => {
     expect(plan.due.map((r) => r.id)).toEqual(['l', 's']);
   });
 
+  it('puts a read-only ontology review between local checks and service work', () => {
+    const service = round({ id: 's', kind: 'service', connectorId: 'c', nextDueAt: '2026-09-17T08:00:00.000Z' });
+    const ontology = round({ id: 'o', kind: 'ontology', query: 'source gaps', nextDueAt: '2026-09-17T08:00:00.000Z' });
+    const local = round({ id: 'l', nextDueAt: '2026-09-17T08:00:00.000Z' });
+    const plan = planTick({ rounds: [service, ontology, local], now: at('2026-09-17T09:00:30Z'), lastTickAt: at('2026-09-17T08:59:30Z'), running: false });
+    expect(plan.due.map((r) => r.id)).toEqual(['l', 'o', 's']);
+  });
+
   it('skips a paused round and one not yet due', () => {
     const paused = round({ id: 'p', enabled: false });
     const later = round({ id: 'x', nextDueAt: '2026-09-17T10:00:00.000Z' });

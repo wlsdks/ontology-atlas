@@ -2771,6 +2771,32 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     assert.ok(getCallParsed(written.responses, 2).concepts.every((row) => row.ok));
     assert.ok(getCallParsed(written.responses, 3).relations.every((row) => row.ok));
 
+    const readback = await rpcForRepo(vaultRoot, repoRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "get_concepts", {
+        slugs: qualifiedResult.proposalValidation.writePlan.concepts.map(({ slug }) => slug),
+        body: "full",
+      }),
+    ]);
+    const readbackResult = getCallParsed(readback.responses, 2);
+    assert.equal(readbackResult.concepts.length, qualifiedResult.proposalValidation.writePlan.concepts.length);
+    assert.ok(readbackResult.concepts.every((row) => row.isNode === true && row.bodyInfo?.mode === "full"));
+
+    const validated = await rpcForRepo(vaultRoot, repoRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "validate_vault", {}),
+    ]);
+    const validatedResult = getCallParsed(validated.responses, 2);
+    assert.equal(validatedResult.summary.problemFiles, 0);
+
+    const compiled = await rpcForRepo(vaultRoot, repoRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "compile_ontology", {}),
+    ]);
+    const compiledResult = getCallParsed(compiled.responses, 2);
+    assert.equal(compiledResult.issues.filter(({ severity }) => severity === "error").length, 0);
+    assert.equal(compiledResult.unresolvedEdgeCount, 0);
+
     const connected = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
       callTool(2, "connect_project_source", {

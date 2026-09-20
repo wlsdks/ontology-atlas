@@ -120,7 +120,7 @@ describe('MeaningEditorPanel', () => {
 
     fireEvent.click(screen.getByTestId('meaning-editor-review'));
     expect(screen.queryByTestId('meaning-editor-change-review')).not.toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent('변경할 내용이 없습니다');
+    expect(screen.getByRole('alert')).toHaveTextContent('변경할 내용이 없어요');
   });
 
   it('쓰기를 마친 뒤 다시 열면 처음 단계로 돌아가고 버튼이 풀린다', async () => {

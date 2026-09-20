@@ -35,7 +35,17 @@ function tourAnchorTestids(): string[] {
   return found;
 }
 
-/** Every literal `data-testid="…"` rendered by product source (tests excluded). */
+/**
+ * Every literal testid rendered by product source (tests excluded).
+ *
+ * Two spellings reach the DOM as `data-testid`. The attribute is one; the other is the
+ * `testId` prop the shared primitives forward (`tab-bar`, `dialog`, `segmented-control`,
+ * `census-tile`, `hidden-count-line` all end in `data-testid={testId}`). Measured on
+ * 2026-09-21: 142 literal `testId="…"` props in product source were invisible here, and the
+ * first anchor to land on one — `automations-tabs`, the Automations header tab strip — was
+ * reported as "no screen renders it" although the element is really in the DOM. A gate that
+ * cannot see half the spelling of the thing it checks fails honest screens.
+ */
 function renderedTestids(): Set<string> {
   const stack = [join(process.cwd(), "src")];
   const found = new Set<string>();
@@ -53,6 +63,7 @@ function renderedTestids(): Set<string> {
       scanned += 1;
       const text = readFileSync(full, "utf8");
       for (const match of text.matchAll(/data-testid="([^"]+)"/g)) found.add(match[1]!);
+      for (const match of text.matchAll(/\btestId="([^"]+)"/g)) found.add(match[1]!);
     }
   }
   // A walk that died reports "nothing to check" as a pass, so the floor is asserted first.

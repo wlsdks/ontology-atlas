@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, Pause, Play, Plus, Trash2, TriangleAlert } from "lucide-react";
+import { CalendarClock, Clock3, Pause, Play, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useMemo, useState } from "react";
 
@@ -8,6 +8,7 @@ import type { RoundPassEntry, RoundRecord } from "@/entities/library-round";
 import { cadenceKey, cadenceMinutes, roundPlaceLabels, roundPlaces } from "@/entities/library-round";
 import { useLocalVault } from "@/entities/vault-session";
 import { Link, useRouter } from "@/i18n/navigation";
+import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
@@ -57,8 +58,10 @@ export function LibraryRounds() {
   const now = new Date();
   const todayKey = now.toDateString();
 
-  const rounds = runner?.rounds ?? EMPTY_ROUNDS;
-  const entries = runner?.ledger ?? EMPTY_ENTRIES;
+  const sourceRounds = runner?.rounds ?? EMPTY_ROUNDS;
+  const sourceEntries = runner?.ledger ?? EMPTY_ENTRIES;
+  const rounds = useMemo(() => sourceRounds.filter((round) => round.kind !== "ontology"), [sourceRounds]);
+  const entries = useMemo(() => sourceEntries.filter((entry) => entry.kind !== "ontology"), [sourceEntries]);
   const runnerState = runner?.state ?? null;
   const selected = rounds.find((round) => round.id === selectedId) ?? null;
   const shownEntries = useMemo(
@@ -136,6 +139,7 @@ export function LibraryRounds() {
     if (entry.outcome === "redrafted") {
       return { text: t("outcome.redrafted", { count: entry.written.filter((p) => p.startsWith("wiki/")).length }), tone: "indigo" as const };
     }
+    if (entry.outcome === "reviewed") return { text: t("outcome.reviewed"), tone: "indigo" as const };
     if (entry.outcome === "refused" || entry.outcome === "failed") return { text: t(`outcome.${entry.outcome}`), tone: "danger" as const };
     return { text: t("outcome.held"), tone: "quiet" as const };
   };
@@ -437,13 +441,18 @@ export function LibraryRounds() {
 
 function Header({ t }: { t: ReturnType<typeof useTranslations<"library.rounds">> }) {
   return (
-    <header className="min-w-0">
-      <p className="text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
-        {t("eyebrow")}
-      </p>
-      <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t("title")}</h1>
-      <p className="mt-2 max-w-prose text-body-lg leading-title text-[color:var(--color-text-tertiary)] [word-break:keep-all]">{t("lede")}</p>
+    <header className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+      <div className="min-w-0">
+        <p className="text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
+          {t("eyebrow")}
+        </p>
+        <h1 className="mt-2 text-display leading-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t("title")}</h1>
+        <p className="mt-2 max-w-prose text-body-lg leading-title text-[color:var(--color-text-tertiary)] [word-break:keep-all]">{t("lede")}</p>
+      </div>
+      <Link href={`${DESTINATION_HREF.automations}?kind=documents`} data-testid="library-rounds-manage-automations" className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>
+        <CalendarClock size={ICON_SIZE.sm} aria-hidden />
+        {t("manageAutomations")}
+      </Link>
     </header>
   );
 }
-

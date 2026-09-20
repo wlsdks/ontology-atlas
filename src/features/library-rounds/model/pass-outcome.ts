@@ -12,6 +12,10 @@ import type { ConsistencyPassResult } from './consistency-pass';
  * and its `checked` is the number of documents it was sent to refresh. Before this, the
  * consistency check ran for *every* pass and a service round's ledger row wore a
  * `stale · N` badge counting pages that round never looked at.
+ *
+ * An ontology round is the third shape: its brief forbids every write, so a turn that finished
+ * without a refusal has *reviewed*, not *held*. `held` reads as "looked and found nothing to
+ * do", which is the opposite of what a review packet is.
  */
 
 export interface PassFacts {
@@ -34,7 +38,8 @@ export interface PassLedgerFacts {
 export function passLedgerFacts({ kind, check, refreshed = 0, failed, written, refused }: PassFacts): PassLedgerFacts {
   const stale = kind === 'consistency' && check ? check.stalePages : [];
   const checked = kind === 'consistency' && check ? check.checked : refreshed;
-  return { outcome: outcomeOf({ failed, written, refused, stale }), checked, stale };
+  const reviewed = kind === 'ontology' && !failed;
+  return { outcome: outcomeOf({ failed, written, refused, stale, reviewed }), checked, stale };
 }
 
 function outcomeOf(input: {
@@ -42,10 +47,12 @@ function outcomeOf(input: {
   written: readonly string[];
   refused: readonly string[];
   stale: readonly string[];
+  reviewed?: boolean;
 }): RoundPassOutcome {
   if (input.failed) return 'failed';
   if (input.written.length > 0) return 'redrafted';
   if (input.refused.length > 0) return 'refused';
+  if (input.reviewed) return 'reviewed';
   if (input.stale.length > 0) return 'stale';
   return 'held';
 }

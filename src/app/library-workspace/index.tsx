@@ -33,7 +33,7 @@ export function LibraryWorkspace() {
   const preferredSegment = useLibraryIndexSegment();
   const requested = params.get('tab');
   const rounds = useLibraryRounds();
-  const roundsOn = rounds ? rounds.rounds.filter((round) => round.enabled).length : 0;
+  const roundsOn = rounds ? rounds.rounds.filter((round) => round.kind !== 'ontology' && round.enabled).length : 0;
   const tab: LibraryTab = requested === 'ontology' || requested === 'collections' || requested === 'rounds'
     ? requested
     : requested === 'sources' || requested === 'wiki' ? requested : preferredSegment;

@@ -369,9 +369,18 @@ const VAULT_HANDOFF_BASE = [
 const VAULT_MCP_SENTENCE =
   'The `atlas-vault` MCP server is already connected to this exact folder. Use it for everything about this graph. Do not shell out, list directories, or open the markdown files yourself to find your way around — the tools already answer those questions, and reading the files by hand is how stale and duplicated nodes get made. When you report counts, keep their units explicit and treat `query_ontology` health `relationCensus` as the authority: MCP `graph.edges` and `internalEdges` count compiled frontmatter relation declarations, so parent and child declarations can describe the same containment twice; the map\'s canonical relation census counts deduplicated normalized typed edges across the loaded ontology, not the current view filter. The MCP process does not know that app-side numeric census. Neither number is wrong, and never present them as the same census.';
 
+/**
+ * Construction is a different path from ordinary one-node editing. The MCP server already owns
+ * the reviewPlan/qualification/writePlan contract; ACP has to tell the agent to enter that path or
+ * it will take the tempting shortcut of calling add_concepts/add_relations from a folder scan.
+ * This is a routing instruction, not a qualification result and never grants write authority.
+ */
+const VAULT_CONSTRUCTION_SENTENCE =
+  'When the person asks you to build or rebuild an ontology from this repository, use the construction lifecycle: verify `connection_info`, call `index_project` for the read-only source packet, author a complete proposal, and call `analyze_repo_structure` without qualification first. Show the returned reviewPlan, source/meaning gaps, and exact plan digest in plain language. Do not call `add_concepts`, `add_relations`, `patch_concept`, or `finalize_project_meaning` for that bulk plan while `canWrite` is false, `writePlan` is absent, or `writeEligibility` is not executable. Only after the person explicitly accepts that exact plan and visible gaps, and an independent qualification packet makes the unchanged proposal return an exact writePlan, pass those rows unchanged to the batch writers, then validate and compile. If an independent evaluator is unavailable, do not invent one: keep the bulk plan review-only and offer a small evidence-backed batch for the person to inspect.';
+
 function vaultHandoffPrompt(hasVaultMcp: boolean, locale: string): string {
   const rules = hasVaultMcp
-    ? [VAULT_HANDOFF_BASE[0], VAULT_MCP_SENTENCE, ...VAULT_HANDOFF_BASE.slice(1)]
+    ? [VAULT_HANDOFF_BASE[0], VAULT_MCP_SENTENCE, VAULT_CONSTRUCTION_SENTENCE, ...VAULT_HANDOFF_BASE.slice(1)]
     : VAULT_HANDOFF_BASE;
   return rules.map((rule) => (rule === ANSWER_LANGUAGE_SLOT ? answerLanguageSentence(locale) : rule)).join(' ');
 }
@@ -1083,6 +1092,16 @@ export function useAcpSession({
       const hasVaultMcp = hasVaultMcpServer(mcpServers);
       const client = createAcpClient(transport, {
         onUpdate: applyUpdate,
+        onAutoAllowed: (request) => {
+          // Atlas reads are answered directly inside the protocol client, so they never pass
+          // through `askUser` and its standing-round receipt. Let the active surface classify the
+          // exact request after the same policy check; ordinary chat has no active round and stays
+          // silent.
+          const note = autoDecideRef.current?.(request);
+          if (typeof note === 'string') {
+            push({ kind: 'notice', id: nextEventId(), text: 'auto-allowed', detail: note });
+          }
+        },
         /*
          * Tools from the vault server we wired are allowed on the user's behalf **when there is no
          * path** — without this line the agent **cannot write anything to the map** (measured

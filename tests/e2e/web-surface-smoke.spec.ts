@@ -315,7 +315,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     name: "순회 — 브라우저는 자리를 비운 동안 시계를 지키거나 에이전트를 열 수 없다",
     url: "/ko/library/?tab=rounds",
     card: "library-rounds-app-required",
-    reason: /설치한 앱만 할 수 있습니다/,
+    reason: /설치한 앱만 할 수 있어요/,
     destination: "library-rounds-get-app",
   },
   {
@@ -350,7 +350,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     },
     needsVault: true,
     card: "agent-server-unavailable",
-    reason: /브라우저는[\s\S]*설정 파일을 대신 저장하지 못합니다/,
+    reason: /브라우저는[\s\S]*설정 파일을 대신 저장하지 못해요/,
     destination: "agent-connect-web-get-app",
   },
   {
@@ -424,7 +424,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     // ⚠️ The card **does not name the browser** — `surface-naming-ratchet` counts strings that
     // do, and this sentence is true wherever it renders, so it states the fact instead: a
     // program on this computer is what reads those files.
-    reason: /이 컴퓨터에서 도는 프로그램이 있어야 하고[\s\S]*토큰을 담아 둘 자리도 여기에는 없습니다/,
+    reason: /이 컴퓨터에서 도는 프로그램이 있어야 하고[\s\S]*토큰을 담아 둘 자리도 여기에는 없어요/,
     destination: "connectors-web-get-app",
   },
   {

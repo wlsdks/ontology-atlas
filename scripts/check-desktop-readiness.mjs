@@ -1094,7 +1094,7 @@ if (
   (enMessages.download?.windowsTrackCta ?? "").length > 0 &&
   (koMessages.download?.windowsTrackCta ?? "").length > 0 &&
   /not code-signed/.test(enMessages.download?.windowsUnsignedWarning ?? "") &&
-  /코드 서명되지 않았습니다/.test(koMessages.download?.windowsUnsignedWarning ?? "") &&
+  /코드 서명되지 않았어요/.test(koMessages.download?.windowsUnsignedWarning ?? "") &&
   /SmartScreen/.test(enMessages.download?.windowsUnsignedWarning ?? "") &&
   /SmartScreen/.test(koMessages.download?.windowsUnsignedWarning ?? "") &&
   // Signing status is written as **what is true now** — no future tense ("the gate

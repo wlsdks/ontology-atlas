@@ -261,6 +261,7 @@
     "architecture": "Harness",
     "docs": "Ontology",
     "library": "Library",
+    "automations": "Automations",
     "insights": "Insights",
     "projects": "Projects",
     "agents": "Agents",
@@ -901,6 +902,14 @@
       "librarySources": {
         "title": "Sources come first",
         "body": "Add files, or let Atlas propose what is already in the folders you granted. Each row says whether anybody has written that file up yet."
+      },
+      "automationsWhat": {
+        "title": "Keep repeated work in one place",
+        "body": "Automations holds the schedules. Ontology reviews and document analysis stay separate, while the map and Library remain the places where you inspect and correct their work."
+      },
+      "automationsTabs": {
+        "title": "Two lanes, two boundaries",
+        "body": "Ontology reviews read evidence and leave a review packet. Documents use the Library's existing rounds and writing scope. A schedule never approves ontology meaning."
       }
     }
   },
@@ -1216,6 +1225,7 @@
         "goTo_architecture": "Go to the harness",
         "goTo_docs": "Go to docs",
         "goTo_library": "Go to library",
+        "goTo_automations": "Go to automations",
         "goTo_insights": "Go to insights",
         "goTo_projects": "Go to projects",
         "goTo_agents": "Go to Agents",
@@ -3063,6 +3073,9 @@
       "docsTooltip": "Quick view of Ontology documents (D)",
       "docsAriaLabel": "Open the Ontology documents quick view (D)",
       "docsLabel": "Ontology documents",
+      "automationsTooltip": "Schedule a read-only ontology review",
+      "automationsAriaLabel": "Open ontology automation schedules",
+      "automationsLabel": "Automations",
       "switchToMyDataLabel": "Switch to my data",
       "switchToMyDataAriaLabel": "Open my markdown folder and light up the map with my data (⌘O)",
       "switchToMyDataTooltip": "Open my markdown folder: the map fills with my data (⌘O)",
@@ -5296,6 +5309,101 @@
     "foundMore": "{count} more",
     "foundLess": "Fold"
   },
+  "automations": {
+    "title": "Automations",
+    "eyebrow": "LOCAL, WHILE ATLAS IS OPEN",
+    "lede": "Choose what repeats and where it is allowed to work. Ontology reviews propose; document rounds keep the Library current.",
+    "tabsAria": "Automation lanes",
+    "tabs": {
+      "ontology": "Ontology",
+      "documents": "Documents"
+    },
+    "indexAria": "Schedules in this folder",
+    "appRequiredTitle": "Automations run in the Mac app",
+    "appRequiredDescription": "The clock and the in-app agent only run while the installed app has this folder open. Open it there to schedule a pass.",
+    "getApp": "Get the app",
+    "loadingTitle": "Reading this folder's schedules",
+    "malformedTitle": "The schedules file needs attention",
+    "malformedDescription": "Atlas could not read the local schedule file and left it unchanged. Fix it, then read again.",
+    "retry": "Read again",
+    "saved": "Scheduled {name}.",
+    "cancel": "Cancel",
+    "allowAndSchedule": "Allow and schedule",
+    "sheetName": "Name",
+    "next": "next {time} · {name}",
+    "running": "running now · {name}",
+    "runNow": "Run now",
+    "pause": "Pause",
+    "resume": "Resume",
+    "removeNamed": "Remove {name}",
+    "historyTitle": "Latest review",
+    "noRuns": "No pass has run yet.",
+    "noSummary": "The pass finished without a stored summary.",
+    "refused": "Refused: {tools}",
+    "called": "Read: {tools}",
+    "saveFailed": "The schedule could not be saved. Nothing was changed.",
+    "state": {
+      "on": "On",
+      "paused": "Paused",
+      "running": "Running"
+    },
+    "outcome": {
+      "none": "new",
+      "held": "held",
+      "reviewed": "reviewed",
+      "stale": "stale",
+      "redrafted": "redrafted",
+      "refused": "refused",
+      "failed": "failed",
+      "asleep": "asleep"
+    },
+    "cadence": {
+      "hour": "Every hour",
+      "6h": "Every 6 hours",
+      "daily": "Daily",
+      "weekdays": "Weekdays",
+      "dailyAt": "Daily at {time}",
+      "weekdaysAt": "Weekdays at {time}",
+      "label": "How often",
+      "time": "Time"
+    },
+    "ontology": {
+      "indexTitle": "Ontology · {count}",
+      "info": "Read-only ACP passes that inspect the ontology and source evidence, then leave a bounded review packet.",
+      "new": "New ontology review",
+      "count": "{count, plural, =0 {No ontology reviews} one {# ontology review} other {# ontology reviews}}",
+      "title": "Ontology refinement",
+      "description": "The scheduled ACP pass reads the current graph, source binding, and a bounded improvement area. It leaves the construction decision for the map and the person.",
+      "guard": "Read-only · no ontology writes or meaning finalization",
+      "emptyTitle": "Nothing is reviewing the ontology yet",
+      "emptyDescription": "Schedule a read-only pass to find one evidence-backed improvement area at a time. The result waits for review before anything can change.",
+      "defaultName": "Ontology refinement",
+      "eyebrow": "ONTOLOGY REVIEW",
+      "sheet": {
+        "title": "Schedule an ontology review",
+        "description": "Atlas will open one guarded ACP turn at the chosen time, inspect the ontology and code evidence, and leave a review-only packet.",
+        "focus": "Focus (optional)",
+        "focusPlaceholder": "source binding gaps, stale capabilities, relation evidence…",
+        "focusHint": "Leave it empty and Atlas chooses one bounded area from the current evidence.",
+        "scopeTitle": "This review may",
+        "mayRead": "Read the ontology and current source evidence through atlas-vault.",
+        "mayPropose": "Describe proposed changes with exact slugs, paths, and uncertainty.",
+        "mayNeverWrite": "Never write concepts, relations, files, or a meaning receipt."
+      }
+    },
+    "documents": {
+      "indexTitle": "Documents · {count}",
+      "info": "Existing Library rounds refresh sources and redraft wiki pages under their approved standing scope.",
+      "new": "New document round",
+      "count": "{count, plural, =0 {No document rounds} one {# document round} other {# document rounds}}",
+      "title": "Document analysis",
+      "description": "Use the Library's existing consistency and service rounds for source refresh, stale-page checks, and bounded wiki drafts.",
+      "guard": "Existing Library scope · ontology writes refused",
+      "emptyTitle": "No document round is scheduled",
+      "emptyDescription": "Create a consistency or service round here, then open the Library for the full ledger and page review.",
+      "openRounds": "Open full Library rounds"
+    }
+  },
   "library": {
     "title": "Library",
     "workActivity": {
@@ -5985,6 +6093,7 @@
       "indexHeader": "Rounds · {count, number}",
       "indexAria": "Rounds this Mac keeps for this folder",
       "newRound": "New round",
+      "manageAutomations": "Manage in Automations",
       "limit": "Runs while Ontology Atlas is open on this Mac. Sleep pauses it; the next pass catches up once.",
       "appRequiredTitle": "Rounds run in the Mac app",
       "appRequiredDescription": "A round keeps a clock and opens an agent while you are away, which only the installed app can do. Register a round there.",
@@ -6029,6 +6138,7 @@
       },
       "outcome": {
         "held": "held",
+        "reviewed": "reviewed",
         "stale": "{count, plural, one {# stale} other {# stale}}",
         "redrafted": "{count, plural, one {# redrafted} other {# redrafted}}",
         "refused": "refused",

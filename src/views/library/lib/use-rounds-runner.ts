@@ -35,6 +35,7 @@ import {
   TICK_MS,
   afterPass,
   buildServiceRoundBrief,
+  buildOntologyRoundBrief,
   judgeRoundScope,
   passLedgerFacts,
   planTick,
@@ -43,6 +44,7 @@ import {
   triggerFor,
   type ScopeRequest,
 } from "@/features/library-rounds";
+import type { RoundsRunnerValue, RoundsStoreStatus } from "@/features/library-rounds";
 import { useVaultConnectors } from "@/features/mcp-connectors";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { getTauriVaultRootPath, nativeVaultFileHashes, readTauriVaultText } from "@/shared/lib/tauri-vault-fs";
@@ -73,43 +75,6 @@ import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
  * carry all four across the bridge, and it would only buy running with the window closed, which
  * this slice does not promise (§5, "only while open").
  */
-
-type RoundsStoreStatus = "no-vault" | "loading" | "ok" | "missing" | "malformed" | "unavailable";
-
-interface RoundsRunning {
-  roundId: string;
-  roundName: string;
-  startedAt: string;
-  phase: "checking" | "agent";
-}
-
-export interface RoundsRunnerValue {
-  /** Native folder only. `no-vault` in the browser and before a folder is open. */
-  storeStatus: RoundsStoreStatus;
-  state: RoundState | null;
-  rounds: RoundRecord[];
-  ledger: RoundPassEntry[];
-  running: RoundsRunning | null;
-  /** A guarded coding agent is ready to take a turn; without it a redraft or a service pass cannot run. */
-  agentReady: boolean;
-  agentLabel: string | null;
-  /** Names of connectors switched on for this folder, so the sheet can offer them. */
-  connectors: { id: string; name: string; enabled: boolean }[];
-  lastTickAt: string | null;
-  /** Bumps on every ledger or state write, so a screen can re-read without a folder watcher. */
-  revision: number;
-  /**
-   * `startedNow` is the promise the sheet made coming true: a consistency round saved while
-   * nothing else is running takes its first pass immediately. A pass already in flight means
-   * this one waits for its own due time, and the screen has to say so rather than repeat the
-   * promise — one runner runs one pass at a time (`runPass` refuses a second).
-   */
-  save(round: RoundRecord): Promise<{ ok: boolean; startedNow: boolean }>;
-  remove(id: string): Promise<boolean>;
-  setEnabled(id: string, enabled: boolean): Promise<boolean>;
-  runNow(id: string): void;
-  refresh(): Promise<void>;
-}
 
 const PASS_TIMEOUT_MS = 20 * 60_000;
 const READY_POLL_MS = 250;
@@ -148,12 +113,12 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const [storeStatus, setStoreStatus] = useState<RoundsStoreStatus>("no-vault");
   const [state, setState] = useState<RoundState | null>(null);
   const [entries, setEntries] = useState<RoundPassEntry[]>([]);
-  const [running, setRunning] = useState<RoundsRunning | null>(null);
+  const [running, setRunning] = useState<RoundsRunnerValue['running']>(null);
   const [lastTickAt, setLastTickAt] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
 
   const stateRef = useRef<RoundState | null>(null);
-  const runningRef = useRef<RoundsRunning | null>(null);
+  const runningRef = useRef<RoundsRunnerValue['running']>(null);
   const lastTickRef = useRef<Date | null>(null);
   const manifestRef = useRef(vault.manifest);
   useEffect(() => {
@@ -305,7 +270,10 @@ export function useRoundsRunner(): RoundsRunnerValue {
   }, []);
 
   /** Open a session, send one brief, wait for the turn, close. Returns what the turn did. */
-  const agentTurn = useCallback(async (brief: string, aborted: Promise<void>): Promise<{ failed: boolean; written: string[]; refused: string[]; called: string[] }> => {
+  const agentTurn = useCallback(async (
+    brief: string,
+    aborted: Promise<void>,
+  ): Promise<{ failed: boolean; written: string[]; refused: string[]; called: string[]; answer: string | null }> => {
     const current = sessionRef.current;
     const done = new Promise<AcpTurnCompletion | null>((resolve) => {
       completionRef.current = resolve;
@@ -353,6 +321,12 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const written: string[] = [];
     const refused: string[] = [];
     const called: string[] = [];
+    const answer = [...(completion?.events ?? [])]
+      .reverse()
+      .find((event) => event.kind === "agent")?.text
+      ?.replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 280) ?? null;
     for (const event of completion?.events ?? []) {
       if (event.kind !== "notice") continue;
       if (event.text === "auto-allowed" && event.detail) {
@@ -367,6 +341,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       written: [...new Set(written)],
       refused: [...new Set(refused)],
       called: [...new Set(called)],
+      answer,
     };
   }, []);
 
@@ -394,8 +369,8 @@ export function useRoundsRunner(): RoundsRunnerValue {
   const runPass = useCallback(async (round: RoundRecord, trigger: RoundPassEntry["trigger"]) => {
     if (!store || !ledger || !rootPath || runningRef.current) return;
     const startedAt = new Date();
-    const mark = (phase: RoundsRunning["phase"]) => {
-      const next = { roundId: round.id, roundName: round.name, startedAt: startedAt.toISOString(), phase };
+    const mark = (phase: NonNullable<RoundsRunnerValue['running']>['phase']) => {
+      const next: NonNullable<RoundsRunnerValue['running']> = { roundId: round.id, roundName: round.name, startedAt: startedAt.toISOString(), phase };
       runningRef.current = next;
       setRunning(next);
     };
@@ -415,13 +390,20 @@ export function useRoundsRunner(): RoundsRunnerValue {
     const services = servicePlaces(places);
     let entry: RoundPassEntry;
     try {
-      const data = await readPassData();
+      /*
+       * An ontology round reads the graph through the vault MCP, not the folder manifest, so it
+       * opens with an empty pass set: nothing local to hash, nothing local to compile.
+       */
+      const data: PassData | null = round.kind === "ontology"
+        ? { sources: [], docs: [], hashes: new Map<string, string>(), pageTexts: new Map<string, string>() }
+        : await readPassData();
       if (!data) throw new Error("no-manifest");
       /*
        * **Only a consistency round runs the consistency check.** It is the whole of that
        * round's verdict, and it is none of a service round's: a service pass that re-read four
        * documents and changed nothing used to wear `stale · N` in the ledger, counting pages it
-       * never looked at, because the check ran for every pass and fed `outcomeOf` either way.
+       * never looked at, because the check ran for every pass and fed the outcome either way.
+       * An ontology round has no local check at all; its verdict comes from its one turn.
        */
       const fromService = new Set<string>();
       if (watched.ownDocumentsOnly) {
@@ -439,10 +421,14 @@ export function useRoundsRunner(): RoundsRunnerValue {
         round.kind === "consistency"
           ? runConsistencyPass({ ...data, paths: watched.paths, ownDocumentsOnly: watched.ownDocumentsOnly, fromService })
           : null;
-      const model = buildLibraryModel({ sources: data.sources, docs: data.docs, hashes: data.hashes });
+      /** No local library model for an ontology round: it reads the graph, not the folder. */
+      const model = round.kind === "ontology"
+        ? null
+        : buildLibraryModel({ sources: data.sources, docs: data.docs, hashes: data.hashes });
       let written: string[] = [];
       let refused: string[] = [];
       let called: string[] = [];
+      let answer: string | null = null;
       let failed = false;
       let agentTurns: 0 | 1 = 0;
       let note: RoundPassEntry["note"];
@@ -457,8 +443,8 @@ export function useRoundsRunner(): RoundsRunnerValue {
           mark("agent");
           agentTurns = 1;
           const brief = buildCompileBrief({
-            sources: model.sources.filter((row) => check.staleSources.includes(row.path)),
-            existingPages: model.wikiPages,
+            sources: model!.sources.filter((row) => check.staleSources.includes(row.path)),
+            existingPages: model!.wikiPages,
             locale,
             execution: "acp",
             writerId: `agent:${runtimeId}`,
@@ -466,9 +452,9 @@ export function useRoundsRunner(): RoundsRunnerValue {
             hashes: data.hashes,
             now: new Date(),
           });
-          ({ failed, written, refused, called } = await agentTurn(brief, aborted));
+          ({ failed, written, refused, called, answer } = await agentTurn(brief, aborted));
         }
-      } else {
+      } else if (round.kind === "service") {
         if (!agentReady || !runtimeId) {
           failed = true;
           note = "no-agent";
@@ -503,8 +489,8 @@ export function useRoundsRunner(): RoundsRunnerValue {
             vaultPaths: watched.paths,
             limit: round.limit,
             compileBrief: buildCompileBrief({
-              sources: model.sources.filter((row) => roundSources.has(row.path)),
-              existingPages: model.wikiPages,
+              sources: model!.sources.filter((row) => roundSources.has(row.path)),
+              existingPages: model!.wikiPages,
               locale,
               execution: "acp",
               writerId: `agent:${runtimeId}`,
@@ -514,10 +500,32 @@ export function useRoundsRunner(): RoundsRunnerValue {
             }),
             now: new Date(),
           });
-          ({ failed, written, refused, called } = await agentTurn(brief, aborted));
+          ({ failed, written, refused, called, answer } = await agentTurn(brief, aborted));
+        }
+      } else {
+        /*
+         * Ontology round: one read-only refinement review. The brief forbids every write tool,
+         * so the turn's product is the answer it comes back with, not a file.
+         */
+        if (!agentReady || !runtimeId) {
+          failed = true;
+          note = "no-agent";
+        } else {
+          activeRef.current = { round, data };
+          mark("agent");
+          agentTurns = 1;
+          const brief = buildOntologyRoundBrief({ vaultRoot: rootPath, locale, focus: round.query });
+          ({ failed, written, refused, called, answer } = await agentTurn(brief, aborted));
         }
       }
-      const { outcome, checked, stale } = passLedgerFacts({ kind: round.kind, check, refreshed, failed, written, refused });
+      const { outcome, checked, stale } = passLedgerFacts({
+        kind: round.kind,
+        check,
+        refreshed,
+        failed,
+        written,
+        refused,
+      });
       entry = {
         v: 1,
         id: newId(),
@@ -534,7 +542,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
         called,
         places: roundPlaceLabels(places),
         agentTurns,
-        summary: "",
+        summary: round.kind === "ontology" ? answer ?? "Read-only refinement review completed." : "",
         trigger,
       };
       if (stoppedByPerson) entry.note = "stopped";

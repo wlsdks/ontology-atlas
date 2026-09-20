@@ -53,7 +53,9 @@ export function planTick({ rounds, now, lastTickAt, running, asleepAfterMs = ASL
 }
 
 function rank(round: RoundRecord): number {
-  return round.kind === 'consistency' ? 0 : 1;
+  if (round.kind === 'consistency') return 0;
+  if (round.kind === 'ontology') return 1;
+  return 2;
 }
 
 /** Whether a due run is on time or a catch-up: more than one tick late is a catch-up. */

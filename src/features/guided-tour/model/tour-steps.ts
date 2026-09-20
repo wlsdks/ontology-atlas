@@ -104,6 +104,7 @@ export type DestinationTourId =
   | "architecture"
   | "docs"
   | "library"
+  | "automations"
   | "insights"
   | "projects"
   | "agents"
@@ -170,6 +171,15 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
       anchor: { type: "testid", value: "library-sources" },
       persona: "all",
       copyKey: "librarySources",
+    },
+  ],
+  automations: [
+    { id: "automations-what", anchor: null, persona: "all", copyKey: "automationsWhat" },
+    {
+      id: "automations-tabs",
+      anchor: { type: "testid", value: "automations-tabs" },
+      persona: "all",
+      copyKey: "automationsTabs",
     },
   ],
   /*

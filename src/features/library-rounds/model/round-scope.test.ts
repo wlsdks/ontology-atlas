@@ -34,6 +34,7 @@ function judge(overrides: Partial<ScopeInput> & { request: ScopeRequest }) {
 }
 
 const service = { kind: 'service' as const, connectorName: 'confluence' };
+const ontology = { kind: 'ontology' as const };
 
 describe('round scope', () => {
   it('never lets a round write the ontology', () => {
@@ -100,6 +101,25 @@ describe('round scope', () => {
     expect(judge({ request: answer, round: service }).decision).toBe('reject');
     const log = request({ filePath: `${VAULT}/wiki/_log.md`, toolKind: 'edit', rawInput: { content: 'ok' } });
     expect(judge({ request: log, round: service }).decision).toBe('reject');
+  });
+
+  it('lets an ontology review read the folder but refuses every file write', () => {
+    expect(judge({
+      round: ontology,
+      request: request({ filePath: `${VAULT}/capabilities/x.md`, toolKind: 'read' }),
+    }).decision).toBe('allow');
+    expect(judge({
+      round: ontology,
+      request: request({ filePath: `${VAULT}/wiki/x.md`, toolKind: 'edit', rawInput: { content: 'draft' } }),
+    }).decision).toBe('reject');
+    expect(judge({
+      round: ontology,
+      request: request({ filePath: `${VAULT}/capabilities/x.md`, toolKind: 'edit' }),
+    }).decision).toBe('reject');
+    expect(judge({
+      round: ontology,
+      request: request({ toolName: 'mcp__atlas-vault__add_concepts' }),
+    })).toEqual({ decision: 'reject', reason: 'mcp__atlas-vault__add_concepts' });
   });
 
   it('lets only a service round touch sources/, and never delete or move there', () => {

@@ -2,7 +2,7 @@
  * The destination registry — ids, default hrefs and keyboard shortcuts in one
  * place.
  *
- * **Why this file exists.** The seven destinations' hrefs lived inline **inside the
+ * **Why this file exists.** The eight destinations' hrefs lived inline **inside the
  * `AppNavRail` component**. That was enough for drawing the screen, but a
  * **second consumer that reads the list as data** (keyboard navigation and the
  * shortcut sheet) could not use it: the array inside the component is
@@ -33,6 +33,8 @@ export const DESTINATION_IDS = [
   'architecture',
   // Ontology documents now live inside Library; /docs remains a link alias.
   'library',
+  // Automation management owns schedules; execution context remains Map or Library.
+  'automations',
   'insights',
   'projects',
   /*
@@ -99,6 +101,7 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   agents: '/agents/',
   mcp: '/agents/?tab=mcp',
   library: '/library/',
+  automations: '/automations/',
   git: '/git/',
 };
 
@@ -120,6 +123,8 @@ export const DESTINATION_KEY: Record<DestinationId, string> = {
   mcp: 'c',
   // `l` — nothing collides with it, and it is the destination's own first letter.
   library: 'l',
+  // `u` — automation is a management utility, and `a` belongs to Agents.
+  automations: 'u',
   git: 'g',
 };
 
@@ -151,7 +156,7 @@ export function destinationsForVaultShape(
   shape: { map: boolean; wiki: boolean } | null | undefined,
 ): ReadonlySet<DestinationId> {
   if (!shape || shape.map || !shape.wiki) return new Set(DESTINATION_IDS);
-  return new Set<DestinationId>(['library', 'agents', 'git']);
+  return new Set<DestinationId>(['library', 'automations', 'agents', 'git']);
 }
 
 /** The bottom tabs for a wiki without a map: the Library is the one place to go. */

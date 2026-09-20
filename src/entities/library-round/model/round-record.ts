@@ -24,7 +24,7 @@
 
 const ROUND_STORE_VERSION = 1 as const;
 
-const ROUND_KINDS = ['consistency', 'service'] as const;
+const ROUND_KINDS = ['consistency', 'service', 'ontology'] as const;
 export type RoundKind = (typeof ROUND_KINDS)[number];
 
 export type RoundOnStale = 'mark' | 'redraft';
