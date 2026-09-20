@@ -43,13 +43,51 @@ test("바닥 가까이 그려진 도메인도 이름을 잃지 않는다 — 위
   const state = (await read(page))!;
 
   const floorBand = state.canvasHeight - 72;
-  const low = state.domains.filter((d) => d.y > floorBand - 40);
-  expect(low.length, "바닥 띠 가까이 그려진 도메인이 없다 — 이 스펙이 공회전한다").toBeGreaterThan(0);
+  const inBand = (d: { y: number }) => d.y > floorBand - 40;
+
+  /*
+   * The subject used to be whatever the camera happened to leave near the floor,
+   * and once the frame changed there was no domain down there at all — on CI the
+   * spec failed on its own idling guard rather than on the rule it exists for.
+   * So the condition is made rather than waited for: drag empty canvas downward
+   * until a domain enters the band, and say so plainly if it never does.
+   */
+  const empty = await page.evaluate(() => {
+    const m = (window as unknown as { __atlasMap?: Probe }).__atlasMap!;
+    const box = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const drawn = m.nodes().filter((n) => !n.hidden);
+    for (let x = box.left + 80; x < box.right - 80; x += 40) {
+      for (let y = box.top + 120; y < box.bottom - 160; y += 40) {
+        if (drawn.every((n) => Math.hypot(box.left + n.x - x, box.top + n.y - y) > n.radius + 40)) return { x, y };
+      }
+    }
+    return null;
+  });
+  expect(empty, "빈 캔버스를 못 찾아 끌 자리가 없다").not.toBeNull();
+
+  for (let pull = 0; pull < 8; pull++) {
+    if ((await read(page))!.domains.some(inBand)) break;
+    await page.mouse.move(empty!.x, empty!.y);
+    await page.mouse.down();
+    for (let step = 1; step <= 6; step++) await page.mouse.move(empty!.x, empty!.y + step * 20);
+    await page.mouse.up();
+    await waitForMapStill(page, { what: "camera" });
+  }
+
+  const low = (await read(page))!.domains.filter(inBand);
+  expect(low.length, "바닥 띠까지 끌어내렸는데도 그 자리에 도메인이 없다").toBeGreaterThan(0);
+  /*
+   * Only what is still on the canvas. Pulling the map down to make the subject
+   * also pushes other domains past the bottom edge, and a name for a node nobody
+   * can see is exactly what the cull is for — asserting on those would be asking
+   * the map to draw off-screen.
+   */
+  const onCanvas = (d: { y: number; top: number }) => d.top > 0 && d.y < state.canvasHeight;
   await expect
-    .poll(async () => (await read(page))!.domains.filter((d) => !d.label).map((d) => d.id), { timeout: 15_000, message: "이름을 잃은 도메인" })
+    .poll(async () => (await read(page))!.domains.filter((d) => onCanvas(d) && !d.label).map((d) => d.id), { timeout: 15_000, message: "이름을 잃은 도메인" })
     .toEqual([]);
   const after = (await read(page))!;
-  for (const d of after.domains.filter((d) => d.y > floorBand - 40)) {
+  for (const d of after.domains.filter((d) => onCanvas(d) && d.y > floorBand - 40)) {
     // Above the node, inside the canvas.
     expect(d.label!.maxY, `${d.id} 의 이름이 노드 위에 있지 않다`).toBeLessThanOrEqual(d.top + 1);
     expect(d.label!.minY).toBeGreaterThan(0);
