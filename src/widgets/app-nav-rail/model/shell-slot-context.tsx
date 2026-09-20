@@ -40,6 +40,11 @@ interface NavRailShellState {
  *  context is unclear, so it was left out of this slice (per instruction). */
 export interface NavRailContextHrefs {
   docs?: string;
+  /**
+   * Where the Projects door leads when the folder holds exactly one project: that project, rather
+   * than a list with one row and nothing to choose (2026-09-19). Absent for none or several.
+   */
+  projects?: string;
 }
 
 interface NavRailShellContextValue extends NavRailShellState {

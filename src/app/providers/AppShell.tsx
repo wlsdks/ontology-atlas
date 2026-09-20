@@ -32,6 +32,7 @@ import {
 } from "@/shared/lib/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
+import { useSoleProjectHref } from "@/features/project-data-source";
 import { AgentMascotPresence } from "@/features/agent-activity";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
@@ -365,6 +366,12 @@ function AppNavRailSlot() {
   const pathname = usePathname() ?? "/";
   const dataSourceMode = useDataSourceMode();
   const vault = useLocalVault();
+  /*
+   * With exactly one project in the folder, the Projects door opens it. The rail, its keyboard
+   * shortcut and the mobile tab bar all read this one hook, because a rail and a tab bar that
+   * disagree about where the same destination leads are two navigations rather than one.
+   */
+  const soleProjectHref = useSoleProjectHref();
 
   // Gateway routes do not use the workbench chrome (the left rail) — owner decision,
   // 2026-07-28. The `hidden` prop is `lg:hidden` rather than an unmount, so the
@@ -477,7 +484,9 @@ function AppNavRailSlot() {
       vaultSlot={<VaultSwitchRailTile />}
       settingsSlot={utilityTier}
       hidden={hidden || gateway || desktopWithoutVault}
-      contextHrefs={contextHrefs}
+      contextHrefs={
+        soleProjectHref ? { ...contextHrefs, projects: soleProjectHref } : contextHrefs
+      }
       gitDirtyCount={gitDirtyCount}
       agentsNoticeCount={installNotice.count}
       visibleDestinations={visibleDestinations}
