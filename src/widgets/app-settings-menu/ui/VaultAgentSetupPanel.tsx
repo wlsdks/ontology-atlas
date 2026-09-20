@@ -541,6 +541,13 @@ export function VaultAgentSetupPanel({
   });
 
   if (localVault.status !== 'loaded' || !agentStatus) return null;
+  /*
+   * **Nothing until the server lookup answers.** `launch: null` alone cannot tell "a browser,
+   * which cannot launch anything" from "the app, still asking", so this panel opened on the
+   * browser's degradation card inside the installed app — telling someone running the app to
+   * download it. One empty frame is honest; that sentence is not.
+   */
+  if (serverAvailability.pending) return null;
 
   const agentSetupReady = Boolean(
     publicPackagesReady &&
@@ -568,6 +575,14 @@ export function VaultAgentSetupPanel({
   ] as const;
   const agentSetupConnections = [
     {
+      /*
+       * ⚠️ **`.mcp.json` is Claude Code's file, and only its** (2026-09-20). This row read
+       * "Claude Code · Cursor" and credited both to the same check, but Cursor's project scope
+       * is `.cursor/mcp.json` — the repo's own 2026-07-30 research, and what `AGENT_CLIENTS`
+       * writes for it. Atlas reads two files, this one and Codex's; the other two it writes and
+       * never reads back, which `connectionHint` already tells the reader to confirm inside the
+       * tool. Naming Cursor here said Atlas had checked something it had not looked at.
+       */
       key: 'claudeCursor',
       file: agentSetupFiles[0],
       label: t('agentSetup.connectionClaudeCursor'),
@@ -898,7 +913,28 @@ export function VaultAgentSetupPanel({
         }
       >
         {clientRows ? (
-          AGENT_CLIENTS.map((client) => (
+          AGENT_CLIENTS.map((client) => {
+            /*
+             * ⚠️ **A row that offers a replacement says what it is replacing** (2026-09-19,
+             * caught by rendering the mixed state). Atlas reads two of these four files, and
+             * when one exists but is not ours the control changes to "copy a correct one" —
+             * which, on its own, is a verb with no fact behind it. The sentence that states
+             * the fact already exists and was already translated; it had moved into the
+             * verification dialog with the rest of the status line, leaving the page with
+             * three rows saying "connect" and one saying "copy a correct one" for no visible
+             * reason. It belongs on the row whose file it is about.
+             *
+             * Only Claude Code and Codex can reach this state: `agentSetupFiles` is what Atlas
+             * reads, and Cursor and Antigravity are written without being read back.
+             */
+            const inspected =
+              client.id === 'claude-code'
+                ? { state: mcpJsonState, path: agentSetupFiles[0].path }
+                : client.id === 'codex'
+                  ? { state: codexConfigState, path: agentSetupFiles[1].path }
+                  : null;
+            const foreignConfig = inspected?.state === 'invalid';
+            return (
             <SettingsRow
               key={client.id}
               testId={`agent-setup-row-${client.id}`}
@@ -906,13 +942,20 @@ export function VaultAgentSetupPanel({
               iconInk={client.brandInk}
               label={client.name}
               /* The file this row writes, so "ready" and "connect" both say which file they mean. */
-              caption={client.files.join(' · ')}
+              caption={
+                foreignConfig
+                  ? t('agentSetup.nextInvalid', { path: inspected.path })
+                  : client.files.join(' · ')
+              }
+              captionTone={foreignConfig ? 'warning' : 'neutral'}
               /* One column: every control is `w-full` inside the same fixed slot, so the four
                  buttons share a left edge instead of a ragged one (owner detail rule, 2026-09-12:
-                 a group of controls fills a grid). The slot fits the longest label. */
-              control={<span className="flex w-52 max-w-full">{clientRows[client.id]}</span>}
+                 a group of controls fills a grid). 144px since the labels became verbs alone
+                 (2026-09-19); the row's own label and file carry the tool's name. */
+              control={<span className="flex w-36 max-w-full">{clientRows[client.id]}</span>}
             />
-          ))
+            );
+          })
         ) : (
           /* No launchable server (a browser): the degradation card and the by-hand panel are
              the group's whole body — there is no per-tool button to put on a row. */
@@ -969,9 +1012,18 @@ export function VaultAgentSetupPanel({
             </p>
           </section>
 
+          {/*
+            ⚠️ **A section may not be named after the dialog it is in** (2026-09-20). This heading
+            was `step3Title` — the same three words as the chip that opens this dialog and as the
+            dialog's own title, so the same three words stood three times in one small box and the second
+            one named nothing a reader could not already see. The section's subject is the table
+            under it: which tool's connection file exists, and what to type in that tool to see
+            it. `connectionStatusHeading` (the words the panel's own list already used as its
+            accessible name) says exactly that, so the two surfaces name one thing once.
+          */}
           <section data-testid="agent-setup-step-3" className="mt-4 flex flex-col gap-2">
             <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-              {tc('step3Title')}
+              {t('agentSetup.connectionStatusHeading')}
             </h3>
               <div className="divide-y divide-[color:var(--color-divider)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)]">
                 <div className="flex items-center gap-2 px-2.5 py-2">
@@ -987,10 +1039,12 @@ export function VaultAgentSetupPanel({
                   <span className="min-w-0 flex-1 break-keep text-body text-[color:var(--color-text-secondary)]">
                     {agentSetupReady
                       ? t('agentSetup.connectionCheckReady')
-                      : t('agentSetup.connectionCheckPending', {
-                          ready: agentSetupReadyCount,
-                          total: agentSetupFiles.length,
-                        })}
+                      : /*
+                           The count is **not** repeated here. This line used to open with
+                           "N/M connection files ready", which the dialog's own subtitle says
+                           130px above it; what it adds is where the missing ones come from.
+                        */
+                        t('agentSetup.connectionCheckPending')}
                   </span>
                 </div>
                 <dl className="grid gap-1 px-2.5 py-2">
@@ -1082,7 +1136,7 @@ export function VaultAgentSetupPanel({
             and so on) were promoted into step 3, so what remains here is three things:
             **name · path · status**.
           */}
-          <ul aria-label={t('agentSetup.connectionAriaLabel')} className="grid gap-1">
+          <ul aria-label={t('agentSetup.connectionStatusHeading')} className="grid gap-1">
             {agentSetupConnections.map(({ key, file, label }) => {
               const present = Boolean(agentStatus[file.key]);
               const ready = present && agentStatus[file.validKey] !== false;

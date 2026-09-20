@@ -231,9 +231,12 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByLabelText('확인 명령 결과 읽는 법'),
     ).toBeInTheDocument();
-    expect(screen.getByText('안 됨')).toBeInTheDocument();
-    expect(screen.getByText('느림')).toBeInTheDocument();
-    expect(screen.getByText('준비됨')).toBeInTheDocument();
+    // Scoped to the gate-rules list: the ready word is also a tool row's button label since
+    // 2026-09-19, when those buttons dropped the tool name the row already carries.
+    const gateRules = screen.getByLabelText('확인 명령 결과 읽는 법');
+    expect(within(gateRules).getByText('안 됨')).toBeInTheDocument();
+    expect(within(gateRules).getByText('느림')).toBeInTheDocument();
+    expect(within(gateRules).getByText('준비됨')).toBeInTheDocument();
     expect(screen.getByText('코드를 고친 뒤')).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -316,7 +319,10 @@ describe('VaultAgentSetupPanel', () => {
     const connections = screen.getByRole('list', {
       name: '도구별 연결 파일 상태',
     });
-    expect(within(connections).getByText('Claude Code · Cursor')).toBeInTheDocument();
+    // Only the two files Atlas reads are named here; Cursor's own scope is .cursor/mcp.json,
+    // which this screen writes and never reads back.
+    expect(within(connections).getByText('Claude Code')).toBeInTheDocument();
+    expect(within(connections).queryByText(/Cursor/)).toBeNull();
     expect(within(connections).getByText('.mcp.json')).toBeInTheDocument();
     expect(within(connections).getByText('Codex')).toBeInTheDocument();
     expect(within(connections).getByText('.codex/config.toml')).toBeInTheDocument();
@@ -1265,6 +1271,54 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
+  it('남의 설정이 있는 행은 그 사실을 자기 줄에서 말한다 — 동사만 바뀌지 않는다', () => {
+    // Caught by rendering the mixed state, 2026-09-19: the control changed to "copy a correct
+    // one" while the row said only the file path, so the page showed three rows offering to
+    // connect and one offering a replacement for no visible reason.
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault({
+          agentConfigStatus: {
+            mcpJson: true,
+            mcpJsonValid: true,
+            codexConfig: true,
+            codexConfigValid: false,
+            mcpExample: false,
+            mcpExampleValid: false,
+          },
+        })}
+        serverAvailability={bundledServer}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    const codexRow = screen.getByTestId('agent-setup-row-codex');
+    expect(codexRow).toHaveTextContent(
+      '점검: .codex/config.toml는 Ontology Atlas 연결 설정이 아니에요',
+    );
+    // The row whose file is ours keeps the plain path.
+    expect(screen.getByTestId('agent-setup-row-claude-code')).toHaveTextContent('.mcp.json');
+    expect(screen.getByTestId('agent-setup-row-claude-code')).not.toHaveTextContent('점검:');
+  });
+
+  it('서버 조회가 답하기 전에는 아무 주장도 그리지 않는다', () => {
+    // `launch: null` alone cannot tell a browser from the app still asking, so this panel used
+    // to open on the browser's degradation card inside the installed app.
+    const { container } = render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault()}
+        serverAvailability={{ ...agentServerUnavailable(null), pending: true }}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByTestId('agent-server-unavailable')).toBeNull();
+    expect(screen.queryByTestId('agent-setup-steps')).toBeNull();
+  });
+
   it('첫 화면은 도구 행 넷이고, 확인과 상세 검증은 대화상자 뒤에 있다', () => {
     render(
       <VaultAgentSetupPanel
@@ -1303,6 +1357,49 @@ describe('VaultAgentSetupPanel', () => {
     // Expanding reveals it.
     fireEvent.click(screen.getByTestId('agent-setup-advanced-toggle'));
     expect(screen.getByTestId('agent-setup-advanced')).toBeInTheDocument();
+  });
+
+  /*
+   * **One dialog, one name, one count** (2026-09-20).
+   *
+   * Rendered, the verification dialog said its own name three times — on the chip that opens it,
+   * as its own title, and again as the heading of the section holding the per-tool table — and
+   * stated how many connection files were ready twice, in the subtitle and again 130px below in
+   * the section's first line. Both are the duplicated prose the owner asked this screen to shed.
+   *
+   * Counted rather than matched on a sentence: the rule is "not twice", and a wording change
+   * that keeps it once should not redden this.
+   */
+  it('확인 대화상자는 제 이름과 개수를 한 번씩만 말한다', () => {
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault()}
+        serverAvailability={bundledServer}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('agent-setup-verify-open'));
+    const dialog = screen.getByTestId('agent-setup-verify-dialog');
+    const title = koMessages.agentConnect.step3Title;
+    const headings = [...dialog.querySelectorAll('h2, h3')].map((h) => h.textContent?.trim());
+    expect(headings.filter((h) => h === title)).toHaveLength(1);
+
+    /*
+     * "N/M connection files ready" is the subtitle's job; the section below states what to do
+     * about the missing ones. Matched on the **shape** rather than the sentence, so the
+     * catalogue can be reworded and the rule still reads "said once".
+     */
+    const countShape = /\d+\/\d+개 준비됨/;
+    const saidTheCount = [...dialog.querySelectorAll('p, span')].filter((el) =>
+      countShape.test(el.textContent ?? ''),
+    );
+    // Ancestors repeat a descendant's text, so the deepest element carrying it is the count.
+    const owners = saidTheCount.filter(
+      (el) => !saidTheCount.some((other) => other !== el && el.contains(other)),
+    );
+    expect(owners).toHaveLength(1);
   });
 
   it('missing 설정은 생성 버튼이고 이미 유효한 설정은 준비 상태다', () => {

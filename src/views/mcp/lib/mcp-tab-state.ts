@@ -1,13 +1,16 @@
 /**
- * `/mcp` tab state. The URL `?tab=` is the source of truth — a refresh, a shared link, or an
+ * The MCP tab's section state, under `?mcp=`. The URL is the source of truth — a refresh, a shared link, or an
  * agent handoff must open the same tab — so parsing and serialization are pure functions rather
  * than component-local state. Same grammar as `/ontology/insights`; the two screens must not
  * grow two ways of writing the same query.
  *
- * **Two tabs, one question each.** `share` answers *"how do I point a coding tool at this
- * folder"* and is the default, because the folder's own server is what everyone needs and is
- * wired without anyone asking for it. `connectors` answers *"what else may an agent reach"*,
- * which is a deliberate addition on top and therefore second.
+ * **Two groups, one question each, since 2026-09-19.** `share` answers *"how do I point a
+ * coding tool at this folder"* and is the default, because the folder's own server is what
+ * everyone needs and is wired without anyone asking for it. `connectors` answers *"what else
+ * may an agent reach"*, which is a deliberate addition on top and therefore second. They were
+ * two tabs until the MCP screen became a tab itself; a strip inside a strip was the nested
+ * switch the 2026-09-17 record's dissent named, so they are stacked groups and this value now
+ * says which one a deep link lands on rather than which one is drawn.
  */
 const MCP_TABS = ['share', 'connectors'] as const;
 

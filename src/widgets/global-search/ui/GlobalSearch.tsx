@@ -340,6 +340,7 @@ export function GlobalSearch({
         <div
           className="flex flex-col gap-1 border-b border-[color:var(--color-border-soft)] px-3 py-2"
           aria-label={t('filterAriaLabel')}
+          data-testid="global-search-filter-row"
         >
           <div className="flex items-center gap-2 overflow-x-auto">
             <span
