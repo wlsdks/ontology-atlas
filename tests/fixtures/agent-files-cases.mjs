@@ -658,4 +658,38 @@ export const CASES = [
       drift: [],
     },
   },
+  {
+    name: 'an exclusion file is neither a guide nor a config, and each name belongs to one product',
+    input: {
+      files: [
+        { path: '.cursorignore', content: 'secrets/**\n' },
+        { path: '.aiexclude', content: 'private/**\n' },
+        { path: '.geminiignore', content: 'private/**\n' },
+        { path: 'AGENTS.md', content: '# AGENTS.md\n\nguide body\n' },
+      ],
+      existingPaths: [],
+    },
+    expected: {
+      records: [
+        // `.aiexclude` is Gemini Code Assist's and `.geminiignore` is Gemini CLI's; attaching the
+        // first to `gemini-cli` would name the wrong product on screen.
+        { path: '.aiexclude', ruleId: 'ai-exclude', kind: 'exclusion', tools: [], drift: [] },
+        { path: '.cursorignore', ruleId: 'cursor-ignore', kind: 'exclusion', tools: ['cursor'], drift: [] },
+        { path: '.geminiignore', ruleId: 'gemini-ignore', kind: 'exclusion', tools: ['gemini-cli'], drift: [] },
+        { path: 'AGENTS.md', ruleId: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], drift: [] },
+      ],
+      checkStatuses: {
+        claudeAgentsBridge: 'not-applicable',
+        skillCopy: 'not-applicable',
+        agentCopy: 'not-applicable',
+        /* No `@ref` in any of these files, so there is nothing to verify — not a pass. */
+        atRefs: 'not-applicable',
+        codexSizeCap: 'ok',
+        agentLanguage: 'not-applicable',
+        mcpGrants: 'not-applicable',
+      },
+      drift: [],
+    },
+  },
+
 ];

@@ -162,10 +162,26 @@ describe("filterTreeByQuery", () => {
 
 describe("knowledgeNodeMatchesQuery", () => {
   const n = node("capability:mcp-server", "MCP Server");
-  it("title 또는 id 소문자 포함이면 true", () => {
+  it("title 또는 id slug 소문자 포함이면 true", () => {
     expect(knowledgeNodeMatchesQuery(n, "mcp")).toBe(true); // title
     expect(knowledgeNodeMatchesQuery(n, "server")).toBe(true);
-    expect(knowledgeNodeMatchesQuery(n, "capability")).toBe(true); // id
+    expect(knowledgeNodeMatchesQuery(n, "mcp-server")).toBe(true); // id slug
+  });
+
+  it("id 의 kind 접두는 매치하지 않는다 — 팔레트와 같은 규칙", () => {
+    // It used to, so the word pulled every node of that kind into the tree; the
+    // kind filter already selects them, properly. A pasted whole id still answers.
+    expect(knowledgeNodeMatchesQuery(n, "capability")).toBe(false);
+    expect(knowledgeNodeMatchesQuery(n, "capability:mcp")).toBe(true);
+  });
+
+  it("한글 자판이 만드는 질의에도 팔레트와 같이 답한다", () => {
+    // Measured 2026-09-19: INDEX said "no matching concept" to both of these while
+    // the palette on the same screen resolved them against the same vault.
+    const cart = node("capability:cart", "장바구니");
+    expect(knowledgeNodeMatchesQuery(cart, "ㅈㅂㄱㄴ")).toBe(true);
+    expect(knowledgeNodeMatchesQuery(cart, "장바ㄱ")).toBe(true);
+    expect(knowledgeNodeMatchesQuery(cart, "ㅈㅁㅅ")).toBe(false);
   });
   it("매치 없거나 빈 query 면 false", () => {
     expect(knowledgeNodeMatchesQuery(n, "zzz")).toBe(false);
