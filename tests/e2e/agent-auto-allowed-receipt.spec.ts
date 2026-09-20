@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { seedFirstRunSeen } from './first-run-seed';
+import { openFolderFromFirstRun } from './open-folder';
 import { installLibraryWorkHarness } from './library-work-harness';
 
 /**
@@ -64,8 +65,7 @@ async function driveAutoAllowedWrite(page: import('@playwright/test').Page) {
     // an option a caller may set.
     permissionText: FITTING_PAGE,
   });
-  await page.goto('/en/docs/');
-  await page.getByRole('button', { name: /Open my folder/i }).click();
+  await openFolderFromFirstRun(page, 'en');
   await page.goto('/en/library/?guides=off&e2e=1');
   await page.getByTestId('library-workspace-wiki').click();
   await page.getByTestId('library-open-conversation').click();

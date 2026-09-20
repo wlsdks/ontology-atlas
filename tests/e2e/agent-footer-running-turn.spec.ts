@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { seedFirstRunSeen } from './first-run-seed';
+import { openFolderFromFirstRun } from './open-folder';
 import { installLibraryWorkHarness } from './library-work-harness';
 
 /**
@@ -27,8 +28,7 @@ async function open(page: Page, width: number, locale: 'en' | 'ko') {
     window.localStorage.setItem('atlas.acp-chat.width', String(stored));
   }, width);
   const harness = await installLibraryWorkHarness(page, {});
-  await page.goto(`/${locale}/docs/`);
-  await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
+  await openFolderFromFirstRun(page, locale);
   await page.goto(`/${locale}/library/?guides=off&e2e=1`);
   await page.getByTestId('library-workspace-wiki').click();
   await page.getByTestId('library-open-conversation').click();

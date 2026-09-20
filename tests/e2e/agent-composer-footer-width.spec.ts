@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { seedFirstRunSeen } from './first-run-seed';
+import { openFolderFromFirstRun } from './open-folder';
 import { installLibraryWorkHarness } from './library-work-harness';
 
 /**
@@ -67,10 +68,7 @@ async function openDockAt(page: Page, width: number, locale: 'en' | 'ko') {
    * door this was — rather than a test-timeout stack. Corrected after main-6-a8 probed it both
    * ways; the first version of this comment claimed the failure was silent, and it is not.
    */
-  await page.goto(`/${locale}/docs/`);
-  const openFolder = page.getByRole('button', { name: /Open my folder|내 폴더 열기/i });
-  await expect(openFolder, 'waiting for the open-folder door').toBeVisible();
-  await openFolder.click();
+  await openFolderFromFirstRun(page, locale);
   await page.goto(`/${locale}/library/?guides=off&e2e=1`);
   const workspace = page.getByTestId('library-workspace-wiki');
   await expect(workspace, 'waiting for the wiki workspace').toBeVisible();
