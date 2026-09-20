@@ -4,6 +4,7 @@ export {
   MCP_SERVER_NAME,
   agentServerFromBundle,
   agentServerUnavailable,
+  agentServerPending,
   bundledServerLaunch,
   inspectMcpServerLaunch,
   sourceCheckoutLaunch,

@@ -120,11 +120,27 @@ export interface AgentServerAvailability {
   binaryPath: string | null;
   /** Why not. This becomes a sentence the user reads, so it must carry a diagnosis. */
   reason: string | null;
+  /**
+   * **The probe has not answered yet**, as distinct from having answered "no".
+   *
+   * The two used to be one value, and a screen cannot tell them apart from `launch: null`:
+   * the installed app therefore opened on the browser's degradation card — "only saving the
+   * config for you is what this screen cannot do", with a link to download the app it is
+   * already running — until the bundled-server lookup came back. A false sentence for a few
+   * frames is still a false sentence, and this is the flag that lets a caller say nothing
+   * instead of saying that.
+   */
+  pending?: boolean;
 }
 
-/** No known way to launch — the default for a web session. */
+/** No known way to launch — the answered state for a web session. */
 export function agentServerUnavailable(reason: string | null = null): AgentServerAvailability {
   return { kind: "unavailable", launch: null, binaryPath: null, reason };
+}
+
+/** Nothing is known yet: the lookup is in flight. Callers draw neither claim. */
+export function agentServerPending(): AgentServerAvailability {
+  return { kind: "unavailable", launch: null, binaryPath: null, reason: null, pending: true };
 }
 
 /** The bundled binary was found, so one-click connect holds. */

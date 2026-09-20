@@ -325,7 +325,7 @@ had become false).
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
 - **The trail you walked** → every node that takes focus is appended to a session trail. The map leaves footprints beside the relation lines actually crossed (offset along the line's own curve, never on it) and a step number beside each visited node; the top-centre **Trail** chip opens a newest-first mini timeline. Each row carries, under the title, how that step connects to the step before it: the relation word plus the reason recorded on that edge (`relation_notes`), the relation word alone when no reason is written, or "Not directly related" when the two share no edge. **Hand off to AI** copies the same per-step lines into the agent brief, so the argument the walk made travels with the names. Past trails are archived in the vault folder.
-- **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms). Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection.
+- **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms). Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. That leash is sized to the screen (2026-09-20): half of the free extent beside the open panels less a 120px edge pad, on each axis, with `--map-camera-focus-pan-margin` as its floor, and the fit scale respects it, so a wide ego graph is centred in the free area instead of its far side landing under the detail panel (measured at 1512: two dependencies at x 1349 and 1369 behind a panel from 1128; after, both left of it).
 - **Expand all** → the top action opens every containment parent in one step and
   fits every rendered node inside the map. It is a temporary overview, not a
   saved default; pressing it again collapses the batch. A route arriving with
@@ -2308,7 +2308,7 @@ Opening a conversation preserves the selected runner across the quick detection 
 
 **Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **API Keys and workspaces remain in settings** — the former has a "Path Freezing" decision on 2026-08-16 (promoting destination is itself an emphasis), and the latter's axis answered by vault is different.
 
-**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01). That row names the place and links to it, because since 2026-09-05 the place is `/mcp` and not a section of this screen.
+**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01). That row names the place: since 2026-09-19 it is the MCP tab on the same strip, one press away, so the sentence no longer carries a link (the settings sheet, which has no strip, still does).
 
 **2026-09-06**: the screen wears `PAGE_FRAME_FORM` (960px) like `/mcp`, and the frame carries the desktop bottom breath itself.
 
@@ -2316,23 +2316,31 @@ Opening a conversation preserves the selected runner across the quick detection 
 
 **What changed on 2026-09-07**: only the tools Atlas confirmed on this machine are listed inline. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product. Nothing left the list; a fold of 36 rows had nowhere to put a search.
 
-### `/agents?tab=mcp` — MCP (new 2026-09-05; a section of the Agents page since 2026-09-18)
+### `/agents?tab=mcp` — MCP (new 2026-09-05; the Agents page's second tab since 2026-09-19)
 
 **One sentence on what this screen does**: everything MCP — the folder's own server
 (share this folder with a coding tool) and the external connectors an in-app agent may
-reach — as the last section of the Agents page, with its own two sections on `?mcp=`.
+reach — as the second tab of the Agents page, in two groups stacked under one strip.
 The owner folded the two rail destinations into one on 2026-09-17 ("merge these two,
-split them as tabs inside"), then on 2026-09-18 took the header tab strip away too ("this
-way of showing them at the top is very bad… it should be folded in here"): the strip spent
-a 56px chrome band on two words and left the rest empty, and the two were one subject.
-`?tab=mcp` scrolls to the section; `/mcp/` and `/mcp/?tab=connectors` redirect into it with
-every parameter kept, so the installed app's `ontology-atlas://mcp?install=…` deep link
-still opens the connectors dialog. The rail lost its MCP tile; `g c` still lands here.
+split them as tabs inside"), took the header tab strip away on 2026-09-18 ("this way of
+showing them at the top is very bad… it should be folded in here": it spent a 56px chrome
+band on two words), and on 2026-09-19 rejected the stack that replaced it ("I don't want
+agents and MCP on one screen with a scroll — split them into tabs"). Both objections hold
+at once when the strip is the page's own, under the title: no chrome band, one question on
+screen at a time. `?tab=mcp` selects the tab and `?mcp=connectors` scrolls to the
+connectors group; `/mcp/` and `/mcp/?tab=connectors` redirect in with every parameter
+kept, so the installed app's `ontology-atlas://mcp?install=…` deep link still opens the
+connectors dialog. The rail lost its MCP tile; `g c` still lands here.
 
-- **Share this folder** — the three steps that put a ready config in front of each tool,
-  the connection status those files add up to, the first-contact proof packet an agent
-  pastes to prove it attached, and a collapsed "Not working?" fold holding file status,
-  CLI verification, and connecting from another code folder.
+- **Share this folder** — one row per tool since 2026-09-19 ("this design is poor — make it
+  properly; a popup, say"): the tool's mark, its name, the file it writes, and on the right
+  the one control in that tool's own state (connect, copy, or ready). A row whose file exists
+  but belongs to another tool says so in warning tone instead of its path. What Atlas cannot
+  know on its own — did you restart it, did it attach — opens from the group heading as one
+  dialog holding the restart step, the connection status those files add up to, the
+  first-contact proof packet an agent pastes to prove it attached, and the former
+  "Not working?" fold (file status, CLI verification, connecting from another code folder).
+  The server-lifetime sentence and the folder-root note wait in a hint beside the heading.
 - **Connectors** — the attached list: one line per connector carrying the service mark, the name,
   what will actually run, the switch, and one more-actions button; that button's dialog holds the
   keychain fields and removal, and removal confirms first because forgetting a token cannot be
@@ -2885,6 +2893,33 @@ than highlighting past the truncation — measured live: rows whose mark rendere
 outside its own box went from 1-2 per English query to 0. The per-node name index is
 built once and kept (`WeakMap`), which also took a plain query over 12,000 nodes from
 243 ms to 29.8 ms; `node-name-match.perf.test.ts` holds the ratio.
+
+**Every result row says what it matched** (2026-09-19). Matching deliberately looks
+wider than the row draws — every one of a concept's names (the canonical `title` and
+each `display_<locale>`), the summary, and the id — but the row drew only the
+localised name and the summary, so a match on anything else arrived with nothing to
+see. Measured on the bundled sample over thirty English queries: **97 of 317 rows
+(30.6%) carried no highlight at all.** Two changes close it. The id now matches on its
+slug and not its `kind:` prefix, because typing "element" returned twenty rows that
+were all just the kind — which the filter chips already select, properly; a query
+containing a colon is someone pasting a real id, and for that the whole id still
+answers. And the trailing column became the row's evidence: the summary when the name
+on screen carried the match, that other name when a name the screen is not showing
+did, the summary opened at the match when the description did, and the id's slug in
+mono when the id did. A mark therefore means exactly one thing — *this is what you
+typed* — which is why the context summary is drawn plain. Project rows use the same
+seat for the same job. Re-measured over the same thirty queries plus three Hangul
+ones: **0 of 276 rows unexplained, 0 marks clipped**, and the column has one text
+start line (`w-[14rem]`, after four rows of "policy" began at four different x).
+
+**One answer to the same typing, in every box** (2026-09-19). The map draws INDEX
+and the `⌘K` palette on the same screen, and the docs tree has a third field; each
+kept its own match rule. Measured on the bundled sample: INDEX answered "no matching
+concept" to a chosung query and to a half-typed syllable that the palette resolved
+against the same vault, and it pulled every element for the word "element" because it
+compared the whole `kind:slug`. All three now call `findNameMatch` and `idSearchText`
+in `shared/lib/node-name-match`, which is the single contract; the palette's ranking
+stays its own, because only it ranks. `nameIncludes` retired with its last caller.
 
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio

@@ -32,6 +32,7 @@ import {
 import type { ConnectorWriteResult } from '@/shared/lib/connector-store';
 import {
   isAttachableTransport,
+  type ConnectorDiscoveryState,
   type DiscoveredConnector,
 } from '@/shared/lib/tauri-connectors';
 import { connectorSecretRef, connectorSecretSet } from '@/shared/lib/tauri-connector-secrets';
@@ -230,7 +231,7 @@ function pressOutcome(variant: CatalogueVariant): PressOutcome {
 export function AddConnectorDialog({
   open,
   onClose,
-  discovered,
+  discovery,
   canDiscover,
   canStoreSecrets,
   attachedNames,
@@ -242,7 +243,8 @@ export function AddConnectorDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  discovered: DiscoveredConnector[] | null;
+  /** Scanning / failed / done — see `ConnectorDiscoveryState`; `done` is the only one with rows. */
+  discovery: ConnectorDiscoveryState;
   canDiscover: boolean;
   canStoreSecrets: boolean;
   attachedNames: Set<string>;
@@ -363,6 +365,7 @@ export function AddConnectorDialog({
     [attempt, onAddCustom],
   );
 
+  const discovered = discovery.status === 'done' ? discovery.connectors : null;
   const groups = useMemo(
     () => groupDiscovered((discovered ?? []).filter((server) => !attachedNames.has(server.name))),
     [attachedNames, discovered],
@@ -415,7 +418,7 @@ export function AddConnectorDialog({
   const foundSection = (
     <FoundSection
       canDiscover={canDiscover}
-      discovered={discovered}
+      discovery={discovery}
       matches={foundMatches}
       query={query}
       onAdd={(server) => void attempt(() => onAddDiscovered(server))}
@@ -625,14 +628,14 @@ function GroupHeading({ title, meta }: { title: string; meta?: string }) {
 /** What this machine already registers — one row per thing that actually runs. */
 function FoundSection({
   canDiscover,
-  discovered,
+  discovery,
   matches,
   query,
   onAdd,
   testIdPrefix,
 }: {
   canDiscover: boolean;
-  discovered: DiscoveredConnector[] | null;
+  discovery: ConnectorDiscoveryState;
   matches: DiscoveredGroup[];
   query: string;
   onAdd: (server: DiscoveredConnector) => void;
@@ -691,11 +694,25 @@ function FoundSection({
     );
   }
   // Searching hides an empty group rather than explaining it; the dialog's one line does that.
-  if (discovered !== null && matches.length === 0 && query.trim()) return null;
+  if (discovery.status === 'done' && matches.length === 0 && query.trim()) return null;
   return (
     <section data-testid={`${testIdPrefix}-found-section`}>
       <GroupHeading title={t('groupFound')} />
-      {discovered === null ? (
+      {/*
+        A failed scan says so here as well. This group is the only place the scan's results
+        appear, so leaving it on "reading…" after the command rejected is where the wait looks
+        endless; and the sentence has to be different from "found none", which is a claim about
+        this computer that a failed read has not earned.
+      */}
+      {discovery.status === 'failed' ? (
+        <p
+          role="status"
+          data-testid={`${testIdPrefix}-discovery-failed`}
+          className="break-keep text-label leading-prose text-[color:var(--color-status-warning)]"
+        >
+          {t('discoveryFailed')}
+        </p>
+      ) : discovery.status === 'scanning' ? (
         <p
           role="status"
           data-testid={`${testIdPrefix}-scanning`}

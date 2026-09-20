@@ -46,7 +46,14 @@ const TERMINAL = new Set(['completed', 'failed', 'cancelled']);
 export type ToolOutcome =
   | { kind: 'count'; count: number }
   /** `running` covers every status before the call is over — `pending`, `in_progress`, and any newer name. */
-  | { kind: 'status'; status: 'running' | 'done' | 'failed' | 'cancelled' };
+  | {
+      kind: 'status';
+      /**
+       * `unfinished` is a call that never reached a terminal state and whose turn is over. It is
+       * not a failure — nobody said it failed — it is the absence of an ending.
+       */
+      status: 'running' | 'done' | 'failed' | 'cancelled' | 'unfinished';
+    };
 
 /**
  * The count fields our tools report at the top level. **Order is the priority.** `total`
@@ -89,8 +96,22 @@ export function readToolOutcome(
   status: string,
   /** Did this call go to the vault server we wired in? Only then is a count readable. */
   fromVaultServer: boolean,
+  /**
+   * Is the turn this call belongs to **still running**?
+   *
+   * ⚠️ Required, and deliberately not defaulted, for the same reason `fromVaultServer` is: only
+   * the caller knows, and either default is a lie in one direction. Measured 2026-09-19 — press
+   * Stop while a read is in flight, or let a turn end without the adapter closing its call, and
+   * the row kept the word 「running」 and its pulsing ring for the rest of the conversation, with
+   * the session sitting at Ready and the composer open. The panel was claiming work in progress
+   * that had already stopped, which is the defect this repository already recorded once in the
+   * silent-turn case.
+   */
+  turnRunning: boolean,
 ): ToolOutcome {
-  if (!TERMINAL.has(status)) return { kind: 'status', status: 'running' };
+  if (!TERMINAL.has(status)) {
+    return { kind: 'status', status: turnRunning ? 'running' : 'unfinished' };
+  }
   if (status === 'failed') return { kind: 'status', status: 'failed' };
   if (status === 'cancelled') return { kind: 'status', status: 'cancelled' };
 
