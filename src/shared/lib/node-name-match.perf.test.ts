@@ -19,8 +19,24 @@ import { chosungKey, hangulIncludes } from "./hangul-match";
  * **Gate design — a ratio measured in the same run, never absolute wall-clock**, the
  * shape `duplicate-pairs.perf.test.ts` established. The defective behaviour is
  * reproduced here as `naiveMatch`: it re-normalises and re-reduces every name on every
- * tier, exactly as the old code did. Numerator and denominator ride the same machine
- * and the same concurrent load, so the verdict does not depend on either.
+ * tier, exactly as the old code did.
+ *
+ * ⚠️ **This gate used to claim the ratio was load-proof, and that was wrong.** The claim was
+ * that numerator and denominator ride the same machine and the same concurrent load, so the
+ * verdict depends on neither. They do share the machine; they do not share the **allocation**.
+ * The cached side holds a per-node index and pays the collector under memory pressure, while
+ * the naive side walks strings it immediately throws away — so contention pushes the ratio down
+ * from above while barely moving the bottom. Measured in CI on three branches that never touched
+ * this matcher: **6.73, 9.20, 9.20** against a bar of 10, none of them anywhere near the 2.7-5.3
+ * the real defect produces. Vitest shards by file, so the verdict depended on which other files
+ * happened to land in the same shard.
+ *
+ * That is why these files now have their own project and `fileParallelism: false`
+ * (`vitest.config.ts`), and why the threshold was **not** lowered: re-deriving it under load
+ * would overlap the healthy and defective bands and leave the gate with nothing to separate.
+ * The reason also predicts that this gate gets less trustworthy as the repository grows,
+ * independent of any one afternoon's contention — so if it reddens again, move the lane, do not
+ * move the number.
  *
  * Measured 2026-09-19, this gate's own run (12,000 nodes, best of three, a query that
  * reaches the lowest tier so every name is examined): cached 4.7-5.9 ms against naive

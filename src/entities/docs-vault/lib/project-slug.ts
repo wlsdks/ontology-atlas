@@ -66,3 +66,44 @@ export function findProjectDocInList(
   }
   return null;
 }
+
+/**
+ * The slug of the folder's **only** project, or null when it holds none or several.
+ *
+ * `<project>/atlas` is the standard folder shape, so most folders hold exactly one project and the
+ * Projects door has nothing to choose between: it opens that project rather than a list of one row
+ * above an empty screen (2026-09-19, decision "With one project, the Projects door opens that
+ * project"). Deriving the whole `Project[]` to learn that would map every document on every route
+ * the rail is drawn on, so this walks once and stops at the second.
+ */
+export function resolveSoleProjectSlug(docs: readonly VaultDoc[]): string | null {
+  let only: string | null = null;
+  for (const doc of docs) {
+    if (!isProjectVaultDoc(doc)) continue;
+    const slug = computeProjectSlug(doc);
+    if (!slug) continue;
+    if (only !== null) return null;
+    only = slug;
+  }
+  return only;
+}
+
+/**
+ * Whether the folder holds more than one project document.
+ *
+ * The connected-projects card asks "which other project is this one tied to", and a folder with a
+ * single project cannot answer it: connecting needs a second project to exist, so the card's empty
+ * state is permanent and sits at the top of the rail saying so forever. This walks once and stops
+ * at the second document, the same way `resolveSoleProjectSlug` does, because both run on every
+ * render of a project page.
+ */
+export function hasSeveralProjectDocs(docs: readonly VaultDoc[]): boolean {
+  let seen = 0;
+  for (const doc of docs) {
+    if (!isProjectVaultDoc(doc)) continue;
+    if (!computeProjectSlug(doc)) continue;
+    seen += 1;
+    if (seen > 1) return true;
+  }
+  return false;
+}

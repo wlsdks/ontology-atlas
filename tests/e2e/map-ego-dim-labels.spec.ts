@@ -9,7 +9,7 @@ import { waitForMapStill } from "./settle";
  * names went to alpha 0 with them, so three of the nine domains became
  * anonymous grey chips. A person deciding where to go next was left hovering
  * to find out which chip was which. The dimmed domain keeps a faint name now
- * (`--map-ego-dim-label-alpha`); children stay unnamed, as they were before
+ * (now `--map-ego-rest-alpha`, which the node itself sinks to); children stay unnamed, as they were before
  * the selection.
  */
 test("selecting a domain keeps every other domain's name on the map", async ({ page }) => {

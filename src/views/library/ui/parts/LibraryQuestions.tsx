@@ -197,11 +197,13 @@ export function LibraryQuestions({ answers, knownSources, hashes, onOpen, onAsk,
                     data-state={observation.state}
                     className="flex flex-none items-center"
                   >
-                    {observation.state === 'unchanged' ? (
+                    {observation.state === 'unchanged' || observation.state === 'rewritten' ? (
                       /* The check the source list already uses for *nothing to do here*:
                          the glyph is `aria-hidden` and the word rides with it in
                          `sr-only`, so the sentence is still announced and still part of
-                         the row's description. */
+                         the row's description. A rewritten page joins it: the source moved
+                         and the page was written from the move, so there is nothing to act
+                         on and an amber badge here would ask for work already done. */
                       <>
                         <Check size={ICON_SIZE.sm} aria-hidden />
                         <span className="sr-only">{stateLabel}</span>

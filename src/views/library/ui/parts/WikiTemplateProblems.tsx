@@ -13,8 +13,8 @@ import {
   type WikiProblemWhere,
   type WikiProblemWords,
   type WikiTemplateProblem,
-} from "../../lib/describe-wiki-problem";
-import { isWikiFolderCode } from "@/features/library";
+  isWikiFolderCode,
+} from "@/features/library";
 
 export type { WikiTemplateProblem };
 

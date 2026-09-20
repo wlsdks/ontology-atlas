@@ -150,8 +150,19 @@ export function estimateCanvasTextWidth(text: string, fontSize: number): number 
  * caption (`wardingRing.caption`) already receives translated text the same way.
  */
 export interface ClusterBarLabels {
-  /** One press opens **everything** left. Carries no number — see `clusterBarLabel`. */
-  expandAll: string;
+  /**
+   * One press opens **everything** left, so it carries no number — the node
+   * already engraves that count (`clusterBarLabel`).
+   *
+   * It is the bare verb, the mirror of `collapse`, and deliberately **not** the
+   * toolbar's "expand all": that button opens every folded node on the map and
+   * refits, while this bar opens one parent's children. Until 2026-09-20 both
+   * read the literal words "Expand all" in English, and two synonyms of it in
+   * Korean, with no way to tell the two scopes apart. The verb itself, and the
+   * rule that a count appears only when it differs from the engraved total,
+   * come from the 2026-08-02 ledger decision this narrows.
+   */
+  expand: string;
   /** How many this press opens. Contains a `{count}` placeholder. */
   expandCount: string;
   /** Collapse what is expanded. */
@@ -163,7 +174,7 @@ export interface ClusterBarLabels {
  * means the wiring is broken; a contract test guards that wiring separately.
  */
 const FALLBACK_CLUSTER_BAR_LABELS: ClusterBarLabels = {
-  expandAll: "Expand all",
+  expand: "Expand",
   expandCount: "Expand {count}",
   collapse: "Collapse",
 };
@@ -192,7 +203,7 @@ export function clusterBarLabel(input: {
   if (input.expanded) return labels.collapse;
   const opens = Math.max(1, Math.min(Math.floor(input.batchSize), input.count));
   return opens >= input.count
-    ? labels.expandAll
+    ? labels.expand
     : labels.expandCount.replace("{count}", String(opens));
 }
 

@@ -26,8 +26,14 @@ export interface OntologyMapTokens {
   nodeStrokeElement: string;
   nodeFillDim: string;
   nodeStrokeDim: string;
-  /** `--map-ego-dim-label-alpha` — the name of a domain the ego focus dimmed; children stay at 0. */
-  egoDimLabelAlpha: number;
+  /**
+   * `--map-ego-rest-alpha` — what the ego focus dims sinks to: the node, its
+   * lines, its chip and (for a project or domain) its name, on one number. A
+   * dimmed child keeps no name. The colour ramp alone (stroke 1.37:1 against
+   * the normal stroke, fill lighter than normal) left dimmed siblings reading as
+   * ego members without names (measured 2026-09-20).
+   */
+  egoRestAlpha: number;
   nodeFillStale: string;
   nodeStrokeStale: string;
   nodeHoleFill: string;
@@ -330,7 +336,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "nodeStrokeElement", cssVar: "--map-node-stroke-element", kind: "color" },
   { key: "nodeFillDim", cssVar: "--map-node-fill-dim", kind: "color" },
   { key: "nodeStrokeDim", cssVar: "--map-node-stroke-dim", kind: "color" },
-  { key: "egoDimLabelAlpha", cssVar: "--map-ego-dim-label-alpha", kind: "number" },
+  { key: "egoRestAlpha", cssVar: "--map-ego-rest-alpha", kind: "number" },
   { key: "nodeFillStale", cssVar: "--map-node-fill-stale", kind: "color" },
   { key: "nodeStrokeStale", cssVar: "--map-node-stroke-stale", kind: "color" },
   { key: "nodeHoleFill", cssVar: "--map-node-hole-fill", kind: "color" },

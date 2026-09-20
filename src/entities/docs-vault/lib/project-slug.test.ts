@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { VaultDoc, VaultManifest } from "../model/types";
 import {
+  resolveSoleProjectSlug,
+  hasSeveralProjectDocs,
   computeProjectSlug,
   findProjectDocInList,
   findProjectVaultDoc,
@@ -145,5 +147,52 @@ describe("findProjectDocInList", () => {
     ];
     expect(findProjectDocInList(docs, "ontology-atlas")?.slug).toBe("ontology/project");
     expect(findProjectDocInList(docs, "ontology/project")).toBeNull();
+  });
+});
+
+describe("resolveSoleProjectSlug", () => {
+  const projectDoc = (slug: string, frontmatterSlug?: string): VaultDoc =>
+    makeDoc({ slug, frontmatter: { kind: "project", ...(frontmatterSlug ? { slug: frontmatterSlug } : {}) } });
+
+  it("names the folder's only project", () => {
+    expect(
+      resolveSoleProjectSlug([
+        makeDoc({ slug: "domains/order", frontmatter: { kind: "domain" } }),
+        projectDoc("atlas/project", "storefront"),
+      ]),
+    ).toBe("storefront");
+  });
+
+  it("is null for a folder with none, and for one with a second", () => {
+    expect(resolveSoleProjectSlug([])).toBeNull();
+    expect(resolveSoleProjectSlug([makeDoc({ slug: "domains/order", frontmatter: { kind: "domain" } })])).toBeNull();
+    expect(resolveSoleProjectSlug([projectDoc("projects/a"), projectDoc("projects/b")])).toBeNull();
+  });
+});
+
+describe("hasSeveralProjectDocs", () => {
+  const projectDoc = (slug: string): VaultDoc =>
+    makeDoc({ slug, frontmatter: { kind: "project", slug } });
+
+  it("is false for a folder with one project, which is the standard shape", () => {
+    expect(
+      hasSeveralProjectDocs([
+        makeDoc({ slug: "domains/order", frontmatter: { kind: "domain" } }),
+        projectDoc("atlas/project"),
+      ]),
+    ).toBe(false);
+  });
+
+  it("is false for a folder with no project at all", () => {
+    expect(hasSeveralProjectDocs([makeDoc({ slug: "notes", frontmatter: { kind: "document" } })])).toBe(false);
+  });
+
+  it("is true as soon as a second project exists", () => {
+    expect(hasSeveralProjectDocs([projectDoc("one"), projectDoc("two")])).toBe(true);
+  });
+
+  it("does not count a project document whose slug cannot be resolved", () => {
+    const unnamed = makeDoc({ slug: "", frontmatter: { kind: "project" } });
+    expect(hasSeveralProjectDocs([projectDoc("one"), unnamed])).toBe(false);
   });
 });

@@ -69,8 +69,15 @@ test("걸어온 길 — 쌓이고, 목록이 맞고, 뒤로 점프하고, 지워
     .poll(selection, { timeout: 15_000, message: "자취 행이 그 노드로 데려가지 않았다" })
     .toBe("domain:order");
 
-  // Clear — the chip disappears
+  /*
+   * Clear — the chip disappears, and it now takes **two** presses. Discarding a walked trail
+   * asks again before it throws the walk away (`topology.footprint.clearConfirmLabel`), which
+   * landed with the map batch. This spec still pressed once and
+   * then waited fifteen seconds for a chip that was never going to leave, so the failure read as
+   * "clear is broken" when the product had grown a confirmation the walk did not answer.
+   */
   await page.getByText(/걸어온 길 · \d/).click();
   await page.getByText("지우기", { exact: true }).click();
+  await page.getByText("한 번 더 누르면 지워요", { exact: true }).click();
   await expect(page.getByText(/걸어온 길 · \d/)).toHaveCount(0);
 });

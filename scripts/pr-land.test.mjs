@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import {
@@ -18,6 +19,9 @@ import {
   pruneWaiters,
   waitingLineHead,
   describeLock,
+  readOutcome,
+  protectionFrom,
+  distanceFrom,
   isBrowserCommand,
   isCiOwnedCommand,
   localCheckPlan,
@@ -264,6 +268,79 @@ describe('the landing lock', () => {
     assert.equal(classifyLock({ payload: {}, nowMs: NOW }).state, 'unreadable');
     assert.equal(classifyLock({ payload: { pr: 'twelve' }, nowMs: NOW }).state, 'unreadable');
     assert.equal(classifyLock({ payload: null, nowMs: NOW }).state, 'free');
+  });
+
+  /*
+   * Observed on 2026-09-19: twenty-six landers shared one GitHub account, the REST quota reached
+   * 0/5000, and `pnpm pr:queue` printed `nothing is landing` while PR #1728 held the lock and
+   * refreshed it every minute. A second session logged `taking over a lock nobody refreshed: an
+   * unreadable lock ({})` — the ref read had been served and the blob read had been rate-limited,
+   * so a live lock presented as abandoned and was force-taken. These four cases hold the
+   * distinction that outage cost us: an answer that arrived versus a read that never did.
+   */
+  it('does not render a read that failed as an open door', () => {
+    const failure = { reason: 'rate-limited', detail: 'the shared GitHub REST quota is exhausted' };
+    const lock = classifyLock({ payload: null, unreadable: failure, nowMs: NOW });
+    assert.equal(lock.state, 'unknown');
+    assert.equal(lock.holder, null);
+    assert.match(describeLock(lock), /could not be read: the shared GitHub REST quota is exhausted/);
+  });
+
+  it('waits on a lock it could not read instead of taking it', () => {
+    const unknown = classifyLock({ payload: null, unreadable: { reason: 'unreachable', detail: 'no network' }, nowMs: NOW });
+    assert.equal(decideNext({ pr: draftPr(), lock: unknown, requiredContexts: REQUIRED_CONTEXTS }).action, 'wait-lock');
+    // The stale-lock takeover it must not become: that one forces a PATCH over whoever is landing.
+    assert.equal(
+      decideNext({ pr: draftPr(), lock: classifyLock({ payload: {}, nowMs: NOW }), requiredContexts: REQUIRED_CONTEXTS }).action,
+      'take-stale-lock',
+    );
+  });
+
+  it('tells a ref that is absent from a request that did not happen', () => {
+    // The 404 this script asks for on purpose: there is no lock, so there is no ref.
+    assert.deepEqual(readOutcome({ failed: true, output: 'gh: Not Found (HTTP 404)' }), { value: null, failure: null });
+    // Everything else is a read that never arrived, and each says which.
+    assert.equal(readOutcome({ failed: true, output: '{"message":"API rate limit exceeded for user ID 1"}' }).failure.reason, 'rate-limited');
+    assert.equal(readOutcome({ failed: true, output: 'dial tcp: lookup api.github.com: no such host' }).failure.reason, 'unreachable');
+    assert.match(readOutcome({ failed: true, output: 'dial tcp: no such host' }).failure.detail, /no such host/);
+    assert.deepEqual(readOutcome('{"object":{"sha":"abc"}}').value, { object: { sha: 'abc' } });
+  });
+
+  it('never lets a failed read accuse main of having no gate', () => {
+    const refused = { failed: true, output: '{"message":"API rate limit exceeded for user ID 1"}' };
+    assert.equal(protectionFrom(readOutcome(refused)).contexts, null);
+    // Nor may a 404: this endpoint answers a caller without admin rights much as it answers a
+    // branch with no rule, and only one of those two deserves the accusation.
+    assert.equal(protectionFrom(readOutcome({ failed: true, output: 'gh: Not Found (HTTP 404)' })).contexts, null);
+    assert.deepEqual(protectionFrom(readOutcome('{"contexts":["Unit · Contract"]}')).contexts, ['Unit · Contract']);
+  });
+
+  it('never lets a failed read say main has stayed still', () => {
+    // Answering 0 would skip pouring main in and spend the one CI run on a base nothing checked.
+    assert.equal(distanceFrom(readOutcome({ failed: true, output: 'API rate limit exceeded' })).behindBy, null);
+    assert.equal(distanceFrom(readOutcome({ failed: true, output: 'gh: Not Found (HTTP 404)' })).behindBy, null);
+    assert.equal(distanceFrom(readOutcome('{"behind_by":3}')).behindBy, 3);
+    assert.equal(distanceFrom(readOutcome('{"behind_by":0}')).behindBy, 0);
+  });
+
+  /*
+   * The states of a read are all single-call facts; this one is about the holder across polls, and
+   * no single-call test reaches it. A `continue` that lands above the refresh means the holder
+   * spends a poll without renewing, `acquiredAt` stops moving, the lease expires under a live
+   * holder, and the next lander force-takes the lock — the defect this file is about, by a quieter
+   * road. Caught in review on the first version of that guard, where the new compare-read exit sat
+   * above the refresh and only a holder could reach it.
+   */
+  it('renews the lease before any poll a holder can leave early', () => {
+    const source = readFileSync(new URL('./pr-land.mjs', import.meta.url), 'utf8');
+    const loop = source.slice(source.indexOf('while (Date.now() < deadline) {'));
+    const refresh = loop.indexOf('if (held) refreshLock(');
+    const firstExit = loop.indexOf('continue;');
+    assert.ok(refresh !== -1, 'the poll no longer refreshes the lease it holds');
+    assert.ok(
+      refresh < firstExit,
+      'a poll can end before the holder renews its lease; move the refresh above every early exit',
+    );
   });
 
   it('honours a lease the holder wrote, not only the default', () => {

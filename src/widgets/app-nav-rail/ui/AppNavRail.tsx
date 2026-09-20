@@ -266,7 +266,7 @@ export function AppNavRail({
      * says "measures", which is what this destination opens on.
      */
     { id: "insights", href: DESTINATION_HREF.insights, label: t("insights"), Icon: LineChart },
-    { id: "projects", href: DESTINATION_HREF.projects, label: t("projects"), Icon: FolderKanban },
+    { id: "projects", href: contextHrefs?.projects ?? DESTINATION_HREF.projects, label: t("projects"), Icon: FolderKanban },
     // Agents — a new destination on 2026-08-20 (ledger 90). The install and connect
     // screens were pulled out of the settings sheet to here.
     //

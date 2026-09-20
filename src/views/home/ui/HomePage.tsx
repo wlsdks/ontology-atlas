@@ -561,7 +561,36 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const workbenchOpenRef = useRef({ agent: false, meaning: false });
   useLayoutEffect(() => { workbenchOpenRef.current = { agent: acpDockFrameOpen, meaning: meaningWorkbenchOpen }; }, [acpDockFrameOpen, meaningWorkbenchOpen]);
   const requestWorkbenchSection = useCallback((tab: 'meaning' | 'history' | 'conversation') => setWorkbenchSectionRequest((current) => ({ tab, nonce: current.nonce + 1 })), []);
+  /** Which tab the dock is actually on, so the chip knows whether a press still has somewhere to go. */
+  const workbenchSectionRef = useRef<'meaning' | 'history' | 'conversation'>('meaning');
   const openMeaningWorkbench = useCallback(() => { setVaultAgentOpen(false); setMeaningWorkbenchOpen(true); requestWorkbenchSection('meaning'); }, [requestWorkbenchSection]);
+  /*
+   * The chip wears the active tone while the panel is open, and the rule beside
+   * `growthReplaying` says a control may wear that tone and `aria-pressed` for
+   * exactly as long as the thing it names is on. This one wore the tone, said
+   * nothing, and only ever opened: measured 2026-09-20, three presses on the lit
+   * chip left the panel present and the canvas at 928 px. A lit control that
+   * ignores a press is not a control, so the press closes what it opened.
+   */
+  const toggleMeaningWorkbench = useCallback(() => {
+    /*
+     * Closing is what a lit chip owes a press, but only once the press has
+     * nothing else to do. While the dock is parked on another tab this chip is
+     * still the way back to meaning, and taking that away would close a dock the
+     * person was reading (`analysis-workbench.spec.ts`, "returns an open history
+     * dock to meaning without closing it"). So: on meaning it closes, elsewhere
+     * it comes home first.
+     */
+    if (meaningWorkbenchOpen) {
+      if (workbenchSectionRef.current !== 'meaning') {
+        requestWorkbenchSection('meaning');
+        return;
+      }
+      setMeaningWorkbenchOpen(false);
+      return;
+    }
+    openMeaningWorkbench();
+  }, [meaningWorkbenchOpen, openMeaningWorkbench, requestWorkbenchSection]);
   const [analysisFindings, setAnalysisFindings] = useState<readonly AnalysisFinding[]>([]);
   /**
    * Whether the dock starts open — true only in the installed app with a key
@@ -3196,6 +3225,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     setCreateNodeOpen(false);
   }, [agentChatUsesRuntime, cancelAcpSessionStart, requestWorkbenchSection, setCreateNodeOpen]);
   const handleWorkbenchSectionChange = useCallback((tab: 'meaning' | 'history' | 'conversation') => {
+    workbenchSectionRef.current = tab;
     if (tab === 'conversation' && agentChatUsesRuntime && !workbenchOpenRef.current.agent) {
       setChatMounted(true); setAcpDockFrameOpen(true); setAcpChatOpen(true);
     }
@@ -4273,7 +4303,16 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     }));
     return {
       rootKind: subtree.node.kind,
-      rootTitle: subtree.node.title,
+      /*
+       * The reader's name for the root, not the canonical one. Measured
+       * 2026-09-20 on the sample map: the chip, the chip's title and the node on
+       * the canvas all read the vault's `display_ko` while this header reached
+       * past it to `title` ("Payments"), so one screen called the same domain by
+       * two names in two languages. The ledger's boundary rows and subtree were
+       * already localized; only the header was not. `display ?? title` is the
+       * idiom the rest of this file uses.
+       */
+      rootTitle: subtree.node.display ?? subtree.node.title,
       census,
       subtree,
       boundaryRows,
@@ -4302,7 +4341,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
    */
   const clusterBarLabels = useMemo(
     () => ({
-      expandAll: t("cluster.barExpandAll"),
+      expand: t("cluster.barExpand"),
       expandCount: t("cluster.barExpandCount", { count: "{count}" }),
       collapse: t("cluster.barCollapse"),
     }),
@@ -4823,6 +4862,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                             copyAriaLabel: t("footprint.copyAriaLabel"),
                             copyCopiedAriaLabel: t("footprint.copyCopiedAriaLabel"),
                             clearLabel: t("footprint.clearLabel"),
+                            clearConfirmLabel: t("footprint.clearConfirmLabel"),
                             clearAriaLabel: t("footprint.clearAriaLabel"),
                             pastLinkLabel: t("footprint.pastLinkLabel", {
                               count: pastWalkRows.length,
@@ -4906,9 +4946,10 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                       aria-label={tWorkbench('meaningTitle')}
                       title={tWorkbench('meaningTitle')}
                       active={meaningWorkbenchOpen}
+                      aria-pressed={meaningWorkbenchOpen}
                       compact={topologyUtilityChromeCompact || searchLaneCrowded}
                       data-testid="topology-meaning-workbench-toggle"
-                      onClick={openMeaningWorkbench}
+                      onClick={toggleMeaningWorkbench}
                     >{tWorkbench('meaningTitle')}</ChromeChip>
                     {/* 「Agent」 — This button's spot is the moment you go from viewing a map to saying "fix this."
                         It uses the same chip spec as the existing utility lane without creating a rail destination or new route (zero surface addition).
@@ -4920,10 +4961,25 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
                     {llmBridgeAvailable ? (
                       <Tooltip content={tAgent('title')} side="bottom" withProvider={false}>
                         <ChromeChip
-                          onClick={() =>
-                            (agentDockTouchedRef.current = true,
-                            openVaultAgent())
-                          }
+                          /*
+                           * The press closes what it opened. It used to call
+                           * `openVaultAgent` only, so a chip wearing the active
+                           * tone and reporting `aria-expanded="true"` ignored
+                           * every press after the first: measured 2026-09-20
+                           * with a folder open at 1512, the second and third
+                           * presses left the state true and the map's canvas at
+                           * 1055 of 1448. The dock keeps its own close button;
+                           * this is the one a person reaches for after opening
+                           * it here, and it matches the review chip beside it.
+                           */
+                          onClick={() => {
+                            agentDockTouchedRef.current = true;
+                            if (agentDockOpen) {
+                              closeVaultAgent();
+                              return;
+                            }
+                            openVaultAgent();
+                          }}
                           aria-label={tAgent('title')}
                           aria-expanded={agentDockOpen}
                           data-testid="topology-vault-agent-toggle"
@@ -6785,6 +6841,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
         <ShortcutSheet
           open={!createNodeOpen && shortcutsOpen}
           onClose={() => setShortcutsOpen(false)}
+          returnFocusSelector={'[data-testid="topology-shortcuts-help-button"]'}
         />
         <DocsQuickDrawer
           open={!createNodeOpen && docsDrawerOpen}

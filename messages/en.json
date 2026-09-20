@@ -3189,7 +3189,7 @@
       "hint": "Dense groups are folded into +N chips: click a chip to expand that group, click again to collapse.",
       "expandAria": "Expand {count} hidden items",
       "collapseAria": "Collapse this group",
-      "barExpandAll": "Expand all",
+      "barExpand": "Expand",
       "barExpandCount": "Expand {count}",
       "barCollapse": "Collapse",
       "tooltipCollapsed": "“{name}”: {total} total under it · {hidden} hidden at this level. Click to expand",
@@ -3225,6 +3225,7 @@
       "copyAriaLabel": "Copy your trail to hand off to AI",
       "copyCopiedAriaLabel": "Copied: paste into your AI chat",
       "clearLabel": "Clear",
+      "clearConfirmLabel": "Press again to discard",
       "clearAriaLabel": "Clear trail",
       "packetTitle": "Exploration trail",
       "packetOrder": "Visited order (oldest → most recent):",
@@ -4487,6 +4488,9 @@
   "acpChat": {
     "ariaLabel": "Conversation with {runtime}",
     "emptyHint": "Ask anything about this folder.",
+    "emptySeatedHint": "This screen has written a question for you. Edit it below, or send it as it is.",
+    "codeCopy": "Copy",
+    "codeCopied": "Copied",
     "composerLabel": "Write what you want done",
     "send": "Send",
     "stop": "Stop",
@@ -4498,6 +4502,7 @@
       "starting": "Connecting",
       "ready": "Ready",
       "thinking": "Thinking",
+      "awaiting": "Waiting for you",
       "error": "Problem",
       "exited": "Ended"
     },
@@ -4534,7 +4539,7 @@
         "incomplete": "Meaning review incomplete · {inspected} of {total} recorded meaning units shown · {omitted} omitted. Details contains the complete request.",
         "coverageNone": "This request records no meaning text. Details carries the complete request.",
         "coverageAll": "{total, plural, one {The # recorded meaning unit is shown in full} other {All # recorded meaning units are shown}}. Details carries the complete request.",
-        "beforeUnavailable": "A trusted historical vault snapshot is unavailable. Current request values are shown without inventing a before state.",
+        "beforeUnavailable": "Only the values in this request are shown; a before state is never invented.",
         "beforeUnknown": "Before · unavailable",
         "before": "Before",
         "after": "Proposed",
@@ -4625,6 +4630,7 @@
       "scopeUnknownHint": "This tool did not say what the grant covers. Allowing once is the safer choice.",
       "pageFits": "The page keeps its shape: every fact cited, the five sections in order.",
       "pageFails": "{count, plural, one {# problem} other {# problems}} with this page's shape. Allow saves it as is; the Wiki list will show them.",
+      "pageFailsRest": "{count, plural, one {# more} other {# more}} beyond these. The Wiki list shows them all.",
       "insideFolderTitle": "It wants to change a file in this folder",
       "insideFolderBody": "The path is below. Nothing happens until you allow it.",
       "insideProjectTitle": "It wants to look at code in your project",
@@ -4693,8 +4699,6 @@
       "openHint": "Follow this ontology-only answer through {count} scenes.",
       "blocked": "This answer is not ready to present yet. {reason}",
       "blockReason": {
-        "intent_inactive": "It was not requested as a presentation.",
-        "turn_incomplete": "The answer has not finished.",
         "no_answer": "There is no completed explanation.",
         "source_hidden_unproven": "The tool record does not prove an ontology-only read.",
         "no_full_body_reads": "No concept body was read in full.",
@@ -4724,7 +4728,8 @@
     "trouble": {
       "limit": {
         "title": "This tool has hit its usage limit",
-        "hint": "Not the app: the tool's own plan is out of room. If Details names when it resets, press Retry then; until then pick another tool below and carry on."
+        "hint": "Not the app: the tool's own plan is out of room. If Details names when it resets, press Retry then; until then pick another tool below and carry on.",
+      "hintOnlyTool": "Not the app: the tool's own plan is out of room, and it is the only tool set up here. If Details names when it resets, press Retry then. Connecting a second tool on the Agents screen is what gives you somewhere to carry on."
       },
       "auth": {
         "title": "An old app-scoped sign-in is getting in the way",
@@ -4740,7 +4745,7 @@
       },
       "launch": {
         "title": "The tool could not be started",
-        "hint": "Open the Agents destination on the left to see this tool's state."
+        "hint": "Agents shows what state this tool is in. The button below opens it.", "door": "Open Agents"
       },
       "network": {
         "title": "No connection to the outside",
@@ -4760,6 +4765,7 @@
       "modeMoved": "The tool moved this conversation into {mode}, a mode that accepts file edits without asking you first.",
       "modeMovedServerGate": "The tool moved this conversation into {mode}, a mode that accepts file edits without asking you first. Changes made through Atlas tools still stop at the server for your approval.",
       "autoAllowed": "{detail} was written without asking: it fits the wiki page contract.",
+      "autoRefused": "Refused without asking · {detail}. It is outside what this conversation may do.",
       "openPage": "Open",
       "askNext": "Ask next time"
     },
@@ -5864,6 +5870,7 @@
         "changed": "Cited originals changed",
         "missing": "A cited original is missing",
         "new-sources": "New originals need consideration",
+        "rewritten": "A cited original changed and this answer was rewritten from that version",
         "unmeasured": "Source version not established",
         "unchanged": "No change since source observation"
       },
@@ -5907,7 +5914,8 @@
       "paths": {
         "changed": "Changed originals",
         "missing": "Missing originals",
-        "added": "New originals to consider"
+        "added": "New originals to consider",
+        "rewritten": "Rewritten from"
       },
       "version": {
         "head": "Latest draft",
@@ -6071,6 +6079,14 @@
         "noAgent": "No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again."
       },
       "sheet": {
+        "readbackConsistency": "{cadence}, check that every page still matches its originals, and {onStale} a page that has gone stale. It runs once as soon as you save.",
+        "readbackService": "{cadence}, read what {service} sent again, bring in what is new, and rewrite the pages that changed. One agent turn per pass.",
+        "readbackRedraft": "rewrite",
+        "readbackMark": "only mark",
+        "readbackHour": "Every hour",
+        "readback6h": "Every six hours",
+        "readbackDaily": "Every day at {time}",
+        "readbackWeekdays": "On weekdays at {time}",
         "title": "New round",
         "what": "What to check",
         "how": "How often",

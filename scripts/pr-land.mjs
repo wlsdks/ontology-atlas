@@ -161,6 +161,15 @@ export const POLL_SECONDS = 30;
  *
  * The line is read only when the lock is observed **free**, which is the rare poll, so the common
  * case costs nothing beyond the one lock read it already did.
+ *
+ * **These two refs are the whole REST cost of waiting, and that is not where anyone looks first.**
+ * Measured on 2026-09-20 against `gh api rate_limit` either side of each call: `gh pr view --json`
+ * and `gh pr checks` cost **0** — they are GraphQL, which has its own budget — while the branch
+ * protection read costs 2 and a lock read (ref plus blob) costs 2. So a waiting poll spends
+ * roughly 4 to 6 REST every 30 seconds, about 480 to 720 an hour, and the 5,000/hour account
+ * ceiling is therefore **about eight concurrent landers**. Twenty-six of them exhausted it
+ * completely that night. Anyone making polling cheaper should widen `POLL_SECONDS` or back off by
+ * queue position, not touch the pull-request reads, which are already free.
  */
 export const QUEUE_REF = 'refs/atlas/landing-queue';
 
@@ -277,8 +286,21 @@ export function refuseLanding(pr) {
  * parsed is still a lock somebody took, and treating a shape we do not
  * understand as an open door is how a mutex becomes decoration. It becomes
  * takeable only once it is older than the lease.
+ *
+ * `unknown` is the same rule one layer down, and it was missing until the
+ * fleet proved it. The guard above covers a payload that arrived and made no
+ * sense; it does not cover a read that never arrived. Every tolerated read here
+ * returned the same `null` whether the ref was genuinely absent or the request
+ * failed, so on 2026-09-19, with the shared REST quota at 0/5000, `pnpm
+ * pr:queue` printed `nothing is landing` while #1728 held the lock and was
+ * refreshing it every minute. Nothing merged twice — `takeLock` creates the ref
+ * with POST and a POST over a ref that exists fails — but a status line stated
+ * a fact it had failed to fetch, which is the same defect class as an invented
+ * answer. A read that did not happen now has its own state and never renders as
+ * an open door.
  */
-export function classifyLock({ payload, nowMs, leaseMinutes = LEASE_MINUTES }) {
+export function classifyLock({ payload, unreadable = null, nowMs, leaseMinutes = LEASE_MINUTES }) {
+  if (unreadable) return { state: 'unknown', holder: null, ageMinutes: null, failure: unreadable };
   if (payload === null || payload === undefined) return { state: 'free', holder: null, ageMinutes: null };
   const acquiredMs = Date.parse(payload?.acquiredAt ?? '');
   if (!Number.isFinite(acquiredMs) || typeof payload?.pr !== 'number') {
@@ -296,6 +318,7 @@ export function classifyLock({ payload, nowMs, leaseMinutes = LEASE_MINUTES }) {
 
 export function describeLock(lock) {
   if (lock.state === 'free') return 'nothing is landing';
+  if (lock.state === 'unknown') return `the landing lock could not be read: ${lock.failure?.detail ?? 'the read failed'}`;
   if (lock.state === 'unreadable') {
     return `an unreadable lock (${JSON.stringify(lock.payload)}); it can be taken over once it is older than ${LEASE_MINUTES} minutes`;
   }
@@ -571,6 +594,9 @@ export function decideNext({
 
   const holdsLock = selfLock !== null && lock.state !== 'free' && lock.holder?.token === selfLock;
   if (!holdsLock) {
+    // A lock we could not read may be anyone's, including nobody's. Waiting costs a poll; taking
+    // it on a failed read is the one move that cannot be undone by the next poll.
+    if (lock.state === 'unknown') return { action: 'wait-lock', lock };
     if (lock.state === 'held') return { action: 'wait-lock', lock };
     if (lock.state === 'stale' || lock.state === 'unreadable') return { action: 'take-stale-lock', lock };
     return { action: 'take-lock', lock };
@@ -678,6 +704,45 @@ function gh(args, { allowFailure = false } = {}) {
   }
 }
 
+/**
+ * Why a tolerated read came back empty.
+ *
+ * A 404 is not a failure: it is the answer 「there is no such ref」, which is how this script asks
+ * whether a lock exists. Everything else is a read that did not happen, and the two must not share
+ * a return value — see `classifyLock`.
+ */
+export function describeReadFailure(output) {
+  const text = String(output ?? '');
+  if (/rate limit exceeded/i.test(text)) {
+    return {
+      reason: 'rate-limited',
+      detail: 'the shared GitHub REST quota is exhausted (`gh api rate_limit` says when it returns)',
+    };
+  }
+  const first = text.trim().split('\n').find((line) => line.trim().length > 0) ?? '';
+  return { reason: 'unreachable', detail: first.trim() || 'the request failed without a message' };
+}
+
+/**
+ * What a tolerated read came back with: `{ value }` when the repository answered — including the
+ * 404 that means 「there is no such ref」, which arrives as a null value — or `{ failure }` when the
+ * request did not happen at all.
+ */
+export function readOutcome(out) {
+  if (typeof out === 'string') {
+    try {
+      return { value: JSON.parse(out), failure: null };
+    } catch {
+      return { value: null, failure: { reason: 'unreadable', detail: 'the reply was not JSON' } };
+    }
+  }
+  const text = String(out?.output ?? '');
+  if (/HTTP 404|Not Found/i.test(text)) return { value: null, failure: null };
+  return { value: null, failure: describeReadFailure(text) };
+}
+
+const ghRead = (args) => readOutcome(gh(args, { allowFailure: true }));
+
 function ghJson(args, options) {
   const out = gh(args, options);
   if (out === null || typeof out === 'object') return null;
@@ -723,17 +788,55 @@ function readPr(number) {
   return ghJson(['pr', 'view', String(number), '--json', PR_FIELDS]);
 }
 
-function readRequiredContexts(slug) {
-  const required = ghJson(['api', `repos/${slug}/branches/main/protection/required_status_checks`], {
-    allowFailure: true,
-  });
-  return Array.isArray(required?.contexts) ? required.contexts : [];
+/**
+ * The protection's own list, or `null` when the question could not be asked.
+ *
+ * The difference is not cosmetic. An empty list makes this script print 「main declares no required
+ * status checks」, which accuses the repository of having no gate — and the obvious way to act on
+ * that accusation is to go and weaken branch protection so a landing can proceed. A rate-limited
+ * read must not be able to say that sentence.
+ */
+export function protectionFrom(read) {
+  if (read.failure) return { contexts: null, failure: read.failure };
+  /*
+   * Unlike the lock ref, a 404 here is **not** a real answer, and the difference is ownership. The
+   * lock ref belongs to this script — it creates and deletes it — so「no ref」is a fact the script
+   * itself authored. Branch protection belongs to the repository, and its endpoints answer a
+   * caller without admin rights much as they answer a branch with no rule. A scope change, a
+   * re-auth or a different host would therefore make this script print 「main declares no required
+   * status checks」as a measurement, which is the one sentence here that invites a person to go
+   * and weaken branch protection. Both readings refuse to land, so insisting on a body costs
+   * nothing and removes the misleading one.
+   */
+  if (!read.value) {
+    return {
+      contexts: null,
+      failure: { reason: 'unreadable', detail: "main's protection returned no body; 「no rule」 and 「not allowed to look」 read alike here" },
+    };
+  }
+  return { contexts: Array.isArray(read.value.contexts) ? read.value.contexts : [], failure: null };
 }
 
-/** How far `main` has run ahead of this branch since they parted. */
+function readRequiredContexts(slug) {
+  return protectionFrom(ghRead(['api', `repos/${slug}/branches/main/protection/required_status_checks`]));
+}
+
+/**
+ * How far `main` has run ahead of this branch since they parted, or `null` when it could not be
+ * read. A failed read used to answer `0`, which is 「main has not moved」 — so the landing skipped
+ * pouring main in and spent its one CI run on a base it had never checked. That is the opposite of
+ * what this step exists for.
+ */
+export function distanceFrom(read) {
+  if (read.failure) return { behindBy: null, failure: read.failure };
+  // Unlike the protection read, a 404 answers nothing here: a comparison that returned no body
+  // cannot say main has stayed still.
+  if (!read.value) return { behindBy: null, failure: { reason: 'unreadable', detail: 'the comparison returned no body' } };
+  return { behindBy: read.value.behind_by ?? 0, failure: null };
+}
+
 function readBehindBy(slug, headSha) {
-  const comparison = ghJson(['api', `repos/${slug}/compare/main...${headSha}`], { allowFailure: true });
-  return comparison?.behind_by ?? 0;
+  return distanceFrom(ghRead(['api', `repos/${slug}/compare/main...${headSha}`]));
 }
 
 /**
@@ -768,15 +871,18 @@ function mergeMainInto(slug, branch) {
 }
 
 function readLockPayload(slug) {
-  const ref = ghJson(['api', `repos/${slug}/git/ref/${LOCK_REF.replace('refs/', '')}`], { allowFailure: true });
-  if (!ref?.object?.sha) return { payload: null, sha: null };
-  const blob = ghJson(['api', `repos/${slug}/git/blobs/${ref.object.sha}`], { allowFailure: true });
-  if (!blob?.content) return { payload: {}, sha: ref.object.sha };
+  const ref = ghRead(['api', `repos/${slug}/git/ref/${LOCK_REF.replace('refs/', '')}`]);
+  if (ref.failure) return { payload: null, sha: null, unreadable: ref.failure };
+  const sha = ref.value?.object?.sha ?? null;
+  if (!sha) return { payload: null, sha: null, unreadable: null };
+  const blob = ghRead(['api', `repos/${slug}/git/blobs/${sha}`]);
+  if (blob.failure) return { payload: null, sha, unreadable: blob.failure };
+  if (!blob.value?.content) return { payload: {}, sha, unreadable: null };
   try {
-    const raw = Buffer.from(blob.content, blob.encoding === 'base64' ? 'base64' : 'utf8').toString('utf8');
-    return { payload: JSON.parse(raw), sha: ref.object.sha };
+    const encoding = blob.value.encoding === 'base64' ? 'base64' : 'utf8';
+    return { payload: JSON.parse(Buffer.from(blob.value.content, encoding).toString('utf8')), sha, unreadable: null };
   } catch {
-    return { payload: {}, sha: ref.object.sha };
+    return { payload: {}, sha, unreadable: null };
   }
 }
 
@@ -1006,8 +1112,8 @@ function runLocalChecks({ worktree, pr, io }) {
 }
 
 function printQueue(slug, io = console) {
-  const { payload } = readLockPayload(slug);
-  const lock = classifyLock({ payload, nowMs: Date.now() });
+  const { payload, unreadable } = readLockPayload(slug);
+  const lock = classifyLock({ payload, unreadable, nowMs: Date.now() });
   io.log(`[pr-queue] landing now: ${describeLock(lock)}`);
   /*
    * The order, so a waiter can see its own place instead of guessing why it keeps losing. A
@@ -1107,8 +1213,13 @@ export function runPrLand(argv, io = console) {
   if (args.queue) return printQueue(slug, io);
 
   if (args.release) {
-    const { payload } = readLockPayload(slug);
-    const lock = classifyLock({ payload, nowMs: Date.now() });
+    const { payload, unreadable } = readLockPayload(slug);
+    const lock = classifyLock({ payload, unreadable, nowMs: Date.now() });
+    if (lock.state === 'unknown') {
+      // Forcing a delete over a lock we could not read would take out whoever is actually landing.
+      io.error(`[pr-land] ${describeLock(lock)}; not releasing a lock nobody can see`);
+      return 1;
+    }
     if (lock.state === 'free') {
       io.log('[pr-land] the landing lock is already free');
       return 0;
@@ -1145,7 +1256,13 @@ export function runPrLand(argv, io = console) {
     return 1;
   }
 
-  const requiredContexts = readRequiredContexts(slug);
+  const protection = readRequiredContexts(slug);
+  if (protection.failure) {
+    io.error(`[pr-land] could not read main's required status checks: ${protection.failure.detail}`);
+    io.error("[pr-land] this says nothing about main's protection; try again once the read works");
+    return 1;
+  }
+  const requiredContexts = protection.contexts;
   if (requiredContexts.length === 0) {
     io.error('[pr-land] main declares no required status checks; refusing to land without a gate');
     return 1;
@@ -1206,9 +1323,27 @@ export function runPrLand(argv, io = console) {
   const parallelAttempts = new Set();
 
   while (Date.now() < deadline) {
-    const { payload } = readLockPayload(slug);
-    const lock = classifyLock({ payload, nowMs: Date.now() });
-    const behindBy = held ? readBehindBy(slug, pr.headRefOid) : 0;
+    const { payload, unreadable } = readLockPayload(slug);
+    const lock = classifyLock({ payload, unreadable, nowMs: Date.now() });
+    /*
+     * ⚠️ **A holder renews its lease before it decides anything.** Every `continue` below this
+     * line is a poll in which the holder does nothing else, and a poll that skips the refresh
+     * stops `acquiredAt` moving, ages the lock past its lease, and invites the next lander to
+     * force-take a lock somebody is still holding. That is the same two-landers-on-one-lock
+     * outcome this file is otherwise about, reached by a quieter road, so the refresh goes first
+     * and unconditionally.
+     */
+    if (held) refreshLock(slug, lockBody({ pr: number, token }));
+
+    const distance = held ? readBehindBy(slug, pr.headRefOid) : { behindBy: 0, failure: null };
+    if (distance.failure) {
+      // Guessing 0 here would skip pouring main in and spend the one CI run on an unchecked base.
+      log(`could not read how far main has moved: ${distance.failure.detail} (retry in ${POLL_SECONDS}s)`);
+      sleep(POLL_SECONDS);
+      pr = readPr(number);
+      continue;
+    }
+    const behindBy = distance.behindBy;
     // Consecutive readings that found no run at all for this head. One of those is
     // the gap between a push and its run set appearing; two is a pull request with no
     // event left to fire.
@@ -1287,8 +1422,6 @@ export function runPrLand(argv, io = console) {
       stepOutOfLine();
       continue;
     }
-
-    refreshLock(slug, lockBody({ pr: number, token }));
 
     if (step.action === 'merge-main') {
       log(`main moved by ${step.behindBy} commit(s); merging it into ${pr.headRefName} while this is still a draft`);
