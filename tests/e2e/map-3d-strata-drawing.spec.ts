@@ -449,9 +449,37 @@ for (const screen of SCREENS) {
  * may be further than its own height from the plane it names, and losing a plane
  * sends the names to the corner, which gives up alignment out loud.
  */
+/*
+ * **Which of the two placements is drawn is a precondition, not the subject**
+ * (2026-09-20).
+ *
+ * The 1512 row required `corner` and was red on every pull request that built
+ * the export fresh — `Expected "corner" / Received "rail"`, six attempts across
+ * two independent CI runs, on branches touching no map code. Main stayed green
+ * because its post-merge run reuses a cached export
+ * (`Build browser artifact: skipped`), so it never built its own head for this
+ * lane.
+ *
+ * Neither value is right for both machines. Placement is
+ * `freeWidth - 56 >= freeHeight * 1.08`, and at 1512x982 the crossover sits near
+ * a free width of 1115 while this file's setup leaves about 1148 — **31 px**.
+ * Under the identical setup a developer machine reads `corner` and the runner
+ * reads `rail`, so a pinned value is red on one of them whichever is chosen.
+ * (The reading that first produced `corner` was taken with the sample folder
+ * expanded, which narrows the box past the crossover; `openStrata` does not
+ * expand it.)
+ *
+ * Everything this test is named for — the four kinds, equal row heights,
+ * top-to-bottom order, and landing on nothing — holds in both placements, and
+ * `map-strata-tier-scale.spec.ts` already accepts either and checks the
+ * alignment rule for whichever was drawn. So the placement is recorded here
+ * rather than required. The corner fallback keeps its coverage: the crossover is
+ * unit-tested on both sides in `tier-legend-rows.test.ts`, and that sibling spec
+ * owns the "a rail that cannot sit beside its plane is not a rail" rule.
+ */
 for (const legend of [
-  { width: 1512, height: 982, placement: "corner" },
-  { width: 1040, height: 720, placement: "corner" },
+  { width: 1512, height: 982 },
+  { width: 1040, height: 720 },
 ] as const) {
 test(`Strata ${legend.width}x${legend.height} — the tier legend names four planes without landing on anything`, async ({ page }) => {
   test.setTimeout(120_000);
@@ -520,7 +548,8 @@ test(`Strata ${legend.width}x${legend.height} — the tier legend names four pla
     });
 
   const before = await read();
-  expect(before.placement, "the legend chose the other placement for this size").toBe(legend.placement);
+  // Recorded, not required — see the note above the sizes.
+  expect(["rail", "corner"], `unknown placement: ${before.placement}`).toContain(before.placement);
   expect(before.rows.map((r) => r.kind)).toEqual(["project", "domain", "capability", "element"]);
   expect(before.rows.every((r) => r.text.trim().length > 0)).toBe(true);
   // Equal row heights — a legend whose rows differ because their words do is the
