@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import type { ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ko from '../../../../messages/ko.json';
@@ -9,6 +9,8 @@ const bridge = vi.hoisted(() => ({
   discoveryAvailable: true,
   secretsAvailable: true,
   discovered: null as unknown,
+  /** Set to make `discover_mcp_connectors` reject, the way an unreadable config file does. */
+  discoveryRejects: false,
   secretSets: [] as Array<{ ref: string; secret: string }>,
   secretDeletes: [] as string[],
   stored: new Map<string, string>(),
@@ -26,7 +28,10 @@ vi.mock('@/shared/lib/tauri-connectors', async () => {
   return {
     ...actual,
     isConnectorDiscoveryAvailable: () => bridge.discoveryAvailable,
-    discoverMcpConnectors: async () => bridge.discovered,
+    discoverMcpConnectors: async () => {
+      if (bridge.discoveryRejects) throw new Error('discover_mcp_connectors failed');
+      return bridge.discovered;
+    },
   };
 });
 
@@ -70,12 +75,19 @@ import { useVaultConnectors } from '../model/use-vault-connectors';
  * a second `useVaultConnectors` would never hear about the first one's writes. So the panel
  * takes the state as a prop, and the harness plays the caller.
  */
-function Panel({ handle }: { handle: FileSystemDirectoryHandle | null }) {
+function Panel({
+  handle,
+  countInHeading = false,
+}: {
+  handle: FileSystemDirectoryHandle | null;
+  countInHeading?: boolean;
+}) {
   const store = useVaultConnectors(handle);
   return (
     <ConnectorsPanel
       handle={handle}
       store={store}
+      countInHeading={countInHeading}
       /* The view's slot — stood in for here, since the panel may not import it (FSD). */
       openFolderAction={<button type="button" data-testid="connectors-open-vault">open</button>}
     />
@@ -187,11 +199,76 @@ beforeEach(() => {
   bridge.secretsAvailable = true;
   bridge.discovered = null;
   bridge.secretSets = [];
+  bridge.discoveryRejects = false;
   bridge.secretDeletes = [];
   bridge.stored = new Map();
 });
 
 afterEach(cleanup);
+
+/**
+ * **One count, in one place** (2026-09-20).
+ *
+ * The card states how many of its rows are switched on, because a caller that draws no heading
+ * would otherwise leave that number only in a bare badge somewhere else. The Agents destination's
+ * MCP tab does draw a heading, and on 2026-09-19 that heading started saying the same thing — so
+ * for one day the screen carried "1 on" in the heading and "1 of 2 on" a line below it, two
+ * wordings of one fact on a screen whose owner had just asked for less prose. The denominator
+ * moved up into the heading and `countInHeading` silences the line here.
+ *
+ * Both directions are asserted, because a prop that silences something is only worth having if
+ * the something exists without it.
+ */
+/**
+ * **A scan that failed must stop saying it is running** (2026-09-20).
+ *
+ * `discover_mcp_connectors` reads four config files on this machine, and the call had no
+ * `catch`: a rejection left the discovery state at "has not answered yet" for the life of the
+ * screen. Both places that draw it then read "reading what is already registered on this
+ * computer" forever — a wait with no end and no way to tell it from a slow disk.
+ *
+ * The failed sentence is also deliberately **not** "found none". An empty result is a claim
+ * about this computer; a read that failed has not earned it.
+ */
+describe('연결 도구 패널 — 실패한 훑기는 끝났다고 말한다', () => {
+  it('훑기가 실패하면 읽는 중이라고 하지 않고 실패를 말한다', async () => {
+    bridge.discoveryRejects = true;
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('connectors-discovery-failed')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('connectors-scanning')).toBeNull();
+  });
+
+  it('추가 대화상자도 같은 자리에서 실패를 말한다 — 「없음」이 아니다', async () => {
+    bridge.discoveryRejects = true;
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('connectors-add-open'));
+    const failed = await screen.findAllByTestId('connectors-discovery-failed');
+    expect(failed.length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('connectors-found-empty')).toBeNull();
+    expect(screen.queryByTestId('connectors-scanning')).toBeNull();
+  });
+});
+
+describe('연결 도구 패널 — 개수는 한 곳에서만 말한다', () => {
+  it('머리글이 없으면 카드가 켜진 수를 말한다', async () => {
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item')).toBeInTheDocument());
+    expect(screen.getByTestId('connectors-on-of-total')).toHaveTextContent('1');
+  });
+
+  it('머리글이 이미 말했다면 카드는 같은 수를 다시 말하지 않는다', async () => {
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<Panel handle={vault.handle} countInHeading />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item')).toBeInTheDocument());
+    expect(screen.queryByTestId('connectors-on-of-total')).toBeNull();
+  });
+});
 
 describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다', () => {
   it('무엇이 실제로 실행되는지, 어디로 오가는지, 어떤 기록에 안 남는지 켜기 전에 말한다', async () => {
@@ -1065,5 +1142,50 @@ describe('what runs, in one line', () => {
     expect(connectorDestination({ ...stdioRecord, transport: 'http', url: 'not a url' })).toBe(
       'not a url',
     );
+  });
+});
+
+describe('the opener may stand outside the card (2026-09-19)', () => {
+  function HeadedPanel({ handle }: { handle: FileSystemDirectoryHandle | null }) {
+    const store = useVaultConnectors(handle);
+    const opener = useRef<HTMLButtonElement | null>(null);
+    const [request, setRequest] = useState(0);
+    return (
+      <>
+        <button
+          type="button"
+          ref={opener}
+          data-testid="heading-add-open"
+          onClick={() => setRequest((n) => n + 1)}
+        >
+          add
+        </button>
+        <ConnectorsPanel
+          handle={handle}
+          store={store}
+          addOpenRequest={request}
+          externalAddOpener={opener}
+          openFolderAction={<button type="button" data-testid="connectors-open-vault">open</button>}
+        />
+      </>
+    );
+  }
+
+  it('with an external opener the listed card draws none of its own, and the request opens the dialog', async () => {
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<HeadedPanel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-list')).toBeInTheDocument());
+    // The Agents page's MCP tab puts the press in the group heading; two would be one too many.
+    expect(screen.queryByTestId('connectors-add-open')).toBeNull();
+    expect(screen.queryByTestId('connectors-add-dialog')).toBeNull();
+    fireEvent.click(screen.getByTestId('heading-add-open'));
+    await waitFor(() => expect(screen.getByTestId('connectors-add-dialog')).toBeInTheDocument());
+  });
+
+  it('the empty state keeps its own indigo ask even with an external opener — that ask is the card', async () => {
+    const vault = fakeVault(seeded());
+    draw(<HeadedPanel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
+    expect(screen.getByTestId('connectors-add-open')).toBeInTheDocument();
   });
 });

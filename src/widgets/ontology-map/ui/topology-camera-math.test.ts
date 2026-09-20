@@ -12,7 +12,8 @@ import {
   computeUnfocusedPanBounds,
   fitWorldTarget,
   hitTestWorld,
-  worldToScreen, clampFitInsets, MAX_FIT_CHROME_SHARE } from "./topology-camera-math";
+  worldToScreen, clampFitInsets, MAX_FIT_CHROME_SHARE,
+  focusLeashPx, focusLeashWorld, FOCUS_LEASH_EDGE_PAD_PX } from "./topology-camera-math";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import { computeEgoBounds, type TopologyWorld } from "./topology-world";
 
@@ -412,13 +413,55 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
       { f: ["far1", "far2"], far1: ["f"], far2: ["f"] },
     );
     const target = computeFocusCameraTarget(world, tokens, 1200, 800, "f", 0.9)!;
-    expect(Math.abs(target.tx - 0)).toBeLessThanOrEqual(180);
-    expect(Math.abs(target.ty - 0)).toBeLessThanOrEqual(180);
+    // The leash is the free half-width less the edge pad, in world units at
+    // the target's scale — never tighter than the token.
+    const leash = focusLeashWorld(focusLeashPx(1200, 800, { left: 0, right: 0, top: 0, bottom: 0 }).x, target.tscale, 180);
+    expect(leash).toBeGreaterThanOrEqual(180);
+    expect(Math.abs(target.tx - 0)).toBeLessThanOrEqual(leash + 1e-6);
+    expect(Math.abs(target.ty - 0)).toBeLessThanOrEqual(leash + 1e-6);
+    // The focused node itself stays inside the free area with the pad to spare.
+    const focusScreenX = 1200 / 2 + (0 - target.tx) * target.tscale;
+    expect(focusScreenX).toBeGreaterThanOrEqual(FOCUS_LEASH_EDGE_PAD_PX - 1e-6);
+    expect(focusScreenX).toBeLessThanOrEqual(1200 - FOCUS_LEASH_EDGE_PAD_PX + 1e-6);
     // The clamp is a clamp: a compact ego graph is framed exactly as before.
     const near = egoWorld({ f: { x: 0, y: 0, kind: "capability" }, n: { x: 60, y: 0, kind: "capability" } }, { f: ["n"], n: ["f"] });
     const wide = computeFocusCameraTarget(near, { ...baseTokens, cameraFocusPanMargin: 10_000 } as unknown as OntologyMapTokens, 1200, 800, "f", 0.9)!;
     const leashed = computeFocusCameraTarget(near, tokens, 1200, 800, "f", 0.9)!;
     expect(leashed).toEqual(wide);
+  });
+
+  it("a wide ego graph is centred in the free area beside an open panel, not held near the node", () => {
+    // 2026-09-19 at 1512×806: a capability with two dependencies in other
+    // domains, a 384 px panel on the right. The ego centre sat 404 px right of
+    // the free centre; the 180-unit token leash allowed 157 px, so both
+    // neighbours landed under the panel.
+    const tokens = { ...baseTokens, cameraFocusPanMargin: 180, safeInsetLeft: 0, safeInsetRight: 384 } as unknown as OntologyMapTokens;
+    const world = egoWorld(
+      {
+        f: { x: 0, y: 0, kind: "capability" },
+        n1: { x: 820, y: 60, kind: "capability" },
+        n2: { x: 840, y: 340, kind: "capability" },
+      },
+      { f: ["n1", "n2"], n1: ["f"], n2: ["f"] },
+    );
+    // The whole ring's bounds: at or below the overview scale the unfocused
+    // leash (around the map, not the node) is what the physics holds.
+    const ring = { minX: -1200, minY: -600, maxX: 1200, maxY: 600 };
+    const target = computeFocusCameraTarget(world, tokens, 1448, 806, "f", 0.872, null, ring)!;
+    const screenX = (x: number) => 1448 / 2 + (x - target.tx) * target.tscale;
+    // Both neighbours sit left of the panel, the focus sits right of the pad.
+    expect(screenX(840)).toBeLessThan(1448 - 384);
+    expect(screenX(0)).toBeGreaterThanOrEqual(FOCUS_LEASH_EDGE_PAD_PX);
+  });
+
+  it("focusLeashPx: half the free width less the pad, never negative", () => {
+    const leash = focusLeashPx(1448, 806, { left: 0, right: 384, top: 148, bottom: 96 });
+    expect(leash.x).toBe((1448 - 384) / 2 - FOCUS_LEASH_EDGE_PAD_PX);
+    expect(leash.y).toBe((806 - 148 - 96) / 2 - FOCUS_LEASH_EDGE_PAD_PX);
+    expect(focusLeashPx(200, 200, { left: 0, right: 100, top: 0, bottom: 0 }).x).toBe(0);
+    expect(focusLeashWorld(412, 0.872, 180)).toBeCloseTo(412 / 0.872, 6);
+    expect(focusLeashWorld(100, 1, 180)).toBe(180);
+    expect(focusLeashWorld(412, 0, 180)).toBe(180);
   });
 });
 
