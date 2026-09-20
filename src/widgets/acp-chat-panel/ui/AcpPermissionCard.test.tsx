@@ -668,7 +668,17 @@ describe('온톨로지 쓰기 — 여덟 문장을 사람이 읽는 카드', () 
 });
 
 describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => {
-  function cardWithVerdict(verdict: { ok: boolean; problems: Array<{ code: string; message: string; line?: number }> } | null) {
+  function cardWithVerdict(
+    verdict: {
+      ok: boolean;
+      problems: Array<{
+        code: string;
+        message: string;
+        line?: number;
+        detail?: { key: string; values?: Record<string, string> };
+      }>;
+    } | null,
+  ) {
     return (
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <AcpPermissionCard
@@ -727,5 +737,42 @@ describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => 
     expect(block.textContent).toContain('citation-target-missing');
     // The gate is the person: Allow is still offered.
     expect(screen.getByTestId('acp-permission-allow')).toBeTruthy();
+  });
+
+  /** One missing frontmatter field, as the validator hands it over. */
+  const missing = (field: string) => ({
+    code: `missing-field:${field}`,
+    message: `\`${field}:\` is missing. The page name a person reads.`,
+    detail: { key: 'missing-field', values: { field } },
+  });
+
+  it('says every listed finding in the reader\'s language, not only the first', () => {
+    /*
+     * Measured on the rendered card (2026-09-20): four rows, one English sentence on the
+     * first, three bare machine codes under it. The sentences existed the whole time under
+     * `library.wiki.problem.*`; the card was printing the validator's copy for machines.
+     */
+    render(cardWithVerdict({ ok: false, problems: [missing('title'), missing('created_by')] }));
+    const block = screen.getByTestId('acp-permission-page-verdict');
+    expect(block.textContent).toContain('파일 맨 위 정보칸에 title 줄이 없어요.');
+    expect(block.textContent).toContain('파일 맨 위 정보칸에 created_by 줄이 없어요.');
+    // The validator's English copy is for machines and does not reach a Korean screen.
+    expect(block.textContent).not.toContain('is missing. The page name a person reads.');
+  });
+
+  it('counts what it did not list, so the header is never larger than the list', () => {
+    const problems = ['title', 'created_by', 'compiled_at', 'sources', 'summary', 'kind'].map(missing);
+    render(cardWithVerdict({ ok: false, problems }));
+    const block = screen.getByTestId('acp-permission-page-verdict');
+    expect(block.textContent).toContain('6건');
+    // Four are listed; the two it withheld are stated rather than dropped.
+    expect(block.textContent).toContain('파일 맨 위 정보칸에 sources 줄이 없어요.');
+    expect(block.textContent).not.toContain('파일 맨 위 정보칸에 summary 줄이 없어요.');
+    expect(block.textContent).toContain('그 밖에 2건');
+  });
+
+  it('says nothing about a rest that does not exist', () => {
+    render(cardWithVerdict({ ok: false, problems: [missing('title')] }));
+    expect(screen.getByTestId('acp-permission-page-verdict').textContent).not.toContain('그 밖에');
   });
 });
