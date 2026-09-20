@@ -206,16 +206,30 @@ export function AcpPresentationPanel({
           variant="ghost"
           size="sm"
           data-testid="acp-presentation-ask"
-          className="w-full"
+          className="atlas-touch-floor w-full"
           onClick={() => onAsk(scene)}
         >
           <MessageCircle size={ICON_SIZE.md} aria-hidden />
           {t('ask')}
         </Button>
+        {/*
+         * ⚠️ **These three are pressed over and over, and they were the small step.**
+         *
+         * `--control-h-sm` is 28px and the `button` shape carries no coarse promotion — only
+         * `chip`, `row`, `pill` and `segment` do — so on a touch screen these sat 16px under the
+         * 44px `--touch-target-min`. Walking a presentation is Next, Next, Next; the arrows are
+         * the most-pressed controls this panel has.
+         *
+         * `touch-target-contract.spec.ts` sweeps real controls against that floor and would have
+         * caught it. It never saw these: the presentation needs a whole ready trace to appear and
+         * no end-to-end spec can reach it, the same blind spot that hid the receipt's two doors
+         * (2026-09-20).
+         */}
         <div className="grid grid-cols-2 gap-2">
           <Button
             variant="outline"
             size="sm"
+            className="atlas-touch-floor"
             data-testid="acp-presentation-previous"
             disabled={activeIndex === 0}
             onClick={() => onChangeScene(activeIndex - 1)}
@@ -226,6 +240,7 @@ export function AcpPresentationPanel({
           <Button
             variant="primary"
             size="sm"
+            className="atlas-touch-floor"
             data-testid="acp-presentation-next"
             onClick={() => (last ? onClose() : onChangeScene(activeIndex + 1))}
           >
