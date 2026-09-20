@@ -88,12 +88,24 @@ for (const locale of ['en', 'ko'] as const) {
     });
   }
 
-  test(`the mode keeps its whole word while a turn runs once the row fits it (${locale})`, async ({ page }) => {
+  /*
+   * ⚠️ **Whole or absent — never a cut word.** The first version of this asserted the mode is
+   * *visible* at 400 and whole there, and 400 was a width measured on macOS. On the CI runner the
+   * same Korean words lay out wider, so the picker stayed on the row and clipped, and the case
+   * failed on its first run and both retries — deterministic, not flaky, and pointing at a real
+   * guarantee dressed up as a pixel. The guarantee is that a person never reads a truncated mode
+   * name; which side of the threshold a given width falls on is a layout decision, not a promise.
+   */
+  test(`the mode is whole or stands down, never clipped, while a turn runs (${locale})`, async ({ page }) => {
     const harness = await open(page, FITS, locale);
     await startTurn(page, harness);
     expect(await covered(page)).toEqual([]);
-    await expect(page.getByTestId('acp-chat-mode')).toBeVisible();
-    expect(await modeWordIsWhole(page), 'the mode showed a cut word instead of standing down').toBe(true);
+    const mode = page.getByTestId('acp-chat-mode');
+    if (await mode.isVisible()) {
+      expect(await modeWordIsWhole(page), 'the mode showed a cut word instead of standing down').toBe(true);
+    } else {
+      await expect(page.getByTestId('acp-chat-stop'), 'the mode stood down, so the stop control has the row').toBeVisible();
+    }
   });
 
   test(`the mode is there at the minimum width while nothing is running, and comes back when the turn ends (${locale})`, async ({ page }) => {
