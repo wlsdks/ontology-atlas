@@ -2,12 +2,10 @@ import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
 import { hangulIncludes, hangulStartsWith } from "@/shared/lib/hangul-match";
 import {
-  nameEquals,
-  nameHangulIncludes,
-  nameHangulStartsWith,
-  nameIncludes,
-  nameStartsWith,
+  findNameMatch,
+  idSearchText,
   normalizeForMatch,
+  type NameMatchTier,
 } from "@/shared/lib/node-name-match";
 
 /**
@@ -24,12 +22,36 @@ export function isPathLikeTitle(title: string): boolean {
 }
 
 /**
+ * What carried the match, so a result row can say why it is in the list. One shape
+ * for both sources, because the two kinds of row sit in one list and a person
+ * reading it should not have to learn two explanations.
+ *
+ * `text` is the exact string that matched. The three seats:
+ *
+ * - `name` — one specific name. For a concept that is the canonical `title` or any
+ *   `display_<locale>`; for a project, its name or `nameEn`. It is often **not** the
+ *   name the row is drawing, which is the whole reason this type exists.
+ * - `summary` — the descriptive prose beside the name: a concept's summary, or a
+ *   project's description, tag or category.
+ * - `id` — the identifier: a concept's id slug, or a project's slug.
+ */
+export interface SearchMatchEvidence {
+  field: "name" | "summary" | "id";
+  text: string;
+}
+
+/**
  * One search result — an ontology approved node source.
  */
 export interface OntologySearchResult {
   node: KnowledgeGraphNode;
   /** The match score the caller sorts on. Higher wins. */
   score: number;
+  /**
+   * Which field carried the match. Absent for an empty query, where nothing was
+   * matched and the row is a recency sample.
+   */
+  matched?: SearchMatchEvidence;
 }
 
 /**
@@ -72,6 +94,17 @@ export interface MatchOntologyOptions {
  *   1 — id substring match (for searching a kebab-case slug directly)
  *   0 — no match (excluded)
  *
+ * Every scored result carries `matched` — the field and the exact text that earned
+ * it — because a row that gives no sign of why it is in the list reads as a broken
+ * search. Measured 2026-09-19 on the bundled sample: 30.6% of rows over thirty
+ * English queries showed no highlight at all.
+ *
+ * **The id matches on its slug, not its `kind:` prefix.** Every element's id begins
+ * `element:`, so typing that word used to return twenty rows, every one of them
+ * unexplained — that is the kind, which the filter chips already select properly, not
+ * a search result. A query that carries a colon is someone pasting a real id, so the
+ * whole id is still matched for them.
+ *
  * The Hangul tiers sit **between** the literal name tiers and the summary tier.
  * Below the literal ones because a name that really contains what was typed is
  * the better answer; above the summary because what a Korean typist half-typed is
@@ -99,6 +132,15 @@ export interface MatchOntologyOptions {
  * are scored). An empty query plus a filter becomes "the most recent N of this kind
  * or project".
  */
+/** The score each name tier earns. The ladder above is this table read downwards. */
+const NAME_TIER_SCORE: Readonly<Record<NameMatchTier, number>> = {
+  equals: 7,
+  prefix: 6,
+  includes: 5,
+  "hangul-prefix": 4,
+  "hangul-includes": 3,
+};
+
 export function matchOntologyNodes(
   query: string,
   nodes: readonly KnowledgeGraphNode[],
@@ -134,19 +176,26 @@ export function matchOntologyNodes(
   for (const node of nodes) {
     if (!passesFilter(node)) continue;
 
+    const nameMatch = findNameMatch(node, trimmed);
+    if (nameMatch) {
+      matches.push({
+        node,
+        score: NAME_TIER_SCORE[nameMatch.tier],
+        matched: { field: "name", text: nameMatch.name },
+      });
+      continue;
+    }
+
     const summary = normalizeForMatch(node.summary ?? "");
-    const id = normalizeForMatch(node.id);
+    if (node.summary && summary.includes(trimmed)) {
+      matches.push({ node, score: 2, matched: { field: "summary", text: node.summary } });
+      continue;
+    }
 
-    let score = 0;
-    if (nameEquals(node, trimmed)) score = 7;
-    else if (nameStartsWith(node, trimmed)) score = 6;
-    else if (nameIncludes(node, trimmed)) score = 5;
-    else if (nameHangulStartsWith(node, trimmed)) score = 4;
-    else if (nameHangulIncludes(node, trimmed)) score = 3;
-    else if (summary.includes(trimmed)) score = 2;
-    else if (id.includes(trimmed)) score = 1;
-
-    if (score > 0) matches.push({ node, score });
+    const idText = idSearchText(node.id, trimmed);
+    if (idText !== null && normalizeForMatch(idText).includes(trimmed)) {
+      matches.push({ node, score: 1, matched: { field: "id", text: idText } });
+    }
   }
 
   matches.sort((a, b) => {
@@ -165,6 +214,8 @@ export interface ProjectSearchResult {
   project: Project;
   /** The match score. Higher wins. */
   score: number;
+  /** Which field carried the match; absent for an empty query. */
+  matched?: SearchMatchEvidence;
 }
 
 /**
@@ -204,26 +255,40 @@ export function matchProjects(
   for (const project of projects) {
     const name = project.name.toLowerCase();
     const nameEn = project.nameEn?.toLowerCase() ?? "";
-    const description = project.description?.toLowerCase() ?? "";
-    const tags = project.tags.join(" ").toLowerCase();
-    const category = (project.category ?? '').toLowerCase();
     const slug = project.slug.toLowerCase();
 
-    let score = 0;
-    if (name === trimmed || nameEn === trimmed) score = 7;
-    else if (name.startsWith(trimmed) || nameEn.startsWith(trimmed)) score = 6;
-    else if (name.includes(trimmed) || nameEn.includes(trimmed)) score = 5;
-    else if (hangulStartsWith(name, trimmed) || hangulStartsWith(nameEn, trimmed)) score = 4;
-    else if (hangulIncludes(name, trimmed) || hangulIncludes(nameEn, trimmed)) score = 3;
-    else if (
-      description.includes(trimmed)
-      || tags.includes(trimmed)
-      || category.includes(trimmed)
-    )
-      score = 2;
-    else if (slug.includes(trimmed)) score = 1;
+    // Which of the two names matched decides what the row shows, so the pair is
+    // resolved once rather than asked about twice.
+    const nameTier = (candidate: string): number => {
+      if (candidate === "") return 0;
+      if (candidate === trimmed) return 7;
+      if (candidate.startsWith(trimmed)) return 6;
+      if (candidate.includes(trimmed)) return 5;
+      if (hangulStartsWith(candidate, trimmed)) return 4;
+      if (hangulIncludes(candidate, trimmed)) return 3;
+      return 0;
+    };
+    const named: ReadonlyArray<readonly [number, string]> = [
+      [nameTier(name), project.name],
+      [nameTier(nameEn), project.nameEn ?? ""],
+    ];
+    const bestName = named.reduce((best, entry) => (entry[0] > best[0] ? entry : best));
 
-    if (score > 0) matches.push({ project, score });
+    if (bestName[0] > 0) {
+      matches.push({ project, score: bestName[0], matched: { field: "name", text: bestName[1] } });
+      continue;
+    }
+
+    const prose = [project.description, ...project.tags, project.category]
+      .find((value) => typeof value === "string" && value.toLowerCase().includes(trimmed));
+    if (prose) {
+      matches.push({ project, score: 2, matched: { field: "summary", text: prose } });
+      continue;
+    }
+
+    if (slug.includes(trimmed)) {
+      matches.push({ project, score: 1, matched: { field: "id", text: project.slug } });
+    }
   }
 
   matches.sort((a, b) => {

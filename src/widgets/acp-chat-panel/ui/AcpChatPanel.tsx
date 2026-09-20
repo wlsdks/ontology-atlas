@@ -1391,6 +1391,29 @@ export function AcpChatPanel({
   const lastWorkGroupId = [...transcriptItems]
     .reverse()
     .find((item) => item.kind === 'workGroup')?.id;
+  /**
+   * **The tool calls that are actually still running.**
+   *
+   * A call is only live while the session is thinking *and* the call opened in the current turn.
+   * Membership of the current turn is the half that cannot be skipped: a row left open by an
+   * earlier turn would otherwise start claiming 「running」 again the moment the next question was
+   * asked, which is a stopped call borrowing a live turn's word.
+   *
+   * It also makes `stoppedWithoutAnswer` below true. That rule stays quiet when a tool ran,
+   * because 「a tool that was mid-flight carries its own *stopped* on its row」 — and until this
+   * set existed the row carried the opposite word.
+   */
+  const liveToolIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (status !== 'thinking') return ids;
+    for (let index = lastUserEventIndex + 1; index < events.length; index += 1) {
+      const event = events[index];
+      if (event.kind === 'tool' && !['completed', 'failed', 'cancelled'].includes(event.status)) {
+        ids.add(event.id);
+      }
+    }
+    return ids;
+  }, [events, lastUserEventIndex, status]);
   return (
     <section
       ref={panelRef}
@@ -1565,6 +1588,7 @@ export function AcpChatPanel({
                     knownSlugs={knownSlugs}
                     onHoverSlug={onHoverSlug}
                     noticeActions={noticeActions}
+                    liveToolIds={liveToolIds}
                   />
                 ))}
               </div>
@@ -1577,6 +1601,7 @@ export function AcpChatPanel({
                 active={busy && item.id === lastWorkGroupId}
                 knownSlugs={knownSlugs}
                 onHoverSlug={onHoverSlug}
+                liveToolIds={liveToolIds}
               />
             );
           /*
@@ -1607,6 +1632,7 @@ export function AcpChatPanel({
                  * after the turn ends would leave a completed conversation half drawn.
                  */
                 streaming={busy && index === transcriptItems.length - 1}
+                liveToolIds={liveToolIds}
               />
             </div>
           );
@@ -2470,11 +2496,14 @@ function WorkGroup({
   active,
   knownSlugs,
   onHoverSlug,
+  liveToolIds,
 }: {
   events: Extract<AcpEvent, { kind: 'thought' | 'tool' }>[];
   active: boolean;
   knownSlugs?: ReadonlySet<string>;
   onHoverSlug?: (slug: string | null) => void;
+  /** The tool calls still running; see `TranscriptEntry`. */
+  liveToolIds: ReadonlySet<string>;
 }) {
   const t = useTranslations('acpChat');
   const [open, setOpen] = useState(false);
@@ -2539,6 +2568,7 @@ function WorkGroup({
                 event={event}
                 knownSlugs={knownSlugs}
                 onHoverSlug={onHoverSlug}
+                liveToolIds={liveToolIds}
               />
             ))}
           </div>
@@ -2646,10 +2676,17 @@ function TranscriptEntry({
   streaming = false,
   repeat = 1,
   fold = null,
+  liveToolIds,
 }: {
   event: AcpEvent;
   knownSlugs?: ReadonlySet<string>;
   onHoverSlug?: (slug: string | null) => void;
+  /**
+   * The tool calls that are still running. ⚠️ Required and never defaulted: a row reads its own
+   * status from the adapter, which stops reporting the moment a turn ends, so only the panel
+   * knows whether an open call is still open or was simply abandoned there.
+   */
+  liveToolIds: ReadonlySet<string>;
   /** The two doors an `auto-allowed` notice may carry; see `AcpChatPanelProps.noticeActions`. */
   noticeActions?: { openPage: (path: string) => void; askNext: () => void } | null;
   /** Is this the bubble the agent is still writing into? Only that one reveals gradually. */
@@ -2809,6 +2846,7 @@ function TranscriptEntry({
       event.rawOutput,
       event.status,
       isVaultTool(event.title, VAULT_MCP_SERVER_NAME),
+      liveToolIds.has(event.id),
     );
     const running = outcome.kind === 'status' && outcome.status === 'running';
     const broke =
