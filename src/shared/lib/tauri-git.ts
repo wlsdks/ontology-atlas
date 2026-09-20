@@ -229,6 +229,37 @@ export async function gitSetRemote(
   return invoke<GitSetRemoteResult>('git_set_remote', { vaultPath, url });
 }
 
+/** Rust `GitDocumentDiffResult`. */
+export interface GitDocumentDiffResult {
+  path: string;
+  /** Unified diff with the whole document as context; empty when `tooLarge`. */
+  diff: string;
+  untracked: boolean;
+  /** `true` when the document is too long to send whole; the caller falls back to its hunks. */
+  tooLarge: boolean;
+}
+
+/**
+ * One document with the whole of it around its changes — the working file against `HEAD`,
+ * or, with `source`, what that commit did to it. Read-only.
+ */
+export async function gitDocumentDiff(
+  vaultPath: string,
+  relativePath: string,
+  source?: string,
+  /** The name the document had, when it was just renamed, so git can pair the two. */
+  previousPath?: string | null,
+): Promise<GitDocumentDiffResult | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<GitDocumentDiffResult>('git_document_diff', {
+    vaultPath,
+    relativePath,
+    source: source ?? null,
+    previousPath: previousPath ?? null,
+  });
+}
+
 /** Rust `GitRestoreResult`. */
 export interface GitRestoreResult {
   restored: boolean;

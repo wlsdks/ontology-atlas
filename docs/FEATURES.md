@@ -2213,7 +2213,9 @@ reads the folder, so a teammate who pulls it sees the same thing. A wiki without
 on `/library`. Settings › Workspace carries an add-only row, "This folder holds", whose one
 chip writes the missing part's starter files; the tabs follow the files.
 
-### `/git` — Record (primary desktop destination; redesigned 2026-07-27)
+### `/git` — Git (primary desktop destination; redesigned 2026-07-27; named "Git" in both locales since 2026-09-19)
+
+The rail tile (`navRail.git`), the page headline (`atlasGit.title`) and the tile's title (`atlasGit.tileTitle*`) say **Git** in Korean and English; until 2026-09-19 the Korean said the plain word for "record" and the English said "History". The owner asked why the screen hid the word: Atlas keeps no history of its own — durable history, restore and discard are git's — so the plain name is the honest one. Git's trademark policy (Software Freedom Conservancy, U.S. reg. 4680534) permits factual reference to the Git software and identifying it as a component of a product; only portmanteaus, implied affiliation and the logo need permission. Sentences that describe the act (`initButton`, `scopeNotice`, `stepStart`) keep their verb.
 
 Architecture was added without replacing this destination. Git keeps its primary
 desktop rail tile, uncommitted-change badge, `G G` shortcut, and contextual
@@ -2231,11 +2233,10 @@ The screen layout splits into two stages. First, **is this screen even in a stat
 - In the browser, `Get App` is the primary button, and copying CLI commands for terminal use is secondary
 
 #### State with uncommitted changes (`decide`)
-- Left: One line of status totals at the top, then **file rows grouped by kind**
-  (status symbols `+ ~ − →` · folder names larger · how many lines added/removed). Clicking a row shows changed lines from that document on the right
-- Non-concept files (`.gitignore`, etc.) are **collapsed by default** — they go into the commit but aren't things humans need to judge. The number of collapsed lines is shown numerically so it's not hidden
-- Bottom fixed bar: Indigo-filled `Leave N items` button → confirmation step (preview of the actual commit title line + whether to push remotely, default off). Text explaining what is being recorded is also here — because files are actually written here
-- Right: Area showing evidence — `Changed lines` (file-by-file +/- lines with git internal notation removed) and `Previous steps` (previous commits). **Drawn only when there is content to show**
+- Left: the timeline — the "now" row for uncommitted changes, then the past steps. Clicking the "now" row opens the uncommitted changes on the right
+- Right, **read as documents** (owner direction B, 2026-09-19 — "the design itself is poor", chosen from three sketched directions): one line of totals (`1 added · 2 edited`), then a chip per changed document named by its concept with its status mark and kind glyph (non-concept files such as `.gitignore` are chips too, in the file face, after the documents), then the chosen document **whole, in the reading face**, with the changed lines marked where they are — an added line on the success tint, a removed line on the danger tint and struck through, still readable. The leading `---` block is kept apart as the front matter box (`atlasGit.docReaderInfoBox`) in the mono face; headings and list items keep their shape. No `+`, no `-`, no terminal face for prose, no kind label over a single row, no header repeating the left row. The whole document comes from `git_document_diff` (the file with every line as context; an untracked file is all added lines); when that read is unavailable the hunk diff from `git_diff` is drawn instead and the header says so
+- The document with changed lines opens by default; a newly created document opens on its own chip. The document's one destructive door, discard, sits at the foot of the document
+- Bottom fixed bar (left column): Indigo-filled `Leave N items` button → confirmation step (editable commit title, whether to push, default off). Text explaining what is being recorded is also here — because files are actually written here
 - The width for splitting into 2 columns is `xl` (1280). Making it 2 columns at 1024 compresses the list and cuts off concept names
 
 #### State with nothing to leave (`recall`)
