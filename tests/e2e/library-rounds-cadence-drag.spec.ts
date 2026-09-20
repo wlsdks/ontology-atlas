@@ -16,8 +16,23 @@ import { installDesktopBridge, openRounds } from "./rounds-desktop-bridge";
  * value onto the other rail, and what the index row says afterwards is what the store holds.
  */
 
+/**
+ * Evidence for a person to look at. Every entrance and exit is disabled and the dialog is
+ * scrolled to its head first, so the frame shows the finished screen rather than one caught
+ * mid-motion — a half-faded capture says nothing about the layout it was taken to show.
+ */
+async function shoot(page: import("@playwright/test").Page, name: string) {
+  await page.evaluate(() => document.querySelector("[data-testid='library-rounds-sheet']")?.scrollTo(0, 0));
+  await page.screenshot({ path: `.claude/shots-2026-09-21/${name}.png`, animations: "disabled" });
+}
+
 test.describe("Library rounds — the cadence rail", () => {
   test("drag the thumb, switch the unit, name a place, and the index says all three", async ({ page }) => {
+    const problems: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error" || message.type() === "warning") problems.push(message.text());
+    });
+    page.on("pageerror", (error) => problems.push(`pageerror: ${error.message}`));
     await seedFirstRunSeen(page);
     await installDesktopBridge(page, { seedRounds: false });
     await openRounds(page);
@@ -33,7 +48,7 @@ test.describe("Library rounds — the cadence rail", () => {
     // It opens on the cadence every round had before the rail existed.
     await expect(readback).toContainText("Every hour");
     await expect(thumb).toHaveAttribute("aria-valuetext", "every 1 hours");
-    await page.screenshot({ path: ".claude/shots-2026-09-21/rounds-sheet-default.png" });
+    await shoot(page, "rounds-sheet-default");
 
     /*
      * Minutes, then a real drag. Five detents sit at 0 / 25 / 50 / 75 / 100 percent, so 40%
@@ -50,19 +65,23 @@ test.describe("Library rounds — the cadence rail", () => {
     await page.mouse.up();
     await expect(thumb).toHaveAttribute("aria-valuetext", "every 10 minutes");
 
-    // The thumb ends where the third detent is drawn, not where the finger let go.
-    const settled = await thumb.boundingBox();
-    const detent = await page.locator("[data-cadence-detent='10']").boundingBox();
-    if (!settled || !detent) throw new Error("the thumb or its detent was not drawn");
-    expect(Math.abs(settled.x + settled.width / 2 - (detent.x + detent.width / 2))).toBeLessThan(2);
+    /*
+     * The thumb ends where the detent is drawn, not where the finger let go. The spring is
+     * still running at this instant, so the distance is polled until it settles rather than
+     * read once after a sleep — the condition is what matters, not a copy of the duration.
+     */
+    const offsetFrom = async (minutes: number) => {
+      const settled = await thumb.boundingBox();
+      const detent = await page.locator(`[data-cadence-detent='${minutes}']`).boundingBox();
+      if (!settled || !detent) throw new Error("the thumb or its detent was not drawn");
+      return Math.abs(settled.x + settled.width / 2 - (detent.x + detent.width / 2));
+    };
+    await expect.poll(() => offsetFrom(10)).toBeLessThan(2);
 
     // Switching the unit carries the value onto the rail the new unit can say.
     await page.getByTestId("library-rounds-cadence-unit").getByRole("radio", { name: "Hours" }).click();
     await expect(thumb).toHaveAttribute("aria-valuetext", "every 1 hours");
-    const hourThumb = await thumb.boundingBox();
-    const hourDetent = await page.locator("[data-cadence-detent='60']").boundingBox();
-    if (!hourThumb || !hourDetent) throw new Error("the hour thumb or its detent was not drawn");
-    expect(Math.abs(hourThumb.x + hourThumb.width / 2 - (hourDetent.x + hourDetent.width / 2))).toBeLessThan(2);
+    await expect.poll(() => offsetFrom(60)).toBeLessThan(2);
 
     // Back to ten minutes for the round that is actually saved.
     await page.getByTestId("library-rounds-cadence-unit").getByRole("radio", { name: "Minutes" }).click();
@@ -77,19 +96,19 @@ test.describe("Library rounds — the cadence rail", () => {
     await page.getByTestId("library-rounds-add-menu").getByRole("menuitem", { name: "Confluence" }).click();
     await page.getByTestId("library-rounds-place-0-where").fill("ENG space");
     await expect(readback).toContainText("Confluence ENG space");
-    await expect(page.getByTestId("library-rounds-scope")).toContainText("call Confluence to read ENG space, never to write there");
+    await expect(page.getByTestId("library-rounds-scope")).toContainText("ask Confluence to read ENG space, never to write there");
     // 144 turns a day is past the 48 the cost line tolerates quietly.
     await expect(page.getByTestId("library-rounds-cost")).toHaveAttribute("data-cost-tone", "alarming");
-    await page.screenshot({ path: ".claude/shots-2026-09-21/rounds-sheet-two-places.png" });
+    await expect(page.getByTestId("library-rounds-add-menu")).toHaveCount(0);
+    await shoot(page, "rounds-sheet-two-places");
 
     await page.getByTestId("library-rounds-allow").click();
     await expect(sheet).toBeHidden();
 
-    // The index row names where before how often.
+    // The index row says how often first — the column's own job — then where.
     const list = page.getByTestId("library-rounds-list");
-    await expect(list).toContainText("confluence · ENG space");
-    await expect(list).toContainText("Every 10 minutes");
-    await page.screenshot({ path: ".claude/shots-2026-09-21/rounds-index-ten-minutes.png" });
+    await expect(list).toContainText("Every 10 minutes · Confluence · ENG space");
+    await shoot(page, "rounds-index-ten-minutes");
 
     const stored = await page.evaluate(() => {
       const files = (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles;
@@ -106,6 +125,16 @@ test.describe("Library rounds — the cadence rail", () => {
       { kind: "vault", paths: [] },
       { kind: "service", connectorId: "c1", connectorName: "confluence", location: "ENG space" },
     ]);
+
+    /*
+     * The registration sheet raises nothing in the console. The dev overlay's issue counter
+     * is the reason this is asserted rather than eyeballed: a screenshot of the sheet carried
+     * "1 Issue" in its corner, and nobody could tell whose it was from the picture.
+     */
+    if (problems.length > 0) console.log("console during the round sheet:\n" + problems.join("\n"));
+    // The dev server's own advice about the shell's `scroll-behavior` is not this screen's.
+    const noise = /Download the React DevTools|Turbopack|hot-update|Fast Refresh|scroll-behavior/i;
+    expect(problems.filter((line) => !noise.test(line))).toEqual([]);
   });
 
   test("the rail answers the keyboard, so nobody has to drag", async ({ page }) => {

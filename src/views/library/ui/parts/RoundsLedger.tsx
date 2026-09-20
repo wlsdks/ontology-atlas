@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Moon } from "lucide-react";
+import { FileText, Moon, Play } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
@@ -55,21 +55,88 @@ const staleNotRedrafted = (entry: RoundPassEntry) => {
 };
 const sourcesWritten = (entry: RoundPassEntry) => entry.written.filter((path) => !path.startsWith("wiki/"));
 
+/** The pass in flight, as the runner reports it. */
+export interface RunningPass {
+  roundId: string;
+  roundName: string;
+  startedAt: string;
+  phase: "checking" | "agent";
+}
+
+/**
+ * **The live row.** A pass in flight is on the axis while it runs, not only once it is over.
+ * Measured in the browser on 2026-09-21: the header said "running now · <name>" while the
+ * ledger below it still printed "No pass yet. The first one runs at 01:00." — two lines on one
+ * screen contradicting each other, and the person watching a pass they had just started had
+ * nothing on the axis to watch. The empty sentence yields to this row.
+ */
+function LiveRow({ running, locale }: { running: RunningPass; locale: string }) {
+  const t = useTranslations("library.rounds");
+  // The caller keys this component on `startedAt`, so a new pass is a new mount and the
+  // counter starts from the initial value rather than being reset inside an effect.
+  const [seconds, setSeconds] = useState(() => elapsedSeconds(running.startedAt));
+  useEffect(() => {
+    const timer = setInterval(() => setSeconds(elapsedSeconds(running.startedAt)), 1_000);
+    return () => clearInterval(timer);
+  }, [running.startedAt]);
+  const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
+  return (
+    <ol className="relative" data-testid="library-rounds-ledger-live">
+      <span aria-hidden className="absolute bottom-0 left-[calc(3.5rem+0.75rem+0.25rem-0.5px)] top-0 w-px bg-[color:var(--color-divider)]" />
+      <li
+        data-outcome="running"
+        data-phase={running.phase}
+        className="grid grid-cols-[3.5rem_1rem_minmax(0,1fr)] items-start gap-x-3"
+      >
+        <span className="py-1.5 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">
+          {time.format(new Date(running.startedAt))}
+        </span>
+        <span className="flex justify-center py-2">
+          <Play size={ICON_SIZE.sm} className="text-[color:var(--color-indigo-text-soft)]" aria-hidden />
+        </span>
+        <p role="status" aria-live="polite" className="truncate py-1.5 text-body leading-body text-[color:var(--color-indigo-text-soft)]">
+          {t("ledger.runningNow", {
+            name: running.roundName,
+            phase: running.phase === "agent" ? t("ledger.phaseAgent") : t("ledger.phaseChecking"),
+            seconds,
+          })}
+        </p>
+      </li>
+    </ol>
+  );
+}
+
+function elapsedSeconds(startedAt: string): number {
+  const started = Date.parse(startedAt);
+  return Number.isFinite(started) ? Math.max(0, Math.round((Date.now() - started) / 1000)) : 0;
+}
+
 export function RoundsLedger({
   entries,
   locale,
   onOpenPage,
+  titleFor,
+  running = null,
   nextDueLabel,
   allPaused,
 }: {
   entries: readonly RoundPassEntry[];
   locale: string;
   onOpenPage: (slug: string) => void;
+  /**
+   * The title a person knows a page by. A chip reading `meeting-notes-summary` names a file;
+   * the person named the page "Release readiness sync notes", and that is what they look for.
+   * A page that is gone from the folder keeps its slug, which is still true.
+   */
+  titleFor?: (slug: string) => string;
+  /** The pass in flight, drawn at the top of the axis while it runs. */
+  running?: RunningPass | null;
   /** The first due time, for the empty line. */
   nextDueLabel: string | null;
   allPaused: boolean;
 }) {
   const t = useTranslations("library.rounds");
+  const pageTitle = (slug: string) => titleFor?.(slug) ?? pageName(slug);
   const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
   const dayFormat = new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric" });
 
@@ -88,7 +155,10 @@ export function RoundsLedger({
   }, [entries]);
 
   if (entries.length === 0) {
-    return (
+    // A pass is running: the empty sentence would contradict the row above it.
+    return running ? (
+      <LiveRow key={running.startedAt} running={running} locale={locale} />
+    ) : (
       <p data-testid="library-rounds-ledger-empty" className="text-body leading-body text-[color:var(--color-text-tertiary)]">
         {allPaused ? t("ledger.emptyPaused") : nextDueLabel ? t("ledger.empty", { time: nextDueLabel }) : t("ledger.emptyPaused")}
       </p>
@@ -105,6 +175,7 @@ export function RoundsLedger({
 
   return (
     <section aria-label={t("ledger.aria")} data-testid="library-rounds-ledger" className="flex flex-col gap-6">
+      {running ? <LiveRow key={running.startedAt} running={running} locale={locale} /> : null}
       {days.map((day) => (
         <div key={day.key} data-ledger-day={day.key}>
           <h3 className="mb-2 text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
@@ -183,9 +254,9 @@ export function RoundsLedger({
                       {entry.stale.length > 0 || pagesWritten(entry).length > 0 ? (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {staleNotRedrafted(entry).map((slug) => (
-                            <Chip key={`stale-${slug}`} size="sm" onClick={() => onOpenPage(slug)} aria-label={t("since.openPage", { page: pageName(slug) })}>
+                            <Chip key={`stale-${slug}`} size="sm" onClick={() => onOpenPage(slug)} aria-label={t("since.openPage", { page: pageTitle(slug) })}>
                               <span className={cn("rounded-full", DOT.stale)} aria-hidden />
-                              {pageName(slug)}
+                              {pageTitle(slug)}
                             </Chip>
                           ))}
                           {pagesWritten(entry).map((path) => (
@@ -193,10 +264,10 @@ export function RoundsLedger({
                               key={`written-${path}`}
                               size="sm"
                               onClick={() => onOpenPage(path.replace(/\.md$/, ""))}
-                              aria-label={t("since.openPage", { page: pageName(path) })}
+                              aria-label={t("since.openPage", { page: pageTitle(path) })}
                             >
                               <FileText size={ICON_SIZE.sm} aria-hidden />
-                              {pageName(path)}
+                              {pageTitle(path)}
                             </Chip>
                           ))}
                         </div>
@@ -208,6 +279,9 @@ export function RoundsLedger({
                       ) : null}
                       {entry.note === "no-agent" ? (
                         <p className="mt-2 text-label leading-label text-[color:var(--color-amber-source-a90)]">{t("ledger.noAgent")}</p>
+                      ) : null}
+                      {entry.note === "stopped" ? (
+                        <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t("ledger.stopped")}</p>
                       ) : null}
                       {entry.refused.length > 0 ? (
                         <p className="mt-2 truncate text-label leading-label text-[color:var(--color-danger-text)]">

@@ -25,13 +25,21 @@ export function SinceYouLeft({
   summary,
   locale,
   onOpenPage,
+  titleFor,
 }: {
   span: SinceSpan;
   summary: SinceSummary;
   locale: string;
   onOpenPage: (slug: string) => void;
+  /**
+   * The title a person knows a page by. The card named pages by their slug
+   * (`meeting-notes-summary`) while the person had named the page "Release readiness sync
+   * notes"; a page no longer in the folder keeps its slug, which is still the truth.
+   */
+  titleFor?: (slug: string) => string;
 }) {
   const t = useTranslations("library.rounds");
+  const pageTitle = (slug: string) => titleFor?.(slug) ?? pageName(slug);
   const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
   const dayTime = new Intl.DateTimeFormat(locale, { weekday: "short", hour: "2-digit", minute: "2-digit" });
   const crossesDay = span.from.toDateString() !== span.to.toDateString();
@@ -71,8 +79,8 @@ export function SinceYouLeft({
               </span>
               <span className="flex flex-wrap gap-1.5">
                 {summary.stale.map((slug) => (
-                  <Chip key={slug} size="sm" onClick={() => onOpenPage(slug)} aria-label={t("since.openPage", { page: pageName(slug) })}>
-                    {pageName(slug)}
+                  <Chip key={slug} size="sm" onClick={() => onOpenPage(slug)} aria-label={t("since.openPage", { page: pageTitle(slug) })}>
+                    {pageTitle(slug)}
                   </Chip>
                 ))}
               </span>
@@ -90,10 +98,10 @@ export function SinceYouLeft({
                     key={path}
                     size="sm"
                     onClick={() => onOpenPage(path.replace(/\.md$/, ""))}
-                    aria-label={t("since.openPage", { page: pageName(path) })}
+                    aria-label={t("since.openPage", { page: pageTitle(path) })}
                   >
                     <FileText size={ICON_SIZE.sm} aria-hidden />
-                    {pageName(path)}
+                    {pageTitle(path)}
                   </Chip>
                 ))}
               </span>

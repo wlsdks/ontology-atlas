@@ -7,12 +7,15 @@ import { buildLibraryModel, isWikiPage, selectWikiPages, type VaultDoc, type Vau
 import {
   type RoundLedger,
   type RoundPassEntry,
-  type RoundPassOutcome,
   type RoundRecord,
   type RoundState,
   type RoundStore,
   createVaultFileRoundStore,
   createVaultRoundLedger,
+  roundPlaceLabels,
+  roundPlaces,
+  servicePlaces,
+  vaultPlace,
 } from "@/entities/library-round";
 import { useAgentServer, useLocalVault } from "@/entities/vault-session";
 import {
@@ -33,6 +36,7 @@ import {
   afterPass,
   buildServiceRoundBrief,
   judgeRoundScope,
+  passLedgerFacts,
   planTick,
   runConsistencyPass,
   scopeNoteEffect,
@@ -94,7 +98,13 @@ export interface RoundsRunnerValue {
   lastTickAt: string | null;
   /** Bumps on every ledger or state write, so a screen can re-read without a folder watcher. */
   revision: number;
-  save(round: RoundRecord): Promise<boolean>;
+  /**
+   * `startedNow` is the promise the sheet made coming true: a consistency round saved while
+   * nothing else is running takes its first pass immediately. A pass already in flight means
+   * this one waits for its own due time, and the screen has to say so rather than repeat the
+   * promise — one runner runs one pass at a time (`runPass` refuses a second).
+   */
+  save(round: RoundRecord): Promise<{ ok: boolean; startedNow: boolean }>;
   remove(id: string): Promise<boolean>;
   setEnabled(id: string, enabled: boolean): Promise<boolean>;
   runNow(id: string): void;
@@ -125,19 +135,6 @@ function citedSourcePaths(docs: readonly VaultDoc[]): string[] {
 
 function newId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-}
-
-function outcomeOf(input: {
-  failed: boolean;
-  written: string[];
-  refused: string[];
-  stale: string[];
-}): RoundPassOutcome {
-  if (input.failed) return "failed";
-  if (input.written.length > 0) return "redrafted";
-  if (input.refused.length > 0) return "refused";
-  if (input.stale.length > 0) return "stale";
-  return "held";
 }
 
 export function useRoundsRunner(): RoundsRunnerValue {
@@ -248,7 +245,14 @@ export function useRoundsRunner(): RoundsRunnerValue {
     if (!active || !rootPath) return { reject: "no-round" };
     const verdict = judgeRoundScope({
       request,
-      round: { kind: active.round.kind, onStale: active.round.onStale, connectorName: active.round.connectorName },
+      round: {
+        kind: active.round.kind,
+        onStale: active.round.onStale,
+        connectorName: active.round.connectorName,
+        // Every connector the round's places name, so a pass that watches Slack and
+        // Confluence is not refused halfway through its one turn (spec §3.2).
+        connectorNames: servicePlaces(roundPlaces(active.round)).map((place) => place.connectorName),
+      },
       vaultRoot: rootPath,
       vaultServerName: VAULT_MCP_SERVER_NAME,
       atlasToolMode,
@@ -284,18 +288,43 @@ export function useRoundsRunner(): RoundsRunnerValue {
     sessionRef.current = session;
   }, [session]);
 
+  /**
+   * **A pass that is no longer wanted ends now, not in twenty minutes.** Removing or pausing a
+   * round whose pass is in flight used to leave the header saying "running now · <name>" for a
+   * round that no longer existed, and, worse, `runningRef` stayed set, so every other round's
+   * pass was blocked until `PASS_TIMEOUT_MS`. The resolver below is what `remove` and a pause
+   * pull: it cancels the agent turn and the pass writes one ledger line noting it was stopped.
+   */
+  const abortRef = useRef<{ roundId: string; stop: () => void } | null>(null);
+
+  const stopPassFor = useCallback((roundId: string) => {
+    const abort = abortRef.current;
+    if (!abort || abort.roundId !== roundId) return false;
+    abort.stop();
+    return true;
+  }, []);
+
   /** Open a session, send one brief, wait for the turn, close. Returns what the turn did. */
-  const agentTurn = useCallback(async (brief: string): Promise<{ failed: boolean; written: string[]; refused: string[]; called: string[] }> => {
+  const agentTurn = useCallback(async (brief: string, aborted: Promise<void>): Promise<{ failed: boolean; written: string[]; refused: string[]; called: string[] }> => {
     const current = sessionRef.current;
     const done = new Promise<AcpTurnCompletion | null>((resolve) => {
       completionRef.current = resolve;
     });
     let failed = false;
+    let stopped = false;
+    void aborted.then(() => {
+      stopped = true;
+      try {
+        sessionRef.current.cancel();
+      } catch {
+        /* A session already gone cannot be cancelled twice; the stop below still runs. */
+      }
+    });
     try {
       await current.start();
       const deadline = Date.now() + READY_WAIT_MS;
       while (statusRef.current !== "ready") {
-        if (statusRef.current === "error" || statusRef.current === "exited" || Date.now() > deadline) {
+        if (stopped || statusRef.current === "error" || statusRef.current === "exited" || Date.now() > deadline) {
           failed = true;
           break;
         }
@@ -304,7 +333,9 @@ export function useRoundsRunner(): RoundsRunnerValue {
       if (!failed) {
         const timeout = setTimeout(() => sessionRef.current.cancel(), PASS_TIMEOUT_MS);
         try {
-          await sessionRef.current.send(brief);
+          // The abort wins the race so the pass returns at once; the cancelled turn's own
+          // rejection is swallowed by the catch below, and `stop()` still runs after it.
+          await Promise.race([sessionRef.current.send(brief), aborted]);
         } finally {
           clearTimeout(timeout);
         }
@@ -312,7 +343,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
     } catch {
       failed = true;
     }
-    const completion = failed ? null : await Promise.race([done, new Promise<null>((resolve) => setTimeout(() => resolve(null), 5_000))]);
+    const completion = failed || stopped ? null : await Promise.race([done, new Promise<null>((resolve) => setTimeout(() => resolve(null), 5_000))]);
     completionRef.current = null;
     try {
       await sessionRef.current.stop();
@@ -332,7 +363,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
       if (event.text === "auto-refused" && event.detail) refused.push(event.detail);
     }
     return {
-      failed: failed || !completion || completion.outcome !== "completed",
+      failed: stopped || failed || !completion || completion.outcome !== "completed",
       written: [...new Set(written)],
       refused: [...new Set(refused)],
       called: [...new Set(called)],
@@ -369,11 +400,45 @@ export function useRoundsRunner(): RoundsRunnerValue {
       setRunning(next);
     };
     mark("checking");
+    let stoppedByPerson = false;
+    const aborted = new Promise<void>((resolve) => {
+      abortRef.current = {
+        roundId: round.id,
+        stop: () => {
+          stoppedByPerson = true;
+          resolve();
+        },
+      };
+    });
+    const places = roundPlaces(round);
+    const watched = vaultPlace(places);
+    const services = servicePlaces(places);
     let entry: RoundPassEntry;
     try {
       const data = await readPassData();
       if (!data) throw new Error("no-manifest");
-      const check = runConsistencyPass(data);
+      /*
+       * **Only a consistency round runs the consistency check.** It is the whole of that
+       * round's verdict, and it is none of a service round's: a service pass that re-read four
+       * documents and changed nothing used to wear `stale · N` in the ledger, counting pages it
+       * never looked at, because the check ran for every pass and fed `outcomeOf` either way.
+       */
+      const fromService = new Set<string>();
+      if (watched.ownDocumentsOnly) {
+        for (const source of data.sources) {
+          if (!source.path.endsWith(".md")) continue;
+          try {
+            const text = await readTauriVaultText(rootPath, source.path);
+            if (text && typeof parseFrontmatter(text).frontmatter.source_url === "string") fromService.add(source.path);
+          } catch {
+            /* Unreadable here means "not proven to come from a service"; the check still judges it. */
+          }
+        }
+      }
+      const check =
+        round.kind === "consistency"
+          ? runConsistencyPass({ ...data, paths: watched.paths, ownDocumentsOnly: watched.ownDocumentsOnly, fromService })
+          : null;
       const model = buildLibraryModel({ sources: data.sources, docs: data.docs, hashes: data.hashes });
       let written: string[] = [];
       let refused: string[] = [];
@@ -381,8 +446,10 @@ export function useRoundsRunner(): RoundsRunnerValue {
       let failed = false;
       let agentTurns: 0 | 1 = 0;
       let note: RoundPassEntry["note"];
+      /** Service round: the documents this pass was sent to refresh — what `checked` counts there. */
+      let refreshed = 0;
 
-      if (round.kind === "consistency") {
+      if (round.kind === "consistency" && check) {
         const redraft = round.onStale !== "mark" && check.staleSources.length > 0;
         if (redraft && !(agentReady && runtimeId)) note = "no-agent";
         if (redraft && agentReady && runtimeId) {
@@ -399,7 +466,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
             hashes: data.hashes,
             now: new Date(),
           });
-          ({ failed, written, refused, called } = await agentTurn(brief));
+          ({ failed, written, refused, called } = await agentTurn(brief, aborted));
         }
       } else {
         if (!agentReady || !runtimeId) {
@@ -419,15 +486,24 @@ export function useRoundsRunner(): RoundsRunnerValue {
               /* Not readable: not a document this round refreshes. */
             }
           }
+          refreshed = knownSources.length;
+          /*
+           * **The compile brief carries this round's documents, not the folder's.** With
+           * `model.sources` the brief listed every local file in the vault as a target, so an
+           * unattended service pass could be instructed to write wiki pages for documents that
+           * have nothing to do with the connector it was approved for. The scope this round was
+           * given is exactly the fetched set: the documents above, which are the ones under
+           * `sources/` carrying a `source_url` this pass refreshes or adds.
+           */
+          const roundSources = new Set(knownSources);
           const brief = buildServiceRoundBrief({
-            serviceLabel: round.connectorName ?? round.name,
-            connectorName: round.connectorName ?? "",
+            places: services,
             vaultRoot: rootPath,
             knownSources,
-            query: round.query ?? "",
+            vaultPaths: watched.paths,
             limit: round.limit,
             compileBrief: buildCompileBrief({
-              sources: model.sources,
+              sources: model.sources.filter((row) => roundSources.has(row.path)),
               existingPages: model.wikiPages,
               locale,
               execution: "acp",
@@ -438,10 +514,10 @@ export function useRoundsRunner(): RoundsRunnerValue {
             }),
             now: new Date(),
           });
-          ({ failed, written, refused, called } = await agentTurn(brief));
+          ({ failed, written, refused, called } = await agentTurn(brief, aborted));
         }
       }
-      const stale = check.stalePages;
+      const { outcome, checked, stale } = passLedgerFacts({ kind: round.kind, check, refreshed, failed, written, refused });
       entry = {
         v: 1,
         id: newId(),
@@ -450,17 +526,19 @@ export function useRoundsRunner(): RoundsRunnerValue {
         kind: round.kind,
         startedAt: startedAt.toISOString(),
         endedAt: new Date().toISOString(),
-        outcome: outcomeOf({ failed, written, refused, stale }),
-        checked: check.checked,
+        outcome,
+        checked,
         stale,
         written,
         refused,
         called,
+        places: roundPlaceLabels(places),
         agentTurns,
         summary: "",
         trigger,
       };
-      if (note) entry.note = note;
+      if (stoppedByPerson) entry.note = "stopped";
+      else if (note) entry.note = note;
     } catch (error) {
       entry = {
         v: 1,
@@ -476,12 +554,15 @@ export function useRoundsRunner(): RoundsRunnerValue {
         written: [],
         refused: [],
         called: [],
+        places: roundPlaceLabels(places),
         agentTurns: 0,
         summary: error instanceof Error ? error.message : String(error),
         trigger,
       };
+      if (stoppedByPerson) entry.note = "stopped";
     } finally {
       activeRef.current = null;
+      abortRef.current = null;
     }
     try {
       await ledger.append(entry);
@@ -580,7 +661,7 @@ export function useRoundsRunner(): RoundsRunnerValue {
   /* ---- Actions ------------------------------------------------------------------------ */
 
   const save = useCallback(async (round: RoundRecord) => {
-    if (!store) return false;
+    if (!store) return { ok: false, startedNow: false };
     const result = await store.upsert(round);
     await refresh();
     /*
@@ -591,25 +672,33 @@ export function useRoundsRunner(): RoundsRunnerValue {
      * animation ends. A service round spends a turn per pass; its first pass stays on the
      * clock the person just chose.
      */
-    if (result.status === "saved" && round.kind === "consistency" && round.enabled && !runningRef.current) {
-      void runPass(round, "manual");
-    }
-    return result.status === "saved";
+    const startedNow = result.status === "saved" && round.kind === "consistency" && round.enabled && !runningRef.current;
+    if (startedNow) void runPass(round, "manual");
+    return { ok: result.status === "saved", startedNow };
   }, [refresh, runPass, store]);
 
   const remove = useCallback(async (id: string) => {
     if (!store) return false;
+    /*
+     * **Removing a round ends its pass.** Measured in the browser, 2026-09-21: the header kept
+     * saying "running now · <name>" for a round that was gone, and the ghost held the one-pass
+     * lock for the full twenty-minute timeout, so no other round could run. The pass is asked
+     * to stop before the record leaves the file, and it writes one ledger line noting it.
+     */
+    stopPassFor(id);
     const result = await store.remove(id);
     await refresh();
     return result.status === "saved";
-  }, [refresh, store]);
+  }, [refresh, stopPassFor, store]);
 
   const setEnabled = useCallback(async (id: string, enabled: boolean) => {
     if (!store) return false;
+    // Pausing is the same promise as removing: the round stops, including the pass in flight.
+    if (!enabled) stopPassFor(id);
     const result = await store.patch(id, { enabled });
     await refresh();
     return result.status === "saved";
-  }, [refresh, store]);
+  }, [refresh, stopPassFor, store]);
 
   const runNow = useCallback((id: string) => {
     const round = stateRef.current?.rounds.find((entry) => entry.id === id);

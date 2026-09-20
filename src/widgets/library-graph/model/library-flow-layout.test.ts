@@ -38,6 +38,36 @@ describe("flow layout", () => {
     expect(ys[1] - ys[0]).toBe(FLOW_ROW_MAX);
   });
 
+  it("lets a page name run into the empty concept column instead of cutting it", () => {
+    // A wiki whose pages cite no concept: the concept column is never laid, so a third of
+    // the canvas stands empty to the right of the pages while their names were still cut at
+    // the page column's own budget ("Engineering onboarding…", 2026-09-21).
+    const layout = flowLayout(
+      graph({ sources: ["a.md", "b.md"], pages: ["Engineering onboarding and the rest of it", "b"], cites: [["b", "b.md"]] }),
+      BOX,
+    );
+    const page = layout.columns.find((column) => column.kind === "page")!;
+    expect(layout.columns.map((column) => column.kind)).toEqual(["source", "page"]);
+    expect(page.labelRoom).toBeGreaterThan(FLOW_LABEL_ROOM_PX / layout.scale);
+    // Out to the picture's edge: everything between the name's start and the side pad.
+    expect(page.labelRoom).toBeCloseTo(layout.extent.width - FLOW_SIDE_PAD - (page.x + 9 + 5), 6);
+    // A name that long is drawn whole, so nothing is cut while the canvas has the room.
+    expect(page.labelRoom).toBeGreaterThan(300);
+  });
+
+  it("keeps the budgeted room when the concept column does hold rows", () => {
+    // Widening here would put a page name across the citations running to the concepts.
+    const layout = flowLayout(
+      graph({ sources: ["a.md"], pages: ["a"], concepts: ["x"], cites: [["a", "a.md"]], mentions: [["a", "x"]] }),
+      BOX,
+    );
+    const page = layout.columns.find((column) => column.kind === "page")!;
+    const concept = layout.columns.find((column) => column.kind === "concept")!;
+    expect(page.labelRoom).toBeCloseTo(FLOW_LABEL_ROOM_PX / layout.scale, 6);
+    // The rightmost column is not "a neighbour with no rows" — it has no neighbour kind.
+    expect(concept.labelRoom).toBeCloseTo(FLOW_LABEL_ROOM_PX / layout.scale, 6);
+  });
+
   it("is the same picture for the same folder, whatever order the nodes arrived in", () => {
     const one = flowLayout(graph({ sources: ["b.md", "a.md"], pages: ["b", "a"], cites: [["a", "a.md"], ["b", "b.md"]] }), BOX);
     const two = flowLayout(graph({ sources: ["a.md", "b.md"], pages: ["a", "b"], cites: [["b", "b.md"], ["a", "a.md"]] }), BOX);

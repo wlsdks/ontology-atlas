@@ -45,6 +45,12 @@ export interface RoundPassEntry {
   refused: string[];
   /** Connector and vault tools the pass called, so a person sees exactly what it reached. */
   called: string[];
+  /**
+   * The short labels of the places this pass looked at ("slack · #release-room",
+   * "sources/planning"), so the morning card says *where* and not only *what*. Absent on
+   * entries written before 2026-09-21, which read as they always did.
+   */
+  places?: string[];
   agentTurns: 0 | 1;
   /** One sentence for the axis, in the locale the pass ran under. */
   summary: string;
@@ -54,9 +60,12 @@ export interface RoundPassEntry {
    * Why the pass did less than the round asked. `no-agent`: a redraft or a service pass
    * was due but no guarded coding agent was ready on this Mac, so nothing was written.
    * Measured 2026-09-17: without this the ledger said "stale" and the person could not
-   * tell a skipped redraft from a round that never asked for one.
+   * tell a skipped redraft from a round that never asked for one. `stopped`: the round was
+   * removed or paused while its pass was in flight, so the pass was cut short on purpose —
+   * without it a person reads "did not finish" and goes looking for a fault that is their own
+   * press.
    */
-  note?: 'no-agent';
+  note?: 'no-agent' | 'stopped';
 }
 
 const OUTCOMES: readonly RoundPassOutcome[] = ['held', 'stale', 'redrafted', 'refused', 'failed', 'asleep'];
@@ -95,7 +104,9 @@ export function parseRoundPassEntry(line: string): RoundPassEntry | null {
   if (typeof record.roundId === 'string') entry.roundId = record.roundId;
   if (typeof record.roundName === 'string') entry.roundName = record.roundName;
   if (record.kind === 'consistency' || record.kind === 'service') entry.kind = record.kind;
-  if (record.note === 'no-agent') entry.note = record.note;
+  if (record.note === 'no-agent' || record.note === 'stopped') entry.note = record.note;
+  const places = stringList(record.places);
+  if (places.length > 0) entry.places = places;
   return entry;
 }
 

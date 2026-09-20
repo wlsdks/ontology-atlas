@@ -78,6 +78,19 @@ interface FlowColumn {
   ids: string[];
   /** How many sub-columns the band was folded into; 1 means every mark has a row of its own. */
   grid: number;
+  /**
+   * World units a name standing beside this column may run to before it is cut.
+   *
+   * Normally the shared room every name place is budgeted (`FLOW_LABEL_ROOM_PX` at the
+   * scale the picture settled at). **A column whose right neighbour holds no rows takes
+   * that neighbour's room as well**: on a folder whose pages cite no concept, the concept
+   * column is not laid at all, and page names were still cut at the page column's own
+   * width while a third of the canvas stood empty beside them (2026-09-21,
+   * "Engineering onboarding…"). Nothing is placed in that space, so nothing is crossed by
+   * running into it; the renderer's collision pass still shortens a name that would meet
+   * a mark or another name on its line.
+   */
+  labelRoom: number;
 }
 
 export interface FlowLayout {
@@ -265,7 +278,31 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     x: columnX(index),
     ids: column.nodes.map((node) => node.id),
     grid: grids[index],
+    labelRoom,
   }));
+  /**
+   * The room each column's names may take, settled once the columns stand where they
+   * stand.
+   *
+   * A column keeps the shared budget while the kind that belongs to its right holds
+   * rows — a name that ran into that gap would lie across the citations crossing it.
+   * When that kind has **no** rows the column beside it was never laid, nothing crosses
+   * the space, and the column takes it out to the picture's edge. Never less than the
+   * shared budget, so this can only widen a name's room. A folded column is left alone:
+   * its names stand beside sub-columns this single `x` cannot speak for.
+   */
+  const settleLabelRooms = (laid: FlowColumn[], pictureWidth: number): void => {
+    const rowsOfKind = new Map(laid.map((column) => [column.kind, column.ids.length]));
+    for (const column of laid) {
+      // A file's name stands to the left of its square, inside the room the picture
+      // already reserved there; only the named columns run rightward.
+      if (column.kind === "source" || column.grid > 1) continue;
+      const nextKind = COLUMN_ORDER[COLUMN_ORDER.indexOf(column.kind) + 1];
+      if (nextKind === undefined || (rowsOfKind.get(nextKind) ?? 0) > 0) continue;
+      const start = column.x + WIDEST_MARK + NAME_GAP;
+      column.labelRoom = Math.max(labelRoom, pictureWidth - FLOW_SIDE_PAD - start);
+    }
+  };
   /*
    * The anchor is the column spread evenly; the others follow it by barycentre. It is the
    * column with the most rows — except when the file band is folded: a grid is even by
@@ -388,8 +425,10 @@ export function flowLayout(graph: LibraryGraph, world: FlowWorld): FlowLayout {
     sourceColumn.x = stackX.reduce((sum, at) => sum + at.files, 0) / stackX.length + shift;
     sourceColumn.grid = Math.max(...groupGrid);
     pageColumn.x = stackX.reduce((sum, at) => sum + at.pages, 0) / stackX.length + shift;
+    settleLabelRooms(columns, stackWidth);
     return { positions, columns, rowGap, extent: { width: stackWidth, height }, scale };
   }
 
+  settleLabelRooms(columns, width);
   return { positions, columns, rowGap, extent: { width, height }, scale };
 }

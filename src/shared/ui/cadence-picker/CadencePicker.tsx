@@ -3,7 +3,7 @@
 import { useCallback, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { cn } from "@/shared/lib/cn";
-import { fieldLabel } from "@/shared/ui/control-class";
+import { controlClass, fieldLabel } from "@/shared/ui/control-class";
 import { Input } from "@/shared/ui/input";
 import { SegmentedControl } from "@/shared/ui/segmented-control";
 
@@ -46,7 +46,7 @@ import {
 
 export type CadenceUnit = "minutes" | "hours" | "day";
 
-export interface CadencePickerLabels {
+interface CadencePickerLabels {
   /** The group's name, e.g. "How often". */
   legend: string;
   unitMinutes: string;
@@ -68,7 +68,7 @@ export interface CadencePickerLabels {
   timeError: string;
 }
 
-export interface CadencePickerProps {
+interface CadencePickerProps {
   unit: CadenceUnit;
   onUnitChange: (unit: CadenceUnit) => void;
   /** The interval in minutes. Ignored while the unit is `day`, and `null` before one is chosen. */
@@ -84,7 +84,7 @@ export interface CadencePickerProps {
   className?: string;
 }
 
-export function detentsForUnit(unit: CadenceUnit): readonly number[] {
+function detentsForUnit(unit: CadenceUnit): readonly number[] {
   return unit === "hours" ? HOUR_DETENTS : MINUTE_DETENTS;
 }
 
@@ -265,11 +265,18 @@ export function CadencePicker({
               onKeyDown={onKeyDown}
               data-testid={`${testId}-thumb`}
               data-cadence-dragging={dragRatio === null ? undefined : "true"}
-              className={cn(
-                "absolute grid h-11 w-11 -translate-x-1/2 place-items-center rounded-full",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a32)]",
-                dragRatio === null ? "transition-[left] motion-reduce:transition-none" : "transition-none",
-              )}
+              /*
+                The value layer owns the press; the geometry here is the 44px touch floor over
+                a 4px track, which is this control's own shape rather than an off-ramp size.
+              */
+              className={controlClass({
+                shape: "icon",
+                size: "lg",
+                className: cn(
+                  "absolute grid h-11 w-11 -translate-x-1/2 place-items-center rounded-full",
+                  dragRatio === null ? "transition-[left] motion-reduce:transition-none" : "transition-none",
+                ),
+              })}
               style={{
                 left: `${ratio * 100}%`,
                 ...(dragRatio === null
@@ -306,13 +313,17 @@ export function CadencePicker({
                 onClick={() => onMinutesChange(value)}
                 data-cadence-detent={value}
                 aria-pressed={tick === index}
-                className={cn(
-                  "absolute top-0 -translate-x-1/2 rounded-chip px-1 text-label leading-label tabular-nums",
-                  "hover:text-[color:var(--color-text-primary)]",
-                  tick === index
-                    ? "font-[var(--font-weight-strong)] text-[color:var(--color-indigo-text-soft)]"
-                    : "text-[color:var(--color-text-quaternary)]",
-                )}
+                className={controlClass({
+                  shape: "chip",
+                  size: "xs",
+                  hoverInk: "strong",
+                  className: cn(
+                    "absolute top-0 min-h-0 -translate-x-1/2 border-transparent px-1 text-label leading-label tabular-nums",
+                    tick === index
+                      ? "font-[var(--font-weight-strong)] text-[color:var(--color-indigo-text-soft)]"
+                      : "text-[color:var(--color-text-quaternary)]",
+                  ),
+                })}
                 style={{ left: `${detentRatio(tick, detents.length) * 100}%` }}
               >
                 {labels.detent(value)}

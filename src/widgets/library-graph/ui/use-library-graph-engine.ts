@@ -1203,6 +1203,14 @@ export function useLibraryGraphEngine({
             : pictureRef.current === "islands"
               ? false
               : view.scale >= SOURCE_LABEL_MIN_SCALE,
+        // Each named column's own room, in screen px: the layout hands back world units,
+        // and a name is drawn at screen scale. Only the flow picture lays columns.
+        flowLabelRoom:
+          pictureRef.current === "flow" && columnsRef.current
+            ? Object.fromEntries(
+                columnsRef.current.columns.map((column) => [column.kind, column.labelRoom * view.scale]),
+              )
+            : undefined,
         labelReport: labelReportRef.current ?? undefined,
         opacity,
         dim: dimState.value,
@@ -1875,6 +1883,19 @@ export function useLibraryGraphEngine({
 
   const onPointerMove = useCallback(
     (event: ReactPointerEvent<HTMLCanvasElement>) => {
+      /*
+       * **The box's position is re-read on every move, not only on resize and press.** A
+       * scroll moves the canvas without resizing it and raises no event this hook listened
+       * to, so after scrolling the page the cached `left/top` were the old ones and a hover
+       * hit-tested a point offset by however far the page had travelled — marks lit up beside
+       * the pointer, or nothing lit up at all. One `getBoundingClientRect` per move is a read
+       * of already-committed layout; the frame loop does not write between moves.
+       */
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const rect = canvas.getBoundingClientRect();
+        rectRef.current = { left: rect.left, top: rect.top };
+      }
       const point = pointOf(event);
       const state = pointerRef.current;
       const sim = simRef.current;
@@ -1976,7 +1997,7 @@ export function useLibraryGraphEngine({
         wake();
       }
     },
-    [finishGesture, hitTest, wake],
+    [canvasRef, finishGesture, hitTest, wake],
   );
 
   const onPointerUp = useCallback(

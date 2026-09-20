@@ -32,9 +32,46 @@ export type RoundOnStale = 'mark' | 'redraft';
 export type RoundCadence =
   | { every: 'hour' }
   | { every: '6h' }
+  /**
+   * The one interval form (2026-09-21). `hour` and `6h` stay as the two literals already on
+   * disk, and the writer keeps emitting them for 60 and 360, so a file written today still
+   * reads on the build before this one. Every other interval travels as minutes.
+   */
+  | { everyMinutes: number }
   | { daily: string; weekdaysOnly: boolean };
 
-export type RoundCadenceKey = 'hour' | '6h' | 'daily' | 'weekdays';
+export type RoundCadenceKey = 'hour' | '6h' | 'minutes' | 'hours' | 'daily' | 'weekdays';
+
+/** The longest interval the rail can say: a day. Anything longer is the daily form. */
+const MAX_INTERVAL_MINUTES = 1440;
+
+/**
+ * **A place a round reads** (spec `2026-09-21-round-cadence-and-scope.md` §3).
+ *
+ * A round used to name one connector and nothing else, so the sheet could not say *which*
+ * Slack channel or *which* Confluence space, and neither could the ledger next morning. A place
+ * is either folders inside this vault or one connector narrowed to a location.
+ */
+export interface RoundPlaceVault {
+  kind: 'vault';
+  /** Folders relative to the root, picked from the real folder list. `[]` is the whole vault. */
+  paths: string[];
+  /** Only files under `sources/` with no `source_url` — what a person dropped in themselves. */
+  ownDocumentsOnly?: boolean;
+}
+
+export interface RoundPlaceService {
+  kind: 'service';
+  connectorId: string;
+  /** The name the connector is attached under — the `mcp__<name>__` prefix of its tools. */
+  connectorName: string;
+  /** The part of the service this round is limited to: `#release-room`, `ENG`, `Roadmap DB`. */
+  location?: string;
+  /** What to look for beyond re-reading the documents already here. */
+  query?: string;
+}
+
+export type RoundPlace = RoundPlaceVault | RoundPlaceService;
 
 export interface RoundRecord {
   id: string;
@@ -53,6 +90,11 @@ export interface RoundRecord {
   query?: string;
   /** Service only: cap on new documents per pass. */
   limit?: number;
+  /**
+   * The places this round reads. Absent on records written before 2026-09-21, which read as
+   * one whole-vault place plus, for a service round, the connector in the legacy fields.
+   */
+  places?: RoundPlace[];
   createdAt: string;
   lastPassAt?: string;
   /** ISO-8601. The next scheduled time; a pass runs at the first tick at or after it. */
@@ -80,9 +122,37 @@ export function isValidClockTime(value: string): boolean {
   return TIME_PATTERN.test(value);
 }
 
+/** Minutes between two passes, or `null` for the daily and weekday forms. */
+export function cadenceMinutes(cadence: RoundCadence): number | null {
+  if ('every' in cadence) return cadence.every === 'hour' ? 60 : 360;
+  if ('everyMinutes' in cadence) return cadence.everyMinutes;
+  return null;
+}
+
+/**
+ * The cadence an interval is stored as. 60 and 360 keep their literals because a build older
+ * than 2026-09-21 reads only those two; every other interval is minutes.
+ */
+export function cadenceFromMinutes(minutes: number): RoundCadence {
+  if (minutes === 60) return { every: 'hour' };
+  if (minutes === 360) return { every: '6h' };
+  return { everyMinutes: minutes };
+}
+
 export function cadenceKey(cadence: RoundCadence): RoundCadenceKey {
-  if ('every' in cadence) return cadence.every === 'hour' ? 'hour' : '6h';
-  return cadence.weekdaysOnly ? 'weekdays' : 'daily';
+  const minutes = cadenceMinutes(cadence);
+  if (minutes !== null) {
+    if (minutes === 60) return 'hour';
+    if (minutes === 360) return '6h';
+    return minutes % 60 === 0 ? 'hours' : 'minutes';
+  }
+  return 'daily' in cadence && cadence.weekdaysOnly ? 'weekdays' : 'daily';
+}
+
+/** About how many agent turns a day a cadence costs when every pass spends one (spec §2.1). */
+export function turnsPerDay(cadence: RoundCadence): number {
+  const minutes = cadenceMinutes(cadence);
+  return minutes !== null && minutes > 0 ? Math.round(MAX_INTERVAL_MINUTES / minutes) : 1;
 }
 
 export function cadenceFromKey(key: RoundCadenceKey, time = '09:00'): RoundCadence {
@@ -91,6 +161,11 @@ export function cadenceFromKey(key: RoundCadenceKey, time = '09:00'): RoundCaden
       return { every: 'hour' };
     case '6h':
       return { every: '6h' };
+    case 'minutes':
+    case 'hours':
+      // The two interval keys are descriptions of a stored interval, not choices a caller
+      // makes blind: a caller that wants one builds it from minutes.
+      return { every: 'hour' };
     case 'daily':
       return { daily: time, weekdaysOnly: false };
     case 'weekdays':
@@ -111,22 +186,38 @@ function isWeekend(date: Date): boolean {
  * during sleep produces one pass, never one per missed hour.
  */
 export function nextDueAt(cadence: RoundCadence, from: Date): Date {
-  if ('every' in cadence) {
-    const step = cadence.every === 'hour' ? 1 : 6;
+  const minutes = cadenceMinutes(cadence);
+  if (minutes !== null && minutes > 0) {
     const next = new Date(from);
-    next.setMinutes(0, 0, 0);
-    const hour = next.getHours();
-    const aligned = Math.floor(hour / step) * step;
-    next.setHours(aligned);
-    while (next.getTime() <= from.getTime()) next.setHours(next.getHours() + step);
+    if (minutes < 60 && 60 % minutes === 0) {
+      // Shorter than an hour: the hour is the grid, so :00 :05 :10 … and two five-minute
+      // rounds share one column in the ledger.
+      next.setSeconds(0, 0);
+      next.setMinutes(Math.floor(next.getMinutes() / minutes) * minutes);
+      while (next.getTime() <= from.getTime()) next.setMinutes(next.getMinutes() + minutes);
+      return next;
+    }
+    /*
+     * An hour or longer: the **day** is the grid, counted from local midnight, so a two-hour
+     * round runs at 00 02 04 … and a daylight-saving day moves the run with the clock on the
+     * wall rather than by a fixed number of milliseconds — `setMinutes` walks wall time.
+     */
+    next.setHours(0, 0, 0, 0);
+    const elapsed = Math.floor((from.getTime() - next.getTime()) / 60_000);
+    next.setMinutes(Math.max(0, Math.floor(elapsed / minutes)) * minutes);
+    while (next.getTime() <= from.getTime()) next.setMinutes(next.getMinutes() + minutes);
     return next;
   }
-  const [hours, minutes] = cadence.daily.split(':').map(Number);
+  if (!('daily' in cadence)) {
+    // An interval of zero or less is not a cadence; treat it as an hour rather than looping.
+    return nextDueAt({ every: 'hour' }, from);
+  }
+  const [clockHours, clockMinutes] = cadence.daily.split(':').map(Number);
   const next = new Date(from);
-  next.setHours(hours, minutes, 0, 0);
+  next.setHours(clockHours, clockMinutes, 0, 0);
   while (next.getTime() <= from.getTime() || (cadence.weekdaysOnly && isWeekend(next))) {
     next.setDate(next.getDate() + 1);
-    next.setHours(hours, minutes, 0, 0);
+    next.setHours(clockHours, clockMinutes, 0, 0);
   }
   return next;
 }
@@ -160,7 +251,83 @@ function isValidCadence(value: unknown): value is RoundCadence {
   if (!value || typeof value !== 'object') return false;
   const record = value as Record<string, unknown>;
   if ('every' in record) return record.every === 'hour' || record.every === '6h';
+  if ('everyMinutes' in record) {
+    const minutes = record.everyMinutes;
+    return typeof minutes === 'number' && Number.isInteger(minutes) && minutes >= 1 && minutes <= MAX_INTERVAL_MINUTES;
+  }
   return typeof record.daily === 'string' && isValidClockTime(record.daily) && typeof record.weekdaysOnly === 'boolean';
+}
+
+function readPlaces(value: unknown): RoundPlace[] | null {
+  if (!Array.isArray(value)) return null;
+  const places: RoundPlace[] = [];
+  for (const entry of value) {
+    const record = asRecord(entry);
+    if (!record) continue;
+    if (record.kind === 'vault') {
+      const paths = Array.isArray(record.paths) ? record.paths.filter((path): path is string => typeof path === 'string') : [];
+      const place: RoundPlaceVault = { kind: 'vault', paths };
+      if (record.ownDocumentsOnly === true) place.ownDocumentsOnly = true;
+      places.push(place);
+      continue;
+    }
+    if (record.kind === 'service' && typeof record.connectorId === 'string' && typeof record.connectorName === 'string') {
+      const place: RoundPlaceService = { kind: 'service', connectorId: record.connectorId, connectorName: record.connectorName };
+      if (typeof record.location === 'string' && record.location.trim()) place.location = record.location;
+      if (typeof record.query === 'string' && record.query.trim()) place.query = record.query;
+      places.push(place);
+    }
+  }
+  return places;
+}
+
+/**
+ * The places a record describes, for a record written before 2026-09-21 too: the whole vault,
+ * plus the connector the legacy fields name. Nothing here invents a location the person never
+ * chose — an old service round watched wherever its connector reached, and still says so.
+ */
+export function roundPlaces(round: RoundRecord): RoundPlace[] {
+  if (round.places && round.places.length > 0) return round.places;
+  const places: RoundPlace[] = [{ kind: 'vault', paths: [] }];
+  if (round.kind === 'service' && round.connectorId && round.connectorName) {
+    const place: RoundPlaceService = { kind: 'service', connectorId: round.connectorId, connectorName: round.connectorName };
+    if (round.query?.trim()) place.query = round.query;
+    places.push(place);
+  }
+  return places;
+}
+
+/** Service places only, in the order the person added them. */
+export function servicePlaces(places: readonly RoundPlace[]): RoundPlaceService[] {
+  return places.filter((place): place is RoundPlaceService => place.kind === 'service');
+}
+
+/** The one vault place a round always has; the first when a file somehow holds two. */
+export function vaultPlace(places: readonly RoundPlace[]): RoundPlaceVault {
+  return places.find((place): place is RoundPlaceVault => place.kind === 'vault') ?? { kind: 'vault', paths: [] };
+}
+
+/**
+ * The kind is **derived** from the places, never chosen (spec §3.2): a round that names any
+ * service spends an agent turn per pass and is a service round; one that names none is the
+ * local check. The stored `kind` stays in the record because the scope judge, the ledger and
+ * every build before this one read it.
+ */
+export function deriveRoundKind(places: readonly RoundPlace[]): RoundKind {
+  return servicePlaces(places).length > 0 ? 'service' : 'consistency';
+}
+
+/** The short labels the index row, the ledger and the morning card name a pass's places by. */
+export function roundPlaceLabels(places: readonly RoundPlace[]): string[] {
+  const labels: string[] = [];
+  for (const place of places) {
+    if (place.kind === 'service') {
+      labels.push(place.location?.trim() ? `${place.connectorName} · ${place.location.trim()}` : place.connectorName);
+      continue;
+    }
+    for (const path of place.paths) labels.push(path);
+  }
+  return labels;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -188,6 +355,8 @@ function readRound(value: unknown): RoundRecord | null {
   if (typeof record.connectorName === 'string') round.connectorName = record.connectorName;
   if (typeof record.query === 'string') round.query = record.query;
   if (typeof record.limit === 'number') round.limit = record.limit;
+  const places = readPlaces(record.places);
+  if (places && places.length > 0) round.places = places;
   if (typeof record.lastPassAt === 'string') round.lastPassAt = record.lastPassAt;
   return round;
 }

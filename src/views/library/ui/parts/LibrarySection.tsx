@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { useTranslations } from "next-intl";
 
@@ -438,7 +438,6 @@ export function LibrarySection({
     writeLibraryIndexQuery(vaultScope, next);
   };
   const needle = query.trim().toLowerCase();
-  const matches = (text: string | null | undefined) => (text ?? "").toLowerCase().includes(needle);
   const search = useSourceSearch({
     sources: model.sources,
     sourceHandles,
@@ -479,14 +478,24 @@ export function LibrarySection({
    * whose file has not been read is neither a match nor a miss, so it is still shown and
    * the list *narrows* as the reads land.
    */
-  const visibleSources = needle
-    ? model.sources.filter(
-        (row) =>
-          matches(row.path) ||
-          search.hits.has(row.path) ||
-          (search.phase === "reading" && !search.read.has(row.path)),
-      )
-    : model.sources;
+  /*
+   * **Memoised on what the list is actually made of.** Recomputed every render, the array was
+   * a new identity each time, so the effect below — the one that scrolls the list to the open
+   * file — re-fired on renders that had nothing to do with the list and dragged the column
+   * back under the person's own scrolling.
+   */
+  const visibleSources = useMemo(
+    () =>
+      needle
+        ? model.sources.filter(
+            (row) =>
+              row.path.toLowerCase().includes(needle) ||
+              search.hits.has(row.path) ||
+              (search.phase === "reading" && !search.read.has(row.path)),
+          )
+        : model.sources,
+    [model.sources, needle, search.hits, search.phase, search.read],
+  );
   /**
    * **The majority state is said once, at the head; the rows keep only the exceptions**
    * (the rule `majorityWriter` below already applies to the wiki list). A folder that was
@@ -522,9 +531,18 @@ export function LibrarySection({
     scrollToSource(index);
     sourceRowFocus(index);
   }, [scrollToSource, selectedSourcePath, sourceRowFocus, visibleSources]);
-  const visiblePages = needle
-    ? model.wikiPages.filter((page) => matches(page.title) || matches(model.pageTexts.get(page.slug)))
-    : model.wikiPages;
+  /* Memoised for the same reason, and because `LibraryShelf` derives its spines from this array. */
+  const visiblePages = useMemo(
+    () =>
+      needle
+        ? model.wikiPages.filter(
+            (page) =>
+              page.title.toLowerCase().includes(needle) ||
+              (model.pageTexts.get(page.slug) ?? "").toLowerCase().includes(needle),
+          )
+        : model.wikiPages,
+    [model.pageTexts, model.wikiPages, needle],
+  );
   /*
    * The writer label prints on the rows that are the exception. On a folder where nine
    * of ten pages say Claude, nine identical labels are texture and the one that says a

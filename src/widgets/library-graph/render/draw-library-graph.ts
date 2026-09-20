@@ -120,6 +120,13 @@ export interface LibraryGraphFrame {
   /** `flow`: columns, edges drawn as horizontal S-curves; `force`: the bowed quadratic; `islands`: the overview. */
   layout?: "flow" | "force" | "islands";
   /**
+   * Per kind, in screen px, how wide a standing name may be in the flow picture — the
+   * `labelRoom` its column settled on. It replaces the flat {@link STANDING_LABEL_MAX_WIDTH}
+   * budget, which cut a page name at the page column's own width even when the concept
+   * column beside it held no rows and the space stood empty. Absent means the flat budget.
+   */
+  flowLabelRoom?: Partial<Record<LibraryGraphNodeKind, number>>;
+  /**
    * The islands of the overview, in canvas pixels: drawn under the marks as a body with a
    * name, and the one thing a person can read at rest on a folder of thousands.
    */
@@ -1490,10 +1497,13 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       const fontPx = labelFontPx(ink, node.kind);
       ctx.font = `${fontPx}px ${ink.fontFamily}`;
       const lineHeight = Math.round(fontPx * 1.35);
+      // The column's own room when the layout settled one, else the flat budget. The
+      // canvas is still the outer bound: a room wider than the frame is not room.
+      const roomCap = frame.flowLabelRoom?.[node.kind] ?? STANDING_LABEL_MAX_WIDTH;
       let text = truncateToWidth(
         ctx,
         middleEllipsis(node.label, STANDING_LABEL_MAX_CHARS),
-        Math.min(STANDING_LABEL_MAX_WIDTH, frame.width - 8),
+        Math.min(Math.max(roomCap, STANDING_LABEL_MAX_WIDTH), frame.width - 8),
       );
       if (!text) continue;
       let width = ctx.measureText(text).width;

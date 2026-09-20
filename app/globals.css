@@ -3348,6 +3348,15 @@
        the first token to spend it, and it names the meaning it carries.
        Reduced motion never reaches it: both consumers draw finished on the first frame. */
     --motion-ease-place: cubic-bezier(0.34, 1.28, 0.64, 1);
+    /* Drag-release easing (2026-09-21) — where a dragged thing lands after the finger lets go.
+       A thumb the person was moving carries momentum, so arriving on `--motion-ease` reads as
+       the control taking the object away and parking it; this curve leaves at speed, reaches
+       the detent and settles back about 15% past it, which is the "it snapped into the notch"
+       the cadence rail owes the hand. Licensed on **a released drag only**, on the moving
+       object's own position, over `--motion-settle` (240ms, the spec's clock). Reduced motion
+       never reaches it: the consumer drops the transition entirely and the thumb is already
+       there. Spec: `docs/superpowers/specs/2026-09-21-round-cadence-and-scope.md` §2.2. */
+    --motion-ease-drag-release: cubic-bezier(0.2, 0.9, 0.3, 1.15);
     /* --topology-card-scale is injected by SigmaSkeletonCards into container based on viewport width — CSS pipeline drops custom property without utility reference, so not declared here. */
 
     /*

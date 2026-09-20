@@ -80,4 +80,28 @@ describe('round store', () => {
     const noop = await store.markBack('2026-09-17T09:03:00.000Z');
     expect(noop.state.lastAway?.to).toBe('2026-09-17T09:02:00.000Z');
   });
+
+  it('does not believe an absence left behind by a crash: the span starts at the last pass', async () => {
+    // Written by a process that went hidden and never came back; the pass that ran afterwards
+    // is the folder's own proof the app was awake long after that moment.
+    const store = createMemoryRoundStore(
+      serializeRoundState({
+        v: 1,
+        rounds: [round({ lastPassAt: '2026-09-17T08:00:00.000Z' })],
+        awayFrom: '2026-09-14T22:00:00.000Z',
+      }),
+    );
+    const back = await store.markBack('2026-09-17T09:02:00.000Z');
+    expect(back.state.awayFrom).toBeUndefined();
+    expect(back.state.lastAway).toEqual({ from: '2026-09-17T08:00:00.000Z', to: '2026-09-17T09:02:00.000Z' });
+  });
+
+  it('falls back to this process when nothing else dates the stale absence', async () => {
+    const constructedAfter = Date.now();
+    const store = createMemoryRoundStore(serializeRoundState({ v: 1, rounds: [round()], awayFrom: '2020-01-01T00:00:00.000Z' }));
+    const at = new Date(Date.now() + 1_000).toISOString();
+    const back = await store.markBack(at);
+    expect(back.state.lastAway?.to).toBe(at);
+    expect(Date.parse(back.state.lastAway!.from)).toBeGreaterThanOrEqual(constructedAfter);
+  });
 });

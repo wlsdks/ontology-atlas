@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { RoundPlaceService, RoundRecord } from '@/entities/library-round';
 
 import en from '../../../../../messages/en.json';
+import ko from '../../../../../messages/ko.json';
 import { NewRoundSheet } from './NewRoundSheet';
 
 const CONNECTORS = [
@@ -13,9 +14,9 @@ const CONNECTORS = [
   { id: 'c3', name: 'archived', enabled: false },
 ];
 
-function open(props: Partial<Parameters<typeof NewRoundSheet>[0]> = {}) {
+function open(props: Partial<Parameters<typeof NewRoundSheet>[0]> = {}, locale: 'en' | 'ko' = 'en') {
   const view = render(
-    <NextIntlClientProvider locale="en" messages={en}>
+    <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? ko : en}>
       <NewRoundSheet
         open
         onClose={() => {}}
@@ -163,7 +164,27 @@ describe('the new round sheet', () => {
     const view = open({ connectors: CONNECTORS });
     addPlace('Slack');
     fireEvent.change(screen.getByTestId('library-rounds-place-0-where'), { target: { value: '#release-room' } });
-    expect(view.scope()).toContain('call Slack to read #release-room, never to write there');
+    expect(view.scope()).toContain('ask Slack to read #release-room, never to write there');
+    view.close();
+  });
+
+  it('the example question is the one the service itself would be asked', () => {
+    /*
+     * A Slack row offering "pages changed in the last day in space ENG" teaches the wrong
+     * shape of question for the service in front of the person.
+     */
+    const view = open({ connectors: CONNECTORS });
+    addPlace('Slack');
+    expect(screen.getByTestId('library-rounds-place-0-query')).toHaveAttribute('placeholder', 'posts in this channel from the last week');
+    addPlace('Confluence');
+    expect(screen.getByTestId('library-rounds-place-1-query')).toHaveAttribute('placeholder', 'pages changed in the last day in space ENG');
+    view.close();
+  });
+
+  it('opening the sheet does not put focus on the name, so the title is not wearing a field', () => {
+    const view = open();
+    expect(document.activeElement).not.toBe(screen.getByTestId('library-rounds-rename'));
+    expect(screen.queryByTestId('library-rounds-name')).toBeNull();
     view.close();
   });
 
@@ -174,15 +195,22 @@ describe('the new round sheet', () => {
      */
     const view = open({ connectors: CONNECTORS });
     addPlace('Slack');
+    // It opens on one hour: 24 turns a day, which the sentence states in the quiet ink.
     expect(view.cost()).toHaveAttribute('data-cost-tone', 'quiet');
 
     switchUnit('Minutes');
-    dragRailTo(1); // 30 minutes → 48 a day, still the quiet ink.
-    expect(view.cost()).toHaveAttribute('data-cost-tone', 'quiet');
+    // Thirty minutes is 48 a day, the first cadence the spec calls too much.
+    dragRailTo(1);
     expect(view.cost().textContent).toContain('48');
-
-    dragRailTo(0.6); // 15 minutes → 96 a day.
     expect(view.cost()).toHaveAttribute('data-cost-tone', 'alarming');
+
+    dragRailTo(0.6); // 15 minutes → 96 a day, still alarming.
+    expect(view.cost()).toHaveAttribute('data-cost-tone', 'alarming');
+
+    // An hour is 24 a day: the same sentence, the quiet ink.
+    switchUnit('Hours');
+    dragRailTo(0);
+    expect(view.cost()).toHaveAttribute('data-cost-tone', 'quiet');
     view.close();
   });
 
@@ -192,5 +220,23 @@ describe('the new round sheet', () => {
     dragRailTo(0);
     expect(view.cost()).toHaveAttribute('data-cost-tone', 'quiet');
     view.close();
+  });
+
+  it('every locale inks the words the controls change, not only English', () => {
+    /*
+     * The ink is what makes a press visible in the sentence rather than only in the control.
+     * Both catalogues carry the same `<em>` tag, so the check is that the Korean sentence
+     * really is emphasising its own words — the cadence, the place, the stale action.
+     */
+    for (const locale of ['en', 'ko'] as const) {
+      const view = open({ connectors: CONNECTORS }, locale);
+      addPlace(locale === 'ko' ? '슬랙|Slack' : 'Slack');
+      const inked = [...screen.getByTestId('library-rounds-readback').querySelectorAll('span')];
+      expect(inked.length).toBeGreaterThanOrEqual(3);
+      for (const span of inked) {
+        expect(span.className).toContain('--color-indigo-text-soft');
+      }
+      view.close();
+    }
   });
 });

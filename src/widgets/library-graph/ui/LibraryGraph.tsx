@@ -482,8 +482,10 @@ export function LibraryGraph({
     ? t("graph.announce", {
         kind: t(`graph.kind.${activeNode.kind}`),
         name: activeNode.label,
-        position: graph.nodes.indexOf(activeNode) + 1,
-        total: graph.nodes.length,
+        // Counted along the walk the arrows take, not the order the model happens to hold:
+        // "3 of 40" has to be the third stop of this traversal or it is a number about nothing.
+        position: ordered.indexOf(activeNode) + 1,
+        total: ordered.length,
         action: t(activeNode.kind === "concept" ? "graph.actionMap" : "graph.actionSelect"),
       })
     : "";

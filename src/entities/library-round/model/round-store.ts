@@ -47,7 +47,45 @@ export interface RoundStore {
   markBack(at: string): Promise<RoundWriteResult>;
 }
 
+/**
+ * The latest moment this state itself proves the app was running: the newest pass and the end of
+ * the last completed absence. An `awayFrom` older than that cannot describe a real absence,
+ * because the app was demonstrably awake after it was written.
+ */
+function lastKnownActivity(state: RoundState): number | null {
+  let latest: number | null = null;
+  const consider = (value: string | undefined) => {
+    if (!value) return;
+    const at = Date.parse(value);
+    if (Number.isFinite(at) && (latest === null || at > latest)) latest = at;
+  };
+  for (const round of state.rounds) consider(round.lastPassAt);
+  consider(state.lastAway?.to);
+  return latest;
+}
+
+/** The start `markBack` records for an absence found on disk: never before the app was last awake. */
+function clampAbsenceStart(state: RoundState, awayFrom: string, at: string, bornAt: number): string {
+  const opened = Date.parse(awayFrom);
+  const floor = lastKnownActivity(state) ?? bornAt;
+  if (Number.isFinite(opened) && opened >= floor) return awayFrom;
+  const returned = Date.parse(at);
+  // An absence never ends before it starts, whatever the two clocks say.
+  return new Date(Number.isFinite(returned) ? Math.min(floor, returned) : floor).toISOString();
+}
+
 export function createRoundStore(medium: RoundMedium): RoundStore {
+  /*
+   * **An absence this process did not open is not trusted for its start.** `markAway` writes
+   * `awayFrom` and only `markBack` clears it, so a crash or a force quit while the window was
+   * hidden leaves one on disk forever. The next run then read it as the beginning of the current
+   * absence, and a two-minute hide reported "since you left" spanning days. An absence opened
+   * here is exact and kept as written; one found on disk starts no earlier than the last moment
+   * this folder can prove the app was awake, or than this process itself.
+   */
+  const bornAt = Date.now();
+  let openedHere = false;
+
   let queue: Promise<unknown> = Promise.resolve();
   const enqueue = <T,>(job: () => Promise<T>): Promise<T> => {
     const run = queue.then(job, job);
@@ -98,11 +136,18 @@ export function createRoundStore(medium: RoundMedium): RoundStore {
         ...state,
         rounds: state.rounds.map((entry) => (entry.id === id ? { ...entry, ...change, id } : entry)),
       })),
-    markAway: (at) => mutate((state) => (state.awayFrom ? state : { ...state, awayFrom: at })),
+    markAway: (at) =>
+      mutate((state) => {
+        if (state.awayFrom) return state;
+        openedHere = true;
+        return { ...state, awayFrom: at };
+      }),
     markBack: (at) =>
       mutate((state) => {
         if (!state.awayFrom) return state;
-        const next: RoundState = { ...state, lastAway: { from: state.awayFrom, to: at } };
+        const from = openedHere ? state.awayFrom : clampAbsenceStart(state, state.awayFrom, at, bornAt);
+        openedHere = false;
+        const next: RoundState = { ...state, lastAway: { from, to: at } };
         delete next.awayFrom;
         return next;
       }),

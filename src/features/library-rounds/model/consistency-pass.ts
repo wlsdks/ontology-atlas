@@ -19,6 +19,17 @@ export interface ConsistencyPassInput {
   hashes: ReadonlyMap<string, string>;
   /** Raw text by wiki slug (`wiki/<name>`), for the structural check. */
   pageTexts: ReadonlyMap<string, string>;
+  /**
+   * Folders the round's vault place names, relative to the root. `[]` — the default — is the
+   * whole folder, which is what every round written before 2026-09-21 means. A page counts
+   * when its own file or any source it cites sits under one of them, so limiting a round to
+   * `sources/planning` still judges the pages built on those documents wherever they live.
+   */
+  paths?: readonly string[];
+  /** The vault place watches only files under `sources/` with no `source_url`. */
+  ownDocumentsOnly?: boolean;
+  /** Vault-relative source paths that carry a `source_url`, for `ownDocumentsOnly`. */
+  fromService?: ReadonlySet<string>;
 }
 
 export interface ConsistencyPassResult {
@@ -34,13 +45,46 @@ export interface ConsistencyPassResult {
   notCompiled: number;
 }
 
-export function runConsistencyPass({ sources, docs, hashes, pageTexts }: ConsistencyPassInput): ConsistencyPassResult {
+/** Is `path` the folder itself or inside it? `wiki/releases` never matches `wiki/releases-old`. */
+function isUnder(path: string, folder: string): boolean {
+  const clean = folder.replace(/\/+$/, '');
+  return clean === '' || path === clean || path.startsWith(`${clean}/`);
+}
+
+export function runConsistencyPass({
+  sources,
+  docs,
+  hashes,
+  pageTexts,
+  paths = [],
+  ownDocumentsOnly = false,
+  fromService,
+}: ConsistencyPassInput): ConsistencyPassResult {
   const model = buildLibraryModel({ sources, docs, hashes });
+  /*
+   * **The filter is applied to the model, not to the hashing.** The hashes were measured for
+   * whatever the caller asked for; deciding here which rows count keeps one rule in one place
+   * and keeps a page that cites a watched document in the pass even when the page itself lives
+   * elsewhere — the person said "watch these documents", not "watch these pages".
+   */
+  const inScope = (path: string) => {
+    if (ownDocumentsOnly && fromService?.has(path)) return false;
+    return paths.length === 0 || paths.some((folder) => isUnder(path, folder));
+  };
+  const watchedSources = new Set(model.sources.filter((row) => inScope(row.path)).map((row) => row.path));
+  const watchedPages = new Set<string>();
+  for (const row of model.sources) {
+    if (!watchedSources.has(row.path)) continue;
+    for (const slug of row.reviewPages ?? []) watchedPages.add(slug);
+  }
+  const pageInScope = (slug: string) =>
+    paths.length === 0 && !ownDocumentsOnly ? true : watchedPages.has(slug) || paths.some((folder) => isUnder(slug, folder));
+
   const stalePages = new Set<string>();
   const staleSources: string[] = [];
   for (const row of model.sources) {
     const pages = row.reviewPages ?? [];
-    if (row.state !== 'stale' || pages.length === 0) continue;
+    if (row.state !== 'stale' || pages.length === 0 || !watchedSources.has(row.path)) continue;
     staleSources.push(row.path);
     for (const slug of pages) stalePages.add(slug);
   }
@@ -49,6 +93,7 @@ export function runConsistencyPass({ sources, docs, hashes, pageTexts }: Consist
   let checked = 0;
   for (const page of model.wikiPages) {
     if (isWikiFurnitureSlug(page.slug)) continue;
+    if (!pageInScope(page.slug)) continue;
     checked += 1;
     const raw = pageTexts.get(page.slug);
     if (raw === undefined) continue;

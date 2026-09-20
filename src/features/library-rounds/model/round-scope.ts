@@ -34,6 +34,12 @@ interface ScopeRound {
   onStale?: 'mark' | 'redraft';
   /** The name the connector is attached under — the `mcp__<name>__` prefix of its tools. */
   connectorName?: string;
+  /**
+   * Every connector the round's places name (2026-09-21). A round may watch a Slack room and a
+   * Confluence space in one pass, so the allow-list is the union; `connectorName` stays because
+   * a record written before places holds only that one.
+   */
+  connectorNames?: readonly string[];
 }
 
 export interface ScopeInput {
@@ -80,11 +86,25 @@ function vaultRelative(filePath: string | null, vaultRoot: string): string | nul
   return relative;
 }
 
-function mcpServerOf(toolName: string | null): string | null {
-  if (!toolName || !toolName.startsWith('mcp__')) return null;
-  const rest = toolName.slice('mcp__'.length);
-  const cut = rest.indexOf('__');
-  return cut > 0 ? rest.slice(0, cut) : null;
+/**
+ * Is this one of `server`'s tools?
+ *
+ * Matched as the whole prefix `mcp__<server>__`, never by splitting at the first `__`: a
+ * connector the person attached as `notion__staging` owns `mcp__notion__staging__search`, and
+ * reading the name up to the first separator called that server `notion` — a name that matches
+ * neither the vault server nor the round's own connector, so every tool of that connector was
+ * refused as "other connector".
+ */
+function isToolOf(toolName: string | null, server: string): boolean {
+  return Boolean(toolName && server && toolName.startsWith(`mcp__${server}__`));
+}
+
+/** The connectors this round was approved for, from its places and its legacy field alike. */
+function roundConnectors(round: ScopeRound): string[] {
+  const names = new Set<string>();
+  for (const name of round.connectorNames ?? []) if (name) names.add(name);
+  if (round.connectorName) names.add(round.connectorName);
+  return [...names];
 }
 
 export function judgeRoundScope({
@@ -99,15 +119,15 @@ export function judgeRoundScope({
     return { decision: 'reject', reason: 'ontology-write' };
   }
 
-  const server = mcpServerOf(request.toolName);
-  if (server !== null) {
-    if (server === vaultServerName) {
+  if (request.toolName?.startsWith('mcp__')) {
+    if (isToolOf(request.toolName, vaultServerName)) {
       const mode = atlasToolMode(request.toolName, vaultServerName);
       return mode === 'read'
         ? { decision: 'allow', note: `call ${request.toolName}` }
         : { decision: 'reject', reason: request.toolName ?? 'atlas write' };
     }
-    if (round.kind === 'service' && round.connectorName && server === round.connectorName) {
+    const approved = roundConnectors(round);
+    if (round.kind === 'service' && approved.some((name) => isToolOf(request.toolName, name))) {
       const kind = (request.toolKind ?? '').trim().toLowerCase();
       if (MUTATING_KINDS.has(kind)) return { decision: 'reject', reason: request.toolName ?? 'connector mutation' };
       return { decision: 'allow', note: `call ${request.toolName}` };

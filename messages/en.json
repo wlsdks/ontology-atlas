@@ -850,9 +850,9 @@
         "title": "Where you check the whole thing",
         "body": "As the pile grows, some pieces end up connected to nothing and some go untouched for months. This finds all of that in one place. Start here when you don't know what to tidy up first."
       },
-      "insightsToday": {
-        "title": "What to fix today, first",
-        "body": "The few things that help most right now sit at the top. Click one to check it on the map, or go straight to fixing it."
+      "insightsHeadline": {
+        "title": "The top line is today's count",
+        "body": "It says how many things there are to learn and how many could not be checked, and the cards below name each one."
       },
       "projectsWhat": {
         "title": "Grouped by product",
@@ -1188,6 +1188,7 @@
         "evidenceDefinition": "Code or documents supporting a meaning claim. Check whether they support the definition and boundary, not just the label.",
         "nodeNumberTerm": "Number on a circle",
         "nodeNumberDefinition": "Capabilities plus elements inside it: domains and documents are left out, so it is smaller than the concept total at the top",
+        "sharedConceptNote": "A concept several domains reference is counted once, under the domain that holds it",
         "criteria": {
           "project": "one product or independently changeable system, with its purpose and boundary.",
           "domain": "a coherent business responsibility with its own language and boundaries. A folder or team alone is insufficient.",
@@ -2279,7 +2280,7 @@
       "surfaceSources": "sources",
       "surfaceWikiPages": "wiki pages",
       "surfacePlanOnly": "{count} domains hold no element yet",
-      "surfaceRelations": "{count} relations",
+      "surfaceRelations": "{count} relations among these concepts",
       "surfaceOntologyEmpty": "No domains or capabilities yet. Make the first domain on the map.",
       "surfaceLibraryEmpty": "This folder holds no sources and no wiki pages.",
       "surfaceHarnessHolds": "The instructions, structure and sensors an agent works under, read from the folder's source tree in the Mac app.",
@@ -3158,6 +3159,7 @@
       "alreadyTyped": "{count} documents already on the map are left as-is.",
       "runtimeSkills": "{count} skill files owned by your agent runtime are left untouched: that program manages them.",
       "agentPointers": "{count} agent instruction files (AGENTS.md, CLAUDE.md) are left untouched: they tell an agent how to use this folder, so they are not concepts.",
+      "libraryFiles": "{count} Library files (sources/, wiki/) are left untouched: a raw source is kept exactly as it arrived, and a wiki page is what Atlas already wrote about one.",
       "confirm": "Build the map",
       "cancel": "Close",
       "errorPrefix": "Could not save:",
@@ -4729,7 +4731,7 @@
       "limit": {
         "title": "This tool has hit its usage limit",
         "hint": "Not the app: the tool's own plan is out of room. If Details names when it resets, press Retry then; until then pick another tool below and carry on.",
-      "hintOnlyTool": "Not the app: the tool's own plan is out of room, and it is the only tool set up here. If Details names when it resets, press Retry then. Connecting a second tool on the Agents screen is what gives you somewhere to carry on."
+        "hintOnlyTool": "Not the app: the tool's own plan is out of room, and it is the only tool set up here. If Details names when it resets, press Retry then. Connecting a second tool on the Agents screen is what gives you somewhere to carry on."
       },
       "auth": {
         "title": "An old app-scoped sign-in is getting in the way",
@@ -4745,7 +4747,8 @@
       },
       "launch": {
         "title": "The tool could not be started",
-        "hint": "Agents shows what state this tool is in. The button below opens it.", "door": "Open Agents"
+        "hint": "Agents shows what state this tool is in. The button below opens it.",
+        "door": "Open Agents"
       },
       "network": {
         "title": "No connection to the outside",
@@ -4933,6 +4936,7 @@
     "restore-untracked": "This document has never been committed, so there is no earlier content to go back to. Delete the file yourself if you do not need it.",
     "restore-source-missing": "That commit does not contain this document. It may have been created later or had another name.",
     "restore-identity-mismatch": "The document's identity at that commit (uid, slug or merged_uids) differs from the current one, so nothing was restored: restoring as-is could break links from other documents. To bring back only the body, read that version and edit by hand.",
+    "restore-identity-check-failed": "Could not read this document on disk, so the check that it is still the same document could not run. Nothing was restored. Check the file, then try again.",
     "restore-path-invalid": "This path does not point inside the folder, so nothing was touched.",
     "restore-source-invalid": "The commit reference is not valid, so nothing was restored.",
     "git-restore-failed": "Could not restore the document. It was not changed.",
@@ -6012,7 +6016,11 @@
         "hourShort": "hourly",
         "6hShort": "every 6 h",
         "dailyChip": "Daily",
-        "weekdaysChip": "Weekdays"
+        "weekdaysChip": "Weekdays",
+        "everyMinutes": "Every {count, number} minutes",
+        "everyHours": "Every {count, number} hours",
+        "everyMinutesShort": "every {count, number} min",
+        "everyHoursShort": "every {count, number} h"
       },
       "state": {
         "on": "On",
@@ -6076,10 +6084,15 @@
         "asleep": "Asleep",
         "duration": "{seconds} s",
         "heldLine": "{name} · {checked} · held",
-        "noAgent": "No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again."
+        "noAgent": "No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again.",
+        "runningNow": "{name} · {phase} · {seconds, number} s",
+        "phaseChecking": "Checking documents",
+        "phaseAgent": "Agent turn in progress",
+        "stopped": "You removed or paused this round while it was running, so the pass stopped there."
       },
       "sheet": {
         "readbackConsistency": "{cadence}, check that every page still matches its originals, and {onStale} a page that has gone stale. It runs once as soon as you save.",
+        "readbackConsistencyQueued": "{cadence}, check that every page still matches its originals, and {onStale} a page that has gone stale. Another round is running, so this one starts at its next due time.",
         "readbackService": "{cadence}, read what {service} sent again, bring in what is new, and rewrite the pages that changed. One agent turn per pass.",
         "readbackRedraft": "rewrite",
         "readbackMark": "only mark",
@@ -6105,7 +6118,7 @@
         "name": "Name",
         "may": "This round may",
         "mayReadVault": "read this folder and its map",
-        "mayCallConnector": "call {service} to read, never to write there",
+        "mayCallConnector": "ask {service} to read, never to write there",
         "mayWriteSources": "add or refresh files under sources/",
         "mayWritePages": "write pages under wiki/ that fit the template, as drafts",
         "mayNothingElse": "nothing else; anything else is refused and named in the ledger",
@@ -6116,10 +6129,55 @@
         "cancel": "Cancel",
         "saved": "{name} runs first at {time}.",
         "savedRunningNow": "Running {name} once now; the next pass is at {time}.",
-        "saveFailed": "Could not save the round: {reason}"
+        "saveFailed": "Could not save the round: {reason}",
+        "places": "What to look at",
+        "placeVault": "Documents in this folder",
+        "placeVaultAll": "all of it",
+        "placeOwn": "the documents I wrote",
+        "placeOwnDetail": "files under sources/ that no service sent",
+        "chooseFolders": "Choose folders",
+        "noFolders": "This folder has no subfolders yet, so the round watches all of it.",
+        "addPlace": "Add a place",
+        "addFolder": "Another folder in this folder",
+        "addNoConnector": "No service is attached to this folder yet. Attach one in Agents.",
+        "removePlace": "Remove {place}",
+        "removeFolder": "Stop watching {folder}",
+        "where": "Where",
+        "wherePlaceholder": "#release-room, ENG, Roadmap DB",
+        "whereAnywhere": "wherever it reaches",
+        "rename": "Rename this round",
+        "nameAria": "Round name",
+        "readbackServices": "<em>{cadence}</em>, re-read the documents from <em>{places}</em>,",
+        "readbackFolders": " check that the documents under <em>{folders}</em> still match their sources,",
+        "readbackWholeFolder": " check that every page still matches its originals,",
+        "readbackStaleRedraft": " and <em>redraft</em> the stale ones.",
+        "readbackStaleMark": " and <em>only mark</em> the stale ones.",
+        "readbackTurn": " One agent turn per pass.",
+        "readbackNow": " It runs once as soon as you save.",
+        "readbackQueued": " Another round is running, so this one starts at its next due time.",
+        "mayCallPlace": "ask {service} to read {location}, never to write there",
+        "readbackFoldersLead": "<em>{cadence}</em>, check that the documents under <em>{folders}</em> still match their sources,",
+        "readbackWholeFolderLead": "<em>{cadence}</em>, check that every page still matches its originals,",
+        "queryPlaceholderSlack": "posts in this channel from the last week",
+        "queryPlaceholderNotion": "pages in this database changed recently",
+        "queryPlaceholderConfluence": "pages changed in the last day in space ENG",
+        "queryPlaceholderJira": "issues closed on this board this week",
+        "queryPlaceholderGeneric": "documents changed recently"
       },
       "name": {
         "consistency": "Pages still match"
+      },
+      "picker": {
+        "unitMinutes": "Minutes",
+        "unitHours": "Hours",
+        "unitDay": "Day",
+        "railAria": "How often · drag, or use the arrow keys",
+        "dayAria": "Which days",
+        "valueMinutes": "every {count, number} minutes",
+        "valueHours": "every {count, number} hours"
+      },
+      "index": {
+        "subtitle": "{cadence} · {places}"
       }
     }
   },

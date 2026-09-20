@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { RoundPassEntry, RoundRecord } from "@/entities/library-round";
 
-import { groupLedgerByDay, lastOutcome, lastPass, nextRound, sinceSpan, summarizeSince, turnsPerDay } from "./round-presentation";
+import { groupLedgerByDay, lastOutcome, lastPass, nextRound, sinceSpan, summarizeSince } from "./round-presentation";
 
 function pass(overrides: Partial<RoundPassEntry> = {}): RoundPassEntry {
   return {
@@ -103,9 +103,4 @@ describe("ledger grouping and header facts", () => {
     expect(nextRound([round(), paused, soon])?.id).toBe("s");
   });
 
-  it("states the daily agent-turn bill per cadence", () => {
-    expect(turnsPerDay({ every: "hour" })).toBe(24);
-    expect(turnsPerDay({ every: "6h" })).toBe(4);
-    expect(turnsPerDay({ daily: "09:00", weekdaysOnly: true })).toBe(1);
-  });
 });

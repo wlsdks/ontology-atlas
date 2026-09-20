@@ -107,3 +107,47 @@ describe('consistency pass', () => {
     expect(result.stalePages).toEqual([]);
   });
 });
+
+describe('a round that names folders', () => {
+  /** Two documents in two folders, each with its own page; only the planning one went stale. */
+  const sources = [source('sources/planning/plan.md'), source('sources/legal/terms.md')];
+  const docs = [
+    wiki('wiki/plan', { title: 'Plan', sources: ['sources/planning/plan.md'], source_hash: { 'sources/planning/plan.md': HASH_A } }),
+    wiki('wiki/terms', { title: 'Terms', sources: ['sources/legal/terms.md'], source_hash: { 'sources/legal/terms.md': HASH_A } }),
+  ];
+  const hashes = new Map([
+    ['sources/planning/plan.md', HASH_B],
+    ['sources/legal/terms.md', HASH_B],
+  ]);
+
+  it('checks everything when it names no folder — what every round written before this meant', () => {
+    const result = runConsistencyPass({ sources, docs, hashes, pageTexts: new Map() });
+    expect(result.checked).toBe(2);
+    expect(result.staleSources).toEqual(['sources/legal/terms.md', 'sources/planning/plan.md']);
+  });
+
+  it('limits the check to the folders it names, by the document or by the page', () => {
+    const result = runConsistencyPass({ sources, docs, hashes, pageTexts: new Map(), paths: ['sources/planning'] });
+    expect(result.checked).toBe(1);
+    expect(result.staleSources).toEqual(['sources/planning/plan.md']);
+    expect(result.stalePages).toEqual(['wiki/plan']);
+  });
+
+  it('a folder name is a folder, not a prefix', () => {
+    const result = runConsistencyPass({ sources, docs, hashes, pageTexts: new Map(), paths: ['sources/plan'] });
+    expect(result.checked).toBe(0);
+    expect(result.staleSources).toEqual([]);
+  });
+
+  it('"the documents I wrote" leaves out what a service sent', () => {
+    const result = runConsistencyPass({
+      sources,
+      docs,
+      hashes,
+      pageTexts: new Map(),
+      ownDocumentsOnly: true,
+      fromService: new Set(['sources/legal/terms.md']),
+    });
+    expect(result.staleSources).toEqual(['sources/planning/plan.md']);
+  });
+});

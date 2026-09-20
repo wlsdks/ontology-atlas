@@ -60,6 +60,16 @@ describe('round scope', () => {
     expect(judge({ request: execute, round: service }).decision).toBe('reject');
   });
 
+  it('matches the connector by its whole name, separators and all', () => {
+    // A connector attached as `notion__staging` owns `mcp__notion__staging__…`; reading the
+    // server name up to the first `__` called it `notion` and refused its every tool.
+    const staging = { kind: 'service' as const, connectorName: 'notion__staging' };
+    const search = request({ toolName: 'mcp__notion__staging__search', toolKind: 'other' });
+    expect(judge({ request: search, round: staging })).toEqual({ decision: 'allow', note: 'call mcp__notion__staging__search' });
+    // And a sibling connector is still somebody else's.
+    expect(judge({ request: request({ toolName: 'mcp__notion__search', toolKind: 'other' }), round: staging }).decision).toBe('reject');
+  });
+
   it('refuses any other connector, and a connector for a consistency round', () => {
     const other = request({ toolName: 'mcp__notion__search', toolKind: 'other' });
     expect(judge({ request: other, round: service })).toEqual({ decision: 'reject', reason: 'mcp__notion__search' });
@@ -108,6 +118,31 @@ describe('round scope', () => {
     const run = request({ filePath: `${VAULT}/sources/plan.md`, toolKind: 'execute' });
     expect(judge({ request: run, round: service }).decision).toBe('reject');
     expect(judge({ request: request({ toolName: 'Bash', toolKind: 'execute' }) }).decision).toBe('reject');
+  });
+
+  it('allows every connector the round\'s places name, and no other', () => {
+    /*
+     * Spec §3.2: one round may watch a Slack room and a Confluence space in one pass, so the
+     * allow-list is the union of its places. A third connector is still "other connector".
+     */
+    const both = { kind: 'service' as const, connectorNames: ['slack', 'confluence'] };
+    expect(judge({ request: request({ toolName: 'mcp__slack__search' }), round: both }))
+      .toEqual({ decision: 'allow', note: 'call mcp__slack__search' });
+    expect(judge({ request: request({ toolName: 'mcp__confluence__search' }), round: both }))
+      .toEqual({ decision: 'allow', note: 'call mcp__confluence__search' });
+    expect(judge({ request: request({ toolName: 'mcp__jira__search' }), round: both }))
+      .toEqual({ decision: 'reject', reason: 'mcp__jira__search' });
+    // A mutating call is still refused whichever of its places it belongs to.
+    expect(judge({ request: request({ toolName: 'mcp__slack__post_message', toolKind: 'edit' }), round: both }).decision)
+      .toBe('reject');
+  });
+
+  it('a connector whose own name holds the separator owns its tools', () => {
+    const staging = { kind: 'service' as const, connectorNames: ['notion__staging'] };
+    expect(judge({ request: request({ toolName: 'mcp__notion__staging__search' }), round: staging }))
+      .toEqual({ decision: 'allow', note: 'call mcp__notion__staging__search' });
+    // And the shorter name is a different server, not this one.
+    expect(judge({ request: request({ toolName: 'mcp__notion__search' }), round: staging }).decision).toBe('reject');
   });
 
   it('a note names its effect first, so the ledger can list writes apart from reads', () => {

@@ -240,6 +240,7 @@ const INTENTIONALLY_ENGLISH = new Set([
   'settings.ai.providerGemini', // a product name
   'settings.ai.localBaseUrlPlaceholder', // a URL
   'download.heroMacSilicon', // Apple's own chip name — the row beside it reads Intel
+  'library.rounds.sheet.wherePlaceholder', // example locations, spelled the way each service spells them
 ]);
 
 /**

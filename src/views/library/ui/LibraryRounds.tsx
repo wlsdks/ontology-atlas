@@ -2,10 +2,11 @@
 
 import { Clock3, Pause, Play, Plus, Trash2, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import type { RoundPassEntry, RoundRecord } from "@/entities/library-round";
-import { cadenceKey } from "@/entities/library-round";
+import { cadenceKey, cadenceMinutes, roundPlaceLabels, roundPlaces } from "@/entities/library-round";
+import { useLocalVault } from "@/entities/vault-session";
 import { Link, useRouter } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
@@ -15,7 +16,9 @@ import { PAGE_FRAME_FORM } from "@/shared/ui/page-frame";
 import { Button, Chip, EmptyState, IconButton, InfoHint, RowButton, useToast } from "@/shared/ui";
 
 import { useLibraryRounds } from "../lib/library-rounds-context";
+import { capitalize } from "../lib/round-presentation";
 import { lastOutcome, lastPass, nextRound, sinceSpan, summarizeSince } from "../lib/round-presentation";
+import { useVaultFolders } from "../lib/use-vault-folders";
 import { NewRoundSheet } from "./parts/NewRoundSheet";
 import { EmptyShape } from "./parts/EmptyShape";
 import { RoundsLedger } from "./parts/RoundsLedger";
@@ -41,9 +44,13 @@ export function LibraryRounds() {
   const router = useRouter();
   const toast = useToast();
   const runner = useLibraryRounds();
+  const vault = useLocalVault();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sheetNonce, setSheetNonce] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Read from disk only while the sheet is up: the folder list is the sheet's, and the
+  // architecture rule forbids building a model for a surface nobody is looking at.
+  const folders = useVaultFolders(sheetOpen);
 
   const time = useMemo(() => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }), [locale]);
   const dayTime = useMemo(() => new Intl.DateTimeFormat(locale, { weekday: "short", hour: "2-digit", minute: "2-digit" }), [locale]);
@@ -62,6 +69,26 @@ export function LibraryRounds() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const span = useMemo(() => sinceSpan(runnerState, new Date()), [runnerState, todayKey]);
   const summary = useMemo(() => summarizeSince(entries, span), [entries, span]);
+  /*
+   * **A running round that is no longer in the index is not running.** Measured in the browser
+   * on 2026-09-21: removing a round mid-pass left the header saying "running now · <name>" for
+   * a round that was gone. The runner now ends that pass (`stopPassFor`), and this is the
+   * second half of the same promise: what the screen says is derived from the rounds that
+   * exist, so no race can leave a ghost on it.
+   */
+  const running = runner?.running && rounds.some((round) => round.id === runner.running?.roundId) ? runner.running : null;
+  /** Slug → the title a person knows the page by; a page that is gone keeps its slug. */
+  const pageTitles = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const doc of vault.manifest?.docs ?? []) {
+      if (doc.title) map.set(doc.slug, doc.title);
+    }
+    return map;
+  }, [vault.manifest]);
+  const titleFor = useCallback(
+    (slug: string) => pageTitles.get(slug.replace(/\.md$/, "")) ?? slug.replace(/^wiki\//, "").replace(/\.md$/, ""),
+    [pageTitles],
+  );
   const last = lastPass(entries);
   const next = nextRound(rounds);
   const allPaused = rounds.length > 0 && rounds.every((round) => !round.enabled);
@@ -76,8 +103,25 @@ export function LibraryRounds() {
     const at = "daily" in round.cadence ? round.cadence.daily : "";
     if (key === "hour") return t("cadence.hour");
     if (key === "6h") return t("cadence.6h");
+    if (key === "minutes") return t("cadence.everyMinutes", { count: cadenceMinutes(round.cadence) ?? 0 });
+    if (key === "hours") return t("cadence.everyHours", { count: (cadenceMinutes(round.cadence) ?? 60) / 60 });
     if (key === "daily") return t("cadence.daily", { time: at });
     return t("cadence.weekdays", { time: at });
+  };
+
+  /**
+   * The row's second line: **how often**, then **where**. The column exists to say name,
+   * cadence and next run (spec §9.1), so the cadence leads and the places take the
+   * truncation — with the places first, a row with two connectors cut off the one thing the
+   * column is for. A service is named the way its own row names it, capitalised.
+   */
+  const placeWords = (round: RoundRecord) => {
+    const labels = roundPlaceLabels(roundPlaces(round)).map((label) =>
+      label.includes(" · ") ? label.split(" · ").map(capitalize).join(" · ") : capitalize(label),
+    );
+    return labels.length > 0
+      ? t("index.subtitle", { cadence: cadenceWords(round), places: labels.join(" · ") })
+      : cadenceWords(round);
   };
 
   const dueLabel = (iso: string) => {
@@ -110,10 +154,16 @@ export function LibraryRounds() {
 
   const save = async (round: RoundRecord) => {
     if (!runner) return false;
-    const ok = await runner.save(round);
+    /*
+     * **The toast says what happened, not what usually happens.** "Running it once now" was
+     * printed for every consistency round, but the runner starts that first pass only when
+     * nothing else is running — so a round saved while another pass was in flight was promised
+     * a run that never came, and the person watched a ledger that stayed empty.
+     */
+    const { ok, startedNow } = await runner.save(round);
     if (ok) {
       toast.show(
-        t(round.kind === "consistency" ? "sheet.savedRunningNow" : "sheet.saved", { name: round.name, time: dueLabel(round.nextDueAt) }),
+        t(startedNow ? "sheet.savedRunningNow" : "sheet.saved", { name: round.name, time: dueLabel(round.nextDueAt) }),
         "success",
       );
       setSelectedId(round.id);
@@ -192,8 +242,8 @@ export function LibraryRounds() {
 
   /* ---- The workbench --------------------------------------------------------------------- */
 
-  const headerLine = runner.running
-    ? t("header.running", { name: runner.running.roundName })
+  const headerLine = running
+    ? t("header.running", { name: running.roundName })
     : allPaused
       ? t("header.paused")
       : next
@@ -206,7 +256,7 @@ export function LibraryRounds() {
       tabIndex={-1}
       data-testid="library-rounds"
       data-rounds-state={rounds.length === 0 ? "empty" : "ready"}
-      data-rounds-running={runner.running ? runner.running.phase : undefined}
+      data-rounds-running={running ? running.phase : undefined}
       className="topology-ui-scale relative flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)] max-lg:flex-col"
     >
       <aside
@@ -251,7 +301,7 @@ export function LibraryRounds() {
         <ul className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto px-1 pb-3 pt-2" data-testid="library-rounds-list">
           {rounds.map((round) => {
             const word = outcomeWord(round);
-            const isRunning = runner.running?.roundId === round.id;
+            const isRunning = running?.roundId === round.id;
             return (
               <li key={round.id}>
                 <RowButton
@@ -279,7 +329,7 @@ export function LibraryRounds() {
                       </span>
                     </span>
                     <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
-                      {cadenceWords(round)} · {isRunning ? t("state.running") : round.enabled ? t("state.on") : t("state.paused")}
+                      {placeWords(round)} · {isRunning ? t("state.running") : round.enabled ? t("state.on") : t("state.paused")}
                     </span>
                   </span>
                   <span className={badgeClass({ shape: "micro", className: cn("border shrink-0", toneClass[word.tone]) })}>{word.text}</span>
@@ -299,7 +349,7 @@ export function LibraryRounds() {
                 <span className="text-[color:var(--color-text-primary)]">{t("header.rounds", { count: rounds.length })}</span>
                 {last ? <> · {t("header.lastPass", { time: dueLabel(last.endedAt) })}</> : null}
                 {" · "}
-                <span className={runner.running ? "text-[color:var(--color-indigo-text-soft)]" : undefined}>{headerLine}</span>
+                <span className={running ? "text-[color:var(--color-indigo-text-soft)]" : undefined}>{headerLine}</span>
               </p>
               {selected ? (
                 <div className="flex items-center gap-1.5">
@@ -307,7 +357,7 @@ export function LibraryRounds() {
                     variant="outline"
                     size="sm"
                     onClick={() => runner.runNow(selected.id)}
-                    disabled={runner.running !== null}
+                    disabled={running !== null}
                     data-testid="library-rounds-run-now"
                     aria-label={t("runNowNamed", { name: selected.name })}
                     className="atlas-touch-floor"
@@ -349,7 +399,7 @@ export function LibraryRounds() {
             />
           ) : (
             <>
-              <SinceYouLeft span={span} summary={summary} locale={locale} onOpenPage={openPage} />
+              <SinceYouLeft span={span} summary={summary} locale={locale} onOpenPage={openPage} titleFor={titleFor} />
               <div className="flex flex-col gap-3">
                 <h2 className="text-body-lg leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
                   {t("ledger.title")}
@@ -359,6 +409,8 @@ export function LibraryRounds() {
                   entries={shownEntries}
                   locale={locale}
                   onOpenPage={openPage}
+                  titleFor={titleFor}
+                  running={running}
                   nextDueLabel={next ? dueLabel(next.nextDueAt) : null}
                   allPaused={allPaused}
                 />
@@ -375,7 +427,9 @@ export function LibraryRounds() {
         connectors={runner.connectors.map((connector) => ({ ...connector, name: connector.name }))}
         agentReady={runner.agentReady}
         onSave={save}
-        existingCount={rounds.length}
+        folders={folders}
+        existingNames={rounds.map((round) => round.name)}
+        passRunning={running !== null}
       />
     </main>
   );

@@ -13,7 +13,7 @@ import type { Page } from "@playwright/test";
  * cannot reach `.ontology-atlas/rounds.json` — which is the whole point of these specs.
  */
 
-export const VAULT_ROOT = "/Users/probe/Ontology Atlas/launch";
+const VAULT_ROOT = "/Users/probe/Ontology Atlas/launch";
 const HASH_A = "a".repeat(64);
 
 function wikiPage(title: string, source: string): string {
@@ -171,6 +171,13 @@ export async function installDesktopBridge(page: Page, options: { seedRounds: bo
             return null;
           case "connector_secret_status":
             return { present: false };
+          /*
+           * The app asks this on arrival. Without it the bridge rejected and the Next dev
+           * overlay carried "1 Issue" in every screenshot of this screen — a fault of the
+           * fixture that read, in a capture, as a fault of the page.
+           */
+          case "secret_status":
+            return { present: false, account: null };
           default:
             return undefined;
         }

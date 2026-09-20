@@ -1,6 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import { seedFirstRunSeen } from "./first-run-seed";
+import { installDesktopBridge, openRounds } from "./rounds-desktop-bridge";
 
 /**
  * **The Rounds tab draws what the ledger holds, and a round is registered under a stated scope.**
@@ -15,199 +16,6 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * WKWebView running this same static export, so answering the commands the walk calls from a map
  * exercises the real handle, the real store, and the real presentation.
  */
-
-const VAULT_ROOT = "/Users/probe/Ontology Atlas/launch";
-const HASH_A = "a".repeat(64);
-
-function wikiPage(title: string, source: string): string {
-  return [
-    "---",
-    `title: ${title}`,
-    "created_by: agent:claude",
-    "compiled_at: 2026-09-15T09:00:00Z",
-    "sources:",
-    `  - ${source}`,
-    "source_hash:",
-    `  ${source}: ${HASH_A}`,
-    "status: draft",
-    `summary: ${title}.`,
-    "---",
-    "",
-    "## Summary",
-    "",
-    `${title} [[src:${source}#p1]].`,
-    "",
-    "## Facts",
-    "",
-    `- A fact [[src:${source}#p1]]`,
-    "",
-    "## Decisions",
-    "",
-    "## Open questions",
-    "",
-    "## Not in sources",
-    "",
-  ].join("\n");
-}
-
-/** Timestamps are built at page time so "today" and "yesterday" are the runner's, not the author's. */
-const SEED_SCRIPT = `
-  const day = (offsetDays, h, m, s = 0) => { const d = new Date(); d.setDate(d.getDate() + offsetDays); d.setHours(h, m, s, 0); return d; };
-  const iso = (d) => d.toISOString();
-  const rounds = { v: 1, rounds: [
-    { id: "r-consistency", name: "Pages still match", kind: "consistency", cadence: { every: "hour" }, enabled: true, onStale: "redraft", createdAt: iso(day(-3, 9, 0)), lastPassAt: iso(day(0, 9, 0)), nextDueAt: iso(day(1, 9, 0)) },
-    { id: "r-confluence", name: "Confluence", kind: "service", cadence: { daily: "07:30", weekdaysOnly: true }, enabled: true, connectorId: "c1", connectorName: "confluence", query: "pages changed in the last day", limit: 20, createdAt: iso(day(-3, 9, 0)), lastPassAt: iso(day(0, 7, 30)), nextDueAt: iso(day(1, 7, 30)) },
-  ], lastAway: { from: iso(day(-1, 18, 30)), to: iso(day(0, 9, 2)) } };
-  const held = (id, d) => ({ v: 1, id, roundId: "r-consistency", roundName: "Pages still match", kind: "consistency", startedAt: iso(d), endedAt: iso(new Date(d.getTime() + 3000)), outcome: "held", checked: 4, stale: [], written: [], refused: [], called: [], agentTurns: 0, summary: "", trigger: "clock" });
-  const ledger = [
-    held("p1", day(-1, 19, 0)),
-    held("p2", day(-1, 20, 0)),
-    { v: 1, id: "gap1", startedAt: iso(day(0, 1, 12)), endedAt: iso(day(0, 7, 28)), outcome: "asleep", checked: 0, stale: [], written: [], refused: [], called: [], agentTurns: 0, summary: "", trigger: "clock" },
-    { v: 1, id: "p3", roundId: "r-confluence", roundName: "Confluence", kind: "service", startedAt: iso(day(0, 7, 30)), endedAt: iso(day(0, 7, 33)), outcome: "redrafted", checked: 4, stale: [], written: ["sources/onboarding.md", "wiki/onboarding.md"], refused: ["mcp__confluence__create_page"], called: ["mcp__confluence__search"], agentTurns: 1, summary: "", trigger: "catch-up" },
-    { v: 1, id: "p4", roundId: "r-consistency", roundName: "Pages still match", kind: "consistency", startedAt: iso(day(0, 8, 0)), endedAt: iso(day(0, 8, 0, 4)), outcome: "stale", checked: 4, stale: ["wiki/design-system"], written: [], refused: [], called: [], agentTurns: 0, summary: "", trigger: "catch-up" },
-    held("p5", day(0, 9, 0)),
-  ];
-  files[".ontology-atlas/rounds.json"] = JSON.stringify(rounds, null, 2) + "\\n";
-  files[".ontology-atlas/rounds-ledger.jsonl"] = ledger.map((e) => JSON.stringify(e)).join("\\n") + "\\n";
-`;
-
-const VAULT: Record<string, string> = {
-  "project.md": ["---", "kind: project", "slug: launch", "title: Launch", "---", "", "# Launch", ""].join("\n"),
-  "sources/payments-api.md": "---\nsource_url: https://example.atlassian.net/wiki/1\n---\n# Payments API\n",
-  "sources/design-system.pdf": "%PDF-1.7 design system\n",
-  "sources/onboarding.md": "---\nsource_url: https://example.atlassian.net/wiki/3\n---\n# Onboarding\n",
-  "wiki/payments-api.md": wikiPage("Payments API", "sources/payments-api.md"),
-  "wiki/design-system.md": wikiPage("Design system", "sources/design-system.pdf"),
-  "wiki/onboarding.md": wikiPage("Onboarding", "sources/onboarding.md"),
-  ".ontology-atlas/.gitignore": "*\n",
-  ".ontology-atlas/connectors.json": JSON.stringify({
-    version: 1,
-    connectors: [
-      { id: "c1", name: "confluence", transport: "http", args: [], url: "https://mcp.atlassian.com/v1/mcp", env: [], headers: [], enabled: true },
-    ],
-  }),
-};
-
-const RUNTIME = {
-  id: "claude-code",
-  label: "Claude Agent",
-  description: "",
-  website: null,
-  license: null,
-  verified: true,
-  icon: null,
-  brandInk: null,
-  launchKind: "npx",
-  state: "ready",
-  cliPath: "/opt/homebrew/bin/claude",
-  adapterPath: null,
-  adapterPackage: "@agentclientprotocol/claude-agent-acp",
-  isolated: true,
-};
-
-async function installDesktopBridge(page: Page, options: { seedRounds: boolean }) {
-  await page.addInitScript(
-    ({ files, runtime, rootPath, seed }) => {
-      const MTIME = 1_757_000_000_000;
-      const encoder = new TextEncoder();
-      if (seed) {
-        new Function("files", seed)(files);
-      }
-      const listDirectory = (relative: string) => {
-        const prefix = relative ? `${relative}/` : "";
-        const seen = new Map<string, "file" | "directory">();
-        for (const path of Object.keys(files)) {
-          if (!path.startsWith(prefix)) continue;
-          const rest = path.slice(prefix.length);
-          if (!rest) continue;
-          const slash = rest.indexOf("/");
-          if (slash < 0) seen.set(rest, "file");
-          else seen.set(rest.slice(0, slash), "directory");
-        }
-        return [...seen].map(([name, kind]) => ({ name, kind }));
-      };
-      const answer = (command: string, args: Record<string, unknown> = {}): unknown => {
-        const relative = String(args.relativePath ?? "");
-        switch (command) {
-          case "pick_vault_directory":
-            return rootPath;
-          case "list_vault_directory":
-            return listDirectory(relative);
-          case "vault_path_exists":
-            if (args.kind === "directory") {
-              return relative === "" || Object.keys(files).some((path) => path.startsWith(`${relative}/`));
-            }
-            return relative in files;
-          case "read_vault_text_file":
-            if (!(relative in files)) throw new Error(`missing ${relative}`);
-            return { text: files[relative], lastModified: MTIME };
-          case "read_vault_binary_file":
-            if (!(relative in files)) throw new Error(`missing ${relative}`);
-            return { bytes: [...encoder.encode(files[relative])], lastModified: MTIME };
-          case "write_vault_text_file":
-            files[relative] = String(args.content ?? "");
-            return null;
-          case "create_vault_text_file":
-            files[relative] = String(args.content ?? "");
-            return true;
-          case "ensure_vault_directory":
-            return null;
-          case "vault_fingerprint":
-            return {
-              entries: Object.entries(files)
-                .filter(([path]) => path.endsWith(".md") || path.startsWith("sources/"))
-                .map(([path, body]) => ({ relativePath: path, lastModified: MTIME, size: encoder.encode(body).length })),
-              truncated: false,
-              prunedDirs: [],
-            };
-          case "hash_vault_files":
-            return (args.relativePaths as string[]).map((relativePath) => ({ relativePath, sha256: "a".repeat(64) }));
-          case "acp_detect_runtimes":
-            return [runtime];
-          case "mcp_bundled_server":
-            return { path: "/Applications/Ontology Atlas.app/mcp", available: true, reason: null };
-          case "discover_source_candidates":
-            return { candidates: [], truncated: false, unreadableRoots: [] };
-          case "discover_mcp_connectors":
-            return { servers: [], problems: [] };
-          case "start_vault_watch":
-            return null;
-          case "connector_secret_status":
-            return { present: false };
-          default:
-            return undefined;
-        }
-      };
-      (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {
-        transformCallback: (cb: unknown) => cb,
-        invoke: (command: string, args?: Record<string, unknown>) => {
-          try {
-            const value = answer(command, args ?? {});
-            return value === undefined ? Promise.reject(new Error(`no stub for ${command}`)) : Promise.resolve(value);
-          } catch (error) {
-            return Promise.reject(error);
-          }
-        },
-      };
-      (window as unknown as { isTauri?: boolean }).isTauri = true;
-      (window as unknown as { __roundsStubFiles?: Record<string, string> }).__roundsStubFiles = files;
-    },
-    { files: { ...VAULT }, runtime: RUNTIME, rootPath: VAULT_ROOT, seed: options.seedRounds ? SEED_SCRIPT : "" },
-  );
-}
-
-async function openRounds(page: Page) {
-  await page.goto("/en/docs/");
-  await page.waitForLoadState("networkidle");
-  const door = page.getByRole("button", { name: /^Open my folder/ });
-  await door.first().waitFor({ timeout: 25_000 });
-  await door.first().click();
-  await page.getByRole("heading", { name: "Map", level: 1 }).waitFor({ timeout: 30_000 });
-  await page.getByTestId("app-nav-rail").getByRole("link", { name: "Library" }).click();
-  await page.getByTestId("library-workspace-rounds").waitFor({ timeout: 30_000 });
-  await page.getByTestId("library-workspace-rounds").click();
-  await page.getByTestId("library-rounds").waitFor({ timeout: 30_000 });
-}
 
 test.describe("Library rounds", () => {
   test("the morning card and the axis draw the seeded night", async ({ page }) => {
@@ -225,7 +33,8 @@ test.describe("Library rounds", () => {
     await expect(since).toContainText("1 redraft waits for you");
     await expect(since).toContainText("1 request was refused");
     await expect(since).toContainText("3 passes held");
-    await expect(since.getByRole("button", { name: "Open design-system in Wiki" })).toBeVisible();
+    // The chip names the page the way the person named it, not the file it lives in.
+    await expect(since.getByRole("button", { name: "Open Design system in Wiki" })).toBeVisible();
 
     const ledger = page.getByTestId("library-rounds-ledger");
     await expect(ledger.locator("[data-outcome='held']")).toHaveCount(3);
@@ -267,7 +76,9 @@ test.describe("Library rounds", () => {
 
     // The sentence above the controls says what will happen, and follows every press.
     const readback = page.getByTestId("library-rounds-readback");
-    await expect(readback).toHaveText("Every hour, check that every page still matches its originals, and rewrite a page that has gone stale. It runs once as soon as you save.");
+    await expect(readback).toHaveText(
+      "Every hour, check that every page still matches its originals, and redraft the stale ones. It runs once as soon as you save.",
+    );
 
     const scope = page.getByTestId("library-rounds-scope");
     await expect(scope).toContainText("read this folder and its map");
@@ -277,19 +88,25 @@ test.describe("Library rounds", () => {
 
     // Mark only: no write at all, and the cost line says so.
     await page.getByTestId("library-rounds-on-stale").getByRole("radio", { name: "Mark it" }).click();
-    await expect(readback).toContainText("and only mark a page that has gone stale");
+    await expect(readback).toContainText("and only mark the stale ones");
     await expect(scope).not.toContainText("write pages under wiki/");
     await expect(page.getByTestId("library-rounds-cost")).toContainText("No agent turn");
 
-    // The service kind offers the attached connector and states the daily bill.
-    await page.getByTestId("library-rounds-kind").getByRole("radio", { name: "Documents from a service" }).click();
-    await expect(page.getByTestId("library-rounds-connector").getByRole("radio", { name: "Confluence" })).toBeVisible();
-    await expect(scope).toContainText("call Confluence to read, never to write there");
+    /*
+     * Naming a service place is what makes this a service round — the sheet never asks which
+     * kind it is (spec §3.2), so the daily bill and the connector sentence follow the place.
+     */
+    await page.getByTestId("library-rounds-add-place").click();
+    await page.getByTestId("library-rounds-add-menu").getByRole("menuitem", { name: "Confluence" }).click();
+    await expect(scope).toContainText("ask Confluence to read, never to write there");
     await expect(page.getByTestId("library-rounds-cost")).toContainText("about 24 a day");
-    await page.getByTestId("library-rounds-cadence").getByRole("radio", { name: "Weekdays" }).click();
+
+    await page.getByTestId("library-rounds-cadence-unit").getByRole("radio", { name: "Day" }).click();
+    await page.getByTestId("library-rounds-cadence-day").getByRole("radio", { name: "Weekdays" }).click();
     await expect(page.getByTestId("library-rounds-time")).toBeVisible();
-    await expect(readback).toContainText("On weekdays at 09:00, read what Confluence sent again");
-    await page.screenshot({ path: ".claude/shots-2026-09-20/rounds-sheet-readback.png" });
+    await expect(readback).toContainText("On weekdays at 09:00");
+    await expect(readback).toContainText("Confluence");
+    await page.screenshot({ path: ".claude/shots-2026-09-21/rounds-sheet-readback.png" });
     await expect(page.getByTestId("library-rounds-cost")).toContainText("about 1 a day");
 
     await page.getByTestId("library-rounds-allow").click();

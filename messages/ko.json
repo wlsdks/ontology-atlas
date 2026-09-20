@@ -850,9 +850,9 @@
         "title": "전체를 점검하는 곳이에요",
         "body": "글이 늘어나면 어디에도 안 이어진 글, 오래 손 안 댄 글이 생겨요. 여기가 그런 것들을 한 번에 찾아줘요. 무엇부터 정리할지 모를 때 여기부터 보면 돼요."
       },
-      "insightsToday": {
-        "title": "오늘 손볼 것부터",
-        "body": "지금 고치면 가장 도움이 되는 몇 개를 맨 위에 올려 둬요. 하나를 눌러 지도에서 확인하거나 바로 고치러 갈 수 있어요."
+      "insightsHeadline": {
+        "title": "맨 윗줄이 오늘의 수예요",
+        "body": "새로 알아야 할 것과 확인 못 한 것이 각각 몇 개인지 먼저 알려 주고, 아래 카드들이 그게 무엇인지 하나씩 이름으로 펴 줘요."
       },
       "projectsWhat": {
         "title": "제품 단위로 묶어 보는 곳이에요",
@@ -1188,6 +1188,7 @@
         "evidenceDefinition": "의미 주장을 뒷받침하는 코드·문서: 그 근거가 정의와 업무 경계까지 뒷받침하는지 확인해야 해요",
         "nodeNumberTerm": "동그라미 위 숫자",
         "nodeNumberDefinition": "그 안에 담긴 역량·요소를 더한 수: 도메인·문서는 빼고 세니 화면 위쪽 「개념」 총수보다 작아요",
+        "sharedConceptNote": "여러 도메인이 함께 쓰는 개념은 그것을 품은 도메인에서 한 번만 셉니다",
         "criteria": {
           "project": "하나의 제품 또는 독립적으로 변경할 수 있는 시스템입니다. 목적과 경계를 적습니다.",
           "domain": "고유한 업무 언어와 경계를 가진 비즈니스 책임입니다. 폴더나 팀 이름만으로는 충분하지 않습니다.",
@@ -2279,7 +2280,7 @@
       "surfaceSources": "원문",
       "surfaceWikiPages": "위키",
       "surfacePlanOnly": "요소가 아직 없는 도메인 {count}개",
-      "surfaceRelations": "관계 {count}개",
+      "surfaceRelations": "이 개념들 사이 관계 {count}개",
       "surfaceOntologyEmpty": "아직 도메인도 역량도 없습니다. 지도에서 첫 도메인을 만들어 보세요.",
       "surfaceLibraryEmpty": "이 폴더에 원문도 위키 페이지도 없습니다.",
       "surfaceHarnessHolds": "에이전트가 따르는 지침·구조·센서. 폴더의 소스 트리에서 읽어 맥 앱에서 보입니다.",
@@ -3158,6 +3159,7 @@
       "alreadyTyped": "이미 지도에 올라온 문서 {count}개는 그대로 둬요.",
       "runtimeSkills": "에이전트가 쓰는 스킬 파일 {count}개는 건드리지 않아요. 그쪽 프로그램이 관리하는 파일이에요.",
       "agentPointers": "에이전트 안내 파일 {count}개(AGENTS.md, CLAUDE.md)는 건드리지 않아요. 이 폴더를 어떻게 쓰는지 에이전트에게 알려 주는 파일이라 개념이 아니에요.",
+      "libraryFiles": "자료실 파일 {count}개(sources/, wiki/)는 건드리지 않아요. 원문은 받은 그대로 두고, 위키 문서는 Atlas가 이미 그 원문에 대해 쓴 글이에요.",
       "confirm": "지도 만들기",
       "cancel": "닫기",
       "errorPrefix": "저장하지 못했어요:",
@@ -4729,7 +4731,7 @@
       "limit": {
         "title": "이 도구의 사용 한도에 닿았어요",
         "hint": "앱의 문제가 아니라 도구 쪽 요금제의 한도예요. 「자세히」에 풀리는 시각이 적혀 있으면 그때 「다시 시도」를 누르고, 그 전에는 아래에서 다른 도구를 골라 이어 가세요.",
-      "hintOnlyTool": "앱의 문제가 아니라 도구 쪽 요금제의 한도인데, 지금 연결된 도구가 이것 하나예요. 「자세히」에 풀리는 시각이 적혀 있으면 그때 「다시 시도」를 눌러 주세요. 「에이전트」 화면에서 도구를 하나 더 연결해 두면 이럴 때 이어 갈 곳이 생깁니다."
+        "hintOnlyTool": "앱의 문제가 아니라 도구 쪽 요금제의 한도인데, 지금 연결된 도구가 이것 하나예요. 「자세히」에 풀리는 시각이 적혀 있으면 그때 「다시 시도」를 눌러 주세요. 「에이전트」 화면에서 도구를 하나 더 연결해 두면 이럴 때 이어 갈 곳이 생깁니다."
       },
       "auth": {
         "title": "이 앱 몫으로 남은 옛 로그인이 가로막고 있어요",
@@ -4745,7 +4747,8 @@
       },
       "launch": {
         "title": "도구를 띄우지 못했어요",
-        "hint": "이 도구가 지금 어떤 상태인지 「에이전트」에서 볼 수 있어요. 아래 버튼으로 바로 열어요.", "door": "에이전트 열기"
+        "hint": "이 도구가 지금 어떤 상태인지 「에이전트」에서 볼 수 있어요. 아래 버튼으로 바로 열어요.",
+        "door": "에이전트 열기"
       },
       "network": {
         "title": "바깥과 연결되지 않았어요",
@@ -4933,6 +4936,7 @@
     "restore-untracked": "아직 한 번도 커밋하지 않은 문서라 돌아갈 예전 내용이 없어요. 필요 없으면 파일을 직접 지워 주세요.",
     "restore-source-missing": "그 커밋에는 이 문서가 없어요. 문서가 그 뒤에 만들어졌거나 다른 이름이었을 수 있어요.",
     "restore-identity-mismatch": "그 시점 문서의 신원(uid·slug·merged_uids)이 지금 문서와 달라서 되돌리지 않았어요. 그대로 되돌리면 다른 문서의 링크가 끊길 수 있어요. 본문만 옮기려면 그 시점 내용을 보고 직접 고쳐 주세요.",
+    "restore-identity-check-failed": "디스크에 있는 이 문서를 읽지 못해서, 같은 문서가 맞는지 확인하지 못했어요. 아무것도 되돌리지 않았어요. 파일을 확인한 뒤 다시 시도해 주세요.",
     "restore-path-invalid": "이 문서 경로는 폴더 안을 가리키지 않아서 건드리지 않았어요.",
     "restore-source-invalid": "커밋 표시가 올바르지 않아 되돌리지 않았어요.",
     "git-restore-failed": "문서를 되돌리지 못했어요. 문서는 바뀌지 않았어요.",
@@ -6012,7 +6016,11 @@
         "hourShort": "매시간",
         "6hShort": "6시간마다",
         "dailyChip": "매일",
-        "weekdaysChip": "평일"
+        "weekdaysChip": "평일",
+        "everyMinutes": "{count, number}분마다",
+        "everyHours": "{count, number}시간마다",
+        "everyMinutesShort": "{count, number}분마다",
+        "everyHoursShort": "{count, number}시간마다"
       },
       "state": {
         "on": "켜짐",
@@ -6076,10 +6084,15 @@
         "asleep": "잠듦",
         "duration": "{seconds}초",
         "heldLine": "{name} · {checked} · 유지",
-        "noAgent": "이 맥에 준비된 코딩 에이전트가 없어 다시 쓰지 못했습니다. 에이전트 화면에서 로그인한 뒤 자동 점검을 다시 돌리세요."
+        "noAgent": "이 맥에 준비된 코딩 에이전트가 없어 다시 쓰지 못했습니다. 에이전트 화면에서 로그인한 뒤 자동 점검을 다시 돌리세요.",
+        "runningNow": "{name} · {phase} · {seconds, number}초",
+        "phaseChecking": "문서 확인 중",
+        "phaseAgent": "에이전트 턴 진행 중",
+        "stopped": "도는 중에 이 자동 점검을 빼거나 멈춰서 실행이 거기서 끝났습니다."
       },
       "sheet": {
         "readbackConsistency": "{cadence} 문서가 원문과 여전히 맞는지 확인하고, 낡은 문서는 {onStale}. 저장하면 바로 한 번 돕니다.",
+        "readbackConsistencyQueued": "{cadence} 문서가 원문과 여전히 맞는지 확인하고, 낡은 문서는 {onStale}. 다른 점검이 도는 중이라 이 점검은 다음 차례에 시작합니다.",
         "readbackService": "{cadence} {service}에서 온 문서를 다시 읽고, 새 것을 가져오고, 바뀐 문서를 다시 씁니다. 실행마다 에이전트 턴 하나.",
         "readbackRedraft": "다시 씁니다",
         "readbackMark": "노랗게 표시만 합니다",
@@ -6105,7 +6118,7 @@
         "name": "이름",
         "may": "이 자동 점검이 해도 되는 일",
         "mayReadVault": "이 폴더와 지도를 읽기",
-        "mayCallConnector": "{service}를 읽기 위해 호출하기, 거기에 쓰지는 않음",
+        "mayCallConnector": "{service}에 요청해 읽기만 하기, 거기에 쓰지는 않음",
         "mayWriteSources": "sources/ 아래 파일을 더하거나 새로 고치기",
         "mayWritePages": "wiki/ 아래에 틀에 맞는 문서를 초안으로 쓰기",
         "mayNothingElse": "그 밖에는 없음. 다른 요청은 거부되고 기록에 이름이 남습니다",
@@ -6116,10 +6129,55 @@
         "cancel": "취소",
         "saved": "{time}에 처음 돕니다 · {name}",
         "savedRunningNow": "지금 한 번 돌립니다 · {name}. 다음은 {time}입니다.",
-        "saveFailed": "자동 점검을 저장하지 못했습니다: {reason}"
+        "saveFailed": "자동 점검을 저장하지 못했습니다: {reason}",
+        "places": "어디를 볼지",
+        "placeVault": "이 폴더의 문서",
+        "placeVaultAll": "폴더 전체",
+        "placeOwn": "내가 쓴 문서",
+        "placeOwnDetail": "서비스가 보내지 않은 sources/ 아래 파일",
+        "chooseFolders": "폴더 고르기",
+        "noFolders": "이 폴더에는 하위 폴더가 아직 없어서 폴더 전체를 봅니다.",
+        "addPlace": "볼 곳 더하기",
+        "addFolder": "이 폴더 안의 다른 폴더",
+        "addNoConnector": "이 폴더에 붙은 서비스가 아직 없습니다. 「에이전트」에서 붙일 수 있습니다.",
+        "removePlace": "{place} 빼기",
+        "removeFolder": "{folder} 그만 보기",
+        "where": "어디를",
+        "wherePlaceholder": "#release-room, ENG, Roadmap DB",
+        "whereAnywhere": "닿는 곳 전부",
+        "rename": "이 자동 점검 이름 바꾸기",
+        "nameAria": "자동 점검 이름",
+        "readbackServices": "<em>{cadence}</em> <em>{places}</em>에서 온 문서를 다시 읽고,",
+        "readbackFolders": " <em>{folders}</em> 아래 문서가 원문과 여전히 맞는지 확인하고,",
+        "readbackWholeFolder": " 모든 문서가 원문과 여전히 맞는지 확인하고,",
+        "readbackStaleRedraft": " 낡은 것은 <em>다시 씁니다</em>.",
+        "readbackStaleMark": " 낡은 것은 <em>표시만 합니다</em>.",
+        "readbackTurn": " 실행마다 에이전트 턴 하나.",
+        "readbackNow": " 저장하면 바로 한 번 돕니다.",
+        "readbackQueued": " 다른 점검이 도는 중이라 이 점검은 다음 차례에 시작합니다.",
+        "mayCallPlace": "{service}에 요청해 {location} 안에서 읽기만 하기, 거기에 쓰지는 않음",
+        "readbackFoldersLead": "<em>{cadence}</em> <em>{folders}</em> 아래 문서가 원문과 여전히 맞는지 확인하고,",
+        "readbackWholeFolderLead": "<em>{cadence}</em> 모든 문서가 원문과 여전히 맞는지 확인하고,",
+        "queryPlaceholderSlack": "이 채널에 지난 한 주 올라온 글",
+        "queryPlaceholderNotion": "이 데이터베이스에서 최근 바뀐 페이지",
+        "queryPlaceholderConfluence": "ENG 스페이스에서 하루 안에 바뀐 페이지",
+        "queryPlaceholderJira": "이 보드에서 이번 주 닫힌 이슈",
+        "queryPlaceholderGeneric": "최근 바뀐 문서"
       },
       "name": {
         "consistency": "문서가 원문과 맞는지"
+      },
+      "picker": {
+        "unitMinutes": "분",
+        "unitHours": "시간",
+        "unitDay": "하루",
+        "railAria": "주기 · 끌거나 화살표 키로 고르기",
+        "dayAria": "어떤 날",
+        "valueMinutes": "{count, number}분마다",
+        "valueHours": "{count, number}시간마다"
+      },
+      "index": {
+        "subtitle": "{cadence} · {places}"
       }
     }
   },

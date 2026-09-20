@@ -309,8 +309,15 @@ const BASELINE_HARD_CUTS = 0;
  * `agent-setup-verify-open`, drawn only with a launchable server and an open folder,
  * which the static OPENERS fixture cannot synthesize; `VaultAgentSetupPanel.test.tsx`
  * owns its open path.
+ * 52 -> 54 (2026-09-21): the new-round sheet's two menus — "Add a place" (the connectors
+ * this folder has attached, plus another folder) and "Choose folders" (the real folder list
+ * plus "the documents I wrote"). Both are born as `Surface`, so hard cuts stay at zero, and
+ * both live **inside** the registration Dialog: their opener is a press inside a modal that
+ * only exists behind the desktop bridge with an open folder, which the static OPENERS fixture
+ * cannot synthesize. `NewRoundSheet.test.tsx` opens both and presses through them, and
+ * `tests/e2e/library-rounds-cadence-drag.spec.ts` opens the place menu through the bridge stub.
  */
-const BASELINE_APPEARING_SURFACES = 52;
+const BASELINE_APPEARING_SURFACES = 54;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';
