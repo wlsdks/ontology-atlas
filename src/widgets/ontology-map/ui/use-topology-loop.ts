@@ -65,7 +65,7 @@ import {
   FOOTPRINT_TONE_TOKEN,
 } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
-import { centerForInsets, computeClusterFitTarget, computeDomeFitCameraTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
+import { centerForInsets, computeClusterFitTarget, computeDomeFitCameraTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen, focusLeashPx, type FocusLeashPx } from "./topology-camera-math";
 import { drawTopologyFrame, lastDrawnLabelBoxes, lastDrawnNodeAlphas, lastDrawnNodeCount, lastDrawnRelationCaptions } from "./topology-frame-draw";
 import { MOTION } from "@/shared/motion";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
@@ -1122,6 +1122,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const prevExpandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** Density gate — this frame's cluster chips (world-anchored). Hit-testing reads it. */
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
+  const lastTapRef = useRef<{ nodeId: string; at: number } | null>(null);
+  /** The focus leash in screen pixels, set at the selection dive (`focusLeashPx`). */
+  const focusLeashPxRef = useRef<FocusLeashPx | null>(null);
   /**
    * The nodes this frame did **not** draw: density-gate collapsed ones plus
    * neighbours hidden by selective ego. Pointer hit-testing reads it to exclude
@@ -3202,6 +3205,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
        // difference in entry/exit states for one condition, not a separate correction value.
        */
       const focusTokens = focusedSlug === null ? tokens : cameraTokens(tokens);
+      // The physics keeps the same leash this target is clamped to: half the
+      // free width less the edge pad, measured against the panels open now.
+      focusLeashPxRef.current =
+        focusedSlug === null
+          ? null
+          : focusLeashPx(width, height, {
+              left: focusTokens.safeInsetLeft,
+              right: focusTokens.safeInsetRight,
+              top: focusTokens.safeInsetTop,
+              bottom: focusTokens.safeInsetBottom,
+            });
       target = computeFocusCameraTarget(world, focusTokens, width, height, focusedSlug, overviewEntryScale, realmMembers, overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current));
     }
     if (!target) return;
@@ -5018,6 +5032,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
             ? domeRuntimeRef.current.fitScale
             : null,
+        focusLeashPx: focusLeashPxRef.current,
         reducedMotion: reducedMotionRef.current,
         userDrivenCamera: userDrivenCameraRef.current,
         freezeCamera,
@@ -5169,7 +5184,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         for (const id of realmExpandChainRef.current.chain) withRealm.add(id);
         effectiveExpanded = withRealm;
       }
-      const clusterState = computeTopologyClusterState(world, effectiveExpanded);
+      // The focused node's neighbours held by another parent stay drawn inside
+      // that parent's fold, so the ego graph shows every relation the panel
+      // lists. Its own children are not held: a domain's fold is its chip's job.
+      let heldOpen: Set<string> | undefined;
+      {
+        const focusId = focusedSlugRef.current;
+        const neighbors = focusId ? world.neighborMap.get(focusId) : undefined;
+        if (focusId && neighbors) {
+          for (const id of neighbors) {
+            const parentId = world.nodeById.get(id)?.parentId ?? null;
+            if (parentId === focusId) continue;
+            (heldOpen ??= new Set<string>()).add(id);
+          }
+        }
+      }
+      const clusterState = computeTopologyClusterState(world, effectiveExpanded, heldOpen);
 
       // Selective ego: when a focused node has more neighbours than the batch
       // limit, keep the top (revealedBatches × limit) by DOI and collapse the
@@ -6164,6 +6194,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
+    lastTapRef,
     expandPrefRef,
     clusterBarLabelsRef,
     clusteredIdsRef,

@@ -83,6 +83,14 @@ export type HoverAvoidRect = Rect;
 /** How far around the pointer drawn nodes and names are collected for the card to avoid. */
 const HOVER_AVOID_REACH_PX = 420;
 /**
+ * Two taps on one node inside this window are a double-click. The second tap
+ * then opens or folds that node's children (the `+N` chip's own act) and keeps
+ * the selection, instead of undoing the first tap. Measured before this existed
+ * (2026-09-19): a double-click on a domain selected it and deselected it again,
+ * leaving nothing selected and nothing opened.
+ */
+export const DOUBLE_TAP_WINDOW_MS = 350;
+/**
  * Breathing room around each disc and name. "Clear" means visibly clear, not
  * touching: without it the card's edge sat 1 px inside a disc's ring and the
  * placement still counted the corner as free (measured 2026-09-19).
@@ -267,6 +275,8 @@ export interface PointerHandlerRefs {
   selectedEdgeRef?: Ref<{ sourceId: string; targetId: string } | null>;
   /** Density gate — this frame's cluster chips (world anchors), for chip hit testing. */
   clusterChipsRef?: Ref<readonly ClusterChip[]>;
+  /** The last committed node tap, so the next one can be read as a double-click. */
+  lastTapRef?: Ref<{ nodeId: string; at: number } | null>;
   /**
    * S3 finishing polish (an S2 known gap) — the set of nodes not drawn this frame
    * (density-gate collapsed plus optionally hidden ego neighbours). Node and edge hit
@@ -459,6 +469,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
+    lastTapRef,
     clusteredIdsRef,
     hoveredClusterIdRef,
     expandPrefRef,
@@ -1514,6 +1525,24 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       return;
     }
 
+    // A double-click on a node opens its children and keeps it selected. A second
+    // quick tap on a leaf keeps the selection too: a repeated click is never an undo.
+    if (commitClick !== null && commitClick.nodeId !== null && lastTapRef) {
+      const now = performance.now();
+      const last = lastTapRef.current;
+      const nodeId = commitClick.nodeId;
+      if (last !== null && last.nodeId === nodeId && now - last.at <= DOUBLE_TAP_WINDOW_MS) {
+        lastTapRef.current = null;
+        if (focusedSlugRef.current !== nodeId) onSelect?.(nodeId);
+        const chip = clusterChipsRef?.current?.find((c) => c.parentId === nodeId);
+        if (chip && onToggleCluster) {
+          onToggleCluster(nodeId);
+          clearClusterHover();
+        }
+        return;
+      }
+      lastTapRef.current = { nodeId, at: now };
+    }
     const action = resolveClickAction(commitClick, focusedSlugRef.current);
     if (action.type === "select") {
       onSelect?.(action.nodeId);
