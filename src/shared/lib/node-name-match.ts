@@ -1,6 +1,7 @@
 /**
- * The one rule for matching node names — however many search surfaces exist, the
- * contract "type the name you see on screen and it is found" must be single.
+ * The one rule for matching a node — however many search surfaces exist, the
+ * contract "type what you see on screen and it is found" must be single. Names are
+ * the subject of most of this file; {@link idSearchText} owns the id half.
  *
  * **Why it was needed:** the map, INDEX, popovers and the studio all draw
  * locale-specific display names (frontmatter `display_ko:` / `display_en:`)
@@ -58,6 +59,12 @@ export interface NodeNameSource {
 interface NodeNameIndex {
   /** Normalised names, canonical title first. */
   readonly names: readonly string[];
+  /**
+   * The same names as written, index for index. A result row has to be able to
+   * **show** the name that carried the match, and the normalised form is
+   * lowercased, so the original is kept beside it.
+   */
+  readonly raw: readonly string[];
   /** The same names reduced to syllable initials, spaces dropped — what a chosung query is compared against. */
   readonly chosung: readonly string[];
 }
@@ -68,6 +75,7 @@ function nodeNameIndex(node: NodeNameSource): NodeNameIndex {
   const cached = NAME_INDEX.get(node);
   if (cached) return cached;
   const names: string[] = [];
+  const raw: string[] = [];
   const seen = new Set<string>();
   const push = (value: string | undefined) => {
     if (!value) return;
@@ -75,55 +83,110 @@ function nodeNameIndex(node: NodeNameSource): NodeNameIndex {
     if (key === "" || seen.has(key)) return;
     seen.add(key);
     names.push(key);
+    raw.push(value.trim());
   };
   push(node.title);
   push(node.display);
   for (const value of Object.values(node.displayLocales ?? {})) push(value);
-  const index: NodeNameIndex = { names, chosung: names.map(chosungKey) };
+  const index: NodeNameIndex = { names, raw, chosung: names.map(chosungKey) };
   NAME_INDEX.set(node, index);
   return index;
 }
 
-/** Does any name equal the query exactly (takes an already-normalised query). */
-export function nameEquals(node: NodeNameSource, normalizedQuery: string): boolean {
-  return nodeNameIndex(node).names.some((name) => name === normalizedQuery);
-}
+/**
+ * How strongly a name matched, strongest first. The ladder the palette scores on
+ * is built from this, so the order is the contract: a name that really contains
+ * what was typed beats one the Hangul rules had to reach for.
+ */
+const NAME_MATCH_TIERS = [
+  "equals",
+  "prefix",
+  "includes",
+  "hangul-prefix",
+  "hangul-includes",
+] as const;
 
-/** Does any name start with the query (takes an already-normalised query). */
-export function nameStartsWith(node: NodeNameSource, normalizedQuery: string): boolean {
-  return nodeNameIndex(node).names.some((name) => name.startsWith(normalizedQuery));
-}
+export type NameMatchTier = (typeof NAME_MATCH_TIERS)[number];
 
-/** Does any name contain the query (takes an already-normalised query). */
-export function nameIncludes(node: NodeNameSource, normalizedQuery: string): boolean {
-  return nodeNameIndex(node).names.some((name) => name.includes(normalizedQuery));
+/** Which name matched, and how. */
+export interface NameMatch {
+  /** The name as written — what a result row shows when it is not the one already on screen. */
+  readonly name: string;
+  readonly tier: NameMatchTier;
 }
 
 /**
- * The same two questions, asked the way a Hangul keyboard writes a query:
- * consonant initials alone, and the half-typed syllable every Korean word passes
- * through. `shared/lib/hangul-match` owns the rule, says why it is bounded to those
- * two states, and its test file carries the worked examples.
+ * The best match across every name this node answers to, in one pass.
  *
- * These **widen** the match, exactly as display names do; they never replace a
- * literal one. Rank them below the literal tier so a name that really contains
- * what was typed still wins.
+ * **Why one call rather than the five booleans above.** A search result that gives
+ * no sign of why it is in the list reads as a broken search. Measured on the bundled
+ * sample, 2026-09-19: 30.6% of result rows over thirty English queries carried no
+ * highlight at all, and a large share of those had matched a name the screen was not
+ * showing — the canonical `title`, or another locale's display name. Matching was
+ * widened to every name (that is this file's whole reason), but the row was never
+ * widened with it. Returning *which* name matched is what lets the row say so.
+ *
+ * It is also cheaper: the tier questions used to walk the name list up to five times.
  */
-export function nameHangulStartsWith(node: NodeNameSource, normalizedQuery: string): boolean {
-  const { names, chosung } = nodeNameIndex(node);
-  if (isChosungQuery(normalizedQuery)) {
-    const key = normalizedQuery.replace(/ /g, "");
-    return chosung.some((initials) => initials.startsWith(key));
+export function findNameMatch(node: NodeNameSource, normalizedQuery: string): NameMatch | null {
+  if (normalizedQuery === "") return null;
+  const { names, raw, chosung } = nodeNameIndex(node);
+  const chosungMode = isChosungQuery(normalizedQuery);
+  const chosungNeedle = chosungMode ? normalizedQuery.replace(/ /g, "") : "";
+  let best: NameMatch | null = null;
+  let bestRank: number = NAME_MATCH_TIERS.length;
+
+  const consider = (index: number, tier: NameMatchTier) => {
+    const rank = NAME_MATCH_TIERS.indexOf(tier);
+    if (rank >= bestRank) return;
+    bestRank = rank;
+    best = { name: raw[index] ?? names[index] ?? "", tier };
+  };
+
+  for (let i = 0; i < names.length; i += 1) {
+    const name = names[i] ?? "";
+    if (name === normalizedQuery) {
+      consider(i, "equals");
+      break; // Nothing outranks an exact match.
+    }
+    if (name.startsWith(normalizedQuery)) {
+      consider(i, "prefix");
+      continue;
+    }
+    if (name.includes(normalizedQuery)) {
+      consider(i, "includes");
+      continue;
+    }
+    if (chosungMode) {
+      const initials = chosung[i] ?? "";
+      if (initials.startsWith(chosungNeedle)) consider(i, "hangul-prefix");
+      else if (initials.includes(chosungNeedle)) consider(i, "hangul-includes");
+      continue;
+    }
+    if (hangulStartsWith(name, normalizedQuery)) consider(i, "hangul-prefix");
+    else if (hangulIncludes(name, normalizedQuery)) consider(i, "hangul-includes");
   }
-  return names.some((name) => hangulStartsWith(name, normalizedQuery));
+
+  return best;
 }
 
-/** Does any name contain the query, read the Hangul-aware way. */
-export function nameHangulIncludes(node: NodeNameSource, normalizedQuery: string): boolean {
-  const { names, chosung } = nodeNameIndex(node);
-  if (isChosungQuery(normalizedQuery)) {
-    const key = normalizedQuery.replace(/ /g, "");
-    return chosung.some((initials) => initials.includes(key));
-  }
-  return names.some((name) => hangulIncludes(name, normalizedQuery));
+/**
+ * The part of an id a query is allowed to match, or null when nothing is.
+ *
+ * Node ids are `<kind>:<slug>`. The kind half is not meaning anybody searched for —
+ * every element carries it — so only the slug is offered. Measured 2026-09-19 on the
+ * bundled sample: typing the word "element" returned twenty palette rows and every
+ * one of them was that prefix. A query containing a colon is someone pasting a real
+ * id, and for that the whole id answers.
+ *
+ * It lives here rather than beside the palette because the map's INDEX filter and the
+ * docs tree ask the same question, and a person typing into one of the three boxes on
+ * a screen should not get three different answers.
+ */
+export function idSearchText(id: string, normalizedQuery: string): string | null {
+  if (normalizedQuery.includes(":")) return id;
+  const separator = id.indexOf(":");
+  if (separator === -1) return id;
+  const slug = id.slice(separator + 1);
+  return slug === "" ? null : slug;
 }

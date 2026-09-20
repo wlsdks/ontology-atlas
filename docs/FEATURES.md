@@ -325,7 +325,7 @@ had become false).
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
 - **The trail you walked** → every node that takes focus is appended to a session trail. The map leaves footprints beside the relation lines actually crossed (offset along the line's own curve, never on it) and a step number beside each visited node; the top-centre **Trail** chip opens a newest-first mini timeline. Each row carries, under the title, how that step connects to the step before it: the relation word plus the reason recorded on that edge (`relation_notes`), the relation word alone when no reason is written, or "Not directly related" when the two share no edge. **Hand off to AI** copies the same per-step lines into the agent brief, so the argument the walk made travels with the names. Past trails are archived in the vault folder.
-- **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms). Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection.
+- **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms). Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. That leash is sized to the screen (2026-09-20): half of the free extent beside the open panels less a 120px edge pad, on each axis, with `--map-camera-focus-pan-margin` as its floor, and the fit scale respects it, so a wide ego graph is centred in the free area instead of its far side landing under the detail panel (measured at 1512: two dependencies at x 1349 and 1369 behind a panel from 1128; after, both left of it).
 - **Expand all** → the top action opens every containment parent in one step and
   fits every rendered node inside the map. It is a temporary overview, not a
   saved default; pressing it again collapses the batch. A route arriving with
@@ -2893,6 +2893,33 @@ than highlighting past the truncation — measured live: rows whose mark rendere
 outside its own box went from 1-2 per English query to 0. The per-node name index is
 built once and kept (`WeakMap`), which also took a plain query over 12,000 nodes from
 243 ms to 29.8 ms; `node-name-match.perf.test.ts` holds the ratio.
+
+**Every result row says what it matched** (2026-09-19). Matching deliberately looks
+wider than the row draws — every one of a concept's names (the canonical `title` and
+each `display_<locale>`), the summary, and the id — but the row drew only the
+localised name and the summary, so a match on anything else arrived with nothing to
+see. Measured on the bundled sample over thirty English queries: **97 of 317 rows
+(30.6%) carried no highlight at all.** Two changes close it. The id now matches on its
+slug and not its `kind:` prefix, because typing "element" returned twenty rows that
+were all just the kind — which the filter chips already select, properly; a query
+containing a colon is someone pasting a real id, and for that the whole id still
+answers. And the trailing column became the row's evidence: the summary when the name
+on screen carried the match, that other name when a name the screen is not showing
+did, the summary opened at the match when the description did, and the id's slug in
+mono when the id did. A mark therefore means exactly one thing — *this is what you
+typed* — which is why the context summary is drawn plain. Project rows use the same
+seat for the same job. Re-measured over the same thirty queries plus three Hangul
+ones: **0 of 276 rows unexplained, 0 marks clipped**, and the column has one text
+start line (`w-[14rem]`, after four rows of "policy" began at four different x).
+
+**One answer to the same typing, in every box** (2026-09-19). The map draws INDEX
+and the `⌘K` palette on the same screen, and the docs tree has a third field; each
+kept its own match rule. Measured on the bundled sample: INDEX answered "no matching
+concept" to a chosung query and to a half-typed syllable that the palette resolved
+against the same vault, and it pulled every element for the word "element" because it
+compared the whole `kind:slug`. All three now call `findNameMatch` and `idSearchText`
+in `shared/lib/node-name-match`, which is the single contract; the palette's ranking
+stays its own, because only it ranks. `nameIncludes` retired with its last caller.
 
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio

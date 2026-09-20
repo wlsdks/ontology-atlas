@@ -4432,7 +4432,8 @@
       "running": "running",
       "done": "done",
       "failed": "failed",
-      "cancelled": "stopped"
+      "cancelled": "stopped",
+      "unfinished": "never finished"
     },
     "workGroup": "Work details · {count, plural, one {# step} other {# steps}}",
     "workGroupActive": "Working · {count, plural, one {# step} other {# steps}}",
