@@ -25,25 +25,82 @@
  * what the tool actually did.
  */
 
-/** Tool names on the vault server we wired in → what that tool does. */
+/**
+ * Tool names on the vault server we wired in → what that tool does.
+ *
+ * ⚠️ **Every tool the server advertises has to be in here** — the table stopped at fifteen while
+ * the server grew to forty, so the transcript printed `read_source`, `compile_ontology`,
+ * `validate_wiki`, `delete_concept` and twenty-one other function names at people (measured
+ * 2026-09-19). That is precisely the defect this file was written to end, and it returned quietly
+ * because nothing tied the table to the inventory. `tests/contract/tool-label-inventory.contract.test.ts`
+ * now reads `TOOLS_FOR_LIST` — the list the server actually answers `tools/list` with — so a new
+ * tool cannot ship without a word.
+ *
+ * **Words, not names, and only where we know the meaning.** Several tools share one word where
+ * they do one thing for a person: seven different reads of the graph are all 「read the map」.
+ * What is *not* collapsed is the **object**: reading a source file, reading the folder's history
+ * and reading the code are three different things to have done, and one word for all of them
+ * would say less than the function name did.
+ */
 const VAULT_TOOL_KEYS: Readonly<Record<string, string>> = {
   connection_info: 'connect',
+  startup: 'connect',
+
+  // Reads of the graph itself.
   list_concepts: 'read',
   list_kinds: 'read',
   get_concept: 'read',
+  get_concepts: 'read',
+  query_concepts: 'read',
+  query_ontology: 'read',
   find_backlinks: 'read',
   find_neighbors: 'read',
   find_path: 'read',
-  query_ontology: 'read',
+  find_evidence: 'findEvidence',
+  find_orphans: 'findOrphans',
+  get_constellation: 'readConstellation',
+  list_constellations: 'readConstellation',
+
+  // Reads of something that is not the graph. The object is the whole information here.
+  read_source: 'readSource',
+  git_status: 'readHistory',
+  git_history: 'readHistory',
+  git_snapshot: 'readHistory',
+  index_project: 'readCode',
+  infer_imports: 'readCode',
+  analyze_repo_structure: 'readCode',
+  inspect_architecture: 'readCode',
+
+  // Checks.
   validate_vault: 'check',
+  validate_wiki: 'checkPages',
+
+  // Writes.
   add_concept: 'addNode',
+  add_concepts: 'addNode',
   patch_concept: 'editNode',
   rename_concept: 'renameNode',
+  reclassify_concept: 'reclassifyNode',
   merge_concepts: 'mergeNodes',
+  delete_concept: 'deleteNode',
   add_relation: 'addRelation',
   add_relations: 'addRelation',
-  startup: 'connect',
+  remove_relation: 'removeRelation',
+  replace_relation: 'replaceRelation',
+  compile_ontology: 'compile',
+  absorb_document: 'absorb',
+  connect_project_source: 'connectSource',
+  disconnect_project_source: 'disconnectSource',
+  finalize_project_meaning: 'judgeMeaning',
 };
+
+/** The labels this table uses, for the contract that binds it to the server's own inventory. */
+export const VAULT_TOOL_LABEL_KEYS: readonly string[] = [
+  ...new Set(Object.values(VAULT_TOOL_KEYS)),
+];
+
+/** The tool names this table knows, for the same contract. */
+export const LABELLED_VAULT_TOOLS: readonly string[] = Object.keys(VAULT_TOOL_KEYS);
 
 export interface ToolLabel {
   /** Words a person reads. An i18n key (when `kind` is `known`) or the raw name. */
