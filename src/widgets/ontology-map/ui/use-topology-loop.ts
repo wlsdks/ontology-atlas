@@ -1122,9 +1122,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const prevExpandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** Density gate — this frame's cluster chips (world-anchored). Hit-testing reads it. */
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
-  const lastTapRef = useRef<{ nodeId: string; at: number } | null>(null);
   /** The focus leash in screen pixels, set at the selection dive (`focusLeashPx`). */
   const focusLeashPxRef = useRef<FocusLeashPx | null>(null);
+  const lastTapRef = useRef<{ nodeId: string; at: number } | null>(null);
   /**
    * The nodes this frame did **not** draw: density-gate collapsed ones plus
    * neighbours hidden by selective ego. Pointer hit-testing reads it to exclude
@@ -1367,6 +1367,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** Tier gate config mirror, shared by the rAF closure and the pointer handlers. */
   const tierRevealRef = useRef<TierRevealConfig>(tierReveal);
 
+  /** What a panel covers on each side, refreshed wherever the camera measures it. */
+  const panelInsetsRef = useRef<{ left: number; right: number } | null>(null);
+
   /**
    * Tokens for computing a camera target — **only the left and right safe
    * insets are replaced with measured values.**
@@ -1403,10 +1406,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       width: box.width,
       height: box.height,
     });
+    /*
+     * The same measurement the names need. The frame reads its tokens every
+     * frame, and `measureCanvasInsets` walks elements, so the draw cannot take
+     * it per frame — it reads this ref instead. Written here because the moments
+     * that move the camera are the moments a panel opens or closes: a selection
+     * reframes, and so does a resize.
+     */
+    panelInsetsRef.current = { left: measured.left, right: measured.right };
     return {
       ...tokens,
       safeInsetLeft: Math.max(tokens.safeInsetLeft, measured.left),
       safeInsetRight: Math.max(tokens.safeInsetRight, measured.right),
+      // What a panel really covers, so a narrow window may shrink the
+      // reservation without sliding the graph under it (`clampFitInsets`).
+      obstacleInsetLeft: measured.left,
+      obstacleInsetRight: measured.right,
     };
   }, []);
 
@@ -5905,6 +5920,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         now,
         viewportWidth: width,
         viewportHeight: height,
+        panelInsets: panelInsetsRef.current,
         // The ratio this frame is really rasterising at — the adaptive one while a
         // drag has lowered it, not `window.devicePixelRatio`. Only the 3D resting
         // line's width floor reads it.
@@ -6660,11 +6676,27 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           /** A collapsed subtree is replaced by a chip and is not on screen. */
           hidden: isPreviewEndpointHidden(clustered?.has(n.id) ?? false, preview, n.id),
           /**
-           * The alpha the last frame drew this node at. `hidden` says
-           * "collapsed"; it does not say "drawn": at the overview the density
-           * gate keeps capabilities at alpha 0 with `hidden` false, and a spec
-           * that read `hidden` alone counted 26 invisible discs as on screen
-           * (2026-09-03). Whether the thing is visible is this number.
+           * The alpha the **tier and ego passes** left this node at. `hidden`
+           * says "collapsed"; it does not say "drawn": at the overview the
+           * density gate keeps capabilities at alpha 0 with `hidden` false, and
+           * a spec that read `hidden` alone counted 26 invisible discs as on
+           * screen (2026-09-03).
+           *
+           * ⚠️ It is **not** what the frame painted. The lens sink
+           * (`spotlightSink`) and the growth-replay ramp are applied later, in
+           * the draw itself, and never reach this number: with the path lens on,
+           * every node still reports full ink while the screen plainly sinks
+           * everything off the path, and a growth replay that grew from 91 to
+           * 1,134 lit pixels reports one unchanging state (measured 2026-09-20,
+           * three times in one day before the cause was found). Nodes are drawn
+           * in more than one pass, so recording `ctx.globalAlpha` at any single
+           * one of them is worse than this: a first attempt reported the darkest
+           * nodes on screen (median 43 of 765) as `1.00` and the sunk ones
+           * (median 195) as `0.30`.
+           *
+           * To ask what a person can see under a lens or a replay, sample the
+           * canvas pixels — `map-path-lens-sink.spec.ts` does, and it is the
+           * only method that has agreed with the screen so far.
            */
           alpha: drawnAlphas.get(n.id) ?? 1,
           previewEndpoint: isPreviewEndpoint(preview, n.id),

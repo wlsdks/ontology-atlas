@@ -2983,7 +2983,7 @@
       "hint": "Dense groups are folded into +N chips: click a chip to expand that group, click again to collapse.",
       "expandAria": "Expand {count} hidden items",
       "collapseAria": "Collapse this group",
-      "barExpandAll": "Expand all",
+      "barExpand": "Expand",
       "barExpandCount": "Expand {count}",
       "barCollapse": "Collapse",
       "tooltipCollapsed": "“{name}”: {total} total under it · {hidden} hidden at this level. Click to expand",
@@ -3019,6 +3019,7 @@
       "copyAriaLabel": "Copy your trail to hand off to AI",
       "copyCopiedAriaLabel": "Copied: paste into your AI chat",
       "clearLabel": "Clear",
+      "clearConfirmLabel": "Press again to discard",
       "clearAriaLabel": "Clear trail",
       "packetTitle": "Exploration trail",
       "packetOrder": "Visited order (oldest → most recent):",
@@ -5658,6 +5659,7 @@
         "changed": "Cited originals changed",
         "missing": "A cited original is missing",
         "new-sources": "New originals need consideration",
+        "rewritten": "A cited original changed and this answer was rewritten from that version",
         "unmeasured": "Source version not established",
         "unchanged": "No change since source observation"
       },
@@ -5701,7 +5703,8 @@
       "paths": {
         "changed": "Changed originals",
         "missing": "Missing originals",
-        "added": "New originals to consider"
+        "added": "New originals to consider",
+        "rewritten": "Rewritten from"
       },
       "version": {
         "head": "Latest draft",
@@ -5865,6 +5868,14 @@
         "noAgent": "No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again."
       },
       "sheet": {
+        "readbackConsistency": "{cadence}, check that every page still matches its originals, and {onStale} a page that has gone stale. It runs once as soon as you save.",
+        "readbackService": "{cadence}, read what {service} sent again, bring in what is new, and rewrite the pages that changed. One agent turn per pass.",
+        "readbackRedraft": "rewrite",
+        "readbackMark": "only mark",
+        "readbackHour": "Every hour",
+        "readback6h": "Every six hours",
+        "readbackDaily": "Every day at {time}",
+        "readbackWeekdays": "On weekdays at {time}",
         "title": "New round",
         "what": "What to check",
         "how": "How often",

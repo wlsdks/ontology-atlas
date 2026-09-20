@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Blocks, Download, FolderKanban, Library, LineChart, Map as MapIcon } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
+import { useSoleProjectHref } from '@/features/project-data-source';
 import { describeVaultShape } from '@/shared/lib/vault-shape';
 import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/nav-destination';
 import {
@@ -65,6 +66,13 @@ const WIKI_ONLY_TABS: ReadonlyArray<TabItem> = WIKI_ONLY_MOBILE_DESTINATION_IDS.
 
 export function BottomTabBar() {
   const pathname = usePathname() ?? '/';
+  /*
+   * The same answer the desktop rail reads: with exactly one project in the folder, the Projects
+   * tab opens that project. A rail and a tab bar that disagree about where one destination leads
+   * are two navigations rather than one, which this file's own comment about active state already
+   * says (2026-09-19).
+   */
+  const soleProjectHref = useSoleProjectHref();
   const t = useTranslations('nav');
   const tRail = useTranslations('navRail');
   const vault = useLocalVault();
@@ -101,7 +109,10 @@ export function BottomTabBar() {
   const activeId = resolveActiveNavDestination(pathname);
   const visible = destinationsForVaultShape(vault.manifest ? describeVaultShape(vault.manifest.docs) : null);
   const mapTabs = TABS.filter((tab) => visible.has(tab.id));
-  const tabs = mapTabs.length > 0 ? mapTabs : WIKI_ONLY_TABS;
+  const shapeTabs = mapTabs.length > 0 ? mapTabs : WIKI_ONLY_TABS;
+  const tabs = soleProjectHref
+    ? shapeTabs.map((tab) => (tab.id === 'projects' ? { ...tab, href: soleProjectHref } : tab))
+    : shapeTabs;
 
 
   return (

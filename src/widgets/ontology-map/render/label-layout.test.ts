@@ -12,8 +12,7 @@ import {
   isSafeRectProtectedLabel,
   isWithinSafeRect,
   resolveLabelPriority,
-  type LabelCandidate,
-} from "./label-layout";
+  type LabelCandidate, floorFlipBaseline } from "./label-layout";
 
 const RECT = { left: 344, right: 880, top: 96, bottom: 704 };
 
@@ -299,5 +298,85 @@ describe("노드 도형 예약 — 라벨이 노드 위에 글자를 얹지 않�
 
   it("겹치지 않으면 통과", () => {
     expect(overlapsForeignReserved(box(200, 260), "other", 5, [disc])).toBe(false);
+  });
+});
+
+describe("floorFlipBaseline", () => {
+  const rect = { left: 0, right: 1448, top: 112, bottom: 806 - 72 };
+  it("a slot under the floor band moves above the node when that slot is safe", () => {
+    // Node at y 741, radius 19: below-slot baseline ~772, above-slot ~712.
+    expect(floorFlipBaseline(551, 772, 712, 741, rect, 806)).toBe(712);
+  });
+  it("leaves an in-band slot alone", () => {
+    expect(floorFlipBaseline(551, 700, 640, 660, rect, 806)).toBeNull();
+  });
+  it("does not rescue a node that is itself below the canvas", () => {
+    expect(floorFlipBaseline(551, 860, 800, 830, rect, 806)).toBeNull();
+  });
+  it("does not flip when the slot above is outside the safe rect either", () => {
+    expect(floorFlipBaseline(1500, 772, 712, 741, rect, 806)).toBeNull();
+  });
+});
+
+describe("resolveLabelPriority — a lens subject wins the slot", () => {
+  const cap = { kind: "capability" as const, isSelected: false, isHovered: false, isHub: false };
+
+  it("puts a path or constellation node in the top band, above a domain and the project", () => {
+    expect(resolveLabelPriority({ ...cap, isLensSubject: true })).toBe(0);
+    expect(resolveLabelPriority({ ...cap, isLensSubject: true })).toBeLessThan(
+      resolveLabelPriority({ ...cap, kind: "domain" }),
+    );
+    expect(resolveLabelPriority({ ...cap, isLensSubject: true })).toBeLessThan(
+      resolveLabelPriority({ ...cap, kind: "project" }),
+    );
+  });
+
+  it("leaves every other ranking where it was", () => {
+    expect(resolveLabelPriority(cap)).toBe(4);
+    expect(resolveLabelPriority({ ...cap, isSelected: true })).toBe(0);
+    expect(resolveLabelPriority({ ...cap, isHovered: true })).toBe(1);
+    expect(resolveLabelPriority({ ...cap, isHub: true })).toBe(2);
+    expect(resolveLabelPriority({ ...cap, kind: "domain" })).toBe(3);
+    expect(resolveLabelPriority({ ...cap, kind: "element" })).toBe(5);
+    expect(resolveLabelPriority({ ...cap, isLensSubject: false })).toBe(4);
+  });
+});
+
+describe("greedyPlaceLabels — a blocked name tries the slot above", () => {
+  const box = (minY: number) => ({ minX: 0, maxX: 40, minY, maxY: minY + 12 });
+  const make = (id: string, priority: number, bbox: ReturnType<typeof box>, altBbox?: ReturnType<typeof box>) => ({
+    priority, order: 0, bbox, altBbox, ownerId: id, payload: { id },
+  });
+
+  it("falls back to the alternate box instead of dropping the name", () => {
+    const winner = make("a", 0, box(100));
+    const blocked = make("b", 1, box(104), box(40));
+    const placed = greedyPlaceLabels([winner, blocked]);
+    expect(placed.map((p) => p.payload.id)).toEqual(["a", "b"]);
+    const moved = placed.find((p) => p.payload.id === "b")!;
+    expect(moved.bbox).toEqual(box(40));
+    expect(moved.usedAlt).toBe(true);
+  });
+
+  it("still drops the name when the alternate is taken too", () => {
+    const first = make("a", 0, box(100));
+    const second = make("b", 0, box(40));
+    const blocked = make("c", 1, box(104), box(44));
+    expect(greedyPlaceLabels([first, second, blocked]).map((p) => p.payload.id)).toEqual(["a", "b"]);
+  });
+
+  it("leaves a candidate with no alternate exactly as before", () => {
+    const winner = make("a", 0, box(100));
+    const blocked = make("b", 1, box(104));
+    const placed = greedyPlaceLabels([winner, blocked]);
+    expect(placed.map((p) => p.payload.id)).toEqual(["a"]);
+    expect(placed[0].usedAlt).toBeUndefined();
+  });
+
+  it("prefers the first slot when it is free — the alternate never pre-empts it", () => {
+    const only = make("a", 0, box(100), box(40));
+    const placed = greedyPlaceLabels([only]);
+    expect(placed[0].bbox).toEqual(box(100));
+    expect(placed[0].usedAlt).toBeUndefined();
   });
 });

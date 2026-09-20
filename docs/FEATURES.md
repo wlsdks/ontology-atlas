@@ -314,24 +314,109 @@ had become false).
   project/domain/hub structure and bounded ForceAtlas2 settling: the read-first
   decision surface.
 - Focus/path/health are **not separate canvases**:
-  - **Focus** — enters via node click on the map (selection state); `mode=focus` deep links preserved
+  - **Focus** — enters via node click on the map (selection state); `mode=focus` deep links preserved What the focus dims recedes to `--map-ego-rest-alpha` (0.42): the node, its lines, its chip and, for a project or domain, its name, on one number (2026-09-20; before, the dim was a colour ramp of 1.37:1 and dimmed siblings drew as bright nameless circles) A name whose slot below its node falls under the floor band (the readout's corner) takes the slot above the node instead of vanishing (2026-09-20: two domains at y 741 of 806 drew nameless).
   - **Path** — enters via shift-click of 2 nodes or `mode=path` deep links
   - **Health** — enters via the maintenance queue count chip on the view rail; `mode=health` deep links preserved
 
 #### Canvas (`ontology-map` — custom canvas-2D engine + Graphology ForceAtlas2 physics)
 - **Click node** → right-side panel opens (`ProjectDrawer` for project nodes, the 352px node datasheet for domain/capability/element nodes — see "Node datasheet" below)
 - **Drag node** → reposition (releases back to physics)
-- **Double-click node** → "local graph" mode (2-hop neighbors only, breadcrumb: `Local · Root · slugA · slugB`, click to backtrack, Esc to exit)
+- **Double-click node** → opens or folds its children, the same act as its `+N` chip, and keeps it selected (the "local graph" mode this line once described does not exist; 2026-09-19)
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
 - **The trail you walked** → every node that takes focus is appended to a session trail. The map leaves footprints beside the relation lines actually crossed (offset along the line's own curve, never on it) and a step number beside each visited node; the top-centre **Trail** chip opens a newest-first mini timeline. Each row carries, under the title, how that step connects to the step before it: the relation word plus the reason recorded on that edge (`relation_notes`), the relation word alone when no reason is written, or "Not directly related" when the two share no edge. **Hand off to AI** copies the same per-step lines into the agent brief, so the argument the walk made travels with the names. Past trails are archived in the vault folder.
 - **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded. Double-clicking the parent node itself does the same as its chip — opens or folds the children — and keeps the node selected; before 2026-09-19 the second click of a double-click undid the first, so the gesture selected and deselected and opened nothing. A second quick click on a node without children keeps the selection too: a repeated click is never an undo (`DOUBLE_TAP_WINDOW_MS`, 350 ms). Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. Selecting a node holds its neighbours in *other* folded parents open — drawn, named, and joined by their lines — so the ego graph shows every relation the panel lists (before 2026-09-19 a capability whose dependencies lived in two folded domains drew 1 of its 3 relations), and each folded parent's chip claims only what still folds. The focus camera target is clamped to the same leash the physics keeps around the focused node; a target outside it made the spring and the clamp fight at full frame rate for the whole selection. That leash is sized to the screen (2026-09-20): half of the free extent beside the open panels less a 120px edge pad, on each axis, with `--map-camera-focus-pan-margin` as its floor, and the fit scale respects it, so a wide ego graph is centred in the free area instead of its far side landing under the detail panel (measured at 1512: two dependencies at x 1349 and 1369 behind a panel from 1128; after, both left of it).
+
+- **A name blocked below tries the slot above** (2026-09-20) → the greedy label
+  placer walked the candidates by priority and dropped any whose box overlapped
+  one already placed, with no second attempt however much room sat beside it.
+  Measured on a folder of 20 concepts at 1512x982 with every group opened: the
+  map used 49% of the canvas width and still drew one capability without its
+  name, beaten by a neighbour 49px away while its own upper slot was clear. The
+  frame already computes that upper slot for every node; the placer now takes it
+  as a fallback, and drops the name only when both slots are taken.
+
+- **The agent chip closes what it opened** (2026-09-20) → it wore the active
+  tone, reported `aria-expanded`, and called only the open path. Measured with a
+  folder open at 1512: the first press opened the dock and narrowed the map's
+  canvas from 1448 to 1055, and every press after left the state `true` and the
+  canvas at 1055. The dock keeps its own close button; the chip is the second
+  way, and the one a person reaches for after opening it there.
+
+- **A realm calls its root one name** (2026-09-20) → entering a realm names its
+  root in four places at once, and the ledger's header reached past `display` to
+  the canonical `title`: on the sample map the chip, the chip's title and the
+  node on the canvas read the Korean display name while the header read
+  `Payments`. Its own
+  boundary rows and subtree were already localized; the header now uses the same
+  `display ?? title` the rest of the screen does.
+
+- **Closing the shortcuts sheet returns the keyboard** (2026-09-20) → the sheet
+  records where focus came from as it opens, but the button that opened it
+  unmounts in that moment (raising the sheet turns off that button's render
+  condition), so the record was empty and the close fell back to the start of
+  the content. Measured: open with the map's `?` button, press Escape, focus
+  lands on `main` while the button is back in the page. It now names the control
+  to come back to, the way the analysis workbench and the architecture dock
+  already do, and looks it up after it remounts.
+
+- **The review chip reports its state and closes what it opened** (2026-09-20) →
+  it wore the active tone while the meaning panel was open but carried no
+  `aria-pressed`, and its handler only ever opened. Measured with the panel open:
+  three presses in a row left the panel present and the map's canvas at 928px,
+  so a lit control ignored every press. It is a toggle now, matching the rule
+  stated beside the replay control — the active tone and `aria-pressed` last for
+  exactly as long as the thing the control names.
+
+- **The constellation chip expands a named region** (2026-09-20) → it claimed
+  `aria-haspopup="dialog"` while what opened was an unnamed `div`: zero elements
+  with `role="dialog"`, no `aria-controls` on the trigger, no accessible name on
+  the panel, so a reader heard "expanded" and found nothing to move to. It is a
+  disclosure now — the chip points at a named region — because nothing about it
+  is modal: no scrim, no focus trap, focus stays on the chip, the map behind
+  stays live, and Escape or an outside press closes it.
+
+- **Discarding a walk takes two presses** (2026-09-20) → the session trail is
+  discarded rather than archived and cannot be rebuilt, since it is not in the
+  URL, yet one press on the trail popover's 45px clear button erased a
+  three-step walk with no confirm, no undo and no notice — while the more
+  destructive control beside it, clearing every past walk, already asked twice.
+  Both clear controls (the chip's ✕ and the footer) now arm the popover and the
+  second press discards; the arming releases itself after four seconds.
+
+- **The relation panel's source link is the document's name** (2026-09-20) → it
+  read `storefront.md → Open doc`, an arrow between a name and an action inside a
+  link that navigates within the app, which `forbidden.md` refuses. The name is
+  the label now and the action stays in the accessible name. The glyph sat in JSX
+  between two expressions, the one shape the label-decoration gate's two scans
+  cannot see; a measured sweep of `src` and `app` found this was the only one.
+- **A path names both of its ends** (2026-09-20) → the path lens keeps its nodes
+  at full ink, but their labels ranked as ordinary concepts, so an endpoint
+  inside an expanded domain disc lost its slot to that domain and the project.
+  Asking how one concept reaches another drew the answer with one end named and
+  the other anonymous. A lens's own nodes now take the top label band, the same
+  one the constellation lens already had.
+
+- **The INDEX tree states its own shape** (2026-09-20) → its rows are siblings in
+  the DOM, with the hierarchy drawn as a left margin, so each row carries
+  `aria-level` plus `aria-posinset`/`aria-setsize`. Before this a screen reader
+  announced the project and its nine domains as ten peers, and an expanded
+  domain's capabilities joined that same flat list.
+
+- **The chrome may not eat the map** (2026-09-20) → the camera's side insets are
+  absolute pixels (350 for the INDEX panel, 120 for the tool rail), so they did
+  not shrink with the window: on an 820-wide canvas they reserved 57% of it, and
+  on a 390-wide canvas more than the whole canvas, collapsing the free width to
+  one pixel so only the minimum zoom kept a frame. The fit now reserves at most
+  half of each axis, and never less than what an open panel measurably covers,
+  so the graph still clears the panel. Measured drawn width as a share of the
+  canvas: 1512, 1280 and 1024 unchanged; 820 31%→37%, 640 19%→37%, 390 30%→37%.
 - **Expand all** → the top action opens every containment parent in one step and
   fits every rendered node inside the map. It is a temporary overview, not a
   saved default; pressing it again collapses the batch. A route arriving with
   existing `?open=` parents also uses full-bounds fitting on its first frame so
   already-open nodes do not begin off screen.
-- **How the chip looks and where children land is a setting** (Settings › Expand, 2026-08-01 — ported from the `.qa-scratch/proto-expand.html` measurement prototype). Five values: the open control (`floating pill` · **`bar above`, default** · `shoulder badge`), the child layout (`spiral disk`, default · `fan` · `ring` · `column`), and three numbers — how many open at once (4–24, default 24), how many names are attempted per parent (3–40, default 8), and how many parents stay open at once (1–6, default 3). The default control is the bar docked directly above the **selected** node: nothing shows until you select a node, and the folded count keeps living on the node body. Rationale and the observation that would reverse it: `docs/DECISIONS.md`.
+- **How the chip looks and where children land is a setting** (Settings › Expand, 2026-08-01 — ported from the `.qa-scratch/proto-expand.html` measurement prototype). Five values: the open control (`floating pill` · **`bar above`, default** · `shoulder badge`), the child layout (`spiral disk`, default · `fan` · `ring` · `column`), and three numbers — how many open at once (4–24, default 24), how many names are attempted per parent (3–40, default 8), and how many parents stay open at once (1–6, default 3). The default control is the bar docked directly above the **selected** node: nothing shows until you select a node, and the folded count keeps living on the node body. Its words are its own: the bare verb `Expand` (and its Korean equivalent) when one press opens everything left, `Expand {count}` when the batch is smaller, and `Collapse` to reverse it. "Expand all" belongs to the toolbar button, which opens every folded group on the map — until 2026-09-20 both controls said those same words for the two different scopes (`docs/records/decisions/`, "The expand bar names its own scope"). Rationale and the observation that would reverse it: `docs/DECISIONS.md`.
 - **Expand realm** → focus a node (click) and an orbital **Expand realm** button appears just outside its ring (also offered as an action in the node datasheet, for container nodes). Activating it transforms the map into *that node's world*: only its containment subtree remains, re-laid-out with the node as a temporary root at the origin (children map to rings by **depth**, not kind), and everything outside unmounts behind a 1px indigo warding circle. Relations crossing the boundary fade to a stub at the ring. The transition is a 600ms choreography — outside nodes fling out along curved "gravity" trajectories, inside nodes FLIP to their new spots, the camera dollies in to fit the realm (`prefers-reduced-motion` snaps instantly). The active realm lives in the URL (`?realm=slug`) so a shared link or an AI agent reproduces the same world; a top-center **Realm: {title} ✕** chip and **Esc** (highest ladder priority) return to the full map. Click, `?open` density gating, selective ego, and top-K labels all still work inside a realm.
 - **Ontology block exchange** — feature to exchange concept bundles folder-by-folder. INDEX's
   **Import Block** reads `.md` folders and, if present, `block-manifest.json`, showing **only what is coming in and what conflicts with existing files first**
@@ -1933,6 +2018,9 @@ a navigation destination or a product screen.
 ---
 
 ### `/projects` — Project list (rebuilt 2026-07-18)
+
+**The door depends on the folder** (2026-09-19, decision "With one project, the Projects door opens that project"): with exactly one project the rail, its keyboard shortcut and the mobile tab bar open that project's page instead of a list of one row; with none or several they open this list. The list stays one press away as the breadcrumb at the top of every project page, and it is still where a project is created. One hook answers for all three doors (`useSoleProjectHref`), so the rail and the tab bar cannot disagree.
+
 
 The project index uses the shared page frame and compact rows so several project
 documents can be scanned by name and authored purpose. There is currently no

@@ -10,7 +10,7 @@ import { collectDomeAncestry, domeAncestryEdgeKey } from "../model/dome-ancestry
 import { buildTrailGlintLegs, trailGlintLocalPhase } from "../model/footprint-steps";
 import { bodyPresence, filamentPresence, galaxyAppearance, galaxyMeteorPhase, galaxySelectionInk, galaxyTemperatureKey, galaxyTwinkle, starLuminance } from "../model/galaxy";
 import { isGalaxyEdgeVisible } from "../model/galaxy-layout";
-import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, trailNodeInkStrength, type EdgeEgoState, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
+import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, trailNodeInkStrength, type EdgeEgoState, type EdgePairFocus, type NodeEgoState, egoRestSink } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { backgroundParallaxOrigin, resolveBackgroundOrigin } from "../model/background-parallax";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
@@ -83,8 +83,7 @@ import {
   resolveLabelPriority,
   type LabelCandidate,
   type ReservedBox,
-  type SafeRect,
-} from "../render/label-layout";
+  type SafeRect, floorFlipBaseline } from "../render/label-layout";
 import { draw as nodeShapesDraw, drawGalaxyNodeStar, drawNodeStar, SPOTLIGHT_RING_OFFSET } from "../render/node-shapes";
 import { clusterChipOccupancyRect, drawClusterChip, clusterChipScale, type ClusterBarLabels } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
@@ -678,6 +677,21 @@ export interface FrameDrawParams {
   viewportWidth: number;
   viewportHeight: number;
   /**
+   * What a panel actually covers on each side, in CSS px, measured rather than
+   * assumed. `safeInsetLeft`/`safeInsetRight` are static tokens, so the label
+   * cull believed the right edge was 120 px away while the open inspector was
+   * 352 px wide from x=1128: measured at 1512x982 on the sample folder, two of
+   * five selections painted a concept's name underneath that panel, where it
+   * cannot be read and where it still spent one of the limited label slots.
+   * The camera has taken the larger of token and measurement since 2026-08-10
+   * (`use-topology-loop.ts#cameraTokens`); this gives the names the same truth.
+   *
+   * Left and right only, for the reason that note gives: the top inset is the
+   * tool lane and the bottom one is a label reservation, and both are layout
+   * promises rather than something covering the canvas.
+   */
+  panelInsets?: { left: number; right: number } | null;
+  /**
    * The ratio `ctx` is transformed by, so a length in CSS px can be converted to
    * device pixels. Only the 3D resting relation line's width floor reads it
    * (`domeEdgeMinWidthPx`); everything else on this canvas is a CSS quantity by
@@ -1069,6 +1083,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     now,
     viewportWidth,
     viewportHeight,
+    panelInsets = null,
     devicePixelRatio: canvasDpr = 1,
     gridPattern,
     dustPoints,
@@ -1648,6 +1663,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // edge path.
     const returnAlpha = realmOutsideReturnAlphaById?.get(node.id);
     let outAlpha = returnAlpha !== undefined ? baseAlpha * returnAlpha : baseAlpha;
+    // What the ego focus dims recedes: the node, and through this map its
+    // lines, chip and name. Lenses keep their own sink (`spotlightSink`).
+    if ((focusedNodeId !== null || selectedEdge !== null) && !isEgoMember && !trailLensActive) {
+      outAlpha *= egoRestSink(focusRampById.get(node.id) ?? 0, tokens.egoRestAlpha);
+    }
     // 3D — on the dome **every tier takes part in the form**: capabilities and
     // elements the semantic-zoom condition hides still rise on their tier's
     // assembly ramp. At ramp 0 the value is unchanged (2D), at ramp 1 fully
@@ -3304,8 +3324,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // word-boundary-ellipsize long titles, then greedily place by priority so no
   // two boxes overlap.
   const safeRect: SafeRect = {
-    left: tokens.safeInsetLeft,
-    right: viewportWidth - tokens.safeInsetRight,
+    left: Math.max(tokens.safeInsetLeft, panelInsets?.left ?? 0),
+    right: viewportWidth - Math.max(tokens.safeInsetRight, panelInsets?.right ?? 0),
     top: tokens.safeInsetTop,
     bottom: viewportHeight - tokens.safeInsetBottom,
   };
@@ -3482,7 +3502,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       kind: node.kind,
       egoState,
       isHovered,
-      dimLabelAlpha: tokens.egoDimLabelAlpha,
       revealAlpha: labelRevealAlpha,
     });
     // A saved set is an explicit reading scope. Its names use the existing
@@ -3546,7 +3565,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // nearest safe edge. Everything else culls as before.
     let anchorX = screen.x;
     let clampedAnchorY = anchorY;
-    if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
+    let baselineY = anchorY;
+    const floorFlip = isWithinSafeRect(anchorX, anchorY, safeRect)
+      ? null
+      : floorFlipBaseline(anchorX, anchorY, resolveFlippedLabelBaselineY(screen.y, screenRadius), screen.y, safeRect, viewportHeight);
+    if (floorFlip !== null) {
+      // Under the floor band but on screen: the name goes above the node.
+      baselineY = floorFlip;
+    } else if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
       // If protected, pull to the inset edge instead of discarding. The check is
       // just `render/label-layout.ts#isSafeRectProtectedLabel` — keeping it inline here
       // would make it impossible to write unit tests that prevent regression, as there's no place
@@ -3565,6 +3591,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const clamped = clampAnchorIntoSafeRect(anchorX, anchorY, safeRect, width / 2 + 4, fontSize + 4);
       anchorX = clamped.x;
       clampedAnchorY = clamped.y;
+      baselineY = clampedAnchorY;
     }
     const shiftX = anchorX - screen.x;
     const shiftY = clampedAnchorY - anchorY;
@@ -3586,15 +3613,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         (egoState === "neighbor" && isEgoNeighborLabelExempt(node.id, egoNeighborLabelEligibleIds));
       labelRankEntries.push({ id: node.id, degree: world.neighborMap.get(node.id)?.size ?? 0, exempt });
     }
-    const priority = constellationKept
-      ? 0
-      : galaxyOn && (node.kind === "project" || node.kind === "domain")
+    const priority =
+      galaxyOn && (node.kind === "project" || node.kind === "domain") && !pathKept && !constellationKept
         ? 1
         : resolveLabelPriority({
             kind: node.kind,
             isSelected: egoState === "center",
             isHovered,
             isHub: node.isHub,
+            // A lens was opened to show these; they win the slot (`resolveLabelPriority`).
+            isLensSubject: pathKept || constellationKept,
           });
     // The vertical extent is **measured from the font**. The old approximation
     // (`ascent = fontSize`, `descent = 2` constant) overshot above and undershot
@@ -3615,7 +3643,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       minY: baselineY - vertical.ascent,
       maxY: baselineY + vertical.descent,
     });
-    const candidateBbox = boxAt(clampedAnchorY);
+    const candidateBbox = boxAt(baselineY);
     labelBboxById.set(node.id, candidateBbox);
     /*
      * The upper slot this label would take if the lower one turns out to be
@@ -3631,8 +3659,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ascent: vertical.ascent,
       descent: vertical.descent,
     });
+    const flipSlot = labelFlipSlots.get(node.id);
     labelCandidates.push({
       priority,
+      // The slot above the node, offered to the placer for when the one below
+      // is taken (`LabelCandidate.altBbox`).
+      altBbox: flipSlot
+        ? { minX: candidateBbox.minX, maxX: candidateBbox.maxX, minY: flipSlot.baselineY - flipSlot.ascent, maxY: flipSlot.baselineY + flipSlot.descent }
+        : undefined,
       /*
        * **Nearer wins the slot.** Within one priority band the placer settles ties
        * by `order`, so in the cone that order is depth: a node at the front of the
@@ -3652,7 +3686,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         // Pass the baseline the placer settled on: recomputing it inside `draw()`
         // would undo the flipped slot. Rewritten by the flip pass below when the
         // lower slot turns out to be blocked.
-        baselineY: clampedAnchorY,
+        baselineY,
         screenRadius,
         egoState,
         isHovered,
@@ -3715,6 +3749,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // discs are reserved together, and labels avoid both.
     [...chipReservations, ...nodeDiscReservations],
   );
+  // A name the placer moved to its upper slot has to be drawn there too.
+  for (const candidate of placedResult) {
+    if (!candidate.usedAlt) continue;
+    const slot = labelFlipSlots.get(candidate.payload.nodeId);
+    if (slot === undefined) continue;
+    candidate.payload.baselineY = slot.baselineY;
+    labelBboxById.set(candidate.payload.nodeId, candidate.bbox);
+  }
   const placedIds = new Set<string>(placedResult.map((c) => c.payload.nodeId));
 
   // LOD presence ramp. Each on-screen candidate fades linearly toward placed (1)
@@ -3796,7 +3838,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         labelDomain: tokens.labelDomain,
         labelCapability: tokens.labelCapability,
         labelElement: tokens.labelElement,
-        egoDimLabelAlpha: tokens.egoDimLabelAlpha,
         amberHub: tokens.amberHub,
         labelHalo: tokens.canvasBgNear,
       },

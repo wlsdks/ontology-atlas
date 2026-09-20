@@ -2983,7 +2983,7 @@
       "hint": "자식이 많은 그룹은 +N 칩으로 접혀 있습니다. 칩을 클릭하면 그 그룹이 펼쳐지고, 다시 클릭하면 접힙니다.",
       "expandAria": "숨겨진 하위 항목 {count}개 펼치기",
       "collapseAria": "이 그룹 접기",
-      "barExpandAll": "모두 펼치기",
+      "barExpand": "펼치기",
       "barExpandCount": "{count}개 펼치기",
       "barCollapse": "접기",
       "tooltipCollapsed": "「{name}」: 하위 전체 {total}개 · 이 단계에서 숨긴 것 {hidden}개. 클릭하면 펼쳐요",
@@ -3019,6 +3019,7 @@
       "copyAriaLabel": "걸어온 길을 복사해 AI에게 이어서 맡기기",
       "copyCopiedAriaLabel": "복사했어요. AI 채팅에 붙여넣으면 이어서 봐요",
       "clearLabel": "지우기",
+      "clearConfirmLabel": "한 번 더 누르면 지워요",
       "clearAriaLabel": "걸어온 길 지우기",
       "packetTitle": "걸어온 길 (탐색 경로)",
       "packetOrder": "방문 순서 (오래된 → 최근):",
@@ -5658,6 +5659,7 @@
         "changed": "인용한 원문이 바뀌었습니다",
         "missing": "인용한 원문이 없습니다",
         "new-sources": "새 자료를 검토해 주세요",
+        "rewritten": "인용한 원문이 바뀌었고, 이 답은 그 판본으로 다시 쓰였습니다",
         "unmeasured": "원문 버전이 확인되지 않았습니다",
         "unchanged": "출처 관찰 이후 변경 없음"
       },
@@ -5701,7 +5703,8 @@
       "paths": {
         "changed": "바뀐 원문",
         "missing": "없는 원문",
-        "added": "검토할 새 원문"
+        "added": "검토할 새 원문",
+        "rewritten": "다시 쓴 원문"
       },
       "version": {
         "head": "최근 초안",
@@ -5865,6 +5868,14 @@
         "noAgent": "이 맥에 준비된 코딩 에이전트가 없어 다시 쓰지 못했습니다. 에이전트 화면에서 로그인한 뒤 자동 점검을 다시 돌리세요."
       },
       "sheet": {
+        "readbackConsistency": "{cadence} 문서가 원문과 여전히 맞는지 확인하고, 낡은 문서는 {onStale}. 저장하면 바로 한 번 돕니다.",
+        "readbackService": "{cadence} {service}에서 온 문서를 다시 읽고, 새 것을 가져오고, 바뀐 문서를 다시 씁니다. 실행마다 에이전트 턴 하나.",
+        "readbackRedraft": "다시 씁니다",
+        "readbackMark": "노랗게 표시만 합니다",
+        "readbackHour": "한 시간마다",
+        "readback6h": "여섯 시간마다",
+        "readbackDaily": "매일 {time}에",
+        "readbackWeekdays": "평일 {time}에",
         "title": "새 자동 점검",
         "what": "무엇을 확인할지",
         "how": "얼마나 자주",

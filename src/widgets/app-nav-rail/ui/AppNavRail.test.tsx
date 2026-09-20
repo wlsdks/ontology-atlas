@@ -195,6 +195,14 @@ describe("AppNavRail", () => {
     );
   });
 
+  it("opens the folder's only project when the shell says which one it is", () => {
+    renderRail(<AppNavRail contextHrefs={{ projects: "/project/fallback/?slug=storefront" }} />);
+    expect(screen.getByTestId("app-nav-rail-item-projects")).toHaveAttribute(
+      "href",
+      "/project/fallback/?slug=storefront&focus=main",
+    );
+  });
+
   it("preserves every destination path while adding its reading-start marker", () => {
     renderRail(
       <AppNavRail contextHrefs={{ docs: "/docs/?slug=capabilities/mcp-server" }} />,

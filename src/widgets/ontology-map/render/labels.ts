@@ -89,8 +89,6 @@ export interface LabelTokens {
   labelDomain: string;
   labelCapability: string;
   labelElement: string;
-  /** `--map-ego-dim-label-alpha` — what a dimmed project or domain keeps of its name. */
-  egoDimLabelAlpha: number;
   /** W6 agent visibility — same amber signal tone as the node ring (`NodeShapeTokens.amberHub`), reused here for the label-side activity mark. */
   amberHub: string;
   /**
@@ -313,17 +311,11 @@ export interface LabelAlphaInput {
   egoState: LabelDrawState["egoState"];
   isHovered: boolean;
   revealAlpha: number;
-  /**
-   * `--map-ego-dim-label-alpha`: what a dimmed project or domain keeps of its
-   * name. Omitted means 0, the pre-2026-09-19 behaviour the older callers and
-   * tests were written against.
-   */
-  dimLabelAlpha?: number;
 }
 
 /**
  * Resolves a label's opacity for this frame. A `"dim"` project or domain keeps
- * `dimLabelAlpha` of its name and a dimmed child `0`; `1` unconditionally for the
+ * `revealAlpha` of its name (the node's own alpha, which carries the sink) and a dimmed child `0`; `1` unconditionally for the
  * SELECTED node or the currently-hovered node, any kind (no more
  * unlabeled-circle selections/hovers); otherwise the per-kind formula:
  * project and domain always 1, capability/element ramp with the node's own
@@ -339,12 +331,14 @@ export interface LabelAlphaInput {
  * own tier arrives, which is a separate question owned by the label budget.
  */
 export function computeLabelAlpha(input: LabelAlphaInput): number {
-  const { kind, egoState, isHovered, revealAlpha, dimLabelAlpha = 0 } = input;
+  const { kind, egoState, isHovered, revealAlpha } = input;
   // A dimmed domain keeps a faint name: selecting one domain used to leave
   // the others anonymous grey chips, and a person choosing where to go next
   // had to hover each one (2026-09-19). Dimmed children stay unnamed — they
   // were unnamed before the selection as well.
-  if (egoState === "dim") return kind === "project" || kind === "domain" ? dimLabelAlpha : 0;
+  // A dimmed project or domain keeps its name; the node's own alpha, which the
+  // ego focus sank to `--map-ego-rest-alpha`, carries the dimming for both.
+  if (egoState === "dim") return kind === "project" || kind === "domain" ? revealAlpha : 0;
   if (egoState === "center" || isHovered) return 1;
 
   if (kind === "project" || kind === "domain") return 1;
@@ -516,7 +510,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, token
   // dimmed domain was placed but drawn at 0 (measured 2026-09-19, max
   // luminance 14 under the name against 185 for a neighbour).
   const alpha = Math.max(
-    computeLabelAlpha({ kind, egoState, isHovered, revealAlpha, dimLabelAlpha: tokens.egoDimLabelAlpha }),
+    computeLabelAlpha({ kind, egoState, isHovered, revealAlpha }),
     emphasisAlpha,
   ) * presenceAlpha;
   if (alpha <= 0.02) return;

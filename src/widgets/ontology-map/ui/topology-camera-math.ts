@@ -217,7 +217,56 @@ export function hitTestWorld(
  */
 export type SafeInsetTokens = Partial<
   Pick<OntologyMapTokens, "safeInsetLeft" | "safeInsetRight" | "safeInsetTop" | "safeInsetBottom">
->;
+> & {
+  /**
+   * What a panel measured on screen actually covers, in canvas pixels — the
+   * part of the side inset that is real occlusion rather than a preference.
+   * `MAX_FIT_CHROME_SHARE` never shrinks the fit below it, so narrowing the
+   * reservation can never slide the graph under an open panel. Absent means
+   * "not measured": then the whole inset is treated as preference.
+   */
+  obstacleInsetLeft?: number;
+  obstacleInsetRight?: number;
+};
+
+/**
+ * The share of an axis the fit may reserve for chrome.
+ *
+ * The side insets are absolute pixels (350 + 120 by default), so they do not
+ * shrink with the window. Measured 2026-09-20: on an 820-wide canvas they take
+ * 57% of it and the graph spans 31% of the width; on a 390-wide canvas they
+ * total more than the canvas, the free width collapses to one pixel and only
+ * `cameraScaleMin` saves the frame — the map draws at its floor zoom, its nodes
+ * spanning 118 px of 390. The widest reservation the layout itself asks for is
+ * 39% (470 of a 1216-wide canvas), and the widest any test pins is 46%, so a
+ * half-canvas ceiling leaves every desktop width untouched and binds only where
+ * the chrome would otherwise take more of the frame than the map.
+ */
+export const MAX_FIT_CHROME_SHARE = 0.5;
+
+/**
+ * Shrinks a pair of insets so together they reserve at most
+ * `MAX_FIT_CHROME_SHARE` of `extent`, keeping each one's measured floor. Only
+ * the part above the floor gives way, and both sides give way in proportion.
+ */
+export function clampFitInsets(
+  lo: number,
+  hi: number,
+  extent: number,
+  floorLo = 0,
+  floorHi = 0,
+): { lo: number; hi: number } {
+  if (!(extent > 0)) return { lo, hi };
+  const budget = extent * MAX_FIT_CHROME_SHARE;
+  if (lo + hi <= budget) return { lo, hi };
+  const fLo = Math.min(Math.max(0, floorLo), lo);
+  const fHi = Math.min(Math.max(0, floorHi), hi);
+  const soft = lo - fLo + (hi - fHi);
+  if (soft <= 0) return { lo: fLo, hi: fHi };
+  const allowed = Math.max(0, budget - fLo - fHi);
+  const k = Math.min(1, allowed / soft);
+  return { lo: fLo + (lo - fLo) * k, hi: fHi + (hi - fHi) * k };
+}
 
 interface SafeInsets {
   left: number;
@@ -273,8 +322,12 @@ export function centerForInsets(
  */
 const OVERVIEW_LABEL_BOTTOM_ALLOWANCE = Math.max(...Object.values(LABEL_OFFSET)) + 4;
 
-function readSafeInsets(tokens: SafeInsetTokens): SafeInsets {
-  return {
+function readSafeInsets(
+  tokens: SafeInsetTokens,
+  viewportWidth?: number,
+  viewportHeight?: number,
+): SafeInsets {
+  const raw = {
     left: tokens.safeInsetLeft ?? 0,
     right: tokens.safeInsetRight ?? 0,
     top: tokens.safeInsetTop ?? 0,
@@ -285,6 +338,15 @@ function readSafeInsets(tokens: SafeInsetTokens): SafeInsets {
         ? 0
         : tokens.safeInsetBottom + OVERVIEW_LABEL_BOTTOM_ALLOWANCE,
   };
+  // The chrome may not eat the map (`MAX_FIT_CHROME_SHARE`). Callers without a
+  // viewport — the pan leash — keep the raw numbers.
+  const x =
+    viewportWidth === undefined
+      ? { lo: raw.left, hi: raw.right }
+      : clampFitInsets(raw.left, raw.right, viewportWidth, tokens.obstacleInsetLeft ?? 0, tokens.obstacleInsetRight ?? 0);
+  const y =
+    viewportHeight === undefined ? { lo: raw.top, hi: raw.bottom } : clampFitInsets(raw.top, raw.bottom, viewportHeight);
+  return { left: x.lo, right: x.hi, top: y.lo, bottom: y.hi };
 }
 
 /**
@@ -313,7 +375,7 @@ export function computeOverviewFitScale(
    */
   nodeCount?: number,
 ): number {
-  const insets = readSafeInsets(tokens);
+  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight);
   const effW = Math.max(1, viewportWidth - insets.left - insets.right);
   const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
   const maxScale =
@@ -340,7 +402,7 @@ export function computeOverviewCameraTarget(
   /** #11 — total node count, forwarded to the small-graph fit clamp. */
   nodeCount?: number,
 ): CameraTarget {
-  const insets = readSafeInsets(tokens);
+  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight);
   const fitScale = computeOverviewFitScale(bounds, viewportWidth, viewportHeight, tokens, nodeCount);
   const tscale = Math.min(tokens.cameraScaleMax, Math.max(tokens.cameraScaleMin, fitScale * tokens.overviewEntryRatio));
   const centerX = (bounds.minX + bounds.maxX) / 2;
@@ -661,7 +723,7 @@ export function computeFocusCameraTarget(
    * opposite (stacking a second shift at the call site), and that produced a 188px
    * misalignment and a 64px over-correction.
    */
-  const insets = readSafeInsets(tokens);
+  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight);
   const effW = Math.max(1, viewportWidth - insets.left - insets.right);
   const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
   // The leash is a box around the viewport centre, not the free centre, so a
@@ -755,7 +817,7 @@ export function computeDomeFocusCameraTarget(
   const centerY = (egoBounds.minY + egoBounds.maxY) / 2;
   const w = Math.max(1, (egoBounds.maxX - egoBounds.minX) * marginRatio);
   const h = Math.max(1, (egoBounds.maxY - egoBounds.minY) * marginRatio);
-  const insets = readSafeInsets(tokens);
+  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight);
   const effW = Math.max(1, viewportWidth - insets.left - insets.right);
   const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
   const fitScale = Math.min(effW / w, effH / h);

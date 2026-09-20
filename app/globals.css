@@ -3519,7 +3519,7 @@
        with the dim stroke: readable as context, never competing with the
        selected node's own name. Children stay at 0 — they were unnamed before
        the selection too. */
-    --map-ego-dim-label-alpha: 0.42;
+    --map-ego-rest-alpha: 0.42;
     /* Recent change spotlight rest alpha (council design 2026-07-23). product reason: when the "changes in last N days" lens is ON, sink nodes/edges outside the window to this alpha so change nodes (fresh channel) win by contrast — not "glowing" but "sinking" (prohibited glow/pulse per charter, fulfilling owner's 'at a glance' desire). Lighter than ego dim(0.15): in the full-map lens, remaining structure must remain readable as context (ego is local focus, so sinks deeper). state/layer:
        map lens. Responsive: value itself is width-agnostic (alpha scalar). Marker: lens state is deterministically reproducible via URL `?recent=`. */
     --map-spotlight-rest-alpha: 0.65;

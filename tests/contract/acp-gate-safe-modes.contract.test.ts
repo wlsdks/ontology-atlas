@@ -198,16 +198,22 @@ const TRANSCRIBED_FROM = {
    * instead of reading the process constant directly. The five advertised mode records and their
    * `_meta.kind` values are unchanged; SHA-256 of `dist/session-mode.js` is
    * `6d2b54c5b4a992fecc3bbaff9eea7a8d59eef08c36a60c4c27e3c83f00138658`.
+   *
+   * 0.79.0 (2026-09-20): `dist/session-mode.js` is byte-identical to 0.77.0 — the same SHA-256
+   * above — so the five advertised records and their `_meta.kind` values still stand. What moved
+   * is `permissions/presentation.js`, a title's wording, which advertises no mode.
    */
-  claude: '@agentclientprotocol/claude-agent-acp@0.77.0',
+  claude: '@agentclientprotocol/claude-agent-acp@0.79.0',
   /**
    * The launch is the newest upstream since 2026-09-07 (owner: "the version is always the
    * newest"; the pin's overturn is in `docs/DECISIONS.md`). 1.10.0 was inspected on 2026-09-05 and
    * its `AgentMode.ts` is byte-identical to 1.9.0, so the kinds transcribed above describe it.
    * 1.11.0 (2026-09-11): the `AgentMode` block in `dist/index.js` is byte-identical to 1.10.0's —
    * same three modes, same kinds, same sandbox policies — so the transcription still holds.
+   * 1.12.0 (2026-09-20): the same 111-line `AgentMode` block is byte-identical to 1.11.0's; the
+   * bundled `@openai/codex` went 0.153.4 → 0.154.0.
    */
-  codexLaunch: '@agentclientprotocol/codex-acp@1.11.0',
+  codexLaunch: '@agentclientprotocol/codex-acp@1.12.0',
 };
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..');

@@ -101,6 +101,37 @@ async function openEditedDraft() {
   await screen.findByRole('button', { name: '변경 내용 확인' });
 }
 
+/**
+ * **The chip expands a named region, and says which one** (map round,
+ * 2026-09-20).
+ *
+ * It used to claim `aria-haspopup="dialog"` while what opened was an unnamed
+ * `div`: measured on the live map, zero elements with `role="dialog"`, no
+ * `aria-controls` on the trigger, and no accessible name on the panel — a
+ * reader heard "expanded" and had nothing to move to. Giving it the dialog role
+ * would have been a hand-assembled modal, which `dialog.tsx` owns and the
+ * adoption ratchet refuses, and a lie besides: no scrim, no focus trap, focus
+ * stays on the chip and the map behind stays live. So it is what it always
+ * behaved as — a disclosure pointing at a named region.
+ */
+describe('SavedConstellationsControl — the chip expands a named region', () => {
+  it('names the region, ties it to the chip, and claims no dialog', () => {
+    renderControl();
+    const trigger = screen.getByRole('button', { name: '내 별자리' });
+    expect(trigger).not.toHaveAttribute('aria-haspopup', 'dialog');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('region', { name: '저장한 범위' })).toBeNull();
+
+    fireEvent.click(trigger);
+
+    const region = screen.getByRole('region', { name: '저장한 범위' });
+    const id = region.getAttribute('id');
+    expect(id, 'the region needs an id for aria-controls').toBeTruthy();
+    expect(trigger).toHaveAttribute('aria-controls', id!);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
 describe('SavedConstellationsControl conflict recovery', () => {
   beforeEach(() => {
     mocks.save.mockReset();
