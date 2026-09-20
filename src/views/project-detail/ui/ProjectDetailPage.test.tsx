@@ -171,6 +171,7 @@ const mocks = vi.hoisted(() => ({
   projects: [] as ReturnType<typeof baseProject>[],
   projectsMode: "static" as "static" | "local",
   vaultDocs: [] as unknown[],
+  vaultManifest: null as { docs: unknown[]; sources: unknown[] } | null,
   handle: null as { rootPath: string } | null,
   agent: {
     route: "unavailable",
@@ -218,6 +219,7 @@ vi.mock("@/features/project-data-source", () => ({
   }),
   useProjectBody: () => ({ body: mocks.vaultBody }),
   useVaultDocs: () => mocks.vaultDocs,
+  useVaultManifest: () => mocks.vaultManifest,
 }));
 
 function baseProject() {
@@ -268,6 +270,7 @@ describe("ProjectDetailPage", () => {
     mocks.projects = [];
     mocks.projectsMode = "static";
     mocks.vaultDocs = [];
+    mocks.vaultManifest = null;
     mocks.handle = null;
     mocks.agent = {
       route: "unavailable",
@@ -412,7 +415,9 @@ describe("ProjectDetailPage", () => {
     expect(screen.getByTestId("construction-review-ingress")).toBeInTheDocument();
     const summary = screen.getByTestId("construction-review-summary");
     expect(summary).toHaveAttribute("data-qualification-status", "qualified");
-    expect(summary.compareDocumentPosition(screen.getByRole("tablist"))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(summary.compareDocumentPosition(screen.getByTestId("project-detail-composition"))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
     expect(localStorage).toHaveLength(0);
   });
 
@@ -435,41 +440,98 @@ describe("ProjectDetailPage", () => {
     expect(screen.queryByTestId("construction-review-summary")).not.toBeInTheDocument();
   });
 
-  it("renders the hero metric strip with real projectIds-derived counts", () => {
+  it("the ontology cell carries this project's own projectIds-derived counts", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
     renderPage();
 
-    // domains=1, capabilities=1, elements=2, documents=1
-    // Only the ontology hierarchy (domain ⊃ capability ⊃ element) becomes chips — the value follows the label.
-    expect(screen.getByText("Domains").nextElementSibling).toHaveTextContent("1");
-    expect(screen.getByText("Capabilities").nextElementSibling).toHaveTextContent("1");
-    expect(screen.getByText("Elements").nextElementSibling).toHaveTextContent("2");
+    // domains=1, capabilities=1, elements=2. Read as a description list pairs them — the term and
+    // the description it belongs to — rather than as running text, whose order is a drawing
+    // decision: the row is reversed visually so the figure reads "1 Domains" on screen while the
+    // document names the term first, which is the order a description list requires.
+    const cell = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="ontology"]')!;
+    const figures = [...cell.querySelectorAll("dt")].map((term) => [
+      term.textContent,
+      term.parentElement?.querySelector("dd")?.textContent,
+    ]);
+    expect(figures).toEqual([
+      ["Domains", "1"],
+      ["Capabilities", "1"],
+      ["Elements", "2"],
+    ]);
   });
 
-  // Five at the same weight reads as "everything matters, so nothing does". Meta figures are a different
-  // kind and drop from chips to plain text — pinned so that hierarchy cannot collapse.
-  it("메타 수치(문서·관계)는 칩이 아니라 평문으로 강등된다", () => {
+  it("names the three Atlas surfaces, each with its own door", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
     renderPage();
 
-    // As a chip, the label and value would be separate elements and "Documents" would match as its own node.
-    expect(screen.queryByText("Documents")).not.toBeInTheDocument();
-    expect(screen.getByText(/Documents\s+1/)).toBeInTheDocument();
+    const cells = screen.getAllByTestId("project-detail-surface-cell");
+    expect(cells.map((cell) => cell.getAttribute("data-surface"))).toEqual(["ontology", "library", "harness"]);
+    const doors = screen.getAllByTestId("project-detail-surface-open");
+    expect(doors.map((door) => door.getAttribute("href"))).toEqual([
+      `/topology/?p=${SLUG}`,
+      "/library/",
+      "/architecture/",
+    ]);
   });
 
-  // The hero figures are this project's while the census at the top is the whole vault. Two different
-  // numbers on one screen reads as one of them being wrong, so the scope is stated in words.
-  it("히어로 지표에 스코프 캡션이 붙는다", () => {
+  // The Library cell once counted wiki pages out of the chosen sample while counting sources out
+  // of the open local folder, so every reader without a folder open — the web, and any sample —
+  // was told the folder held no sources whatever it held. One manifest answers both now.
+  it("자료실 칸은 폴더를 열지 않아도 그 표본의 원본 수를 센다", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.projectsMode = "static";
+    mocks.handle = null;
+    mocks.vaultManifest = { docs: [], sources: [{ path: "sources/a.md" }, { path: "sources/b.md" }] };
+    renderPage();
+
+    const library = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="library"]')!;
+    const figures = [...library.querySelectorAll("dt")].map((node, index) => [
+      node.textContent,
+      library.querySelectorAll("dd")[index]?.textContent,
+    ]);
+    expect(figures).toContainEqual(["sources", "2"]);
+  });
+
+  it("the harness cell shows no figure, because this surface cannot count from here", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    renderPage();
+
+    const harness = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="harness"]')!;
+    expect(harness.querySelector("dl")).toBeNull();
+    expect(harness).toHaveTextContent(/instructions, structure and sensors/i);
+  });
+
+  // Relations say how connected the map is, not how much of it there is, so they are a different
+  // kind from the containment figures and ride the cell's note line instead of becoming a fourth
+  // figure of equal weight. Pinned so that hierarchy inside the cell cannot collapse.
+  it("관계 수는 네 번째 지표가 아니라 온톨로지 칸의 한 줄로 붙는다", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
     renderPage();
 
-    expect(screen.getByText("This project")).toBeInTheDocument();
+    const cell = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="ontology"]')!;
+    const figureLabels = [...cell.querySelectorAll("dt")].map((node) => node.textContent);
+    expect(figureLabels).toEqual(["Domains", "Capabilities", "Elements"]);
+    expect(cell.querySelector('[data-testid="project-detail-surface-note"]')).toHaveTextContent("3 relations");
+  });
+
+  // Only the ontology half of the board is this project's; sources and wiki pages count the folder.
+  // Two scopes side by side read as one unless the difference is said in words.
+  it("구성 판 옆에 스코프 캡션이 붙는다 — 온톨로지만 이 프로젝트의 것이다", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    renderPage();
+
+    expect(screen.getByTestId("project-detail-composition")).toHaveTextContent(
+      "Sources and wiki pages count the whole folder",
+    );
   });
 
   it("구성 탭의 도메인 행을 펼치면 그 도메인의 지도 딥링크가 나온다", () => {
@@ -524,61 +586,23 @@ describe("ProjectDetailPage", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
-    // The tab state's source of truth is the URL — in this harness a tab click only records the URL and
-    // the real app's router does the re-render. So the two states are rendered separately.
-    const { unmount } = renderPage();
-    expect(screen.queryByTestId("project-detail-domain-overlap-note")).not.toBeInTheDocument();
-    unmount();
-
-    nav.search = "tab=composition";
     renderPage();
+
     expect(screen.getAllByTestId("project-detail-domain-overlap-note")).toHaveLength(1);
   });
 
-  it("탭을 누르면 URL 에 기록된다 — 공유·에이전트 재현이 가능해야 한다 (#87)", () => {
+  // The tabs are gone (2026-09-19): the page's question is "what is in here", so composition is
+  // not behind a press, and the document's own destination holds the prose the card used to pour out.
+  it("draws the composition and the domains on one page, with no tablist", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
     renderPage();
 
-    fireEvent.click(screen.getByRole("tab", { name: /composition/i }));
-    expect(nav.search).toContain("tab=composition");
-  });
-
-  it("기본 탭으로 돌아가면 URL 에서 파라미터가 사라진다 (#87)", () => {
-    // A short share link is easy to paste — `?tab=overview` is noise that need not be there.
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
-    nav.search = "tab=composition";
-    renderPage();
-
-    fireEvent.click(screen.getByRole("tab", { name: /overview/i }));
-    expect(nav.search).not.toContain("tab=");
-  });
-
-  it("기본은 개요 탭 — 본문이 보이고 구성 카드는 아직 없다 (#87)", () => {
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
-    renderPage();
-
-    // Owner: "you don't have to show everything by scrolling" — the project.md body runs to thousands of
-    // px, so putting it in the same scroll as composition left no way to scan composition.
-    expect(screen.queryByTestId("project-detail-domain-rows")).not.toBeInTheDocument();
-  });
-
-  it("연결된 프로젝트는 탭 밖에 있다 — 어느 탭에서든 보인다 (#87)", () => {
-    // It is the first surface of treating project-to-project relations as ontology, so it must not be
-    // hidden behind a tab. It has to stay when switching to the composition tab too.
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
-    renderPage();
-
-    const railBefore = screen.getByTestId("project-detail-connected");
-    fireEvent.click(screen.getByRole("tab", { name: /composition/i }));
-    expect(screen.getByTestId("project-detail-connected")).toBe(railBefore);
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.getByTestId("project-detail-surface-board")).toBeInTheDocument();
+    expect(screen.getByTestId("project-detail-domain-rows")).toBeInTheDocument();
+    expect(screen.getByTestId("project-detail-connected")).toBeInTheDocument();
   });
 
   it("shows a sentence-form empty state (not a numeral) when no project is connected", () => {
@@ -683,8 +707,9 @@ describe("ProjectDetailPage", () => {
     mocks.vaultBody = "## Real project.md content\n\nThis is the actual markdown body.";
     renderPage();
 
-    // A `##` heading makes the body a brief: the heading is the block's title.
-    const content = screen.getByTestId("project-detail-brief");
+    // The card summarises: the section titles are the contents line, the opening paragraph is the
+    // prose, and the document's own destination holds the rest.
+    const content = screen.getByTestId("project-detail-brief-summary");
     expect(content).toHaveTextContent("Real project.md content");
     expect(content).toHaveTextContent("This is the actual markdown body.");
     expect(screen.queryByTestId("project-detail-body-empty")).not.toBeInTheDocument();
@@ -707,21 +732,33 @@ describe("ProjectDetailPage", () => {
     ].join("\n");
     renderPage();
 
-    const brief = screen.getByTestId("project-detail-brief");
+    const brief = screen.getByTestId("project-detail-brief-summary");
     expect(brief).toHaveAttribute("data-section-count", "3");
-    const sections = screen.getAllByTestId("project-detail-brief-section");
-    expect(sections.map((section) => section.querySelector("h3")?.textContent)).toEqual([
+    // The contents line names what is written, in order, without pouring the document out.
+    const sections = screen.getByTestId("project-detail-brief-sections");
+    expect([...sections.querySelectorAll("li")].map((item) => item.textContent?.replace(/^·\s*/, ""))).toEqual([
       "What it does",
       "How work flows",
       "Where it is uneven",
     ]);
-    expect(screen.getByTestId("project-detail-brief-steps").querySelectorAll("li")).toHaveLength(2);
-    expect(screen.getByTestId("project-detail-brief-rows").querySelectorAll("li")).toHaveLength(2);
-    const door = screen.getByTestId("project-detail-brief-doc-link");
-    expect(door).toHaveAttribute("href", "/docs/?slug=domains%2Fcatalog");
-    expect(door).toHaveTextContent("catalog");
-    expect(screen.queryByTestId("project-detail-body-content")).not.toBeInTheDocument();
+    // Only the opening paragraph is drawn, so the steps and rows of later sections are not.
+    expect(screen.queryByTestId("project-detail-brief-steps")).not.toBeInTheDocument();
+    expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent("A store.");
+    expect(screen.getByTestId("project-detail-body-continue")).toBeInTheDocument();
     expect(screen.getByTestId("project-detail-brief-ask")).toHaveAttribute("data-brief-state", "structured");
+  });
+
+  // A body can open with a list. The summary used to look for a paragraph, find none, and draw
+  // nothing at all about the document — the one thing this card exists to carry.
+  it("목록으로 시작하는 본문도 그 첫 블록을 보여준다", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.vaultBody = "- A storefront that sells one thing\n- Built in the open";
+    renderPage();
+
+    expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent(
+      "A storefront that sells one thing",
+    );
   });
 
   it("keeps an unsectioned body as prose and leads with the ask to lay it out", async () => {
@@ -744,8 +781,9 @@ describe("ProjectDetailPage", () => {
     ];
     renderPage();
 
-    expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent("Another paragraph.");
-    expect(screen.queryByTestId("project-detail-brief")).not.toBeInTheDocument();
+    // No `##` heading: the opening paragraph stands alone with no contents line.
+    expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent("One paragraph.");
+    expect(screen.queryByTestId("project-detail-brief-sections")).not.toBeInTheDocument();
     const ask = screen.getByTestId("project-detail-brief-ask");
     expect(ask).toHaveAttribute("data-brief-state", "unstructured");
     const copy = screen.getByTestId("project-detail-brief-ask-copy");
