@@ -561,6 +561,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const workbenchOpenRef = useRef({ agent: false, meaning: false });
   useLayoutEffect(() => { workbenchOpenRef.current = { agent: acpDockFrameOpen, meaning: meaningWorkbenchOpen }; }, [acpDockFrameOpen, meaningWorkbenchOpen]);
   const requestWorkbenchSection = useCallback((tab: 'meaning' | 'history' | 'conversation') => setWorkbenchSectionRequest((current) => ({ tab, nonce: current.nonce + 1 })), []);
+  /** Which tab the dock is actually on, so the chip knows whether a press still has somewhere to go. */
+  const workbenchSectionRef = useRef<'meaning' | 'history' | 'conversation'>('meaning');
   const openMeaningWorkbench = useCallback(() => { setVaultAgentOpen(false); setMeaningWorkbenchOpen(true); requestWorkbenchSection('meaning'); }, [requestWorkbenchSection]);
   /*
    * The chip wears the active tone while the panel is open, and the rule beside
@@ -571,12 +573,24 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
    * ignores a press is not a control, so the press closes what it opened.
    */
   const toggleMeaningWorkbench = useCallback(() => {
+    /*
+     * Closing is what a lit chip owes a press, but only once the press has
+     * nothing else to do. While the dock is parked on another tab this chip is
+     * still the way back to meaning, and taking that away would close a dock the
+     * person was reading (`analysis-workbench.spec.ts`, "returns an open history
+     * dock to meaning without closing it"). So: on meaning it closes, elsewhere
+     * it comes home first.
+     */
     if (meaningWorkbenchOpen) {
+      if (workbenchSectionRef.current !== 'meaning') {
+        requestWorkbenchSection('meaning');
+        return;
+      }
       setMeaningWorkbenchOpen(false);
       return;
     }
     openMeaningWorkbench();
-  }, [meaningWorkbenchOpen, openMeaningWorkbench]);
+  }, [meaningWorkbenchOpen, openMeaningWorkbench, requestWorkbenchSection]);
   const [analysisFindings, setAnalysisFindings] = useState<readonly AnalysisFinding[]>([]);
   /**
    * Whether the dock starts open — true only in the installed app with a key
@@ -3211,6 +3225,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     setCreateNodeOpen(false);
   }, [agentChatUsesRuntime, cancelAcpSessionStart, requestWorkbenchSection, setCreateNodeOpen]);
   const handleWorkbenchSectionChange = useCallback((tab: 'meaning' | 'history' | 'conversation') => {
+    workbenchSectionRef.current = tab;
     if (tab === 'conversation' && agentChatUsesRuntime && !workbenchOpenRef.current.agent) {
       setChatMounted(true); setAcpDockFrameOpen(true); setAcpChatOpen(true);
     }
