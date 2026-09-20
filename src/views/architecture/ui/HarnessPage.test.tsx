@@ -7,6 +7,9 @@ import type { HarnessReport } from '@/entities/agent-files';
 
 const state = {
   mode: 'local' as 'local' | 'static',
+  /* Which surface the page thinks it is on. The arrival view depends on it: only a desktop bridge
+     can read the dot directories the structure view is about. */
+  bridge: true,
   report: null as null | {
     status: string;
     sourceRoot?: string;
@@ -20,6 +23,12 @@ vi.mock('@/entities/vault-session', () => ({
   useLocalVault: () => ({ status: 'loaded', handle: {}, manifest: { docs: [] } }),
   useStaticVaultSource: () => ({ manifest: { docs: [] } }),
   VaultSourceHydrationBoundary: ({ children }: { children: React.ReactNode }) => children,
+}));
+// Both sides are needed: main added the bridge-runtime mock, and this branch moved the harness
+// report behind its feature's public API, so the second mock names the slice rather than the file.
+vi.mock('@/shared/lib/tauri-vault-fs', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/tauri-vault-fs')>()),
+  isTauriVaultRuntime: () => state.bridge,
 }));
 vi.mock('@/features/harness-report', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/harness-report')>()),
@@ -95,6 +104,8 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
       unnamedByFolder: [], excluded: [], truncated: false,
     },
     testFiles: [],
+    gitHookFiles: [],
+    workflowFiles: [],
     times: [],
     contents: new Map(),
     checks: { wiredHooks: 20, gitHooks: 3, scripts: new Array(57).fill('x'), total: 80 },
@@ -106,6 +117,7 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
 
 beforeEach(() => {
   state.mode = 'local';
+  state.bridge = true;
   state.report = null;
   /* Real timers by default; only the wait-screen tests fake them, and they must not leak into the
      count-up animation the arrival runs. */
@@ -128,24 +140,65 @@ describe('the destination identity', () => {
   });
 
   it('drops the explainer in the blueprint, where 20px is a third of a layer row', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=structure');
+    window.history.replaceState(null, '', '/ko/architecture/?view=architecture');
     mount();
     expect(
       screen.queryByText('에이전트가 이 저장소에서 어떻게 일하도록 되어 있는지'),
     ).toBeNull();
   });
 
-  it('opens on the blueprint, where every link written before this slice points', () => {
-    /* The matrix is the tab's spine and one press away; the view a person walks into is the ladder
-       (owner, 2026-09-13), which also keeps the plain address meaning what it always meant. */
+  it('opens on the harness structure, which is what the destination is named after', () => {
+    /* The owner's 2026-09-13 call put the layer ladder here; his 2026-09-19 call moved it, because
+       the ladder is the product's architecture and not the harness's anatomy. */
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+    mount();
+    expect(screen.getByTestId('harness-anatomy')).toBeInTheDocument();
+    expect(screen.queryByTestId('architecture-page')).toBeNull();
+  });
+
+  it('arrives on the blueprint in a browser, which is the view a browser can answer', () => {
+    /*
+     * Almost the whole harness lives in dot directories and the File System Access API cannot see
+     * one, so the structure view is empty on the web. Arriving there handed a web visitor a card
+     * about what this browser cannot do — and CI caught it as a route that draws almost nothing
+     * inside `main`, which the a11y ratchet refuses to score (2026-09-20).
+     */
+    state.bridge = false;
     mount();
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('harness-anatomy')).toBeNull();
+  });
+
+  it('arrives on the blueprint when a bridge exists but no harness can be read', () => {
+    /*
+     * ⚠️ The gap CI found and the unit tests did not: a browser session that mounts a local folder
+     * through a Tauri-shaped stub **has** the bridge and no connected project source, so asking
+     * only "is there a bridge" opened the structure view and drew "this browser cannot read dot
+     * directories" over a repository whose architecture profile was right there
+     * (`local-vault-route-identity`, 2026-09-20). The question is whether a reading can be
+     * produced, not whether a bridge is present.
+     */
+    state.bridge = true;
+    state.report = { status: 'no-source' };
+    mount();
+    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('harness-anatomy')).toBeNull();
+  });
+
+  it('still opens the structure view when an address names it, source or not', () => {
+    /* A shared link opens what it says; the fallback moves the arrival, never the address. */
+    state.bridge = true;
+    state.report = { status: 'no-source' };
+    window.history.replaceState(null, '', '/ko/architecture/?view=structure');
+    mount();
+    expect(screen.queryByTestId('architecture-page')).toBeNull();
   });
 
   it('lets the rail through, which carries ?focus=main on every link', () => {
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     window.history.replaceState(null, '', '/ko/architecture/?focus=main');
     mount();
-    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-anatomy')).toBeInTheDocument();
   });
 
   it('keeps one tab set above the panel, never inside it', () => {
@@ -156,11 +209,11 @@ describe('the destination identity', () => {
      * canvas and then lost the tabs entirely on a repository with no architecture profile, where
      * that view returns its empty state early. One instance, in the shell, above every panel.
      */
-    window.history.replaceState(null, '', '/ko/architecture/?view=structure');
+    window.history.replaceState(null, '', '/ko/architecture/?view=architecture');
     mount();
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-embedded', 'true');
     expect(screen.getAllByRole('tablist')).toHaveLength(1);
-    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
     // The identity is the shell's, so the blueprint is handed none of it.
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-has-identity', 'false');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
@@ -168,7 +221,7 @@ describe('the destination identity', () => {
 });
 
 describe('the segmented control', () => {
-  it('moves between the three views and writes the view into the address', () => {
+  it('moves between the four views and writes the view into the address', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     act(() => {
@@ -178,9 +231,15 @@ describe('the segmented control', () => {
     expect(window.location.search).toBe('?view=coverage');
 
     act(() => {
-      fireEvent.click(document.querySelector('#harness-tab-structure')!);
+      fireEvent.click(document.querySelector('#harness-tab-architecture')!);
     });
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+    expect(window.location.search).toBe('?view=architecture');
+
+    act(() => {
+      fireEvent.click(document.querySelector('#harness-tab-structure')!);
+    });
+    expect(screen.getByTestId('harness-anatomy')).toBeInTheDocument();
     // The default view leaves the plain address a person copies.
     expect(window.location.search).toBe('');
   });
@@ -188,7 +247,7 @@ describe('the segmented control', () => {
   it('follows the address when history moves under it', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-anatomy')).toBeInTheDocument();
     act(() => {
       window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
       window.dispatchEvent(new PopStateEvent('popstate'));
@@ -203,6 +262,32 @@ describe('the segmented control', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
+  });
+
+  it('keeps the census off the structure view, where the bands count differently', () => {
+    /*
+     * The sentence counts declarations in one bucket and a mirrored guard twice; the bands below
+     * split gates from watchers and count a mirrored guard once. Printing both put a reader in
+     * front of one screen arguing with itself.
+     */
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+    mount();
+    expect(screen.queryByTestId('harness-sentence')).toBeNull();
+
+    act(() => {
+      fireEvent.click(document.querySelector('#harness-tab-coverage')!);
+    });
+    expect(screen.getByTestId('harness-sentence')).toBeInTheDocument();
+  });
+
+  it('opens the blueprint for an address that carries a role but names no view', () => {
+    /* `?role=` is written by the blueprint's own deep links and exists on no other view. Those
+       links were meaningful with no `?view=` beside them while the blueprint was the default, and
+       moving the default must not turn every one of them into a screen with no roles on it. */
+    window.history.replaceState(null, '', '/ko/architecture/?role=views');
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+    mount();
+    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
   });
 
   it('sends the retired sensors address to the view that answers it', () => {

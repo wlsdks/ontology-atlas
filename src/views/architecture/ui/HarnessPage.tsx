@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 
@@ -10,6 +10,7 @@ import {
   useStaticVaultSource,
   VaultSourceHydrationBoundary,
 } from '@/entities/vault-session';
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { Chip, EmptyState, InfoHint, Surface, TabBar } from '@/shared/ui';
 import { PAGE_TOP_PAD } from '@/shared/ui/page-frame';
 
@@ -17,11 +18,13 @@ import {
   buildHarnessViewHref,
   HARNESS_VIEW_ORDER,
   parseHarnessView,
+  resolveAddressView,
   type HarnessView,
 } from '../lib/harness-view-state';
 import { deriveCoverageAreas } from '@/features/harness-report';
 import { useHarnessReport } from '@/features/harness-report';
 import { ArchitecturePage } from './ArchitecturePage';
+import { HarnessAnatomyView } from './HarnessAnatomyView';
 import { HarnessCoverageView } from './HarnessCoverageView';
 import { HarnessGuidesView } from './HarnessGuidesView';
 import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
@@ -87,6 +90,15 @@ import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
  */
 const PROGRESS_REVEAL_MS = 1000;
 
+/** The read never changes within a session, so nothing has to be watched. */
+const subscribeNever = () => () => {};
+
+/**
+ * The server's answer, which is the browser's: a static export is built with no desktop bridge, and
+ * the exported HTML is what a web visitor gets.
+ */
+const readHarnessSurfaceOnServer = () => false;
+
 const EMPTY_DOCS: Array<{
   slug: string;
   title: string;
@@ -111,8 +123,19 @@ function HarnessPageInner() {
    * URL with `replaceState`, which `useSearchParams` does not observe.
    */
   const [viewOverride, setViewOverride] = useState<HarnessView | null>(null);
-  const addressView = parseHarnessView(searchParams.get('view'));
-  const view = viewOverride ?? addressView;
+  /*
+   * ⚠️ **The surface decides the arrival view, and a static export cannot know it on the server.**
+   * So the server snapshot is `false` — the browser's answer, and the one the exported HTML has to
+   * carry — while the client reads the real runtime. `useSyncExternalStore` rather than an effect
+   * plus state: the read never changes, the subscription is a no-op, and the first client render
+   * is already correct with no hydration mismatch (the same shape `FirstRunStarterModule` uses for
+   * the platform badge).
+   */
+  const surfaceHasBridge = useSyncExternalStore(
+    subscribeNever,
+    isTauriVaultRuntime,
+    readHarnessSurfaceOnServer,
+  );
   const [reloadNonce, setReloadNonce] = useState(0);
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
@@ -158,20 +181,43 @@ function HarnessPageInner() {
        what putting the view in the URL was meant to prevent. */
     const onPopState = () => {
       const params = new URL(window.location.href).searchParams;
-      setViewOverride(parseHarnessView(params.get('view')));
+      setViewOverride(resolveAddressView(params, isTauriVaultRuntime()));
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
+  /*
+   * ⚠️ **The read is not gated on the view any more, and it cannot be.** The arrival view is chosen
+   * from whether this surface can actually produce a harness reading, so gating the reading on the
+   * view would have each waiting for the other. It costs nothing where it cannot run: without the
+   * bridge the hook returns `unsupported` without a round trip.
+   */
   const reportState = useHarnessReport(
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     projectSlugs,
-    view !== 'structure',
+    surfaceHasBridge,
     coverage.capabilityPaths,
     reloadNonce,
   );
   const report = reportState.status === 'ready' ? reportState.report : null;
+  /*
+   * ⚠️ **A bridge is not a harness.** The first version of this asked only whether the desktop
+   * bridge existed, and CI found the gap: a browser session that mounts a local folder through a
+   * Tauri-shaped stub has the bridge and no connected project source, so the destination opened the
+   * structure view and drew "this browser cannot read dot directories" over a repository whose
+   * architecture profile was right there to show (`local-vault-route-identity`, 2026-09-20).
+   *
+   * So the question is the one that matters: can a reading be produced here at all? `unsupported`
+   * and `no-source` are the two answers that mean no, and both send the arrival to the blueprint,
+   * which answers from the profile. A named `?view=` still wins over this, so a shared link opens
+   * what it says on either surface.
+   */
+  const harnessUnavailable =
+    reportState.status === 'unsupported' || reportState.status === 'no-source';
+  const addressView = resolveAddressView(searchParams, surfaceHasBridge && !harnessUnavailable);
+  /* A press wins over the address until the next history move; see `setView`. */
+  const view = viewOverride ?? addressView;
 
   /*
    * The wait screen is held back rather than the read being slowed down. `loading` flips identity on
@@ -288,11 +334,11 @@ function HarnessPageInner() {
         </div>
       </div>
 
-      {view === 'structure' ? (
+      {view === 'architecture' ? (
         <ArchitecturePage
           embedded
-          harnessPanelId="harness-tabpanel-structure"
-          harnessPanelLabelledBy="harness-tab-structure"
+          harnessPanelId="harness-tabpanel-architecture"
+          harnessPanelLabelledBy="harness-tab-architecture"
         />
       ) : (
         /*
@@ -337,11 +383,34 @@ function HarnessPageInner() {
               <p className="max-w-prose text-body-lg text-[color:var(--color-text-tertiary)]">
                 {t('explainer')}
               </p>
-              {sentence}
+              {/*
+                ⚠️ **Not on the structure view, because it contradicts it.** The census counts
+                declarations in one bucket — "N checks in place" is wired hooks plus `.githooks/`
+                files plus `package.json` scripts, and a guard mirrored for Claude Code and Codex
+                counts twice. The view below splits exactly that bucket into what gates and what
+                watches, and counts a mirrored guard **once**, which is the distinction the two
+                files carry. So a reader met "80 checks" over rows adding to 77 under a different
+                definition, one screen arguing with itself (2026-09-20). The bands *are* the
+                census there, and they say it in the vocabulary the rest of the view uses.
+
+                It stays on the coverage and guides views, where the matrix and the table use the
+                same counting rule it does.
+              */}
+              {view === 'structure' ? null : sentence}
             </div>
             {reportState.status === 'ready' ? (
               <div className="architecture-result-arrive">
-                {view === 'coverage' ? (
+                {view === 'structure' ? (
+                  <>
+                    <HarnessAnatomyView
+                      report={reportState.report}
+                      sourceRoot={reportState.sourceRoot}
+                    />
+                    <p className="mt-6 font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                      {t('sourceRoot', { path: reportState.sourceRoot })}
+                    </p>
+                  </>
+                ) : view === 'coverage' ? (
                   <HarnessCoverageView
                     report={reportState.report}
                     areas={coverage.areas}

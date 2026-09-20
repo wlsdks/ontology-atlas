@@ -19,8 +19,11 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  * `.claude/rules/surfaces.md` sets.
  */
 
-async function openConnectorsWithVault(page: import("@playwright/test").Page) {
-  await stubDirectoryPicker(page, { ...FIXTURE_VAULT });
+async function openConnectorsWithVault(
+  page: import("@playwright/test").Page,
+  extraFiles: Record<string, string> = {},
+) {
+  await stubDirectoryPicker(page, { ...FIXTURE_VAULT, ...extraFiles });
   await seedFirstRunSeen(page);
   await page.goto("/ko/topology/?guides=off");
   await page.waitForLoadState("networkidle");
@@ -32,6 +35,55 @@ async function openConnectorsWithVault(page: import("@playwright/test").Page) {
   await page.waitForLoadState("networkidle");
   await expect(page.getByTestId("connectors-panel")).toBeVisible();
 }
+
+test("연결 도구 딥링크는 그 칸에 내려선다 — 짧은 창에서도", async ({ page }) => {
+  test.setTimeout(300_000);
+  /*
+   * ⚠️ **Measured at four viewports, 2026-09-19.** `?mcp=connectors` stopped being a tab
+   * switch and became a scroll when the MCP screen's two halves became two groups under one
+   * strip. Nothing measured whether it lands: this spec only asserted the panel was *visible*,
+   * which both groups always are now, so the deep link's whole effect sat outside coverage.
+   *
+   * A short window is the state that catches it. The scroll used to run while the connector
+   * store was still loading, against a page at its short height; the list then rendered
+   * underneath and pushed the group down, leaving the heading **140px above the viewport** at
+   * 1440×600 — a link named "connectors" arriving with the connectors heading cut off. At
+   * 1280×900 the group is in view without scrolling at all, which is why a desktop-sized
+   * check saw nothing.
+   */
+  await page.setViewportSize({ width: 1440, height: 600 });
+  /*
+   * **Attached connectors are the state that catches it**, and the empty fixture is not: the
+   * list is what renders after the scroll and pushes the group down, so with nothing attached
+   * this assertion passes on code that has the defect. Measured both ways before it was kept.
+   */
+  await openConnectorsWithVault(page, {
+    ".ontology-atlas/connectors.json": JSON.stringify({
+      version: 1,
+      connectors: [
+        { id: "c1", name: "confluence", transport: "http", url: "https://mcp.atlassian.com/v1/mcp", args: [], env: [], headers: [], enabled: true },
+        { id: "c2", name: "github", transport: "stdio", command: "npx", args: ["-y", "@modelcontextprotocol/server-github"], env: [], headers: [], enabled: false },
+      ],
+    }),
+  });
+  await expect(page.getByTestId("connectors-list")).toBeVisible({ timeout: 20_000 });
+
+  const landing = await page.evaluate(() => {
+    const group = document.getElementById("mcp-connectors");
+    if (!group) return null;
+    const rect = group.getBoundingClientRect();
+    return { top: Math.round(rect.top), viewport: window.innerHeight };
+  });
+  expect(landing, "the connectors group is not on the page").not.toBeNull();
+  expect(
+    landing!.top,
+    "the connectors heading is above the viewport — the scroll overshot",
+  ).toBeGreaterThanOrEqual(0);
+  expect(
+    landing!.top,
+    "the connectors group is below the fold — the deep link did not land on it",
+  ).toBeLessThan(landing!.viewport);
+});
 
 test("빈 상태는 한 문장·한 줄 공개·문 하나다", async ({ page }) => {
   test.setTimeout(300_000);
