@@ -350,6 +350,21 @@ export function createAnalysisTurnObserver(
   };
 }
 
+/**
+ * **The read-only frame every non-Flow Analysis request opens with**, in each language.
+ *
+ * It lives here rather than beside the screen that writes it because two places need the exact
+ * same bytes: `buildInsightsAgentPrompt`, which composes the request, and `request-parts.ts`,
+ * which has to recognise where the machine half of that request begins. A widget cannot import
+ * from a view, and a sentence copied into both would drift the first time one of them is
+ * reworded — which is the failure this constant exists to prevent, the same way
+ * `ANALYSIS_FINDINGS_INSTRUCTION` below is read rather than transcribed.
+ */
+export const READ_ONLY_TOOL_INSTRUCTION = {
+  en: 'Use only Atlas MCP read tools. Do not call write tools, shell, files, source, or the web.',
+  ko: 'Atlas MCP 읽기 도구만 사용하고 쓰기 도구, shell, 파일, 소스, 웹은 호출하지 마.',
+} as const;
+
 export const ANALYSIS_FINDINGS_INSTRUCTION = [
   'Keep the answer useful as plain Markdown. Cite exact ontology slugs and preserve unknowns; do not invent a maintainability percentage or treat a suspicion as a confirmed defect.',
   'At the end, include one ```atlas-analysis JSON block shaped {"findings":[{"category":"definition|boundary|relation|evidence|architecture","title":"...","detail":"...","targetSlugs":["exact authored slug"],"evidenceSlugs":["slug read in full this turn"],"roleIds":[],"relation":null,"suggestedAction":"..."}]}.',

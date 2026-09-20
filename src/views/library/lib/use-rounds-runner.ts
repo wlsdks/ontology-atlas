@@ -583,8 +583,19 @@ export function useRoundsRunner(): RoundsRunnerValue {
     if (!store) return false;
     const result = await store.upsert(round);
     await refresh();
+    /*
+     * **A local check runs once as it is saved** (owner, 2026-09-19: the screen was "hard
+     * to operate"; measured on the installed app, a check saved at 21:35 showed nothing
+     * until its 22:00 boundary or until a person found "run now"). A consistency pass costs
+     * no agent turn, so the first result can stand on the screen before the sheet's close
+     * animation ends. A service round spends a turn per pass; its first pass stays on the
+     * clock the person just chose.
+     */
+    if (result.status === "saved" && round.kind === "consistency" && round.enabled && !runningRef.current) {
+      void runPass(round, "manual");
+    }
     return result.status === "saved";
-  }, [refresh, store]);
+  }, [refresh, runPass, store]);
 
   const remove = useCallback(async (id: string) => {
     if (!store) return false;

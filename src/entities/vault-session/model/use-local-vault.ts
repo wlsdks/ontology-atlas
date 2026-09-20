@@ -808,13 +808,26 @@ export function useLocalVaultInternal() {
     // through — the chooser row, the picker, or a restore. Clearing it here rather than in
     // each caller is why a new door cannot forget to.
     setAwaitingVaultChoice(false);
-    setState((s) => ({
-      ...s,
-      status: 'loading',
-      handle,
-      errorMessage: null,
-      errorCode: null,
-    }));
+    setState((s) => {
+      const cleared = { ...s, handle, errorMessage: null, errorCode: null };
+      /*
+       * **Re-reading a folder that is already open is not opening one.**
+       *
+       * The 5-second watch calls this whenever the fingerprint moves, and it used to
+       * drop back to `loading` every time. Everything the screen derives from
+       * `status === 'loaded'` went with it: measured on the map at 1512x982 with
+       * nothing touched, the INDEX lost the folder's name and document count for
+       * ~3.5 s out of every ~8.6 s, and while it was gone the recent filter claimed
+       * nothing at all in seven days on a folder where 20 of 20 documents had
+       * changed that same day.
+       * A false zero is worse than a stale one.
+       *
+       * So a rebuild of the same handle keeps the frame that is already on screen and
+       * swaps in the new manifest when it arrives. A different folder, or one that is
+       * not loaded yet, still shows `loading` — there is nothing to keep there.
+       */
+      return s.status === 'loaded' && s.handle === handle ? cleared : { ...cleared, status: 'loading' };
+    });
     try {
       // With a previous build of the same vault (identical handle), rebuild incrementally —
       // re-reading only changed files, which is what removes the live-update lag on a large

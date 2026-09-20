@@ -103,15 +103,48 @@ export const SETTINGS_SECTION_LABEL =
  * and on the right means one of them is wasted ink). A name is given only when one
  * pane holds more than one group.
  */
-export function SettingsGroup({ label, children }: { label?: string; children: ReactNode }) {
+/**
+ * A group's heading row: the eyebrow on the left and, when a group carries one, its own control
+ * on the right (a hint, an opener). Exported on its own for a group whose body is not the row
+ * container — the connectors card on the MCP tab draws its own frame.
+ */
+export function SettingsGroupHeading({
+  label,
+  trailing,
+  id,
+}: {
+  label: string;
+  trailing?: ReactNode;
+  id?: string;
+}) {
+  return (
+    <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1">
+      <h3 id={id} className={SETTINGS_SECTION_LABEL}>
+        {label}
+      </h3>
+      {trailing ? <div className="flex items-center gap-2">{trailing}</div> : null}
+    </div>
+  );
+}
+
+export function SettingsGroup({
+  label,
+  trailing,
+  children,
+  testId,
+}: {
+  label?: string;
+  /** Controls that belong to the whole group, on the heading's right (2026-09-19). */
+  trailing?: ReactNode;
+  children: ReactNode;
+  testId?: string;
+}) {
   // `min-w-0` on the section: as a grid item it would otherwise size to its widest caption —
   // a long folder path — and the group's `overflow-hidden` then clipped every control on
   // the right (installed app, 2026-09-06: the folder row's chips were off-screen).
   return (
-    <section aria-label={label} className="min-w-0">
-      {label ? (
-        <h3 className={`px-1 ${SETTINGS_SECTION_LABEL}`}>{label}</h3>
-      ) : null}
+    <section aria-label={label} className="min-w-0" data-testid={testId}>
+      {label ? <SettingsGroupHeading label={label} trailing={trailing} /> : null}
       <div className={`${label ? 'mt-1.5 ' : ''}divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]`}>
         {children}
       </div>
@@ -166,16 +199,25 @@ export function SettingsRow({
    * decoration.
    */
   const hasMarkSlot = icon !== undefined;
+  /*
+   * **The controls wrap under the label when the row cannot hold both** (responsive sweep,
+   * 2026-09-19). Measured at 390 on the Agents destination: a runtime row's three controls
+   * (chat, check, badge) stood over a name squeezed to 0px, and on the MCP tab the four tool
+   * rows kept a 60px label column beside a 208px button, splitting `.codex/config.toml` mid-word.
+   * The text block claims at least 10rem before the control cluster is allowed on the same line;
+   * when that does not fit, the cluster drops to its own line and keeps to the right (`ml-auto`).
+   * At 768 and above nothing moves: the text simply grows.
+   */
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-3 px-3 min-w-0',
+        'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-3',
         hasMarkSlot ? 'min-h-16 py-2.5' : 'min-h-12 py-2',
       )}
       data-testid={testId}
     >
       {hasMarkSlot ? <VendorMark src={icon ?? null} ink={iconInk ?? null} /> : null}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-40">
         <p className="text-body text-[color:var(--color-text-secondary)]">{label}</p>
         {caption ? (
           <p
@@ -192,7 +234,7 @@ export function SettingsRow({
           </p>
         ) : null}
       </div>
-      <div className="flex shrink-0 items-center gap-2">{control}</div>
+      <div className="ml-auto flex shrink-0 items-center gap-2">{control}</div>
     </div>
   );
 }
