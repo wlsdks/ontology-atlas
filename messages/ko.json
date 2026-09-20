@@ -943,7 +943,7 @@
     "redirectFilesProof": "마크다운 파일은 로컬에 유지",
     "redirectGraphProof": "파일 맨 위 정보칸이 곧 지도",
     "redirectAgentProof": "에이전트가 이 폴더 밖을 건드리기 전에 먼저 물어봐요",
-    "lostVaultMissing": "전에 연결했던 폴더 「{name}」을(를) 찾지 못했어요. 이동했거나 지워진 것 같아요. 다시 선택하면 이어서 쓸 수 있어요.",
+    "lostVaultMissing": "전에 연결했던 폴더 「{name}」, 찾지 못했어요. 이동했거나 지워진 것 같아요. 다시 선택하면 이어서 쓸 수 있어요.",
     "lostVaultUnreadable": "전에 연결했던 폴더를 다시 열지 못했어요. 폴더를 다시 고르거나, 샘플로 계속 둘러봐도 돼요.",
     "lostVaultAction": "폴더 다시 고르기",
     "lostVaultDismiss": "알림 닫기"
@@ -1678,7 +1678,7 @@
         "occurrences": "×{count}",
         "askedByPrefix": "찾은 곳:",
         "writtenUnder": "적힌 자리: {keys}",
-        "dismiss": "{name}을(를) 이 컴퓨터에서 숨깁니다",
+        "dismiss": "이 컴퓨터에서 숨깁니다 · {name}",
         "hiddenMarker": "{count}개 숨김 · 보기",
         "hiddenNote": "{count}개를 이 컴퓨터에서 숨겼습니다. 위 숫자는 폴더에 있는 그대로입니다.",
         "pending": "그래프를 불러오는 중입니다…",
@@ -4533,7 +4533,7 @@
       "diedMidTurn": "답하는 도중에 에이전트가 멈췄어요. 여기까지가 받은 전부예요. 위의 「새 대화」로 다시 물어봐 주세요.",
       "modeMoved": "도구가 이 대화를 {mode} 방식으로 옮겼습니다. 이 방식은 파일 수정을 먼저 묻지 않고 받아들입니다.",
       "modeMovedServerGate": "도구가 이 대화를 {mode} 방식으로 옮겼습니다. 이 방식은 파일 수정을 먼저 묻지 않고 받아들입니다. 아틀라스 도구로 지나가는 변경은 서버에서 그대로 승인을 받습니다.",
-      "autoAllowed": "{detail}을(를) 묻지 않고 썼습니다. 위키 서식에 맞아서요.",
+      "autoAllowed": "묻지 않고 {detail}에 썼습니다. 위키 서식에 맞아서요.",
       "openPage": "열기",
       "askNext": "다음엔 묻기"
     },
@@ -4553,7 +4553,7 @@
         "prompt": "「{firstLabel}」({first})를 포함한 {count}개 노드가 지도의 나머지와 이어져 있지 않아요. 코드를 근거로 어디에 붙어야 하는지 찾아서, 왜 그렇게 잇는지와 함께 제안해 줘."
       },
       "containment": {
-        "label": "「{slugLabel}」 문서에는 「{domainLabel}」 소속이라고 적혀 있는데, 「{domainLabel}」 문서의 목록에는 「{slugLabel}」이(가) 없어요. 어느 쪽이 맞는지 확인하고 두 문서를 같게 맞춰 줘",
+        "label": "「{slugLabel}」 문서에는 「{domainLabel}」 소속이라고 적혀 있는데, 「{domainLabel}」 문서의 목록에 「{slugLabel}」이 빠져 있어요. 어느 쪽이 맞는지 확인하고 두 문서를 같게 맞춰 줘",
         "prompt": "「{slugLabel}」({slug})는 「{domainLabel}」({domain})에 속한다고 적혀 있는데, 도메인 쪽 연결에는 빠져 있어요. 소속이 맞는지 확인하고, 맞으면 양쪽 연결을 맞춰 줘."
       },
       "evidence": {
@@ -4966,12 +4966,12 @@
     "askEdit": "직접 고쳐서 넣기",
     "askDismiss": "접기",
     "remove": "지우기",
-    "removeConfirmTitle": "{name}을(를) 지울까요?",
+    "removeConfirmTitle": "지울까요? · {name}",
     "removeConfirmBody": "이 폴더의 연결 도구 목록에서 그 줄이 사라집니다. 이 컴퓨터의 다른 것은 그대로입니다.",
     "removeConfirmBodyKeys": "이 폴더의 연결 도구 목록에서 그 줄이 사라지고, 이 컴퓨터 키체인에서 {keys} 값이 지워집니다. 다시 읽어 올 방법은 없습니다.",
     "removeCancel": "취소",
-    "removedAnnouncement": "{name}을(를) 지웠습니다.",
-    "rowTransfer": "켜면 에이전트가 {destination}과(와) 직접 주고받습니다.",
+    "removedAnnouncement": "지웠습니다 · {name}",
+    "rowTransfer": "켜면 에이전트가 직접 주고받습니다 · {destination}",
     "rowTransferStdio": "켜면 이것이 이 컴퓨터에서 돌고, 그것이 닿는 곳과는 거기서 곧장 주고받습니다. Atlas는 그 사이에 없습니다.",
     "collision": "이 컴퓨터에 이미 {name}이라는 이름의 서버가 등록되어 있습니다. Codex는 같은 이름의 두 번째를 말없이 버리므로, 이름을 바꾸십시오.",
     "malformed": "{path}를 읽지 못해 여기서 아무것도 저장할 수 없습니다. 그 파일을 열어 고치시거나 지우십시오.",
@@ -5056,7 +5056,7 @@
       "playwright": "웹 페이지를 열어 접근성 스냅샷으로 이동·클릭·입력·읽기를 합니다.",
       "context7": "라이브러리의 현재 버전 문서와 코드 예시를 가져옵니다."
     },
-    "attachedToast": "{name}을(를) 붙였어요. 아직 꺼져 있고, 켜면 에이전트가 씁니다.",
+    "attachedToast": "붙였어요 · {name}. 아직 꺼져 있고, 켜면 에이전트가 씁니다.",
     "foundMore": "{count}개 더 보기",
     "foundLess": "접기"
   },
@@ -5117,15 +5117,15 @@
         },
         "compiled": {
           "label": "정리됨",
-          "hint": "{pages}이(가) 정리했고, 그 뒤로 파일이 바뀌지 않았습니다."
+          "hint": "정리한 문서: {pages}. 그 뒤로 파일이 바뀌지 않았습니다."
         },
         "partial": {
           "label": "일부만 읽음",
-          "hint": "{pages}은(는) 이 파일의 앞부분만 읽어서, 나머지는 아직 정리되지 않았습니다."
+          "hint": "이 파일의 앞부분만 읽은 문서: {pages}. 나머지는 아직 정리되지 않았습니다."
         },
         "stale": {
           "label": "확인 필요",
-          "hint": "{pages}은(는) 이 파일의 다른 판에서 쓰였거나, 해시를 남기지 않았습니다."
+          "hint": "다른 판에서 쓰였거나 해시를 남기지 않은 문서: {pages}."
         },
         "checking": {
           "label": "확인 중",
@@ -5189,7 +5189,7 @@
       "viewOriginal": "원본 보기",
       "viewOriginalCount": "원문 {count, number}개",
       "viewOriginalOne": "원본 보기: {name}",
-      "originalMissing": "{name}을(를) 인용하지만 이 폴더에는 없습니다.",
+      "originalMissing": "근거로 인용한 {name}, 이 폴더에는 없습니다.",
       "compileCreateFile": "{path} 만들기",
       "compileModifyFile": "{path} 바꾸기",
       "logCount": {
@@ -5277,7 +5277,7 @@
           "do": "{field} 줄을 한 줄 더해 주세요."
         },
         "section-order-missing": {
-          "what": "구획 다섯 개가 다 있어야 하는데 {missing}이(가) 빠졌어요.",
+          "what": "구획 다섯 개가 다 있어야 하는데 빠진 것이 있어요 · {missing}",
           "do": "빠진 구획을 제목만이라도 더하세요. 비어 있다는 것도 읽는 사람이 알게 되는 사실이에요."
         },
         "section-order-sequence": {
@@ -5297,15 +5297,15 @@
           "do": "어디까지 읽은 원문인지 그 경로를 목록으로 적어 주세요."
         },
         "bad-truncation-record-path": {
-          "what": "{path}이(가) 어디까지 읽었는지 적는 칸에는 있는데, 이 문서가 쓰는 원문 목록에는 없어요.",
+          "what": "어디까지 읽었는지 적는 칸에는 {path}, 이 문서가 쓰는 원문 목록에는 없어요.",
           "do": "원문 목록에 더하거나, 그 줄을 지우세요."
         },
         "citation-target-missing-folder": {
-          "what": "{path}을(를) 근거로 달았는데 이 폴더에 그 파일이 없어요.",
+          "what": "근거로 {path}, 이 폴더에 그 파일이 없어요.",
           "do": "열어 볼 수 없는 근거는 근거가 아니에요. 파일을 이 폴더에 넣거나, 근거를 고치세요."
         },
         "citation-target-missing-sources": {
-          "what": "{path}을(를) 근거로 달았는데 이 문서가 쓰는 원문 목록에 없어요.",
+          "what": "근거로 {path}, 이 문서가 쓰는 원문 목록에 없어요.",
           "do": "원문 목록에 더하거나, 근거를 고치세요."
         },
         "describes-needs-approval": {
@@ -5872,8 +5872,8 @@
         "costOnStale": "낡은 것을 찾은 실행에만 에이전트 턴 하나.",
         "allowAndSave": "허용하고 저장",
         "cancel": "취소",
-        "saved": "{name}이(가) {time}에 처음 돕니다.",
-        "savedRunningNow": "{name}을(를) 지금 한 번 돌립니다. 다음은 {time}입니다.",
+        "saved": "{time}에 처음 돕니다 · {name}",
+        "savedRunningNow": "지금 한 번 돌립니다 · {name}. 다음은 {time}입니다.",
         "saveFailed": "자동 점검을 저장하지 못했습니다: {reason}"
       },
       "name": {
