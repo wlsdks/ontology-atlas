@@ -318,6 +318,28 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
   });
 
   /*
+   * Measured in the rendered Details tab (2026-09-20), on the row reporting the write guard:
+   * `expected_mtime  1727000000000`. That number is the write condition — the file is written only
+   * if it has not changed since that moment — and thirteen digits answer nothing a person came
+   * here to ask.
+   */
+  it('쓰기 조건의 시각은 사람이 읽을 수 있게 나오고, 정확한 값은 그대로 남는다', () => {
+    const { view } = taskCard();
+    render(view);
+    fireEvent.click(screen.getByTestId('task-review-depth-details'));
+    const details = screen.getByTestId('task-review-details');
+    fireEvent.click(within(details).getByText(koMessages.acpChat.permission.taskReview.provenance));
+
+    const row = within(details).getByText('expected_mtime').nextElementSibling!;
+    // The epoch is no longer what a person reads…
+    expect(row.textContent).not.toBe('100');
+    // …it is a time, and it is the same instant the request named.
+    expect(row.textContent).toContain('1970');
+    // …and the exact millisecond is still reachable for an agent or a terminal reader.
+    expect(row.getAttribute('title')).toBe('100');
+  });
+
+  /*
    * Measured on the rendered card (2026-09-20): this grid drew four label/value pairs and the
    * value column held exactly one distinct value across all four — "unknown" — because `code`,
    * `merge` and `deployment` were written as the literal `'unknown'` key and could never say

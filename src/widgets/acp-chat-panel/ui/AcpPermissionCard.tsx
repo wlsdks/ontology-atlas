@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Eye, GitCompareArrows, ShieldAlert } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 
 import { permissionIntent, permissionScope, permissionLocality } from '@/features/acp-session';
 import {
@@ -149,6 +149,7 @@ export function AcpPermissionCard({
    * place to fix the same sentence and one place to forget.
    */
   const libraryT = useTranslations('library');
+  const format = useFormatter();
   const tChange = useTranslations('ontologyChangeReview');
   const { request, resolve } = pending;
   const reviewStateKey = `${typeof request.requestId}:${String(request.requestId)}:${request.toolCallId ?? ''}`;
@@ -261,9 +262,39 @@ export function AcpPermissionCard({
           total: meaningUnits.length,
           omitted: omittedMeaningUnits,
         });
+  /**
+   * **A write condition a person can check against the file in front of them.**
+   *
+   * Measured in the rendered Details tab (2026-09-20), directly under the row that reports the
+   * write guard as unknown:
+   *
+   * ```
+   * expected_mtime   1727000000000
+   * ```
+   *
+   * That number **is** the write condition — the file is written only if it has not changed since
+   * that moment — and thirteen digits answer nothing a person came here to ask. The question this
+   * row exists for is "is that the version I am looking at?", and a date answers it.
+   *
+   * The exact value is not replaced, only led: it stays on the row's `title`, so an agent or a
+   * terminal reader who needs the epoch still has it to the millisecond.
+   */
   const proposalGuards = ['confirm', 'expected_mtime', 'expected_into_mtime']
     .filter((key) => request.rawInput[key] !== undefined)
-    .map((key) => ({ key, value: request.rawInput[key] }));
+    .map((key) => {
+      const value = request.rawInput[key];
+      const epoch = key.endsWith('_mtime') && typeof value === 'number' && Number.isFinite(value)
+        ? value
+        : null;
+      return {
+        key,
+        value,
+        shown: epoch === null
+          ? formatReviewValue(value)
+          : format.dateTime(new Date(epoch), { dateStyle: 'medium', timeStyle: 'short' }),
+        exact: epoch === null ? undefined : String(epoch),
+      };
+    });
   const meaningAuthority = taskReview?.status === 'ready'
     ? taskReview.meaningStatus === 'accepted' ? 'accepted' : 'pending'
     : 'unknown';
@@ -642,7 +673,7 @@ export function AcpPermissionCard({
                   <dt>{t('taskReview.generation')}</dt><dd>{taskOrigin.sessionGeneration}</dd>
                   {taskReview ? <><dt>{t('taskReview.guardStatus')}</dt><dd>{t(`taskReview.guard.${taskReview.guardStatus}`)}</dd></> : null}
                   {proposalGuards.map((guard) => (
-                    <Fragment key={guard.key}><dt>{guard.key}</dt><dd>{formatReviewValue(guard.value)}</dd></Fragment>
+                    <Fragment key={guard.key}><dt>{guard.key}</dt><dd title={guard.exact}>{guard.shown}</dd></Fragment>
                   ))}
                 </dl>
               </details>
