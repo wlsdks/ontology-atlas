@@ -547,6 +547,24 @@ test(`Strata ${legend.width}x${legend.height} — the tier legend names four pla
       };
     });
 
+  /*
+   * **The first reading waits for a drawn legend** (2026-09-20).
+   *
+   * The legend draws no row until it has measured its band, so a single read can
+   * land on a frame that already carries the placement attribute and no rows at
+   * all. Measured on CI at 1512x982: placement present, `rows` empty, three
+   * attempts in a row. `map-strata-tier-scale.spec.ts` polls for exactly this.
+   *
+   * Only the first reading. The second one below deliberately expects an empty
+   * legend — the rail steps aside while the inspector is docked — so waiting for
+   * rows there would wait forever.
+   */
+  await page.waitForFunction(
+    () => document.querySelectorAll('[data-testid^="topology-tier-legend-row-"]').length === 4,
+    undefined,
+    { timeout: 30_000 },
+  );
+
   const before = await read();
   // Recorded, not required — see the note above the sizes.
   expect(["rail", "corner"], `unknown placement: ${before.placement}`).toContain(before.placement);
