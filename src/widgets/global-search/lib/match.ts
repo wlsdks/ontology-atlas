@@ -3,6 +3,7 @@ import type { Project } from "@/entities/project";
 import { hangulIncludes, hangulStartsWith } from "@/shared/lib/hangul-match";
 import {
   findNameMatch,
+  idSearchText,
   normalizeForMatch,
   type NameMatchTier,
 } from "@/shared/lib/node-name-match";
@@ -139,23 +140,6 @@ const NAME_TIER_SCORE: Readonly<Record<NameMatchTier, number>> = {
   "hangul-prefix": 4,
   "hangul-includes": 3,
 };
-
-/**
- * The part of an id a query is allowed to match, or null when nothing is.
- *
- * Node ids are `<kind>:<slug>`. The kind half is not meaning a person searched for —
- * every element carries it — so only the slug is offered. Measured 2026-09-19 on the
- * bundled sample: typing the word "element" returned twenty rows and every one of
- * them was the prefix. A query containing a colon is someone pasting a real id, and
- * for that the whole id answers.
- */
-export function idSearchText(id: string, normalizedQuery: string): string | null {
-  if (normalizedQuery.includes(":")) return id;
-  const separator = id.indexOf(":");
-  if (separator === -1) return id;
-  const slug = id.slice(separator + 1);
-  return slug === "" ? null : slug;
-}
 
 export function matchOntologyNodes(
   query: string,

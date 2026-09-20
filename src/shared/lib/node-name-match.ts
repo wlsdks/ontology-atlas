@@ -1,6 +1,7 @@
 /**
- * The one rule for matching node names — however many search surfaces exist, the
- * contract "type the name you see on screen and it is found" must be single.
+ * The one rule for matching a node — however many search surfaces exist, the
+ * contract "type what you see on screen and it is found" must be single. Names are
+ * the subject of most of this file; {@link idSearchText} owns the id half.
  *
  * **Why it was needed:** the map, INDEX, popovers and the studio all draw
  * locale-specific display names (frontmatter `display_ko:` / `display_en:`)
@@ -93,17 +94,6 @@ function nodeNameIndex(node: NodeNameSource): NodeNameIndex {
 }
 
 /**
- * Does any name contain the query (takes an already-normalised query)?
- *
- * The plain-substring question, for the surfaces that only filter — the ontology tree
- * and the docs tree. The palette asks {@link findNameMatch} instead, which answers
- * *which* name and *how strongly* in one pass.
- */
-export function nameIncludes(node: NodeNameSource, normalizedQuery: string): boolean {
-  return nodeNameIndex(node).names.some((name) => name.includes(normalizedQuery));
-}
-
-/**
  * How strongly a name matched, strongest first. The ladder the palette scores on
  * is built from this, so the order is the contract: a name that really contains
  * what was typed beats one the Hangul rules had to reach for.
@@ -178,4 +168,25 @@ export function findNameMatch(node: NodeNameSource, normalizedQuery: string): Na
   }
 
   return best;
+}
+
+/**
+ * The part of an id a query is allowed to match, or null when nothing is.
+ *
+ * Node ids are `<kind>:<slug>`. The kind half is not meaning anybody searched for —
+ * every element carries it — so only the slug is offered. Measured 2026-09-19 on the
+ * bundled sample: typing the word "element" returned twenty palette rows and every
+ * one of them was that prefix. A query containing a colon is someone pasting a real
+ * id, and for that the whole id answers.
+ *
+ * It lives here rather than beside the palette because the map's INDEX filter and the
+ * docs tree ask the same question, and a person typing into one of the three boxes on
+ * a screen should not get three different answers.
+ */
+export function idSearchText(id: string, normalizedQuery: string): string | null {
+  if (normalizedQuery.includes(":")) return id;
+  const separator = id.indexOf(":");
+  if (separator === -1) return id;
+  const slug = id.slice(separator + 1);
+  return slug === "" ? null : slug;
 }
