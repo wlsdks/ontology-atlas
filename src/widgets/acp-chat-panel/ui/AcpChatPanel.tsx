@@ -1146,6 +1146,7 @@ export function AcpChatPanel({
   const toolPickerValue =
     choices.models.length > 0 ? (choices.currentModelId ? `model:${choices.currentModelId}` : '') : `runtime:${runtimeId}`;
 
+  const busy = status === 'thinking';
   const choicesRow =
     choices.models.length > 0 || choices.modes.length > 0 ? (
         /*
@@ -1183,9 +1184,33 @@ export function AcpChatPanel({
          * the promise this screen is built on. Content-sized here, plus a name that absorbs the
          * shortfall first, puts the yielding the right way round.
          */
+        /*
+         * ⚠️ **While a turn runs, this row stands down at the widths that cannot hold it.**
+         *
+         * Measured on the rendered footer with a live turn (2026-09-19). A running turn puts the
+         * Stop chip on the right-hand group, which takes it to 215 of the 228 pixels this footer
+         * has at the panel's documented minimum. The row was left with **nine**, and the picker
+         * inside it does not shrink below its floor, so it drew **on top of the status word**:
+         * three of five probe points over 「Thinking · 1s」 came back as the picker or its chevron.
+         * The footer's own `scrollWidth` was equal to its `clientWidth` throughout, so nothing
+         * measuring rectangles would ever have seen it — occlusion is not geometry.
+         *
+         * From 320 to 380 the same squeeze also clipped the picker's word, which is the promise
+         * the runtime name already yields to keep. The name's own rule decides this one too: a
+         * control that names its choice and then hides it is worse than one that never claimed to.
+         *
+         * So the mode is the thing that yields here, and only here. During a turn it is the one
+         * control on the row that cannot act — the mode was fixed when the turn started — while
+         * the status and its clock are live, and Stop is the way out. It comes back the moment the
+         * turn ends. 308 is the footer width at which the Korean mode name and the running group
+         * both measured whole; Korean decides, as it did for the name.
+         */
         <div
           data-testid="acp-chat-choices"
-          className="flex min-w-0 items-center gap-0.5"
+          className={cn(
+            'min-w-0 items-center gap-0.5',
+            busy ? 'hidden @min-[308px]/composer:flex' : 'flex',
+          )}
         >
           {choices.modes.length > 0 ? (
             <Select
@@ -1227,7 +1252,6 @@ export function AcpChatPanel({
         </div>
       ) : null;
 
-  const busy = status === 'thinking';
   /*
    * A clock beside the status word (owner, 2026-09-06). "thinking" alone cannot show that
    * time passes; a person watching a long turn wants to know whether it is 20 seconds or
