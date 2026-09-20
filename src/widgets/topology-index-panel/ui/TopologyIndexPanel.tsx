@@ -147,6 +147,8 @@ export interface TopologyIndexPanelProps {
   onStartTour?: () => void;
   /** The guided tour is pointing at the INDEX: the first-run card gives way to the list it describes. */
   tourIndexSpotlit?: boolean;
+  /** The guided tour is pointing at the first-run card's one-line command: its disclosure stands open. */
+  tourAgentSpotlit?: boolean;
   /** The first-run card's one-click "show it in plain words" toggle. The
    *  audiencePlain state is owned by HomePage (the same source as the `plainMode` prop). */
   onEnablePlainMode?: () => void;
@@ -291,6 +293,7 @@ export function TopologyIndexPanel({
   onPromoteUncatalogedDocs = null,
   onStartTour,
   tourIndexSpotlit = false,
+  tourAgentSpotlit = false,
   onEnablePlainMode,
   domainCensus = null,
   lens: lensProp,
@@ -513,6 +516,7 @@ export function TopologyIndexPanel({
            see `FirstRunStarterModule`'s `nodeSelected` doc-block. */
         nodeSelected={selectedId !== null}
         indexSpotlit={tourIndexSpotlit}
+        agentSpotlit={tourAgentSpotlit}
         /*
          * ⚠️ **Who the 「make a map from my code」 door is for** (owner correction, 2026-08-24).
          * A vault is open and nothing in it points at real code — the same fact the unbound-source

@@ -134,6 +134,59 @@ function buildFixtureTree() {
 }
 
 describe("TopologyIndexPanel", () => {
+  /*
+   * **One badge column, one meaning.** The number at the right of a row is the same
+   * mark the map draws inside a node, and the map counts every kind from the domain
+   * census (`views/home/lib/map-adapter.ts`). The row read that census for domains
+   * only, so a project row fell through to `children.length`: measured on the sample
+   * folder at 1512×982, the one project said **3** in the INDEX while its own node on
+   * the canvas said **16**, and the three domain rows agreed at 5/7/4.
+   */
+  it("a project row counts everything below it, the same number its node carries", () => {
+    const census = new Map([
+      ["project:root", { id: "project:root", title: "ontology-atlas", capabilityCount: 2, elementCount: 1, total: 3 }],
+      ["domain:onboarding", { id: "domain:onboarding", title: "Onboarding & UX", capabilityCount: 2, elementCount: 1, total: 3 }],
+    ]);
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={{ ...labels, subtotalTitle: "하위 전체" }}
+        domainCensus={census}
+      />,
+    );
+
+    const projectRow = document.querySelector('[data-index-row="project:root"]')!;
+    const badge = projectRow.querySelector('[data-testid="topology-index-row-count"]')!;
+    // 1 would be the count of its direct children — the number the map never shows.
+    expect(badge.textContent?.trim(), "프로젝트 행이 지도 노드와 다른 수를 말한다").toBe("3");
+    expect(badge.getAttribute("title")).toBe("하위 전체 3");
+  });
+
+  it("falls back to the child count when no census reaches the row", () => {
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+    const projectRow = document.querySelector('[data-index-row="project:root"]')!;
+    expect(projectRow.querySelector('[data-testid="topology-index-row-count"]')?.textContent?.trim()).toBe("1");
+  });
+
   it("uses one tree role without conflicting navigation semantics", () => {
     render(
       <TopologyIndexPanel

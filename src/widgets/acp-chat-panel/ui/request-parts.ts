@@ -1,4 +1,4 @@
-import { ANALYSIS_FINDINGS_INSTRUCTION } from '@/features/acp-session';
+import { ANALYSIS_FINDINGS_INSTRUCTION, READ_ONLY_TOOL_INSTRUCTION } from '@/features/acp-session';
 
 /**
  * **A turn the app wrote on the person's behalf still opens on the sentence they can read.**
@@ -42,6 +42,12 @@ export interface RequestParts {
  *   readable half in front of it to stand on.
  * - the response-format contract — `ANALYSIS_FINDINGS_INSTRUCTION`'s own first line, taken from
  *   the constant rather than copied, so the two cannot drift apart.
+ * - the read-only frame every non-Flow Analysis request opens with, in both languages
+ *   (`READ_ONLY_TOOL_INSTRUCTION`). ⚠️ This one is what the Insights dock **seats in the
+ *   composer**, and until it was listed the split found nothing: the person's own text box opened
+ *   on `Use only Atlas MCP read tools…` and a literal `query_ontology({operation:"…"})`, five
+ *   lines tall (measured 2026-09-19). Both languages are listed because the request is composed
+ *   in the reader's, and a marker that only knows English folds nothing for the owner.
  */
 const APP_BLOCK_MARKERS = [
   'Scope:',
@@ -51,6 +57,8 @@ const APP_BLOCK_MARKERS = [
   'Folder: ',
   '폴더: ',
   ANALYSIS_FINDINGS_INSTRUCTION.split('\n')[0],
+  READ_ONLY_TOOL_INSTRUCTION.en,
+  READ_ONLY_TOOL_INSTRUCTION.ko,
 ] as const;
 
 export function splitAppRequest(text: string): RequestParts {

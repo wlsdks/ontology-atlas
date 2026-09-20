@@ -64,6 +64,29 @@
  * One landing, in order: **take a place, lock, merge main, local checks, ready, one CI run,
  * merge, clean.**
  *
+ * **Marking ready is the one step a failed landing does not undo** (2026-09-19). Everything
+ * else here is idempotent or released on exit: the lock, the waiting-line entry, the merge of
+ * main into the branch. Step 4 is not — `gh pr ready` is one-way, and a landing that then
+ * fails CI, loses the lock, or is stopped leaves the pull request **ready**. From that moment
+ * every push to it fires another full CI run, which is the opposite of the "draft runs no CI"
+ * economy this file is built on, and nothing on screen says so. Two sessions discovered it the
+ * same night by reading `isDraft` on their own pull requests after retrying a landing. **Check
+ * `gh pr view <n> --json isDraft` before committing again on a pull request whose landing
+ * failed**, and `gh pr ready --undo` puts it back.
+ *
+ * **The local lanes of step 3 are not the CI plan, and the gap has a name** (measured
+ * 2026-09-20). `node scripts/classify-change.mjs --base=origin/main` prints what CI will
+ * actually run (`gates=true unit=full …`) in a second. It is worth asking before landing,
+ * because the full gates lane runs `pnpm lint` over the **whole repository** at
+ * `--max-warnings 0`: once a branch is planned `full` it inherits every warning in the tree,
+ * including in files it never touched. Changing the impact authority forces that plan by
+ * design — the planner, this file, the workflows, `lib/focused-check-suggestions.mjs` —
+ * while touching `tests/e2e/**` alone does not. That night a landing whose own diff was clean
+ * failed `Types · Lint · Docs` on an unused declaration left on `main`, because the branch had
+ * edited the check advisor two commits earlier; three sessions read it as a repo-wide outage
+ * and stood their work down before the plan was read. **When the plan says `gates=true`, run
+ * `pnpm lint` before landing, not only `pnpm checks:changed`.**
+ *
  * **Required is not the same as "what matters"** (2026-09-13). Step 5 waited on the
  * branch protection's list and merged on "every required context is green".
  * `windows-beta-check.yml` produces no required context, had been red on `main` since
@@ -167,11 +190,20 @@ export function pruneWaiters(waiters, nowMs, leaseMinutes = WAIT_LEASE_MINUTES) 
  *
  * ⚠️ Rejoining never moves a waiter to the back. `since` is when it first asked, and a refresh
  * that reset it would punish exactly the waiter this whole mechanism exists for.
+ *
+ * ⚠️ **Which is what it did.** The first version recovered `since` only from the list it had just
+ * read, so when a concurrent last-write-wins blob dropped this entry there was no standing row to
+ * read it from and the waiter silently went to the back. Reported from another agent's session
+ * (2026-09-19) after its lander polled 25 minutes and the queue printed it as fifth, waiting 4 —
+ * and the asymmetry is the bad part: the longest waiter has the most polls in which to be dropped,
+ * so the ref punished the waiter it exists to protect. `entry.since` is the caller's own memory of
+ * when it first asked, and it outlives any blob. A lost entry now costs one poll of order, which
+ * is the trade this file already claimed to make.
  */
 export function joinWaitingLine(waiters, entry, nowMs) {
   const live = pruneWaiters(waiters, nowMs);
   const standing = live.find((waiter) => waiter.token === entry.token);
-  const since = standing?.since ?? new Date(nowMs).toISOString();
+  const since = standing?.since ?? entry.since ?? new Date(nowMs).toISOString();
   return [
     ...live.filter((waiter) => waiter.token !== entry.token),
     { ...entry, since, seenAt: new Date(nowMs).toISOString() },
@@ -1125,6 +1157,8 @@ export function runPrLand(argv, io = console) {
   let held = false;
   let standing = false;
   let lineWrittenAtMs = 0;
+  /** When this process first asked for the lock. Survives a queue entry being overwritten. */
+  let askedAtIso = null;
   /**
    * Take a place in the waiting line, or keep the one already held, and hand back the line as it
    * now stands. `null` means 「the order could not be established」 — an unwritable queue, which by
@@ -1137,7 +1171,9 @@ export function runPrLand(argv, io = console) {
   const standInLine = ({ force = false } = {}) => {
     const nowMs = Date.now();
     if (!force && standing && nowMs - lineWrittenAtMs < WAIT_REFRESH_SECONDS * 1000) return null;
-    const line = joinWaitingLine(readWaitingLine(slug), { pr: number, token, holder: lockBody({ pr: number, token }).holder, host: hostname() }, nowMs);
+    // Minted once, in this process. The ref can lose the entry; it cannot lose when we arrived.
+    askedAtIso ??= new Date(nowMs).toISOString();
+    const line = joinWaitingLine(readWaitingLine(slug), { pr: number, token, since: askedAtIso, holder: lockBody({ pr: number, token }).holder, host: hostname() }, nowMs);
     if (!writeWaitingLine(slug, line)) return null;
     standing = true;
     lineWrittenAtMs = nowMs;
