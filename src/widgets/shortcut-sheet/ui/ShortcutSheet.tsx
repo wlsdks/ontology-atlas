@@ -38,6 +38,21 @@ import {
 interface Props {
   open: boolean;
   onClose: () => void;
+  /**
+   * A selector for the control to hand the keyboard back to.
+   *
+   * The sheet records `document.activeElement` when it opens, but the button
+   * that opened it usually unmounts in that same moment — raising the sheet
+   * turns off that button's render condition — so the record is empty and the
+   * close falls back to the start of the content. Measured 2026-09-20 on the
+   * map: open with the `?` button, press Escape, and focus lands on `main`
+   * while the button itself is back in the page.
+   *
+   * Naming the control instead of holding a reference survives that unmount,
+   * which is how `AnalysisWorkbench` and `ArchitectureAgentDock` already solve
+   * it. Omitted, the old fallback stands.
+   */
+  returnFocusSelector?: string;
 }
 
 type ShortcutKey = string | { i18nKey: string };
@@ -288,7 +303,7 @@ const SECTIONS: ShortcutSection[] = [
   // stale and were cleaned up in cycle 22.
 ];
 
-export function ShortcutSheet({ open, onClose }: Props) {
+export function ShortcutSheet({ open, onClose, returnFocusSelector }: Props) {
   const t = useTranslations("searchWidgets.shortcuts");
   const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
@@ -410,8 +425,12 @@ export function ShortcutSheet({ open, onClose }: Props) {
        * content** rather than the start of the page.
        */
       const previous = previousFocusRef.current;
+      const named = returnFocusSelector ? document.querySelector<HTMLElement>(returnFocusSelector) : null;
       if (previous?.isConnected) {
         previous.focus();
+      } else if (named?.isConnected && !named.closest("[inert]")) {
+        // The opener came back after its unmount; hand the keyboard to it.
+        named.focus({ preventScroll: true });
       } else {
         // With no control to return to, go to **the start of the content**. `<main>`
         // already receives focus since the skip-link fix — better than walking from the
@@ -430,7 +449,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
         });
       });
     };
-  }, [open]);
+  }, [open, returnFocusSelector]);
 
   /*
    * The reduced-motion equivalent (frame measurement, 2026-07-28). This was swapped

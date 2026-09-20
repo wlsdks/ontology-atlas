@@ -6664,11 +6664,27 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           /** A collapsed subtree is replaced by a chip and is not on screen. */
           hidden: isPreviewEndpointHidden(clustered?.has(n.id) ?? false, preview, n.id),
           /**
-           * The alpha the last frame drew this node at. `hidden` says
-           * "collapsed"; it does not say "drawn": at the overview the density
-           * gate keeps capabilities at alpha 0 with `hidden` false, and a spec
-           * that read `hidden` alone counted 26 invisible discs as on screen
-           * (2026-09-03). Whether the thing is visible is this number.
+           * The alpha the **tier and ego passes** left this node at. `hidden`
+           * says "collapsed"; it does not say "drawn": at the overview the
+           * density gate keeps capabilities at alpha 0 with `hidden` false, and
+           * a spec that read `hidden` alone counted 26 invisible discs as on
+           * screen (2026-09-03).
+           *
+           * ⚠️ It is **not** what the frame painted. The lens sink
+           * (`spotlightSink`) and the growth-replay ramp are applied later, in
+           * the draw itself, and never reach this number: with the path lens on,
+           * every node still reports full ink while the screen plainly sinks
+           * everything off the path, and a growth replay that grew from 91 to
+           * 1,134 lit pixels reports one unchanging state (measured 2026-09-20,
+           * three times in one day before the cause was found). Nodes are drawn
+           * in more than one pass, so recording `ctx.globalAlpha` at any single
+           * one of them is worse than this: a first attempt reported the darkest
+           * nodes on screen (median 43 of 765) as `1.00` and the sunk ones
+           * (median 195) as `0.30`.
+           *
+           * To ask what a person can see under a lens or a replay, sample the
+           * canvas pixels — `map-path-lens-sink.spec.ts` does, and it is the
+           * only method that has agreed with the screen so far.
            */
           alpha: drawnAlphas.get(n.id) ?? 1,
           previewEndpoint: isPreviewEndpoint(preview, n.id),
