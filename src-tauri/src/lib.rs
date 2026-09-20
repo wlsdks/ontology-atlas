@@ -4171,6 +4171,7 @@ pub fn run() {
             git::git_pull,
             git::git_fetch,
             git::git_restore_file,
+            git::git_document_diff,
             agent_setup::mcp_bundled_server,
             agent_setup::verify_mcp_server,
             connectors::discover_mcp_connectors,
