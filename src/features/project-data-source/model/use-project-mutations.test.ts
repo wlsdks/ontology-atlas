@@ -142,6 +142,27 @@ describe("useProjectMutations path-agnostic project source", () => {
     );
   });
 
+  it("a display-name patch writes only that locale's display key", async () => {
+    const manifest = makeManifest("project", "project");
+    manifest.docs[0].frontmatter = {
+      ...manifest.docs[0].frontmatter,
+      display_ko: "커스텀 이름",
+      display_en: "Custom name",
+    };
+    mocks.vault.manifest = manifest;
+    const { result } = renderHook(() => useProjectMutations());
+
+    await act(() =>
+      result.current.patchProject("project", { displayName: { locale: "ko", value: "새 이름" } }),
+    );
+
+    expect(mocks.vault.updateFrontmatter).toHaveBeenCalledWith(
+      "project",
+      { display_ko: "새 이름" },
+      { expectedMtime: 123 },
+    );
+  });
+
   it("사용자가 지정한 display 이름은 rename 시 덮어쓰지 않는다 (C6)", async () => {
     const manifest = makeManifest("project", "project");
     manifest.docs[0].frontmatter = {

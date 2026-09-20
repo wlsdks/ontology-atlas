@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { findProjectDocInList } from "@/entities/docs-vault";
-import { getProjectRuntimeDetailHref, getTopologyProjectHref, type Project } from "@/entities/project";
+import { getProjectRuntimeDetailHref, getTopologyProjectHref, projectDisplayName, type Project } from "@/entities/project";
 import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault } from "@/entities/vault-session";
 import { Link } from "@/i18n/navigation";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
@@ -86,6 +86,9 @@ export function ProjectSelectorPage() {
 }
 
 function ProjectRow({ project, description, t }: { project: Project; description: string | null; t: SelectorTranslator }) {
+  const locale = useLocale();
+  // The word the map and the Library draw for this project on this screen (2026-09-19).
+  const name = projectDisplayName(project, locale);
   const detailHref = getProjectRuntimeDetailHref(project.slug);
   const ago = formatAgo(resolveRecentActivityAgo(project.updatedAt, new Date()), t);
 
@@ -94,7 +97,7 @@ function ProjectRow({ project, description, t }: { project: Project; description
       <div className="min-w-0 flex-1">
         <h2 className="truncate text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)]">
           <Link href={detailHref} prefetch={false} className={controlClass({ shape: "link", tone: "secondary", hoverInk: "strong", className: "min-w-0 max-w-full text-title text-[color:var(--color-text-primary)]" })}>
-            <span className="min-w-0 truncate">{project.name}</span>
+            <span className="min-w-0 truncate">{name}</span>
           </Link>
         </h2>
         <p className="mt-1 line-clamp-1 text-body leading-title text-[color:var(--color-text-tertiary)]">
@@ -103,7 +106,7 @@ function ProjectRow({ project, description, t }: { project: Project; description
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
         <span className="mr-1 text-label text-[color:var(--color-text-quaternary)]">{t("cardUpdatedPrefix")} {ago}</span>
-        <Link href={detailHref} prefetch={false} aria-label={t("cardDetailAriaLabel", { name: project.name })} className={controlClass({ shape: "chip", size: "md", tone: "accent" })}>
+        <Link href={detailHref} prefetch={false} aria-label={t("cardDetailAriaLabel", { name })} className={controlClass({ shape: "chip", size: "md", tone: "accent" })}>
           {t("footDetail")}
         </Link>
         <Link href={getTopologyProjectHref(project.slug)} prefetch={false} className={controlClass({ shape: "chip", size: "md", tone: "secondary" })}>
