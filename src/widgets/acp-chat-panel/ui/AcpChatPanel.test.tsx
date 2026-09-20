@@ -512,6 +512,8 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
 
   it('says how much came back, using the number the tool itself reported', async () => {
     await bootSession();
+    // A tool call only ever arrives inside a live turn, and a row reads 「running」 only there.
+    await startUserTurn('go');
     emit({
       jsonrpc: '2.0',
       method: 'session/update',
@@ -582,6 +584,8 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
 
   it('marks only a running call, and says the outcome in words on the rest', async () => {
     await bootSession();
+    // A tool call only ever arrives inside a live turn, and a row reads 「running」 only there.
+    await startUserTurn('go');
     emit({
       jsonrpc: '2.0',
       method: 'session/update',
@@ -615,6 +619,49 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     await waitFor(() =>
       expect(document.querySelector('[data-acp-entry="tool"] [data-tool-running]')).toBeNull(),
     );
+  });
+
+  /**
+   * ⚠️ Measured in the rendered dock, 2026-09-19. Press Stop while a read is in flight and the row
+   * kept the word 「running」 and its pulsing ring for the rest of the conversation, with the
+   * session back at Ready and the composer open — the panel claiming work that had already
+   * stopped. Nothing on the wire says otherwise: a cancelled adapter simply stops reporting.
+   *
+   * It is also the promise `stoppedWithoutAnswer` already leans on. That rule stays quiet when a
+   * tool ran, because 「a tool that was mid-flight carries its own *stopped* on its row」, and the
+   * row was carrying the opposite word.
+   */
+  it('중지한 턴의 열린 도구 줄은 진행 중이라고 우기지 않는다', async () => {
+    await bootSession();
+    await startUserTurn('go');
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-open',
+          title: 'mcp__atlas-vault__list_concepts',
+          kind: 'read',
+          status: 'pending',
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"] [data-tool-running]')).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByTestId('acp-chat-stop'));
+    act(() => replyTo('session/prompt', { stopReason: 'cancelled' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+    const row = document.querySelector('[data-acp-entry="tool"]')!;
+    expect(row.querySelector('[data-tool-running]')).toBeNull();
+    expect(row.getAttribute('data-tool-outcome')).toBe('unfinished');
+    // Translations are stubbed to their keys here, so the row's own word is the assertion.
+    expect(row).toHaveTextContent('toolOutcome.unfinished');
+    expect(row).not.toHaveTextContent('toolOutcome.running');
   });
 
   it('reports the number our server gave, and zero is a number', async () => {
