@@ -68,20 +68,31 @@ const covered = (page: Page) => page.evaluate(() => {
 });
 
 /*
- * ⚠️ **Wait for the font before measuring text.** This read `scrollWidth` against `clientWidth`
- * while the page could still be laying the row out in a fallback face. Latin fallback metrics sit
- * close to Pretendard's, Korean fallback metrics do not — so on a CI runner with a cold font cache
- * the Korean case overflowed a row the real font fits, and only the Korean case, on the first run
- * and both retries. The asymmetry between the two locales is what named the cause; identical
- * output across three attempts is what ruled out flakiness.
+ * ⚠️ **Measure the text against its box in the same units, or sub-pixel rounding invents a clip.**
+ *
+ * This compared `scrollWidth` with `clientWidth`, which are integers, against a label whose real
+ * box is fractional. Measured locally: the Korean mode name lays out at 58.94px inside a 58.94px
+ * label, and those two round to 60 and 59 — a one-pixel "overflow" in a word that is not clipped
+ * at all. A `+ 1` tolerance hid it on macOS; on the CI runner the fractions fall differently and
+ * the same untruncated word failed, on the first run and both retries, in Korean only.
+ *
+ * A Range over the text node measures what is actually drawn, fractionally, against a box read
+ * the same way — so the comparison no longer depends on which side of .5 a platform lands.
+ * `document.fonts.ready` stays: a measurement taken in a fallback face is a different number again.
  */
 const modeWordIsWhole = async (page: Page) => {
   await page.evaluate(() => document.fonts.ready);
   return page.evaluate(() => {
-  const trigger = document.querySelector('[data-testid="acp-chat-mode"]');
-  if (!trigger) return null;
-  const label = [...trigger.querySelectorAll('span')].find((span) => span.scrollWidth > 0);
-    return label ? label.scrollWidth <= label.clientWidth + 1 : null;
+    const trigger = document.querySelector('[data-testid="acp-chat-mode"]');
+    if (!trigger) return null;
+    const label = [...trigger.querySelectorAll('span')].find((span) => span.scrollWidth > 0);
+    if (!label) return null;
+    const range = document.createRange();
+    range.selectNodeContents(label);
+    const text = range.getBoundingClientRect().width;
+    const box = label.getBoundingClientRect().width;
+    // Half a pixel of slack: enough for the renderer's own rounding, far short of an ellipsis.
+    return text <= box + 0.5;
   });
 };
 
