@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   layoutTierLegendRows,
+  tierLegendRowsAlign,
+  tierLegendWorstOffset,
   type TierLegendAnchor,
   type TierLegendPlacement,
 } from "../model/tier-legend-rows";
@@ -132,11 +134,25 @@ export function OntologyMapTierLegend({ anchors, labels, onRaise, onFitChange, p
     return () => observer.disconnect();
   }, [measure]);
 
-  const corner = placement === "corner";
-  const rows =
-    corner || band === null
+  const railRows =
+    placement === "corner" || band === null
       ? null
       : layoutTierLegendRows(anchors, band.top, band.height, TIER_LEGEND_ROW_PX);
+  /*
+   * The column being free is not the same as the rail being able to use it. The
+   * band begins under the last utility tile, so a plane projected above that tile
+   * is out of reach and its row clamps to the top of the band — measured in
+   * Strata at 1512x982, the project's name stood 206 px from the only project
+   * node and dragged the domain row down onto it. When a row loses its plane the
+   * stack goes to the corner, which gives up per-plane alignment out loud instead
+   * of a rail that still claims it. `model/tier-legend-rows.ts` owns the rule.
+   */
+  const railOffset =
+    railRows === null ? null : tierLegendWorstOffset(railRows, anchors, band?.top ?? 0, TIER_LEGEND_ROW_PX);
+  const corner =
+    placement === "corner" ||
+    (railRows !== null && !tierLegendRowsAlign(railRows, anchors, band?.top ?? 0, TIER_LEGEND_ROW_PX));
+  const rows = corner ? null : railRows;
   // The corner stack owns a corner nothing else draws in, so it always places its
   // rows; only the rail can run out of band and hand the names back to the rims.
   const fits = corner || rows !== null;
@@ -157,7 +173,13 @@ export function OntologyMapTierLegend({ anchors, labels, onRaise, onFitChange, p
       ref={railRef}
       data-testid="topology-tier-legend"
       data-tier-legend-fits={fits ? "true" : "false"}
-      data-tier-legend-placement={placement}
+      /* The shape actually drawn, not the one asked for: the rail hands over to the
+         corner when a row loses its plane, and a reader of this attribute — a test,
+         or the next person measuring the map — must not be told otherwise. */
+      data-tier-legend-placement={corner ? "corner" : "rail"}
+      /* The worst distance between a row and the plane it names, while the rail is
+         the shape drawn. The rail's promise is this number staying within a row. */
+      data-tier-legend-offset={!corner && railOffset !== null ? String(Math.round(railOffset)) : undefined}
       aria-hidden={!fits}
       /*
        * **A real 64 px column, not a zero-width anchor.** The camera reserves

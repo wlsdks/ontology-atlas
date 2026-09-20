@@ -10,7 +10,7 @@ import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, FileText, FolderSearch, Layers, Waypoints } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -29,6 +29,8 @@ import {
   getProjectEditHref,
   getProjectRuntimeDetailHref,
   getTopologyProjectHref,
+  projectDisplayName,
+  projectHasDisplayName,
   type Project,
 } from "@/entities/project";
 import { useProjects, useProjectMutations, useProjectBody, useVaultDocs } from "@/features/project-data-source";
@@ -315,10 +317,15 @@ export function ProjectDetailPage({
 
   // Client-side dynamic title. Static export metadata is prebuilt per slug, but user context
   // (project.name) exists only on the client.
+  // The word this screen draws for the project: `display_<locale>` when the document carries
+  // one, the canonical name otherwise. The map, the INDEX and the Library already read it that
+  // way; the page and the list said the canonical title beside them (2026-09-19).
+  const locale = useLocale();
+  const displayName = project ? projectDisplayName(project, locale) : undefined;
   useDocumentTitle(
     Array.from(
       new Set(
-        [project?.name, t("documentTitleSuffix")].filter(
+        [displayName, t("documentTitleSuffix")].filter(
           (value): value is string => Boolean(value),
         ),
       ),
@@ -452,10 +459,14 @@ export function ProjectDetailPage({
   ) => {
     if (!project || !canManageProject) return;
     try {
+      // The heading edits the word the person is looking at: the locale's display key when the
+      // document carries one, the canonical name otherwise (starter displays follow a rename).
       await projectMutations.patchProject(
         project.slug,
         field === "name"
-          ? { name: next }
+          ? projectHasDisplayName(project, locale)
+            ? { displayName: { locale, value: next } }
+            : { name: next }
           : { description: next.trim() ? next : null },
       );
       showToast(field === "name" ? t("saveSuccessName") : t("saveSuccessDescription"), "success");
@@ -546,7 +557,7 @@ export function ProjectDetailPage({
         agent.route === "agent" && agent.runtime && nativeVaultRootPath ? (
           <ProjectAgentDock
             open={agent.open}
-            projectName={project.name}
+            projectName={displayName ?? project.name}
             runtime={agent.runtime}
             runtimes={agent.runtimes}
             onRuntimeChange={agent.setRuntimeId}
@@ -562,7 +573,7 @@ export function ProjectDetailPage({
     >
       <ProjectDetailTopBar
         slug={slug}
-        projectName={project.name}
+        projectName={displayName ?? project.name}
         census={{ concepts: insightNodes.length, relations: insightEdges.length }}
         projectDocSlug={projectDoc?.slug ?? null}
       />
@@ -588,7 +599,7 @@ export function ProjectDetailPage({
             <div className="min-w-0 flex-1">
               <InlineEditable
                 as="h1"
-                value={project.name}
+                value={displayName ?? project.name}
                 editable={canManageProject}
                 onSave={(next) => saveProjectField("name", next)}
                 ariaLabel={t("inlineNameAria")}

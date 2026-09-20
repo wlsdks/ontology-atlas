@@ -12,7 +12,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { isGraphDrawnKind, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { buildProjectChips } from "../lib/project-chips";
-import type { Project } from "@/entities/project";
+import { projectDisplayName, type Project } from "@/entities/project";
 import { cn } from "@/shared/lib/cn";
 import {
   MEANINGFUL_ONTOLOGY_KINDS,
@@ -589,7 +589,11 @@ export function GlobalSearch({
                       both groups — as a concept and as a project — and only one of the
                       two was showing why it was there (measured live 2026-09-19). */}
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
-                    <HighlightedText text={project.name} query={isEmptyQuery ? undefined : query} />
+                    {/* The word this screen draws for the project, with the match still lit. */}
+                    <HighlightedText
+                      text={projectDisplayName(project, locale)}
+                      query={isEmptyQuery ? undefined : query}
+                    />
                   </span>
                   {/* Same seat, same job as the concept rows: the reason. It holds the
                       slug until something else earned the row — the English name, or
