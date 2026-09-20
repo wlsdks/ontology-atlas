@@ -56,8 +56,36 @@ test("바닥 가까이 그려진 도메인도 이름을 잃지 않는다 — 위
   const inBand = (d: { x: number; y: number; top: number }) =>
     d.y > floorBand - 40 && d.top > 0 && d.y < state.canvasHeight && d.x < panelLeft;
 
-  const low = state.domains.filter(inBand);
-  expect(low.length, "바닥 띠 가까이 그려진 도메인이 없다 — 이 스펙이 공회전한다").toBeGreaterThan(0);
+  /*
+   * The subject is made, not waited for. Where the camera leaves the lowest
+   * domains depends on the frame, and on CI there was no domain in the band at
+   * all, so the spec failed on its own idling guard rather than on its rule.
+   * Dragging empty canvas downward puts one there on any frame.
+   */
+  const empty = await page.evaluate(() => {
+    const m = (window as unknown as { __atlasMap?: Probe }).__atlasMap!;
+    const box = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const drawn = m.nodes().filter((n) => !n.hidden);
+    for (let x = box.left + 80; x < box.right - 80; x += 40) {
+      for (let y = box.top + 120; y < box.bottom - 160; y += 40) {
+        if (drawn.every((n) => Math.hypot(box.left + n.x - x, box.top + n.y - y) > n.radius + 40)) return { x, y };
+      }
+    }
+    return null;
+  });
+  expect(empty, "빈 캔버스를 못 찾아 끌 자리가 없다").not.toBeNull();
+
+  for (let pull = 0; pull < 8; pull++) {
+    if ((await read(page))!.domains.some(inBand)) break;
+    await page.mouse.move(empty!.x, empty!.y);
+    await page.mouse.down();
+    for (let step = 1; step <= 6; step++) await page.mouse.move(empty!.x, empty!.y + step * 16);
+    await page.mouse.up();
+    await waitForMapStill(page, { what: "camera" });
+  }
+
+  const low = (await read(page))!.domains.filter(inBand);
+  expect(low.length, "바닥 띠까지 끌어내렸는데도 그 자리에 도메인이 없다").toBeGreaterThan(0);
 
   /*
    * What this can see from outside: a name near the floor is never placed **below**
@@ -67,7 +95,8 @@ test("바닥 가까이 그려진 도메인도 이름을 잃지 않는다 — 위
    * pinned directly by `render/label-layout.test.ts#floorFlipBaseline`, which also
    * owns the arithmetic this spec can only observe the result of.
    */
-  for (const d of low.filter((d) => d.label)) {
+  const after = (await read(page))!.domains.filter(inBand);
+  for (const d of after.filter((d) => d.label)) {
     expect(d.label!.maxY, `${d.id} 의 이름이 노드 아래에 남아 있다`).toBeLessThanOrEqual(d.top + 1);
     expect(d.label!.minY, `${d.id} 의 이름이 캔버스 위로 넘어갔다`).toBeGreaterThan(0);
   }
