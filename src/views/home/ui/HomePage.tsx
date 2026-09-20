@@ -4302,7 +4302,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
    */
   const clusterBarLabels = useMemo(
     () => ({
-      expandAll: t("cluster.barExpandAll"),
+      expand: t("cluster.barExpand"),
       expandCount: t("cluster.barExpandCount", { count: "{count}" }),
       collapse: t("cluster.barCollapse"),
     }),
