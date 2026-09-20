@@ -138,8 +138,11 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
     // 1.10.0's — `read-only` still carries `on-request` approvals, `workspaceWrite` with an
     // empty `writableRoots`, and `networkAccess: false`. Only its line offset moved, and the
     // bundled `@openai/codex` went 0.153.3 → 0.153.4.
+    // 1.12.0 (2026-09-20): the `AgentMode` block is byte-identical to 1.11.0's again — same
+    // `on-request` approvals, same `workspaceWrite` with an empty `writableRoots`, same
+    // `networkAccess: false`. The bundled `@openai/codex` went 0.153.4 → 0.154.0.
     expect(registry.agents.find((agent) => agent.id === 'codex-acp')?.launch?.package).toBe(
-      '@agentclientprotocol/codex-acp@1.11.0',
+      '@agentclientprotocol/codex-acp@1.12.0',
     );
     expect(readFileSync(join(ROOT, 'mcp/src/write-consent.mjs'), 'utf8')).toContain(
       'codex_approval_kind',
