@@ -268,9 +268,18 @@ export function matchProjects(
       if (hangulIncludes(candidate, trimmed)) return 3;
       return 0;
     };
+    /*
+     * A `display_<locale>` is a name a screen draws for this project, so it is a candidate on the
+     * same ladder as `name` and `nameEn` — including the Hangul rungs, since the Korean display
+     * name is the one a person types jamo into. It enters as a *candidate* rather than as extra
+     * score, so a row that matched on the Korean word shows the Korean word: the point of the
+     * display name is that the screen and the search agree about what this project is called.
+     */
+    const displays = Object.values(project.displayNames ?? {});
     const named: ReadonlyArray<readonly [number, string]> = [
       [nameTier(name), project.name],
       [nameTier(nameEn), project.nameEn ?? ""],
+      ...displays.map((display) => [nameTier(display.toLowerCase()), display] as const),
     ];
     const bestName = named.reduce((best, entry) => (entry[0] > best[0] ? entry : best));
 
