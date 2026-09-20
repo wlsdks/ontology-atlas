@@ -1122,6 +1122,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const prevExpandedParentsRef = useRef<ReadonlySet<string>>(expandedParents);
   /** Density gate — this frame's cluster chips (world-anchored). Hit-testing reads it. */
   const clusterChipsRef = useRef<readonly ClusterChip[]>([]);
+  const lastTapRef = useRef<{ nodeId: string; at: number } | null>(null);
   /** The focus leash in screen pixels, set at the selection dive (`focusLeashPx`). */
   const focusLeashPxRef = useRef<FocusLeashPx | null>(null);
   /**
@@ -6193,6 +6194,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
+    lastTapRef,
     expandPrefRef,
     clusterBarLabelsRef,
     clusteredIdsRef,
