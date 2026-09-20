@@ -34,6 +34,15 @@ const CURSOR_AGENTS_MD = 'https://agents.md/';
 const COPILOT_INSTRUCTIONS =
   'https://docs.github.com/en/copilot/reference/custom-instructions-support';
 const GEMINI_MD = 'https://google-gemini.github.io/gemini-cli/docs/cli/gemini-md.html';
+const CURSOR_IGNORE = 'https://cursor.com/help/customization/ignore-files';
+/*
+ * The same Google page answers two different products, which is why one URL appears once here and
+ * not twice: it says Gemini Code Assist excludes context through `.aiexclude`, and in the same
+ * breath that "Gemini CLI users can exclude files by using a `.geminiignore` file". `.aiexclude`
+ * therefore carries no tool in our list at all — Code Assist is not an `AgentTool` — and only the
+ * CLI's file is a cited pair (read 2026-09-20).
+ */
+const GEMINI_EXCLUDE = 'https://docs.cloud.google.com/gemini/docs/codeassist/create-aiexclude-file';
 
 interface GuideCitation {
   /** The document the claim was read from. */
@@ -52,6 +61,10 @@ interface GuideCitation {
  */
 const CITATIONS: Readonly<Record<string, GuideCitation>> = Object.freeze({
   'claude-md:claude-code': { source: CLAUDE_STEERING },
+
+  'cursor-ignore:cursor': { source: CURSOR_IGNORE },
+  'cursor-indexing-ignore:cursor': { source: CURSOR_IGNORE },
+  'gemini-ignore:gemini-cli': { source: GEMINI_EXCLUDE },
 
   'agents-md:codex': { source: CODEX_CUSTOMIZATION },
   'agents-md:cursor': { source: CURSOR_AGENTS_MD },
