@@ -260,18 +260,20 @@ const STATES: readonly VaultState[] = [
   },
   {
     // The old ratchet measured the "not in your folder" degraded card here.
-    name: "프로젝트 상세 · 개요",
+    //
+    // The tabs are gone (2026-09-20): the page asks "what is built in here", so the composition
+    // board and the domain rows stand on one page instead of behind a tablist. Both are still
+    // vault-backed states — the board needs a project with an ontology, the rows need domains —
+    // so the ratchet still measures what only data can open. The `act` that clicked the second
+    // tab went with the tablist.
+    name: "프로젝트 상세 · 구성 판",
     url: "/ko/project/storefront/",
-    evidence: '[data-tab-panel="overview"]',
+    evidence: '[data-testid="project-detail-composition"]',
   },
   {
-    name: "프로젝트 상세 · 구성",
+    name: "프로젝트 상세 · 도메인 행",
     url: "/ko/project/storefront/",
-    evidence: '[data-tab-panel="composition"]',
-    async act(page) {
-      await page.getByRole("tab").nth(1).click({ timeout: EVIDENCE_TIMEOUT });
-      await expect(page.locator('[data-tab-panel="composition"]')).toBeVisible({ timeout: EVIDENCE_TIMEOUT });
-    },
+    evidence: '[data-testid="project-detail-domains"]',
   },
   {
     // The old ratchet measured an **empty screen without even a `<main>`** here.
