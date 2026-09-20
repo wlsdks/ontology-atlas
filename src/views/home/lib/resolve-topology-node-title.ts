@@ -1,5 +1,5 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import type { Project } from "@/entities/project";
+import { projectDisplayName, type Project } from "@/entities/project";
 import { resolveTopologySelectedOntologyNode } from "./resolve-topology-selected-node";
 
 /**
@@ -18,15 +18,18 @@ export function resolveTopologyNodeTitle({
   slug,
   projectBySlug,
   ontologyNodes,
+  locale,
 }: {
   slug: string | null;
   projectBySlug: ReadonlyMap<string, Project>;
   ontologyNodes: readonly KnowledgeGraphNode[] | null | undefined;
+  /** The screen's locale; with it a project reads by its `display_<locale>`, like every node. */
+  locale?: string;
 }): string | null {
   if (!slug) return null;
 
   const project = projectBySlug.get(slug);
-  if (project) return project.name;
+  if (project) return locale ? projectDisplayName(project, locale) : project.name;
 
   const node = resolveTopologySelectedOntologyNode(slug, ontologyNodes);
   if (!node) return null;
