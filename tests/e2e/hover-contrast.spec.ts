@@ -233,22 +233,21 @@ async function auditRoute(page: Page) {
 }
 
 /**
- * **The routes this instrument walks, and the one place it differs from the audited list.**
+ * **The routes this instrument walks.**
  *
- * Everything else in this file measures `AUDITED_ROUTES`, and it should: a route nobody hovers is
- * a route whose hover contrast nobody knows. The one subtraction below exists because this
- * instrument has a floor, and a floor is only meaningful on a screen whose controls it has not
- * already counted.
+ * Everything in this file measures `AUDITED_ROUTES`, and it should: a route nobody hovers is a
+ * route whose hover contrast nobody knows. This instrument has a floor, and a floor is only
+ * meaningful on a screen whose controls it has not already counted — which is why the list has
+ * had a subtraction twice and has none now.
  *
  * `/ko/agents/` came off on 2026-09-05, when MCP left that destination and what remained — in a
  * browser, which cannot launch a program — was a title, a sentence and one degradation row, below
- * the floor of 3. On 2026-09-18 MCP came back as a section of that same page, so the page has its
- * controls again and is walked as itself. `/ko/agents/?tab=mcp` is that page scrolled to the
- * section: the same document, the same controls, and a second walk over it would count the same
- * state pairs twice. The ratchets that measure resting state keep the address because they see
- * the scrolled viewport; this instrument hovers controls, which do not move when the page scrolls.
+ * the floor of 3. On 2026-09-18 MCP came back as a section of that same page, and
+ * `/ko/agents/?tab=mcp` was that page scrolled: the same controls, so the address came off to
+ * keep from counting the same state pairs twice. On 2026-09-19 MCP became the page's second tab:
+ * a different set of controls under the same title, walked as itself again.
  */
-const HOVER_ROUTES = AUDITED_ROUTES.filter((route) => route !== "/ko/agents/?tab=mcp");
+const HOVER_ROUTES = AUDITED_ROUTES;
 
 for (const route of HOVER_ROUTES) {
   test(`호버 대비 — ${route}`, async ({ page }) => {

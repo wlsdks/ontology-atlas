@@ -133,6 +133,12 @@ function installDesktopGit({
   // reader's language, and only the screen already holds `ahead`/`behind`.
   fetch = { ok: true, upstream: "origin/main", ahead: 2, behind: 0, summary: "remote-diverged" },
   pull = { ok: true, upstream: "origin/main", summary: "1개 받아옴" },
+  /**
+   * The whole document at a point in time. `null` stands for "this screen cannot read it
+   * whole", which is what the web and an older app answer, and the reader then draws the
+   * hunks it already has.
+   */
+  documentDiff = null as unknown,
   restore = (args: Record<string, unknown>) => ({
     restored: true,
     path: args.relativePath,
@@ -150,6 +156,7 @@ function installDesktopGit({
   fetch?: unknown;
   pull?: unknown;
   restore?: unknown;
+  documentDiff?: unknown;
 } = {}) {
   tauriApiMock.runtimeAvailable = true;
   tauriApiMock.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) => {
@@ -157,7 +164,9 @@ function installDesktopGit({
     if (command === "git_diff") return diff;
     if (command === "git_commit_diff") return { count: 0, files: [], diff: COMMIT_PATCH };
     if (command === "git_history")
-      return typeof history === "function" ? history(Number(args?.limit ?? 0)) : history;
+      return typeof history === "function"
+        ? history(Number(args?.limit ?? 0), (args?.path as string | undefined) ?? undefined)
+        : history;
     if (command === "git_snapshot") return snapshot;
     if (command === "git_init") return init;
     if (command === "git_set_remote") return setRemote;
@@ -166,6 +175,8 @@ function installDesktopGit({
     if (command === "git_pull") return pull;
     if (command === "git_restore_file")
       return typeof restore === "function" ? restore(args ?? {}) : restore;
+    if (command === "git_document_diff")
+      return typeof documentDiff === "function" ? documentDiff(args ?? {}) : documentDiff;
     throw new Error(`unexpected command: ${command}`);
   });
 }
@@ -224,12 +235,16 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
+    // The pane reads documents (owner direction B, 2026-09-19): one line of totals, then a
+    // chip per changed document named by its concept — no kind label over a single row.
     const groups = await screen.findByTestId("atlas-git-change-groups");
-    expect(groups).toHaveTextContent("capability");
     expect(groups).toHaveTextContent("추가 1");
-    expect(groups).toHaveTextContent("element");
     expect(groups).toHaveTextContent("수정 1");
-    expect(groups).toHaveTextContent("capabilities/foo");
+    expect(groups).toHaveTextContent("foo");
+    expect(groups).toHaveTextContent("bar");
+    expect(groups).not.toHaveTextContent("capability");
+    // The document with changed lines opens by default, whole, with its path named once.
+    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/elements/bar.md");
 
     // #85 — history is the evidence pane's second tab (left: what to record, right: evidence).
     const step = screen.getByTestId("atlas-git-history-item");
@@ -503,7 +518,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
+    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("new line");
     // The uncommitted row is at the top of the list and is the one selected.
     const pending = screen.getByTestId("atlas-git-pending-row");
     // 2026-08-15 (8) — this row is "what I am looking at", not a pressed button.
@@ -540,8 +555,9 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     // Without this assertion, the next person could revert the parser unnoticed.
     expect(patch.textContent).not.toContain("diff --git");
     expect(patch.textContent).not.toContain("index 05d74bf");
-    // The file name is carried by **the list above** — the patch box does not repeat it.
-    expect(patch.textContent).not.toContain("docs/capabilities/foo.md");
+    // The files lens reads the file with the same document reader the uncommitted pane
+    // uses (2026-09-19): one header names the document once, then its lines in prose.
+    expect(patch).toHaveTextContent("추가된 줄:");
   });
 
   it("새 걸음으로 바뀐 뒤 늦은 이전 git show 응답을 버린다", async () => {
@@ -643,7 +659,9 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     // elsewhere on the rail.
     expect(screen.queryByTestId("atlas-git-close")).not.toBeInTheDocument();
     // An h1, not an 11px mono eyebrow — measured, that was far too small for a page title.
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("기록");
+    // The destination is named for what it is (owner, 2026-09-19): "Git", in both locales.
+    // Git's trademark policy permits naming the software a feature operates on.
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Git");
   });
 });
 
@@ -1219,7 +1237,7 @@ describe("AtlasGitPanel — 2단 작업대의 선택", () => {
     await screen.findByTestId("atlas-git-history-detail");
 
     fireEvent.click(screen.getByTestId("atlas-git-pending-row"));
-    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
+    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("new line");
     expect(screen.queryByTestId("atlas-git-history-detail")).toBeNull();
   });
 
@@ -1503,6 +1521,12 @@ describe("AtlasGitPanel — 문서 하나를 되돌린다", () => {
       source: "abc1234def5678",
     });
     expect(await screen.findByTestId("atlas-git-restore-notice")).toHaveTextContent("되돌렸어요");
+    // The result of what was just done is on screen: the "now" row is selected with this
+    // document chosen, so the restored lines are what the right column reads.
+    await waitFor(() =>
+      expect(screen.getByTestId("atlas-git-pending-row")).toHaveAttribute("aria-current", "true"),
+    );
+    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/capabilities/foo.md");
   });
 
   it("신원이 다른 시점은 거부되고, 문서가 그대로라는 말이 같이 선다", async () => {
@@ -1523,5 +1547,347 @@ describe("AtlasGitPanel — 문서 하나를 되돌린다", () => {
     expect(error).toHaveTextContent("문서는 바뀌지 않았어요");
     // The confirm step stays open: the person can read why and choose again.
     expect(screen.getByTestId("atlas-git-restore-step")).toBeInTheDocument();
+  });
+});
+
+describe("AtlasGitPanel — 문서 하나의 이력", () => {
+  /*
+   * "When else did this concept change" used to mean scanning every row for the concept's
+   * name. A commit's detail now lists the other steps that touched the focused document,
+   * read from git scoped to that path, and a row jumps to that step — reading the list on,
+   * page by page, when the step sits below the depth already loaded.
+   */
+  const step = (n: number, subject: string) => ({
+    shortHash: `d${n.toString().padStart(6, "0")}`,
+    hash: `d${n.toString().padStart(6, "0")}${"0".repeat(33)}`,
+    subject,
+    relativeTime: `${n} hours ago`,
+    isoTime: new Date(Date.parse("2026-09-19T08:00:00Z") - n * 3_600_000).toISOString(),
+    files: [
+      { path: "docs/capabilities/foo.md", status: "modified", kind: "capability", slug: "capabilities/foo", renamedFrom: null },
+    ],
+  });
+  // Thirty steps in the repository; the document changed in steps 1 and 25.
+  const all = Array.from({ length: 30 }, (_, i) => step(i + 1, `docs: step ${i + 1}`));
+  const forDocument = [all[0], all[24]];
+
+  it("상세가 그 문서를 바꾼 다른 커밋을 보여주고, 누르면 목록이 그 커밋까지 읽어 내려가 선택한다", async () => {
+    installDesktopGit({
+      history: (limit: number, path?: string) => (path ? forDocument.slice(0, limit) : all.slice(0, limit)),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click((await screen.findAllByTestId("atlas-git-history-item"))[0]);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+
+    const list = await screen.findByTestId("atlas-git-document-history");
+    expect(list).toHaveTextContent("이 문서를 바꾼 다른 커밋");
+    const rows = screen.getAllByTestId("atlas-git-document-step");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent("docs: step 25");
+    // Scoped read: git was asked for this document's path.
+    const scoped = tauriApiMock.invoke.mock.calls.filter(
+      ([command, args]) => command === "git_history" && (args as { path?: string }).path === "docs/capabilities/foo.md",
+    );
+    expect(scoped.length).toBeGreaterThan(0);
+
+    fireEvent.click(rows[0]);
+    // Step 25 lies below the first ten; the list reads on until the row exists and is selected.
+    await waitFor(
+      () => {
+        const selected = screen
+          .getAllByTestId("atlas-git-history-item")
+          .find((row) => row.getAttribute("aria-expanded") === "true");
+        expect(selected).toHaveTextContent("docs: step 25");
+      },
+      { timeout: 4000 },
+    );
+    expect(screen.getByTestId("atlas-git-detail-headline")).toHaveTextContent("docs: step 25");
+  });
+
+  it("그 문서를 바꾼 커밋이 이것뿐이면 그렇게 말한다", async () => {
+    installDesktopGit({ history: (limit: number, path?: string) => (path ? [all[0]] : all.slice(0, limit)) });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click((await screen.findAllByTestId("atlas-git-history-item"))[0]);
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+    expect(await screen.findByTestId("atlas-git-document-history")).toHaveTextContent("이것뿐이에요");
+    expect(screen.queryByTestId("atlas-git-document-step")).toBeNull();
+  });
+});
+
+describe("AtlasGitPanel — 열리지 않을 문은 그리지 않는다", () => {
+  it("커밋이 지운 파일에는 되돌리기 문이 없다 — 그 시점에 내용이 없으니까", async () => {
+    installDesktopGit({
+      history: [
+        {
+          shortHash: "del1234",
+          hash: "del1234def5678",
+          subject: "chore: retire the foo capability",
+          relativeTime: "2 hours ago",
+          isoTime: "2026-09-19T06:00:00.000Z",
+          files: [
+            { path: "docs/capabilities/foo.md", status: "deleted", kind: "capability", slug: "capabilities/foo", renamedFrom: null },
+          ],
+        },
+      ],
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    await screen.findByTestId("atlas-git-history-detail");
+    fireEvent.click(screen.getByTestId("atlas-git-lens-files"));
+    await screen.findByTestId("atlas-git-commit-file");
+    expect(screen.queryByTestId("atlas-git-restore")).toBeNull();
+
+  });
+
+  it("이름을 바꾼 미커밋 문서에는 버리기 문이 없다 — 마지막 커밋은 옛 이름을 갖고 있으니까", async () => {
+    installDesktopGit({
+      diff: {
+        count: 1,
+        files: [
+          { path: "docs/elements/baz.md", status: "renamed", kind: "element", slug: "elements/baz", renamedFrom: "docs/elements/bar.md" },
+        ],
+        diff: "",
+      },
+      status: { ...STATUS_WITH_CHANGES, changedCount: 1 },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    // A rename has no diff lines, so the screen opens on the latest commit; open the "now" row.
+    fireEvent.click(await screen.findByTestId("atlas-git-pending-row"));
+    await screen.findByTestId("atlas-git-change-groups");
+    fireEvent.click(screen.getAllByTestId("atlas-git-change-row")[0]);
+    await waitFor(() => expect(screen.getByTestId("atlas-git-change-groups")).toHaveTextContent("baz"));
+    expect(screen.queryByTestId("atlas-git-discard")).toBeNull();
+  });
+});
+
+describe("AtlasGitPanel — 목록은 키보드로 걷는다", () => {
+  it("화살표가 행 사이를 옮기고, 탭 정지는 하나뿐이다", async () => {
+    const steps = Array.from({ length: 3 }, (_, i) => ({
+      shortHash: `k${i}000000`,
+      hash: `k${i}${"0".repeat(38)}`,
+      subject: `docs: step ${i}`,
+      relativeTime: `${i + 1} hours ago`,
+      isoTime: new Date(Date.parse("2026-09-19T08:00:00Z") - (i + 1) * 3_600_000).toISOString(),
+      files: [],
+    }));
+    installDesktopGit({ history: steps });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const rows = await screen.findAllByTestId("atlas-git-history-item");
+    expect(rows).toHaveLength(3);
+
+    const list = screen.getByTestId("atlas-git-steps");
+    const stops = Array.from(list.querySelectorAll("button")).filter((b) => b.tabIndex === 0);
+    expect(stops).toHaveLength(1);
+
+    rows[0].focus();
+    fireEvent.focus(rows[0]);
+    fireEvent.keyDown(rows[0], { key: "ArrowDown" });
+    await waitFor(() => expect(document.activeElement).toBe(rows[1]));
+    fireEvent.keyDown(rows[1], { key: "End" });
+    await waitFor(() => expect(document.activeElement).toBe(rows[2]));
+    // A press is still the deliberate act: moving focus selected nothing.
+    expect(rows[2]).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
+describe("AtlasGitPanel — 읽기 창은 한 번에 한 문서다", () => {
+  it("칩을 바꾸면 이전 문서의 읽기 창은 사라지고 새 문서 하나만 선다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-diff-pre");
+    const chips = screen.getAllByTestId("atlas-git-change-row");
+    fireEvent.click(chips.find((c) => c.getAttribute("title")?.includes("foo"))!);
+    await waitFor(() => expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/capabilities/foo.md"));
+    expect(screen.getAllByTestId("atlas-git-diff-pre")).toHaveLength(1);
+    fireEvent.click(chips.find((c) => c.getAttribute("title")?.includes("bar"))!);
+    await waitFor(() => expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/elements/bar.md"));
+    expect(screen.getAllByTestId("atlas-git-diff-pre")).toHaveLength(1);
+  });
+});
+
+describe("AtlasGitPanel — 읽기 창은 그리는 것을 사실대로 말한다", () => {
+  /*
+   * Two facts the reader used to get wrong. A long document has no ceiling: measured
+   * 2026-09-19, a 6,009-line document produced a 6,014-line diff (~600 KB over IPC, one DOM
+   * node per line) whose hunks were ten lines. And a renamed document asked for by its new
+   * name alone comes back from git as a brand-new file, every line "added", although its
+   * bytes never changed.
+   */
+  it("문서가 상한을 넘으면 훅 조각을 그리고 길어서 그렇다고 말한다", async () => {
+    installDesktopGit({
+      documentDiff: () => ({ path: "docs/elements/bar.md", diff: "", untracked: false, tooLarge: true }),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const reader = await screen.findByTestId("atlas-git-diff-pre");
+    await waitFor(() => expect(reader).toHaveTextContent("문서가 길어서"));
+    // Said above the body, in the cut grammar: what follows is a fragment, not the document.
+    expect(screen.getByTestId("atlas-git-doc-fragment")).toHaveTextContent("문서가 길어서");
+    // The hunks are still drawn — they always hold the changed lines.
+    expect(reader).toHaveTextContent("new line");
+    expect(reader).not.toHaveTextContent("문서 전체를 읽지 못해");
+  });
+
+  it("이름 바뀐 문서는 옛 이름과 함께 물어본다 — 전부 추가로 그리지 않도록", async () => {
+    installDesktopGit({
+      diff: {
+        count: 1,
+        files: [
+          {
+            path: "docs/elements/baz.md",
+            status: "renamed",
+            kind: "element",
+            slug: "elements/baz",
+            renamedFrom: "docs/elements/bar.md",
+          },
+        ],
+        diff: "",
+      },
+      documentDiff: (args: Record<string, unknown>) => ({
+        path: args.relativePath,
+        diff: `diff --git a/${String(args.relativePath)} b/${String(args.relativePath)}\n@@ -1,1 +1,1 @@\n unchanged body line\n`,
+        untracked: false,
+        tooLarge: false,
+      }),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-pending-row"));
+    await screen.findByTestId("atlas-git-diff-pre");
+    await waitFor(() => {
+      const asked = tauriApiMock.invoke.mock.calls.filter(([command]) => command === "git_document_diff");
+      expect(asked.length).toBeGreaterThan(0);
+      expect((asked[asked.length - 1][1] as { previousPath?: string }).previousPath).toBe("docs/elements/bar.md");
+    });
+    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("unchanged body line");
+    // A renamed document carries the name it had.
+    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("docs/elements/bar.md");
+  });
+});
+
+describe("AtlasGitPanel — 개념이 아닌 파일은 산문이 아니다", () => {
+  it("무시 파일의 주석 줄을 문서 제목으로 그리지 않는다", async () => {
+    installDesktopGit({
+      diff: {
+        count: 1,
+        files: [
+          { path: ".ontology-atlasignore", status: "modified", kind: null, slug: ".ontology-atlasignore", renamedFrom: null },
+        ],
+        diff: "",
+      },
+      documentDiff: () => ({
+        path: ".ontology-atlasignore",
+        diff: "diff --git a/.ontology-atlasignore b/.ontology-atlasignore\n@@ -1,2 +1,3 @@\n # cache files, not a heading\n+build/\n",
+        untracked: false,
+        tooLarge: false,
+      }),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-pending-row"));
+    const reader = await screen.findByTestId("atlas-git-diff-pre");
+    await waitFor(() => expect(reader).toHaveTextContent("cache files, not a heading"));
+    // The file's own characters, not Markdown: the comment stays a line, and only the
+    // document's name is a heading on this pane.
+    expect(reader.querySelectorAll("h3, h4")).toHaveLength(0);
+    expect(reader).toHaveTextContent("build/");
+    // It is called a file, and a file at the folder's root does not read its name twice.
+    expect(reader).toHaveTextContent("고친 파일");
+    expect(reader).not.toHaveTextContent("고친 문서");
+  });
+});
+
+describe("AtlasGitPanel — 본문은 표시가 아니라 뜻을 읽힌다", () => {
+  it("굵게와 코드 표시를 별표와 백틱째 보여주지 않는다", async () => {
+    installDesktopGit({
+      documentDiff: () => ({
+        path: "docs/elements/bar.md",
+        diff: [
+          "diff --git a/docs/elements/bar.md b/docs/elements/bar.md",
+          "@@ -1,2 +1,3 @@",
+          " A single location (`/agents/`) where you **receive and attach** tools.",
+          "+One more line.",
+          "",
+        ].join("\n"),
+        untracked: false,
+        tooLarge: false,
+      }),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const reader = await screen.findByTestId("atlas-git-diff-pre");
+    await waitFor(() => expect(reader).toHaveTextContent("receive and attach"));
+    expect(reader.textContent).not.toContain("**");
+    expect(reader.textContent).not.toContain("`");
+    expect(reader.querySelector("code")).toHaveTextContent("/agents/");
+    expect(reader.querySelector("b")).toHaveTextContent("receive and attach");
+  });
+
+  it("번호 목록도 항목으로 서고, 번호는 문서의 것을 그대로 쓴다", async () => {
+    installDesktopGit({
+      documentDiff: () => ({
+        path: "docs/elements/bar.md",
+        diff: [
+          "diff --git a/docs/elements/bar.md b/docs/elements/bar.md",
+          "@@ -1,3 +1,3 @@",
+          " 1. **Executor List**: tools confirmed on this device.",
+          " 2. **Connection Check**: review eight steps.",
+          "",
+        ].join("\n"),
+        untracked: false,
+        tooLarge: false,
+      }),
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const reader = await screen.findByTestId("atlas-git-diff-pre");
+    await waitFor(() => expect(reader).toHaveTextContent("Executor List"));
+    expect(reader.textContent).not.toContain("**");
+    expect(reader.textContent).toContain("2.");
+  });
+});
+
+describe("AtlasGitPanel — 문이 없는 이유는 말한다", () => {
+  /*
+   * Walked in the installed app on 2026-09-19: a concept whose document that step deleted
+   * showed no restore door and no reason, and a missing door reads as a missing feature.
+   */
+  const GRAPH = {
+    nodes: [
+      {
+        id: "capability:foo",
+        title: "Foo Capability",
+        display: "첫 실행 안내",
+        kind: "capability",
+        projectIds: [],
+        evidenceIds: ["capabilities/foo"],
+        hasOwnDocument: true,
+        agentSlug: "capabilities/foo",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: null,
+      },
+    ],
+    edges: [],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+
+  it("이 걸음이 문서를 지웠으면 되돌리기 문 대신 그 사실이 선다", async () => {
+    installDesktopGit({
+      history: [
+        {
+          shortHash: "del1234",
+          hash: "del1234def5678",
+          subject: "chore: retire the foo capability",
+          relativeTime: "2 hours ago",
+          isoTime: "2026-09-19T06:00:00.000Z",
+          files: [
+            { path: "docs/capabilities/foo.md", status: "deleted", kind: "capability", slug: "capabilities/foo", renamedFrom: null },
+          ],
+        },
+      ],
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    await screen.findByTestId("atlas-git-history-detail");
+    expect(await screen.findByTestId("atlas-git-restore-absent")).toHaveTextContent("지웠어요");
+    expect(screen.queryByTestId("atlas-git-restore")).toBeNull();
   });
 });

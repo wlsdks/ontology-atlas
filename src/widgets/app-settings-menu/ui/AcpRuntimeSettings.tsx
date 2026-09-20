@@ -12,7 +12,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { cn } from '@/shared/lib/cn';
 import { useArrivalMemory } from '@/shared/lib/route-arrival-memory';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip, Dialog } from '@/shared/ui';
+import { Chip, Dialog, InfoHint } from '@/shared/ui';
 import { Input } from '@/shared/ui/input';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
@@ -229,6 +229,34 @@ export function AcpRuntimeSettings({
 
   const ready = (runtimes ?? []).filter((r) => isRuntimeUsable(r.state));
   const others = (runtimes ?? []).filter((r) => !isRuntimeUsable(r.state));
+
+  /*
+   * **The re-scan press belongs to the group it re-scans** (2026-09-20).
+   *
+   * It used to sit on the intro row, level with the sentence about which tools can open a
+   * chat and a whole line above the heading that counts what it would re-count. The MCP tab
+   * beside this one puts its "add a connector" press in its group heading, so the two tabs
+   * asked to be read differently for no reason a person could name; the owner's own rule for
+   * this screen is that a group's controls stand with the group, filling the row's width.
+   *
+   * ⚠️ **Not while the first scan is still running.** `checking` covers a re-scan this button
+   * started; the very first detection, before any answer exists, left it live — so the row
+   * offered "check again" beside a list that says it is still looking, and a press started a
+   * second scan over the first. `runtimes` is null exactly until that first answer lands.
+   */
+  const recheck = (
+    <Chip
+      size="lg"
+      tone="secondary"
+      data-testid="app-settings-runtimes-recheck"
+      disabled={checking || runtimes === null}
+      onClick={() => void refresh()}
+      className={`${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`}
+    >
+      <RefreshCw size={ICON_SIZE.md} aria-hidden />
+      {t('recheck')}
+    </Chip>
+  );
   /*
    * The names inside the explanation — **not written by hand.** When more runners
    * become isolated the sentence follows on its own, and with none it branches to a
@@ -242,72 +270,49 @@ export function AcpRuntimeSettings({
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-runtimes">
       {/*
-        ⚠️ **The destination does not draw this intro** (2026-08-20, caught in an
-        installed-app capture). The page has already said the same thing in its own
-        lede, and overlapping the two stands near-identical sentences one above the
-        other — the "duplicate sentence" defect this screen already went through
-        once, and the council's prescription was "explanatory paragraphs 3 → 1".
+        **One row above the list: what the list means, and the way to re-read it** (owner,
+        2026-09-19: *"there is so much useless text here — tooltips if it is really needed"*).
+        Three paragraphs used to stand between the page title and the first tool. What they
+        said still matters at exactly two moments — *why does this tool open a chat and that
+        one not*, and *what does starting a chat write to disk* — so the first is one sentence
+        that names the tools it is about, and the second waits in a hint beside it. Nothing is
+        dropped: the credential-link disclosure is still drawn
+        (`tests/contract/acp-disk-disclosure.contract.test.ts`), one press away instead of in
+        the way.
 
-        In the sheet there is no title, so this line takes that place. So it is not
-        deleted; **the caller decides.**
-      */}
-      {/*
-        ⚠️ **The installed app had no way to `/mcp` from here** (PO council, 2026-09-05).
-        `DESTINATION_HREF.mcp` had exactly two production consumers: the rail tile, and one link
-        in the branch above — which only renders when the ACP bridge is **absent**, i.e. in a
-        browser. So on the surface where this screen matters most, three sentences named MCP setup
-        (`intro`, `guardedExplainer`, `unknownExplainer`) and none of them could be followed. A
-        name with no way there is the dead pointer `.claude/rules/surfaces.md` forbids in a
-        degradation card, and it is no better outside one.
+        In the sheet there is no title, so the intro line takes that place; **the caller
+        decides**, as before.
 
-        The link is quiet and always drawn, so the row has a left slot in both shapes: on the
-        destination (`embedded`) the intro is the page's own lede and is not repeated, and the
-        link stands alone; in the sheet it sits under the intro.
+        The link to the MCP tab that used to stand here left with the tabs (2026-09-19): the
+        tab is on the same strip, a press away, and a sentence pointing at it was the dead
+        pointer `.claude/rules/surfaces.md` forbids the moment the strip is visible.
       */}
       <div className="flex items-start justify-between gap-3 px-1">
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           {embedded ? null : (
             <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
               {t('intro')}
             </p>
           )}
-          <Link
-            href={DESTINATION_HREF.mcp}
-            data-testid="app-settings-runtimes-mcp-link"
-            className={controlClass({
-              shape: 'link',
-              tone: 'muted',
-              hoverInk: 'strong',
-              className: `text-label ${embedded ? '' : 'mt-1'}`,
-            })}
-          >
-            {t('mcpLink')}
-          </Link>
-        </div>
-        <Chip
-          size="lg"
-          tone="secondary"
-          data-testid="app-settings-runtimes-recheck"
-          disabled={checking}
-          onClick={() => void refresh()}
-          className={DETAIL_TOGGLE_CHIP}
-        >
-          <RefreshCw size={ICON_SIZE.md} aria-hidden />
-          {t('recheck')}
-        </Chip>
-      </div>
-
-      {runtimes === null ? (
-        <SettingsGroup>
-          <SettingsRow label={t('checking')} control={null} testId="app-settings-runtimes-loading" />
-        </SettingsGroup>
-      ) : (
-        <>
-          {ready.some((r) => !isGuardedRuntime(r.id, r.isolated)) ? (
+          {embedded ? null : (
+            <Link
+              href={DESTINATION_HREF.mcp}
+              data-testid="app-settings-runtimes-mcp-link"
+              className={controlClass({
+                shape: 'link',
+                tone: 'muted',
+                hoverInk: 'strong',
+                className: 'text-label',
+              })}
+            >
+              {t('mcpLink')}
+            </Link>
+          )}
+          {runtimes !== null && ready.some((r) => !isGuardedRuntime(r.id, r.isolated)) ? (
             <p
               data-testid="app-settings-runtimes-guard-note"
               data-guarded-count={guardedNames.length}
-              className="break-keep px-1 text-label leading-label text-[color:var(--color-text-tertiary)]"
+              className="break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
             >
               {guardedNames.length > 0
                 ? t('guardedExplainer', { names: guardedNames.join(' · ') })
@@ -317,26 +322,52 @@ export function AcpRuntimeSettings({
           {/*
             Say what appears on disk (2026-08-17).
 
-            When a conversation starts, Rust creates a config folder for that tool
-            inside the app's data directory and **symlinks the user's real
-            credential files** into it (`link_credentials` in
-            `src-tauri/src/acp.rs`). Isolating them breaks login, and copying
-            secrets into the app folder is something the charter forbids, so a link
-            is the answer in between — that is right. What was wrong is that
-            **no screen said so.**
+            When a conversation starts, Rust creates a config folder for that tool inside the
+            app's data directory and **symlinks the user's real credential files** into it
+            (`link_credentials` in `src-tauri/src/acp.rs`). Isolating them breaks login, and
+            copying secrets into the app folder is something the charter forbids, so a link is
+            the answer in between — that is right. What was wrong is that **no screen said so.**
+            Since 2026-09-19 it is said in the hint beside the list rather than as a paragraph
+            above it: the sentence matters at the moment of pressing "open a chat", and a hint
+            is one press from that button without standing between the title and the tools.
+            Gate: `tests/contract/acp-disk-disclosure.contract.test.ts`.
 
-            The API key pane right beside this explains in two sentences how the key
-            is stored. This side, which touches real credential files, staying
-            silent does not add up. Gate:
-            `tests/contract/acp-disk-disclosure.contract.test.ts`.
+            ⚠️ **Only where a chat can start** (2026-09-20). `link_credentials` runs when a
+            conversation opens, and a conversation opens only for a tool this screen confirmed
+            and guards — so on a machine with none, this answered a question nobody can ask,
+            and as a hint rather than the old paragraph it left a lone question mark beside a
+            list that says "no tool found". The condition is the same one the chat button uses.
+            The gate greps this file for the sentence and the testid, so it cannot see either
+            this change or its reverse; the reason it is right is the disclosure's own subject.
           */}
-          <p
-            data-testid="app-settings-runtimes-disk-note"
-            className="break-keep px-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
-          >
-            {t('diskNote')}
-          </p>
-          <SettingsGroup label={t('readyHeading', { count: ready.length })}>
+          {runtimes !== null && ready.some((r) => isGuardedRuntime(r.id, r.isolated)) ? (
+            <InfoHint label={t('hintLabel')} align="left">
+              <p
+                data-testid="app-settings-runtimes-disk-note"
+                className="break-keep text-label leading-prose text-[color:var(--color-text-secondary)]"
+              >
+                {t('diskNote')}
+              </p>
+            </InfoHint>
+          ) : null}
+        </div>
+      </div>
+
+      {runtimes === null ? (
+        /*
+         * **Named before it can be counted.** The group carries the plain name while the scan
+         * is still running and the name with the count the moment it answers — the same shape
+         * the MCP tab's connectors group uses, so the two tabs read alike. It matters here
+         * because the heading is where the re-scan press now lives: without a heading in this
+         * state the press would appear only after the first answer, and the guided tour
+         * anchors on it.
+         */
+        <SettingsGroup label={t('heading')} trailing={recheck}>
+          <SettingsRow label={t('checking')} control={null} testId="app-settings-runtimes-loading" />
+        </SettingsGroup>
+      ) : (
+        <>
+          <SettingsGroup label={t('readyHeading', { count: ready.length })} trailing={recheck}>
             {ready.length === 0 ? (
               <SettingsRow label={t('noneReady')} caption={t('noneReadyCaption')} control={null} />
             ) : (
@@ -629,11 +660,20 @@ function RuntimeRow({
                 size="lg"
                 tone="accentOnTint"
                 data-testid={`app-settings-runtime-chat-${runtime.id}`}
+                /*
+                 * **The verb alone, and the sentence as the name** (2026-09-19). The row already
+                 * carries this tool's mark and its name, so "open a chat with this tool" says
+                 * "this tool" a second time — and three of these sentences stacked down the
+                 * column were what pushed the names to 0px at 390. A screen reader moving from
+                 * control to control does not see the row beside it, so the accessible name
+                 * keeps the whole sentence; the same split the MCP tab's rows use.
+                 */
+                aria-label={t('openChat')}
                 onClick={() => onOpenChat(runtime.id)}
                 className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
               >
                 <MessageSquare size={ICON_SIZE.md} aria-hidden />
-                {t('openChat')}
+                {t('openChatShort')}
               </Chip>
             ) : null}
             {/*

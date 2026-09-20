@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { MoreHorizontal, Plus, X } from 'lucide-react';
@@ -34,6 +34,7 @@ import { CONNECTORS_RELATIVE_PATH, type ConnectorWriteResult } from '@/shared/li
 import {
   discoverMcpConnectors,
   isConnectorDiscoveryAvailable,
+  type ConnectorDiscoveryState,
   type DiscoveredConnector,
 } from '@/shared/lib/tauri-connectors';
 import {
@@ -139,6 +140,9 @@ export function ConnectorsPanel({
   store,
   openFolderAction,
   testIdPrefix = 'connectors',
+  addOpenRequest = 0,
+  externalAddOpener,
+  countInHeading = false,
 }: {
   handle: FileSystemDirectoryHandle | null;
   /**
@@ -159,18 +163,76 @@ export function ConnectorsPanel({
    */
   openFolderAction?: ReactNode;
   testIdPrefix?: string;
+  /**
+   * **The opener may stand outside the card** (2026-09-19). On the Agents destination's MCP
+   * tab the "add a connector" press sits in the group heading, beside the count, where the
+   * share group keeps its own control — so the two groups read the same way and the card no
+   * longer opens with a row that holds one chip and empty span. The parent owns that chip;
+   * it bumps `addOpenRequest` to open the dialog here and lends the chip's ref so focus still
+   * returns to the opener after a removal. With `externalAddOpener` set, the card draws no
+   * opener of its own in the listed state; the empty state keeps its indigo ask, because that
+   * ask *is* the card's content.
+   */
+  addOpenRequest?: number;
+  externalAddOpener?: RefObject<HTMLButtonElement | null>;
+  /**
+   * **The caller's heading already says how many are on**, so the list does not say it again
+   * (2026-09-20). The Agents destination's MCP tab gives this group a heading that reads
+   * "Connectors · 1 of 2 on"; for a while the card kept its own line saying the same thing in
+   * different words a few pixels below, which is the duplicated prose the owner objected to on
+   * this screen. Off by default: a caller that draws no heading still needs the count, and the
+   * panel's own component test owns that case.
+   */
+  countInHeading?: boolean;
 }) {
   const t = useTranslations('connectors');
   const vaultPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
   const canDiscover = isConnectorDiscoveryAvailable();
   const canStoreSecrets = isConnectorSecretBridgeAvailable();
 
-  const [discovered, setDiscovered] = useState<DiscoveredConnector[] | null>(null);
+  /*
+   * ⚠️ **A scan that fails must stop claiming it is still running** (2026-09-20).
+   *
+   * This used to be one `DiscoveredConnector[] | null`, where `null` meant "has not answered
+   * yet" — and the call had no `catch`. `discover_mcp_connectors` reads four config files on
+   * this machine; when it rejects (an unreadable `~/.claude.json`, a denied home directory, a
+   * panic in the command) the state stays `null` for the life of the screen. Both places that
+   * render it then say "reading what is already registered on this computer" **forever**, the
+   * rejection goes unhandled, and `registeredNames` stays empty so the name-collision warning
+   * never fires with nothing on screen saying why.
+   *
+   * Three states, named, so neither consumer can spell one of them as the absence of another.
+   */
+  const [discovery, setDiscovery] = useState<ConnectorDiscoveryState>({ status: 'scanning' });
+  const discovered = discovery.status === 'done' ? discovery.connectors : null;
   useEffect(() => {
     let cancelled = false;
-    void discoverMcpConnectors(vaultPath).then((result) => {
-      if (!cancelled) setDiscovered(result?.connectors ?? null);
-    });
+    /*
+     * No synchronous reset to `scanning` here. `vaultPath` changing would ideally clear a
+     * previous folder's answer, but setting state in an effect body is what
+     * `react-hooks/set-state-in-effect` forbids, and the reset is not this slice's subject: the
+     * old code never cleared it either, and the values it carries (which names this *machine*
+     * registers) are about the computer, not the folder.
+     */
+    void discoverMcpConnectors(vaultPath)
+      .then((result) => {
+        if (cancelled) return;
+        /*
+         * **`done` means a list arrived**, not merely that the promise settled. A `null` result
+         * is the web path — the bridge is absent, so nothing was read; `canDiscover` is false
+         * there and neither sentence is drawn. A settled call carrying no list is a reply this
+         * screen cannot use, and calling that `done` would paint "nothing is registered on this
+         * computer" out of a malformed answer.
+         */
+        setDiscovery(
+          Array.isArray(result?.connectors)
+            ? { status: 'done', connectors: result.connectors }
+            : { status: 'failed' },
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setDiscovery({ status: 'failed' });
+      });
     return () => {
       cancelled = true;
     };
@@ -320,7 +382,7 @@ export function ConnectorsPanel({
   const [removedTick, setRemovedTick] = useState(0);
   useEffect(() => {
     if (removedTick === 0) return;
-    addOpenRef.current?.focus();
+    (externalAddOpener?.current ?? addOpenRef.current)?.focus();
     /*
      * ⚠️ **`connectors.length` is in the list on purpose** (2026-09-07). Removal is asynchronous:
      * the tick is bumped when the confirmation closes, but the row leaves only when the folder
@@ -329,7 +391,14 @@ export function ConnectorsPanel({
      * the body. Re-running when the list actually changes puts it on the card's own door, which
      * is the only control left on screen.
      */
-  }, [removedTick, store.connectors.length]);
+  }, [removedTick, store.connectors.length, externalAddOpener]);
+
+  // The parent's opener, read the way an arriving install link is: adjust state during render.
+  const [seenAddRequest, setSeenAddRequest] = useState(addOpenRequest);
+  if (addOpenRequest !== seenAddRequest) {
+    setSeenAddRequest(addOpenRequest);
+    setAddOpen(true);
+  }
 
   /*
    * **A link opens the dialog once.** The comparison is against what was seen last render rather
@@ -375,7 +444,7 @@ export function ConnectorsPanel({
         discarded one. A person could not tell the two apart. The Share tab already answers this
         state by asking for the folder; this is the same answer on the same screen.
       */}
-      {noFolder || isEmpty ? null : (
+      {noFolder || isEmpty || externalAddOpener ? null : (
         <div className="flex flex-wrap items-start justify-end gap-x-4 gap-y-2">
           <Chip
             ref={addOpenRef}
@@ -495,19 +564,28 @@ export function ConnectorsPanel({
         </p>
       ) : null}
 
-      {canDiscover && discovered === null && !isEmpty ? (
+      {canDiscover && !isEmpty && discovery.status !== 'done' ? (
         <p
           role="status"
-          data-testid={`${testIdPrefix}-scanning`}
-          className="mt-3 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+          data-testid={
+            discovery.status === 'failed'
+              ? `${testIdPrefix}-discovery-failed`
+              : `${testIdPrefix}-scanning`
+          }
+          className={`mt-3 break-keep text-label leading-prose ${
+            discovery.status === 'failed'
+              ? 'text-[color:var(--color-status-warning)]'
+              : 'text-[color:var(--color-text-quaternary)]'
+          }`}
         >
-          {t('scanning')}
+          {discovery.status === 'failed' ? t('discoveryFailed') : t('scanning')}
         </p>
       ) : null}
 
       <AttachedList
         connectors={store.connectors}
         status={store.status}
+        countStatedAbove={countInHeading}
         registeredNames={registeredNames}
         storedRefs={storedRefs}
         onToggle={(id, enabled) => void store.setEnabled(id, enabled)}
@@ -555,7 +633,7 @@ export function ConnectorsPanel({
       <AddConnectorDialog
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        discovered={discovered}
+        discovery={discovery}
         canDiscover={canDiscover}
         canStoreSecrets={canStoreSecrets}
         attachedNames={attachedNames}
@@ -654,6 +732,7 @@ function AttachedList({
   onToggle,
   onOpenDetail,
   testIdPrefix,
+  countStatedAbove,
 }: {
   connectors: ConnectorRecord[];
   /** The store's own state - `loading` is not "none", and this list must not say it is. */
@@ -664,6 +743,8 @@ function AttachedList({
   onToggle: (id: string, enabled: boolean) => void;
   onOpenDetail: (id: string) => void;
   testIdPrefix: string;
+  /** The group heading above the card states the count; see `countInHeading`. */
+  countStatedAbove?: boolean;
 }) {
   const t = useTranslations('connectors');
   /*
@@ -696,17 +777,26 @@ function AttachedList({
       {/*
         **How many are on, in words.** The tab strip shows the same number as a bare badge, and a
         number with no unit beside a word is a number somebody has to guess the meaning of
-        (design council, 2026-09-05). This says it once, where the rows it counts are.
+        (design council, 2026-09-05). This says it once, where the rows it counts are — unless
+        the caller's own group heading already says it, which the Agents destination's MCP tab
+        has done since 2026-09-19. Two wordings of one count, a line apart, was prose the owner
+        had just asked this screen to shed; the denominator moved into that heading instead.
       */}
-      <p
-        data-testid={`${testIdPrefix}-on-of-total`}
-        className="mt-3 text-label leading-label text-[color:var(--color-text-quaternary)]"
-      >
-        {t('onOfTotal', { on: enabled, total: connectors.length })}
-      </p>
+      {countStatedAbove ? null : (
+        <p
+          data-testid={`${testIdPrefix}-on-of-total`}
+          className="mt-3 text-label leading-label text-[color:var(--color-text-quaternary)]"
+        >
+          {t('onOfTotal', { on: enabled, total: connectors.length })}
+        </p>
+      )}
     <ul
       data-testid={`${testIdPrefix}-list`}
-      /* The card no longer carries a heading, so the list names itself for assistive tech. */
+      /*
+        The card carries no heading of its own, so the list names itself for assistive tech —
+        including under a caller that does draw one, where the section's own `aria-labelledby`
+        names the group and this names the rows inside it.
+      */
       aria-label={t('title')}
       className="mt-2 flex flex-col gap-2"
     >

@@ -1,57 +1,60 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useCallback, type ReactNode } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 import { AcpRuntimeSettings } from '@/widgets/app-settings-menu';
-import { Disclosure } from '@/shared/ui';
+import { TabBar } from '@/shared/ui';
 import { useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
+import { useSwapHeight } from '@/shared/lib/use-presence';
 import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
+
+import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } from '../lib/agents-tab-state';
 
 /**
  * The "agents" destination — where this computer's AI coding tools are **downloaded, installed,
- * connected, repaired, and opened into a conversation**.
+ * connected, repaired, and opened into a conversation**, and where the folder is handed to them
+ * over MCP.
  *
  * **Why it left settings** (2026-08-20, ledger 90). Owner instruction: *[should we put settings
  * into the LNB entirely and use a whole window like other open source, instead of a popup?]* → of three
- * options, **"promote agents to top level"**.
+ * options, **"promote agents to top level"**. The basis is the container: a modal dims and blocks
+ * what is behind it and owns Esc; a sheet unmounts entirely when closed; settings is where you
+ * pick values, and this is an operational task with progress state.
  *
- * Five PO council seats and five design bench seats reviewed it, and the basis for the move is not
- * width (measured in the installed app: on the normal path 46–47% of the sheet is in fact empty). The
- * basis is **the container**:
+ * **Two tabs in the body, not a header strip** (owner, 2026-09-19). MCP has been one subject
+ * with Agents since 2026-09-17; on 2026-09-18 the owner rejected the *header* tab strip that
+ * split them ("a 56px chrome band on two words"), and it became a section below the tool list.
+ * The owner then rejected the stack as well: *"I don't want agents and MCP on one screen with a
+ * scroll — split them into tabs, choose one, see that one."* Both objections hold at once when
+ * the strip is the page's own, under the title where the Library and Insights carry theirs:
+ * no chrome band, and one question on screen at a time. Only the selected tab mounts; the MCP
+ * tab is the children the app layer hands in, so neither view imports the other.
  *
- * - A modal **dims and blocks what is behind it and owns Esc.** You cannot look at the map while 52MB
- *   downloads.
- * - A sheet **unmounts entirely when closed** — a completion signal can be lost. (That defect is
- *   independent of the move and was fixed separately. A destination does the same when you leave the route.)
- * - **Settings is where you pick values**, and this is **an operational task with progress state**.
+ * `?tab=mcp` is what `/mcp/` redirects into and what `DESTINATION_HREF.mcp` names, so every
+ * older link and the installed app's deep link (`ontology-atlas://mcp?install=…`) keep resolving.
  *
- * Picking a setting and running an operation with progress answer different questions, so they get
- * different destinations.
+ * **What this screen holds and does not.** Holds: the runner list, connection checks, app-only
+ * install, reconnection, opening a conversation, and — on its second tab — the folder's MCP
+ * connection and connectors. Does not hold: **API keys** (the 2026-08-16 "freeze the path, do not
+ * emphasize it" decision stands) and **the workspace** (a vault answers a different axis; owned
+ * by `local-vault-management`).
  *
- * **What this screen holds and does not.** Holds: the runner list, connection checks, app-only install,
- * reconnection, opening a conversation. Does not hold: **API keys** (the 2026-08-16 "freeze the path,
- * do not emphasize it" decision stands — promoting to a destination is itself emphasis and cannot
- * quietly reverse it), **the workspace** (a vault answers a different axis; owned by
- * `local-vault-management`), and — since 2026-09-05 — **MCP**.
- *
- * ## Why MCP left (2026-09-05)
- *
- * This destination had grown two jobs that only share a word. "Which coding tools does this
- * computer have" is about programs on this machine and is the reason the screen exists. "What does
- * an agent reach over MCP" — the folder's own server plus the external connectors — is about a wire
- * that works the same in a browser, and it was the taller half of the page. The owner read the
- * merged screen and asked for the split: *"Agents itself needs a redesign — MCP separately (doesn't
- * it need its own LNB tab?)"*. It is now `/mcp`.
- *
- * The runner list's web row used to point at *"the «MCP connection» section on this screen"*. A
- * section name is guidance only while that section is on the same screen, so that sentence now
- * carries a **link** to the new destination instead (`AcpRuntimeSettings`).
+ * **One line above the strip, nothing else** (owner, 2026-09-19: *"there is so much useless text
+ * here — tooltips if it is really needed"*). The 2026-09-06 fold ("what this screen does") and
+ * the three paragraphs the tool list used to open with are gone from the page; what a person
+ * comes back to ask — why one tool opens a chat and another does not, what starting a chat
+ * writes to disk — sits in one hint beside the list, in `AcpRuntimeSettings`.
  */
-export function AgentsPage({ children }: { children?: ReactNode } = {}) {
+export function AgentsPage({
+  children,
+  mcpCount,
+}: { children?: ReactNode; mcpCount?: number } = {}) {
   const t = useTranslations('agents');
+  const tMcp = useTranslations('mcp');
   const router = useRouter();
   const openChatOnMap = useCallback(
     (runtimeId: string) => {
@@ -60,6 +63,66 @@ export function AgentsPage({ children }: { children?: ReactNode } = {}) {
     },
     [router],
   );
+
+  const searchParams = useSearchParams();
+  const [tab, setTabState] = useState<AgentsTab>(() =>
+    parseAgentsTab(searchParams?.get(AGENTS_TAB_PARAM)),
+  );
+  /*
+   * The two panels are very different heights, and swapping them in one frame drops the page's
+   * scroll position somewhere unrelated. `useSwapHeight` is this repository's grammar for exactly
+   * that (`/ontology/insights`, the MCP section): measure before the change, transition the
+   * host's height on `--motion-base`, and stand aside under reduced motion.
+   */
+  const { hostRef: panelHostRef, capture: capturePanelHeight } = useSwapHeight(tab);
+
+  /*
+   * A rail click on Agents while the MCP tab is up, or `DESTINATION_HREF.mcp` from the shortcut
+   * sheet while the tool list is up, changes only the query of the same document — the view
+   * stays mounted, so the tab has to follow the address, not just the first render.
+   */
+  const paramTab = parseAgentsTab(searchParams?.get(AGENTS_TAB_PARAM));
+  // Adjusting state during render, React's own shape for "derive from a prop that changed":
+  // an effect would paint the stale tab for one frame and then cascade a second render.
+  const [seenParamTab, setSeenParamTab] = useState(paramTab);
+  if (paramTab !== seenParamTab) {
+    setSeenParamTab(paramTab);
+    if (paramTab !== tab) {
+      capturePanelHeight();
+      setTabState(paramTab);
+    }
+  }
+
+  /*
+   * Back and forward have to move the tab too. Without this the address bar says `?tab=mcp`
+   * while the screen still draws the tool list — the state and the URL disagreeing is exactly
+   * what putting the tab in the URL was for.
+   */
+  useEffect(() => {
+    const syncFromHistory = () => {
+      capturePanelHeight();
+      setTabState(parseAgentsTab(new URL(window.location.href).searchParams.get(AGENTS_TAB_PARAM)));
+    };
+    window.addEventListener('popstate', syncFromHistory);
+    return () => window.removeEventListener('popstate', syncFromHistory);
+  }, [capturePanelHeight]);
+
+  const selectTab = (next: string) => {
+    const nextTab = parseAgentsTab(next);
+    capturePanelHeight();
+    setTabState(nextTab);
+    /*
+     * Only the query view of the same document changes. A router navigation moves focus to the
+     * document root in the WebView, which would throw away the tab strip's roving focus, so the
+     * URL is updated through native history in the same event instead — the pattern
+     * `/ontology/insights` already uses.
+     */
+    window.history.replaceState(
+      window.history.state,
+      '',
+      buildAgentsTabHref(nextTab, new URL(window.location.href)),
+    );
+  };
 
   return (
     /*
@@ -78,6 +141,7 @@ export function AgentsPage({ children }: { children?: ReactNode } = {}) {
       id="main"
       tabIndex={-1}
       data-testid="agents-page"
+      data-agents-tab={tab}
       className={`${PAGE_FRAME_FORM} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
     >
       {/*
@@ -94,30 +158,68 @@ export function AgentsPage({ children }: { children?: ReactNode } = {}) {
           </h1>
         </div>
       </header>
-      {/*
-        ⚠️ **One line stands, the rest folds** (owner review, 2026-09-06: three long lines of body
-        copy stood between the title and the first card). The screen's job is a list of tools on
-        this machine, and a paragraph naming everything it does and does not do is a preface to a
-        list nobody has reached yet. The first sentence says what the screen is; what it also does,
-        and what it deliberately does not hold, is one row away — nothing is dropped, because the
-        boundary lines (no API keys, no folder here) are the ones people come back to ask about.
-      */}
-      <p className="mt-2 max-w-2xl break-keep text-body-lg leading-title text-[color:var(--color-text-tertiary)]">
-        {t('lede')}
+      {/* One line, and it belongs to the tab that is up: the tool list's sentence over the tool
+          list, the connection's sentence over the connection. */}
+      <p
+        data-testid="agents-lede"
+        className="mt-2 max-w-2xl break-keep text-body-lg leading-title text-[color:var(--color-text-tertiary)]"
+      >
+        {tab === 'mcp' ? tMcp('lede') : t('lede')}
       </p>
-      <Disclosure className="mt-2" summary={t('ledeMore')}>
-        <p className="mt-2 max-w-2xl break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
-          {t('ledeDetail')}
-        </p>
-      </Disclosure>
 
-      <section className="mt-6 min-w-0" aria-label={t('runtimesHeading')}>
-        <h2 className="sr-only">{t('runtimesHeading')}</h2>
-        <AcpRuntimeSettings embedded onOpenChat={openChatOnMap} />
-      </section>
-      {/* What the app layer folds in below the tools: the MCP section (2026-09-18). */}
-      {children}
+      <nav className="mt-5" data-testid="agents-tabs">
+        <TabBar
+          idPrefix="agents"
+          ariaLabel={t('workspace.aria')}
+          activeKey={tab}
+          onSelect={selectTab}
+          items={[
+            { key: 'agents', label: t('workspace.agents'), testId: 'agents-tab-agents' },
+            {
+              key: 'mcp',
+              label: t('workspace.mcp'),
+              testId: 'agents-tab-mcp',
+              /*
+               * **How many connectors are switched on**, not how many are written down. The
+               * number is the only rail-level sign that connectors exist at all, now that MCP
+               * has no tile of its own; it is omitted until the store has answered, so the strip
+               * never shows a zero that means "not read yet".
+               */
+              count: mcpCount,
+              countTitle: t('workspace.mcpCount'),
+            },
+          ]}
+        />
+      </nav>
 
+      {/*
+        **One panel element, and the tab decides what is in it.** Only the selected tab's panel is
+        rendered — the same shape `/ontology/insights` uses: drawing the other half into a hidden
+        box pays for building a model nobody is looking at, while `aria-controls` only has to
+        resolve for the selected tab. The `id` and `aria-labelledby` therefore follow the tab.
+      */}
+      <div
+        ref={panelHostRef}
+        role="tabpanel"
+        id={`agents-tabpanel-${tab}`}
+        aria-labelledby={`agents-tab-${tab}`}
+        data-testid="agents-tabpanel"
+        className="mt-5 min-w-0"
+      >
+        {tab === 'agents' ? (
+          /*
+            The section keeps its label for assistive tech and for the tests that find this
+            panel by region, but it no longer repeats it as an `sr-only` heading: since
+            2026-09-20 the tool group inside draws that name **visibly**, so the heading was a
+            screen reader hearing the same words twice before the rows it introduces.
+          */
+          <section className="min-w-0" aria-label={t('runtimesHeading')}>
+            <AcpRuntimeSettings embedded onOpenChat={openChatOnMap} />
+          </section>
+        ) : (
+          children
+        )}
+      </div>
     </main>
   );
 }
