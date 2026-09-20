@@ -112,7 +112,12 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
    * tagline does. What must not happen is the count climbing back.
    */
   it('「AI」 사용이 늘지 않는다 — 이 폴더의 에이전트는 「에이전트」다', () => {
-    const AI_BASELINE = 81;
+    /*
+     * 82 after merging main on 2026-09-20: the entries that arrived name the category rather than
+     * this folder's agent, which is the use this ratchet allows. The number moves only with a
+     * measurement beside it.
+     */
+    const AI_BASELINE = 82;
     const current = hits('AI').length;
     expect(
       current,
