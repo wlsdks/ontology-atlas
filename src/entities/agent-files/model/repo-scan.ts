@@ -49,6 +49,18 @@ const ROOT_FILES = Object.freeze([
   '.mcp.json',
   '.github/copilot-instructions.md',
   '.claude/settings.json',
+  /*
+   * ⚠️ **A rule that matches a path this list never asks for is a rule that never fires.** The
+   * classifier decides what a file *is*; this decides what gets looked for. The exclusion rules
+   * were written first and every repository would have shown an empty row until these five lines
+   * followed them (caught before writing the row, 2026-09-20).
+   */
+  '.cursorignore',
+  '.cursorindexingignore',
+  '.codeiumignore',
+  '.aiexclude',
+  '.aiignore',
+  '.geminiignore',
 ]);
 
 /** Directories walked recursively — the only dot directories this scan touches. */
@@ -130,7 +142,11 @@ export function isPairDrift(code: string): boolean {
  * enforcement layer and belong to the second number and the hooks section.
  */
 export function isGuideRecord(record: { kind: string }): boolean {
-  return record.kind !== 'config';
+  /* `exclusion` is not a guide either, and the reason is the sentence this number feeds: "this
+     repository speaks to agents through N documents". A file that says what an agent may not see
+     is the opposite of a thing the repository says, and counting it would move that number
+     without changing what anybody was told. */
+  return record.kind !== 'config' && record.kind !== 'exclusion';
 }
 
 /**
@@ -194,6 +210,23 @@ export interface HarnessReport {
    * sits under it" are different statements, and only the pair of them is safe to read.
    */
   testFiles: readonly string[];
+  /**
+   * Files under `.githooks/`, independent of the coverage pass.
+   *
+   * Same reason as `workflowFiles`: the census has always carried the *number*, but the names came
+   * only from the coverage join, so a repository whose vault records no implementation path got a
+   * bare count with nothing a reader could open (measured on this repository, 2026-09-20).
+   */
+  gitHookFiles: readonly string[];
+  /**
+   * `.github/workflows/*` paths, independent of the coverage pass.
+   *
+   * The scan has always read these files; until 2026-09-19 they reached the screen only through
+   * `coverage`, which runs when the vault records implementation paths and not otherwise. The
+   * structure view needs them unconditionally, because a repository whose only gate is a pipeline
+   * would otherwise be drawn with nothing watching it at all.
+   */
+  workflowFiles: readonly string[];
   /**
    * `true` always, and stated on screen: these timestamps are filesystem modification times, not
    * commit dates. A fresh clone or a new worktree stamps every file with the checkout time, so the
@@ -556,6 +589,8 @@ export async function scanHarness(
     coverage,
     documentReach,
     testFiles: [...new Set(testFiles)].sort(),
+    gitHookFiles: [...gitHooks.keys()].sort(),
+    workflowFiles: [...workflows.keys()].sort(),
     timesAreFileMtime: true,
   };
 }

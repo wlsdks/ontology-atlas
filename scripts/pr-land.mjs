@@ -64,6 +64,29 @@
  * One landing, in order: **take a place, lock, merge main, local checks, ready, one CI run,
  * merge, clean.**
  *
+ * **Marking ready is the one step a failed landing does not undo** (2026-09-19). Everything
+ * else here is idempotent or released on exit: the lock, the waiting-line entry, the merge of
+ * main into the branch. Step 4 is not — `gh pr ready` is one-way, and a landing that then
+ * fails CI, loses the lock, or is stopped leaves the pull request **ready**. From that moment
+ * every push to it fires another full CI run, which is the opposite of the "draft runs no CI"
+ * economy this file is built on, and nothing on screen says so. Two sessions discovered it the
+ * same night by reading `isDraft` on their own pull requests after retrying a landing. **Check
+ * `gh pr view <n> --json isDraft` before committing again on a pull request whose landing
+ * failed**, and `gh pr ready --undo` puts it back.
+ *
+ * **The local lanes of step 3 are not the CI plan, and the gap has a name** (measured
+ * 2026-09-20). `node scripts/classify-change.mjs --base=origin/main` prints what CI will
+ * actually run (`gates=true unit=full …`) in a second. It is worth asking before landing,
+ * because the full gates lane runs `pnpm lint` over the **whole repository** at
+ * `--max-warnings 0`: once a branch is planned `full` it inherits every warning in the tree,
+ * including in files it never touched. Changing the impact authority forces that plan by
+ * design — the planner, this file, the workflows, `lib/focused-check-suggestions.mjs` —
+ * while touching `tests/e2e/**` alone does not. That night a landing whose own diff was clean
+ * failed `Types · Lint · Docs` on an unused declaration left on `main`, because the branch had
+ * edited the check advisor two commits earlier; three sessions read it as a repo-wide outage
+ * and stood their work down before the plan was read. **When the plan says `gates=true`, run
+ * `pnpm lint` before landing, not only `pnpm checks:changed`.**
+ *
  * **Required is not the same as "what matters"** (2026-09-13). Step 5 waited on the
  * branch protection's list and merged on "every required context is green".
  * `windows-beta-check.yml` produces no required context, had been red on `main` since
