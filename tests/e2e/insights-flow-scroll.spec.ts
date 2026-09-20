@@ -4,7 +4,10 @@ test('long Flow requests keep the handoff below their content at laptop width', 
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/ko/ontology/insights/?tab=flow&guides=off');
-  await expect(page.getByRole('heading', { name: '비즈니스 흐름', exact: true })).toBeVisible();
+  // The panel's heading is the tab's own name, and the questions were renamed when a reader could
+  // not tell which of the three cores a tab counted (2026-09-19). This waited fifteen seconds for
+  // the old name and failed three times in a row in CI, while passing wherever the name is unread.
+  await expect(page.getByRole('heading', { name: '제품 흐름', exact: true })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   const footer = page.getByTestId('insights-handoff-row');
   await footer.scrollIntoViewIfNeeded();
