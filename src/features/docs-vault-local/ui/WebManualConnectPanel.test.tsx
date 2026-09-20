@@ -12,7 +12,14 @@ import { describe, expect, it } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 
-import { AgentClientButtons } from './AgentClientButtons';
+import { useAgentClientControls, type AgentClientControlsProps } from './AgentClientButtons';
+
+// The smallest host for the hook: with no launchable server it returns the degradation card
+// plus the by-hand panel, which is exactly the surface this file measures.
+function AgentClientButtons(props: AgentClientControlsProps) {
+  const { serverUnavailable, controls } = useAgentClientControls(props);
+  return <div data-testid="agent-client-buttons">{controls ? null : serverUnavailable}</div>;
+}
 import { WebManualConnectPanel } from './WebManualConnectPanel';
 import ko from '../../../../messages/ko.json';
 

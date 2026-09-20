@@ -6,6 +6,7 @@ import type { VaultManifest } from '@/entities/docs-vault';
 import { agentServerFromBundle, agentServerUnavailable } from '@/shared/config';
 import { copyText } from '@/shared/lib/copy-text';
 import { TooltipProvider } from '@/shared/ui';
+import { AGENT_CLIENTS } from '@/entities/vault-session';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
 vi.mock('@/shared/lib/copy-text', () => ({
@@ -96,9 +97,11 @@ function renderPanel(
       onOpenWorkflowGuide={vi.fn()}
     />,
   );
-  // C13 — the detailed verification, snippets and gate were demoted behind the
-  // "advanced" fold. It is expanded here so the existing assertions can see the
-  // content (the first screen's three steps stay exposed).
+  // 2026-09-19 — restart, check and the "not working?" fold live in the verification dialog;
+  // C13 (2026-08) had already demoted the detailed verification behind the fold. Both are
+  // opened here so the existing assertions can see the content (the tool rows stay exposed).
+  const verifyOpen = screen.queryByTestId('agent-setup-verify-open');
+  if (verifyOpen) fireEvent.click(verifyOpen);
   const advancedToggle = screen.queryByTestId('agent-setup-advanced-toggle');
   if (advancedToggle) fireEvent.click(advancedToggle);
   return localVault;
@@ -148,15 +151,14 @@ describe('VaultAgentSetupPanel', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('더 확인하려면')).toBeInTheDocument();
-    expect(
-      screen.getByRole('list', { name: '더 확인할 것' }),
-    ).not.toBeVisible();
+    // Inside the dialog (a framer surface whose opacity jsdom never animates), visibility is
+    // the `<details>` open state, not computed style.
+    const deeper = screen.getByText('더 확인하려면').closest('details');
+    expect(deeper).not.toHaveAttribute('open');
 
     fireEvent.click(screen.getByText('더 확인하려면'));
 
-    expect(
-      screen.getByRole('list', { name: '더 확인할 것' }),
-    ).toBeVisible();
+    expect(deeper).toHaveAttribute('open');
     // The first three (config files · restart · verify connection) were **promoted
     // into the three steps**, so only the three that follow remain here. This is the
     // cleanup of a screen that had four separate numbering systems.
@@ -169,8 +171,8 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByText('처음 고치기 전에 폴더 요약(workspace-brief · agent-brief)을 먼저 읽습니다.'),
     ).toBeInTheDocument();
-    // The promoted three did not disappear but moved up — the three steps exist by name.
-    expect(screen.getByTestId('agent-setup-step-1')).toBeInTheDocument();
+    // The tool rows stand on the page; restart and check stand in the dialog (open above).
+    expect(screen.getByTestId('agent-setup-steps')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-2')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-3')).toBeInTheDocument();
     expect(
@@ -229,9 +231,12 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByLabelText('확인 명령 결과 읽는 법'),
     ).toBeInTheDocument();
-    expect(screen.getByText('안 됨')).toBeInTheDocument();
-    expect(screen.getByText('느림')).toBeInTheDocument();
-    expect(screen.getByText('준비됨')).toBeInTheDocument();
+    // Scoped to the gate-rules list: the ready word is also a tool row's button label since
+    // 2026-09-19, when those buttons dropped the tool name the row already carries.
+    const gateRules = screen.getByLabelText('확인 명령 결과 읽는 법');
+    expect(within(gateRules).getByText('안 됨')).toBeInTheDocument();
+    expect(within(gateRules).getByText('느림')).toBeInTheDocument();
+    expect(within(gateRules).getByText('준비됨')).toBeInTheDocument();
     expect(screen.getByText('코드를 고친 뒤')).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -253,8 +258,8 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByText('제품 코드 폴더에서 열면 상태 확인·수리·서버 확인 명령 모두 이 폴더의 절대경로를 적어야 합니다.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('.mcp.json')).toBeInTheDocument();
-    expect(screen.getByText('.codex/config.toml')).toBeInTheDocument();
+    expect(within(screen.getByTestId('agent-setup-inspection')).getByText('.mcp.json')).toBeInTheDocument();
+    expect(within(screen.getByTestId('agent-setup-inspection')).getByText('.codex/config.toml')).toBeInTheDocument();
     expect(screen.getByText(/\.mcp\.json\.example은 다른 폴더에서 쓸 본보기/)).toBeInTheDocument();
 
     fireEvent.click(
@@ -314,7 +319,10 @@ describe('VaultAgentSetupPanel', () => {
     const connections = screen.getByRole('list', {
       name: '도구별 연결 파일 상태',
     });
-    expect(within(connections).getByText('Claude Code · Cursor')).toBeInTheDocument();
+    // Only the two files Atlas reads are named here; Cursor's own scope is .cursor/mcp.json,
+    // which this screen writes and never reads back.
+    expect(within(connections).getByText('Claude Code')).toBeInTheDocument();
+    expect(within(connections).queryByText(/Cursor/)).toBeNull();
     expect(within(connections).getByText('.mcp.json')).toBeInTheDocument();
     expect(within(connections).getByText('Codex')).toBeInTheDocument();
     expect(within(connections).getByText('.codex/config.toml')).toBeInTheDocument();
@@ -325,8 +333,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('.mcp.json.example은 다른 폴더에서 쓸 본보기라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.'),
     ).toBeInTheDocument();
 
-    // The per-tool «how do I check» is step 3's content — it appears when 「Check connection」 opens.
-    fireEvent.click(screen.getByTestId('agent-setup-step-3-toggle'));
+    // The per-tool «how do I check» is the check section's content, inside the dialog.
     const step3 = screen.getByTestId('agent-setup-step-3');
     expect(within(step3).getByText('/mcp로 확인')).toBeInTheDocument();
     expect(within(step3).getByText('codex mcp list로 확인')).toBeInTheDocument();
@@ -513,6 +520,7 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
+    fireEvent.click(screen.getByTestId('agent-setup-verify-open'));
     fireEvent.click(screen.getByTestId('agent-setup-advanced-toggle'));
     fireEvent.click(screen.getByRole('button', { name: '기능 문서 열기' }));
 
@@ -1102,10 +1110,8 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: '에이전트 연결(MCP)' });
-    fireEvent.click(
-      within(agentSetup).getByRole('button', { name: '확인 명령 복사' }),
-    );
+    // The verification dialog portals to `document.body`, outside the panel's region.
+    fireEvent.click(screen.getByRole('button', { name: '확인 명령 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -1132,10 +1138,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: '에이전트 연결(MCP)' });
-    fireEvent.click(
-      within(agentSetup).getByRole('button', { name: '맞추기 절차 복사' }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: '맞추기 절차 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -1268,7 +1271,55 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('첫 화면은 3단계 + 원클릭 버튼을 보이고 상세 검증은 접혀 있다', () => {
+  it('남의 설정이 있는 행은 그 사실을 자기 줄에서 말한다 — 동사만 바뀌지 않는다', () => {
+    // Caught by rendering the mixed state, 2026-09-19: the control changed to "copy a correct
+    // one" while the row said only the file path, so the page showed three rows offering to
+    // connect and one offering a replacement for no visible reason.
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault({
+          agentConfigStatus: {
+            mcpJson: true,
+            mcpJsonValid: true,
+            codexConfig: true,
+            codexConfigValid: false,
+            mcpExample: false,
+            mcpExampleValid: false,
+          },
+        })}
+        serverAvailability={bundledServer}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    const codexRow = screen.getByTestId('agent-setup-row-codex');
+    expect(codexRow).toHaveTextContent(
+      '점검: .codex/config.toml는 Ontology Atlas 연결 설정이 아니에요',
+    );
+    // The row whose file is ours keeps the plain path.
+    expect(screen.getByTestId('agent-setup-row-claude-code')).toHaveTextContent('.mcp.json');
+    expect(screen.getByTestId('agent-setup-row-claude-code')).not.toHaveTextContent('점검:');
+  });
+
+  it('서버 조회가 답하기 전에는 아무 주장도 그리지 않는다', () => {
+    // `launch: null` alone cannot tell a browser from the app still asking, so this panel used
+    // to open on the browser's degradation card inside the installed app.
+    const { container } = render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault()}
+        serverAvailability={{ ...agentServerUnavailable(null), pending: true }}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByTestId('agent-server-unavailable')).toBeNull();
+    expect(screen.queryByTestId('agent-setup-steps')).toBeNull();
+  });
+
+  it('첫 화면은 도구 행 넷이고, 확인과 상세 검증은 대화상자 뒤에 있다', () => {
     render(
       <VaultAgentSetupPanel
         canEditCurrent
@@ -1278,17 +1329,77 @@ describe('VaultAgentSetupPanel', () => {
         onOpenWorkflowGuide={vi.fn()}
       />,
     );
-    // The three step cards plus the client buttons are exposed on the first screen.
-    expect(screen.getByTestId('agent-setup-step-1')).toBeInTheDocument();
+    // One row per tool, each with its file and its own control (owner, 2026-09-19).
+    const rows = screen.getByTestId('agent-setup-steps');
+    // Render order is derived from `AGENT_CLIENTS` — "one list, two truths" (2026-07-30) stays
+    // closed: change the array order and the rows must follow.
+    expect(
+      [...rows.querySelectorAll("[data-testid^='agent-setup-row-']")].map((el) =>
+        el.getAttribute('data-testid'),
+      ),
+    ).toEqual(AGENT_CLIENTS.map((client) => `agent-setup-row-${client.id}`));
+    expect(within(rows).getByTestId('agent-setup-row-claude-code')).toHaveTextContent('.mcp.json');
+    expect(within(rows).getByTestId('agent-setup-row-codex')).toHaveTextContent('.codex/config.toml');
+    expect(within(rows).getByTestId('agent-setup-row-cursor')).toBeInTheDocument();
+    expect(within(rows).getByTestId('agent-setup-row-antigravity')).toBeInTheDocument();
+    expect(screen.getByTestId('agent-client-claude-code')).toBeInTheDocument();
+    // The server-lifetime sentence is still drawn — in the hint beside the heading.
+    expect(screen.getByTestId('agent-connect-server-line')).toBeInTheDocument();
+    // Restart, check and the detailed verification wait behind one press.
+    expect(screen.queryByTestId('agent-setup-step-2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('agent-setup-step-3')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('agent-setup-verify-open'));
+    expect(screen.getByTestId('agent-setup-verify-dialog')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-2')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-3')).toBeInTheDocument();
-    expect(screen.getByTestId('agent-client-claude-code')).toBeInTheDocument();
-    expect(screen.getByTestId('agent-connect-server-line')).toBeInTheDocument();
     // The detailed verification (mode chooser and so on) is collapsed, so it is not visible.
     expect(screen.queryByTestId('agent-setup-advanced')).not.toBeInTheDocument();
     // Expanding reveals it.
     fireEvent.click(screen.getByTestId('agent-setup-advanced-toggle'));
     expect(screen.getByTestId('agent-setup-advanced')).toBeInTheDocument();
+  });
+
+  /*
+   * **One dialog, one name, one count** (2026-09-20).
+   *
+   * Rendered, the verification dialog said its own name three times — on the chip that opens it,
+   * as its own title, and again as the heading of the section holding the per-tool table — and
+   * stated how many connection files were ready twice, in the subtitle and again 130px below in
+   * the section's first line. Both are the duplicated prose the owner asked this screen to shed.
+   *
+   * Counted rather than matched on a sentence: the rule is "not twice", and a wording change
+   * that keeps it once should not redden this.
+   */
+  it('확인 대화상자는 제 이름과 개수를 한 번씩만 말한다', () => {
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault()}
+        serverAvailability={bundledServer}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('agent-setup-verify-open'));
+    const dialog = screen.getByTestId('agent-setup-verify-dialog');
+    const title = koMessages.agentConnect.step3Title;
+    const headings = [...dialog.querySelectorAll('h2, h3')].map((h) => h.textContent?.trim());
+    expect(headings.filter((h) => h === title)).toHaveLength(1);
+
+    /*
+     * "N/M connection files ready" is the subtitle's job; the section below states what to do
+     * about the missing ones. Matched on the **shape** rather than the sentence, so the
+     * catalogue can be reworded and the rule still reads "said once".
+     */
+    const countShape = /\d+\/\d+개 준비됨/;
+    const saidTheCount = [...dialog.querySelectorAll('p, span')].filter((el) =>
+      countShape.test(el.textContent ?? ''),
+    );
+    // Ancestors repeat a descendant's text, so the deepest element carrying it is the count.
+    const owners = saidTheCount.filter(
+      (el) => !saidTheCount.some((other) => other !== el && el.contains(other)),
+    );
+    expect(owners).toHaveLength(1);
   });
 
   it('missing 설정은 생성 버튼이고 이미 유효한 설정은 준비 상태다', () => {
@@ -1383,10 +1494,7 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
-    // With all three ready, step 1 is collapsed as 「Complete」 — open it to see the tool
-    // column. This one line is the proof that it was collapsed, not deleted.
-    fireEvent.click(screen.getByTestId('agent-setup-step-1-toggle'));
-
+    // With all three ready, the rows stay where they are and say so (2026-09-19: no fold).
     expect(screen.getByRole('status', { name: '.mcp.json 준비됨' })).toBeInTheDocument();
     expect(screen.getByRole('status', { name: 'Codex 설정 준비됨' })).toBeInTheDocument();
     expect(

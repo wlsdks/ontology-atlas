@@ -18,10 +18,6 @@ import { waitForMapStill } from "./settle";
  * is — when some corner of that pointer is clear, the card must be clear too; a
  * pointer boxed in on all four sides is allowed the least overlap.
  */
-type Rect = { x: number; y: number; w: number; h: number };
-
-const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-
 test("hovering a line puts the card beside the drawn nodes, not on them", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 806 });
