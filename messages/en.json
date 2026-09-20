@@ -4535,6 +4535,7 @@
       "modeMoved": "The tool moved this conversation into {mode}, a mode that accepts file edits without asking you first.",
       "modeMovedServerGate": "The tool moved this conversation into {mode}, a mode that accepts file edits without asking you first. Changes made through Atlas tools still stop at the server for your approval.",
       "autoAllowed": "{detail} was written without asking: it fits the wiki page contract.",
+      "autoRefused": "Refused without asking · {detail}. It is outside what this conversation may do.",
       "openPage": "Open",
       "askNext": "Ask next time"
     },

@@ -1609,6 +1609,28 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     expect(screen.queryByTestId('acp-notice-ask-next')).toBeNull();
   });
 
+  /*
+   * The refusal sibling of the receipt above, and it had no arm on the panel's chain (2026-09-20).
+   * `use-rounds-runner` answers `autoDecide` with `{ reject }` on every write outside a round's
+   * scope, and the notice fell through to `notice.gateOff` — a sentence saying Atlas *cannot* ask
+   * before a file outside the folder is touched. The opposite of what happened: it had decided,
+   * and refused. There was no `notice.autoRefused` string either.
+   */
+  it('자동 거절은 거절했다고 말하고, 무엇을 막았는지 이름을 댄다', async () => {
+    await bootSession({ autoDecide: () => ({ reject: 'wiki/out-of-scope.md' }) });
+    emit(permissionRequest('/vault/wiki/out-of-scope.md', 93, 'edit'));
+
+    await waitFor(() => expect(document.querySelector('[data-acp-entry="notice"]')).not.toBeNull());
+    const notice = document.querySelector('[data-acp-entry="notice"]')!;
+    // The card never stood: the screen had already decided.
+    expect(screen.queryByTestId('acp-permission-card')).toBeNull();
+    // It names what it blocked…
+    expect(notice.textContent).toContain('wiki/out-of-scope.md');
+    // …and it is not the unrelated sentence about the folder gate being off.
+    expect(notice.textContent).not.toContain('notice.gateOff');
+    expect(notice.textContent).toContain('notice.autoRefused');
+  });
+
   it('볼트 밖이면 카드를 띄우고, 답하기 전에는 아무 답도 보내지 않는다', async () => {
     await bootSession();
     emit(permissionRequest('/somewhere/else.md'));
