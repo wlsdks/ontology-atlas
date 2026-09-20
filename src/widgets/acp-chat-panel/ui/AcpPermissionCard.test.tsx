@@ -283,12 +283,31 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     expect(details).toHaveTextContent('expected_mtime');
   });
 
-  it('네 권한은 모두 unknown이고 이번만 허용은 의미 승인으로 바꾸지 않는다', () => {
+  /*
+   * Measured on the rendered card (2026-09-20): this grid drew four label/value pairs and the
+   * value column held exactly one distinct value across all four — "unknown" — because `code`,
+   * `merge` and `deployment` were written as the literal `'unknown'` key and could never say
+   * anything else. Four facts drawn, one carried. The claim they stood in for is a sentence on
+   * the same card, and it is the stronger one: allowing does not grant those things, which is not
+   * the same as their state being unavailable.
+   */
+  it('상태가 움직이는 줄만 그리고, 나머지 셋은 문장이 계속 이름을 부른다', () => {
     const { view, resolve } = taskCard();
     render(view);
-    for (const authority of ['meaning', 'code', 'merge', 'deployment']) {
-      expect(screen.getByTestId(`task-review-authority-${authority}`)).toHaveTextContent('알 수 없음');
+    expect(screen.getByTestId('task-review-authority-meaning')).toHaveTextContent('알 수 없음');
+    for (const authority of ['code', 'merge', 'deployment']) {
+      expect(
+        screen.queryByTestId(`task-review-authority-${authority}`),
+        `${authority} 줄은 늘 「알 수 없음」만 말할 수 있어 그려지지 않는다`,
+      ).toBeNull();
     }
+    // Nothing was lost: the standing sentence still names all four and says what Allow does not do.
+    const card = screen.getByTestId('acp-permission-card');
+    expect(card).toHaveTextContent(koMessages.acpChat.permission.taskReview.allowScope);
+    for (const word of ['의미', '코드 검증', '병합', '배포']) {
+      expect(card.textContent, `${word}를 이제 아무 데서도 말하지 않는다`).toContain(word);
+    }
+
     fireEvent.click(screen.getByTestId('acp-permission-allow'));
     expect(resolve).toHaveBeenCalledWith('allow');
     expect(screen.queryByText(/승인됨|검증됨|배포됨/)).not.toBeInTheDocument();
