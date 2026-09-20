@@ -204,7 +204,7 @@ describe('bringing documents in from a service', () => {
     expect(screen.queryByTestId('library-import-bring')).toBeNull();
     // And nothing left on screen still promises the conversation that cannot start.
     expect(screen.queryByTestId('library-import-runtime')).toBeNull();
-    expect(document.body.textContent).not.toContain('대화가 열립니다');
+    expect(document.body.textContent).not.toContain('대화가 열려요');
     const card = screen.getByTestId('library-import-no-agent');
     expect(card).toHaveAttribute('role', 'status');
     // A reason, what still works, and a destination that opens — the degradation contract.
@@ -274,8 +274,8 @@ describe('bringing documents in from a service', () => {
     typeToken();
     fireEvent.click(screen.getByTestId('library-import-connect'));
     return waitFor(() => {
-      expect(document.body.textContent).toContain('대화가 열립니다');
-      expect(document.body.textContent).toContain('허락을 물어봅니다');
+      expect(document.body.textContent).toContain('대화가 열려요');
+      expect(document.body.textContent).toContain('허락을 물어봐요');
     });
   });
 });

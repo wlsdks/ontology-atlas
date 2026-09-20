@@ -59,7 +59,7 @@ function makeProject(overrides: Partial<Project> = {}): Project {
     name: "데모 프로젝트",
     category: "service",
     status: "active",
-    description: "테스트용 프로젝트 설명입니다.",
+    description: "테스트용 프로젝트 설명이에요.",
     tags: [],
     stack: [],
     links: [],
@@ -132,7 +132,7 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
     const first = renderDrawer({ impactMode: "none", onChangeImpactMode });
     expect(
       within(screen.getByTestId("project-drawer-impact-help")).getByText(
-        "강조 없이 현재 노드만 봅니다",
+        "강조 없이 현재 노드만 봐요",
       ),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: /^의존 —/ }));
@@ -142,7 +142,7 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
     renderDrawer({ impactMode: "upstream", onChangeImpactMode });
     expect(
       within(screen.getByTestId("project-drawer-impact-help")).getByText(
-        "이 항목에 필요한 대상을 강조합니다",
+        "이 항목에 필요한 대상을 강조해요",
       ),
     ).toBeInTheDocument();
   });
