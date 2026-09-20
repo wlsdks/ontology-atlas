@@ -51,10 +51,29 @@ interface ShortcutSection {
   titleKey: string;
   /** The surface this section applies to — the source of truth for contextual tab classification (#67). */
   surface: ShortcutSurface;
+  /**
+   * A CSS selector for the control these keys drive. The "current screen" tab
+   * promises what can actually be pressed now, so a section whose control is
+   * not on the screen when the sheet opens is dropped from that tab. The `All`
+   * tab still documents it. Sections without a selector are always listed.
+   */
+  requiresOnScreen?: string;
   rows: ShortcutRow[];
 }
 
 const k = (i18nKey: string): ShortcutKey => ({ i18nKey });
+
+/**
+ * Which `requiresOnScreen` controls are drawn right now. Called on the open
+ * transition, so it reads the screen the person was looking at.
+ */
+function sectionsOnScreen(): readonly string[] {
+  if (typeof document === "undefined") return [];
+  const needed = new Set(
+    SECTIONS.map((section) => section.requiresOnScreen).filter((selector): selector is string => selector !== undefined),
+  );
+  return [...needed].filter((selector) => document.querySelector(selector) !== null);
+}
 
 /**
  * P1a-2 (persona measurement N8 — the definitions of domain/capability/element
@@ -207,6 +226,9 @@ const SECTIONS: ShortcutSection[] = [
   {
     titleKey: "hubRail",
     surface: "topology",
+    // The rail draws only when the map has hub projects and the left panel is
+    // collapsed or the drawer is open, and it is hidden below `md` entirely.
+    requiresOnScreen: '[data-testid="topology-hub-rail"]',
     rows: [
       { keys: ["↑", "↓"], labelKey: "prevHub" },
       { keys: ["Home"], labelKey: "firstHub" },
@@ -277,9 +299,16 @@ export function ShortcutSheet({ open, onClose }: Props) {
   // crowding.
   const [scope, setScope] = useState<ShortcutScope>("current");
   const [wasOpen, setWasOpen] = useState(open);
+  // Read once as the sheet opens, in the same transition that resets the tab: a
+  // section is listed on the current-screen tab only when the control its keys
+  // drive is really on the screen behind the sheet.
+  const [onScreen, setOnScreen] = useState<readonly string[]>([]);
   if (open !== wasOpen) {
     setWasOpen(open);
-    if (open) setScope("current");
+    if (open) {
+      setScope("current");
+      setOnScreen(sectionsOnScreen());
+    }
   }
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -288,12 +317,12 @@ export function ShortcutSheet({ open, onClose }: Props) {
 
   const visibleSections = useMemo(
     () =>
-      SECTIONS.filter((section) =>
-        scope === "current"
-          ? sectionVisibleForCurrent(currentSurface, section.surface)
-          : sectionVisible(scope, section.surface),
-      ),
-    [scope, currentSurface],
+      SECTIONS.filter((section) => {
+        if (scope !== "current") return sectionVisible(scope, section.surface);
+        if (!sectionVisibleForCurrent(currentSurface, section.surface)) return false;
+        return section.requiresOnScreen === undefined || onScreen.includes(section.requiresOnScreen);
+      }),
+    [scope, currentSurface, onScreen],
   );
   /** On the current-screen tab with nothing but global sections — say so quietly. */
   const currentHasOwnSections =

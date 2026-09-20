@@ -199,16 +199,25 @@ export function SettingsRow({
    * decoration.
    */
   const hasMarkSlot = icon !== undefined;
+  /*
+   * **The controls wrap under the label when the row cannot hold both** (responsive sweep,
+   * 2026-09-19). Measured at 390 on the Agents destination: a runtime row's three controls
+   * (chat, check, badge) stood over a name squeezed to 0px, and on the MCP tab the four tool
+   * rows kept a 60px label column beside a 208px button, splitting `.codex/config.toml` mid-word.
+   * The text block claims at least 10rem before the control cluster is allowed on the same line;
+   * when that does not fit, the cluster drops to its own line and keeps to the right (`ml-auto`).
+   * At 768 and above nothing moves: the text simply grows.
+   */
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-3 px-3 min-w-0',
+        'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-3',
         hasMarkSlot ? 'min-h-16 py-2.5' : 'min-h-12 py-2',
       )}
       data-testid={testId}
     >
       {hasMarkSlot ? <VendorMark src={icon ?? null} ink={iconInk ?? null} /> : null}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-40">
         <p className="text-body text-[color:var(--color-text-secondary)]">{label}</p>
         {caption ? (
           <p
@@ -225,7 +234,7 @@ export function SettingsRow({
           </p>
         ) : null}
       </div>
-      <div className="flex shrink-0 items-center gap-2">{control}</div>
+      <div className="ml-auto flex shrink-0 items-center gap-2">{control}</div>
     </div>
   );
 }

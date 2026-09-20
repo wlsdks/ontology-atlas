@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
-import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "./match";
+import { idSearchText, isPathLikeTitle, matchOntologyNodes, matchProjects } from "./match";
 
 const APPROVED_AT = new Date("2026-04-27T00:00:00Z");
 
@@ -207,6 +207,75 @@ describe("matchOntologyNodes", () => {
 
     it("초성이 안 맞으면 끌어오지 않는다", () => {
       expect(matchOntologyNodes("ㅋㅋㅋ", shop)).toHaveLength(0);
+    });
+  });
+
+  // 2026-09-19 — measured on the bundled sample: 97 of 317 rows over thirty English
+  // queries carried no highlight, because the row drew only the localised name and the
+  // summary while matching looked at every name, the summary and the id.
+  describe("행이 왜 목록에 있는지 — matched 근거", () => {
+    const localized = node({
+      id: "capability:shipping-fee",
+      title: "Shipping Fee Policy",
+      display: "배송비 정책",
+      displayLocales: { ko: "배송비 정책", en: "Shipping Fee Policy" },
+      summary: "Decides who pays to move the parcel.",
+    });
+
+    it("화면에 없는 이름으로 걸리면 그 이름을 돌려준다", () => {
+      const r = matchOntologyNodes("policy", [localized]);
+      expect(r[0]?.matched).toEqual({ field: "name", text: "Shipping Fee Policy" });
+    });
+
+    it("화면에 있는 이름으로 걸리면 그 이름을 돌려준다", () => {
+      const r = matchOntologyNodes("배송비", [localized]);
+      expect(r[0]?.matched).toEqual({ field: "name", text: "배송비 정책" });
+    });
+
+    it("summary 로 걸리면 summary 를 돌려준다", () => {
+      const r = matchOntologyNodes("parcel", [localized]);
+      expect(r[0]?.matched).toEqual({ field: "summary", text: "Decides who pays to move the parcel." });
+    });
+
+    it("id 로 걸리면 kind 접두를 뺀 slug 를 돌려준다", () => {
+      const r = matchOntologyNodes("fee", [node({ id: "capability:shipping-fee", title: "배송비" })]);
+      expect(r[0]?.matched).toEqual({ field: "id", text: "shipping-fee" });
+    });
+
+    it("빈 query 는 근거가 없다 — 매치가 아니라 최근 표본이다", () => {
+      expect(matchOntologyNodes("", [localized])[0]?.matched).toBeUndefined();
+    });
+  });
+
+  describe("id 의 kind 접두는 매치하지 않는다", () => {
+    const kinds = [
+      node({ id: "element:order-number", title: "주문번호", kind: "element" }),
+      node({ id: "element:login-session", title: "로그인 세션", kind: "element" }),
+      node({ id: "capability:cart", title: "장바구니", kind: "capability" }),
+    ];
+
+    it("종류 낱말은 그 종류 전부를 끌어오지 않는다", () => {
+      // Every element id begins with it, so this used to return the whole kind —
+      // which the filter chips already select, properly.
+      expect(matchOntologyNodes("element", kinds)).toHaveLength(0);
+      expect(matchOntologyNodes("capability", kinds)).toHaveLength(0);
+    });
+
+    it("slug 로는 그대로 찾는다", () => {
+      expect(matchOntologyNodes("order", kinds).map((m) => m.node.id)).toEqual(["element:order-number"]);
+    });
+
+    it("콜론이 든 질의는 id 를 통째로 붙여넣은 것이다", () => {
+      const r = matchOntologyNodes("capability:cart", kinds);
+      expect(r.map((m) => m.node.id)).toEqual(["capability:cart"]);
+      expect(r[0]?.matched).toEqual({ field: "id", text: "capability:cart" });
+    });
+
+    it("콜론이 없는 id 는 통째로 본다", () => {
+      expect(idSearchText("auth-logout", "logout")).toBe("auth-logout");
+      expect(idSearchText("element:order-number", "order")).toBe("order-number");
+      expect(idSearchText("element:order-number", "element:order")).toBe("element:order-number");
+      expect(idSearchText("element:", "x")).toBeNull();
     });
   });
 
