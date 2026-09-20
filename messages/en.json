@@ -5844,6 +5844,14 @@
         "noAgent": "No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again."
       },
       "sheet": {
+        "readbackConsistency": "{cadence}, check that every page still matches its originals, and {onStale} a page that has gone stale. It runs once as soon as you save.",
+        "readbackService": "{cadence}, read what {service} sent again, bring in what is new, and rewrite the pages that changed. One agent turn per pass.",
+        "readbackRedraft": "rewrite",
+        "readbackMark": "only mark",
+        "readbackHour": "Every hour",
+        "readback6h": "Every six hours",
+        "readbackDaily": "Every day at {time}",
+        "readbackWeekdays": "On weekdays at {time}",
         "title": "New round",
         "what": "What to check",
         "how": "How often",
