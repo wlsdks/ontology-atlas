@@ -459,7 +459,11 @@ export function buildExcerpt(body: string, max = 320): string {
     .replace(/^[\s|:-]*-{2,}[\s|:-]*$/gm, '') // table separator / hr rows (| --- |, ---)
     .replace(/\s*\|\s*/g, ' · ') // table cell pipes → readable middot separators
     .replace(/^\s*[-•]\s+/gm, '') // list bullets
-    .replace(/[*_`>#]/g, '') // residual emphasis / quote / heading marks
+    // `#` is deliberately NOT in this class. Heading marks are gone two lines up, and a `#`
+    // anywhere else is content: `path.tsx#Symbol` is how every element document names its
+    // entrypoint, and deleting the separator glued the two names into `HubRail.tsxHubRail` in
+    // the search palette's reason column (2026-09-21).
+    .replace(/[*_`>]/g, '') // residual emphasis / quote marks
     .replace(/\s+/g, ' ') // collapse whitespace
     .replace(/(?:·\s*){2,}/g, '· ') // collapse middot runs left by empty cells
     .replace(/^[\s·]+|[\s·]+$/g, '') // trim leading/trailing middots

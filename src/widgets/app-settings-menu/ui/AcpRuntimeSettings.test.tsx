@@ -179,6 +179,46 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(note.closest('[role="tooltip"]'), '알림이 힌트 판 밖에 있다').not.toBeNull();
   });
 
+  /*
+   * **A hint has to hang off the thing it explains** (2026-09-21).
+   *
+   * On the agents tab the intro sentence and the MCP link belong to the sheet, so with one
+   * confirmed tool the row above the list held this hint and nothing else: a lone question mark
+   * on a row of its own, above the heading, marking nothing. In the group heading it reads
+   * name · hint · re-scan — the order the MCP tab's own heading already uses.
+   */
+  it('디스크 힌트는 묶음 머리글 줄에 선다 — 목록 위에 혼자 뜬 물음표가 아니라', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    // Every string here is its own key (see the `next-intl` mock at the top of this file).
+    const heading = screen.getByRole('heading', { name: 'readyHeading:{"count":1}' });
+    const hint = screen.getByRole('button', { name: 'hintLabel' });
+    expect(heading.parentElement?.contains(hint)).toBe(true);
+    // Containment rather than coordinates, and the row keeps its order: hint before the re-scan.
+    const row = heading.parentElement as HTMLElement;
+    const chip = screen.getByTestId('app-settings-runtimes-recheck');
+    expect(hint.compareDocumentPosition(chip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(row.contains(chip)).toBe(true);
+  });
+
+  it('대화를 열 수 있는 도구만 있으면 목록 위에 빈 줄을 두지 않는다', async () => {
+    // With every confirmed tool guarded there is no guard note, and on this tab the intro and the
+    // MCP link belong to the sheet — so the row would render empty and still spend a grid gap.
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    await screen.findByTestId('app-settings-runtime-claude-acp');
+    expect(screen.queryByTestId('app-settings-runtimes-guard-note')).toBeNull();
+    const group = screen.getByTestId('app-settings-runtimes');
+    const heading = screen.getByRole('heading', { name: 'readyHeading:{"count":1}' });
+    // The heading's own section is the first thing in the panel; nothing empty precedes it.
+    expect(group.firstElementChild?.contains(heading)).toBe(true);
+  });
+
   it('바로 쓸 수 있는 것은 펼쳐 두고, 설치가 필요한 것은 접어 둔다', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),

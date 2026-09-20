@@ -109,6 +109,30 @@ describe('RouteFocusManager', () => {
     expect(window.location.search).not.toContain('focus=main');
   });
 
+  /* The rail's `?focus=main` promises the landmark. On the project page it reached the editable
+     name instead, so arriving from the rail drew a focus ring around the project's title. */
+  it('honours ?focus=main on a page whose h1 is the editable name', async () => {
+    route.pathname = '/ko/project/storefront/';
+    window.history.replaceState({}, '', '/ko/project/storefront/?focus=main');
+    const view = render(<RouteFocusManager />);
+
+    view.rerender(
+      <>
+        <RouteFocusManager />
+        <main id="main" data-testid="main" tabIndex={-1}>
+          <h1 role="button" tabIndex={0}>
+            Online Store
+          </h1>
+        </main>
+      </>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('main')).toHaveFocus();
+    });
+    expect(screen.getByRole('button', { name: 'Online Store' })).not.toHaveFocus();
+  });
+
   it('waits for the destination surface to settle before consuming the URL marker', async () => {
     route.pathname = '/ko/docs/';
     window.history.replaceState({}, '', '/ko/docs/?focus=main');
@@ -153,6 +177,42 @@ describe('RouteFocusManager', () => {
       expect(screen.getByRole('heading', { name: '문서함' })).toHaveFocus();
     });
     expect(screen.getByRole('heading', { name: '문서함' })).toHaveAttribute('tabindex', '-1');
+  });
+
+  /*
+   * The project page's `h1` is the project's name, edited in place — `role="button"`,
+   * `tabIndex={0}`. Handing arrival focus to it armed what looks like a text field the moment the
+   * page opened, and `tabIndex = -1` then took the name out of the tab order for the rest of the
+   * visit. A heading that is itself a control is not the page title to announce; `#main` is.
+   */
+  it('lands on the landmark rather than on a heading that is itself a control', async () => {
+    route.pathname = '/ko/topology/';
+    const view = render(
+      <>
+        <RouteFocusManager />
+        <Surface title="지도" />
+      </>,
+    );
+
+    route.pathname = '/ko/project/storefront/';
+    view.rerender(
+      <>
+        <RouteFocusManager />
+        <main id="main" data-testid="main" tabIndex={-1}>
+          <h1 role="button" tabIndex={0}>
+            Online Store
+          </h1>
+        </main>
+      </>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('main')).toHaveFocus();
+    });
+    const name = screen.getByRole('button', { name: 'Online Store' });
+    expect(name).not.toHaveFocus();
+    // Still reachable from the keyboard afterwards — the focus pass must not rewrite its tabindex.
+    expect(name).toHaveAttribute('tabindex', '0');
   });
 
   it('falls back to the main landmark when a surface has no h1', async () => {

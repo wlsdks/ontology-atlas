@@ -54,17 +54,39 @@ export interface BriefCore {
   unknown: number | null;
   /** Lines with a count of zero are kept: the screen decides whether a zero is worth ink. */
   lines: readonly BriefLine[];
+  /**
+   * What this core adds to the headline, when adding its own lines would count one subject
+   * twice. Omitted means the lines already are a sum of separate things: the harness card's
+   * three "areas" lines count three different empty cells of the coverage table, and the agent
+   * card's waiting and failed receipts are different receipts.
+   *
+   * The ontology card is the one that needed it. Its folder-only concepts sit **inside** its
+   * unchecked count and an agent-written concept can be in any evidence state, so three lines
+   * describe overlapping sets of the same concepts.
+   */
+  headlineTotals?: { stale: number; unknown: number };
 }
 
 /**
  * The one line above the cards: what a reader now has to learn (items in the stale state)
  * and what could not be checked (items in the unknown state). Two sums of named things,
  * never combined into one, and never a score.
+ *
+ * **Named things, counted once.** Each core contributes its own `headlineTotals` when its lines
+ * describe overlapping sets, and the sum of its lines otherwise. Adding the lines
+ * unconditionally put 205 unchecked items over a folder holding 108 concepts, because the
+ * ontology card names some of the same concepts on three lines (measured on this repository's
+ * own vault, 2026-09-21). A reader cannot place a count larger than the thing it counts.
  */
 export function briefTotals(cores: readonly BriefCore[]): { stale: number; unknown: number } {
   let stale = 0;
   let unknown = 0;
   for (const core of cores) {
+    if (core.headlineTotals) {
+      stale += core.headlineTotals.stale;
+      unknown += core.headlineTotals.unknown;
+      continue;
+    }
     for (const line of core.lines) {
       if (line.state === 'stale') stale += line.count;
       else if (line.state === 'unknown') unknown += line.count;

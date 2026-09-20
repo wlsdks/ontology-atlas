@@ -72,6 +72,9 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
           />
         ))}
         {detail.findings.length === 0 ? <Quiet text={t('check.none')} /> : null}
+        {/* The three cards beside this one all say what their cut left out; this one did not, so a
+            folder with more than six kinds of finding reported six and named no remainder. */}
+        <HiddenCountLine total={detail.findings.length} shown={Math.min(ROWS, detail.findings.length)} label={(hidden) => t('more', { count: hidden })} route={<Link href="/library/" className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>{t('open')}</Link>} className="mt-2" />
       </Card>
       <Card title={t('rounds.title', { count: detail.passes.length })} caption={t('rounds.caption')}>
         {detail.passes.map((pass) => (

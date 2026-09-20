@@ -141,9 +141,22 @@ export function RouteFocusManager() {
         return true;
       }
 
-      const target =
-        document.querySelector<HTMLElement>('h1:not([hidden]):not([aria-hidden="true"])') ??
-        main;
+      /*
+       * A heading that is itself a control is not the page title to announce. The project page's
+       * `h1` is the project's name, edited in place (`role="button"`, `tabIndex={0}`), so arrival
+       * handed focus to what looks like a text field and the line below then rewrote its
+       * `tabIndex` to -1, taking the name out of the tab order for the rest of the visit. The
+       * landmark is the honest destination there, which is also what `?focus=main` promises.
+       */
+      const heading = document.querySelector<HTMLElement>(
+        'h1:not([hidden]):not([aria-hidden="true"])',
+      );
+      const headingIsControl =
+        heading !== null &&
+        (heading.tabIndex >= 0 ||
+          heading.getAttribute('role') === 'button' ||
+          heading.getAttribute('role') === 'link');
+      const target = heading && !headingIsControl ? heading : main;
       target.tabIndex = -1;
       target.focus({ preventScroll: true });
       if (hasUrlFocusIntent) clearRouteFocusQueryMarker();

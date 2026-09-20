@@ -533,7 +533,33 @@ describe("ProjectDetailPage", () => {
     const cell = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="ontology"]')!;
     const figureLabels = [...cell.querySelectorAll("dt")].map((node) => node.textContent);
     expect(figureLabels).toEqual(["Domains", "Capabilities", "Elements"]);
-    expect(cell.querySelector('[data-testid="project-detail-surface-note"]')).toHaveTextContent("3 relations");
+    // ...and it names its own scope. This counts only the edges whose two ends are both in this
+    // project, which is a smaller number than the folder's relation total shown in the same
+    // block — two figures called "relations" in one eyeful, with nothing saying they measure
+    // different things.
+    expect(cell.querySelector('[data-testid="project-detail-surface-note"]')).toHaveTextContent(
+      "3 relations among these concepts",
+    );
+  });
+
+  /*
+   * **One folder, one number.** The strip beside the composition board says "whole folder", so it
+   * has to count what every other surface calls a concept — `computeCanonicalCensus`, the rule the
+   * map's INDEX row reads. Counting the raw node array added the vault readme, and the same folder
+   * read 7 here and 6 on the map, one click apart.
+   */
+  it("폴더 전체 개념 수는 지도 INDEX 와 같은 규칙으로 센다", () => {
+    mocks.insightNodes = [
+      ...BASE_NODES,
+      ontologyNode("vault-readme:README", "vault-readme", [], "My ontology vault"),
+    ];
+    mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = false;
+    renderPage();
+
+    expect(screen.getByTestId("project-detail-global-census")).toHaveTextContent(
+      "WHOLE FOLDER · 6 CONCEPTS · 3 RELATIONS",
+    );
   });
 
   // Only the ontology half of the board is this project's; sources and wiki pages count the folder.

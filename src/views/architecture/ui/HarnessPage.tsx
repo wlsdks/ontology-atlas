@@ -16,6 +16,7 @@ import { PAGE_TOP_PAD } from '@/shared/ui/page-frame';
 
 import {
   buildHarnessViewHref,
+  defaultViewForSurface,
   HARNESS_VIEW_ORDER,
   parseHarnessView,
   resolveAddressView,
@@ -159,23 +160,6 @@ function HarnessPageInner() {
     [docs],
   );
 
-  const setView = useCallback((next: HarnessView) => {
-    setViewOverride(next);
-    /*
-     * `history.replaceState`, not a router push: switching view inside one destination is not a new
-     * place a person navigated to, and pushing would make Back walk the segmented control instead of
-     * leaving the screen. The address still carries the view so a refresh or a shared link reopens
-     * it — the same grammar `/mcp` uses for its tabs.
-     */
-    if (typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    window.history.replaceState(
-      window.history.state,
-      '',
-      buildHarnessViewHref(next, url.pathname, url.search) + url.hash,
-    );
-  }, []);
-
   useEffect(() => {
     /* Back and forward must move the view too; the address and the screen disagreeing is exactly
        what putting the view in the URL was meant to prevent. */
@@ -215,9 +199,38 @@ function HarnessPageInner() {
    */
   const harnessUnavailable =
     reportState.status === 'unsupported' || reportState.status === 'no-source';
-  const addressView = resolveAddressView(searchParams, surfaceHasBridge && !harnessUnavailable);
+  const canReadHarness = surfaceHasBridge && !harnessUnavailable;
+  const addressView = resolveAddressView(searchParams, canReadHarness);
   /* A press wins over the address until the next history move; see `setView`. */
   const view = viewOverride ?? addressView;
+
+  const setView = useCallback(
+    (next: HarnessView) => {
+      setViewOverride(next);
+      /*
+       * `history.replaceState`, not a router push: switching view inside one destination is not a
+       * new place a person navigated to, and pushing would make Back walk the segmented control
+       * instead of leaving the screen. The address still carries the view so a refresh or a shared
+       * link reopens it — the same grammar `/mcp` uses for its tabs.
+       *
+       * ⚠️ **The surface's own arrival view is what may be left unwritten, not the constant.** The
+       * address is read back through `resolveAddressView(..., canReadHarness)`, so the only view
+       * that survives a refresh unwritten is the one *this* surface opens with. On the web that is
+       * the blueprint, and omitting `?view=` for `structure` there meant pressing that tab and
+       * refreshing reopened the ladder — the one surface where no bridge exists to argue otherwise.
+       * So the writer is handed the same value the reader uses.
+       */
+      if (typeof window === 'undefined') return;
+      const url = new URL(window.location.href);
+      window.history.replaceState(
+        window.history.state,
+        '',
+        buildHarnessViewHref(next, url.pathname, url.search, defaultViewForSurface(canReadHarness)) +
+          url.hash,
+      );
+    },
+    [canReadHarness],
+  );
 
   /*
    * The wait screen is held back rather than the read being slowed down. `loading` flips identity on

@@ -67,9 +67,21 @@ export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
   let folderOnly = 0;
   let agentUnreviewed = 0;
   let changedSince = 0;
+  /*
+   * The concepts the headline may call unknown, as a set rather than as a sum of the lines
+   * below. `ontology-evidence-folder-only` is a subset of `ontology-evidence-unchecked`, and an
+   * agent-written concept nobody reviewed can be in any evidence state, so three lines describe
+   * overlapping sets of the same concepts — added, they claimed 205 unchecked items over 108
+   * concepts (measured on this repository's own vault, 2026-09-21). The lines keep their own
+   * counts: each answers its own question, and only their sum was the lie.
+   */
+  const unknownConcepts = new Set<string>();
   for (const node of concepts) {
     const doc = node.docSlug ? input.docs.get(node.docSlug) : undefined;
-    if (isAgentWritten(node.createdBy) && !doc?.reviewedBy) agentUnreviewed += 1;
+    if (isAgentWritten(node.createdBy) && !doc?.reviewedBy) {
+      agentUnreviewed += 1;
+      unknownConcepts.add(node.id);
+    }
     if (doc && isAfter(doc.updatedAt, input.anchorMs)) changedSince += 1;
     if (input.evidence?.missing.has(node.id)) {
       missing += 1;
@@ -79,6 +91,7 @@ export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
     else {
       if (input.evidence?.folderOnly.has(node.id)) folderOnly += 1;
       unknown += 1;
+      unknownConcepts.add(node.id);
     }
   }
 
@@ -103,5 +116,13 @@ export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
     stale: input.evidence ? stale : null,
     unknown,
     lines,
+    headlineTotals: {
+      /* The two stale lines partition the stale concepts (`stale - missing`, then `missing`), so
+         their sum is already distinct. */
+      stale: input.evidence ? stale : 0,
+      /* Concepts counted once, plus the unmatched names — those are not concepts this folder
+         holds, so they cannot double-count one. */
+      unknown: unknownConcepts.size + input.unmatchedCount,
+    },
   };
 }

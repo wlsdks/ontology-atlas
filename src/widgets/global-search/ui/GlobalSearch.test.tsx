@@ -529,6 +529,33 @@ describe("GlobalSearch — footer names the searched scope", () => {
     expect(footerText()).toBe("1 matches · Online Store");
   });
 
+  /*
+   * The same double-count the indexed total already subtracts, now on the matches. A project
+   * card and its `kind:project` node are one thing, so a query equal to the project's name
+   * matched both and the footer said "2 matches" about one project.
+   */
+  it("counts a project that also matched as a node once", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={[
+          ...nodes,
+          node({ id: "project:storefront", title: "Online Store", kind: "project" }),
+        ]}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+      target: { value: "Online Store" },
+    });
+
+    expect(footerText()).toBe("1 matches · Online Store");
+  });
+
   it("falls back to \"this map\" when no single project names the scope", () => {
     render(
       <GlobalSearch

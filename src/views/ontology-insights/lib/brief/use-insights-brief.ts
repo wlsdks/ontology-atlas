@@ -19,7 +19,12 @@ import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { gitPathsLastChange, isGitBridgeAvailable, type GitPathLastChange } from '@/shared/lib/tauri-git';
 import { resolveEvidenceStates, type EvidenceConceptInput } from './evidence-states';
 import type { BriefLineDetail } from './brief-model';
-import { resolveBriefAnchor, useBriefSeenAt, type BriefAnchor } from './brief-anchor';
+import {
+  canUndoBriefSeenAt,
+  resolveBriefAnchor,
+  useBriefSeenAt,
+  type BriefAnchor,
+} from './brief-anchor';
 import { buildEvidenceDetails } from './evidence-details';
 import { buildAgentBrief } from './agent-brief';
 import { buildHarnessBrief } from './harness-brief';
@@ -42,6 +47,13 @@ export interface InsightsBrief {
   markSeen: () => void;
   /** Puts the anchor back where the last mark found it. Local to this browser, so no dialog. */
   undoSeen: () => void;
+  /**
+   * Whether a mark made in this session can still be taken back for this folder. It is a fact
+   * about the folder, not about one mount, so the tab reads it rather than remembering its own
+   * press — leaving the tab and coming back used to lose the way back while the anchor was
+   * still recoverable.
+   */
+  canUndoSeen: boolean;
   ontology: BriefCore;
   wiki: BriefCore;
   harness: BriefCore;
@@ -147,6 +159,10 @@ export function useInsightsBrief({
     undoSeenAt();
     setNowMs(Date.now());
   }, [undoSeenAt]);
+  /* Read straight through on every render. Both presses write through `useBriefSeenAt`, whose
+     `useSyncExternalStore` subscription re-renders this hook, so the answer is never one press
+     behind — and memoising it would only add a dependency list that has to repeat that fact. */
+  const canUndoSeen = canUndoBriefSeenAt(identityScope);
   const sinceDays = Math.max(0, Math.floor((nowMs - anchor.anchorMs) / 86_400_000));
 
   const library = useLibraryModel({
@@ -460,6 +476,7 @@ export function useInsightsBrief({
     nowMs,
     markSeen,
     undoSeen,
+    canUndoSeen,
     ontology,
     wiki,
     harness,

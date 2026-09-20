@@ -339,7 +339,8 @@ function buildExcerpt(body) {
     .replace(/^[\s|:-]*-{2,}[\s|:-]*$/gm, '') // table separator / hr rows
     .replace(/\s*\|\s*/g, ' · ') // table cell pipes → middot separators
     .replace(/^\s*[-•]\s+/gm, '') // list bullets
-    .replace(/[*_`>#]/g, '') // residual emphasis / quote / heading marks
+    // `#` stays: heading marks are already gone, and `path.tsx#Symbol` needs its separator.
+    .replace(/[*_`>]/g, '') // residual emphasis / quote marks
     .replace(/\s+/g, ' ') // collapse whitespace
     .replace(/(?:·\s*){2,}/g, '· ') // collapse middot runs from empty cells
     .replace(/^[\s·]+|[\s·]+$/g, '') // trim leading/trailing middots

@@ -103,7 +103,10 @@ export function BriefTab({
    * confirmation is a live region, so it is announced rather than only drawn, and the button
    * stays enabled because pressing again re-anchors to now, which is a real thing to want.
    */
-  const [seenMarked, setSeenMarked] = useState(false);
+  /* Seeded from the folder rather than from this mount: what can be taken back outlives the tab
+     the press happened on, and the row used to vanish on a tab switch while the anchor was still
+     recoverable. */
+  const [seenMarked, setSeenMarked] = useState(brief.canUndoSeen);
   return (
     <section data-testid="brief-tab" className="flex flex-col gap-[var(--section-gap)]">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">

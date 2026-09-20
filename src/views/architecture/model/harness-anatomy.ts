@@ -414,9 +414,21 @@ export function buildHarnessAnatomy(report: HarnessReport): HarnessAnatomy {
     }
   }
 
+  /* Both files, added. `settings.local.json` is a person's own additions **on top of** the shared
+     policy, not a replacement for it — Claude reads both — so taking the first that parsed hid
+     every locally added rule, and on a checkout without the shared file it reported the local one
+     as though it were the whole policy. `null` only when neither file parsed. */
+  const permissionFiles = ['.claude/settings.json', '.claude/settings.local.json']
+    .map((path) => permissionCounts(report.contents.get(path)))
+    .filter((counts): counts is { allow: number; deny: number; ask: number } => counts !== null);
   const permissions =
-    permissionCounts(report.contents.get('.claude/settings.json')) ??
-    permissionCounts(report.contents.get('.claude/settings.local.json'));
+    permissionFiles.length === 0
+      ? null
+      : permissionFiles.reduce((sum, counts) => ({
+          allow: sum.allow + counts.allow,
+          deny: sum.deny + counts.deny,
+          ask: sum.ask + counts.ask,
+        }));
 
   /* Straight from the scan. Reading them out of the coverage pass left the row with a bare count
      on any repository whose vault records no implementation path, because that pass does not run

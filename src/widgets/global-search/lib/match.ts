@@ -261,14 +261,18 @@ export interface ProjectSearchResult {
  * An empty query returns a limit by updatedAt desc. Sorted by score desc, ties by
  * updatedAt desc (unified with the other matchers — ontology uses lastApprovedAt desc).
  *
- * Lowercased substring matching for mixed Korean and English.
+ * Substring matching for mixed Korean and English, through the **same** `normalizeForMatch`
+ * the node matcher uses: NFC, then lowercase, then a whitespace tidy. The NFC half is not
+ * cosmetic — Hangul arrives decomposed from local vault filenames and the macOS clipboard, and
+ * a raw comparison sent an exactly typed name down to the Hangul rung while a decomposed word
+ * in a description matched nothing at all.
  */
 export function matchProjects(
   query: string,
   projects: readonly Project[],
   limit = 30,
 ): ProjectSearchPage {
-  const trimmed = query.trim().toLowerCase();
+  const trimmed = normalizeForMatch(query);
   if (trimmed === "") {
     return {
       total: projects.length,
@@ -282,9 +286,9 @@ export function matchProjects(
 
   const matches: ProjectSearchResult[] = [];
   for (const project of projects) {
-    const name = project.name.toLowerCase();
-    const nameEn = project.nameEn?.toLowerCase() ?? "";
-    const slug = project.slug.toLowerCase();
+    const name = normalizeForMatch(project.name);
+    const nameEn = normalizeForMatch(project.nameEn ?? "");
+    const slug = normalizeForMatch(project.slug);
 
     // Which of the two names matched decides what the row shows, so the pair is
     // resolved once rather than asked about twice.
@@ -308,7 +312,7 @@ export function matchProjects(
     const named: ReadonlyArray<readonly [number, string]> = [
       [nameTier(name), project.name],
       [nameTier(nameEn), project.nameEn ?? ""],
-      ...displays.map((display) => [nameTier(display.toLowerCase()), display] as const),
+      ...displays.map((display) => [nameTier(normalizeForMatch(display)), display] as const),
     ];
     const bestName = named.reduce((best, entry) => (entry[0] > best[0] ? entry : best));
 
@@ -318,7 +322,7 @@ export function matchProjects(
     }
 
     const prose = [project.description, ...project.tags, project.category]
-      .find((value) => typeof value === "string" && value.toLowerCase().includes(trimmed));
+      .find((value) => typeof value === "string" && normalizeForMatch(value).includes(trimmed));
     if (prose) {
       matches.push({ project, score: 2, matched: { field: "summary", text: prose } });
       continue;

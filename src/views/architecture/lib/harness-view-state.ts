@@ -110,15 +110,22 @@ export function defaultViewForSurface(canReadHarness: boolean): HarnessView {
  * so Back does not bring it either. `?guides=off`, which the e2e harness sets, was lost the same
  * way (design-interaction, 2026-09-13).
  *
- * The default still omits `?view=` so the destination's plain URL stays the one a person copies.
+ * The arrival view still omits `?view=` so the destination's plain URL stays the one a person
+ * copies — but **which view that is depends on the surface**, so the caller has to say. The
+ * constant was used here for as long as there was one arrival for everybody; once the browser
+ * started arriving on the blueprint, dropping `?view=` for `structure` wrote an address that means
+ * `architecture` on the web. Pressing the structure tab and refreshing reopened the ladder, which
+ * contract at the top of this file breaking on the surface that has no other way back.
  */
 export function buildHarnessViewHref(
   view: HarnessView,
   pathname = '/architecture/',
   search = '',
+  /** The view this surface opens with no `?view=` on the address — `defaultViewForSurface`. */
+  surfaceDefault: HarnessView = DEFAULT_HARNESS_VIEW,
 ): string {
   const params = new URLSearchParams(search);
-  if (view === DEFAULT_HARNESS_VIEW) params.delete('view');
+  if (view === surfaceDefault) params.delete('view');
   else params.set('view', view);
   const query = params.toString();
   return query ? `${pathname}?${query}` : pathname;

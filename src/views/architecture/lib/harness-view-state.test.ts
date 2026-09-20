@@ -82,6 +82,23 @@ describe('buildHarnessViewHref', () => {
     expect(buildHarnessViewHref('structure')).toBe('/architecture/');
   });
 
+  it('writes the view a surface does not arrive on, so a refresh reopens what was pressed', () => {
+    /* The browser arrives on the blueprint. Dropping `?view=` for `structure` there wrote an
+       address that reads back as `architecture`, so pressing the structure tab and refreshing
+       reopened the ladder. */
+    expect(buildHarnessViewHref('structure', '/architecture/', '', 'architecture')).toBe(
+      '/architecture/?view=structure',
+    );
+    /* The installed app does arrive on it, so its plain address stays plain. */
+    expect(buildHarnessViewHref('structure', '/architecture/', '', 'structure')).toBe(
+      '/architecture/',
+    );
+    /* And on the web the blueprint is the one that needs no parameter. */
+    expect(buildHarnessViewHref('architecture', '/architecture/', '', 'architecture')).toBe(
+      '/architecture/',
+    );
+  });
+
   it('names the other three views in the query', () => {
     expect(buildHarnessViewHref('guides')).toBe('/architecture/?view=guides');
     expect(buildHarnessViewHref('coverage')).toBe('/architecture/?view=coverage');

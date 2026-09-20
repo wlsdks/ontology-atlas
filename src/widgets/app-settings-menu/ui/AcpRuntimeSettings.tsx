@@ -266,6 +266,47 @@ export function AcpRuntimeSettings({
   const guardedNames = ready
     .filter((r) => isGuardedRuntime(r.id, r.isolated))
     .map((r) => r.label);
+  /*
+    Say what appears on disk (2026-08-17).
+
+    When a conversation starts, Rust creates a config folder for that tool inside the app's data
+    directory and **symlinks the user's real credential files** into it (`link_credentials` in
+    `src-tauri/src/acp.rs`). Isolating them breaks login, and copying secrets into the app folder is
+    something the charter forbids, so a link is the answer in between — that is right. What was
+    wrong is that **no screen said so.** Since 2026-09-19 it is said in a hint rather than as a
+    paragraph above the list: the sentence matters at the moment of pressing "open a chat", and a
+    hint is one press from that button without standing between the title and the tools.
+    Gate: `tests/contract/acp-disk-disclosure.contract.test.ts`.
+
+    ⚠️ **Only where a chat can start** (2026-09-20). `link_credentials` runs when a conversation
+    opens, and a conversation opens only for a tool this screen confirmed and guards — so on a
+    machine with none, this answered a question nobody can ask. The condition is the same one the
+    chat button uses. The gate greps this file for the sentence and the testid, so it can see
+    neither this change nor its reverse; the reason it is right is the disclosure's own subject.
+
+    ⚠️ **It rides the heading row, because a hint has to hang off something** (2026-09-21). On the
+    agents tab the intro sentence and the MCP link are the sheet's, not this tab's, so the row
+    above the list was frequently the guard note and this hint — and with one confirmed tool that
+    note does not draw either. What was left was a **lone question mark on a row of its own**,
+    above the group it explains, marking nothing. Inside the group heading it has a subject: the
+    row reads name · hint · re-scan, which is the grammar the MCP tab's own heading already uses
+    beside its own `mcp.shareHeading`. `align="right"` follows the move — the panel now hangs from
+    edge of the row rather than the left of a paragraph.
+  */
+  /** Whether any confirmed tool cannot open a chat — the one line this row still carries. */
+  const showGuardNote =
+    runtimes !== null && ready.some((r) => !isGuardedRuntime(r.id, r.isolated));
+  const diskHint =
+    runtimes !== null && ready.some((r) => isGuardedRuntime(r.id, r.isolated)) ? (
+      <InfoHint label={t('hintLabel')} align="right">
+        <p
+          data-testid="app-settings-runtimes-disk-note"
+          className="break-keep text-label leading-prose text-[color:var(--color-text-secondary)]"
+        >
+          {t('diskNote')}
+        </p>
+      </InfoHint>
+    ) : null;
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-runtimes">
@@ -286,9 +327,14 @@ export function AcpRuntimeSettings({
         The link to the MCP tab that used to stand here left with the tabs (2026-09-19): the
         tab is on the same strip, a press away, and a sentence pointing at it was the dead
         pointer `.claude/rules/surfaces.md` forbids the moment the strip is visible.
+
+        ⚠️ **The row is not drawn when it has nothing to say** (2026-09-21). On the agents tab
+        the intro and the MCP link belong to the sheet, so this row's only possible content is
+        the guard note — and rendered empty it was still a grid item, spending the parent's
+        12px gap above a heading it no longer introduces.
       */}
-      <div className="flex items-start justify-between gap-3 px-1">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+      {!embedded || showGuardNote ? (
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 px-1">
           {embedded ? null : (
             <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
               {t('intro')}
@@ -308,7 +354,7 @@ export function AcpRuntimeSettings({
               {t('mcpLink')}
             </Link>
           )}
-          {runtimes !== null && ready.some((r) => !isGuardedRuntime(r.id, r.isolated)) ? (
+          {showGuardNote ? (
             <p
               data-testid="app-settings-runtimes-guard-note"
               data-guarded-count={guardedNames.length}
@@ -319,39 +365,8 @@ export function AcpRuntimeSettings({
                 : t('guardedExplainerNone')}
             </p>
           ) : null}
-          {/*
-            Say what appears on disk (2026-08-17).
-
-            When a conversation starts, Rust creates a config folder for that tool inside the
-            app's data directory and **symlinks the user's real credential files** into it
-            (`link_credentials` in `src-tauri/src/acp.rs`). Isolating them breaks login, and
-            copying secrets into the app folder is something the charter forbids, so a link is
-            the answer in between — that is right. What was wrong is that **no screen said so.**
-            Since 2026-09-19 it is said in the hint beside the list rather than as a paragraph
-            above it: the sentence matters at the moment of pressing "open a chat", and a hint
-            is one press from that button without standing between the title and the tools.
-            Gate: `tests/contract/acp-disk-disclosure.contract.test.ts`.
-
-            ⚠️ **Only where a chat can start** (2026-09-20). `link_credentials` runs when a
-            conversation opens, and a conversation opens only for a tool this screen confirmed
-            and guards — so on a machine with none, this answered a question nobody can ask,
-            and as a hint rather than the old paragraph it left a lone question mark beside a
-            list that says "no tool found". The condition is the same one the chat button uses.
-            The gate greps this file for the sentence and the testid, so it cannot see either
-            this change or its reverse; the reason it is right is the disclosure's own subject.
-          */}
-          {runtimes !== null && ready.some((r) => isGuardedRuntime(r.id, r.isolated)) ? (
-            <InfoHint label={t('hintLabel')} align="left">
-              <p
-                data-testid="app-settings-runtimes-disk-note"
-                className="break-keep text-label leading-prose text-[color:var(--color-text-secondary)]"
-              >
-                {t('diskNote')}
-              </p>
-            </InfoHint>
-          ) : null}
         </div>
-      </div>
+      ) : null}
 
       {runtimes === null ? (
         /*
@@ -367,7 +382,16 @@ export function AcpRuntimeSettings({
         </SettingsGroup>
       ) : (
         <>
-          <SettingsGroup label={t('readyHeading', { count: ready.length })} trailing={recheck}>
+          {/* Name · hint · action, the order the MCP tab's own group heading uses. */}
+          <SettingsGroup
+            label={t('readyHeading', { count: ready.length })}
+            trailing={
+              <>
+                {diskHint}
+                {recheck}
+              </>
+            }
+          >
             {ready.length === 0 ? (
               <SettingsRow label={t('noneReady')} caption={t('noneReadyCaption')} control={null} />
             ) : (

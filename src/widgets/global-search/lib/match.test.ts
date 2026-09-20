@@ -444,6 +444,23 @@ describe("matchProjects", () => {
     expect(r[0]?.score).toBe(4);
   });
 
+  /*
+   * The node matcher normalises both sides (`normalizeForMatch`); this one compared raw
+   * strings, so a decomposed name — what a local vault filename and the macOS clipboard
+   * hand over — never reached the literal tiers. An exact name landed on the Hangul rung
+   * (4) instead of 7, and a decomposed word in the description matched nothing at all.
+   */
+  it("자소 분리(NFD) 입력도 같은 결과 — 노드 매처와 같은 정규화", () => {
+    const shops = [project({ slug: "shop", name: "온라인 쇼핑몰", description: "결제와 배송" })];
+    const exact = matchProjects("온라인 쇼핑몰".normalize("NFD"), shops);
+    expect(exact.results[0]?.project.slug).toBe("shop");
+    expect(exact.results[0]?.score).toBe(7);
+
+    const prose = matchProjects("배송".normalize("NFD"), shops);
+    expect(prose.results[0]?.project.slug).toBe("shop");
+    expect(prose.results[0]?.score).toBe(2);
+  });
+
   it("매치 0 — 빈 결과", () => {
     expect(matchProjects("xyzqwerty", corpus).results).toHaveLength(0);
   });

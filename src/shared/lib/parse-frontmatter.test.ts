@@ -150,6 +150,25 @@ describe('buildExcerpt — markdown is flattened to readable prose', () => {
     expect(excerpt).not.toMatch(/^\s*-\s/);
   });
 
+  /*
+   * The search palette draws this excerpt as a result's reason. A `path#symbol` reference —
+   * how every element document in the dogfood vault names its entrypoint — lost the `#` to the
+   * residual-mark strip, so the row read `src/widgets/topology-controls/ui/HubRail.tsxHubRail`
+   * and the two names glued into one word nobody can read (2026-09-21). A `#` away from the
+   * start of a line is content, not a heading mark.
+   */
+  it('keeps the separator between a path and the symbol it names', () => {
+    const body = [
+      '- Primary implementation: `src/widgets/topology-controls/ui/HubRail.tsx#HubRail`',
+      '- Also see [HubRail](src/widgets/topology-controls/ui/HubRail.tsx).',
+    ].join('\n');
+    const excerpt = buildExcerpt(body);
+    expect(excerpt).toContain('src/widgets/topology-controls/ui/HubRail.tsx#HubRail');
+    expect(excerpt).not.toContain('HubRail.tsxHubRail');
+    // The link form keeps only its text, so nothing glues there either.
+    expect(excerpt).toContain('Also see HubRail.');
+  });
+
   it('respects the max length (잘릴 땐 말줄임표 포함 max+1 이내)', () => {
     // Very long text with no spaces (no word boundary to cut at) — cut at max and append the ellipsis.
     expect(buildExcerpt('x'.repeat(500)).length).toBeLessThanOrEqual(321);

@@ -244,6 +244,33 @@ describe('the segmented control', () => {
     expect(window.location.search).toBe('');
   });
 
+  it('writes 구조 into a browser address, where the plain one means the blueprint', () => {
+    /*
+     * ⚠️ The arrival view depends on the surface, so "the view that needs no parameter" does too.
+     * Dropping `?view=` for `structure` on the web wrote an address that reads back as
+     * `architecture`: pressing the structure tab and refreshing — or sending the link — reopened
+     * which is the contract `harness-view-state.ts` opens with, broken on the one surface that has
+     * no bridge to argue otherwise.
+     */
+    state.bridge = false;
+    const view = mount();
+    act(() => {
+      fireEvent.click(document.querySelector('#harness-tab-structure')!);
+    });
+    expect(window.location.search).toBe('?view=structure');
+
+    // A refresh is a fresh mount against that address, and it has to land back on the structure view.
+    view.unmount();
+    mount();
+    expect(screen.queryByTestId('architecture-page')).toBeNull();
+
+    // And the browser's own arrival still copies as the plain address.
+    act(() => {
+      fireEvent.click(document.querySelector('#harness-tab-architecture')!);
+    });
+    expect(window.location.search).toBe('');
+  });
+
   it('follows the address when history moves under it', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();

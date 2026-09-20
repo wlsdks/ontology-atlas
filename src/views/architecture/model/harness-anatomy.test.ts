@@ -258,6 +258,31 @@ describe('buildHarnessAnatomy', () => {
     expect(slotOf(without, 'permissions').status).toBe('absent');
   });
 
+  /*
+   * Claude reads both files and the local one adds to the shared one — it does not replace it.
+   * Taking the first that parsed made every rule a person had added locally invisible, and on a
+   * checkout whose `.claude/settings.json` is absent the row reported only the local file as if
+   * it were the whole policy.
+   */
+  it('adds the local settings file to the shared one rather than choosing between them', () => {
+    const both = buildHarnessAnatomy(
+      report({
+        contents: new Map([
+          [
+            '.claude/settings.json',
+            JSON.stringify({ permissions: { allow: ['a', 'b'], deny: ['c'], ask: [] } }),
+          ],
+          [
+            '.claude/settings.local.json',
+            JSON.stringify({ permissions: { allow: ['d'], deny: ['e'], ask: ['f'] } }),
+          ],
+        ]),
+      }),
+    );
+    expect(both.permissions).toEqual({ allow: 3, deny: 2, ask: 1 });
+    expect(slotOf(both, 'permissions').count).toBe(3);
+  });
+
   it('folds discovered tests to the folder the runner walks, not to every subtree', () => {
     /* Depth three produced 689 names for 1471 files on this repository; the citation became a list
        nobody reads. Where the runner finds them is the answer. */

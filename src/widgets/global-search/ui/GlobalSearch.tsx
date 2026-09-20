@@ -136,10 +136,8 @@ export function GlobalSearch({
   // them straight gives "296 indexed", one more than the canonical inventory (295) —
   // the same species as the P0c map double-count. Projects already counted as nodes
   // are subtracted before summing.
-  const projectNodeCount = useMemo(
-    () => drawnNodes.filter((node) => node.kind === "project").length,
-    [drawnNodes],
-  );
+  const projectNodes = useMemo(() => drawnNodes.filter((node) => node.kind === "project"), [drawnNodes]);
+  const projectNodeCount = projectNodes.length;
   const totalCorpus = ontologySize + Math.max(0, projectSize - projectNodeCount);
   /**
    * **Name what was actually searched** (owner report, 2026-09-04).
@@ -168,7 +166,20 @@ export function GlobalSearch({
   }, [projects, drawnNodes, locale]);
   // The footer names the scope it searched, so its number is read as a fact about
   // that folder — it has to be what was found, not what fitted (measured 2026-09-19).
-  const totalMatches = ontologyPage.total + projectPage.total;
+  //
+  // The same subtraction as `totalCorpus`, because the same entity is on both sides: typing a
+  // project's name matches its card *and* its `kind:project` node, and adding the two totals
+  // said "2 matches" about one project. There is one project node per project, so re-running
+  // the matcher over just those is the cheapest way to learn how many of the two lists overlap.
+  const projectNodeMatches = useMemo(
+    () =>
+      matchOntologyNodes(query, projectNodes, 0, {
+        kinds: selectedKinds,
+        projectIds: selectedProjectIds,
+      }).total,
+    [query, projectNodes, selectedKinds, selectedProjectIds],
+  );
+  const totalMatches = ontologyPage.total + Math.max(0, projectPage.total - projectNodeMatches);
   const hasFilter = selectedKinds.size > 0 || selectedProjectIds.size > 0;
 
   // The source for the workspace project chip row — the projects prop when present

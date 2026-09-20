@@ -87,4 +87,20 @@ describe('the card and the strip count the same thing', () => {
     expect(nodes.some((node) => node.kind === 'vault-readme')).toBe(true);
     expect(census.conceptCount).toBeLessThan(nodes.length);
   });
+
+  /*
+   * The headline sentence counts concepts, so it cannot name more of them than the folder holds.
+   * Three of this fixture's lines describe overlapping sets of the same five concepts — added,
+   * they came to more than five (the 205-over-108 reading on this repository's own vault,
+   * 2026-09-21).
+   */
+  it('never offers the headline more unknown concepts than the folder holds', () => {
+    const brief = buildOntologyBrief({ nodes, docs, evidence: null, repairCount: 8, unmatchedCount: 0, anchorMs });
+    const lineSum = brief.lines
+      .filter((line) => line.state === 'unknown')
+      .reduce((sum, line) => sum + line.count, 0);
+    expect(lineSum, 'the lines themselves still each answer their own question').toBe(6);
+    expect(brief.headlineTotals?.unknown).toBe(5);
+    expect(brief.headlineTotals?.unknown).toBeLessThanOrEqual(brief.headline ?? 0);
+  });
 });

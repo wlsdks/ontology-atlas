@@ -31,6 +31,7 @@ function brief(overrides: Partial<InsightsBrief> = {}): InsightsBrief {
     nowMs: Date.parse("2026-09-19T00:00:00Z"),
     markSeen: vi.fn(),
     undoSeen: vi.fn(),
+    canUndoSeen: false,
     ontology: core({
       core: "ontology",
       headline: 106,
@@ -293,6 +294,21 @@ describe("taking the visit mark back", () => {
     expect(undoSeen).toHaveBeenCalledTimes(1);
     // One press back is the whole of it; the offer goes with it.
     expect(screen.queryByTestId("brief-mark-seen-undo")).toBeNull();
+  });
+
+  /*
+   * The offer used to live only in this component's own state, so switching to another tab and
+   * back unmounted it and the way back vanished although the anchor was still recoverable —
+   * `canUndoBriefSeenAt` said so the whole time. What can be undone is a fact about the folder,
+   * not about this mount.
+   */
+  it("still offers the way back after the tab is left and reopened", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <BriefTab brief={brief({ canUndoSeen: true })} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId("brief-mark-seen-undo")).toBeInTheDocument();
   });
 });
 

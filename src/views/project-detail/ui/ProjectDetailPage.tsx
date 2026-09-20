@@ -39,7 +39,7 @@ import {
 } from "@/features/project-data-source";
 import { buildDocsVaultHref, findProjectDocInList, hasSeveralProjectDocs } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
-import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
+import { computeCanonicalCensus, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { useProjectAgent } from "../lib/use-project-agent";
@@ -410,6 +410,8 @@ export function ProjectDetailPage({
   // The one Markdown file this page is drawn from — the door in the top bar and the path in the footer.
   const projectDoc = findProjectDocInList(vaultDocs, project.slug);
   const metrics = buildProjectOntologyMetrics(insightNodes, insightEdges, project.slug);
+  // The folder's own totals, by the one rule every "concept" count on this product goes through.
+  const folderCensus = computeCanonicalCensus(insightNodes, insightEdges);
   const domainComposition = buildProjectDomainComposition(insightNodes, insightEdges, project.slug);
   // What this project has on each Atlas surface — the page's first block. Ontology figures are
   // this project's; sources and wiki pages are the folder's, and the caption beside the board
@@ -770,11 +772,14 @@ export function ProjectDetailPage({
           {/* The folder's own totals belong to this sentence, not to the top bar: they are the
               only number on the page that is not this project's, and beside the controls they
               read as a third control size. */}
+          {/* One folder, one number. `computeCanonicalCensus` is the single rule behind every count
+              that says "concept" — the map's INDEX row reads it too. The raw node array counts the
+              vault readme as well, so the same folder said 109 here and 108 one click away. */}
           <span
             data-testid="project-detail-global-census"
             className="ml-auto hidden font-mono text-label tracking-[var(--tracking-caps-08)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] md:inline"
           >
-            {t("globalCensus", { concepts: insightNodes.length, relations: insightEdges.length })}
+            {t("globalCensus", { concepts: folderCensus.conceptCount, relations: folderCensus.relationCount })}
           </span>
         </div>
         <SurfaceCompositionBoard
@@ -935,7 +940,11 @@ export function ProjectDetailPage({
                         information and was removed too. */}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                        {candidate.name}
+                        {/* The same name the rest of this page, the map label and the INDEX row draw
+                            (`display_<locale>` when the folder carries one) — a card that names the
+                            neighbour by its canonical title sends a reader looking for a project the
+                            screen calls something else. */}
+                        {projectDisplayName(candidate, locale)}
                       </p>
                       <p className="mt-1 truncate text-body text-[color:var(--color-text-tertiary)]">
                         {candidate.description || candidate.slug}
