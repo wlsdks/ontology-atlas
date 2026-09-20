@@ -151,7 +151,11 @@ describe("AgentClientButtons — 쓰지 못한 write 는 성공처럼 보이지 
         "failed",
       ),
     );
-    expect(screen.getByTestId("agent-client-claude-code")).toHaveTextContent(
+    // The button shows the short state and is *called* by the full sentence (2026-09-19): the
+    // row beside it names the tool, but a screen reader moving control to control does not.
+    expect(screen.getByTestId("agent-client-claude-code")).toHaveTextContent("안 됐어요");
+    expect(screen.getByTestId("agent-client-claude-code")).toHaveAttribute(
+      "aria-label",
       "안 됐어요. 다시 눌러 주세요.",
     );
   });

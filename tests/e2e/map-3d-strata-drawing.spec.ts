@@ -438,8 +438,19 @@ for (const screen of SCREENS) {
  * one is expected at which size is pinned — a legend that quietly reverted to the
  * rail at 1040 would take that width back with nothing on screen to say so.
  */
+/*
+ * 1512x982 moved from `rail` to `corner` on 2026-09-20. The column is free at
+ * that size, which is all this fixture used to ask, but a free column is not a
+ * reachable one: the rail begins under the last utility tile and the sample
+ * folder's project plane projects above it, so the top row clamped to the band's
+ * edge and stood 205 px from the only project node — ten of its own rows — while
+ * dragging the domain row down onto it. `map-strata-tier-scale.spec.ts` pins the
+ * rule that replaced the size check: while the rail is the shape drawn, no row
+ * may be further than its own height from the plane it names, and losing a plane
+ * sends the names to the corner, which gives up alignment out loud.
+ */
 for (const legend of [
-  { width: 1512, height: 982, placement: "rail" },
+  { width: 1512, height: 982, placement: "corner" },
   { width: 1040, height: 720, placement: "corner" },
 ] as const) {
 test(`Strata ${legend.width}x${legend.height} — the tier legend names four planes without landing on anything`, async ({ page }) => {

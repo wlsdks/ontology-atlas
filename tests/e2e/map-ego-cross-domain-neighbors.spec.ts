@@ -69,6 +69,21 @@ test("선택한 개념이 다른 도메인에 접힌 이웃도 지도에 나온�
   });
   expect(gap, "카메라가 목표에 닿지 못하고 있다").toBeLessThan(0.5);
 
+  // Drawn is not seen: the frame puts the whole ego graph in the free area
+  // beside the detail panel. Before the screen-sized leash the two
+  // dependencies landed under the panel (x 1349 and 1369, panel from 1128).
+  const seen = await page.evaluate(() => {
+    const m = (window as unknown as { __atlasMap: { nodes: () => Array<{ id: string; x: number; radius: number }> } }).__atlasMap;
+    const box = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const panel = document.querySelector('[data-testid="map-detail-panel"]')!.getBoundingClientRect();
+    const right = (id: string) => { const n = m.nodes().find((n) => n.id === id)!; return box.left + n.x + n.radius; };
+    const focus = m.nodes().find((n) => n.id === "capability:exchange-request")!;
+    return { pickupRight: right("capability:return-pickup"), reserveRight: right("capability:stock-reservation"), panelLeft: panel.left, focusLeft: box.left + focus.x - focus.radius, canvasLeft: box.left };
+  });
+  expect(seen.pickupRight, "반품 회수가 상세 패널 아래에 있다").toBeLessThan(seen.panelLeft);
+  expect(seen.reserveRight, "재고 선점이 상세 패널 아래에 있다").toBeLessThan(seen.panelLeft);
+  expect(seen.focusLeft, "선택한 개념이 캔버스 왼쪽 밖으로 밀렸다").toBeGreaterThan(seen.canvasLeft);
+
   // Both dependencies are drawn, named, and joined to the focus by their line.
   expect(after.pickup?.hidden, "반품 회수(배송)가 숨어 있다").toBe(false);
   expect(after.reserve?.hidden, "재고 선점(재고)가 숨어 있다").toBe(false);
