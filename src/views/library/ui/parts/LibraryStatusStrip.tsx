@@ -2,9 +2,9 @@
 
 import type { useTranslations } from "next-intl";
 
-import { libraryDanglingLinkCount, libraryOffTemplateCount } from "../../lib/merge-wiki-verdict";
+import { libraryDanglingLinkCount, libraryOffTemplateCount } from "@/features/library";
 import { libraryStepStates } from "../../lib/stage-steps";
-import type { LibraryUiModel } from "../../lib/use-library-model";
+import type { LibraryUiModel } from "@/features/library";
 
 /**
  * **One verdict, or nothing at all.**

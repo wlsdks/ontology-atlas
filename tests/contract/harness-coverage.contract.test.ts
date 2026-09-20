@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildCoverageMatrix, scanHarness, type HarnessScanPort } from "@/entities/agent-files";
 import { groupMirroredDeclarations } from "@/views/architecture/ui/HarnessCoverageView";
-import { deriveCoverageAreas, type CoverageVaultDoc } from "@/views/architecture/model/coverage-areas";
+import { deriveCoverageAreas, type CoverageVaultDoc } from "@/features/harness-report";
 import { buildExcerpt, parseFrontmatter } from "@/shared/lib/parse-frontmatter";
 
 /**

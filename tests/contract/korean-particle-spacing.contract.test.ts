@@ -44,10 +44,8 @@ const SPACED = new RegExp(`${WORD_END} ${PARTICLE}(?![A-Za-z가-힣])`, "g");
  * string, so one determiner inside a long prompt does not excuse the rest of it.
  */
 const DETERMINER_EXEMPTIONS = [
-  "을(를) 이 컴퓨터",
   "1) 이 제품",
   "{ago} 이 지도",
-  "은(는) 이 파일",
 ];
 
 function collectStrings(value: unknown, out: string[] = []): string[] {
@@ -84,7 +82,13 @@ describe("Korean particle spacing", () => {
   });
 
   it("leaves the determiner 이 alone", () => {
-    const determiner = "{name}을(를) 이 컴퓨터에서 숨깁니다";
+    /*
+     * This used to be checked against a catalogue string that no longer exists:
+     * `korean-particle-choice` removed every parenthesised allomorph on 2026-09-20, and two of
+     * this list's four entries went with those sentences. The rule is unchanged — a determiner
+     * keeps its space — so the probe now uses an entry that is still live.
+     */
+    const determiner = "{ago} 이 지도를 마지막으로 봤어요";
     expect(DETERMINER_EXEMPTIONS.some((exempt) => determiner.includes(exempt))).toBe(true);
   });
 

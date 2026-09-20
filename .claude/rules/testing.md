@@ -100,7 +100,14 @@ Consequences that follow from the rule:
   reports with a better message. Delete it.
 - **Performance lanes never block.** `*.perf.test.*` runs where the number means
   something: CI on a quiet runner, not the pre-push hook, which deliberately
-  saturates the machine.
+  saturates the machine. A sharded lane is not a quiet runner either — Vitest
+  shards by file, so a ratio's verdict would depend on which other files landed
+  beside it. `vitest.config.ts` gives these files their own `perf` project with
+  `fileParallelism: false`, the sharded sweeps in `run-ci-lane.mjs` name the
+  other two projects explicitly, and `pnpm test:perf` runs them alone on the one
+  shard that carries whole-graph work. Measured cost of getting this wrong:
+  `node-name-match.perf.test.ts` read 6.73, 9.20 and 9.20 against a bar of 10 on
+  branches that never touched it.
 - **In e2e, the conditions live in `tests/e2e/settle.ts`.** A canvas has no DOM,
   so the map's stillness is read from the `?e2e=1` probe's own drawn values and a
   DOM reveal from `Element.getAnimations()` — never from a token's duration

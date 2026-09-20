@@ -75,7 +75,9 @@ test.describe("실제 브라우저 글자 크기 설정 200%", () => {
     await page.addInitScript(() => {
       window.localStorage.setItem("demo:sample-source:v1", "storefront");
     });
-    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    // The question row is the concepts subject's; the board lands on the brief, which is a
+    // single view and draws no tabs at all (2026-09-20).
+    await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
     const selected = page.locator('[role="tab"][aria-selected="true"]');
     await expect(selected).toHaveCount(1);
     await expect(selected).toBeVisible({ timeout: 30_000 });

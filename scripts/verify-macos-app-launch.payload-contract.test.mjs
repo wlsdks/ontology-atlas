@@ -362,3 +362,81 @@ test("payload contract · 지도 라우트의 요구는 여전히 살아 있다"
   assert.equal(typeof message, "string", "지도 라우트인데 아무것도 요구하지 않는다");
   assert.match(message, /topology|Relief/i);
 });
+
+/**
+ * The insights board has **two rows that are not the same kind of control**: the
+ * subject row is a radiogroup (brief · concepts · library · harness) and only the
+ * concepts subject opens a row of question tabs underneath it.
+ *
+ * Measured 2026-09-20: the contract pinned one number, `[role="tab"] === 10`, from
+ * the era when every entry was a tab. After the split the board opens on the brief,
+ * which draws **zero** tabs, so the packaged-app verification could not pass on that
+ * route under any correct rendering. These cases hold each landing separately.
+ */
+function insightsPayload(markerOverrides) {
+  return validPayload({
+    href: "tauri://localhost/ko/ontology/insights/",
+    markers: {
+      insightsMaintenanceBoard: true,
+      insightsQuestionModel: "one-tab-one-question",
+      insightsSubjectCount: 4,
+      insightsSelectedSubject: "insights-core-brief",
+      insightsSelectedPanelKey: "brief",
+      insightsSelectedPanelVisible: true,
+      insightsTabCount: 0,
+      insightsSelectedTabCount: 0,
+      insightsHandoff: false,
+      ...markerOverrides,
+    },
+  });
+}
+
+test("payload contract · the insights brief landing passes with no question tabs", () => {
+  assert.equal(validateWebviewVerifyPayload(insightsPayload()), null);
+});
+
+test("payload contract · the insights concepts landing still owes its question row", () => {
+  const onConcepts = {
+    insightsSelectedSubject: "insights-core-ontology",
+    insightsSelectedPanelKey: "composition",
+    insightsTabCount: 7,
+    insightsSelectedTabCount: 1,
+    insightsHandoff: true,
+  };
+  assert.equal(validateWebviewVerifyPayload(insightsPayload(onConcepts)), null);
+  assert.match(
+    validateWebviewVerifyPayload(insightsPayload({ ...onConcepts, insightsTabCount: 6 })),
+    /question tab count/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(insightsPayload({ ...onConcepts, insightsHandoff: false })),
+    /handoff/,
+  );
+  // The to-do question offers the agent per row, so it carries no tab-wide handoff row.
+  assert.equal(
+    validateWebviewVerifyPayload(
+      insightsPayload({ ...onConcepts, insightsSelectedPanelKey: 'do-next', insightsHandoff: false }),
+    ),
+    null,
+  );
+});
+
+test("payload contract · a vanished insights subject or panel fails", () => {
+  assert.match(
+    validateWebviewVerifyPayload(insightsPayload({ insightsSubjectCount: 3 })),
+    /subject count/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(insightsPayload({ insightsSelectedPanelKey: "" })),
+    /drew no panel/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload(insightsPayload({ insightsSelectedPanelVisible: false })),
+    /not visible/,
+  );
+  // The pre-split shape: ten tabs on a subject that draws none.
+  assert.match(
+    validateWebviewVerifyPayload(insightsPayload({ insightsTabCount: 10, insightsSelectedTabCount: 1 })),
+    /question tab count/,
+  );
+});

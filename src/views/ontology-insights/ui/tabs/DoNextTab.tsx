@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronRight, FileWarning, MessageCircle } from "lucide-
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { EvidenceOnlyBadge } from "@/shared/ui/evidence-only-badge";
+import { HiddenCountLine } from "@/shared/ui/hidden-count-line";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 import type { MeaningGapKind, OntologyHealthActionTarget } from "@/entities/knowledge-graph";
 import type { VaultDocumentIssue } from "@/shared/lib/validate-vault-document";
@@ -76,6 +77,8 @@ export interface DoNextTabLabels extends FixRowLabels {
   listTitle: (count: number) => string;
   /** The remainder line inside an opened group, when it draws fewer rows than it counts. */
   moreCount: (count: number) => string;
+  /** The control that raises a group's own row limit to its whole count. */
+  showAll: string;
   /** One name per finding group — what the rows inside it have in common, said once. */
   groupName: (group: DoNextGroupKey) => string;
   /** The disclosure's accessible name, which must carry the group's own scale. */
@@ -90,6 +93,10 @@ export interface DoNextTabLabels extends FixRowLabels {
   whyNeglectedHub: (degree: number, agoDays: number) => string;
   whyOrphan: string;
   whyPromotion: (count: number) => string;
+  /** The concepts behind a promotion row's count, by name, when every one of them is named. */
+  whyPromotionNamed: (names: string) => string;
+  /** The same, when the count is larger than the names printed. */
+  whyPromotionNamedMore: (names: string, count: number) => string;
   whyCycle: (length: number) => string;
   whyDuplicate: (percent: number) => string;
   whyMissingDefinition: string;
@@ -142,6 +149,11 @@ export interface DoNextTabProps {
    * viewport out, and a disclosure does that job now.
    */
   groupRowLimit?: number;
+  /**
+   * Raise the queue's own per-kind supply, because a control cannot reveal rows that were never
+   * built: the queue is five per kind and the sixth row does not exist until this is called.
+   */
+  onShowAllRows?: () => void;
   /**
    * One whole-group action, for the groups that honestly have one. A group-level "view on the map"
    * is deliberately **not** offered: it would have to pick an arbitrary member and call it the
@@ -218,6 +230,7 @@ function FixRowActions({
   viewHref,
   viewLabel,
   menu,
+  onLeaveRow,
   labels,
 }: {
   askAgentUrl?: string | null;
@@ -225,6 +238,16 @@ function FixRowActions({
   viewHref?: string | null;
   viewLabel: string;
   menu?: ReactNode;
+  /**
+   * Claim this row before leaving it, so coming back reopens the group and restores the row.
+   *
+   * ⚠️ **The machinery existed and only the overflow menu reached it.** The visible chips carry
+   * the review id in their own href but never wrote it to this board's address, so pressing the
+   * one visible way out and then pressing Back returned to a collapsed group with nothing to
+   * restore from — the ability was real and hidden behind a 「…」 (design-interaction,
+   * 2026-09-20).
+   */
+  onLeaveRow?: () => void;
   labels: DoNextTabLabels;
 }) {
   return (
@@ -248,6 +271,7 @@ function FixRowActions({
         <Link
           href={fixHref}
           data-testid="do-next-item-fix"
+          onClick={onLeaveRow}
           className={controlClass({ shape: "chip", size: "md", className: FIX_ROW_SECONDARY_INK })}
         >
           {labels.fixHere}
@@ -257,6 +281,7 @@ function FixRowActions({
         <Link
           href={viewHref}
           data-testid="do-next-item-view"
+          onClick={onLeaveRow}
           className={controlClass({
             shape: "chip",
             size: "md",
@@ -276,6 +301,7 @@ export function DoNextTab({
   totalCount,
   groupCounts,
   groupRowLimit = 5,
+  onShowAllRows,
   groupAction,
   queue,
   cycles,
@@ -467,6 +493,7 @@ export function DoNextTab({
                 labels={labels}
                 viewHref={mapHref(pair.keepId)}
                 viewLabel={labels.viewOnMap}
+                onLeaveRow={() => onReviewStart?.({ id: pair.id, title: pair.keepTitle })}
                 menu={rowMenu(
                   { id: pair.id, title: pair.keepTitle },
                   pair.keepId,
@@ -522,6 +549,7 @@ export function DoNextTab({
                   fixHref={builderHref(firstNodeId, reviewId)}
                   viewHref={mapHref(firstNodeId, reviewId)}
                   viewLabel={labels.viewOnMap}
+                  onLeaveRow={() => onReviewStart?.(candidate)}
                   menu={rowMenu(candidate, firstNodeId, cycleHandoff(cycle), reviewId)}
                 />
               }
@@ -534,9 +562,24 @@ export function DoNextTab({
       case "orphan":
         return queueRowsOfKind(group).map((row) => {
           const candidate = { id: row.id, title: row.title };
+          /*
+           * A count is not evidence a person can judge: the row claimed "N places reference this"
+           * and named none of them, so the reader had to open the map to see what the
+           * recommendation rested on (walkthrough, 2026-09-20). The count stays the true total and
+           * the names are the first few behind it.
+           */
+          const names = group === "promotion" ? (row.referencedBy ?? []) : [];
+          const promotionSentence = () => {
+            const total = row.degree ?? 0;
+            if (names.length === 0) return labels.whyPromotion(total);
+            const named = names.join(", ");
+            return total > names.length
+              ? labels.whyPromotionNamedMore(named, total)
+              : labels.whyPromotionNamed(named);
+          };
           const sentence =
             group === "promotion"
-              ? labels.whyPromotion(row.degree ?? 0)
+              ? promotionSentence()
               : group === "neglected-hub"
                 ? labels.whyNeglectedHub(row.degree ?? 0, row.agoDays ?? 0)
                 : labels.whyOrphan;
@@ -565,6 +608,7 @@ export function DoNextTab({
                   fixHref={builderHref(row.nodeId, row.id)}
                   viewHref={mapHref(row.nodeId, row.id)}
                   viewLabel={labels.viewOnMap}
+                  onLeaveRow={() => onReviewStart?.(candidate)}
                   menu={rowMenu(candidate, row.nodeId, row.handoffPayload, row.id)}
                 />
               }
@@ -658,6 +702,7 @@ export function DoNextTab({
                 defaultOpen={index === 0}
                 forceOpen={reviewGroup === group.key}
                 rows={rowsOfGroup}
+                onShowAllRows={onShowAllRows}
                 labels={labels}
                 groupAction={groupAction?.(group.key, group.count)}
               />
@@ -687,6 +732,7 @@ function FixGroup({
   defaultOpen,
   forceOpen,
   rows,
+  onShowAllRows,
   labels,
   groupAction,
 }: {
@@ -703,16 +749,23 @@ function FixGroup({
   /** The group holding the row a person is returning to from the map opens by itself. */
   forceOpen: boolean;
   rows: (group: DoNextGroupKey) => ReactNode[];
+  onShowAllRows?: () => void;
   labels: DoNextTabLabels;
   /** The group's one whole-group action, when it has an honest one. */
   groupAction?: ReactNode;
 }) {
   const [opened, setOpened] = useState(defaultOpen);
+  /*
+   * A group's own limit. The remainder used to be a sentence with no control, naming rows a
+   * person could not reach and promising an agent that is not rendered on the web at all
+   * (design-interaction, 2026-09-20). `HiddenCountLine` is the primitive written for exactly
+   * this, and it refuses to draw a number that disagrees with `total - shown`.
+   */
+  const [showingAll, setShowingAll] = useState(false);
   const open = opened || forceOpen;
   const name = labels.groupName(groupKey);
   const body = useMemo(() => (open ? rows(groupKey) : []), [open, rows, groupKey]);
-  const shown = body.slice(0, rowLimit);
-  const hidden = Math.max(0, count - shown.length);
+  const shown = body.slice(0, showingAll ? count : rowLimit);
   const panelId = `do-next-group-panel-${groupKey}`;
 
   return (
@@ -768,14 +821,26 @@ function FixGroup({
           // Indented, so "inside this group" is carried by position and not by the chevron alone.
           <div className="flex flex-col pb-1.5 pl-5">
             {shown}
-            {hidden > 0 ? (
-              <p
-                data-testid="do-next-group-truncated"
-                className="pt-2 text-body text-[color:var(--color-text-quaternary)]"
-              >
-                {labels.moreCount(hidden)}
-              </p>
-            ) : null}
+            <HiddenCountLine
+              total={count}
+              shown={shown.length}
+              label={(remaining) => labels.moreCount(remaining)}
+              route={
+                <button
+                  type="button"
+                  data-testid="do-next-group-show-all"
+                  onClick={() => {
+                    setShowingAll(true);
+                    onShowAllRows?.();
+                  }}
+                  className={controlClass({ shape: "link", className: "text-[color:var(--color-indigo-text-strong)]" })}
+                >
+                  {labels.showAll}
+                </button>
+              }
+              className="pt-2"
+              data-testid="do-next-group-truncated"
+            />
           </div>
         ) : null}
       </div>

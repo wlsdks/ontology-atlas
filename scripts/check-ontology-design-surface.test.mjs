@@ -91,6 +91,9 @@ function writeCleanWorkbenchFixtures(root) {
     "src/views/ontology-insights/lib/insights-tab-state.ts",
     [
       "export const INSIGHTS_TABS = [",
+      '  "brief",',
+      '  "library",',
+      '  "harness",',
       '  "do-next",',
       '  "unmatched",',
       '  "composition",',
@@ -107,7 +110,8 @@ function writeCleanWorkbenchFixtures(root) {
     [
       '<main data-insights-surface="maintenance-board" data-insights-question-model="one-tab-one-question">',
       "<TabBar",
-      'role="tabpanel"',
+      'role: "tabpanel"',
+      "data-insights-panel={tab}",
       '{tab === "flow" ? (',
       "<FlowTab",
       'request={flowRequest}',
@@ -223,7 +227,7 @@ function writeCleanWorkbenchFixtures(root) {
     root,
     "AGENTS.md",
     [
-      "Product design gate",
+      "gate after the PO pass",
       "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
       "/design-build",
       "pnpm design:route",
@@ -369,6 +373,9 @@ test("ontology design surface reports missing workbench structure markers", () =
     [
       [
         "missing marker: export const INSIGHTS_TABS = [",
+        '  "brief",',
+        '  "library",',
+        '  "harness",',
         '  "do-next",',
         '  "unmatched",',
         '  "composition",',
@@ -381,7 +388,8 @@ test("ontology design surface reports missing workbench structure markers", () =
       'missing marker: data-insights-surface="maintenance-board"',
       'missing marker: data-insights-question-model="one-tab-one-question"',
       "missing marker: TabBar",
-      'missing marker: role="tabpanel"',
+      'missing marker: role: "tabpanel"',
+      "missing marker: data-insights-panel={tab}",
       'missing marker: {tab === "flow" ? (',
       "missing marker: <FlowTab",
       'missing marker: request={flowRequest}',
@@ -402,6 +410,9 @@ test("ontology design surface rejects a metrics-only board that omits Flow", () 
     "src/views/ontology-insights/lib/insights-tab-state.ts",
     [
       "export const INSIGHTS_TABS = [",
+      '  "brief",',
+      '  "library",',
+      '  "harness",',
       '  "do-next",',
       '  "unmatched",',
       '  "composition",',
@@ -434,7 +445,8 @@ test("ontology design surface rejects a named Flow tab whose handoff no longer w
     [
       '<main data-insights-surface="maintenance-board" data-insights-question-model="one-tab-one-question">',
       "<TabBar",
-      'role="tabpanel"',
+      'role: "tabpanel"',
+      "data-insights-panel={tab}",
       '{tab === "flow" ? <FlowTab /> : null}',
       "<InsightsHandoffRow",
     ].join("\n"),

@@ -71,6 +71,12 @@ vi.mock('next-intl', () => ({
   useLocale: () => 'en',
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
     values ? `${key}:${JSON.stringify(values)}` : key,
+  // The permission card reads a write guard's epoch through the locale's own date format. A mock
+  // missing this throws inside the card, so every case that renders one fails on a blank body
+  // rather than on what it was asserting.
+  useFormatter: () => ({
+    dateTime: (value: Date) => value.toISOString(),
+  }),
 }));
 
 import {
@@ -353,6 +359,48 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     // Several chunks still make one bubble — a single sentence arrives split up.
     await waitFor(() => expect(screen.getByText('네, 볼게요.')).toBeInTheDocument());
     expect(screen.getAllByText(/네, 볼게요\./)).toHaveLength(1);
+  });
+
+  /*
+   * Measured at the dock's documented floor (2026-09-20): the answer column is 260px and
+   * `pnpm atlas compile --page wiki/architecture.md --force --locale ko` lays out at 456px, so
+   * 196px — 43% of the command — sat behind `overflow-x: auto` and a 2px scrollbar with no copy
+   * control anywhere. The one actionable line in the answer could be neither read nor taken.
+   */
+  it('답에 실린 명령은 통째로 가져갈 수 있다 — 잘려 보이더라도', async () => {
+    const written: string[] = [];
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: (text: string) => { written.push(text); return Promise.resolve(); } },
+    });
+    await bootSession();
+    const command = 'pnpm atlas compile --page wiki/architecture.md --force --locale ko';
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: { sessionUpdate: 'agent_message_chunk', content: { text: `Run it:\n\n\`\`\`bash\n${command}\n\`\`\`` } },
+      },
+    });
+
+    const chip = await screen.findByTestId('acp-chat-code-copy');
+    fireEvent.click(chip);
+    // What is copied is the command as drawn, not the markdown fence around it.
+    await waitFor(() => expect(written).toEqual([`${command}\n`]));
+    await waitFor(() => expect(chip.textContent).toBe('codeCopied'));
+  });
+
+  it('표에는 복사 칩이 붙지 않는다 — 명령이 아니라 읽을 것이라서', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: { sessionUpdate: 'agent_message_chunk', content: { text: '| 항목 | 값 |\n| --- | --- |\n| 소스 | 없음 |' } },
+      },
+    });
+    await screen.findByTestId('acp-chat-markdown-table');
+    expect(screen.queryByTestId('acp-chat-code-copy')).toBeNull();
   });
 
   it('에이전트의 GFM 표를 좁은 패널에서도 구획과 가로 스크롤이 있는 표로 그린다', async () => {
@@ -1117,11 +1165,17 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 292, {
       slug: 'capabilities/refund', expected_mtime: 100, body: 'Refund only after capture.',
     }));
-    expect(await screen.findByTestId('acp-permission-allow')).toBeInTheDocument();
+    // Re-query rather than holding the first node: the panel re-renders as the replacement
+    // request settles, and under a loaded parallel run that node is detached by the time the
+    // matcher reads it (the same flake as the deferred-request test above).
+    await waitFor(() => expect(screen.getByTestId('acp-permission-allow')).toBeInTheDocument());
     expect(answerFor(292)).toBeUndefined();
     expect(answerFor(291)).toEqual({ outcome: 'selected', optionId: 'reject' });
-    fireEvent.click(screen.getByTestId('task-review-depth-details'));
-    expect(screen.getByTestId('acp-ontology-change-review')).toHaveTextContent('Refund only after capture.');
+    // The review card's own controls arrive with the card, not with the permission buttons.
+    fireEvent.click(await screen.findByTestId('task-review-depth-details'));
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-ontology-change-review')).toHaveTextContent('Refund only after capture.'),
+    );
     expect(screen.queryByTestId('task-review-meaning-accept')).not.toBeInTheDocument();
   });
 
@@ -1180,7 +1234,13 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     emit(mcpPermissionRequest('mcp__atlas-vault__patch_concept', 194, {
       slug: 'capabilities/refund', expected_mtime: 100, body: 'Replacement',
     }));
-    expect(await screen.findByTestId('acp-permission-allow')).toBeInTheDocument();
+    /*
+     * Re-query on every poll rather than holding the node `findBy` first resolved: the panel
+     * re-renders as the replacement request settles, and under a loaded parallel run the
+     * first node is detached by the time the matcher reads it — the assertion then failed on
+     * a live card (measured on this branch's pre-push, 2026-09-19, 364ms into the test).
+     */
+    await waitFor(() => expect(screen.getByTestId('acp-permission-allow')).toBeInTheDocument());
     expect(screen.queryByTestId('acp-permission-deferred')).not.toBeInTheDocument();
     expect(answerFor(194)).toBeUndefined();
   });
@@ -1193,6 +1253,43 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
    * the card scrolls **only its reading matter**, and the decision row sits after that scroller
    * rather than inside it. Rendered geometry is the installed app's job.
    */
+  /**
+   * ⚠️ **A turn blocked on this card is not thinking.** Measured in the rendered panel, both
+   * catalogues: with the card on screen the footer read 「Thinking」 and its clock kept counting,
+   * beside a Stop button, while the agent had produced nothing since it asked and could produce
+   * nothing until the person answered. The panel was reporting its own wait as the agent's work.
+   * The session's own state is untouched — `data-acp-status` is still `thinking` — and only the
+   * word a person reads changes.
+   */
+  it('말로는 기다린다고 하고, 세션 상태는 그대로 둔다', async () => {
+    await bootSession();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '관계를 정리해줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+
+    const panel = screen.getByTestId('acp-chat-panel');
+    const badge = document.querySelector('[data-acp-status-badge]') as HTMLElement;
+    expect(badge.getAttribute('data-acp-status-badge')).toBe('thinking');
+
+    emit(
+      mcpPermissionRequest('mcp__atlas-vault__add_relation', 98, {
+        from: 'capabilities/a',
+        to: 'domains/b',
+        type: 'relates',
+        why: '같은 흐름이라서',
+      }),
+    );
+    await screen.findByTestId('acp-permission-card');
+
+    await waitFor(() => {
+      expect(
+        (document.querySelector('[data-acp-status-badge]') as HTMLElement).getAttribute('data-acp-status-badge'),
+      ).toBe('awaiting');
+    });
+    expect(document.querySelector('[data-acp-status-badge]')!.textContent).toContain('status.awaiting');
+    // The protocol state is what it was; only the sentence changed.
+    expect(panel.getAttribute('data-acp-status')).toBe('thinking');
+  });
+
   it('권한 카드가 길어져도 답할 두 버튼은 스크롤 밖에 남는다', async () => {
     await bootSession();
     fireEvent.change(screen.getByRole('textbox'), { target: { value: '관계를 정리해줘' } });
@@ -1522,6 +1619,28 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await waitFor(() => expect(answerFor(92)).toEqual({ outcome: 'selected', optionId: 'allow' }));
     expect(screen.queryByTestId('acp-notice-open-page')).toBeNull();
     expect(screen.queryByTestId('acp-notice-ask-next')).toBeNull();
+  });
+
+  /*
+   * The refusal sibling of the receipt above, and it had no arm on the panel's chain (2026-09-20).
+   * `use-rounds-runner` answers `autoDecide` with `{ reject }` on every write outside a round's
+   * scope, and the notice fell through to `notice.gateOff` — a sentence saying Atlas *cannot* ask
+   * before a file outside the folder is touched. The opposite of what happened: it had decided,
+   * and refused. There was no `notice.autoRefused` string either.
+   */
+  it('자동 거절은 거절했다고 말하고, 무엇을 막았는지 이름을 댄다', async () => {
+    await bootSession({ autoDecide: () => ({ reject: 'wiki/out-of-scope.md' }) });
+    emit(permissionRequest('/vault/wiki/out-of-scope.md', 93, 'edit'));
+
+    await waitFor(() => expect(document.querySelector('[data-acp-entry="notice"]')).not.toBeNull());
+    const notice = document.querySelector('[data-acp-entry="notice"]')!;
+    // The card never stood: the screen had already decided.
+    expect(screen.queryByTestId('acp-permission-card')).toBeNull();
+    // It names what it blocked…
+    expect(notice.textContent).toContain('wiki/out-of-scope.md');
+    // …and it is not the unrelated sentence about the folder gate being off.
+    expect(notice.textContent).not.toContain('notice.gateOff');
+    expect(notice.textContent).toContain('notice.autoRefused');
   });
 
   it('볼트 밖이면 카드를 띄우고, 답하기 전에는 아무 답도 보내지 않는다', async () => {
@@ -2262,6 +2381,7 @@ describe('대화 패널 — 오류는 사람의 말로 말하고 다음 할 일�
       ).toBeGreaterThan(before),
     );
   });
+
 });
 
 describe('첫 내려받기 — 「켜는 중」만으로는 부족하다 (2026-08-19)', () => {
@@ -3787,5 +3907,34 @@ describe('대화 패널 — 앉힌 요청은 읽을 문장만 서고, 붙은 지
     await bootSession({ prefillRequest: { text: plain, nonce: 1 } });
     expect(screen.getByRole('textbox')).toHaveValue(plain);
     expect(screen.queryByTestId('acp-chat-seated-detail')).toBeNull();
+  });
+
+  /*
+   * Measured on the Insights dock (2026-09-20): the screen had written the question and folded
+   * three instruction lines under it, and the empty transcript — 470px of panel above that box —
+   * still read "Ask anything about this folder." The biggest region on screen invited a blank
+   * start while the start was already written.
+   */
+  it('앉힌 요청이 기다리면 빈 대화는 백지에서 시작하라고 하지 않는다', async () => {
+    await seat();
+    const empty = screen.getByTestId('acp-chat-empty');
+    // This harness echoes message keys, so the key is the fact to check, not the sentence.
+    expect(empty.getAttribute('data-acp-empty')).toBe('seated');
+    expect(empty.textContent).toBe('emptySeatedHint');
+  });
+
+  it('상자를 비우면 정말로 백지이므로 원래 문장이 돌아온다', async () => {
+    await seat();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } });
+    const empty = screen.getByTestId('acp-chat-empty');
+    expect(empty.getAttribute('data-acp-empty')).toBe('open');
+    expect(empty.textContent).toBe('emptyHint');
+  });
+
+  it('아무것도 앉히지 않은 독은 열린 초대를 그대로 쓴다', async () => {
+    await bootSession({});
+    const empty = screen.getByTestId('acp-chat-empty');
+    expect(empty.getAttribute('data-acp-empty')).toBe('open');
+    expect(empty.textContent).toBe('emptyHint');
   });
 });

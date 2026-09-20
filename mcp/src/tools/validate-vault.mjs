@@ -22,6 +22,8 @@ import {
   validateVaultDocument,
 } from '../validate.mjs';
 import { loadVaultDocs } from '../vault.mjs';
+import { collectPathLastChanges } from '../git-tools.mjs';
+import { evidenceConceptsFromDocs, resolveEvidenceStates } from '../evidence-drift.mjs';
 import {
   WIKI_DIR,
   isWikiFurnitureSlug,
@@ -204,6 +206,7 @@ function validateVaultTool({ repoRoot } = {}) {
       problems,
       summary: { problemFiles: problems.length, errorFiles, warningFiles, byCode },
       summaryFreshness: buildSummaryFreshness(docs),
+      evidenceDrift: buildEvidenceDrift(docs, null, VAULT_ROOT),
       pathDrift: {
         repoRoot: driftRoot,
         checked: false,
@@ -247,6 +250,7 @@ function validateVaultTool({ repoRoot } = {}) {
       byCode,
     },
     summaryFreshness: buildSummaryFreshness(docs),
+    evidenceDrift: buildEvidenceDrift(docs, driftRoot, VAULT_ROOT),
     pathDrift: {
       repoRoot: drift.repoRoot,
       checked: true,
@@ -260,6 +264,72 @@ function validateVaultTool({ repoRoot } = {}) {
             ? `all ${drift.pathsChecked} frontmatter source path(s) exist under repoRoot (no code drift).`
             : 'no frontmatter path:/elements: source paths to check.',
     },
+  };
+}
+
+const EVIDENCE_ROW_LIMIT = 50;
+const ZERO_EVIDENCE_COUNTS = Object.freeze({ current: 0, stale: 0, missing: 0, unknown: 0, folderOnly: 0 });
+
+/**
+ * Does the meaning still stand on the code it cites? One Git walk dates every cited
+ * `path:` and every concept document; `resolveEvidenceStates` says per concept whether the
+ * code moved after the meaning was last touched. `checked: false` names why nothing was
+ * measured — it never means nothing moved.
+ */
+function buildEvidenceDrift(docs, repoRoot, vaultRoot) {
+  const concepts = evidenceConceptsFromDocs(docs);
+  const repoPaths = [...new Set(concepts.flatMap((concept) => concept.evidencePaths))];
+  const vaultPaths = concepts.map((concept) => concept.docPath);
+  const unmeasured = (reason, hint) => ({
+    checked: false,
+    reason,
+    counts: { ...ZERO_EVIDENCE_COUNTS },
+    stale: [],
+    missing: [],
+    folderOnly: [],
+    hint,
+  });
+  if (!repoRoot) {
+    return unmeasured('no-repo-root', 'Evidence was NOT dated: no repository root. Pass repoRoot to validate_vault.');
+  }
+  if (repoPaths.length === 0) {
+    return unmeasured('no-evidence-paths', 'No concept cites an implementation path, so there is nothing to date against Git.');
+  }
+  let walk = null;
+  try {
+    walk = collectPathLastChanges({ repoRoot, vaultRoot, repoPaths, vaultPaths });
+  } catch {
+    walk = null;
+  }
+  if (!walk?.ok) {
+    return unmeasured(
+      walk?.reason ?? 'git-unavailable',
+      'Evidence was NOT dated: the vault is not inside a Git repository this process can read, so no concept is called current here.',
+    );
+  }
+  const states = resolveEvidenceStates(concepts, walk.changes);
+  const folderOnly = states.unknown.filter((row) => row.reason === 'folder-only').length;
+  const counts = {
+    current: states.current.length,
+    stale: states.stale.length,
+    missing: states.missing.length,
+    unknown: states.unknown.length,
+    folderOnly,
+  };
+  const hint =
+    counts.stale + counts.missing > 0
+      ? `${counts.stale} concept(s) have a cited file that changed after their document was last touched and ${counts.missing} cite a path that is gone: read those files before trusting the recorded meaning, then update the document (patch_concept) or the path. ${counts.folderOnly} more cite only a folder that changed underneath (unknown, not stale): name a file in path: to make them checkable.`
+      : counts.current > 0
+        ? `all ${counts.current} dated concept(s) still stand on unchanged code; ${counts.unknown} could not be dated (no evidence path, or no commit in the walk window).`
+        : `no concept could be dated (${counts.unknown} unknown): commits may be missing or older than the walk window.`;
+  return {
+    checked: true,
+    repoRoot: walk.repoRoot,
+    counts,
+    stale: states.stale.slice(0, EVIDENCE_ROW_LIMIT),
+    missing: states.missing.slice(0, EVIDENCE_ROW_LIMIT),
+    folderOnly: states.unknown.filter((row) => row.reason === 'folder-only').slice(0, EVIDENCE_ROW_LIMIT).map((row) => ({ slug: row.slug, kind: row.kind, docChangedAt: row.docChangedAt ?? null, folders: row.folders ?? [] })),
+    hint,
   };
 }
 

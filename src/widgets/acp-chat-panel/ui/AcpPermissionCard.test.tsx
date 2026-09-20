@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
 import koMessages from '../../../../messages/ko.json';
+import enMessages from '../../../../messages/en.json';
 import { AcpPermissionCard } from './AcpPermissionCard';
 import type { TaskMeaningReviewController } from '../model/use-task-meaning-review';
 
@@ -261,14 +262,47 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     expect(document.activeElement).not.toBe(screen.getByTestId('acp-permission-allow'));
   });
 
-  it('비교는 신뢰할 이전 값이 없다고 하고 제안값은 그대로 보인다', () => {
+  /*
+   * Measured on the rendered tab (2026-09-20): with no comparison basis it stated the same fact
+   * five times — the standing sentence, the reason, and `Before · unavailable` once per meaning
+   * unit. Three copies of an unchanging line pushed apart the three proposed values a person came
+   * here to read, and the tab overflowed by 54px because of them.
+   */
+  it('비교할 이전 값이 없다는 말은 한 번만 하고, 제안값 사이에 끼어들지 않는다', () => {
     const { view } = taskCard();
     render(view);
     fireEvent.click(screen.getByTestId('task-review-depth-compare'));
     const compare = screen.getByTestId('task-review-compare');
-    expect(compare).toHaveTextContent(koMessages.acpChat.permission.taskReview.beforeUnavailable);
+    const taskReview = koMessages.acpChat.permission.taskReview;
+
+    // Said once, at the top, as the promise it is.
+    expect(compare).toHaveTextContent(taskReview.beforeUnavailable);
+    expect(compare.textContent!.split(taskReview.beforeUnavailable).length - 1).toBe(1);
+    // Never again beside each unit.
+    expect(compare).not.toHaveTextContent(taskReview.beforeUnknown);
+
+    // Every proposed value is still here, and still marked as proposed rather than current.
     expect(compare).toHaveTextContent('Refund only after capture.');
-    expect(compare).toHaveTextContent(koMessages.acpChat.permission.taskReview.beforeUnknown);
+    expect(compare.textContent!.split(taskReview.after).length - 1).toBeGreaterThan(1);
+  });
+
+  it('서 있는 문장은 원인을 대지 않는다 — 원인은 아는 쪽이 말한다', () => {
+    /*
+     * The standing sentence used to assert a missing historical snapshot while the reason list,
+     * rendered right under it, said the request shape is not comparable. Two causes for one
+     * absence, and only the specific one was true. The sentence now carries the half that always
+     * holds — values are not invented — and leaves the cause to `taskReview.reason.*`.
+     *
+     * ⚠️ That the reason line is drawn is not checked here: this card's fixture reports no
+     * `unavailable` reasons, so the list is empty in jsdom. It is in the rendered evidence
+     * (`unsupported_request`, compare tab, 2026-09-20).
+     */
+    for (const locale of [koMessages, enMessages]) {
+      const sentence = locale.acpChat.permission.taskReview.beforeUnavailable;
+      for (const cause of ['스냅샷', 'snapshot']) {
+        expect(sentence, 'the standing sentence names a cause it cannot know').not.toContain(cause);
+      }
+    }
   });
 
   it('상세에서 전체 요청과 쓰기 조건·숫자 요청 id를 보존한다', () => {
@@ -283,12 +317,53 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     expect(details).toHaveTextContent('expected_mtime');
   });
 
-  it('네 권한은 모두 unknown이고 이번만 허용은 의미 승인으로 바꾸지 않는다', () => {
+  /*
+   * Measured in the rendered Details tab (2026-09-20), on the row reporting the write guard:
+   * `expected_mtime  1727000000000`. That number is the write condition — the file is written only
+   * if it has not changed since that moment — and thirteen digits answer nothing a person came
+   * here to ask.
+   */
+  it('쓰기 조건의 시각은 사람이 읽을 수 있게 나오고, 정확한 값은 그대로 남는다', () => {
+    const { view } = taskCard();
+    render(view);
+    fireEvent.click(screen.getByTestId('task-review-depth-details'));
+    const details = screen.getByTestId('task-review-details');
+    fireEvent.click(within(details).getByText(koMessages.acpChat.permission.taskReview.provenance));
+
+    const row = within(details).getByText('expected_mtime').nextElementSibling!;
+    // The epoch is no longer what a person reads…
+    expect(row.textContent).not.toBe('100');
+    // …it is a time, and it is the same instant the request named.
+    expect(row.textContent).toContain('1970');
+    // …and the exact millisecond is still reachable for an agent or a terminal reader.
+    expect(row.getAttribute('title')).toBe('100');
+  });
+
+  /*
+   * Measured on the rendered card (2026-09-20): this grid drew four label/value pairs and the
+   * value column held exactly one distinct value across all four — "unknown" — because `code`,
+   * `merge` and `deployment` were written as the literal `'unknown'` key and could never say
+   * anything else. Four facts drawn, one carried. The claim they stood in for is a sentence on
+   * the same card, and it is the stronger one: allowing does not grant those things, which is not
+   * the same as their state being unavailable.
+   */
+  it('상태가 움직이는 줄만 그리고, 나머지 셋은 문장이 계속 이름을 부른다', () => {
     const { view, resolve } = taskCard();
     render(view);
-    for (const authority of ['meaning', 'code', 'merge', 'deployment']) {
-      expect(screen.getByTestId(`task-review-authority-${authority}`)).toHaveTextContent('알 수 없음');
+    expect(screen.getByTestId('task-review-authority-meaning')).toHaveTextContent('알 수 없음');
+    for (const authority of ['code', 'merge', 'deployment']) {
+      expect(
+        screen.queryByTestId(`task-review-authority-${authority}`),
+        `${authority} 줄은 늘 「알 수 없음」만 말할 수 있어 그려지지 않는다`,
+      ).toBeNull();
     }
+    // Nothing was lost: the standing sentence still names all four and says what Allow does not do.
+    const card = screen.getByTestId('acp-permission-card');
+    expect(card).toHaveTextContent(koMessages.acpChat.permission.taskReview.allowScope);
+    for (const word of ['의미', '코드 검증', '병합', '배포']) {
+      expect(card.textContent, `${word}를 이제 아무 데서도 말하지 않는다`).toContain(word);
+    }
+
     fireEvent.click(screen.getByTestId('acp-permission-allow'));
     expect(resolve).toHaveBeenCalledWith('allow');
     expect(screen.queryByText(/승인됨|검증됨|배포됨/)).not.toBeInTheDocument();
@@ -379,8 +454,8 @@ describe('작업에 묶인 의미 검토 — 실행 권한과 의미 판단을 �
     fireEvent.click(screen.getByTestId('task-review-defer'));
     expect(onDefer).toHaveBeenCalledTimes(1);
     expect(resolve).not.toHaveBeenCalled();
-    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('자동으로 보내지 않습니다');
-    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('저장되지 않습니다');
+    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('대신 보내지도');
+    expect(screen.getByText(koMessages.acpChat.permission.taskReview.interventionHint)).toHaveTextContent('저장되지 않아요');
   });
 });
 
@@ -668,7 +743,17 @@ describe('온톨로지 쓰기 — 여덟 문장을 사람이 읽는 카드', () 
 });
 
 describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => {
-  function cardWithVerdict(verdict: { ok: boolean; problems: Array<{ code: string; message: string; line?: number }> } | null) {
+  function cardWithVerdict(
+    verdict: {
+      ok: boolean;
+      problems: Array<{
+        code: string;
+        message: string;
+        line?: number;
+        detail?: { key: string; values?: Record<string, string> };
+      }>;
+    } | null,
+  ) {
     return (
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <AcpPermissionCard
@@ -704,7 +789,7 @@ describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => 
     render(cardWithVerdict({ ok: true, problems: [] }));
     const block = screen.getByTestId('acp-permission-page-verdict');
     expect(block.getAttribute('data-ok')).toBe('true');
-    expect(block.textContent).toContain('문서 모양이 맞습니다');
+    expect(block.textContent).toContain('문서 모양이 맞아요');
     expect(screen.getByTestId('acp-permission-allow')).toBeTruthy();
     expect(screen.getByTestId('acp-permission-reject')).toBeTruthy();
   });
@@ -727,5 +812,42 @@ describe('권한 카드 — 쓰기 전에 문서 판정을 보여준다', () => 
     expect(block.textContent).toContain('citation-target-missing');
     // The gate is the person: Allow is still offered.
     expect(screen.getByTestId('acp-permission-allow')).toBeTruthy();
+  });
+
+  /** One missing frontmatter field, as the validator hands it over. */
+  const missing = (field: string) => ({
+    code: `missing-field:${field}`,
+    message: `\`${field}:\` is missing. The page name a person reads.`,
+    detail: { key: 'missing-field', values: { field } },
+  });
+
+  it('says every listed finding in the reader\'s language, not only the first', () => {
+    /*
+     * Measured on the rendered card (2026-09-20): four rows, one English sentence on the
+     * first, three bare machine codes under it. The sentences existed the whole time under
+     * `library.wiki.problem.*`; the card was printing the validator's copy for machines.
+     */
+    render(cardWithVerdict({ ok: false, problems: [missing('title'), missing('created_by')] }));
+    const block = screen.getByTestId('acp-permission-page-verdict');
+    expect(block.textContent).toContain('파일 맨 위 정보칸에 title 줄이 없어요.');
+    expect(block.textContent).toContain('파일 맨 위 정보칸에 created_by 줄이 없어요.');
+    // The validator's English copy is for machines and does not reach a Korean screen.
+    expect(block.textContent).not.toContain('is missing. The page name a person reads.');
+  });
+
+  it('counts what it did not list, so the header is never larger than the list', () => {
+    const problems = ['title', 'created_by', 'compiled_at', 'sources', 'summary', 'kind'].map(missing);
+    render(cardWithVerdict({ ok: false, problems }));
+    const block = screen.getByTestId('acp-permission-page-verdict');
+    expect(block.textContent).toContain('6건');
+    // Four are listed; the two it withheld are stated rather than dropped.
+    expect(block.textContent).toContain('파일 맨 위 정보칸에 sources 줄이 없어요.');
+    expect(block.textContent).not.toContain('파일 맨 위 정보칸에 summary 줄이 없어요.');
+    expect(block.textContent).toContain('그 밖에 2건');
+  });
+
+  it('says nothing about a rest that does not exist', () => {
+    render(cardWithVerdict({ ok: false, problems: [missing('title')] }));
+    expect(screen.getByTestId('acp-permission-page-verdict').textContent).not.toContain('그 밖에');
   });
 });

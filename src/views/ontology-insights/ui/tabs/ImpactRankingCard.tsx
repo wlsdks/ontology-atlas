@@ -136,7 +136,13 @@ export function ImpactRankingCard({
         </span>
         <Link
           href="/topology/"
-          className={controlClass({ shape: "link", tone: "secondary", className: "ml-auto underline decoration-[color:var(--color-border-soft)] underline-offset-4 hover:text-[color:var(--color-text-primary)]" })}
+          /*
+           * A standalone action in a wrapping row, not an inline prose link, so the 2.5.5 inline
+           * exception does not cover it: measured 82x24 under a coarse pointer at 390 *and* at
+           * 1040 (design-responsive, 2026-09-20). `atlas-touch-floor` lands only under coarse,
+           * and `ml-auto` in a flex-wrap row means growing it pushes nothing.
+           */
+          className={controlClass({ shape: "link", tone: "secondary", className: "atlas-touch-floor ml-auto underline decoration-[color:var(--color-border-soft)] underline-offset-4 hover:text-[color:var(--color-text-primary)]" })}
         >
           {labels.structureLink}
         </Link>

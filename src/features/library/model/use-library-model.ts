@@ -9,7 +9,8 @@ import {
   type VaultSourceFile,
 } from "@/entities/docs-vault";
 import { nativeVaultFileHashes } from "@/shared/lib/tauri-vault-fs";
-import { isRetainedAnswerPath, parseWikiLog, retainedAnswerHeads, type RetainedAnswerHead, type WikiLogEntry } from "@/features/library";
+import { isRetainedAnswerPath, retainedAnswerHeads, type RetainedAnswerHead } from "../lib/answer-revision";
+import { parseWikiLog, type WikiLogEntry } from "../lib/wiki-log";
 import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/wiki-page-schema";
 import { aggregateWikiFindings, type WikiReport } from "@/shared/lib/wiki-report.mjs";
 import { mergeWikiVerdict } from "./merge-wiki-verdict";

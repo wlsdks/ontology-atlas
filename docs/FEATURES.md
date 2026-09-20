@@ -1,7 +1,7 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-09-17 (added Library Rounds: unattended hourly consistency checks and one-turn service passes under a standing scope approved once, with a since-you-left card and a time-axis ledger. Earlier (2026-09-15) added saved constellations as durable task scope across Galaxy, Library, MCP, and CLI. Earlier kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser; on 2026-08-31 documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
+> Last updated: 2026-09-19 (the analysis opens on a brief across the ontology, the wiki, the harness and agent activity, measured from the reader's last visit, with the app dating cited code against each concept in one Git walk. Earlier (2026-09-17) added Library Rounds: unattended hourly consistency checks and one-turn service passes under a standing scope approved once, with a since-you-left card and a time-axis ledger. Earlier (2026-09-15) added saved constellations as durable task scope across Galaxy, Library, MCP, and CLI. Earlier kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser; on 2026-08-31 documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
 > source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments,
 > and project meaning receipts — `/ontology` is a compatibility redirect to
 > `/topology?index=expanded`, `/ontology/edit` and
@@ -1893,20 +1893,57 @@ surface chrome.
 
 ---
 
-### `/ontology/insights` — Insights (6-tab maintenance board)
+### `/ontology/insights` — Analysis (a brief, then one subject at a time)
 
-The first five tabs derive their numbers from the data source the page already used
+**Two levels, two kinds of control** (2026-09-19). The first row names the subject the screen
+is about — Brief (all of them) · Concepts · Wiki · Guidance — and wears a `SegmentedControl`,
+because a subject is a mode. The ontology's own questions sit under it in a `TabBar`, because
+they are sections of one subject, and that second row exists only for Concepts: Wiki, Guidance
+and the Brief are single views. Two identical tab rows stacked on one screen is a named
+anti-pattern (Nielsen Norman, "Tabs, Used Right") and it was the first thing a reader tripped
+on. The subjects are also named so they never repeat the rail's destinations (Map, Library,
+Harness): no product researched disambiguates the same label by depth alone.
+
+The ontology's numbers derive from the data source the page already used
 (`useOntologyInsight`, `entities/knowledge-graph/lib/ontology-tree`) — no separate persona or
-store layer. Flow is intentionally prose rather than another metric: it gives the
-agent one visible, reviewable request grounded in the same ontology. **One tab answers one question**: the old `Structure` tab stacked three
-different questions and grew to 2.2× the 14-inch viewport, so it was split into
-Composition / Connection / Boundary. Scroll contract: every tab stays ≤ 1.3× viewport.
+store layer. **One tab answers one question**: the old `Structure` tab stacked three different
+questions and grew to 2.2× the 14-inch viewport, so it was split into Inventory / Relations /
+Domain boundaries. Scroll contract: every tab stays ≤ 1.3× viewport.
 
-#### Census strip (always visible, 2026-09-06)
+#### Tab 0 — Brief (default, 2026-09-19)
+- **What in your understanding has to change**, across the three cores and agent activity, measured from the reader's last visit to this vault (browser storage, never the folder; the last seven days on a first visit; "Seen up to here" moves the anchor and the sentence changes in the same frame). Four equal-height cards: ontology, wiki, harness, agent activity. Each opens with its magnitude (concepts · pages · guide files · calls since), then three words — current / stale / unknown for ontology and wiki, told / gated / watched for the harness, reads / writes / agents for activity — then lines: one count per sentence, a mark by state, and **Open** to the screen that lists what the line counts (the to-do or growth tab, `/library`, `/architecture?view=coverage`, `/agents`). No list is copied here.
+- Below the cards, one bounded list names what changed since the anchor — concept documents, wiki log entries, guide files, agent calls — newest first, with the rest counted.
+- The heading states two sums of named lines — things to learn (stale) and things not checked (unknown) — never one score. Lines the builders rank: code moved under a concept, cited code gone, agent-written and unreviewed, names not held; pages whose source changed, disagreements the last check found, sources not written up, orphan pages, dangling links, pages written or rewritten since; areas no guide reaches / no rule gates / no check watches, mirror drift, guide files changed since; calls, writes, agents since. `lib/brief/*` are pure builders with tests; `use-insights-brief.ts` feeds them from the readers the Library, Harness and Agents screens already use.
+- **Honest about where it stands.** A browser cannot read the code beside a vault or its dot folders, so ontology evidence and harness coverage read "measured in the app" **there only**; inside the app the same cards say they are reading the folder, or that they could not read it, rather than offering the app to someone already in it. One bounded Git walk (`git_paths_last_change`, mirrored for agents by `collectPathLastChanges`) dates every cited `path:` and every concept document. `mcp/src/evidence-verdict.mjs` owns the single verdict and its priority — a cited path that is gone outranks a file that moved, a moved file outranks anything undated, and a moved folder is never stale because a folder changes on almost any commit — and `tests/contract/evidence-drift-parity.contract.test.ts` runs one fixture through the screen's resolver and the server's. That walk also supplies each concept document's own date: a checkout stamps every file with the moment it landed, so the file date alone reported all 106 concepts as changed this week in a fresh worktree. Measured on this repository's vault in the installed app: 106 concepts, 36 current, 21 stale, 49 unknown (all folder-only).
+- **A line hands its work on.** The drift line offers one request naming the same concepts, files and dates it shows, capped at five with the remainder stated; it asks for a judgement and a proposed sentence and never for a vault write, seats itself in the tab's own ACP conversation without sending, and is copyable where no agent can be launched. The agent card leads with what a person decided rather than what ran: writes allowed and unfinished, writes that failed, then calls, writes and refusals. A core with nothing to count says what would fill it and opens that screen. Decisions: `docs/records/decisions/2026-09-19-analysis-brief-across-three-cores-*.md` and `2026-09-19-drift-line-names-its-evidence-*.md`.
+- The census strip below does not draw on this tab: its numbers are the cards' magnitudes. The
+  ontology card counts what that strip counts — every node but the vault readme, through the
+  shared `isCanonicalConcept` — because both are labelled with the same word and sat one click
+  apart reading 124 and 125 (2026-09-20).
+- **A destination on this same board answers in place.** Half of these lines open another question
+  here, and the board keeps its tab in component state, so a plain link changed the address and
+  left the reader on the brief: the landing's only "go fix it" action did nothing. They stay real
+  links, for the address, a modified click and assistive technology, and the plain click is
+  answered by the same call the controls use (`DestinationLink`, `parseInsightsTabHref`). Starting
+  a review keeps `?tab=` too, so leaving for a source document and coming back returns to the
+  question rather than to the brief.
+- "Seen up to here" says so: the confirmation sits beside the button in a live region, because
+  moving the anchor changes one 12px line on a screen where every other number may legitimately
+  stay the same. The button stays enabled, since pressing it again re-anchors to now.
+
+#### Census strip (the Concepts subject only, 2026-09-06)
 - Four equal-height tiles above the tab bar (`InsightsCensusStrip`): concepts (kind chips and the share held by a domain), relations (top types, the hidden remainder named, density), health (the verdict in words, blocking and advisory counts, orphans · islands · cycles), and the last 12 weeks (hairline bars from `weeklyTotals`, a quiet week drawn as a baseline tick). It replaced the corner census line, the audience banner, the Composition hero and the Freshness aggregate trend, which all counted the same folder. Decision: `docs/DECISIONS.md` 2026-09-06.
 #### Header
 - Title + subtitle
-- `TabBar` — Do next (default) / Composition Inventory / Connection Connections / Boundary Boundaries / Freshness / Flow. Tab state in `?tab=`; the first four badges count what their tabs are about (verdict total / nodes / edges / cross-domain relations). Freshness and Flow leave the badge slot empty because neither has an honest single count. Legacy `?tab=structure|overview` → Composition, `?tab=relations` → Connection, so bookmarks and agent return-chip links stay alive.
+- `SegmentedControl` — Brief (default) · Concepts · Wiki · Guidance. `TabBar` under it, for Concepts only — To fix / Missing concepts / Inventory / Relations / Domain boundaries / Accumulation / Product flow. Tab state stays in `?tab=`; the default omits it, so `/ontology/insights/` is the brief, the to-do list is `?tab=do-next` and the two single-view subjects are `?tab=library` and `?tab=harness`. Choosing Concepts lands on its first question rather than an empty shelf. The first four question badges count what their tabs are about (verdict total / nodes / edges / cross-domain relations); Accumulation and Product flow leave the slot empty because neither has an honest single count. Legacy `?tab=structure|overview` → Inventory, `?tab=relations` → Relations, `?tab=freshness` → Accumulation, so bookmarks and agent return-chip links stay alive. The census strip and the ontology handoff row draw on the Concepts subject only: four ontology numbers above a screen about the wiki is the confusion the first row exists to end.
+
+#### Wiki (single view)
+- The same model the Library screen renders from (`useLibraryModel`, the rounds ledger), read for the questions a person arrives at Analysis with: pages whose cited source changed underneath, sources nobody has written up, what the format check flagged (blocking kinds first, advisory after, each naming its pages), and what the unattended passes did. Every row opens `/library` to act; nothing is written here and no list is a second copy of a store.
+- With no wiki and no sources it still says what the panel answers and opens the Library.
+
+#### Guidance (single view)
+- The coverage table's own rows: per vault domain, how many declarations tell, gate and watch it, with a zero drawn as a dash a reader can count rather than a score, plus the mirror findings where the two agent trees disagree. Rows open `/architecture?view=coverage` and `?view=guides`.
+- Its four honest states are distinct: a browser cannot read dot folders (offers the app), the scan is still reading, the scan failed, or this vault is not bound to a code repository — the last one is what a fresh ontology folder actually hits, and saying "get the app" there, inside the app, was the defect that sent this panel back. Where it cannot measure it still explains what telling, gating and watching mean.
 
 #### Tab 1 — Do next
 - **One row per finding group** (2026-09-06, `lib/do-next-groups.ts`): name · count · disclosure, five rows per opened group with its own "N more"; the first group starts open so the most urgent files are named without a click. Group counts are the verdict's own signal counts re-keyed and `tests/contract/do-next-group-sum.contract.test.ts` pins their sum to the title count. The badge is the single verdict model (`insights-verdict`) shared with the body. The picks band and the readiness gauge are gone.
@@ -1917,27 +1954,28 @@ Composition / Connection / Boundary. Scroll contract: every tab stays ≤ 1.3× 
 - **Similar names — are they the same?** (duplicate suspects) — concept pairs whose names/slug/kind/domain/neighbours overlap heavily, top 3 with the shared words as evidence, the overlap percent, a map deeplink to the node worth keeping, and a per-pair `merge_concepts` dry-run handoff. The score is a mirror of the MCP engine's `similar_nodes`, locked by `tests/contract/duplicate-pairs.contract.test.ts`, so screen and agent never name a different pair. Only nodes that own a vault document are considered (a node born from another doc's `elements:` ref has no file to merge). **0 suspects renders no section** — an empty "no duplicates" card is ink without a decision.
 - Queue sections show 3 rows each plus their total; the rest is the agent handoff's job (scroll contract).
 
-#### Tab 2 — Configuration Inventory
+#### Tab 2 — Inventory
 - **Kind census** card — kind → glyph + bar + count, tallest bar highlighted
 - **Domain capacity** card — domain → bar (capability/element sub-counts), hidden when there are no domains
 
-#### Tab 3 — Connections
+#### Tab 3 — Relations
 - **Relation breakdown** — every edge type as a bar row with a `OntologyMapTraceMark` (solid=containment, dashed=depends/relates) + count + percent of total; empty vault gets a "connect them on the map" hint
 - **Hubs** — top nodes by degree: kind glyph + title + relative bar + degree, map deeplink per row, "top N / M total" folded into the single footnote line
 
-#### Tab 4 — Boundaries
+#### Tab 4 — Domain boundaries
 - **Domain coupling** — a domain×domain **heat grid** (rows send, columns receive; the diagonal is inside-one-domain connections in neutral). Cell shade is a 4-step indigo alpha ladder and every non-zero cell keeps its number, so the card never speaks in colour alone. Picking a cell opens that pair's relation-type counts and real example edges (map deeplinks) in a slot that is reserved whether or not anything is selected. Top 6 domains by cross activity; beyond that the footnote says "top N of M domains" and how many cross links fall outside the grid. Same `computeDomainCouplingMatrix` output as MCP `domain_matrix` — no new calculation.
 - **Boundary pressure** — per-domain inside vs cross ratio; a high cross share signals a leaking boundary
 - Cold start (fewer than 2 domains or no cross edges) shows one explicit empty state **with a next step** (map editor link) instead of a misleading table
 
-#### Tab 5 — Growth (formerly Freshness; `?tab=freshness` still lands here)
+#### Tab 5 — Accumulation (formerly Growth, and Freshness before that; `?tab=growth|freshness` still land here)
 - **What the folder holds, and how it got there** (2026-09-09, `VaultHistorySection`) — the tab opens with the folder's present: four layers (concepts, architecture, wiki pages, raw sources) each drawn as a bounded pile of blocks that assembles itself row by row over a fixed 600ms, whatever the folder's size. **The pile is a fixed size and the block carries a stated quantity** — the largest layer fills 36 blocks and every other layer is drawn against the same block, so a folder of forty and a folder of forty thousand produce the same picture and only the sentence under it ("one block = N files") changes. Magnitude is the numeral under each pile; the pile carries accumulation and proportion. A layer at a true zero keeps a dashed rule, so "none" and "not counted" never look alike. The present needs neither Git nor timestamps, so it draws everywhere.
 - **Week by week, where Git can say so** — on the installed app the same four layers also draw as weekly tracks, replayed backwards from the folder's own Git history (`git log --name-status`, 1500-commit window) and held only while the screen is open; nothing is stored, and a rules version is stamped so an old picture is never redrawn by new counting rules. Never a stacked area and never a blended total: on this repository concepts fell 107 → 71 while documents rose, the comparison a moving baseline destroys. Under the chart, in words, the two facts a forty-pixel column cannot state: the week a layer began and the week it grew most. Four states — a browser has no Git bridge, a folder may have no commits, a read can fail, and each says which rather than drawing zeroes. Reduced motion draws both figures finished on the first frame with no schedule. Decisions: `docs/DECISIONS.md` 2026-09-09.
 - **Domain freshness heatstrip** — one row per domain, a week-by-week heat strip (neutral ramp, current week in indigo) built from real vault `updatedAt` values (`FRESHNESS_WINDOW_WEEKS`); domains with no dated docs are excluded from the stale count rather than counted as stale ("unknown" ≠ "old"); stale domains get a dashed "stale" tag
 - **Recent updates** — most recently touched nodes with kind glyph, domain, and ISO date; footer shows total stale-domain count
 
-#### Tab 6 — Flow
+#### Tab 6 — Product flow
 - Answers “what is this product and how does it move?” with an agent-written narrative rather than an invented graph score.
+- **The writing is the body, and it is kept.** Every completed analysis turn is already recorded beside the vault (`.ontology-atlas/analyses/`), so the tab reads those back as versions: the latest explanation in full, when it was written and by which runtime, whether the folder has moved since (`compareAnalysisBasis`), and — against the previous writing — which scenes were added, removed or rewritten, compared by heading rather than by word so a rewrite is never read as a change of meaning. The request that produces it folds away behind a summary instead of being the page, and a folder with no writing yet says what would fill it. `lib/flow-history.ts` owns both selections and is tested.
 - Analysis owns one ACP dock outside the keyed tab panel. Every tab can explicitly seat its own read-only question in that one conversation; merely switching tabs never sends, replaces a draft, changes the request origin, or starts another session. Replacing a non-empty draft requires a second explicit action.
 - Shows the exact Flow request before handoff. In the installed app, **Explain the flow with ACP** opens that Analysis-owned dock and prefills the composer without sending; the person still owns Send and stays on Analysis.
 - In the browser or built-in sample, where no local agent process can be launched, the same request remains visible and copyable instead of presenting a dead control.
@@ -3015,6 +3053,55 @@ against the same vault, and it pulled every element for the word "element" becau
 compared the whole `kind:slug`. All three now call `findNameMatch` and `idSearchText`
 in `shared/lib/node-name-match`, which is the single contract; the palette's ranking
 stays its own, because only it ranks. `nameIncludes` retired with its last caller.
+
+**INDEX marks where the query landed** (2026-09-19). The panel's own search field
+filtered 125 concepts down to two and marked nothing in either, on an 11px label,
+while the palette on the same screen had been marking its rows for months — the
+filter said which rows survived, nothing said where. Both index panels now hand their
+trimmed query to `TopologyIndexTreeRow`, which draws the name through
+`HighlightedText`, so a chosung query marks there too (`shared/lib/highlight-match`
+already reads a Hangul keyboard). Measured on the map panel's own surface: the mark's
+ink clears **8.59:1** against its composited background. Rows kept only as the path to
+a match stay unmarked, which is what they are; telling a match apart from the path it
+sits on is a separate open question.
+
+**The palette says how many it found, not how many fitted** (2026-09-19). Each group
+draws at most 20 rows, and both the group heading and the footer counted the drawn
+array — so the limit stood in for the answer. The footer is the one place that names
+the scope it searched ("N matches · Online Store"), which makes its number read as a
+fact about that folder. Measured on the bundled sample: typing `the` showed "match ·
+20" and "21 matches" where 120 actually matched, and one common Hangul initial showed
+20 where 52 did. The
+matchers now return the page **and** the size of what was found, the heading uses the
+"shown / found" shape the empty state already used ("20 / 119"), and the footer
+carries the real total. Below the limit nothing changes — a query with 11 matches
+still reads "11".
+
+**Enter belongs to whichever control has focus** (2026-09-19). cmdk's root listens
+for Enter across the whole palette and turns it into "open the highlighted row",
+`preventDefault` included, so it also swallowed Enter pressed on a control. Measured
+live: tabbing to a kind filter chip and pressing Enter left the chip
+`aria-pressed="false"` and instead closed the palette and flew the map to whichever
+concept happened to be highlighted; the close button did the same, navigating instead
+of closing. Space was unaffected, so the two keys disagreed about what the focused
+control does. Enter now stops at the control's own row in the bubble phase — the
+button still receives it — leaving cmdk's root only the Enter that comes from the
+search field, which is the one place "open the highlighted row" is what a person
+means.
+
+**The reason survives a phone** (2026-09-19). The reason column was `md:`-only, so
+below that breakpoint the class that hid it took the whole answer with it — measured
+at 390x844 on the bundled sample: `policy` showed 4 rows with **0** marks, `order` and
+`shopper` 20 rows with 0, while the desktop layout explained every one of them. A
+reason that **carries a mark** now drops to a line of its own under the name there
+(rows grow 44 → 58px, and only those rows do); a reason with no mark is the summary
+standing in as context, and giving that a second line would double every phone row to
+repeat something the row is not there for, so it stays a `md`-and-up column. From `md`
+up nothing moved: one fixed-width column, one text start line. The same pass fixed the
+project chip's scroller, a hardcoded `height: 24` around a chip that the touch floor
+makes 44px tall — `overflow-x: auto` clips the other axis too, so the finger got 24.
+The box now reads `--control-h-sm`, and the gate for it asks the document what is at
+the chip's top and bottom edge, because a clipped control still measures full size.
 
 ### `ShortcutSheet` (`?` to open)
 - 10 sections grouped: navigation · topology · search palette · hub rail · workspace palette · workspace graph · workspace files · workspace actions · tour · portfolio

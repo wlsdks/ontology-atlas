@@ -21,6 +21,14 @@ export { judgePageWrite, wikiPagePathOf } from "./lib/judge-page-write";
 export { appendWikiLog, describeCompileTurn, describeLintTurn, parseWikiLog } from "./lib/wiki-log";
 export type { WikiLogEntry } from "./lib/wiki-log";
 export type { PageWriteRequest, PageWriteVerdict } from "./lib/judge-page-write";
+export { describeWikiProblem, groupWikiProblems, wikiProblemMachineLine } from "./lib/describe-wiki-problem";
+export type {
+  WikiProblemContext,
+  WikiProblemTarget,
+  WikiProblemWhere,
+  WikiProblemWords,
+  WikiTemplateProblem,
+} from "./lib/describe-wiki-problem";
 export { FindDocumentsDialog } from "./ui/FindDocumentsDialog";
 export { buildAskBrief } from "./lib/ask-brief";
 export type { AskQuestionId } from "./lib/ask-brief";
@@ -50,3 +58,11 @@ export type {
   LibraryWorkEvent,
   LibraryWorkTarget,
 } from "./model/library-work-activity";
+export { useLibraryModel } from "./model/use-library-model";
+export type { LibraryUiModel } from "./model/use-library-model";
+export {
+  isAdvisoryWikiCode,
+  isWikiFolderCode,
+  libraryDanglingLinkCount,
+  libraryOffTemplateCount,
+} from "./model/merge-wiki-verdict";

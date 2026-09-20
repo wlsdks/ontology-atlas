@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSwapHeight } from "@/shared/lib/use-presence";
@@ -45,11 +45,15 @@ import { MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-sea
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { Button, EmptyState, TabBar, useToast } from "@/shared/ui";
+import { SegmentedControl } from "@/shared/ui/segmented-control";
 import {
   DEFAULT_INSIGHTS_TAB,
-  INSIGHTS_TABS,
+  INSIGHTS_CORES,
+  ONTOLOGY_TABS,
   buildInsightsTabHref,
+  coreOfTab,
   parseInsightsTab,
+  tabOfCore,
   type InsightsTab,
 } from "../lib/insights-tab-state";
 import { buildUnmatchedBoard } from "../lib/unmatched-board";
@@ -95,6 +99,10 @@ import {
   type InsightsCensusStripLabels,
 } from "./parts/InsightsCensusStrip";
 import { DoNextTab } from "./tabs/DoNextTab";
+import { BriefTab } from "./tabs/BriefTab";
+import { LibraryTab } from "./tabs/LibraryTab";
+import { HarnessTab } from "./tabs/HarnessTab";
+import { useInsightsBrief } from "../lib/brief/use-insights-brief";
 import { buildDoNextGroupCounts, type DoNextGroupKey } from "../lib/do-next-groups";
 import {
   buildContainmentPlan,
@@ -121,9 +129,12 @@ import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import {
   presentationRelationKeysForGraphEdge,
   analysisGraphFromInsight,
+  currentAnalysisBasis,
   type AnalysisCaptureContext,
 } from "@/features/acp-session";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
+import { readAnalysisHistory, type AnalysisBasis, type AnalysisRecord } from "@/entities/analysis-record";
+import { selectFlowVersions } from "../lib/flow-history";
 import { InsightsAgentDock } from "./parts/InsightsAgentDock";
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -188,6 +199,18 @@ const DUPLICATE_DISCLOSURE_LIMIT = 24;
  * group can show before its own remainder line takes over.
  */
 const DO_NEXT_PER_KIND_LIMIT = 5;
+
+/**
+ * What a group's own "show all" raises that limit to.
+ *
+ * ⚠️ **The rows have to exist before a control can reveal them.** The remainder line used to be a
+ * sentence with no control, naming rows a person could not reach; a button inside the group could
+ * not have produced them either, because the queue itself is built five per kind and the sixth row
+ * was never made (measured 2026-09-20). Raising the supply is what makes the control honest. It is
+ * a bound rather than "all": the group head keeps stating the true count, and the remainder line
+ * still appears for anything past this.
+ */
+const DO_NEXT_SHOW_ALL_LIMIT = 50;
 /**
  * The validation codes that have a plain sentence of their own. An unlisted code falls back to
  * `blockedReason.other`, so a blocked row always says something rather than nothing.
@@ -224,6 +247,12 @@ const RECENT_UPDATES_EVIDENCE_LIMIT = 3;
  * operating instructions (bug sweep 2026-09-01).
  */
 const HANDOFF_PAYLOAD_KEY: Record<InsightsTab, keyof InsightsHandoffProse> = {
+  // The brief draws no handoff row (see the row's condition); the key only satisfies the record.
+  // The brief, the library and the harness seat their own requests or none at all; these keys
+  // are the fallback for the generic tab handoff row, which those three do not draw.
+  brief: "tabDoNext",
+  library: "tabDoNext",
+  harness: "tabDoNext",
   "do-next": "tabDoNext",
   unmatched: "tabUnmatched",
   composition: "tabComposition",
@@ -258,6 +287,11 @@ const INSIGHTS_TAB_BADGE: Record<
   InsightsTab,
   (input: InsightsBadgeInput) => string | number | undefined
 > = {
+  // The brief is sentences across three cores; no single count is its scale. The library and
+  // the harness carry their own counts inside their panels.
+  brief: () => undefined,
+  library: () => undefined,
+  harness: () => undefined,
   "do-next": (i) => i.verdictTotal,
   unmatched: (i) => i.unmatchedTotal,
   composition: (i) => i.totalNodes,
@@ -297,6 +331,9 @@ export function OntologyInsightsPage() {
     parseInsightsTab(searchParams.get("tab")),
   );
   const { hostRef: insightsSwapHostRef, capture: captureInsightsHeight } = useSwapHeight(tab);
+  const insightsPanelRef = useRef<HTMLDivElement>(null);
+  /** Set only by a brief destination, so the question row's roving focus is never disturbed. */
+  const focusPanelAfterSwitch = useRef(false);
   const [reviewId, setReviewId] = useState<string | null>(() =>
     parseInsightsTab(searchParams.get("tab")) === "do-next"
       ? searchParams.get("review")
@@ -508,6 +545,46 @@ export function OntologyInsightsPage() {
     t,
     toast,
   ]);
+  /*
+   * **The product's explanation is kept, not thrown away.** Every completed analysis turn is
+   * already recorded beside the vault; the flow tab reads those back as versions so a person
+   * sees what an agent wrote, when, and what changed since — rather than the request that
+   * produced it (owner, 2026-09-19).
+   */
+  const [flowArchive, setFlowArchive] = useState<{
+    handle: FileSystemDirectoryHandle | null;
+    records: readonly AnalysisRecord[];
+    basis: AnalysisBasis | null;
+  }>({ handle: null, records: [], basis: null });
+  const flowHandle = tab === "flow" ? analysisContext.handle : null;
+  useEffect(() => {
+    if (!flowHandle) return;
+    let cancelled = false;
+    const load = () => {
+      void Promise.all([
+        readAnalysisHistory(flowHandle, { limit: 20 }).catch(() => null),
+        currentAnalysisBasis(analysisContext, []).catch(() => null),
+      ]).then(([page, basis]) => {
+        // An unreadable archive is no versions, never a wrong one.
+        if (!cancelled) setFlowArchive({ handle: flowHandle, records: page?.records ?? [], basis });
+      });
+    };
+    load();
+    window.addEventListener("atlas-analysis-records-changed", load);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("atlas-analysis-records-changed", load);
+    };
+  }, [flowHandle, analysisContext]);
+  // A folder that closed or changed never keeps the previous folder's versions on screen.
+  const flowVersions = useMemo(
+    () =>
+      flowArchive.handle && flowArchive.handle === flowHandle
+        ? selectFlowVersions(flowArchive.records, analysisContext, flowArchive.basis)
+        : [],
+    [flowArchive, flowHandle, analysisContext],
+  );
+
   const agentContextLabel = agentPrefill
     ? t('agentContext', { tab: t(`tab.${agentPrefill.kind}`) })
     : '';
@@ -540,9 +617,14 @@ export function OntologyInsightsPage() {
    * the single verdict.
    */
   const vaultValidation = useVaultValidationSummary();
+
+  /** Raised once, by a group asking for its whole list. Kinds share one supply, so all groups gain. */
+  const [doNextShowAllRows, setDoNextShowAllRows] = useState(false);
+  const doNextPerKindLimit = doNextShowAllRows ? DO_NEXT_SHOW_ALL_LIMIT : DO_NEXT_PER_KIND_LIMIT;
+
   const blockedDocuments = useMemo(
-    () => buildBlockedDocumentRows(vaultValidation, DO_NEXT_PER_KIND_LIMIT),
-    [vaultValidation],
+    () => buildBlockedDocumentRows(vaultValidation, doNextPerKindLimit),
+    [vaultValidation, doNextPerKindLimit],
   );
   const blockedDocumentCount = useMemo(
     () => countBlockedDocuments(vaultValidation),
@@ -704,10 +786,10 @@ export function OntologyInsightsPage() {
   const doNextQueue = useMemo(
     () =>
       buildDoNextQueue(nodes, edges, docFreshnessIndex, {
-        perKindLimit: DO_NEXT_PER_KIND_LIMIT,
+        perKindLimit: doNextPerKindLimit,
         prose: handoffProse,
       }),
-    [nodes, edges, docFreshnessIndex, handoffProse],
+    [nodes, edges, docFreshnessIndex, handoffProse, doNextPerKindLimit],
   );
 
   // What this session can actually do right now — the only input to the "mine first"
@@ -736,10 +818,10 @@ export function OntologyInsightsPage() {
   const meaningGapResult = useMemo(
     () =>
       buildMeaningGapRows(nodes, conceptFacts, {
-        perKindLimit: DO_NEXT_PER_KIND_LIMIT,
+        perKindLimit: doNextPerKindLimit,
         prose: handoffProse,
       }),
-    [nodes, conceptFacts, handoffProse],
+    [nodes, conceptFacts, handoffProse, doNextPerKindLimit],
   );
   const domainChoices = useMemo(() => buildDomainChoices(nodes), [nodes]);
 
@@ -850,7 +932,9 @@ export function OntologyInsightsPage() {
     );
   };
 
-  const setTab = (next: string) => {
+  // Wrapped because a brief destination now composes on top of it; an identity that changed every
+  // render would rebuild that callback, and the panel-focus effect keyed off it, on every render.
+  const setTab = useCallback((next: string) => {
     // Only the query view of the same document changes. A Next router navigation moves
     // focus to the document root in the WebView, so the URL state is updated through
     // native history integration instead. Screen state and URL are aligned in the same
@@ -865,7 +949,23 @@ export function OntologyInsightsPage() {
       "",
       buildInsightsTabHref(nextTab, window.location.pathname),
     );
-  };
+  }, [captureInsightsHeight]);
+
+  /**
+   * Open another question from a brief line, and take focus with you.
+   *
+   * The panel is re-keyed on every switch, so this runs after the new one has mounted.
+   */
+  const openTabFromBrief = useCallback((next: InsightsTab) => {
+    focusPanelAfterSwitch.current = true;
+    setTab(next);
+  }, [setTab]);
+
+  useLayoutEffect(() => {
+    if (!focusPanelAfterSwitch.current) return;
+    focusPanelAfterSwitch.current = false;
+    insightsPanelRef.current?.focus();
+  }, [tab]);
 
   const activeReviewIds = useMemo(
     () =>
@@ -912,7 +1012,13 @@ export function OntologyInsightsPage() {
     (candidate: { id: string; title: string }) => {
       setReviewId(candidate.id);
       const next = new URL(window.location.href);
-      next.searchParams.delete("tab");
+      /*
+       * ⚠️ **Keep the tab.** This used to delete `tab`, which was right while the to-do question
+       * was the default and an absent `tab` meant this very screen. The board now opens on the
+       * brief, so deleting it made the address say "the brief" while a review was open on the
+       * to-do question: a reload or a shared link landed somewhere the reader had not been
+       * (walkthrough, 2026-09-20).
+       */
       next.searchParams.set("review", candidate.id);
       window.history.replaceState(
         window.history.state,
@@ -964,6 +1070,24 @@ export function OntologyInsightsPage() {
     () => buildInsightsVerdict(insightsSignalCounts),
     [insightsSignalCounts],
   );
+  const briefNodes = useMemo(
+    () =>
+      (insight?.nodes ?? []).map((node) => ({
+        id: node.id,
+        kind: node.kind,
+        title: node.title,
+        createdBy: node.createdBy ?? null,
+        docSlug: node.evidenceIds[0] ?? null,
+      })),
+    [insight],
+  );
+  const brief = useInsightsBrief({
+    nodes: briefNodes,
+    repairCount: insightsVerdict.total,
+    unmatchedCount: unmatchedBoard.totalCount,
+    // The library and harness panels read the same model, so the work runs for those tabs too.
+    enabled: tab === "brief" || tab === "library" || tab === "harness",
+  });
   /**
    * The scale of each finding group — the **same** `InsightsSignalCounts` the verdict is built
    * from, re-keyed. One argument means the ten group counts and the one title count cannot drift
@@ -1086,6 +1210,7 @@ export function OntologyInsightsPage() {
   const doNextLabels = {
     listTitle: (count: number) => t("doNext.listTitle", { count }),
     moreCount: (count: number) => t("doNext.moreCount", { count }),
+    showAll: t("doNext.showAll"),
     // One name per finding group. The sentence the rows inside repeat is said once, here.
     groupName: (group: DoNextGroupKey) => t(`doNext.group.${group}`),
     groupToggle: (name: string, count: number) =>
@@ -1099,6 +1224,9 @@ export function OntologyInsightsPage() {
       t("doNext.touchUpWhyNeglectedHub", { degree, days: agoDays }),
     whyOrphan: t("doNext.whyOrphan"),
     whyPromotion: (count: number) => t("doNext.touchUpWhyPromotion", { count }),
+    whyPromotionNamed: (names: string) => t("doNext.whyPromotionNamed", { names }),
+    whyPromotionNamedMore: (names: string, count: number) =>
+      t("doNext.whyPromotionNamedMore", { names, count }),
     whyCycle: (length: number) => t("doNext.touchUpWhyCycle", { length }),
     whyDuplicate: (percent: number) => t("doNext.whyDuplicate", { percent }),
     whyMissingDefinition: t("doNext.whyMissingDefinition"),
@@ -1281,42 +1409,73 @@ export function OntologyInsightsPage() {
           </div>
         </header>
         {/*
-         * **The census strip leads the board** (owner, 2026-09-06: "isn't analysis supposed to
-         * show indicators and flow?"). It sits above the tab bar because it answers the question
-         * a person arrives with — how big is this folder and is it in trouble — before they pick
-         * which of the seven questions to open. The audience banner that used to stand here
-         * ("this board is for the people and agents who tend the map") went with it: a sentence
-         * announcing who a screen is for is not a measurement, and the strip now occupies the one
-         * band a reader looks at first.
-         */}
-        {insight && hasConcepts ? (
-          <div className="mt-4">
-            <InsightsCensusStrip
-              totalNodes={totalNodes}
-              totalEdges={totalEdges}
-              health={health}
-              islandCount={healthRepair.islandCount}
-              verdict={insightsVerdict}
-              weeklyTotals={freshness.weeklyTotals}
-              kindsSummary={kindRows.map((row) => ({
-                key: row.kind,
-                label: kindLabel(row.kind),
-                count: row.count,
-              }))}
-              relationsSummary={edgeTypeSummary}
-              relationsTotal={edgeTypeRows.length}
-              onSeeAllRelations={() => setTab("connections")}
-              labels={censusStripLabels}
-            />
+          * **Two rows, because one could not say what it was about.** The first names the thing —
+          * the brief across all of them, the ontology, the library, the harness — and the second
+          * carries the ontology's own questions. A reader looking at "relations" could not tell
+          * which of the three it counted (owner, 2026-09-19).
+          */}
+        {/*
+          * **Two rows, two kinds of control.** The subject is a mode, so it wears a segmented
+          * control; the questions inside a subject are sections, so they wear tabs. Stacking two
+          * identical tab rows is a named anti-pattern — the active state becomes ambiguous and
+          * spatial memory goes (Nielsen Norman, "Tabs, Used Right"), which is what a reader hit
+          * here (owner, 2026-09-19). The question row exists only for the concepts subject; the
+          * other three are single views and draw no second row at all.
+          */}
+        <div className="mt-[var(--section-gap)] flex flex-col gap-2">
+          <div className="self-start">
+          <SegmentedControl
+            ariaLabel={t("coreAriaLabel")}
+            value={coreOfTab(tab)}
+            onChange={(key) => setTab(tabOfCore(key))}
+            options={INSIGHTS_CORES.map((key) => ({ value: key, label: t(`core.${key}`), testId: `insights-core-${key}` }))}
+            testId="insights-core-switch"
+          />
           </div>
-        ) : null}
-
-        <nav className="mt-[var(--section-gap)]">
+          {/*
+           * **The census strip sits between the two rows** (owner, 2026-09-06: "isn't analysis
+           * supposed to show indicators and flow?"). It answers the question a person arrives
+           * with — how big is this folder and is it in trouble — before they pick which of the
+           * seven questions to open, which is what that decision asked for and is still true
+           * here. The audience banner that used to stand in this band went with it: a sentence
+           * announcing who a screen is for is not a measurement.
+           *
+           * ⚠️ **It may not lead the board any more, because the board gained a first row.** The
+           * strip is drawn for the concepts subject only, so standing above the subject control
+           * it pushed that control from y=104 to y=292 the moment a reader picked concepts — the
+           * control moved out from under the pointer that had just clicked it, and the screen
+           * stated 125 and 258 before naming whose numbers they were (design audit, 2026-09-20,
+           * identical at 1512 and 1920). Below the subject row the control never moves, and the
+           * decided clause — "four equal-height census tiles above the tab bar" — is still
+           * literally true, so that decision stands rather than being overturned.
+           */}
+          {insight && hasConcepts && coreOfTab(tab) === "ontology" ? (
+            <div className="my-2">
+              <InsightsCensusStrip
+                totalNodes={totalNodes}
+                totalEdges={totalEdges}
+                health={health}
+                islandCount={healthRepair.islandCount}
+                verdict={insightsVerdict}
+                weeklyTotals={freshness.weeklyTotals}
+                kindsSummary={kindRows.map((row) => ({
+                  key: row.kind,
+                  label: kindLabel(row.kind),
+                  count: row.count,
+                }))}
+                relationsSummary={edgeTypeSummary}
+                relationsTotal={edgeTypeRows.length}
+                onSeeAllRelations={() => setTab("connections")}
+                labels={censusStripLabels}
+              />
+            </div>
+          ) : null}
+          {coreOfTab(tab) === "ontology" ? (
           <TabBar
             ariaLabel={t("tabsAriaLabel")}
             activeKey={tab}
             onSelect={setTab}
-            items={INSIGHTS_TABS.map((key) => ({
+            items={ONTOLOGY_TABS.map((key) => ({
               key,
               label: t(`tab.${key}`),
               // A badge is the scale of the question that tab answers, so each tab counts
@@ -1347,7 +1506,8 @@ export function OntologyInsightsPage() {
                 key === "growth" || key === "flow" ? undefined : t(`tabCountTitle.${key}`),
             }))}
           />
-        </nav>
+          ) : null}
+        </div>
 
         {error ? (
           <div
@@ -1389,13 +1549,65 @@ export function OntologyInsightsPage() {
           <div ref={insightsSwapHostRef} className="flex flex-1 flex-col">
           <div
             key={tab}
-            role="tabpanel"
+            ref={insightsPanelRef}
+            /*
+             * ⚠️ **`tabIndex={-1}` so a switch can land here.** Pressing a brief line's destination
+             * changes the panel in place rather than navigating, and the link it was pressed on
+             * leaves the DOM with the old panel, so focus fell to `<body>`: the reader had
+             * neither the link nor the answer, and the next Tab restarted inside the new panel by
+             * luck rather than by design (design-interaction, 2026-09-20). Focus is moved only
+             * for that path; the question row keeps its own roving focus.
+             */
+            tabIndex={-1}
+            /*
+             * The question row draws real tabs, so its panel is a `tabpanel` named by the tab that
+             * opened it. The other three subjects have no tab — the subject row is a radiogroup —
+             * and `aria-labelledby="insights-tab-brief"` pointed at an id that does not exist,
+             * which resolves to no name at all. They are named regions instead.
+             */
+            {...(coreOfTab(tab) === "ontology"
+              ? ({ role: "tabpanel", "aria-labelledby": `insights-tab-${tab}` } as const)
+              : ({ role: "region", "aria-label": t(`core.${coreOfTab(tab)}`) } as const))}
             id={`insights-tabpanel-${tab}`}
-            aria-labelledby={`insights-tab-${tab}`}
+            data-insights-panel={tab}
             className="insights-tab-crossfade mt-[var(--section-gap)] flex flex-1 flex-col"
           >
+            {tab === "library" ? <LibraryTab detail={brief.library} nowMs={brief.nowMs} /> : null}
+            {tab === "harness" ? <HarnessTab detail={brief.harnessDetail} /> : null}
+            {tab === "brief" ? (
+              <BriefTab
+                brief={brief}
+                onOpenTab={openTabFromBrief}
+                onAskAgent={
+                  agentRoute === 'agent'
+                    ? (request) => {
+                        const plan = planInsightsAgentPrompt({
+                          current: agentPrefill,
+                          draftPresent: agentDraftPresent,
+                          kind: 'brief',
+                          text: request,
+                        });
+                        if (plan.action === 'open-current') {
+                          setAgentOpen(true);
+                          return;
+                        }
+                        if (plan.action === 'seat') {
+                          commitAgentPrefill(plan.request);
+                          return;
+                        }
+                        setAgentOpen(true);
+                        toast.show(t('agentDraftHeld'), 'info', {
+                          label: t('agentReplaceDraft'),
+                          onClick: () => commitAgentPrefill(plan.request),
+                        });
+                      }
+                    : undefined
+                }
+              />
+            ) : null}
             {tab === "do-next" ? (
               <DoNextTab
+                onShowAllRows={() => setDoNextShowAllRows(true)}
                 totalCount={insightsVerdict.total}
                 queue={doNextQueue}
                 groupCounts={doNextGroupCounts}
@@ -1588,7 +1800,21 @@ export function OntologyInsightsPage() {
                   copied: t("flow.copied"),
                   noVaultTitle: t("flow.noVaultTitle"),
                   noVaultBody: t("flow.noVaultBody"),
+                  writtenAt: (values) => t("flow.writtenAt", values),
+                  standingCurrent: t("flow.standingCurrent"),
+                  standingStale: t("flow.standingStale"),
+                  standingUnknown: t("flow.standingUnknown"),
+                  ungrounded: t("flow.ungrounded"),
+                  changedTitle: t("flow.changedTitle"),
+                  changeAdded: t("flow.changeAdded"),
+                  changeRemoved: t("flow.changeRemoved"),
+                  changeRewritten: t("flow.changeRewritten"),
+                  noVersionTitle: t("flow.noVersionTitle"),
+                  noVersionBody: t("flow.noVersionBody"),
+                  rewrite: t("flow.rewrite"),
+                  versionsLabel: (count) => t("flow.versionsLabel", { count }),
                 }}
+                versions={flowVersions}
                 request={flowRequest}
                 hasGraph={totalNodes > 0}
                 hasOwnFolder={vault.status === "loaded"}
@@ -1609,7 +1835,7 @@ export function OntologyInsightsPage() {
           * at 1040×720, sits over the long Flow request. It returns when the dock closes and remains
           * the browser/copy-only path.
           */}
-        {tab === "do-next" || agentOpen ? null : (
+        {coreOfTab(tab) !== "ontology" || tab === "do-next" || agentOpen ? null : (
         <InsightsHandoffRow
           label={t("handoffLabel")}
           caption={t("handoffCaption")}

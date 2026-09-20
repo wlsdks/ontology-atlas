@@ -4,6 +4,17 @@ import { spawnSync } from 'node:child_process';
 
 import { decodePlan, FULL_LANE_COMMANDS } from './classify-change.mjs';
 
+/*
+ * ⚠️ **The measurement files never ride a shard.** Vitest shards by file, so a ratio gate's
+ * verdict otherwise depended on which other files happened to land beside it — and only one
+ * side of a cached-against-naive ratio pays for that company, because the cached side is the
+ * one holding an index when the collector runs. `node-name-match.perf.test.ts` read 6.73, 9.20
+ * and 9.20 against a bar of 10 on branches that never touched the matcher, never once near the
+ * 2.7-5.3 its defect actually produces. `vitest.config.ts` owns the reasoning; this constant is
+ * how the sweeps skip them, and `pnpm test:perf` is where they run instead.
+ */
+const MEASURED_LANES_EXCLUDED = "--project=contract-node --project=jsdom";
+
 function unique(values) {
   return [...new Set(values)];
 }
@@ -90,7 +101,9 @@ export function commandsForLane({
     const wholeGraphOnly = index === 1;
     if (unit.mode === 'full') {
       return FULL_LANE_COMMANDS.unit.flatMap((command) => {
-        if (command === 'pnpm test:run') return [sharded('pnpm exec vitest run')];
+        if (command === 'pnpm test:run') {
+          return [sharded(`pnpm exec vitest run ${MEASURED_LANES_EXCLUDED}`), ...(wholeGraphOnly ? ['pnpm test:perf'] : [])];
+        }
         return wholeGraphOnly ? [command] : [];
       });
     }
@@ -100,9 +113,12 @@ export function commandsForLane({
       if (!base) throw new Error('affected Vitest lane requires a comparison base');
       commands.push(
         sharded(
-          `pnpm exec vitest run --changed=${shellArgument(base)} --exclude='tests/contract/**' --passWithNoTests`,
+          `pnpm exec vitest run --changed=${shellArgument(base)} --exclude='tests/contract/**' ${MEASURED_LANES_EXCLUDED} --passWithNoTests`,
         ),
       );
+      // The measurement files the sweep just skipped, run by themselves on the one shard that
+      // carries whole-graph work. Sequential within this runner, so nothing competes with a ratio.
+      if (wholeGraphOnly) commands.push('pnpm test:perf');
     }
     if (unit.contract === 'full') commands.push(sharded('pnpm exec vitest run tests/contract'));
     if (unit.contract === 'focused') {

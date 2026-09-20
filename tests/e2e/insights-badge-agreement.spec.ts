@@ -36,7 +36,7 @@ test.describe("인사이트 할 일 — 탭 배지와 목록 제목이 같은 �
    * what this measures.
    */
   test("탭 배지 = 목록 제목이 말하는 규모", async ({ page }) => {
-    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => document.fonts.ready);
     await expect(page.getByTestId("do-next-list")).toBeVisible({ timeout: 20_000 });
 
@@ -46,7 +46,7 @@ test.describe("인사이트 할 일 — 탭 배지와 목록 제목이 같은 �
         const m = /(\d+)/.exec(s);
         return m ? Number(m[1]) : null;
       };
-      const tab = [...document.querySelectorAll("button")].find((b) => /^할\s*일/.test(text(b)));
+      const tab = [...document.querySelectorAll("button")].find((b) => /^고칠\s*것/.test(text(b)));
       const heading = document.querySelector('[data-testid="do-next-list-title"]');
       // Every counter that used to live on this tab. Any of them coming back means the same work
       // is being counted in a second place again.
@@ -114,7 +114,7 @@ test.describe("인사이트 할 일 — 탭 배지와 목록 제목이 같은 �
 test.describe("인사이트 인구조사 — 타일 큰 숫자와 탭 배지가 같은 폴더를 센다", () => {
   test.use({ viewport: { width: 1512, height: 900 } });
 
-  test("개념·관계 대형 숫자 = 구성·연결 탭 배지", async ({ page }) => {
+  test("개념·관계 대형 숫자 = 구성·관계 탭 배지", async ({ page }) => {
     const { seedFirstRunSeen } = await import("./first-run-seed");
     const { stubDirectoryPicker } = await import("./vault-picker-stub");
     await seedFirstRunSeen(page);
@@ -152,7 +152,7 @@ test.describe("인사이트 인구조사 — 타일 큰 숫자와 탭 배지가 
       timeout: 30_000,
     });
 
-    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    await page.goto("/ko/ontology/insights/?guides=off&tab=composition", { waitUntil: "domcontentloaded" });
     // Long enough to outlast the 400ms intro — and the sample→vault swap falls inside it.
     await page.waitForTimeout(2_000);
 
@@ -172,7 +172,7 @@ test.describe("인사이트 인구조사 — 타일 큰 숫자와 탭 배지가 
       });
       return {
         composition: badge(/^구성/),
-        connections: badge(/^연결/),
+        connections: badge(/^관계/),
         bignums,
         tiles: document.querySelectorAll('[data-testid="insights-census-tile"]').length,
       };
@@ -187,13 +187,13 @@ test.describe("인사이트 인구조사 — 타일 큰 숫자와 탭 배지가 
     // Idling guards: with no tiles or no badges, nothing was measured.
     expect(seen.tiles, "인구조사 타일이 없다 — 이 시험이 공회전한다").toBe(4);
     expect(seen.composition, "구성 배지를 못 읽었다 — 셀렉터가 낡았다").not.toBeNull();
-    expect(seen.connections, "연결 배지를 못 읽었다 — 셀렉터가 낡았다").not.toBeNull();
+    expect(seen.connections, "관계 배지를 못 읽었다 — 셀렉터가 낡았다").not.toBeNull();
     expect(seen.bignums.length, "대형 숫자를 하나도 못 찾았다").toBeGreaterThanOrEqual(2);
 
     expect(seen.bignums[0].animated, `화면의 개념 숫자가 구성 배지(${seen.composition})와 다르다`).toBe(
       seen.composition,
     );
-    expect(seen.bignums[1].animated, `화면의 관계 숫자가 연결 배지(${seen.connections})와 다르다`).toBe(
+    expect(seen.bignums[1].animated, `화면의 관계 숫자가 관계 배지(${seen.connections})와 다르다`).toBe(
       seen.connections,
     );
     expect(seen.bignums[0].exact, `접근성 개념 숫자가 구성 배지(${seen.composition})와 다르다`).toBe(

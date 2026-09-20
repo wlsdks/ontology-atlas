@@ -50,7 +50,7 @@ import { AUDITED_ROUTES } from "./audited-routes";
  * | `/ko/` | 34px | 0 | 1 (`gateway-hero-cta`) | ② renamed 2026-08-19 |
  * | `/ko/topology/` | **none** (h1 = `sr-only` 1×1) | — | 1 (`first-run-starter-open`) | ① exception |
  * | `/ko/docs/` | **none** (h1 = `sr-only` 1×1) | — | 0 | ① exception |
- * | `/ko/ontology/insights/` | 23px | 3 (`insights-bignum` ×2, `insights-verdict-word`) | 0 | ① figures |
+ * | `/ko/ontology/insights/` | 23px | 1 (`brief-headline`) | 0 | ① figures |
  * | `/ko/projects/` | 23px | 0 | 0 | the 10 capacity bars are data-marks (h≤8) |
  * | `/ko/project/storefront/` | 23px | 0 | 0 | two h1s (23·16) — an a11y matter |
  * | `/ko/project/storefront/edit/` | 30px | 0 | 1 (`project-save-top`) | fixed from 2 on 2026-08-08 |
@@ -401,11 +401,14 @@ const TITLE_EXEMPT_ROUTES = new Set(TITLE_EXEMPT.map((e) => e.route));
 const TITLE_FIGURES: ReadonlyArray<{ route: string; testids: readonly string[]; why: string }> = [
   {
     route: "/ko/ontology/insights/",
-    testids: ["insights-bignum", "insights-verdict-word"],
+    testids: ["brief-headline"],
     why:
-      "2026-09-05 (#1455) 「분석 화면은 측정치로 시작한다」 — 인구조사 숫자(40px, 서명 숫자)와 판정 낱말(23px)이 " +
-      "이 화면의 주목 승자다. h1 「분석」(23px)은 목적지 이름이고, 숫자가 그 위에 서는 것이 결정이다. " +
-      "아래 「숫자가 제목보다 크게 서 있다」가 그 숫자가 사라지거나 줄면 빨갛게 만든다",
+      "2026-09-05 (#1455) 「분석 화면은 측정치로 시작한다」는 그대로다 — 측정치가 목적지 이름(h1 23px) 위에 " +
+      "서는 것이 그 결정이다. 2026-09-20 에 무엇이 그 측정치인지가 바뀌었다: 보드가 주제를 먼저 이름 짓는 " +
+      "두 줄이 되면서 맨 주소는 브리핑으로 열리고, 그 화면의 측정치는 헤드라인 문장(30px)이다. 인구조사 " +
+      "숫자와 판정 낱말은 「개념」 주제에서만 그려지고 이 감사는 그 주소를 걷지 않으므로, 그 두 id 를 여기 " +
+      "남겨 두면 살아 있지 않은 예외가 된다(실측: 브리핑에는 insights-bignum 이 없다). " +
+      "아래 「숫자가 제목보다 크게 서 있다」가 이 문장이 사라지거나 줄면 빨갛게 만든다",
   },
 ];
 const TITLE_FIGURE_IDS = new Map(TITLE_FIGURES.map((f) => [f.route, new Set(f.testids)]));

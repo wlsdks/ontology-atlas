@@ -3,22 +3,20 @@
  * link must open the same tab, so parsing and serialization are pure functions rather than
  * component-local state.
  *
- * There are seven tabs, **one per question**: to do (the default) · unmatched · composition ·
- * connections · boundaries · growth · flow. Flow is the only one whose answer is written by an agent rather
- * than computed from the graph: its question is "what is this product and how does it move", and
- * that is prose a person reads once on first contact, not a measurement. When one tab holds several questions, a user has to scroll past two
- * screens of unrelated material to answer their own — the former `structure` tab really did stack
- * "what exists / what is central / is the boundary healthy" into one column and grew to 2.2× the
- * viewport. One question per tab also removes any room for the scroll to grow long again.
- */
-/*
- * `unmatched` is the second work question and sits deliberately beside the first: what did
- * an agent ask this folder for that it does not hold. A count of names nothing answers to
- * is repair work, not inventory, so it reads next to the repair queue rather than after
- * the measurement tabs. The literal below is pinned character for character by
- * `scripts/check-ontology-design-surface.mjs`, so nothing may be written inside it.
+ * **Two levels, because one row could not say what it was about.** The screen answers questions
+ * about three different things — the ontology, the wiki, and the harness — and a single row of
+ * names like "connections" or "boundaries" left a reader unable to tell which of the three a tab
+ * counted — the owner could not tell whether a tab meant the ontology, the library or the
+ * harness (2026-09-19).
+ * The first row now names the thing: the brief across all of them, then the ontology, the library,
+ * the harness. The ontology's own questions sit in a second row, **one question per tab**: a single
+ * tab holding several questions made a person scroll past two screens of unrelated material to
+ * answer their own, which is why the former `structure` tab was split.
  */
 export const INSIGHTS_TABS = [
+  "brief",
+  "library",
+  "harness",
   "do-next",
   "unmatched",
   "composition",
@@ -28,9 +26,65 @@ export const INSIGHTS_TABS = [
   "flow",
 ] as const;
 
+/** The first row: the thing a tab is about. `ontology` opens the question row underneath. */
+export const INSIGHTS_CORES = ["brief", "ontology", "library", "harness"] as const;
+
+export type InsightsCore = (typeof INSIGHTS_CORES)[number];
+
+/** The ontology's own questions, in reading order, for the second row. */
+export const ONTOLOGY_TABS = [
+  "do-next",
+  "unmatched",
+  "composition",
+  "connections",
+  "boundaries",
+  "growth",
+  "flow",
+] as const satisfies readonly InsightsTab[];
+
+/** Which row-one entry a tab belongs to. Every ontology question answers to `ontology`. */
+export function coreOfTab(tab: InsightsTab): InsightsCore {
+  if (tab === "brief" || tab === "library" || tab === "harness") return tab;
+  return "ontology";
+}
+
+/**
+ * The tab a row-one entry opens. Picking the ontology lands on its first question rather than on
+ * an empty shelf; the address then carries that question, so a shared link reopens it exactly.
+ */
+export function tabOfCore(core: InsightsCore): InsightsTab {
+  return core === "ontology" ? ONTOLOGY_TABS[0] : core;
+}
+
 export type InsightsTab = (typeof INSIGHTS_TABS)[number];
 
-export const DEFAULT_INSIGHTS_TAB: InsightsTab = "do-next";
+/** The path every in-screen destination on this board shares, without its locale prefix. */
+const INSIGHTS_PATH = "/ontology/insights/";
+
+/**
+ * The tab an href opens **on this same board**, or `null` when it leads somewhere else.
+ *
+ * ⚠️ **A link to this board is not a navigation.** The screen holds its tab in component state
+ * and writes the address with `history.replaceState`, because a router navigation moves focus to
+ * the document root in the WebView. A Next `<Link>` to `?tab=do-next` therefore changed the
+ * address and left the screen where it was: the brief's only "go fix it" link did nothing, and a
+ * hard reload of the same address worked, which is what made it look like a routing bug
+ * (walkthrough, 2026-09-20). Links that land here are intercepted and answered by the same
+ * `setTab` the controls use; every other href stays an ordinary navigation.
+ */
+export function parseInsightsTabHref(href: string): InsightsTab | null {
+  if (!href.startsWith(INSIGHTS_PATH)) return null;
+  const query = href.slice(INSIGHTS_PATH.length);
+  if (!query.startsWith("?")) return query === "" ? DEFAULT_INSIGHTS_TAB : null;
+  return parseInsightsTab(new URLSearchParams(query.slice(1)).get("tab"));
+}
+
+/*
+ * The brief opens first (2026-09-19). A person who delegated work and came back asks "what in
+ * my understanding has to change", and that is one screen across the ontology, the wiki and the
+ * harness; the six measured tabs and Flow keep answering their own questions behind it.
+ */
+export const DEFAULT_INSIGHTS_TAB: InsightsTab = "brief";
 
 function isInsightsTab(value: string): value is InsightsTab {
   return (INSIGHTS_TABS as readonly string[]).includes(value);

@@ -943,7 +943,7 @@
     "redirectFilesProof": "마크다운 파일은 로컬에 유지",
     "redirectGraphProof": "파일 맨 위 정보칸이 곧 지도",
     "redirectAgentProof": "에이전트가 이 폴더 밖을 건드리기 전에 먼저 물어봐요",
-    "lostVaultMissing": "전에 연결했던 폴더 「{name}」을(를) 찾지 못했어요. 이동했거나 지워진 것 같아요. 다시 선택하면 이어서 쓸 수 있어요.",
+    "lostVaultMissing": "전에 연결했던 폴더 「{name}」, 찾지 못했어요. 이동했거나 지워진 것 같아요. 다시 선택하면 이어서 쓸 수 있어요.",
     "lostVaultUnreadable": "전에 연결했던 폴더를 다시 열지 못했어요. 폴더를 다시 고르거나, 샘플로 계속 둘러봐도 돼요.",
     "lostVaultAction": "폴더 다시 고르기",
     "lostVaultDismiss": "알림 닫기"
@@ -1655,19 +1655,121 @@
       "subtitleSample": "지금 열어 둔 샘플 전체를 한눈에 봐요. 모든 숫자는 그 샘플의 문서에서 자동으로 계산돼요.",
       "tabsAriaLabel": "분석 탭",
       "tab": {
-        "do-next": "할 일",
-        "unmatched": "없는 이름",
+        "brief": "브리핑",
+        "library": "자료실",
+        "harness": "하네스",
+        "do-next": "고칠 것",
+        "unmatched": "빠진 개념",
         "composition": "구성",
-        "connections": "연결",
-        "boundaries": "경계",
-        "growth": "성장",
+        "connections": "관계",
+        "boundaries": "도메인 경계",
+        "growth": "축적",
         "freshness": "최근 변화",
         "structure": "구조",
-        "flow": "흐름"
+        "flow": "제품 흐름"
+      },
+      "brief": {
+        "sinceSeen": "{days, plural, =0 {오늘 본 뒤로} one {# 일 전 본 뒤로} other {# 일 전 본 뒤로}}",
+        "sinceDefault": "최근 7일 기준",
+        "sinceGloss": "점수는 없어요. 줄마다 무엇을 세는지 이름으로 펴 보거나, 그것이 사는 곳으로 갈 수 있어요.",
+        "headline": "새로 알아야 할 것 {stale}개 · 확인 못 한 것 {unknown}개",
+        "unit": {
+          "ontology": "",
+          "wiki": "페이지",
+          "harness": "파일",
+          "agent": "호출"
+        },
+        "sinceTitle": "그 뒤로 바뀐 것 {count, number}건",
+        "sinceHidden": "{count, number}건 더 있어요.",
+        "sinceHiddenRoute": "기록에서 전부 보기",
+        "since": {
+          "concept-doc": "개념 문서",
+          "wiki-log": "위키",
+          "guide-file": "지침 파일",
+          "agent-call": "에이전트"
+        },
+        "detailMoved": "{moved}에 바뀜 · 문서는 {doc}",
+        "detailDocUnknown": "기록 없음",
+        "detailGone": "파일이 없어요",
+        "detailHidden": "{count, number}개 더",
+        "notMeasured": "아직 못 쟀어요",
+        "askAgent": "에이전트에게 맡기기",
+        "copyRequest": "요청 복사",
+        "copiedRequest": "복사했어요",
+        "getApp": "앱 받기",
+        "empty": {
+          "ontology": "이 폴더엔 아직 개념이 없어요.",
+          "wiki": "이 폴더엔 아직 위키 페이지가 없어요. 원문을 정리하면 여기서 세요.",
+          "harness": "이 폴더엔 에이전트 지침 파일이 없어요.",
+          "agent": "아직 에이전트가 한 일이 없어요. 연결하면 무엇을 읽고 썼는지 여기 남아요."
+        },
+        "emptyAction": {
+          "ontology": "지도 열기",
+          "wiki": "자료실 열기",
+          "harness": "하네스 열기",
+          "agent": "에이전트 연결"
+        },
+        "reading": "지금 폴더를 읽고 있어요.",
+        "unreadable": "이 폴더의 지침 파일을 읽지 못했어요. 폴더를 다시 열면 다시 시도해요.",
+        "noSource": "이 폴더는 아직 코드 저장소와 연결돼 있지 않아요. 연결하면 지침과 검사가 어디를 덮는지 여기서 세요.",
+        "markSeen": "여기까지 봤음",
+        "markSeenDone": "여기까지 봤다고 표시했어요. 지금부터 다시 셉니다.",
+        "core": {
+          "ontology": "개념",
+          "wiki": "위키",
+          "harness": "지침",
+          "agent": "에이전트"
+        },
+        "col": {
+          "current": "현재",
+          "stale": "낡음",
+          "unknown": "모름",
+          "told": "알려줌",
+          "gated": "막음",
+          "watched": "지켜봄",
+          "reads": "읽기",
+          "writes": "쓰기",
+          "agents": "에이전트"
+        },
+        "appOnly": "앱에서만 잴 수 있어요. 브라우저는 폴더 옆의 코드와 숨김 폴더를 읽지 못해요.",
+        "noData": "아직 잴 것이 없어요.",
+        "quiet": "그 뒤로 새로 알아야 할 것이 없어요.",
+        "open": "열기",
+        "line": {
+          "ontology-evidence-moved": "의미는 그대로인데 밑의 코드 파일이 움직인 개념 {count}개",
+          "ontology-evidence-missing": "근거로 적은 코드 파일이 사라진 개념 {count}개",
+          "ontology-evidence-folder-only": "폴더 단위 근거만 있어 무엇이 움직였는지 모르는 개념 {count}개",
+          "ontology-evidence-unchecked": "코드가 움직였는지 확인 못 한 개념 {count}개",
+          "ontology-agent-unreviewed": "에이전트가 쓰고 사람이 아직 안 본 개념 {count}개",
+          "ontology-changed-since": "그 뒤로 문서가 바뀐 개념 {count}개",
+          "ontology-repair": "지금 고칠 것 {count}개",
+          "ontology-unmatched": "에이전트가 찾았지만 이 폴더에 없는 이름 {count}개",
+          "wiki-stale-pages": "원문이 바뀌어 낡은 페이지 {count}개",
+          "wiki-disagreements": "지난 점검이 잡은 어긋남·대체됨 {count}건",
+          "wiki-sources-unwritten": "아직 정리 안 된 원문 {count}개",
+          "wiki-orphan-pages": "아무 데서도 안 잇는 페이지 {count}개",
+          "wiki-dangling-links": "없는 페이지로 가는 링크 {count}개",
+          "wiki-written-since": "그 뒤로 에이전트가 쓴 페이지 {count}개",
+          "wiki-redrafted-since": "자동 점검이 다시 쓴 페이지 {count}개",
+          "wiki-passes-troubled-since": "거절되거나 실패한 자동 점검 {count}회",
+          "harness-app-only": "지침·검사 커버리지는 앱에서 잽니다",
+          "harness-untold-areas": "아무 지침도 안 닿는 도메인 {count}곳",
+          "harness-ungated-areas": "막는 규칙이 없는 도메인 {count}곳",
+          "harness-unwatched-areas": "지켜보는 검사가 없는 도메인 {count}곳",
+          "harness-mirror-drift": "두 에이전트 트리가 어긋난 파일 {count}개",
+          "harness-changed-since": "그 뒤로 바뀐 지침 파일 {count}개",
+          "agent-writes-waiting": "허락했지만 아직 안 끝난 쓰기 {count}건",
+          "agent-writes-failed": "실패한 쓰기 {count}건",
+          "agent-writes-refused": "사람이 거절한 쓰기 {count}건",
+          "agent-calls-since": "그 뒤로 에이전트 호출 {count}회",
+          "agent-writes-since": "그중 폴더에 쓴 것 {count}회",
+          "agent-distinct-since": "일한 에이전트 {count}개"
+        },
+        "markSeenUndo": "되돌리기"
       },
       "tabCountTitle": {
-        "do-next": "손볼 항목 수",
-        "unmatched": "이 폴더에 없는 이름 수",
+        "do-next": "고칠 항목 수",
+        "unmatched": "문서가 가리키는데 이 폴더에 없는 개념 수",
         "composition": "개념 수",
         "connections": "관계 수",
         "boundaries": "도메인을 넘나드는 관계 수"
@@ -1678,7 +1780,7 @@
         "occurrences": "×{count}",
         "askedByPrefix": "찾은 곳:",
         "writtenUnder": "적힌 자리: {keys}",
-        "dismiss": "{name}을(를) 이 컴퓨터에서 숨깁니다",
+        "dismiss": "이 컴퓨터에서 숨깁니다 · {name}",
         "hiddenMarker": "{count}개 숨김 · 보기",
         "hiddenNote": "{count}개를 이 컴퓨터에서 숨겼습니다. 위 숫자는 폴더에 있는 그대로입니다.",
         "pending": "그래프를 불러오는 중입니다…",
@@ -1691,13 +1793,13 @@
       "emptyTitleBefore": "아직 온톨로지 개념이 없습니다. ",
       "emptyTitleLink": "온톨로지 문서",
       "emptyTitleAfter": "에서 내 폴더를 열거나 문서를 추가해 보세요.",
-      "handoffLabel": "AI에게 이어서 맡기기",
-      "handoffCaption": "AI 에이전트용",
+      "handoffLabel": "에이전트에게 이어서 맡기기",
+      "handoffCaption": "에이전트용",
       "handoffCopy": "다음 액션 복사",
       "agentCopied": "복사됨",
       "agentCopyFailed": "복사 실패: 클립보드가 막혔어요",
-      "agentOpen": "이 탭을 AI와 분석",
-      "agentOpenAria": "{tab} 탭을 AI와 분석",
+      "agentOpen": "이 탭을 에이전트와 분석",
+      "agentOpenAria": "{tab} 탭을 에이전트와 분석",
       "agentContext": "분석 · {tab}",
       "agentDraftHeld": "작성 중인 문장은 그대로 뒀어요.",
       "agentReplaceDraft": "이 탭 질문으로 바꾸기",
@@ -1706,7 +1808,7 @@
       "heroRelationsHidden": "이 줄에 없는 관계 유형이 {count}개 더 있습니다",
       "heroRelationsHiddenRoute": "관계 유형 전체",
       "statusHealthy": "치명적 문제 없음",
-      "statusNeedsAttention": "손볼 것 있음",
+      "statusNeedsAttention": "고칠 것 있음",
       "statusBlocking": "막힘",
       "statusAdvisory": "권고",
       "recentWindowTitle": "최근 {weeks}주",
@@ -1748,18 +1850,18 @@
       "impactRowAriaLabel": "{title}: 바로 {direct}개, 건너서 포함 {total}개 · 지도에서 보기",
       "evidenceShow": "문서 없이 이름만 적힌 것 {count}개 보기",
       "evidenceHide": "문서 없이 이름만 적힌 것 접기",
-      "impactEvidenceCaption": "위험도가 아니라 이 이름을 근거로 적어 둔 개념 수예요. 테스트 파일이 위에 있으면 그만큼 지켜준다는 뜻이에요. 문서로 만들면 위 목록·검색·AI 도구에서도 찾을 수 있어요.",
+      "impactEvidenceCaption": "위험도가 아니라 이 이름을 근거로 적어 둔 개념 수예요. 테스트 파일이 위에 있으면 그만큼 지켜준다는 뜻이에요. 문서로 만들면 위 목록·검색·에이전트에서도 찾을 수 있어요.",
       "evidenceTruncated": "상위 {shown} / 문서 없이 이름만 적힌 것 {total}",
       "impactEvidenceRowAriaLabel": "{title}: 이 이름을 근거로 적은 개념 {total}개 · 지도에서 보기",
       "evidenceBadge": "문서 없음",
-      "evidenceBadgeHint": "이 이름은 다른 문서가 근거로 적어 둔 거예요. 문서로 만들면 목록·검색·AI 도구에서도 찾을 수 있어요.",
+      "evidenceBadgeHint": "이 이름은 다른 문서가 근거로 적어 둔 거예요. 문서로 만들면 목록·검색·에이전트에서도 찾을 수 있어요.",
       "freshnessEvidenceCaption": "이 이름들은 자기 글이 없어서, 옆의 날짜는 이 이름을 적어 둔 문서를 고친 날이에요. 이 개념을 고친 날이 아니에요. 오른쪽 작은 글씨가 그 문서 위치고, 문서로 만들면 위 목록에 올라와요.",
       "impactEmpty": "아직 선언된 의존 관계가 없어요",
       "impactEmptyHint": "import 근거와 두 개념의 의미를 검토한 뒤, 승인한 「기대는」 관계만 지도에서 이어주세요.",
       "domainCouplingTitle": "도메인 결합",
       "domainCouplingCountUnit": "교차 관계",
       "domainCouplingBoundaryCountUnit": "도메인",
-      "domainCouplingEmptyTitle": "아직 결합 데이터가 부족해요",
+      "domainCouplingEmptyTitle": "아직 결합을 볼 만큼 이어지지 않았어요",
       "domainCouplingEmptyDescription": "도메인 2개 이상 · 서로 다른 도메인을 잇는 교차 관계가 있어야 계산할 수 있어요.",
       "domainCouplingEmptyAction": "지도에서 개념 잇기",
       "domainCouplingGridCaption": "칸이 진할수록 관계가 많아요. 가로줄이 나가는 쪽, 세로줄이 받는 쪽이에요. 파선 칸(대각선)은 같은 도메인 안 연결이라 세는 대상이 달라서, 색도 회색 척도를 따로 써요.",
@@ -1768,7 +1870,7 @@
       "domainCouplingGridHiddenCross": "격자 밖 교차 {count}건",
       "domainCouplingGridCellAria": "{from}에서 {to}로 나가는 교차 {count}건",
       "domainCouplingGridSelfAria": "{domain} 안쪽 연결 {count}건",
-      "domainCouplingBoundaryTitle": "경계 압력",
+      "domainCouplingBoundaryTitle": "교차 연결 비율",
       "domainCouplingSelfLabel": "안쪽",
       "domainCouplingCrossLabel": "교차",
       "domainCouplingBoundaryCaption": "안쪽=같은 도메인 안 연결, 교차=다른 도메인으로 나가거나 들어오는 연결. 막대 길이가 곧 교차 비중이고, 길수록 도메인 경계가 새고 있다는 신호예요. 위에서부터 비중이 높은 순이에요.",
@@ -1825,7 +1927,7 @@
         "duplicateMetric": "겹침 {percent}%",
         "duplicateRestShow": "비슷한 이름 {count}쌍 더 보기",
         "duplicateRestHide": "접기",
-        "duplicateTruncated": "상위 {shown} / 비슷한 이름 {total}쌍: 나머지는 AI에게 이어서 확인",
+        "duplicateTruncated": "상위 {shown} / 비슷한 이름 {total}쌍: 나머지는 에이전트에게 이어서 확인",
         "hintNeglectedHub": "연결이 많은데 한동안 안 바뀐 개념이에요. 내용이 아직 맞는지 확인해 주세요.",
         "hintOrphan": "아무 관계도 없는 외톨이 개념이에요. 관련 개념과 이어 주세요.",
         "hintPromotion": "다른 개념 여럿이 이 개념을 참조하고 있어요. 상위 개념(역량·도메인)으로 올리면 지도에서 중심축으로 또렷해져요.",
@@ -1837,8 +1939,8 @@
         "openSource": "원문 확인",
         "openBuilder": "지도에서 수정",
         "handoffCopy": "에이전트로 검증",
-        "emptyQueue": "지금은 손볼 것이 없어요. 그래프가 건강합니다.",
-        "moreCount": "외 {count}개: 전체는 AI에게 이어서 확인",
+        "emptyQueue": "지금은 고칠 것이 없어요. 그래프가 건강합니다.",
+        "moreCount": "외 {count}개",
         "group": {
           "blocked-document": "검사에 막힌 문서",
           "island": "따로 떨어진 무리",
@@ -1881,23 +1983,23 @@
         "touchUpWhyCycle": "개념 {length}개가 서로를 가리켜 시작점이 없어요",
         "touchUpWhyPromotion": "{count}곳에서 참조돼요. 상위 개념으로 올릴 만해요",
         "rowMenuTrigger": "더보기",
-        "askAgent": "에이전트에게 말로 시키기",
+        "askAgent": "에이전트에게 맡기기",
         "reviewFallback": "선택한 항목",
         "reviewChecking": "{title} 신호를 지금 폴더에서 다시 확인하고 있어요.",
         "reviewActive": "{title} 신호가 지금 폴더에서 아직 보입니다.",
         "reviewCleared": "지금 폴더에서는 {title} 신호가 보이지 않습니다. 남은 항목을 다시 정렬했습니다.",
         "reviewUnverified": "{title} 신호는 현재 결과만으로 해소 여부를 확인할 수 없습니다.",
         "openBuilderReadOnly": "지도에서 보기",
-        "handoffCopyIdle": "이 요청을 복사해서 AI 도구에 붙여넣기",
-        "handoffCopiedHint": "복사했어요. AI 도구나 동료의 터미널에 붙여넣으면 처리돼요.",
+        "handoffCopyIdle": "이 요청을 복사해서 에이전트에 붙여넣기",
+        "handoffCopiedHint": "복사했어요. 에이전트나 동료의 터미널에 붙여넣으면 처리돼요.",
         "groupMeaningTitle": "지금 바로 고칠 수 있어요",
         "groupMeaningTitleReadOnly": "내 폴더를 열면 고칠 수 있어요",
         "groupMeaningHint": "코드를 몰라도 돼요. 뜻·소속·같은 개념인지만 정하면 끝나는 일이에요.",
         "groupMeaningHintReadOnly": "지금은 샘플이에요. 내 폴더를 열면 이 일들은 여기서 바로 끝낼 수 있어요. 지금은 명령을 복사해 넘길 수 있어요.",
-        "groupCodeTitle": "개발자·AI에게 넘길 일",
-        "groupCodeHint": "코드를 봐야 답이 나오는 일이에요. 요청 문장을 복사해 AI 도구에 넘기면 돼요.",
+        "groupCodeTitle": "개발자·에이전트에게 넘길 일",
+        "groupCodeHint": "코드를 봐야 답이 나오는 일이에요. 요청 문장을 복사해 에이전트에 넘기면 돼요.",
         "sectionMissingDefinition": "뜻이 안 적혀 있어요. 한 문장 적을까요?",
-        "hintMissingDefinition": "이 개념이 무슨 뜻인지 어디에도 없어요. 한 문장만 적으면 지도·검색·AI가 모두 같은 뜻을 읽어요.",
+        "hintMissingDefinition": "이 개념이 무슨 뜻인지 어디에도 없어요. 한 문장만 적으면 지도·검색·에이전트가 모두 같은 뜻을 읽어요.",
         "sectionMissingDomain": "어느 도메인인지 안 적혀 있어요. 골라 줄까요?",
         "hintMissingDomain": "역량·요소는 어느 도메인에 속하는지 적혀야 지도에서 제자리에 놓여요.",
         "inlineWriteHere": "여기서 적기",
@@ -1921,7 +2023,7 @@
         "digestMinutesAgo": "{count}분 전",
         "digestHoursAgo": "{count}시간 전",
         "digestDaysAgo": "{count}일 전",
-        "listTitle": "손볼 것 {count}개",
+        "listTitle": "고칠 것 {count}개",
         "fixHere": "직접 고치기",
         "viewOnMap": "지도에서 보기",
         "openDocument": "온톨로지 문서에서 열기",
@@ -1931,7 +2033,7 @@
         "whyMissingDomain": "어느 도메인에 속하는지 안 적혀 있어요. 하나만 골라 주세요.",
         "whyIsland": "다른 개념과 하나도 안 이어진 무리에 있어요. 한 곳만 이어 주면 지도에 붙어요.",
         "whyContainment": "속한 도메인이 이 개념을 다시 가리키지 않아요. domain을 적어 주세요.",
-        "whyBlockedDocument": "{reason} 그래서 AI가 이 문서를 아직 못 읽어요.",
+        "whyBlockedDocument": "{reason} 그래서 에이전트가 이 문서를 아직 못 읽어요.",
         "blockedReason": {
           "unclosed-frontmatter": "파일 맨 위 정보칸이 닫히지 않았어요.",
           "malformed-frontmatter-line": "파일 맨 위 정보칸에 읽을 수 없는 줄이 있어요.",
@@ -1942,11 +2044,14 @@
           "invalid-merged-uids": "merged_uids 형식이 맞지 않아요.",
           "duplicate-uid": "다른 문서와 uid가 겹쳐요.",
           "other": "파일 맨 위 정보칸에 문제가 있어요."
-        }
+        },
+        "showAll": "모두 보기",
+        "whyPromotionNamed": "{names}에서 가리켜요. 상위 개념으로 올릴 만해요",
+        "whyPromotionNamedMore": "{names} 등 {count}곳에서 가리켜요. 상위 개념으로 올릴 만해요"
       },
       "flow": {
-        "title": "비즈니스 흐름",
-        "lead": "온톨로지에 적힌 것만으로 이 제품이 무엇이고 어떻게 흐르는지 설명하게 합니다. 소스는 읽지 않습니다.",
+        "title": "제품 흐름",
+        "lead": "이 폴더에 적힌 것만 읽고, 제품이 무엇이고 어떻게 도는지 에이전트가 글로 씁니다. 소스 코드는 읽지 않아요.",
         "action": "에이전트로 흐름 설명하기",
         "actionHint": "이 분석 화면 옆 대화에 요청을 넣습니다. 보내는 것은 직접 하세요.",
         "checking": "이 컴퓨터에서 사용할 수 있는 에이전트를 확인하고 있어요.",
@@ -1957,7 +2062,20 @@
         "copied": "복사했습니다",
         "noVaultTitle": "먼저 폴더를 여세요",
         "noVaultBody": "설명할 온톨로지가 아직 없습니다.",
-        "request": "Atlas의 온톨로지 읽기 도구만 사용해 이 온톨로지의 비즈니스 흐름을 설명해줘. shell·파일·소스·웹·다른 도구는 호출하지 마.\n\n정확히 여섯 개의 ### 제목과 각 한 문단으로 답해:\n1) 이 제품이 왜 존재하는가.\n2) 어느 도메인이 무엇을 책임지는가.\n3) 주요 capability가 어떤 비즈니스 흐름을 만드는가.\n4) 그 capability가 element나 path에서 어떻게 구현되는가.\n5) 선언된 dependency가 어떤 영향을 설명하며 무엇이 unknown인가.\n6) 다음 사람이 유지해야 할 partial, visible-gap, stale, unverified 한계는 무엇인가.\n\n규칙:\n- 먼저 전체 지도를 보고 대표 의미→구현 체인 하나를 골라. 모든 노드를 열거하지 마.\n- get_concept(body: full) 또는 get_concepts(body: full)는 합쳐서 최대 12개 개념만 읽어.\n- 모든 문단은 이번 턴에 본문 전체를 읽은 정확한 전체 노드 슬러그를 하나 이상 적어.\n- from --type--> to 관계는 현재 온톨로지에 실제로 있을 때만 적어.\n- partial, visible-gap, unknown 한정을 끝까지 유지해.\n- capability의 제외를 제품 전체 범위로 넓히지 마.\n- 답할 수 없으면 이유와 함께 모른다고 말하고, 다른 지식으로 메우지 마."
+        "request": "Atlas의 온톨로지 읽기 도구만 사용해 이 온톨로지의 비즈니스 흐름을 설명해줘. shell·파일·소스·웹·다른 도구는 호출하지 마.\n\n정확히 여섯 개의 ### 제목과 각 한 문단으로 답해:\n1) 이 제품이 왜 존재하는가.\n2) 어느 도메인이 무엇을 책임지는가.\n3) 주요 capability가 어떤 비즈니스 흐름을 만드는가.\n4) 그 capability가 element나 path에서 어떻게 구현되는가.\n5) 선언된 dependency가 어떤 영향을 설명하며 무엇이 unknown인가.\n6) 다음 사람이 유지해야 할 partial, visible-gap, stale, unverified 한계는 무엇인가.\n\n규칙:\n- 먼저 전체 지도를 보고 대표 의미→구현 체인 하나를 골라. 모든 노드를 열거하지 마.\n- get_concept(body: full) 또는 get_concepts(body: full)는 합쳐서 최대 12개 개념만 읽어.\n- 모든 문단은 이번 턴에 본문 전체를 읽은 정확한 전체 노드 슬러그를 하나 이상 적어.\n- from --type--> to 관계는 현재 온톨로지에 실제로 있을 때만 적어.\n- partial, visible-gap, unknown 한정을 끝까지 유지해.\n- capability의 제외를 제품 전체 범위로 넓히지 마.\n- 답할 수 없으면 이유와 함께 모른다고 말하고, 다른 지식으로 메우지 마.",
+        "writtenAt": "{when} · {writer}가 쓴 설명",
+        "standingCurrent": "쓴 뒤로 폴더가 그대로예요",
+        "standingStale": "쓴 뒤로 폴더가 바뀌었어요",
+        "standingUnknown": "지금 폴더와 맞는지 확인 못 했어요",
+        "ungrounded": "읽은 근거를 증명하지 못한 답이에요",
+        "changedTitle": "지난 설명과 달라진 곳",
+        "changeAdded": "새로 생김",
+        "changeRemoved": "없어짐",
+        "changeRewritten": "다시 씀",
+        "noVersionTitle": "아직 쓴 설명이 없어요",
+        "noVersionBody": "에이전트가 이 폴더만 읽고 제품이 무엇이고 어떻게 도는지 한 번 써 두면, 여기에 그 설명이 남고 다음에 다시 쓸 때 무엇이 달라졌는지 함께 보여드려요.",
+        "rewrite": "다시 쓰게 하기",
+        "versionsLabel": "{count, number}개 남아 있어요."
       },
       "vaultHistory": {
         "title": "폴더가 담고 있는 것",
@@ -1980,6 +2098,94 @@
         "failedBody": "폴더의 Git 이력을 읽는 중에 오류가 났습니다. 폴더에 커밋이 없다는 뜻은 아닙니다. 다시 열어 보면 대개 읽힙니다.",
         "noneTitle": "아직 볼 이력이 없습니다",
         "noneBody": "이 폴더에는 커밋이 없습니다. Atlas는 자체 기록을 쌓지 않으므로 커밋이 생기기 전에는 지난 주를 보여 줄 방법이 없습니다. 0으로 그리면 폴더가 비어 있었다는 뜻이 되어 사실이 아닙니다."
+      },
+      "core": {
+        "brief": "브리핑",
+        "ontology": "개념",
+        "library": "위키",
+        "harness": "지침"
+      },
+      "coreAriaLabel": "분석에서 볼 것",
+      "libraryTab": {
+        "empty": "이 폴더엔 아직 원문도 위키 페이지도 없어요. 자료실에서 원문을 넣으면 여기서 세요.",
+        "open": "자료실 열기",
+        "more": "{count, number}개 더",
+        "stale": {
+          "title": "원문이 바뀐 페이지 {count, number}개",
+          "caption": "페이지가 인용한 원문이 그 뒤에 바뀌었어요. 다시 쓰기 전엔 그 문장을 믿지 마세요.",
+          "none": "모든 페이지가 인용한 원문 그대로예요."
+        },
+        "unwritten": {
+          "title": "아직 정리 안 된 원문 {count, number}개",
+          "caption": "폴더엔 있는데 아직 어떤 페이지도 쓰지 않은 원문이에요.",
+          "none": "모든 원문이 한 번은 정리됐어요."
+        },
+        "check": {
+          "title": "서식 점검에서 걸린 것 {count, number}건",
+          "caption": "페이지 {pages, number}개 검사 · 아직 못 읽은 페이지 {unmeasured, number}개",
+          "none": "걸린 것이 없어요."
+        },
+        "rounds": {
+          "title": "자동 점검 회차 {count, number}회",
+          "caption": "사람이 없을 때 돈 회차예요. 무엇을 보고 무엇을 썼는지 그대로 적습니다.",
+          "none": "아직 돈 회차가 없어요."
+        },
+        "outcome": {
+          "held": "그대로 둠",
+          "stale": "낡은 것 발견",
+          "redrafted": "다시 씀",
+          "refused": "거절됨",
+          "failed": "실패",
+          "asleep": "쉬는 중"
+        },
+        "code": {
+          "orphan-page": "아무 데서도 안 잇는 페이지",
+          "dangling-wikilink": "없는 페이지로 가는 링크",
+          "uncited-fact": "인용 없는 문장",
+          "shared-source-unlinked": "같은 원문을 쓰는데 서로 안 이어짐",
+          "citation-target-missing": "인용한 곳이 없어짐",
+          "kind-present": "위키 페이지에 kind가 붙음",
+          "section-order": "절 순서가 다름",
+          "bad-truncation-record": "일부만 읽은 기록이 어긋남",
+          "bad-citation": "인용 꼴이 어긋남"
+        },
+        "about": {
+          "title": "이 판이 답하는 것",
+          "body": "원문을 정리해 만든 위키 페이지가 지금도 그 원문과 맞는지, 아직 아무도 안 쓴 원문이 있는지, 서식 점검에 걸린 곳이 어디인지, 사람이 없을 때 돈 자동 점검이 무엇을 했는지 봅니다."
+        }
+      },
+      "harnessTab": {
+        "open": "하네스 열기",
+        "getApp": "앱 받기",
+        "more": "도메인 {count, number}곳 더",
+        "appOnly": "앱에서만 잴 수 있어요. 브라우저는 숨김 폴더를 읽지 못해요.",
+        "reading": "지금 폴더를 읽고 있어요.",
+        "unreadable": "지침 파일을 읽지 못했어요. 폴더를 다시 열면 다시 시도해요.",
+        "noSource": "이 폴더는 아직 코드 저장소와 연결돼 있지 않아요. 연결하면 지침과 검사가 어디를 덮는지 여기서 세요.",
+        "column": {
+          "area": "도메인",
+          "told": "알려줌",
+          "gated": "막음",
+          "watched": "지켜봄"
+        },
+        "coverage": {
+          "title": "하네스 커버리지: 도메인 {count, number}곳",
+          "caption": "지침 파일 {guides, number}개 · 검사 {checks, number}개를 도메인에 맞춰 세요.",
+          "gaps": "아무 지침도 안 닿는 도메인 {untold, number} · 막는 규칙이 없는 도메인 {ungated, number} · 지켜보는 검사가 없는 도메인 {unwatched, number}",
+          "everywhere": "어디에나 닿는 것: 알려줌 {told, number} · 막음 {gated, number} · 지켜봄 {watched, number}"
+        },
+        "drift": {
+          "title": "두 에이전트 트리가 어긋난 파일 {count, number}개",
+          "caption": "같은 내용이어야 하는 두 벌이 서로 달라요.",
+          "none": "두 벌이 서로 같아요."
+        },
+        "about": {
+          "title": "이 판이 답하는 것",
+          "body": "에이전트 하네스가 이 폴더의 어느 도메인까지 닿는지 봅니다. 지침과 검사가 닿지 않는 빈 칸이 곧 답이에요. 아무도 알려주지 않고, 막지 않고, 지켜보지 않는 자리입니다.",
+          "told": "AGENTS.md·CLAUDE.md·규칙 문서처럼 에이전트가 읽는 글",
+          "gated": "훅·검사처럼 잘못된 변경을 실제로 막는 것",
+          "watched": "테스트·린트처럼 바뀐 뒤에 알려주는 것"
+        }
       }
     }
   },
@@ -3857,7 +4063,12 @@
       "at-ref-missing": "@참조된 파일을 찾을 수 없어요",
       "agents-md-over-codex-cap": "AGENTS.md가 Codex의 32 KiB 문서 상한을 넘었어요",
       "skill-copy-diverged": "복제된 스킬 사본(.claude/skills ↔ .agents/skills)이 서로 달라졌어요",
-      "skill-copy-file-missing": "복제 스킬 트리의 한쪽에만 있는 파일이 있어요"
+      "skill-copy-file-missing": "복제 스킬 트리의 한쪽에만 있는 파일이 있어요",
+      "agent-copy-diverged": "복제된 에이전트 브리프(.claude/agents ↔ .agents/agents)가 서로 달라졌어요",
+      "agent-copy-file-missing": "복제 에이전트 트리의 한쪽에만 있는 브리프가 있어요",
+      "non-english-agent-text": "에이전트 파일에 영어가 아닌 글자가 있어요. 그 글이 곧 에이전트가 읽는 지침입니다",
+      "mcp-config-unparseable": "에이전트 연결(MCP) 설정 파일은 있는데 선언된 서버가 없어요. 옆에 있는 권한이 전부 선언 없는 상태예요",
+      "undeclared-mcp-server": "에이전트 브리프가 설정에 없는 MCP 서버의 도구를 쓰겠다고 적어 뒀어요"
     }
   },
   "editProvenance": {
@@ -4277,10 +4488,13 @@
   "acpChat": {
     "ariaLabel": "{runtime} 대화",
     "emptyHint": "이 폴더에 대해 무엇이든 물어보세요.",
+    "emptySeatedHint": "이 화면이 질문을 하나 써 뒀어요. 아래에서 고치거나 그대로 보내세요.",
+    "codeCopy": "복사",
+    "codeCopied": "복사했어요",
     "composerLabel": "무엇을 시킬지 적어요",
     "send": "보내기",
     "stop": "그만",
-    "stoppedBeforeAnswer": "에이전트가 답하기 전에 멈췄습니다. 쓴 것은 없습니다.",
+    "stoppedBeforeAnswer": "답하기 전에 멈췄어요. 폴더에 쓴 건 없어요.",
     "turnSilent": "에이전트가 {minutes}분째 아무 소식이 없어요",
     "turnSilentHint": "아직 일하는 중일 수도 있지만, 대답이 끝났는데 알려 주지 않은 것일 수도 있어요. 「그만」을 누르면 다시 입력할 수 있어요.",
     "status": {
@@ -4288,6 +4502,7 @@
       "starting": "연결 중",
       "ready": "준비됨",
       "thinking": "생각 중",
+      "awaiting": "답 기다리는 중",
       "error": "문제 있음",
       "exited": "끝남"
     },
@@ -4312,62 +4527,62 @@
       "allowOnce": "이번만 허용",
       "taskReview": {
         "eyebrow": "현재 작업",
-        "nonGoalsUnstructured": "하지 않을 일은 따로 기록되지 않아 아직 알 수 없습니다.",
+        "nonGoalsUnstructured": "하지 않을 일은 따로 적히지 않아서 아직 알 수 없어요.",
         "depthLabel": "검토 깊이",
         "summary": "요약",
         "compare": "비교",
         "details": "상세",
+        "batchRemaining": "이 요약 밖에 묶음 항목이 {count}개 더 있어요.",
+        "incomplete": "의미 검토 미완료 · 적어 둔 의미 문장 {total}개 중 {inspected}개 표시 · 생략 {omitted}개. 상세에서 요청 전체를 확인하세요.",
+        "beforeUnavailable": "믿을 만한 예전 온톨로지 기록이 없어요. 이전 값을 지어내지 않고 지금 요청한 값만 보여 줘요.",
         "scopeRelation": "{from} → {type} → {to}",
         "scopeItem": "묶음 {items, number}개 중 {selected, number}번 항목",
         "scopeFields": "요청 필드 {count, number}개",
-        "batchRemaining": "이 요약 밖에 묶음 항목 {count}개가 더 있습니다.",
-        "incomplete": "의미 검토 미완료 · 기록된 의미 단위 {total}개 중 {inspected}개 표시 · 생략 {omitted}개. 상세에서 요청 전체를 확인하세요.",
-        "coverageNone": "이 요청에는 기록된 의미 문장이 없습니다. 상세에서 요청 전체를 확인하세요.",
+        "coverageNone": "이 요청에는 기록해 둔 의미 문장이 없어요. 「상세」에서 요청 전체를 확인해 주세요.",
         "coverageAll": "기록된 의미 단위 {total, number}개를 모두 보여 줍니다. 상세에서 요청 전체를 확인하세요.",
-        "beforeUnavailable": "신뢰할 수 있는 과거 온톨로지 스냅샷이 없습니다. 이전 값을 지어내지 않고 현재 요청값만 표시합니다.",
         "beforeUnknown": "이전 · 확인할 수 없음",
         "before": "이전",
         "after": "제안값",
         "absent": "없음",
         "comparisonCoverage": "신뢰할 수 있는 비교 · {total}개 중 {inspected}개 확인 · 생략 {omitted}개",
-        "acknowledgeFullScope": "이 의미 판단을 요청 항목 {count}개 전체에 적용합니다.",
+        "acknowledgeFullScope": "이 의미 판단을 요청 항목 {count}개 전체에 적용해요.",
         "acceptMeaning": "이 의미 제안 승인",
         "checkingBasis": "근거 다시 확인 중…",
         "meaningAccepted": "의미 승인됨",
-        "rootMismatchBody": "연결된 온톨로지가 이 작업과 다릅니다. 쓰기를 막았습니다. 거절한 뒤 현재 온톨로지에서 요청을 다시 만드세요.",
+        "rootMismatchBody": "연결된 온톨로지가 이 작업과 달라요. 쓰기를 막았어요. 거절한 뒤 지금 온톨로지에서 요청을 다시 만들어 주세요.",
         "rootMismatch": "연결된 온톨로지: {actual} · 예상 온톨로지: {expected}. 이 요청을 거절하고 예상 온톨로지에서 다시 만드세요.",
         "reason": {
-          "unsupported_request": "아직 비교할 수 없는 요청 형식입니다.",
-          "historical_basis_unavailable": "작업 시작 스냅샷을 확인할 수 없습니다.",
-          "source_basis_unavailable": "작업 시작 시점의 소스 근거를 확인할 수 없습니다.",
-          "target_before_unavailable": "작업 시작 때 이 대상을 기록하지 못했습니다.",
-          "current_basis_unavailable": "현재 비교 근거를 확인할 수 없습니다.",
-          "intervening_change": "캡처한 제안 밖에서 대상이 바뀌었습니다.",
-          "guard_mismatch": "쓰기 조건이 캡처한 대상과 맞지 않습니다.",
-          "parse_failed": "캡처한 Markdown을 안전하게 읽지 못했습니다.",
-          "request_changed": "검토 중 대기 요청이 바뀌었습니다.",
-          "acknowledgement_required": "요청 범위 전체에 대한 확인이 필요합니다.",
-          "connection_unverified": "현재 에이전트 연결(MCP)의 온톨로지를 확인하지 못했습니다.",
+          "unsupported_request": "아직 비교할 수 없는 요청 모양이에요.",
+          "historical_basis_unavailable": "작업을 시작할 때의 기록을 확인할 수 없어요.",
+          "source_basis_unavailable": "작업을 시작할 때의 원문 근거를 확인할 수 없어요.",
+          "target_before_unavailable": "작업을 시작할 때 이 대상을 적어 두지 못했어요.",
+          "current_basis_unavailable": "지금 비교할 근거를 확인할 수 없어요.",
+          "intervening_change": "적어 둔 제안 밖에서 대상이 바뀌었어요.",
+          "guard_mismatch": "쓰기 조건이 적어 둔 대상과 맞지 않아요.",
+          "parse_failed": "적어 둔 Markdown을 안전하게 읽지 못했어요.",
+          "request_changed": "검토하는 동안 기다리던 요청이 바뀌었어요.",
+          "acknowledgement_required": "요청 범위 전체를 확인해 주셔야 해요.",
+          "connection_unverified": "지금 에이전트 연결(MCP)의 온톨로지를 확인하지 못했어요.",
           "connection_root_mismatch": "현재 MCP 온톨로지 루트가 다릅니다.",
-          "source_binding_changed": "이 작업 중 소스 코드 폴더 연결이 바뀌었습니다.",
-          "source_diff_unavailable": "이 작업의 소스 변경 범위를 확인할 수 없습니다. 작업 소유 범위를 추정하지 않습니다."
+          "source_binding_changed": "이 작업 중에 소스 코드 폴더 연결이 바뀌었어요.",
+          "source_diff_unavailable": "이 작업이 바꾼 소스 범위를 확인할 수 없어요. 어디까지가 이 작업 몫인지는 짐작하지 않아요."
         },
         "correct": "거절 후 수정",
         "defer": "대기 유지",
-        "interventionHint": "수정 요청은 이 제안을 거절하고 편집할 맥락만 준비하며 자동으로 보내지 않습니다. 코드를 되돌리지도 않습니다. 대기는 이 대화 안에서만 유지되고 저장되지 않습니다.",
+        "interventionHint": "「거절 후 수정」은 이 제안을 거절하고 고쳐 쓸 맥락만 준비해요. 대신 보내지도, 코드를 되돌리지도 않아요. 「대기 유지」는 이 대화 안에서만 살아 있고 저장되지 않아요.",
         "provenance": "요청 출처와 쓰기 조건",
         "requestId": "요청",
-        "userEvent": "턴",
-        "toolCall": "도구",
-        "generation": "세대",
+        "userEvent": "사용자 차례",
+        "toolCall": "도구 호출",
+        "generation": "대화 회차",
         "guardStatus": "쓰기 조건",
         "guard": {
           "verified": "정확히 확인",
-          "compatible-coarse": "파일 시간 정밀도에서 일치",
+          "compatible-coarse": "파일 시각까지만 일치",
           "unknown": "알 수 없음"
         },
         "unknown": "알 수 없음",
-        "permissionSeparate": "이번만 허용은 이 쓰기만 진행합니다. 의미 승인이나 코드 검증, 병합, 배포를 뜻하지 않습니다.",
+        "permissionSeparate": "「이번만 허용」은 이 쓰기만 해요. 의미를 승인하거나 코드 검증·병합·배포를 뜻하지는 않아요.",
         "authority": {
           "meaning": "의미",
           "code": "코드 검증",
@@ -4385,22 +4600,22 @@
           "uncomparable": "비교할 수 없음"
         },
         "actionScope": "동작 범위",
-        "allowScope": "한 번 허용은 이 쓰기만 실행합니다.",
+        "allowScope": "「이번만 허용」은 이 쓰기만 실행해요.",
         "canonicalPreview": "실제로 저장될 Markdown",
-        "canonicalPreviewNote": "작성기는 형식과 주석을 다시 구성합니다. 의미를 수락하기 전에 전체 저장 내용을 확인하세요.",
-        "previewUnavailable": "정확한 저장 내용을 확인할 수 없습니다. 의미 수락에는 기존 UID와 유효한 단일 문서 변경이 필요합니다.",
+        "canonicalPreviewNote": "저장할 때 서식과 주석이 다시 정리돼요. 의미를 승인하기 전에 저장될 내용 전체를 확인해 주세요.",
+        "previewUnavailable": "저장될 내용을 정확히 알 수 없어요. 의미 승인은 기존 UID가 있고 문서 하나만 바꾸는 요청일 때만 돼요.",
         "decisionSave": {
-          "unsaved": "이 결정은 아직 이력에 저장되지 않았습니다.",
-          "saved": "의미 결정을 저장했습니다. 실행·코드 검사·병합·배포 상태는 별도입니다.",
-          "failed": "의미 결정을 저장하지 못했습니다. 이 폴더를 확인한 뒤 다시 시도하세요."
+          "unsaved": "이 결정은 아직 이력에 저장되지 않았어요.",
+          "saved": "의미 결정을 저장했어요. 실행·코드 검사·병합·배포 상태는 따로예요.",
+          "failed": "의미 결정을 저장하지 못했어요. 이 폴더를 확인한 뒤 다시 시도해 주세요."
         },
-        "terminalSaveFailed": "의미 결정은 보존했지만 최신 실행 결과를 저장하지 못했습니다. 이력에는 아직 미확인 상태로 표시될 수 있습니다.",
-        "noSemanticDelta": "이 요청은 해석된 의미를 바꾸지 않습니다. 의미 결정 기록이 필요하지 않습니다.",
+        "terminalSaveFailed": "의미 결정은 남겼지만 마지막 실행 결과를 저장하지 못했어요. 이력에는 아직 확인 안 된 상태로 보일 수 있어요.",
+        "noSemanticDelta": "이 요청은 해석된 의미를 바꾸지 않아요. 의미 결정을 남길 필요는 없어요.",
         "rationale": "이 해석을 수락하는 이유 (선택)"
       },
-      "deferredNotice": "이 요청은 이 대화에서 계속 대기 중입니다. 저장되지 않으며 대화를 닫거나 취소하면 거절됩니다.",
+      "deferredNotice": "이 요청은 이 대화에서 계속 기다리고 있어요. 저장되지 않고, 대화를 닫거나 취소하면 거절돼요.",
       "resumeReview": "검토 다시 열기",
-      "correctionDraft": "이전 제안을 거절했습니다. 다음 작업의 수정 제안을 준비하세요: {task}\n대상: {target}\n요청: {requestId}\n수정 요청: [필요한 수정 내용을 적으세요]",
+      "correctionDraft": "이전 제안을 거절했어요. 다음 작업의 수정 제안을 준비해 주세요: {task}\n대상: {target}\n요청: {requestId}\n수정 요청: [필요한 수정 내용을 적으세요]",
       "intent": {
         "read": "읽으려고 해요",
         "edit": "고치려고 해요",
@@ -4413,12 +4628,13 @@
       "allowAlwaysUnknown": "이번 대화 내내 허용",
       "scopeHint": "허용 범위: {names}",
       "scopeUnknownHint": "이 도구가 허용 범위를 알려 주지 않았어요. 한 번만 허용하는 쪽이 안전해요.",
-      "pageFits": "문서 모양이 맞습니다. 사실마다 인용이 있고 다섯 절이 순서대로입니다.",
+      "pageFits": "문서 모양이 맞아요. 사실마다 인용이 있고 다섯 절이 순서대로예요.",
       "pageFails": "문서 모양에 어긋나는 문제 {count}건. 허용하면 이대로 저장되고 위키 목록에 표시됩니다.",
+      "pageFailsRest": "그 밖에 {count}건이 더 있어요. 위키 목록에서 전부 볼 수 있어요.",
       "insideFolderTitle": "이 폴더의 파일을 바꾸려고 해요",
       "insideFolderBody": "경로는 아래에 있어요. 허락하기 전에는 아무 일도 일어나지 않아요.",
       "insideProjectTitle": "내 프로젝트 안의 코드를 보려고 해요",
-      "insideProjectBody": "지도 폴더 밖이지만, 고른 프로젝트 안입니다. 허락하기 전에는 아무 일도 일어나지 않아요.",
+      "insideProjectBody": "지도 폴더 밖이지만 고른 프로젝트 안이에요. 허락하기 전에는 아무 일도 일어나지 않아요.",
       "ontologyWriteUnverifiedBody": "이 요청은 한 번 허용한 뒤에만 제안된 온톨로지 파일에 씁니다. 허용하기 전에 대상을 확인하세요."
     },
     "close": "대화 닫기",
@@ -4483,22 +4699,20 @@
       "openHint": "온톨로지만 읽은 답을 {count}개 장면으로 따라갑니다.",
       "blocked": "이 답은 아직 발표로 만들 수 없어요. {reason}",
       "blockReason": {
-        "intent_inactive": "발표 요청이 아닙니다.",
-        "turn_incomplete": "답변이 아직 끝나지 않았습니다.",
-        "no_answer": "완료된 설명이 없습니다.",
-        "source_hidden_unproven": "온톨로지만 읽었다는 것을 도구 기록으로 확인할 수 없습니다.",
-        "no_full_body_reads": "본문 전체를 읽은 개념이 없습니다.",
-        "full_body_read_budget_exceeded": "본문 전체를 읽은 개념이 12개를 넘었습니다. 대표 흐름으로 다시 좁혀야 합니다.",
-        "scene_count_out_of_range": "명시된 장면 수가 3~7개 범위를 벗어났습니다.",
-        "scene_uncited": "근거 슬러그가 없는 장면이 있습니다.",
-        "citation_not_read": "이번 턴에서 본문 전체를 읽지 않은 개념을 인용했습니다.",
-        "relation_not_in_graph": "현재 온톨로지에 없는 관계를 설명에 사용했습니다."
+        "no_answer": "끝난 설명이 없어요.",
+        "source_hidden_unproven": "온톨로지만 읽었다는 걸 도구 기록으로 확인할 수 없어요.",
+        "no_full_body_reads": "본문 전체를 읽은 개념이 없어요.",
+        "full_body_read_budget_exceeded": "본문 전체를 읽은 개념이 12개를 넘었어요. 대표 흐름으로 다시 좁혀 주세요.",
+        "scene_count_out_of_range": "적어 낸 장면 수가 3~7개를 벗어났어요.",
+        "scene_uncited": "근거 이름이 없는 장면이 있어요.",
+        "citation_not_read": "이번 차례에 본문 전체를 읽지 않은 개념을 인용했어요.",
+        "relation_not_in_graph": "지금 온톨로지에 없는 관계를 설명에 썼어요."
       },
       "progress": "{current}/{total} 장면",
       "progressAria": "발표 진행",
       "sourceHidden": "온톨로지만 읽음 · 본문 {count}개",
       "qualification": {
-        "cited": "현재 턴에서 읽은 근거",
+        "cited": "이번 차례에 읽은 근거",
         "limited": "한정 또는 미확인 포함"
       },
       "sceneFallback": "장면 {current}",
@@ -4514,7 +4728,8 @@
     "trouble": {
       "limit": {
         "title": "이 도구의 사용 한도에 닿았어요",
-        "hint": "앱의 문제가 아니라 도구 쪽 요금제의 한도예요. 「자세히」에 풀리는 시각이 적혀 있으면 그때 「다시 시도」를 누르고, 그 전에는 아래에서 다른 도구를 골라 이어 가세요."
+        "hint": "앱의 문제가 아니라 도구 쪽 요금제의 한도예요. 「자세히」에 풀리는 시각이 적혀 있으면 그때 「다시 시도」를 누르고, 그 전에는 아래에서 다른 도구를 골라 이어 가세요.",
+      "hintOnlyTool": "앱의 문제가 아니라 도구 쪽 요금제의 한도인데, 지금 연결된 도구가 이것 하나예요. 「자세히」에 풀리는 시각이 적혀 있으면 그때 「다시 시도」를 눌러 주세요. 「에이전트」 화면에서 도구를 하나 더 연결해 두면 이럴 때 이어 갈 곳이 생깁니다."
       },
       "auth": {
         "title": "이 앱 몫으로 남은 옛 로그인이 가로막고 있어요",
@@ -4530,7 +4745,7 @@
       },
       "launch": {
         "title": "도구를 띄우지 못했어요",
-        "hint": "왼쪽 「에이전트」 화면에서 이 도구가 어떤 상태인지 확인해 주세요."
+        "hint": "이 도구가 지금 어떤 상태인지 「에이전트」에서 볼 수 있어요. 아래 버튼으로 바로 열어요.", "door": "에이전트 열기"
       },
       "network": {
         "title": "바깥과 연결되지 않았어요",
@@ -4545,11 +4760,12 @@
       "diagnosticsLabel": "도구가 남긴 말"
     },
     "notice": {
-      "gateOff": "이 대화에서는 폴더 밖 파일을 건드릴 때 Atlas가 대신 물어봐 주지 못해요. 그 도구에 직접 해 둔 설정대로 움직입니다.",
+      "gateOff": "이 대화에서는 폴더 밖 파일을 건드릴 때 Atlas가 대신 물어봐 주지 못해요. 그 도구에 직접 해 둔 설정대로 움직여요.",
       "diedMidTurn": "답하는 도중에 에이전트가 멈췄어요. 여기까지가 받은 전부예요. 위의 「새 대화」로 다시 물어봐 주세요.",
-      "modeMoved": "도구가 이 대화를 {mode} 방식으로 옮겼습니다. 이 방식은 파일 수정을 먼저 묻지 않고 받아들입니다.",
-      "modeMovedServerGate": "도구가 이 대화를 {mode} 방식으로 옮겼습니다. 이 방식은 파일 수정을 먼저 묻지 않고 받아들입니다. 아틀라스 도구로 지나가는 변경은 서버에서 그대로 승인을 받습니다.",
-      "autoAllowed": "{detail}을(를) 묻지 않고 썼습니다. 위키 서식에 맞아서요.",
+      "modeMoved": "도구가 이 대화를 {mode} 방식으로 옮겼어요. 이 방식은 파일 수정을 먼저 묻지 않고 받아들여요.",
+      "modeMovedServerGate": "도구가 이 대화를 {mode} 방식으로 옮겼어요. 이 방식은 파일 수정을 먼저 묻지 않고 받아들여요. 아틀라스 도구를 지나가는 변경은 서버에서 그대로 승인을 받아요.",
+      "autoAllowed": "묻지 않고 {detail}에 썼어요. 위키 서식에 맞아서요.",
+      "autoRefused": "묻지 않고 막았어요 · {detail}. 이 대화에 허용된 범위 밖이라서요.",
       "openPage": "열기",
       "askNext": "다음엔 묻기"
     },
@@ -4569,7 +4785,7 @@
         "prompt": "「{firstLabel}」({first})를 포함한 {count}개 노드가 지도의 나머지와 이어져 있지 않아요. 코드를 근거로 어디에 붙어야 하는지 찾아서, 왜 그렇게 잇는지와 함께 제안해 줘."
       },
       "containment": {
-        "label": "「{slugLabel}」 문서에는 「{domainLabel}」 소속이라고 적혀 있는데, 「{domainLabel}」 문서의 목록에는 「{slugLabel}」이(가) 없어요. 어느 쪽이 맞는지 확인하고 두 문서를 같게 맞춰 줘",
+        "label": "「{slugLabel}」 문서에는 「{domainLabel}」 소속이라고 적혀 있는데, 「{domainLabel}」 문서의 목록에 「{slugLabel}」이 빠져 있어요. 어느 쪽이 맞는지 확인하고 두 문서를 같게 맞춰 줘",
         "prompt": "「{slugLabel}」({slug})는 「{domainLabel}」({domain})에 속한다고 적혀 있는데, 도메인 쪽 연결에는 빠져 있어요. 소속이 맞는지 확인하고, 맞으면 양쪽 연결을 맞춰 줘."
       },
       "evidence": {
@@ -4654,12 +4870,12 @@
         }
       }
     },
-    "openingScopeChanged": "요청을 준비한 폴더나 분석 대상이 달라져 아직 보내지 않았습니다. 현재 대상을 확인하고 다시 분석하세요.",
+    "openingScopeChanged": "요청을 준비한 폴더나 분석 대상이 달라져서 아직 보내지 않았어요. 지금 대상을 확인하고 다시 분석해 주세요.",
     "dockTitle": "대화",
     "elapsedSeconds": "{seconds}초",
     "elapsedMinutes": "{minutes}분 {seconds}초",
     "elapsedHours": "{hours}시간 {minutes}분",
-    "checkAnswerLine": "점검 결과는 앱이 직접 확인한 것과 나란히 「점검 결과」 페이지에 있습니다.",
+    "checkAnswerLine": "점검 결과는 앱이 직접 확인한 것과 나란히 「점검 결과」 페이지에 있어요.",
     "checkAnswerDoor": "점검 결과 열기",
     "checkAnswerFull": "에이전트의 보고 원문"
   },
@@ -4982,12 +5198,12 @@
     "askEdit": "직접 고쳐서 넣기",
     "askDismiss": "접기",
     "remove": "지우기",
-    "removeConfirmTitle": "{name}을(를) 지울까요?",
+    "removeConfirmTitle": "지울까요? · {name}",
     "removeConfirmBody": "이 폴더의 연결 도구 목록에서 그 줄이 사라집니다. 이 컴퓨터의 다른 것은 그대로입니다.",
     "removeConfirmBodyKeys": "이 폴더의 연결 도구 목록에서 그 줄이 사라지고, 이 컴퓨터 키체인에서 {keys} 값이 지워집니다. 다시 읽어 올 방법은 없습니다.",
     "removeCancel": "취소",
-    "removedAnnouncement": "{name}을(를) 지웠습니다.",
-    "rowTransfer": "켜면 에이전트가 {destination}과(와) 직접 주고받습니다.",
+    "removedAnnouncement": "지웠습니다 · {name}",
+    "rowTransfer": "켜면 에이전트가 직접 주고받습니다 · {destination}",
     "rowTransferStdio": "켜면 이것이 이 컴퓨터에서 돌고, 그것이 닿는 곳과는 거기서 곧장 주고받습니다. Atlas는 그 사이에 없습니다.",
     "collision": "이 컴퓨터에 이미 {name}이라는 이름의 서버가 등록되어 있습니다. Codex는 같은 이름의 두 번째를 말없이 버리므로, 이름을 바꾸십시오.",
     "malformed": "{path}를 읽지 못해 여기서 아무것도 저장할 수 없습니다. 그 파일을 열어 고치시거나 지우십시오.",
@@ -5072,7 +5288,7 @@
       "playwright": "웹 페이지를 열어 접근성 스냅샷으로 이동·클릭·입력·읽기를 합니다.",
       "context7": "라이브러리의 현재 버전 문서와 코드 예시를 가져옵니다."
     },
-    "attachedToast": "{name}을(를) 붙였어요. 아직 꺼져 있고, 켜면 에이전트가 씁니다.",
+    "attachedToast": "붙였어요 · {name}. 아직 꺼져 있고, 켜면 에이전트가 씁니다.",
     "foundMore": "{count}개 더 보기",
     "foundLess": "접기"
   },
@@ -5133,15 +5349,15 @@
         },
         "compiled": {
           "label": "정리됨",
-          "hint": "{pages}이(가) 정리했고, 그 뒤로 파일이 바뀌지 않았습니다."
+          "hint": "정리한 문서: {pages}. 그 뒤로 파일이 바뀌지 않았습니다."
         },
         "partial": {
           "label": "일부만 읽음",
-          "hint": "{pages}은(는) 이 파일의 앞부분만 읽어서, 나머지는 아직 정리되지 않았습니다."
+          "hint": "이 파일의 앞부분만 읽은 문서: {pages}. 나머지는 아직 정리되지 않았습니다."
         },
         "stale": {
           "label": "확인 필요",
-          "hint": "{pages}은(는) 이 파일의 다른 판에서 쓰였거나, 해시를 남기지 않았습니다."
+          "hint": "다른 판에서 쓰였거나 해시를 남기지 않은 문서: {pages}."
         },
         "checking": {
           "label": "확인 중",
@@ -5205,7 +5421,7 @@
       "viewOriginal": "원본 보기",
       "viewOriginalCount": "원문 {count, number}개",
       "viewOriginalOne": "원본 보기: {name}",
-      "originalMissing": "{name}을(를) 인용하지만 이 폴더에는 없습니다.",
+      "originalMissing": "근거로 인용한 {name}, 이 폴더에는 없습니다.",
       "compileCreateFile": "{path} 만들기",
       "compileModifyFile": "{path} 바꾸기",
       "logCount": {
@@ -5293,7 +5509,7 @@
           "do": "{field} 줄을 한 줄 더해 주세요."
         },
         "section-order-missing": {
-          "what": "구획 다섯 개가 다 있어야 하는데 {missing}이(가) 빠졌어요.",
+          "what": "구획 다섯 개가 다 있어야 하는데 빠진 것이 있어요 · {missing}",
           "do": "빠진 구획을 제목만이라도 더하세요. 비어 있다는 것도 읽는 사람이 알게 되는 사실이에요."
         },
         "section-order-sequence": {
@@ -5313,15 +5529,15 @@
           "do": "어디까지 읽은 원문인지 그 경로를 목록으로 적어 주세요."
         },
         "bad-truncation-record-path": {
-          "what": "{path}이(가) 어디까지 읽었는지 적는 칸에는 있는데, 이 문서가 쓰는 원문 목록에는 없어요.",
+          "what": "어디까지 읽었는지 적는 칸에는 {path}, 이 문서가 쓰는 원문 목록에는 없어요.",
           "do": "원문 목록에 더하거나, 그 줄을 지우세요."
         },
         "citation-target-missing-folder": {
-          "what": "{path}을(를) 근거로 달았는데 이 폴더에 그 파일이 없어요.",
+          "what": "근거로 {path}, 이 폴더에 그 파일이 없어요.",
           "do": "열어 볼 수 없는 근거는 근거가 아니에요. 파일을 이 폴더에 넣거나, 근거를 고치세요."
         },
         "citation-target-missing-sources": {
-          "what": "{path}을(를) 근거로 달았는데 이 문서가 쓰는 원문 목록에 없어요.",
+          "what": "근거로 {path}, 이 문서가 쓰는 원문 목록에 없어요.",
           "do": "원문 목록에 더하거나, 근거를 고치세요."
         },
         "describes-needs-approval": {
@@ -5898,8 +6114,8 @@
         "costOnStale": "낡은 것을 찾은 실행에만 에이전트 턴 하나.",
         "allowAndSave": "허용하고 저장",
         "cancel": "취소",
-        "saved": "{name}이(가) {time}에 처음 돕니다.",
-        "savedRunningNow": "{name}을(를) 지금 한 번 돌립니다. 다음은 {time}입니다.",
+        "saved": "{time}에 처음 돕니다 · {name}",
+        "savedRunningNow": "지금 한 번 돌립니다 · {name}. 다음은 {time}입니다.",
         "saveFailed": "자동 점검을 저장하지 못했습니다: {reason}"
       },
       "name": {

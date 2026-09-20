@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Command } from "cmdk";
 import * as Dialog from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -20,8 +20,16 @@ import {
 } from "@/entities/knowledge-graph";
 import { controlClass, HighlightedText } from "@/shared/ui";
 import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match";
-import { describeMatchReason } from "../lib/match-reason";
+import { describeMatchReason, reasonLineClass } from "../lib/match-reason";
 import { focusMapCanvasWhenReady, MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
+
+/**
+ * How many rows each group draws. The heading says "shown / found" whenever this
+ * binds, so the limit is visible rather than silently standing in for the answer.
+ */
+const RESULT_LIMIT = 20;
+
+const EMPTY_PROJECT_PAGE = { results: [], total: 0 } as const;
 
 export interface GlobalSearchProps {
   open: boolean;
@@ -106,18 +114,20 @@ export function GlobalSearch({
   // "5 indexed" beside a census of 4 concepts (design audit 2026-09-04). The
   // predicate is the one the recent-changes lens uses, so the two agree.
   const drawnNodes = useMemo(() => nodes.filter((node) => isGraphDrawnKind(node.kind)), [nodes]);
-  const ontologyResults = useMemo(
+  const ontologyPage = useMemo(
     () =>
-      matchOntologyNodes(query, drawnNodes, 20, {
+      matchOntologyNodes(query, drawnNodes, RESULT_LIMIT, {
         kinds: selectedKinds,
         projectIds: selectedProjectIds,
       }),
     [query, drawnNodes, selectedKinds, selectedProjectIds],
   );
-  const projectResults = useMemo(
-    () => (projects ? matchProjects(query, projects, 20) : []),
+  const ontologyResults = ontologyPage.results;
+  const projectPage = useMemo(
+    () => (projects ? matchProjects(query, projects, RESULT_LIMIT) : EMPTY_PROJECT_PAGE),
     [query, projects],
   );
+  const projectResults = projectPage.results;
 
   const isEmptyQuery = query.trim() === "";
   const ontologySize = drawnNodes.length;
@@ -156,7 +166,9 @@ export function GlobalSearch({
     const localized = projectNode?.displayLocales?.[locale]?.trim();
     return localized || project.name.trim() || null;
   }, [projects, drawnNodes, locale]);
-  const totalMatches = ontologyResults.length + projectResults.length;
+  // The footer names the scope it searched, so its number is read as a fact about
+  // that folder — it has to be what was found, not what fitted (measured 2026-09-19).
+  const totalMatches = ontologyPage.total + projectPage.total;
   const hasFilter = selectedKinds.size > 0 || selectedProjectIds.size > 0;
 
   // The source for the workspace project chip row — the projects prop when present
@@ -196,6 +208,28 @@ export function GlobalSearch({
     },
     [projectVirtualizer],
   );
+
+  /**
+   * Enter belongs to whichever control has focus.
+   *
+   * cmdk's root listens for Enter across the whole palette and turns it into "open
+   * the highlighted row", `preventDefault` included — so it also swallowed Enter
+   * pressed on a control. Measured 2026-09-19: tabbing to a kind filter chip and
+   * pressing Enter left the chip `aria-pressed="false"` and instead **closed the
+   * palette and flew the map to `capability:account-closure`**, whichever row
+   * happened to be highlighted. The close button did the same: Enter navigated
+   * instead of closing. Space was unaffected, so the two keys disagreed about what
+   * the focused control does.
+   *
+   * Stopping Enter at the control's own row (bubble phase, so the button still gets
+   * it) leaves cmdk's root handling only Enter from the search field, which is the
+   * one place "open the highlighted row" is what a person means.
+   */
+  const keepEnterOnTheFocusedControl = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Enter") return;
+    if (event.target === inputRef.current) return;
+    event.stopPropagation();
+  };
 
   const closeAndClear = () => {
     onOpenChange(false);
@@ -305,7 +339,10 @@ export function GlobalSearch({
             className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-hidden border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-2)] md:h-auto md:max-w-[var(--topology-search-sheet-floating-width)] md:rounded-sheet"
             onClick={(event) => event.stopPropagation()}
           >
-        <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-4 py-3">
+        <div
+          className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-4 py-3"
+          onKeyDown={keepEnterOnTheFocusedControl}
+        >
           <Search size={ICON_SIZE.md} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
           <Command.Input
             ref={inputRef}
@@ -341,6 +378,7 @@ export function GlobalSearch({
           className="flex flex-col gap-1 border-b border-[color:var(--color-border-soft)] px-3 py-2"
           aria-label={t('filterAriaLabel')}
           data-testid="global-search-filter-row"
+          onKeyDown={keepEnterOnTheFocusedControl}
         >
           <div className="flex items-center gap-2 overflow-x-auto">
             <span
@@ -396,10 +434,16 @@ export function GlobalSearch({
               {/* @tanstack/react-virtual horizontal virtualizer — renders only the
                   chips in the viewport (~10–15) even in a workspace of 1,979 projects.
                   The overflow-x-auto + relative + absolute-child pattern. */}
+              {/* The scroller's height is the control's, not a number.
+                  `overflow-x: auto` clips the other axis too, and this was a hardcoded
+                  24px while the chip inside it is `--control-h-sm` — 28px on a mouse
+                  and 44px under a coarse pointer, where the touch floor raises it.
+                  Measured 2026-09-19 at 390x844: the chip rendered 44px tall inside a
+                  24px box and lost its bottom 20px, so the control the touch floor
+                  exists for was clipped to 24. */}
               <div
                 ref={attachProjectScroll}
-                className="relative flex-1 overflow-x-auto"
-                style={{ height: 24 }}
+                className="relative h-[var(--control-h-sm)] flex-1 overflow-x-auto"
               >
                 <div
                   className="relative"
@@ -465,7 +509,7 @@ export function GlobalSearch({
               heading={
                 <span className="px-2 pb-1 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                   {isEmptyQuery ? t('groupConceptRecent') : t('groupConceptMatch')} · {ontologyResults.length}
-                  {isEmptyQuery && ontologySize > ontologyResults.length ? ` / ${ontologySize}` : ""}
+                  {ontologyPage.total > ontologyResults.length ? ` / ${ontologyPage.total}` : ""}
                 </span>
               }
             >
@@ -513,33 +557,32 @@ export function GlobalSearch({
                     <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">
                       {kindLabel(node.kind)}
                     </span>
-                    <span
-                      data-search-result-path-like={pathLike ? "true" : undefined}
-                      className={cn(
-                        "min-w-0 flex-1 truncate",
-                        pathLike
-                          ? "font-mono text-body text-[color:var(--color-text-tertiary)]"
-                          : "text-[color:var(--color-text-primary)]",
-                      )}
-                    >
-                      <HighlightedText text={label} query={isEmptyQuery ? undefined : query} />
-                    </span>
-                    {reason ? (
+                    {/* Beside the name from `md` up, under it below — see
+                        `reasonLineClass`. */}
+                    <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-2">
                       <span
-                        data-search-result-reason={reason.kind}
-                        // A fixed width, not a maximum: the column is one column, so
-                        // its text starts on one line. Measured 2026-09-19 with
-                        // `max-w`, four rows of "policy" began at four different x
-                        // (763-916, a 153px spread) because each short name was
-                        // pushed flush right by the label's `flex-1`.
+                        data-search-result-path-like={pathLike ? "true" : undefined}
                         className={cn(
-                          "hidden w-[14rem] shrink-0 truncate text-body text-[color:var(--color-text-tertiary)] md:block",
-                          reason.kind === "id" && "font-mono text-caption",
+                          "min-w-0 truncate md:flex-1",
+                          pathLike
+                            ? "font-mono text-body text-[color:var(--color-text-tertiary)]"
+                            : "text-[color:var(--color-text-primary)]",
                         )}
                       >
-                        <HighlightedText text={reason.text} query={reason.query} />
+                        <HighlightedText text={label} query={isEmptyQuery ? undefined : query} />
                       </span>
-                    ) : null}
+                      {reason ? (
+                        <span
+                          data-search-result-reason={reason.kind}
+                          className={cn(
+                            reasonLineClass(reason),
+                            reason.kind === "id" && "font-mono text-caption",
+                          )}
+                        >
+                          <HighlightedText text={reason.text} query={reason.query} />
+                        </span>
+                      ) : null}
+                    </div>
                   </Command.Item>
                 );
               })}
@@ -551,7 +594,7 @@ export function GlobalSearch({
               heading={
                 <span className="px-2 pb-1 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                   {isEmptyQuery ? t('groupProjectRecent') : t('groupProjectMatch')} · {projectResults.length}
-                  {isEmptyQuery && projectSize > projectResults.length ? ` / ${projectSize}` : ""}
+                  {projectPage.total > projectResults.length ? ` / ${projectPage.total}` : ""}
                 </span>
               }
             >
@@ -576,28 +619,30 @@ export function GlobalSearch({
                   {/* Marked like the concept rows above. The same project appears in
                       both groups — as a concept and as a project — and only one of the
                       two was showing why it was there (measured live 2026-09-19). */}
-                  <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
-                    {/* The word this screen draws for the project, with the match still lit. */}
-                    <HighlightedText
-                      text={projectDisplayName(project, locale)}
-                      query={isEmptyQuery ? undefined : query}
-                    />
-                  </span>
                   {/* Same seat, same job as the concept rows: the reason. It holds the
                       slug until something else earned the row — the English name, or
                       the description, tag or category that matched and which this row
                       otherwise never shows. */}
-                  {reason ? (
-                    <span
-                      data-search-result-reason={reason.kind}
-                      className={cn(
-                        "hidden w-[14rem] shrink-0 truncate text-caption text-[color:var(--color-text-tertiary)] md:block",
-                        reason.kind !== "summary" && "font-mono",
-                      )}
-                    >
-                      <HighlightedText text={reason.text} query={reason.query} />
+                  <div className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-2">
+                    <span className="min-w-0 truncate text-[color:var(--color-text-primary)] md:flex-1">
+                      {/* The word this screen draws for the project, with the match still lit. */}
+                      <HighlightedText
+                        text={projectDisplayName(project, locale)}
+                        query={isEmptyQuery ? undefined : query}
+                      />
                     </span>
-                  ) : null}
+                    {reason ? (
+                      <span
+                        data-search-result-reason={reason.kind}
+                        className={cn(
+                          reasonLineClass(reason),
+                          reason.kind !== "summary" && "font-mono",
+                        )}
+                      >
+                        <HighlightedText text={reason.text} query={reason.query} />
+                      </span>
+                    ) : null}
+                  </div>
                   <span className="shrink-0 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">
                     {project.status}
                   </span>
