@@ -4270,6 +4270,7 @@
       "starting": "Connecting",
       "ready": "Ready",
       "thinking": "Thinking",
+      "awaiting": "Waiting for you",
       "error": "Problem",
       "exited": "Ended"
     },

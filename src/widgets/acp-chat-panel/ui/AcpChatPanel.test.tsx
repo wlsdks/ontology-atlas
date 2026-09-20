@@ -1193,6 +1193,43 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
    * the card scrolls **only its reading matter**, and the decision row sits after that scroller
    * rather than inside it. Rendered geometry is the installed app's job.
    */
+  /**
+   * ⚠️ **A turn blocked on this card is not thinking.** Measured in the rendered panel, both
+   * catalogues: with the card on screen the footer read 「Thinking」 and its clock kept counting,
+   * beside a Stop button, while the agent had produced nothing since it asked and could produce
+   * nothing until the person answered. The panel was reporting its own wait as the agent's work.
+   * The session's own state is untouched — `data-acp-status` is still `thinking` — and only the
+   * word a person reads changes.
+   */
+  it('말로는 기다린다고 하고, 세션 상태는 그대로 둔다', async () => {
+    await bootSession();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '관계를 정리해줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+
+    const panel = screen.getByTestId('acp-chat-panel');
+    const badge = document.querySelector('[data-acp-status-badge]') as HTMLElement;
+    expect(badge.getAttribute('data-acp-status-badge')).toBe('thinking');
+
+    emit(
+      mcpPermissionRequest('mcp__atlas-vault__add_relation', 98, {
+        from: 'capabilities/a',
+        to: 'domains/b',
+        type: 'relates',
+        why: '같은 흐름이라서',
+      }),
+    );
+    await screen.findByTestId('acp-permission-card');
+
+    await waitFor(() => {
+      expect(
+        (document.querySelector('[data-acp-status-badge]') as HTMLElement).getAttribute('data-acp-status-badge'),
+      ).toBe('awaiting');
+    });
+    expect(document.querySelector('[data-acp-status-badge]')!.textContent).toContain('status.awaiting');
+    // The protocol state is what it was; only the sentence changed.
+    expect(panel.getAttribute('data-acp-status')).toBe('thinking');
+  });
+
   it('권한 카드가 길어져도 답할 두 버튼은 스크롤 밖에 남는다', async () => {
     await bootSession();
     fireEvent.change(screen.getByRole('textbox'), { target: { value: '관계를 정리해줘' } });
