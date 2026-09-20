@@ -278,7 +278,62 @@ export function refuseLanding(pr) {
  * understand as an open door is how a mutex becomes decoration. It becomes
  * takeable only once it is older than the lease.
  */
-export function classifyLock({ payload, nowMs, leaseMinutes = LEASE_MINUTES }) {
+/**
+ * Who a lock's token says holds it: the machine and the process id.
+ *
+ * The token is `${hostname}-${pid}-${Date.now()}`, and a hostname may itself contain dashes, so
+ * the two known fields are read from the right. `null` for anything that does not parse, because
+ * a token we cannot read is not evidence about anybody.
+ */
+export function parseLockToken(token) {
+  const parts = String(token ?? '').split('-');
+  if (parts.length < 3) return null;
+  const pid = Number(parts[parts.length - 2]);
+  const host = parts.slice(0, -2).join('-');
+  if (!host || !Number.isInteger(pid) || pid <= 0) return null;
+  return { host, pid };
+}
+
+/**
+ * Is the process that took this lock still running?
+ *
+ * ⚠️ **A lease is a guess about liveness; the pid is the fact.** Twice on 2026-09-20 a landing
+ * process died holding the lock — once killed during the REST outage, once unexplained — and each
+ * time the lock sat for its full 45 minutes with nobody behind it. The second was **561 minutes**
+ * old when it was found, because the takeover is only consulted on the poll that needs it.
+ *
+ * Three answers, never two: `alive`, `dead`, and `unknown`. `unknown` is the honest answer for a
+ * lock taken on another machine, where this process cannot see the process table at all, and it
+ * leaves the lease as the only rule there. Claiming `dead` from ignorance is how a mutex becomes
+ * decoration.
+ *
+ * The command line is checked, not only the pid's existence: pids are recycled, and a lock is not
+ * free because some unrelated program inherited the number.
+ */
+export function classifyHolderLiveness(payload, {
+  host = hostname(),
+  readProcessCommand = (pid) => {
+    try {
+      return execFileSync('ps', ['-p', String(pid), '-o', 'command='], {
+        encoding: 'utf-8',
+        // `ps` complains on stderr about a pid it dislikes; the empty answer is the whole message.
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+    } catch {
+      // A non-zero exit is `ps` saying no such process, which is the answer we want.
+      return '';
+    }
+  },
+} = {}) {
+  const token = parseLockToken(payload?.token);
+  if (!token) return 'unknown';
+  if (token.host !== host) return 'unknown';
+  const command = readProcessCommand(token.pid);
+  if (!command) return 'dead';
+  return command.includes('pr-land') ? 'alive' : 'dead';
+}
+
+export function classifyLock({ payload, nowMs, leaseMinutes = LEASE_MINUTES, liveness = classifyHolderLiveness }) {
   if (payload === null || payload === undefined) return { state: 'free', holder: null, ageMinutes: null };
   const acquiredMs = Date.parse(payload?.acquiredAt ?? '');
   if (!Number.isFinite(acquiredMs) || typeof payload?.pr !== 'number') {
@@ -286,11 +341,19 @@ export function classifyLock({ payload, nowMs, leaseMinutes = LEASE_MINUTES }) {
   }
   const ageMinutes = (nowMs - acquiredMs) / 60_000;
   const lease = typeof payload.leaseMinutes === 'number' ? payload.leaseMinutes : leaseMinutes;
+  /*
+   * The lease is a guess about liveness and the pid is the fact, so a holder this machine can
+   * prove is gone releases the lock now rather than in `lease - ageMinutes` minutes. On another
+   * machine the answer is `unknown` and the lease remains the only rule.
+   */
+  const holderLiveness = liveness(payload);
+  const state = holderLiveness === 'dead' || ageMinutes > lease ? 'stale' : 'held';
   return {
-    state: ageMinutes > lease ? 'stale' : 'held',
+    state,
     holder: payload,
     ageMinutes,
     expiresInMinutes: lease - ageMinutes,
+    holderLiveness,
   };
 }
 
@@ -301,9 +364,10 @@ export function describeLock(lock) {
   }
   const age = `${lock.ageMinutes.toFixed(0)} min ago`;
   const who = `${lock.holder.holder ?? 'unknown'}@${lock.holder.host ?? 'unknown'}`;
-  return lock.state === 'stale'
-    ? `PR #${lock.holder.pr} held by ${who} since ${age} and never refreshed: stale`
-    : `PR #${lock.holder.pr} held by ${who} since ${age}`;
+  if (lock.state !== 'stale') return `PR #${lock.holder.pr} held by ${who} since ${age}`;
+  // Say which of the two reasons freed it: a lock two minutes old was not "never refreshed".
+  const why = lock.holderLiveness === 'dead' ? 'its process is gone' : 'never refreshed: stale';
+  return `PR #${lock.holder.pr} held by ${who} since ${age} and ${why}`;
 }
 
 /**

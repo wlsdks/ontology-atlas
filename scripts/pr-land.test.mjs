@@ -8,6 +8,8 @@ import {
   LEASE_MINUTES,
   LOCK_REF,
   classifyLock,
+  classifyHolderLiveness,
+  parseLockToken,
   decideNext,
   QUEUE_REF,
   WAIT_LEASE_MINUTES,
@@ -270,10 +272,68 @@ describe('the landing lock', () => {
     assert.equal(classifyLock({ payload: { pr: 1, acquiredAt: '2026-09-12T11:50:00Z', leaseMinutes: 5 }, nowMs: NOW }).state, 'stale');
   });
 
+  it('reads the machine and the process out of a token, right to left', () => {
+    // A hostname carries dashes of its own, so only the last two fields are known positions.
+    assert.deepEqual(parseLockToken('mbp-pro-local-12426-1789854745891'), { host: 'mbp-pro-local', pid: 12426 });
+    assert.equal(parseLockToken('me'), null);
+    assert.equal(parseLockToken('mbp-notapid-1789854745891'), null);
+    assert.equal(parseLockToken(undefined), null);
+  });
+
+  it('proves a holder dead only on this machine, and only by its command line', () => {
+    const token = 'mbp-4242-1789854745891';
+    const alive = classifyHolderLiveness({ token }, {
+      host: 'mbp',
+      readProcessCommand: () => 'node /repo/scripts/pr-land.mjs 1704',
+    });
+    assert.equal(alive, 'alive');
+
+    // `ps` printing nothing is `ps` saying there is no such process.
+    assert.equal(classifyHolderLiveness({ token }, { host: 'mbp', readProcessCommand: () => '' }), 'dead');
+
+    // Pids are recycled; the number surviving is not the landing surviving.
+    assert.equal(
+      classifyHolderLiveness({ token }, { host: 'mbp', readProcessCommand: () => '/usr/bin/vim notes.md' }),
+      'dead',
+    );
+
+    // Another machine's process table is not readable from here, so nothing is proven either way.
+    assert.equal(classifyHolderLiveness({ token }, { host: 'other', readProcessCommand: () => '' }), 'unknown');
+    assert.equal(classifyHolderLiveness({ token: 'me' }, { host: 'mbp', readProcessCommand: () => '' }), 'unknown');
+  });
+
+  it('frees a lock whose process is gone without waiting out the lease', () => {
+    // The lock found stranded on 2026-09-20: minutes old, nobody behind it.
+    const payload = { pr: 1727, holder: 'stark', host: 'mbp', acquiredAt: '2026-09-12T11:58:00Z' };
+    const dead = classifyLock({ payload, nowMs: NOW, liveness: () => 'dead' });
+    assert.equal(dead.state, 'stale');
+    assert.equal(dead.holderLiveness, 'dead');
+    assert.ok(dead.expiresInMinutes > 0, 'the lease has not run out — liveness is what freed it');
+
+    // A live holder inside a slow CI round is never robbed.
+    assert.equal(classifyLock({ payload, nowMs: NOW, liveness: () => 'alive' }).state, 'held');
+
+    // Off this machine the lease remains the only rule, in both directions.
+    assert.equal(classifyLock({ payload, nowMs: NOW, liveness: () => 'unknown' }).state, 'held');
+    assert.equal(
+      classifyLock({ payload: { ...payload, acquiredAt: '2026-09-12T11:00:00Z' }, nowMs: NOW, liveness: () => 'unknown' }).state,
+      'stale',
+    );
+  });
+
   it('says who holds it and for how long', () => {
     const payload = { pr: 1570, holder: 'stark', host: 'mbp', acquiredAt: '2026-09-12T11:30:00Z' };
     assert.match(describeLock(classifyLock({ payload, nowMs: NOW })), /PR #1570 held by stark@mbp since 30 min ago/);
     assert.match(describeLock(classifyLock({ payload: null, nowMs: NOW })), /nothing is landing/);
+    // Two reasons free a lock, and the log says which one, because they call for different repairs.
+    assert.match(
+      describeLock(classifyLock({ payload, nowMs: NOW, liveness: () => 'dead' })),
+      /its process is gone/,
+    );
+    assert.match(
+      describeLock(classifyLock({ payload: { ...payload, acquiredAt: '2026-09-12T11:00:00Z' }, nowMs: NOW, liveness: () => 'unknown' })),
+      /never refreshed: stale/,
+    );
   });
 });
 
