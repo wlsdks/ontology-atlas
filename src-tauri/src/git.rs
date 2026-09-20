@@ -2486,6 +2486,10 @@ mod tests {
         git(&["config", "user.email", "test@example.invalid"]);
         git(&["config", "user.name", "atlas test"]);
         git(&["config", "commit.gpgsign", "false"]);
+        // The last assertion compares restored bytes with the committed ones; a Windows git
+        // with autocrlf on would hand back CRLF and fail a test that is about identity, not
+        // line endings.
+        git(&["config", "core.autocrlf", "false"]);
         let file = dir.join("orders.md");
         let committed = "---\nuid: 11111111\nslug: domains/orders\n---\n# Orders\n";
         fs::write(&file, committed).unwrap();
