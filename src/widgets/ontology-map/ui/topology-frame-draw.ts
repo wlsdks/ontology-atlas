@@ -83,8 +83,7 @@ import {
   resolveLabelPriority,
   type LabelCandidate,
   type ReservedBox,
-  type SafeRect,
-} from "../render/label-layout";
+  type SafeRect, floorFlipBaseline } from "../render/label-layout";
 import { draw as nodeShapesDraw, drawGalaxyNodeStar, drawNodeStar, SPOTLIGHT_RING_OFFSET } from "../render/node-shapes";
 import { clusterChipOccupancyRect, drawClusterChip, clusterChipScale, type ClusterBarLabels } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
@@ -3550,7 +3549,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // nearest safe edge. Everything else culls as before.
     let anchorX = screen.x;
     let clampedAnchorY = anchorY;
-    if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
+    let baselineY = anchorY;
+    const floorFlip = isWithinSafeRect(anchorX, anchorY, safeRect)
+      ? null
+      : floorFlipBaseline(anchorX, anchorY, resolveFlippedLabelBaselineY(screen.y, screenRadius), screen.y, safeRect, viewportHeight);
+    if (floorFlip !== null) {
+      // Under the floor band but on screen: the name goes above the node.
+      baselineY = floorFlip;
+    } else if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
       // If protected, pull to the inset edge instead of discarding. The check is
       // just `render/label-layout.ts#isSafeRectProtectedLabel` — keeping it inline here
       // would make it impossible to write unit tests that prevent regression, as there's no place
@@ -3569,6 +3575,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const clamped = clampAnchorIntoSafeRect(anchorX, anchorY, safeRect, width / 2 + 4, fontSize + 4);
       anchorX = clamped.x;
       clampedAnchorY = clamped.y;
+      baselineY = clampedAnchorY;
     }
     const shiftX = anchorX - screen.x;
     const shiftY = clampedAnchorY - anchorY;
@@ -3619,7 +3626,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       minY: baselineY - vertical.ascent,
       maxY: baselineY + vertical.descent,
     });
-    const candidateBbox = boxAt(clampedAnchorY);
+    const candidateBbox = boxAt(baselineY);
     labelBboxById.set(node.id, candidateBbox);
     /*
      * The upper slot this label would take if the lower one turns out to be
@@ -3656,7 +3663,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         // Pass the baseline the placer settled on: recomputing it inside `draw()`
         // would undo the flipped slot. Rewritten by the flip pass below when the
         // lower slot turns out to be blocked.
-        baselineY: clampedAnchorY,
+        baselineY,
         screenRadius,
         egoState,
         isHovered,
