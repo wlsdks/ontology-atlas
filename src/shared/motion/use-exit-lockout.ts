@@ -35,8 +35,8 @@ import { EXIT_TRANSITION } from './tokens';
  * {@link import('@/shared/lib/merge-refs').mergeRefs} when the element already owns a
  * ref) and spread `onAnimationStart` onto it. The `exit` object keeps
  * `transition: EXIT_TRANSITION` — that is the only thing this hook keys on — and drops
- * `pointerEvents` entirely; entry and any mid-life `animate` calls are untouched because
- * their transition is never `EXIT_TRANSITION`.
+ * `pointerEvents` entirely. If entry reverses an unfinished exit on the same node,
+ * restore the pointer policy that was present before the lockout.
  *
  * ```tsx
  * const { ref, onAnimationStart } = useExitLockout<HTMLDivElement>();
@@ -52,17 +52,21 @@ export function useExitLockout<T extends HTMLElement>(): {
   onAnimationStart: (definition: TargetAndTransition | VariantLabels) => void;
 } {
   const ref = useRef<T | null>(null);
+  const locked = useRef<{ element: T; pointerEvents: string } | null>(null);
 
   const onAnimationStart = useCallback((definition: TargetAndTransition | VariantLabels) => {
-    if (
-      typeof definition !== 'object' ||
-      definition === null ||
-      (definition as TargetAndTransition).transition !== EXIT_TRANSITION
-    ) {
-      return;
-    }
     const el = ref.current;
-    if (el) el.style.pointerEvents = 'none';
+    const exiting = typeof definition === 'object' && definition !== null
+      && (definition as TargetAndTransition).transition === EXIT_TRANSITION;
+    if (exiting && el) {
+      if (locked.current?.element !== el) {
+        locked.current = { element: el, pointerEvents: el.style.pointerEvents };
+      }
+      el.style.pointerEvents = 'none';
+    } else if (locked.current) {
+      if (locked.current.element === el) el.style.pointerEvents = locked.current.pointerEvents;
+      locked.current = null;
+    }
   }, []);
 
   return { ref, onAnimationStart };

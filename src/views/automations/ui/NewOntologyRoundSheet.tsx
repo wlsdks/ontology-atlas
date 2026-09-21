@@ -13,7 +13,7 @@ import {
 } from "@/entities/library-round";
 import { fieldLabel } from "@/shared/ui/control-class";
 import { SegmentedControl } from "@/shared/ui/segmented-control";
-import { Button, Dialog } from "@/shared/ui";
+import { Button, Dialog, DialogBody, DialogFooter } from "@/shared/ui";
 import { Input } from "@/shared/ui/input";
 
 export interface NewOntologyRoundSheetProps {
@@ -39,6 +39,9 @@ export function NewOntologyRoundSheet({ open, onClose, onSave }: NewOntologyRoun
 
   const timeValid = cadence === "hour" || cadence === "6h" || isValidClockTime(time);
   const canSave = timeValid && !saving;
+  const close = () => {
+    if (!saving) onClose();
+  };
 
   const save = async () => {
     if (!canSave) return;
@@ -46,33 +49,49 @@ export function NewOntologyRoundSheet({ open, onClose, onSave }: NewOntologyRoun
     setFailure(false);
     const now = new Date();
     const cadenceValue = cadenceFromKey(cadence, time);
-    const saved = await onSave({
-      id: newId(),
-      name: name.trim() || t("ontology.defaultName"),
-      kind: "ontology",
-      cadence: cadenceValue,
-      enabled: true,
-      query: focus.trim(),
-      createdAt: now.toISOString(),
-      nextDueAt: nextDueAt(cadenceValue, now).toISOString(),
-    });
-    setSaving(false);
+    let saved = false;
+    try {
+      saved = await onSave({
+        id: newId(),
+        name: name.trim() || t("ontology.defaultName"),
+        kind: "ontology",
+        cadence: cadenceValue,
+        enabled: true,
+        query: focus.trim(),
+        createdAt: now.toISOString(),
+        nextDueAt: nextDueAt(cadenceValue, now).toISOString(),
+      });
+      if (!saved) setFailure(true);
+    } catch {
+      setFailure(true);
+    } finally {
+      setSaving(false);
+    }
     if (saved) onClose();
-    else setFailure(true);
   };
 
   return (
-    <Dialog open={open} onClose={onClose} size="md" labelledBy={titleId} testId="ontology-automation-sheet" className="flex flex-col gap-5">
-      <div>
-        <p className="text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
+    <Dialog open={open} onClose={close} size="md" labelledBy={titleId} testId="ontology-automation-sheet" className="flex max-h-[calc(100dvh-var(--chrome-inset)*2)] flex-col gap-4 overflow-hidden break-keep">
+      <header className="shrink-0">
+        <p className="text-body text-[color:var(--color-text-tertiary)]">
           {t("ontology.eyebrow")}
         </p>
         <h2 id={titleId} className="mt-2 text-title leading-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t("ontology.sheet.title")}
         </h2>
-      </div>
+      </header>
 
+      <DialogBody className="flex flex-col gap-5 pr-1">
+      <fieldset disabled={saving} className="contents disabled:pointer-events-none">
       <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{t("ontology.sheet.description")}</p>
+
+      <Input
+        label={t("sheetName")}
+        value={name}
+        onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}
+        placeholder={t("ontology.defaultName")}
+        data-testid="ontology-automation-name"
+      />
 
       <Input
         label={t("ontology.sheet.focus")}
@@ -112,7 +131,7 @@ export function NewOntologyRoundSheet({ open, onClose, onSave }: NewOntologyRoun
         ) : null}
       </div>
 
-      <div className="rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
+      <div className="border-t border-[color:var(--color-divider)] pt-3">
         <p className={fieldLabel()}>{t("ontology.sheet.scopeTitle")}</p>
         <ul className="mt-2 flex flex-col gap-1.5">
           {[
@@ -128,22 +147,18 @@ export function NewOntologyRoundSheet({ open, onClose, onSave }: NewOntologyRoun
         </ul>
       </div>
 
-      <Input
-        label={t("sheetName")}
-        value={name}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => setName(event.target.value)}
-        placeholder={t("ontology.defaultName")}
-        data-testid="ontology-automation-name"
-      />
+
 
       {failure ? <p role="alert" className="text-body leading-body text-[color:var(--color-danger-text)]">{t("saveFailed")}</p> : null}
 
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="ghost" onClick={onClose} className="atlas-touch-floor atlas-touch-floor-wide">{t("cancel")}</Button>
+      </fieldset>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="ghost" onClick={close} disabled={saving} className="atlas-touch-floor atlas-touch-floor-wide">{t("cancel")}</Button>
         <Button onClick={() => void save()} disabled={!canSave} data-testid="ontology-automation-allow" className="atlas-touch-floor atlas-touch-floor-wide">
-          {t("allowAndSchedule")}
+          {saving ? t("saving") : t("allowAndSchedule")}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

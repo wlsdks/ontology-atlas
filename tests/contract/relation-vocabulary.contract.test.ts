@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import ts from 'typescript';
 import koMessages from '../../messages/ko.json';
 import enMessages from '../../messages/en.json';
 import { KNOWLEDGE_EDGE_TYPES } from '../../src/entities/knowledge-graph/model/types';
@@ -29,7 +30,7 @@ const ROOT = process.cwd();
 const SURFACE_FILES: ReadonlyArray<{ label: string; file: string }> = [
   { label: '지도 도움말 관계 가이드 (ShortcutSheet)', file: 'src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx' },
   { label: '인사이트 (OntologyInsightsPage)', file: 'src/views/ontology-insights/ui/OntologyInsightsPage.tsx' },
-  { label: '데이터시트 (HomePage — nodeDatasheet labels)', file: 'src/views/home/ui/HomePage.tsx' },
+  { label: '데이터시트 (HomePage — nodeDatasheet labels)', file: 'src/views/home/model/use-topology-preferences.tsx' },
 ];
 
 const IMPORT_MARKERS = ['useRelationVocabulary', 'useEdgeTypeLabel'];
@@ -39,7 +40,13 @@ describe('relation-vocabulary contract — 3 표면 공용 사전', () => {
     const missing: string[] = [];
     for (const surface of SURFACE_FILES) {
       const source = readFileSync(path.join(ROOT, surface.file), 'utf8');
-      const hasMarker = IMPORT_MARKERS.some((marker) => source.includes(marker));
+      const file = ts.createSourceFile(surface.file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+      const hasMarker = file.statements.some((statement) => {
+        if (!ts.isImportDeclaration(statement) || statement.importClause?.isTypeOnly) return false;
+        const bindings = statement.importClause?.namedBindings;
+        return bindings && ts.isNamedImports(bindings)
+          && bindings.elements.some((element) => !element.isTypeOnly && IMPORT_MARKERS.includes((element.propertyName ?? element.name).text));
+      });
       if (!hasMarker) missing.push(`${surface.label} (${surface.file})`);
     }
     expect(
@@ -71,4 +78,9 @@ describe('relation-vocabulary contract — 3 표면 공용 사전', () => {
       }
     },
   );
+});
+
+it("keeps the protected topology owners connected to the route", () => {
+  const route = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+  expect(route).toContain('useTopologyPreferences()');
 });

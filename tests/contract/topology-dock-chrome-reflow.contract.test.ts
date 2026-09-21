@@ -1,20 +1,22 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const home = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+const inspector = readFileSync("src/views/home/model/use-topology-inspector-state.tsx", "utf8");
+const chrome = readFileSync("src/views/home/ui/TopologyCommandChrome.tsx", "utf8");
+const canvas = readFileSync("src/views/home/ui/TopologyCanvasSurface.tsx", "utf8");
 const hint = readFileSync("src/widgets/search-hint/ui/SearchHint.tsx", "utf8");
 const fit = readFileSync("src/widgets/topology-controls/ui/TopologyFitControl.tsx", "utf8");
 const css = readFileSync("app/globals.css", "utf8");
 
 describe("14-inch map chrome reflows around the agent dock and node inspector", () => {
   it("agent dock requests compact top chrome instead of overlapping the search lane", () => {
-    expect(home).toMatch(
-      /const topologyUtilityChromeCompact\s*=\s*[\s\S]*agentDockRequestedOpen/,
+    expect(inspector).toMatch(
+      /const topologyUtilityChromeCompact\s*=\s*[^;]*agentDockRequestedOpen/,
     );
   });
 
   it("Home tells the search lane when the right inspector actually occupies the map", () => {
-    expect(home).toContain("rightInspectorReserved={nodePanelMounted}");
+    expect(chrome).toContain("rightInspectorReserved={nodePanelMounted}");
     expect(hint).toContain('data-right-inspector-reserve');
   });
 
@@ -28,7 +30,8 @@ describe("14-inch map chrome reflows around the agent dock and node inspector", 
   it("pulls every right map-control rail toward the inset dock with one shared seam", () => {
     // Four rails since 2026-09-02: fit, guided tour, shortcuts help, and the growth
     // replay tile that took the fourth slot of the same rhythm.
-    expect(home.match(/data-agent-dock-adjacent-rail/g)).toHaveLength(4);
+    expect(chrome.match(/data-agent-dock-adjacent-rail/g)).toHaveLength(1);
+    expect(canvas.match(/data-agent-dock-adjacent-rail/g)).toHaveLength(3);
     expect(fit).toContain('data-agent-dock-adjacent-rail="true"');
     expect(css).toContain("[data-agent-dock-adjacent-rail='true']");
     expect(css).toMatch(
@@ -37,4 +40,11 @@ describe("14-inch map chrome reflows around the agent dock and node inspector", 
     expect(css).toContain("transition-property: right, color, background-color, border-color");
     expect(css).toContain("var(--agent-panel-reflow-duration)");
   });
+});
+
+it("keeps the protected topology owners connected to the route", () => {
+  const route = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+  expect(route).toContain('useTopologyInspectorState({');
+  expect(route).toContain('<TopologyCommandChrome');
+  expect(route).toContain('<TopologyCanvasSurface');
 });

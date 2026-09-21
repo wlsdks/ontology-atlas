@@ -6,6 +6,9 @@ import { agentChatDoor, type AgentChatDoorInput } from './agent-chat-door';
 import { parseHomeRouteState } from './url-state';
 
 const homePageSource = readFileSync('src/views/home/ui/HomePage.tsx', 'utf8');
+const indexSource = readFileSync('src/views/home/model/use-topology-index-presentation.tsx', 'utf8');
+const agentSource = readFileSync('src/views/home/model/use-topology-agent-orchestration.tsx', 'utf8');
+const dockSource = readFileSync('src/views/home/ui/TopologyAgentDock.tsx', 'utf8');
 
 function frameWidthOwners(source: string): string[] {
   const file = ts.createSourceFile('HomePage.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -124,32 +127,34 @@ describe('대화창은 하나 — 어느 갈래가 그 창을 갖나', () => {
     ).toEqual({ runtime: true, key: false, open: true });
     // INDEX and the first-run card must yield on the arrival frame too; otherwise
     // the correct door opens into a squeezed map before its derived prefill exists.
-    expect(homePageSource).toMatch(
+    expect(homePageSource).toContain("<TopologyAgentDock");
+    expect(homePageSource).toContain("useTopologyAgentOrchestration({");
+    expect(indexSource).toMatch(
       /const agentDockRequestedOpen\s*=\s*[\s\S]{0,260}routeState\.askBusinessFlow/,
     );
     // Ownership is not visibility: the ACP frame itself is stateful so it can animate
     // its width. The route handoff must enter the same open function as a button, and
     // that function must drive both the width and Surface `open` bindings.
-    expect(homePageSource).toMatch(
+    expect(agentSource).toMatch(
       /const routeAskDockRequestRef[\s\S]{0,1800}openVaultAgent\(\);/,
     );
-    expect(homePageSource).toMatch(
+    expect(agentSource).toMatch(
       /if \(agentChatUsesRuntime\)[\s\S]{0,220}setAcpDockFrameOpen\(true\)/,
     );
-    expect(frameWidthOwners(homePageSource)).toEqual(['acpDockFrameOpen', 'meaningWorkbenchOpen']);
+    expect(frameWidthOwners(dockSource)).toEqual(['acpDockFrameOpen', 'meaningWorkbenchOpen']);
     // The shared inset-surface contract checks its open binding; the route must
     // also claim actual frame width when the meaning section is closed.
-    const missingRuntime = homePageSource.replace('width: acpDockFrameOpen || meaningWorkbenchOpen', 'width: meaningWorkbenchOpen');
+    const missingRuntime = dockSource.replace('width: acpDockFrameOpen || meaningWorkbenchOpen', 'width: meaningWorkbenchOpen');
     expect(frameWidthOwners(missingRuntime)).not.toEqual(['acpDockFrameOpen', 'meaningWorkbenchOpen']);
   });
 
   it('흐름 요청은 두 대화 갈래 모두 입력칸에만 앉고 자동 전송 경로에는 들어가지 않는다', () => {
     expect(
-      homePageSource.match(
+      dockSource.match(
         /prefillRequest=\{vaultAgentPrefill \?\? askPrefill\}/g,
       ),
     ).toHaveLength(2);
-    expect(homePageSource).not.toMatch(
+    expect(dockSource).not.toMatch(
       /openingRequest=\{[^}]*askPrefill[^}]*\}/,
     );
   });

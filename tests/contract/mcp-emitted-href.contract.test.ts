@@ -73,7 +73,9 @@ describe('addresses handed to agents point at live surfaces', () => {
 
   it('still emits a builder address, and it is a live one', () => {
     // A positive assertion, so deleting the emission cannot be mistaken for fixing it.
-    const engine = readFileSync(join(repoRoot, 'mcp/src/ontology-engine.mjs'), 'utf8');
+    const composition = readFileSync(join(repoRoot, 'mcp/src/ontology-engine.mjs'), 'utf8');
+    expect(composition).toMatch(/\bcreateTraversalAnalysis\(\{/);
+    const engine = readFileSync(join(repoRoot, 'mcp/src/ontology-engine/traversal-analysis.mjs'), 'utf8');
     expect(engine).toMatch(/href: `\/topology\/\?p=\$\{encodeURIComponent\(focusParam\)\}/);
   });
 

@@ -1,9 +1,15 @@
 'use client';
 
+import { useId, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
+import { cn } from '@/shared/lib/cn';
+import { MOTION, STAGGER } from '@/shared/motion';
 import { controlClass } from '@/shared/ui/control-class';
+import { EmptyState } from '@/shared/ui/empty-state';
 import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
+import { RowDisclosure } from '@/shared/ui/row-disclosure';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 
 const ROWS = 6;
@@ -29,14 +35,19 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
   const format = useFormatter();
   if (detail.availability !== 'measured') {
     return (
-      <section data-testid="library-tab" className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-        {/* A panel with nothing to count still says what it is for. */}
-        <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">{t('about.title')}</h3>
-        <p className="mt-1 max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{t('about.body')}</p>
-        <p className="mt-3 text-body text-[color:var(--color-text-tertiary)]">{t('empty')}</p>
-        <Link href="/library/" className={controlClass({ shape: 'link', className: 'mt-2 -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]' })}>
-          {t('open')}
-        </Link>
+      <section data-testid="library-tab" className="flex flex-col gap-[var(--card-gap)]">
+        <WikiAnalysisPreview />
+        <EmptyState
+          title={t('preview.emptyTitle')}
+          description={t('preview.emptyDescription')}
+          size="compact"
+          className="border-0 bg-transparent px-0 py-0"
+          action={(
+            <Link href="/library/" className={controlClass({ shape: 'link', size: 'lg', className: 'atlas-touch-floor atlas-touch-floor-wide text-[color:var(--color-indigo-text-strong)]' })}>
+              {t('open')}
+            </Link>
+          )}
+        />
       </section>
     );
   }
@@ -90,6 +101,127 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
       </Card>
       </div>
     </section>
+  );
+}
+
+function WikiAnalysisPreview() {
+  const t = useTranslations('ontologyPages.insights.libraryTab.preview');
+  const [selected, setSelected] = useState<number | null>(null);
+  const [open, setOpen] = useState(false);
+  const disclosureId = useId();
+  const reduceMotion = useReducedMotion();
+  const stages = [
+    { key: 'source' },
+    { key: 'page' },
+    { key: 'check' },
+  ] as const;
+
+  return (
+    <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+      <p className="text-label text-[color:var(--color-text-tertiary)]">{t('exampleLabel')}</p>
+      <h3 className="mt-2 text-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        {t('title')}
+      </h3>
+      <p className="mt-1 max-w-[62ch] break-keep text-body text-[color:var(--color-text-secondary)]">{t('body')}</p>
+
+      <ol className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {stages.map(({ key }, index) => {
+          const stageOpen = open && selected === index;
+          return (
+            <li key={key} className="relative flex min-w-0">
+              <button
+                type="button"
+                aria-label={t(`stages.${key}.buttonLabel`)}
+                aria-expanded={stageOpen}
+                aria-controls={disclosureId}
+                onClick={() => {
+                  if (selected === index) {
+                    setOpen(!open);
+                    return;
+                  }
+                  setSelected(index);
+                  setOpen(true);
+                }}
+                className={controlClass({
+                  shape: 'tile',
+                  size: 'lg',
+                  active: stageOpen,
+                  className: 'w-full flex-row flex-wrap items-center py-2 text-left sm:flex-col sm:flex-nowrap sm:items-start sm:py-3',
+                })}
+              >
+                <motion.span
+                  aria-hidden
+                  initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...MOTION.base, delay: reduceMotion ? undefined : index * STAGGER }}
+                  className={cn(
+                    'relative flex h-20 w-20 flex-none items-center justify-center sm:w-full',
+                    stageOpen ? 'text-[color:var(--color-indigo-text-strong)]' : 'text-[color:var(--color-text-tertiary)]',
+                  )}
+                >
+                  <StagePreview kind={key} />
+                  {index < stages.length - 1 ? (
+                    <span aria-hidden className="absolute left-full top-1/2 z-10 hidden h-px w-3 bg-[color:var(--color-divider)] sm:block" />
+                  ) : null}
+                </motion.span>
+                <span className="min-w-0 flex-1 basis-32 sm:basis-auto">
+                  <span className="block text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] sm:mt-1">
+                    {t(`stages.${key}.title`)}
+                  </span>
+                  <span className="block text-label text-[color:var(--color-text-tertiary)]">{t(`stages.${key}.example`)}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+
+      <RowDisclosure open={open} id={disclosureId} className="pt-3">
+        {selected !== null ? (
+          <div className="border-t border-[color:var(--color-divider)] pt-3">
+            <p className="max-w-[68ch] break-keep text-body text-[color:var(--color-text-secondary)]">
+              {t(`stages.${stages[selected].key}.setup`)}
+            </p>
+            <Link href="/library/" className={controlClass({ shape: 'link', size: 'lg', className: 'atlas-touch-floor atlas-touch-floor-wide mt-2 text-[color:var(--color-indigo-text-strong)]' })}>
+              {t('openLibrary')}
+            </Link>
+          </div>
+        ) : null}
+      </RowDisclosure>
+      <p className="mt-3 text-body text-[color:var(--color-text-tertiary)]">{t('instruction')}</p>
+    </div>
+  );
+}
+
+function StagePreview({ kind }: { kind: 'source' | 'page' | 'check' }) {
+  const t = useTranslations('ontologyPages.insights.libraryTab.preview');
+  if (kind === 'source') {
+    return (
+      <span className="flex h-16 w-16 flex-col justify-center gap-1.5 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3">
+        <span className="h-px w-full bg-[color:var(--color-text-quaternary)]" />
+        <span className="h-px w-4/5 bg-[color:var(--color-text-quaternary)]" />
+        <span className="h-px w-3/5 bg-[color:var(--color-text-quaternary)]" />
+      </span>
+    );
+  }
+  if (kind === 'page') {
+    return (
+      <span className="flex h-16 w-full max-w-40 flex-col rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-2 py-1.5 text-left">
+        <span className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">{t('stages.page.visualTitle')}</span>
+        <span className="mt-1 h-px w-full bg-[color:var(--color-divider)]" />
+        <span className="mt-1 text-label text-[color:var(--color-text-tertiary)]">{t('stages.page.citation')}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="flex w-full max-w-36 flex-col gap-1 text-left text-label text-[color:var(--color-text-tertiary)]">
+      {(['citation', 'links', 'sourceChanges'] as const).map((item) => (
+        <span key={item} className="flex items-center gap-1.5">
+          <span className="h-px w-3 flex-none bg-[color:var(--color-text-quaternary)]" />
+          <span>{t(`stages.check.${item}`)}</span>
+        </span>
+      ))}
+    </span>
   );
 }
 

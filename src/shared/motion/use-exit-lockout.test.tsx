@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { act, useEffect, useState } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -56,6 +56,24 @@ describe('useExitLockout', () => {
     });
 
     expect(el.style.pointerEvents).toBe('none');
+  });
+
+  it('restores the prior pointer policy when a retained exit reverses into entry', () => {
+    function Reversible() {
+      const { ref, onAnimationStart } = useExitLockout<HTMLDivElement>();
+      return <>
+        <div ref={ref} data-testid="reversible" style={{ pointerEvents: 'auto' }} />
+        <button onClick={() => onAnimationStart({ opacity: 0, transition: EXIT_TRANSITION })}>leave</button>
+        <button onClick={() => onAnimationStart({ opacity: 1 })}>return</button>
+      </>;
+    }
+    const { getByTestId, getByText } = render(<Reversible />);
+    const element = getByTestId('reversible');
+    fireEvent.click(getByText('leave'));
+    fireEvent.click(getByText('leave'));
+    expect(element.style.pointerEvents).toBe('none');
+    fireEvent.click(getByText('return'));
+    expect(element.style.pointerEvents).toBe('auto');
   });
 
   it('does not lock out a definition whose transition is not EXIT_TRANSITION', () => {

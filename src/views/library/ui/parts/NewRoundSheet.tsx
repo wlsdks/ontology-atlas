@@ -23,7 +23,7 @@ import { controlClass, fieldLabel } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { SegmentedControl } from "@/shared/ui/segmented-control";
 import { transientSurface } from "@/shared/ui/transient-surface";
-import { Button, Chip, Dialog, IconButton, Surface } from "@/shared/ui";
+import { Button, Chip, Dialog, DialogBody, DialogFooter, IconButton, Surface } from "@/shared/ui";
 import { Input } from "@/shared/ui/input";
 
 import { capitalize, serviceExample, unusedRoundName } from "../../lib/round-presentation";
@@ -185,6 +185,9 @@ export function NewRoundSheet({
   const folderNames = ownDocumentsOnly ? [...vaultPaths, t("sheet.placeOwn")] : vaultPaths;
   const canSave =
     name.trim().length > 0 && timeValid && (kind === "consistency" || agentReady) && !saving;
+  const close = () => {
+    if (!saving) onClose();
+  };
 
   const save = async () => {
     if (!canSave) return;
@@ -214,10 +217,16 @@ export function NewRoundSheet({
       record.query = first.query.trim();
       record.limit = DEFAULT_SERVICE_ROUND_LIMIT;
     }
-    const saved = await onSave(record);
-    setSaving(false);
+    let saved = false;
+    try {
+      saved = await onSave(record);
+      if (!saved) setFailure(t("sheet.saveFailed", { reason: "write" }));
+    } catch {
+      setFailure(t("sheet.saveFailed", { reason: "write" }));
+    } finally {
+      setSaving(false);
+    }
     if (saved) onClose();
-    else setFailure(t("sheet.saveFailed", { reason: "write" }));
   };
 
   const may: string[] = [t("sheet.mayReadVault")];
@@ -267,7 +276,7 @@ export function NewRoundSheet({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={close}
       size="md"
       labelledBy={titleId}
       testId="library-rounds-sheet"
@@ -285,13 +294,30 @@ export function NewRoundSheet({
        * reach it (measured in the rounds spec, 2026-09-20). The cap uses the same chrome
        * inset the viewport-sized dialog keeps.
        */
-      className="flex max-h-[calc(100vh-var(--chrome-inset)*2)] flex-col gap-5 overflow-y-auto atlas-scroll-quiet"
+      className="flex max-h-[calc(100dvh-var(--chrome-inset)*2)] flex-col gap-4 overflow-hidden break-keep"
     >
       {/*
         **The name is the title.** Click it and it is a field, the way the project page's own
         name works; there is no second "Name" box at the foot of the form asking what to call
         the thing the paragraph below has already described.
       */}
+      <fieldset disabled={saving} className="contents disabled:pointer-events-none"
+        onPointerDownCapture={(event) => {
+          if (!(event.target instanceof Element) || event.target.closest('[data-testid="library-rounds-add-menu"], [data-testid="library-rounds-folder-menu"], [data-testid="library-rounds-add-place"], [data-testid="library-rounds-folders"]')) return;
+          setAddOpen(false);
+          setFolderMenuOpen(false);
+        }}
+        onKeyDownCapture={(event) => {
+          if (event.key !== "Escape" || (!addOpen && !folderMenuOpen)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          const trigger = addOpen ? "library-rounds-add-place" : "library-rounds-folders";
+          setAddOpen(false);
+          setFolderMenuOpen(false);
+          event.currentTarget.querySelector<HTMLButtonElement>(`[data-testid="${trigger}"]`)?.focus();
+        }}>
+      <header className="shrink-0">
+      <p className="mb-2 text-body text-[color:var(--color-text-tertiary)]">{t("sheet.title")}</p>
       {renaming ? (
         <div className="min-w-0">
           <h2 id={titleId} className="sr-only">
@@ -318,6 +344,7 @@ export function NewRoundSheet({
         <h2 id={titleId} className="min-w-0">
           <button
             type="button"
+            disabled={saving}
             onClick={() => setRenaming(true)}
             data-testid="library-rounds-rename"
             title={t("sheet.rename")}
@@ -334,6 +361,8 @@ export function NewRoundSheet({
         </h2>
       )}
 
+      </header>
+      <DialogBody className="flex flex-col gap-5 pr-1">
       {/*
         **The sheet reads back what it will do, as one sentence, before anything is saved**
         (owner on the installed app, 2026-09-19: the screen was "hard to operate", compared
@@ -390,7 +419,7 @@ export function NewRoundSheet({
               <Folder size={ICON_SIZE.sm} aria-hidden className="mt-0.5 flex-none text-[color:var(--color-text-quaternary)]" />
               <span className="min-w-0 flex-1">
                 <span className="block text-body leading-body text-[color:var(--color-text-primary)]">{t("sheet.placeVault")}</span>
-                <span className="mt-0.5 block text-label leading-label text-[color:var(--color-text-quaternary)]">
+                <span className="mt-0.5 block text-body leading-body text-[color:var(--color-text-tertiary)]">
                   {folderNames.length > 0 ? folderNames.join(" · ") : t("sheet.placeVaultAll")}
                 </span>
               </span>
@@ -400,7 +429,10 @@ export function NewRoundSheet({
                 <Chip
                   size="md"
                   tone="muted"
-                  onClick={() => setFolderMenuOpen((value) => !value)}
+                  onClick={() => {
+                    setAddOpen(false);
+                    setFolderMenuOpen((value) => !value);
+                  }}
                   aria-expanded={folderMenuOpen}
                   data-testid="library-rounds-folders"
                 >
@@ -411,7 +443,7 @@ export function NewRoundSheet({
                   motion="chrome"
                   role="group"
                   aria-label={t("sheet.chooseFolders")}
-                  className="absolute right-0 top-[calc(100%+4px)] z-10 max-h-56 w-64 overflow-y-auto atlas-scroll-quiet p-1.5"
+                  className="absolute right-0 top-[calc(100%+4px)] z-10 max-h-56 w-64 max-w-[calc(100vw-4rem)] overflow-y-auto atlas-scroll-quiet rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1.5 shadow-[var(--shadow-elevation-2)]"
                   {...transientSurface("menu")}
                   data-testid="library-rounds-folder-menu"
                 >
@@ -422,12 +454,12 @@ export function NewRoundSheet({
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-body leading-body">{t("sheet.placeOwn")}</span>
-                      <span className="block truncate text-label leading-label text-[color:var(--color-text-quaternary)]">{t("sheet.placeOwnDetail")}</span>
+                      <span className="block truncate text-body leading-body text-[color:var(--color-text-tertiary)]">{t("sheet.placeOwnDetail")}</span>
                     </span>
                     {ownDocumentsOnly ? <Check size={ICON_SIZE.sm} aria-hidden className="flex-none" /> : null}
                   </button>
                   {folders.length === 0 ? (
-                    <p className="px-2 py-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]">{t("sheet.noFolders")}</p>
+                    <p className="px-2 py-1.5 text-body leading-body text-[color:var(--color-text-tertiary)]">{t("sheet.noFolders")}</p>
                   ) : (
                     folders.map((folder) => (
                       <button
@@ -470,7 +502,7 @@ export function NewRoundSheet({
                 <Cable size={ICON_SIZE.sm} aria-hidden className="mt-0.5 flex-none text-[color:var(--color-text-quaternary)]" />
                 <span className="min-w-0 flex-1">
                   <span className="block text-body leading-body text-[color:var(--color-text-primary)]">{capitalize(draft.connectorName)}</span>
-                  <span className="mt-0.5 block text-label leading-label text-[color:var(--color-text-quaternary)]">
+                  <span className="mt-0.5 block text-body leading-body text-[color:var(--color-text-tertiary)]">
                     {draft.location.trim() || t("sheet.whereAnywhere")}
                   </span>
                 </span>
@@ -484,7 +516,7 @@ export function NewRoundSheet({
                   <Trash2 size={ICON_SIZE.sm} aria-hidden />
                 </IconButton>
               </div>
-              <div className="grid grid-cols-2 gap-2 pl-6">
+              <div className="grid grid-cols-1 gap-3 pl-6 sm:grid-cols-2">
                 <Input
                   label={t("sheet.where")}
                   value={draft.location}
@@ -508,7 +540,10 @@ export function NewRoundSheet({
           <Chip
             size="md"
             tone="muted"
-            onClick={() => setAddOpen((value) => !value)}
+            onClick={() => {
+              setFolderMenuOpen(false);
+              setAddOpen((value) => !value);
+            }}
             aria-expanded={addOpen}
             data-testid="library-rounds-add-place"
           >
@@ -520,12 +555,12 @@ export function NewRoundSheet({
             motion="chrome"
             role="menu"
             aria-label={t("sheet.addPlace")}
-            className="absolute left-0 top-[calc(100%+4px)] z-10 w-72 p-1.5"
+            className="absolute left-0 top-[calc(100%+4px)] z-10 w-72 max-w-[calc(100vw-4rem)] rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1.5 shadow-[var(--shadow-elevation-2)]"
             {...transientSurface("menu")}
             data-testid="library-rounds-add-menu"
           >
             {enabledConnectors.length === 0 ? (
-              <p className="px-2 py-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]">{t("sheet.addNoConnector")}</p>
+              <p className="px-2 py-1.5 text-body leading-body text-[color:var(--color-text-tertiary)]">{t("sheet.addNoConnector")}</p>
             ) : (
               enabledConnectors.map((connector) => (
                 <button
@@ -608,7 +643,7 @@ export function NewRoundSheet({
             { value: "mark", label: t("sheet.mark") },
           ]}
         />
-        <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
+        <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
           {onStale === "redraft" ? t("sheet.redraftHint") : t("sheet.markHint")}
         </p>
       </div>
@@ -645,14 +680,16 @@ export function NewRoundSheet({
 
       {failure ? <p role="alert" className="text-body leading-body text-[color:var(--color-danger-text)]">{failure}</p> : null}
 
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="ghost" onClick={onClose} className="atlas-touch-floor atlas-touch-floor-wide">
+      </DialogBody>
+      </fieldset>
+      <DialogFooter>
+        <Button variant="ghost" onClick={close} disabled={saving} className="atlas-touch-floor atlas-touch-floor-wide">
           {t("sheet.cancel")}
         </Button>
         <Button onClick={() => void save()} disabled={!canSave} data-testid="library-rounds-allow" className="atlas-touch-floor atlas-touch-floor-wide">
-          {t("sheet.allowAndSave")}
+          {saving ? t("sheet.saving") : t("sheet.allowAndSave")}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

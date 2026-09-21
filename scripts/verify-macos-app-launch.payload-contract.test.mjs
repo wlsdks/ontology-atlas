@@ -99,8 +99,13 @@ test("payload contract · Agents 라우트는 지도 문구 없이 자기 본문
 
 test("payload contract · topology route accepts the current map shell", () => {
   const markers = webviewWorkbenchMarkersForPath("/en/topology/");
-  const currentMapBody = "Atlas\nMap\nDocs\nWorkshop\nInsights\nProjects\nAgents\nHistory\nINDEX";
+  // Body samples are truncated; the route title already proves app identity.
+  const currentMapBody = "Map\nLibrary\nAutomations\nInsights\nProjects\nAgents\nINDEX";
+  assert.equal(markers.length, 2);
   assert.equal(markers.every((marker) => marker.test(currentMapBody)), true);
+  assert.equal(markers.every((marker) => marker.test("지도\n자료실\n자동화\nINDEX")), true);
+  assert.equal(markers.every((marker) => marker.test("Map\nLibrary\nAutomations")), false);
+  assert.equal(markers.every((marker) => marker.test("INDEX")), false);
   assert.equal(markers.every((marker) => marker.test("Atlas\nDocs\nWorkshop")), false);
 });
 

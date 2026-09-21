@@ -90,8 +90,10 @@ const WEBVIEW_LIBRARY_WORKBENCH_MARKERS = [
 ];
 
 const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
-  /온톨로지|Ontology|Atlas/,
-  /Map|지도|INDEX|Concept map|개념|Workspace|작업공간|Relief/,
+  // App identity is checked in the document title. The truncated body need not
+  // repeat the brand; require both the destination and its rendered map content.
+  /Map|지도/,
+  /INDEX|Concept map|개념|Workspace|작업공간|Relief/,
 ];
 
 /**

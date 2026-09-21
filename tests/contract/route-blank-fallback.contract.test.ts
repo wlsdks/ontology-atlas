@@ -60,6 +60,7 @@ const SCAN_DIRS = [join(process.cwd(), "app"), join(process.cwd(), "src")];
  */
 const APPROVED_FALLBACKS = [
   "RouteLoadingFallback",
+  "InsightsLoadingView",
   "MapEntryFallback",
   "GatewayEntryFallback",
 ] as const;
@@ -116,6 +117,14 @@ describe("라우트 진입 빈 화면 게이트", () => {
       return !APPROVED_FALLBACKS.some((name) => source.includes(name));
     });
     expect(offenders.map(rel)).toEqual([]);
+  });
+
+  it("analysis has a named, busy destination while its implementation loads", () => {
+    const shell = readFileSync("src/views/ontology-insights/ui/InsightsLoadingView.tsx", "utf8");
+    expect(shell).toContain('<h1');
+    expect(shell).toContain('aria-busy="true"');
+    expect(shell).toContain('role="status"');
+    expect(shell).toContain('data-route-loading="true"');
   });
 
   it("자리표시자 문구가 ko · en 양쪽에 있다", () => {

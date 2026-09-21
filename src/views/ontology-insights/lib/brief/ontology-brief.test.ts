@@ -45,6 +45,14 @@ describe('buildOntologyBrief', () => {
     expect(byId['ontology-repair']).toBe(8);
   });
 
+  it.each(['reading', 'unreadable', 'no-source'] as const)('keeps absent evidence unknown in the app: %s', (evidenceAvailability) => {
+    const brief = buildOntologyBrief({ nodes, docs, evidence: null, evidenceAvailability, repairCount: 0, unmatchedCount: 0, anchorMs });
+    expect(brief.availability).toBe(evidenceAvailability);
+    expect(brief.current).toBeNull();
+    expect(brief.stale).toBeNull();
+    expect(brief.unknown).toBe(5);
+  });
+
   it('splits concepts by evidence state when the app measured it', () => {
     const brief = buildOntologyBrief({
       nodes,

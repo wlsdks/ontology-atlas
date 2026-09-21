@@ -19,14 +19,20 @@ import { describe, expect, it } from "vitest";
  * Lint cannot catch either: this is not a value rule but "does this code exist and
  * is it conditional".
  */
-const LOOP = join(
+const INSTRUMENTATION = join(
   process.cwd(),
-  "src/widgets/ontology-map/ui/use-topology-loop.ts",
+  "src/widgets/ontology-map/ui/use-topology-map-instrumentation.ts",
 );
 
-const source = readFileSync(LOOP, "utf8");
+const source = readFileSync(INSTRUMENTATION, "utf8");
+const loop = readFileSync(join(process.cwd(), "src/widgets/ontology-map/ui/use-topology-loop.ts"), "utf8");
 
 describe("지도 검사 훅 (window.__atlasMap)", () => {
+  it("the production loop installs the inspection hook", () => {
+    expect(loop).toMatch(/import\s*\{\s*useTopologyMapInstrumentation\s*\}\s*from\s*["']\.\/use-topology-map-instrumentation["']/);
+    expect(loop).toMatch(/\buseTopologyMapInstrumentation\(\{/);
+  });
+
   it("`e2e` 쿼리가 있을 때만 붙는다 — 상시 노출이 아니다", () => {
     expect(source).toContain("__atlasMap");
     // The gate must have this shape. Delete the condition and the diagnostic window becomes product surface.
@@ -34,7 +40,7 @@ describe("지도 검사 훅 (window.__atlasMap)", () => {
   });
 
   it("창구를 걷어낸다 — 언마운트 뒤 전역에 남지 않는다", () => {
-    expect(source).toMatch(/delete \(window as unknown as \{ __atlasMap\?: typeof hook \}\)\.__atlasMap/);
+    expect(source).toMatch(/delete\s+\(window as unknown as \{\s*__atlasMap\?: typeof hook;?\s*\}\)\.__atlasMap/);
   });
 
   /**
@@ -53,7 +59,7 @@ describe("지도 검사 훅 (window.__atlasMap)", () => {
   ] as const;
 
   it.each(REQUIRED_ACCESSORS)("`%s` 창구가 있다", (accessor) => {
-    expect(source).toContain(accessor);
+    expect(source).toMatch(new RegExp(`\\b${accessor}\\s*\\(\\)\\s*=>`));
   });
 
   it("엣지는 컨트롤 포인트까지 낸다 — 현선을 재면 화면에 없는 교차를 센다", () => {
@@ -83,7 +89,7 @@ describe("지도 검사 훅 (window.__atlasMap)", () => {
   it("칩은 주장과 실제를 나란히 낸다", () => {
     // With `claimedCount` but no `shownChildren`, the mismatch of "says +24 and draws
     // 1" is invisible from outside — a defect that actually occurred.
-    expect(source).toContain("claimedCount");
-    expect(source).toContain("shownChildren");
+    expect(source).toMatch(/\bclaimedCount:\s*chip\.count/);
+    expect(source).toMatch(/\bshownChildren:\s*shown/);
   });
 });

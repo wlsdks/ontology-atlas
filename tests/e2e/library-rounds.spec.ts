@@ -87,7 +87,7 @@ test.describe("Library rounds", () => {
     await expect(page.getByTestId("library-rounds-cost")).toContainText("only on a pass that finds something stale");
 
     // Mark only: no write at all, and the cost line says so.
-    await page.getByTestId("library-rounds-on-stale").getByRole("radio", { name: "Mark it" }).click();
+    await page.getByTestId("library-rounds-on-stale").getByRole("radio", { name: "Flag for review" }).click();
     await expect(readback).toContainText("and only mark the stale ones");
     await expect(scope).not.toContainText("write pages under wiki/");
     await expect(page.getByTestId("library-rounds-cost")).toContainText("No agent turn");

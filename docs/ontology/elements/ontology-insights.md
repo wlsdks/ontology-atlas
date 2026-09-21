@@ -15,6 +15,7 @@ The Analysis workbench names its subject first: a segmented control picks the Br
 
 ## Evidence
 
+- Visible loading boundary: src/views/ontology-insights/ui/InsightsPageEntry.tsx#InsightsPageEntry
 - Primary implementation: src/views/ontology-insights/ui/OntologyInsightsPage.tsx#OntologyInsightsPage
 - Brief panel: src/views/ontology-insights/ui/tabs/BriefTab.tsx#BriefTab
 - Brief facts: src/views/ontology-insights/lib/brief/use-insights-brief.ts#useInsightsBrief
@@ -30,6 +31,9 @@ The Analysis workbench names its subject first: a segmented control picks the Br
 
 ## Includes
 
+- Explicitly labelled examples distinguish the Wiki source-to-page-to-checks flow from Guidance code-area-to-instructions/gates/checks when measurements are unavailable. Reversible local disclosures explain setup and link to existing destinations without writes or fabricated counts.
+- Guidance report state is scoped to the selected folder and source binding, showing reading state immediately while resolving a new binding instead of retaining results from the previous folder.
+- A named loading destination painted before the analysis workbench loads and mounts; navigation remains available while its code loads. Graph derivation still runs on the main thread.
 - A brief that states each core in three words, sums stale and unknown lines apart, and names the concept, file, and both dates behind a drift count.
 - One bounded request that hands the drifted concepts to the tab's own agent, asking for a judgement and a proposed sentence and never for a write.
 - Product flow read as versions: the written explanation, when and by whom, whether the folder moved since, and which scenes changed against the previous writing.

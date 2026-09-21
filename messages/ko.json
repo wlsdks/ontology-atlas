@@ -1776,7 +1776,9 @@
           "agent-writes-since": "그중 폴더에 쓴 것 {count}회",
           "agent-distinct-since": "일한 에이전트 {count}개"
         },
-        "markSeenUndo": "되돌리기"
+        "markSeenUndo": "되돌리기",
+        "evidenceUnreadable": "연결된 코드를 확인하지 못했어요. 폴더를 다시 열면 다시 시도해요.",
+        "evidenceNoSource": "이 폴더에 연결된 코드 저장소가 없어요. 지도에서 코드 폴더를 연결하세요."
       },
       "tabCountTitle": {
         "do-next": "고칠 항목 수",
@@ -1800,7 +1802,7 @@
         "emptyDescription": "이 폴더에 없는 개념을 가리키는 곳이 없어요."
       },
       "errorAlert": "그래프를 불러오지 못했어요: {message}",
-      "loading": "그래프를 불러오는 중이에요…",
+      "loading": "분석을 준비하고 있어요…",
       "emptyTitleBefore": "아직 온톨로지 개념이 없어요. ",
       "emptyTitleLink": "온톨로지 문서",
       "emptyTitleAfter": "에서 내 폴더를 열거나 문서를 추가해 보세요.",
@@ -2123,8 +2125,8 @@
         "more": "{count, number}개 더",
         "stale": {
           "title": "원문이 바뀐 페이지 {count, number}개",
-          "caption": "페이지가 인용한 원문이 그 뒤에 바뀌었어요. 다시 쓰기 전엔 그 문장을 믿지 마세요.",
-          "none": "모든 페이지가 인용한 원문 그대로예요."
+          "caption": "인용한 원문이 바뀌었어요. 영향을 받은 내용을 확인하고 필요하면 페이지를 고쳐 주세요.",
+          "none": "현재 원문 변경으로 표시된 페이지가 없어요."
         },
         "unwritten": {
           "title": "아직 정리 안 된 원문 {count, number}개",
@@ -2138,8 +2140,8 @@
         },
         "rounds": {
           "title": "자동 점검 회차 {count, number}회",
-          "caption": "사람이 없을 때 돈 회차예요. 무엇을 보고 무엇을 썼는지 그대로 적어요.",
-          "none": "아직 돈 회차가 없어요."
+          "caption": "자동 점검이 무엇을 확인하고 바꿨는지 기록해요.",
+          "none": "아직 실행된 자동 점검이 없어요."
         },
         "outcome": {
           "held": "그대로 둠",
@@ -2158,44 +2160,124 @@
           "kind-present": "위키 페이지에 kind가 붙음",
           "section-order": "절 순서가 다름",
           "bad-truncation-record": "일부만 읽은 기록이 어긋남",
-          "bad-citation": "인용 꼴이 어긋남"
+          "bad-citation": "인용 형식이 올바르지 않음"
         },
         "about": {
-          "title": "이 판이 답하는 것",
+          "title": "위키 분석 안내",
           "body": "원문을 정리해 만든 위키 페이지가 지금도 그 원문과 맞는지, 아직 아무도 안 쓴 원문이 있는지, 서식 점검에 걸린 곳이 어디인지, 사람이 없을 때 돈 자동 점검이 무엇을 했는지 봐요."
+        },
+        "preview": {
+          "title": "원문에서 위키까지",
+          "body": "원문을 정리한 페이지와 점검 결과를 함께 살펴봐요.",
+          "exampleLabel": "예시 · 내 폴더의 데이터가 아니에요",
+          "instruction": "궁금한 단계를 눌러 시작 방법을 확인하세요.",
+          "openLibrary": "자료실에서 시작하기",
+          "stages": {
+            "source": {
+              "title": "원문",
+              "example": "회의록.txt",
+              "buttonLabel": "원문을 추가하는 방법",
+              "setup": "자료실에 원문 파일을 추가하세요."
+            },
+            "page": {
+              "title": "위키 페이지",
+              "example": "결정과 근거 · [원문]",
+              "buttonLabel": "위키 페이지를 만드는 방법",
+              "setup": "추가한 원문으로 위키 페이지를 만들어 주세요. 만든 페이지와 인용한 원문을 여기서 확인할 수 있어요.",
+              "visualTitle": "결정과 근거",
+              "citation": "[회의록.txt]"
+            },
+            "check": {
+              "title": "점검",
+              "example": "인용 · 링크 · 원문 변경",
+              "buttonLabel": "점검 결과를 확인하는 방법",
+              "setup": "위키 페이지가 생기면 인용·링크·문서 형식의 점검 결과를 여기서 볼 수 있어요.",
+              "citation": "인용",
+              "links": "링크",
+              "sourceChanges": "원문 변경"
+            }
+          },
+          "emptyTitle": "위키 분석을 시작해 보세요",
+          "emptyDescription": "자료실에 원문을 추가하면 위키 페이지와 점검 결과를 여기서 확인할 수 있어요."
         }
       },
       "harnessTab": {
-        "open": "하네스 열기",
+        "open": "하네스에서 구조 보기",
         "getApp": "앱 받기",
         "more": "도메인 {count, number}곳 더",
-        "appOnly": "앱에서만 잴 수 있어요. 브라우저는 숨김 폴더를 읽지 못해요.",
         "reading": "지금 폴더를 읽고 있어요.",
         "unreadable": "지침 파일을 읽지 못했어요. 폴더를 다시 열면 다시 시도해요.",
-        "noSource": "이 폴더는 아직 코드 저장소와 연결돼 있지 않아요. 연결하면 지침과 검사가 어디를 덮는지 여기서 세요.",
+        "noSource": "분석할 코드 저장소를 확인해 주세요. 연결된 저장소를 하나로 확인할 수 있어야 지침과 검사 범위를 읽을 수 있어요.",
         "column": {
           "area": "도메인",
-          "told": "알려줌",
-          "gated": "막음",
-          "watched": "지켜봄"
+          "told": "작업 지침",
+          "gated": "차단 규칙",
+          "watched": "자동 검사"
         },
         "coverage": {
           "title": "하네스 커버리지: 도메인 {count, number}곳",
           "caption": "지침 파일 {guides, number}개 · 검사 {checks, number}개를 도메인에 맞춰 세요.",
-          "gaps": "아무 지침도 안 닿는 도메인 {untold, number} · 막는 규칙이 없는 도메인 {ungated, number} · 지켜보는 검사가 없는 도메인 {unwatched, number}",
-          "everywhere": "어디에나 닿는 것: 알려줌 {told, number} · 막음 {gated, number} · 지켜봄 {watched, number}"
+          "gaps": "작업 지침이 없는 도메인 {untold, number} · 차단 규칙이 없는 도메인 {ungated, number} · 자동 검사가 없는 도메인 {unwatched, number}",
+          "everywhere": "모든 코드 경로에 적용: 작업 지침 {told, number} · 차단 규칙 {gated, number} · 자동 검사 {watched, number}"
         },
         "drift": {
-          "title": "두 에이전트 트리가 어긋난 파일 {count, number}개",
-          "caption": "같은 내용이어야 하는 두 벌이 서로 달라요.",
-          "none": "두 벌이 서로 같아요."
+          "title": "지침·설정 점검 항목 {count, number}건",
+          "caption": "파일 차이와 참조·설정 점검 결과예요. 에이전트별 지침을 똑같이 맞추라는 뜻은 아니에요.",
+          "none": "현재 표시할 점검 항목이 없어요."
         },
         "about": {
-          "title": "이 판이 답하는 것",
-          "body": "에이전트 하네스가 이 폴더의 어느 도메인까지 닿는지 봐요. 지침과 검사가 닿지 않는 빈 칸이 곧 답이에요. 아무도 알려주지 않고, 막지 않고, 지켜보지 않는 자리예요.",
-          "told": "AGENTS.md·CLAUDE.md·규칙 문서처럼 에이전트가 읽는 글",
-          "gated": "훅·검사처럼 잘못된 변경을 실제로 막는 것",
-          "watched": "테스트·린트처럼 바뀐 뒤에 알려주는 것"
+          "title": "지침 범위 안내",
+          "body": "에이전트 작업 지침, 변경을 차단하는 규칙, 자동 검사가 어느 코드 경로에 적용되는지 확인해요.",
+          "told": "AGENTS.md·CLAUDE.md·규칙 문서에 적힌 작업 지침",
+          "gated": "훅·검사처럼 잘못된 변경을 실제로 차단하는 규칙",
+          "watched": "테스트·린트처럼 변경을 확인하는 자동 검사"
+        },
+        "preview": {
+          "title": "코드 경로별 지침과 검사",
+          "body": "어느 코드 경로에 작업 지침, 차단 규칙, 자동 검사가 연결되는지 살펴봐요.",
+          "exampleLabel": "예시 · 내 폴더의 데이터가 아니에요",
+          "instruction": "궁금한 역할을 눌러 연결 방법을 확인하세요.",
+          "openHarness": "하네스에서 지침 보기",
+          "area": {
+            "title": "결제"
+          },
+          "roles": {
+            "instructions": {
+              "title": "작업 지침",
+              "buttonLabel": "작업 지침을 추가하는 방법",
+              "setup": "코드 저장소의 AGENTS.md나 규칙 문서에 작업 지침을 적어 주세요. 적용 범위를 확인하면 어느 코드 경로에 닿는지 볼 수 있어요."
+            },
+            "gates": {
+              "title": "차단 규칙",
+              "example": "예시: 연결된 규칙 없음",
+              "buttonLabel": "차단 규칙을 연결하는 방법",
+              "setup": "변경을 실제로 막는 훅이나 검사를 연결하고 적용 범위를 확인해 주세요. 지침에 적힌 요청만으로는 차단 규칙으로 세지 않아요."
+            },
+            "checks": {
+              "title": "자동 검사",
+              "example": "테스트 · 린트",
+              "buttonLabel": "자동 검사를 연결하는 방법",
+              "setup": "테스트·린트 같은 자동 검사의 대상 경로를 확인해 주세요. 검사 파일이 있어도 실제 실행 여부나 통과 결과를 뜻하지는 않아요."
+            }
+          }
+        },
+        "availability": {
+          "app-only": {
+            "title": "앱에서 폴더를 열어 주세요",
+            "description": "브라우저는 숨김 폴더를 읽지 못해 지침 범위는 앱에서 확인할 수 있어요."
+          },
+          "no-source": {
+            "title": "코드 저장소를 확인해 주세요",
+            "description": "분석할 코드 저장소를 확인해 주세요. 연결된 저장소를 하나로 확인할 수 있어야 지침과 검사 범위를 읽을 수 있어요."
+          },
+          "reading": {
+            "title": "작업 지침을 읽고 있어요",
+            "description": "연결된 저장소에서 작업 지침과 자동 검사를 확인하고 있어요."
+          },
+          "unreadable": {
+            "title": "작업 지침을 읽지 못했어요",
+            "description": "폴더를 다시 열어 작업 지침과 자동 검사를 확인해 주세요."
+          }
         }
       }
     }
@@ -5310,9 +5392,24 @@
     "foundLess": "접기"
   },
   "automations": {
+    "blockedActions": "작업 {count}건을 차단했습니다.",
+    "toolActivity": "도구 기록",
+    "removeQuestion": "‘{name}’ 예약을 삭제할까요?",
+    "removeConfirm": "예약 삭제",
+    "changeFailed": "변경 사항을 저장하지 못했어요. 다시 시도해 주세요.",
+    "checked": "문서 {count}개를 점검했습니다.",
+    "stalePages": "검토가 필요한 문서 · {pages}",
+    "writtenFiles": "수정한 파일 · {files}",
+    "earlierRuns": "이전 실행 · {count}건",
+    "openFolderTitle": "폴더를 열고 점검을 예약하세요",
+    "openFolderDescription": "예약과 결과는 이 폴더에 저장됩니다. 앱에서 폴더를 열어 둔 동안 실행돼요.",
+    "scopeLabel": "검토 범위",
+    "noNextRun": "일시 정지 중에는 실행하지 않아요",
+    "nextRunAt": "다음 · {time}",
+    "scheduleCount": "예약 {count}개",
     "title": "자동화",
     "eyebrow": "ATLAS가 켜져 있는 동안 로컬 실행",
-    "lede": "반복할 일과 허용 범위를 고르세요. 온톨로지는 검토안을 만들고, 문서 점검은 자료실을 계속 최신으로 둡니다.",
+    "lede": "반복할 일을 예약하고, 실행 결과를 확인하세요.",
     "tabsAria": "자동화 갈래",
     "tabs": {
       "ontology": "온톨로지",
@@ -5336,26 +5433,27 @@
     "pause": "멈춤",
     "resume": "다시 켜기",
     "removeNamed": "{name} 삭제",
-    "historyTitle": "최근 검토",
+    "historyTitle": "실행 기록",
     "noRuns": "아직 실행된 적이 없습니다.",
     "noSummary": "실행은 끝났지만 저장된 요약이 없습니다.",
     "refused": "거부됨: {tools}",
     "called": "읽은 도구: {tools}",
+    "saving": "예약 중…",
     "saveFailed": "예약을 저장하지 못했어요. 아무것도 바뀌지 않았습니다.",
     "state": {
       "on": "켜짐",
       "paused": "멈춤",
-      "running": "도는 중"
+      "running": "실행 중"
     },
     "outcome": {
       "none": "새 예약",
-      "held": "유지",
+      "held": "변경 없음",
       "reviewed": "검토 완료",
-      "stale": "낡음",
-      "redrafted": "다시 씀",
+      "stale": "검토 필요",
+      "redrafted": "초안 갱신",
       "refused": "거부됨",
       "failed": "실패",
-      "asleep": "잠듦"
+      "asleep": "실행 공백"
     },
     "cadence": {
       "hour": "매시간",
@@ -5375,19 +5473,19 @@
       "title": "온톨로지 정교화",
       "description": "예약된 앱 안 코딩 에이전트가 현재 그래프와 코드 연결, 정한 개선 범위를 읽어요. 구축 승인과 적용은 지도와 사람에게 남깁니다.",
       "guard": "읽기 전용 · 온톨로지 쓰기·의미 확정 없음",
-      "emptyTitle": "아직 온톨로지를 검토하지 않아요",
-      "emptyDescription": "한 번에 근거가 있는 개선 범위 하나만 찾도록 읽기 전용 실행을 예약하세요. 결과를 검토하기 전에는 아무것도 바뀌지 않습니다.",
+      "emptyTitle": "온톨로지 점검을 예약하세요",
+      "emptyDescription": "에이전트가 빠진 연결이나 부족한 근거를 찾아 개선안을 남깁니다. 주기를 정해 두고, 다음에 돌아와 결과를 검토하세요.",
       "defaultName": "온톨로지 정교화",
       "eyebrow": "온톨로지 검토",
       "sheet": {
         "title": "온톨로지 검토 예약",
-        "description": "정한 시각에 보호된 앱 안 코딩 에이전트 턴 하나를 열어 온톨로지와 코드 근거를 읽고, 검토 전용 결과를 남깁니다.",
+        "description": "에이전트가 정해진 주기로 온톨로지와 코드를 읽고 개선안을 남깁니다. 변경 사항은 직접 검토하고 적용합니다.",
         "focus": "집중할 범위 (선택)",
         "focusPlaceholder": "코드 연결 빈틈, 오래된 역량, 관계 근거…",
         "focusHint": "비워 두면 현재 근거에서 범위가 작은 영역 하나를 고릅니다.",
-        "scopeTitle": "이 검토가 할 수 있는 일",
+        "scopeTitle": "허용할 작업",
         "mayRead": "연결된 온톨로지 도구를 통해 온톨로지와 현재 코드 근거를 읽습니다.",
-        "mayPropose": "정확한 slug·경로·불확실성을 갖춘 변경안을 설명합니다.",
+        "mayPropose": "대상 개념과 코드 경로를 밝히고, 확실하지 않은 점을 구분해 제안합니다.",
         "mayNeverWrite": "개념·관계·파일·의미 기록을 절대 쓰지 않습니다."
       }
     },
@@ -6210,15 +6308,15 @@
         "readback6h": "여섯 시간마다",
         "readbackDaily": "매일 {time}에",
         "readbackWeekdays": "평일 {time}에",
-        "title": "새 자동 점검",
+        "title": "문서 점검 예약",
         "what": "무엇을 확인할지",
-        "how": "얼마나 자주",
+        "how": "실행 주기",
         "time": "시각",
-        "onStale": "문서가 낡으면",
-        "redraft": "다시 쓴다",
-        "redraftHint": "낡은 원문만 에이전트 턴 하나로 다시 써요. 새 문서는 초안으로 기다려요.",
-        "mark": "표시만 한다",
-        "markHint": "원문 목록의 줄이 노랗게 돼요. 아무것도 쓰지 않아요.",
+        "onStale": "원문과 다른 내용이 있으면",
+        "redraft": "수정 초안 만들기",
+        "redraftHint": "변경된 원문을 바탕으로 초안을 만들어요. 검토 후 문서에 반영할 수 있어요.",
+        "mark": "검토할 문서로 표시",
+        "markHint": "검토할 문서를 표시해요. 문서 내용은 수정하지 않아요.",
         "service": "서비스",
         "noConnectors": "이 폴더에 붙은 서비스가 아직 없어요. 서비스에서 문서를 한 번 가져오면 여기에 나타나요.",
         "noAgent": "이 맥에 준비된 코딩 에이전트가 없어 「서비스에서 온 문서」 점검은 아직 돌 수 없어요. 「문서가 원문과 여전히 맞는지」 점검은 돼요.",
@@ -6226,28 +6324,29 @@
         "queryPlaceholder": "ENG 스페이스에서 하루 안에 바뀐 페이지",
         "queryHint": "비워 두면 이미 있는 것만 다시 읽어요.",
         "name": "이름",
-        "may": "이 자동 점검이 해도 되는 일",
+        "may": "허용할 작업",
         "mayReadVault": "이 폴더와 지도를 읽기",
         "mayCallConnector": "{service}에 요청해 읽기만 하기, 거기에 쓰지는 않음",
         "mayWriteSources": "sources/ 아래 파일을 더하거나 새로 고치기",
-        "mayWritePages": "wiki/ 아래에 틀에 맞는 문서를 초안으로 쓰기",
-        "mayNothingElse": "그 밖에는 없음. 다른 요청은 거부되고 기록에 이름이 남아요",
+        "mayWritePages": "wiki/ 아래에 수정 초안 저장하기",
+        "mayNothingElse": "이 범위를 벗어난 요청은 차단하고 기록에 남겨요",
         "costNone": "에이전트 턴 없음.",
         "costPerPass": "실행마다 에이전트 턴 하나 · 이 주기면 하루 약 {count, number}회.",
-        "costOnStale": "낡은 것을 찾은 실행에만 에이전트 턴 하나.",
-        "allowAndSave": "허용하고 저장",
+        "costOnStale": "수정 초안이 필요할 때만 에이전트를 1회 실행해요.",
+        "allowAndSave": "허용하고 예약",
         "cancel": "취소",
         "saved": "{time}에 처음 돌아요 · {name}",
         "savedRunningNow": "지금 한 번 돌려요 · {name}. 다음은 {time}.",
+        "saving": "예약 중…",
         "saveFailed": "자동 점검을 저장하지 못했어요: {reason}",
-        "places": "어디를 볼지",
+        "places": "점검 대상",
         "placeVault": "이 폴더의 문서",
         "placeVaultAll": "폴더 전체",
         "placeOwn": "내가 쓴 문서",
         "placeOwnDetail": "서비스가 보내지 않은 sources/ 아래 파일",
         "chooseFolders": "폴더 고르기",
         "noFolders": "이 폴더에는 하위 폴더가 아직 없어서 폴더 전체를 봐요.",
-        "addPlace": "볼 곳 더하기",
+        "addPlace": "점검 대상 추가",
         "addFolder": "이 폴더 안의 다른 폴더",
         "addNoConnector": "이 폴더에 붙은 서비스가 아직 없어요. 「에이전트」에서 붙일 수 있어요.",
         "removePlace": "{place} 빼기",
@@ -6260,14 +6359,14 @@
         "readbackServices": "<em>{cadence}</em> <em>{places}</em>에서 온 문서를 다시 읽고,",
         "readbackFolders": " <em>{folders}</em> 아래 문서가 원문과 여전히 맞는지 확인하고,",
         "readbackWholeFolder": " 모든 문서가 원문과 여전히 맞는지 확인하고,",
-        "readbackStaleRedraft": " 낡은 것은 <em>다시 써요</em>.",
-        "readbackStaleMark": " 낡은 것은 <em>표시만 해요</em>.",
+        "readbackStaleRedraft": " 변경이 있으면 <em>수정 초안을 만들어요</em>.",
+        "readbackStaleMark": " 변경이 있으면 <em>검토할 문서로 표시해요</em>.",
         "readbackTurn": " 실행마다 에이전트 턴 하나.",
-        "readbackNow": " 저장하면 바로 한 번 돌아요.",
-        "readbackQueued": " 다른 점검이 도는 중이라 이 점검은 다음 차례에 시작해요.",
+        "readbackNow": " 저장 후 첫 점검을 바로 시작해요.",
+        "readbackQueued": "진행 중인 점검이 있어 다음 예정 시각부터 시작해요.",
         "mayCallPlace": "{service}에 요청해 {location} 안에서 읽기만 하기, 거기에 쓰지는 않음",
         "readbackFoldersLead": "<em>{cadence}</em> <em>{folders}</em> 아래 문서가 원문과 여전히 맞는지 확인하고,",
-        "readbackWholeFolderLead": "<em>{cadence}</em> 모든 문서가 원문과 여전히 맞는지 확인하고,",
+        "readbackWholeFolderLead": "<em>{cadence}</em> 문서를 원문과 비교하고,",
         "queryPlaceholderSlack": "이 채널에 지난 한 주 올라온 글",
         "queryPlaceholderNotion": "이 데이터베이스에서 최근 바뀐 페이지",
         "queryPlaceholderConfluence": "ENG 스페이스에서 하루 안에 바뀐 페이지",

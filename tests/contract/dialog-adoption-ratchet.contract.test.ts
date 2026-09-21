@@ -80,7 +80,7 @@ function scanProduction(): Map<string, number> {
  */
 const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: string]> = [
   [
-    "src/views/home/ui/HomePage.tsx",
+    "src/views/home/ui/TopologyBlockingOverlays.tsx",
     3,
     "지도 컴포저 — --z-map-scrim(25) 층·지도 좌표계 내부에 산다. body 포털(--z-dialog 60)로 올리면 지도 위 다른 크롬과의 층 계약이 깨진다.",
   ],

@@ -64,7 +64,6 @@ import {
   selectInsightsDocumentTitle,
   selectInsightsScopeTitle,
 } from "../lib/insights-scope-title";
-import { buildImpactRanking } from "../lib/impact-ranking";
 import {
   buildDoNextQueue,
   fillHandoffTemplate,
@@ -733,15 +732,6 @@ export function OntologyInsightsPage() {
     [hubRanking],
   );
 
-  // Impact ranking — "if I change this, how far do I have to re-read?". It calls the
-  // same `computeOntologyDependents` (the semantics of MCP `blast_radius`) as the map
-  // drawer and the change diff. It is a full-node BFS, so it re-runs only when
-  // nodes/edges change.
-  const impact = useMemo(
-    () => buildImpactRanking(nodes, edges, IMPACT_DISPLAY_LIMIT),
-    [nodes, edges],
-  );
-
   // Suspected duplicate pairs — how much the names, parents, and neighbours overlap.
   // A faithful mirror of MCP `similar_nodes`, so the pairs the screen names are the
   // pairs the agent answers with.
@@ -1348,7 +1338,7 @@ export function OntologyInsightsPage() {
         * space (measured at 1512×900). It is a `min-h-full` chain, so long content still grows
         * and scrolling is unchanged.
         */}
-      <div className="@container/insights flex min-w-0 flex-1 flex-col overflow-y-auto">
+      <div className="@container/insights flex min-w-0 flex-1 flex-col overflow-y-auto max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]">
         {/*
          * ⚠️ **The live indicator was removed** (2026-08-03, owner report — same reason as the
          * project list). "Live · N changed" is **the map's object**: it draws what changed onto
@@ -1712,7 +1702,9 @@ export function OntologyInsightsPage() {
                   ariaLabel: (title) => t("hubRowAriaLabel", { title }),
                 }}
                 labels={connectionsLabels}
-                impact={impact}
+                impactNodes={nodes}
+                impactEdges={edges}
+                impactLimit={IMPACT_DISPLAY_LIMIT}
                 impactLink={{
                   href: mapNodeHref,
                   // The bar is `aria-hidden`, so the two numbers are carried in the link name — a

@@ -250,7 +250,7 @@ export function useInsightsBrief({
 
   const [evidenceChanges, setEvidenceChanges] = useState<{
     key: string;
-    changes: ReadonlyMap<string, GitPathLastChange>;
+    changes: ReadonlyMap<string, GitPathLastChange> | null;
   } | null>(null);
   const evidenceKey = nativeRootPath ? `${nativeRootPath}\0${vault.lastLoadedAt ?? ''}` : '';
   useEffect(() => {
@@ -262,20 +262,30 @@ export function useInsightsBrief({
     const key = evidenceKey;
     void gitPathsLastChange(nativeRootPath, repoPaths, vaultPaths)
       .then((rows) => {
-        if (cancelled || !rows) return;
-        setEvidenceChanges({ key, changes: new Map(rows.map((row) => [row.path, row])) });
+        if (cancelled) return;
+        setEvidenceChanges({ key, changes: rows ? new Map(rows.map((row) => [row.path, row])) : null });
       })
       .catch(() => {
-        /* no repository or no git: the brief says unknown, which is the truth here */
+        if (!cancelled) setEvidenceChanges({ key, changes: null });
       });
     return () => {
       cancelled = true;
     };
   }, [enabled, nativeRootPath, evidenceKey, evidenceConcepts]);
   const evidence = useMemo(() => {
-    if (!evidenceChanges || evidenceChanges.key !== evidenceKey) return null;
+    if (nativeRootPath && evidenceConcepts.every((concept) => concept.evidencePaths.length === 0)) {
+      return resolveEvidenceStates(evidenceConcepts, new Map());
+    }
+    if (!evidenceChanges?.changes || evidenceChanges.key !== evidenceKey) return null;
     return resolveEvidenceStates(evidenceConcepts, evidenceChanges.changes);
-  }, [evidenceChanges, evidenceKey, evidenceConcepts]);
+  }, [evidenceChanges, evidenceKey, evidenceConcepts, nativeRootPath]);
+  const evidenceAvailability = !isGitBridgeAvailable()
+    ? 'app-only'
+    : harnessState.status === 'no-source'
+      ? 'no-source'
+      : evidenceChanges?.key === evidenceKey && evidenceChanges.changes === null
+        ? 'unreadable'
+        : 'reading';
 
   /*
    * When this concept document last changed — from Git where the walk reached it, from the
@@ -286,7 +296,7 @@ export function useInsightsBrief({
   const docChangedAt = useCallback(
     (slug: string, fallback: string | null) => {
       const fromGit = evidenceChanges?.key === evidenceKey
-        ? evidenceChanges.changes.get(`${slug}.md`)?.lastChangedAt ?? null
+        ? evidenceChanges.changes?.get(`${slug}.md`)?.lastChangedAt ?? null
         : null;
       return fromGit ?? fallback;
     },
@@ -311,11 +321,12 @@ export function useInsightsBrief({
         nodes,
         docs: docFacts,
         evidence,
+        evidenceAvailability,
         repairCount,
         unmatchedCount,
         anchorMs: anchor.anchorMs,
       }),
-    [nodes, docFacts, evidence, repairCount, unmatchedCount, anchor.anchorMs],
+    [nodes, docFacts, evidence, evidenceAvailability, repairCount, unmatchedCount, anchor.anchorMs],
   );
 
   const libraryDetail = useMemo(() => {

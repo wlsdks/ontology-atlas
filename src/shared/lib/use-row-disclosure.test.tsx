@@ -1,5 +1,5 @@
 import { act, render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { useRowDisclosure } from "./use-row-disclosure";
 
 /**
@@ -103,5 +103,45 @@ describe("useRowDisclosure — 마운트는 재지 않는다", () => {
       act(() => rerender(<Harness open />));
       expect(box(container).style.height).toBe(`${CONTENT_HEIGHT}px`);
     });
+  });
+});
+
+
+describe("disclosure interruption", () => {
+  it("reverses from the painted height and cancels the pending unmount", () => {
+    vi.useFakeTimers();
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      heights.push(this.style.height);
+      return { height: 42 } as DOMRect;
+    });
+    const heights: string[] = [];
+    try {
+      const { container, rerender } = render(<Harness open />);
+      rerender(<Harness open={false} />);
+      expect(heights).toContain("42px");
+      heights.length = 0;
+      rerender(<Harness open />);
+      expect(heights).toContain("42px");
+      act(() => vi.advanceTimersByTime(300));
+      expect(container.querySelector('[data-testid="content"]')).not.toBeNull();
+    } finally {
+      rect.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps space for the reduced-motion fade before removing content", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    try {
+      const { container, rerender } = render(<Harness open />);
+      rerender(<Harness open={false} />);
+      expect(box(container).style.height).toBe("auto");
+      act(() => vi.advanceTimersByTime(300));
+      expect(container.querySelector('[data-testid="content"]')).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
   });
 });

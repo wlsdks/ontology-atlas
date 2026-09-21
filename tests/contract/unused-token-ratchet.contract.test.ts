@@ -60,7 +60,7 @@ const GENERATED_MIRRORS = ["src/entities/docs-vault/data/", "public/docs-vault/"
 function repoFiles(): string[] {
   const out = execFileSync(
     "git",
-    ["ls-files", "src", "app", "mcp", "cli", "scripts", "tests", "src-tauri"],
+    ["ls-files", "--cached", "--others", "--exclude-standard", "src", "app", "mcp", "cli", "scripts", "tests", "src-tauri"],
     { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   );
   return out
@@ -69,7 +69,7 @@ function repoFiles(): string[] {
     .filter((f) => /\.(ts|tsx|js|jsx|mjs|cjs|css|rs|html)$/.test(f))
     .filter((f) => f !== "app/globals.css")
     .filter((f) => !GENERATED_MIRRORS.some((dir) => f.startsWith(dir)))
-    // `git ls-files` answers from **the index** — a deleted but uncommitted file is
+    // Include new, untracked source owners during a refactor. A deleted but uncommitted file is
     // still listed. If the gate died trying to read a missing file, then mid-refactor
     // this test would go red because of **itself**, not because of a token.
     .filter((f) => existsSync(f));

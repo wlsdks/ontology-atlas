@@ -107,7 +107,7 @@ describe('비활성 어포던스 — 값 층', () => {
 });
 
 describe('최근 변경 칩 — 못 쓰는 이유를 모드별로 말한다', () => {
-  const HOME = read('src/views/home/ui/HomePage.tsx');
+  const HOME = read('src/views/home/ui/TopologyCommandChrome.tsx');
 
   it('샘플과 내 폴더의 사유를 다른 문장으로 낸다', () => {
     // Telling someone viewing the sample to "edit a document" **presumes they have a
@@ -126,4 +126,9 @@ describe('최근 변경 칩 — 못 쓰는 이유를 모드별로 말한다', ()
     // the degradation contract in `surfaces.md` (why plus where).
     expect(text, `${locale}: 다음 행동(폴더)을 안 말한다`).toMatch(locale === 'ko' ? /폴더/ : /folder/i);
   });
+});
+
+it("keeps the protected topology owners connected to the route", () => {
+  const route = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+  expect(route).toContain('<TopologyCommandChrome');
 });

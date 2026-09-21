@@ -50,8 +50,13 @@ function writeCleanWorkbenchFixtures(root) {
     [
       "<MeaningEditorPanel",
       "create-node-change-review",
-      "previewEdge={mapRelationPreview}",
+      "<TopologyCanvasSurface",
     ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/views/home/ui/TopologyCanvasSurface.tsx",
+    "previewEdge={mapRelationPreview}",
   );
   writeFixture(
     root,

@@ -2075,6 +2075,11 @@
     animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
   }
 
+  /* Keep the settings frame and navigation stationary while its selected content changes. */
+  .settings-section-in {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
   /* Disclosure expansion — short fade-in when a previously collapsed lower layer
      opens, such as for names listed only in references. Uses the same keyframes and tokens
      as tab transitions on the same surface: similar appearances should look identical. Since it
@@ -4641,6 +4646,7 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
 
     /* ① Already opacity-only — restores time only. */
     .practice-step-crossfade,
+    .settings-section-in,
     .route-loading-in {
       animation-duration: var(--motion-fast) !important;
     }

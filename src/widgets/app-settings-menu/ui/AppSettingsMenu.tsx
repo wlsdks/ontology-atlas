@@ -378,10 +378,12 @@ export function AppSettingsMenu({
   const guideAutoStart = useGuideAutoStart();
   const frameMeter = useFrameMeter();
   const [internalOpen, setInternalOpen] = useState(false);
+  const [animateSection, setAnimateSection] = useState(false);
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
   const setOpen = useCallback(
     (next: boolean) => {
+      if (!next) setAnimateSection(false);
       if (isControlled) onOpenChange?.(next);
       else setInternalOpen(next);
     },
@@ -474,6 +476,11 @@ export function AppSettingsMenu({
 
   useEffect(() => {
     if (detailsRef.current) detailsRef.current.open = open;
+    if (open) {
+      navRef.current
+        ?.querySelector<HTMLElement>('[aria-current="page"]')
+        ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    }
   }, [open]);
 
   useEffect(() => {
@@ -736,16 +743,16 @@ export function AppSettingsMenu({
              * two drill-ins (agent connection · in-app agent) came up into this list
              * as well, so **no subview remains in this sheet**.
              */
-            <div key="root" className="flex min-h-0 flex-1" data-testid="app-settings-body">
+            <div key="root" className="flex min-h-0 flex-1 flex-col sm:flex-row" data-testid="app-settings-body">
               <nav
                 ref={navRef}
                 aria-label={t('title')}
                 data-testid="app-settings-nav"
-                className="flex w-[180px] shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[color:var(--color-border-soft)] p-2"
+                className="flex w-full shrink-0 gap-1 overflow-x-auto border-b border-[color:var(--color-border-soft)] p-2 scroll-px-2 sm:w-[180px] sm:flex-col sm:gap-0.5 sm:overflow-y-auto sm:border-b-0 sm:border-r"
               >
                 {SETTINGS_GROUPS.map((group) => (
-                  <div key={group.key} className="mb-3 last:mb-0">
-                    <p className="px-2.5 pb-1 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+                  <div key={group.key} className="flex w-max shrink-0 gap-1 sm:mb-3 sm:block sm:w-auto sm:last:mb-0">
+                    <p className="hidden px-2.5 pb-1 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)] sm:block">
                       {t(`sectionGroup.${group.key}`)}
                     </p>
                     {/*
@@ -793,7 +800,7 @@ export function AppSettingsMenu({
                           shape: 'row',
                           size: 'md',
                           tone: 'muted',
-                          className: `gap-2.5 rounded-card px-3 py-2 text-body-lg ${SETTINGS_NAV_ROW_HOVER}`,
+                          className: `w-auto shrink-0 whitespace-nowrap gap-2.5 rounded-card px-3 py-2 text-body-lg sm:w-full ${SETTINGS_NAV_ROW_HOVER}`,
                         })}
                       >
                         {/* The destination's own rail icon, so the row and the tile agree. */}
@@ -815,12 +822,16 @@ export function AppSettingsMenu({
                           type="button"
                           data-testid={`app-settings-nav-${item}`}
                           aria-current={active ? 'page' : undefined}
-                          onClick={() => setSection(item)}
+                          onClick={() => {
+                            if (item === section) return;
+                            setAnimateSection(true);
+                            setSection(item);
+                          }}
                           className={controlClass({
                             shape: 'row',
                             size: 'md',
                             tone: active ? 'accentOnTint' : 'muted',
-                            className: `gap-2.5 rounded-card px-3 py-2 text-body-lg ${
+                            className: `w-auto shrink-0 whitespace-nowrap gap-2.5 rounded-card px-3 py-2 text-body-lg sm:w-full ${
                               active
                                 ? 'bg-[color:var(--color-indigo-line-a13)]'
                                 : SETTINGS_NAV_ROW_HOVER
@@ -837,8 +848,14 @@ export function AppSettingsMenu({
               </nav>
 
               <div
+                key={section}
                 // The 20px margin is the value from the macOS settings window layout guide.
-                className="grid min-h-0 min-w-0 flex-1 content-start gap-4 overflow-y-auto p-5"
+                // A new section starts at its first control. Only section selection fades;
+                // opening the dialog already has its own panel animation.
+                className={cn('grid min-h-0 min-w-0 flex-1 content-start gap-4 overflow-y-auto p-3 sm:p-5', animateSection && 'settings-section-in')}
+                onAnimationEnd={(event) => {
+                  if (event.target === event.currentTarget) setAnimateSection(false);
+                }}
                 data-testid={`app-settings-pane-${section}`}
               >
                 {section === 'screen' ? (

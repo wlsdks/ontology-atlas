@@ -118,6 +118,22 @@ node identity in `tools/vault-nodes.mjs` and post-write maintenance in
 `scripts/check-decision-record.mjs` watches `server/registry.mjs` alongside the
 entry point, because that is where a public-contract change now lands.
 
+### Runtime module ownership
+
+The public entrypoints remain stable while internal modules own narrower work:
+
+| Entrypoint | Internal responsibilities |
+|---|---|
+| `src/views/home/ui/HomePage.tsx` | Composes typed domain controllers and surface components. `home/model/use-topology-*` owns graph projection, route/index navigation, authoring, source actions, selection, keyboard/tour state, and review actions; ACP hooks own startup and session orchestration. `TopologyCommandChrome`, `TopologyCanvasSurface`, `TopologyIndexSlot`, `TopologyInspectorSurfaces`, `TopologyAgentDock`, and overlay components own their respective JSX. |
+| `src/widgets/ontology-map/ui/use-topology-loop.ts` | Wires camera, world, realm, interaction, and presentation state to their lifecycle hooks. Ordered frame stages own dome projection, world motion, physics/camera, clusters, realms, reveal, visual state, and rendering. The frame scheduler owns request/cancel, idle/yield decisions, and context recovery. Stage factories capture stable dependencies once per effect and reuse frame result objects. Viewport lifecycle and opt-in instrumentation remain separate. |
+| `mcp/src/ontology-engine.mjs` | Composes public query methods. `artifact-context.mjs` builds indexes; `context-operations.mjs` owns graph lookups; planner, traversal, selection, scope, maintenance, brief, and health modules own their query families. Dependencies between families are explicit named functions. Dispatch, vocabulary, validation, result shaping, and response formatting are separate owners. |
+| `src/views/ontology-insights/ui/InsightsPageEntry.tsx` | Commits the lightweight `InsightsLoadingView` before mounting the dynamically imported analysis workbench. Two animation frames cross a paint boundary; unmount cancels pending frames. Heavy derivation still runs on the main thread after that visible handoff. |
+| `src/views/automations/ui/AutomationsPage.tsx` | Owns lane and selected-schedule navigation. `AutomationScheduleRow` displays timing/status and targets the runner's existing actions; `AutomationRunHistory` owns latest/older result presentation. Scheduling and execution authority remain in Library rounds. |
+
+These modules preserve the existing React lifecycle, frame order, query result
+ordering, and error contracts. The MCP package's explicit file inventory includes
+every engine module so source, bundled, and installed callers use the same code.
+
 ### Agent instruction ownership
 
 Atlas has several instruction channels, each with a different runtime boundary:

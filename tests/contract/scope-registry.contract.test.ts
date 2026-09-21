@@ -501,18 +501,30 @@ describe("범위 등록부 — URL 쿼리 키", () => {
       join(REPO_ROOT, "src/views/home/ui/HomePage.tsx"),
       "utf8",
     );
-    for (const wired of [
-      // On a vault change, clear vault-specific address state
-      "clearVaultScopedRouteState",
-      "useVaultSessionIdentityScope",
-      // Never hand a non-existent node through as the focus
-      "resolveCanvasSelectedSlug",
-      // Never assert "no path" for non-existent endpoints, and never pass them to the agent
-      "resolveTopologyPathChipState",
-      "canCopyTopologyPathPacket",
-    ]) {
-      expect(homePage, `${wired} 이 HomePage 에 배선되지 않았다`).toContain(wired);
+    const owners = [
+      ['src/views/home/model/use-topology-vault-read-model.tsx', 'useTopologyVaultReadModel', ['clearVaultScopedRouteState', 'useVaultSessionIdentityScope']],
+      ['src/views/home/model/use-topology-graph-projection.ts', 'useTopologyGraphProjection', ['resolveCanvasSelectedSlug']],
+      ['src/views/home/model/use-topology-scene-controls.tsx', 'useTopologySceneControls', ['useTopologyPathLens']],
+      ['src/views/home/ui/TopologyCommandChrome.tsx', 'TopologyCommandChrome', ['canCopyTopologyPathPacket']],
+    ] as const;
+    for (const [file, owner, witnesses] of owners) {
+      const source = readFileSync(join(REPO_ROOT, file), "utf8");
+      expect(homePage).toContain(owner.startsWith('use') ? `${owner}({` : `<${owner}`);
+      for (const witness of witnesses) {
+        const usage = witness === 'clearVaultScopedRouteState'
+          ? /setRouteState\(clearVaultScopedRouteState,\s*\{ replace: true \}\)/
+          : new RegExp(`\\b${witness}\\s*\\(`);
+        expect(source, `${witness} missing in ${file}`).toMatch(usage);
+      }
     }
+    const scene = readFileSync(join(REPO_ROOT, 'src/views/home/model/use-topology-scene-controls.tsx'), 'utf8');
+    expect(scene).toMatch(/\buseTopologyPathLens\(\{/);
+    const pathLens = readFileSync(
+      join(REPO_ROOT, "src/views/home/model/use-topology-path-lens.ts"),
+      "utf8",
+    );
+    expect(pathLens).toMatch(/\bresolveTopologyPathChipState\(\{/);
+    expect(pathLens).toMatch(/\bcanCopyTopologyPathPacket\(chipState\)/);
   });
 });
 

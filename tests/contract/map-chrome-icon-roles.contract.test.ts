@@ -21,7 +21,8 @@ import { describe, expect, it } from "vitest";
  */
 const read = (...parts: string[]) => readFileSync(join(process.cwd(), ...parts), "utf8");
 
-const HOME = read("src", "views", "home", "ui", "HomePage.tsx");
+const HOME = read("src", "views", "home", "ui", "TopologyCommandChrome.tsx");
+const CANVAS = read("src", "views", "home", "ui", "TopologyCanvasSurface.tsx");
 const PANEL = read("src", "widgets", "ontology-map", "ui", "OntologyMapDetailPanel.tsx");
 
 /** The chip element that toggles the meaning workbench, whichever glyph it currently holds. */
@@ -61,9 +62,15 @@ describe("map chrome icon roles", () => {
   });
 
   it("keeps a help glyph on the shortcut sheet, which really is help", () => {
-    const at = HOME.indexOf('data-testid="topology-shortcuts-help-button"');
+    const at = CANVAS.indexOf('data-testid="topology-shortcuts-help-button"');
     expect(at).toBeGreaterThan(-1);
-    const tile = HOME.slice(HOME.lastIndexOf("<ChromeTile", at), at);
+    const tile = CANVAS.slice(CANVAS.lastIndexOf("<ChromeTile", at), at);
     expect(tile).toMatch(/HelpCircle|CircleHelp/);
   });
+});
+
+it("keeps the protected topology owners connected to the route", () => {
+  const route = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+  expect(route).toContain('<TopologyCommandChrome');
+  expect(route).toContain('<TopologyCanvasSurface');
 });

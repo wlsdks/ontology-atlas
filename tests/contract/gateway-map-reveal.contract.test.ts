@@ -61,7 +61,9 @@ describe('관문 지도의 도착 안무', () => {
   });
 
   it('엔진 쪽 안무는 여전히 살아 있다', () => {
-    const loop = codeOnly(read('src/widgets/ontology-map/ui/use-topology-loop.ts'));
+    const loop = codeOnly(read('src/widgets/ontology-map/ui/use-topology-layout-commands.ts'));
+    const composition = codeOnly(read('src/widgets/ontology-map/ui/use-topology-loop.ts'));
+    expect(composition).toMatch(/useTopologyLayoutCommands\(\{[\s\S]*?\brevealToken,/);
     // The contract above assumes the comparison baseline starts at 0.
     expect(loop).toMatch(/lastRevealTokenRef = useRef\(0\)/);
     // The origin is the project node's home — the radial spring's natural arc prevents a straight-line flight.

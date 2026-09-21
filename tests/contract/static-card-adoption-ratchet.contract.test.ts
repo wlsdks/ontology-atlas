@@ -58,7 +58,7 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   // 1 → 0 (2026-08-19): that single card was the download panel, and it went with the
   // wholesale deletion of the install section (`docs/DECISIONS.md`, entry 83).
   ["src/views/home/ui/CreateNodeForm.tsx", 1],
-  ["src/views/home/ui/HomePage.tsx", 1],
+  ["src/views/home/ui/TopologyBlockingOverlays.tsx", 1],
   ["src/views/home/ui/TopologyNoMatchesState.tsx", 1],
   ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx", 2],
   ["src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx", 1],

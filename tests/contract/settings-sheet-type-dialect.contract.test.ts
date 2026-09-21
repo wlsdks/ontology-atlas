@@ -294,11 +294,14 @@ describe("한 시트 안에서 «값 하나 고르기» 는 한 규격이다", (
    * `min-h-11`) stands the whole row at 44px so the row satisfies the target on
    * touch as well.
    */
-  it("칩 행이 44px 미만으로 눌리지 않는다", () => {
+  it.each(["Choice", "Slider"])("%s rows retain their 44px minimum", (component) => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
-    // Row containers for Choice and Slider
-    const rows = primitives.match(/flex min-h-11 items-center gap-3 px-1 py-2/g) ?? [];
-    expect(rows.length, "Choice·Slider 두 행 문법이 같은 최소 높이를 안 쓴다").toBe(2);
+    const body = primitives.split(`export function ${component}`)[1];
+    expect(body, `${component} inventory must not be empty`).toBeDefined();
+    const row = body?.match(/return\s*\(\s*<(?:label|div)\s+className="([^"]*)"/)?.[1];
+    expect(row, `${component} must expose its row container`).toBeDefined();
+    // Layout may reflow; the minimum hit-area height is the protected property.
+    expect(row?.split(/\s+/), `${component} row must remain at least 44px tall`).toContain("min-h-11");
   });
 });
 

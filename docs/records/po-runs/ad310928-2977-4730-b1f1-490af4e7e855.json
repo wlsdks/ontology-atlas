@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-21",
+  "decision": "Refine Settings and Insights navigation, reduce measured route work, and correct selected-profile contrast",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "orient",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-21",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "ad310928-2977-4730-b1f1-490af4e7e855",
+  "recordedAt": "2026-09-21T07:02:02.653Z"
+}

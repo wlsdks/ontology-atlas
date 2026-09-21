@@ -199,6 +199,24 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
   });
 
+  it('starts a different section at its first control without replacing the dialog or navigation', () => {
+    openSheet();
+    const dialog = screen.getByRole('dialog');
+    const nav = screen.getByTestId('app-settings-nav');
+    const screenPane = screen.getByTestId('app-settings-pane-screen');
+    screenPane.scrollTop = 180;
+    fireEvent.click(screen.getByTestId('app-settings-nav-screen'));
+    expect(screenPane.scrollTop).toBe(180);
+
+    const destination = screen.getByTestId('app-settings-nav-notify');
+    destination.focus();
+    fireEvent.click(destination);
+    expect(screen.getByTestId('app-settings-pane-notify').scrollTop).toBe(0);
+    expect(screen.getByRole('dialog')).toBe(dialog);
+    expect(screen.getByTestId('app-settings-nav')).toBe(nav);
+    expect(destination).toHaveFocus();
+  });
+
   it('overlay dims the page behind (modality scrim token)', () => {
     openSheet();
     expect(screen.getByTestId('app-settings-overlay').className).toContain('scrim');
@@ -774,6 +792,29 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     expect(screen.queryByTestId('app-settings-footprint-size')).toBeNull();
     fireEvent.click(screen.getByTestId('app-settings-footprint-detail-toggle'));
     expect(screen.getByTestId('app-settings-footprint-size')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['expand', 'app-settings-expand-batch'],
+    ['footprint', 'app-settings-footprint-size'],
+  ] as const)('keeps %s detail controls inert during exit and supports reopening', async (section, controlId) => {
+    openSection(section);
+    const toggle = screen.getByTestId(`app-settings-${section}-detail-toggle`);
+    toggle.focus();
+    fireEvent.click(toggle);
+    const control = screen.getByTestId(controlId);
+    const body = document.getElementById(toggle.getAttribute('aria-controls') ?? '');
+    expect(body).toContainElement(control);
+    fireEvent.click(toggle);
+    expect(body).toHaveAttribute('inert');
+    expect(body).toHaveAttribute('aria-hidden', 'true');
+    expect(control).toBeInTheDocument();
+    expect(toggle).toHaveFocus();
+    fireEvent.click(toggle);
+    expect(body).not.toHaveAttribute('inert');
+    expect(screen.getByTestId(controlId)).toBe(control);
+    fireEvent.click(toggle);
+    await waitFor(() => expect(screen.queryByTestId(controlId)).not.toBeInTheDocument());
   });
 
   /* ── Expand section (2026-08-01, ported from the mockup `.qa-scratch/proto-expand.html`) ──── */

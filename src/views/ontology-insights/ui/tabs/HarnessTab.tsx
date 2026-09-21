@@ -1,13 +1,22 @@
 'use client';
 
+import { useId, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { FileText, ListChecks, OctagonMinus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
+import { MOTION, STAGGER } from '@/shared/motion';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { controlClass } from '@/shared/ui/control-class';
+import { EmptyState } from '@/shared/ui/empty-state';
 import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
+import { RowDisclosure } from '@/shared/ui/row-disclosure';
 import { cn } from '@/shared/lib/cn';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 
 const ROWS = 8;
+const EXAMPLE_AREA_PATH = 'src/payments/';
+const EXAMPLE_INSTRUCTIONS_FILE = 'AGENTS.md';
 
 /**
  * **What the agent guidance reaches, area by area.**
@@ -21,41 +30,27 @@ const ROWS = 8;
 export function HarnessTab({ detail }: { detail: InsightsBrief['harnessDetail'] }) {
   const t = useTranslations('ontologyPages.insights.harnessTab');
   if (detail.availability !== 'measured') {
-    /*
-     * A panel that cannot measure still says what it is for. A reader who cannot see the numbers
-     * here — in a browser, or before a repository is bound — should still leave knowing what
-     * guidance coverage means, because understanding the product is the point of the screen.
-     */
     return (
-      <section data-testid="harness-tab" className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-        <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">{t('about.title')}</h3>
-        <p className="mt-1 max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{t('about.body')}</p>
-        <dl className="mt-3 flex flex-col gap-1.5 text-body">
-          {(['told', 'gated', 'watched'] as const).map((column) => (
-            <div key={column} className="flex flex-wrap items-baseline gap-x-2">
-              <dt className="text-[color:var(--color-text-primary)]">{t(`column.${column}`)}</dt>
-              <dd className="min-w-0 text-label text-[color:var(--color-text-tertiary)]">{t(`about.${column}`)}</dd>
+      <section data-testid="harness-tab" className="flex flex-col gap-[var(--card-gap)]">
+        <GuidancePreview />
+        <EmptyState
+          title={t(`availability.${detail.availability}.title`)}
+          description={t(`availability.${detail.availability}.description`)}
+          size="compact"
+          className="border-0 bg-transparent px-0 py-0"
+          action={(
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <Link href="/architecture/?view=guides" className={controlClass({ shape: 'link', size: 'lg', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide text-[color:var(--color-indigo-text-strong)]' })}>
+                {t('preview.openHarness')}
+              </Link>
+              {detail.availability === 'app-only' ? (
+                <Link href="/download/" className={controlClass({ shape: 'link', size: 'lg', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide text-[color:var(--color-text-tertiary)]' })}>
+                  {t('getApp')}
+                </Link>
+              ) : null}
             </div>
-          ))}
-        </dl>
-        <p className="mt-3 text-body text-[color:var(--color-text-tertiary)]">{t(detail.availability === 'no-source' ? 'noSource' : detail.availability === 'reading' ? 'reading' : detail.availability === 'unreadable' ? 'unreadable' : 'appOnly')}</p>
-        {/*
-          * ⚠️ **A panel that cannot count still has somewhere to send you.** In a browser this
-          * offered the app and nothing else, so a reader who wanted to know what guidance coverage
-          * even is had one door and it left the product (walkthrough, 2026-09-20). The Harness
-          * screen renders its approved structure, its roles and its rules in a browser perfectly
-          * well; only the counts need the app. The door that works now comes first.
-          */}
-        <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-          <Link href="/architecture/" className={controlClass({ shape: 'link', hoverInk: 'strong', className: 'atlas-touch-floor -mx-2 min-h-7 px-2 text-[color:var(--color-indigo-text-strong)]' })}>
-            {t('open')}
-          </Link>
-          {detail.availability === 'app-only' ? (
-            <Link href="/download/" className={controlClass({ shape: 'link', hoverInk: 'strong', className: 'atlas-touch-floor -mx-2 min-h-7 px-2 text-[color:var(--color-text-tertiary)]' })}>
-              {t('getApp')}
-            </Link>
-          ) : null}
-        </p>
+          )}
+        />
       </section>
     );
   }
@@ -135,6 +130,88 @@ export function HarnessTab({ detail }: { detail: InsightsBrief['harnessDetail'] 
       </div>
     </section>
   );
+}
+
+function GuidancePreview() {
+  const t = useTranslations('ontologyPages.insights.harnessTab.preview');
+  const [selected, setSelected] = useState<number | null>(null);
+  const [open, setOpen] = useState(false);
+  const disclosureId = useId();
+  const reduceMotion = useReducedMotion();
+  const roles = ['instructions', 'gates', 'checks'] as const;
+
+  return (
+    <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+      <p className="text-label text-[color:var(--color-text-tertiary)]">{t('exampleLabel')}</p>
+      <h3 className="mt-2 text-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t('title')}</h3>
+      <p className="mt-1 max-w-[62ch] break-keep text-body text-[color:var(--color-text-secondary)]">{t('body')}</p>
+
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:items-center">
+        <div className={controlClass({ shape: 'card', size: 'lg', active: true, className: 'block' })}>
+          <p className="text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t('area.title')}</p>
+          <code className="mt-1 block break-all font-mono text-label text-[color:var(--color-text-tertiary)]">{EXAMPLE_AREA_PATH}</code>
+        </div>
+        <ol className="grid grid-cols-1 gap-2 border-l border-[color:var(--color-divider)] pl-3 sm:col-span-2">
+          {roles.map((role, index) => {
+            const stageOpen = open && selected === index;
+            return (
+              <li key={role} className="relative min-w-0 before:absolute before:-left-3 before:top-1/2 before:w-3 before:border-t before:border-[color:var(--color-divider)]">
+                <button
+                  type="button"
+                  aria-label={t(`roles.${role}.buttonLabel`)}
+                  aria-expanded={stageOpen}
+                  aria-controls={disclosureId}
+                  onClick={() => {
+                    if (selected === index) {
+                      setOpen(!open);
+                      return;
+                    }
+                    setSelected(index);
+                    setOpen(true);
+                  }}
+                  className={controlClass({ shape: 'row', size: 'lg', active: stageOpen, className: 'w-full items-center text-left' })}
+                >
+                  <motion.span
+                    aria-hidden
+                    initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ...MOTION.base, delay: reduceMotion ? undefined : index * STAGGER }}
+                    className="flex h-8 w-8 flex-none items-center justify-center text-[color:var(--color-text-tertiary)]"
+                  >
+                    <RoleMark role={role} />
+                  </motion.span>
+                  <span className="min-w-0">
+                    <span className="block text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t(`roles.${role}.title`)}</span>
+                    <span className="block text-label text-[color:var(--color-text-tertiary)]">{role === 'instructions' ? EXAMPLE_INSTRUCTIONS_FILE : t(`roles.${role}.example`)}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      <RowDisclosure open={open} id={disclosureId} className="pt-3">
+        {selected !== null ? (
+          <div className="border-t border-[color:var(--color-divider)] pt-3">
+            <p className="max-w-[68ch] break-keep text-body text-[color:var(--color-text-secondary)]">{t(`roles.${roles[selected]}.setup`)}</p>
+            <Link href="/architecture/?view=guides" className={controlClass({ shape: 'link', size: 'lg', className: 'atlas-touch-floor atlas-touch-floor-wide mt-2 text-[color:var(--color-indigo-text-strong)]' })}>{t('openHarness')}</Link>
+          </div>
+        ) : null}
+      </RowDisclosure>
+      <p className="mt-3 text-body text-[color:var(--color-text-tertiary)]">{t('instruction')}</p>
+    </div>
+  );
+}
+
+function RoleMark({ role }: { role: 'instructions' | 'gates' | 'checks' }) {
+  if (role === 'instructions') {
+    return <FileText aria-hidden size={ICON_SIZE.md} strokeWidth={1.5} />;
+  }
+  if (role === 'gates') {
+    return <OctagonMinus aria-hidden size={ICON_SIZE.md} strokeWidth={1.5} />;
+  }
+  return <ListChecks aria-hidden size={ICON_SIZE.md} strokeWidth={1.5} />;
 }
 
 /** A zero is the finding, so it is drawn as a dash that reads as "nothing here", not as a score. */

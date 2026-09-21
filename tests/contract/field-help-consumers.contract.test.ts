@@ -60,7 +60,8 @@ describe('every consumer named in field help exists as a real code path', () => 
   });
 
   it('an impact query walks relation edges, which is what the target help promises', () => {
-    const engine = read('mcp/src/ontology-engine.mjs');
+    const engine = read('mcp/src/ontology-engine/traversal-analysis.mjs');
+    expect(read('mcp/src/ontology-engine.mjs')).toContain('createTraversalAnalysis(');
     expect(engine).toContain("function impact(");
     expect(engine).toContain('traversalEdges(current.slug, direction, typeSet)');
   });

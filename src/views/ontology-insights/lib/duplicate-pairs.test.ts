@@ -142,4 +142,38 @@ describe("buildDuplicatePairs", () => {
     const { rows } = buildDuplicatePairs(nodes, edges, 20, 0.2);
     expect(rows.some((row) => row.sharedTokens.length === 0)).toBe(true);
   });
+
+  it("counts multi-token pairs once and keeps the exact exhaustive prefix for unusual limits", () => {
+    const generated = Array.from({ length: 18 }, (_, index) =>
+      node(
+        `capability:payment-handler-${index}`,
+        "capability",
+        `Payment handler ${index}`,
+        `capabilities/payment-handler-${index}`,
+      ),
+    );
+    const generatedEdges = generated.slice(1).map((entry, index) =>
+      edge(`g${index}`, entry.id, generated[index].id, "depends_on"),
+    );
+    const exhaustive = buildDuplicatePairs(generated, generatedEdges, Infinity, 0.6, Infinity);
+
+    expect(exhaustive.suspectCount).toBeGreaterThan(20);
+    expect(exhaustive.rows).toHaveLength(exhaustive.suspectCount);
+    expect(new Set(exhaustive.rows.map((row) => row.id)).size).toBe(exhaustive.suspectCount);
+    for (const [limit, restLimit] of [
+      [0, 0],
+      [Number.NaN, 4],
+      [5, Number.NaN],
+      [1.8, 2.9],
+      [5, 7],
+      [Infinity, 0],
+    ] as const) {
+      const bounded = buildDuplicatePairs(generated, generatedEdges, limit, 0.6, restLimit);
+      const shown = Math.max(0, limit);
+      const folded = Math.max(0, restLimit);
+      expect(bounded.suspectCount).toBe(exhaustive.suspectCount);
+      expect(bounded.rows).toEqual(exhaustive.rows.slice(0, shown));
+      expect(bounded.restRows).toEqual(exhaustive.rows.slice(shown, shown + folded));
+    }
+  });
 });

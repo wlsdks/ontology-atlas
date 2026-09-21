@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import ko from "../../../../../messages/ko.json";
@@ -56,5 +56,43 @@ describe("the check card's cut list", () => {
   it("stays silent when every finding is on screen", () => {
     renderTab(["a", "b"]);
     expect(screen.queryAllByTestId("hidden-count-line")).toHaveLength(0);
+  });
+});
+
+describe("the Wiki setup example", () => {
+  function renderPreview() {
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <LibraryTab detail={{ ...detail([]), availability: "no-data" }} nowMs={Date.parse("2026-09-21T00:00:00Z")} />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it("keeps the example distinct from the folder's empty state", () => {
+    renderPreview();
+    expect(screen.getByText("위키 분석을 시작해 보세요")).toBeInTheDocument();
+    expect(screen.queryByText("이 판이 답하는 것")).not.toBeInTheDocument();
+    expect(screen.getByText("예시 · 내 폴더의 데이터가 아니에요")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "원문을 추가하는 방법" })).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("reveals one stage's real prerequisite and uses the honest Library destination", () => {
+    renderPreview();
+    const source = screen.getByRole("button", { name: "원문을 추가하는 방법" });
+    const page = screen.getByRole("button", { name: "위키 페이지를 만드는 방법" });
+
+    fireEvent.click(source);
+    expect(source).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("자료실에 원문 파일을 추가하세요.")).toBeVisible();
+    expect(screen.getByRole("link", { name: "자료실에서 시작하기" })).toHaveAttribute("href", "/library/");
+
+    fireEvent.click(page);
+    expect(source).toHaveAttribute("aria-expanded", "false");
+    expect(page).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText(/추가한 원문으로 위키 페이지를 만들어 주세요/)).toBeVisible();
+
+    fireEvent.click(page);
+    expect(page).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("link", { name: "자료실에서 시작하기" })).not.toBeInTheDocument();
   });
 });

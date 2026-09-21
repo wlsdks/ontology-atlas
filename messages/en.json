@@ -1776,7 +1776,9 @@
           "agent-writes-since": "{count, plural, one {# of them wrote} other {# of them wrote}} to the folder",
           "agent-distinct-since": "{count, plural, one {# agent} other {# agents}} at work"
         },
-        "markSeenUndo": "Undo"
+        "markSeenUndo": "Undo",
+        "evidenceUnreadable": "The linked code could not be checked. Reopen the folder to try again.",
+        "evidenceNoSource": "No code repository is connected to this folder yet. Connect it from the project on the map."
       },
       "tabCountTitle": {
         "do-next": "Things to fix",
@@ -1800,7 +1802,7 @@
         "emptyDescription": "Nothing in this folder references a concept it does not hold."
       },
       "errorAlert": "Could not load the graph: {message}",
-      "loading": "Loading the graph…",
+      "loading": "Preparing analysis…",
       "emptyTitleBefore": "No ontology concepts yet. Pick a folder or add a document in ",
       "emptyTitleLink": "Ontology documents",
       "emptyTitleAfter": ".",
@@ -2123,8 +2125,8 @@
         "more": "{count, number} more",
         "stale": {
           "title": "{count, number} pages whose source changed",
-          "caption": "The source a page cited changed after it was written. Do not trust those sentences until it is rewritten.",
-          "none": "Every page still stands on the source it cited."
+          "caption": "A cited source changed. Review the affected content and update the page if needed.",
+          "none": "No pages are currently flagged for source changes."
         },
         "unwritten": {
           "title": "{count, number} sources not written up",
@@ -2163,21 +2165,54 @@
         "about": {
           "title": "What this panel answers",
           "body": "Whether the wiki pages written from your sources still match those sources, which sources nobody wrote up, what the format check flagged, and what the unattended passes did while nobody was here."
+        },
+        "preview": {
+          "title": "From sources to wiki",
+          "body": "See the pages built from your sources and the checks that keep them useful.",
+          "exampleLabel": "Example · not data from your folder",
+          "instruction": "Select a stage to see how to get started.",
+          "openLibrary": "Start in the Library",
+          "stages": {
+            "source": {
+              "title": "Source",
+              "example": "meeting-notes.txt",
+              "buttonLabel": "How to add a source",
+              "setup": "Add a source file in the Library."
+            },
+            "page": {
+              "title": "Wiki page",
+              "example": "Decisions and evidence · [source]",
+              "buttonLabel": "How to create a wiki page",
+              "setup": "Create a wiki page from a source in the Library. Its source links and check results appear here.",
+              "visualTitle": "Decisions and evidence",
+              "citation": "[meeting-notes.txt]"
+            },
+            "check": {
+              "title": "Checks",
+              "example": "Citations · links · source changes",
+              "buttonLabel": "How to see check results",
+              "setup": "Once wiki pages exist, their citation, link and format findings appear here.",
+              "citation": "Citations",
+              "links": "Links",
+              "sourceChanges": "Source changes"
+            }
+          },
+          "emptyTitle": "Start your wiki analysis",
+          "emptyDescription": "Add sources in the Library to see their wiki pages and check results here."
         }
       },
       "harnessTab": {
-        "open": "Open the harness",
+        "open": "Explore the harness",
         "getApp": "Get the app",
         "more": "{count, number} more domains",
-        "appOnly": "Measured in the app only. A browser cannot read hidden folders.",
         "reading": "Reading the folder.",
         "unreadable": "The guide files could not be read. Reopening the folder tries again.",
-        "noSource": "This folder is not bound to a code repository yet. Bind one and the guides and checks are counted here.",
+        "noSource": "Check the code repository for this folder. Guidance can be measured when one bound repository can be identified.",
         "column": {
           "area": "Domain",
-          "told": "Told",
-          "gated": "Gated",
-          "watched": "Watched"
+          "told": "Instructions",
+          "gated": "Gates",
+          "watched": "Checks"
         },
         "coverage": {
           "title": "Harness coverage: {count, number} domains",
@@ -2186,9 +2221,9 @@
           "everywhere": "Reaching everything: told {told, number} · gated {gated, number} · watched {watched, number}"
         },
         "drift": {
-          "title": "{count, number} files where the two agent trees disagree",
-          "caption": "Two copies that should say the same thing do not.",
-          "none": "The two copies agree."
+          "title": "{count, number} guidance and configuration findings",
+          "caption": "File differences and reference or configuration findings. Agent-specific instructions do not need to be identical.",
+          "none": "No findings to show."
         },
         "about": {
           "title": "What this panel answers",
@@ -2196,6 +2231,53 @@
           "told": "what an agent reads: AGENTS.md, CLAUDE.md, rule documents",
           "gated": "what actually stops a bad change: hooks and gates",
           "watched": "what reports after the fact: tests and linters"
+        },
+        "preview": {
+          "title": "Guidance and checks by code area",
+          "body": "See which areas have instructions, rules that block changes, and automated checks.",
+          "exampleLabel": "Example · not data from your folder",
+          "instruction": "Select a role to see how to connect it.",
+          "openHarness": "View guidance in Harness",
+          "area": {
+            "title": "Payments"
+          },
+          "roles": {
+            "instructions": {
+              "title": "Instructions",
+              "buttonLabel": "How to add instructions",
+              "setup": "Add working guidance to AGENTS.md or rule documents in the code repository. Review their scope to see which code areas they reach."
+            },
+            "gates": {
+              "title": "Gates",
+              "example": "Example: no connected rule",
+              "buttonLabel": "How to connect gates",
+              "setup": "Connect hooks or checks that actually block changes, then review their scope. A request written in guidance alone does not count as a gate."
+            },
+            "checks": {
+              "title": "Checks",
+              "example": "Tests · lint",
+              "buttonLabel": "How to connect checks",
+              "setup": "Review the target paths of automated checks such as tests and lint. A check file does not prove that the check ran or passed."
+            }
+          }
+        },
+        "availability": {
+          "app-only": {
+            "title": "Open this folder in the app",
+            "description": "The browser cannot read hidden folders, so guidance coverage is measured in the app."
+          },
+          "no-source": {
+            "title": "Check the code repository",
+            "description": "Check the code repository for this folder. Guidance can be measured when one bound repository can be identified."
+          },
+          "reading": {
+            "title": "Reading guidance",
+            "description": "Atlas is reading guidance and checks from the connected repository."
+          },
+          "unreadable": {
+            "title": "Guidance could not be read",
+            "description": "Reopen the folder to try reading its guidance and checks again."
+          }
         }
       }
     }
@@ -5310,9 +5392,24 @@
     "foundLess": "Fold"
   },
   "automations": {
+    "blockedActions": "Blocked {count} actions.",
+    "toolActivity": "Tool activity",
+    "removeQuestion": "Remove “{name}” from the schedule?",
+    "removeConfirm": "Remove schedule",
+    "changeFailed": "The change could not be saved. Try again.",
+    "checked": "Checked {count} documents.",
+    "stalePages": "Needs review · {pages}",
+    "writtenFiles": "Updated files · {files}",
+    "earlierRuns": "Earlier runs · {count}",
+    "openFolderTitle": "Open a folder to schedule reviews",
+    "openFolderDescription": "Schedules and results stay with this folder. The app runs them while the folder is open.",
+    "scopeLabel": "Review focus",
+    "noNextRun": "No run scheduled while paused",
+    "nextRunAt": "Next · {time}",
+    "scheduleCount": "{count, plural, one {# scheduled automation} other {# scheduled automations}}",
     "title": "Automations",
     "eyebrow": "LOCAL, WHILE ATLAS IS OPEN",
-    "lede": "Choose what repeats and where it is allowed to work. Ontology reviews propose; document rounds keep the Library current.",
+    "lede": "Schedule recurring reviews, then inspect what each run found.",
     "tabsAria": "Automation lanes",
     "tabs": {
       "ontology": "Ontology",
@@ -5336,11 +5433,12 @@
     "pause": "Pause",
     "resume": "Resume",
     "removeNamed": "Remove {name}",
-    "historyTitle": "Latest review",
+    "historyTitle": "Run history",
     "noRuns": "No pass has run yet.",
     "noSummary": "The pass finished without a stored summary.",
     "refused": "Refused: {tools}",
     "called": "Read: {tools}",
+    "saving": "Scheduling…",
     "saveFailed": "The schedule could not be saved. Nothing was changed.",
     "state": {
       "on": "On",
@@ -5348,14 +5446,14 @@
       "running": "Running"
     },
     "outcome": {
-      "none": "new",
-      "held": "held",
-      "reviewed": "reviewed",
-      "stale": "stale",
-      "redrafted": "redrafted",
-      "refused": "refused",
-      "failed": "failed",
-      "asleep": "asleep"
+      "none": "New schedule",
+      "held": "No changes",
+      "reviewed": "Review complete",
+      "stale": "Needs review",
+      "redrafted": "Draft updated",
+      "refused": "Blocked",
+      "failed": "Failed",
+      "asleep": "Not running"
     },
     "cadence": {
       "hour": "Every hour",
@@ -5385,7 +5483,7 @@
         "focus": "Focus (optional)",
         "focusPlaceholder": "source binding gaps, stale capabilities, relation evidence…",
         "focusHint": "Leave it empty and Atlas chooses one bounded area from the current evidence.",
-        "scopeTitle": "This review may",
+        "scopeTitle": "Allowed actions",
         "mayRead": "Read the ontology and current source evidence through atlas-vault.",
         "mayPropose": "Describe proposed changes with exact slugs, paths, and uncertainty.",
         "mayNeverWrite": "Never write concepts, relations, files, or a meaning receipt."
@@ -6210,14 +6308,14 @@
         "readback6h": "Every six hours",
         "readbackDaily": "Every day at {time}",
         "readbackWeekdays": "On weekdays at {time}",
-        "title": "New round",
+        "title": "Schedule a document review",
         "what": "What to check",
-        "how": "How often",
+        "how": "Schedule",
         "time": "At",
-        "onStale": "When a page goes stale",
-        "redraft": "Redraft it",
+        "onStale": "When the source changes",
+        "redraft": "Prepare an updated draft",
         "redraftHint": "One agent turn for the stale sources only; the new page waits as a draft.",
-        "mark": "Mark it",
+        "mark": "Flag for review",
         "markHint": "The row in Sources turns amber. Nothing is written.",
         "service": "Service",
         "noConnectors": "No service is attached to this folder yet. Bring documents from a service once and it appears here.",
@@ -6226,7 +6324,7 @@
         "queryPlaceholder": "pages changed in the last day in space ENG",
         "queryHint": "Leave empty to only re-read what is already here.",
         "name": "Name",
-        "may": "This round may",
+        "may": "Allowed actions",
         "mayReadVault": "read this folder and its map",
         "mayCallConnector": "ask {service} to read, never to write there",
         "mayWriteSources": "add or refresh files under sources/",
@@ -6235,19 +6333,20 @@
         "costNone": "No agent turn.",
         "costPerPass": "One agent turn per pass · about {count, number} a day at this cadence.",
         "costOnStale": "One agent turn only on a pass that finds something stale.",
-        "allowAndSave": "Allow and save",
+        "allowAndSave": "Allow and schedule",
         "cancel": "Cancel",
         "saved": "{name} runs first at {time}.",
         "savedRunningNow": "Running {name} once now; the next pass is at {time}.",
+        "saving": "Scheduling…",
         "saveFailed": "Could not save the round: {reason}",
-        "places": "What to look at",
+        "places": "Review targets",
         "placeVault": "Documents in this folder",
         "placeVaultAll": "all of it",
         "placeOwn": "the documents I wrote",
         "placeOwnDetail": "files under sources/ that no service sent",
         "chooseFolders": "Choose folders",
         "noFolders": "This folder has no subfolders yet, so the round watches all of it.",
-        "addPlace": "Add a place",
+        "addPlace": "Add a review target",
         "addFolder": "Another folder in this folder",
         "addNoConnector": "No service is attached to this folder yet. Attach one in Agents.",
         "removePlace": "Remove {place}",

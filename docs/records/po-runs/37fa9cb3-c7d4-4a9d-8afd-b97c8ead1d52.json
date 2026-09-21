@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-21",
+  "decision": "Paint Insights before analysis and rebuild Automations around readable schedule rows",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "orient",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-21",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "37fa9cb3-c7d4-4a9d-8afd-b97c8ead1d52",
+  "recordedAt": "2026-09-21T04:26:36.386Z"
+}

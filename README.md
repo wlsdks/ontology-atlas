@@ -83,6 +83,12 @@ to further inspection rather than automatic reassurance. Its five-kind
 discriminator and standards boundary live in the
 [vault specification](docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
 
+The Analysis tab opens with visible loading feedback before preparing its views.
+In the Mac app, Automations groups recurring reviews by schedule, with the next
+run and latest result on each row. Ontology reviews are read-only; document rounds
+retain their approved Library scope. See the [feature inventory](docs/FEATURES.md)
+for the full execution and review boundaries.
+
 ## Use it in the next task
 
 With a populated vault and an MCP connection, ask your agent for the context of
@@ -406,8 +412,12 @@ drifting agent is visible before it writes.
 
 ![The current Analysis screen in the installed macOS app, with four measurements above the tabs (concepts by kind, relations by type, health in words, the last four weeks), the Do next, Not held, Inventory, Connections, Boundaries, Growth, Recent changes, Structure and Flow tabs, and the things to fix grouped by kind with the first group open on a pair whose names overlap](docs/assets/readme/graph-insights.png)
 
-Insights opens on four measurements: concepts by kind, relations by type, the
-folder's health in words rather than a score, and the last four weeks of change.
+Insights opens on a Brief across concepts, wiki pages, guidance and agent activity.
+Choose a subject to inspect its evidence. When Wiki or Guidance cannot yet show
+measurements, distinct examples explain source-to-page checks or guidance across
+code areas. Select an example to reveal the required setup and its Library or
+Harness destination; examples never count as your data or create files.
+The Concepts subject shows the folder's measurements and maintenance questions.
 **Do next** is one row per kind of finding, and the counts add up to the title,
 always. Where a missing back-link can be repaired from two facts already on disk,
 one sheet names each file it would touch and nothing is written until you apply.

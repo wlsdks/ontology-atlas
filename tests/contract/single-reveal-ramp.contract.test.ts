@@ -35,7 +35,8 @@ import { describe, expect, it } from "vitest";
  */
 
 const DRAW = join(process.cwd(), "src/widgets/ontology-map/ui/topology-frame-draw.ts");
-const LOOP = join(process.cwd(), "src/widgets/ontology-map/ui/use-topology-loop.ts");
+const REVEAL = join(process.cwd(), "src/widgets/ontology-map/ui/topology-reveal-frame-stage.ts");
+const SCHEDULER = join(process.cwd(), "src/widgets/ontology-map/ui/use-topology-frame-loop.ts");
 
 function read(path: string): string {
   return readFileSync(path, "utf8");
@@ -44,7 +45,9 @@ function read(path: string): string {
 describe("등장 램프는 노드당 하나다", () => {
   it("소스를 실제로 읽는다 — 빈 스캔은 통과가 아니라 결함이다", () => {
     expect(read(DRAW).length).toBeGreaterThan(1000);
-    expect(read(LOOP).length).toBeGreaterThan(1000);
+    expect(read(REVEAL).length).toBeGreaterThan(1000);
+    expect(read(SCHEDULER)).toContain("createRevealFrameStage(configuration.revealFrameStage)");
+    expect(read(SCHEDULER)).toMatch(/runRevealFrameStage\(\s*now,\s*dt,/);
   });
 
   it("`revealMul` 의 모든 갈래가 그룹 페이드를 **대체**한다 — 곱이 아니다", () => {
@@ -86,7 +89,7 @@ describe("등장 램프는 노드당 하나다", () => {
     // So what must be measured is not "does the branch exist" but **"which tau does
     // the branch actually taken use"**. If the batch-reveal step goes back to ego's
     // tau, this fails.
-    const src = read(LOOP);
+    const src = read(REVEAL);
     const anchor = src.indexOf("const appearMap = batchAppearRef.current;");
     expect(anchor, "배치-공개 스텝을 못 찾았다 — 이름이 바뀌었으면 이 테스트도 갱신한다").toBeGreaterThan(0);
     // Only the first `stepEmphasis` call inside that block is inspected.
@@ -107,7 +110,7 @@ describe("등장 램프는 노드당 하나다", () => {
     // The chip's pill/badge fade and the ramp of the children it reveals are born of
     // the same click. Different taus make the chip finish first with children
     // trailing, which reads as two events.
-    const src = read(LOOP);
+    const src = read(REVEAL);
     // No attempt is made to capture a whole `stepEmphasis(…)` call by regex — the
     // arguments span lines and nest parentheses such as `revealMap.get(id) ?? 0`, so
     // they cannot be balanced. Counting references is enough: two ramp steps must read

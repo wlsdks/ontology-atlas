@@ -665,7 +665,10 @@ describe("노드 컨트롤 방위 — 막대·배지·궤도 버튼이 자리를
    * overlaps again — so this also checks that the consumer calls the function.
    */
   it("궤도 버튼 DOM 배치가 같은 함수를 쓴다", () => {
-    const source = readFileSync("src/widgets/ontology-map/ui/use-topology-loop.ts", "utf8");
+    const source = readFileSync("src/widgets/ontology-map/ui/topology-realm-frame-stage.ts", "utf8");
+    const scheduler = readFileSync("src/widgets/ontology-map/ui/use-topology-frame-loop.ts", "utf8");
+    expect(scheduler).toContain("createRealmFrameStage(configuration.realmFrameStage)");
+    expect(scheduler).toContain("runRealmFrameStage(");
     expect(source).toContain("orbitButtonRect(");
     expect(source, "45° 인라인 계산이 되살아났다").not.toContain("Math.cos(-Math.PI / 4)");
   });
@@ -689,7 +692,10 @@ describe("동시에 펼쳐 둘 부모 — 딥링크도 상한을 받는다", () 
   });
 
   it("지도 화면이 그 상한을 실제로 건다", () => {
-    const source = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+    const source = readFileSync("src/views/home/model/use-topology-route-controls.tsx", "utf8");
+    const composition = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+    expect(composition).toContain("useTopologyRouteControls({");
+    expect(composition).toContain("topologyRouteControls={topologyRouteControls}");
     expect(source).toContain("limitExpandedParents(expandedParentSlugs, expand.maxOpenParents)");
   });
 });
@@ -825,11 +831,15 @@ describe("머리 위 막대 — 동사가 든 글자 버튼", () => {
    * fallback appears on screen.
    */
   it("지도 화면이 세 문구를 번역해 캔버스로 넘긴다", () => {
-    const source = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+    const source = readFileSync("src/views/home/model/use-topology-scene-controls.tsx", "utf8");
+    const composition = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+    const surface = readFileSync("src/views/home/ui/TopologyCanvasSurface.tsx", "utf8");
+    expect(composition).toContain("useTopologySceneControls({");
+    expect(composition).toContain("topologySceneControls={topologySceneControls}");
     expect(source).toContain('t("cluster.barExpand")');
     expect(source).toContain('t("cluster.barExpandCount"');
     expect(source).toContain('t("cluster.barCollapse")');
-    expect(source).toContain("clusterBarLabels={clusterBarLabels}");
+    expect(surface).toContain("clusterBarLabels={clusterBarLabels}");
     for (const locale of ["ko", "en"] as const) {
       const messages = JSON.parse(readFileSync(`messages/${locale}.json`, "utf8")) as {
         topology: { cluster: Record<string, string> };

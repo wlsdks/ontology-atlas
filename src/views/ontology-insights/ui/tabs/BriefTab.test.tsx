@@ -109,6 +109,7 @@ describe("BriefTab", () => {
     ]);
     expect(lines[0]).toHaveAttribute("data-brief-state", "stale");
     expect(ontology.querySelector('a[href="/ontology/insights/?tab=do-next"]')).not.toBeNull();
+    fireEvent.click(screen.getByTestId("brief-line-open-ontology-evidence-moved"));
     // The stale line names what it counts: concept, the file, and both dates — never a bare number.
     const rows = ontology.querySelectorAll('[data-testid="brief-line-rows-ontology-evidence-moved"] li');
     expect(rows).toHaveLength(2);
@@ -116,6 +117,24 @@ describe("BriefTab", () => {
     expect(rows[0]).toHaveTextContent("src/pay.ts");
     expect(ontology.querySelector('a[href="/topology/?p=capabilities%2Fpay"]')).not.toBeNull();
     expect(screen.getByTestId("brief-core-wiki").querySelectorAll("[data-brief-line]")).toHaveLength(0);
+  });
+
+  it("makes exiting evidence inert and reopens the same rows on interruption", () => {
+    mount(brief());
+    const toggle = screen.getByTestId("brief-line-open-ontology-evidence-moved");
+    expect(screen.queryByTestId("brief-line-rows-ontology-evidence-moved")).toBeNull();
+    toggle.focus();
+    fireEvent.click(toggle);
+    const rows = screen.getByTestId("brief-line-rows-ontology-evidence-moved");
+    const body = document.getElementById(toggle.getAttribute("aria-controls") ?? "");
+    expect(body).toContainElement(rows);
+    fireEvent.click(toggle);
+    expect(body).toHaveAttribute("inert");
+    expect(body).toHaveAttribute("aria-hidden", "true");
+    expect(toggle).toHaveFocus();
+    fireEvent.click(toggle);
+    expect(body).not.toHaveAttribute("inert");
+    expect(screen.getByTestId("brief-line-rows-ontology-evidence-moved")).toBe(rows);
   });
 
   it("says where a core cannot be measured instead of showing zeros as fine", () => {
@@ -173,6 +192,7 @@ describe("BriefTab", () => {
         <BriefTab brief={brief()} onAskAgent={onAskAgent} />
       </NextIntlClientProvider>,
     );
+    fireEvent.click(screen.getByTestId("brief-line-open-ontology-evidence-moved"));
     fireEvent.click(screen.getByTestId("brief-ask-agent"));
     expect(onAskAgent).toHaveBeenCalledTimes(1);
     const request = onAskAgent.mock.calls[0]![0] as string;
@@ -185,6 +205,7 @@ describe("BriefTab", () => {
   it("offers the same request to copy when no agent can be launched here", () => {
     mount(brief());
     expect(screen.queryByTestId("brief-ask-agent")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("brief-line-open-ontology-evidence-moved"));
     expect(screen.getByTestId("brief-line-handoff-ontology-evidence-moved")).toBeInTheDocument();
   });
 
@@ -313,7 +334,7 @@ describe("taking the visit mark back", () => {
 });
 
 describe("a line that cannot be checked", () => {
-  it("offers the app in a browser and never inside it", () => {
+  it.each(["measured", "reading", "unreadable", "no-source"] as const)("offers the app in a browser and never inside it: %s", (availability) => {
     /*
      * Measured in the installed app at 1040x720 on this repository's own vault: "50 concepts
      * whose code could not be checked · Get the app", inside the app. In a browser the same line
@@ -332,10 +353,11 @@ describe("a line that cannot be checked", () => {
 
     const app = render(
       <NextIntlClientProvider locale="ko" messages={ko}>
-        <BriefTab brief={brief({ ontology: core({ core: "ontology", availability: "measured", headline: 9, lines: [line] }) })} />
+        <BriefTab brief={brief({ ontology: core({ core: "ontology", availability, headline: 9, lines: [line] }) })} />
       </NextIntlClientProvider>,
     );
     const inApp = app.container.querySelector('[data-brief-line="ontology-evidence-unchecked"] a');
+    expect(app.container.querySelector('[data-testid="brief-core-ontology"] a[href="/download/"]')).toBeNull();
     expect(inApp?.getAttribute("href"), "앱 안에서 앱을 받으라고 한다").not.toContain("/download/");
     expect(inApp?.getAttribute("href")).toContain("/topology/");
   });
