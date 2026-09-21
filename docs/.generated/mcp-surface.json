@@ -116,7 +116,9 @@
       {
         "name": "connection_info",
         "mode": "read",
-        "arguments": [],
+        "arguments": [
+          "guide"
+        ],
         "required": []
       },
       {
