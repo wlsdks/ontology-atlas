@@ -30,6 +30,7 @@ import {
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
   flatSlugIssue,
+  folderForKind,
   generateNodeUid,
   inspectMergedUids,
   nodeUidIssue,
@@ -43,6 +44,7 @@ import {
   looksLikePath,
   pathShapedReferenceMessage,
   pathShapedTitleMessage,
+  slugOutsideKindFolderMessage,
 } from './construction-rules.mjs';
 import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
 import { meaningFindings } from './meaning-findings.mjs';
@@ -1055,6 +1057,32 @@ function runNodeEligibilityGate(
         refs: [],
         count: 1,
         message: capabilityWithoutEvidenceMessage({ slug }),
+      });
+    }
+  }
+
+  // ⓪b A node written outside its kind folder. Creation only: the slug is minted
+  //     once, and repeating it on every later write would be a standing
+  //     accusation about a decision the author cannot undo with a patch. Measured
+  //     2026-09-21 — a trial built a whole vault flat at the root and
+  //     `validate_vault` answered 0 issues, so nothing in the product ever said
+  //     the convention exists. Advisory: a flat slug is valid, it just groups
+  //     with nothing. The hard error next door (`flatSlugIssue`, in `writeDoc`)
+  //     covers the different shape that silently merges distinct nodes.
+  if (created && typeof frontmatter.kind === 'string') {
+    const folder = folderForKind(frontmatter.kind.trim());
+    if (folder && !slug.startsWith(folder)) {
+      GATE.findings.push({
+        code: 'slug-outside-kind-folder',
+        slug,
+        key: 'slug',
+        refs: [`${folder}${slug}`],
+        count: 1,
+        message: slugOutsideKindFolderMessage({
+          slug,
+          kind: frontmatter.kind.trim(),
+          canonicalSlug: `${folder}${slug}`,
+        }),
       });
     }
   }

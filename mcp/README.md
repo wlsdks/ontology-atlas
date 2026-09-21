@@ -585,7 +585,7 @@ the evidence row fail closed.
 
 | Tool | What it does |
 |---|---|
-| `connection_info` | First-call connection proof: resolved vault/repository roots, resolution sources, same-root warning, restart requirement, server identity, read-only mode, and the actually advertised `toolCount` / `toolNames` / deterministic `toolsetHash`. An explicit `OATLAS_REPO_ROOT` wins; otherwise the server discovers the active vault's Git top-level and falls back to process cwd only outside Git. Run it before repository analysis or writes; compare the inventory after upgrades to catch a stale client process that needs restart. Every response also carries `guide.card` — the construction card — and `guide.topics`; pass `guide: "meta_model" | "construction" | "lifecycle" | "write_safety" | "workflows"` to receive that section's full text in `guideText`, because a host may keep only the first ~2,000 characters of the server `instructions` while tool results arrive whole. |
+| `connection_info` | First-call connection proof: resolved vault/repository roots, resolution sources, same-root warning, restart requirement, server identity, read-only mode, and the actually advertised `toolCount` / `toolNames` / deterministic `toolsetHash`. An explicit `OATLAS_REPO_ROOT` wins; otherwise the server discovers the active vault's Git top-level and falls back to process cwd only outside Git. Run it before repository analysis or writes; compare the inventory after upgrades to catch a stale client process that needs restart. Every response also carries `guide.card` — the construction card — and `guide.topics`; pass `guide: "meta_model" | "construction" | "lifecycle" | "write_safety" | "workflows" | "competency"` to receive that section's full text in `guideText`, because a host may keep only the first ~2,000 characters of the server `instructions` while tool results arrive whole. `competency` returns the exact `## Competency answers` layout `finalize_project_meaning` parses, with a complete example. |
 | `git_status` | Read-only, vault-scoped Git status: HEAD/branch, changed vault files, outside-vault counts, staged-outside warnings, detached-HEAD and merge/rebase/cherry-pick/revert risk. NUL-delimited porcelain parsing preserves Unicode and whitespace paths. Never initializes, stages, commits, or pushes. |
 | `git_history` | Read-only, newest-first commit history scoped to the active vault pathspec. Returns bounded hashes, subjects, authored timestamps, `limited` / `hasMore`, shallow-repository state, and `historyComplete` while excluding commits that touched only files outside the vault. `limit` defaults to 20 and is capped at 100. Never initializes, fetches, pulls, commits, or pushes. |
 | `git_snapshot` | Local vault checkpoint with a mandatory dry-run/`confirm:true` flow and exact `expectedHead` concurrency guard. Runs vault validation; blocks validation errors, detached HEAD, and in-progress Git operations; returns the shared destructive-preview decision contract; commits only the vault pathspec; preserves outside staging; and never pushes. |
@@ -1048,8 +1048,8 @@ is limited to `inspect_compile_issue` / `break_dependency_cycle` /
 `add_missing_relation` / `materialize_external_element` / `unassigned_node` /
 `empty_domain` / `separate_evidence_from_concept` / `fold_bulk_siblings` /
 `retire_unearned_node` / `capability_without_evidence` / `rejudge_summary_membership` /
-`definition_missing` / `boundary_missing` / `epistemic_exclusion` / `folder_only_evidence`
-for the same reason.
+`definition_missing` / `boundary_missing` / `epistemic_exclusion` / `folder_only_evidence` /
+`slug_outside_kind_folder` for the same reason.
 `separate_evidence_from_concept` and `fold_bulk_siblings` come from the write-path
 node-eligibility gate (2026-07-31 council) and only ever appear on a write response:
 a path sitting in a meaning slot, and siblings a single machine batch created under
@@ -1090,6 +1090,22 @@ that only reads the queue still sees them. A compiled snapshot carries no bodies
 the engine reports nothing when a caller hands over none; that is "not looked at",
 never "clean". `folder_only_evidence` is write-path only, because deciding whether a
 cited path is a directory needs the repository root that a snapshot does not carry.
+`slug_outside_kind_folder` is the fifth, and it is about where a node lives rather than
+what it says: a `domain`, `capability`, or `element` whose slug does not start with its
+kind's folder (`domains/`, `capabilities/`, `elements/`). Measured 2026-09-21 — a trial
+built an entire vault flat at the root and `validate_vault` answered **0 issues**, so
+nothing in the product ever stated the convention it expects. A flat slug is valid and
+is never blocked; it simply groups with nothing, so the map, the README generator, and
+every other reader that shows a vault by kind put a root-level capability beside the
+project node. The write gate says it once, at the one moment a slug is minted (a slug
+cannot be repaired by a patch, so repeating it would be an accusation with no exit), and
+the row then stands in `maintenance_plan` — on both the write and the read path, because
+this question needs only a slug and a kind, not a body. The repair is named in full:
+`rename_concept({oldSlug, newSlug})` without `confirm` for the dry-run, then the same
+call with `confirm: true`; the UID does not change. Note this is **not** the sibling hard
+error: `add_concept` still rejects a path-style slug nested *under* a kind folder
+(`elements/src/views/home`), because that shape silently merges nodes that share a
+basename.
 `health` / `workspace_brief` / `agent_brief` relation filters expose the same enum schema for
 `dependencyTypes` and `componentTypes` (`domains` / `domain` / `capabilities` /
 `elements` / `dependencies` / `depends_on` / `relates` / `contains` /

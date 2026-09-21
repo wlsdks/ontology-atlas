@@ -389,6 +389,103 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
   });
 
   /**
+   * The kind-folder convention, stated at the one moment a slug is minted.
+   *
+   * Measured 2026-09-21: a trial built an entire vault flat at the root —
+   * `slug: option-declaration` with `kind: capability` — and `validate_vault`
+   * answered 0 issues. The builder could not have known a convention it was
+   * never told about. Advisory, and creation-only: a slug cannot be repaired by
+   * a patch, so repeating it on every later write would be an accusation with
+   * no exit.
+   */
+  describe('slug outside its kind folder — said once, never blocked', () => {
+    it('reports a capability written at the vault root and names the canonical slug', () => {
+      const filePath = writeDoc(root, 'option-declaration', {
+        frontmatter: {
+          slug: 'option-declaration',
+          kind: 'capability',
+          title: 'Option Declaration',
+          domain: 'domains/cli',
+          path: 'cli/src/index.mjs',
+        },
+        body: WRITTEN_BODY,
+      });
+      // Never blocked: the file lands exactly where the caller asked for it.
+      assert.ok(filePath.endsWith('/option-declaration.md'));
+      const findings = drainNodeEligibilityFindings().filter((f) => f.code === 'slug-outside-kind-folder');
+      assert.equal(findings.length, 1);
+      assert.equal(findings[0].slug, 'option-declaration');
+      assert.equal(findings[0].key, 'slug');
+      assert.deepEqual(findings[0].refs, ['capabilities/option-declaration']);
+      assert.match(findings[0].message, /rename_concept\(\{oldSlug:"option-declaration", newSlug:"capabilities\/option-declaration"\}\)/);
+      assert.match(findings[0].message, /confirm/);
+      assert.match(findings[0].message, /nothing here blocks it/);
+    });
+
+    it('reports a domain written at the vault root too', () => {
+      writeDoc(root, 'help-documentation', {
+        frontmatter: { slug: 'help-documentation', kind: 'domain', title: 'Help Documentation' },
+        body: WRITTEN_BODY,
+      });
+      const findings = drainNodeEligibilityFindings().filter((f) => f.code === 'slug-outside-kind-folder');
+      assert.deepEqual(findings.map((f) => f.refs[0]), ['domains/help-documentation']);
+    });
+
+    it('stays silent when the slug is already inside its folder', () => {
+      writeDoc(root, 'capabilities/option-declaration', {
+        frontmatter: {
+          slug: 'capabilities/option-declaration',
+          kind: 'capability',
+          title: 'Option Declaration',
+          domain: 'domains/cli',
+          path: 'cli/src/index.mjs',
+        },
+        body: WRITTEN_BODY,
+      });
+      assert.deepEqual(
+        drainNodeEligibilityFindings().filter((f) => f.code === 'slug-outside-kind-folder'),
+        [],
+      );
+    });
+
+    it('stays silent for the two kinds that have no folder', () => {
+      // `project` and `document` live at the vault root by schema, so telling
+      // them to move would be telling them to break the convention.
+      writeDoc(root, 'atlas', {
+        frontmatter: { slug: 'atlas', kind: 'project', title: 'Atlas' },
+        body: WRITTEN_BODY,
+      });
+      writeDoc(root, 'release-notes', {
+        frontmatter: { slug: 'release-notes', kind: 'document', title: 'Release Notes' },
+        body: WRITTEN_BODY,
+      });
+      assert.deepEqual(
+        drainNodeEligibilityFindings().filter((f) => f.code === 'slug-outside-kind-folder'),
+        [],
+      );
+    });
+
+    it('says it once — a later patch to the same node does not repeat it', () => {
+      writeDoc(root, 'option-declaration', {
+        frontmatter: {
+          slug: 'option-declaration',
+          kind: 'capability',
+          title: 'Option Declaration',
+          domain: 'domains/cli',
+          path: 'cli/src/index.mjs',
+        },
+        body: WRITTEN_BODY,
+      });
+      drainNodeEligibilityFindings();
+      patchFrontmatter(root, 'option-declaration', { title: 'Option Declaration, renamed' });
+      assert.deepEqual(
+        drainNodeEligibilityFindings().filter((f) => f.code === 'slug-outside-kind-folder'),
+        [],
+      );
+    });
+  });
+
+  /**
    * The body half of the same claim. Frontmatter was only ever half a node, and
    * the door every real build actually uses — the app's ACP session, which has
    * no independent evaluator lane — never opened the other half. One case here,

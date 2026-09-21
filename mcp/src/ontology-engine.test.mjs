@@ -4665,6 +4665,75 @@ describe('maintenance_plan — meaning gaps in the body', () => {
   });
 });
 
+/**
+ * The kind-folder convention as a durable review item.
+ *
+ * Unlike the three body questions this needs nothing a compiled artifact does
+ * not already carry, so it answers whether or not the caller handed over
+ * bodies — which matters precisely because the vault that was measured flat is
+ * the one that would otherwise be told nothing.
+ */
+describe('maintenance_plan — a node outside its kind folder', () => {
+  function flatRows(docs, options = {}) {
+    const graph = compileOntology(docs, { includeIndexes: true });
+    const result = queryCompiledOntology(graph, { operation: 'maintenance_plan', limit: 25 }, options);
+    return result.actions.filter((action) => action.kind === 'slug_outside_kind_folder');
+  }
+
+  it('reports a flat capability and a flat domain, with the canonical slug in the sentence', () => {
+    const rows = flatRows([
+      doc('help-documentation', { kind: 'domain', title: 'Help Documentation' }),
+      doc('option-declaration', { kind: 'capability', title: 'Option Declaration', domain: 'help-documentation', path: 'lib/option.js' }),
+    ]);
+    assert.deepEqual(rows.map((row) => row.node.slug), ['help-documentation', 'option-declaration']);
+    assert.match(rows[0].reason, /domains\/help-documentation/);
+    assert.match(rows[1].reason, /capabilities\/option-declaration/);
+    for (const row of rows) {
+      assert.equal(row.executable, false);
+      assert.equal(row.phase, 'review');
+      assert.equal(row.severity, 'info');
+    }
+  });
+
+  it('stays silent on a vault that already uses the folders, and on project and document', () => {
+    assert.deepEqual(
+      flatRows([
+        doc('atlas', { kind: 'project', title: 'Atlas' }),
+        doc('release-notes', { kind: 'document', title: 'Release Notes' }),
+        doc('domains/vault', { kind: 'domain', title: 'Vault' }),
+        doc('capabilities/folder-access', { kind: 'capability', title: 'Folder Access', domain: 'domains/vault', path: 'src/vault.ts' }),
+        doc('elements/parser', { kind: 'element', title: 'Parser', domain: 'domains/vault', path: 'src/parser.ts' }),
+      ]),
+      [],
+    );
+  });
+
+  it('does not ask twice when the write gate already asked', () => {
+    const rows = flatRows(
+      [doc('option-declaration', { kind: 'capability', title: 'Option Declaration', domain: 'domains/x', path: 'lib/option.js' })],
+      {
+        nodeEligibilityFindings: [
+          {
+            code: 'slug-outside-kind-folder',
+            slug: 'option-declaration',
+            key: 'slug',
+            refs: ['capabilities/option-declaration'],
+            count: 1,
+            message: 'from the write path',
+          },
+        ],
+      },
+    );
+    assert.equal(rows.length, 1);
+    assert.doesNotMatch(rows[0].reason, /from the write path/);
+  });
+
+  it('answers without bodies — the vault most in need of this was built flat', () => {
+    const rows = flatRows([doc('option-declaration', { kind: 'capability', title: 'Option Declaration', domain: 'domains/x', path: 'lib/option.js' })]);
+    assert.equal(rows.length, 1);
+  });
+});
+
 /*
  * ────────────────────────────────────────────────────────────────────────────
  * The read path, end to end.

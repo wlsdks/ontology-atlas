@@ -7,13 +7,14 @@ import { buildSlugNotFoundGrowthHint } from './growth-hint.mjs';
 const DEFAULT_LIMIT = 100;
 const DEFAULT_ALL_PATHS_SEARCH_BUDGET = 5000;
 const MAX_ALL_PATHS_SEARCH_BUDGET = 50000;
-import { defaultBody } from './schema.mjs';
+import { defaultBody, folderForKind } from './schema.mjs';
 import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
 import {
   boundaryFindings,
   definitionFinding,
   epistemicExclusionFinding,
 } from './meaning-findings.mjs';
+import { slugOutsideKindFolderMessage } from './construction-rules.mjs';
 
 /**
  * Is this body still the template `add_concept` writes when no body is given?
@@ -272,6 +273,13 @@ export const MAINTENANCE_KIND_VALUES = Object.freeze([
   'boundary_missing',
   'epistemic_exclusion',
   'folder_only_evidence',
+  // A node written outside its kind folder (2026-09-21). A trial built an
+  // entire vault flat at the root and `validate_vault` answered 0 issues, so
+  // the product never stated the convention it expects. `review` / `info` and
+  // not executable: the repair is a `rename_concept` whose dry-run a person
+  // reads first, and handing over a ready-made rename of every node at once is
+  // exactly the scaffold that makes a queue dangerous.
+  'slug_outside_kind_folder',
 ]);
 /**
  * Write-gate finding code → maintenance kind, and the score each carries.
@@ -285,6 +293,7 @@ const MEANING_GAP_KIND_BY_CODE = Object.freeze({
   'boundary-missing': 'boundary_missing',
   'epistemic-exclusion': 'epistemic_exclusion',
   'folder-only-evidence': 'folder_only_evidence',
+  'slug-outside-kind-folder': 'slug_outside_kind_folder',
 });
 const MEANING_GAP_SCORE_BY_CODE = Object.freeze({
   'definition-missing': 0.6,
@@ -293,6 +302,10 @@ const MEANING_GAP_SCORE_BY_CODE = Object.freeze({
   // is the one defect a source-hidden reader repeats as an established fact.
   'epistemic-exclusion': 0.7,
   'folder-only-evidence': 0.5,
+  // Lowest of the five. Nothing is wrong with the node itself — it reads worse
+  // and groups with nothing, and the repair moves a file rather than writing
+  // meaning, so it waits behind every question about what a node means.
+  'slug-outside-kind-folder': 0.35,
 });
 
 const MAINTENANCE_PHASES = new Set(MAINTENANCE_PHASE_VALUES);
@@ -2953,6 +2966,40 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   /**
+   * Nodes written outside their kind folder.
+   *
+   * Unlike the three body questions above, this one needs nothing the compiled
+   * artifact does not already carry — a slug and a kind — so it answers on every
+   * `maintenance_plan` call, bodies or no bodies. That matters because the vault
+   * it was measured on was built entirely flat: if this went quiet without
+   * `sourceDocs`, the one vault that most needed telling would be the one told
+   * nothing.
+   */
+  function slugOutsideKindFolderCandidates(limit) {
+    const rows = [];
+    for (const node of [...nodes].sort((a, b) => a.slug.localeCompare(b.slug))) {
+      if (typeof node.kind !== 'string' || typeof node.slug !== 'string') continue;
+      const folder = folderForKind(node.kind);
+      if (!folder || node.slug.startsWith(folder)) continue;
+      rows.push({
+        kind: 'slug_outside_kind_folder',
+        score: MEANING_GAP_SCORE_BY_CODE['slug-outside-kind-folder'],
+        slug: node.slug,
+        reason: slugOutsideKindFolderMessage({
+          slug: node.slug,
+          kind: node.kind,
+          canonicalSlug: `${folder}${node.slug}`,
+        }),
+        node: summarizeNode(node),
+      });
+    }
+    return {
+      ...limitedCandidateGroup(rows, limit),
+      keys: rows.map((row) => `${row.kind}\0${row.slug}`),
+    };
+  }
+
+  /**
    * Bridge nodes that group nothing — the fourth bridge condition, enforced.
    *
    * ## Why the predicate is this narrow
@@ -3437,6 +3484,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const unearnedNodes = unearnedNodeCandidates(limit);
     const capabilitiesWithoutEvidence = capabilityWithoutEvidenceCandidates(limit);
     const meaningGaps = meaningGapCandidates(limit);
+    const flatSlugs = slugOutsideKindFolderCandidates(limit);
     const canonicalizationActions = Array.isArray(artifact?.canonicalizationActions)
       ? artifact.canonicalizationActions
       : [];
@@ -3553,7 +3601,7 @@ export function createOntologyEngine(artifact, options = {}) {
         node: row.node,
       });
     }
-    for (const row of meaningGaps.rows) {
+    for (const row of [...meaningGaps.rows, ...flatSlugs.rows]) {
       actions.push({
         phase: 'review',
         kind: row.kind,
@@ -3569,7 +3617,7 @@ export function createOntologyEngine(artifact, options = {}) {
     // rows makes the queue generate its own noise, so whatever the full scan
     // already said is dropped here.
     const capabilitiesWithoutEvidenceSlugs = new Set(capabilitiesWithoutEvidence.slugs ?? []);
-    const meaningGapKeys = new Set(meaningGaps.keys ?? []);
+    const meaningGapKeys = new Set([...(meaningGaps.keys ?? []), ...(flatSlugs.keys ?? [])]);
     for (const action of nodeEligibilityActions()) {
       if (
         action.kind === 'capability_without_evidence' &&

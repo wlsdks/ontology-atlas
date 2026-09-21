@@ -534,6 +534,7 @@ kept in lock-step by
 | `boundary-missing` | warning | *(write-path gate and `maintenance_plan` only)* a `domain` or `capability` with no `## Includes` or no `## Excludes` section holding anything but placeholders; one finding per missing side |
 | `epistemic-exclusion` | warning | *(write-path gate and `maintenance_plan` only)* an exclusion bullet that states an evidence limit ("not mentioned in this scan") rather than a product boundary — the one claim a source-hidden reader cannot check and does repeat as fact |
 | `folder-only-evidence` | warning | *(write-path gate only)* frontmatter `path:` resolves to a directory, so this node's evidence drift can never be judged: a folder changes on almost any commit beneath it |
+| `slug-outside-kind-folder` | warning | *(write-path gate and `maintenance_plan` only)* a `domain`, `capability`, or `element` whose slug does not start with its kind's folder (§4). Valid, never blocked, and reported once at creation: a flat node groups with nothing in any reader that shows a vault by kind |
 
 Structural parse failures and v2 identity failures are errors; the other
 quality codes remain advisory. A v1 vault without UID is intentionally not a
@@ -550,8 +551,8 @@ every other node's slug, which only a whole-vault pass can do. A per-file
 UI check (fast path, used while a human is editing a single file) cannot
 and does not claim to catch it.
 
-The last four are **body** advisories rather than frontmatter ones, and they have
-a different scope again. They are produced by the write-path node-eligibility
+The last five are advisories about a node's body and its address rather than
+about frontmatter shape, and they have a different scope again. They are produced by the write-path node-eligibility
 gate inside `mcp/src/meaning-findings.mjs`, so they reach an author through the
 `add_concept` / `add_concepts` / `patch_concept` response and through
 `query_ontology({operation:"maintenance_plan"})` — which reads the vault's bodies,

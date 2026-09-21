@@ -552,3 +552,32 @@ export function folderOnlyEvidenceMessage({ slug, path, suggestion }) {
     : 'Name the one file an unfamiliar agent should open first';
   return `"${slug}" cites \`path: ${path}\`, and that is a directory. The write succeeded, but drift on a folder can never be checked: a folder's timestamp moves on almost any commit underneath it, so this node's evidence is permanently "unknown" rather than current or stale. ${opener}: patch_concept({slug:"${slug}", frontmatter:{path:"${suggestion || `${path.replace(/\/$/, '')}/<file>`}"}}). Keep the folder in the body as context if it matters; the frontmatter slot is for the one entry point.`;
 }
+
+/**
+ * Warning literal for a node written outside its kind's folder.
+ *
+ * ## Why this needed its own sentence (measured 2026-09-21)
+ *
+ * A post-change trial built an entire vault flat at the root —
+ * `slug: option-declaration` carrying `kind: capability`, `slug:
+ * help-documentation` carrying `kind: domain` — and `validate_vault` answered
+ * **0 issues**. Nothing in the product told the builder the convention exists,
+ * so it could not have known to follow it. A convention no channel states is
+ * not a convention, it is folklore.
+ *
+ * ⚠️ It never rejects, and it is deliberately **not** the sibling hard error.
+ * `flatSlugIssue` throws on a path-style slug *nested under* a kind folder
+ * (`elements/src/views/home`) because that shape silently merges distinct nodes
+ * the moment two files share a basename — that is validity. A flat slug at the
+ * root merges nothing; it is a vault that reads worse. Reporting is the right
+ * response to the second, and blocking would break every vault already written
+ * this way.
+ *
+ * @param {object} args
+ * @param {string} args.slug the slug as written
+ * @param {string} args.kind
+ * @param {string} args.canonicalSlug what the same node is called inside its folder
+ */
+export function slugOutsideKindFolderMessage({ slug, kind, canonicalSlug }) {
+  return `"${slug}" is a ${kind} written at the vault root instead of inside its kind folder, so it reads as "${slug}" where every other ${kind} reads as "${canonicalSlug}". The write succeeded and nothing here blocks it — a flat slug is valid, it just groups with nothing. The map, the README generator, and every other reader that shows a vault by kind group on that folder, so a root-level ${kind} sits beside the project node rather than with its own kind. Move it when you are ready: rename_concept({oldSlug:"${slug}", newSlug:"${canonicalSlug}"}) without \`confirm\` returns a dry-run listing every backlink that would be rewritten; repeat the same call with \`confirm: true\` to move the file and rewrite them in one pass. The UID does not change, so nothing loses its identity.`;
+}
