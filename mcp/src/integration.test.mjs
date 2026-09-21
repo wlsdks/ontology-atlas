@@ -95,6 +95,62 @@ console.log(
     : "integration",
 );
 
+/**
+ * A body that answers every meaning check, per kind.
+ *
+ * Since 2026-09-22 `validate_vault` reads the prose as well as the frontmatter,
+ * so a node with an empty body carries `definition-missing`, both
+ * `boundary-missing` sides, and `uncertainty-missing`. Almost every fixture
+ * below is about something else — a relation, a health verdict, a tool's
+ * response shape — and was written when a bodyless document was silent. Rather
+ * than restate a finished body in sixty places, `makeVault` supplies one
+ * wherever a fixture left the body blank, exactly as it already supplies a
+ * `uid:`. A fixture that writes its own body keeps it, so a case that wants a
+ * thin one still gets the findings.
+ */
+const FINISHED_BODY_BY_KIND = {
+  domain:
+    "\nOwns a stable responsibility this codebase keeps in one place, whatever moves inside it.\n\n" +
+    "## Includes\n\n- The work this area is answerable for\n\n" +
+    "## Excludes\n\n- The neighbouring area it is most often confused with\n\n" +
+    "## Uncertainty\n\n- Which callers outside the repository depend on it was never established\n",
+  capability:
+    "\nTurns a reviewed folder of Markdown into a graph a reader can walk without opening code.\n\n" +
+    "## Includes\n\n- Reading frontmatter relations from every document\n\n" +
+    "## Excludes\n\n- Drawing the result on screen, which a separate surface owns\n\n" +
+    "## Uncertainty\n\n- The symlinked-subtree case was never measured\n",
+  element:
+    "\nHolds the one address every caller resolves through, so a moved surface renames in one place.\n\n" +
+    "## Uncertainty\n\n- The fallback for an older build was not read\n",
+};
+
+/** The body a fixture left blank, filled in for the kinds that have body duties. */
+function withFinishedBody(content) {
+  if (!/^---\r?\n/.test(content)) return content;
+  const match = /(?:^|\r?\n)kind\s*:\s*([A-Za-z-]+)/m.exec(content);
+  const body = FINISHED_BODY_BY_KIND[match?.[1]?.trim() ?? ""];
+  if (!body) return content;
+  const close = content.search(/\r?\n---\r?\n/);
+  if (close === -1) return content;
+  /*
+   * "Blank" includes a body that is only the `# Title` line. The heading repeats
+   * the frontmatter `title`, so a node whose whole body is its own name says
+   * exactly as much as one with no body at all — and dozens of fixtures below
+   * write that shape to look like a real document.
+   */
+  const afterClose = content
+    .slice(close)
+    .replace(/^\r?\n---\r?\n/, "")
+    .split("\n")
+    .filter((line) => line.trim() !== "" && !/^#\s+/.test(line.trim()))
+    .join("\n");
+  if (afterClose.trim() !== "") return content;
+  // The `# Title` line is kept: a fixture that asserts on the rendered body
+  // excerpt still finds it, and the finished prose lands underneath.
+  const kept = content.slice(close).replace(/^\r?\n---\r?\n/, "").replace(/\s+$/, "");
+  return content.slice(0, close) + "\n---\n" + kept + "\n" + body;
+}
+
 function makeVault(seed = []) {
   const root = mkdtempSync(join(tmpdir(), "ontology-atlas-int-"));
   for (const [index, { slug, content }] of seed.entries()) {
@@ -108,7 +164,7 @@ function makeVault(seed = []) {
           `---$1uid: 00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}$1`,
         )
       : content;
-    writeFileSync(fullPath, seededContent, "utf-8");
+    writeFileSync(fullPath, withFinishedBody(seededContent), "utf-8");
   }
   return root;
 }
@@ -2787,7 +2843,30 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
       callTool(2, "validate_vault", {}),
     ]);
     const validatedResult = getCallParsed(validated.responses, 2);
-    assert.equal(validatedResult.summary.problemFiles, 0);
+    /*
+     * **Frontmatter clean, meaning thin — and `validate_vault` now says both.**
+     *
+     * Every structural check passes: zero errors, no dangling reference, no
+     * duplicate. What the qualification lane wrote is still three findings
+     * short, and until 2026-09-22 this tool answered `0 problems` about it while
+     * the write door had already told the agent otherwise. The exact three are
+     * pinned rather than counted, because each proves a different half of the
+     * wiring: two body checks reading the prose the write plan produced, and
+     * `folder-only-evidence` — the one that needs a repository root and the
+     * filesystem — arriving from the whole-vault pass. `path: src/review` is a
+     * directory, so this node's evidence can never be dated against the code.
+     */
+    assert.equal(validatedResult.summary.errorFiles, 0);
+    assert.deepEqual(
+      Object.fromEntries(
+        Object.entries(validatedResult.summary.byCode).map(([code, entry]) => [code, entry.files]),
+      ),
+      {
+        'definition-missing': ['capabilities/review'],
+        'boundary-missing': ['domains/review', 'capabilities/review'],
+        'folder-only-evidence': ['capabilities/review'],
+      },
+    );
 
     const compiled = await rpcForRepo(vaultRoot, repoRoot, [
       ...INIT_REQUESTS,
@@ -10034,19 +10113,26 @@ await test("query_ontology agent_brief — selected project and compact task han
   const root = makeVault([
     {
       slug: "project-a",
-      content: "---\nkind: project\ntitle: Encoding Library\ndomains: [domains/encoding]\n---\n## Definition\n\nA library that writes encoded values.\n\n## Excludes\n\n- Behavior not established by the bounded vault.\n",
+      // The exclusion moved into `## Uncertainty` on 2026-09-22. "Behavior not
+      // established by the bounded vault" says what the writer did not see, not
+      // what the library does not do, and `epistemic-exclusion` now says so —
+      // the repair the finding itself prescribes.
+      content: "---\nkind: project\ntitle: Encoding Library\ndomains: [domains/encoding]\n---\n## Definition\n\nA library that writes encoded values.\n\n## Excludes\n\n- Decoding, which a separate library owns.\n\n## Uncertainty\n\n- Behavior not established by the bounded vault.\n",
     },
     {
       slug: "domains/encoding",
-      content: "---\nkind: domain\ntitle: Encoding\ncapabilities: [capabilities/write-values]\n---\n## Definition\n\nEncoding owns value production.\n",
+      // Finished on 2026-09-22: `validate_vault` reads the prose now, and this
+      // test asserts the brief reports a clean vault — so the fixture has to be
+      // one. Four words of definition and no boundary is not.
+      content: "---\nkind: domain\ntitle: Encoding\ncapabilities: [capabilities/write-values]\n---\n## Definition\n\nEncoding owns turning in-memory values into the bytes a decoder on another machine can read.\n\n## Includes\n\n- Producing the byte form of every value this library writes\n\n## Excludes\n\n- Parsing bytes back into values, which the decoding side owns\n\n## Uncertainty\n\n- Whether callers outside this repository depend on the byte order was never established\n",
     },
     {
       slug: "capabilities/write-values",
-      content: "---\nkind: capability\ntitle: Write DER Values\ndomain: domains/encoding\nelements: [elements/writer]\npath: src/writer.rs\n---\n## Definition\n\nWrite DER Values is the broad ability to produce encoded values.\n\n## Evidence\n\n- `src/writer.rs`\n\n## Uncertainty\n\nThe bounded vault does not establish optional SET ordering behavior or complete change impact.\n",
+      content: "---\nkind: capability\ntitle: Write DER Values\ndomain: domains/encoding\nelements: [elements/writer]\npath: src/writer.rs\n---\n## Definition\n\nWrite DER Values is the broad ability to produce encoded output a decoder elsewhere accepts.\n\n## Includes\n\n- Emitting the byte form of every supported value\n\n## Excludes\n\n- Choosing which values a caller should send, which the caller decides\n\n## Evidence\n\n- `src/writer.rs`\n\n## Uncertainty\n\nThe bounded vault does not establish optional SET ordering behavior or complete change impact.\n",
     },
     {
       slug: "elements/writer",
-      content: "---\nkind: element\ntitle: Writer Implementation\ndomain: domains/encoding\npath: src/writer.rs\n---\n## Definition\n\nWriter Implementation anchors the broad writing capability.\n\n## Uncertainty\n\nThe concrete SET symbol and focused test path are not recorded.\n",
+      content: "---\nkind: element\ntitle: Writer Implementation\ndomain: domains/encoding\npath: src/writer.rs\n---\n## Definition\n\nWriter Implementation anchors the broad writing ability in one concrete Rust module callers reach.\n\n## Uncertainty\n\nThe concrete SET symbol and focused test path are not recorded.\n",
     },
     {
       slug: "project-b",

@@ -975,6 +975,21 @@ responses reset the preview decision fields because they are no longer plans.
 `path` and preserve it in frontmatter as implementation evidence. The same
 path is checked by `validate_vault` against the configured repository root.
 
+`validate_vault` reads the body as well as the frontmatter. Alongside the
+structural codes it reports `definition-missing`, `boundary-missing`,
+`uncertainty-missing`, `epistemic-exclusion`, `slug-outside-kind-folder`, and —
+when the vault sits inside a known repository — `folder-only-evidence`. These
+are the same six findings the write door returns from `add_concept` /
+`add_concepts` / `patch_concept`, produced by the same module
+(`src/meaning-findings.mjs`), and every one is a **warning**: the document is
+valid Markdown the graph reads correctly, and what is missing is the half a
+reader needs and code cannot supply, so `ok` stays true and nothing blocks. They
+are here because an agent used to be the only reader who could see them — it
+could report six findings and call the vault clean in the same turn, and no
+surface the person could run disagreed. `summary.byCode` counts them per file
+like every other code, so a first-contact call now states how much of the vault
+says nothing.
+
 `query_ontology({operation:"cycles"})` keeps the slug path in each
 `cycles[].nodes` array and also returns aligned `cycles[].nodeSummaries`
 (`slug` / `kind` / `title` / `domain?`) so agents can read a dependency cycle

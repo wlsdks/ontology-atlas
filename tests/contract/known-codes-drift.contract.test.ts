@@ -70,7 +70,7 @@ describe('KNOWN_CODES drift contract — list-codes / fail-on UX 진실원', () 
           `KNOWN_CODES has '${known.code}' but no fixture case elicits it`,
         );
       }
-      const result = validateCli(fixtureCase.input) as ValidatorReport;
+      const result = validateCli(fixtureCase.input, fixtureCase.options) as ValidatorReport;
       const issue = result.issues.find((i) => i.code === known.code);
       expect(issue, `'${known.code}' issue not produced by validator`).toBeDefined();
       expect(issue!.severity).toBe(known.severity);

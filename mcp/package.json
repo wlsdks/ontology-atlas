@@ -58,6 +58,8 @@
     "src/vault.mjs",
     "src/constellations.mjs",
     "src/construction-rules.mjs",
+    "src/construction-card.mjs",
+    "src/meaning-findings.mjs",
     "src/absorb.mjs",
     "src/activity-log.mjs",
     "src/analysis-record.mts",
