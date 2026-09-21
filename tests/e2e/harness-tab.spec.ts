@@ -1514,9 +1514,8 @@ test.describe("하네스 탭", () => {
     await expect(sentence).toContainText("검사");
     /* ⚠️ The fixture holds two exclusion files (`.cursorignore`, `.geminiignore`), and this number
        must not move for them: a file that says what an agent may not see is the opposite of a
-       document the repository speaks through. The valid guide
-       `.claude/rules/a-very-long-outside-domain-mapping-identity.md` does count even though its
-       path scope reaches no recorded domain. The structure view proves the rows; this proves the
+       document the repository speaks through. The outside-mapping fixture adds one valid Claude
+       guide; the exact total is eleven. The structure view proves the rows; this proves the
        census the exclusions are kept out of. */
     await expect(sentence).toContainText("문서 11개");
     /* The two numbers here are file counts. The coverage claim has its own denominator and its own
