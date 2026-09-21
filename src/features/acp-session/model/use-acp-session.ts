@@ -384,9 +384,16 @@ const VAULT_MCP_SENTENCE =
  *
  * So the sentence now describes one path that completes in this session, and names the bulk
  * route once as the thing a terminal run with a separate evaluator lane can take.
+ *
+ * **What a body must carry is stated here because the write door only advises.** `add_concepts`
+ * returns `definition-missing`, `boundary-missing`, `uncertainty-missing`, `epistemic-exclusion`,
+ * `folder-only-evidence`, and `slug-outside-kind-folder` as findings, not refusals — an agent that
+ * learns the shape from them has already written the node. The `## Uncertainty` line is the one a
+ * prompt cannot leave out: a node with no stated unknown claims completeness, and an evidence
+ * limit pushed into `## Excludes` states a product boundary that was never observed.
  */
 const VAULT_CONSTRUCTION_SENTENCE =
-  'When the person asks you to build or rebuild an ontology from this repository: verify `connection_info` and read the construction card in its `guide`; survey with `analyze_repo_structure` (no proposal) and `index_project`, plus `infer_imports` where structure does not say what depends on what; propose in plain sentences — each candidate one definition sentence, what it includes and excludes, and the file proving it — preferring few well-evidenced concepts to many thin ones; then wait for the person. Once they agree, write in reviewed batches of at most 12: `add_concepts`, bodies carrying the definition and Includes/Excludes, `path:` naming a file; `add_relations`, each with a `why`; then `validate_vault`, `connect_project_source`, and `finalize_project_meaning`. Answer every warning by the repair it names, or say why not. This session does not have an independent evaluator, and the bulk `analyze_repo_structure` writePlan route needs one, so do not author a qualification proposal or wait for `canWrite` here; it stays open to a terminal run with one. Do not fabricate an evaluator.';
+  'When the person asks you to build or rebuild this repository\'s ontology: verify `connection_info` and read the construction card in its `guide`; survey with `analyze_repo_structure`, `index_project`, and `infer_imports` where structure does not say what depends on what; propose in plain sentences — each candidate one definition, what it includes and excludes, and the file proving it — preferring few well-evidenced concepts to many thin ones; then wait. Once they agree, write in reviewed batches of ≤12 with `add_concepts`: each slug under its kind folder, each body carrying the definition, `## Includes` / `## Excludes`, an `## Uncertainty` line naming what you did not read or could not check, and on a capability or element a `path:` naming a file. Then `add_relations` each with a `why`, `validate_vault`, `connect_project_source`, `finalize_project_meaning`. Answer every warning by the repair it names, or say why not. This session does not have an independent evaluator, and the bulk `analyze_repo_structure` writePlan route needs one, so do not author a qualification proposal or wait for `canWrite`; it stays open to a terminal run with one. Do not fabricate an evaluator.';
 
 function vaultHandoffPrompt(hasVaultMcp: boolean, locale: string): string {
   const rules = hasVaultMcp

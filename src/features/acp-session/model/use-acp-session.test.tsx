@@ -529,6 +529,14 @@ describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
     expect(meta?.systemPrompt?.append).toContain('verify `connection_info` and read the construction card');
     expect(meta?.systemPrompt?.append).toContain('does not have an independent evaluator');
     expect(meta?.systemPrompt?.append).toContain('Do not fabricate an evaluator');
+    /*
+     * The write door answers a missing definition, boundary, uncertainty line, or misplaced slug
+     * with a finding, which arrives after the node is written. What the body must carry is
+     * therefore stated before the first write, and the uncertainty line is the one a body most
+     * easily omits while still looking complete.
+     */
+    expect(meta?.systemPrompt?.append).toContain('each slug under its kind folder');
+    expect(meta?.systemPrompt?.append).toContain('`## Uncertainty` line naming what you did not read');
     expect(meta?.systemPrompt?.append).not.toContain('use the construction lifecycle');
 
     await act(async () => {

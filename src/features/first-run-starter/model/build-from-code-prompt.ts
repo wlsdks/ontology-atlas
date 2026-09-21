@@ -19,6 +19,11 @@
  * the vault still empty after the person had already said to build it. So step 3 now names the
  * path that finishes here: small reviewed batches, then validate, bind, and finalize.
  *
+ * **And it asks for what could not be checked, because nothing else will.** The write door
+ * answers a body with no stated unknown by a `uncertainty-missing` finding, which is advice
+ * arriving after the node exists; a node that states no unknown reads as a complete claim about
+ * the product. Asking for it in the person's own turn puts it in the body the first time.
+ *
  * **It promises nothing the checkpoint does not keep.** Every write this leads to still stops at
  * the permission card (decisions (113) and (114)); this sentence does not and cannot bypass one.
  * It is written in the person's own voice because it lands in the transcript as their turn — a
@@ -51,11 +56,11 @@ export function buildFromCodePrompt(
     '   which capabilities sit under them. For each one give me a single sentence defining it, what',
     '   it includes and what it excludes, and the file that proves it. Name anything you are unsure',
     '   about rather than guessing it into a node.',
-    '3. After I say yes, write it in small reviewed batches — each node carrying its definition and',
-    '   its boundary in the body, each relation carrying a `why`. Then check the result with',
-    '   `validate_vault`, bind this code folder with `connect_project_source` so each capability',
-    '   keeps its evidence, and finish with `finalize_project_meaning`. Tell me what the folder',
-    '   holds now.',
+    '3. After I say yes, write it in small reviewed batches — each node carrying its definition, its',
+    '   boundary and what you could not check in the body, each relation carrying a `why`. Then',
+    '   check the result with `validate_vault`, bind this code folder with `connect_project_source`',
+    '   so each capability keeps its evidence, and finish with `finalize_project_meaning`. Tell me',
+    '   what the folder holds now.',
     '',
     'Prefer few, well-evidenced concepts over many thin ones. If two things look like the same',
     'concept, ask me instead of making both.',

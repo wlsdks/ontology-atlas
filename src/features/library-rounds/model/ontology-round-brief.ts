@@ -4,6 +4,12 @@
  * A scheduled pass may keep the map's understanding current by measuring and proposing. It never
  * becomes the person who accepts meaning: the existing ACP writer card and MCP construction
  * lifecycle remain the only path to an ontology write or a meaning receipt.
+ *
+ * **A proposal names the finding it answers, so the reviewer can price it.** The MCP write door
+ * already classifies body defects by a fixed code, and the person reading this packet is deciding
+ * which proposals are worth a turn. A proposal carrying the code repairs something the tools
+ * already measured; one carrying none is this pass's own judgement, and saying which is which is
+ * cheaper than re-deriving it at review time.
  */
 
 export interface OntologyRoundBriefInput {
@@ -27,6 +33,7 @@ export function buildOntologyRoundBrief({ vaultRoot, locale, focus }: OntologyRo
     '3. Inspect a bounded set of relevant concepts, evidence paths, relations, and currentness gaps. Treat Unknown as a valid result.',
     `4. ${focusLine}`,
     '5. Return a review packet with: observed evidence, proposed ontology changes (if any), exact slugs or source paths, uncertainty, and the smallest human review action.',
+    '6. When a proposed change answers one of the write-door findings, name which one: definition-missing, boundary-missing, uncertainty-missing, epistemic-exclusion, folder-only-evidence, or slug-outside-kind-folder. A proposal that answers none of them says so; do not attach a finding name to a change that does not repair it.',
     '',
     'Hard boundary:',
     '- Do not call add_concept, add_concepts, add_relation, add_relations, patch_concept, rename_concept, merge_concepts, delete_concept, reclassify_concept, or finalize_project_meaning.',

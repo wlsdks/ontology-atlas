@@ -10,6 +10,10 @@ import { buildFromCodePrompt } from './build-from-code-prompt';
  * qualification lifecycle — spent a whole turn authoring a proposal, stopped at `canWrite:false`,
  * and left the vault empty after the person had already approved the build. So the step that writes
  * now names the path that finishes in one session, and these tests hold that order and those calls.
+ *
+ * Step 3 also asks for what could not be checked. The MCP write door answers a body with no
+ * stated unknown after the node already exists, and a node that states none reads as a complete
+ * claim about the product — so the person's own turn asks for it the first time.
  */
 describe('코드로 첫 온톨로지 — 보낸 순서가 곧 만드는 순서다', () => {
   const prompt = buildFromCodePrompt('/Users/dana/my-product', null);
@@ -35,7 +39,7 @@ describe('코드로 첫 온톨로지 — 보낸 순서가 곧 만드는 순서�
   it('쓰기 단계가 작은 검토 묶음과 그 뒤 세 호출을 이름으로 부른다', () => {
     expect(flat).toContain('small reviewed batches');
     // Each write still carries what makes it judgeable later.
-    expect(flat).toContain('each node carrying its definition and its boundary in the body');
+    expect(flat).toContain('each node carrying its definition, its boundary and what you could not check in the body');
     expect(flat).toContain('each relation carrying a `why`');
     for (const tool of ['`validate_vault`', '`connect_project_source`', '`finalize_project_meaning`']) {
       expect(flat).toContain(tool);
