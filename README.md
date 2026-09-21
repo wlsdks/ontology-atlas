@@ -430,8 +430,8 @@ declared relationships; their presence alone does not establish human approval
 or complete runtime impact:
 
 ```console
-$ node $ATLAS blast-radius capabilities/mcp-server docs/ontology --depth 2
-capabilities/mcp-server — blast radius (depth 2, incoming)
+$ node $ATLAS blast-radius capabilities/mcp-tool-server docs/ontology --depth 2
+capabilities/mcp-tool-server — blast radius (depth 2, incoming)
   risk unknown · 1 node · 1 relation · 0 cross-domain
 
 impact certainty unknown · declared 1 · rationale 0 · source-backed 0

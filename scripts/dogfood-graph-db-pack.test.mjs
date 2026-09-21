@@ -31,11 +31,11 @@ function frontmatterEdgeScanPayload() {
 function focusedBlastRadiusPayload() {
   return {
     operation: "blast_radius",
-    center: "capabilities/mcp-server",
+    center: "capabilities/mcp-tool-server",
     direction: "incoming",
     depth: 2,
     risk: "high",
-    node: { slug: "capabilities/mcp-server" },
+    node: { slug: "capabilities/mcp-tool-server" },
     summary: { affectedNodes: 3, affectedEdges: 4 },
     nodes: { total: 3, rows: [{}] },
     edges: { total: 4, rows: [{}] },
@@ -193,8 +193,8 @@ describe("dogfood graph DB pack", () => {
       },
       {
         operation: "relation_check",
-        from: "capabilities/cli-developer-entry",
-        to: "capabilities/mcp-server",
+        from: "capabilities/cli-commands",
+        to: "capabilities/mcp-tool-server",
         relation: "dependencies",
         exists: true,
         verdict: "already_exists",
@@ -222,7 +222,7 @@ describe("dogfood graph DB pack", () => {
     assert.equal(stderr.join(""), "");
     assert.equal(call, 14);
     assert.match(stdout.join(""), /\[dogfood:graph-db\] health_gate: status=healthy checks=1 issues=0 unresolved=0/);
-    assert.match(stdout.join(""), /\[dogfood:graph-db\] focused_blast_radius: center=capabilities\/mcp-server risk=high nodes=3 edges=4/);
+    assert.match(stdout.join(""), /\[dogfood:graph-db\] focused_blast_radius: center=capabilities\/mcp-tool-server risk=high nodes=3 edges=4/);
     assert.match(stdout.join(""), /\[dogfood:graph-db\] relation_name_parity: public=depends_on frontmatter=dependencies rows=2 totalMatches=2/);
     assert.match(stdout.join(""), /\[dogfood:graph-db\] frontmatter_edge_scan: totalMatches=1 relation=elements followUp=1/);
     assert.match(stdout.join(""), /\[dogfood:graph-db\] structural_traversal: pattern=domains→capabilities paths=6 endNodes=5/);
@@ -292,10 +292,10 @@ describe("dogfood graph DB pack", () => {
       },
       {
         operation: "blast_radius",
-        center: "capabilities/mcp-server",
+        center: "capabilities/mcp-tool-server",
         direction: "incoming",
         depth: 2,
-        node: { slug: "capabilities/mcp-server" },
+        node: { slug: "capabilities/mcp-tool-server" },
         summary: { affectedNodes: 0, affectedEdges: 0 },
         nodes: { total: 0, rows: [] },
         edges: { total: 0, rows: [] },
@@ -540,8 +540,8 @@ describe("dogfood graph DB pack", () => {
       },
       {
         operation: "relation_check",
-        from: "capabilities/cli-developer-entry",
-        to: "capabilities/mcp-server",
+        from: "capabilities/cli-commands",
+        to: "capabilities/mcp-tool-server",
         relation: "dependencies",
         exists: true,
         verdict: "already_exists",

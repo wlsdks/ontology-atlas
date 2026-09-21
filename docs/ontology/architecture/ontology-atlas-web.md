@@ -2,7 +2,7 @@
 architecture_schema: architecture-profile/v1
 profile_uid: e9f5fe88-3711-4b3c-9f77-3b6f809db82c
 profile_slug: atlas-web
-project_uid: 8c48b61f-1f75-448e-87a5-6ea2a7b02cf8
+project_uid: 465072fe-a912-4968-91ac-dba3004f8f82
 title: Atlas Web Workbench
 created_by: human
 patterns: [source-organization:feature-sliced-design]

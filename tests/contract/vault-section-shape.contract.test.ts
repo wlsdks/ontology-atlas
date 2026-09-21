@@ -42,21 +42,26 @@ const REPO_ROOT = join(import.meta.dirname, "..", "..");
 const VAULT_ROOT = join(REPO_ROOT, "docs", "ontology");
 
 /**
- * **The worst surviving section, in bytes** (`Behaviour Contract` in
- * `capabilities/acp-runtime.md`, 5,952 B).
+ * **The worst surviving section, in bytes** (`Verify the agent loop` in
+ * `README.md`, 1,736 B, measured 2026-09-22 after the product rebuilt this
+ * vault through its own construction path).
  *
- * That section is five language scan contracts — Python, Go, C/Autotools, Rust,
- * It is the honest current ceiling, not a target.
+ * The 5,952 B `Behaviour Contract` the cap was written against is gone with the
+ * hand-curated nodes; the largest section any node now carries is a 701 B
+ * `## Uncertainty`, and the four sections above it are all orientation prose in
+ * the vault README. It is the honest current ceiling, not a target.
  */
-const SECTION_BYTE_CAP = 6_000;
+const SECTION_BYTE_CAP = 1_800;
 
 /**
  * **The gap the cap is allowed to sit above reality.**
  *
  * A cap far above the worst real section is a gate that can never fire. This
- * keeps the ratchet within sight of the thing it measures.
+ * keeps the ratchet within sight of the thing it measures, and it came down
+ * with the cap: 400 B of slack above a 1,736 B ceiling is a quarter of the
+ * measurement, where it used to be a fifteenth.
  */
-const CAP_HEADROOM = 400;
+const CAP_HEADROOM = 100;
 
 /**
  * **`## Competency answers` is exempt — it is parsed, not authored.**

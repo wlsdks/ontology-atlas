@@ -4,9 +4,9 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_VAULT = "docs/ontology";
-const DEFAULT_FROM = "capabilities/cli-developer-entry";
-const DEFAULT_TO = "capabilities/mcp-server";
-const DEFAULT_FOCUS = "capabilities/mcp-server";
+const DEFAULT_FROM = "capabilities/cli-commands";
+const DEFAULT_TO = "capabilities/mcp-tool-server";
+const DEFAULT_FOCUS = "capabilities/mcp-tool-server";
 
 const GRAPH_DB_PACK_COMMANDS = [
   {

@@ -1,37 +1,25 @@
 ---
-uid: 2546833b-d01b-4601-94c5-d925ae2fa853
+uid: a54818d1-169d-44f8-ae36-7d5ced88ae9c
 slug: capabilities/saved-constellations
 kind: capability
-title: Saved Constellation Task Scopes
-display_en: Saved Constellation Task Scopes
-display_ko: 저장된 개념 모음
-domain: domains/topology-navigation
-elements: [elements/saved-constellation-sidecar]
-path: src/features/saved-constellations
-created_by: "agent:ontology-atlas-cli"
+title: Saved constellations
+display_en: Saved constellations
+display_ko: 저장된 별자리
+domain: domains/human-workbench
+elements: []
+path: src/features/saved-constellations/model/use-saved-constellations.ts
+created_by: "agent:claude-code"
 ---
 
-People can save a named, purposeful set of real ontology concepts and reopen that durable task scope in Galaxy or Library. MCP and CLI expose the same saved set as bounded read-only context for a later agent session.
+Saves a named slice of the graph as a working scope a person can reopen later, so the set of nodes a task was about survives the session that assembled it.
 
 ## Includes
-
-- Creating, renaming, changing, and deleting a constellation in Galaxy.
-- Saving current ontology-node membership with a purpose and stable constellation identity.
-- Reopening the whole set on the topology map and inspecting its resolved members in Library.
-- Reading the saved constellation inventory or one constellation through MCP and CLI without changing it.
-- Reporting unresolved members explicitly when a saved UID no longer resolves.
+- Naming, storing, and reopening a chosen set of nodes as one scope.
+- The same saved scopes being readable from the agent surface, not only in the app.
 
 ## Excludes
+- Changing what the nodes in a scope mean; a constellation is a selection, not a claim.
+- Sharing a scope with anyone else; it stays in the person's folder.
 
-- A new ontology kind or a graph relation for constellation membership.
-- Accepting constellation membership as project meaning, dependency evidence, or complete impact coverage.
-- Replacing canonical ontology nodes with copied collection records.
-- Automatically sending the saved set to an external agent or service.
-
-## Evidence
-
-- `src/features/saved-constellations`: shared saved-constellation hook and actions.
-- `src/widgets/saved-constellations`: Galaxy editor and current-set controls.
-- `src/views/library/ui/LibraryConstellations.tsx`: Library list, member resolution, and map re-entry.
-- `mcp/src/tools/constellations.mjs`: bounded read-only `list_constellations` and `get_constellation` tools.
-- `cli/src/commands/constellations.mjs`: connector-less constellation inventory and detail commands.
+## Uncertainty
+- Read from the feature's file layout and from the two read tools the agent surface advertises for constellations. The storage format and the draft-membership model were not opened, and no constellation exists in this vault to inspect.
