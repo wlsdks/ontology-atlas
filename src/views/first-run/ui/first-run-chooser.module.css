@@ -1,0 +1,9 @@
+.chooser { container: folder-chooser / size; }
+.help { display: none; }
+.listRegion { min-height: min(10rem, 25vh); }
+@container folder-chooser (max-height: 40rem) or (max-width: 32rem) {
+  .identity, .description, .release, .trust { display: none; }
+  .help { display: block; flex: none; }
+  .title { font-size: var(--text-display); line-height: var(--leading-display); }
+  .frame { gap: 0.75rem; }
+}

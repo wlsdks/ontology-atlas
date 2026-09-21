@@ -3,11 +3,13 @@
 import { AlertTriangle, Folder, HardDrive, KeyRound, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { computeEditAge } from '@/shared/lib/edit-age';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { MOTION } from '@/shared/motion';
 import {
   buildRecentVaultRows,
   canOpenReachability,
@@ -66,8 +68,8 @@ export function RecentVaultList({
    * one part of a popover, not the whole question.
    */
   emphasis?: boolean;
-  /** A full-page chooser lets its page own scrolling; popovers retain a bounded list. */
-  scroll?: 'page' | 'contained';
+  /** The viewport chooser fills its allocated space; popovers retain their compact cap. */
+  scroll?: 'page' | 'contained' | 'viewport';
   className?: string;
 }) {
   const t = useTranslations('vaultSwitch');
@@ -92,8 +94,9 @@ export function RecentVaultList({
       data-testid="recent-vault-list"
       className={cn(
         'grid border bg-[color:var(--color-panel)]',
-        scroll === 'page' ? 'rounded-card' : 'rounded-chip',
+        scroll !== 'contained' ? 'rounded-card' : 'rounded-chip',
         scroll === 'contained' && 'max-h-[var(--recent-vault-list-max-h)] overflow-y-auto overscroll-contain',
+        scroll === 'viewport' && 'min-h-0 auto-rows-max overflow-y-auto overscroll-contain',
         emphasis
           ? 'border-[color:var(--color-indigo-line-a32)]'
           : 'border-[color:var(--color-border-soft)]',
@@ -107,7 +110,7 @@ export function RecentVaultList({
           nowMs={nowMs}
           busy={busy}
           divided={index > 0}
-          wrapName={scroll === 'page'}
+          wrapName={scroll !== 'contained'}
           onOpen={onOpen}
           onForget={onForget}
           onLocate={onLocate}
@@ -158,6 +161,7 @@ function RecentVaultRowView({
   onLocate?: () => void;
   t: ReturnType<typeof useTranslations>;
 }) {
+  const reducedMotion = useReducedMotion();
   const age = computeEditAge(row.lastAccessedAt, nowMs);
   const openedLabel = t('openedAgo', { when: t(`age.${age.key}`, { count: age.count }) });
   const contents = row.counts
@@ -293,7 +297,10 @@ function RecentVaultRowView({
   );
 
   return (
-    <div
+    <motion.div
+      layout={wrapName && !reducedMotion ? 'position' : false}
+      initial={false}
+      transition={MOTION.settle}
       data-testid="recent-vault-row"
       data-reachability={row.reachability}
       data-current={row.isCurrent ? 'true' : 'false'}
@@ -395,6 +402,6 @@ function RecentVaultRowView({
         </button>
       </div>
       )}
-    </div>
+    </motion.div>
   );
 }

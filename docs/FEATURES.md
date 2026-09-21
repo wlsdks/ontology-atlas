@@ -84,7 +84,7 @@ work here, and where it can.
 | Read / edit / create nodes in that folder | ✅ | ✅ | same parser, same schema, same files |
 | Remember the folder between visits | ❌ pick it again | ✅ | web keeps an FSA handle in its own IndexedDB; a convenience cache, not the source of truth |
 | Resume a single folder on launch | ❌ the browser needs a click for permission, and the chooser says so | ✅ opens it directly | File System Access permission has to come from a gesture, so the web presses something either way |
-| Choose between known folders on launch | ✅ | ✅ | two or more known folders open a wide list with Open folder and Create new above it; the page owns scrolling, names wrap, paths keep their full value on hover, and compact unavailable states retain explicit recovery and removal actions beside each row; counts and last-use remain visible; one folder resumes directly |
+| Choose between known folders on launch | ✅ | ✅ | two or more known folders open a fixed chooser with Open folder and Create new above an internally scrolling list; names wrap and paths keep their full value on hover; unavailable rows retain recovery/removal actions; constrained height or larger text folds optional guidance into an accessible help dialog so the list stays usable; one folder resumes directly |
 | See which folder is open, and leave it | ✅ | ✅ | the folder's name sits at the top of the rail on every destination and opens the switcher; each row carries the folder's contents, its last opening, and whether it opens now |
 | Map entry feedback | ✅ | ✅ | sidebar and G M map entry show a live preparation scene before navigation; the first canvas draw releases it, and another destination or the return action can cancel the pending entry |
 | Work offline | ❌ | ✅ | |
@@ -449,8 +449,9 @@ had become false).
   with its purpose. Opening a saved constellation focuses that whole set through
   `?constellation=<folder UUID>`; `?constellation=new` opens the creation editor.
   The set is durable task context, not a new graph kind or relation.
-  Two cached diffuse-gas layers drift slowly within the fixed arms and breathe
-  only in luminance; concept positions and the anchored base field never move.
+  Two cached diffuse-gas layers carry fine dust through shallow counter-moving
+  arcs inside the fixed arms; concept positions and the anchored base field never move.
+  Three cached texture draws avoid rebuilding the dust particles on every frame.
   Reduced motion freezes the atmosphere and omits the meteor. Galaxy inspection
   keeps the expanded constellation mounted and smoothly approaches the selected
   star in the free canvas beside the inspector. It never zooms out a view the
@@ -765,6 +766,14 @@ servers wired over the agent connection; Gated holds the hooks that can refuse a
 had never shown anywhere — and the files under `.githooks/`; Watched holds the hooks that only
 record, the check scripts a command names, the test files a runner discovers by itself, and the
 workflows that run after a push.
+
+Structure starts as a connected diagram of this measured repository composition, with a Text
+alternative over the same model. Selecting a part reveals its evidence immediately below that
+part. The page header and presentation switch stay fixed. The compact overview fits a desktop
+viewport; expanded evidence, larger text and smaller windows scroll only within the work area.
+Connections are composition, not proof of runtime execution; missing parts and tool-owned
+state keep their distinct meanings. Unbound and browser-only states show a labelled illustrative
+scene with a source-connection or app-download action, respectively.
 
 **What the repository keeps out of sight is a gate too** (2026-09-20). Gated carries the exclusion
 files, and the row prints the name each product actually uses rather than one word for all of them:
@@ -1904,6 +1913,10 @@ updated files, and tool receipts when recorded. An empty lane presents one first
 schedule action. Without a folder, the installed app opens a folder in place.
 The browser explains the installed-app requirement.
 
+A missing schedule file is a valid empty collection and offers the first schedule action.
+Unreadable or malformed files remain protected from overwrite. Switching lanes temporarily
+disables the previous lane's create action until navigation commits.
+
 Ontology schedules stay read-only: they may inspect evidence and propose changes,
 never write concepts, relations, files, or meaning receipts. Document rounds keep
 their previously approved Library scope. Both execute locally while the app has
@@ -1966,11 +1979,28 @@ Domain boundaries. Scroll contract: every tab stays ≤ 1.3× viewport.
 - The same model the Library screen renders from (`useLibraryModel`, the rounds ledger), read for the questions a person arrives at Analysis with: pages whose cited source changed underneath, sources nobody has written up, what the format check flagged (blocking kinds first, advisory after, each naming its pages), and what the unattended passes did. Every row opens `/library` to act; nothing is written here and no list is a second copy of a store.
 
 #### Guidance (single view)
-- The coverage table's own rows: per vault domain, how many declarations tell,
-  gate and watch it, with a zero drawn as a dash rather than a score. Guidance
-  and configuration findings include file differences, missing references and
-  configuration checks; independent agent instructions need not be identical.
-  Rows open `/architecture?view=coverage` and `?view=guides`.
+- Measured Guidance starts with an unboxed domain diagram. Instructions, Hooks,
+  and Checks & workflows keep fixed positions and exact scoped declaration
+  counts; only nonzero attributions have connections. Diagram and Text read the
+  same complete population, including domains beyond eight, inside one bounded
+  scrolling work area. Neither view is a score or an execution graph.
+- Selecting a role opens one anchored evidence popup on desktop or one dialog
+  on narrow screens. It shows the domain purpose, complete source identities,
+  extracted scope and canonically matched capability entrypoints. An empty
+  extraction is explicit, not an invented wildcard. Changing reading mode
+  dismisses the old popup; an anchor that leaves view closes it without sending
+  focus offscreen or resetting the reader's scroll position.
+- Compact actions expose separately counted declarations by role, scoped
+  declarations outside the recorded domain mapping, capability entrypoints not
+  reached by path-scoped instructions, and all guidance/configuration findings.
+  These are distinct populations, not one combined total. Separate declarations
+  have no extracted scope or reach every recorded domain; this is not proof of
+  applicability to every repository path. Discovered test files remain separate
+  from check declarations and executed results.
+- Findings retain their complete paths and messages on request. Independent
+  Codex/Claude instruction differences may be informational and do not require
+  identical harnesses. The full Harness destination remains available; inspecting
+  these lists neither edits the vault nor accepts meaning.
 - Unavailable measurements retain their actual state: browser-only access,
   reading, failed reading, or inability to identify one bound code repository
   (including absent or ambiguous bindings). A labelled example connects a code

@@ -32,6 +32,10 @@ import { buildOntologyBrief, type OntologyBriefNode } from './ontology-brief';
 import { buildWikiBrief } from './wiki-brief';
 import { buildSinceList, type SinceRow } from './since-list';
 import type { BriefCore } from './brief-model';
+import {
+  projectHarnessCoverageEvidence,
+  type HarnessCoverageEvidence,
+} from './harness-detail';
 
 export interface InsightsBrief {
   anchor: BriefAnchor;
@@ -78,15 +82,22 @@ export interface InsightsBrief {
     passes: { endedAt: string; outcome: string; checked: number; written: number; summary: string }[];
   };
   /** What the harness panel lists: the coverage table's own rows and the mirror findings. */
-  harnessDetail: {
-    availability: BriefCore['availability'];
-    areas: { slug: string; title: string; told: number; gated: number; watched: number }[];
-    everywhere: { told: number; gated: number; watched: number };
-    drift: { path: string; message: string }[];
-    guideFiles: number;
-    checks: number;
-  };
+  harnessDetail: HarnessDetail;
 }
+
+interface HarnessDetailBase {
+  areas: { slug: string; title: string; told: number; gated: number; watched: number }[];
+  everywhere: { told: number; gated: number; watched: number };
+  drift: { path: string; message: string }[];
+  guideFiles: number;
+  checks: number;
+}
+
+type HarnessUnavailableAvailability = 'app-only' | 'no-source' | 'reading' | 'unreadable';
+
+type HarnessDetail =
+  | (HarnessDetailBase & { availability: 'measured'; evidence: HarnessCoverageEvidence })
+  | (HarnessDetailBase & { availability: HarnessUnavailableAvailability; evidence: null });
 
 const EMPTY_DOCS: readonly VaultDoc[] = [];
 const EMPTY_LEDGER: readonly RoundPassEntry[] = [];
@@ -409,39 +420,43 @@ export function useInsightsBrief({
 
   const harnessDetail = useMemo(() => {
     if (!harnessReport) {
+      const availability: HarnessUnavailableAvailability = harnessState.status === 'loading'
+        ? 'reading'
+        : harnessState.status === 'failed'
+          ? 'unreadable'
+          : harnessState.status === 'no-source'
+            ? 'no-source'
+            : 'app-only';
       return {
-        availability: (harnessState.status === 'loading'
-          ? 'reading'
-          : harnessState.status === 'failed'
-            ? 'unreadable'
-            : harnessState.status === 'no-source'
-              ? 'no-source'
-              : 'app-only') as BriefCore['availability'],
+        availability,
         areas: [],
         everywhere: { told: 0, gated: 0, watched: 0 },
         drift: [],
         guideFiles: 0,
         checks: 0,
+        evidence: null,
       };
     }
     const matrix = buildCoverageMatrix(harnessReport.coverage, coverage.areas, harnessReport.testFiles);
+    const evidence = projectHarnessCoverageEvidence(matrix);
     return {
-      availability: 'measured' as BriefCore['availability'],
-      areas: matrix.areas.map((area) => ({
+      availability: 'measured' as const,
+      areas: evidence.areas.map((area) => ({
         slug: area.slug,
         title: area.title,
-        told: area.told.length,
-        gated: area.gated.length,
-        watched: area.watched.length,
+        told: area.roles.told.declarations.length,
+        gated: area.roles.gated.declarations.length,
+        watched: area.roles.watched.declarations.length,
       })),
       everywhere: {
-        told: matrix.everywhere.told.length,
-        gated: matrix.everywhere.gated.length,
-        watched: matrix.everywhere.watched.length,
+        told: evidence.everywhere.told.length,
+        gated: evidence.everywhere.gated.length,
+        watched: evidence.everywhere.watched.length,
       },
       drift: harnessReport.analysis.drift.map((finding) => ({ path: finding.path, message: finding.message })),
       guideFiles: harnessReport.guideDocumentCount,
       checks: harnessReport.checks.total,
+      evidence,
     };
   }, [harnessReport, harnessState.status, coverage.areas]);
 

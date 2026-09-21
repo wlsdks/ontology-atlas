@@ -57,6 +57,19 @@ afterEach(() => {
 });
 
 describe('Automations manager', () => {
+  it.each(['ontology', 'documents'])('a folder without a schedule file can create its first %s schedule', (lane) => {
+    search = `kind=${lane}`;
+    const openDocuments = vi.fn();
+    const value = runner({ storeStatus: 'missing' });
+    renderPage(value, openDocuments);
+    expect(screen.getByTestId('automations')).toHaveAttribute('data-automations-state', 'ready');
+    expect(screen.queryByText(en.automations.malformedTitle)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('automations-new'));
+    if (lane === 'ontology') expect(screen.getByTestId('ontology-automation-sheet')).toBeInTheDocument();
+    else expect(openDocuments).toHaveBeenCalledOnce();
+    expect(value.save).not.toHaveBeenCalled();
+  });
+
   it('opens a read-only ontology schedule from the manager and saves an ontology round', async () => {
     const value = runner();
     renderPage(value);

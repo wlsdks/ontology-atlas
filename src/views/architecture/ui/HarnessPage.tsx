@@ -13,6 +13,10 @@ import {
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { Chip, EmptyState, InfoHint, Surface, TabBar } from '@/shared/ui';
 import { PAGE_TOP_PAD } from '@/shared/ui/page-frame';
+import { GuidanceRelationshipPreview } from '@/widgets/relationship-preview';
+import { Link } from '@/i18n/navigation';
+import { controlClass } from '@/shared/ui/control-class';
+import { cn } from '@/shared/lib/cn';
 
 import {
   buildHarnessViewHref,
@@ -379,9 +383,10 @@ function HarnessPageInner() {
              explainer's first line sat at y 85.4 against a rail whose own y was 85.4 (measured
              1512×901, 2026-09-13) — the cramping the owner reported, reintroduced by the fix for
              it. */
-          className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] pt-4 md:px-10 lg:pb-[var(--page-bottom-breath)]"
+          className={cn('min-h-0 flex-1 px-5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] pt-4 md:px-10 lg:pb-[var(--page-bottom-breath)] max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
+            view === 'structure' && reportState.status === 'ready' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto')}
         >
-          <div className="mx-auto w-full max-w-[var(--page-max)]">
+          <div className={cn('mx-auto w-full max-w-[var(--page-max)]', view === 'structure' && reportState.status === 'ready' && 'flex min-h-0 flex-1 flex-col')}>
             {/*
               ⚠️ **One lead, not four stacked lines.** The owner read the header as four things of
               descending size with nothing grouping them: the name, the explainer, the census
@@ -392,7 +397,7 @@ function HarnessPageInner() {
               equal. What the finding used to be is now the three column cards, which carry it per
               question instead of only for Watched.
             */}
-            <div className="mb-5 flex flex-col gap-1">
+            <div className="mb-3 flex shrink-0 flex-col gap-1">
               <p className="max-w-prose text-body-lg text-[color:var(--color-text-tertiary)]">
                 {t('explainer')}
               </p>
@@ -412,16 +417,13 @@ function HarnessPageInner() {
               {view === 'structure' ? null : sentence}
             </div>
             {reportState.status === 'ready' ? (
-              <div className="architecture-result-arrive">
+              <div className={cn('architecture-result-arrive', view === 'structure' && 'flex min-h-0 flex-1 flex-col')}>
                 {view === 'structure' ? (
                   <>
                     <HarnessAnatomyView
                       report={reportState.report}
                       sourceRoot={reportState.sourceRoot}
                     />
-                    <p className="mt-6 font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                      {t('sourceRoot', { path: reportState.sourceRoot })}
-                    </p>
                   </>
                 ) : view === 'coverage' ? (
                   <HarnessCoverageView
@@ -472,7 +474,13 @@ function HarnessPageInner() {
                 <HarnessScanProgressPanel progress={reportState.progress} />
               </Surface>
             ) : reportState.status === 'no-source' ? (
-              <EmptyState title={t('noSource')} description={t('noSourceBody')} />
+              <GuidanceRelationshipPreview footer={<>
+                <div className="min-w-0 max-w-prose">
+                  <p className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('noSource')}</p>
+                  <p className="mt-2 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('noSourceBody')}</p>
+                </div>
+                <Link href="/projects/" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide'})}>{t('connectSourceAction')}</Link>
+              </>} />
             ) : reportState.status === 'failed' ? (
               /* A dead end with no way out was the one irreversible state on a read-only screen. */
               <EmptyState
@@ -487,7 +495,13 @@ function HarnessPageInner() {
             ) : (
               /* The browser can see no dot directory at all, so it does not draw a shorter list
                  and call it the harness. */
-              <EmptyState title={t('browserOnly')} description={t('browserOnlyBody')} />
+              <GuidanceRelationshipPreview footer={<>
+                <div className="min-w-0 max-w-prose">
+                  <p className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('browserOnly')}</p>
+                  <p className="mt-2 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('browserOnlyBody')}</p>
+                </div>
+                <Link href="/download/" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide'})}>{t('browserAction')}</Link>
+              </>} />
             )}
           </div>
         </div>

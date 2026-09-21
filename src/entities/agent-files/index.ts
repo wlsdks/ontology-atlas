@@ -35,7 +35,7 @@ export {
   type CoverageAreaRow,
   type CoverageCapability,
 } from './model/coverage-matrix';
-export { type CoverageColumn, type ScopeDeclaration } from './model/coverage-scopes';
+export { scopeReaches, type CoverageColumn, type ScopeDeclaration } from './model/coverage-scopes';
 export {
   declaredPairFor,
   isGuideRecord,

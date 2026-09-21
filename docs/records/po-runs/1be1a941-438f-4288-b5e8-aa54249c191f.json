@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-22",
+  "decision": "Make measured Guidance visually inspectable through domain-role groups and selection-owned declaration evidence",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "judge",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-22",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "1be1a941-438f-4288-b5e8-aa54249c191f",
+  "recordedAt": "2026-09-21T17:21:40.485Z"
+}

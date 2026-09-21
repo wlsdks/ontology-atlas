@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-22",
+  "decision": "Repair connected-example evidence readability and controllable motion within the owner-selected B composition",
+  "door": "two-way",
+  "route": "solo",
+  "outcome": "explain",
+  "changes": [
+    "rollback-cheap"
+  ],
+  "boundaries": {
+    "truth": "unchanged",
+    "transfer": "unchanged",
+    "agent-write": "unchanged",
+    "human-correction": "unchanged"
+  },
+  "risk": "none",
+  "firstTurns": 0,
+  "rebuttalTurns": 0,
+  "delta": "unchanged",
+  "uniqueContributors": [],
+  "initialUpdate": {
+    "date": "2026-09-22",
+    "proof": "pending",
+    "ownerClear": "pending",
+    "boundaryMiss": "pending",
+    "laterResult": "pending"
+  },
+  "schema": "po-pilot-run/v1",
+  "id": "60eb04d0-df72-4270-92bf-9e01663fd5fe",
+  "recordedAt": "2026-09-21T16:00:55.293Z"
+}

@@ -35,15 +35,28 @@ function report(partial: Partial<HarnessReport> = {}): HarnessReport {
   } as HarnessReport;
 }
 
-function mount(value: HarnessReport) {
-  return render(
+function mount(value: HarnessReport, text = true) {
+  const result = render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <HarnessAnatomyView report={value} sourceRoot="/repo" />
     </NextIntlClientProvider>,
   );
+  if (text) fireEvent.click(screen.getByTestId('harness-view-text'));
+  return result;
 }
 
 describe('HarnessAnatomyView', () => {
+  it('starts with connected measured parts and preserves the same evidence in text view', () => {
+    mount(report({checks:{wiredHooks:0,gitHooks:0,scripts:['lint','test'],total:2}}), false);
+    expect(screen.getByTestId('harness-structure-diagram')).toBeVisible();
+    fireEvent.click(screen.getByTestId('harness-diagram-node-checks'));
+    expect(screen.getByTestId('harness-anatomy-slot-checks')).toHaveTextContent('lint · test');
+    fireEvent.click(screen.getByTestId('harness-view-text'));
+    expect(screen.queryByTestId('harness-structure-diagram')).not.toBeInTheDocument();
+    expect(screen.getByTestId('harness-anatomy-slot-checks')).toHaveTextContent('lint · test');
+    fireEvent.click(screen.getByTestId('harness-view-diagram'));
+    expect(screen.getByTestId('harness-diagram-node-checks')).toHaveAttribute('aria-expanded','true');
+  });
   it('borrows the coverage matrix’s three words rather than inventing a second vocabulary', () => {
     mount(report());
     for (const band of ['tells', 'gates', 'watches']) {

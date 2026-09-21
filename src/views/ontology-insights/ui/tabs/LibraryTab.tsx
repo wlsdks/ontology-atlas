@@ -1,15 +1,10 @@
 'use client';
 
-import { useId, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { cn } from '@/shared/lib/cn';
-import { MOTION, STAGGER } from '@/shared/motion';
 import { controlClass } from '@/shared/ui/control-class';
-import { EmptyState } from '@/shared/ui/empty-state';
 import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
-import { RowDisclosure } from '@/shared/ui/row-disclosure';
+import { RelationshipPreview } from '@/widgets/relationship-preview';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 
 const ROWS = 6;
@@ -37,17 +32,6 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
     return (
       <section data-testid="library-tab" className="flex flex-col gap-[var(--card-gap)]">
         <WikiAnalysisPreview />
-        <EmptyState
-          title={t('preview.emptyTitle')}
-          description={t('preview.emptyDescription')}
-          size="compact"
-          className="border-0 bg-transparent px-0 py-0"
-          action={(
-            <Link href="/library/" className={controlClass({ shape: 'link', size: 'lg', className: 'atlas-touch-floor atlas-touch-floor-wide text-[color:var(--color-indigo-text-strong)]' })}>
-              {t('open')}
-            </Link>
-          )}
-        />
       </section>
     );
   }
@@ -106,118 +90,42 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
 
 function WikiAnalysisPreview() {
   const t = useTranslations('ontologyPages.insights.libraryTab.preview');
-  const [selected, setSelected] = useState<number | null>(null);
-  const [open, setOpen] = useState(false);
-  const disclosureId = useId();
-  const reduceMotion = useReducedMotion();
-  const stages = [
-    { key: 'source' },
-    { key: 'page' },
-    { key: 'check' },
-  ] as const;
-
-  return (
-    <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-      <p className="text-label text-[color:var(--color-text-tertiary)]">{t('exampleLabel')}</p>
-      <h3 className="mt-2 text-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-        {t('title')}
-      </h3>
-      <p className="mt-1 max-w-[62ch] break-keep text-body text-[color:var(--color-text-secondary)]">{t('body')}</p>
-
-      <ol className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {stages.map(({ key }, index) => {
-          const stageOpen = open && selected === index;
-          return (
-            <li key={key} className="relative flex min-w-0">
-              <button
-                type="button"
-                aria-label={t(`stages.${key}.buttonLabel`)}
-                aria-expanded={stageOpen}
-                aria-controls={disclosureId}
-                onClick={() => {
-                  if (selected === index) {
-                    setOpen(!open);
-                    return;
-                  }
-                  setSelected(index);
-                  setOpen(true);
-                }}
-                className={controlClass({
-                  shape: 'tile',
-                  size: 'lg',
-                  active: stageOpen,
-                  className: 'w-full flex-row flex-wrap items-center py-2 text-left sm:flex-col sm:flex-nowrap sm:items-start sm:py-3',
-                })}
-              >
-                <motion.span
-                  aria-hidden
-                  initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ ...MOTION.base, delay: reduceMotion ? undefined : index * STAGGER }}
-                  className={cn(
-                    'relative flex h-20 w-20 flex-none items-center justify-center sm:w-full',
-                    stageOpen ? 'text-[color:var(--color-indigo-text-strong)]' : 'text-[color:var(--color-text-tertiary)]',
-                  )}
-                >
-                  <StagePreview kind={key} />
-                  {index < stages.length - 1 ? (
-                    <span aria-hidden className="absolute left-full top-1/2 z-10 hidden h-px w-3 bg-[color:var(--color-divider)] sm:block" />
-                  ) : null}
-                </motion.span>
-                <span className="min-w-0 flex-1 basis-32 sm:basis-auto">
-                  <span className="block text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] sm:mt-1">
-                    {t(`stages.${key}.title`)}
-                  </span>
-                  <span className="block text-label text-[color:var(--color-text-tertiary)]">{t(`stages.${key}.example`)}</span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-
-      <RowDisclosure open={open} id={disclosureId} className="pt-3">
-        {selected !== null ? (
-          <div className="border-t border-[color:var(--color-divider)] pt-3">
-            <p className="max-w-[68ch] break-keep text-body text-[color:var(--color-text-secondary)]">
-              {t(`stages.${stages[selected].key}.setup`)}
-            </p>
-            <Link href="/library/" className={controlClass({ shape: 'link', size: 'lg', className: 'atlas-touch-floor atlas-touch-floor-wide mt-2 text-[color:var(--color-indigo-text-strong)]' })}>
-              {t('openLibrary')}
-            </Link>
-          </div>
-        ) : null}
-      </RowDisclosure>
-      <p className="mt-3 text-body text-[color:var(--color-text-tertiary)]">{t('instruction')}</p>
-    </div>
-  );
+  const stages = ['source', 'page', 'check'] as const;
+  return <RelationshipPreview title={t('title')} description={t('body')} exampleLabel={t('exampleLabel')} pauseLabel={t('pauseAnimation')} resumeLabel={t('resumeAnimation')} emphasizedItemId="page"
+    items={stages.map(id => ({ id, title:t(`stages.${id}.title`),caption:t(`stages.${id}.example`),label:t(`stages.${id}.buttonLabel`),explanation:t(`stages.${id}.setup`),visual:<StagePreview kind={id} />,
+      description:id==='source'?`${t('exampleLabel')} ${t('sourceExcerpt')}`:id==='page'?`${t('pageEyebrow')}: ${t('pageExampleTitle')}. ${t('pageExampleBody')} ${t('stages.page.citation')}`:t('stages.check.example'),
+    }))}
+    footer={<><div className="min-w-0 max-w-prose"><p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('emptyTitle')}</p><p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('emptyDescription')}</p></div>
+      <Link href="/library/" data-testid="preview-primary-action" className={controlClass({shape:'pill',size:'lg',tone:'accent',className:'atlas-touch-floor atlas-touch-floor-wide shrink-0'})}>{t('openLibrary')}</Link></>} />;
 }
 
 function StagePreview({ kind }: { kind: 'source' | 'page' | 'check' }) {
   const t = useTranslations('ontologyPages.insights.libraryTab.preview');
   if (kind === 'source') {
     return (
-      <span className="flex h-16 w-16 flex-col justify-center gap-1.5 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3">
-        <span className="h-px w-full bg-[color:var(--color-text-quaternary)]" />
-        <span className="h-px w-4/5 bg-[color:var(--color-text-quaternary)]" />
-        <span className="h-px w-3/5 bg-[color:var(--color-text-quaternary)]" />
+      <span data-relationship-port className="relative flex min-h-24 w-full max-w-48 flex-col gap-3 rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-4 text-left shadow-[var(--shadow-elevation-1)] max-sm:max-w-none">
+        <span className="text-label text-[color:var(--color-text-tertiary)]">{t('stages.source.example')}</span>
+        <span className="text-body leading-prose text-[color:var(--color-text-secondary)]">{t('sourceExcerpt')}</span>
       </span>
     );
   }
   if (kind === 'page') {
     return (
-      <span className="flex h-16 w-full max-w-40 flex-col rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-2 py-1.5 text-left">
-        <span className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">{t('stages.page.visualTitle')}</span>
-        <span className="mt-1 h-px w-full bg-[color:var(--color-divider)]" />
-        <span className="mt-1 text-label text-[color:var(--color-text-tertiary)]">{t('stages.page.citation')}</span>
+      <span data-relationship-port className="flex min-w-0 w-full max-w-80 flex-col rounded-panel border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-elevated)] p-4 text-left shadow-[var(--shadow-elevation-2)] sm:p-5">
+        <span className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]">{t('pageEyebrow')}</span>
+        <span className="mt-3 break-words text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] sm:text-display">{t('pageExampleTitle')}</span>
+        <span className="mt-3 break-words text-body-lg text-[color:var(--color-text-secondary)]">{t('pageExampleBody')}</span>
+        <span className="mt-5 h-px w-full bg-[color:var(--color-divider)]" />
+        <span className="mt-3 border-l-2 border-[color:var(--color-indigo-line-a32)] pl-3 text-body text-[color:var(--color-indigo-text-soft)]">{t('stages.page.citation')}</span>
       </span>
     );
   }
   return (
-    <span className="flex w-full max-w-36 flex-col gap-1 text-left text-label text-[color:var(--color-text-tertiary)]">
+    <span className="relative flex w-full max-w-40 flex-col gap-3 pl-5 text-left text-body text-[color:var(--color-text-secondary)]">
+      <span data-relationship-port className="absolute inset-y-0 left-0 w-2 border-y border-l border-[color:var(--color-border-strong)]" />
       {(['citation', 'links', 'sourceChanges'] as const).map((item) => (
         <span key={item} className="flex items-center gap-1.5">
-          <span className="h-px w-3 flex-none bg-[color:var(--color-text-quaternary)]" />
+          <span className="h-2 w-2 flex-none rounded-full border border-[color:var(--color-indigo-text-soft)]" />
           <span>{t(`stages.check.${item}`)}</span>
         </span>
       ))}

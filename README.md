@@ -200,8 +200,9 @@ What we decided *not* to build is [What this is not](#what-this-is-not).
 ### 1. Open a folder
 
 When several folders are known, the app opens a single list with **Open folder**
-and **Create new** above it. The page scrolls as a whole; folder rows keep their
-paths, last-use details, and recovery actions together.
+and **Create new** above it. The page stays fixed while the folder list scrolls;
+folder rows keep their paths, last-use details, and recovery actions together.
+At constrained sizes, optional guidance is available through a help dialog.
 
 Choosing Map in the sidebar or with G M shows a live preparation scene,
 then reveals the first drawn frame. Section tabs use a flat shared treatment with

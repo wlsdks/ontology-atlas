@@ -1,10 +1,12 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import type { HarnessReport } from '@/entities/agent-files';
 import { CompactCopyButton, InfoHint } from '@/shared/ui';
+import { SegmentedControl } from '@/shared/ui/segmented-control';
+import { HarnessStructureDiagram } from './HarnessStructureDiagram';
 import { cn } from '@/shared/lib/cn';
 
 import {
@@ -90,9 +92,9 @@ function SlotRow({
     <li
       data-testid={`harness-anatomy-slot-${slot.id}`}
       data-status={slot.status}
-      className="border-t border-[color:var(--color-divider)] py-3 first:border-t-0 first:pt-0"
+      className="relative border-t border-[color:var(--color-divider)] py-3 first:border-t-0 first:pt-0"
     >
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h3
           className={cn(
             'min-w-0 break-keep text-body font-[var(--font-weight-emphasis)]',
@@ -134,7 +136,7 @@ function SlotRow({
           the limit that matters — the repository writes the file, the tool decides.
         */}
         {bodyHint ? (
-          <InfoHint align="left" label={t(`anatomySlots.${slot.id}.hintLabel`)}>
+          <InfoHint align="left" className="static" panelClassName="max-w-full max-h-[35dvh] overflow-y-auto" label={t(`anatomySlots.${slot.id}.hintLabel`)}>
             {bodyHint}
           </InfoHint>
         ) : null}
@@ -146,7 +148,7 @@ function SlotRow({
         <div className="mt-1 flex flex-wrap items-center gap-x-1 text-caption tabular-nums text-[color:var(--color-text-tertiary)]">
           <span>{extra}</span>
           {extraHint ? (
-            <InfoHint align="left" label={extraHintLabel ?? t('anatomyAlwaysWeightLabel')}>
+            <InfoHint align="left" className="static" panelClassName="max-w-full max-h-[35dvh] overflow-y-auto" label={extraHintLabel ?? t('anatomyAlwaysWeightLabel')}>
               {extraHint}
             </InfoHint>
           ) : null}
@@ -210,6 +212,10 @@ export function HarnessAnatomyView({
 }) {
   const t = useTranslations('harness');
   const anatomy = useMemo(() => buildHarnessAnatomy(report), [report]);
+  const [presentation, setPresentation] = useState<'diagram' | 'text'>('diagram');
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const detailId = useId();
+  const selected = anatomy.slots.find(slot => slot.id === selectedSlot);
   const toolSlot = anatomy.slots.find((slot) => slot.band === 'tool');
   /* One id, not a set: a second copy replaces the first acknowledgement rather than leaving a
      column of green checks behind, which is what the other copy affordances in this product do. */
@@ -236,7 +242,7 @@ export function HarnessAnatomyView({
     <section
       data-testid="harness-anatomy"
       aria-label={t('anatomyTitle')}
-      className="flex flex-col gap-4"
+      className="flex min-h-0 flex-1 flex-col gap-3"
     >
       {/*
         ⚠️ **One line, not a second masthead.** The shell above already prints the destination's
@@ -246,11 +252,17 @@ export function HarnessAnatomyView({
         down (measured 1512×949, 2026-09-20). The name survives as the region's accessible label,
         where it names the landmark without spending a row.
       */}
-      <div className="flex flex-wrap items-baseline gap-x-2">
+      <SegmentedControl ariaLabel={t('structurePresentation')} value={presentation} onChange={setPresentation}
+        options={[{value:'diagram',label:t('diagramView'),testId:'harness-view-diagram'},{value:'text',label:t('textView'),testId:'harness-view-text'}]} className="shrink-0 self-start" />
+
+      {/* Only the work area scrolls. Headers and view switching stay anchored even
+          when evidence expands or the reader enlarges text. No evidence is clipped. */}
+      <div data-testid="harness-structure-scroll" className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pr-1">
+      <div className="relative flex shrink-0 flex-wrap items-baseline gap-x-2">
         <p className="min-w-0 max-w-prose break-keep text-caption text-[color:var(--color-text-tertiary)]">
           {t('anatomyCaption')}
         </p>
-        <InfoHint align="left" label={t('anatomyProvenanceLabel')}>
+        <InfoHint align="left" className="static" label={t('anatomyProvenanceLabel')} panelClassName="max-w-full max-h-[35dvh] overflow-y-auto">
           {t('anatomyProvenance')}
         </InfoHint>
         {/*
@@ -270,19 +282,28 @@ export function HarnessAnatomyView({
         />
       </div>
 
+      {presentation === 'diagram' ? <>
+        <HarnessStructureDiagram slots={anatomy.slots} sourceRoot={sourceRoot} selectedId={selectedSlot} detailId={detailId} onSelect={id=>setSelectedSlot(selectedSlot===id?null:id)}
+          selectedContent={<ul className="px-3 py-2">
+            {selected ? <SlotRow slot={selected} t={t} copied={copiedId===selected.id} onCopy={copy} /> : null}
+          </ul>} />
+        {anatomy.silentGuards.missing.length > 0 ? <p className={cn('rounded-chip px-3 py-2 text-body',WARNING_TONE)}>{t('anatomySilentGuards',{count:anatomy.silentGuards.missing.length,scripts:anatomy.silentGuards.missing.join(' · ')})}</p> : null}
+        {anatomy.approvalGates.length > 0 ? <p className="text-body text-[color:var(--color-text-tertiary)]">{t('anatomyApprovalGate',{config:anatomy.approvalGates.join(' · ')})}</p> : null}
+      </> : <>
+
       {/*
         Three equal columns, one per question. Equal height by the grid rather than by content, the
         rule this repository's `forbidden.md` states for cards in a row: the band with four parts
         and the band with two must not read as different weights of claim.
       */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid shrink-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {BAND_ORDER.map((band) => {
           const slots = anatomy.slots.filter((slot) => slot.band === band);
           return (
             <section
               key={band}
               data-testid={`harness-anatomy-band-${band}`}
-              className="flex flex-col rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)]"
+              className="flex min-w-0 flex-col rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)]"
             >
               <h2 className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                 {t(BAND_HEAD[band])}
@@ -374,7 +395,7 @@ export function HarnessAnatomyView({
           );
         })}
       </div>
-
+      </>}
       {toolSlot ? (
         /*
           Outside the grid and quieter than it, because this row is the screen's honesty rather than
@@ -383,7 +404,7 @@ export function HarnessAnatomyView({
         */
         <section
           data-testid="harness-anatomy-band-tool"
-          className="rounded-card border border-dashed border-[color:var(--color-border-soft)] p-[var(--card-pad)]"
+          className="shrink-0 rounded-card border border-dashed border-[color:var(--color-border-soft)] p-[var(--card-pad)]"
         >
           {/*
             Two columns, because one prose column inside a full-width card left 930 of 1400px empty
@@ -411,6 +432,10 @@ export function HarnessAnatomyView({
           </div>
         </section>
       ) : null}
+      <p className="break-all font-mono text-caption text-[color:var(--color-text-quaternary)]">
+        {t('sourceRoot', { path: sourceRoot })}
+      </p>
+      </div>
     </section>
   );
 }

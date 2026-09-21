@@ -328,6 +328,13 @@
     "browserOnly": "A browser cannot read this",
     "browserOnlyBody": "Most harness files live in dot directories: .claude, .agents, .codex. A browser's folder permission cannot see those entries at all, so a list drawn here would show far fewer files than exist. The Mac app reads all of them.",
     "noSource": "No repository is connected",
+    "connectSourceAction": "Connect source folder",
+    "browserAction": "Get the Mac app",
+    "structurePresentation": "Harness structure presentation",
+    "diagramView": "Diagram",
+    "textView": "Text",
+    "diagramRoot": "Repository harness",
+    "diagramHint": "Composition found in files. Select a part to inspect its evidence. This is not an execution trace.",
     "noSourceBody": "The harness belongs to the repository agents actually edit. Connect a source folder to a project and this list fills in. When more than one folder is connected we do not pick which harness you meant.",
     "failed": "Could not read it",
     "empty": "No agent guide files",
@@ -2168,8 +2175,14 @@
         },
         "preview": {
           "title": "From sources to wiki",
+          "sourceExcerpt": "“After cancellation, access continues until the next billing date.”",
+          "pageEyebrow": "Example wiki page",
+          "pageExampleTitle": "Cancellation",
+          "pageExampleBody": "The remaining access period is preserved. The decision links back to its original source.",
           "body": "See the pages built from your sources and the checks that keep them useful.",
           "exampleLabel": "Example · not data from your folder",
+          "pauseAnimation": "Pause example animation",
+          "resumeAnimation": "Resume example animation",
           "instruction": "Select a stage to see how to get started.",
           "openLibrary": "Start in the Library",
           "stages": {
@@ -2204,6 +2217,46 @@
       "harnessTab": {
         "open": "Explore the harness",
         "getApp": "Get the app",
+        "visual": {
+          "title": "Declared guidance across {count, number} domains",
+          "fieldLabel": "Declared guidance by domain",
+          "mode": { "label": "Guidance reading mode", "diagram": "Diagram", "text": "Text" },
+          "collection": {
+            "eyebrow": "Guidance evidence",
+            "none": "No entries in this group.",
+            "separate": { "action": "Separate {role}", "title": "Separately counted {role}", "description": "These declarations are counted separately because no path scope was extracted, or their scope matches every recorded domain. They are not added to a domain's scoped count." },
+            "outside": { "action": "Outside mapping", "title": "Outside the domain mapping", "description": "These scoped declarations do not match the ontology's recorded domain entrypoints. That does not establish broken code, universal scope, or an absent file." },
+            "unreached": { "action": "Unreached entrypoints", "title": "Unreached capability entrypoints", "description": "These capability entrypoints are not reached by a path-scoped instruction declaration. Separately counted instructions may still exist. This capability count is not an outside-declaration count." },
+            "findings": { "action": "Findings", "title": "All harness findings", "description": "These findings retain their original paths and messages. They are not attributed to a domain without a supporting join.", "independence": "Differences between Codex and Claude instruction trees can be informational; this list is not an instruction to make independent harnesses identical." }
+          },
+          "inventoryCaption": "{guides, number} guide files · {checks, number} check items.",
+          "diagramCaption": "Diagram numbers count scoped declarations attributed to each domain; they do not show execution results.",
+          "findingSummary": "{count, number} findings in Harness",
+          "role": {
+            "told": "Instructions",
+            "gated": "Hooks",
+            "watched": "Checks & workflows"
+          },
+          "emptyRoleLabel": "{domain}: no scoped {role}",
+          "filledRoleLabel": "{domain}: {role}, {count, number} declarations",
+          "popupLabel": "{domain} · {role} evidence",
+          "popupFallbackLabel": "Guidance evidence",
+          "close": "Close",
+          "zeroScoped": "No scoped {role} declaration was attributed to this domain.",
+          "exactCount": "{count, number} scoped declarations were attributed to this domain.",
+          "declaredScope": "Original declared scope",
+          "extractedScope": "Extracted scope",
+          "noExtractedScope": "No path scope extracted. This scan did not establish a path filter; it does not prove unrestricted runtime scope.",
+          "matchedEntrypoints": "Matching capability entrypoints",
+          "tools": "Read by",
+          "sourceId": "Source identity",
+          "sourceLabel": "Source label",
+          "globalCount": "Show {count, number} separate entries",
+          "globalExplanation": "These entries are counted separately because no path scope was extracted, or their scope matches every recorded domain. They are not added to this domain's scoped count.",
+          "globalNone": "No global declarations in this role.",
+          "discoveredTests": "{count, number} test files were discovered under recorded capability paths. Discovery is separate from a declared check scope.",
+          "limit": "Attribution uses declared path-prefix reach. It does not prove the path is current, a hook is installed or ran, or a check or workflow passed."
+        },
         "more": "{count, number} more domains",
         "reading": "Reading the folder.",
         "unreadable": "The guide files could not be read. Reopening the folder tries again.",
@@ -2211,14 +2264,14 @@
         "column": {
           "area": "Domain",
           "told": "Instructions",
-          "gated": "Gates",
-          "watched": "Checks"
+          "gated": "Hooks",
+          "watched": "Checks & workflows"
         },
         "coverage": {
           "title": "Harness coverage: {count, number} domains",
-          "caption": "{guides, number} guide files · {checks, number} checks, counted against each domain.",
-          "gaps": "No guide reaches {untold, number} · no rule gates {ungated, number} · no check watches {unwatched, number}",
-          "everywhere": "Reaching everything: told {told, number} · gated {gated, number} · watched {watched, number}"
+          "caption": "{guides, number} guide files · {checks, number} check items, measured against each domain.",
+          "gaps": "No instruction reaches {untold, number} · no scoped hook reaches {ungated, number} · no scoped check or workflow reaches {unwatched, number}",
+          "everywhere": "Reaching everything: instructions {told, number} · hooks {gated, number} · checks and workflows {watched, number}"
         },
         "drift": {
           "title": "{count, number} guidance and configuration findings",
@@ -2236,6 +2289,8 @@
           "title": "Guidance and checks by code area",
           "body": "See which areas have instructions, rules that block changes, and automated checks.",
           "exampleLabel": "Example · not data from your folder",
+          "pauseAnimation": "Pause example animation",
+          "resumeAnimation": "Resume example animation",
           "instruction": "Select a role to see how to connect it.",
           "openHarness": "View guidance in Harness",
           "area": {
@@ -6486,6 +6541,8 @@
       "bodyWeb": "Your browser needs a click to reopen a folder. Choose one below or pick another.",
       "listTitle": "FOLDERS ATLAS KNOWS",
       "releaseValve": "Leave one folder in this list and the next launch opens it directly.",
+      "helpLabel": "About choosing a folder",
+      "closeHelp": "Close",
       "justStartBody": "Create a ready local folder in Documents without a picker.",
       "openBody": "Choose another existing Markdown folder.",
       "createBody": "Choose an empty folder, then select what it will hold."

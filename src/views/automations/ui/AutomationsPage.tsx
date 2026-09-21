@@ -71,7 +71,8 @@ export function AutomationsPage({
     return ok;
   };
 
-  const ready = desktop === true && runner?.storeStatus === "ok";
+  // A missing file is a new schedule collection, not a failed read. The first save creates it.
+  const ready = desktop === true && (runner?.storeStatus === "ok" || runner?.storeStatus === "missing");
   const state = desktop === null ? "loading" : !desktop || !runner ? "app-required" : runner.storeStatus === "no-vault" ? "no-vault"
     : runner.storeStatus === "loading" ? "loading" : ready ? "ready" : "malformed";
   const add = lane === "ontology" ? () => {

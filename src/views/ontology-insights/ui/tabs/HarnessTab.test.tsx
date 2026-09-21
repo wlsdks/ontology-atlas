@@ -14,9 +14,11 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 type Detail = InsightsBrief["harnessDetail"];
+type Unavailable = Exclude<Detail["availability"], "measured">;
+type Measured = Extract<Detail, { availability: "measured" }>;
 const GUIDES_HREF = "/architecture/?view=guides";
 
-function detail(availability: Detail["availability"]): Detail {
+function detail(availability: Unavailable): Detail {
   return {
     availability,
     areas: [],
@@ -24,7 +26,8 @@ function detail(availability: Detail["availability"]): Detail {
     guideFiles: 0,
     checks: 0,
     everywhere: { told: 0, gated: 0, watched: 0 },
-  } as Detail;
+    evidence: null,
+  };
 }
 
 function hrefs(): string[] {
@@ -96,4 +99,39 @@ describe("the guidance panel's unmeasured states", () => {
     fireEvent.click(gates);
     expect(gates).toHaveAttribute("aria-expanded", "false");
   });
+});
+
+it("hands measured evidence to the domain-role overview", () => {
+  const measured: Measured = {
+    availability: "measured",
+    areas: [{ slug: "domains/guidance", title: "Guidance", told: 0, gated: 0, watched: 0 }],
+    everywhere: { told: 0, gated: 0, watched: 0 },
+    drift: [],
+    guideFiles: 1,
+    checks: 0,
+    evidence: {
+      areas: [{
+        slug: "domains/guidance",
+        title: "Guidance",
+        purpose: "지침 범위를 설명해요.",
+        capabilities: [],
+        discoveredTests: 0,
+        roles: {
+          told: { column: "told", declarations: [] },
+          gated: { column: "gated", declarations: [] },
+          watched: { column: "watched", declarations: [] },
+        },
+      }],
+      everywhere: { told: [], gated: [], watched: [] },
+      outsideAreas: [],
+      unreachedCapabilities: [],
+    },
+  };
+  render(
+    <NextIntlClientProvider locale="ko" messages={ko}>
+      <HarnessTab detail={measured} />
+    </NextIntlClientProvider>,
+  );
+  expect(screen.getByTestId("harness-coverage-overview")).toBeInTheDocument();
+  expect(screen.queryByTestId("harness-coverage-table")).toBeNull();
 });

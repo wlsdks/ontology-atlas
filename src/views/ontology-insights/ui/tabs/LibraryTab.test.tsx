@@ -74,6 +74,7 @@ describe("the Wiki setup example", () => {
     expect(screen.queryByText("이 판이 답하는 것")).not.toBeInTheDocument();
     expect(screen.getByText("예시 · 내 폴더의 데이터가 아니에요")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "원문을 추가하는 방법" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole('button',{name:'원문을 추가하는 방법'})).toHaveAccessibleDescription(expect.stringContaining(ko.ontologyPages.insights.libraryTab.preview.sourceExcerpt));
   });
 
   it("reveals one stage's real prerequisite and uses the honest Library destination", () => {
@@ -93,6 +94,7 @@ describe("the Wiki setup example", () => {
 
     fireEvent.click(page);
     expect(page).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("link", { name: "자료실에서 시작하기" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "자료실에서 시작하기" })).toBeVisible();
+    expect(screen.getAllByRole("link", { name: "자료실에서 시작하기" })).toHaveLength(1);
   });
 });

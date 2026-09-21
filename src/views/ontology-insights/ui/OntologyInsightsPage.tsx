@@ -1078,6 +1078,7 @@ export function OntologyInsightsPage() {
     // The library and harness panels read the same model, so the work runs for those tabs too.
     enabled: tab === "brief" || tab === "library" || tab === "harness",
   });
+  const measuredHarness = tab === "harness" && brief.harnessDetail.availability === "measured";
   /**
    * The scale of each finding group — the **same** `InsightsSignalCounts` the verdict is built
    * from, re-keyed. One argument means the ten group counts and the one title count cannot drift
@@ -1361,7 +1362,7 @@ export function OntologyInsightsPage() {
           // The `lg` breath moved into `PAGE_FRAME` on 2026-09-05 — stating it here as well
           // would be the second source the frame spec exists to remove. What stays is the
           // below-`lg` tab-bar reserve, which is the page's to decide.
-          className={`${PAGE_FRAME} flex min-h-full shrink-0 flex-col max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]`}
+          className={`${PAGE_FRAME} flex flex-col max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] ${measuredHarness ? 'h-full min-h-0 flex-1 overflow-hidden' : 'min-h-full shrink-0'}`}
         >
         <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />
 
@@ -1536,7 +1537,7 @@ export function OntologyInsightsPage() {
           // The content crossfades in while **the box jumped in one frame** (measured 878.5 →
           // 605px, a 246px jump for the whole document). The height is set one step (base) later
           // so the crossfade wraps the reflow.
-          <div ref={insightsSwapHostRef} className="flex flex-1 flex-col">
+          <div ref={insightsSwapHostRef} className={`flex flex-1 flex-col ${measuredHarness ? 'min-h-0 overflow-hidden' : ''}`}>
           <div
             key={tab}
             ref={insightsPanelRef}
@@ -1560,7 +1561,7 @@ export function OntologyInsightsPage() {
               : ({ role: "region", "aria-label": t(`core.${coreOfTab(tab)}`) } as const))}
             id={`insights-tabpanel-${tab}`}
             data-insights-panel={tab}
-            className="insights-tab-crossfade mt-[var(--section-gap)] flex flex-1 flex-col"
+            className={`insights-tab-crossfade mt-[var(--section-gap)] flex flex-1 flex-col ${measuredHarness ? 'min-h-0 overflow-hidden' : ''}`}
           >
             {tab === "library" ? <LibraryTab detail={brief.library} nowMs={brief.nowMs} /> : null}
             {tab === "harness" ? <HarnessTab detail={brief.harnessDetail} /> : null}

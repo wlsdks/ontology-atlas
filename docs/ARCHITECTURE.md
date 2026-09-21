@@ -194,6 +194,22 @@ reads which, size against a documented cap, declared mirror-pair drift, and hook
 files only, through the installed app's bridge (`entities/agent-files`); the browser cannot see a
 dot directory at all and says so instead of drawing a shorter list.
 
+`HarnessAnatomyView` offers diagram and text presentations of the same `buildHarnessAnatomy`
+result. Its header and presentation switch stay fixed; only the bounded work area scrolls
+when evidence expands or the viewport cannot contain the content. `HarnessStructureDiagram`
+renders composition edges and inline evidence disclosures; it does not infer an execution graph.
+Measured Insights Guidance uses `projectHarnessCoverageEvidence` to retain the existing
+coverage matrix members and add only the capability paths reached by canonical `scopeReaches`.
+`HarnessCoverageOverview` presents Diagram/Text from that same projection and the actual
+finding rows. One local scroll owner contains the overview and all domains; one desktop
+anchored Surface or narrow Dialog presents role, separate, outside-mapping, unreached-entrypoint
+and finding evidence. Mode changes and clipped anchors dismiss the old selection without stale
+focus restoration. The measured/null availability contract, scanner, join, and write authority
+remain unchanged; declaration counts, discovered tests, and execution evidence are not merged.
+The `relationship-preview` widget supplies explicitly
+labelled Wiki/Guidance examples and their real next action, shared with unavailable Harness
+states. Its decorative motion pauses offscreen and under reduced motion; it never creates data.
+
 ## Surface contract — web and app
 
 Decided 2026-07-27 (`docs/DECISIONS.md`); the working rule agents load is

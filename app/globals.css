@@ -5821,26 +5821,33 @@ html[data-gateway-stage] {
 }
 
 
-/* One low-contrast light field accompanies the status. It carries presence only:
-   no route progress, graph structure, or inferred completion. */
+/* Indeterminate orbit planes around a stable core. These are decorative light,
+   never a progress percentage or an inferred graph. Hidden/reduced states rest. */
 .map-wait-halo {
   background: radial-gradient(circle at center, var(--color-indigo-line-a13), var(--color-indigo-line-a06) 28%, transparent 68%);
 }
-.map-wait-cluster {
+.map-wait-orbit {
+  transform-origin: 0 0;
   animation-play-state: paused;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .map-wait-cluster {
-    will-change: opacity;
-    animation: map-wait-presence calc(var(--motion-settle) * 8) var(--motion-ease) infinite;
+  .map-wait-orbit {
+    animation: map-wait-orbit calc(var(--motion-settle) * 18) linear infinite;
+    animation-play-state: paused;
   }
-  .map-wait-cluster[data-map-wait-motion='running'] {
+  .map-wait-orbit-1 { animation-name: map-wait-counter-orbit; animation-duration: calc(var(--motion-settle) * 25); }
+  .map-wait-orbit-2 { animation-duration: calc(var(--motion-settle) * 31); animation-delay: calc(var(--motion-settle) * -7); }
+  .map-wait-cluster[data-map-wait-motion='running'] .map-wait-orbit {
     animation-play-state: running;
   }
 }
-@keyframes map-wait-presence {
-  0%, 100% { opacity: 0.72; }
-  50% { opacity: 1; }
+@keyframes map-wait-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes map-wait-counter-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
 }
 
 /* Swatches keep their own palette even when the surrounding app uses the other

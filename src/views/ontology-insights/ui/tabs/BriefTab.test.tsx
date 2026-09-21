@@ -69,6 +69,7 @@ function brief(overrides: Partial<InsightsBrief> = {}): InsightsBrief {
       drift: [],
       guideFiles: 0,
       checks: 0,
+      evidence: null,
     },
     details: new Map([
       [
