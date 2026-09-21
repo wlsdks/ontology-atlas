@@ -5371,9 +5371,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // shown = batches × batch size, the same arithmetic as
           // `selectiveEgoNeighbors`, sliced directly to preserve order. The
           // remainder collapses behind a "+N more" chip.
-          const shown =
-            Math.max(1, clusterRevealBatchesRef.current.get(parentId) ?? 1) *
-            expandPrefRef.current.batchSize;
+          // Expand-all promises every node on screen. It passes `full` as the
+          // overview fit, and the batch fold must stand down for it: measured on
+          // the product-built dogfood vault (2026-09-22), a domain with 26
+          // children kept two behind a "+2 more" chip after expand-all because
+          // the batch size is 24 and nothing here knew the person had asked for
+          // everything.
+          const shown = overviewFitRef.current === "full"
+            ? ranked.length
+            : Math.max(1, clusterRevealBatchesRef.current.get(parentId) ?? 1) *
+              expandPrefRef.current.batchSize;
           const visibleOrdered = ranked.slice(0, shown);
           const hidden = ranked.slice(shown);
           for (const id of visibleOrdered) batchAppearVisible.add(id);
