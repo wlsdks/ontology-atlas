@@ -11,7 +11,8 @@ import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { join, sep } from 'node:path';
 
 import { defaultBody } from './schema.mjs';
 import {
@@ -303,6 +304,53 @@ describe('folder-only-evidence — drift on a folder cannot be checked', () => {
         repoRoot: root,
       }),
       null,
+    );
+  });
+
+  /*
+   * A vault is ordinary Markdown an agent writes, so `path:` is untrusted
+   * input. Rejecting an absolute path was not enough — `../` resolves out of
+   * the tree just as well, and the two things this check does next are read a
+   * directory and put one of its filenames into a tool response.
+   */
+  it('refuses to leave the repository through `../`, so nothing outside it is listed', (t) => {
+    const root = repo();
+    t.after(() => rmSync(root, { recursive: true, force: true }));
+    // A real directory beside the repository, holding a filename that must not
+    // appear anywhere in a response.
+    const outside = join(root, '..', `outside-${randomUUID()}`);
+    mkdirSync(outside, { recursive: true });
+    writeFileSync(join(outside, 'private-notes.txt'), 'not for a tool response\n');
+    t.after(() => rmSync(outside, { recursive: true, force: true }));
+
+    const escape = `../${outside.split(sep).pop()}`;
+    assert.equal(
+      folderOnlyEvidenceFinding({
+        kind: 'capability',
+        slug: 'capabilities/escape',
+        frontmatter: { path: escape },
+        repoRoot: root,
+      }),
+      null,
+    );
+    // Positive control: the same call one directory in still fires, so the null
+    // above is the clamp and not a typo in the fixture.
+    assert.ok(
+      folderOnlyEvidenceFinding({
+        kind: 'capability',
+        slug: 'capabilities/inside',
+        frontmatter: { path: 'mcp/src' },
+        repoRoot: root,
+      }),
+    );
+    // A `../` that climbs and comes back is inside, and is still judged.
+    assert.ok(
+      folderOnlyEvidenceFinding({
+        kind: 'capability',
+        slug: 'capabilities/roundtrip',
+        frontmatter: { path: 'mcp/../mcp/src' },
+        repoRoot: root,
+      }),
     );
   });
 

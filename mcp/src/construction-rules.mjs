@@ -413,10 +413,12 @@ export function bulkProvenanceMessage({ parent, count, slugs, sampleLimit }) {
  *   - evidence `path:` naming a folder — 51 of 107 in this vault — so drift on
  *     that node can never be checked.
  *
- * The 2026-08-31 decision («A refusal names the path that stays open») named
- * its own falsifier: solo users completing through the recovery routing and
- * producing junk vaults. These sentences exist so the door that is actually
- * used says what is missing while the author still has the file in hand.
+ * That is the 2026-08-31 decision's recorded **dissent** («A refusal names the
+ * path that stays open»): a person routed to incremental writing may build a
+ * shallow vault while believing they completed construction. Its falsifier —
+ * junk vaults, validation red, wrong kinds — did not fire and the ledger says
+ * so; these vaults validated clean. These sentences exist so the door that is
+ * actually used says what is thin while the author still has the file in hand.
  *
  * Same contract as everything above: advisory, never blocking (2026-07-31
  * council, construction rule 5). The logic lives in `meaning-findings.mjs`;

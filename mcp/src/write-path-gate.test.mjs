@@ -524,6 +524,33 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     configureNodeEligibilityRepoRoot(null);
   });
 
+  it('a create whose `path:` climbs out of the repository lists nothing and reports nothing', () => {
+    // `path:` is a value an agent wrote, so it is untrusted input at this door.
+    const outside = join(root, '..', `outside-${Date.now()}`);
+    mkdirSync(outside, { recursive: true });
+    writeFileSync(join(outside, 'private-notes.txt'), 'not for a tool response\n');
+    try {
+      configureNodeEligibilityRepoRoot(root);
+      writeDoc(root, 'capabilities/escape', {
+        frontmatter: {
+          slug: 'capabilities/escape',
+          kind: 'capability',
+          title: 'Escape',
+          domain: 'domains/cli',
+          path: `../${outside.split('/').pop()}`,
+        },
+        body: WRITTEN_BODY,
+      });
+      const findings = drainNodeEligibilityFindings();
+      assert.deepEqual(findings.filter((f) => f.code === 'folder-only-evidence'), []);
+      // Nothing from outside the repository reached the response at all.
+      assert.equal(JSON.stringify(findings).includes('private-notes'), false);
+    } finally {
+      configureNodeEligibilityRepoRoot(null);
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
   it('updateDoc reports the body it was handed, and patchFrontmatter stays out of a body it never opened', () => {
     // A patch that replaces the body is judged…
     updateDoc(root, 'capabilities/entry', { body: defaultBody('capability', 'Entry') });

@@ -9,10 +9,13 @@
  * `patch_concept`. That door judged frontmatter only: capability evidence at
  * creation, path-shaped titles, unresolved references, dense parents, bulk
  * provenance. Nothing looked at the prose, and the prose is where a concept
- * either exists or does not. The 2026-08-31 decision («A refusal names the path
- * that stays open, or it is a dead end») wrote its own falsifier: solo users
- * completing through the recovery routing and producing junk vaults —
- * evidence-free nodes. Measured, that is exactly what arrived.
+ * either exists or does not. This is the 2026-08-31 decision's recorded
+ * **dissent** («A refusal names the path that stays open, or it is a dead
+ * end»): a person routed to incremental writing may build a shallow vault
+ * while believing they completed construction. Not its falsifier — that names
+ * junk vaults, validation red with wrong kinds, and the vaults measured here
+ * validated clean with real paths. Shallow and clean at once is precisely what
+ * nothing in the product was saying out loud.
  *
  * ## The contract
  *
@@ -29,7 +32,7 @@
  */
 
 import { existsSync, readdirSync, statSync } from 'node:fs';
-import { isAbsolute, join, resolve } from 'node:path';
+import { isAbsolute, join, resolve, sep } from 'node:path';
 
 import {
   BODY_BOUNDARY_SECTIONS,
@@ -357,7 +360,21 @@ export function folderOnlyEvidenceFinding({ kind, slug, frontmatter, repoRoot })
   if (!FOLDER_EVIDENCE_KINDS.has(kind)) return null;
   const path = typeof frontmatter?.path === 'string' ? frontmatter.path.trim() : '';
   if (!path || !repoRoot || isAbsolute(path)) return null;
-  const absolute = resolve(repoRoot, path);
+  /*
+   * **Stay inside the repository.** Rejecting an absolute path is not enough:
+   * `path: ../../somewhere` resolves out of the tree just as well, and the two
+   * things this function does next are read someone's directory and put one of
+   * its filenames into a tool response. A vault is ordinary Markdown an agent
+   * writes, so the value in that slot is untrusted input, not a promise.
+   *
+   * The comparison is lexical and deliberately so — no `realpath`, because the
+   * caller's root is the one `assertScanRootAllowed` already settled, and
+   * re-resolving it here would disagree with every other boundary in the server
+   * on a machine whose temp or home directory is a symlink.
+   */
+  const boundary = resolve(repoRoot);
+  const absolute = resolve(boundary, path);
+  if (absolute !== boundary && !absolute.startsWith(boundary + sep)) return null;
   if (!existsSync(absolute)) return null;
   let isDirectory = false;
   try {
