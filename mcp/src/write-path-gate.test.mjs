@@ -22,7 +22,9 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { defaultBody } from './schema.mjs';
 import {
+  configureNodeEligibilityRepoRoot,
   drainNodeEligibilityFindings,
   patchFrontmatter,
   resetNodeEligibilityGate,
@@ -32,6 +34,30 @@ import {
 
 let root;
 let uidSequence = 0;
+
+/**
+ * A body that answers the three questions the gate now asks of one.
+ *
+ * The cases below are about frontmatter, and they assert an exact code list. A
+ * starter or empty body would add the body codes to every one of those lists and
+ * bury the fact each case exists to pin, so they hand the gate a written node and
+ * the body half is proved on its own, further down.
+ */
+const WRITTEN_BODY = [
+  '# Written',
+  '',
+  'This node states one behaviour the vault can point at, in a sentence that does',
+  'not repeat its own title back to the reader.',
+  '',
+  '## Includes',
+  '',
+  '- The one thing it actually covers.',
+  '',
+  '## Excludes',
+  '',
+  '- The neighbouring thing it is confused with and does not do.',
+  '',
+].join('\n');
 
 function nextTestUid() {
   uidSequence += 1;
@@ -79,7 +105,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
         domain: 'domains/cli',
         elements: ['cli/src/commands/absorb.mjs'],
       },
-      body: '',
+      body: WRITTEN_BODY,
     });
     const findings = drainNodeEligibilityFindings();
     assert.deepEqual(codesFor(findings, 'capabilities/fresh'), [
@@ -181,7 +207,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
           title: 'No Evidence',
           domain: 'domains/cli',
         },
-        body: '',
+        body: WRITTEN_BODY,
       });
       const findings = drainNodeEligibilityFindings();
       assert.deepEqual(codesFor(findings, 'capabilities/no-evidence'), [
@@ -253,7 +279,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
           domain: 'domains/cli',
           elements: refs,
         },
-        body: '',
+        body: WRITTEN_BODY,
       });
       const findings = drainNodeEligibilityFindings();
       assert.deepEqual(findings.filter((f) => f.code === 'dense-parent'), []);
@@ -360,5 +386,65 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       frontmatter: { slug: 'services/auth-api', kind: 'element', title: 'Auth API' },
       body: '',
     });
+  });
+
+  /**
+   * The body half of the same claim. Frontmatter was only ever half a node, and
+   * the door every real build actually uses — the app's ACP session, which has
+   * no independent evaluator lane — never opened the other half. One case here,
+   * for the same reason as the rest of this file: it proves the wiring, and
+   * `meaning-findings.test.mjs` proves what each code decides.
+   */
+  it('a body that is still the starter scaffold is reported on the creation door', () => {
+    writeDoc(root, 'capabilities/labelled', {
+      frontmatter: {
+        slug: 'capabilities/labelled',
+        kind: 'capability',
+        title: 'Labelled',
+        domain: 'domains/cli',
+        path: 'cli/src/commands/absorb.mjs',
+      },
+      body: defaultBody('capability', 'Labelled'),
+    });
+    const codes = codesFor(drainNodeEligibilityFindings(), 'capabilities/labelled');
+    assert.deepEqual(codes, ['boundary-missing', 'boundary-missing', 'definition-missing']);
+  });
+
+  it('a cited folder is reported once the write door has grounded a repository root', () => {
+    // Ungrounded first: measuring this vault against whichever directory the
+    // process started in would report drift that is not there.
+    configureNodeEligibilityRepoRoot(null);
+    patchFrontmatter(root, 'capabilities/entry', { path: 'capabilities' });
+    assert.deepEqual(
+      codesFor(drainNodeEligibilityFindings(), 'capabilities/entry').filter((code) => code === 'folder-only-evidence'),
+      [],
+    );
+    resetNodeEligibilityGate();
+    configureNodeEligibilityRepoRoot(root);
+    patchFrontmatter(root, 'capabilities/entry', { path: 'capabilities' });
+    const codes = codesFor(drainNodeEligibilityFindings(), 'capabilities/entry');
+    assert.ok(codes.includes('folder-only-evidence'), codes.join(', '));
+    configureNodeEligibilityRepoRoot(null);
+  });
+
+  it('updateDoc reports the body it was handed, and patchFrontmatter stays out of a body it never opened', () => {
+    // A patch that replaces the body is judged…
+    updateDoc(root, 'capabilities/entry', { body: defaultBody('capability', 'Entry') });
+    assert.deepEqual(
+      codesFor(drainNodeEligibilityFindings(), 'capabilities/entry').filter((code) =>
+        code.startsWith('definition') || code.startsWith('boundary'),
+      ),
+      ['boundary-missing', 'boundary-missing', 'definition-missing'],
+    );
+    resetNodeEligibilityGate();
+    // …while a frontmatter-only write is not. A standing accusation on every
+    // unrelated patch is how `missing-expected-field` became invisible.
+    patchFrontmatter(root, 'capabilities/entry', { title: 'Entry, renamed' });
+    assert.deepEqual(
+      codesFor(drainNodeEligibilityFindings(), 'capabilities/entry').filter((code) =>
+        code.startsWith('definition') || code.startsWith('boundary'),
+      ),
+      [],
+    );
   });
 });

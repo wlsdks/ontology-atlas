@@ -1,5 +1,11 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { runJsonRpcProcess } from '../../scripts/lib/mcp-test-rpc.mjs';
 
 import { compileOntology } from './ontology-compiler.mjs';
 import { deriveBridgeShapes, queryCompiledOntology } from './ontology-engine.mjs';
@@ -4511,5 +4517,250 @@ describe('deriveBridgeShapes', () => {
     // synthetic one. Requiring a child instead collapses it into the rule above.
     // Either way it contributes nothing, so it is not implemented.
     assert.equal(deriveBridgeShapes(flat).has('elements/e'), false);
+  });
+});
+
+/**
+ * The durable half of the write-time body findings.
+ *
+ * The gate speaks once, while the author still has the file in hand, and then
+ * the finding is drained. A queue that forgets is not a queue, so the same four
+ * questions live in `maintenance_plan` too — asked from bodies, which means they
+ * go quiet rather than guess when nobody handed any over.
+ */
+describe('maintenance_plan — meaning gaps in the body', () => {
+  const WRITTEN = [
+    '# Folder Access',
+    '',
+    'Opens one Markdown folder on the person\'s disk and keeps reading it as the graph.',
+    '',
+    '## Includes',
+    '',
+    '- Choosing the folder and remembering it between sessions.',
+    '',
+    '## Excludes',
+    '',
+    '- Copying it anywhere else; team sync is a separate layer.',
+    '',
+  ].join('\n');
+
+  function rows(bodyBySlug, { withBodies = true } = {}) {
+    const docs = [
+      { ...doc('domains/vault', { kind: 'domain', title: 'Vault', capabilities: ['capabilities/folder-access'] }), body: bodyBySlug['domains/vault'] ?? WRITTEN },
+      {
+        ...doc('capabilities/folder-access', {
+          kind: 'capability',
+          title: 'Folder Access',
+          domain: 'domains/vault',
+          path: 'src/vault.ts',
+        }),
+        body: bodyBySlug['capabilities/folder-access'] ?? WRITTEN,
+      },
+    ];
+    const graph = compileOntology(docs, { includeIndexes: true });
+    const result = queryCompiledOntology(
+      graph,
+      { operation: 'maintenance_plan', limit: 25 },
+      withBodies ? { sourceDocs: docs } : {},
+    );
+    return result.actions.filter((action) =>
+      ['definition_missing', 'boundary_missing', 'epistemic_exclusion'].includes(action.kind),
+    );
+  }
+
+  it('reports the starter scaffold as a definition and both boundary sides', () => {
+    const found = rows({ 'capabilities/folder-access': defaultBody('capability', 'Folder Access') });
+    assert.deepEqual(found.map((action) => action.kind).sort(), [
+      'boundary_missing',
+      'boundary_missing',
+      'definition_missing',
+    ]);
+    // Review items: no tool call writes a definition, and offering a scaffold
+    // for one is the shape that produced the problem.
+    for (const action of found) {
+      assert.equal(action.executable, false);
+      assert.equal(action.phase, 'review');
+      assert.equal(action.severity, 'info');
+    }
+  });
+
+  it('reports an exclusion that states an evidence limit rather than a boundary', () => {
+    const body = WRITTEN.replace(
+      '- Copying it anywhere else; team sync is a separate layer.',
+      '- Remote folders, which are not mentioned in this scan.',
+    );
+    const found = rows({ 'capabilities/folder-access': body });
+    assert.deepEqual(found.map((action) => action.kind), ['epistemic_exclusion']);
+    assert.match(found[0].reason, /not mentioned in this scan/);
+  });
+
+  it('stays silent on bodies that answered the questions', () => {
+    assert.deepEqual(rows({}), []);
+  });
+
+  it('stays silent without bodies rather than accusing the whole vault', () => {
+    assert.deepEqual(
+      rows({ 'capabilities/folder-access': defaultBody('capability', 'Folder Access') }, { withBodies: false }),
+      [],
+    );
+  });
+
+  it('does not ask the same question twice when the write gate already asked it', () => {
+    const docs = [
+      { ...doc('domains/vault', { kind: 'domain', title: 'Vault' }), body: WRITTEN },
+      {
+        ...doc('capabilities/folder-access', { kind: 'capability', title: 'Folder Access', domain: 'domains/vault', path: 'src/vault.ts' }),
+        body: defaultBody('capability', 'Folder Access'),
+      },
+    ];
+    const graph = compileOntology(docs, { includeIndexes: true });
+    const result = queryCompiledOntology(
+      graph,
+      { operation: 'maintenance_plan', limit: 25 },
+      {
+        sourceDocs: docs,
+        nodeEligibilityFindings: [
+          {
+            code: 'definition-missing',
+            slug: 'capabilities/folder-access',
+            key: 'body',
+            refs: [],
+            count: 1,
+            message: 'from the write path',
+          },
+        ],
+      },
+    );
+    const definitions = result.actions.filter((action) => action.kind === 'definition_missing');
+    assert.equal(definitions.length, 1);
+    assert.doesNotMatch(definitions[0].reason, /from the write path/);
+  });
+
+  it('carries the folder-only evidence finding the compiled snapshot cannot derive', () => {
+    const docs = [
+      { ...doc('domains/vault', { kind: 'domain', title: 'Vault' }), body: WRITTEN },
+      { ...doc('capabilities/folder-access', { kind: 'capability', title: 'Folder Access', domain: 'domains/vault', path: 'src' }), body: WRITTEN },
+    ];
+    const graph = compileOntology(docs, { includeIndexes: true });
+    const result = queryCompiledOntology(
+      graph,
+      { operation: 'maintenance_plan', limit: 25 },
+      {
+        sourceDocs: docs,
+        nodeEligibilityFindings: [
+          {
+            code: 'folder-only-evidence',
+            slug: 'capabilities/folder-access',
+            key: 'path',
+            refs: ['src'],
+            count: 1,
+            message: 'drift on a folder cannot be checked',
+          },
+        ],
+      },
+    );
+    const folderOnly = result.actions.filter((action) => action.kind === 'folder_only_evidence');
+    assert.equal(folderOnly.length, 1);
+    assert.equal(folderOnly[0].executable, false);
+  });
+});
+
+/*
+ * ────────────────────────────────────────────────────────────────────────────
+ * The read path, end to end.
+ *
+ * Everything above hands `sourceDocs` to the engine directly, which proves what
+ * the engine decides and nothing about who gives it bodies. That distinction
+ * was a real gap: `compactPostWriteMaintenance` passed bodies and the read
+ * `query_ontology({operation:"maintenance_plan"})` did not, so the three body
+ * review items existed only inside a write response. An unattended round reads
+ * the queue; it does not write first to be told what is in it. This case runs
+ * the real server over a real vault so the wiring itself is what is asserted.
+ * ────────────────────────────────────────────────────────────────────────────
+ */
+describe('query_ontology maintenance_plan — the read path sees the body too', () => {
+  const __enginedir = dirname(fileURLToPath(import.meta.url));
+  const SERVER_ENTRY = resolve(__enginedir, 'index.js');
+
+  function writeVaultNode(vault, slug, frontmatter, body) {
+    const filePath = join(vault, `${slug}.md`);
+    mkdirSync(dirname(filePath), { recursive: true });
+    const yaml = Object.entries(frontmatter).map(([key, value]) => `${key}: ${value}`);
+    writeFileSync(filePath, `---\n${yaml.join('\n')}\n---\n\n${body}\n`, 'utf8');
+  }
+
+  it('returns a definition_missing row for a node still carrying its starter body', async () => {
+    const vault = mkdtempSync(join(tmpdir(), 'ontology-atlas-read-maintenance-'));
+    try {
+      writeVaultNode(vault, 'domains/vault', {
+        uid: 'a1111111-1111-4111-8111-111111111111',
+        kind: 'domain',
+        title: 'Vault',
+      }, [
+        '# Vault',
+        '',
+        'Owns how a person chooses one Markdown folder and keeps reading it as the graph.',
+        '',
+        '## Includes',
+        '',
+        '- Choosing the folder and remembering it between sessions.',
+        '',
+        '## Excludes',
+        '',
+        '- Copying it anywhere else; team sync is a separate layer.',
+      ].join('\n'));
+      // The measured shape: created through the door, never written up.
+      writeVaultNode(vault, 'capabilities/folder-access', {
+        uid: 'a2222222-2222-4222-8222-222222222222',
+        kind: 'capability',
+        title: 'Folder Access',
+        domain: 'domains/vault',
+        path: 'mcp/src/index.js',
+      }, defaultBody('capability', 'Folder Access').trim());
+
+      const { responses } = await runJsonRpcProcess({
+        command: process.execPath,
+        args: [SERVER_ENTRY],
+        env: { ...process.env, OATLAS_VAULT: vault },
+        requests: [
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'initialize',
+            params: {
+              protocolVersion: '2024-11-05',
+              capabilities: {},
+              clientInfo: { name: 'read-maintenance-test', version: '1' },
+            },
+          },
+          { jsonrpc: '2.0', method: 'notifications/initialized' },
+          {
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'tools/call',
+            params: {
+              name: 'query_ontology',
+              arguments: { operation: 'maintenance_plan', limit: 25 },
+            },
+          },
+        ],
+        timeoutMs: 20_000,
+      });
+
+      const plan = responses.find((response) => response.id === 2)?.result?.structuredContent;
+      assert.ok(plan, `no maintenance_plan payload: ${JSON.stringify(responses)}`);
+      const kinds = plan.actions.map((action) => action.kind);
+      assert.ok(kinds.includes('definition_missing'), kinds.join(', '));
+      assert.ok(kinds.includes('boundary_missing'), kinds.join(', '));
+      const definition = plan.actions.find((action) => action.kind === 'definition_missing');
+      assert.equal(definition.node.slug, 'capabilities/folder-access');
+      assert.equal(definition.executable, false);
+      assert.equal(definition.phase, 'review');
+      // Write-path only, and this is a read: deciding whether a cited path is a
+      // directory needs the repository root a compiled snapshot does not carry.
+      assert.equal(kinds.includes('folder_only_evidence'), false, kinds.join(', '));
+    } finally {
+      rmSync(vault, { recursive: true, force: true });
+    }
   });
 });

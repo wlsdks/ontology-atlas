@@ -530,6 +530,10 @@ kept in lock-step by
 | `dangling-graph-reference` | warning | *(whole-vault validators only — see below)* a relation array or `domain` key points at a slug that does not exist anywhere in the vault |
 | `swallowed-relation-note` | **error** | *(MCP and CLI validators only — see below)* a `relation_notes` value contains another declared target in `target: ` form: an unquoted value swallowed the entries after it, and their rationale is gone |
 | `orphaned-relation-note` | **error** | *(MCP and CLI validators only — see below)* a `relation_notes` key names no relation the document declares, so no edge carries the sentence; the key side of the same unquoted-value accident, or a note left behind by a manual relation removal |
+| `definition-missing` | warning | *(write-path gate and `maintenance_plan` only — see below)* a `domain`, `capability`, or `element` whose body states no definition, neither before its first `##` nor under a `## Definition` / `## Summary` / `## Overview` heading: still the starter scaffold, or a title restated as a phrase |
+| `boundary-missing` | warning | *(write-path gate and `maintenance_plan` only)* a `domain` or `capability` with no `## Includes` or no `## Excludes` section holding anything but placeholders; one finding per missing side |
+| `epistemic-exclusion` | warning | *(write-path gate and `maintenance_plan` only)* an exclusion bullet that states an evidence limit ("not mentioned in this scan") rather than a product boundary — the one claim a source-hidden reader cannot check and does repeat as fact |
+| `folder-only-evidence` | warning | *(write-path gate only)* frontmatter `path:` resolves to a directory, so this node's evidence drift can never be judged: a folder changes on almost any commit beneath it |
 
 Structural parse failures and v2 identity failures are errors; the other
 quality codes remain advisory. A v1 vault without UID is intentionally not a
@@ -545,6 +549,18 @@ difference, not drift: detecting a dangling reference requires scanning
 every other node's slug, which only a whole-vault pass can do. A per-file
 UI check (fast path, used while a human is editing a single file) cannot
 and does not claim to catch it.
+
+The last four are **body** advisories rather than frontmatter ones, and they have
+a different scope again. They are produced by the write-path node-eligibility
+gate inside `mcp/src/meaning-findings.mjs`, so they reach an author through the
+`add_concept` / `add_concepts` / `patch_concept` response and through
+`query_ontology({operation:"maintenance_plan"})` — which reads the vault's bodies,
+so an unattended review round sees the first three without writing first — but not
+through `validate_vault`, which judges one file's frontmatter at a time. They exist because that write
+path is the one a session without an independent evaluator lane must use, and it
+previously never opened the body at all. Like every other advisory here they
+never block a write (construction rules, step 5); a conformant implementation
+MAY omit them and MUST NOT turn them into errors.
 
 `swallowed-relation-note` and `orphaned-relation-note` live in
 `mcp/src/validate.mjs` and its byte-identical CLI copy

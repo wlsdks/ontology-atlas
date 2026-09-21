@@ -585,7 +585,7 @@ the evidence row fail closed.
 
 | Tool | What it does |
 |---|---|
-| `connection_info` | First-call connection proof: resolved vault/repository roots, resolution sources, same-root warning, restart requirement, server identity, read-only mode, and the actually advertised `toolCount` / `toolNames` / deterministic `toolsetHash`. An explicit `OATLAS_REPO_ROOT` wins; otherwise the server discovers the active vault's Git top-level and falls back to process cwd only outside Git. Run it before repository analysis or writes; compare the inventory after upgrades to catch a stale client process that needs restart. |
+| `connection_info` | First-call connection proof: resolved vault/repository roots, resolution sources, same-root warning, restart requirement, server identity, read-only mode, and the actually advertised `toolCount` / `toolNames` / deterministic `toolsetHash`. An explicit `OATLAS_REPO_ROOT` wins; otherwise the server discovers the active vault's Git top-level and falls back to process cwd only outside Git. Run it before repository analysis or writes; compare the inventory after upgrades to catch a stale client process that needs restart. Every response also carries `guide.card` — the construction card — and `guide.topics`; pass `guide: "meta_model" | "construction" | "lifecycle" | "write_safety" | "workflows"` to receive that section's full text in `guideText`, because a host may keep only the first ~2,000 characters of the server `instructions` while tool results arrive whole. |
 | `git_status` | Read-only, vault-scoped Git status: HEAD/branch, changed vault files, outside-vault counts, staged-outside warnings, detached-HEAD and merge/rebase/cherry-pick/revert risk. NUL-delimited porcelain parsing preserves Unicode and whitespace paths. Never initializes, stages, commits, or pushes. |
 | `git_history` | Read-only, newest-first commit history scoped to the active vault pathspec. Returns bounded hashes, subjects, authored timestamps, `limited` / `hasMore`, shallow-repository state, and `historyComplete` while excluding commits that touched only files outside the vault. `limit` defaults to 20 and is capped at 100. Never initializes, fetches, pulls, commits, or pushes. |
 | `git_snapshot` | Local vault checkpoint with a mandatory dry-run/`confirm:true` flow and exact `expectedHead` concurrency guard. Runs vault validation; blocks validation errors, detached HEAD, and in-progress Git operations; returns the shared destructive-preview decision contract; commits only the vault pathspec; preserves outside staging; and never pushes. |
@@ -1047,7 +1047,8 @@ is limited to `inspect_compile_issue` / `break_dependency_cycle` /
 `canonicalize_graph_arrays` / `resolve_dangling_reference` /
 `add_missing_relation` / `materialize_external_element` / `unassigned_node` /
 `empty_domain` / `separate_evidence_from_concept` / `fold_bulk_siblings` /
-`retire_unearned_node` / `capability_without_evidence` / `rejudge_summary_membership`
+`retire_unearned_node` / `capability_without_evidence` / `rejudge_summary_membership` /
+`definition_missing` / `boundary_missing` / `epistemic_exclusion` / `folder_only_evidence`
 for the same reason.
 `separate_evidence_from_concept` and `fold_bulk_siblings` come from the write-path
 node-eligibility gate (2026-07-31 council) and only ever appear on a write response:
@@ -1066,6 +1067,29 @@ a human judgement, so the action asks for a re-judgement and proposes no rewrite
 same signal is reported by `validate_vault` as `summaryFreshness`. Both read Git history
 for summary nodes only, and both report `checked: false` outside a repository rather than
 a clean bill, because not looking is not the same as finding nothing.
+`definition_missing`, `boundary_missing`, `epistemic_exclusion` and
+`folder_only_evidence` are the body half of the same gate (2026-09-21). Every check
+above them reads frontmatter, and frontmatter is half a node: the door every real
+build actually uses — `add_concept` / `add_concepts` / `patch_concept`, because an
+app session has no independent evaluator lane — never opened the prose. So each
+write that touches a body is now also told when that body carries no definition
+sentence — neither before its first `##` nor under a `## Definition` / `## Summary`
+/ `## Overview` heading — when an `## Includes` or `## Excludes` section is absent or
+still holds only placeholders, and when an `## Excludes` bullet states an evidence
+limit ("not mentioned in this scan") rather than a product boundary — the one claim
+a reader handed the vault without the source cannot check, and the one it repeats as
+established fact. A write that sets `path:` is told when that path is a directory,
+because drift on a folder can never be judged: a folder's timestamp moves on almost
+any commit beneath it, so the node's evidence stays permanently `unknown`. All four
+are `review` / `info`, **never block a write** (construction rule 5), and each names
+the exact `patch_concept` call that answers it. The first three are also raised by the
+vault-wide scan for as long as the answer is missing — on the write response **and**
+on the read `query_ontology({operation:"maintenance_plan"})`, which walks the vault for
+bodies on the same pass it already makes for summary freshness, so an unattended round
+that only reads the queue still sees them. A compiled snapshot carries no bodies, so
+the engine reports nothing when a caller hands over none; that is "not looked at",
+never "clean". `folder_only_evidence` is write-path only, because deciding whether a
+cited path is a directory needs the repository root that a snapshot does not carry.
 `health` / `workspace_brief` / `agent_brief` relation filters expose the same enum schema for
 `dependencyTypes` and `componentTypes` (`domains` / `domain` / `capabilities` /
 `elements` / `dependencies` / `depends_on` / `relates` / `contains` /

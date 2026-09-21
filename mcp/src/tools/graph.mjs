@@ -273,8 +273,18 @@ async function queryOntologyTool(args = {}) {
   // freshness compares a node's description against the membership it describes,
   // and a compiled artifact carries neither clock. Computed only for that
   // operation so every other query stays a pure snapshot read.
-  const maintenanceFreshness =
-    args.operation === 'maintenance_plan' ? buildSummaryFreshness(loadVaultDocs(VAULT_ROOT)) : null;
+  //
+  // The same walk answers a second question the snapshot cannot. A compiled
+  // artifact carries no bodies, so the empty-bridge audit and the meaning-gap
+  // review items (`definition_missing`, `boundary_missing`,
+  // `epistemic_exclusion`) had nothing to read on this path and went silent —
+  // correct behaviour for "no bodies were handed over", and the wrong answer
+  // for an unattended round that only ever calls this read operation and would
+  // therefore never see a node whose body is still the starter scaffold. One
+  // load, both answers, and the docs are loaded here exactly once.
+  const maintenanceDocs =
+    args.operation === 'maintenance_plan' ? loadVaultDocs(VAULT_ROOT) : null;
+  const maintenanceFreshness = maintenanceDocs ? buildSummaryFreshness(maintenanceDocs) : null;
   const agentBriefInput = args.operation === 'agent_brief'
     ? scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns)
     : null;
@@ -282,6 +292,7 @@ async function queryOntologyTool(args = {}) {
   const queryResult = agentBriefInput?.result ?? queryCompiledOntology(artifact, args, {
     ontologyAtlasIgnorePatterns,
     ...(args.operation === 'builder_context' ? { sourceDocs: loadVaultDocs(VAULT_ROOT) } : {}),
+    ...(maintenanceDocs ? { sourceDocs: maintenanceDocs } : {}),
     ...(maintenanceFreshness?.checked ? { staleSummaries: maintenanceFreshness.stale } : {}),
   });
   const validatedResult = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)

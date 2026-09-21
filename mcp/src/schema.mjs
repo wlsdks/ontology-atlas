@@ -442,6 +442,12 @@ export const VAULT_KIND_SCHEMA = {
       `# ${title}\n\n` +
       `Describe the stable responsibility or problem boundary, what it includes, ` +
       `what it excludes, and the evidence that makes it more than a folder or team.\n\n` +
+      `## Includes\n\n` +
+      `- <one responsibility this domain owns>\n\n` +
+      `## Excludes\n\n` +
+      `- <one neighbouring responsibility this domain does not own>\n\n` +
+      `## Evidence\n\n` +
+      `- <what makes this more than a folder or a team name>\n\n` +
       metaModelStarterLine(),
   },
   capability: {
@@ -473,6 +479,12 @@ export const VAULT_KIND_SCHEMA = {
       `# ${title}\n\n` +
       `Describe the observable, implementation-independent ability, its boundary, ` +
       `and the evidence or scenario that proves the product or system can perform it.\n\n` +
+      `## Includes\n\n` +
+      `- <one thing this capability can do>\n\n` +
+      `## Excludes\n\n` +
+      `- <one nearby ability this capability does not provide>\n\n` +
+      `## Evidence\n\n` +
+      `- path: <file> — what it proves\n\n` +
       metaModelStarterLine(),
   },
   element: {
@@ -500,6 +512,12 @@ export const VAULT_KIND_SCHEMA = {
       `# ${title}\n\n` +
       `Describe the distinct implementation role, what it realizes or proves, and ` +
       `the source path or interface that supports the claim. A path alone is evidence, not a node.\n\n` +
+      `## Includes\n\n` +
+      `- <one part of the role this element plays>\n\n` +
+      `## Excludes\n\n` +
+      `- <one nearby role this element does not play>\n\n` +
+      `## Evidence\n\n` +
+      `- path: <file> — what it proves\n\n` +
       metaModelStarterLine(),
   },
   document: {
