@@ -3,7 +3,7 @@
 import { CalendarClock, FileSearch, Plus, ScanSearch, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
 
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import type { RoundRecord } from "@/entities/library-round";
@@ -48,6 +48,7 @@ export function AutomationsPage({
   const [selectedId, setSelectedId] = useState<string | null | undefined>(undefined);
   const [ontologySheetOpen, setOntologySheetOpen] = useState(false);
   const [ontologyDraft, setOntologyDraft] = useState(0);
+  const [lanePending, startLaneTransition] = useTransition();
 
   const allRounds = runner?.rounds ?? EMPTY_RUNNER_ROUNDS;
   const rounds = useMemo(() => allRounds.filter((round) => isLaneRound(round, lane)), [allRounds, lane]);
@@ -56,7 +57,8 @@ export function AutomationsPage({
   const selectLane = (nextLane: AutomationLane) => {
     const query = new URLSearchParams(params.toString());
     query.set("kind", nextLane);
-    router.push(`/automations/?${query}`, { scroll: false });
+    // The old lane's create action must not remain pressable while navigation commits.
+    startLaneTransition(() => router.push(`/automations/?${query}`, { scroll: false }));
     setSelectedId(undefined);
   };
 
@@ -98,7 +100,7 @@ export function AutomationsPage({
               { key: "ontology", label: t("tabs.ontology"), testId: "automations-tab-ontology" },
               { key: "documents", label: t("tabs.documents"), testId: "automations-tab-documents" },
             ]} />
-          {ready && rounds.length > 0 ? <Button variant="outline" onClick={add} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide">
+          {ready && rounds.length > 0 ? <Button variant="outline" onClick={add} disabled={lanePending} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide">
             <Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}
           </Button> : null}
         </div>
@@ -130,7 +132,7 @@ export function AutomationsPage({
               {rounds.length === 0 ? (
                 <div className="flex flex-1 items-center justify-center py-8">
                   <EmptyState title={<span className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t(`${lane}.emptyTitle`)}</span>} titleAs="h2" description={<><span className="text-body-lg text-[color:var(--color-text-secondary)]">{t(`${lane}.emptyDescription`)}</span><span className="mt-4 flex items-center justify-center gap-2 text-body text-[color:var(--color-text-tertiary)]"><ShieldCheck size={ICON_SIZE.sm} className="flex-none" aria-hidden />{t(`${lane}.guard`)}</span></>}
-                    action={<Button onClick={add} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide"><Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}</Button>}
+                    action={<Button onClick={add} disabled={lanePending} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide"><Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}</Button>}
                     icon={lane === "ontology" ? <ScanSearch size={ICON_SIZE.md} /> : <FileSearch size={ICON_SIZE.md} />}
                     tone="solid" align="center" className="w-full max-w-[var(--measure-stage-column)] break-keep" />
                 </div>
