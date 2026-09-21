@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, HardDrive, KeyRound, Search } from 'lucide-react';
+import { AlertTriangle, Folder, HardDrive, KeyRound, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
@@ -91,7 +91,8 @@ export function RecentVaultList({
     <div
       data-testid="recent-vault-list"
       className={cn(
-        'grid rounded-chip border bg-[color:var(--color-panel)]',
+        'grid border bg-[color:var(--color-panel)]',
+        scroll === 'page' ? 'rounded-card' : 'rounded-chip',
         scroll === 'contained' && 'max-h-[var(--recent-vault-list-max-h)] overflow-y-auto overscroll-contain',
         emphasis
           ? 'border-[color:var(--color-indigo-line-a32)]'
@@ -188,6 +189,7 @@ function RecentVaultRowView({
       : null;
   const notice = noticeFor(row.reachability, t);
   const openable = canOpenReachability(row.reachability);
+  const compactNotice = wrapName && !openable;
   /*
    * The accessible name carries the facts the sighted reader gets from the three lines,
    * because a row whose name is only the folder's name is the bare-name list again for
@@ -208,17 +210,23 @@ function RecentVaultRowView({
     <>
       <span
         className={cn(
-          'flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border',
-          notice?.danger
+          'flex shrink-0 items-center justify-center rounded-chip',
+          wrapName ? 'h-8 w-8' : 'h-7 w-7',
+          wrapName
+            ? openable
+              ? 'bg-[color:var(--color-indigo-a08)] text-[color:var(--color-indigo-text-soft)]'
+              : 'text-[color:var(--color-text-tertiary)]'
+            : notice?.danger
             ? 'border-[color:var(--color-danger-a32)] text-[color:var(--color-danger-text)]'
             : 'border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]',
+          !wrapName && 'border',
         )}
       >
-        <HardDrive size={ICON_SIZE.sm} aria-hidden />
+        {wrapName ? <Folder size={ICON_SIZE.md} aria-hidden /> : <HardDrive size={ICON_SIZE.sm} aria-hidden />}
       </span>
       <span className="min-w-0">
         <span className="flex min-w-0 items-baseline gap-1.5">
-          <span data-testid="recent-vault-name" className={cn("min-w-0 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]", wrapName ? "break-all" : "truncate")}>
+          <span data-testid="recent-vault-name" className={cn("min-w-0 text-[color:var(--color-text-primary)]", wrapName ? "break-all text-body-lg font-[var(--font-weight-emphasis)]" : "truncate text-body font-[var(--font-weight-signature)]")}>
             {row.name}
           </span>
           {row.isCurrent ? (
@@ -247,22 +255,25 @@ function RecentVaultRowView({
           <span className="tabular-nums">{openedLabel}</span>
         </span>
         {row.path ? (
-          <span className="mt-0.5 block break-words font-mono text-label leading-body text-[color:var(--color-text-tertiary)]">
+          <span title={row.path} className={cn('mt-1 block text-label text-[color:var(--color-text-tertiary)]', wrapName ? 'truncate' : 'break-words font-mono leading-body')}>
             {row.path}
           </span>
         ) : null}
         {notice ? (
           <span
             data-testid={`recent-vault-notice-${row.reachability}`}
+            title={compactNotice ? notice.text : undefined}
             className={cn(
               'mt-1 flex items-start gap-1.5 text-label leading-body',
-              notice.danger
+              compactNotice
+                ? 'text-[color:var(--color-text-secondary)]'
+                : notice.danger
                 ? 'text-[color:var(--color-danger-text)]'
                 : 'text-[color:var(--color-amber-source-text-a85)]',
             )}
           >
             <notice.Icon size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
-            <span className="min-w-0">{notice.text}</span>
+            <span className="min-w-0">{compactNotice ? t(`state.${row.reachability}Short`) : notice.text}</span>
           </span>
         ) : null}
       </span>
@@ -272,10 +283,13 @@ function RecentVaultRowView({
   // The divider is drawn once, by the wrapper. Repeating it on the pressable child put two
   // hairlines on one seam.
   const rowClass = cn(
-    'grid min-w-0 grid-cols-[28px_1fr] gap-3 px-3 py-2.5',
+    'grid min-w-0 gap-3',
+    wrapName
+      ? 'w-full grid-cols-[32px_minmax(0,1fr)] items-center px-4 py-4 sm:w-auto sm:flex-1'
+      : 'grid-cols-[28px_1fr] px-3 py-2.5',
     // Space kept clear for the action chip laid over the top-right corner. The token binds
     // the reserve to the chip's promoted touch width so the two cannot drift apart.
-    (!row.isCurrent || !openable) && 'pr-[var(--recent-vault-action-reserve)]',
+    !wrapName && (!row.isCurrent || !openable) && 'pr-[var(--recent-vault-action-reserve)]',
   );
 
   return (
@@ -283,7 +297,7 @@ function RecentVaultRowView({
       data-testid="recent-vault-row"
       data-reachability={row.reachability}
       data-current={row.isCurrent ? 'true' : 'false'}
-      className={cn('relative', divided && 'border-t border-[color:var(--color-border-soft)]')}
+      className={cn('relative', wrapName && 'flex min-w-0 flex-wrap items-center gap-x-2 pr-4', divided && 'border-t border-[color:var(--color-border-soft)]')}
     >
       {openable ? (
         <button
@@ -320,7 +334,7 @@ function RecentVaultRowView({
         a folder Atlas has never seen.
       */}
       {!openable && onLocate ? (
-        <div className="flex justify-start px-3 pb-2.5 pl-[52px]">
+        <div className={wrapName ? 'mb-3 ml-15 flex shrink-0 sm:mb-0 sm:ml-0' : 'flex justify-start px-3 pb-2.5 pl-[52px]'}>
           <button
             type="button"
             data-testid="recent-vault-locate"
@@ -338,7 +352,7 @@ function RecentVaultRowView({
              */
             className={controlClass({
               shape: 'chip',
-              size: 'xs',
+              size: wrapName ? 'md' : 'xs',
               tone: 'secondary',
               className: 'atlas-touch-floor-wide justify-center rounded-micro',
             })}
@@ -360,7 +374,7 @@ function RecentVaultRowView({
         chip never sits on top of a folder name.
       */}
       {row.isCurrent && openable ? null : (
-      <div className="absolute right-2 top-2">
+      <div className={wrapName ? 'mb-3 flex shrink-0 sm:mb-0' : 'absolute right-2 top-2'}>
         <button
           type="button"
           data-testid="recent-vault-forget"
@@ -372,7 +386,7 @@ function RecentVaultRowView({
           // The width half of the touch floor; see the note on the locate chip below.
           className={controlClass({
             shape: 'chip',
-            size: 'xs',
+            size: wrapName ? 'md' : 'xs',
             tone: 'muted',
             className: 'atlas-touch-floor-wide justify-center rounded-micro',
           })}

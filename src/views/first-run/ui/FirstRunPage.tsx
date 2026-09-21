@@ -241,14 +241,14 @@ export function FirstRunPage() {
             </span>
           </div>
           <div className="grid gap-1.5">
-            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+            {!choosingFolderHome ? <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
               {choosingFolder ? tSwitch("choose.eyebrow") : t("eyebrow")}
-            </p>
-            <h1 className="break-keep text-display font-[var(--font-weight-signature)] leading-display text-[color:var(--color-text-primary)]">
+            </p> : null}
+            <h1 className={`break-keep font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] ${choosingFolderHome ? "text-hero" : "text-display"}`}>
               {choosingFolder ? tSwitch("choose.title") : t("title")}
             </h1>
             <p
-              className={`break-keep leading-body text-[color:var(--color-text-tertiary)] ${choosingFolderHome ? "text-body" : "mx-auto max-w-[360px] text-body"}`}
+              className={`break-keep text-[color:var(--color-text-tertiary)] ${choosingFolderHome ? "text-body-lg" : "mx-auto max-w-[360px] text-body"}`}
             >
               {choosingFolder
                 ? isTauriVaultRuntime()
@@ -328,7 +328,7 @@ export function FirstRunPage() {
               <section className="grid gap-2" aria-labelledby="known-folders-heading">
                 <p
                   id="known-folders-heading"
-                  className="px-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]"
+                  className="px-1 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]"
                 >
                   {tSwitch("choose.listTitle")}
                 </p>
@@ -347,7 +347,7 @@ export function FirstRunPage() {
                   clause of the intro paragraph (design-lead seat, 2026-09-13).
                 */}
                 {choosingFolder ? (
-                  <p className="px-1 text-caption leading-body text-[color:var(--color-text-quaternary)]">
+                  <p className="px-1 text-label text-[color:var(--color-text-tertiary)]">
                     {tSwitch("choose.releaseValve")}
                   </p>
                 ) : null}

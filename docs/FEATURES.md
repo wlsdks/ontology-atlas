@@ -84,7 +84,7 @@ work here, and where it can.
 | Read / edit / create nodes in that folder | ✅ | ✅ | same parser, same schema, same files |
 | Remember the folder between visits | ❌ pick it again | ✅ | web keeps an FSA handle in its own IndexedDB; a convenience cache, not the source of truth |
 | Resume a single folder on launch | ❌ the browser needs a click for permission, and the chooser says so | ✅ opens it directly | File System Access permission has to come from a gesture, so the web presses something either way |
-| Choose between known folders on launch | ✅ | ✅ | two or more known folders open a wide list with Open folder and Create new above it; the page owns scrolling, and rows retain paths, counts, last-use and recovery actions; one folder resumes directly |
+| Choose between known folders on launch | ✅ | ✅ | two or more known folders open a wide list with Open folder and Create new above it; the page owns scrolling, names wrap, paths keep their full value on hover, and compact unavailable states retain explicit recovery and removal actions beside each row; counts and last-use remain visible; one folder resumes directly |
 | See which folder is open, and leave it | ✅ | ✅ | the folder's name sits at the top of the rail on every destination and opens the switcher; each row carries the folder's contents, its last opening, and whether it opens now |
 | Map entry feedback | ✅ | ✅ | sidebar and G M map entry show a live preparation scene before navigation; the first canvas draw releases it, and another destination or the return action can cancel the pending entry |
 | Work offline | ❌ | ✅ | |

@@ -6469,6 +6469,8 @@
     },
     "state": {
       "missing": "Not at this path any more. It was renamed, moved, or is on a volume that is not mounted.",
+      "missingShort": "Folder not found",
+      "blockedShort": "Access needed",
       "blocked": "This browser refused permission for this folder. Open it again through the folder picker.",
       "needsPermission": "The browser will ask for permission again when you open this.",
       "unknown": "Could not check whether this folder is reachable."
